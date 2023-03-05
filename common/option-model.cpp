@@ -614,3 +614,57 @@ bool option_model::slider_unselected( rs2_option opt,
     }
     return res;
 }
+
+bool option_model::draw_option(bool update_read_only_options,
+    bool is_streaming,
+    std::string& error_message, notifications_model& model)
+{
+    if (update_read_only_options)
+    {
+        update_supported(error_message);
+        if (supported && is_streaming)
+        {
+            update_read_only_status(error_message);
+            if (read_only)
+            {
+                update_all_fields(error_message, model);
+            }
+        }
+    }
+    if (custom_draw_method)
+        return custom_draw_method(*this, error_message, model);
+    else
+        return draw(error_message, model);
+}
+
+bool option_model::set_option(rs2_option opt,
+    float req_value,
+    std::string& error_message,
+    std::chrono::steady_clock::duration ignore_period)
+{
+    // Only set the value if `ignore_period` time past since last set_option() call for this option
+    if (last_set_stopwatch.get_elapsed() < ignore_period)
+        return false;
+
+    try
+    {
+        last_set_stopwatch.reset();
+        endpoint->set_option(opt, req_value);
+    }
+    catch (const error& e)
+    {
+        error_message = error_to_string(e);
+    }
+
+    // Only update the cached value once set_option is done! That way, if it doesn't change
+    // anything...
+    try
+    {
+        value = endpoint->get_option(opt);
+    }
+    catch (...)
+    {
+    }
+
+    return true;
+}

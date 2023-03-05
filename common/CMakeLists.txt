@@ -51,6 +51,8 @@ set(COMMON_SRC
     "${CMAKE_CURRENT_LIST_DIR}/processing-block-model.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/stream-model.h"
     "${CMAKE_CURRENT_LIST_DIR}/stream-model.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/post-processing-filters.h"
+    "${CMAKE_CURRENT_LIST_DIR}/post-processing-filters.cpp"
     )
 
 set(SW_UPDATE_FILES
