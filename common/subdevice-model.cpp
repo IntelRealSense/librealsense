@@ -60,6 +60,15 @@ namespace rs2
         return res;
     }
 
+    std::string get_device_sensor_name(subdevice_model* sub)
+    {
+        std::stringstream ss;
+        ss << configurations::viewer::post_processing
+            << "." << sub->dev.get_info(RS2_CAMERA_INFO_NAME)
+            << "." << sub->s->get_info(RS2_CAMERA_INFO_NAME);
+        return ss.str();
+    }
+
     void subdevice_model::populate_options(std::map<int, option_model>& opt_container,
         const std::string& opt_base_label,
         subdevice_model* model,

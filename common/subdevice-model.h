@@ -36,6 +36,8 @@ namespace rs2
     bool restore_processing_block(const char* name,
         std::shared_ptr<rs2::processing_block> pb, bool enable = true);
 
+    std::string get_device_sensor_name(subdevice_model* sub);
+
     class frame_queues
     {
     public:

@@ -311,9 +311,6 @@ namespace rs2
     class viewer_model;
     class subdevice_model;
 
-    void save_processing_block_to_config_file(const char* name,
-        std::shared_ptr<rs2::processing_block> pb, bool enable = true);
-
     class syncer_model
     {
     public:
