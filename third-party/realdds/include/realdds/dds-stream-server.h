@@ -6,8 +6,6 @@
 #include <realdds/dds-stream-profile.h>
 #include <realdds/dds-stream-base.h>
 
-#include <rsutils/json.h>
-
 #include <memory>
 #include <string>
 #include <set>

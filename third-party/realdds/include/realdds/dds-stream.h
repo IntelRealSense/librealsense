@@ -22,8 +22,6 @@ class flexible_msg;
 class dds_subscriber;
 class dds_topic_reader;
 
-class frame_metadata_syncer;
-
 // Represents a stream of information (images, motion data, etc..) from a single source received via the DDS system.
 // A stream can have several profiles, i.e different data frequency, image resolution, etc..
 // 
