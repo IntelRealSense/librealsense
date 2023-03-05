@@ -6,6 +6,48 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include "model-views.h"
+#include "subdevice-model.h"
+
+namespace rs2
+{
+    option_model create_option_model(rs2_option opt,
+        const std::string& opt_base_label,
+        subdevice_model* model,
+        std::shared_ptr<options> options,
+        bool* options_invalidated,
+        std::string& error_message)
+    {
+        option_model option = {};
+
+        std::stringstream ss;
+
+        ss << opt_base_label << "/" << options->get_option_name(opt);
+        option.id = ss.str();
+        option.opt = opt;
+        option.endpoint = options;
+        option.label = options->get_option_name(opt) + std::string("##") + ss.str();
+        option.invalidate_flag = options_invalidated;
+        option.dev = model;
+        option.range = { 0, 1, 0, 0 };
+        option.value = 0;
+
+        option.supported = options->supports(opt);
+        if (option.supported)
+        {
+            try
+            {
+                option.range = options->get_option_range(opt);
+                option.read_only = options->is_option_read_only(opt);
+                option.value = options->get_option(opt);
+            }
+            catch (const error& e)
+            {
+                error_message = error_to_string(e);
+            }
+        }
+        return option;
+    }
+}
 
 using namespace rs2;
 
