@@ -26,7 +26,8 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
 **Download/Clone librealsense github repository:**  
   * Get *librealsense* sources in one of the following ways:<br />
 
-    - Download the complete source tree with *git*<br />
+    - Install *git* and download the complete source tree.<br />
+      `sudo apt-get install git`<br />
       `git clone https://github.com/IntelRealSense/librealsense.git`<br />
 
     - Download and unzip the latest stable version from `master` branch:
@@ -38,7 +39,7 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
 
   2. Install the core packages required to build *librealsense* binaries and the affected kernel modules:  
  
-     `sudo apt-get install git libssl-dev libusb-1.0-0-dev libudev-dev pkg-config libgtk-3-dev cmake`  <br /><br />
+     `sudo apt-get install libssl-dev libusb-1.0-0-dev libudev-dev pkg-config libgtk-3-dev cmake`  <br /><br />
      Distribution-specific packages:<br />
      * Ubuntu 14 or when running Ubuntu 16.04 live-disk:<br />
       `./scripts/install_glfw3.sh`  <br />
