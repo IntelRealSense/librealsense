@@ -74,6 +74,26 @@ namespace rs2
         return results;
     }
 
+    inline  std::vector<uint8_t> aus_get_data()
+    {
+        std::vector<uint8_t> results;
+
+        rs2_error * e = nullptr;
+        const rs2_raw_data_buffer * buf = rs2_aus_get_data(&e);
+        error::handle(e);
+
+        std::shared_ptr<const rs2_raw_data_buffer> list(buf, rs2_delete_raw_data);
+
+        auto size = rs2_get_raw_data_size(list.get(), &e);
+        error::handle(e);
+
+        auto start = rs2_get_raw_data(list.get(), &e);
+
+        results.insert(results.begin(), start, start + size);
+
+        return results;
+    }
+
 }
 
 #endif // LIBREALSENSE_RS2_AUS_HPP

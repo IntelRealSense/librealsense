@@ -8,6 +8,7 @@
 #include <rsutils/version.h>
 #include <rsutils/number/running-average.h>
 #include <rsutils/number/stabilized-value.h>
+#include <rsutils/os/os.h>
 
 
 #define NAME pyrsutils
@@ -29,6 +30,9 @@ PYBIND11_MODULE(NAME, m) {
            py::arg( "logger" ) = LIBREALSENSE_ELPP_ID );
 
     m.def( "split", &rsutils::string::split );
+
+    m.def("get_os_name", &rsutils::get_os_name);
+    m.def("get_platform_name", &rsutils::get_platform_name);
 
     using rsutils::version;
     py::class_< version >( m, "version" )
@@ -122,5 +126,5 @@ PYBIND11_MODULE(NAME, m) {
         .def( "get", &stabilized_value::get, py::arg( "stabilization-percent" ) = 0.75 )
         .def( "clear", &stabilized_value::clear )
         .def( "to_string", to_string )
-        .def( "__str__", to_string );
+        .def( "__str__", to_string ); 
 }

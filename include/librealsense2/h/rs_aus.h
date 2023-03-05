@@ -96,6 +96,12 @@ extern "C" {
     */
     const char* rs2_aus_get_counter_data(const rs2_strings_list* buffer, int i, rs2_error** error);
 
+    /**
+    * Get aus information as raw_data_buffer
+    * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    * \return   rs2_raw_data_buffer * with aus information which should be released by rs2_delete_raw_data
+    */
+    const rs2_raw_data_buffer * rs2_aus_get_data(rs2_error ** error);
 
 #ifdef __cplusplus
 }

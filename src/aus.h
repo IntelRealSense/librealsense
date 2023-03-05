@@ -7,8 +7,11 @@
 #include "device.h"
 #include <mutex>
 #include <rsutils/os/os.h>
+#include <third-party/json.hpp>
 
 #define NOT_SUPPORTED(func_api)  func_api{throw std::runtime_error("function " #func_api " is not supported without BUILD_AUS flag on");}
+
+using nlohmann::json;
 
 namespace librealsense
 {
@@ -240,7 +243,22 @@ namespace librealsense
                     insert_device_to_device_manager(serial, name);
                 }
             }
-        } 
+        }
+
+        std::vector<std::uint8_t>  get_data()
+        {
+            json j;
+            j["librealsense_version"] = _librealsense_version;
+            j["os_name"] = _os_name;
+            j["platform_name"] = _platform_name;
+
+            for ( const auto & pair : _mp )
+            {
+                j[pair.first] = std::to_string(pair.second->get());
+            }
+            auto str = j.dump(4);
+            return std::vector<uint8_t>(str.begin(), str.end());
+        }
 
     private:
         std::unordered_map<std::string, std::shared_ptr<aus_value>>_mp;
