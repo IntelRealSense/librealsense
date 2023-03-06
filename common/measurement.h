@@ -2,7 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "model-views.h"
+#include "device-model.h"
 
 #include <vector>
 #include <functional>
