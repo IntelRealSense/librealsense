@@ -1142,9 +1142,9 @@ namespace rs2
         }
         else
         {
-            for (int i = 0; i < res_values_map.size(); ++i)
+            for (auto it = res_values_map.begin(); it != res_values_map.end(); ++it)
             {
-                selected_resolutions.push_back(res_values_map[i][ui.selected_res_id_map[i]]);
+                selected_resolutions.push_back(it->second[ui.selected_res_id_map[it->first]]);
             }
         }
         std::sort(profiles.begin(), profiles.end(), [&](stream_profile a, stream_profile b) {
@@ -1214,9 +1214,9 @@ namespace rs2
         }
         else
         {
-            for (int i = 0; i < res_values_map.size(); ++i)
+            for (auto it = res_values_map.begin(); it != res_values_map.end(); ++it)
             {
-                selected_resolutions.push_back(res_values_map[i][ui.selected_res_id_map[i]]);
+                selected_resolutions.push_back(it->second[ui.selected_res_id_map[it->first]]);
             }
         }
 
@@ -1466,9 +1466,9 @@ namespace rs2
                             }
                             else
                             {
-                                for (int i = 0; i < res_values_map.size(); ++i)
+                                for (auto it = res_values_map.begin(); it != res_values_map.end(); ++it)
                                 {
-                                    selected_resolutions.push_back(res_values_map[i][ui.selected_res_id_map[i]]);
+                                    selected_resolutions.push_back(it->second[ui.selected_res_id_map[it->first]]);
                                 }
                                 error_message << "\n{" << stream_display_names[stream] << ","
                                     << selected_resolutions[0].first << "x" << selected_resolutions[0].second << " at " << fps << "Hz, "
@@ -1537,13 +1537,11 @@ namespace rs2
 
         if (ui.is_multiple_resolutions)
         {
-            for (auto&& p : profiles)
-            {
-                if (p.stream_type() == RS2_STREAM_DEPTH)
-                    streaming_map[0] = false;
-                else
-                    streaming_map[1] = false;
-            }
+            uint32_t depth_res_id, ir1_res_id, ir2_res_id;
+            get_depth_ir_mismatch_resolutions_ids(depth_res_id, ir1_res_id, ir2_res_id);
+            streaming_map[depth_res_id] = false;
+            streaming_map[ir1_res_id] = false;
+            streaming_map[ir2_res_id] = false;
         }
 
         if (profiles[0].stream_type() == RS2_STREAM_COLOR)
@@ -1660,13 +1658,11 @@ namespace rs2
 
         if (ui.is_multiple_resolutions)
         {
-            for (auto&& p : profiles)
-            {
-                if (p.stream_type() == RS2_STREAM_DEPTH)
-                    streaming_map[0] = true;
-                else
-                    streaming_map[1] = true;
-            }
+            uint32_t depth_res_id, ir1_res_id, ir2_res_id;
+            get_depth_ir_mismatch_resolutions_ids(depth_res_id, ir1_res_id, ir2_res_id);
+            streaming_map[depth_res_id] = true;
+            streaming_map[ir1_res_id] = true;
+            streaming_map[ir2_res_id] = true;
         }
 
         if (s->is< color_sensor >())

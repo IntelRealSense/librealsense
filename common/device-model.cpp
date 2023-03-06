@@ -2124,10 +2124,16 @@ namespace rs2
                         sub->ui.selected_res_id = static_cast<int>(res_id);
                     else
                     {
+                        uint32_t depth_res_id, ir1_res_id, ir2_res_id;
+                        sub->get_depth_ir_mismatch_resolutions_ids(depth_res_id, ir1_res_id, ir2_res_id);
+
                         if (kvp.first.first == RS2_STREAM_DEPTH)
-                            sub->ui.selected_res_id_map[0] = static_cast<int>(res_id);
+                        sub->ui.selected_res_id_map[depth_res_id] = static_cast<int>(res_id);
                         else
-                            sub->ui.selected_res_id_map[1] = static_cast<int>(res_id);
+                        {
+                            sub->ui.selected_res_id_map[ir1_res_id] = static_cast<int>(res_id);
+                            sub->ui.selected_res_id_map[ir2_res_id] = static_cast<int>(res_id);
+                        }
                     }
                 }
             }
