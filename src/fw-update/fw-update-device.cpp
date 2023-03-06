@@ -214,8 +214,7 @@ namespace librealsense
         // either RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET or RS2_DFU_STATE_DFU_ERROR status.
         // This command also reset the device
         
-        // TODO: DFU issue - remove d500_device usage when HKR will fix manifest issue
-        if (!d500_device && !wait_for_state(messenger, RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET, 20000))
+        if (!wait_for_state(messenger, RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET, 20000))
             throw std::runtime_error("Firmware manifest failed");
     }
 
