@@ -401,7 +401,6 @@ namespace librealsense
     d500_device::d500_device(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
         : device(ctx, group), global_time_interface(),
-          auto_calibrated(),
           _device_capabilities(ds::ds_caps::CAP_UNDEFINED),
           _depth_stream(new stream(RS2_STREAM_DEPTH)),
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
@@ -440,7 +439,6 @@ namespace librealsense
                 std::make_shared<locked_transfer>(
                     backend.create_usb_device(group.usb_devices.front()), raw_sensor));
         }
-        set_hw_monitor_for_auto_calib(_hw_monitor);
 
         _ds_device_common = std::make_shared<ds_device_common>(this, _hw_monitor);
 
