@@ -24,7 +24,7 @@ namespace librealsense
     class d400_thermal_monitor;
     class ds_devices_common;
 
-    class d500_device : public virtual device, public debug_interface, public global_time_interface, public updatable, public auto_calibrated
+    class d500_device : public virtual device, public debug_interface, public global_time_interface, public updatable
     {
     public:
         std::shared_ptr<synthetic_sensor> create_depth_device(std::shared_ptr<context> ctx,
