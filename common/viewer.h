@@ -5,6 +5,10 @@
 
 #include <unordered_set>
 #include "model-views.h"
+#include "device-model.h"
+#include "subdevice-model.h"
+#include "stream-model.h"
+#include "post-processing-filters.h"
 #include "notifications.h"
 #include "skybox.h"
 #include "measurement.h"

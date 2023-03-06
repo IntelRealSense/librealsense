@@ -1,3 +1,6 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+
 #pragma once
 
 #include <librealsense2/rs.hpp>
@@ -62,4 +65,7 @@ namespace rs2
         std::function<rs2::frame( rs2::frame )> _invoker;
         subdevice_model* _owner;
     };
+
+    void save_processing_block_to_config_file(const char* name,
+        std::shared_ptr<rs2::processing_block> pb, bool enable = true);
 }

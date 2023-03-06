@@ -64,6 +64,28 @@ namespace librealsense
         memcpy(bufferToSend, &tmp_size, sizeof(uint16_t)); // Length doesn't include header
     }
 
+    command hw_monitor::build_command_from_data(const std::vector<uint8_t> data)
+    {
+        uint32_t offset = 4; // skipping over first 4 bytes
+        uint8_t opcode = data[offset];
+        // despite the fact that the opcode is only uint8, we need to step over 4 bytes, 
+        // as done in hw_monitor::fill_usb_buffer - the method that constructs the data for usb buffer
+        offset += sizeof(uint32_t); 
+
+        uint32_t param1 = *reinterpret_cast<const uint32_t*>(data.data() + offset);
+        offset += sizeof(uint32_t);
+
+        uint32_t param2 = *reinterpret_cast<const uint32_t*>(data.data() + offset);
+        offset += sizeof(uint32_t);
+
+        uint32_t param3 = *reinterpret_cast<const uint32_t*>(data.data() + offset);
+        offset += sizeof(uint32_t);
+
+        uint32_t param4 = *reinterpret_cast<const uint32_t*>(data.data() + offset);
+        offset += sizeof(uint32_t);
+
+        return command{ opcode, param1, param2, param2, param4 };
+    }
 
     void hw_monitor::execute_usb_command(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize, bool require_response) const
     {
