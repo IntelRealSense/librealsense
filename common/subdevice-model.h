@@ -123,7 +123,7 @@ namespace rs2
         void restore_ui_selection() { ui = last_valid_ui; }
         void store_ui_selection() { last_valid_ui = ui; }
 
-        void get_depth_ir_mismatch_resolutions_ids(uint32_t& depth_res_id, uint32_t& ir1_res_id, uint32_t& ir2_res_id) const;
+        void get_depth_ir_mismatch_resolutions_ids(int& depth_res_id, int& ir1_res_id, int& ir2_res_id) const;
 
         template<typename T>
         bool get_default_selection_index(const std::vector<T>& values, const T & def, int* index)

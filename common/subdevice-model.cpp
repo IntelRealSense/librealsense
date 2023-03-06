@@ -784,7 +784,7 @@ namespace rs2
             return false;
         }
 
-        uint32_t depth_res_id, ir1_res_id, ir2_res_id;
+        int depth_res_id, ir1_res_id, ir2_res_id;
         get_depth_ir_mismatch_resolutions_ids(depth_res_id, ir1_res_id, ir2_res_id);
 
         std::vector<uint32_t> stream_types_ids;
@@ -885,8 +885,8 @@ namespace rs2
 
             // stream and formats
             // Draw combo-box with all format options for current stream type
-            std::map<rs2_stream, std::vector<uint32_t>> stream_to_index;
-            uint32_t depth_res_id, ir1_res_id, ir2_res_id;
+            std::map<rs2_stream, std::vector<int>> stream_to_index;
+            int depth_res_id, ir1_res_id, ir2_res_id;
             get_depth_ir_mismatch_resolutions_ids(depth_res_id, ir1_res_id, ir2_res_id);
             stream_to_index[RS2_STREAM_DEPTH] = { depth_res_id };
             stream_to_index[RS2_STREAM_INFRARED] = { ir1_res_id, ir2_res_id };
@@ -1537,7 +1537,7 @@ namespace rs2
 
         if (ui.is_multiple_resolutions)
         {
-            uint32_t depth_res_id, ir1_res_id, ir2_res_id;
+            int depth_res_id, ir1_res_id, ir2_res_id;
             get_depth_ir_mismatch_resolutions_ids(depth_res_id, ir1_res_id, ir2_res_id);
             streaming_map[depth_res_id] = false;
             streaming_map[ir1_res_id] = false;
@@ -1658,7 +1658,7 @@ namespace rs2
 
         if (ui.is_multiple_resolutions)
         {
-            uint32_t depth_res_id, ir1_res_id, ir2_res_id;
+            int depth_res_id, ir1_res_id, ir2_res_id;
             get_depth_ir_mismatch_resolutions_ids(depth_res_id, ir1_res_id, ir2_res_id);
             streaming_map[depth_res_id] = true;
             streaming_map[ir1_res_id] = true;
@@ -1775,7 +1775,7 @@ namespace rs2
         // TODO: Once auto-calib makes it into the API, switch to querying camera info
     }
 
-    void subdevice_model::get_depth_ir_mismatch_resolutions_ids(uint32_t& depth_res_id, uint32_t& ir1_res_id, uint32_t& ir2_res_id) const
+    void subdevice_model::get_depth_ir_mismatch_resolutions_ids(int& depth_res_id, int& ir1_res_id, int& ir2_res_id) const
     {
         auto it = profile_id_to_res.begin();
         if (it != profile_id_to_res.end())
