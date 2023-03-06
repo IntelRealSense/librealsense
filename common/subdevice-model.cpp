@@ -356,7 +356,7 @@ namespace rs2
                     push_back_if_not_exists(res_values, std::pair<int, int>(vid_prof.width(), vid_prof.height()));
                     push_back_if_not_exists(resolutions, res.str());
                     push_back_if_not_exists(resolutions_per_stream[profile.stream_type()], std::pair<int, int>(vid_prof.width(), vid_prof.height()));
-                    push_back_if_not_exists(res_values_map[profile.unique_id()], std::pair<int, int>(vid_prof.width(), vid_prof.height()));
+                    push_back_if_not_exists(profile_id_to_res[profile.unique_id()], std::pair<int, int>(vid_prof.width(), vid_prof.height()));
                 }
 
                 std::stringstream fps;
@@ -432,7 +432,7 @@ namespace rs2
             {
                 ui.is_multiple_resolutions = true;
                 auto default_res = std::make_pair(1280, 960);
-                for (auto res_array : res_values_map)
+                for (auto res_array : profile_id_to_res)
                 {
                     if (get_default_selection_index(res_array.second, default_res, &selection_index))
                     {
@@ -1069,7 +1069,7 @@ namespace rs2
             }
             else
             {
-                auto res_vec = res_values_map[p.unique_id()];
+                auto res_vec = profile_id_to_res[p.unique_id()];
                 for (int i = 0; i < res_vec.size(); i++)
                 {
                     if (auto vid_prof = p.as<video_stream_profile>())
@@ -1142,7 +1142,7 @@ namespace rs2
         }
         else
         {
-            for (auto it = res_values_map.begin(); it != res_values_map.end(); ++it)
+            for (auto it = profile_id_to_res.begin(); it != profile_id_to_res.end(); ++it)
             {
                 selected_resolutions.push_back(it->second[ui.selected_res_id_map[it->first]]);
             }
@@ -1214,7 +1214,7 @@ namespace rs2
         }
         else
         {
-            for (auto it = res_values_map.begin(); it != res_values_map.end(); ++it)
+            for (auto it = profile_id_to_res.begin(); it != profile_id_to_res.end(); ++it)
             {
                 selected_resolutions.push_back(it->second[ui.selected_res_id_map[it->first]]);
             }
@@ -1466,7 +1466,7 @@ namespace rs2
                             }
                             else
                             {
-                                for (auto it = res_values_map.begin(); it != res_values_map.end(); ++it)
+                                for (auto it = profile_id_to_res.begin(); it != profile_id_to_res.end(); ++it)
                                 {
                                     selected_resolutions.push_back(it->second[ui.selected_res_id_map[it->first]]);
                                 }
@@ -1777,14 +1777,14 @@ namespace rs2
 
     void subdevice_model::get_depth_ir_mismatch_resolutions_ids(uint32_t& depth_res_id, uint32_t& ir1_res_id, uint32_t& ir2_res_id) const
     {
-        auto it = res_values_map.begin();
-        if (it != res_values_map.end())
+        auto it = profile_id_to_res.begin();
+        if (it != profile_id_to_res.end())
         {
             depth_res_id = it->first;
-            if (++it != res_values_map.end())
+            if (++it != profile_id_to_res.end())
             {
                 ir1_res_id = it->first;
-                if (++it != res_values_map.end())
+                if (++it != profile_id_to_res.end())
                 {
                     ir2_res_id = it->first;
                 }

@@ -168,7 +168,7 @@ namespace rs2
         subdevice_ui_selection last_valid_ui;
 
         std::vector<std::pair<int, int>> res_values;
-        std::map<int, std::vector<std::pair<int, int>>> res_values_map; // used for depth and ir mixed resolutions
+        std::map<int, std::vector<std::pair<int, int>>> profile_id_to_res; // used for depth and ir mixed resolutions
         std::map<int, std::vector<int>> fps_values_per_stream;
         std::vector<int> shared_fps_values;
         bool show_single_fps_list = false;
