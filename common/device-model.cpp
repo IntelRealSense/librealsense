@@ -2120,7 +2120,15 @@ namespace rs2
                                                   << "No match found for requested resolution: " << requested_res.first
                                                   << "x" << requested_res.second );
                     }
-                    sub->ui.selected_res_id = int(res_id);
+                    if (!sub->ui.selected_res_map_used)
+                        sub->ui.selected_res_id = int(res_id);
+                    else
+                    {
+                        if (kvp.first.first == RS2_STREAM_DEPTH)
+                            sub->ui.selected_res_id_map[0] = int(res_id);
+                        else
+                            sub->ui.selected_res_id_map[1] = int(res_id);
+                    }
                 }
             }
         }
