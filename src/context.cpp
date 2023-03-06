@@ -1074,7 +1074,7 @@ namespace librealsense
         }
 
         if (list.size())
-            LOG_INFO( "Found " << list.size() << " RealSense devices (mask 0x" << std::hex << mask << ")" );
+            LOG_INFO( "Found " << list.size() << " RealSense devices (mask 0x" << std::hex << mask << ")" << std::dec );
         return list;
     }
 
