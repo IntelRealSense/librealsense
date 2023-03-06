@@ -65,7 +65,7 @@ namespace rs2
     {
         int selected_res_id = 0;
         std::map<int, int> selected_res_id_map; // used for depth and ir mixed resolutions
-        bool selected_res_map_used = false; // used for depth and ir mixed resolutions
+        bool is_multiple_resolutions = false; // used for depth and ir mixed resolutions
         int selected_shared_fps_id = 0;
         std::map<int, int> selected_fps_id;
         std::map<int, int> selected_format_id;

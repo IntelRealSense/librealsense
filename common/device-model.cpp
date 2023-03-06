@@ -2089,7 +2089,7 @@ namespace rs2
                         throw std::runtime_error( rsutils::string::from()
                                                   << "No match found for requested format: " << requested_format );
                     }
-                    sub->ui.selected_format_id[uid] = int(format_id);
+                    sub->ui.selected_format_id[uid] = static_cast<int>(format_id);
 
                     //Find fps
                     int requested_fps = kvp.second.fps;
@@ -2104,7 +2104,7 @@ namespace rs2
                         throw std::runtime_error( rsutils::string::from()
                                                   << "No match found for requested fps: " << requested_fps );
                     }
-                    sub->ui.selected_shared_fps_id = int(fps_id);
+                    sub->ui.selected_shared_fps_id = static_cast<int>(fps_id);
 
                     //Find Resolution
                     std::pair<int, int> requested_res{ kvp.second.width,kvp.second.height };
@@ -2120,14 +2120,14 @@ namespace rs2
                                                   << "No match found for requested resolution: " << requested_res.first
                                                   << "x" << requested_res.second );
                     }
-                    if (!sub->ui.selected_res_map_used)
-                        sub->ui.selected_res_id = int(res_id);
+                    if (!sub->ui.is_multiple_resolutions)
+                        sub->ui.selected_res_id = static_cast<int>(res_id);
                     else
                     {
                         if (kvp.first.first == RS2_STREAM_DEPTH)
-                            sub->ui.selected_res_id_map[0] = int(res_id);
+                            sub->ui.selected_res_id_map[0] = static_cast<int>(res_id);
                         else
-                            sub->ui.selected_res_id_map[1] = int(res_id);
+                            sub->ui.selected_res_id_map[1] = static_cast<int>(res_id);
                     }
                 }
             }

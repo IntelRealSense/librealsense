@@ -430,7 +430,7 @@ namespace rs2
             if (!strcmp(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE), "D500") &&
                 !strcmp(s->get_info(RS2_CAMERA_INFO_NAME), "Stereo Module"))
             {
-                ui.selected_res_map_used = true;
+                ui.is_multiple_resolutions = true;
                 auto default_res = std::make_pair(1280, 960);
                 for (auto res_array : res_values_map)
                 {
@@ -473,7 +473,7 @@ namespace rs2
                 }
             }
 
-            if (ui.selected_res_map_used)
+            if (ui.is_multiple_resolutions)
             {
                 for (auto it = ui.selected_res_id_map.begin(); it != ui.selected_res_id_map.end(); ++it)
                 {
@@ -779,7 +779,7 @@ namespace rs2
     {
         bool res = false;
 
-        if (!ui.selected_res_map_used)
+        if (!ui.is_multiple_resolutions)
         {
             return false;
         }
@@ -985,7 +985,7 @@ namespace rs2
         auto col0 = ImGui::GetCursorPosX();
         auto col1 = 155.f;
 
-        if (ui.selected_res_map_used && !strcmp(s->get_info(RS2_CAMERA_INFO_NAME), "Stereo Module"))
+        if (ui.is_multiple_resolutions && !strcmp(s->get_info(RS2_CAMERA_INFO_NAME), "Stereo Module"))
         {
             if (draw_fps_selector)
             {
@@ -1055,7 +1055,7 @@ namespace rs2
             }
 
             // update resolution
-            if (!ui.selected_res_map_used)
+            if (!ui.is_multiple_resolutions)
             {
                 for (int i = 0; i < res_values.size(); i++)
                 {
@@ -1135,7 +1135,7 @@ namespace rs2
         int width = 0;
         int height = 0;
         std::vector<std::pair<int, int>> selected_resolutions;
-        if (!ui.selected_res_map_used)
+        if (!ui.is_multiple_resolutions)
         {
             width = res_values[ui.selected_res_id].first;
             height = res_values[ui.selected_res_id].second;
@@ -1164,7 +1164,7 @@ namespace rs2
             if (!a_vp || !b_vp)
                 return score_a < score_b;
 
-            if (!ui.selected_res_map_used)
+            if (!ui.is_multiple_resolutions)
             {
                 if (a_vp.width() != width || a_vp.height() != height)
                     score_a++;
@@ -1207,7 +1207,7 @@ namespace rs2
         int width = 0;
         int height = 0;
         std::vector<std::pair<int, int>> selected_resolutions;
-        if (!ui.selected_res_map_used)
+        if (!ui.is_multiple_resolutions)
         {
             width = res_values[ui.selected_res_id].first;
             height = res_values[ui.selected_res_id].second;
@@ -1222,7 +1222,7 @@ namespace rs2
 
         std::vector<stream_profile> sorted_profiles = profiles;
 
-        if (!ui.selected_res_map_used && (ui.selected_res_id != last_valid_ui.selected_res_id))
+        if (!ui.is_multiple_resolutions && (ui.selected_res_id != last_valid_ui.selected_res_id))
         {
             get_sorted_profiles(sorted_profiles);
             std::map<int, std::map<int, stream_profile>> profiles_by_fps;
@@ -1234,7 +1234,7 @@ namespace rs2
                     break;
             }
         }
-        else if (ui.selected_res_map_used && (ui.selected_res_id_map != last_valid_ui.selected_res_id_map))
+        else if (ui.is_multiple_resolutions && (ui.selected_res_id_map != last_valid_ui.selected_res_id_map))
         {
             get_sorted_profiles(sorted_profiles);
             std::map<int, std::map<int, stream_profile>> profiles_by_fps;
@@ -1329,7 +1329,7 @@ namespace rs2
             for (auto&& p : sorted_profiles)
             {
                 // first try to find profile from the new stream to match the current configuration
-                if (!ui.selected_res_map_used)
+                if (!ui.is_multiple_resolutions)
                 {
                     if (check_profile(p, [&](video_stream_profile vid_prof)
                         { return (p.fps() == fps && vid_prof.width() == width && vid_prof.height() == height); },
@@ -1456,7 +1456,7 @@ namespace rs2
                             int width = 0;
                             int height = 0;
                             std::vector<std::pair<int, int>> selected_resolutions;
-                            if (!ui.selected_res_map_used)
+                            if (!ui.is_multiple_resolutions)
                             {
                                 width = res_values[ui.selected_res_id].first;
                                 height = res_values[ui.selected_res_id].second;
@@ -1487,7 +1487,7 @@ namespace rs2
                                 }
                                 else
                                 {
-                                    if (!ui.selected_res_map_used)
+                                    if (!ui.is_multiple_resolutions)
                                     {
                                         if (vid_prof.width() == width && vid_prof.height() == height)
                                             results.push_back(p);
@@ -1535,7 +1535,7 @@ namespace rs2
         streaming = false;
         _pause = false;
 
-        if (ui.selected_res_map_used)
+        if (ui.is_multiple_resolutions)
         {
             for (auto&& p : profiles)
             {
@@ -1658,7 +1658,7 @@ namespace rs2
         _options_invalidated = true;
         streaming = true;
 
-        if (ui.selected_res_map_used)
+        if (ui.is_multiple_resolutions)
         {
             for (auto&& p : profiles)
             {
