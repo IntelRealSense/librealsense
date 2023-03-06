@@ -215,7 +215,10 @@ namespace rs2
             serial = _dev.query_sensors().front().get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
 
         // TODO: DFU issue - remove d500_device usage when HKR FW team fix the firmware product id issue
+        // also, we set is_signed here to be true, because there is one flow for HKR, which is DFU (signed)
+        // if the file is unsigned or not compataible, HKR FW will notify for that.
         bool d500_device = true;
+        _is_signed = true;
 		
         // Clear FW update related notification to avoid dismissing the notification on ~device_model()
         // We want the notification alive during the whole process.

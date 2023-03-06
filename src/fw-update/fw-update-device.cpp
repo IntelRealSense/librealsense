@@ -214,6 +214,11 @@ namespace librealsense
         // either RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET or RS2_DFU_STATE_DFU_ERROR status.
         // This command also reset the device
         
+        // TODO: DFU issue - for HKR, sleep 80 seconds till finish writing to qspi flash
+        // and wake up the device with the new burned FW
+        // Still, this workaround doesn't solve the "Firmware manifest failed" below
+        std::this_thread::sleep_for(std::chrono::milliseconds(80000));
+
         if (!wait_for_state(messenger, RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET, 20000))
             throw std::runtime_error("Firmware manifest failed");
     }
