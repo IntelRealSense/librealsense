@@ -136,6 +136,9 @@ int main(int argc, char** argv) try
 
     bool done = false;
 
+	// TODO: DFU issue - remove d500_device usage when HKR fixes DFU related issue
+    bool d500_device = true;
+
     CmdLine cmd("librealsense rs-fw-update tool", ' ', RS2_API_VERSION_STR);
 
     SwitchArg list_devices_arg("l", "list_devices", "List all available devices");
@@ -263,7 +266,8 @@ int main(int argc, char** argv) try
         for (auto&& d : info.get_new_devices())
         {
             std::lock_guard<std::mutex> lk(mutex);
-            if (d.is<rs2::update_device>() && (d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID) == update_serial_number))
+			// TODO: DFU issue - remove d500_device usage when HKR fixes DFU related issue
+            if (d500_device || d.is<rs2::update_device>() && (d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID) == update_serial_number))
                 new_fw_update_device = d;
             else
                 new_device = d;
@@ -342,7 +346,9 @@ int main(int argc, char** argv) try
         std::cout << std::endl << "Updating device: " << std::endl;
         print_device_info(d);
 
-        if (unsigned_arg.isSet())
+		// TODO: DFU issue - remove d500_device usage when HKR fixes DFU related issue
+		// Here we go to signed flow always (even if -u was provided by the user)
+        if (unsigned_arg.isSet() && !d500_device)
         {
             std::cout << std::endl << "Firmware update started" << std::endl << std::endl;
 
