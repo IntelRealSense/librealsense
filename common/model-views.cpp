@@ -40,7 +40,7 @@
 
 #include "opengl3.h"
 
-rs2_sensor_mode rs2::resolution_from_width_height(int width, int height)
+ rs2_sensor_mode rs2::resolution_from_width_height(int width, int height)
 {
     if ((width == 240 && height == 320) || (width == 320 && height == 240))
         return RS2_SENSOR_MODE_QVGA;
@@ -82,15 +82,15 @@ namespace rs2
     {
         std::ifstream file(filename.c_str(), std::ios::binary);
         if (!file.good())
-            throw std::runtime_error(rsutils::string::from() << "Invalid binary file specified " << filename
-                << " verify the source path and location permissions");
+            throw std::runtime_error( rsutils::string::from() << "Invalid binary file specified " << filename
+                                                              << " verify the source path and location permissions" );
 
         // Determine the file length
         file.seekg(0, std::ios_base::end);
         std::size_t size = file.tellg();
         if (!size)
-            throw std::runtime_error(rsutils::string::from()
-                << "Invalid binary file " << filename << " provided  - zero-size ");
+            throw std::runtime_error( rsutils::string::from()
+                                      << "Invalid binary file " << filename << " provided  - zero-size " );
         file.seekg(0, std::ios_base::beg);
 
         // Create a vector to store the data
@@ -107,8 +107,8 @@ namespace rs2
     {
         std::ofstream file(filename, std::ios::binary | std::ios::trunc);
         if (!file.good())
-            throw std::runtime_error(rsutils::string::from() << "Invalid binary file specified " << filename
-                << " verify the target path and location permissions");
+            throw std::runtime_error( rsutils::string::from() << "Invalid binary file specified " << filename
+                                                              << " verify the target path and location permissions" );
         file.write((char*)bytes.data(), bytes.size());
     }
 
@@ -127,8 +127,8 @@ namespace rs2
     std::tuple<uint8_t, uint8_t, uint8_t> get_texcolor(video_frame texture, texture_coordinate texcoords)
     {
         const int w = texture.get_width(), h = texture.get_height();
-        int x = std::min(std::max(int(texcoords.u * w + .5f), 0), w - 1);
-        int y = std::min(std::max(int(texcoords.v * h + .5f), 0), h - 1);
+        int x = std::min(std::max(int(texcoords.u*w + .5f), 0), w - 1);
+        int y = std::min(std::max(int(texcoords.v*h + .5f), 0), h - 1);
         int idx = x * texture.get_bytes_per_pixel() + y * texture.get_stride_in_bytes();
         const auto texture_data = reinterpret_cast<const uint8_t*>(texture.get_data());
         return std::tuple<uint8_t, uint8_t, uint8_t>(
@@ -157,7 +157,7 @@ namespace rs2
         if (image)
         {
             std::ofstream outfile(filename.data(), std::ofstream::binary);
-            outfile.write(static_cast<const char*>(image.get_data()), image.get_height() * image.get_stride_in_bytes());
+            outfile.write(static_cast<const char*>(image.get_data()), image.get_height()*image.get_stride_in_bytes());
 
             outfile.close();
             ret = true;
@@ -200,26 +200,26 @@ namespace rs2
         return ret;
     }
 
-    bool motion_data_to_csv(const std::string& filename, rs2::frame frame)
+    bool motion_data_to_csv( const std::string & filename, rs2::frame frame )
     {
         bool ret = false;
-        if (auto motion = frame.as< motion_frame >())
+        if( auto motion = frame.as< motion_frame >() )
         {
             std::string units;
-            if (motion.get_profile().stream_type() == RS2_STREAM_GYRO)
+            if( motion.get_profile().stream_type() == RS2_STREAM_GYRO )
                 units = "( deg/sec )";
             else
                 units = "( m/sec^2 )";
             auto axes = motion.get_motion_data();
-            std::ofstream csv(filename);
+            std::ofstream csv( filename );
 
             auto profile = frame.get_profile();
             csv << "Frame Info: " << std::endl << "Type," << profile.stream_name() << std::endl;
-            csv << "Format," << rs2_format_to_string(profile.format()) << std::endl;
+            csv << "Format," << rs2_format_to_string( profile.format() ) << std::endl;
             csv << "Frame Number," << frame.get_frame_number() << std::endl;
-            csv << "Timestamp (ms)," << std::fixed << std::setprecision(2)
+            csv << "Timestamp (ms)," << std::fixed << std::setprecision( 2 )
                 << frame.get_timestamp() << std::endl;
-            csv << std::setprecision(7) << "Axes" << units << ", " << axes << std::endl;
+            csv << std::setprecision( 7 ) << "Axes" << units << ", " << axes << std::endl;
 
             ret = true;
         }
@@ -227,38 +227,38 @@ namespace rs2
         return ret;
     }
 
-    bool pose_data_to_csv(const std::string& filename, rs2::frame frame)
+    bool pose_data_to_csv( const std::string & filename, rs2::frame frame )
     {
         bool ret = false;
-        if (auto pose = frame.as< pose_frame >())
+        if( auto pose = frame.as< pose_frame >() )
         {
             auto pose_data = pose.get_pose_data();
-            std::ofstream csv(filename);
+            std::ofstream csv( filename );
 
             auto profile = frame.get_profile();
             csv << "Frame Info: " << std::endl << "Type," << profile.stream_name() << std::endl;
-            csv << "Format," << rs2_format_to_string(profile.format()) << std::endl;
+            csv << "Format," << rs2_format_to_string( profile.format() ) << std::endl;
             csv << "Frame Number," << frame.get_frame_number() << std::endl;
-            csv << "Timestamp (ms)," << std::fixed << std::setprecision(2)
+            csv << "Timestamp (ms)," << std::fixed << std::setprecision( 2 )
                 << frame.get_timestamp() << std::endl;
-            csv << std::setprecision(7) << "Acceleration( meters/sec^2 ), "
+            csv << std::setprecision( 7 ) << "Acceleration( meters/sec^2 ), "
                 << pose_data.acceleration << std::endl;
-            csv << std::setprecision(7) << "Angular_acceleration( radians/sec^2 ), "
+            csv << std::setprecision( 7 ) << "Angular_acceleration( radians/sec^2 ), "
                 << pose_data.angular_acceleration << std::endl;
-            csv << std::setprecision(7) << "Angular_velocity( radians/sec ), "
+            csv << std::setprecision( 7 ) << "Angular_velocity( radians/sec ), "
                 << pose_data.angular_velocity << std::endl;
-            csv << std::setprecision(7)
+            csv << std::setprecision( 7 )
                 << "Mapper_confidence( 0x0 - Failed 0x1 - Low 0x2 - Medium 0x3 - High ), "
                 << pose_data.mapper_confidence << std::endl;
-            csv << std::setprecision(7)
+            csv << std::setprecision( 7 )
                 << "Rotation( quaternion rotation (relative to initial position) ), "
                 << pose_data.rotation << std::endl;
-            csv << std::setprecision(7)
+            csv << std::setprecision( 7 )
                 << "Tracker_confidence( 0x0 - Failed 0x1 - Low 0x2 - Medium 0x3 - High ), "
                 << pose_data.tracker_confidence << std::endl;
-            csv << std::setprecision(7) << "Translation( meters ), " << pose_data.translation
+            csv << std::setprecision( 7 ) << "Translation( meters ), " << pose_data.translation
                 << std::endl;
-            csv << std::setprecision(7) << "Velocity( meters/sec ), " << pose_data.velocity
+            csv << std::setprecision( 7 ) << "Velocity( meters/sec ), " << pose_data.velocity
                 << std::endl;
 
             ret = true;
@@ -304,7 +304,7 @@ namespace rs2
         auto clicked = false;
 
         ImGui::OpenPopup(title.c_str());
-        ImGui::SetNextWindowPos({ window.width() * 0.35f, window.height() * 0.35f });
+        ImGui::SetNextWindowPos( {window.width() * 0.35f, window.height() * 0.35f });
         if (ImGui::BeginPopup(title.c_str()))
         {
             {
@@ -364,7 +364,7 @@ namespace rs2
 
     // Create a process windows with process details from the caller,
     // and close button activated by the caller
-    bool status_dialog(const std::string& title, const std::string& process_topic_text, const std::string& process_status_text, bool enable_close, ux_window& window)
+    bool status_dialog(const std::string& title, const std::string& process_topic_text, const std::string& process_status_text , bool enable_close, ux_window& window)
     {
         ImGui_ScopePushFont(window.get_font());
         ImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
@@ -421,7 +421,7 @@ namespace rs2
         return close_clicked;
     }
 
-
+    
 
     // Generic helper functions for comparison of fw versions
     std::vector<int> fw_version_to_int_vec(std::string fw_version)
