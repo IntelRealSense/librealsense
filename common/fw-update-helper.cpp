@@ -219,7 +219,7 @@ namespace rs2
         // if the file is unsigned or not compataible, HKR FW will notify for that.
         bool d500_device = true;
         _is_signed = true;
-		
+
         // Clear FW update related notification to avoid dismissing the notification on ~device_model()
         // We want the notification alive during the whole process.
         _model.related_notifications.erase(

@@ -926,7 +926,7 @@ namespace rs2
         try
         {
             std::vector<uint8_t> data;
-            auto ret = file_dialog_open(open_file, "Unsigned Firmware Image\0*.bin\0", NULL, NULL);
+            auto ret = file_dialog_open(open_file, "Unsigned Firmware Image\0*.bin;*.img\0", NULL, NULL);
             if (ret)
             {
                 std::ifstream file(ret, std::ios::binary | std::ios::in);
@@ -975,7 +975,7 @@ namespace rs2
         {
             if (data.size() == 0)
             {
-                auto ret = file_dialog_open(open_file, "Signed Firmware Image\0*.bin\0", NULL, NULL);
+                auto ret = file_dialog_open(open_file, "Signed Firmware Image\0*.bin;*.img\0", NULL, NULL);
                 if (ret)
                 {
                     std::ifstream file(ret, std::ios::binary | std::ios::in);
