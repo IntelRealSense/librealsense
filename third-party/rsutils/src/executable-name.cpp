@@ -4,7 +4,7 @@
 #include <rsutils/os/executable-name.h>
 
 #if defined( PLATFORM_POSIX ) || defined( __linux__ )
-#include <iostream>
+#include <fstream>
 #elif defined( _WIN32 )
 #include <Windows.h>
 #endif
