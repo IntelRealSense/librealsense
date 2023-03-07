@@ -214,11 +214,19 @@ namespace rs2
         else
             serial = _dev.query_sensors().front().get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
 
-        // TODO: DFU issue - remove d500_device usage when HKR FW team fix the firmware product id issue
-        // also, we set is_signed here to be true, because there is one flow for HKR, which is DFU (signed)
-        // if the file is unsigned or not compataible, HKR FW will notify for that.
-        bool d500_device = true;
-        _is_signed = true;
+
+        // TODO: HKR DFU issue - remove d500_device usage when HKR will support FIRMWARE_UPDATE_ID
+        // HKR uses DFU protocl (signed fw update flow) for updating FW, so we set _is_signed=true force DFU flow
+        bool d500_device = false;
+        if (_dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
+        {
+            std::string product_line = _dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
+            if (product_line == "D500")
+            {
+                d500_device = true;
+                _is_signed = true;
+            }
+        }
 
         // Clear FW update related notification to avoid dismissing the notification on ~device_model()
         // We want the notification alive during the whole process.
@@ -308,7 +316,7 @@ namespace rs2
                 // to prevent that, a blocking is added to make sure device is updated before continue to next step of querying device
                 upd.enter_update_state();
 
-                // TODO: DFU issue - remove d500_device usage when HKR FW team fix the firmware product id issue
+                // TODO: HKR DFU issue - remove d500_device usage when HKR will support FIRMWARE_UPDATE_ID
                 if (!check_for([this, serial, d500_device, &dfu]() {
                     auto devs = _ctx.query_devices();
 
@@ -321,7 +329,7 @@ namespace rs2
                             {
                                 if (d.supports(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))
                                 {
-                                    // TODO: DFU issue - remove d500_device usage when HKR FW team fix the firmware product id issue
+                                    // TODO: HKR DFU issue - remove d500_device usage when HKR will support FIRMWARE_UPDATE_ID
                                     if (d500_device || serial == d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))
                                     {
                                         dfu = d;
@@ -403,7 +411,7 @@ namespace rs2
             }
 
             return false;
-        }, cleanup, std::chrono::seconds(60)))
+        }, cleanup, std::chrono::seconds(120))) // TODO: HKR DFU issue - increased timeout from 60 to 120 seconds for HKR to complete FW write to flash
         {
             fail("Original device did not reconnect in time!");
             return;

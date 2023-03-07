@@ -2966,20 +2966,13 @@ void rs2_update_firmware_cpp(const rs2_device* device, const void* fw_image, int
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(fw_image);
 
-    // TODO: DFU issue - remove d500_device usage when HKR will fix image size issue 
-    // or by asking if we are working with D500 device (including D5XX recovery device when it will be added).
-    // Meanwhile, d500_device is always true, but in the future we need to check some PIDs (see commented lines for example)
-    // if it equals to D585, D585S or D5XX_RECOVERY device, then pass the image size check
-    bool d500_device = true;
-    /*if (device->device->supports_info(RS2_CAMERA_INFO_PRODUCT_ID))
-    {
-        std::string pid = device->device->get_info(RS2_CAMERA_INFO_PRODUCT_ID).c_str();
-        d500_device = (pid == "0B6A" || pid == "0B6B");
-    }*/
-
+    // TODO: HKR DFU issue - remove validate_image_size usage when HKR will support fixed image size
+    // or set validate_image_size to false when D5XX recovery device will be supported by HKR
+    // Meanwhile, validate_image_size is always false for HKR
+    bool validate_image_size = false;
 
     // check if the given FW size matches the expected FW size
-    if (!d500_device && !val_in_range(fw_image_size, { signed_fw_size, signed_sr300_size }))
+    if (validate_image_size && !val_in_range(fw_image_size, { signed_fw_size, signed_sr300_size }))
         throw librealsense::invalid_value_exception(
             rsutils::string::from() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes" );
 
@@ -3116,19 +3109,17 @@ int rs2_check_firmware_compatibility(const rs2_device* device, const void* fw_im
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(fw_image);
 
-    // TODO: DFU issue - remove d500_device usage when HKR will fix image size issue 
-    // or by asking if we are working with D500 device (including D5XX recovery device when it will be added).
-    // Meanwhile, d500_device is always true, but in the future we need to check some PIDs (see commented out lines for example)
-    // if it equals to D585, D585S or D5XX_RECOVERY device, then pass the image size check
-    bool d500_device = true;
-    /*if (device->device->supports_info(RS2_CAMERA_INFO_PRODUCT_ID))
+    // TODO: HKR DFU issue - remove validate_image_size usage when HKR will support fixed image size
+    bool validate_image_size = true;
+    if (device->device->supports_info(RS2_CAMERA_INFO_PRODUCT_LINE))
     {
-        std::string pid = device->device->get_info(RS2_CAMERA_INFO_PRODUCT_ID).c_str();
-        d500_device = (pid == "0B6A" || pid == "0B6B");
-    }*/
+        std::string product_line = device->device->get_info(RS2_CAMERA_INFO_PRODUCT_LINE).c_str();
+        if (product_line == "D500")
+            validate_image_size = false;
+    }
 
     // check if the given FW size matches the expected FW size
-    if (!d500_device && !val_in_range(fw_image_size, { signed_fw_size, signed_sr300_size }))
+    if (validate_image_size && !val_in_range(fw_image_size, { signed_fw_size, signed_sr300_size }))
         throw librealsense::invalid_value_exception(
             rsutils::string::from() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes" );
 

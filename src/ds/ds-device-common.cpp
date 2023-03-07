@@ -72,7 +72,7 @@ namespace librealsense
             command cmd(ds::DFU);
             cmd.param1 = 1;
 
-            // TODO: DFU issue - A workdaroud till HKR FW team will support DFU response
+            // TODO: HKR DFU issue - A workdaroud till HKR FW team will support DFU response
             if (dynamic_cast<d500_device*>(_owner))
             {
                 cmd.require_response = false;
