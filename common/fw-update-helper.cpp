@@ -216,7 +216,7 @@ namespace rs2
 
 
         // TODO: HKR DFU issue - remove d500_device usage when HKR will support FIRMWARE_UPDATE_ID
-        // HKR uses DFU protocl (signed fw update flow) for updating FW, so we set _is_signed=true force DFU flow
+        // HKR uses DFU protocl (signed fw update flow) for updating FW, so we set _is_signed=true to force DFU flow
         bool d500_device = false;
         if (_dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
         {

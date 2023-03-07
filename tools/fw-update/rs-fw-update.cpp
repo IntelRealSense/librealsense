@@ -155,6 +155,7 @@ bool query_d500_and_wait(rs2::context& ctx)
     std::cout << std::endl << "Timeout reached... Device not found!" << std::endl;
     return false;
 }
+
 int main(int argc, char** argv) try
 {
 #ifdef BUILD_EASYLOGGINGPP
@@ -173,7 +174,7 @@ int main(int argc, char** argv) try
     bool done = false;
 
     // TODO: HKR DFU issue - remove d500_device usage when HKR supports FIRMWARE_UPDATE_ID
-    // For HKR, only DFU flow is enabled (signed fw update flow). see ignore_unisigned_request parameter usage below
+    // For HKR, only DFU flow is enabled (signed fw update flow). see ignore_unsigned_request parameter usage below
     bool d500_device = false;
     bool ignore_unsigned_request = false;
 
