@@ -34,6 +34,7 @@ class dds_subscriber;
 class dds_stream_server;
 class dds_notification_server;
 class dds_topic_reader;
+class dds_topic_writer;
 struct image_header;
 
 
@@ -69,6 +70,7 @@ public:
     std::map< std::string, std::shared_ptr< dds_stream_server > > const & streams() const { return _stream_name_to_server; }
 
     void publish_notification( topics::flexible_msg && );
+    void publish_metadata( topics::flexible_msg && );
     
     typedef std::function< void( const nlohmann::json & msg ) > control_callback;
     void on_open_streams( control_callback callback ) { _open_streams_callback = std::move( callback ); }
@@ -96,6 +98,7 @@ private:
     std::map< std::string, std::shared_ptr< dds_stream_server > > _stream_name_to_server;
     std::shared_ptr< dds_notification_server > _notification_server;
     std::shared_ptr< dds_topic_reader > _control_reader;
+    std::shared_ptr< dds_topic_writer > _metadata_writer;
     dispatcher _control_dispatcher;
     
     control_callback _open_streams_callback = nullptr;

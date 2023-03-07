@@ -60,22 +60,6 @@ void dds_motion_stream::open( std::string const & topic_name, std::shared_ptr< d
 }
 
 
-void dds_metadata_stream::open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & subscriber )
-{
-    if( is_open() )
-        DDS_THROW( runtime_error, "stream '" + name() + "' is already open" );
-
-    // Topics with same name and type can be created multiple times (multiple open() calls) without an error.
-    auto topic = topics::flexible_msg::create_topic( subscriber->get_participant(), topic_name.c_str() );
-
-    // To support automatic streaming (without the need to handle start/stop-streaming commands) the reader is created
-    // here and destroyed on close()
-    _reader = std::make_shared< dds_topic_reader >( topic, subscriber );
-    _reader->on_data_available( [&]() { handle_data(); } );
-    _reader->run( dds_topic_reader::qos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
-}
-
-
 void dds_stream::close()
 {
     _reader->on_data_available( [](){} );
@@ -117,26 +101,8 @@ void dds_motion_stream::handle_data()
     eprosima::fastdds::dds::SampleInfo info;
     while( _reader && topics::device::image::take_next( *_reader, &frame, &info ) )
     {
-        if( ! frame.is_valid() )
-            continue;
-
         if( is_streaming() && _on_data_available )
             _on_data_available( std::move( frame ) );
-    }
-}
-
-
-void dds_metadata_stream::handle_data()
-{
-    topics::flexible_msg metadata;
-    eprosima::fastdds::dds::SampleInfo info;
-    while( _reader && topics::flexible_msg::take_next( *_reader, &metadata, &info ) )
-    {
-        if( ! metadata.is_valid() )
-            continue;
-
-        if( is_streaming() && _on_data_available )
-            _on_data_available( std::move( metadata ) );
     }
 }
 
@@ -211,12 +177,6 @@ dds_gyro_stream::dds_gyro_stream( std::string const & stream_name, std::string c
 
 
 dds_pose_stream::dds_pose_stream( std::string const & stream_name, std::string const & sensor_name )
-    : super( stream_name, sensor_name )
-{
-}
-
-
-dds_metadata_stream::dds_metadata_stream( std::string const & stream_name, std::string const & sensor_name )
     : super( stream_name, sensor_name )
 {
 }

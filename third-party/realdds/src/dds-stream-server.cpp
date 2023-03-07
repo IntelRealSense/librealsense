@@ -108,12 +108,6 @@ dds_pose_stream_server::dds_pose_stream_server( std::string const & stream_name,
 }
 
 
-dds_metadata_stream_server::dds_metadata_stream_server( std::string const & stream_name, std::string const & sensor_name )
-    : dds_stream_server( stream_name, sensor_name )
-{
-}
-
-
 void dds_video_stream_server::open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & publisher )
 {
     if( is_open() )
@@ -157,7 +151,8 @@ void dds_stream_server::run_stream()
     _writer->run( dds_topic_writer::qos( BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
 }
 
-void dds_motion_stream_server::open( std::string const & topic_name,
+
+void dds_motion_stream_server::open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & publisher )
 {
     if( is_open() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is already open" );
@@ -165,21 +160,6 @@ void dds_motion_stream_server::open( std::string const & topic_name,
         DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
 
     auto topic = topics::device::image::create_topic( publisher->get_participant(), topic_name.c_str() );
-    _writer = std::make_shared< dds_topic_writer >( topic, publisher );
-
-
-    run_stream();
-}
-
-
-void dds_metadata_stream_server::open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & publisher )
-{
-    if( is_open() )
-        DDS_THROW( runtime_error, "stream '" + name() + "' is already open" );
-    if( profiles().empty() )
-        DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
-
-    auto topic = topics::flexible_msg::create_topic( publisher->get_participant(), topic_name.c_str() );
     _writer = std::make_shared< dds_topic_writer >( topic, publisher );
 
 
@@ -200,15 +180,21 @@ void dds_stream_server::start_streaming( const image_header & header )
 {
     if( ! is_open() )
         DDS_THROW( runtime_error, "stream '" + name() + "' must be open before start_streaming()" );
-    if( ! header.is_valid() )
-        DDS_THROW( runtime_error, "stream '" + name() + "' cannot start_streaming() with an invalid header" );
+    if( is_streaming() )
+        DDS_THROW( runtime_error, "stream '" + name() + "' is already streaming" );
+
     _image_header = header;
+    _streaming = true;
 }
 
 
 void dds_stream_server::stop_streaming()
 {
+    if( ! is_streaming() )
+        DDS_THROW( runtime_error, "stream '" + name() + "' is not streaming" );
+
     _image_header.invalidate();
+    _streaming = false;
 }
 
 void dds_stream_server::close()
@@ -221,9 +207,9 @@ void dds_stream_server::publish( const uint8_t * data, size_t size, unsigned lon
     if( ! is_streaming() )
         DDS_THROW( runtime_error, "stream '" + name() + "' cannot publish before start_streaming()" );
 
-    LOG_DEBUG( "publishing a DDS video frame for topic: " << _writer->topic()->get()->get_name() );
+    // LOG_DEBUG( "publishing a DDS video frame for topic: " << _writer->topic()->get()->get_name() );
     sensor_msgs::msg::Image raw_image;
-    raw_image.header().frame_id() = std::to_string( ++_frame_id );
+    raw_image.header().frame_id() = std::to_string( id );
     auto const now = realdds::now();
     raw_image.header().stamp().sec() = now.seconds();
     raw_image.header().stamp().nanosec() = now.nanosec();
@@ -233,18 +219,7 @@ void dds_stream_server::publish( const uint8_t * data, size_t size, unsigned lon
     raw_image.step() = uint32_t( size / _image_header.height );
     raw_image.is_bigendian() = false;
     raw_image.data().assign( data, data + size );
-    LOG_DEBUG( "publishing '" << name() << "' frame " << std::dec << _frame_id << " " << raw_image.encoding() );
+    LOG_DEBUG( "publishing '" << name() << "' frame " << std::dec << id << " " << raw_image.encoding() );
 
     DDS_API_CALL( _writer->get()->write( &raw_image ) );
-}
-
-void dds_metadata_stream_server::publish( const uint8_t * data, size_t size, unsigned long long id )
-{
-    if( ! is_open() )
-        DDS_THROW( runtime_error, "stream '" + name() + "' must be open before publishing" );
-
-    // Temporary, dds_stream_server API would change to publish relevant topic
-    nlohmann::json json_data( *( reinterpret_cast< const nlohmann::json * >( data ) ) );
-    topics::flexible_msg msg( std::move( json_data ) );
-    msg.write_to( *_writer );
 }

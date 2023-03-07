@@ -94,12 +94,15 @@ void dds_device::impl::run( size_t message_timeout_ms )
     _running = true;
 
     // Start handling options only after init() is done
+    if( !_notifications_reader )
+        DDS_THROW( runtime_error, "failed to set notifications reader for '" + _info.topic_root + "'" );
+
     _notifications_reader->on_data_available( [&]() {
         topics::flexible_msg notification;
         eprosima::fastdds::dds::SampleInfo info;
         while( topics::flexible_msg::take_next( *_notifications_reader, &notification, &info ) )
         {
-            if( !notification.is_valid() )
+            if( ! notification.is_valid() )
                 continue;
             auto j = notification.json_data();
             auto id = rsutils::json::get< std::string >( j, "id" );
@@ -110,6 +113,22 @@ void dds_device::impl::run( size_t message_timeout_ms )
             }
         }
     } );
+
+    if( _metadata_reader )  // Might not be present
+    {
+        _metadata_reader->on_data_available( [&]() {
+            topics::flexible_msg notification;
+            eprosima::fastdds::dds::SampleInfo info;
+            while( topics::flexible_msg::take_next( *_metadata_reader, &notification, &info ) )
+            {
+                if( ! notification.is_valid() )
+                    continue;
+
+                if( _on_metadata_available )
+                    _on_metadata_available( std::move( notification ) );
+            }
+        } );
+    }
 }
 
 void dds_device::impl::open( const dds_stream_profiles & profiles )
@@ -133,11 +152,7 @@ void dds_device::impl::open( const dds_stream_profiles & profiles )
         { "id", "open-streams" },
         { "stream-profiles", stream_profiles },
     };
-        if( _md_supported )
-        {
-            std::string metadata_stream_name = stream->name() + "_metadata";
-            _streams[metadata_stream_name]->close();
-        }
+
     write_control_message( j );
 }
 
@@ -215,13 +230,27 @@ void dds_device::impl::create_notifications_reader()
 
     auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + topics::NOTIFICATION_TOPIC_NAME );
 
-    _notifications_reader = std::make_shared< dds_topic_reader >( topic );
+    _notifications_reader = std::make_shared< dds_topic_reader >( topic, _subscriber );
 
     dds_topic_reader::qos rqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
     //On discovery writer sends a burst of messages, if history is too small we might loose some of them
     //(even if reliable). Setting depth to cover known use-cases plus some spare
     rqos.history().depth = 24;
     _notifications_reader->run( rqos );
+}
+
+void dds_device::impl::create_metadata_reader()
+{
+    if( _metadata_reader )
+        return;
+
+    auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + topics::METADATA_TOPIC_NAME );
+
+    _metadata_reader = std::make_shared< dds_topic_reader >( topic, _subscriber );
+
+    dds_topic_reader::qos rqos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS );
+    rqos.history().depth = 10; // Support receive metadata from multiple streams
+    _metadata_reader->run( rqos );
 }
 
 void dds_device::impl::create_control_writer()
@@ -284,8 +313,6 @@ bool dds_device::impl::init()
                     {
                         auto option = dds_option::from_json( option_json, _info.name );
                         _options.push_back( option );
-                        if( option->get_name() == "metadata-enabled" )
-                            _md_supported = option->get_value();
                     }
 
                     if( n_streams_expected )
@@ -331,8 +358,7 @@ bool dds_device::impl::init()
 
                     if( default_profile_index >= 0 && default_profile_index < profiles.size() )
                         stream->init_profiles( profiles, default_profile_index );
-                    else if( std::dynamic_pointer_cast< dds_video_stream >( stream ) ||
-                             std::dynamic_pointer_cast< dds_motion_stream >( stream ) )
+                    else
                         DDS_THROW( runtime_error,
                                    "stream '" + stream_name + "' default profile index "
                                    + std::to_string( default_profile_index ) + " is out of bounds" );
@@ -341,14 +367,14 @@ bool dds_device::impl::init()
                                    "failed to instantiate stream type '" + stream_type + "' (instead, got '"
                                        + stream->type_string() + "')" );
 
+                    if( rsutils::json::get< bool >( j, "metadata-enabled" ) )
+                    {
+                        create_metadata_reader();
+                        stream->enable_metadata();
+                    }
+
                     LOG_DEBUG( "... stream '" << stream_name << "' (" << _streams.size() << "/" << n_streams_expected
                                               << ") received with " << profiles.size() << " profiles" );
-
-                    if( _md_supported )
-                    {
-                        auto md_stream_name = stream_name + "_metadata";
-                        _streams[md_stream_name] = std::make_shared< dds_metadata_stream >( md_stream_name, sensor_name );
-                    }
 
                     state = state_type::WAIT_FOR_STREAM_OPTIONS;
                 }

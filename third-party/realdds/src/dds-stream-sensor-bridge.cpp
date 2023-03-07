@@ -322,8 +322,11 @@ void dds_stream_sensor_bridge::start_sensor( std::string const & sensor_name, se
         realdds::image_header header;
         header.format = profile->format();
         auto video_profile = std::dynamic_pointer_cast< realdds::dds_video_stream_profile >( profile );
-        header.width = video_profile ? video_profile->width() : 0;
-        header.height = video_profile ? video_profile->height() : 0;
+        if( video_profile )
+        {
+            header.width = video_profile->width();
+            header.height = video_profile->height();
+        }
         stream.server->start_streaming( header );
     }
 }

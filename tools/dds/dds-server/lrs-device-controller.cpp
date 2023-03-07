@@ -132,14 +132,14 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
                 return;
             }
 
-            //Create appropriate realdds::profile for each sensor profile and map to a stream
+            // Create appropriate realdds::profile for each sensor profile and map to a stream
             auto & profiles = stream_name_to_profiles[stream_name];
             std::shared_ptr< realdds::dds_stream_profile > profile;
             if( sp.is< rs2::video_stream_profile >() )
             {
                 auto const & vsp = sp.as< rs2::video_stream_profile >();
                 profile = std::make_shared< realdds::dds_video_stream_profile >(
-                    static_cast<int16_t>( vsp.fps() ),
+                    static_cast< int16_t >( vsp.fps() ),
                     realdds::dds_stream_format::from_rs2( vsp.format() ),
                     static_cast< uint16_t >( vsp.width() ),
                     static_cast< int16_t >( vsp.height() ) );
@@ -171,7 +171,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
         } );
     }
 
-    // Iterate over the mapped streams and initialize 
+    // Iterate over the mapped streams and initialize
     std::vector< std::shared_ptr< realdds::dds_stream_server > > servers;
     for( auto & it : stream_name_to_profiles )
     {
@@ -241,20 +241,16 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
             }
         }
         server->init_options( options );
+
+        // Set stream metadata support (currently if the device supports metadata all streams does)
+        if( _md_enabled )
+        {
+            server->enable_metadata();
+        }
+
         servers.push_back( server );
     }
 
-    // Add metadata streams
-    if( _md_enabled )
-    {
-        for( auto & it : stream_name_to_server )
-        {
-            auto stream_name = it.first;
-            auto md_server = std::make_shared< realdds::dds_metadata_stream_server >( stream_name + "_metadata",
-                                                                                      it.second->sensor_name() );
-            servers.push_back( md_server );
-        }
-    }
     return servers;
 }
 
@@ -475,58 +471,52 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
     _device_sn = _rs_dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
     LOG_DEBUG( "LRS device manager for device: " << _device_sn << " created" );
 
-    // Create a supported streams list for initializing the relevant DDS topics
-    auto supported_streams = get_supported_streams();
-    _bridge.on_start_sensor(
-        [this]( std::string const & sensor_name, dds_stream_profiles const & active_profiles )
-        {
-            auto & sensor = _rs_sensors[sensor_name];
-            auto rs2_profiles = get_rs2_profiles( active_profiles );
-            sensor.open( rs2_profiles );
-            sensor.start(
-                [this]( rs2::frame f )
-                {
-                    auto stream_name = stream_name_from_rs2( f.get_profile() );
-                    auto it = _stream_name_to_server.find( stream_name );
-                    if( it != _stream_name_to_server.end() )
-                    {
-                        auto & server = it->second;
-                        if( _bridge.is_streaming( server ) )
-                            server->publish_image( static_cast< const uint8_t * >( f.get_data() ), f.get_data_size() );
-                    }
-                } );
-            std::cout << sensor_name << " sensor started" << std::endl;
-        } );
-    _bridge.on_stop_sensor(
-        [this]( std::string const & sensor_name )
-        {
-            auto & sensor = _rs_sensors[sensor_name];
-            sensor.stop();
-            sensor.close();
-            std::cout << sensor_name << " sensor stopped" << std::endl;
-        } );
-    _bridge.on_error(
-        [this]( std::string const & error_string )
-        {
-            nlohmann::json j = nlohmann::json::object({
-                { "id", "error" },
-                { "error", error_string },
-            });
-            _dds_device_server->publish_notification( j );
-        } );
-    _bridge.init( supported_streams );
-    auto extrinsics = get_extrinsics_map( dev );
-    realdds::dds_options options;  // TODO - get all device level options
-    auto option = std::make_shared< realdds::dds_option >( std::string( "metadata-enabled" ),
-                                                           _rs_dev.get_info( RS2_CAMERA_INFO_NAME ) );
     // Some camera models support metadata for frames. can_support_metadata will tell us if this model does.
     // Also, to get the metadata driver support needs to be enabled, requires administrator rights on Windows and Linux.
     // is_enabled will return current state. If one of the conditions is false we cannot get metadata from the device.
     _md_enabled = rs2::metadata_helper::instance().can_support_metadata( _rs_dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE ) )
                && rs2::metadata_helper::instance().is_enabled( _rs_dev.get_info( RS2_CAMERA_INFO_PHYSICAL_PORT ) );
-    option->set_value( _md_enabled );
-    option->set_description( "Is metadata being read and sent with frames" );
-    options.push_back( option );
+
+    // Create a supported streams list for initializing the relevant DDS topics
+    auto supported_streams = get_supported_streams();
+
+    _bridge.on_start_sensor( [this]( std::string const & sensor_name, dds_stream_profiles const & active_profiles ) {
+        auto & sensor = _rs_sensors[sensor_name];
+        auto rs2_profiles = get_rs2_profiles( active_profiles );
+        sensor.open( rs2_profiles );
+        sensor.start( [this]( rs2::frame f ) {
+            auto stream_name = stream_name_from_rs2( f.get_profile() );
+            auto it = _stream_name_to_server.find( stream_name );
+            if( it != _stream_name_to_server.end() )
+            {
+                auto & server = it->second;
+                if( _bridge.is_streaming( server ) )
+                {
+                    server->publish( static_cast< const uint8_t * >( f.get_data() ), f.get_data_size(), f.get_frame_number() );
+                    publish_frame_metadata( f );
+                }
+            }
+        } );
+        std::cout << sensor_name << " sensor started" << std::endl;
+    } );
+    _bridge.on_stop_sensor( [this]( std::string const & sensor_name ) {
+        auto & sensor = _rs_sensors[sensor_name];
+        sensor.stop();
+        sensor.close();
+        std::cout << sensor_name << " sensor stopped" << std::endl;
+    } );
+    _bridge.on_error( [this]( std::string const & error_string ) {
+        nlohmann::json j = nlohmann::json::object( {
+            { "id", "error" },
+            { "error", error_string },
+        } );
+        _dds_device_server->publish_notification( std::move( j ) );
+    } );
+    _bridge.init( supported_streams );
+
+    auto extrinsics = get_extrinsics_map( dev );
+
+    realdds::dds_options options;  // TODO - get all device level options
 
     // Initialize the DDS device server with the supported streams
     _dds_device_server->init( supported_streams, options, extrinsics );
@@ -572,6 +562,33 @@ void lrs_device_controller::start_streaming( const json & msg )
     // We're here so all the profiles were acceptable; lock them in -- with no implicit profiles!
     if( rsutils::json::get< bool >( msg, "commit", true ))
         _bridge.commit();
+}
+
+
+void lrs_device_controller::publish_frame_metadata( const rs2::frame & f )
+{
+    nlohmann::json md_header = nlohmann::json::object( {
+        { "frame-id", std::to_string( f.get_frame_number() ) },
+        { "timestamp", f.get_timestamp() },
+        { "timestamp-domain", f.get_frame_timestamp_domain() }
+    } );
+    if( f.is< rs2::depth_frame >() )
+        md_header["depth-units"] = f.as< rs2::depth_frame >().get_units();
+
+    nlohmann::json metadata = nlohmann::json::object( {} );
+    for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
+    {
+        rs2_frame_metadata_value val = static_cast< rs2_frame_metadata_value >( i );
+        if( f.supports_frame_metadata( val ) )
+            metadata[rs2_frame_metadata_to_string( val )] = f.get_frame_metadata( val );
+    }
+
+    nlohmann::json md_msg = nlohmann::json::object( {
+        { "stream-name", stream_name_from_rs2( f.get_profile() ) },
+        { "header", md_header },
+        { "metadata", metadata },
+    } );
+    _dds_device_server->publish_metadata( std::move( md_msg ) );
 }
 
 

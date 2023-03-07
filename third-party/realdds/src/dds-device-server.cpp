@@ -12,7 +12,6 @@
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/topics/dds-topic-names.h>
-#include <realdds/topics/image/image-msg.h>
 #include <realdds/topics/flexible/flexible-msg.h>
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-writer.h>
@@ -70,7 +69,7 @@ static void on_discovery_device_header( size_t const n_streams, const dds_option
         { "id", "device-options" },
         { "n-options", options.size() },
         { "options" , device_options }
-        } );
+    } );
     LOG_DEBUG( "-----> JSON = " << device_options_message.json_data().dump() );
     LOG_DEBUG( "-----> JSON size = " << device_options_message.json_data().dump().length() );
     LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( device_options_message.json_data() ).size() );
@@ -84,13 +83,14 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
     auto profiles = nlohmann::json::array();
     for( auto & sp : stream->profiles() )
         profiles.push_back( std::move( sp->to_json() ) );
-    topics::flexible_msg stream_header_message( json {
+    topics::flexible_msg stream_header_message( json{
         { "id", "stream-header" },
         { "type", stream->type_string() },
         { "name", stream->name() },
         { "sensor-name", stream->sensor_name() },
         { "profiles", profiles },
         { "default-profile-index", stream->default_profile_index() },
+        { "metadata-enabled", stream->metadata_enabled() },
     } );
     LOG_DEBUG( "-----> JSON = " << stream_header_message.json_data().dump() );
     LOG_DEBUG( "-----> JSON size = " << stream_header_message.json_data().dump().length() );
@@ -145,20 +145,28 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
     try
     {
         // Create a notifications server and set discovery notifications
-        _notification_server = std::make_shared< dds_notification_server >( _publisher, _topic_root + topics::NOTIFICATION_TOPIC_NAME );
+        _notification_server = std::make_shared< dds_notification_server >( _publisher,
+                                                                            _topic_root + topics::NOTIFICATION_TOPIC_NAME );
 
         // If a previous init failed (e.g., one of the streams has no profiles):
         _stream_name_to_server.clear();
 
         on_discovery_device_header( streams.size(), options, extr, *_notification_server );
-        for( auto& stream : streams )
+        for( auto & stream : streams )
         {
             std::string topic_name = ros_friendly_topic_name( _topic_root + '/' + stream->name() );
             stream->open( topic_name, _publisher );
             _stream_name_to_server[stream->name()] = stream;
-            if( !std::dynamic_pointer_cast< dds_metadata_stream_server >( stream ) )
-            { // Sending stream with "supports metadata" option, no need to send the metadata stream details
-                on_discovery_stream_header( stream, *_notification_server );
+            on_discovery_stream_header( stream, *_notification_server );
+
+            if( stream->metadata_enabled() && ! _metadata_writer )
+            {
+                auto topic = topics::flexible_msg::create_topic( _publisher->get_participant(),
+                                                                 _topic_root + topics::METADATA_TOPIC_NAME );
+                _metadata_writer = std::make_shared< dds_topic_writer >( topic, _publisher );
+                dds_topic_writer::qos wqos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS );
+                wqos.history().depth = 10;  // default is 1
+                _metadata_writer->run( wqos );
             }
         }
 
@@ -188,6 +196,13 @@ void dds_device_server::publish_notification( topics::flexible_msg && notificati
     _notification_server->send_notification( std::move( notification ) );
 }
 
+void dds_device_server::publish_metadata( topics::flexible_msg && md )
+{
+    if( ! _metadata_writer )
+        DDS_THROW( runtime_error, "device '" + _topic_root + "' has no stream with enabled metadata" );
+
+    md.write_to( *_metadata_writer );
+}
 
 void dds_device_server::on_control_message_received()
 {

@@ -182,26 +182,6 @@ public:
     char const * type_string() const override { return "pose"; }
 };
 
-class dds_metadata_stream : public dds_stream
-{
-    typedef dds_stream super;
-
-public:
-    dds_metadata_stream( std::string const & stream_name, std::string const & sensor_name );
-
-    char const * type_string() const override { return "metadata"; }
-
-    void open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & ) override;
-
-    typedef std::function< void( topics::flexible_msg && md ) > on_data_available_callback;
-    void on_data_available( on_data_available_callback cb ) { _on_data_available = cb; }
-
-protected:
-    void handle_data() override;
-    bool can_start_streaming() const override { return _on_data_available != nullptr; }
-
-    on_data_available_callback _on_data_available = nullptr;
-};
 
 typedef std::vector< std::shared_ptr< dds_stream > > dds_streams;
 
