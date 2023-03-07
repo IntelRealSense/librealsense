@@ -47,6 +47,7 @@ jobs:
       - name: build librealsense ROS 2
         uses: ros-tooling/action-ros-ci@v0.2
         with:
+          import-token: ${{ secrets.GITHUB_TOKEN }}
           target-ros2-distro: ${{ matrix.ros_distribution }}
           skip-tests: true
           colcon-defaults: |  # We align the build flags to the librealsense2 ROS2 release build.
