@@ -24,25 +24,38 @@ namespace {
     typedef int participant_id;
     participant_id last_participants_id = 0;
 
+    std::map< std::string, dds_guid_prefix > participant_by_name;
+
     struct participant_info
     {
         std::string name;
         participant_id id;
+        dds_guid_prefix const prefix;
 
-        participant_info( char const * name_sz )
+        participant_info( participant_info && ) = default;
+        participant_info( char const * name_sz, dds_guid_prefix const & prefix_ )
+            : prefix( prefix_ )
         {
-            {
-                std::lock_guard< std::mutex > lock( participants_mutex );
-                id = ++last_participants_id;
-            }
+            id = ++last_participants_id;
             if( name_sz )
             {
                 name = name_sz;
+                bool needs_disambiguation = false;
                 if( name_sz[0] == '/' && ! name_sz[1] )
                 {
                     // This is likely a ROS participant, without an actual name. There will be one per ROS process at
                     // least, so many could exist with the same name!
-                    // To make it readable, we use the id, converting to '/<id>'
+                    needs_disambiguation = true;
+                }
+                else if( participant_by_name.find( name ) != participant_by_name.end() )
+                {
+                    // Sometimes multiple participants (e.g., of the same executable, or on different hosts) come up
+                    // with the same name. We want to differentiate those, too...
+                    needs_disambiguation = true;
+                }
+                if( needs_disambiguation )
+                {
+                    // To make it readable, we use the id, converting to '/.<id>'
                     //      010f58cfc2dd816201000000.1c1  ->  /.1
                     // NOTE:
                     //      http://design.ros2.org/articles/topic_and_service_names.html#dds-topic-names
@@ -53,7 +66,14 @@ namespace {
                     name += '.';
                     name += std::to_string( id );
                 }
+                participant_by_name[name] = prefix;
             }
+        }
+        ~participant_info()
+        {
+            auto it = participant_by_name.find( name );
+            if( it != participant_by_name.end()  &&  it->second == prefix )
+                participant_by_name.erase( it );
         }
     };
 
@@ -77,13 +97,16 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
         switch( info.status )
         {
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DISCOVERED_PARTICIPANT: {
-            participant_info pinfo( info.info.m_participantName );
-            LOG_DEBUG( "+participant '" << pinfo.name << "' " << realdds::print( info.info.m_guid ) );
+            std::string name;
+            std::string guid = realdds::print( info.info.m_guid );  // has to be outside the mutex
             {
                 std::lock_guard< std::mutex > lock( participants_mutex );
-                participants.emplace( info.info.m_guid.guidPrefix, pinfo );
+                participant_info pinfo( info.info.m_participantName, info.info.m_guid.guidPrefix );
+                name = pinfo.name;
+                LOG_DEBUG( "+participant '" << name << "' " << guid );
+                participants.emplace( info.info.m_guid.guidPrefix, std::move( pinfo ) );
             }
-            _owner.on_participant_added( info.info.m_guid, pinfo.name.c_str() );
+            _owner.on_participant_added( info.info.m_guid, name.c_str() );
             break;
         }
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::REMOVED_PARTICIPANT:
