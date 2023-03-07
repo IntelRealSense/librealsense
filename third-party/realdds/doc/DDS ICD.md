@@ -11,6 +11,7 @@ Information in realdds domain is being passed using 4 main topics
   Other notifications are sent as needed, mostly as reply to a control message
 * **realdds/\<model\>/\<serial\>/control** of type flexible - Controls are commands from the camera's user to the camera, e.g. start streaming, set option value etc...
 * **realdds/\<model\>/\<serial\>/\<stream name\>** of type image - Frames of the selected stream from the camera's server to the user.
+* **realdds/\<model\>/\<serial\>/metadata** of type flexible - metadata for frames of active streams.
 
 All the topics in the realdds domain use one of these 2 topic types
 * **flexible** - Carries a buffer of data that can be JSON, CBOR or other user custom data. See [flexible.idl](https://github.com/IntelRealSense/librealsense/blob/dds/third-party/realdds/include/realdds/topics/flexible/flexible.idl).
@@ -157,5 +158,13 @@ For instance, using `rs2::sensor.open( profile )` will be converted to DDS **ope
     "option-name":"Enable Auto Exposure",
     "owner-name":"Depth",
     "value":0.0
+
+## Metadata
+
+Metadata samples are refering to a specific, streaming, stream. They include some mandatory fields in the header, i.e. frame ID and timestamp, and other fields that are relevant to the specific frame and it's type, e.g, "exposure" for images.
+
+    "stream-name":"color",
+    "header":{"frame-id":"1234", "timestamp":"123456789", "timestamp-domain":"0"},
+    "metadata":{"Exposure":"123", "Gain":"456"}
 
 

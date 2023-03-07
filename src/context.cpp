@@ -761,7 +761,7 @@ namespace librealsense
             if( rsutils::json::has( md_header, "depth-units" ) )
                 frame.depth_units = rsutils::json::get< float >( md_header, "depth-units" );
 
-            // Other metadata fields
+            // Other metadata fields. Metadata fields that are present but unknown by librealsense will be ignored.
             for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
             {
                 const char * str = rs2_frame_metadata_to_string( static_cast< rs2_frame_metadata_value >( i ) );
@@ -810,7 +810,7 @@ namespace librealsense
             frame.timestamp = rsutils::json::get< rs2_time_t >( md_header, "timestamp" );
             frame.domain = rsutils::json::get< rs2_timestamp_domain >( md_header, "timestamp-domain" );
 
-            // Other metadata fields
+            // Other metadata fields. Metadata fields that are present but unknown by librealsense will be ignored.
             for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
             {
                 const char * str = rs2_frame_metadata_to_string( static_cast< rs2_frame_metadata_value >( i ) );
@@ -822,7 +822,7 @@ namespace librealsense
 
         void handle_new_metadata( realdds::topics::flexible_msg && dds_md )
         {
-            std::string & stream_name = rsutils::json::get< std::string >( dds_md.json_data(), "stream-name" );
+            std::string stream_name = rsutils::json::get< std::string >( dds_md.json_data(), "stream-name" );
             if( _md_enabled )
             {
                 auto video_iter = _stream_name_to_video_syncer.find( stream_name );
@@ -1156,7 +1156,7 @@ namespace librealsense
             if( _dds_dev->supports_metadata() )
             {
                 _dds_dev->on_metadata_available( [this]( realdds::topics::flexible_msg && dds_md ) {
-                    std::string & stream_name = rsutils::json::get< std::string >( dds_md.json_data(), "stream-name" );
+                    std::string stream_name = rsutils::json::get< std::string >( dds_md.json_data(), "stream-name" );
                     _stream_name_to_owning_sensor[stream_name]->handle_new_metadata( std::move( dds_md ) );
                 } );
             }
