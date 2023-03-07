@@ -8,6 +8,7 @@
 #include <rsutils/version.h>
 #include <rsutils/number/running-average.h>
 #include <rsutils/number/stabilized-value.h>
+#include <rsutils/os/executable-name.h>
 
 
 #define NAME pyrsutils
@@ -29,6 +30,8 @@ PYBIND11_MODULE(NAME, m) {
            py::arg( "logger" ) = LIBREALSENSE_ELPP_ID );
 
     m.def( "split", &rsutils::string::split );
+    m.def( "executable_path", &rsutils::os::executable_path );
+    m.def( "executable_name", &rsutils::os::executable_name, py::arg( "with_extension" ) = false );
 
     using rsutils::version;
     py::class_< version >( m, "version" )
