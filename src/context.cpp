@@ -30,6 +30,7 @@
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/image/image-msg.h>
 #include <rsutils/shared-ptr-singleton.h>
+#include <rsutils/os/executable-name.h>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 
 // We manage one participant and device-watcher per domain:
@@ -168,7 +169,7 @@ namespace librealsense
             auto & domain = dds_domain_context_by_id[domain_id];
             _dds_participant = domain.participant.instance();
             if( ! _dds_participant->is_valid() )
-                _dds_participant->init( domain_id, "librealsense" );
+                _dds_participant->init( domain_id, rsutils::os::executable_name() );
             _dds_watcher = domain.device_watcher.instance( _dds_participant );
         }
 #endif //BUILD_WITH_DDS
@@ -194,7 +195,8 @@ namespace librealsense
         if( rsutils::json::get< bool >( settings, "dds-discovery", true ) )
         {
             realdds::dds_domain_id domain_id = rsutils::json::get< int >( settings, "dds-domain", 0 );
-            std::string participant_name = rsutils::json::get< std::string >( settings, "dds-participant-name", "librealsense" );
+            std::string participant_name
+                = rsutils::json::get< std::string >( settings, "dds-participant-name", rsutils::os::executable_name() );
 
             auto & domain = dds_domain_context_by_id[domain_id];
             _dds_participant = domain.participant.instance();
