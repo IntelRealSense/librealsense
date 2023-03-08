@@ -507,17 +507,17 @@ namespace librealsense
             std::lock_guard< std::mutex > lock( _queues_lock );
             _frame_queue.push_back( std::move( frame ) );
             _prof_queue.push_back( prof );
-            search_for_match(); //Call under lock
+            search_for_match(); // Call under lock
         }
 
         void enqueue_metadata( realdds::topics::flexible_msg && md )
         {
             std::lock_guard< std::mutex > lock( _queues_lock );
             while( _metadata_queue.size() >= max_md_queue_size )
-                _metadata_queue.pop_front(); //throw oldest
+                _metadata_queue.pop_front(); // Throw oldest
 
             _metadata_queue.push_back( std::move( md ) );
-            search_for_match(); //Call under lock
+            search_for_match(); // Call under lock
         }
 
         typedef std::function< void( T && ) > on_frame_ready;
@@ -726,9 +726,11 @@ namespace librealsense
 
             // prof parameter holds the real data, rs2_software_video_frame forces us to hold a pointer to it.
             // Because we use syncer, not calling on_video_frame in the lifetime of this function, we need a shared_ptr
-            // that the syncer will hold till using the frame.
+            // that the syncer will hold till using the frame. prof_holder->profile holds the actual pointer,
+            // prof_holder->clone holds the shared_ptr to make sure the pointer won't be released before we use it.
             std::shared_ptr< rs2_stream_profile > prof_holder = std::make_shared< rs2_stream_profile >();
             prof_holder->profile = prof.get();
+            prof_holder->clone = prof;
             rs2_frame.profile = prof_holder.get();
 
             // Copying from dds into LibRS space, same as copy from USB backend.
@@ -781,9 +783,11 @@ namespace librealsense
 
             // prof parameter holds the real data, rs2_software_video_frame forces us to hold a pointer to it.
             // Because we use syncer, not calling on_video_frame in the lifetime of this function, we need a shared_ptr
-            // that the syncer will hold till using the frame.
+            // that the syncer will hold till using the frame. prof_holder->profile holds the actual pointer,
+            // prof_holder->clone holds the shared_ptr to make sure the pointer won't be released before we use it.
             std::shared_ptr< rs2_stream_profile > prof_holder = std::make_shared< rs2_stream_profile >();
             prof_holder->profile = prof.get();
+            prof_holder->clone = prof;
             rs2_frame.profile = prof_holder.get();
 
             // Copying from dds into LibRS space, same as copy from USB backend.

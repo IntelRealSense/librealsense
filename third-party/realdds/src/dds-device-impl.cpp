@@ -94,7 +94,7 @@ void dds_device::impl::run( size_t message_timeout_ms )
     _running = true;
 
     // Start handling options only after init() is done
-    if( !_notifications_reader )
+    if( ! _notifications_reader )
         DDS_THROW( runtime_error, "failed to set notifications reader for '" + _info.topic_root + "'" );
 
     _notifications_reader->on_data_available( [&]() {
@@ -356,6 +356,12 @@ bool dds_device::impl::init()
                     TYPE2STREAM( pose, motion )
                     DDS_THROW( runtime_error, "stream '" + stream_name + "' is of unknown type '" + stream_type + "'" );
 
+                    if( rsutils::json::get< bool >( j, "metadata-enabled" ) )
+                    {
+                        create_metadata_reader();
+                        stream->enable_metadata(); // Call before init_profiles
+                    }
+
                     if( default_profile_index >= 0 && default_profile_index < profiles.size() )
                         stream->init_profiles( profiles, default_profile_index );
                     else
@@ -366,12 +372,6 @@ bool dds_device::impl::init()
                         DDS_THROW( runtime_error,
                                    "failed to instantiate stream type '" + stream_type + "' (instead, got '"
                                        + stream->type_string() + "')" );
-
-                    if( rsutils::json::get< bool >( j, "metadata-enabled" ) )
-                    {
-                        create_metadata_reader();
-                        stream->enable_metadata();
-                    }
 
                     LOG_DEBUG( "... stream '" << stream_name << "' (" << _streams.size() << "/" << n_streams_expected
                                               << ") received with " << profiles.size() << " profiles" );

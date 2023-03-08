@@ -15,6 +15,14 @@ dds_stream_base::dds_stream_base( std::string const & name,
 {
 }
 
+void dds_stream_base::enable_metadata()
+{
+    // Ensure no changes after initialization stage
+    if( !_profiles.empty() )
+        DDS_THROW( runtime_error, "enable metadata to stream '" + _name + "' before initializing profiles" );
+
+    _metadata_enabled = true;
+}
 
 void dds_stream_base::init_profiles( dds_stream_profiles const & profiles, int default_profile_index )
 {

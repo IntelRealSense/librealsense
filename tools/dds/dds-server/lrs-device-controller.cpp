@@ -194,6 +194,14 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
             LOG_ERROR( "ignoring stream '" << stream_name << "' with no server" );
             continue;
         }
+
+        // Set stream metadata support (currently if the device supports metadata all streams does)
+        // Must be done before calling init_profiles()
+        if( _md_enabled )
+        {
+            server->enable_metadata();
+        }
+
         server->init_profiles( profiles, default_profile_index );
         
         // Set stream intrinsics
@@ -241,12 +249,6 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
             }
         }
         server->init_options( options );
-
-        // Set stream metadata support (currently if the device supports metadata all streams does)
-        if( _md_enabled )
-        {
-            server->enable_metadata();
-        }
 
         servers.push_back( server );
     }
