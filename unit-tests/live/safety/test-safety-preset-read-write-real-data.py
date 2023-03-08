@@ -6,7 +6,7 @@
 
 import pyrealsense2 as rs
 import random
-from rspy import test
+from rspy import test, log
 
 #############################################################################################
 # Helper Functions
@@ -90,6 +90,7 @@ test.finish()
 
 test.start("Writing safety preset to random index, then reading and comparing")
 index = random.randint(1, 63)
+log.out( "writing to index = ", index )
 safety_preset = get_random_preset()
 safety_sensor.set_safety_preset(index, safety_preset)
 read_result = safety_sensor.get_safety_preset(index)
