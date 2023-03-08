@@ -84,7 +84,11 @@ namespace librealsense
         uint32_t param4 = *reinterpret_cast<const uint32_t*>(data.data() + offset);
         offset += sizeof(uint32_t);
 
-        return command{ opcode, param1, param2, param2, param4 };
+        command cmd { opcode, param1, param2, param3, param4 };
+        if (data.size() > size_of_command_without_data)
+            cmd.data.insert(cmd.data.begin(), data.begin() + offset, data.end());
+
+        return cmd;
     }
 
     void hw_monitor::execute_usb_command(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize, bool require_response) const
@@ -211,7 +215,9 @@ namespace librealsense
     {
         int length;
         std::vector<uint8_t> result;
-        result.resize(IVCAM_MONITOR_MAX_BUFFER_SIZE);
+        size_t length_of_command_with_data = dataLength + size_of_command_without_data;
+        auto init_size = (length_of_command_with_data > IVCAM_MONITOR_MAX_BUFFER_SIZE) ? length_of_command_with_data : IVCAM_MONITOR_MAX_BUFFER_SIZE;
+        result.resize(init_size);
         fill_usb_buffer(opcode, param1, param2, param3, param4, data, static_cast<int>(dataLength), result.data(), length);
         result.resize(length);
         return result;
