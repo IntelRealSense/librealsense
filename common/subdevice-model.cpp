@@ -1430,6 +1430,14 @@ namespace rs2
         return is_cal_format;
     }
 
+    bool subdevice_model::is_multiple_resolutions_supported() const
+    {
+        std::string product_line = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
+        std::string sensor_name = s->get_info(RS2_CAMERA_INFO_NAME);
+
+        return product_line == "D500" && sensor_name == "Stereo Module";
+    }
+
     std::pair<int, int> subdevice_model::get_max_resolution(rs2_stream stream) const
     {
         if (resolutions_per_stream.count(stream) > 0)

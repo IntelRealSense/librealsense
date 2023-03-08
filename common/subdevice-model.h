@@ -226,7 +226,7 @@ namespace rs2
             int stream_type_id, int depth_res_id);
         bool draw_formats_combo_box_multiple_resolutions(std::string& error_message, std::string& label, std::function<void()> streaming_tooltip, float col0, float col1,
             int stream_type_id);
-        bool is_multiple_resolutions_supported() const { return false; }
+        bool is_multiple_resolutions_supported() const;
         std::pair<int, int> get_max_resolution(rs2_stream stream) const;
         void sort_resolutions(std::vector<std::pair<int, int>>& resolutions) const;
         bool is_ir_calibration_profile() const;
