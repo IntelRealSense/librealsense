@@ -311,7 +311,7 @@ namespace librealsense
             size_t                                       receivedCommandDataLength;
         };
 
-        void execute_usb_command(uint8_t *out, size_t outSize, uint32_t& op, uint8_t* in, size_t& inSize) const;
+        void execute_usb_command(uint8_t *out, size_t outSize, uint32_t& op, uint8_t* in, size_t& inSize, bool require_response) const;
         static void update_cmd_details(hwmon_cmd_details& details, size_t receivedCmdLen, unsigned char* outputBuffer);
         void send_hw_monitor_command(hwmon_cmd_details& details) const;
 
