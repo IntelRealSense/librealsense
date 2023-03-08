@@ -38,8 +38,8 @@ safety_sensor.set_option(rs.option.safety_preset_active_index, 20)
 current_index = safety_sensor.get_option(rs.option.safety_preset_active_index)
 test.check_equal(current_index, 20)
 
-current_index = safety_sensor.get_option(rs.option.safety_preset_active_index)
 safety_sensor.set_option(rs.option.safety_preset_active_index, 63)
+current_index = safety_sensor.get_option(rs.option.safety_preset_active_index)
 test.check_equal(current_index, 63)
 
 test.finish()
