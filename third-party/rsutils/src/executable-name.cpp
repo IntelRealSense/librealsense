@@ -9,6 +9,7 @@
 #include <Windows.h>
 #elif defined( __APPLE__ )
 #include <mach-o/dyld.h>
+#include <limits.h>  // PATH_MAX is POSIX, rather than MAXPATHLEN
 #endif
 
 
@@ -33,7 +34,7 @@ std::string executable_path()
 #elif defined( __APPLE__ )
 
     // "With deep directories the total bufsize needed could be more than MAXPATHLEN."
-    uint32_t const max_size = MAXPATHLEN + 1;
+    uint32_t const max_size = PATH_MAX + 1;
     char buf[max_size];
     uint32_t size = max_size;
     _NSGetExecutablePath( buf, &size );
