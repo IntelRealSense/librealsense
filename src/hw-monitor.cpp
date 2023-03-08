@@ -85,7 +85,7 @@ namespace librealsense
         offset += sizeof(uint32_t);
 
         command cmd { opcode, param1, param2, param3, param4 };
-        if (data.size() > 24)
+        if (data.size() > size_of_command_without_data)
             cmd.data.insert(cmd.data.begin(), data.begin() + offset, data.end());
 
         return cmd;
@@ -214,7 +214,7 @@ namespace librealsense
     {
         int length;
         std::vector<uint8_t> result;
-        size_t length_of_command_with_data = dataLength + 24U;
+        size_t length_of_command_with_data = dataLength + size_of_command_without_data;
         auto init_size = (length_of_command_with_data > IVCAM_MONITOR_MAX_BUFFER_SIZE) ? length_of_command_with_data : IVCAM_MONITOR_MAX_BUFFER_SIZE;
         result.resize(init_size);
         fill_usb_buffer(opcode, param1, param2, param3, param4, data, static_cast<int>(dataLength), result.data(), length);
