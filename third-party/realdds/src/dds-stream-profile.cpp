@@ -77,8 +77,7 @@ enum rs2_format  // copy from rs2_sensor.h
 int dds_stream_format::to_rs2() const
 {
     static std::map< std::string, int > fcc_to_rs2{  // copy from ds5-device.cpp
-        { "YUY2", RS2_FORMAT_YUYV },
-        { "YUYV", RS2_FORMAT_YUYV },
+        { "yuv422_yuy2", RS2_FORMAT_YUYV },  // Used by Color streams; ROS2-compatible
         { "UYVY", RS2_FORMAT_UYVY },
         { "mono8", RS2_FORMAT_Y8 },  // Used by IR streams; ROS2-compatible
         { "Y8I",  RS2_FORMAT_Y8I },
@@ -95,7 +94,9 @@ int dds_stream_format::to_rs2() const
         { "MJPG", RS2_FORMAT_MJPEG },
         { "CNF4", RS2_FORMAT_RAW8 },
         { "BYR2", RS2_FORMAT_RAW16 },
+        { "R10", RS2_FORMAT_RAW10 },
         { "MXYZ", RS2_FORMAT_MOTION_XYZ32F },
+        { "Y10B", RS2_FORMAT_Y10BPACK },
     };
 
     std::string s = to_string();
@@ -111,7 +112,7 @@ dds_stream_format dds_stream_format::from_rs2( int rs2_format )
     char const * encoding = nullptr;
     switch( rs2_format )
     {
-    case RS2_FORMAT_YUYV: encoding = "YUYV"; break;
+    case RS2_FORMAT_YUYV: encoding = "yuv422_yuy2"; break;
     case RS2_FORMAT_Y8: encoding = "mono8"; break;
     case RS2_FORMAT_Y8I: encoding = "Y8I"; break;
     case RS2_FORMAT_W10: encoding = "W10"; break;
@@ -127,8 +128,10 @@ dds_stream_format dds_stream_format::from_rs2( int rs2_format )
     case RS2_FORMAT_MJPEG: encoding = "MJPG"; break;
     case RS2_FORMAT_RAW8: encoding = "CNF4"; break;
     case RS2_FORMAT_RAW16: encoding = "BYR2"; break;
+    case RS2_FORMAT_RAW10: encoding = "R10"; break;
     case RS2_FORMAT_UYVY: encoding = "UYVY"; break;
     case RS2_FORMAT_MOTION_XYZ32F: encoding = "MXYZ"; break;  // todo
+    case RS2_FORMAT_Y10BPACK: encoding = "Y10B"; break;
     default:
         DDS_THROW( runtime_error, "cannot translate rs2_format " + std::to_string( rs2_format ) + " to any known dds_stream_format" );
     };

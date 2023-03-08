@@ -33,13 +33,13 @@ namespace realdds {
 // converted to a string. It must be '<= size' characters long, and we actually store the terminating null for
 // convenience.
 // 
-// Currently, only specific formats are needed and so 6 characters are enough to fit our needs given their ROS
-// encodings. We round it up to 8 (64 bits, including the terminating null) for alignment and some flexibility.
+// Currently, the longest format we need is "yuv422_yuy2" so 10 characters are enough to fit our needs given their ROS
+// encodings. We round it up to 16 (including the terminating null) for alignment and some flexibility.
 //
 struct dds_stream_format
 {
-    static constexpr size_t size = 7;  // max length of encoding
-    char data[size + 1];               // add a terminating NULL for ease
+    static constexpr size_t size = 15;  // max length of encoding
+    char data[size + 1];                // add a terminating NULL for ease
 
     dds_stream_format()
         : data{ 0 }
