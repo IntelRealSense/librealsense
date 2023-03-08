@@ -90,20 +90,18 @@ testing_profiles = {}
 append_testing_profiles(device)
 
 for profile, sensor in testing_profiles.items():
-
     sensor.open(profile)
     sensor.start(frame_queue)
-    log.out("Running profile:", profile, "on sensor:", sensor)
 
     # Test #1
     if is_frame_support_metadata(frame_queue.wait_for_frame(), rs.frame_metadata_value.frame_counter):
-        test.start('Starting a test "Frame counter".')
+        test.start('Verifying increasing counter for profile ', profile)
         test.check(is_value_keep_increasing(rs.frame_metadata_value.frame_counter))
         test.finish()
 
     # Test #2
     if is_frame_support_metadata(frame_queue.wait_for_frame(), rs.frame_metadata_value.frame_timestamp):
-        test.start('Starting a test "Frame timestamp".')
+        test.start('Verifying increasing time for profile ', profile)
         test.check(is_value_keep_increasing(rs.frame_metadata_value.frame_timestamp))
         test.finish()
 
