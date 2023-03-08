@@ -7,6 +7,8 @@
 #include <fstream>
 #elif defined( _WIN32 )
 #include <Windows.h>
+#elif defined( __APPLE__ )
+#include <mach-o/dyld.h>
 #endif
 
 
@@ -28,9 +30,18 @@ std::string executable_path()
     GetModuleFileNameA( nullptr, buf, MAX_PATH );
     return buf;
 
+#elif defined( __APPLE__ )
+
+    // "With deep directories the total bufsize needed could be more than MAXPATHLEN."
+    uint32_t const max_size = MAXPATHLEN + 1;
+    char buf[max_size];
+    uint32_t size = max_size;
+    _NSGetExecutablePath( buf, &size );
+    return buf;
+
 #else
 
-    static_assert(false, "unrecognized platform");
+    static_assert( false, "unrecognized platform" );
 
 #endif
 }
