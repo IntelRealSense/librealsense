@@ -214,8 +214,9 @@ namespace librealsense
     {
         int length;
         std::vector<uint8_t> result;
-        result.resize(5000);
-        //result.resize(IVCAM_MONITOR_MAX_BUFFER_SIZE);
+        size_t length_of_command_with_data = dataLength + 24U;
+        auto init_size = (length_of_command_with_data > IVCAM_MONITOR_MAX_BUFFER_SIZE) ? length_of_command_with_data : IVCAM_MONITOR_MAX_BUFFER_SIZE;
+        result.resize(init_size);
         fill_usb_buffer(opcode, param1, param2, param3, param4, data, static_cast<int>(dataLength), result.data(), length);
         result.resize(length);
         return result;
