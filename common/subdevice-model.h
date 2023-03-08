@@ -125,9 +125,6 @@ namespace rs2
 
         void get_depth_ir_mismatch_resolutions_ids(int& depth_res_id, int& ir1_res_id, int& ir2_res_id) const;
 
-        bool is_multiple_resolutions_supported() { return false; }
-
-
         template<typename T>
         bool get_default_selection_index(const std::vector<T>& values, const T& def, int* index)
         {
@@ -228,6 +225,7 @@ namespace rs2
             int stream_type_id, int depth_res_id);
         bool draw_formats_combo_box_multiple_resolutions(std::string& error_message, std::string& label, std::function<void()> streaming_tooltip, float col0, float col1,
             int stream_type_id);
+        bool is_multiple_resolutions_supported() const { return false; }
         std::pair<int, int> get_max_resolution(rs2_stream stream) const;
         void sort_resolutions(std::vector<std::pair<int, int>>& resolutions) const;
         bool is_ir_calibration_profile() const;
