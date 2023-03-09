@@ -119,6 +119,43 @@ void list_devices(rs2::context ctx)
     }
 }
 
+
+// This function returns true if D500 device was discovered during a period of time (timeout)
+bool query_d500_and_wait(rs2::context& ctx)
+{
+    using namespace std::chrono;
+    auto start = system_clock::now();
+    auto timeout = std::chrono::seconds(120);
+    auto now = system_clock::now();
+    std::cout << std::endl << "Waiting for device to wake up after FW update. It can take up to 2 minutes -  Please don't disconnect device!" << std::endl;
+
+    do
+    {
+        std::cout << "Looking for updated device..." << std::endl;
+        try {
+            auto devs = ctx.query_devices(RS2_PRODUCT_LINE_D500);
+            for (uint32_t j = 0; j < devs.size(); j++)
+            {
+                auto d = devs[j];
+                if (d.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
+                {
+                    std::string product_line = d.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
+                    if (product_line == "D500")
+                    {
+                        return true;
+                    }
+                }
+            }
+            now = system_clock::now();
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+        }
+        catch (...) {}
+        } while ((now - start) < timeout);
+
+    std::cout << std::endl << "Timeout reached... Device not found!" << std::endl;
+    return false;
+}
+
 int main(int argc, char** argv) try
 {
 #ifdef BUILD_EASYLOGGINGPP
@@ -135,6 +172,11 @@ int main(int argc, char** argv) try
     rs2::update_device new_fw_update_device;
 
     bool done = false;
+
+    // TODO: HKR DFU issue - remove d500_device usage when HKR supports FIRMWARE_UPDATE_ID
+    // For HKR, only DFU flow is enabled (signed fw update flow). see ignore_unsigned_request parameter usage below
+    bool d500_device = false;
+    bool ignore_unsigned_request = false;
 
     CmdLine cmd("librealsense rs-fw-update tool", ' ', RS2_API_VERSION_STR);
 
@@ -263,7 +305,8 @@ int main(int argc, char** argv) try
         for (auto&& d : info.get_new_devices())
         {
             std::lock_guard<std::mutex> lk(mutex);
-            if (d.is<rs2::update_device>() && (d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID) == update_serial_number))
+            // TODO: HKR DFU issue - remove d500_device usage when HKR supports FIRMWARE_UPDATE_ID
+            if (d500_device || d.is<rs2::update_device>() && (d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID) == update_serial_number))
                 new_fw_update_device = d;
             else
                 new_device = d;
@@ -341,8 +384,21 @@ int main(int argc, char** argv) try
 
         std::cout << std::endl << "Updating device: " << std::endl;
         print_device_info(d);
+        
+        // TODO: HKR DFU issue - remove d500_device usage when HKR supports FIRMWARE_UPDATE_ID
+        if (d.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
+        {
+            std::string product_line = d.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
+            if (product_line == "D500")
+            {
+                d500_device = true;
+                ignore_unsigned_request = true;
+            }
+        }
 
-        if (unsigned_arg.isSet())
+        // TODO: HKR DFU issue - Here we go to signed flow always (even if -u was provided by the user)
+        // To be removed if HKR will support unsigned FW update in the future
+        if (unsigned_arg.isSet() && !ignore_unsigned_request)
         {
             std::cout << std::endl << "Firmware update started" << std::endl << std::endl;
 
@@ -381,7 +437,9 @@ int main(int argc, char** argv) try
             }
 
             update(new_fw_update_device, fw_image);
-            done = true;
+            // TODO: HKR DFU issue - for D500 device, writing to flash takes between 1 to 2 minutes
+            // So, in order to complete FW update process, wait for finish writing to flash and for D500 to wake up
+            done = d500_device ? query_d500_and_wait(ctx) : true;
             break;
         }
     }
@@ -409,8 +467,17 @@ int main(int argc, char** argv) try
             if (serial_number_arg.isSet() && sn != selected_serial_number)
                 continue;
 
-            auto fw = d.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ? d.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) : "unknown";
-            std::cout << std::endl << "Device " << sn << " successfully updated to FW: " << fw << std::endl;
+            // TODO: HKR DFU issue - the FW Version is not set correctly for HKR, and no FW versions are avaialble for now
+            // In the future, when HKR will support these features, remove the first part of this if 
+            if (d500_device)
+            {
+                std::cout << std::endl << "Device " << sn << " FW updated successfully." << std::endl;
+            }
+            else
+            {
+                auto fw = d.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ? d.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) : "unknown";
+                std::cout << std::endl << "Device " << sn << " successfully updated to FW: " << fw << std::endl;
+            }
         }
     }
 

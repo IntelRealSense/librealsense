@@ -311,17 +311,20 @@ namespace librealsense
             size_t                                       receivedCommandDataLength;
         };
 
-        void execute_usb_command(uint8_t *out, size_t outSize, uint32_t& op, uint8_t* in, size_t& inSize) const;
+        void execute_usb_command(uint8_t *out, size_t outSize, uint32_t& op, uint8_t* in, size_t& inSize, bool require_response) const;
         static void update_cmd_details(hwmon_cmd_details& details, size_t receivedCmdLen, unsigned char* outputBuffer);
         void send_hw_monitor_command(hwmon_cmd_details& details) const;
 
         std::shared_ptr<locked_transfer> _locked_transfer;
+
+        static const size_t size_of_command_without_data = 24U;
+
     public:
         explicit hw_monitor(std::shared_ptr<locked_transfer> locked_transfer)
             : _locked_transfer(std::move(locked_transfer))
         {}
 
-         static void fill_usb_buffer( int opCodeNumber,
+        static void fill_usb_buffer( int opCodeNumber,
                                       int p1,
                                       int p2,
                                       int p3,
@@ -331,7 +334,7 @@ namespace librealsense
                                       uint8_t * bufferToSend,
                                       int & length );
 
-         static command build_command_from_data(const std::vector<uint8_t> data);
+        static command build_command_from_data(const std::vector<uint8_t> data);
 
         virtual std::vector<uint8_t> send( std::vector<uint8_t> const & data ) const;
         virtual std::vector<uint8_t> send( command cmd, hwmon_response * = nullptr, bool locked_transfer = false ) const;

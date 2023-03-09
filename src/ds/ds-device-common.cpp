@@ -71,6 +71,13 @@ namespace librealsense
             LOG_INFO("entering to update state, device disconnect is expected");
             command cmd(ds::DFU);
             cmd.param1 = 1;
+
+            // TODO: HKR DFU issue - A workdaroud till HKR FW team will support DFU response
+            if (dynamic_cast<d500_device*>(_owner))
+            {
+                cmd.require_response = false;
+            }
+
             _hw_monitor->send(cmd);
 
             // We allow 6 seconds because on Linux the removal status is updated at a 5 seconds rate.
