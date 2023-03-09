@@ -19,12 +19,12 @@ namespace librealsense
         virtual bool is_enabled() const override { return true; }
         virtual const char* get_description() const override
         {
-            return "RGB TNR: 0:disabled(default), 1:enabled(tnr toggles between on and off). Can only be set before streaming";
+            return "RGB TNR: 0:disabled(default), 1:enabled. Can only be set before streaming";
         }
         virtual void enable_recording(std::function<void(const option&)> record_action) override { _record_action = record_action; }
 
         static int const GET_TNR_STATE = 0;
-        static int const SET_TNR_STATE = 0;
+        static int const SET_TNR_STATE = 1;
 
     private:
         std::function<void(const option&)> _record_action = [](const option&) {};

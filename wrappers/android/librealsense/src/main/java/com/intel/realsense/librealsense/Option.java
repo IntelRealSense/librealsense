@@ -99,6 +99,7 @@ public enum Option {
     OPTION_DEPTH_AUTO_EXPOSURE_MODE(94),
     OPTION_SAFETY_PRESET_ACTIVE_INDEX(95),
     OPTION_SAFETY_MODE(96);
+    OPTION_RGB_TNR_ENABLED(97);
 
 
     private final int mValue;
