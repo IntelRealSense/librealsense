@@ -1881,7 +1881,7 @@ namespace librealsense
                     fy = intrin.fy;
                 }
 
-                std::array<float, 4> rec_sides_cur = { };
+                std::array<float, 4> rec_sides_cur {};
                 rs2_extract_target_dimensions(f, RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES, rec_sides_cur.data(), 4, &e);
                 if (e)
                     throw std::runtime_error("Failed to extract target information\nfrom the captured frames!");
@@ -2143,8 +2143,8 @@ namespace librealsense
                 if (e)
                     throw std::runtime_error("Failed to extract target information\nfrom the captured frames!");
 
-                std::array<float, 4> dots_x_cur = { };
-                std::array<float, 4> dots_y_cur = { };
+                std::array<float, 4> dots_x_cur {};
+                std::array<float, 4> dots_y_cur {};
                 int j = 0;
                 for (int i = 0; i < 4; ++i)
                 {
