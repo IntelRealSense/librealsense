@@ -9,6 +9,10 @@
 #include <unordered_map>
 #include <vector>
 
+namespace rs2 {
+    class frame;
+}
+
 namespace realdds {
 
 class dds_device_server;
@@ -16,7 +20,7 @@ class dds_stream_server;
 class dds_stream_profile;
 class dds_option;
 
-}  // namespace realdds
+} // namespace realdds
 
 
 namespace tools {
@@ -35,6 +39,7 @@ private:
     std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_streams();
 
     void start_streaming( const nlohmann::json & msg );
+    void publish_frame_metadata( const rs2::frame & f );
 
     rs2::device _rs_dev;
     std::map< std::string, rs2::sensor > _rs_sensors;
@@ -46,6 +51,7 @@ private:
     std::vector< rs2::stream_profile > get_rs2_profiles( realdds::dds_stream_profiles const & dds_profiles ) const;
 
     std::shared_ptr< realdds::dds_device_server > _dds_device_server;
+    bool _md_enabled;
 };  // class lrs_device_controller
 
 }  // namespace tools

@@ -9,6 +9,7 @@ set(TOOL_FILES
     lrs-device-watcher.cpp
     lrs-device-controller.h
     lrs-device-controller.cpp
+    ../../../common/metadata-helper.cpp
     )
 
 add_executable( ${PROJECT_NAME} ${TOOL_FILES} )

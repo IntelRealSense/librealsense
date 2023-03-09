@@ -51,6 +51,7 @@ public:
     std::queue< nlohmann::json > _option_response_queue;
 
     std::shared_ptr< dds_topic_reader > _notifications_reader;
+    std::shared_ptr< dds_topic_reader > _metadata_reader;
     std::shared_ptr< dds_topic_writer > _control_writer;
 
     dds_options _options;
@@ -69,10 +70,16 @@ public:
     void set_option_value( const std::shared_ptr< dds_option > & option, float new_value );
     float query_option_value( const std::shared_ptr< dds_option > & option );
 
+    typedef std::function< void( topics::flexible_msg && md ) > on_metadata_available_callback;
+    void on_metadata_available( on_metadata_available_callback cb ) { _on_metadata_available = cb; }
+
 private:
     void create_notifications_reader();
+    void create_metadata_reader();
     void create_control_writer();
     bool init();
+
+    on_metadata_available_callback _on_metadata_available = nullptr;
 
     size_t _message_timeout_ms = 5000;
 };

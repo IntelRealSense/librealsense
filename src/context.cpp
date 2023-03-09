@@ -29,6 +29,7 @@
 #include <librealsense2/h/rs_internal.h>
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/image/image-msg.h>
+#include <realdds/topics/flexible/flexible-msg.h>
 #include <rsutils/shared-ptr-singleton.h>
 #include <rsutils/os/executable-name.h>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
@@ -485,6 +486,119 @@ namespace librealsense
         query_option_callback _query_opt_cb;
     };
 
+
+    // Frame data and metadata are sent as two seperate streams.
+    // They are synchronized using frame_id for matching data+metadata sets.
+    template< class T >
+    class frame_metadata_syncer
+    {
+    public:
+        // We don't want the queue to get large, it means lots of drops and data that we store to (probably) throw later
+        static constexpr size_t max_md_queue_size = 8;
+        // If a metadata is lost we wait for it until the next frame arrives, causing a small delay but we prefer passing
+        // the frame late and without metadata over losing it.
+        static constexpr size_t max_frame_queue_size = 2;
+
+        // frame_metadata_syncer is instanciated with rs2_software_video_frame and rs2_software_motion_frame.
+        // Both structures point to a rs2_stream_profile that was allocated especially for the life time of frame.
+        // We need to pass std::shared_ptr< rs2_stream_profile > as a parameter to keep it alive as long as frame is.
+        void enqueue_frame( T && frame, std::shared_ptr< rs2_stream_profile > prof )
+        {
+            std::lock_guard< std::mutex > lock( _queues_lock );
+            _frame_queue.push_back( std::move( frame ) );
+            _prof_queue.push_back( prof );
+            search_for_match(); // Call under lock
+        }
+
+        void enqueue_metadata( realdds::topics::flexible_msg && md )
+        {
+            std::lock_guard< std::mutex > lock( _queues_lock );
+            while( _metadata_queue.size() >= max_md_queue_size )
+                _metadata_queue.pop_front(); // Throw oldest
+
+            _metadata_queue.push_back( std::move( md ) );
+            search_for_match(); // Call under lock
+        }
+
+        typedef std::function< void( T && ) > on_frame_ready;
+        typedef std::function< void( T & frame, const realdds::topics::flexible_msg & metadata ) > add_metadata_to_frame;
+
+        void reset( on_frame_ready cb = nullptr, add_metadata_to_frame add_md = nullptr )
+        {
+            std::lock_guard< std::mutex > lock( _queues_lock );
+            _frame_queue.clear();
+            _prof_queue.clear();
+            _metadata_queue.clear();
+            _on_frame_ready = cb;
+            _add_md = add_md;
+        }
+
+    private:
+        //Call under lock
+        void search_for_match()
+        {
+            // Wait for frame + metadata set, but if metadata is lost pass frame to the user anyway
+            if( _frame_queue.empty() || ( _metadata_queue.empty() && _frame_queue.size() < max_frame_queue_size ) )
+                return;
+
+            // Sync using frame ID. Frame IDs are assumed to be increasing with time
+            int frame_id = _frame_queue.front().frame_number;
+            int md_id = _metadata_queue.empty() ? frame_id + 1: // If no metadata force call to handle_frame_no_metadata
+                        std::stoi( rsutils::json::get< std::string >( _metadata_queue.front().json_data()["header"], "frame-id"));
+
+            while( frame_id > md_id && _metadata_queue.size() > 1 )
+            {
+                // Metadata without frame, remove it from queue and check next
+                _metadata_queue.pop_front();
+                md_id = std::stoi( rsutils::json::get< std::string >( _metadata_queue.front().json_data()["header"], "frame-id" ) );
+            }
+
+            if( frame_id == md_id )
+                handle_match();
+            else
+                handle_frame_without_metadata();
+        }
+
+        //Call under lock
+        void handle_match()
+        {
+            T & frame = _frame_queue.front();
+
+            if( !_metadata_queue.empty() && _add_md )
+            {
+                _add_md( frame, _metadata_queue.front() );
+                _metadata_queue.pop_front();
+            }
+
+            if( _on_frame_ready )
+                _on_frame_ready( std::move( frame ) );
+
+            _frame_queue.pop_front();
+            _prof_queue.pop_front();
+        }
+
+        //Call under lock
+        void handle_frame_without_metadata()
+        {
+            T & frame = _frame_queue.front();
+
+            if( _on_frame_ready )
+                _on_frame_ready( std::move( frame ) );
+
+            _frame_queue.pop_front();
+            _prof_queue.pop_front();
+        }
+
+        on_frame_ready _on_frame_ready = nullptr;
+        add_metadata_to_frame _add_md = nullptr;
+
+        std::deque< T > _frame_queue;
+        std::deque< std::shared_ptr< rs2_stream_profile > > _prof_queue; // Holding shared_ptr till corresponding frame is used
+        std::deque< realdds::topics::flexible_msg > _metadata_queue;
+        std::mutex _queues_lock;
+    };
+
+
     class dds_sensor_proxy : public software_sensor
     {
     public:
@@ -494,6 +608,7 @@ namespace librealsense
             : software_sensor( sensor_name, owner )
             , _dev( dev )
             , _name( sensor_name )
+            , _md_enabled( dev->supports_metadata() )
         {
         }
 
@@ -603,57 +718,178 @@ namespace librealsense
             software_sensor::open( profiles );
         }
 
+        void handle_video_data( realdds::topics::device::image && dds_frame,
+                                const std::shared_ptr< stream_profile_interface > & prof,
+                                frame_metadata_syncer< rs2_software_video_frame > & syncer )
+        {
+            rs2_software_video_frame rs2_frame = {};
+
+            // prof parameter holds the real data, rs2_software_video_frame forces us to hold a pointer to it.
+            // Because we use syncer, not calling on_video_frame in the lifetime of this function, we need a shared_ptr
+            // that the syncer will hold till using the frame. prof_holder->profile holds the actual pointer,
+            // prof_holder->clone holds the shared_ptr to make sure the pointer won't be released before we use it.
+            std::shared_ptr< rs2_stream_profile > prof_holder = std::make_shared< rs2_stream_profile >();
+            prof_holder->profile = prof.get();
+            prof_holder->clone = prof;
+            rs2_frame.profile = prof_holder.get();
+
+            // Copying from dds into LibRS space, same as copy from USB backend.
+            // TODO - use memory pool or some other frame allocator
+            rs2_frame.pixels = new uint8_t[dds_frame.raw_data.size()];
+            if( ! rs2_frame.pixels )
+                throw std::runtime_error( "Could not allocate memory for new frame" );
+            memcpy( rs2_frame.pixels, dds_frame.raw_data.data(), dds_frame.raw_data.size() );
+            // The way to release allocated memory
+            rs2_frame.deleter = []( void * ptr ) { delete[] ptr; };
+            // Info sent with image topic
+            rs2_frame.stride = static_cast< int >( dds_frame.height > 0 ? dds_frame.raw_data.size() / dds_frame.height
+                                                                        : dds_frame.raw_data.size() );
+            rs2_frame.bpp = dds_frame.width > 0 ? rs2_frame.stride / dds_frame.width : rs2_frame.stride;
+            rs2_frame.frame_number = ! dds_frame.frame_id.empty() ? std::stoi( dds_frame.frame_id ) : 0;
+
+            if( _md_enabled )
+                syncer.enqueue_frame( std::move( rs2_frame ), prof_holder );
+            else
+                on_video_frame( rs2_frame );
+        }
+
+        void add_video_frame_metadata( rs2_software_video_frame & frame, const realdds::topics::flexible_msg & dds_md )
+        {
+            clear_metadata();
+
+            json md_header = dds_md.json_data()["header"];
+            json md = dds_md.json_data()["metadata"];
+
+            // Always expected metadata
+            frame.timestamp = rsutils::json::get< rs2_time_t >( md_header, "timestamp" );
+            frame.domain = rsutils::json::get< rs2_timestamp_domain >( md_header, "timestamp-domain" );
+            // Expected metadata for all depth images
+            if( rsutils::json::has( md_header, "depth-units" ) )
+                frame.depth_units = rsutils::json::get< float >( md_header, "depth-units" );
+
+            // Other metadata fields. Metadata fields that are present but unknown by librealsense will be ignored.
+            for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
+            {
+                const char * str = rs2_frame_metadata_to_string( static_cast< rs2_frame_metadata_value >( i ) );
+                if( rsutils::json::has( md, str ) )
+                    set_metadata( static_cast< rs2_frame_metadata_value >( i ),
+                                  rsutils::json::get< rs2_metadata_type >( md, str ) );
+            }
+        }
+
+        void handle_motion_data( realdds::topics::device::image && dds_frame,
+                                 const std::shared_ptr< stream_profile_interface > & prof,
+                                 frame_metadata_syncer< rs2_software_motion_frame > & syncer )
+        {
+            rs2_software_motion_frame rs2_frame = {};
+
+            // prof parameter holds the real data, rs2_software_video_frame forces us to hold a pointer to it.
+            // Because we use syncer, not calling on_video_frame in the lifetime of this function, we need a shared_ptr
+            // that the syncer will hold till using the frame. prof_holder->profile holds the actual pointer,
+            // prof_holder->clone holds the shared_ptr to make sure the pointer won't be released before we use it.
+            std::shared_ptr< rs2_stream_profile > prof_holder = std::make_shared< rs2_stream_profile >();
+            prof_holder->profile = prof.get();
+            prof_holder->clone = prof;
+            rs2_frame.profile = prof_holder.get();
+
+            // Copying from dds into LibRS space, same as copy from USB backend.
+            // TODO - use memory pool or some other frame allocator
+            rs2_frame.data = new uint8_t[dds_frame.raw_data.size()];
+            if( ! rs2_frame.data )
+                throw std::runtime_error( "Could not allocate memory for new frame" );
+            memcpy( rs2_frame.data, dds_frame.raw_data.data(), dds_frame.raw_data.size() );
+            // The way to release allocated memory
+            rs2_frame.deleter = []( void * ptr ) { delete[] ptr; };
+            // Info sent with image topic
+            rs2_frame.frame_number = std::stoi( dds_frame.frame_id );
+
+            if( _md_enabled )
+                syncer.enqueue_frame( std::move( rs2_frame ), prof_holder );
+            else
+                on_motion_frame( rs2_frame );
+        }
+
+        void add_motion_frame_metadata( rs2_software_motion_frame & frame, const realdds::topics::flexible_msg & dds_md )
+        {
+            clear_metadata();
+
+            json md_header = dds_md.json_data()["header"];
+            json md = dds_md.json_data()["metadata"];
+
+            // Always expected metadata
+            frame.timestamp = rsutils::json::get< rs2_time_t >( md_header, "timestamp" );
+            frame.domain = rsutils::json::get< rs2_timestamp_domain >( md_header, "timestamp-domain" );
+
+            // Other metadata fields. Metadata fields that are present but unknown by librealsense will be ignored.
+            for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
+            {
+                const char * str = rs2_frame_metadata_to_string( static_cast< rs2_frame_metadata_value >( i ) );
+                if( rsutils::json::has( md, str ) )
+                    set_metadata( static_cast< rs2_frame_metadata_value >( i ),
+                        rsutils::json::get< rs2_metadata_type >( md, str ) );
+            }
+        }
+
+        void handle_new_metadata( realdds::topics::flexible_msg && dds_md )
+        {
+            std::string stream_name = rsutils::json::get< std::string >( dds_md.json_data(), "stream-name" );
+            if( _md_enabled )
+            {
+                auto video_iter = _stream_name_to_video_syncer.find( stream_name );
+                if( video_iter != _stream_name_to_video_syncer.end() )
+                    video_iter->second.enqueue_metadata( std::move( dds_md ) );
+                else
+                {
+                    auto motion_iter = _stream_name_to_motion_syncer.find( stream_name );
+                    if( motion_iter != _stream_name_to_motion_syncer.end() )
+                    {
+                        motion_iter->second.enqueue_metadata( std::move( dds_md ) );
+                    }
+                    else
+                        throw std::runtime_error( "Stream " + stream_name + "received metadata for unsupported frame type" );
+                }
+            }
+        }
+
         void start( frame_callback_ptr callback ) override
         {
-            for( auto & profile : sensor_base::get_active_streams() )
+            for ( auto & profile : sensor_base::get_active_streams() )
             {
                 auto & dds_stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
                 // Opening it will start streaming on the server side automatically
                 dds_stream->open( "rt/" + _dev->device_info().topic_root + '_' + dds_stream->name(), _dev->subscriber());
                 // But we won't get callbacks until we "start streaming"
-                dds_stream->start_streaming( [p = profile, this]( realdds::topics::device::image && dds_frame ) {
-                    rs2_stream_profile prof = { p.get() };
+                if( Is< realdds::dds_video_stream >( dds_stream ) )
+                {
+                    _stream_name_to_video_syncer[dds_stream->name()].reset( [this]( rs2_software_video_frame && f ) {
+                        on_video_frame( f );
+                    }, [this]( rs2_software_video_frame & f, const realdds::topics::flexible_msg & md ) {
+                        add_video_frame_metadata( f, md );
+                    } );
 
-                    if( Is< video_stream_profile >(p) )
-                    {
-                        rs2_software_video_frame rs2_frame;
+                    As< realdds::dds_video_stream >( dds_stream )->on_data_available(
+                        [profile, this, dds_stream]( realdds::topics::device::image && dds_frame ) {
+                            handle_video_data( std::move( dds_frame ), profile, _stream_name_to_video_syncer[dds_stream->name()] );
+                        } );
+                }
+                else if( Is< realdds::dds_motion_stream >( dds_stream ) )
+                {
+                    _stream_name_to_motion_syncer[dds_stream->name()].reset( [this]( rs2_software_motion_frame && f ) {
+                        on_motion_frame( f );
+                    }, [this]( rs2_software_motion_frame & f, const realdds::topics::flexible_msg & md ) {
+                        add_motion_frame_metadata( f, md );
+                    } );
 
-                        //Copying from dds into LibRS space, same as copy from USB backend.
-                        //TODO - use memory pool or some other frame allocator
-                        rs2_frame.pixels = new uint8_t[dds_frame.raw_data.size()];
-                        if( !rs2_frame.pixels )
-                            throw std::runtime_error( "Could not allocate memory for new frame" );
-                        memcpy( rs2_frame.pixels, dds_frame.raw_data.data(), dds_frame.raw_data.size() );
+                    As< realdds::dds_motion_stream >( dds_stream )->on_data_available(
+                        [profile, this, dds_stream]( realdds::topics::device::image && dds_frame ) {
+                            handle_motion_data( std::move( dds_frame ), profile, _stream_name_to_motion_syncer[dds_stream->name()] );
+                        } );
+                }
+                else
+                    throw std::runtime_error( "Unsupported stream type" );
 
-                        rs2_frame.deleter = []( void * ptr ) { delete[] ptr; };
-                        rs2_frame.stride = int( dds_frame.height > 0 ? dds_frame.raw_data.size() / dds_frame.height : dds_frame.raw_data.size() );
-                        rs2_frame.bpp = dds_frame.width > 0 ? rs2_frame.stride / dds_frame.width : rs2_frame.stride;
-                        rs2_frame.timestamp = frame_counter * 1000.0 / p->get_framerate(); // TODO - timestamp from dds
-                        rs2_frame.domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK; // TODO - timestamp domain from options?
-                        rs2_frame.frame_number = frame_counter++; // TODO - frame_number from dds
-                        rs2_frame.profile = &prof;
-                        rs2_frame.depth_units = 0.001f; //TODO - depth unit from dds, if needed
-                        on_video_frame( rs2_frame );
-                    }
-                    else
-                    {
-                        rs2_software_motion_frame rs2_frame;
+                dds_stream->start_streaming();
 
-                        //Copying from dds into LibRS space, same as copy from USB backend.
-                        //TODO - use memory pool or some other frame allocator
-                        rs2_frame.data = new uint8_t[dds_frame.raw_data.size()];
-                        if( !rs2_frame.data )
-                            throw std::runtime_error( "Could not allocate memory for new frame" );
-                        memcpy( rs2_frame.data, dds_frame.raw_data.data(), dds_frame.raw_data.size() );
-
-                        rs2_frame.deleter = []( void * ptr ) { delete[] ptr; };
-                        rs2_frame.timestamp = frame_counter * 1000.0 / p->get_framerate(); // TODO - timestamp from dds
-                        rs2_frame.domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK; // TODO - timestamp domain from options?
-                        rs2_frame.frame_number = frame_counter++; // TODO - frame_number from dds
-                        rs2_frame.profile = &prof;
-                        on_motion_frame( rs2_frame );
-                    }
-                } );
             }
 
             software_sensor::start( callback );
@@ -733,7 +969,9 @@ namespace librealsense
         std::string _name;
         std::map< sid_index, std::shared_ptr< realdds::dds_stream > > _streams;
 
-        int frame_counter = 0;
+        bool _md_enabled = false;
+        std::map< std::string, frame_metadata_syncer< rs2_software_video_frame > > _stream_name_to_video_syncer;
+        std::map< std::string, frame_metadata_syncer< rs2_software_motion_frame > > _stream_name_to_motion_syncer;
     };
 
     // This is the rs2 device; it proxies to an actual DDS device that does all the actual
@@ -748,6 +986,7 @@ namespace librealsense
         std::shared_ptr< realdds::dds_device > _dds_dev;
         std::map< std::string, std::vector< std::shared_ptr< stream_profile_interface > > > _stream_name_to_profiles;
         std::map< std::string, std::shared_ptr< librealsense::stream > > _stream_name_to_librs_stream;
+        std::map< std::string, std::shared_ptr< dds_sensor_proxy > > _stream_name_to_owning_sensor;
 
         static rs2_stream to_rs2_stream_type( std::string const & type_string )
         {
@@ -777,7 +1016,7 @@ namespace librealsense
                              std::shared_ptr< realdds::dds_video_stream_profile > const & profile,
                              const std::set< realdds::video_intrinsics > & intrinsics )
         {
-            rs2_video_stream prof;
+            rs2_video_stream prof = {};
             prof.type = stream_type;
             prof.index = sidx.index;
             prof.uid = sidx.sid;
@@ -785,7 +1024,6 @@ namespace librealsense
             prof.height = profile->height();
             prof.fps = profile->frequency();
             prof.fmt = static_cast< rs2_format >( profile->format().to_rs2() );
-            prof.bpp = 0;
             
             // Handle intrinsics
             auto intr = std::find_if( intrinsics.begin(),
@@ -802,10 +1040,6 @@ namespace librealsense
                 prof.intrinsics.fy = intr->focal_lenght_y;
                 prof.intrinsics.model = static_cast< rs2_distortion >( intr->distortion_model );
                 memcpy( prof.intrinsics.coeffs, intr->distortion_coeffs.data(), sizeof( prof.intrinsics.coeffs ) );
-            }
-            else
-            {
-                memset( &prof.intrinsics, 0, sizeof( prof.intrinsics ) );
             }
 
             return prof;
@@ -868,7 +1102,7 @@ namespace librealsense
             // Count how many streams per type
             _dds_dev->foreach_stream( [&]( std::shared_ptr< realdds::dds_stream > const & stream ) {
                 ++counts[to_rs2_stream_type( stream->type_string() )];
-                } );
+            } );
             // Anything that's more than 1 stream starts the count at 1, otherwise 0
             for( int & count : counts )
                 count = ( count > 1 ) ? 1 : 0;
@@ -887,6 +1121,7 @@ namespace librealsense
                 sid_index sidx( stream_type, counts[stream_type]++ );
                 _stream_name_to_librs_stream[stream->name()] = std::make_shared< librealsense::stream >( stream_type, sidx.index );
                 sensor_info.proxy->add_dds_stream( sidx, stream );
+                _stream_name_to_owning_sensor[stream->name()] = sensor_info.proxy;
                 LOG_DEBUG( sidx.to_string() << " " << stream->sensor_name() << " : " << stream->name() );
 
                 software_sensor & sensor = get_software_sensor( sensor_info.sensor_index );
@@ -926,6 +1161,15 @@ namespace librealsense
                     sensor_info.proxy->add_option( option );
                 }
             } );  // End foreach_stream lambda
+
+
+            if( _dds_dev->supports_metadata() )
+            {
+                _dds_dev->on_metadata_available( [this]( realdds::topics::flexible_msg && dds_md ) {
+                    std::string stream_name = rsutils::json::get< std::string >( dds_md.json_data(), "stream-name" );
+                    _stream_name_to_owning_sensor[stream_name]->handle_new_metadata( std::move( dds_md ) );
+                } );
+            }
 
             // According to extrinsics_graph (in environment.h) we need 3 steps
             // 1. Register streams with extrinsics between them

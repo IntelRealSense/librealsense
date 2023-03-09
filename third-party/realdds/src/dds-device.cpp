@@ -153,4 +153,15 @@ std::shared_ptr< extrinsics > dds_device::get_extrinsics( std::string from, std:
     return empty;
 }
 
+bool dds_device::supports_metadata() const
+{
+    return !! _impl->_metadata_reader;
+}
+
+void dds_device::on_metadata_available( on_metadata_available_callback cb )
+{
+    _impl->on_metadata_available( cb );
+}
+
+
 }  // namespace realdds

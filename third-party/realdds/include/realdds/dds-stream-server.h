@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "dds-stream-profile.h"
-#include "dds-stream-base.h"
+#include <realdds/dds-stream-profile.h>
+#include <realdds/dds-stream-base.h>
 
 #include <memory>
 #include <string>
@@ -44,14 +44,14 @@ public:
     virtual ~dds_stream_server();
 
     bool is_open() const override { return !! _writer; }
-    void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & );
+    virtual void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) = 0;
     void close();
 
-    bool is_streaming() const override { return _image_header.is_valid(); }
+    bool is_streaming() const override { return _streaming; }
     void start_streaming( const image_header & header );
     void stop_streaming();
 
-    void publish_image( const uint8_t * data, size_t size );
+    virtual void publish( const uint8_t * data, size_t size, unsigned long long id );
 
     std::shared_ptr< dds_topic > const & get_topic() const override;
 
@@ -64,8 +64,8 @@ public:
 protected:
     std::shared_ptr< dds_topic_writer > _writer;
     image_header _image_header;
-    unsigned _frame_id = 0;
     readers_changed_callback _on_readers_changed;
+    bool _streaming = false;
 
     // Called at the end of open(), when the _writer has been initialized. Override to provide custom QOS etc...
     virtual void run_stream();
@@ -78,6 +78,8 @@ class dds_video_stream_server : public dds_stream_server
 
 public:
     dds_video_stream_server( std::string const & stream_name, std::string const & sensor_name );
+
+    void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
 
     void set_intrinsics( const std::set< video_intrinsics > & intrinsics ) { _intrinsics = intrinsics; }
     const std::set< video_intrinsics > & get_intrinsics() const { return _intrinsics; }
@@ -150,7 +152,9 @@ class dds_motion_stream_server : public dds_stream_server
 
 public:
     dds_motion_stream_server( std::string const & stream_name, std::string const & sensor_name );
-    
+
+    void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
+
     void set_intrinsics( const motion_intrinsics & intrinsics ) { _intrinsics = intrinsics; }
     const motion_intrinsics & get_intrinsics() const { return _intrinsics; }
 

@@ -2,17 +2,20 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include <realdds/dds-stream.h>
-#include "dds-stream-impl.h"
 
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-subscriber.h>
 #include <realdds/topics/image/image-msg.h>
+#include <realdds/topics/flexible/flexible-msg.h>
 #include <realdds/dds-exceptions.h>
+
+#include <rsutils/json.h>
 
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
 
-using namespace realdds;
+
+namespace realdds {
 
 
 dds_stream::dds_stream( std::string const & stream_name, std::string const & sensor_name )
@@ -21,20 +24,38 @@ dds_stream::dds_stream( std::string const & stream_name, std::string const & sen
 }
 
 
-void dds_stream::open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & subscriber )
+void dds_video_stream::open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & subscriber )
 {
-    if ( is_open() )
+    if( is_open() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is already open" );
-    if ( profiles().empty() )
+    if( profiles().empty() )
         DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
 
-    //Topics with same name and type can be created multiple times (multiple open() calls) without an error.
+    // Topics with same name and type can be created multiple times (multiple open() calls) without an error.
     auto topic = topics::device::image::create_topic( subscriber->get_participant(), topic_name.c_str() );
 
-    //To support automatic streaming (without the need to handle start/stop-streaming commands) the reader is created
-    //here and destroyed on close()
+    // To support automatic streaming (without the need to handle start/stop-streaming commands) the reader is created
+    // here and destroyed on close()
     _reader = std::make_shared< dds_topic_reader >( topic, subscriber );
-    _reader->on_data_available( [&]() { handle_frames(); } );
+    _reader->on_data_available( [&]() { handle_data(); } );
+    _reader->run( dds_topic_reader::qos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
+}
+
+
+void dds_motion_stream::open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & subscriber )
+{
+    if( is_open() )
+        DDS_THROW( runtime_error, "stream '" + name() + "' is already open" );
+    if( profiles().empty() )
+        DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
+
+    // Topics with same name and type can be created multiple times (multiple open() calls) without an error.
+    auto topic = topics::device::image::create_topic( subscriber->get_participant(), topic_name.c_str() );
+
+    // To support automatic streaming (without the need to handle start/stop-streaming commands) the reader is created
+    // here and destroyed on close()
+    _reader = std::make_shared< dds_topic_reader >( topic, subscriber );
+    _reader->on_data_available( [&]() { handle_data(); } );
     _reader->run( dds_topic_reader::qos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
 }
 
@@ -46,28 +67,41 @@ void dds_stream::close()
 }
 
 
-void dds_stream::start_streaming( on_data_available_callback cb )
+void dds_stream::start_streaming()
 {
-    if ( !is_open() )
+    if( ! is_open() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is not open" );
     if( is_streaming() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is already streaming" );
+    if( ! can_start_streaming() )
+        DDS_THROW( runtime_error, "stream '" + name() + "' cannot start streaming" );
 
-    _on_data_available = cb;
-
+    _streaming = true;
 }
 
 
-void dds_stream::handle_frames()
+void dds_video_stream::handle_data()
 {
     topics::device::image frame;
     eprosima::fastdds::dds::SampleInfo info;
-    while ( _reader && topics::device::image::take_next( *_reader, &frame, &info ) )
+    while( _reader && topics::device::image::take_next( *_reader, &frame, &info ) )
     {
-        if ( !frame.is_valid() )
+        if( ! frame.is_valid() )
             continue;
 
-        if ( _on_data_available )
+        if( is_streaming() && _on_data_available )
+            _on_data_available( std::move( frame ) );
+    }
+}
+
+
+void dds_motion_stream::handle_data()
+{
+    topics::device::image frame;
+    eprosima::fastdds::dds::SampleInfo info;
+    while( _reader && topics::device::image::take_next( *_reader, &frame, &info ) )
+    {
+        if( is_streaming() && _on_data_available )
             _on_data_available( std::move( frame ) );
     }
 }
@@ -75,10 +109,10 @@ void dds_stream::handle_frames()
 
 void dds_stream::stop_streaming()
 {
-    if ( !is_streaming() )
+    if( ! is_streaming() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is not streaming" );
 
-    _on_data_available = nullptr;
+    _streaming = false;
 }
 
 
@@ -90,7 +124,6 @@ std::shared_ptr< dds_topic > const & dds_stream::get_topic() const
 
 dds_video_stream::dds_video_stream( std::string const & stream_name, std::string const & sensor_name )
     : super( stream_name, sensor_name )
-    , _impl( std::make_shared< dds_video_stream::impl >() )
 {
 }
 
@@ -127,7 +160,6 @@ dds_confidence_stream::dds_confidence_stream( std::string const & stream_name, s
 
 dds_motion_stream::dds_motion_stream( std::string const & stream_name, std::string const & sensor_name )
     : super( stream_name, sensor_name )
-    , _impl( std::make_shared< dds_motion_stream::impl >() )
 {
 }
 
@@ -148,3 +180,6 @@ dds_pose_stream::dds_pose_stream( std::string const & stream_name, std::string c
     : super( stream_name, sensor_name )
 {
 }
+
+
+}  // namespace realdds

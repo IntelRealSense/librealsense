@@ -61,6 +61,10 @@ public:
 
     std::shared_ptr< extrinsics > get_extrinsics( std::string from, std::string to ) const;
 
+    bool supports_metadata() const;
+    typedef std::function< void( topics::flexible_msg && md ) > on_metadata_available_callback;
+    void on_metadata_available( on_metadata_available_callback cb );
+
 private:
     class impl;
     std::shared_ptr< impl > _impl;

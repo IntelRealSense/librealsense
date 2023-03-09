@@ -29,6 +29,7 @@ protected:
     int _default_profile_index = 0;
     dds_stream_profiles _profiles;
     dds_options _options;
+    bool _metadata_enabled = false;
 
     dds_stream_base( std::string const & stream_name, std::string const & sensor_name );
     
@@ -36,6 +37,7 @@ public:
     virtual ~dds_stream_base() = default;
 
     // Init functions can only be called once!
+    void enable_metadata(); // Must call before init_profiles
     void init_profiles( dds_stream_profiles const & profiles, int default_profile_index = 0 );
     void init_options( dds_options const & options );
 
@@ -44,6 +46,7 @@ public:
     dds_stream_profiles const & profiles() const { return _profiles; }
     int default_profile_index() const { return _default_profile_index; }
     dds_options const & options() const { return _options; }
+    bool metadata_enabled() const { return _metadata_enabled; }
 
     std::shared_ptr< dds_stream_profile > default_profile() const
     {

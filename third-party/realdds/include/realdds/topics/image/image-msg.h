@@ -72,6 +72,7 @@ public:
                            eprosima::fastdds::dds::SampleInfo * optional_info = nullptr );
 
     std::vector<uint8_t> raw_data;
+    std::string frame_id;
     int width = -1;
     int height = -1;
 };

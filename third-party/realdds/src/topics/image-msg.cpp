@@ -21,6 +21,7 @@ namespace device {
 image::image( sensor_msgs::msg::Image && rhs )
 {
     raw_data = std::move( rhs.data() );
+    frame_id = std::move( rhs.header().frame_id() );
     width    = std::move( rhs.width() );
     height   = std::move( rhs.height() );
 }
@@ -29,6 +30,7 @@ image::image( sensor_msgs::msg::Image && rhs )
 image & image::operator=( sensor_msgs::msg::Image && rhs )
 {
     raw_data = std::move( rhs.data() );
+    frame_id = std::move( rhs.header().frame_id() );
     width    = std::move( rhs.width() );
     height   = std::move( rhs.height() );
 

@@ -229,6 +229,11 @@ namespace librealsense
         _metadata_map[key] = value;
     }
 
+    void software_sensor::clear_metadata()
+    {
+        _metadata_map.clear();
+    }
+
     void software_sensor::on_video_frame(rs2_software_video_frame software_frame)
     {
         if (!_is_streaming) {
@@ -249,6 +254,7 @@ namespace librealsense
             auto size_of_data = sizeof(rs2_metadata_type);
             if (data.metadata_size + size_of_enum + size_of_data > 255)
             {
+                data.sw_device_extra_data[i.first] = i.second;
                 continue; //stop adding metadata to frame
             }
             memcpy(data.metadata_blob.data() + data.metadata_size, &i.first, size_of_enum);

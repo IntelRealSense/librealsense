@@ -4,13 +4,14 @@ This document aims to list all the topics that realdds object publishes or subsc
 # Topics
 
 Information in realdds domain is being passed using 4 main topics
-* **realdds/device-info** of type flexible - The server sends a sample of this topic to inform readers of a connected camera.
+* **realsense/device-info** of type flexible - The server sends a sample of this topic to inform readers of a connected camera.
   Some of the details included are the *camera model* and *serial number*, this information will be used in the other topic names to ease communication with various cameras in the network.
-* **realdds/\<model\>/\<serial\>/notification** of type flexible - Notifications are sent from the camera's server to the camera's user.
+* **realsense/\<model\>/\<serial\>/notification** of type flexible - Notifications are sent from the camera's server to the camera's user.
   Some notifications are being sent at discovery to convey the full device information, e.g. streams, supported options, etc...
   Other notifications are sent as needed, mostly as reply to a control message
-* **realdds/\<model\>/\<serial\>/control** of type flexible - Controls are commands from the camera's user to the camera, e.g. start streaming, set option value etc...
-* **realdds/\<model\>/\<serial\>/\<stream name\>** of type image - Frames of the selected stream from the camera's server to the user.
+* **realsense/\<model\>/\<serial\>/control** of type flexible - Controls are commands from the camera's user to the camera, e.g. start streaming, set option value etc...
+* **realsense/\<model\>/\<serial\>/\<stream name\>** of type image - Frames of the selected stream from the camera's server to the user.
+* **realsense/\<model\>/\<serial\>/metadata** of type flexible - metadata for frames of active streams.
 
 All the topics in the realdds domain use one of these 2 topic types
 * **flexible** - Carries a buffer of data that can be JSON, CBOR or other user custom data. See [flexible.idl](https://github.com/IntelRealSense/librealsense/blob/dds/third-party/realdds/include/realdds/topics/flexible/flexible.idl).
@@ -26,7 +27,7 @@ On the camera's user side, `realdds::dds_device_watcher` can be used to listen t
 When compiling librealsense with the cmake `BUILD_WITH_DDS` flag the context automatically creates and uses a `realdds::dds_device_watcher` object to identify DDS connected cameras.
 
 The server side can use `realdds::dds_device_broadcaster` to add or remove cameras from the DDS network.
-When a camera is added to the network the broadcaster will create a dds writer for it. If there is a **realdds/device-info** reader that matches the broadcaster writer, topic sample will be sent with the appropriate device details.
+When a camera is added to the network the broadcaster will create a dds writer for it. If there is a **realsense/device-info** reader that matches the broadcaster writer, topic sample will be sent with the appropriate device details.
 When a camera is removed from the network the broadcaster will close the writer, thus informing possible readers that the camera is disconnected.
 
 ### device-info message format example
@@ -157,5 +158,13 @@ For instance, using `rs2::sensor.open( profile )` will be converted to DDS **ope
     "option-name":"Enable Auto Exposure",
     "owner-name":"Depth",
     "value":0.0
+
+## Metadata
+
+Metadata samples are refering to a specific, streaming, stream. They include some mandatory fields in the header, i.e. frame ID and timestamp, and other fields that are relevant to the specific frame and its type, e.g, "exposure" for images.
+
+    "stream-name":"color",
+    "header":{"frame-id":"1234", "timestamp":"123456789", "timestamp-domain":"0"},
+    "metadata":{"Exposure":"123", "Gain":"456"}
 
 
