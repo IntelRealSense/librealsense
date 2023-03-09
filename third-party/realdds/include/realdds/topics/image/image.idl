@@ -9,10 +9,9 @@ module realdds
         {
             module device
             {
-                struct image
+            struct image
                 {
                     sequence<octet> raw_data;
-                    string frame_id; // String to match ros frame_id (see http://docs.ros.org/en/melodic/api/std_msgs/html/msg/Header.html)
                     unsigned long size;
                     unsigned short width;
                     unsigned short height;

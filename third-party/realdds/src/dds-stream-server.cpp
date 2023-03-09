@@ -125,7 +125,7 @@ void dds_video_stream_server::open( std::string const & topic_name, std::shared_
 void dds_stream_server::run_stream()
 {
     if( ! _writer )
-        DDS_THROW( runtime_error, "open() wasn't called before run_writer()" );
+        DDS_THROW( runtime_error, "open() wasn't called before run_stream()" );
 
     if( _on_readers_changed )
     {

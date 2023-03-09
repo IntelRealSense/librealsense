@@ -755,6 +755,8 @@ namespace librealsense
 
         void add_video_frame_metadata( rs2_software_video_frame & frame, const realdds::topics::flexible_msg & dds_md )
         {
+            clear_metadata();
+
             json md_header = dds_md.json_data()["header"];
             json md = dds_md.json_data()["metadata"];
 
@@ -809,6 +811,8 @@ namespace librealsense
 
         void add_motion_frame_metadata( rs2_software_motion_frame & frame, const realdds::topics::flexible_msg & dds_md )
         {
+            clear_metadata();
+
             json md_header = dds_md.json_data()["header"];
             json md = dds_md.json_data()["metadata"];
 

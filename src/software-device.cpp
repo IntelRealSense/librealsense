@@ -229,6 +229,11 @@ namespace librealsense
         _metadata_map[key] = value;
     }
 
+    void software_sensor::clear_metadata()
+    {
+        _metadata_map.clear();
+    }
+
     void software_sensor::on_video_frame(rs2_software_video_frame software_frame)
     {
         if (!_is_streaming) {

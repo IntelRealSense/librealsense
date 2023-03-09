@@ -94,9 +94,6 @@ void dds_device::impl::run( size_t message_timeout_ms )
     _running = true;
 
     // Start handling options only after init() is done
-    if( ! _notifications_reader )
-        DDS_THROW( runtime_error, "failed to set notifications reader for '" + _info.topic_root + "'" );
-
     _notifications_reader->on_data_available( [&]() {
         topics::flexible_msg notification;
         eprosima::fastdds::dds::SampleInfo info;
@@ -236,12 +233,16 @@ void dds_device::impl::create_notifications_reader()
     //On discovery writer sends a burst of messages, if history is too small we might loose some of them
     //(even if reliable). Setting depth to cover known use-cases plus some spare
     rqos.history().depth = 24;
+
+    if( ! _notifications_reader )
+        DDS_THROW( runtime_error, "failed to set notifications reader for '" + _info.topic_root + "'" );
+
     _notifications_reader->run( rqos );
 }
 
 void dds_device::impl::create_metadata_reader()
 {
-    if( _metadata_reader )
+    if( _metadata_reader ) // We can be called multiple times, once per stream
         return;
 
     auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + topics::METADATA_TOPIC_NAME );
@@ -250,6 +251,10 @@ void dds_device::impl::create_metadata_reader()
 
     dds_topic_reader::qos rqos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS );
     rqos.history().depth = 10; // Support receive metadata from multiple streams
+
+    if( ! _metadata_reader )
+        DDS_THROW( runtime_error, "failed to set metadata reader for '" + _info.topic_root + "'" );
+
     _metadata_reader->run( rqos );
 }
 
