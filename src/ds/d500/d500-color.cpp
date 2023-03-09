@@ -99,6 +99,8 @@ namespace librealsense
         _ds_color_common->register_standard_options();
 
         color_ep.register_pu(RS2_OPTION_HUE);
+
+        color_ep.register_option(RS2_OPTION_RGB_TNR_ENABLED, std::make_shared<rgb_tnr_option>(_hw_monitor));
     }
 
     void d500_color::register_metadata()
