@@ -256,13 +256,14 @@ namespace librealsense
 
     void software_sensor::set_metadata( rs2_frame_metadata_value key, rs2_metadata_type value )
     {
-        if( ! _metadata_parsers->count( key ) )
+        auto range = _metadata_parsers->equal_range( key );
+        if( range.first == range.second )
         {
             if( int( key ) < 0 || int( key ) >= _metadata_map.size() )
                 throw invalid_value_exception( "invalid metadata key " + std::to_string( int( key ) ) );
             // At this time (and therefore for backwards compatibility) no register_metadata is required for SW sensors,
             // and metadata persists between frames (!!!!!!!) unless clear_metadata() is used...
-            _metadata_parsers->emplace( key, std::make_shared< md_array_parser >( key ) );
+            _metadata_parsers->emplace_hint( range.second, key, std::make_shared< md_array_parser >( key ) );
         }
         _metadata_map[key] = value;
     }
