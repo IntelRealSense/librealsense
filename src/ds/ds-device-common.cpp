@@ -103,16 +103,9 @@ namespace librealsense
 
     uvc_sensor& ds_device_common::get_raw_depth_sensor()
     {
-        switch (_ds_device_type)
-        {
-        case ds_device_type::ds5:
-        {
-            auto dev = dynamic_cast<d400_device*>(_owner);
+        if (auto dev = dynamic_cast<d400_device*>(_owner))
             return dev->get_raw_depth_sensor();
-        }
-        default:
-            throw std::runtime_error("device not referenced in the product line");
-        }
+        throw std::runtime_error("device not referenced in the product line");
     }
 
     bool ds_device_common::is_locked(uint8_t gvd_cmd, uint32_t offset)
@@ -287,20 +280,6 @@ namespace librealsense
             });
     }
 
-    bool ds_device_common::check_fw_compatibility(const std::vector<uint8_t>& image) const
-    {
-        std::string fw_version = firmware_check_interface::extract_firmware_version_string(image);
-
-        auto it = ds::d400_device_to_fw_min_version.find(_owner->_pid);
-        if (it == ds::d400_device_to_fw_min_version.end())
-            throw librealsense::invalid_value_exception(rsutils::string::from() << "Min and Max firmware versions have not been defined for this device: " << std::hex << _owner->_pid);
-        bool result = (firmware_version(fw_version) >= firmware_version(it->second));
-        if (!result)
-            LOG_ERROR("Firmware version isn't compatible" << fw_version);
-
-        return result;
-    }
-
     bool ds_device_common::is_camera_in_advanced_mode() const
     {
         command cmd(ds::UAMG);
@@ -314,8 +293,8 @@ namespace librealsense
 
     notification ds_notification_decoder::decode(int value)
     {
-        if (ds::d400_fw_error_report.find(static_cast<uint8_t>(value)) != ds::d400_fw_error_report.end())
-            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, ds::d400_fw_error_report.at(static_cast<uint8_t>(value)) };
+        if (ds::ds_fw_error_report.find(static_cast<uint8_t>(value)) != ds::ds_fw_error_report.end())
+            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, ds::ds_fw_error_report.at(static_cast<uint8_t>(value)) };
 
         return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_WARN, (rsutils::string::from() << "D400 HW report - unresolved type " << value) };
     }
