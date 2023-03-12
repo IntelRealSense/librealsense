@@ -41,6 +41,7 @@ namespace rs2
         std::vector<uint8_t> _fw;
         bool _is_signed;
         device_model& _model;
+        bool _is_d500_device = false;
     };
 
     struct fw_update_notification_model : public process_notification_model

@@ -217,13 +217,12 @@ namespace rs2
 
         // TODO: HKR DFU issue - remove d500_device usage when HKR will support FIRMWARE_UPDATE_ID
         // HKR uses DFU protocl (signed fw update flow) for updating FW, so we set _is_signed=true to force DFU flow
-        bool d500_device = false;
         if (_dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
         {
             std::string product_line = _dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
             if (product_line == "D500")
             {
-                d500_device = true;
+                _is_d500_device = true;
                 _is_signed = true;
             }
         }
@@ -264,46 +263,51 @@ namespace rs2
                     return;
                 }
             }
-            log("Backing-up camera flash memory");
-
-            std::string log_backup_status;
-            try
+            if ( ! _is_d500_device )
             {
-                auto flash = upd.create_flash_backup([&](const float progress)
-                {
-                    _progress = ((ceil(progress * 5) / 5) * (30 - next_progress)) + next_progress;
-                });
+                log( "Backing-up camera flash memory" );
 
-                auto temp = get_folder_path(special_folder::app_data);
-                temp += serial + "." + get_timestamped_file_name() + ".bin";
+                std::string log_backup_status;
+                try
+                {
+                    auto flash = upd.create_flash_backup( [&]( const float progress )
+                        {
+                            _progress = ( ( ceil( progress * 5 ) / 5 ) * ( 30 - next_progress ) ) + next_progress;
+                        } );
 
-                {
-                    std::ofstream file(temp.c_str(), std::ios::binary);
-                    file.write((const char*)flash.data(), flash.size());
-                    log_backup_status = "Backup completed and saved as '"  + temp + "'";
+                    auto temp = get_folder_path( special_folder::app_data );
+                    temp += serial + "." + get_timestamped_file_name() + ".bin";
+
+                    {
+                        std::ofstream file( temp.c_str(), std::ios::binary );
+                        file.write( (const char*)flash.data(), flash.size() );
+                        log_backup_status = "Backup completed and saved as '" + temp + "'";
+                    }
                 }
-            }
-            catch (const std::exception& e)
-            {
-                if (auto not_model_protected = get_protected_notification_model())
+                catch( const std::exception& e )
                 {
-                    log_backup_status = "WARNING: backup failed; continuing without it...";
-                    not_model_protected->output.add_log(RS2_LOG_SEVERITY_WARN,
-                        __FILE__,
-                        __LINE__,
-                        log_backup_status + ", Error: " + e.what());
+                    if( auto not_model_protected = get_protected_notification_model() )
+                    {
+                        log_backup_status = "WARNING: backup failed; continuing without it...";
+                        not_model_protected->output.add_log( RS2_LOG_SEVERITY_WARN,
+                            __FILE__,
+                            __LINE__,
+                            log_backup_status + ", Error: " + e.what() );
+                    }
                 }
-            }
-            catch ( ... )
-            {
-                if (auto not_model_protected = get_protected_notification_model())
+                catch( ... )
                 {
-                    log_backup_status = "WARNING: backup failed; continuing without it...";
-                    not_model_protected->add_log(log_backup_status + ", Unknown error occurred");
+                    if( auto not_model_protected = get_protected_notification_model() )
+                    {
+                        log_backup_status = "WARNING: backup failed; continuing without it...";
+                        not_model_protected->add_log( log_backup_status + ", Unknown error occurred" );
+                    }
                 }
+
+                log(log_backup_status);
             }
 
-            log(log_backup_status);
+            
 
             next_progress = 40;
 
@@ -317,7 +321,7 @@ namespace rs2
                 upd.enter_update_state();
 
                 // TODO: HKR DFU issue - remove d500_device usage when HKR will support FIRMWARE_UPDATE_ID
-                if (!check_for([this, serial, d500_device, &dfu]() {
+                if (!check_for([this, serial, &dfu]() {
                     auto devs = _ctx.query_devices();
 
                     for (uint32_t j = 0; j < devs.size(); j++)
@@ -330,7 +334,7 @@ namespace rs2
                                 if (d.supports(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))
                                 {
                                     // TODO: HKR DFU issue - remove d500_device usage when HKR will support FIRMWARE_UPDATE_ID
-                                    if (d500_device || serial == d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))
+                                    if (_is_d500_device || serial == d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))
                                     {
                                         dfu = d;
                                         return true;
@@ -385,6 +389,7 @@ namespace rs2
             {
                 _progress = (ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress;
             });
+
             log("Firmware Update completed, waiting for device to reconnect");
         }
 

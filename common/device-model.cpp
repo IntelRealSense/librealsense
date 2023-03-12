@@ -1383,15 +1383,17 @@ namespace rs2
 
                 if (dev.is<rs2::updatable>() && !is_locked)
                 {
-                    // L500 devices do not support update unsigned image currently
+                    // L500/D500 devices do not support update unsigned image currently
                     bool is_l500_device = false;
+                    bool is_d500_device = false;
                     if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
                     {
                         auto pl = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
                         is_l500_device = (std::string(pl) == "L500");
+                        is_d500_device = (std::string(pl) == "D500");
                     }
 
-                    if( ! is_l500_device )
+                    if( ! is_l500_device && ! is_d500_device )
                     {
                         if (ImGui::Selectable("Update Unsigned Firmware...", false, updateFwFlags))
                         {
