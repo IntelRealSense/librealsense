@@ -84,7 +84,7 @@ namespace librealsense
           _stereo_extension([this]() { return stereo_extension(this); }),
           _depth_extension([this]() { return depth_extension(this); })
     {
-        _metadata_parsers = md_constant_parser::create_metadata_parser_map();
+        _metadata_parsers = std::make_shared< metadata_parser_map >();
         _unique_id = unique_id::generate_id();
     }
 
@@ -224,17 +224,27 @@ namespace librealsense
     }
 
 
-    void software_sensor::set_metadata(rs2_frame_metadata_value key, rs2_metadata_type value)
+    void software_sensor::set_metadata( rs2_frame_metadata_value key, rs2_metadata_type value )
     {
+        auto range = _metadata_parsers->equal_range( key );
+        if( range.first == range.second )
+        {
+            if( int( key ) < 0 || int( key ) >= _metadata_map.size() )
+                throw invalid_value_exception( "invalid metadata key " + std::to_string( int( key ) ) );
+            // At this time (and therefore for backwards compatibility) no register_metadata is required for SW sensors,
+            // and metadata persists between frames (!!!!!!!) unless clear_metadata() is used...
+            _metadata_parsers->emplace_hint( range.second, key, std::make_shared< md_array_parser >( key ) );
+        }
         _metadata_map[key] = value;
     }
 
+
     void software_sensor::clear_metadata()
     {
-        _metadata_map.clear();
+        _metadata_parsers->clear();
     }
 
-    void software_sensor::on_video_frame(rs2_software_video_frame software_frame)
+    void software_sensor::on_video_frame( rs2_software_video_frame const & software_frame )
     {
         if (!_is_streaming) {
             software_frame.deleter(software_frame.pixels);
@@ -247,21 +257,8 @@ namespace librealsense
         data.frame_number = software_frame.frame_number;
         data.depth_units = software_frame.depth_units;
 
-        data.metadata_size = 0;
-        for (auto i : _metadata_map)
-        {
-            auto size_of_enum = sizeof(rs2_frame_metadata_value);
-            auto size_of_data = sizeof(rs2_metadata_type);
-            if (data.metadata_size + size_of_enum + size_of_data > 255)
-            {
-                data.sw_device_extra_data[i.first] = i.second;
-                continue; //stop adding metadata to frame
-            }
-            memcpy(data.metadata_blob.data() + data.metadata_size, &i.first, size_of_enum);
-            data.metadata_size += static_cast<uint32_t>(size_of_enum);
-            memcpy(data.metadata_blob.data() + data.metadata_size, &i.second, size_of_data);
-            data.metadata_size += static_cast<uint32_t>(size_of_data);
-        }
+        data.metadata_size = (uint32_t)( _metadata_map.size() * sizeof( rs2_metadata_type ) );
+        memcpy( data.metadata_blob.data(), _metadata_map.data(), data.metadata_size );
 
         rs2_extension extension = software_frame.profile->profile->get_stream_type() == RS2_STREAM_DEPTH ?
             RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME;
@@ -286,7 +283,7 @@ namespace librealsense
         _source.invoke_callback(frame);
     }
 
-    void software_sensor::on_motion_frame(rs2_software_motion_frame software_frame)
+    void software_sensor::on_motion_frame( rs2_software_motion_frame const & software_frame )
     {
         if (!_is_streaming) return;
 
@@ -295,16 +292,8 @@ namespace librealsense
         data.timestamp_domain = software_frame.domain;
         data.frame_number = software_frame.frame_number;
 
-        data.metadata_size = 0;
-        for (auto i : _metadata_map)
-        {
-            auto size_of_enum = sizeof(rs2_frame_metadata_value);
-            auto size_of_data = sizeof(rs2_metadata_type);
-            memcpy(data.metadata_blob.data() + data.metadata_size, &i.first, size_of_enum);
-            data.metadata_size += static_cast<uint32_t>(size_of_enum);
-            memcpy(data.metadata_blob.data() + data.metadata_size, &i.second, size_of_data);
-            data.metadata_size += static_cast<uint32_t>(size_of_data);
-        }
+        data.metadata_size = (uint32_t) (_metadata_map.size() * sizeof( rs2_metadata_type ));
+        memcpy( data.metadata_blob.data(), _metadata_map.data(), data.metadata_size );
 
         auto frame = _source.alloc_frame(RS2_EXTENSION_MOTION_FRAME, 0, data, false);
         if (!frame)
@@ -319,7 +308,7 @@ namespace librealsense
         _source.invoke_callback(frame);
     }
 
-    void software_sensor::on_pose_frame(rs2_software_pose_frame software_frame)
+    void software_sensor::on_pose_frame( rs2_software_pose_frame const & software_frame )
     {
         if (!_is_streaming) return;
 
@@ -328,16 +317,8 @@ namespace librealsense
         data.timestamp_domain = software_frame.domain;
         data.frame_number = software_frame.frame_number;
 
-        data.metadata_size = 0;
-        for (auto i : _metadata_map)
-        {
-            auto size_of_enum = sizeof(rs2_frame_metadata_value);
-            auto size_of_data = sizeof(rs2_metadata_type);
-            memcpy(data.metadata_blob.data() + data.metadata_size, &i.first, size_of_enum);
-            data.metadata_size += static_cast<uint32_t>(size_of_enum);
-            memcpy(data.metadata_blob.data() + data.metadata_size, &i.second, size_of_data);
-            data.metadata_size += static_cast<uint32_t>(size_of_data);
-        }
+        data.metadata_size = (uint32_t) (_metadata_map.size() * sizeof( rs2_metadata_type ));
+        memcpy( data.metadata_blob.data(), _metadata_map.data(), data.metadata_size );
 
         auto frame = _source.alloc_frame(RS2_EXTENSION_POSE_FRAME, 0, data, false);
         if (!frame)
@@ -352,7 +333,7 @@ namespace librealsense
         _source.invoke_callback(frame);
     }
 
-    void software_sensor::on_notification(rs2_software_notification notif)
+    void software_sensor::on_notification( rs2_software_notification const & notif )
     {
         notification n{ notif.category, notif.type, notif.severity, notif.description };
         n.serialized_data = notif.serialized_data;

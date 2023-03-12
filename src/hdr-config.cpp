@@ -376,7 +376,7 @@ namespace librealsense
     void hdr_config::disable()
     {
         // sending empty sub preset
-        std::vector<uint8_t> pattern{};
+        std::vector<uint8_t> pattern;
 
         // TODO - make it usable not only for ds - use _sensor
         command cmd(ds::SETSUBPRESET, static_cast<int>(pattern.size()));
@@ -394,7 +394,7 @@ namespace librealsense
         std::vector<uint8_t> subpreset_header = prepare_sub_preset_header();
         std::vector<uint8_t> subpreset_frames_config = prepare_sub_preset_frames_config();
 
-        std::vector<uint8_t> pattern{};
+        std::vector<uint8_t> pattern;
         if (subpreset_frames_config.size() > 0)
         {
             pattern.insert(pattern.end(), &subpreset_header[0], &subpreset_header[0] + subpreset_header.size());

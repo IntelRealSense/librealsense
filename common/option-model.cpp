@@ -5,7 +5,49 @@
 #include <librealsense2/rs_advanced_mode.hpp>
 #include <imgui.h>
 #include <imgui_internal.h>
-#include "model-views.h"
+#include "device-model.h"
+#include "subdevice-model.h"
+
+namespace rs2
+{
+    option_model create_option_model(rs2_option opt,
+        const std::string& opt_base_label,
+        subdevice_model* model,
+        std::shared_ptr<options> options,
+        bool* options_invalidated,
+        std::string& error_message)
+    {
+        option_model option = {};
+
+        std::stringstream ss;
+
+        ss << opt_base_label << "/" << options->get_option_name(opt);
+        option.id = ss.str();
+        option.opt = opt;
+        option.endpoint = options;
+        option.label = options->get_option_name(opt) + std::string("##") + ss.str();
+        option.invalidate_flag = options_invalidated;
+        option.dev = model;
+        option.range = { 0, 1, 0, 0 };
+        option.value = 0;
+
+        option.supported = options->supports(opt);
+        if (option.supported)
+        {
+            try
+            {
+                option.range = options->get_option_range(opt);
+                option.read_only = options->is_option_read_only(opt);
+                option.value = options->get_option(opt);
+            }
+            catch (const error& e)
+            {
+                error_message = error_to_string(e);
+            }
+        }
+        return option;
+    }
+}
 
 using namespace rs2;
 
@@ -571,4 +613,58 @@ bool option_model::slider_unselected( rs2_option opt,
             have_unset_value = false;
     }
     return res;
+}
+
+bool option_model::draw_option(bool update_read_only_options,
+    bool is_streaming,
+    std::string& error_message, notifications_model& model)
+{
+    if (update_read_only_options)
+    {
+        update_supported(error_message);
+        if (supported && is_streaming)
+        {
+            update_read_only_status(error_message);
+            if (read_only)
+            {
+                update_all_fields(error_message, model);
+            }
+        }
+    }
+    if (custom_draw_method)
+        return custom_draw_method(*this, error_message, model);
+    else
+        return draw(error_message, model);
+}
+
+bool option_model::set_option(rs2_option opt,
+    float req_value,
+    std::string& error_message,
+    std::chrono::steady_clock::duration ignore_period)
+{
+    // Only set the value if `ignore_period` time past since last set_option() call for this option
+    if (last_set_stopwatch.get_elapsed() < ignore_period)
+        return false;
+
+    try
+    {
+        last_set_stopwatch.reset();
+        endpoint->set_option(opt, req_value);
+    }
+    catch (const error& e)
+    {
+        error_message = error_to_string(e);
+    }
+
+    // Only update the cached value once set_option is done! That way, if it doesn't change
+    // anything...
+    try
+    {
+        value = endpoint->get_option(opt);
+    }
+    catch (...)
+    {
+    }
+
+    return true;
 }

@@ -59,7 +59,7 @@ struct frame_additional_data : frame_header
 {
     uint32_t metadata_size = 0;
     bool fisheye_ae_mode = false;  // TODO: remove in future release
-    std::array< uint8_t, MAX_META_DATA_SIZE > metadata_blob;
+    std::array< uint8_t, RS2_FRAME_METADATA_ACTUAL_COUNT * sizeof( rs2_metadata_type ) > metadata_blob;
     rs2_time_t last_timestamp = 0;
     unsigned long long last_frame_number = 0;
     bool is_blocking  = false;  // when running from recording, this bit indicates
@@ -71,16 +71,12 @@ struct frame_additional_data : frame_header
 
     uint32_t raw_size = 0;     // The frame transmitted size (payload only)
 
-    // Used by software-device, to save metadata that doesn't have enough room in metadata_blob
-    // (saving sizeof(rs2_frame_metadata_value) + sizeof(rs2_metadata_type) for each blob value)
-    std::map< rs2_frame_metadata_value, rs2_metadata_type > sw_device_extra_data;
-
     frame_additional_data() {}
 
     frame_additional_data( rs2_time_t in_timestamp,
                            unsigned long long in_frame_number,
                            rs2_time_t in_system_time,
-                           uint8_t md_size,
+                           uint32_t md_size,
                            const uint8_t * md_buf,
                            rs2_time_t backend_time,
                            rs2_time_t last_timestamp,
@@ -96,9 +92,8 @@ struct frame_additional_data : frame_header
         , depth_units( in_depth_units )
         , raw_size( transmitted_size )
     {
-        // Copy up to 255 bytes to preserve metadata as raw data
         if( metadata_size )
-            std::copy( md_buf, md_buf + std::min( md_size, MAX_META_DATA_SIZE ), metadata_blob.begin() );
+            std::copy( md_buf, md_buf + std::min( size_t( md_size ), metadata_blob.size() ), metadata_blob.begin() );
     }
 };
 
