@@ -7,9 +7,6 @@
 
 #include <rsutils/concurrency/concurrency.h>
 
-#include <functional>
-#include <memory>
-
 
 namespace realdds {
 

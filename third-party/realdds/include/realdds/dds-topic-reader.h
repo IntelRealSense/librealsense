@@ -42,7 +42,7 @@ protected:
 public:
     dds_topic_reader( std::shared_ptr< dds_topic > const & topic );
     dds_topic_reader( std::shared_ptr< dds_topic > const & topic, std::shared_ptr< dds_subscriber > const & subscriber );
-    ~dds_topic_reader();
+    virtual ~dds_topic_reader();
 
     eprosima::fastdds::dds::DataReader * get() const { return _reader; }
     eprosima::fastdds::dds::DataReader * operator->() const { return get(); }
