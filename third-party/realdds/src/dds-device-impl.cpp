@@ -218,9 +218,6 @@ void dds_device::impl::create_notifications_reader()
     //(even if reliable). Setting depth to cover known use-cases plus some spare
     rqos.history().depth = 24;
 
-    if( ! _notifications_reader )
-        DDS_THROW( runtime_error, "failed to set notifications reader for '" + _info.topic_root + "'" );
-
     _notifications_reader->run( rqos );
 }
 
@@ -232,8 +229,6 @@ void dds_device::impl::create_metadata_reader()
     auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + topics::METADATA_TOPIC_NAME );
 
     _metadata_reader = std::make_shared< dds_topic_reader_thread >( topic, _subscriber );
-    if( ! _metadata_reader )
-        DDS_THROW( runtime_error, "failed to set metadata reader for '" + _info.topic_root + "'" );
 
     dds_topic_reader::qos rqos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS );
     rqos.history().depth = 10; // Support receive metadata from multiple streams
