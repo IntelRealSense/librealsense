@@ -14,13 +14,13 @@ namespace realdds {
 
 namespace topics {
 namespace device {
-    class image;
-} // namespace device
+class image;
+}  // namespace device
 class flexible_msg;
-} // namespace topics
+}  // namespace topics
 
 class dds_subscriber;
-class dds_topic_reader;
+class dds_topic_reader_thread;
 
 // Represents a stream of information (images, motion data, etc..) from a single source received via the DDS system.
 // A stream can have several profiles, i.e different data frequency, image resolution, etc..
@@ -52,7 +52,7 @@ protected:
     virtual void handle_data() = 0;
     virtual bool can_start_streaming() const = 0;
 
-    std::shared_ptr< dds_topic_reader > _reader;
+    std::shared_ptr< dds_topic_reader_thread > _reader;
     bool _streaming = false;
 };
 
