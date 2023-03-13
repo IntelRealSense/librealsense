@@ -90,6 +90,7 @@ namespace librealsense
     void d500_device::hardware_reset()
     {
         command cmd(ds::HWRST);
+        cmd.require_response = false;
         _hw_monitor->send(cmd);
     }
 
@@ -480,7 +481,8 @@ namespace librealsense
             std::string fwv;
             _ds_device_common->get_fw_details( gvd_buff, optic_serial, asic_serial, fwv );
             _fw_version = firmware_version(fwv);
-            _recommended_fw_version = firmware_version(D4XX_RECOMMENDED_FIRMWARE_VERSION);
+            // Uncomment and update to D500 recommended FW once exist
+            //_recommended_fw_version = firmware_version(D4XX_RECOMMENDED_FIRMWARE_VERSION);
             _device_capabilities = parse_device_capabilities( gvd_buff );
             advanced_mode = is_camera_in_advanced_mode();
 
@@ -771,7 +773,8 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode) ? "YES" : "NO"));
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "D500");
-        register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, _recommended_fw_version);
+        // Uncomment once D500 recommended FW exist
+        //register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, _recommended_fw_version);
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
 
         if (usb_modality)
