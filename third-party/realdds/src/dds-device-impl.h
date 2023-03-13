@@ -24,7 +24,7 @@
 namespace realdds {
 
 
-class dds_topic_reader;
+class dds_topic_reader_thread;
 class dds_topic_writer;
 class dds_subscriber;
 
@@ -51,7 +51,7 @@ public:
     std::queue< nlohmann::json > _option_response_queue;
 
     std::shared_ptr< dds_topic_reader > _notifications_reader;
-    std::shared_ptr< dds_topic_reader > _metadata_reader;
+    std::shared_ptr< dds_topic_reader_thread > _metadata_reader;
     std::shared_ptr< dds_topic_writer > _control_writer;
 
     dds_options _options;
