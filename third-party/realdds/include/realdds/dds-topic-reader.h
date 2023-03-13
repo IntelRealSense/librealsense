@@ -33,6 +33,7 @@ class dds_subscriber;
 //
 class dds_topic_reader : public eprosima::fastdds::dds::DataReaderListener
 {
+protected:
     std::shared_ptr< dds_topic > const _topic;
     std::shared_ptr < dds_subscriber > const _subscriber;
 
@@ -72,7 +73,7 @@ public:
     };
 
     // The callbacks should be set before we actually create the underlying DDS objects, so the reader does not
-    void run( qos const & = qos() );
+    virtual void run( qos const & = qos() );
 
     // DataReaderListener
 protected:
@@ -81,7 +82,7 @@ protected:
 
     void on_data_available( eprosima::fastdds::dds::DataReader * ) override;
 
-private:
+protected:
     on_data_available_callback _on_data_available;
     on_subscription_matched_callback _on_subscription_matched;
 };
