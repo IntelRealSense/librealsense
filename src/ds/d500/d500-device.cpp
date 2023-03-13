@@ -90,6 +90,7 @@ namespace librealsense
     void d500_device::hardware_reset()
     {
         command cmd(ds::HWRST);
+        cmd.require_response = false;
         _hw_monitor->send(cmd);
     }
 
