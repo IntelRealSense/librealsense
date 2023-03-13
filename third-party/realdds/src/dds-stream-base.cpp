@@ -15,6 +15,7 @@ dds_stream_base::dds_stream_base( std::string const & name,
 {
 }
 
+
 void dds_stream_base::enable_metadata()
 {
     // Ensure no changes after initialization stage
@@ -23,6 +24,7 @@ void dds_stream_base::enable_metadata()
 
     _metadata_enabled = true;
 }
+
 
 void dds_stream_base::init_profiles( dds_stream_profiles const & profiles, int default_profile_index )
 {
@@ -54,6 +56,15 @@ void dds_stream_base::init_options( dds_options const & options )
         DDS_THROW( runtime_error, "stream '" + _name + "' options are already initialized" );
 
     _options = options;
+}
+
+
+void dds_stream_base::set_recommended_filters( std::vector< std::string > const & recommended_filters )
+{
+    if( !_recommended_filters.empty() )
+        DDS_THROW( runtime_error, "stream '" + _name + "' recommended filters are already set" );
+
+    _recommended_filters = recommended_filters;
 }
 
 

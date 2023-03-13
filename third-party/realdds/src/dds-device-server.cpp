@@ -67,7 +67,6 @@ static void on_discovery_device_header( size_t const n_streams, const dds_option
         device_options.push_back( std::move( opt->to_json() ) );
     topics::flexible_msg device_options_message( json {
         { "id", "device-options" },
-        { "n-options", options.size() },
         { "options" , device_options }
     } );
     LOG_DEBUG( "-----> JSON = " << device_options_message.json_data().dump() );
@@ -100,6 +99,7 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
     auto stream_options = nlohmann::json::array();
     for( auto & opt : stream->options() )
         stream_options.push_back( std::move( opt->to_json() ) );
+
     auto video_stream = std::dynamic_pointer_cast< dds_video_stream_server >( stream );
     auto motion_stream = std::dynamic_pointer_cast< dds_motion_stream_server >( stream );
     auto intrinsics = nlohmann::json::array();
@@ -108,12 +108,16 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
             intrinsics.push_back( intr.to_json() );
     if( motion_stream )
         intrinsics.push_back( motion_stream->get_intrinsics().to_json() );
+
+    auto stream_filters = nlohmann::json::array();
+    for( auto & filter : stream->recommended_filters() )
+        stream_filters.push_back( filter );
     topics::flexible_msg stream_options_message( json {
         { "id", "stream-options" },
         { "stream-name", stream->name() },
-        { "n-options", stream->options().size() },
         { "options" , stream_options },
-        { "intrinsics" , intrinsics }
+        { "intrinsics" , intrinsics },
+        { "recommended-filters", stream_filters },
     } );
     LOG_DEBUG( "-----> JSON = " << stream_options_message.json_data().dump() );
     LOG_DEBUG( "-----> JSON size = " << stream_options_message.json_data().dump().length() );

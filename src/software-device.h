@@ -85,6 +85,8 @@ namespace librealsense
         }
         ~software_recommended_proccesing_blocks() override {}
 
+        void add_processing_block( std::shared_ptr< processing_block_interface > const & block );
+
     private:
         processing_blocks _blocks;
     };
@@ -124,6 +126,13 @@ namespace librealsense
         void invoke_new_frame( frame_interface * frame, void const * pixels, std::function< void() > on_release );
 
         std::array< metadata_array_value, RS2_FRAME_METADATA_ACTUAL_COUNT > _metadata_map;
+
+        processing_blocks get_recommended_processing_blocks() const override
+        {
+            return _pbs.get_recommended_processing_blocks();
+        }
+
+        software_recommended_proccesing_blocks & get_software_recommended_proccesing_blocks() { return _pbs; }
 
     private:
         friend class software_device;
