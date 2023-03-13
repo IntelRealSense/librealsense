@@ -36,8 +36,7 @@ public:
     dds_topic_reader_thread( std::shared_ptr< dds_topic > const & topic,
                              std::shared_ptr< dds_subscriber > const & subscriber );
 
-    // The callbacks should be set before we actually create the underlying DDS objects, so the reader does not
-    void run( qos const & = qos() );
+    void run( qos const & ) override;
 };
 
 

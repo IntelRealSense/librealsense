@@ -73,7 +73,7 @@ public:
     };
 
     // The callbacks should be set before we actually create the underlying DDS objects, so the reader does not
-    virtual void run( qos const & = qos() );
+    virtual void run( qos const & );
 
     // DataReaderListener
 protected:
