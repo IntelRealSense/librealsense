@@ -4,7 +4,7 @@
 #include <realdds/dds-stream.h>
 
 #include <realdds/dds-topic.h>
-#include <realdds/dds-topic-reader.h>
+#include <realdds/dds-topic-reader-thread.h>
 #include <realdds/dds-subscriber.h>
 #include <realdds/topics/image/image-msg.h>
 #include <realdds/topics/flexible/flexible-msg.h>
@@ -36,8 +36,8 @@ void dds_video_stream::open( std::string const & topic_name, std::shared_ptr< dd
 
     // To support automatic streaming (without the need to handle start/stop-streaming commands) the reader is created
     // here and destroyed on close()
-    _reader = std::make_shared< dds_topic_reader >( topic, subscriber );
-    _reader->on_data_available( [&]() { handle_data(); } );
+    _reader = std::make_shared< dds_topic_reader_thread >( topic, subscriber );
+    _reader->on_data_available( [this]() { handle_data(); } );
     _reader->run( dds_topic_reader::qos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
 }
 
@@ -54,15 +54,14 @@ void dds_motion_stream::open( std::string const & topic_name, std::shared_ptr< d
 
     // To support automatic streaming (without the need to handle start/stop-streaming commands) the reader is created
     // here and destroyed on close()
-    _reader = std::make_shared< dds_topic_reader >( topic, subscriber );
-    _reader->on_data_available( [&]() { handle_data(); } );
+    _reader = std::make_shared< dds_topic_reader_thread >( topic, subscriber );
+    _reader->on_data_available( [this]() { handle_data(); } );
     _reader->run( dds_topic_reader::qos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
 }
 
 
 void dds_stream::close()
 {
-    _reader->on_data_available( [](){} );
     _reader.reset();
 }
 

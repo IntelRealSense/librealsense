@@ -24,7 +24,7 @@ flexible_reader::flexible_reader( std::shared_ptr< dds_topic > const & topic )
         this->on_subscription_matched( status );
     } );
     _reader->on_data_available( [this]() { this->on_data_available(); } );
-    _reader->run();
+    _reader->run( dds_topic_reader::qos() );
 }
 
 

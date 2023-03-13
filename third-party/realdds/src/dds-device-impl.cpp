@@ -4,7 +4,7 @@
 #include "dds-device-impl.h"
 
 #include <realdds/dds-participant.h>
-#include <realdds/dds-topic-reader.h>
+#include <realdds/dds-topic-reader-thread.h>
 #include <realdds/dds-topic-writer.h>
 #include <realdds/dds-subscriber.h>
 #include <realdds/dds-option.h>
@@ -110,22 +110,6 @@ void dds_device::impl::run( size_t message_timeout_ms )
             }
         }
     } );
-
-    if( _metadata_reader )  // Might not be present
-    {
-        _metadata_reader->on_data_available( [&]() {
-            topics::flexible_msg notification;
-            eprosima::fastdds::dds::SampleInfo info;
-            while( topics::flexible_msg::take_next( *_metadata_reader, &notification, &info ) )
-            {
-                if( ! notification.is_valid() )
-                    continue;
-
-                if( _on_metadata_available )
-                    _on_metadata_available( std::move( notification ) );
-            }
-        } );
-    }
 }
 
 void dds_device::impl::open( const dds_stream_profiles & profiles )
@@ -234,9 +218,6 @@ void dds_device::impl::create_notifications_reader()
     //(even if reliable). Setting depth to cover known use-cases plus some spare
     rqos.history().depth = 24;
 
-    if( ! _notifications_reader )
-        DDS_THROW( runtime_error, "failed to set notifications reader for '" + _info.topic_root + "'" );
-
     _notifications_reader->run( rqos );
 }
 
@@ -247,13 +228,21 @@ void dds_device::impl::create_metadata_reader()
 
     auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + topics::METADATA_TOPIC_NAME );
 
-    _metadata_reader = std::make_shared< dds_topic_reader >( topic, _subscriber );
+    _metadata_reader = std::make_shared< dds_topic_reader_thread >( topic, _subscriber );
 
     dds_topic_reader::qos rqos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS );
     rqos.history().depth = 10; // Support receive metadata from multiple streams
 
-    if( ! _metadata_reader )
-        DDS_THROW( runtime_error, "failed to set metadata reader for '" + _info.topic_root + "'" );
+    _metadata_reader->on_data_available(
+        [this]()
+        {
+            topics::flexible_msg message;
+            while( topics::flexible_msg::take_next( *_metadata_reader, &message ) )
+            {
+                if( message.is_valid() && _on_metadata_available )
+                    _on_metadata_available( std::move( message ) );
+            }
+        } );
 
     _metadata_reader->run( rqos );
 }
