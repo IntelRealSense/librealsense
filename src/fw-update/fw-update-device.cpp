@@ -219,8 +219,12 @@ namespace librealsense
         // This command also reset the device
         
         // TODO: HKR DFU issue - for HKR, don't check RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET state
-        if (!d500_device && !wait_for_state(messenger, RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET, 20000))
-            throw std::runtime_error("Firmware manifest failed");
+        // Once we will have a PID for D500 recovery we will need to check that
+        if( !wait_for_state( messenger, RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET, 20000 ) )
+        {
+            if ( !d500_device )
+                throw std::runtime_error( "Firmware manifest failed" );
+        }
     }
 
     sensor_interface& update_device::get_sensor(size_t i)
