@@ -6,6 +6,7 @@
 
 #include "ds/ds-timestamp.h"
 #include "proc/color-formats-converter.h"
+#include "d500-options.h"
 #include "d500-color.h"
 
 namespace librealsense
@@ -99,6 +100,8 @@ namespace librealsense
         _ds_color_common->register_standard_options();
 
         color_ep.register_pu(RS2_OPTION_HUE);
+
+        color_ep.register_option(RS2_OPTION_RGB_TNR_ENABLED, std::make_shared<rgb_tnr_option>(_hw_monitor, &raw_color_ep));
     }
 
     void d500_color::register_metadata()

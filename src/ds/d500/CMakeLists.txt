@@ -11,6 +11,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/d500-safety.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/d500-depth-mapping.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/hw_monitor_extended_buffers.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/d500-options.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/d500-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/d500-color.h"
         "${CMAKE_CURRENT_LIST_DIR}/d500-motion.h"
@@ -20,4 +21,5 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/d500-safety.h"
         "${CMAKE_CURRENT_LIST_DIR}/d500-depth-mapping.h"
         "${CMAKE_CURRENT_LIST_DIR}/hw_monitor_extended_buffers.h"
+        "${CMAKE_CURRENT_LIST_DIR}/d500-options.h"
 )

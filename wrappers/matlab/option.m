@@ -96,6 +96,7 @@ classdef option < int64
         depth_auto_exposue_mode         (94)
         safety_preset_active_index      (95)
         safety_mode                     (96)
-        count                           (97)
+        rgb_tnr_enabled                 (97)
+        count                           (98)
     end
 end

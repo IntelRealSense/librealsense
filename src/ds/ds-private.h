@@ -106,7 +106,8 @@ namespace librealsense
             SAFETY_PRESET_WRITE = 0x95,   // Write safety preset to given index
             SET_HKR_CONFIG_TABLE = 0xA6, // HKR Set Internal sub calibration table
             GET_HKR_CONFIG_TABLE = 0xA7, // HKR Get Internal sub calibration table
-            CALIBRESTOREEPROM = 0xA8 // HKR Store EEPROM Calibration
+            CALIBRESTOREEPROM = 0xA8, // HKR Store EEPROM Calibration
+            RGB_TNR = 0xAA      // RGB Temporal Noise Reduction
         };
 
 #define TOSTRING(arg) #arg

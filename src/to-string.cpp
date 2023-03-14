@@ -424,6 +424,7 @@ const char * get_string( rs2_option value )
     case RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE:  return "Auto Exposure Mode";
     CASE( SAFETY_PRESET_ACTIVE_INDEX )
     CASE( SAFETY_MODE )
+    CASE( RGB_TNR_ENABLED )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
