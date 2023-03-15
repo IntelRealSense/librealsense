@@ -6,9 +6,33 @@ from rspy import log, test
 import sw
 
 
+def frame_metadata_values():
+    return [rs.frame_metadata_value.__getattribute__( rs.frame_metadata_value, k )
+            for k, v in rs.frame_metadata_value.__dict__.items()
+            if str(v).startswith('frame_metadata_value.')]
+
+
 #############################################################################################
 #
-test.start( "Basic sanity" )
+test.start( "Nothing supported by default" )
+try:
+    with sw.sensor( "Stereo Module" ) as sensor:
+        depth = sensor.video_stream( "Depth", rs.stream.depth, rs.format.z16 )
+        #ir = sensor.video_stream( "Infrared", rs.stream.infrared, rs.format.y8 )
+        sensor.start( depth )
+
+        # Publish a frame
+        f = sensor.publish( depth.frame() )
+
+        for md in frame_metadata_values():
+            test.check_false( f.supports_frame_metadata( md ))
+except:
+    test.unexpected_exception()
+test.finish()
+#
+#############################################################################################
+#
+test.start( "Set one value" )
 try:
     with sw.sensor( "Stereo Module" ) as sensor:
         depth = sensor.video_stream( "Depth", rs.stream.depth, rs.format.z16 )
@@ -22,6 +46,7 @@ try:
         f = sensor.publish( depth.frame() )
 
         # Frame should have received the metadata from the sensor
+        test.check( f.supports_frame_metadata( rs.frame_metadata_value.white_balance ))
         test.check_equal( f.get_frame_metadata( rs.frame_metadata_value.white_balance ), 0xbaad )
 except:
     test.unexpected_exception()
