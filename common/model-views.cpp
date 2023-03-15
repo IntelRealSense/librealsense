@@ -421,45 +421,4 @@ namespace rs2
         return close_clicked;
     }
 
-    
-
-    // Generic helper functions for comparison of fw versions
-    std::vector<int> fw_version_to_int_vec(std::string fw_version)
-    {
-        size_t start{}, end{};
-        std::vector<int> values;
-        std::string delimiter(".");
-        std::string substr;
-        while ((end = fw_version.find(delimiter, start)) != std::string::npos)
-        {
-            substr = fw_version.substr(start, end - start);
-            start = start + substr.length() + delimiter.length();
-            values.push_back(atoi(substr.c_str()));
-        }
-        values.push_back(atoi(fw_version.substr(start, fw_version.length() - start).c_str()));
-        return values;
-    }
-
-    bool fw_version_less_than(std::string fw_version, std::string min_fw_version)
-    {
-        std::vector<int> curr_values = fw_version_to_int_vec(fw_version);
-        std::vector<int> min_values = fw_version_to_int_vec(min_fw_version);
-
-        for (size_t i = 0; i < curr_values.size(); i++)
-        {
-            if (i >= min_values.size())
-            {
-                return false;
-            }
-            if (curr_values[i] < min_values[i])
-            {
-                return true;
-            }
-            if (curr_values[i] > min_values[i])
-            {
-                return false;
-            }
-        }
-        return false;
-    }
 }
