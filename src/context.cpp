@@ -32,6 +32,7 @@
 #include <realdds/topics/flexible/flexible-msg.h>
 #include <rsutils/shared-ptr-singleton.h>
 #include <rsutils/os/executable-name.h>
+#include <rsutils/deferred.h>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 
 // We manage one participant and device-watcher per domain:
@@ -699,6 +700,40 @@ namespace librealsense
             software_sensor::open( profiles );
         }
 
+        void custom_on_video_frame( rs2_software_video_frame const & software_frame )
+        {
+            // We do exactly the same as the base on_video_frame(), but we have a custom releaser that know that the
+            // pixels are actually pointing to a vector:
+            auto p_pixels_vector = static_cast< std::vector< byte > * >( software_frame.pixels );
+            rsutils::deferred on_release( [p_pixels_vector]() { delete p_pixels_vector; } );
+
+            // This will all go away -- moving to storing frame_additional_data directly!
+            stream_profile_interface * profile = software_frame.profile->profile;
+            auto vid_profile = dynamic_cast<video_stream_profile_interface *>(profile);
+            if( ! vid_profile )
+                throw invalid_value_exception( "Non-video profile provided to on_video_frame" );
+
+            if( ! _is_streaming )
+                return;
+
+            frame_additional_data data;
+            data.timestamp = software_frame.timestamp;
+            data.timestamp_domain = software_frame.domain;
+            data.frame_number = software_frame.frame_number;
+            data.depth_units = software_frame.depth_units;
+
+            data.metadata_size = (uint32_t)( _metadata_map.size() * sizeof( rs2_metadata_type ) );
+            memcpy( data.metadata_blob.data(), _metadata_map.data(), data.metadata_size );
+
+            auto frame_i
+                = allocate_new_video_frame( vid_profile, software_frame.stride, software_frame.bpp, std::move( data ) );
+            if( frame_i )
+            {
+                static_cast< frame * >( frame_i )->data = std::move( *p_pixels_vector );
+                invoke_new_frame( frame_i, nullptr, nullptr );
+            }
+        }
+
         void handle_video_data( realdds::topics::device::image && dds_frame,
                                 const std::shared_ptr< stream_profile_interface > & prof,
                                 frame_metadata_syncer< rs2_software_video_frame > & syncer )
@@ -714,24 +749,25 @@ namespace librealsense
             prof_holder->clone = prof;
             rs2_frame.profile = prof_holder.get();
 
+            // Info sent with image topic
+            rs2_frame.stride = static_cast<int>(dds_frame.height > 0 ? dds_frame.raw_data.size() / dds_frame.height
+                                                 : dds_frame.raw_data.size());
+            rs2_frame.bpp = dds_frame.width > 0 ? rs2_frame.stride / dds_frame.width : rs2_frame.stride;
+            rs2_frame.frame_number = !dds_frame.frame_id.empty() ? std::stoi( dds_frame.frame_id ) : 0;
+
             // Copying from dds into LibRS space, same as copy from USB backend.
             // TODO - use memory pool or some other frame allocator
-            rs2_frame.pixels = new uint8_t[dds_frame.raw_data.size()];
-            if( ! rs2_frame.pixels )
-                throw std::runtime_error( "Could not allocate memory for new frame" );
-            memcpy( rs2_frame.pixels, dds_frame.raw_data.data(), dds_frame.raw_data.size() );
+            rs2_frame.pixels = new std::vector< byte >( std::move( dds_frame.raw_data ));
             // The way to release allocated memory
-            rs2_frame.deleter = []( void * ptr ) { delete[] ptr; };
-            // Info sent with image topic
-            rs2_frame.stride = static_cast< int >( dds_frame.height > 0 ? dds_frame.raw_data.size() / dds_frame.height
-                                                                        : dds_frame.raw_data.size() );
-            rs2_frame.bpp = dds_frame.width > 0 ? rs2_frame.stride / dds_frame.width : rs2_frame.stride;
-            rs2_frame.frame_number = ! dds_frame.frame_id.empty() ? std::stoi( dds_frame.frame_id ) : 0;
+            rs2_frame.deleter = []( void * pixels )
+            {
+                delete static_cast< std::vector< byte > * >( pixels );
+            };
 
             if( _md_enabled )
                 syncer.enqueue_frame( std::move( rs2_frame ), prof_holder );
             else
-                on_video_frame( rs2_frame );
+                custom_on_video_frame( rs2_frame );
         }
 
         void add_video_frame_metadata( rs2_software_video_frame & frame, const realdds::topics::flexible_msg & dds_md )
@@ -843,7 +879,7 @@ namespace librealsense
                 if( Is< realdds::dds_video_stream >( dds_stream ) )
                 {
                     _stream_name_to_video_syncer[dds_stream->name()].reset( [this]( rs2_software_video_frame && f ) {
-                        on_video_frame( f );
+                        custom_on_video_frame( f );
                     }, [this]( rs2_software_video_frame & f, const realdds::topics::flexible_msg & md ) {
                         add_video_frame_metadata( f, md );
                     } );

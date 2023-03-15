@@ -11,6 +11,7 @@ namespace librealsense
 {
     class software_sensor;
     class software_device_info;
+    class video_stream_profile_interface;
 
     class software_device : public device
     {
@@ -116,10 +117,16 @@ namespace librealsense
         void add_option(rs2_option option, option_range range, bool is_writable);
         void set_metadata(rs2_frame_metadata_value key, rs2_metadata_type value);
 
+    protected:
+        frame_interface * allocate_new_frame( rs2_extension, stream_profile_interface *, frame_additional_data && );
+        frame_interface * allocate_new_video_frame( video_stream_profile_interface *, int stride, int bpp, frame_additional_data && );
+        void invoke_new_frame( frame_interface * frame, void const * pixels, std::function< void() > on_release );
+
+        std::array< metadata_array_value, RS2_FRAME_METADATA_ACTUAL_COUNT > _metadata_map;
+
     private:
         friend class software_device;
         stream_profiles _profiles;
-        std::array< metadata_array_value, RS2_FRAME_METADATA_ACTUAL_COUNT > _metadata_map;
         uint64_t _unique_id;
 
         class stereo_extension : public depth_stereo_sensor

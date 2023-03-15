@@ -5,7 +5,10 @@
 #include "stream.h"
 
 #include <rsutils/string/from.h>
+#include <rsutils/deferred.h>
 #include <third-party/json.hpp>
+
+using rsutils::deferred;
 
 
 namespace librealsense
@@ -246,13 +249,67 @@ namespace librealsense
     }
 
 
+
+    frame_interface * software_sensor::allocate_new_frame( rs2_extension extension,
+                                                           stream_profile_interface * profile,
+                                                           frame_additional_data && data )
+    {
+        auto frame = _source.alloc_frame( extension, 0, std::move( data ), false );
+        if( ! frame )
+        {
+            LOG_WARNING( "Failed to allocate frame " << data.frame_number << " type " << extension );
+        }
+        else
+        {
+            frame->set_stream( std::dynamic_pointer_cast< stream_profile_interface >( profile->shared_from_this() ) );
+        }
+        return frame;
+    }
+
+
+    frame_interface * software_sensor::allocate_new_video_frame( video_stream_profile_interface * profile,
+                                                                 int stride,
+                                                                 int bpp,
+                                                                 frame_additional_data && data )
+    {
+        auto frame = allocate_new_frame( profile->get_stream_type() == RS2_STREAM_DEPTH ? RS2_EXTENSION_DEPTH_FRAME
+                                                                                        : RS2_EXTENSION_VIDEO_FRAME,
+                                         profile,
+                                         std::move( data ) );
+        if( frame )
+        {
+            auto vid_frame = dynamic_cast< video_frame * >( frame );
+            vid_frame->assign( profile->get_width(), profile->get_height(), stride, bpp * 8 );
+            auto sd = dynamic_cast< software_device * >( _owner );
+            sd->register_extrinsic( *profile );
+        }
+        return frame;
+    }
+
+
+    void software_sensor::invoke_new_frame( frame_interface * frame,
+                                            void const * pixels,
+                                            std::function< void() > on_release )
+    {
+        // The frame pixels/data are stored in the continuation object!
+        if( pixels )
+            frame->attach_continuation( frame_continuation( on_release, pixels ) );
+        _source.invoke_callback( frame );
+    }
+
+
     void software_sensor::on_video_frame( rs2_software_video_frame const & software_frame )
     {
-        if (!_is_streaming) {
-            software_frame.deleter(software_frame.pixels);
-            return;
-        }
+        deferred on_release( [deleter = software_frame.deleter, data = software_frame.pixels]() { deleter( data ); } );
         
+        stream_profile_interface * profile = software_frame.profile->profile;
+        auto vid_profile = dynamic_cast< video_stream_profile_interface * >( profile );
+        if( ! vid_profile )
+            throw invalid_value_exception( "Non-video profile provided to on_video_frame" );
+
+        if( ! _is_streaming )
+            return;
+
         frame_additional_data data;
         data.timestamp = software_frame.timestamp;
         data.timestamp_domain = software_frame.domain;
@@ -262,32 +319,17 @@ namespace librealsense
         data.metadata_size = (uint32_t)( _metadata_map.size() * sizeof( metadata_array_value ) );
         memcpy( data.metadata_blob.data(), _metadata_map.data(), data.metadata_size );
 
-        rs2_extension extension = software_frame.profile->profile->get_stream_type() == RS2_STREAM_DEPTH ?
-            RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME;
-
-        auto frame = _source.alloc_frame(extension, 0, data, false);
-        if (!frame)
-        {
-            LOG_WARNING("Dropped video frame. alloc_frame(...) returned nullptr");
-            return;
-        }
-        auto vid_profile = dynamic_cast<video_stream_profile_interface*>(software_frame.profile->profile);
-        auto vid_frame = dynamic_cast<video_frame*>(frame);
-        vid_frame->assign(vid_profile->get_width(), vid_profile->get_height(), software_frame.stride, software_frame.bpp * 8);
-
-        frame->set_stream(std::dynamic_pointer_cast<stream_profile_interface>(software_frame.profile->profile->shared_from_this()));
-        frame->attach_continuation(frame_continuation{ [=]() {
-            software_frame.deleter(software_frame.pixels);
-        }, software_frame.pixels });
-
-        auto sd = dynamic_cast<software_device*>(_owner);
-        sd->register_extrinsic(*vid_profile);
-        _source.invoke_callback(frame);
+        auto frame
+            = allocate_new_video_frame( vid_profile, software_frame.stride, software_frame.bpp, std::move( data ) );
+        if( frame )
+            invoke_new_frame( frame, software_frame.pixels, on_release.detach() );
     }
 
     void software_sensor::on_motion_frame( rs2_software_motion_frame const & software_frame )
     {
-        if (!_is_streaming) return;
+        deferred on_release( [deleter = software_frame.deleter, data = software_frame.data]() { deleter( data ); } );
+        if( ! _is_streaming )
+            return;
 
         frame_additional_data data;
         data.timestamp = software_frame.timestamp;
@@ -297,22 +339,17 @@ namespace librealsense
         data.metadata_size = (uint32_t) (_metadata_map.size() * sizeof( metadata_array_value ));
         memcpy( data.metadata_blob.data(), _metadata_map.data(), data.metadata_size );
 
-        auto frame = _source.alloc_frame(RS2_EXTENSION_MOTION_FRAME, 0, data, false);
-        if (!frame)
-        {
-            LOG_WARNING("Dropped motion frame. alloc_frame(...) returned nullptr");
-            return;
-        }
-        frame->set_stream(std::dynamic_pointer_cast<stream_profile_interface>(software_frame.profile->profile->shared_from_this()));
-        frame->attach_continuation(frame_continuation{ [=]() {
-            software_frame.deleter(software_frame.data);
-        }, software_frame.data });
-        _source.invoke_callback(frame);
+        auto frame
+            = allocate_new_frame( RS2_EXTENSION_MOTION_FRAME, software_frame.profile->profile, std::move( data ) );
+        if( frame )
+            invoke_new_frame( frame, software_frame.data, on_release.detach() );
     }
 
     void software_sensor::on_pose_frame( rs2_software_pose_frame const & software_frame )
     {
-        if (!_is_streaming) return;
+        deferred on_release( [deleter = software_frame.deleter, data = software_frame.data]() { deleter( data ); } );
+        if( ! _is_streaming )
+            return;
 
         frame_additional_data data;
         data.timestamp = software_frame.timestamp;
@@ -322,17 +359,9 @@ namespace librealsense
         data.metadata_size = (uint32_t) (_metadata_map.size() * sizeof( metadata_array_value ));
         memcpy( data.metadata_blob.data(), _metadata_map.data(), data.metadata_size );
 
-        auto frame = _source.alloc_frame(RS2_EXTENSION_POSE_FRAME, 0, data, false);
-        if (!frame)
-        {
-            LOG_WARNING("Dropped pose frame. alloc_frame(...) returned nullptr");
-            return;
-        }
-        frame->set_stream(std::dynamic_pointer_cast<stream_profile_interface>(software_frame.profile->profile->shared_from_this()));
-        frame->attach_continuation(frame_continuation{ [=]() {
-            software_frame.deleter(software_frame.data);
-        }, software_frame.data });
-        _source.invoke_callback(frame);
+        auto frame = allocate_new_frame( RS2_EXTENSION_POSE_FRAME, software_frame.profile->profile, std::move( data ) );
+        if( frame )
+            invoke_new_frame( frame, software_frame.data, on_release.detach() );
     }
 
     void software_sensor::on_notification( rs2_software_notification const & notif )
