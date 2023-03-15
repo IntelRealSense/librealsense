@@ -249,6 +249,12 @@ namespace librealsense
     }
 
 
+    void software_sensor::erase_metadata( rs2_frame_metadata_value key )
+    {
+        _metadata_map[key].is_valid = false;
+    }
+
+
     frame_interface * software_sensor::allocate_new_frame( rs2_extension extension,
                                                            stream_profile_interface * profile,
                                                            frame_additional_data && data )
