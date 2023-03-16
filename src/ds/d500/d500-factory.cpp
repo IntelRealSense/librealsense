@@ -80,7 +80,7 @@ namespace librealsense
     class rs_d585s_device : public d500_active,
         public d500_color,
         public d500_safety,
-        public d500_depth_mapping,
+        //public d500_depth_mapping,
         public d500_motion,
         public ds_advanced_mode_base,
         public firmware_logger_device
@@ -94,7 +94,7 @@ namespace librealsense
             d500_active(ctx, group),
             d500_color(ctx, group),
             d500_safety(ctx, group),
-            d500_depth_mapping(ctx, group),
+            //d500_depth_mapping(ctx, group),
             d500_motion(ctx, group),
             ds_advanced_mode_base(d500_device::_hw_monitor, get_depth_sensor()),
             firmware_logger_device(ctx, group, d500_device::_hw_monitor,
