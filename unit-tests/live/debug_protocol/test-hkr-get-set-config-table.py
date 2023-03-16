@@ -1,19 +1,12 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
+# test:donotrun
+# test:device D500*
 
 import pyrealsense2 as rs
-from rspy import devices, log, test, file, repo
+from rspy import test
 
-
-#############################################################################################
-# Help Functions
-#############################################################################################
-
-
-
-#############################################################################################
-# Tests
 #############################################################################################
 
 test.start("Get ds5 standard buffer")
@@ -31,7 +24,6 @@ ans = deb.send_and_receive_raw_data(cmd)
 # returns 4 bytes with opcode, and then the requested buffer
 test.check_equal(ans[0], gvd_opcode)
 test.check_equal(len(ans), gvd_size + 4)
-a = 32
 
 test.finish()
 #############################################################################################
@@ -51,7 +43,6 @@ ans = deb.send_and_receive_raw_data(cmd)
 
 test.check_equal(ans[0], get_hkr_config_table_opcode)
 test.check_equal(len(ans), depth_calib_table_size + 4)
-a = 32
 
 test.finish()
 
@@ -71,7 +62,6 @@ cmd = deb.build_command(opcode=get_hkr_config_table_opcode, param1=0, param2=rgb
 ans = deb.send_and_receive_raw_data(cmd)
 test.check_equal(ans[0], get_hkr_config_table_opcode)
 test.check_equal(len(ans), rgb_lens_shading_table_size + 4)
-a = 32
 
 test.finish()
 
