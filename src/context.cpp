@@ -1048,6 +1048,18 @@ namespace librealsense
         std::map< std::string, frame_metadata_syncer< rs2_software_motion_frame > > _stream_name_to_motion_syncer;
     };
 
+    // For cases when checking if this is< color_sensor > (like realsense-viewer::subdevice_model)
+    class dds_color_sensor_proxy : public dds_sensor_proxy, public color_sensor
+    {
+    public:
+        dds_color_sensor_proxy( std::string const & sensor_name,
+            software_device * owner,
+            std::shared_ptr< realdds::dds_device > const & dev )
+            : dds_sensor_proxy( sensor_name, owner, dev )
+        {
+        }
+    };
+
     // This is the rs2 device; it proxies to an actual DDS device that does all the actual
     // work. For example:
     //     auto dev_list = ctx.query_devices();
@@ -1186,7 +1198,10 @@ namespace librealsense
                 if( ! sensor_info.proxy )
                 {
                     // This is a new sensor we haven't seen yet
-                    sensor_info.proxy = std::make_shared< dds_sensor_proxy >( stream->sensor_name(), this, _dds_dev );
+                    if( stream->sensor_name().compare( "RGB Camera" ) == 0 )
+                        sensor_info.proxy = std::make_shared< dds_color_sensor_proxy>( stream->sensor_name(), this, _dds_dev );
+                    else
+                        sensor_info.proxy = std::make_shared< dds_sensor_proxy >( stream->sensor_name(), this, _dds_dev );
                     sensor_info.sensor_index = add_sensor( sensor_info.proxy );
                     assert( sensor_info.sensor_index == _software_sensors.size() );
                     _software_sensors.push_back( sensor_info.proxy );
