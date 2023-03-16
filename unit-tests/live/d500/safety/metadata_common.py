@@ -12,6 +12,7 @@ def reset_data():
     prev_counter = 0
     prev_ts = 0
 
+# if you call it in more than 1 test remember to first call 'reset_date()'
 def check_counter_and_timestamp_increase(frame, fps):
     global prev_counter, prev_ts
     if prev_counter == 0 and prev_ts == 0:

@@ -582,7 +582,7 @@ def _wait_for( serial_numbers, timeout = 5 ):
         time.sleep( 1 )
         did_some_waiting = True
 
-
+# timeout was 5, D500 devices takes a bit longer currently
 def hw_reset( serial_numbers, timeout = 8 ):
     """
     Recycles the given devices manually, using a hardware-reset (rather than any acroname port
