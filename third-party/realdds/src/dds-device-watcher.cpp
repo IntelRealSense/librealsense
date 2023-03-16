@@ -3,7 +3,7 @@
 
 #include <realdds/dds-device-watcher.h>
 #include <realdds/dds-topic.h>
-#include <realdds/dds-topic-reader.h>
+#include <realdds/dds-topic-reader-thread.h>
 #include <realdds/dds-device.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-guid.h>
@@ -23,18 +23,17 @@ using namespace realdds;
 
 dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const & participant )
     : _device_info_topic(
-        new dds_topic_reader( topics::flexible_msg::create_topic( participant, topics::DEVICE_INFO_TOPIC_NAME ) ) )
+        new dds_topic_reader_thread( topics::flexible_msg::create_topic( participant, topics::DEVICE_INFO_TOPIC_NAME ) ) )
     , _participant( participant )
-    , _active_object( [this]( dispatcher::cancellable_timer timer ) {
-
-        eprosima::fastrtps::Duration_t const one_second = { 1, 0 };
-        if( _device_info_topic->get()->wait_for_unread_message( one_second ) )
+{
+    _device_info_topic->on_data_available(
+        [this]()
         {
             topics::flexible_msg msg;
             eprosima::fastdds::dds::SampleInfo info;
             while( topics::flexible_msg::take_next( *_device_info_topic, &msg, &info ) )
             {
-                if( !msg.is_valid() )
+                if( ! msg.is_valid() )
                     continue;
 
                 topics::device_info device_info = topics::device_info::from_json( msg.json_data() );
@@ -42,7 +41,7 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
                 eprosima::fastrtps::rtps::GUID_t guid;
                 eprosima::fastrtps::rtps::iHandle2GUID( guid, info.publication_handle );
 
-                LOG_DEBUG( "DDS device (" << _participant->print(guid) << ") detected:"
+                LOG_DEBUG( "DDS device (" << _participant->print( guid ) << ") detected:"
                                           << "\n\tName: " << device_info.name
                                           << "\n\tSerial: " << device_info.serial
                                           << "\n\tProduct line: " << device_info.product_line
@@ -62,12 +61,18 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
                 if( _on_device_added )
                     _on_device_added( device );
             }
-        }
-    } )
-{
+        } );
+
     if( ! _participant->is_valid() )
         DDS_THROW( runtime_error, "participant was not initialized" );
 }
+
+
+bool dds_device_watcher::is_stopped() const
+{
+    return ! _device_info_topic->is_running();
+}
+
 
 void dds_device_watcher::start()
 {
@@ -79,7 +84,6 @@ void dds_device_watcher::start()
         // it takes time and keeps the 'dds_device_server' busy
         init();
     }
-    _active_object.start();
     LOG_DEBUG( "DDS device watcher started on '" << _participant->get()->get_qos().name() << "' "
                                                  << realdds::print( _participant->guid() ) );
 }
@@ -88,7 +92,7 @@ void dds_device_watcher::stop()
 {
     if( ! is_stopped() )
     {
-        _active_object.stop();
+        _device_info_topic->stop();
         //_callback_inflight.wait_until_empty();
         LOG_DEBUG( "DDS device watcher stopped" );
     }
@@ -127,7 +131,7 @@ void dds_device_watcher::init()
     if( ! _device_info_topic->is_running() )
         _device_info_topic->run( dds_topic_reader::qos() );
 
-    LOG_DEBUG( "DDS device watcher initialized successfully" );
+    LOG_DEBUG( "DDS device watcher is running" );
 }
 
 
