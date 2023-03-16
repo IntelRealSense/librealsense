@@ -2418,7 +2418,7 @@ namespace librealsense
         if (fabs(color_intrin.ppx - ppx) < max_change && fabs(color_intrin.ppy - ppy) < max_change && fabs(color_intrin.fx - fx) < max_change && fabs(color_intrin.fy - fy) < max_change)
         {
             ret = _hw_monitor->send(command{ds::GETINTCAL, static_cast<int>(ds::d400_calibration_table_id::rgb_calibration_id) });
-            auto table = reinterpret_cast<librealsense::ds::rgb_calibration_table*>(ret.data());
+            auto table = reinterpret_cast<librealsense::ds::d400_rgb_calibration_table*>(ret.data());
 
             health[0] = table->intrinsic(2, 0); // px
             health[1] = table->intrinsic(2, 1); // py
