@@ -469,27 +469,6 @@ namespace librealsense
             int32_t disparity_shift;
         };
 
-        struct rgb_calibration_table
-        {
-            table_header        header;
-            // RGB Intrinsic
-            float3x3            intrinsic;                  // normalized by [-1 1]
-            float               distortion[5];              // RGB forward distortion coefficients, Brown model
-            // RGB Extrinsic
-            float3              rotation;                   // RGB rotation angles (Rodrigues)
-            float3              translation;                // RGB translation vector, mm
-            // RGB Projection
-            float               projection[12];             // Projection matrix from depth to RGB [3 X 4]
-            uint16_t            calib_width;                // original calibrated resolution
-            uint16_t            calib_height;
-            // RGB Rectification Coefficients
-            float3x3            intrinsic_matrix_rect;      // RGB intrinsic matrix after rectification
-            float3x3            rotation_matrix_rect;       // Rotation matrix for rectification of RGB
-            float3              translation_rect;           // Translation vector for rectification
-            uint8_t             reserved[24];
-        };
-
-
         inline rs2_motion_device_intrinsic create_motion_intrinsics(imu_intrinsic data)
         {
             rs2_motion_device_intrinsic result{};
@@ -557,10 +536,6 @@ namespace librealsense
         };
 
         ds_rect_resolutions width_height_to_ds_rect_resolutions(uint32_t width, uint32_t height);
-
-        rs2_intrinsics get_color_stream_intrinsic(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
-        bool try_get_intrinsic_by_resolution_new(const std::vector<uint8_t>& raw_data,
-            uint32_t width, uint32_t height, rs2_intrinsics* result);
 
         enum ds_notifications_types
         {
@@ -643,8 +618,5 @@ namespace librealsense
         const std::vector<uint8_t> alternating_emitter_pattern{ 0x5, ALTERNATING_EMITTER_SUBPRESET_ID, 0, 0, 0x2,
             0x4, 0x1, 0, 0x1, 0, 0, 0, 0, 0,
             0x4, 0x1, 0, 0x1, 0, 0x1, 0, 0, 0 };
-
-        pose get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
-
     } // librealsense::ds
 } // namespace librealsense

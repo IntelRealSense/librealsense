@@ -101,7 +101,7 @@ namespace librealsense
             }
             case d400_calibration_table_id::rgb_calibration_id:
             {
-                return get_color_stream_intrinsic(raw_data, width, height);
+                return get_d400_color_stream_intrinsic(raw_data, width, height);
             }
             default:
                 throw invalid_value_exception(rsutils::string::from() << "Parsing Calibration table type " << static_cast<int>(table_id) << " is not supported");
@@ -206,7 +206,7 @@ namespace librealsense
 
         pose get_d400_color_stream_extrinsic(const std::vector<uint8_t>& raw_data)
         {
-            auto table = check_calib<rgb_calibration_table>(raw_data);
+            auto table = check_calib<d400_rgb_calibration_table>(raw_data);
             float3 trans_vector = table->translation_rect;
             float3x3 rect_rot_mat = table->rotation_matrix_rect;
             float trans_scale = -0.001f; // Convert units from mm to meter. Extrinsic of color is referenced to the Depth Sensor CS
@@ -217,5 +217,86 @@ namespace librealsense
 
             return{ rect_rot_mat,trans_vector };
         }
+
+        rs2_intrinsics get_d400_color_stream_intrinsic(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)
+        {
+            auto table = check_calib<ds::d400_rgb_calibration_table>(raw_data);
+
+            // Compensate for aspect ratio as the normalized intrinsic is calculated with a single resolution
+            float3x3 intrin = table->intrinsic;
+            float calib_aspect_ratio = 9.f / 16.f; // shall be overwritten with the actual calib resolution
+
+            if (table->calib_width && table->calib_height)
+                calib_aspect_ratio = float(table->calib_height) / float(table->calib_width);
+            else
+            {
+                LOG_WARNING("RGB Calibration resolution is not specified, using default 16/9 Aspect ratio");
+            }
+
+            // Compensate for aspect ratio
+            float actual_aspect_ratio = height / (float)width;
+            if (actual_aspect_ratio < calib_aspect_ratio)
+            {
+                intrin(1, 1) *= calib_aspect_ratio / actual_aspect_ratio;
+                intrin(2, 1) *= calib_aspect_ratio / actual_aspect_ratio;
+            }
+            else
+            {
+                intrin(0, 0) *= actual_aspect_ratio / calib_aspect_ratio;
+                intrin(2, 0) *= actual_aspect_ratio / calib_aspect_ratio;
+            }
+
+            // Calculate specific intrinsic parameters based on the normalized intrinsic and the sensor's resolution
+            rs2_intrinsics calc_intrinsic{
+                static_cast<int>(width),
+                static_cast<int>(height),
+                ((1 + intrin(2, 0)) * width) / 2.f,
+                ((1 + intrin(2, 1)) * height) / 2.f,
+                intrin(0, 0) * width / 2.f,
+                intrin(1, 1) * height / 2.f,
+                RS2_DISTORTION_INVERSE_BROWN_CONRADY  // The coefficients shall be use for undistort
+            };
+            librealsense::copy(calc_intrinsic.coeffs, table->distortion, sizeof(table->distortion));
+            LOG_DEBUG(endl << array2str((float_4&)(calc_intrinsic.fx, calc_intrinsic.fy, calc_intrinsic.ppx, calc_intrinsic.ppy)) << endl);
+
+            static rs2_intrinsics ref{};
+            if (memcmp(&calc_intrinsic, &ref, sizeof(rs2_intrinsics)))
+            {
+                LOG_DEBUG_THERMAL_LOOP("RGB Intrinsic: ScaleX, ScaleY = "
+                    << std::setprecision(3) << intrin(0, 0) << ", " << intrin(1, 1)
+                    << ". Fx,Fy = " << calc_intrinsic.fx << "," << calc_intrinsic.fy);
+                ref = calc_intrinsic;
+            }
+
+            return calc_intrinsic;
+        }
+
+        // Parse intrinsics from newly added RECPARAMSGET command
+        bool try_get_d400_intrinsic_by_resolution_new(const vector<uint8_t>& raw_data,
+            uint32_t width, uint32_t height, rs2_intrinsics* result)
+        {
+            using namespace ds;
+            auto count = raw_data.size() / sizeof(new_calibration_item);
+            auto items = (new_calibration_item*)raw_data.data();
+            for (int i = 0; i < count; i++)
+            {
+                auto&& item = items[i];
+                if (item.width == width && item.height == height)
+                {
+                    result->width = width;
+                    result->height = height;
+                    result->ppx = item.ppx;
+                    result->ppy = item.ppy;
+                    result->fx = item.fx;
+                    result->fy = item.fy;
+                    result->model = RS2_DISTORTION_BROWN_CONRADY;
+                    memset(result->coeffs, 0, sizeof(result->coeffs));  // All coefficients are zeroed since rectified depth is defined as CS origin
+
+                    return true;
+                }
+            }
+            return false;
+        }
+
     } // librealsense::ds
 } // namespace librealsense
