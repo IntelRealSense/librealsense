@@ -32,7 +32,9 @@ namespace librealsense
         if (cmd.cmd == ds::fw_cmd::GET_HKR_CONFIG_TABLE || cmd.cmd == ds::fw_cmd::SET_HKR_CONFIG_TABLE)
         {
             auto calibration_table_size = get_msg_length(cmd);
-            if (calibration_table_size <= HW_MONITOR_COMMAND_SIZE)
+
+            bool provide_whole_table = (cmd.param4 == 0);
+            if (calibration_table_size <= HW_MONITOR_COMMAND_SIZE || !provide_whole_table)
                 return hwm_buffer_type::standard;
             if (cmd.cmd == ds::fw_cmd::GET_HKR_CONFIG_TABLE)
                 return hwm_buffer_type::big_buffer_to_receive;
