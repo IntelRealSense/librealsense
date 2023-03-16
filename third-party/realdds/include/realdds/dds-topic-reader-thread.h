@@ -5,7 +5,8 @@
 
 #include "dds-topic-reader.h"
 
-#include <rsutils/concurrency/concurrency.h>
+#include <fastdds/dds/core/condition/GuardCondition.hpp>
+#include <thread>
 
 
 namespace realdds {
@@ -28,7 +29,10 @@ namespace realdds {
 //
 class dds_topic_reader_thread : public dds_topic_reader
 {
-    active_object<> _th;
+    eprosima::fastdds::dds::GuardCondition _stopped;
+    std::thread _th;
+
+
 
     typedef dds_topic_reader super;
 
