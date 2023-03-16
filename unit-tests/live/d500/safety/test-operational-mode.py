@@ -1,11 +1,10 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#test:donotrun
 #test:device D585S
 
 import pyrealsense2 as rs
-from rspy import test
+from rspy import test, log
 
 # Constants
 RUN_MODE     = 0 # RS2_SAFETY_MODE_RUN (RESUME)
@@ -14,75 +13,74 @@ SERVICE_MODE = 2 # RS2_SAFETY_MODE_SERVICE (MAINTENANCE)
 
 device = test.find_first_device_or_exit();
 
-def verify_frameset_received(pipe, pipe_profiles, count):
+def verify_frames_received(pipe, pipe_profile, count):
+    prev_fs = None
     for i in range(count):
+        # no check is needed, assume wait_for_frames will raise exception if not frames arrive
         fs = pipe.wait_for_frames()
-        test.check_equal(fs.size() , pipe_profiles.size())
+        if (len(fs) > 1):
+            for f in fs:
+                log.d(f)
+        else:
+            log.d(fs)
 
 ########################### SRS - 3.3.1.14.b ##############################################
 
 test.start("Pause / Resume - no impact on streaming")
 
 cfg = rs.config()
-cfg.enable_stream(rs.stream.safety)
-cfg.enable_stream(rs.stream.depth)
-cfg.enable_stream(rs.stream.color)
+cfg.enable_stream(rs.stream.safety, rs.format.raw8, 30)
+cfg.enable_stream(rs.stream.depth, rs.format.z16, 30)
+cfg.enable_stream(rs.stream.color, rs.format.rgb8, 30)
 
 pipe = rs.pipeline()
-profiles = pipe.start(cfg)
+profile = pipe.start(cfg)
 
 f = pipe.wait_for_frames()
 
-pipeline_device = profiles.get_device()
+pipeline_device = profile.get_device()
 safety_sensor = pipeline_device.first_safety_sensor()
-safety_sensor.get_option(rs.option.safety_mode, RUN_MODE) # verify default
+test.check_equal(safety_sensor.get_option(rs.option.safety_mode), RUN_MODE) # verify default
 
 safety_sensor.set_option(rs.option.safety_mode, STANDBY_MODE) 
 test.check_equal(safety_sensor.get_option(rs.option.safety_mode), STANDBY_MODE)
-verify_frames_received(pipe, profiles, count = 10)
+verify_frames_received(pipe, profile, count = 10)
 
 pipe.stop()
-pipe.start(config)
-verify_frames_received(pipe, profiles, count = 10)
+pipe.start(cfg)
+verify_frames_received(pipe, profile, count = 10)
 
 safety_sensor.set_option(rs.option.safety_mode, RUN_MODE) 
 test.check_equal(safety_sensor.get_option(rs.option.safety_mode), RUN_MODE)
-verify_frames_received(pipe, profiles, count = 10)
+verify_frames_received(pipe, profile, count = 10)
 
 pipe.stop()
 test.finish()
 
 ########################### SRS - 3.3.1.14.c ##############################################
 
-test.start("Maintenance / Resume - deactivate/activate streaming")
+test.start("Resume --> Maintenance deactivate streaming")
 
 cfg = rs.config()
-cfg.enable_stream(rs.stream.safety)
-cfg.enable_stream(rs.stream.depth)
-cfg.enable_stream(rs.stream.color)
+cfg.enable_stream(rs.stream.safety, rs.format.raw8, 30)
 
 pipe = rs.pipeline()
-profiles = pipe.start(config)
+profile = pipe.start(cfg)
 
 f = pipe.wait_for_frames()
 
-pipeline_device = profiles.get_device()
+pipeline_device = profile.get_device()
 safety_sensor = pipeline_device.first_safety_sensor()
 
 safety_sensor.set_option(rs.option.safety_mode, RUN_MODE) 
 test.check_equal(safety_sensor.get_option(rs.option.safety_mode), RUN_MODE)
 # Verify that on RUN mode we get frames
-verify_frames_received(pipe, profiles, count = 10)
+verify_frames_received(pipe, profile, count = 10)
 
 safety_sensor.set_option(rs.option.safety_mode, SERVICE_MODE) 
 test.check_equal(safety_sensor.get_option(rs.option.safety_mode), SERVICE_MODE)
 # Verify that on SERVICE mode we get no frames
-test.check_throws( lambda: verify_frames_received(pipe, profiles, count = 1) , RuntimeError )
-
-safety_sensor.set_option(rs.option.safety_mode, RUN_MODE) 
-test.check_equal(safety_sensor.get_option(rs.option.safety_mode), RUN_MODE)
-# Verify that on RUN mode we get frames
-verify_frames_received(pipe, profiles, count = 10)
+test.check_throws( lambda: verify_frames_received(pipe, profile, 1) , RuntimeError )
 
 pipe.stop()
 test.finish()

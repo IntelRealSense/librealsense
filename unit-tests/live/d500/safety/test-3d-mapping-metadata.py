@@ -1,16 +1,12 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
-# test:donotrun
 # test:device D585S
+# test:donotrun
 
 import pyrealsense2 as rs
 from rspy import test,log
-
-safety_metadata_values = [rs.frame_metadata_value.frame_counter,
-                          rs.frame_metadata_value.frame_timestamp,
-                          rs.frame_metadata_value.safety_level1,
-                          rs.frame_metadata_value.safety_level2]
+from metadata_common import *
 
 occupancy_metadata_values = [rs.frame_metadata_value.frame_counter,
                              rs.frame_metadata_value.safety_depth_frame_counter,
@@ -38,12 +34,7 @@ point_cloud_metadata_values = [rs.frame_metadata_value.frame_counter,
 def check_md_value(frame, md_value):
     test.check(frame.supports_frame_metadata(md_value))
     val = frame.get_frame_metadata(md_value)
-    log.i(repr(md_value) + ": " + repr(val))
-
-
-def check_safety_metadata(frame):
-    for md_value in safety_metadata_values:
-        check_md_value(frame, md_value)
+    log.d(repr(md_value) + ": " + repr(val))
 
 
 def check_occupancy_metadata(frame):
@@ -68,26 +59,14 @@ def check_counter_and_timestamp_increase(frame, fps):
     else:
         current_counter = frame.get_frame_metadata(rs.frame_metadata_value.frame_counter)
         current_ts = frame.get_frame_metadata(rs.frame_metadata_value.frame_timestamp)
-        test.check(current_counter == prev_counter + 1)
+        test.info("prev_counter", prev_counter)
+        test.info("current_counter", current_counter)
+        test.check(current_counter > prev_counter) # D500 has a skip frames mechanism on low fps meaning no sequential frame numbers
         test.check((current_ts - prev_ts) / 1000 < 2 * 1000 / fps)
         prev_counter = current_counter
         prev_ts = current_ts
 
 
-################# Checking safety metadata required fileds are received ##################
-test.start("Checking safety stream metadata received")
-
-cfg = rs.config()
-cfg.enable_stream(rs.stream.safety)
-pipe = rs.pipeline()
-pipe.start(cfg)
-iterations = 0
-while iterations < 20:
-    iterations += 1
-    f = pipe.wait_for_frames()
-    check_safety_metadata(f)
-pipe.stop()
-test.finish()
 
 ################# Checking occupancy metadata required fileds are received ##################
 test.start("Checking occupancy stream metadata received")
@@ -116,21 +95,6 @@ while iterations < 20:
     iterations += 1
     f = pipe.wait_for_frames()
     check_point_cloud_metadata(f)
-pipe.stop()
-test.finish()
-
-################# Checking safety frame counter and timestamp increasing ##################
-test.start("Checking safety stream metadata frame counter and timestamp increasing")
-cfg = rs.config()
-fps = 30
-cfg.enable_stream(rs.stream.safety, rs.format.raw8, fps)
-pipe = rs.pipeline()
-pipe.start(cfg)
-iterations = 0
-while iterations < 20:
-    iterations += 1
-    f = pipe.wait_for_frames()
-    check_counter_and_timestamp_increase(f, fps)
 pipe.stop()
 test.finish()
 

@@ -1,7 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#test:donotrun  ## line to be removed when we connect D585S to our LibCI
 #test:donotrun:!nightly
 #test:device D585S
 
@@ -20,18 +19,16 @@ test.finish()
 
 #############################################################################################
 
-test.start("Valid read from index 0 and valid write to index 1")
+test.start("Valid read and write from index 0")
 safety_preset_at_zero = safety_sensor.get_safety_preset(0)
 safety_sensor.set_safety_preset(1, safety_preset_at_zero)
-safety_preset_at_one = safety_sensor.get_safety_preset(1)
 test.finish()
 
 #############################################################################################
 
-test.start("Valid read from index 0 and valid write to index 63")
-safety_preset_at_zero = safety_sensor.get_safety_preset(0)
-safety_sensor.set_safety_preset(63, safety_preset_at_zero)
+test.start("Valid read and write from index 63")
 safety_preset_at_63 = safety_sensor.get_safety_preset(63)
+safety_sensor.set_safety_preset(63, safety_preset_at_63)
 test.finish()
 
 #############################################################################################

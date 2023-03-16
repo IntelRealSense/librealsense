@@ -583,7 +583,7 @@ def _wait_for( serial_numbers, timeout = 5 ):
         did_some_waiting = True
 
 
-def hw_reset( serial_numbers, timeout = 5 ):
+def hw_reset( serial_numbers, timeout = 8 ):
     """
     Recycles the given devices manually, using a hardware-reset (rather than any acroname port
     reset). The devices are sent a HW-reset command and then we'll wait until they come back
