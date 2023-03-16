@@ -94,6 +94,20 @@ void dds_topic_reader::run( qos const & rqos )
 }
 
 
+void dds_topic_reader::stop()
+{
+    if( _subscriber )
+    {
+        if( _reader )
+        {
+            DDS_API_CALL_NO_THROW( _subscriber->get()->delete_datareader( _reader ) );
+            _reader = nullptr;
+        }
+    }
+    assert( ! is_running() );
+}
+
+
 void dds_topic_reader::on_subscription_matched(
     eprosima::fastdds::dds::DataReader *, eprosima::fastdds::dds::SubscriptionMatchedStatus const & info )
 {

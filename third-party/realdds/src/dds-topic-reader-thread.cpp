@@ -14,19 +14,36 @@
 namespace realdds {
 
 
+dds_topic_reader_thread::dds_topic_reader_thread( std::shared_ptr< dds_topic > const & topic )
+    : dds_topic_reader_thread( topic, std::make_shared< dds_subscriber >( topic->get_participant() ) )
+{
+}
+
+
 dds_topic_reader_thread::dds_topic_reader_thread( std::shared_ptr< dds_topic > const & topic,
                                                   std::shared_ptr< dds_subscriber > const & subscriber )
     : super( topic, subscriber )
     , _th(
-          [this]( dispatcher::cancellable_timer )
+          [this, name = topic->get()->get_name()]( dispatcher::cancellable_timer )
           {
               if( ! _reader )
                   return;
               eprosima::fastrtps::Duration_t const one_second = { 1, 0 };
+              LOG_DEBUG( "----> '" << name << "' waiting for message" );
               if( _reader->wait_for_unread_message( one_second ) )
+              {
+                  LOG_DEBUG( "----> '" << name << "' callback" );
                   _on_data_available();
+                  LOG_DEBUG( "<---- '" << name << "' callback" );
+              }
           } )
 {
+}
+
+
+dds_topic_reader_thread::~dds_topic_reader_thread()
+{
+    LOG_DEBUG( "xxxxx '" << ( _reader ? _reader->get_topicdescription()->get_name() : "unknown" ) << "' dtor" );
 }
 
 
@@ -40,6 +57,13 @@ void dds_topic_reader_thread::run( qos const & rqos )
     //status_mask << eprosima::fastdds::dds::StatusMask::data_available();
     _reader = DDS_API_CALL( _subscriber->get()->create_datareader( _topic->get(), rqos, this, status_mask ) );
     _th.start();
+}
+
+
+void dds_topic_reader_thread::stop()
+{
+    _th.stop();
+    super::stop();
 }
 
 

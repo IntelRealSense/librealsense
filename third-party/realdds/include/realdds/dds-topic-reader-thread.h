@@ -33,10 +33,13 @@ class dds_topic_reader_thread : public dds_topic_reader
     typedef dds_topic_reader super;
 
 public:
+    dds_topic_reader_thread( std::shared_ptr< dds_topic > const & topic );
     dds_topic_reader_thread( std::shared_ptr< dds_topic > const & topic,
                              std::shared_ptr< dds_subscriber > const & subscriber );
+    ~dds_topic_reader_thread();
 
     void run( qos const & ) override;
+    void stop() override;
 };
 
 
