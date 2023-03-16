@@ -10,8 +10,8 @@ fps = 30
 w = 640
 h = 480
 bpp = 2  # bytes
-pixels = bytearray( b'\x00' * ( w * h * 2 ))  # Dummy data
-domain = rs.timestamp_domain.hardware_clock   # For either depth/color
+pixels = bytearray( b'\x00' * ( w * h * bpp ))  # Dummy data
+domain = rs.timestamp_domain.hardware_clock     # For either depth/color
 
 global_frame_number = 0
 
@@ -27,7 +27,7 @@ class sensor:
         if dev is None:
             dev = device()
         self._handle = dev._handle.add_sensor( sensor_name )
-        self._profile = None
+        self._q = None
 
     def __enter__( self ):
         return self
@@ -38,25 +38,31 @@ class sensor:
     def video_stream( self, stream_name:str, type:rs.stream, format:rs.format ):
         return video_stream( self, stream_name, type, format )
 
-    def start( self, stream ):
+    def start( self, *streams ):
         """
         """
-        self._profile = rs.video_stream_profile( self._handle.add_video_stream( stream._handle ))
+        if self._q is not None:
+            raise RuntimeError( 'already started' )
+        profiles = []
+        for stream in streams:
+            stream._profile = rs.video_stream_profile( self._handle.add_video_stream( stream._handle ))
+            profiles.append( stream._profile )
         self._q = rs.frame_queue( 100 )
-        self._handle.open( self._profile )
+        self._handle.open( profiles )
         self._handle.start( self._q )
 
     def stop( self ):
         """
         """
-        if self._profile is not None:
+        if self._q is not None:
             self._handle.stop()
             self._handle.close()
             del self._q
-            self._profile = None
+
+    def set( self, key:rs.frame_metadata_value, value ):
+        self._handle.set_metadata( key, value )
 
     def publish( self, frame ):
-        frame.profile = self._profile
         self._handle.on_video_frame( frame )
         received_frame = self.receive()
         test.check_equal( received_frame.get_frame_number(), frame.frame_number )
@@ -100,4 +106,5 @@ class video_stream:
             f.frame_number = global_frame_number
         f.timestamp = timestamp or time()
         f.domain = domain
+        f.profile = self._profile
         return f
