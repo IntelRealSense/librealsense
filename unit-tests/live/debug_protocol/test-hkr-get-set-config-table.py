@@ -69,7 +69,7 @@ rgb_lens_shading_table_size = 1088
 get_hkr_config_table_opcode = 0xa7
 cmd = deb.build_command(opcode=get_hkr_config_table_opcode, param1=0, param2=rgb_lens_shading_table_id, param3=0)
 ans = deb.send_and_receive_raw_data(cmd)
-test.check_equal(ans[0], rgb_lens_shading_table_id)
+test.check_equal(ans[0], get_hkr_config_table_opcode)
 test.check_equal(len(ans), rgb_lens_shading_table_size + 4)
 a = 32
 
