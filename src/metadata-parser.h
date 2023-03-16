@@ -14,18 +14,6 @@
 
 namespace librealsense
 {
-/** \brief Metadata fields that are utilized internally by librealsense
-    Provides extention to the r2_frame_metadata list of attributes*/
-    enum frame_metadata_internal
-    {
-        RS2_FRAME_METADATA_HW_TYPE  =   RS2_FRAME_METADATA_COUNT +1 , /**< 8-bit Module type: RS4xx, IVCAM*/
-        RS2_FRAME_METADATA_SKU_ID                                   , /**< 8-bit SKU Id*/
-        RS2_FRAME_METADATA_FORMAT                                   , /**< 16-bit Frame format*/
-        RS2_FRAME_METADATA_WIDTH                                    , /**< 16-bit Frame width. pixels*/
-        RS2_FRAME_METADATA_HEIGHT                                   , /**< 16-bit Frame height. pixels*/
-        RS2_FRAME_METADATA_COUNT
-    };
-
     /**\brief Base class that establishes the interface for retrieving metadata attributes*/
     class md_attribute_parser_base
     {
@@ -84,6 +72,33 @@ namespace librealsense
             }
             return false;
         }
+        rs2_frame_metadata_value _type;
+    };
+
+
+    /**\brief metadata parser class - support metadata as array of rs2_metadata_type */
+    class md_array_parser : public md_attribute_parser_base
+    {
+    public:
+        md_array_parser( rs2_frame_metadata_value type )
+            : _type( type )
+        {
+        }
+
+        rs2_metadata_type get( const frame & frm ) const override
+        {
+            auto pmd = reinterpret_cast< rs2_metadata_type const * >( frm.additional_data.metadata_blob.data() );
+            rs2_metadata_type const & value = pmd[_type];
+            return value;
+        }
+
+        bool supports(const frame& frm) const override
+        {
+            // If there's a parser for the type, it's supported
+            return true;
+        }
+
+    private:
         rs2_frame_metadata_value _type;
     };
 
