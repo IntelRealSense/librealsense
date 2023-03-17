@@ -164,7 +164,7 @@ try:
 
             rgb.set( rs.frame_metadata_value.actual_fps, 0xf00d )
             stereo.set( rs.frame_metadata_value.actual_fps, 0xbaad )
-            c1 = rgb.publish( ir.frame() )
+            c1 = rgb.publish( color.frame() )
             test.check_false( f1.supports_frame_metadata( rs.frame_metadata_value.actual_fps ))
             test.check_false( c1.supports_frame_metadata( rs.frame_metadata_value.white_balance ))
             test.check_equal( c1.get_frame_metadata( rs.frame_metadata_value.actual_fps ), 0xf00d )
@@ -174,6 +174,13 @@ try:
             d2 = stereo.publish( depth.frame() )
             test.check_false( c1.supports_frame_metadata( rs.frame_metadata_value.saturation ))
             test.check_equal( d2.get_frame_metadata( rs.frame_metadata_value.saturation ), 0x1eaf )
+
+            stereo.set( rs.frame_metadata_value.contrast, 0xdeaf )
+            rgb.set( rs.frame_metadata_value.sharpness, 0xface )
+            d3 = stereo.publish( depth.frame() )
+            c2 = rgb.publish( color.frame() )
+            test.check_false( c2.supports_frame_metadata( rs.frame_metadata_value.contrast ))
+            test.check_false( d3.supports_frame_metadata( rs.frame_metadata_value.sharpness ))
 except:
     test.unexpected_exception()
 test.finish()

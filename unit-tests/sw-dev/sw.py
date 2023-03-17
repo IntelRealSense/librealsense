@@ -43,12 +43,14 @@ class sensor:
         """
         if self._q is not None:
             raise RuntimeError( 'already started' )
-        profiles = []
+        self._profiles = []
+        self._profiles_str = []
         for stream in streams:
             stream._profile = rs.video_stream_profile( self._handle.add_video_stream( stream._handle ))
-            profiles.append( stream._profile )
+            self._profiles.append( stream._profile )
+            self._profiles_str.append( str(stream._profile) )
         self._q = rs.frame_queue( 100 )
-        self._handle.open( profiles )
+        self._handle.open( self._profiles )
         self._handle.start( self._q )
 
     def stop( self ):
@@ -63,6 +65,8 @@ class sensor:
         self._handle.set_metadata( key, value )
 
     def publish( self, frame ):
+        if str(frame.profile) not in self._profiles_str:
+            raise RuntimeError( f'frame {frame.profile} is not part of sensor {self._profiles}' )
         self._handle.on_video_frame( frame )
         received_frame = self.receive()
         test.check_equal( received_frame.get_frame_number(), frame.frame_number )
