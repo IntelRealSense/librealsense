@@ -116,7 +116,6 @@ namespace librealsense
         void update_read_only_option(rs2_option option, float val);
         void add_option(rs2_option option, option_range range, bool is_writable);
         void set_metadata(rs2_frame_metadata_value key, rs2_metadata_type value);
-        void clear_metadata();
 
     protected:
         frame_interface * allocate_new_frame( rs2_extension, stream_profile_interface *, frame_additional_data && );
