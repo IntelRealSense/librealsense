@@ -76,30 +76,32 @@ namespace librealsense
     };
 
 
-    /**\brief metadata parser class - support metadata as array of rs2_metadata_type */
+    /**\brief metadata parser class - support metadata as array of (bool,rs2_metadata_type) */
     class md_array_parser : public md_attribute_parser_base
     {
+        rs2_frame_metadata_value _key;
+
     public:
-        md_array_parser( rs2_frame_metadata_value type )
-            : _type( type )
+        md_array_parser( rs2_frame_metadata_value key )
+            : _key( key )
         {
         }
 
         rs2_metadata_type get( const frame & frm ) const override
         {
-            auto pmd = reinterpret_cast< rs2_metadata_type const * >( frm.additional_data.metadata_blob.data() );
-            rs2_metadata_type const & value = pmd[_type];
-            return value;
+            auto pmd = reinterpret_cast< metadata_array_value const * >( frm.additional_data.metadata_blob.data() );
+            metadata_array_value const & value = pmd[_key];
+            if( ! value.is_valid )
+                throw invalid_value_exception( "Frame does not support this type of metadata" );
+            return value.value;
         }
 
         bool supports(const frame& frm) const override
         {
-            // If there's a parser for the type, it's supported
-            return true;
+            auto pmd = reinterpret_cast< metadata_array_value const * >( frm.additional_data.metadata_blob.data() );
+            metadata_array_value const & value = pmd[_key];
+            return value.is_valid;
         }
-
-    private:
-        rs2_frame_metadata_value _type;
     };
 
 
