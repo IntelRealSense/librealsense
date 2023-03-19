@@ -104,7 +104,7 @@ if [ ! -d ${kernel_name} ]; then
 	mkdir ${kernel_name}
 	cd ${kernel_name}
 	git init
-	git remote add origin git://kernel.ubuntu.com/ubuntu/ubuntu-${ubuntu_codename}.git
+	git remote add origin https://kernel.ubuntu.com/ubuntu/ubuntu-${ubuntu_codename}.git
 	cd ..
 fi
 
