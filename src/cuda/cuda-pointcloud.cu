@@ -88,7 +88,11 @@ void rscuda::deproject_depth_cuda(float * points, const rs2_intrinsics & intrin,
     float *dev_points = 0;	
     uint16_t *dev_depth = 0;
     rs2_intrinsics* dev_intrin = 0;
+    
+    // Remove release configuration "warning: variable "result" was set but never used"
+    #pragma warning disable CS0219
     cudaError_t result;
+    #pragma warning restore CS0219
 
     result = cudaMalloc(&dev_points, count * sizeof(float) * 3);
     assert(result == cudaSuccess);
@@ -107,8 +111,6 @@ void rscuda::deproject_depth_cuda(float * points, const rs2_intrinsics & intrin,
     result = cudaMemcpy(points, dev_points, count * sizeof(float) * 3, cudaMemcpyDeviceToHost);
     assert(result == cudaSuccess);
     
-    // Remove release configuration "warning: variable "result" was set but never used"
-    ( void ) result;
 
     cudaFree(dev_points);
     cudaFree(dev_depth);
