@@ -998,7 +998,7 @@ namespace librealsense
             create_processing_block( filter_name );
         }
 
-        bool processing_block_exists( processing_blocks const & blocks, std::string const & block_name )
+        bool processing_block_exists( processing_blocks const & blocks, std::string const & block_name ) const
         {
             for( auto & block : blocks )
                 if( block_name.compare( block->get_info( RS2_CAMERA_INFO_NAME ) ) == 0 )
@@ -1014,7 +1014,8 @@ namespace librealsense
             if( filter_name.compare( "Depth Huffman Decoder" ) == 0 )
                 current_filters.add_processing_block( std::make_shared< depth_decompression_huffman >() );
             else if( filter_name.compare( "Decimation Filter" ) == 0 )
-                //TODO - set options? might be needed according to stream type
+                // sensor.cpp sets format option based on sensor type, but the filter does not use it and selects the
+                // appropriate decimation algorithm based on processed frame profile format.
                 current_filters.add_processing_block( std::make_shared< decimation_filter >() );
             else if( filter_name.compare( "HDR Merge" ) == 0 )
                 current_filters.add_processing_block( std::make_shared< hdr_merge >() );
@@ -1053,10 +1054,35 @@ namespace librealsense
     {
     public:
         dds_color_sensor_proxy( std::string const & sensor_name,
-            software_device * owner,
-            std::shared_ptr< realdds::dds_device > const & dev )
+                                software_device * owner,
+                                std::shared_ptr< realdds::dds_device > const & dev )
             : dds_sensor_proxy( sensor_name, owner, dev )
         {
+        }
+    };
+
+    // For cases when checking if this is< depth_sensor > (like realsense-viewer::subdevice_model)
+    class dds_depth_sensor_proxy : public dds_sensor_proxy, public depth_sensor
+    {
+    public:
+        dds_depth_sensor_proxy( std::string const & sensor_name,
+                                software_device * owner,
+                                std::shared_ptr< realdds::dds_device > const & dev )
+            : dds_sensor_proxy( sensor_name, owner, dev )
+        {
+        }
+
+        // Needed by abstract interfaces
+        float get_depth_scale() const override { return get_option( RS2_OPTION_DEPTH_UNITS ).query(); }
+
+        void create_snapshot( std::shared_ptr<depth_sensor> & snapshot ) const override
+        {
+            snapshot = std::make_shared<depth_sensor_snapshot>( get_depth_scale() );
+        }
+
+        void enable_recording( std::function<void( const depth_sensor & )> recording_function ) override
+        {
+            //does not change over time
         }
     };
 
@@ -1198,10 +1224,7 @@ namespace librealsense
                 if( ! sensor_info.proxy )
                 {
                     // This is a new sensor we haven't seen yet
-                    if( stream->sensor_name().compare( "RGB Camera" ) == 0 )
-                        sensor_info.proxy = std::make_shared< dds_color_sensor_proxy>( stream->sensor_name(), this, _dds_dev );
-                    else
-                        sensor_info.proxy = std::make_shared< dds_sensor_proxy >( stream->sensor_name(), this, _dds_dev );
+                    sensor_info.proxy = create_sensor( stream->sensor_name() );
                     sensor_info.sensor_index = add_sensor( sensor_info.proxy );
                     assert( sensor_info.sensor_index == _software_sensors.size() );
                     _software_sensors.push_back( sensor_info.proxy );
@@ -1303,6 +1326,16 @@ namespace librealsense
             }
             // TODO - need to register extrinsics group in dev?
         } //End dds_device_proxy constructor
+
+        std::shared_ptr< dds_sensor_proxy> create_sensor( const std::string & sensor_name )
+        {
+            if( sensor_name.compare( "RGB Camera" ) == 0 )
+                return std::make_shared< dds_color_sensor_proxy>( sensor_name, this, _dds_dev );
+            else if( sensor_name.compare( "Stereo Module" ) == 0 )
+                return std::make_shared< dds_depth_sensor_proxy>( sensor_name, this, _dds_dev );
+
+            return std::make_shared< dds_sensor_proxy >( sensor_name, this, _dds_dev );
+        }
     };
 
     class dds_device_info : public device_info

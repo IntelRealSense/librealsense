@@ -59,7 +59,7 @@ void dds_stream_base::init_options( dds_options const & options )
 }
 
 
-void dds_stream_base::set_recommended_filters( std::vector< std::string > const & recommended_filters )
+void dds_stream_base::set_recommended_filters( std::vector< std::string > && recommended_filters )
 {
     if( !_recommended_filters.empty() )
         DDS_THROW( runtime_error, "stream '" + _name + "' recommended filters are already set" );

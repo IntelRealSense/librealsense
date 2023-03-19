@@ -254,7 +254,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
             }
         }
         server->init_options( options );
-        server->set_recommended_filters( filter_names );
+        server->set_recommended_filters( std::move( filter_names ) );
 
         servers.push_back( server );
     }

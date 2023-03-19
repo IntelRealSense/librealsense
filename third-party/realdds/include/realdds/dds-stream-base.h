@@ -42,7 +42,7 @@ public:
     void enable_metadata(); // Must call before init_profiles
     void init_profiles( dds_stream_profiles const & profiles, int default_profile_index = 0 );
     void init_options( dds_options const & options );
-    void set_recommended_filters( std::vector< std::string > const & recommended_filters );
+    void set_recommended_filters( std::vector< std::string > && recommended_filters );
 
     std::string const & name() const { return _name; }
     std::string const & sensor_name() const { return _sensor_name; }
