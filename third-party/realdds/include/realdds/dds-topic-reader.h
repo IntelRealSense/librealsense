@@ -75,6 +75,9 @@ public:
     // The callbacks should be set before we actually create the underlying DDS objects, so the reader does not
     virtual void run( qos const & );
 
+    // Go back to a pre-run() state, such that is_running() returns false
+    virtual void stop();
+
     // DataReaderListener
 protected:
     void on_subscription_matched( eprosima::fastdds::dds::DataReader *,

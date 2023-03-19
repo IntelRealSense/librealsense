@@ -5,10 +5,9 @@
 
 #include "dds-participant.h"
 
-#include <rsutils/concurrency/concurrency.h>
-
 #include <map>
 #include <memory>
+#include <mutex>
 
 
 namespace realdds {
@@ -43,7 +42,7 @@ public:
 
     void start();
     void stop();
-    bool is_stopped() const { return ! _active_object.is_active(); }
+    bool is_stopped() const;
 
     bool foreach_device( std::function< bool( std::shared_ptr< dds_device > const & ) > ) const;
 
@@ -59,7 +58,6 @@ private:
     std::shared_ptr< dds_participant::listener > _listener;
     std::shared_ptr< dds_topic_reader > _device_info_topic;
 
-    active_object<> _active_object;
     on_device_change_callback _on_device_added;
     on_device_change_callback _on_device_removed;
     std::map< dds_guid, std::shared_ptr< dds_device > > _dds_devices;

@@ -1431,10 +1431,6 @@ namespace librealsense
         if (_devices_changed_callback == nullptr && _devices_changed_callbacks.size() == 0) // There are no register callbacks any more _device_watcher can be stopped
         {
             _device_watcher->stop();
-#ifdef BUILD_WITH_DDS
-            if( _dds_watcher )
-                _dds_watcher->stop();
-#endif //BUILD_WITH_DDS
         }
     }
 
