@@ -341,7 +341,11 @@ namespace librealsense
             data.system_time = _actual_source.get_time();
             data.is_blocking = original->is_blocking();
 
-            auto res = _actual_source.alloc_frame(frame_type, vid_stream->get_width() * vid_stream->get_height() * sizeof(float) * 5, data, true);
+            auto res
+                = _actual_source.alloc_frame( frame_type,
+                                              vid_stream->get_width() * vid_stream->get_height() * sizeof( float ) * 5,
+                                              std::move( data ),
+                                              true );
             if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
             res->set_sensor(original->get_sensor());
             res->set_stream(stream);
@@ -402,7 +406,7 @@ namespace librealsense
 
         auto of = dynamic_cast<frame*>(original);
         frame_additional_data data = of->additional_data;
-        auto res = _actual_source.alloc_frame(frame_type, stride * height, data, true);
+        auto res = _actual_source.alloc_frame( frame_type, stride * height, std::move( data ), true );
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
         vf = dynamic_cast<video_frame*>(res);
         vf->metadata_parsers = of->metadata_parsers;
@@ -425,7 +429,7 @@ namespace librealsense
     {
         auto of = dynamic_cast<frame*>(original);
         frame_additional_data data = of->additional_data;
-        auto res = _actual_source.alloc_frame(frame_type, of->get_frame_data_size(), data, true);
+        auto res = _actual_source.alloc_frame( frame_type, of->get_frame_data_size(), std::move( data ), true );
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
         auto mf = dynamic_cast<motion_frame*>(res);
         mf->metadata_parsers = of->metadata_parsers;
@@ -471,7 +475,10 @@ namespace librealsense
         for (auto&& f : holders)
             req_size += get_embeded_frames_size(f.frame);
 
-        auto res = _actual_source.alloc_frame(RS2_EXTENSION_COMPOSITE_FRAME, req_size * sizeof(rs2_frame*), d, true);
+        auto res = _actual_source.alloc_frame( RS2_EXTENSION_COMPOSITE_FRAME,
+                                               req_size * sizeof( rs2_frame * ),
+                                               std::move( d ),
+                                               true );
         if (!res) return nullptr;
 
         auto cf = static_cast<composite_frame*>(res);

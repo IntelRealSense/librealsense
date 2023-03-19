@@ -457,7 +457,7 @@ void log_callback_end( uint32_t fps,
                     frame_holder fh = _source.alloc_frame(
                         stream_to_frame_types( req_profile_base->get_stream_type() ),
                         expected_size,
-                        fr->additional_data,
+                        std::move( fr->additional_data ),
                         true );
                     auto diff = environment::get_instance().get_time_service()->get_time() - system_time;
                     if( diff > 10 )
@@ -1013,7 +1013,8 @@ void log_callback_end( uint32_t fps,
 
             last_frame_number = frame_counter;
             last_timestamp = timestamp;
-            frame_holder frame = _source.alloc_frame(RS2_EXTENSION_MOTION_FRAME, data_size, fr->additional_data, true);
+            frame_holder frame
+                = _source.alloc_frame( RS2_EXTENSION_MOTION_FRAME, data_size, std::move( fr->additional_data ), true );
             memcpy( (void *)frame->get_frame_data(),
                     sensor_data.fo.pixels,
                     sizeof( byte ) * sensor_data.fo.frame_size );
