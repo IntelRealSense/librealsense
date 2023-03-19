@@ -128,20 +128,10 @@ namespace librealsense
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
         {
-            rs2_intrinsics result;
-
-            if (ds::try_get_intrinsic_by_resolution_new(*_owner->_new_calib_table_raw,
-                profile.width, profile.height, &result))
-            {
-                return result;
-            }
-            else 
-            {
-                return get_d500_intrinsic_by_resolution(
-                    *_owner->_coefficients_table_raw,
-                    ds::d500_calibration_table_id::depth_calibration_id,
-                    profile.width, profile.height);
-            }
+            return get_d500_intrinsic_by_resolution(
+                *_owner->_coefficients_table_raw,
+                ds::d500_calibration_table_id::depth_calibration_id,
+                profile.width, profile.height);
         }
 
         void set_frame_metadata_modifier(on_frame_md callback) override
