@@ -92,7 +92,7 @@ namespace Intel.RealSense
         /// <summary>Grey-scale image as a bit-packed array. 4 pixel data stream taking 5 bytes.</summary>
         W10 = 27,
 
-        /// <summary>Variable-length Huffman-compressed 16-bit depth values.</summary>
+        /// <summary>Deprecated! Variable-length Huffman-compressed 16-bit depth values.</summary>
         Z16H = 28,
 
         /// <summary>16-bit per-pixel frame grabber format.</summary>

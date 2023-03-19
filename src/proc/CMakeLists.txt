@@ -37,7 +37,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/depth-formats-converter.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/motion-transform.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/auto-exposure-processor.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/depth-decompress.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/y411-converter.cpp"
 
         "${CMAKE_CURRENT_LIST_DIR}/processing-blocks-factory.h"
@@ -67,6 +66,5 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/depth-formats-converter.h"
         "${CMAKE_CURRENT_LIST_DIR}/motion-transform.h"
         "${CMAKE_CURRENT_LIST_DIR}/auto-exposure-processor.h"
-        "${CMAKE_CURRENT_LIST_DIR}/depth-decompress.h"
         "${CMAKE_CURRENT_LIST_DIR}/y411-converter.h"
 )

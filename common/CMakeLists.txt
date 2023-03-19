@@ -40,7 +40,6 @@ set(COMMON_SRC
     "${CMAKE_CURRENT_LIST_DIR}/measurement.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/on-chip-calib.h"
     "${CMAKE_CURRENT_LIST_DIR}/on-chip-calib.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/decompress-huffman.h"
     "${CMAKE_CURRENT_LIST_DIR}/updates-model.h"
     "${CMAKE_CURRENT_LIST_DIR}/updates-model.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/option-model.h"
