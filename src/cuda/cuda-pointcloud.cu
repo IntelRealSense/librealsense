@@ -90,9 +90,9 @@ void rscuda::deproject_depth_cuda(float * points, const rs2_intrinsics & intrin,
     rs2_intrinsics* dev_intrin = 0;
     
     // Remove release configuration "warning: variable "result" was set but never used"
-    #pragma warning disable CS0219
+    #pragma diag_suppress = set_but_not_used
     cudaError_t result;
-    #pragma warning restore CS0219
+    #pragma diag_default = set_but_not_used
 
     result = cudaMalloc(&dev_points, count * sizeof(float) * 3);
     assert(result == cudaSuccess);
