@@ -165,7 +165,7 @@ try:
             rgb.set( rs.frame_metadata_value.actual_fps, 0xf00d )
             stereo.set( rs.frame_metadata_value.actual_fps, 0xbaad )
             c1 = rgb.publish( color.frame() )
-            test.check_false( f1.supports_frame_metadata( rs.frame_metadata_value.actual_fps ))
+            test.check_false( d1.supports_frame_metadata( rs.frame_metadata_value.actual_fps ))
             test.check_false( c1.supports_frame_metadata( rs.frame_metadata_value.white_balance ))
             test.check_equal( c1.get_frame_metadata( rs.frame_metadata_value.actual_fps ), 0xf00d )
 
