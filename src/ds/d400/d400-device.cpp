@@ -147,7 +147,7 @@ namespace librealsense
         {
             rs2_intrinsics result;
 
-            if (ds::try_get_intrinsic_by_resolution_new(*_owner->_new_calib_table_raw,
+            if (ds::try_get_d400_intrinsic_by_resolution_new(*_owner->_new_calib_table_raw,
                 profile.width, profile.height, &result))
             {
                 return result;

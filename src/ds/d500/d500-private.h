@@ -106,7 +106,7 @@ namespace librealsense
 
         struct d500_calibration
         {
-            uint16_t        version;                        // major.minor
+            uint16_t         version;                        // major.minor
             rs2_intrinsics   left_imager_intrinsic;
             rs2_intrinsics   right_imager_intrinsic;
             rs2_intrinsics   depth_intrinsic[max_ds_rect_resolutions];
@@ -141,7 +141,7 @@ namespace librealsense
             uint32_t     y_scale_in;
         };
 
-        struct mini_intrisics
+        struct mini_intrinsics
         {
             uint16_t    image_width;    /**< Width of the image in pixels */
             uint16_t    image_height;   /**< Height of the image in pixels */
@@ -153,14 +153,14 @@ namespace librealsense
 
         struct single_sensor_coef_table
         {
-            mini_intrisics            base_instrinsics;
+            mini_intrinsics           base_instrinsics;
             uint32_t                  distortion_non_parametric;
             rs2_distortion            distortion_model;          /**< Distortion model of the image */
             float                     distortion_coeffs[5];      /**< Distortion coefficients. Order for Brown-Conrady: [k1, k2, p1, p2, k3]. Order for F-Theta Fish-eye: [k1, k2, k3, k4, 0]. Other models are subject to their own interpretations */
             uint8_t                   reserved[36];
             float                     radial_distortion_lut_range_degs;
             float                     radial_distortion_lut_focal_length;
-            d500_undist_configuration  undist_config;
+            d500_undist_configuration undist_config;
             float3x3                  rotation_matrix;
         };
 
@@ -172,7 +172,7 @@ namespace librealsense
             float                     baseline;                   //  the baseline between the cameras in mm units
             uint16_t                  translation_dir;
             int16_t                   vertical_shift;             // in pixels
-            mini_intrisics            rectified_intrinsics;
+            mini_intrinsics           rectified_intrinsics;
             uint8_t                   reserved[148];
         };
 
@@ -181,13 +181,16 @@ namespace librealsense
             table_header              header;
             single_sensor_coef_table  rgb_coefficients_table;
             float3                    translation_rect;           // Translation vector for rectification
-            mini_intrisics            rectified_intrinsics;
+            mini_intrinsics           rectified_intrinsics;
             uint8_t                   reserved[48];
         };
 
         rs2_intrinsics get_d500_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, d500_calibration_table_id table_id, uint32_t width, uint32_t height);
-        rs2_intrinsics get_d500_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
-        pose get_d400_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
+        rs2_intrinsics get_d500_depth_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
+        rs2_intrinsics get_d500_color_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
+        pose get_d500_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
+
+
 
         enum class d500_calib_location
         {

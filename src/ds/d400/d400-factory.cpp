@@ -725,9 +725,9 @@ namespace librealsense
             try
             {
                 // verify extrinsic calibration table structure
-                auto table = ds::check_calib<ds::rgb_calibration_table>(raw_data);
+                auto table = ds::check_calib<ds::d400_rgb_calibration_table>(raw_data);
 
-                if ( (table->header.version != 0 && table->header.version != 0xffff) && (table->header.table_size >= sizeof(ds::rgb_calibration_table) - sizeof(ds::table_header)))
+                if ( (table->header.version != 0 && table->header.version != 0xffff) && (table->header.table_size >= sizeof(ds::d400_rgb_calibration_table) - sizeof(ds::table_header)))
                 {
                     float3 trans_vector = table->translation_rect;
                     // Translation Heuristic tests
