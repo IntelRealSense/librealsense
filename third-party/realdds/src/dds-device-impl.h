@@ -12,7 +12,7 @@
 
 #include <fastdds/rtps/common/Guid.h>
 
-#include <third-party/json.hpp>
+#include <nlohmann/json.hpp>
 
 #include <map>
 #include <memory>

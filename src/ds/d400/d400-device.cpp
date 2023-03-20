@@ -25,7 +25,7 @@
 #include "d400-thermal-monitor.h"
 #include <common/fw/firmware-version.h>
 #include <src/fw-update/fw-update-unsigned.h>
-#include <third-party/json.hpp>
+#include <nlohmann/json.hpp>
 
 #include <regex>
 #include <iterator>

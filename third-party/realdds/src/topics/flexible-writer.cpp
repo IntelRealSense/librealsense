@@ -11,7 +11,7 @@
 #include <fastdds/dds/topic/Topic.hpp>
 
 #include <rsutils/time/timer.h>
-#include <third-party/json.hpp>
+#include <nlohmann/json.hpp>
 
 
 namespace realdds {

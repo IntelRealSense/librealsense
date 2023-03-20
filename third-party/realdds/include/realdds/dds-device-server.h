@@ -7,7 +7,7 @@
 #include <realdds/dds-defines.h>
 
 #include <rsutils/concurrency/concurrency.h>
-#include <third-party/json_fwd.hpp>
+#include <nlohmann/json_fwd.hpp>
 
 #include <map>
 #include <vector>

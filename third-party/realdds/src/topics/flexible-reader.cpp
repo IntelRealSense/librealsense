@@ -10,7 +10,7 @@
 
 #include <fastdds/dds/topic/Topic.hpp>
 
-#include <third-party/json.hpp>
+#include <nlohmann/json.hpp>
 
 
 namespace realdds {
