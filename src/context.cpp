@@ -900,10 +900,10 @@ namespace librealsense
                         [this]( rs2_software_video_frame && f, json && md )
                         {
                             if( md.empty() )
-                                clear_metadata();
+                                _metadata_map = {};  // clear it out
                             else
                                 add_video_frame_metadata( f, std::move( md ) );
-                        	custom_on_video_frame( f );
+                            custom_on_video_frame( f );
                         } );
 
                     As< realdds::dds_video_stream >( dds_stream )->on_data_available(
@@ -917,7 +917,7 @@ namespace librealsense
                         [this]( rs2_software_motion_frame && f, json && md )
                         {
                             if( md.empty() )
-                                clear_metadata();
+                                _metadata_map = {};  // clear it out
                             else
                                 add_motion_frame_metadata( f, std::move( md ) );
                             on_motion_frame( f );
