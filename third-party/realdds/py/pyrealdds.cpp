@@ -680,6 +680,11 @@ PYBIND11_MODULE(NAME, m) {
         .def( "guid", &dds_device::guid )
         .def( "is_running", &dds_device::is_running )
         .def( "run", &dds_device::run, py::call_guard< py::gil_scoped_release >() )
+        .def( FN_FWD( dds_device,
+                      on_metadata_available,
+                      ( dds_device &, py::object && ),
+                      ( nlohmann::json && j ),
+                      callback( self, json_to_py( j ) ); ) )
         .def( "n_streams", &dds_device::number_of_streams )
         .def( "streams",
               []( dds_device const & self ) {
