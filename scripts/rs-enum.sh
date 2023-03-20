@@ -158,6 +158,7 @@ for camera in $mux_list; do
     if [[ $info -eq 0 ]]; then
       [[ -e $dev_md_ln ]] && sudo unlink $dev_md_ln
       sudo ln -s "/dev/video$(($vid_num+1))" $dev_md_ln
+      v4l2-ctl -d $dev_md_ln -c enumerate_graph_link=3
     fi
   done
   # create DFU device link for camera
