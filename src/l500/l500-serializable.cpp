@@ -4,7 +4,7 @@
 #include <set>
 #include "l500-serializable.h"
 #include "l500-options.h"
-#include <third-party/json.hpp>
+#include <nlohmann/json.hpp>
 #include <src/serialized-utilities.h>
 
 namespace librealsense

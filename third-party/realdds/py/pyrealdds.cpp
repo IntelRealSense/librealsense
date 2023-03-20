@@ -1,8 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <rsutils/py/pybind11.h>
-
 #include <realdds/dds-defines.h>
 #include <realdds/dds-participant.h>
 #include <realdds/topics/flexible/flexible-msg.h>
@@ -33,7 +31,7 @@
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
 #include <fastrtps/types/DynamicType.h>
 
-#include <third-party/json.hpp>
+#include <rsutils/py/pybind11.h>
 
 
 #define NAME pyrealdds
@@ -528,6 +526,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "sensor_name", &dds_stream_base::sensor_name )
         .def( "type_string", &dds_stream_base::type_string )
         .def( "profiles", &dds_stream_base::profiles )
+        .def( "enable_metadata", &dds_stream_base::enable_metadata )
         .def( "init_profiles", &dds_stream_base::init_profiles )
         .def( "init_options", &dds_stream_base::init_options )
         .def( "default_profile_index", &dds_stream_base::default_profile_index )
@@ -607,7 +606,9 @@ PYBIND11_MODULE(NAME, m) {
                   for( auto const & name2stream : self.streams() )
                       streams.push_back( name2stream.second );
                   return streams;
-              } );
+              } )
+        .def( "publish_metadata",
+              []( dds_device_server & self, py::handle const & obj ) { self.publish_metadata( py_to_json( obj ) ); } );
 
     using realdds::dds_stream;
     py::class_< dds_stream, std::shared_ptr< dds_stream > > stream_client_base( m, "stream", stream_base );
@@ -671,9 +672,9 @@ PYBIND11_MODULE(NAME, m) {
 
     using realdds::dds_device;
     py::class_< dds_device,
-                std::shared_ptr< dds_device >  // handled with a shared_ptr
-                >( m, "device" )
-        .def( py::init( &dds_device::create ))
+        std::shared_ptr< dds_device >  // handled with a shared_ptr
+    >( m, "device" )
+        .def( py::init( &dds_device::create ) )
         .def( "device_info", &dds_device::device_info )
         .def( "participant", &dds_device::participant )
         .def( "guid", &dds_device::guid )

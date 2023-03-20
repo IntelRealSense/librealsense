@@ -5,7 +5,7 @@
 #include <string>
 #include <map>
 #include <types.h>
-#include <third-party/json.hpp>
+#include <nlohmann/json.hpp>
 
 
 namespace librealsense

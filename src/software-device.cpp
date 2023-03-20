@@ -6,7 +6,7 @@
 
 #include <rsutils/string/from.h>
 #include <rsutils/deferred.h>
-#include <third-party/json.hpp>
+#include <nlohmann/json.hpp>
 
 using rsutils::deferred;
 

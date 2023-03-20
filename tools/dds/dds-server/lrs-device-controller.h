@@ -4,7 +4,7 @@
 #pragma once
 #include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
 #include <realdds/dds-stream-sensor-bridge.h>
-#include <third-party/json_fwd.hpp>
+#include <nlohmann/json_fwd.hpp>
 
 #include <unordered_map>
 #include <vector>
