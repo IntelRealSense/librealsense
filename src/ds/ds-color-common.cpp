@@ -25,7 +25,6 @@ namespace librealsense
         _color_ep.register_pu(RS2_OPTION_BRIGHTNESS);
         _color_ep.register_pu(RS2_OPTION_CONTRAST);
         _color_ep.register_pu(RS2_OPTION_SATURATION);
-        _color_ep.register_pu(RS2_OPTION_GAMMA);
         _color_ep.register_pu(RS2_OPTION_SHARPNESS);
         _color_ep.register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
 

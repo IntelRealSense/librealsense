@@ -144,6 +144,8 @@ namespace librealsense
             _ds_color_common->register_color_options();
         }
 
+        color_ep.register_pu(RS2_OPTION_GAMMA);
+
         if (_separate_color)
         {
             // Currently disabled for certain sensors
