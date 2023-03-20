@@ -34,6 +34,15 @@
 #include <rsutils/os/executable-name.h>
 #include <rsutils/deferred.h>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
+#include <proc/depth-decompress.h>
+#include <proc/decimation-filter.h>
+#include <proc/disparity-transform.h>
+#include <proc/hdr-merge.h>
+#include <proc/hole-filling-filter.h>
+#include <proc/sequence-id-filter.h>
+#include <proc/spatial-filter.h>
+#include <proc/temporal-filter.h>
+#include <proc/threshold.h>
 
 // We manage one participant and device-watcher per domain:
 // Two contexts with the same domain-id will share the same participant and watcher, while a third context on a
@@ -979,6 +988,55 @@ namespace librealsense
             throw std::runtime_error( "Could not find a stream that supports option " + name );
         }
 
+        void add_processing_block( std::string filter_name )
+        {
+            auto & current_filters = get_software_recommended_proccesing_blocks();
+            
+            if( processing_block_exists( current_filters.get_recommended_processing_blocks(), filter_name ) )
+                return; // Already created by another stream of this sensor
+
+            create_processing_block( filter_name );
+        }
+
+        bool processing_block_exists( processing_blocks const & blocks, std::string const & block_name ) const
+        {
+            for( auto & block : blocks )
+                if( block_name.compare( block->get_info( RS2_CAMERA_INFO_NAME ) ) == 0 )
+                    return true;
+
+            return false;
+        }
+
+        void create_processing_block( std::string & filter_name )
+        {
+            auto & current_filters = get_software_recommended_proccesing_blocks();
+
+            if( filter_name.compare( "Depth Huffman Decoder" ) == 0 )
+                current_filters.add_processing_block( std::make_shared< depth_decompression_huffman >() );
+            else if( filter_name.compare( "Decimation Filter" ) == 0 )
+                // sensor.cpp sets format option based on sensor type, but the filter does not use it and selects the
+                // appropriate decimation algorithm based on processed frame profile format.
+                current_filters.add_processing_block( std::make_shared< decimation_filter >() );
+            else if( filter_name.compare( "HDR Merge" ) == 0 )
+                current_filters.add_processing_block( std::make_shared< hdr_merge >() );
+            else if( filter_name.compare( "Filter By Sequence id" ) == 0 )
+                current_filters.add_processing_block( std::make_shared< sequence_id_filter >() );
+            else if( filter_name.compare( "Threshold Filter" ) == 0 )
+                current_filters.add_processing_block( std::make_shared< threshold >() );
+            else if( filter_name.compare( "Depth to Disparity" ) == 0 )
+                current_filters.add_processing_block( std::make_shared< disparity_transform >( true ) );
+            else if( filter_name.compare( "Disparity to Depth" ) == 0 )
+                current_filters.add_processing_block( std::make_shared< disparity_transform >( false ) );
+            else if( filter_name.compare( "Spatial Filter" ) == 0 )
+                current_filters.add_processing_block( std::make_shared< spatial_filter >() );
+            else if( filter_name.compare( "Temporal Filter" ) == 0 )
+                current_filters.add_processing_block( std::make_shared< temporal_filter >() );
+            else if( filter_name.compare( "Hole Filling Filter" ) == 0 )
+                current_filters.add_processing_block( std::make_shared< hole_filling_filter >() );
+            else
+                throw std::runtime_error( "Unsupported processing block '" + filter_name + "' received" );
+        }
+
         const std::string & get_name() const { return _name; }
 
     private:
@@ -989,6 +1047,43 @@ namespace librealsense
         bool _md_enabled = false;
         std::map< std::string, frame_metadata_syncer< rs2_software_video_frame > > _stream_name_to_video_syncer;
         std::map< std::string, frame_metadata_syncer< rs2_software_motion_frame > > _stream_name_to_motion_syncer;
+    };
+
+    // For cases when checking if this is< color_sensor > (like realsense-viewer::subdevice_model)
+    class dds_color_sensor_proxy : public dds_sensor_proxy, public color_sensor
+    {
+    public:
+        dds_color_sensor_proxy( std::string const & sensor_name,
+                                software_device * owner,
+                                std::shared_ptr< realdds::dds_device > const & dev )
+            : dds_sensor_proxy( sensor_name, owner, dev )
+        {
+        }
+    };
+
+    // For cases when checking if this is< depth_sensor > (like realsense-viewer::subdevice_model)
+    class dds_depth_sensor_proxy : public dds_sensor_proxy, public depth_sensor
+    {
+    public:
+        dds_depth_sensor_proxy( std::string const & sensor_name,
+                                software_device * owner,
+                                std::shared_ptr< realdds::dds_device > const & dev )
+            : dds_sensor_proxy( sensor_name, owner, dev )
+        {
+        }
+
+        // Needed by abstract interfaces
+        float get_depth_scale() const override { return get_option( RS2_OPTION_DEPTH_UNITS ).query(); }
+
+        void create_snapshot( std::shared_ptr<depth_sensor> & snapshot ) const override
+        {
+            snapshot = std::make_shared<depth_sensor_snapshot>( get_depth_scale() );
+        }
+
+        void enable_recording( std::function<void( const depth_sensor & )> recording_function ) override
+        {
+            //does not change over time
+        }
     };
 
     // This is the rs2 device; it proxies to an actual DDS device that does all the actual
@@ -1129,7 +1224,7 @@ namespace librealsense
                 if( ! sensor_info.proxy )
                 {
                     // This is a new sensor we haven't seen yet
-                    sensor_info.proxy = std::make_shared< dds_sensor_proxy >( stream->sensor_name(), this, _dds_dev );
+                    sensor_info.proxy = create_sensor( stream->sensor_name() );
                     sensor_info.sensor_index = add_sensor( sensor_info.proxy );
                     assert( sensor_info.sensor_index == _software_sensors.size() );
                     _software_sensors.push_back( sensor_info.proxy );
@@ -1176,6 +1271,12 @@ namespace librealsense
                 for( auto & option : options )
                 {
                     sensor_info.proxy->add_option( option );
+                }
+
+                auto & recommended_filters = stream->recommended_filters();
+                for( auto & filter_name : recommended_filters )
+                {
+                    sensor_info.proxy->add_processing_block( filter_name );
                 }
             } );  // End foreach_stream lambda
 
@@ -1225,6 +1326,16 @@ namespace librealsense
             }
             // TODO - need to register extrinsics group in dev?
         } //End dds_device_proxy constructor
+
+        std::shared_ptr< dds_sensor_proxy> create_sensor( const std::string & sensor_name )
+        {
+            if( sensor_name.compare( "RGB Camera" ) == 0 )
+                return std::make_shared< dds_color_sensor_proxy>( sensor_name, this, _dds_dev );
+            else if( sensor_name.compare( "Stereo Module" ) == 0 )
+                return std::make_shared< dds_depth_sensor_proxy>( sensor_name, this, _dds_dev );
+
+            return std::make_shared< dds_sensor_proxy >( sensor_name, this, _dds_dev );
+        }
     };
 
     class dds_device_info : public device_info

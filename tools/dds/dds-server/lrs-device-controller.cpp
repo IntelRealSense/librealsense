@@ -216,8 +216,9 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
             motion_server->set_intrinsics( std::move( stream_name_to_motion_intrinsics[stream_name] ) );
         }
 
+        // Get supported options and recommended filters for this stream
         realdds::dds_options options;
-        // Get supported options for this stream
+        std::vector< std::string > filter_names;
         for( auto sensor : _rs_dev.query_sensors() )
         {
             std::string const sensor_name = sensor.get_info( RS2_CAMERA_INFO_NAME );
@@ -246,9 +247,14 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
                 }
                 // sensor.stop();
                 // sensor.close();
+
+                auto recommended_filters = sensor.get_recommended_filters();
+                for( auto const & filter : recommended_filters )
+                    filter_names.push_back( filter.get_info( RS2_CAMERA_INFO_NAME ) );
             }
         }
         server->init_options( options );
+        server->set_recommended_filters( std::move( filter_names ) );
 
         servers.push_back( server );
     }

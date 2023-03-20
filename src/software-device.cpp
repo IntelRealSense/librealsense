@@ -397,5 +397,14 @@ namespace librealsense
         register_option(option, (is_writable? std::make_shared<float_option>(range) :
                                               std::make_shared<readonly_float_option>(range)));
     }
-}
+
+    void software_recommended_proccesing_blocks::add_processing_block( std::shared_ptr< processing_block_interface > const & block )
+    {
+        if( ! block )
+            throw invalid_value_exception( "trying to add an empty software processing block" );
+
+        _blocks.push_back( block );
+    }
+
+} // namespace librealsense
 

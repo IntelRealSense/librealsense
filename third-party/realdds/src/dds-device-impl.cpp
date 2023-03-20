@@ -301,12 +301,15 @@ bool dds_device::impl::init()
                 }
                 else if( state_type::WAIT_FOR_DEVICE_OPTIONS == state && id == "device-options" )
                 {
-                    LOG_DEBUG( "... device-options: " << j["n-options"] << " options received" );
-
-                    for( auto & option_json : j["options"] )
+                    if( rsutils::json::has( j, "options" ) )
                     {
-                        auto option = dds_option::from_json( option_json, _info.name );
-                        _options.push_back( option );
+                        LOG_DEBUG( "... device-options: " << j["options"].size() << " options received" );
+
+                        for( auto & option_json : j["options"] )
+                        {
+                            auto option = dds_option::from_json( option_json, _info.name );
+                            _options.push_back( option );
+                        }
                     }
 
                     if( n_streams_expected )
@@ -408,6 +411,17 @@ bool dds_device::impl::init()
                         {
                             motion_stream->set_intrinsics( motion_intrinsics::from_json( j["intrinsics"][0] ) );
                         }
+                    }
+
+                    if( rsutils::json::has( j, "recommended-filters" ) )
+                    {
+                        std::vector< std::string > filter_names;
+                        for( auto & filter : j["recommended-filters"] )
+                        {
+                            filter_names.push_back( filter );
+                        }
+
+                        stream_it->second->set_recommended_filters( std::move( filter_names ) );
                     }
 
                     if( _streams.size() >= n_streams_expected )

@@ -71,8 +71,7 @@ On the discovery phase the camera server will send a **device-header** message, 
 #### device-options format example
 
     "id":"device-options",
-    "n-options": 2,       //Integer, number of device options
-    "options":            //Array of supported options, the size of n-options
+    "options":            //Array of supported options
     [
         {"description":"Enable/Disable global timestamp","name":"Global Time Enabled","range-default":1.0,"range-max":1.0,"range-min":0.0,"range-step":1.0,"value":1.0},
         {"description":"HDR Option","name":"Hdr Enabled","range-default":0.0,"range-max":1.0,"range-min":0.0,"range-step":1.0,"value":0.0}
@@ -98,8 +97,7 @@ On the discovery phase the camera server will send a **device-header** message, 
         [640,480,320.14276123046875,238.4058837890625,378.80572509765625,378.80572509765625,4,0.0,0.0,0.0,0.0,0.0]
         [1280,720,640.2379150390625,357.3431396484375,631.3428955078125,631.3428955078125,4,0.0,0.0,0.0,0.0,0.0]
     ]
-    "n-options":3,        //Integer, number of device options
-    "options":            //Array of supported options, the size of n-options
+    "options":            //Array of supported options
     [
         {"description":"Enable / disable backlight compensation","name":"Backlight Compensation","range-default":0.0,"range-max":1.0,"range-min":0.0,"range-step":1.0,"value":0.0},
         {"description":"UVC image brightness","name":"Brightness","range-default":0.0,"range-max":64.0,"range-min":-64.0,"range-step":1.0,"value":0.0},
