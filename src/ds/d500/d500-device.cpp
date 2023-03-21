@@ -506,15 +506,6 @@ namespace librealsense
                 std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_EXT_TRIGGER,
                     "Generate trigger from the camera to external device once per frame"));
 
-            auto error_control = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_ERROR_REPORTING, "Error reporting");
-
-            _polling_error_handler = std::make_shared<polling_error_handler>(1000,
-                error_control,
-                raw_depth_sensor.get_notifications_processor(),
-                std::make_shared<ds_notification_decoder>());
-
-            depth_sensor.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler));
-
             depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
                 std::make_shared<asic_and_projector_temperature_options>(raw_depth_sensor,
                     RS2_OPTION_ASIC_TEMPERATURE));
@@ -595,33 +586,6 @@ namespace librealsense
                 std::make_shared<auto_disabling_control>(
                     gain_option,
                     enable_auto_exposure));
-
-            // Alternating laser pattern is applicable for global shutter/active SKUs
-            auto mask = ds_caps::CAP_GLOBAL_SHUTTER | ds_caps::CAP_ACTIVE_PROJECTOR;
-            // Alternating laser pattern should be set and query in a different way according to the firmware version
-            if ((_device_capabilities & mask) == mask)
-            {
-                auto alternating_emitter_opt = std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor);
-                auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>(*_hw_monitor, &depth_sensor);
-
-                if ((_device_capabilities & ds_caps::CAP_GLOBAL_SHUTTER) == ds_caps::CAP_GLOBAL_SHUTTER)
-                {
-                    std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(alternating_emitter_opt,
-                        "Emitter always ON cannot be set while Emitter ON/OFF is enabled") };
-                    depth_sensor.register_option(RS2_OPTION_EMITTER_ALWAYS_ON,
-                        std::make_shared<gated_option>(
-                            emitter_always_on_opt,
-                            options_and_reasons));
-                }
-
-                std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(hdr_enabled_option, "Emitter ON/OFF cannot be set while HDR is enabled"),
-                            std::make_pair(emitter_always_on_opt, "Emitter ON/OFF cannot be set while Emitter always ON is enabled") };
-                depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF,
-                    std::make_shared<gated_option>(
-                        alternating_emitter_opt,
-                        options_and_reasons
-                        ));
-            }
 
             if ((_device_capabilities & ds_caps::CAP_INTERCAM_HW_SYNC) == ds_caps::CAP_INTERCAM_HW_SYNC)
             {
