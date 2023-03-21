@@ -23,6 +23,18 @@ class depth_sensor;
 typedef std::multimap< rs2_frame_metadata_value, std::shared_ptr< md_attribute_parser_base > >
     metadata_parser_map;
 
+#pragma pack( push, 1 )
+struct metadata_array_value
+{
+    bool is_valid;
+    rs2_metadata_type value;
+};
+#pragma pack( pop )
+
+static_assert( sizeof( metadata_array_value ) == sizeof( rs2_metadata_type ) + 1,
+               "unexpected size for metadata array members" );
+
+
 /*
     Each frame is attached with a static header
     This is a quick and dirty way to manage things like timestamp,
@@ -57,7 +69,7 @@ struct frame_additional_data : frame_header
 {
     uint32_t metadata_size = 0;
     bool fisheye_ae_mode = false;  // TODO: remove in future release
-    std::array< uint8_t, RS2_FRAME_METADATA_ACTUAL_COUNT * sizeof( rs2_metadata_type ) > metadata_blob;
+    std::array< uint8_t, RS2_FRAME_METADATA_ACTUAL_COUNT * sizeof( metadata_array_value ) > metadata_blob;
     rs2_time_t last_timestamp = 0;
     unsigned long long last_frame_number = 0;
     bool is_blocking  = false;  // when running from recording, this bit indicates

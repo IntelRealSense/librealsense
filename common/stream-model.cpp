@@ -139,7 +139,6 @@ namespace rs2
         texture->yuy2rgb = d->yuy2rgb;
         texture->m420_to_rgb = d->m420_to_rgb;
         texture->y411 = d->y411;
-        texture->depth_decode = d->depth_decoder;
 
         if (auto vd = p.as<video_stream_profile>())
         {
