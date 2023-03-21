@@ -208,7 +208,6 @@ namespace rs2
         std::shared_ptr<rs2::yuy_decoder> yuy2rgb;
         std::shared_ptr<rs2::y411_decoder> y411;
         std::shared_ptr<processing_block_model> zero_order_artifact_fix;
-        std::shared_ptr<rs2::depth_huffman_decoder> depth_decoder;
 
         std::vector<std::shared_ptr<processing_block_model>> post_processing;
         bool post_processing_enabled = true;
