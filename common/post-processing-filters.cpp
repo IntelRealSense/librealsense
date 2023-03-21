@@ -185,7 +185,6 @@ std::vector<rs2::frame> post_processing_filters::handle_frame(rs2::frame f, cons
             switch (depth.get_profile().format())
             {
             case RS2_FORMAT_DISPARITY32: depth = disp_to_depth.process(depth); break;
-            case RS2_FORMAT_Z16H: depth = depth_decoder.process(depth); break;
             default: break;
             }
 

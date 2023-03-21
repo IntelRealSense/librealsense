@@ -131,7 +131,6 @@ namespace rs2
         yuy2rgb(std::make_shared<rs2::gl::yuy_decoder>()),
         m420_to_rgb(std::make_shared<rs2::gl::m420_decoder>()),
         y411(std::make_shared<rs2::gl::y411_decoder>()),
-        depth_decoder(std::make_shared<rs2::depth_huffman_decoder>()),
         viewer(viewer),
         detected_objects(device_detected_objects)
     {
@@ -198,9 +197,6 @@ namespace rs2
             auto model = std::make_shared<processing_block_model>(
                 this, shared_filter->get_info(RS2_CAMERA_INFO_NAME), shared_filter,
                 [=](rs2::frame f) { return shared_filter->process(f); }, error_message);
-
-            if (shared_filter->is<depth_huffman_decoder>())
-                model->visible = false;
 
             if (is_zo)
             {
