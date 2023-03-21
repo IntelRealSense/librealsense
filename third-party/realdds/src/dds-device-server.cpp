@@ -200,12 +200,14 @@ void dds_device_server::publish_notification( topics::flexible_msg && notificati
     _notification_server->send_notification( std::move( notification ) );
 }
 
-void dds_device_server::publish_metadata( topics::flexible_msg && md )
+void dds_device_server::publish_metadata( nlohmann::json && md )
 {
     if( ! _metadata_writer )
         DDS_THROW( runtime_error, "device '" + _topic_root + "' has no stream with enabled metadata" );
 
-    md.write_to( *_metadata_writer );
+    topics::flexible_msg msg( md );
+    LOG_DEBUG( "sending metadata: " << msg.custom_data< char const >() );
+    msg.write_to( *_metadata_writer );
 }
 
 void dds_device_server::on_control_message_received()
