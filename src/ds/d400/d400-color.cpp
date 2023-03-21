@@ -142,7 +142,7 @@ namespace librealsense
         if (!val_in_range(_pid, { ds::RS457_PID }))
         {
             _ds_color_common->register_color_options();
-            color_ep.register_pu(RS2_OPTION_GAMMA);
+            color_ep.register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
         }
 
         if (_separate_color)
