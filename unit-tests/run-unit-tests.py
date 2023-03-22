@@ -37,6 +37,8 @@ def usage():
     print( '                             all tags. e.g. -t tag1 -t tag2 will run tests who have both tag1 and tag2' )
     print( '                             tests automatically get tagged with \'exe\' or \'py\' and based on their location' )
     print( '                             inside unit-tests/, e.g. unit-tests/func/test-hdr.py gets [func, py]' )
+    print( '        --live               Find only live tests (with test:device directives)' )
+    print( '        --not-live           Find only tests that are NOT live (without test:device directives)' )
     print( '        --list-tags          Print out all available tags. This option will not run any tests' )
     print( '        --list-tests         Print out all available tests. This option will not run any tests' )
     print( '                             If both list-tags and list-tests are specified each test will be printed along' )
@@ -74,7 +76,7 @@ try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
                                           'list-tests', 'no-exceptions', 'context=', 'repeat=', 'config=', 'no-reset',
-                                          'rslog', 'skip-disconnected'] )
+                                          'rslog', 'skip-disconnected', 'live', 'not-live'] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
@@ -90,6 +92,8 @@ forced_configurations = None
 no_reset = False
 skip_disconnected = False
 rslog = False
+only_live = False
+only_not_live = False
 for opt, arg in opts:
     if opt in ('-h', '--help'):
         usage()
@@ -124,6 +128,16 @@ for opt, arg in opts:
         rslog = True
     elif opt == '--skip-disconnected':
         skip_disconnected = True
+    elif opt == '--live':
+        if only_not_live:
+            log.e( "--live and --not-live are mutually exclusive" )
+            usage()
+        only_live = True
+    elif opt == '--not-live':
+        if only_live:
+            log.e( "--live and --not-live are mutually exclusive" )
+            usage()
+        only_not_live = True
 
 def find_build_dir( dir ):
     """
@@ -298,7 +312,7 @@ def get_tests():
             if regex and not pattern.search( testname ):
                 continue
 
-            yield libci.ExeTest( testname )
+            yield libci.ExeTest( testname, context=context )
     elif exe_dir:
         # In Linux, the build targets are located elsewhere than on Windows
         # Go over all the tests from a "manifest" we take from the result of the last CMake
@@ -436,6 +450,11 @@ try:
         try:
             log.debug_indent()
             test.debug_dump()
+            #
+            if only_live and not test.is_live():
+                continue
+            if only_not_live and test.is_live():
+                continue
             #
             if test.config.donotrun:
                 continue
