@@ -19,9 +19,12 @@
 
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
 
+#include <rsutils/string/shorten-json-string.h>
 #include <rsutils/json.h>
-
 using nlohmann::json;
+using rsutils::string::slice;
+using rsutils::string::shorten_json_string;
+
 using namespace eprosima::fastdds::dds;
 using namespace realdds;
 
@@ -91,9 +94,9 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
         { "default-profile-index", stream->default_profile_index() },
         { "metadata-enabled", stream->metadata_enabled() },
     } );
-    LOG_DEBUG( "-----> JSON = " << stream_header_message.json_data().dump() );
-    LOG_DEBUG( "-----> JSON size = " << stream_header_message.json_data().dump().length() );
-    LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( stream_header_message.json_data() ).size() );
+    auto json_string = slice( stream_header_message.custom_data< char const >(), stream_header_message._data.size() );
+    LOG_DEBUG( "-----> JSON = " << shorten_json_string( json_string, 300 ) << " size " << json_string.length() );
+    //LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( stream_header_message.json_data() ).size() );
     notifications.add_discovery_notification( std::move( stream_header_message ) );
 
     auto stream_options = nlohmann::json::array();
@@ -117,11 +120,11 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
         { "stream-name", stream->name() },
         { "options" , stream_options },
         { "intrinsics" , intrinsics },
-        { "recommended-filters", stream_filters },
+        { "recommended-filters", std::move( stream_filters ) },
     } );
-    LOG_DEBUG( "-----> JSON = " << stream_options_message.json_data().dump() );
-    LOG_DEBUG( "-----> JSON size = " << stream_options_message.json_data().dump().length() );
-    LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( stream_options_message.json_data() ).size() );
+    json_string = slice( stream_options_message.custom_data< char const >(), stream_options_message._data.size() );
+    LOG_DEBUG( "-----> JSON = " << shorten_json_string( json_string, 300 ) << " size " << json_string.length() );
+    //LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( stream_options_message.json_data() ).size() );
     notifications.add_discovery_notification( std::move( stream_options_message ) );
 }
 
@@ -206,7 +209,8 @@ void dds_device_server::publish_metadata( nlohmann::json && md )
         DDS_THROW( runtime_error, "device '" + _topic_root + "' has no stream with enabled metadata" );
 
     topics::flexible_msg msg( md );
-    LOG_DEBUG( "sending metadata: " << msg.custom_data< char const >() );
+    LOG_DEBUG(
+        "sending metadata: " << shorten_json_string( slice( msg.custom_data< char const >(), msg._data.size() ) ) );
     msg.write_to( *_metadata_writer );
 }
 
