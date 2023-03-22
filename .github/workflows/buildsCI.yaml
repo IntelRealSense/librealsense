@@ -64,7 +64,7 @@ jobs:
 
 
   #--------------------------------------------------------------------------------
-  Win_ST_Py_DDS:  # Windows, Static, Python, Tools, DDS
+  Win_ST_Py_DDS_CI:  # Windows, Static, Python, Tools, DDS, libCI
     runs-on: windows-2019
     timeout-minutes: 60
     steps:
@@ -104,7 +104,13 @@ jobs:
       shell: bash
       run: |
         cd ${{env.WIN_BUILD_DIR}}
-        cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -m    
+        cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -m
+
+    - name: LibCI
+      # Build your program with the given configuration
+      shell: bash
+      run: |
+        python3 unit-tests/run-unit-tests.py --no-color --debug --stdout --not-live --context "dds windows" ${{env.WIN_BUILD_DIR}}/Release
 
 
   #--------------------------------------------------------------------------------
@@ -210,7 +216,7 @@ jobs:
 
 
   #--------------------------------------------------------------------------------
-  U20_SH_Py_DDS:  # Ubuntu 2020, Shared, Python, DDS
+  U20_SH_Py_DDS_CI:  # Ubuntu 2020, Shared, Python, DDS, LibCI
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     steps:
@@ -243,6 +249,12 @@ jobs:
         cd build
         cmake .. -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=true -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3)
         cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -j4  
+
+    - name: LibCI
+      # Build your program with the given configuration
+      shell: bash
+      run: |
+        python3 unit-tests/run-unit-tests.py --no-color --debug --stdout --not-live --context "dds linux"
   
 
   #--------------------------------------------------------------------------------
