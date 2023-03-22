@@ -82,7 +82,7 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_environment const&
     out << "\n\t\t" << "Max Linear Velocity: " << se.max_linear_velocity << " [m/sec]";
     out << "\n\t\t" << "Max Angular Velocity: " << se.max_angular_velocity << " [rad/sec]";
     out << "\n\t\t" << "Payload Weight: " << se.payload_weight << " [kg]";
-    out << "\n\t\t" << "Surface Inclination: " << se.surface_inclination << " [rad]";
+    out << "\n\t\t" << "Surface Inclination: " << se.surface_inclination << " [deg]";
     out << "\n\t\t" << "Surface Height: " << se.surface_height << " [m]";
     out << "\n\t\t" << "Surface Confidence: " << (int)(se.surface_confidence) << " [%]";
     out << "\n\t\t" << "Reserved[16]: " << sc_reserved_arr_to_string(se.reserved);
