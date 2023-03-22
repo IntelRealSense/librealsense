@@ -8,6 +8,23 @@ namespace rsutils {
 namespace string {
 
 
+// Return the closing character corresponding to the opening passed in, or 0 otherwise
+static char get_block_close( char const ch )
+{
+    if( ch == '[' )
+        return ']';
+    if( ch == '{' )
+        return '}';
+    return 0;
+}
+
+
+static bool is_block_open( char const ch )
+{
+    return 0 != get_block_close( ch );
+}
+
+
 // Given an outside block, e.g.:
 //        012345678901234567890123456789012345678901234567890123456789012345678901234567890
 //        0         1         2         3         4         5         6         7         8
@@ -20,7 +37,7 @@ static slice find_inside_block( slice const & outside )
     // find an opening
     slice::const_iterator it = outside.begin() + 1;  // opening {, separating comma, etc.
     bool in_quote = false;
-    while( it < outside.end() && ( in_quote || *it != '[' && *it != '{' ) )
+    while( it < outside.end() && ( in_quote || ! is_block_open( *it ) ) )
     {
         if( *it == '"' )
             in_quote = ! in_quote;
@@ -33,7 +50,7 @@ static slice find_inside_block( slice const & outside )
     char const open = *begin;
 
     // find the closing
-    char const close = ( *it == '[' ) ? ']' : '}';
+    char const close = get_block_close( *it );
     int nesting = 0;
     while( 1 )
     {
@@ -81,7 +98,7 @@ ellipsis shorten_json_string( slice const & str, size_t max_length )
         return ellipsis( slice(), str );  // impossible: "{ ... }" is the minimum
 
     // Try to find an inside block that can be taken out
-    ellipsis final;
+    ellipsis result;
     slice range = str;
     while( slice block = find_inside_block( range ) )
     {
@@ -91,11 +108,11 @@ ellipsis shorten_json_string( slice const & str, size_t max_length )
         //        {"one":1,"two":[1,2,3],"three":{ ... },"four":4}
         //        ^_______________________________^    ^__________^
         ellipsis candidate( slice( str.begin(), block.begin() + 1 ), slice( block.end() - 1, str.end() ) );
-        if( candidate.length() <= max_length && candidate.length() > final.length() )
-            final = candidate;
+        if( candidate.length() <= max_length && candidate.length() > result.length() )
+            result = candidate;
 
         // But we might be able to remove only an inside block and get a better result:
-        auto inside_max_length = int(max_length) - ( block.begin() - str.begin() ) - ( str.end() - block.end() );
+        auto inside_max_length = int( max_length ) - ( block.begin() - str.begin() ) - ( str.end() - block.end() );
         if( inside_max_length > 6 )
         {
             auto inside = shorten_json_string( block, inside_max_length );
@@ -107,8 +124,8 @@ ellipsis shorten_json_string( slice const & str, size_t max_length )
                 //                                       ^________________^    ^_^
                 ellipsis inside_candidate( slice( str.begin(), inside.first.end() ),
                                            slice( inside.second.begin(), str.end() ) );
-                if( inside_candidate.length() <= max_length  &&  inside_candidate.length() > final.length() )
-                    final = inside_candidate;
+                if( inside_candidate.length() <= max_length && inside_candidate.length() > result.length() )
+                    result = inside_candidate;
             }
         }
 
@@ -117,10 +134,9 @@ ellipsis shorten_json_string( slice const & str, size_t max_length )
     }
 
     // The minimal solution is to shorten the current block at the end (if we can't find anything else)
-    if( ! final )
-        final = ellipsis( slice( str.begin(), str.begin() + max_length - 6 ),
-                          slice( str.end() - 1, str.end() ) );
-    return final;
+    if( ! result )
+        result = ellipsis( slice( str.begin(), str.begin() + max_length - 6 ), slice( str.end() - 1, str.end() ) );
+    return result;
 }
 
 
