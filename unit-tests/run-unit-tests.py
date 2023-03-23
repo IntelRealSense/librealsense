@@ -82,7 +82,7 @@ except getopt.GetoptError as err:
     usage()
 regex = None
 to_stdout = False
-required_tags = []
+required_tags = set()
 list_tags = False
 list_tests = False
 no_exceptions = False
@@ -106,7 +106,7 @@ for opt, arg in opts:
     elif opt in ('-s', '--stdout'):
         to_stdout = True
     elif opt in ('-t', '--tag'):
-        required_tags.append( arg )
+        required_tags.add( arg )
     elif opt == '--list-tags':
         list_tags = True
     elif opt == '--list-tests':
@@ -466,7 +466,7 @@ try:
                 continue
             #
             if required_tags and not all( tag in test.config.tags for tag in required_tags ):
-                log.d( f'{test.name} does not fit --tag {test.config.tags}; skipping' )
+                log.d( f'{test.name} has {test.config.tags} which do not fit --tag {required_tags}; skipping' )
                 continue
             #
             if 'Windows' in test.config.flags and linux:
