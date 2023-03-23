@@ -267,7 +267,7 @@ namespace librealsense
             uint8_t     data[HW_MONITOR_BUFFER_SIZE];
             int         sizeOfSendCommandData;
             long        timeOut;
-            bool        oneDirection;
+            bool        require_response;
             uint8_t     receivedCommandData[HW_MONITOR_BUFFER_SIZE];
             size_t      receivedCommandDataLength;
             uint8_t     receivedOpcode[4];
@@ -280,7 +280,7 @@ namespace librealsense
                   param4(0),
                   sizeOfSendCommandData(0),
                   timeOut(5000),
-                  oneDirection(false),
+                  require_response(true),
                   receivedCommandDataLength(0)
             {}
 
@@ -293,7 +293,7 @@ namespace librealsense
                   param4(cmd.param4),
                   sizeOfSendCommandData(std::min((uint16_t)cmd.data.size(), HW_MONITOR_BUFFER_SIZE)),
                   timeOut(cmd.timeout_ms),
-                  oneDirection(!cmd.require_response),
+                  require_response(cmd.require_response),
                   receivedCommandDataLength(0)
             {
                 librealsense::copy(data, cmd.data.data(), sizeOfSendCommandData);
@@ -302,7 +302,7 @@ namespace librealsense
 
         struct hwmon_cmd_details
         {
-            bool                                         oneDirection;
+            bool                                         require_response;
             std::array<uint8_t, HW_MONITOR_BUFFER_SIZE>  sendCommandData;
             int                                          sizeOfSendCommandData;
             long                                         timeOut;
@@ -311,7 +311,8 @@ namespace librealsense
             size_t                                       receivedCommandDataLength;
         };
 
-        void execute_usb_command(uint8_t *out, size_t outSize, uint32_t& op, uint8_t* in, size_t& inSize, bool require_response) const;
+        void execute_usb_command(uint8_t *out, size_t outSize, uint32_t& op, uint8_t* in, 
+            size_t& inSize, bool require_response) const;
         static void update_cmd_details(hwmon_cmd_details& details, size_t receivedCmdLen, unsigned char* outputBuffer);
         void send_hw_monitor_command(hwmon_cmd_details& details) const;
 

@@ -91,7 +91,8 @@ namespace librealsense
         return cmd;
     }
 
-    void hw_monitor::execute_usb_command(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize, bool require_response) const
+    void hw_monitor::execute_usb_command(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, 
+        size_t & inSize, bool require_response) const
     {
         std::vector<uint8_t> out_vec(out, out + outSize);
         auto res = _locked_transfer->send_receive(out_vec, 5000, require_response);
@@ -119,7 +120,7 @@ namespace librealsense
     {
         details.receivedCommandDataLength = receivedCmdLen;
 
-        if (details.oneDirection) return;
+        if (!details.require_response) return;
 
         if (details.receivedCommandDataLength < 4)
             throw invalid_value_exception("received incomplete response to usb command");
@@ -137,25 +138,25 @@ namespace librealsense
 
         uint32_t op{};
         size_t receivedCmdLen = HW_MONITOR_BUFFER_SIZE;
-        bool require_response = !details.oneDirection;
 
-        execute_usb_command(details.sendCommandData.data(), details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen, require_response);
+        execute_usb_command(details.sendCommandData.data(), details.sizeOfSendCommandData, op,
+            outputBuffer, receivedCmdLen, details.require_response);
         update_cmd_details(details, receivedCmdLen, outputBuffer);
     }
 
-    std::vector<uint8_t> hw_monitor::send( std::vector< uint8_t > const & data ) const
+    std::vector< uint8_t > hw_monitor::send( std::vector< uint8_t > const & data ) const
     {
         return _locked_transfer->send_receive(data);
     }
 
-    std::vector<uint8_t>
+    std::vector< uint8_t >
     hw_monitor::send( command cmd, hwmon_response * p_response, bool locked_transfer ) const
     {
         hwmon_cmd newCommand(cmd);
         auto opCodeXmit = static_cast<uint32_t>(newCommand.cmd);
 
         hwmon_cmd_details details;
-        details.oneDirection = newCommand.oneDirection;
+        details.require_response = newCommand.require_response;
         details.timeOut = newCommand.timeOut;
 
         fill_usb_buffer(opCodeXmit,
@@ -178,7 +179,7 @@ namespace librealsense
         // Error/exit conditions
         if (p_response)
             *p_response = hwm_Success;
-        if (newCommand.oneDirection)
+        if( !newCommand.require_response )
             return std::vector<uint8_t>();
 
         librealsense::copy(newCommand.receivedOpcode, details.receivedOpcode.data(), 4);

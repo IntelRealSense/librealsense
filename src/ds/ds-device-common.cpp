@@ -282,6 +282,7 @@ namespace librealsense
                 if (callback) callback->on_update_progress(1.0);
 
                 command cmdHWRST(ds::HWRST);
+                cmdHWRST.require_response = false;
                 res = _hw_monitor->send(cmdHWRST);
             });
     }
