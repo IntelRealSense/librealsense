@@ -476,7 +476,7 @@ try:
                 log.d( f'{test.name} has Linux flag and OS is Windows; skipping' )
                 continue
             #
-            if to_stdout:
+            if to_stdout and not list_only:
                 log.split()
             log.d( 'found', test.name, '...' )
             log.debug_indent()
@@ -523,7 +523,7 @@ try:
         finally:
             log.debug_unindent()
 
-    if to_stdout:
+    if to_stdout and not list_only:
         log.split()
     log.progress()
     #
