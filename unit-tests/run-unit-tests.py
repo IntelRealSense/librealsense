@@ -37,6 +37,8 @@ def usage():
     print( '                             all tags. e.g. -t tag1 -t tag2 will run tests who have both tag1 and tag2' )
     print( '                             tests automatically get tagged with \'exe\' or \'py\' and based on their location' )
     print( '                             inside unit-tests/, e.g. unit-tests/func/test-hdr.py gets [func, py]' )
+    print( '        --live               Find only live tests (with test:device directives)' )
+    print( '        --not-live           Find only tests that are NOT live (without test:device directives)' )
     print( '        --list-tags          Print out all available tags. This option will not run any tests' )
     print( '        --list-tests         Print out all available tests. This option will not run any tests' )
     print( '                             If both list-tags and list-tests are specified each test will be printed along' )
@@ -74,13 +76,13 @@ try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
                                           'list-tests', 'no-exceptions', 'context=', 'repeat=', 'config=', 'no-reset',
-                                          'rslog', 'skip-disconnected'] )
+                                          'rslog', 'skip-disconnected', 'live', 'not-live'] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
 regex = None
 to_stdout = False
-required_tags = []
+required_tags = set()
 list_tags = False
 list_tests = False
 no_exceptions = False
@@ -90,6 +92,8 @@ forced_configurations = None
 no_reset = False
 skip_disconnected = False
 rslog = False
+only_live = False
+only_not_live = False
 for opt, arg in opts:
     if opt in ('-h', '--help'):
         usage()
@@ -102,7 +106,7 @@ for opt, arg in opts:
     elif opt in ('-s', '--stdout'):
         to_stdout = True
     elif opt in ('-t', '--tag'):
-        required_tags.append( arg )
+        required_tags.add( arg )
     elif opt == '--list-tags':
         list_tags = True
     elif opt == '--list-tests':
@@ -124,6 +128,16 @@ for opt, arg in opts:
         rslog = True
     elif opt == '--skip-disconnected':
         skip_disconnected = True
+    elif opt == '--live':
+        if only_not_live:
+            log.e( "--live and --not-live are mutually exclusive" )
+            usage()
+        only_live = True
+    elif opt == '--not-live':
+        if only_live:
+            log.e( "--live and --not-live are mutually exclusive" )
+            usage()
+        only_not_live = True
 
 def find_build_dir( dir ):
     """
@@ -281,6 +295,7 @@ def check_log_for_fails( path_to_log, testname, configuration = None, repetition
 
 
 def get_tests():
+    log.progress( '-I- Getting tests ...' )
     global regex, exe_dir, pyrs, current_dir, linux, context, list_only
     if regex:
         pattern = re.compile( regex )
@@ -298,7 +313,7 @@ def get_tests():
             if regex and not pattern.search( testname ):
                 continue
 
-            yield libci.ExeTest( testname )
+            yield libci.ExeTest( testname, context=context )
     elif exe_dir:
         # In Linux, the build targets are located elsewhere than on Windows
         # Go over all the tests from a "manifest" we take from the result of the last CMake
@@ -375,7 +390,7 @@ def test_wrapper( test, configuration = None, repetition = 1 ):
     n_tests += 1
     #
     if not log.is_debug_on() or log.is_color_on():
-        log.progress( configuration_str( configuration, repetition, suffix=' ' ) + test.name, '...' )
+        log.progress( '-I- Running', configuration_str( configuration, repetition, suffix=' ' ) + test.name, '...' )
     #
     log_path = test.get_log()
     #
@@ -384,6 +399,7 @@ def test_wrapper( test, configuration = None, repetition = 1 ):
         opts.add( '--rslog' )
     try:
         test.run_test( configuration = configuration, log_path = log_path, opts = opts )
+        return True
     except FileNotFoundError as e:
         log.e( log.red + test.name + log.reset + ':', str( e ) + configuration_str( configuration, repetition, prefix=' ' ) )
     except subprocess.TimeoutExpired:
@@ -394,12 +410,16 @@ def test_wrapper( test, configuration = None, repetition = 1 ):
             log.e( log.red + test.name + log.reset + ':',
                    configuration_str( configuration, repetition, suffix=' ' ) + 'exited with non-zero value (' + str(
                        cpe.returncode ) + ')' )
+    return False
 
 
 # Run all tests
 try:
     list_only = list_tags or list_tests
-    if not list_only:
+    if only_not_live:
+        log.d( 'Only --not-live tests running; skipping device discovery' )
+    elif not list_only:
+        log.progress( '-I- Discovering devices ...' )
         if pyrs:
             sys.path.insert( 1, pyrs_path )  # Make sure we pick up the right pyrealsense2!
         from rspy import devices
@@ -428,28 +448,39 @@ try:
     log.reset_errors()
     available_tags = set()
     tests = []
+    failed_tests = []
     if context:
-        log.d( 'running under context:', context )
+        log.i( 'Running under context:', context )
     for test in prioritize_tests( get_tests() ):
-        #
-        log.d( 'found', test.name, '...' )
         try:
-            log.debug_indent()
-            test.debug_dump()
+            #
+            if only_live and not test.is_live():
+                log.d( f'{test.name} is not live; skipping' )
+                continue
+            if only_not_live and test.is_live():
+                log.d( f'{test.name} is live; skipping' )
+                continue
             #
             if test.config.donotrun:
+                log.d( f'{test.name} is marked do-not-run; skipping' )
                 continue
             #
             if required_tags and not all( tag in test.config.tags for tag in required_tags ):
-                log.d( 'does not fit --tag:', test.config.tags )
+                log.d( f'{test.name} has {test.config.tags} which do not fit --tag {required_tags}; skipping' )
                 continue
             #
             if 'Windows' in test.config.flags and linux:
-                log.d( 'test has Windows flag and OS is Linux' )
+                log.d( f'{test.name} has Windows flag and OS is Linux; skipping' )
                 continue
             if 'Linux' in test.config.flags and not linux:
-                log.d( 'test has Linux flag and OS is Windows' )
+                log.d( f'{test.name} has Linux flag and OS is Windows; skipping' )
                 continue
+            #
+            if to_stdout and not list_only:
+                log.split()
+            log.d( 'found', test.name, '...' )
+            log.debug_indent()
+            test.debug_dump()
             #
             available_tags.update( test.config.tags )
             tests.append( test )
@@ -458,8 +489,11 @@ try:
                 continue
             #
             if not test.is_live():
+                test_ok = True
                 for repetition in range(repeat):
-                    test_wrapper( test, repetition = repetition )
+                    test_ok = test_wrapper( test, repetition = repetition ) and test_ok
+                if not test_ok:
+                    failed_tests.append( test )
                 continue
             #
             if skip_live_tests:
@@ -469,6 +503,7 @@ try:
                     log.e( test.name + ':', 'is live and there are no cameras' )
                 continue
             #
+            test_ok = True
             for configuration, serial_numbers in devices_by_test_config( test, exceptions ):
                 for repetition in range(repeat):
                     try:
@@ -479,13 +514,17 @@ try:
                     except RuntimeError as e:
                         log.w( log.red + test.name + log.reset + ': ' + str( e ) )
                     else:
-                        test_wrapper( test, configuration, repetition )
+                        test_ok = test_wrapper( test, configuration, repetition ) and test_ok
                     finally:
                         log.debug_unindent()
+            if not test_ok:
+                failed_tests.append( test )
             #
         finally:
             log.debug_unindent()
 
+    if to_stdout and not list_only:
+        log.split()
     log.progress()
     #
     if not n_tests:
@@ -509,6 +548,7 @@ try:
         if n_errors:
             log.out( log.red + str( n_errors ) + log.reset, 'of', n_tests, 'test(s)',
                      log.red + 'failed!' + log.reset + log.clear_eos )
+            log.d( 'Failed tests:\n    ' + '\n    '.join( [test.name for test in failed_tests] ))
             sys.exit( 1 )
         #
         log.out( str( n_tests ) + ' unit-test(s) completed successfully' + log.clear_eos )
@@ -516,7 +556,7 @@ try:
 finally:
     #
     # Disconnect from the Acroname -- if we don't it'll crash on Linux...
-    if not list_only:
+    if not list_only and not only_not_live:
         if devices.acroname:
             devices.acroname.disconnect()
 #
