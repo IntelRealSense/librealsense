@@ -583,7 +583,7 @@ void lrs_device_controller::publish_frame_metadata( const rs2::frame & f )
     if( f.is< rs2::depth_frame >() )
         md_header["depth-units"] = f.as< rs2::depth_frame >().get_units();
 
-    nlohmann::json metadata = nlohmann::json::object( {} );
+    nlohmann::json metadata = nlohmann::json::object();
     for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
     {
         rs2_frame_metadata_value val = static_cast< rs2_frame_metadata_value >( i );
@@ -593,8 +593,8 @@ void lrs_device_controller::publish_frame_metadata( const rs2::frame & f )
 
     nlohmann::json md_msg = nlohmann::json::object( {
         { "stream-name", stream_name_from_rs2( f.get_profile() ) },
-        { "header", md_header },
-        { "metadata", metadata },
+        { "header", std::move( md_header ) },
+        { "metadata", std::move( metadata ) },
     } );
     _dds_device_server->publish_metadata( std::move( md_msg ) );
 }

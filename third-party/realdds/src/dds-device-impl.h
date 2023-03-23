@@ -70,7 +70,7 @@ public:
     void set_option_value( const std::shared_ptr< dds_option > & option, float new_value );
     float query_option_value( const std::shared_ptr< dds_option > & option );
 
-    typedef std::function< void( topics::flexible_msg && md ) > on_metadata_available_callback;
+    typedef std::function< void( nlohmann::json && md ) > on_metadata_available_callback;
     void on_metadata_available( on_metadata_available_callback cb ) { _on_metadata_available = cb; }
 
 private:

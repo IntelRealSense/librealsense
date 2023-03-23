@@ -7,6 +7,7 @@
 #include "dds-stream-profile.h"
 #include "dds-stream.h"
 
+#include <nlohmann/json_fwd.hpp>
 #include <memory>
 #include <vector>
 #include <functional>
@@ -62,7 +63,8 @@ public:
     std::shared_ptr< extrinsics > get_extrinsics( std::string from, std::string to ) const;
 
     bool supports_metadata() const;
-    typedef std::function< void( topics::flexible_msg && md ) > on_metadata_available_callback;
+
+    typedef std::function< void( nlohmann::json && md ) > on_metadata_available_callback;
     void on_metadata_available( on_metadata_available_callback cb );
 
 private:

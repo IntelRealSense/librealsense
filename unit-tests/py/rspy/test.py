@@ -187,7 +187,7 @@ def check_passed():
     return True
 
 
-def check_failed( abort = False ):
+def check_failed( abort_if_failed = False ):
     """
     Function for when a check fails
     :return: always False (so you can 'return check_failed()'
@@ -197,7 +197,7 @@ def check_failed( abort = False ):
     n_failed_assertions += 1
     test_failed = True
     print_info()
-    if abort:
+    if abort_if_failed:
         abort()
     return False
 
@@ -547,7 +547,7 @@ def print_results_and_exit():
     """
     print_separator()
     global n_assertions, n_tests, n_failed_assertions, n_failed_tests
-    if n_failed_tests:
+    if n_failed_tests or n_failed_assertions:
         passed = n_assertions - n_failed_assertions
         log.out("test cases:", n_tests, "|" , n_failed_tests,  "failed")
         log.out("assertions:", n_assertions, "|", passed, "passed |", n_failed_assertions, "failed")

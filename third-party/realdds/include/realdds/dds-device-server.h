@@ -70,7 +70,7 @@ public:
     std::map< std::string, std::shared_ptr< dds_stream_server > > const & streams() const { return _stream_name_to_server; }
 
     void publish_notification( topics::flexible_msg && );
-    void publish_metadata( topics::flexible_msg && );
+    void publish_metadata( nlohmann::json && );
     
     typedef std::function< void( const nlohmann::json & msg ) > control_callback;
     void on_open_streams( control_callback callback ) { _open_streams_callback = std::move( callback ); }

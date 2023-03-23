@@ -485,6 +485,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( py::init< std::string const & >() )
         .def( "is_valid", &dds_stream_format::is_valid )
         .def( "to_rs2", &dds_stream_format::to_rs2 )
+        .def( "from_rs2", &dds_stream_format::from_rs2 )
         .def( "__nonzero__", &dds_stream_format::is_valid )  // Called to implement truth value testing in Python 2
         .def( "__bool__", &dds_stream_format::is_valid )     // Called to implement truth value testing in Python 3
         .def( "__repr__", []( dds_stream_format const & self ) { return self.to_string(); } );
@@ -541,6 +542,11 @@ PYBIND11_MODULE(NAME, m) {
     stream_server_base  //
         .def( "on_readers_changed", &dds_stream_server::on_readers_changed )
         .def( "open", &dds_stream_server::open )
+        .def( "start_streaming",
+              []( dds_stream_server & self, dds_stream_format format, int width, int height ) {
+                  self.start_streaming( { format, height, width } );
+              } )
+        .def( "stop_streaming", &dds_stream_server::stop_streaming )
         .def( "__repr__",
               []( dds_stream_server const & self )
               {
@@ -555,7 +561,10 @@ PYBIND11_MODULE(NAME, m) {
     py::class_< dds_video_stream_server, std::shared_ptr< dds_video_stream_server > >
         video_stream_server_base( m, "video_stream_server", stream_server_base );
     video_stream_server_base
-        .def( "set_intrinsics", &dds_video_stream_server::set_intrinsics );
+        .def( "set_intrinsics", &dds_video_stream_server::set_intrinsics )
+        .def( "publish_image",
+              []( dds_video_stream_server & self, image_msg const & img, uint64_t frame_id )
+              { self.publish( img.raw_data.data(), img.raw_data.size(), frame_id ); } );
 
     using realdds::dds_depth_stream_server;
     py::class_< dds_depth_stream_server, std::shared_ptr< dds_depth_stream_server > >( m, "depth_stream_server", video_stream_server_base )
@@ -607,8 +616,7 @@ PYBIND11_MODULE(NAME, m) {
                       streams.push_back( name2stream.second );
                   return streams;
               } )
-        .def( "publish_metadata",
-              []( dds_device_server & self, py::handle const & obj ) { self.publish_metadata( py_to_json( obj ) ); } );
+        .def( "publish_metadata", &dds_device_server::publish_metadata, py::call_guard< py::gil_scoped_release >() );
 
     using realdds::dds_stream;
     py::class_< dds_stream, std::shared_ptr< dds_stream > > stream_client_base( m, "stream", stream_base );
@@ -680,6 +688,11 @@ PYBIND11_MODULE(NAME, m) {
         .def( "guid", &dds_device::guid )
         .def( "is_running", &dds_device::is_running )
         .def( "run", &dds_device::run, py::call_guard< py::gil_scoped_release >() )
+        .def( FN_FWD( dds_device,
+                      on_metadata_available,
+                      ( dds_device &, py::object && ),
+                      ( nlohmann::json && j ),
+                      callback( self, json_to_py( j ) ); ) )
         .def( "n_streams", &dds_device::number_of_streams )
         .def( "streams",
               []( dds_device const & self ) {
