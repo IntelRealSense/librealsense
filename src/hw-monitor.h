@@ -256,6 +256,7 @@ namespace librealsense
 
     class hw_monitor
     {
+    protected:
         struct hwmon_cmd
         {
             uint8_t     cmd;
@@ -266,7 +267,7 @@ namespace librealsense
             uint8_t     data[HW_MONITOR_BUFFER_SIZE];
             int         sizeOfSendCommandData;
             long        timeOut;
-            bool        oneDirection;
+            bool        require_response;
             uint8_t     receivedCommandData[HW_MONITOR_BUFFER_SIZE];
             size_t      receivedCommandDataLength;
             uint8_t     receivedOpcode[4];
@@ -279,7 +280,7 @@ namespace librealsense
                   param4(0),
                   sizeOfSendCommandData(0),
                   timeOut(5000),
-                  oneDirection(false),
+                  require_response(true),
                   receivedCommandDataLength(0)
             {}
 
@@ -292,7 +293,7 @@ namespace librealsense
                   param4(cmd.param4),
                   sizeOfSendCommandData(std::min((uint16_t)cmd.data.size(), HW_MONITOR_BUFFER_SIZE)),
                   timeOut(cmd.timeout_ms),
-                  oneDirection(!cmd.require_response),
+                  require_response(cmd.require_response),
                   receivedCommandDataLength(0)
             {
                 librealsense::copy(data, cmd.data.data(), sizeOfSendCommandData);
@@ -301,7 +302,7 @@ namespace librealsense
 
         struct hwmon_cmd_details
         {
-            bool                                         oneDirection;
+            bool                                         require_response;
             std::array<uint8_t, HW_MONITOR_BUFFER_SIZE>  sendCommandData;
             int                                          sizeOfSendCommandData;
             long                                         timeOut;
@@ -310,17 +311,21 @@ namespace librealsense
             size_t                                       receivedCommandDataLength;
         };
 
-        void execute_usb_command(uint8_t *out, size_t outSize, uint32_t& op, uint8_t* in, size_t& inSize) const;
+        void execute_usb_command(uint8_t *out, size_t outSize, uint32_t& op, uint8_t* in, 
+            size_t& inSize, bool require_response) const;
         static void update_cmd_details(hwmon_cmd_details& details, size_t receivedCmdLen, unsigned char* outputBuffer);
         void send_hw_monitor_command(hwmon_cmd_details& details) const;
 
         std::shared_ptr<locked_transfer> _locked_transfer;
+
+        static const size_t size_of_command_without_data = 24U;
+
     public:
         explicit hw_monitor(std::shared_ptr<locked_transfer> locked_transfer)
             : _locked_transfer(std::move(locked_transfer))
         {}
 
-         static void fill_usb_buffer( int opCodeNumber,
+        static void fill_usb_buffer( int opCodeNumber,
                                       int p1,
                                       int p2,
                                       int p3,
@@ -330,8 +335,10 @@ namespace librealsense
                                       uint8_t * bufferToSend,
                                       int & length );
 
-        std::vector< uint8_t > send( std::vector< uint8_t > const & data ) const;
-        std::vector<uint8_t> send( command cmd, hwmon_response * = nullptr, bool locked_transfer = false ) const;
+        static command build_command_from_data(const std::vector<uint8_t> data);
+
+        virtual std::vector<uint8_t> send( std::vector<uint8_t> const & data ) const;
+        virtual std::vector<uint8_t> send( command cmd, hwmon_response * = nullptr, bool locked_transfer = false ) const;
         std::vector<uint8_t> build_command(uint32_t opcode,
             uint32_t param1 = 0,
             uint32_t param2 = 0,

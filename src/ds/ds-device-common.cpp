@@ -70,6 +70,7 @@ namespace librealsense
             LOG_INFO("entering to update state, device disconnect is expected");
             command cmd(ds::DFU);
             cmd.param1 = 1;
+            cmd.require_response = false;
             _hw_monitor->send(cmd);
 
             // We allow 6 seconds because on Linux the removal status is updated at a 5 seconds rate.
@@ -187,7 +188,10 @@ namespace librealsense
         for (auto sector_index = first_sector; sector_index < sector_count; sector_index++)
         {
             command cmdFES(ds::FES);
-            cmdFES.require_response = false;
+            // On both FES & FWB commands We don't really need the response but we see that setting
+            // false and sending many commands cause a failure. 
+            // Looks like the FW is expecting it.
+            cmdFES.require_response = true;
             cmdFES.param1 = (int)sector_index;
             cmdFES.param2 = 1;
             auto res = hwm->send(cmdFES);
@@ -199,7 +203,7 @@ namespace librealsense
                     break;
                 int packet_size = std::min((int)(HW_MONITOR_COMMAND_SIZE - (i % HW_MONITOR_COMMAND_SIZE)), (int)(ds::FLASH_SECTOR_SIZE - i));
                 command cmdFWB(ds::FWB);
-                cmdFWB.require_response = false;
+                cmdFWB.require_response = true;
                 cmdFWB.param1 = (int)index;
                 cmdFWB.param2 = packet_size;
                 cmdFWB.data.assign(image.data() + index, image.data() + index + packet_size);
@@ -276,6 +280,7 @@ namespace librealsense
                 if (callback) callback->on_update_progress(1.0);
 
                 command cmdHWRST(ds::HWRST);
+                cmdHWRST.require_response = false;
                 res = _hw_monitor->send(cmdHWRST);
             });
     }

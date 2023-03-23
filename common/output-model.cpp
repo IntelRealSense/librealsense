@@ -3,8 +3,9 @@
 
 #include <glad/glad.h>
 #include "output-model.h"
-
-#include "model-views.h"
+#include <rs-config.h>
+#include "ux-window.h"
+#include "device-model.h"
 #include "os.h"
 
 #include <imgui_internal.h>

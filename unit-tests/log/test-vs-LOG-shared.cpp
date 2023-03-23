@@ -3,6 +3,9 @@
 
 //#cmake: shared!
 
+// On Linux, the EL++ instance is the same as ours (global variables are exported); only on Windows is it different...
+//#test:donotrun:linux
+
 //#cmake: add-file log-common.h
 #include "log-common.h"
 

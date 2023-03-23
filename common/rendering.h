@@ -388,7 +388,6 @@ namespace rs2
         std::shared_ptr<colorizer> colorize;
         std::shared_ptr<yuy_decoder> yuy2rgb;
         std::shared_ptr<y411_decoder> y411;
-        std::shared_ptr<depth_huffman_decoder> depth_decode;
         bool zoom_preview = false;
         rect curr_preview_rect{};
         int texture_id = 0;
@@ -447,13 +446,6 @@ namespace rs2
             int height = 0;
             int stride = 0;
             auto format = frame.get_profile().format();
-
-            // Decode compressed data required for mouse pointer depth calculations
-            if (RS2_FORMAT_Z16H==format)
-            {
-                frame = depth_decode->process(frame);
-                format = frame.get_profile().format();
-            }
 
             last_queue[0].enqueue(frame);
 
