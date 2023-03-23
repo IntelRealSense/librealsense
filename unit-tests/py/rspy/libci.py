@@ -47,7 +47,9 @@ def run( cmd, stdout = None, timeout = 200, append = False ):
     start_time = time.time()
     try:
         log.debug_indent()
-        if stdout and stdout != subprocess.PIPE:
+        if stdout is None:
+            sys.stdout.flush()
+        elif stdout and stdout != subprocess.PIPE:
             if append:
                 handle = open( stdout, "a" )
                 handle.write(
@@ -391,6 +393,8 @@ class PyTest( Test ):
             #
             if log.is_color_on():
                 cmd += ['--color']
+            elif log.is_color_disabled():
+                cmd += ['--no-color']
             #
             if self.config.context:
                 cmd += ['--context', ' '.join(self.config.context)]
