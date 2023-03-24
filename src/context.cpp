@@ -34,7 +34,8 @@
 #include <rsutils/os/executable-name.h>
 #include <rsutils/deferred.h>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
-#include <proc/depth-decompress.h>
+
+// Processing blocks for DDSA SW sensors
 #include <proc/decimation-filter.h>
 #include <proc/disparity-transform.h>
 #include <proc/hdr-merge.h>
@@ -1028,9 +1029,7 @@ namespace librealsense
         {
             auto & current_filters = get_software_recommended_proccesing_blocks();
 
-            if( filter_name.compare( "Depth Huffman Decoder" ) == 0 )
-                current_filters.add_processing_block( std::make_shared< depth_decompression_huffman >() );
-            else if( filter_name.compare( "Decimation Filter" ) == 0 )
+            if( filter_name.compare( "Decimation Filter" ) == 0 )
                 // sensor.cpp sets format option based on sensor type, but the filter does not use it and selects the
                 // appropriate decimation algorithm based on processed frame profile format.
                 current_filters.add_processing_block( std::make_shared< decimation_filter >() );
