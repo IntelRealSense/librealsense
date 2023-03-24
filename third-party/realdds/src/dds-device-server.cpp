@@ -58,11 +58,11 @@ static void on_discovery_device_header( size_t const n_streams, const dds_option
     topics::flexible_msg device_header( json{
         { "id", "device-header" },
         { "n-streams", n_streams },
-        { "extrinsics", extrinsics_json }
+        { "extrinsics", std::move( extrinsics_json ) }
     } );
-    LOG_DEBUG( "-----> JSON = " << device_header.json_data().dump() );
-    LOG_DEBUG( "-----> JSON size = " << device_header.json_data().dump().length() );
-    LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( device_header.json_data() ).size() );
+    auto json_string = slice( device_header.custom_data< char const >(), device_header._data.size() );
+    LOG_DEBUG( "-----> JSON = " << shorten_json_string( json_string, 300 ) << " size " << json_string.length() );
+    //LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( device_header.json_data() ).size() );
     notifications.add_discovery_notification( std::move( device_header ) );
 
     auto device_options = nlohmann::json::array();
@@ -70,11 +70,11 @@ static void on_discovery_device_header( size_t const n_streams, const dds_option
         device_options.push_back( std::move( opt->to_json() ) );
     topics::flexible_msg device_options_message( json {
         { "id", "device-options" },
-        { "options" , device_options }
+        { "options", std::move( device_options ) }
     } );
-    LOG_DEBUG( "-----> JSON = " << device_options_message.json_data().dump() );
-    LOG_DEBUG( "-----> JSON size = " << device_options_message.json_data().dump().length() );
-    LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( device_options_message.json_data() ).size() );
+    json_string = slice( device_options_message.custom_data< char const >(), device_options_message._data.size() );
+    LOG_DEBUG( "-----> JSON = " << shorten_json_string( json_string, 300 ) << " size " << json_string.length() );
+    //LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( device_options_message.json_data() ).size() );
     notifications.add_discovery_notification( std::move( device_options_message ) );
 }
 
@@ -90,7 +90,7 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
         { "type", stream->type_string() },
         { "name", stream->name() },
         { "sensor-name", stream->sensor_name() },
-        { "profiles", profiles },
+        { "profiles", std::move( profiles ) },
         { "default-profile-index", stream->default_profile_index() },
         { "metadata-enabled", stream->metadata_enabled() },
     } );
@@ -118,7 +118,7 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
     topics::flexible_msg stream_options_message( json {
         { "id", "stream-options" },
         { "stream-name", stream->name() },
-        { "options" , stream_options },
+        { "options" , std::move( stream_options ) },
         { "intrinsics" , intrinsics },
         { "recommended-filters", std::move( stream_filters ) },
     } );
