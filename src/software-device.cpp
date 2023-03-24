@@ -315,14 +315,11 @@ namespace librealsense
         if( ! _is_streaming )
             return;
 
-        frame_additional_data data;
+        frame_additional_data data( _metadata_map );
         data.timestamp = software_frame.timestamp;
         data.timestamp_domain = software_frame.domain;
         data.frame_number = software_frame.frame_number;
         data.depth_units = software_frame.depth_units;
-
-        data.metadata_size = (uint32_t)( _metadata_map.size() * sizeof( metadata_array_value ) );
-        memcpy( data.metadata_blob.data(), _metadata_map.data(), data.metadata_size );
 
         auto frame
             = allocate_new_video_frame( vid_profile, software_frame.stride, software_frame.bpp, std::move( data ) );
@@ -336,13 +333,10 @@ namespace librealsense
         if( ! _is_streaming )
             return;
 
-        frame_additional_data data;
+        frame_additional_data data( _metadata_map );
         data.timestamp = software_frame.timestamp;
         data.timestamp_domain = software_frame.domain;
         data.frame_number = software_frame.frame_number;
-
-        data.metadata_size = (uint32_t) (_metadata_map.size() * sizeof( metadata_array_value ));
-        memcpy( data.metadata_blob.data(), _metadata_map.data(), data.metadata_size );
 
         auto frame
             = allocate_new_frame( RS2_EXTENSION_MOTION_FRAME, software_frame.profile->profile, std::move( data ) );
@@ -356,13 +350,10 @@ namespace librealsense
         if( ! _is_streaming )
             return;
 
-        frame_additional_data data;
+        frame_additional_data data( _metadata_map );
         data.timestamp = software_frame.timestamp;
         data.timestamp_domain = software_frame.domain;
         data.frame_number = software_frame.frame_number;
-
-        data.metadata_size = (uint32_t) (_metadata_map.size() * sizeof( metadata_array_value ));
-        memcpy( data.metadata_blob.data(), _metadata_map.data(), data.metadata_size );
 
         auto frame = allocate_new_frame( RS2_EXTENSION_POSE_FRAME, software_frame.profile->profile, std::move( data ) );
         if( frame )
@@ -374,7 +365,6 @@ namespace librealsense
         notification n{ notif.category, notif.type, notif.severity, notif.description };
         n.serialized_data = notif.serialized_data;
         _notifications_processor->raise_notification(n);
-
     }
 
     void software_sensor::add_read_only_option(rs2_option option, float val)
