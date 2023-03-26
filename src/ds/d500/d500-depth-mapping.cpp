@@ -153,7 +153,7 @@ namespace librealsense
                 md_occupancy_attributes::cell_size_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_CRC,
-            make_attribute_parser_with_crc(&md_occupancy::payload_crc32,
+            make_attribute_parser(&md_occupancy::payload_crc32,
                 md_occupancy_attributes::payload_crc32_attribute, md_prop_offset));
     }
 
@@ -200,7 +200,7 @@ namespace librealsense
                 md_point_cloud_attributes::number_of_3d_vertices_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_CRC,
-            make_attribute_parser_with_crc(&md_point_cloud::payload_crc32,
+            make_attribute_parser(&md_point_cloud::payload_crc32,
                 md_point_cloud_attributes::payload_crc32_attribute, md_prop_offset));
     }
 
