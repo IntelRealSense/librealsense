@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-import sys
+import sys, os
 
 # Set this string to show a "nesting" idetifier that can be used to distinguish output
 # from this process from others...
@@ -39,9 +39,14 @@ def _stream_has_color( stream ):
         # guess false in case of error
         return False
 
-_have_color = '--color' in sys.argv
-if _have_color:
+_have_no_color = False
+if '--color' in sys.argv:
     sys.argv.remove( '--color' )
+    _have_color = True
+elif '--no-color' in sys.argv:
+    sys.argv.remove( '--no-color' )
+    _have_color = False
+    _have_no_color = True
 else:
     _have_color = _stream_has_color( sys.stdout )
 if _have_color:
@@ -84,10 +89,15 @@ else:
     def progress(*args):
         if args:
             print( *args )
+        sys.stdout.flush()
 
 def is_color_on():
     global _have_color
     return _have_color
+
+def is_color_disabled():
+    global _have_no_color
+    return _have_no_color
 
 
 def quiet_on():
@@ -186,4 +196,17 @@ def n_warnings():
 def reset_warnings():
     global _n_warnings
     _n_warnings = 0
+
+
+def split():
+    """
+    Output an easy-to-distinguish line separating text above from below.
+    Currently a line of "_____"
+    """
+    try:
+        screen_width = os.get_terminal_size().columns
+    except:
+        # this happens under github actions, for example, or when a terminal does not exist
+        screen_width = 60
+    out( '\n' + '_' * screen_width )
 

@@ -9,7 +9,6 @@
 #include "metadata.h"
 #include "proc/synthetic-stream.h"
 #include "proc/decimation-filter.h"
-#include "proc/depth-decompress.h"
 #include "global_timestamp_reader.h"
 #include "device-calibration.h"
 
@@ -244,8 +243,6 @@ void log_callback_end( uint32_t fps,
     processing_blocks get_depth_recommended_proccesing_blocks()
     {
         processing_blocks res;
-        auto huffman_decode = std::make_shared<depth_decompression_huffman>();
-        res.push_back(huffman_decode);
 
         auto dec = std::make_shared<decimation_filter>();
         if (dec->supports_option(RS2_OPTION_STREAM_FILTER))

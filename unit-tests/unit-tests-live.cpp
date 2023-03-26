@@ -5430,7 +5430,6 @@ TEST_CASE("Sensor get recommended filters", "[live][!mayfail]") {
         dec_color
     };
 
-    auto huff_decoder = std::make_shared<depth_huffman_decoder>();
     auto dec_depth = std::make_shared<decimation_filter>();
     dec_depth->set_option(RS2_OPTION_STREAM_FILTER, RS2_STREAM_DEPTH);
     dec_depth->set_option(RS2_OPTION_STREAM_FORMAT_FILTER, RS2_FORMAT_Z16);
@@ -5452,7 +5451,6 @@ TEST_CASE("Sensor get recommended filters", "[live][!mayfail]") {
     auto disparity2depth = std::make_shared<disparity_transform>(false);
 
     sensors_to_filters[depth_stereo] = {
-        huff_decoder,
         dec_depth,
         threshold,
         depth2disparity,
