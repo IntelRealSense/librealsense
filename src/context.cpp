@@ -848,18 +848,17 @@ namespace librealsense
                 auto & dds_stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
                 // Opening it will start streaming on the server side automatically
                 dds_stream->open( "rt/" + _dev->device_info().topic_root + '_' + dds_stream->name(), _dev->subscriber());
-                // But we won't get callbacks until we "start streaming"
+                _stream_name_to_syncer[dds_stream->name()].reset(
+                    [this]( frame * synced, json && md )
+                    {
+                        if( ! md.empty() )
+                            add_frame_metadata( synced, std::move( md ) );
+                        // else the frame should already have empty metadata!
+                        invoke_new_frame( synced, nullptr, nullptr );
+                    } );
+
                 if( Is< realdds::dds_video_stream >( dds_stream ) )
                 {
-                    _stream_name_to_syncer[dds_stream->name()].reset(
-                        [this]( frame * synced, json && md )
-                        {
-                            if( ! md.empty() )
-                                add_frame_metadata( synced, std::move( md ) );
-                            // else the frame should already have empty metadata!
-                            invoke_new_frame( synced, nullptr, nullptr );
-                        } );
-
                     As< realdds::dds_video_stream >( dds_stream )->on_data_available(
                         [profile, this, dds_stream]( realdds::topics::device::image && dds_frame ) {
                             handle_video_data( std::move( dds_frame ), profile, _stream_name_to_syncer[dds_stream->name()] );
@@ -867,15 +866,6 @@ namespace librealsense
                 }
                 else if( Is< realdds::dds_motion_stream >( dds_stream ) )
                 {
-                    _stream_name_to_syncer[dds_stream->name()].reset(
-                        [this]( frame * synced, json && md )
-                        {
-                            if( ! md.empty() )
-                                add_frame_metadata( synced, std::move( md ) );
-                            // else the frame should already have empty metadata!
-                            invoke_new_frame( synced, nullptr, nullptr );
-                        } );
-
                     As< realdds::dds_motion_stream >( dds_stream )->on_data_available(
                         [profile, this, dds_stream]( realdds::topics::device::image && dds_frame ) {
                             handle_motion_data( std::move( dds_frame ), profile, _stream_name_to_syncer[dds_stream->name()] );
