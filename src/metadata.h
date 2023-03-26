@@ -74,7 +74,9 @@ namespace librealsense
         { md_type::META_DATA_HID_CUSTOM_TEMP_REPORT_ID,     "HID Custom Temperature Report"},
         { md_type::META_DATA_MIPI_INTEL_DEPTH_ID,           "Intel Mipi Depth Control"},
         { md_type::META_DATA_MIPI_INTEL_RGB_ID,             "Intel Mipi RGB Control"},
-        { md_type::META_DATA_INTEL_SAFETY_ID,               "Intel Safety Info"}
+        { md_type::META_DATA_INTEL_SAFETY_ID,               "Intel Safety Info"},
+        { md_type::META_DATA_INTEL_OCCUPANCY_ID,            "Intel Occupancy"},
+        { md_type::META_DATA_INTEL_POINT_CLOUD_ID,          "Intel Point Cloud"}
     };
 
     /**\brief md_capture_timing_attributes - enumerate the bit offset to check
