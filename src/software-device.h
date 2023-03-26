@@ -123,9 +123,9 @@ namespace librealsense
     protected:
         frame_interface * allocate_new_frame( rs2_extension, stream_profile_interface *, frame_additional_data && );
         frame_interface * allocate_new_video_frame( video_stream_profile_interface *, int stride, int bpp, frame_additional_data && );
-        void invoke_new_frame( frame_interface * frame, void const * pixels, std::function< void() > on_release );
+        void invoke_new_frame( frame_holder &&, void const * pixels, std::function< void() > on_release );
 
-        std::array< metadata_array_value, RS2_FRAME_METADATA_ACTUAL_COUNT > _metadata_map;
+        metadata_array _metadata_map;
 
         processing_blocks get_recommended_processing_blocks() const override
         {

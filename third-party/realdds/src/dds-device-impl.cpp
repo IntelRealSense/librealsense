@@ -240,7 +240,16 @@ void dds_device::impl::create_metadata_reader()
             while( topics::flexible_msg::take_next( *_metadata_reader, &message ) )
             {
                 if( message.is_valid() && _on_metadata_available )
-                    _on_metadata_available( std::move( message.json_data() ) );
+                {
+                    try
+                    {
+                        _on_metadata_available( std::move( message.json_data() ) );
+                    }
+                    catch( std::runtime_error const & e )
+                    {
+                        LOG_DEBUG( "metadata exception: " << e.what() );
+                    }
+                }
             }
         } );
 
