@@ -292,14 +292,14 @@ namespace librealsense
     }
 
 
-    void software_sensor::invoke_new_frame( frame_interface * frame,
+    void software_sensor::invoke_new_frame( frame_holder && frame,
                                             void const * pixels,
                                             std::function< void() > on_release )
     {
         // The frame pixels/data are stored in the continuation object!
         if( pixels )
             frame->attach_continuation( frame_continuation( on_release, pixels ) );
-        _source.invoke_callback( frame );
+        _source.invoke_callback( std::move( frame ) );
     }
 
 

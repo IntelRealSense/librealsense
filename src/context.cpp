@@ -499,7 +499,7 @@ namespace librealsense
         struct synced_frame
         {
             id_type _sync_id;
-            frame * _frame;
+            frame_holder _frame;
         };
 
         struct synced_metadata
@@ -530,7 +530,7 @@ namespace librealsense
             search_for_match();  // Call under lock
         }
 
-        typedef std::function< void( frame *, nlohmann::json && metadata ) > on_frame_ready;
+        typedef std::function< void( frame_holder &&, nlohmann::json && metadata ) > on_frame_ready;
 
         void reset( on_frame_ready cb = nullptr )
         {
@@ -570,7 +570,7 @@ namespace librealsense
         // Call under lock
         void handle_match()
         {
-            auto const frame = _frame_queue.front()._frame;
+            auto & fh = _frame_queue.front()._frame;
 
             json md;
             if( ! _metadata_queue.empty() )
@@ -580,7 +580,7 @@ namespace librealsense
             }
 
             if( _on_frame_ready )
-                _on_frame_ready( frame, std::move( md ) );
+                _on_frame_ready( std::move( fh ), std::move( md ) );
 
             _frame_queue.pop_front();
         }
@@ -588,11 +588,11 @@ namespace librealsense
         // Call under lock
         void handle_frame_without_metadata()
         {
-            auto frame = _frame_queue.front()._frame;
+            auto & fh = _frame_queue.front()._frame;
 
             json md;
             if( _on_frame_ready )
-                _on_frame_ready( frame, std::move( md ) );
+                _on_frame_ready( std::move( fh ), std::move( md ) );
 
             _frame_queue.pop_front();
         }
@@ -849,12 +849,12 @@ namespace librealsense
                 // Opening it will start streaming on the server side automatically
                 dds_stream->open( "rt/" + _dev->device_info().topic_root + '_' + dds_stream->name(), _dev->subscriber());
                 _stream_name_to_syncer[dds_stream->name()].reset(
-                    [this]( frame * synced, json && md )
+                    [this]( frame_holder && fh, json && md )
                     {
                         if( ! md.empty() )
-                            add_frame_metadata( synced, std::move( md ) );
+                            add_frame_metadata( static_cast< frame * >( fh.frame ), std::move( md ) );
                         // else the frame should already have empty metadata!
-                        invoke_new_frame( synced, nullptr, nullptr );
+                        invoke_new_frame( std::move( fh ), nullptr, nullptr );
                     } );
 
                 if( Is< realdds::dds_video_stream >( dds_stream ) )
