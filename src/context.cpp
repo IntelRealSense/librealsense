@@ -45,6 +45,8 @@
 #include <proc/temporal-filter.h>
 #include <proc/threshold.h>
 
+#include <rsutils/string/string-utilities.h>  // string_to_value
+
 // We manage one participant and device-watcher per domain:
 // Two contexts with the same domain-id will share the same participant and watcher, while a third context on a
 // different domain will have its own.
@@ -607,6 +609,11 @@ namespace librealsense
 
     class dds_sensor_proxy : public software_sensor
     {
+        std::shared_ptr< realdds::dds_device > const _dev;
+        std::string const _name;
+        bool const _md_enabled;
+
+        std::map< sid_index, std::shared_ptr< realdds::dds_stream > > _streams;
         std::map< std::string, frame_metadata_syncer > _stream_name_to_syncer;
 
     public:
@@ -734,7 +741,8 @@ namespace librealsense
             data.timestamp; // from metadata
             data.timestamp_domain; // from metadata
             data.depth_units; // from metadata
-            data.frame_number = ! dds_frame.frame_id.empty() ? std::stoi( dds_frame.frame_id ) : 0;
+            if( ! rsutils::string::string_to_value( dds_frame.frame_id, data.frame_number ))
+                data.frame_number = 0;
 
             auto vid_profile = dynamic_cast< video_stream_profile_interface * >( profile.get() );
             if( ! vid_profile )
@@ -803,7 +811,8 @@ namespace librealsense
             data.timestamp;              // from metadata
             data.timestamp_domain;       // from metadata
             data.depth_units;            // from metadata
-            data.frame_number = ! dds_frame.frame_id.empty() ? std::stoi( dds_frame.frame_id ) : 0;
+            if( ! rsutils::string::string_to_value( dds_frame.frame_id, data.frame_number ) )
+                data.frame_number = 0;
 
             auto new_frame_interface
                 = allocate_new_frame( RS2_EXTENSION_MOTION_FRAME, profile.get(), std::move( data ) );
@@ -996,13 +1005,6 @@ namespace librealsense
         }
 
         const std::string & get_name() const { return _name; }
-
-    private:
-        std::shared_ptr< realdds::dds_device > const & _dev;
-        std::string _name;
-        std::map< sid_index, std::shared_ptr< realdds::dds_stream > > _streams;
-
-        bool _md_enabled = false;
     };
 
     // For cases when checking if this is< color_sensor > (like realsense-viewer::subdevice_model)
