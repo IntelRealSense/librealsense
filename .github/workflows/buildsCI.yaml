@@ -64,7 +64,7 @@ jobs:
 
 
   #--------------------------------------------------------------------------------
-  Win_ST_Py_DDS_CI:  # Windows, Static, Python, Tools, DDS, libCI
+  Win_ST_Py_CI:  # Windows, Static, Python, Tools, libCI with executables
     runs-on: windows-2019
     timeout-minutes: 60
     steps:
@@ -97,7 +97,7 @@ jobs:
       run: |        
         LRS_SRC_DIR=$(pwd)   
         cd ${{env.WIN_BUILD_DIR}}
-        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DBUILD_SHARED_LIBS=false -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=true -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=true -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true 
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DBUILD_SHARED_LIBS=false -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=true -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=false -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true 
 
     - name: Build
       # Build your program with the given configuration
@@ -107,7 +107,58 @@ jobs:
         cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -m
 
     - name: LibCI
+      # Note: requires BUILD_UNIT_TESTS or the executable C++ unit-tests won't run (and it won't complain)
+      shell: bash
+      run: |
+        python3 unit-tests/run-unit-tests.py --no-color --debug --stdout --not-live --context "windows" ${{env.WIN_BUILD_DIR}}/Release
+
+
+  #--------------------------------------------------------------------------------
+  Win_SH_Py_DDS_CI:  # Windows, Shared, Python, Tools, DDS, libCI without executables
+    runs-on: windows-2019
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v3
+      with:
+       python-version: '3.8.1'
+
+    - name: Enable Long Paths
+      shell: powershell
+      run: |
+       New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+
+    - name: Check_API
+      shell: bash
+      run: |
+        cd scripts
+        ./api_check.sh
+        cd ..   
+
+    - name: PreBuild
+      shell: bash
+      run: |
+       mkdir ${{env.WIN_BUILD_DIR}}
+
+    - name: Configure CMake
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      shell: bash
+      run: |        
+        LRS_SRC_DIR=$(pwd)   
+        cd ${{env.WIN_BUILD_DIR}}
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=false -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=true -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true 
+
+    - name: Build
       # Build your program with the given configuration
+      shell: bash
+      run: |
+        cd ${{env.WIN_BUILD_DIR}}
+        cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -m
+
+    - name: LibCI
+      # Note: we specifically disable BUILD_UNIT_TESTS so the executable C++ unit-tests won't run
+      # This is to save time as DDS already lengthens the build...
       shell: bash
       run: |
         python3 unit-tests/run-unit-tests.py --no-color --debug --stdout --not-live --context "dds windows" ${{env.WIN_BUILD_DIR}}/Release
@@ -217,7 +268,7 @@ jobs:
 
 
   #--------------------------------------------------------------------------------
-  U20_SH_Py_DDS_CI:  # Ubuntu 2020, Shared, Python, DDS, LibCI
+  U20_SH_Py_CI:  # Ubuntu 2020, Shared, Python, LibCI with executables
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     steps:
@@ -249,11 +300,54 @@ jobs:
       shell: bash
       run: |
         cd build
-        cmake .. -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=true -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=true -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3)
+        cmake .. -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=true -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=false -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3)
         cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -j4  
 
     - name: LibCI
-      # Build your program with the given configuration
+      # Note: requires BUILD_UNIT_TESTS or the executable C++ unit-tests won't run (and it won't complain)
+      shell: bash
+      run: |
+        python3 unit-tests/run-unit-tests.py --no-color --debug --stdout --not-live --context "linux"
+
+
+  #--------------------------------------------------------------------------------
+  U20_ST_Py_DDS_CI:  # Ubuntu 2020, Static, Python, DDS, LibCI without executables
+    runs-on: ubuntu-20.04
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Prebuild
+      shell: bash
+      run: |
+        sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
+        sudo apt-get update;
+        sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
+        sudo apt-get install -qq libusb-1.0-0-dev;
+        sudo apt-get install -qq libgtk-3-dev;
+        #sudo apt-get install gcc-5 g++-5;
+        #sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5;
+        sudo apt-get install libglfw3-dev libglfw3;
+
+    - name: Check_API
+      shell: bash
+      run: |
+        cd scripts
+        ./api_check.sh
+        ./pr_check.sh
+        cd ..
+        mkdir build
+
+    - name: Build
+      shell: bash
+      run: |
+        cd build
+        cmake .. -DBUILD_SHARED_LIBS=false -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=false -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=true -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3)
+        cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -j4  
+
+    - name: LibCI
+      # Note: we specifically disable BUILD_UNIT_TESTS so the executable C++ unit-tests won't run
+      # This is to save time as DDS already lengthens the build...
       shell: bash
       run: |
         python3 unit-tests/run-unit-tests.py --no-color --debug --stdout --not-live --context "dds linux"
