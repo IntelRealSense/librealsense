@@ -71,7 +71,6 @@ void init_processing(py::module &m) {
         .def(BIND_DOWNCAST(filter, temporal_filter))
         .def(BIND_DOWNCAST(filter, threshold_filter))
         .def(BIND_DOWNCAST(filter, zero_order_invalidation))
-        .def(BIND_DOWNCAST(filter, depth_huffman_decoder))
         .def(BIND_DOWNCAST(filter, hdr_merge))
         .def(BIND_DOWNCAST(filter, sequence_id_filter))
         .def("__nonzero__", &rs2::filter::operator bool) // Called to implement truth value testing in Python 2
@@ -193,9 +192,6 @@ void init_processing(py::module &m) {
              "0 - fill_from_left - Use the value from the left neighbor pixel to fill the hole\n"
              "1 - farest_from_around - Use the value from the neighboring pixel which is furthest away from the sensor\n"
              "2 - nearest_from_around - -Use the value from the neighboring pixel closest to the sensor", "mode"_a);
-
-    py::class_<rs2::depth_huffman_decoder, rs2::filter> depth_huffman_decoder(m, "depth_huffman_decoder", "Decompresses Huffman-encoded Depth frame to standartized Z16 format");
-    depth_huffman_decoder.def(py::init<>());
 
     py::class_<rs2::hdr_merge, rs2::filter> hdr_merge(m, "hdr_merge", "Merges depth frames with different sequence ID");
     hdr_merge.def(py::init<>());

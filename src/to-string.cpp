@@ -249,7 +249,7 @@ const char * get_string( rs2_extension value )
     CASE( COLOR_SENSOR )
     CASE( MOTION_SENSOR )
     CASE( FISHEYE_SENSOR )
-    CASE( DEPTH_HUFFMAN_DECODER )
+    CASE( DEPTH_HUFFMAN_DECODER ) // Deprecated
     CASE( SERIALIZABLE )
     CASE( FW_LOGGER )
     CASE( AUTO_CALIBRATION_FILTER )

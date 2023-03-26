@@ -232,11 +232,35 @@ namespace librealsense
             uint8_t             reserved2[64];
         };
 
+
         rs2_intrinsics get_d400_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, d400_calibration_table_id table_id, uint32_t width, uint32_t height);
         rs2_intrinsics get_d400_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         pose get_d400_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
+        rs2_intrinsics get_d400_color_stream_intrinsic(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
+        bool try_get_d400_intrinsic_by_resolution_new(const std::vector<uint8_t>& raw_data,
+            uint32_t width, uint32_t height, rs2_intrinsics* result);
 
         rs2_intrinsics get_intrinsic_fisheye_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         pose get_fisheye_extrinsics_data(const std::vector<uint8_t>& raw_data);
+
+        struct d400_rgb_calibration_table
+        {
+            table_header        header;
+            // RGB Intrinsic
+            float3x3            intrinsic;                  // normalized by [-1 1]
+            float               distortion[5];              // RGB forward distortion coefficients, Brown model
+            // RGB Extrinsic
+            float3              rotation;                   // RGB rotation angles (Rodrigues)
+            float3              translation;                // RGB translation vector, mm
+            // RGB Projection
+            float               projection[12];             // Projection matrix from depth to RGB [3 X 4]
+            uint16_t            calib_width;                // original calibrated resolution
+            uint16_t            calib_height;
+            // RGB Rectification Coefficients
+            float3x3            intrinsic_matrix_rect;      // RGB intrinsic matrix after rectification
+            float3x3            rotation_matrix_rect;       // Rotation matrix for rectification of RGB
+            float3              translation_rect;           // Translation vector for rectification
+            uint8_t             reserved[24];
+        };
     } // namespace ds
 } // namespace librealsense

@@ -58,4 +58,11 @@ namespace rs2
 
         std::string adjust_description( const std::string& str_in, const std::string& to_be_replaced, const std::string& to_replace );
     };
+
+    option_model create_option_model(rs2_option opt,
+        const std::string& opt_base_label,
+        subdevice_model* model,
+        std::shared_ptr<options> options,
+        bool* options_invalidated,
+        std::string& error_message);
 }
