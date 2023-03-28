@@ -166,23 +166,31 @@ matcher_factory::create_timestamp_composite_matcher( std::vector< std::shared_pt
     return std::make_shared<timestamp_composite_matcher>(matchers);
 }
 
-device::device(std::shared_ptr<context> ctx,
+device::device( std::shared_ptr<context> ctx,
                const platform::backend_device_group group,
-               bool device_changed_notifications)
-    : _context(ctx), _group(group), _is_valid(true),
-      _device_changed_notifications(device_changed_notifications)
+               bool device_changed_notifications )
+    : _context( ctx ), _group( group ), _is_valid( true )
+    , _device_changed_notifications( device_changed_notifications )
+    , _is_alive( true )
 {
-    _profiles_tags = lazy<std::vector<tagged_profile>>([this]() { return get_profiles_tags(); });
+    _profiles_tags = lazy< std::vector< tagged_profile > >( [this]() { return get_profiles_tags(); } );
 
-    if (_device_changed_notifications)
+    if( _device_changed_notifications )
     {
-        auto cb = new devices_changed_callback_internal([this](rs2_device_list* removed, rs2_device_list* added)
+        std::weak_ptr< bool > weak = std::make_shared< bool >( _is_alive );
+        auto cb = new devices_changed_callback_internal([this, weak = std::move( weak )](rs2_device_list* removed, rs2_device_list* added)
         {
+            // The callback can be called from one thread while the object is being destroyed by another.
+            // Check if members can still be accessed.
+            auto alive = weak.lock();
+            if( ! alive || ! *alive )
+                return;
+
             // Update is_valid variable when device is invalid
             std::lock_guard<std::mutex> lock(_device_changed_mtx);
-            for (auto& dev_info : removed->list)
+            for( auto & dev_info : removed->list )
             {
-                if (dev_info.info->get_device_data() == _group)
+                if( dev_info.info->get_device_data() == _group )
                 {
                     _is_valid = false;
                     return;
@@ -196,9 +204,11 @@ device::device(std::shared_ptr<context> ctx,
 
 device::~device()
 {
-    if (_device_changed_notifications)
+    _is_alive = false;
+
+    if( _device_changed_notifications )
     {
-        _context->unregister_internal_device_callback(_callback_id);
+        _context->unregister_internal_device_callback( _callback_id );
     }
     _sensors.clear();
 }

@@ -108,6 +108,8 @@ private:
     mutable std::mutex _device_changed_mtx;
     uint64_t _callback_id;
     lazy<std::vector<tagged_profile>> _profiles_tags;
+
+    bool _is_alive; // Used with shared_ptr to ensure object can be accessed
 };
 
 // Helper function that should be used when multiple FW calls needs to be made.
