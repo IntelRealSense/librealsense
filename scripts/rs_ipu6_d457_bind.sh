@@ -47,13 +47,13 @@ media-ctl -v -l "\"D4XX depth ${mux}\":0 -> \"DS5 mux ${mux}\":1[1]" 1>/dev/null
 # video streaming node
 media-ctl -v -l "\"Intel IPU6 ${csi2_be_soc}\":1 -> \"Intel IPU6 ${be_soc_cap} 0\":0[5]" 1>/dev/null
 # metadata node
-media-ctl -v -l "\"Intel IPU6 ${csi2_be_soc}\":2 -> \"Intel IPU6 ${be_soc_cap} 1\":0[5]" 1>/dev/null
+#media-ctl -v -l "\"Intel IPU6 ${csi2_be_soc}\":2 -> \"Intel IPU6 ${be_soc_cap} 1\":0[5]" 1>/dev/null
 
 media-ctl -v -l "\"D4XX rgb ${mux}\":0 -> \"DS5 mux ${mux}\":2[1]" 1>/dev/null
 # RGB link
 media-ctl -v -l "\"Intel IPU6 ${csi2_be_soc}\":3 -> \"Intel IPU6 ${be_soc_cap} 2\":0[5]" 1>/dev/null
 # RGB metadata node
-media-ctl -v -l "\"Intel IPU6 ${csi2_be_soc}\":4 -> \"Intel IPU6 ${be_soc_cap} 3\":0[5]" 1>/dev/null
+#media-ctl -v -l "\"Intel IPU6 ${csi2_be_soc}\":4 -> \"Intel IPU6 ${be_soc_cap} 3\":0[5]" 1>/dev/null
 
 # IR link
 media-ctl -v -l "\"D4XX motion detection ${mux}\":0 -> \"DS5 mux ${mux}\":3[1]" 1>/dev/null

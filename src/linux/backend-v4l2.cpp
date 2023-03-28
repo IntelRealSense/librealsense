@@ -939,8 +939,7 @@ namespace librealsense
             {
                 try
                 {
-                    /* mi: 3 - metadata node, IPU6 metadata is mplane type */
-                    if (! ((cur_node.first.uvc_capabilities & V4L2_CAP_META_CAPTURE) || (cur_node.first.mi == 3 && cur_node.first.uvc_capabilities & V4L2_CAP_VIDEO_CAPTURE_MPLANE)))
+                    if (!(cur_node.first.uvc_capabilities & V4L2_CAP_META_CAPTURE))
                         uvc_devices.emplace_back(cur_node);
                     else
                     {
@@ -952,8 +951,8 @@ namespace librealsense
 
                         // Update the preceding uvc item with metadata node info
                         auto uvc_node = uvc_devices.back();
-                        /* mi: 3 - metadata node, IPU6 metadata is mplane type */
-                        if ((uvc_node.first.uvc_capabilities & V4L2_CAP_META_CAPTURE) || (uvc_node.first.mi == 3 && uvc_node.first.uvc_capabilities & V4L2_CAP_VIDEO_CAPTURE_MPLANE))
+
+                        if (uvc_node.first.uvc_capabilities & V4L2_CAP_META_CAPTURE)
                         {
                             LOG_ERROR("Consequtive UVC meta-nodes encountered: " << std::string(uvc_node.first) << " and " << std::string(cur_node.first) );
                             continue;
@@ -2293,14 +2292,12 @@ namespace librealsense
                     throw linux_backend_exception(_md_name +  " xioctl(VIDIOC_QUERYCAP) for metadata failed");
             }
 
-            if(!(cap.capabilities & V4L2_CAP_META_CAPTURE || (cap.capabilities & V4L2_CAP_VIDEO_CAPTURE_MPLANE)))
+            if(!(cap.capabilities & V4L2_CAP_META_CAPTURE))
                 throw linux_backend_exception(_md_name + " is not metadata capture device");
 
             if(!(cap.capabilities & V4L2_CAP_STREAMING))
                 throw linux_backend_exception(_md_name + " does not support metadata streaming I/O");
 
-            if(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE_MPLANE)
-                _md_type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
             if(cap.capabilities & V4L2_CAP_META_CAPTURE)
                 _md_type = LOCAL_V4L2_BUF_TYPE_META_CAPTURE;
         }
@@ -2344,14 +2341,7 @@ namespace librealsense
             {
                 // Configure metadata format - try d4xx, then fallback to currently retrieve UVC default header of 12 bytes
                 memcpy(fmt.fmt.raw_data,&request,sizeof(request));
-                /* IPU6 Metadata is 640x1 */
-                if(_md_type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
-                    fmt.fmt.pix_mp.width = profile.width;;
-                    fmt.fmt.pix_mp.height = profile.height;;
-                    fmt.fmt.pix_mp.num_planes = _dev.num_planes;
-                    fmt.fmt.pix_mp.flags = 0;
-                    fmt.fmt.pix_mp.pixelformat = (const big_endian<int> &)profile.format;
-                }
+
                 if(xioctl(_md_fd, VIDIOC_S_FMT, &fmt) >= 0)
                 {
                     LOG_INFO("Metadata node was successfully configured to " << fourcc_to_string(request) << " format" <<", fd " << std::dec <<_md_fd);
@@ -2404,22 +2394,15 @@ namespace librealsense
                 FD_CLR(_md_fd,&fds);
 
                 v4l2_buffer buf{};
-                struct v4l2_plane planes[VIDEO_MAX_PLANES] = {};
                 buf.type = _md_type;
                 buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
-                if (_dev.buf_type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
-                    buf.m.planes = planes;
-                    buf.length = VIDEO_MAX_PLANES;
-                }
 
                 // W/O multiplexing this will create a blocking call for metadata node
                 if(xioctl(_md_fd, VIDIOC_DQBUF, &buf) < 0)
                 {
                     LOG_DEBUG_V4L("Dequeued empty buf for md fd " << std::dec << _md_fd);
                 }
-                if (_dev.buf_type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
-                    buf.bytesused = buf.m.planes[0].bytesused;
-                }
+
                 //V4l debugging message
                 auto mdbuf = _md_buffers[buf.index]->get_frame_start();
                 auto hwts = *(uint32_t*)((mdbuf+2));
@@ -2850,13 +2833,7 @@ namespace librealsense
         {
             // Enqueue of buffer before throwing its content away
             LOG_DEBUG_V4L("video_md_syncer - Enqueue buf " << std::dec << sb._buffer_index << " for fd " << sb._fd << " before dropping it");
-            auto buf = sb._v4l2_buf.get();
-            struct v4l2_plane planes[VIDEO_MAX_PLANES] = {};
-            if (buf->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
-                buf->m.planes = planes;
-                buf->length = 1;
-            }
-            if (xioctl(sb._fd, VIDIOC_QBUF, buf) < 0)
+            if (xioctl(sb._fd, VIDIOC_QBUF, sb._v4l2_buf.get()) < 0)
             {
                 LOG_ERROR("xioctl(VIDIOC_QBUF) failed when requesting new frame! fd: " << sb._fd << " error: " << strerror(errno));
             }
@@ -2866,13 +2843,7 @@ namespace librealsense
         {
             // Enqueue of buffer before throwing its content away
             LOG_DEBUG_V4L("video_md_syncer - Enqueue buf " << std::dec << sync_queue.front()._buffer_index << " for fd " << sync_queue.front()._fd << " before dropping it");
-            auto buf = sync_queue.front()._v4l2_buf.get();
-            struct v4l2_plane planes[VIDEO_MAX_PLANES] = {};
-            if (buf->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
-                buf->m.planes = planes;
-                buf->length = 1;
-            }
-            if (xioctl(sync_queue.front()._fd, VIDIOC_QBUF, buf) < 0)
+            if (xioctl(sync_queue.front()._fd, VIDIOC_QBUF, sync_queue.front()._v4l2_buf.get()) < 0)
             {
                 LOG_ERROR("xioctl(VIDIOC_QBUF) failed when requesting new frame! fd: " << sync_queue.front()._fd << " error: " << strerror(errno));
             }
