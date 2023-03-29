@@ -4,7 +4,8 @@
 # test:device L500*
 # test:device D400*
 # test:donotrun:!nightly
-# test:timeout 230
+# test:timeout 250
+# timeout = (seconds_till_steady_state + seconds_to_count_frames) * tested_fps.size() * 2 + 10. (2 because depth + color, 10 spare)
 
 import pyrealsense2 as rs
 from rspy.stopwatch import Stopwatch
@@ -15,30 +16,37 @@ import platform
 # Start depth + color streams and measure frame frequency using sensor API.
 # Verify that actual fps is as requested
 
+global first_frame_seconds
+
 def measure_fps(sensor, profile):
     """
-    Wait for 2 seconds to be sure that frames are at steady state after start
-    Count number of received frames for 5 seconds and compare actual fps to requested fps
+    Wait a few seconds to be sure that frames are at steady state after start
+    Count number of received frames for seconds_to_count_frames seconds and compare actual fps to requested fps
     """
-    seconds_till_steady_state = 2
+    seconds_till_steady_state = 4
     seconds_to_count_frames = 20
     
     steady_state = False
+    first_frame_received = False
     frames_received = 0
-    fps_stopwatch = Stopwatch()
+    first_frame_stopwatch = Stopwatch()
 
     def frame_cb(frame):
-        nonlocal steady_state, frames_received
+        global first_frame_seconds
+        nonlocal steady_state, frames_received, first_frame_received
+        if not first_frame_received:
+            first_frame_seconds = first_frame_stopwatch.get_elapsed()
+            first_frame_received = True
         if steady_state:
             frames_received += 1
 
     sensor.open(profile)
     sensor.start(frame_cb)
+    first_frame_stopwatch.reset()
 
     time.sleep(seconds_till_steady_state)
 
     steady_state = True
-    fps_stopwatch.reset()
     
     time.sleep(seconds_to_count_frames) # Time to count frames
     
@@ -75,7 +83,7 @@ for requested_fps in tested_fps:
         print("Requested fps: {:.1f} [Hz], not supported".format(requested_fps))
     else:
         fps = measure_fps(ds, dp)
-        print("Requested fps: {:.1f} [Hz], actual fps: {:.1f} [Hz] ".format(requested_fps, fps))
+        print("Requested fps: {:.1f} [Hz], actual fps: {:.1f} [Hz]. Time to first frame {:.6f}".format(requested_fps, fps, first_frame_seconds))
         test.check(fps <= (requested_fps + delta_Hz) and fps >= (requested_fps - delta_Hz))
 test.finish()
 
@@ -100,7 +108,7 @@ for requested_fps in tested_fps:
         print("Requested fps: {:.1f} [Hz], not supported".format(requested_fps))
     else:
         fps = measure_fps(cs, cp)
-        print("Requested fps: {:.1f} [Hz], actual fps: {:.1f} [Hz] ".format(requested_fps, fps))
+        print("Requested fps: {:.1f} [Hz], actual fps: {:.1f} [Hz]. Time to first frame {:.6f}".format(requested_fps, fps, first_frame_seconds))
         test.check(fps <= (requested_fps + delta_Hz) and fps >= (requested_fps - delta_Hz))
 
 test.finish()
