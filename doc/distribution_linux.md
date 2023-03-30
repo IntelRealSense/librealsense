@@ -25,7 +25,7 @@ curl -sSf https://raw.githubusercontent.com/timor-raiman/tmp/main/librealsense.p
 
 - Add the server to the list of repositories:
 ```
-echo "deb [signed-by=/etc/apt/keyrings/librealsense.pgp] https://librealsense.intel.com/Debian/apt-repo \`lsb_release -cs\` main" | \
+echo "deb [signed-by=/etc/apt/keyrings/librealsense.pgp] https://librealsense.intel.com/Debian/apt-repo `lsb_release -cs` main" | \
 sudo tee /etc/apt/sources.list.d/librealsense.list
 sudo apt-get update
 ```
