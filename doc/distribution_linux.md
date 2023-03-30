@@ -15,16 +15,20 @@ The steps are described in [Linux manual installation guide](./installation.md)
 
 ## Installing the packages:
 - Register the server's public key:
+```
 sudo mkdir -p /etc/apt/keyrings
-`curl -sSf https://raw.githubusercontent.com/timor-raiman/tmp/main/librealsense.pgp | sudo tee /etc/apt/keyrings/librealsense.pgp > /dev/null`
+curl -sSf https://raw.githubusercontent.com/timor-raiman/tmp/main/librealsense.pgp | sudo tee /etc/apt/keyrings/librealsense.pgp > /dev/null
+```
 
 - Make sure apt HTTPS support is installed:
 `sudo apt-get install apt-transport-https`
 
 - Add the server to the list of repositories:
-`echo "deb [signed-by=/etc/apt/keyrings/librealsense.pgp] https://librealsense.intel.com/Debian/apt-repo \`lsb_release -cs\` main" | \
-sudo tee /etc/apt/sources.list.d/librealsense.list && \
-sudo apt-get update`
+```
+echo "deb [signed-by=/etc/apt/keyrings/librealsense.pgp] https://librealsense.intel.com/Debian/apt-repo \`lsb_release -cs\` main" | \
+sudo tee /etc/apt/sources.list.d/librealsense.list
+sudo apt-get update
+```
 
 - Install the libraries (see section below if upgrading packages):  
   `sudo apt-get install librealsense2-dkms`  
