@@ -643,8 +643,13 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_video_stream;
     py::class_< dds_video_stream, std::shared_ptr< dds_video_stream > >
         video_stream_client_base( m, "video_stream", stream_client_base );
-    video_stream_client_base
-        .def( "set_intrinsics", &dds_video_stream::set_intrinsics );
+    video_stream_client_base  //
+        .def( "set_intrinsics", &dds_video_stream::set_intrinsics )
+        .def( FN_FWD( dds_video_stream,
+                      on_data_available,
+                      ( dds_video_stream &, image_msg && ),
+                      ( image_msg && i ),
+                      callback( self, std::move( i ) ); ) );
 
     using realdds::dds_depth_stream;
     py::class_< dds_depth_stream, std::shared_ptr< dds_depth_stream > >( m, "depth_stream", video_stream_client_base )
