@@ -765,7 +765,6 @@ namespace librealsense
                     throw std::runtime_error( "Unsupported stream type" );
 
                 dds_stream->start_streaming();
-
             }
 
             software_sensor::start( callback );
@@ -778,6 +777,7 @@ namespace librealsense
                 auto & dds_stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
                 dds_stream->stop_streaming();
                 dds_stream->close();
+                _stream_name_to_syncer[dds_stream->name()].reset();
             }
 
             software_sensor::stop();
