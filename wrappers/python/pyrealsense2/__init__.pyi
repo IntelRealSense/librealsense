@@ -4294,7 +4294,7 @@ class save_single_frameset:
 
 class save_to_ply:
 
-    def __init__(self: pyrealsense2.save_to_ply, filename: str = 'RealSense Pointcloud ', pc: pyrealsense2.pointcloud) -> None:
+    def __init__(self: pyrealsense2.save_to_ply, filename: str = 'RealSense Pointcloud ', pc: pyrealsense2.pointcloud=...) -> None:
         ...
 
     def as_decimation_filter():
@@ -5640,6 +5640,7 @@ class video_stream_profile:
         ...
 
     def width(self: pyrealsense2.video_stream_profile) -> int:
+        ...
 
 
 class wheel_odometer:
@@ -5731,7 +5732,7 @@ class wheel_odometer:
     def is_wheel_odometer():
         ...
 
-    def load_wheel_odometery_config(self: pyrealsense2.wheel_odometer, odometry_config_buf: List[int]) → bool:
+    def load_wheel_odometery_config(self: pyrealsense2.wheel_odometer, odometry_config_buf: List[int]) -> bool:
         'Load Wheel odometer settings from host to device.'
         ...
 
@@ -5739,7 +5740,7 @@ class wheel_odometer:
         'Overloaded function.'
         ...
 
-    def send_wheel_odometry(self: pyrealsense2.wheel_odometer, wo_sensor_id: int, frame_num: int, translational_velocity: pyrealsense2.vector) → bool:
+    def send_wheel_odometry(self: pyrealsense2.wheel_odometer, wo_sensor_id: int, frame_num: int, translational_velocity: pyrealsense2.vector) -> bool:
         'Send wheel odometry data for each individual sensor (wheel)'
         ...
 
