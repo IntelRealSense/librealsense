@@ -2,8 +2,6 @@
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 # test:device each(D400*)
-# test:device each(D500*)
-# donotrun D500*
 
 import pyrealsense2 as rs
 from rspy import test, log
