@@ -17,7 +17,7 @@ The steps are described in [Linux manual installation guide](./installation.md)
 - Register the server's public key:
 ```
 sudo mkdir -p /etc/apt/keyrings
-curl -sSf https://raw.githubusercontent.com/timor-raiman/tmp/main/librealsense.pgp | sudo tee /etc/apt/keyrings/librealsense.pgp > /dev/null
+curl -sSf https://librealsense.intel.com/Debian/librealsense.pgp | sudo tee /etc/apt/keyrings/librealsense.pgp > /dev/null
 ```
 
 - Make sure apt HTTPS support is installed:
