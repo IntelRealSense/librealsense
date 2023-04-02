@@ -214,7 +214,7 @@ def query( monitor_changes = True ):
     if acroname:
         if not acroname.hub:
             acroname.connect()  # MAY THROW!
-            acroname.enable_ports( sleep_on_change = 5 )  # make sure all connected!
+            acroname.enable_ports( sleep_on_change = 8 )  # make sure all connected!
             if platform.system() == 'Linux':
                 global _acroname_hubs
                 _acroname_hubs = set( acroname.find_all_hubs() )
