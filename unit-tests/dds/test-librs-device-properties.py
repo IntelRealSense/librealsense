@@ -15,7 +15,7 @@ import pyrealsense2 as rs
 rs.log_to_console( rs.log_severity.debug )
 from time import sleep
 
-context = rs.context( '{"dds-domain":123}' )
+context = rs.context( '{"dds-domain":123,"dds-participant-name":"device-properties-client"}' )
 only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
 
 
