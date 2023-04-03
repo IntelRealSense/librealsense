@@ -89,10 +89,6 @@ void dds_device::impl::run( size_t message_timeout_ms )
     if( ! init() )
         DDS_THROW( runtime_error, "failed getting stream data from '" + _info.topic_root + "'" );
 
-    LOG_DEBUG( "device '" << _info.topic_root << "' (" << _participant->print( _guid )
-                          << ") initialized successfully" );
-    _running = true;
-
     // Start handling options only after init() is done
     _notifications_reader->on_data_available( [&]() {
         topics::flexible_msg notification;
@@ -110,6 +106,10 @@ void dds_device::impl::run( size_t message_timeout_ms )
             }
         }
     } );
+
+    LOG_DEBUG( "device '" << _info.topic_root << "' (" << _participant->print( _guid )
+                          << ") initialized successfully" );
+    _running = true;
 }
 
 void dds_device::impl::open( const dds_stream_profiles & profiles )

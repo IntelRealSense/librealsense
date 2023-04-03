@@ -31,13 +31,15 @@ def run_server( server_script, nested_indent = 'svr' ):
         log.d( "server took", run_time, "seconds" )
 
 
-def wait_for_devices( context, mask, tries = 3 ):
+def wait_for_devices( context, mask, timeout=3 ):
     """
     Since DDS devices may take time to be recognized and then initialized, we try over time:
     """
-    while tries:
+    if 'gha' in test.context:
+        timeout *= 3  # GHA VMs have only 2 cores
+    while timeout:
         devices = context.query_devices( mask )
         if len(devices) > 0:
             return devices
-        tries -= 1
+        timeout -= 1
         sleep( 1 )

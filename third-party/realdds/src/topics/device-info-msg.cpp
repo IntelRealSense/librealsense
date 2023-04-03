@@ -34,7 +34,6 @@ nlohmann::json device_info::to_json() const
         { "topic-root", topic_root },
         { "locked", locked },
     } );
-    LOG_DEBUG( "-----> JSON = " << msg.dump() );
     return msg;
 }
 

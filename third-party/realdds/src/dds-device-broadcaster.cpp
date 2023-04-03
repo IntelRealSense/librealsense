@@ -12,6 +12,9 @@
 #include <realdds/topics/flexible/flexible-msg.h>
 #include <realdds/topics/flexible/flexiblePubSubTypes.h>
 
+#include <rsutils/string/slice.h>
+using rsutils::string::slice;
+
 #include <iostream>
 
 using namespace eprosima::fastdds::dds;
@@ -206,8 +209,8 @@ bool dds_device_broadcaster::send_device_info_msg( const dds_device_handle & han
     // Post a DDS message with the new added device
     try
     {
+        LOG_DEBUG( "sending device-info message " << slice( msg.custom_data< char const >(), msg._data.size() ) );
         msg.write_to( *handle.client_listener );
-        LOG_DEBUG( "DDS device message sent!" );
         return true;
     }
     catch( ... )
