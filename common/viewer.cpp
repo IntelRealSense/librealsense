@@ -1666,7 +1666,7 @@ namespace rs2
             auto&& stream_size = stream_mv.size;
             auto stream_rect = view_rect.adjust_ratio(stream_size).grow(-3);
 
-            if (show_frame_allowed(stream_mv)) {
+            if (should_render_frame(stream_mv)) {
                 stream_mv.show_frame(stream_rect, mouse, error_message);
             }
 
@@ -2245,7 +2245,7 @@ namespace rs2
         }
     }
 
-    bool viewer_model::show_frame_allowed(rs2::stream_model& model)
+    bool viewer_model::should_render_frame(rs2::stream_model& model)
     {
         if (model.profile.stream_type() == RS2_STREAM_SAFETY)
             return false;
