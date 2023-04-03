@@ -113,7 +113,7 @@ namespace rs2
         void update_3d_camera(ux_window& win, const rect& viewer_rect, bool force = false);
 
         // Check if showing frames are allowed for the current stream. 
-        bool show_frame_allowed(rs2::stream_model& model);
+        bool should_render_frame(rs2::stream_model& model);
 
         void show_top_bar(ux_window& window, const rect& viewer_rect, const device_models_list& devices);
 
