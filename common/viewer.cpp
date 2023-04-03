@@ -1666,7 +1666,8 @@ namespace rs2
             auto&& stream_size = stream_mv.size;
             auto stream_rect = view_rect.adjust_ratio(stream_size).grow(-3);
 
-            stream_mv.show_frame(stream_rect, mouse, error_message);
+            if (stream_mv.profile.stream_type() != RS2_STREAM_SAFETY)
+                stream_mv.show_frame(stream_rect, mouse, error_message);
 
             auto p = stream_mv.dev->dev.as<playback>();
             float posX = stream_rect.x + 9;
