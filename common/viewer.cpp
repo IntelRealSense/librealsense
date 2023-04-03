@@ -1666,7 +1666,9 @@ namespace rs2
             auto&& stream_size = stream_mv.size;
             auto stream_rect = view_rect.adjust_ratio(stream_size).grow(-3);
 
-            stream_mv.show_frame(stream_rect, mouse, error_message);
+            if (should_render_frame(stream_mv)) {
+                stream_mv.show_frame(stream_rect, mouse, error_message);
+            }
 
             auto p = stream_mv.dev->dev.as<playback>();
             float posX = stream_rect.x + 9;
@@ -2241,6 +2243,12 @@ namespace rs2
         {
             reset_camera();
         }
+    }
+
+    bool viewer_model::should_render_frame(rs2::stream_model& model)
+    {
+        if (model.profile.stream_type() == RS2_STREAM_SAFETY)
+            return false;
     }
 
     void viewer_model::show_top_bar(ux_window& window, const rect& viewer_rect, const device_models_list& devices)
