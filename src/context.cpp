@@ -209,15 +209,11 @@ namespace librealsense
             }
             _dds_watcher = domain.device_watcher.instance( _dds_participant );
 
-            // When building with DDS allowed, we want the DDS device watcher always on.
-            // Not only when it has device change callback.
-            // The initialize process is longer then USB. (getting all info from the device)
-            
+            // The DDS device watcher should always be on
             if( _dds_watcher && _dds_watcher->is_stopped() )
             {
                 start_dds_device_watcher( rsutils::json::get< size_t >( settings, "dds-message-timeout-ms", 5000 ) );
             }
-            //_dds_backend = ...; TODO
         }
 #endif //BUILD_WITH_DDS
     }
@@ -1379,15 +1375,38 @@ namespace librealsense
 
 #ifdef BUILD_WITH_DDS
         if( _dds_watcher )
-            _dds_watcher->foreach_device( [&]( std::shared_ptr< realdds::dds_device > const & dev ) -> bool {
-                //if( mask & RS2_PRODUCT_LINE_D400 )
-                    //if( dev.product_line == "D400" )
+            _dds_watcher->foreach_device(
+                [&]( std::shared_ptr< realdds::dds_device > const & dev ) -> bool
+                {
+                    if( ! dev->is_running() )
                     {
-                        std::shared_ptr< device_info > info = std::make_shared< dds_device_info >( ctx, dev );
-                        list.push_back( info );
+                        LOG_DEBUG( "device '" << dev->device_info().topic_root << "' is not yet running" );
+                        return true;
                     }
-                return true;
-            } );
+                    if( dev->device_info().product_line == "D400" )
+                    {
+                        if( ! ( mask & RS2_PRODUCT_LINE_D400 ) )
+                            return true;
+                    }
+                    else if( dev->device_info().product_line == "L500" )
+                    {
+                        if( ! ( mask & RS2_PRODUCT_LINE_L500 ) )
+                            return true;
+                    }
+                    else if( dev->device_info().product_line == "SR300" )
+                    {
+                        if( ! ( mask & RS2_PRODUCT_LINE_SR300 ) )
+                            return true;
+                    }
+                    else if( ! ( mask & RS2_PRODUCT_LINE_NON_INTEL ) )
+                    {
+                        return true;
+                    }
+
+                    std::shared_ptr< device_info > info = std::make_shared< dds_device_info >( ctx, dev );
+                    list.push_back( info );
+                    return true;
+                } );
 #endif //BUILD_WITH_DDS
 
         // Supported recovery devices
