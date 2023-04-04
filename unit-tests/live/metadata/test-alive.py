@@ -1,5 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+import time
 
 # test:device each(D400*)
 
@@ -77,49 +78,33 @@ def is_value_keep_increasing(metadata_value, number_frames_to_test=50) -> bool:
     return True
 
 
-counter = 10
-while counter > 0:
-    counter -= 1
+queue_capacity = 1
+frame_queue = rs.frame_queue(queue_capacity, keep_frames=False)
+device = test.find_first_device_or_exit()
 
-    queue_capacity = 1
-    frame_queue = rs.frame_queue(queue_capacity, keep_frames=False)
-    device = test.find_first_device_or_exit()
+# We're using dictionary because we need save a profile and his sensor.
+# The key value is profile and value is his sensor.
+testing_profiles = {}
 
-    # We're using dictionary because we need save a profile and his sensor.
-    # The key value is profile and value is his sensor.
-    testing_profiles = {}
+append_testing_profiles(device)
 
-    append_testing_profiles(device)
+for profile, sensor in testing_profiles.items():
+    sensor.open(profile)
+    sensor.start(frame_queue)
 
-    for profile, sensor in testing_profiles.items():
-        if not sensor.is_motion_sensor():
-            continue
+    # Test #1
+    if is_frame_support_metadata(frame_queue.wait_for_frame(), rs.frame_metadata_value.frame_counter):
+        test.start('Verifying increasing counter for profile ', profile)
+        test.check(is_value_keep_increasing(rs.frame_metadata_value.frame_counter))
+        test.finish()
 
-        sensor.open(profile)
-        sensor.start(frame_queue)
+    # Test #2
+    if is_frame_support_metadata(frame_queue.wait_for_frame(), rs.frame_metadata_value.frame_timestamp):
+        test.start('Verifying increasing time for profile ', profile)
+        test.check(is_value_keep_increasing(rs.frame_metadata_value.frame_timestamp))
+        test.finish()
 
-        # Test #1
-        frame_1 = frame_queue.wait_for_frame()
-        if is_frame_support_metadata(frame_1, rs.frame_metadata_value.frame_counter):
-            test.start('Verifying increasing counter for profile ', profile)
-            test.check(is_value_keep_increasing(rs.frame_metadata_value.frame_counter))
-            test.finish()
-        else:
-            print("Skipping Verifying increasing COUNTER for profile ", profile)
-            print(frame_1)
-        frame_1 = None
-
-        # Test #2
-        frame_2 = frame_queue.wait_for_frame()
-        if is_frame_support_metadata(frame_2, rs.frame_metadata_value.frame_timestamp):
-            test.start('Verifying increasing time for profile ', profile)
-            test.check(is_value_keep_increasing(rs.frame_metadata_value.frame_timestamp))
-            test.finish()
-        else:
-            print("Skipping Verifying increasing TIME for profile ", profile)
-            print(frame_2)
-        frame_2 = None
-
-        close_resources(sensor)
+    close_resources(sensor)
+    time.sleep(0.3)
 
 test.print_results_and_exit()
