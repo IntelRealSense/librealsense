@@ -80,7 +80,7 @@ def is_value_keep_increasing(metadata_value, number_frames_to_test=50) -> bool:
 counter = 10
 while counter > 0:
     counter -= 1
-    
+
     queue_capacity = 1
     frame_queue = rs.frame_queue(queue_capacity, keep_frames=False)
     device = test.find_first_device_or_exit()
@@ -121,7 +121,5 @@ while counter > 0:
         frame_2 = None
 
         close_resources(sensor)
-
-        test.print_results()
 
 test.print_results_and_exit()
