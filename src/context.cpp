@@ -484,8 +484,11 @@ namespace librealsense
         std::string const _name;
         bool const _md_enabled;
 
+        typedef realdds::dds_metadata_syncer syncer_type;
+        static void frame_releaser( syncer_type::frame_type * f ) { static_cast< frame * >( f )->release(); }
+
         std::map< sid_index, std::shared_ptr< realdds::dds_stream > > _streams;
-        std::map< std::string, realdds::dds_metadata_syncer > _stream_name_to_syncer;
+        std::map< std::string, syncer_type > _stream_name_to_syncer;
 
     public:
         dds_sensor_proxy( std::string const & sensor_name,
@@ -604,19 +607,9 @@ namespace librealsense
             software_sensor::open( profiles );
         }
 
-        // Helper class that automatically assigns a deleter for a frame object
-        struct synced_frame : realdds::dds_metadata_syncer::frame_holder
-        {
-            synced_frame( frame * const f )
-                : realdds::dds_metadata_syncer::frame_holder(
-                    f, []( void * f ) { static_cast< frame * >( f )->release(); } )
-            {
-            }
-        };
-
         void handle_video_data( realdds::topics::device::image && dds_frame,
                                 const std::shared_ptr< stream_profile_interface > & profile,
-                                realdds::dds_metadata_syncer & syncer )
+                                syncer_type & syncer )
         {
             frame_additional_data data;  // with NO metadata by default!
             data.timestamp; // from metadata
@@ -643,7 +636,7 @@ namespace librealsense
             if( _md_enabled )
             {
                 syncer.enqueue_frame( data.frame_number,  // for now, we use this as the synced-to ID
-                                      synced_frame( new_frame ) );
+                                      syncer.hold( new_frame ) );
             }
             else
             {
@@ -686,7 +679,7 @@ namespace librealsense
 
         void handle_motion_data( realdds::topics::device::image && dds_frame,
                                  const std::shared_ptr< stream_profile_interface > & profile,
-                                 realdds::dds_metadata_syncer & syncer )
+                                 syncer_type & syncer )
         {
             frame_additional_data data;  // with NO metadata by default!
             data.timestamp;              // from metadata
@@ -706,7 +699,7 @@ namespace librealsense
             if( _md_enabled )
             {
                 syncer.enqueue_frame( data.frame_number,  // for now, we use this as the synced-to ID
-                                      synced_frame( new_frame ));
+                                      syncer.hold( new_frame ));
             }
             else
             {
@@ -738,14 +731,16 @@ namespace librealsense
                 auto & dds_stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
                 // Opening it will start streaming on the server side automatically
                 dds_stream->open( "rt/" + _dev->device_info().topic_root + '_' + dds_stream->name(), _dev->subscriber());
-                _stream_name_to_syncer[dds_stream->name()].reset(
-                    [this]( realdds::dds_metadata_syncer::frame_holder && fh, json && md )
-                    {
-                        if( ! md.empty() )
-                            add_frame_metadata( static_cast< frame * >( fh.get() ), std::move( md ) );
-                        // else the frame should already have empty metadata!
-                        invoke_new_frame( static_cast< frame * >( fh.release() ), nullptr, nullptr );
-                    } );
+                _stream_name_to_syncer[dds_stream->name()]
+                    .on_frame_release( frame_releaser )
+                    .on_frame_ready(
+                        [this]( syncer_type::frame_holder && fh, json && md )
+                        {
+                            if( ! md.empty() )
+                                add_frame_metadata( static_cast< frame * >( fh.get() ), std::move( md ) );
+                            // else the frame should already have empty metadata!
+                            invoke_new_frame( static_cast< frame * >( fh.release() ), nullptr, nullptr );
+                        } );
 
                 if( Is< realdds::dds_video_stream >( dds_stream ) )
                 {
@@ -772,12 +767,13 @@ namespace librealsense
 
         void stop()
         {
+            _stream_name_to_syncer.clear();
+
             for( auto & profile : sensor_base::get_active_streams() )
             {
                 auto & dds_stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
                 dds_stream->stop_streaming();
                 dds_stream->close();
-                _stream_name_to_syncer[dds_stream->name()].reset();
             }
 
             software_sensor::stop();

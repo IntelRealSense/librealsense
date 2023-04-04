@@ -8,28 +8,27 @@
 namespace realdds {
 
 
-void dds_metadata_syncer::enqueue_frame( id_type id, frame_holder && frame )
+void dds_metadata_syncer::enqueue_frame( key_type id, frame_holder && frame )
 {
     std::lock_guard< std::mutex > lock( _queues_lock );
     while( _frame_queue.size() >= max_frame_queue_size )
         handle_frame_without_metadata();
-    LOG_DEBUG( "enqueueing frame " << id );
-    _frame_queue.push_back( synced_frame{ id, std::move( frame ) } );
+    _frame_queue.push_back( key_frame{ id, std::move( frame ) } );
     search_for_match();  // Call under lock
 }
 
 
-void dds_metadata_syncer::enqueue_metadata( id_type id, nlohmann::json && md )
+void dds_metadata_syncer::enqueue_metadata( key_type id, metadata_type && md )
 {
     std::lock_guard< std::mutex > lock( _queues_lock );
     while( _metadata_queue.size() >= max_md_queue_size )
     {
-        LOG_DEBUG( "throwing away metadata: " << _metadata_queue.front()._md.dump() );
+        if( _on_metadata_dropped )
+            _on_metadata_dropped( _metadata_queue.front().first, std::move( _metadata_queue.front().second ) );
         _metadata_queue.pop_front();  // Throw oldest
     }
 
-    LOG_DEBUG( "enqueueing metadata: " << md.dump() );
-    _metadata_queue.push_back( synced_metadata{ id, std::move( md ) } );
+    _metadata_queue.push_back( key_metadata{ id, std::move( md ) } );
     search_for_match();  // Call under lock
 }
 
@@ -41,24 +40,25 @@ void dds_metadata_syncer::search_for_match()
         return;
 
     // We're looking for metadata with the same ID as the next frame
-    auto const frame_id = _frame_queue.front()._sync_id;
+    auto const frame_key = _frame_queue.front().first;
 
     // Throw away any old metadata (with ID < the frame) since the frame ID will keep increasing
     while( ! _metadata_queue.empty() )
     {
-        auto const md_id = _metadata_queue.front()._sync_id;
-        if( frame_id == md_id )
+        auto const md_key = _metadata_queue.front().first;
+        if( frame_key == md_key )
         {
             handle_match();
             break;
         }
-        if( frame_id < md_id )
+        if( frame_key < md_key )
         {
             // newer metadata: keep it, wait for a frame to arrive
             break;
         }
         // Metadata without frame, remove it from queue and check next
-        LOG_DEBUG( "throwing away metadata " << md_id << " looking for frame " << frame_id << " match" );
+        if( _on_metadata_dropped )
+            _on_metadata_dropped( _metadata_queue.front().first, std::move( _metadata_queue.front().second ) );
         _metadata_queue.pop_front();
     }
 }
@@ -66,13 +66,12 @@ void dds_metadata_syncer::search_for_match()
 
 void dds_metadata_syncer::handle_match()
 {
-    synced_frame & synced = _frame_queue.front();
-    auto & fh = synced._frame;
+    key_frame & synced = _frame_queue.front();
+    auto & fh = synced.second;
 
-    nlohmann::json md = std::move( _metadata_queue.front()._md );
+    metadata_type md = std::move( _metadata_queue.front().second );
     _metadata_queue.pop_front();
 
-    LOG_DEBUG( "frame " << synced._sync_id << " ready with metadata " << md.dump() );
     if( _on_frame_ready )
         _on_frame_ready( std::move( fh ), std::move( md ) );
 
@@ -82,11 +81,10 @@ void dds_metadata_syncer::handle_match()
 
 void dds_metadata_syncer::handle_frame_without_metadata()
 {
-    synced_frame & synced = _frame_queue.front();
-    auto & fh = synced._frame;
+    key_frame & synced = _frame_queue.front();
+    auto & fh = synced.second;
 
-    nlohmann::json md;
-    LOG_DEBUG( "frame " << synced._sync_id << " ready without metadata" );
+    metadata_type md;
     if( _on_frame_ready )
         _on_frame_ready( std::move( fh ), std::move( md ) );
 

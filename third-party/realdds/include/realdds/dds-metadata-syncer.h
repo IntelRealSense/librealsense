@@ -34,47 +34,74 @@ public:
     // the frame late and without metadata over losing it.
     static constexpr size_t max_frame_queue_size = 2;
 
-    // We synchronize using some abstract "id" used to identify each frame and its metadata. We don't need to know
-    // the nature of the id; only that it is increasing in value over time so that, given id1 > id2, then id1
-    // happened after id2.
-    typedef uint64_t id_type;
+    // We synchronize using some abstract "key" used to identify each frame and its metadata. We don't need to know
+    // the nature of the key; only that it is increasing in value over time so that, given key1 > key2, then key1
+    // happened after key2.
+    typedef uint64_t key_type;
 
     // Likewise, we don't know what the nature of a frame is; we hold it as a pointer to something, with a deleter to
     // ensure some lifetime management...
-    typedef std::unique_ptr< void, void ( * )( void * ) > frame_holder;
+    typedef void frame_type;
 
-    // So our callback gets this generic frame and metadata:
-    typedef std::function< void( frame_holder &&, nlohmann::json && metadata ) > on_frame_ready;
+    // NOTE: this is not std::function<>! unique_ptr does not accept any lambda but rather a function pointer.
+    typedef void ( *on_frame_release_callback )( frame_type * );
+    typedef std::unique_ptr< frame_type, on_frame_release_callback > frame_holder;
+
+    // Metadata is intended to be JSON
+    typedef nlohmann::json metadata_type;
+
+    // So our main callback gets this generic frame and metadata:
+    typedef std::function< void( frame_holder &&, metadata_type && metadata ) > on_frame_ready_callback;
+
+    // And we provide other callbacks, for control, testing, etc.
+    typedef std::function< void( key_type, metadata_type && ) > on_metadata_dropped_callback;
 
 private:
-    struct synced_frame
-    {
-        id_type _sync_id;
-        frame_holder _frame;
-    };
+    using key_frame = std::pair< key_type, frame_holder >;
+    using key_metadata = std::pair< key_type, metadata_type >;
 
-    struct synced_metadata
-    {
-        id_type _sync_id;
-        nlohmann::json _md;
-    };
-
-    on_frame_ready _on_frame_ready = nullptr;
-
-    std::deque< synced_frame > _frame_queue;
-    std::deque< synced_metadata > _metadata_queue;
+    std::deque< key_frame > _frame_queue;
+    std::deque< key_metadata > _metadata_queue;
     std::mutex _queues_lock;
 
-public:
-    void enqueue_frame( id_type, frame_holder && );
-    void enqueue_metadata( id_type, nlohmann::json && );
+    on_frame_release_callback _on_frame_release = nullptr;
+    on_frame_ready_callback _on_frame_ready = nullptr;
+    on_metadata_dropped_callback _on_metadata_dropped = nullptr;
 
-    void reset( on_frame_ready cb = nullptr )
+public:
+    void enqueue_frame( key_type, frame_holder && );
+    void enqueue_metadata( key_type, metadata_type && );
+
+    dds_metadata_syncer & on_frame_release( on_frame_release_callback cb )
+    {
+        _on_frame_release = cb;
+        return *this;
+    }
+
+    dds_metadata_syncer & on_frame_ready( on_frame_ready_callback cb )
+    {
+        _on_frame_ready = cb;
+        return *this;
+    }
+
+    dds_metadata_syncer & on_metadata_dropped( on_metadata_dropped_callback cb )
+    {
+        _on_metadata_dropped = cb;
+        return *this;
+    }
+
+    void clear()
     {
         std::lock_guard< std::mutex > lock( _queues_lock );
         _frame_queue.clear();
         _metadata_queue.clear();
-        _on_frame_ready = cb;
+    }
+
+    // Helper to create frame_holder
+    template< class Frame >
+    inline frame_holder hold( Frame * frame ) const
+    {
+        return frame_holder( frame, _on_frame_release );
     }
 
 private:
