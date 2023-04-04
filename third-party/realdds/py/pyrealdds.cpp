@@ -331,10 +331,31 @@ PYBIND11_MODULE(NAME, m) {
         .def( "source_timestamp", []( SampleInfo const & self ) { return self.source_timestamp.to_ns(); } )
         .def( "reception_timestamp", []( SampleInfo const & self ) { return self.reception_timestamp.to_ns(); } );
 
-    // We need a timestamp function that returns timestamps in the same domain as the sample-info timestamps
+
+    using realdds::dds_time;
     using realdds::dds_nsec;
+    py::class_< dds_time >( m, "time" )
+        .def( py::init<>() )
+        .def_readwrite( "seconds", &dds_time::seconds )
+        .def_readwrite( "nanosec", &dds_time::nanosec )
+        .def( "to_ns", &dds_time::to_ns )
+        .def_static( "from_ns", []( dds_nsec ns ) { return realdds::time_from( ns ); } )
+        .def_static( "from_double", []( long double d ) { return realdds::dds_time( d ); } )
+        .def( "to_double", &realdds::time_to_double )
+        .def( "__repr__",
+              []( dds_time const & self )
+              {
+                  std::ostringstream os;
+                  os << self.seconds;
+                  os << '.';
+                  os << std::setw(9) << std::setfill('0') << self.nanosec;
+                  return os.str();
+              } );
+
+
+    // We need a timestamp function that returns timestamps in the same domain as the sample-info timestamps
     using realdds::timestr;
-    m.def( "now", []() { return realdds::now().to_ns(); } );
+    m.def( "now", []() { return realdds::now(); } );
 
     py::enum_< timestr::no_suffix_t >( m, "no_suffix_t" );
     m.attr( "no_suffix" ) = timestr::no_suffix;
@@ -349,6 +370,17 @@ PYBIND11_MODULE(NAME, m) {
     m.def( "timestr", []( dds_nsec dt, timestr::rel_t, timestr::no_suffix_t ) { return timestr( dt, timestr::rel, timestr::no_suffix ).to_string(); } );
     m.def( "timestr", []( dds_nsec t1, dds_nsec t2 ) { return timestr( t1, t2 ).to_string(); } );
     m.def( "timestr", []( dds_nsec t1, dds_nsec t2, timestr::no_suffix_t ) { return timestr( t1, t2, timestr::no_suffix ).to_string(); } );
+
+    m.def( "timestr", []( dds_time t, dds_time start, timestr::no_suffix_t ) { return timestr( t, start, timestr::no_suffix ).to_string(); } );
+    m.def( "timestr", []( dds_time t, dds_nsec start, timestr::no_suffix_t ) { return timestr( t, start, timestr::no_suffix ).to_string(); } );
+    m.def( "timestr", []( dds_nsec t, dds_time start, timestr::no_suffix_t ) { return timestr( t, start, timestr::no_suffix ).to_string(); } );
+    m.def( "timestr", []( dds_time t, timestr::no_suffix_t ) { return timestr( t, timestr::no_suffix ).to_string(); } );
+    
+    m.def( "timestr", []( dds_time t, dds_time start ) { return timestr( t, start ).to_string(); } );
+    m.def( "timestr", []( dds_time t, dds_nsec start ) { return timestr( t, start ).to_string(); } );
+    m.def( "timestr", []( dds_nsec t, dds_time start ) { return timestr( t, start ).to_string(); } );
+    m.def( "timestr", []( dds_time t ) { return timestr( t ).to_string(); } );
+
 
     typedef std::shared_ptr< dds_topic > flexible_msg_create_topic( std::shared_ptr< dds_participant > const &,
                                                                     char const * );

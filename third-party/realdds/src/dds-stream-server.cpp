@@ -211,8 +211,8 @@ void dds_stream_server::publish( const uint8_t * data, size_t size, unsigned lon
     sensor_msgs::msg::Image raw_image;
     raw_image.header().frame_id() = std::to_string( id );
     auto const now = realdds::now();
-    raw_image.header().stamp().sec() = now.seconds();
-    raw_image.header().stamp().nanosec() = now.nanosec();
+    raw_image.header().stamp().sec() = now.seconds;
+    raw_image.header().stamp().nanosec() = now.nanosec;
     raw_image.encoding() = _image_header.format.to_string();
     raw_image.height() = _image_header.height;
     raw_image.width() = _image_header.width;

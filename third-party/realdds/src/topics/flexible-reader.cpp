@@ -58,7 +58,7 @@ flexible_reader::data_t flexible_reader::read()
         data = std::move( _data.front() );
         _data.pop();
     }
-    LOG_DEBUG( name() << ".read_sample @" << timestr( now(), data.sample.reception_timestamp ) );
+    LOG_DEBUG( name() << ".read_sample @" << timestr( now(), time_from( data.sample.reception_timestamp ) ) );
     return data;
 }
 
@@ -71,7 +71,7 @@ flexible_reader::data_t flexible_reader::read( std::chrono::seconds timeout )
         data = std::move( _data.front() );
         _data.pop();
     }
-    LOG_DEBUG( name() << ".read_sample @" << timestr( now(), data.sample.reception_timestamp ) );
+    LOG_DEBUG( name() << ".read_sample @" << timestr( now(), time_from( data.sample.reception_timestamp ) ) );
     return data;
 }
 
@@ -99,7 +99,7 @@ void flexible_reader::on_data_available()
                 DDS_THROW( runtime_error, "expected message not received!" );
             break;
         }
-        auto & received = data.sample.reception_timestamp;
+        auto received = time_from( data.sample.reception_timestamp );
         LOG_DEBUG( name() << ".on_data_available @" << timestr( received.to_ns(), timestr::no_suffix )
                           << timestr( notify_time, received, timestr::no_suffix ) << timestr( now(), notify_time ) << " "
                           << data.msg.json_data().dump() );

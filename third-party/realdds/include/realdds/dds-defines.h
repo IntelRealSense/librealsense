@@ -13,8 +13,8 @@ namespace rtps {
     struct GUID_t;
     struct GuidPrefix_t;
     struct EntityId_t;
-    class Time_t;
 }  // namespace rtps
+struct Time_t;
 namespace types {
     class DynamicType_ptr;
 }  // namespace types
@@ -24,7 +24,7 @@ namespace types {
 namespace realdds {
 
 
-using dds_time = eprosima::fastrtps::rtps::Time_t;
+using dds_time = eprosima::fastrtps::Time_t;
 using dds_nsec = int64_t;  // the type returned from dds_time::to_ns()
 using dds_guid = eprosima::fastrtps::rtps::GUID_t;
 using dds_guid_prefix = eprosima::fastrtps::rtps::GuidPrefix_t;
