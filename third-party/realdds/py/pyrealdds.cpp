@@ -24,6 +24,7 @@
 #include <realdds/dds-subscriber.h>
 #include <realdds/dds-log-consumer.h>
 #include <realdds/dds-stream-sensor-bridge.h>
+#include <realdds/dds-metadata-syncer.h>
 
 #include <rsutils/easylogging/easyloggingpp.h>
 
@@ -448,7 +449,7 @@ PYBIND11_MODULE(NAME, m) {
 
 
     using image_msg = realdds::topics::device::image;
-    py::class_< image_msg >( m, "image_msg" )
+    py::class_< image_msg, std::shared_ptr< image_msg > >( m, "image_msg" )
         .def( py::init<>() )
         .def_readwrite( "frame_id", &image_msg::frame_id )
         .def_readwrite( "data", &image_msg::raw_data )
@@ -813,4 +814,52 @@ PYBIND11_MODULE(NAME, m) {
         .def( "add_implicit_profiles", &dds_stream_sensor_bridge::add_implicit_profiles )
         .def( "commit", &dds_stream_sensor_bridge::commit )
         .def( "is_streaming", &dds_stream_sensor_bridge::is_streaming );
+
+    // Custom syncer with its own frame management over image_msg
+    struct dds_metadata_syncer : realdds::dds_metadata_syncer
+    {
+        typedef std::shared_ptr< image_msg > frame_type;  // the base case for image_msg (see above)
+
+    private:
+        typedef realdds::dds_metadata_syncer super;
+
+        static void frame_releaser( void * frame )
+        {
+            // frame is really a pointer to a shared object that we create on the heap
+            delete static_cast< frame_type * >( frame );
+        }
+
+    public:
+        dds_metadata_syncer()
+        {
+            on_frame_release( frame_releaser );
+        }
+
+        void enqueue_frame( key_type key, frame_type const & img )
+        {
+            // We need to keep the image alive and somehow point to it at the same time
+            super::enqueue_frame( key, hold( new std::shared_ptr< image_msg >( img ) ) );
+        }
+
+        frame_type get_frame( frame_holder const & fh ) const
+        {
+            return *static_cast< frame_type * >( fh.get() );
+        }
+    };
+
+    py::class_< dds_metadata_syncer >( m, "metadata_syncer" )
+        .def( py::init<>() )
+        .def( FN_FWD( dds_metadata_syncer,
+                      on_frame_ready,
+                      ( dds_metadata_syncer::frame_type, nlohmann::json && ),
+                      ( dds_metadata_syncer::frame_holder && fh, nlohmann::json && metadata ),
+                      callback( self.get_frame( fh ), std::move( metadata ) ); ) )
+        .def( FN_FWD( dds_metadata_syncer,
+                      on_metadata_dropped,
+                      ( dds_metadata_syncer::key_type, nlohmann::json && ),
+                      ( dds_metadata_syncer::key_type key, nlohmann::json && metadata ),
+                      callback( key, std::move( metadata ) ); ) )
+        .def( "enqueue_frame", &dds_metadata_syncer::enqueue_frame )
+        .def( "enqueue_metadata", &dds_metadata_syncer::enqueue_metadata )
+        .def( "clear", &dds_metadata_syncer::clear );
 }
