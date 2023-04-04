@@ -5,6 +5,7 @@
 
 #include <realdds/dds-stream-profile.h>
 #include <realdds/dds-stream-base.h>
+#include <realdds/dds-trinsics.h>
 
 #include <memory>
 #include <string>
