@@ -22,9 +22,10 @@ inline dds_time now()
 
 inline dds_time time_from( dds_nsec nanoseconds )
 {
-    eprosima::fastrtps::rtps::Time_t t;
-    t.from_ns( nanoseconds );  // note: this includes unneeded fraction calculation
-    return dds_time( t.seconds(), t.nanosec() );
+    // see eprosima::fastrtps::rtps::Time_t::from_ns() which includes unneeded fraction calculation
+    auto res = std::lldiv( nanoseconds, 1000000000ull );
+    return dds_time( static_cast< int32_t >( res.quot ),
+                     static_cast< uint32_t >( res.rem ) );
 }
 
 
@@ -42,6 +43,9 @@ inline long double time_to_double( dds_time const & t )
     nsec /= 1000000000ULL;
     return sec + nsec;
 }
+
+
+std::string time_to_string( dds_time const & t );
 
 
 // Easy way to format DDS time to a legible string, in milliseconds

@@ -342,15 +342,7 @@ PYBIND11_MODULE(NAME, m) {
         .def_static( "from_ns", []( dds_nsec ns ) { return realdds::time_from( ns ); } )
         .def_static( "from_double", []( long double d ) { return realdds::dds_time( d ); } )
         .def( "to_double", &realdds::time_to_double )
-        .def( "__repr__",
-              []( dds_time const & self )
-              {
-                  std::ostringstream os;
-                  os << self.seconds;
-                  os << '.';
-                  os << std::setw(9) << std::setfill('0') << self.nanosec;
-                  return os.str();
-              } );
+        .def( "__repr__", &realdds::time_to_string );
 
 
     // We need a timestamp function that returns timestamps in the same domain as the sample-info timestamps
@@ -458,17 +450,22 @@ PYBIND11_MODULE(NAME, m) {
     using image_msg = realdds::topics::device::image;
     py::class_< image_msg >( m, "image_msg" )
         .def( py::init<>() )
+        .def_readwrite( "frame_id", &image_msg::frame_id )
         .def_readwrite( "data", &image_msg::raw_data )
         .def_readwrite( "width", &image_msg::width )
         .def_readwrite( "height", &image_msg::height )
+        .def_readwrite( "timestamp", &image_msg::timestamp )
         .def( "__repr__",
               []( image_msg const & self )
               {
                   std::ostringstream os;
-                  os << "<" SNAME ".image_msg ";
-                  os << self.raw_data.size();
-                  os << ' ';
-                  os << self.width << 'x' << self.height;
+                  os << "<" SNAME ".image_msg";
+                  if( self.width > 0 && self.height > 0 )
+                  {
+                      os << ' ' << self.width << 'x' << self.height;
+                      os << 'x' << (self.raw_data.size() / (self.width * self.height));
+                  }
+                  os << " @ " << realdds::time_to_string( self.timestamp );
                   os << ">";
                   return os.str();
               } )
