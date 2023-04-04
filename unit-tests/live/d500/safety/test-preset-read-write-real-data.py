@@ -1,9 +1,9 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#test:donotrun
 #test:device D585S
-
+# we initialize all safety zone , this to start all safety tests with a known table which is 0 (hard coded in FW)
+#test:priority 1
 import pyrealsense2 as rs
 import random
 from rspy import test, log
@@ -86,15 +86,31 @@ dev = ctx.query_devices()[0]
 safety_sensor = dev.first_safety_sensor()
 test.finish()
 
+test.start("Init all safety zones")
+zone_0 = safety_sensor.get_safety_preset(0)
+for x in range(63):
+    safety_sensor.set_safety_preset(x + 1, zone_0)
+test.finish()
+
 #############################################################################################
 
 test.start("Writing safety preset to random index, then reading and comparing")
 index = random.randint(1, 63)
 log.out( "writing to index = ", index )
 safety_preset = get_random_preset()
+
+# save original table
+previous_result = safety_sensor.get_safety_preset(index)
+
+# write a random new table to the device
 safety_sensor.set_safety_preset(index, safety_preset)
+# read the table from the device
 read_result = safety_sensor.get_safety_preset(index)
+# verify the tables are equal
 test.check_equal(read_result, safety_preset)
+
+# restore original table
+safety_sensor.set_safety_preset(index, previous_result)
 test.finish()
 
 #############################################################################################
