@@ -105,6 +105,6 @@ for profile, sensor in testing_profiles.items():
         test.finish()
 
     close_resources(sensor)
-    time.sleep(0.3)
+    time.sleep(0.3)  # better sleep before stopping/starting streaming, so we can let the device recover properly.
 
 test.print_results_and_exit()
