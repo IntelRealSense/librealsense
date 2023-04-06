@@ -42,4 +42,6 @@ def wait_for_devices( context, mask, timeout=3 ):
         if len(devices) > 0:
             return devices
         timeout -= 1
+        log.d( 'waiting for device...' )
         sleep( 1 )
+    log.d( 'timed out' )
