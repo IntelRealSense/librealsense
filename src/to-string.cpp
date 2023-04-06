@@ -3,9 +3,17 @@
 
 #include "types.h"
 
-#define STRCASE(T, X) case RS2_##T##_##X: {\
-        static const std::string s##T##_##X##_str = make_less_screamy(#X);\
-        return s##T##_##X##_str.c_str(); }
+#define STRX( X ) make_less_screamy( #X )
+#define STRCASE( T, X )                                                                                                \
+    case RS2_##T##_##X: {                                                                                              \
+        static const std::string s##T##_##X##_str = STRX( X );                                                         \
+        return s##T##_##X##_str.c_str();                                                                               \
+    }
+#define STRARR( T, X ) arr[RS2_##T##_##X] = STRX( X )
+
+
+static std::string const unknown_value_str( UNKNOWN_VALUE );
+
 
 namespace librealsense {
 
@@ -498,59 +506,60 @@ const char * get_string( rs2_camera_info value )
 #undef CASE
 }
 
-const char * get_string( rs2_frame_metadata_value value )
+std::string const & get_string( rs2_frame_metadata_value value )
 {
-#define CASE( X ) STRCASE( FRAME_METADATA, X )
-    switch( value )
+    static auto str_array = []()
     {
-    CASE( FRAME_COUNTER )
-    CASE( FRAME_TIMESTAMP )
-    CASE( SENSOR_TIMESTAMP )
-    CASE( ACTUAL_EXPOSURE )
-    CASE( GAIN_LEVEL )
-    CASE( AUTO_EXPOSURE )
-    CASE( WHITE_BALANCE )
-    CASE( TIME_OF_ARRIVAL )
-    CASE( TEMPERATURE )
-    CASE( BACKEND_TIMESTAMP )
-    CASE( ACTUAL_FPS )
-    CASE( FRAME_LASER_POWER )
-    CASE( FRAME_LASER_POWER_MODE )
-    CASE( EXPOSURE_PRIORITY )
-    CASE( EXPOSURE_ROI_LEFT )
-    CASE( EXPOSURE_ROI_RIGHT )
-    CASE( EXPOSURE_ROI_TOP )
-    CASE( EXPOSURE_ROI_BOTTOM )
-    CASE( BRIGHTNESS )
-    CASE( CONTRAST )
-    CASE( SATURATION )
-    CASE( SHARPNESS )
-    CASE( AUTO_WHITE_BALANCE_TEMPERATURE )
-    CASE( BACKLIGHT_COMPENSATION )
-    CASE( GAMMA )
-    CASE( HUE )
-    CASE( MANUAL_WHITE_BALANCE )
-    CASE( POWER_LINE_FREQUENCY )
-    CASE( LOW_LIGHT_COMPENSATION )
-    CASE( FRAME_EMITTER_MODE )
-    CASE( FRAME_LED_POWER )
-    CASE( RAW_FRAME_SIZE )
-    CASE( GPIO_INPUT_DATA )
-    CASE( SEQUENCE_NAME )
-    CASE( SEQUENCE_ID )
-    CASE( SEQUENCE_SIZE )
-    CASE( TRIGGER )
-    CASE( PRESET )
-    CASE( INPUT_WIDTH )
-    CASE( INPUT_HEIGHT )
-    CASE( SUB_PRESET_INFO )
-    CASE( CALIB_INFO )
-    CASE( CRC )
-
-    default:
-        assert( ! is_valid( value ) );
-        return UNKNOWN_VALUE;
-    }
+        std::vector< std::string > arr( RS2_FRAME_METADATA_COUNT );
+#define CASE( X ) STRARR( FRAME_METADATA, X );
+        CASE( FRAME_COUNTER )
+        CASE( FRAME_TIMESTAMP )
+        CASE( SENSOR_TIMESTAMP )
+        CASE( ACTUAL_EXPOSURE )
+        CASE( GAIN_LEVEL )
+        CASE( AUTO_EXPOSURE )
+        CASE( WHITE_BALANCE )
+        CASE( TIME_OF_ARRIVAL )
+        CASE( TEMPERATURE )
+        CASE( BACKEND_TIMESTAMP )
+        CASE( ACTUAL_FPS )
+        CASE( FRAME_LASER_POWER )
+        CASE( FRAME_LASER_POWER_MODE )
+        CASE( EXPOSURE_PRIORITY )
+        CASE( EXPOSURE_ROI_LEFT )
+        CASE( EXPOSURE_ROI_RIGHT )
+        CASE( EXPOSURE_ROI_TOP )
+        CASE( EXPOSURE_ROI_BOTTOM )
+        CASE( BRIGHTNESS )
+        CASE( CONTRAST )
+        CASE( SATURATION )
+        CASE( SHARPNESS )
+        CASE( AUTO_WHITE_BALANCE_TEMPERATURE )
+        CASE( BACKLIGHT_COMPENSATION )
+        CASE( GAMMA )
+        CASE( HUE )
+        CASE( MANUAL_WHITE_BALANCE )
+        CASE( POWER_LINE_FREQUENCY )
+        CASE( LOW_LIGHT_COMPENSATION )
+        CASE( FRAME_EMITTER_MODE )
+        CASE( FRAME_LED_POWER )
+        CASE( RAW_FRAME_SIZE )
+        CASE( GPIO_INPUT_DATA )
+        CASE( SEQUENCE_NAME )
+        CASE( SEQUENCE_ID )
+        CASE( SEQUENCE_SIZE )
+        CASE( TRIGGER )
+        CASE( PRESET )
+        CASE( INPUT_WIDTH )
+        CASE( INPUT_HEIGHT )
+        CASE( SUB_PRESET_INFO )
+        CASE( CALIB_INFO )
+        CASE( CRC )
+        return arr;
+    }();
+    if( ! is_valid( value ) )
+        return unknown_value_str;
+    return str_array[value];
 #undef CASE
 }
 
@@ -660,7 +669,7 @@ const char * rs2_exception_type_to_string( rs2_exception_type type ) { return li
 const char * rs2_playback_status_to_string( rs2_playback_status status ) { return librealsense::get_string( status ); }
 const char * rs2_extension_type_to_string( rs2_extension type ) { return librealsense::get_string( type ); }
 const char * rs2_matchers_to_string( rs2_matchers matcher ) { return librealsense::get_string( matcher ); }
-const char * rs2_frame_metadata_to_string( rs2_frame_metadata_value metadata ) { return librealsense::get_string( metadata ); }
+const char * rs2_frame_metadata_to_string( rs2_frame_metadata_value metadata ) { return librealsense::get_string( metadata ).c_str(); }
 const char * rs2_extension_to_string( rs2_extension type ) { return rs2_extension_type_to_string( type ); }
 const char * rs2_frame_metadata_value_to_string( rs2_frame_metadata_value metadata ) { return rs2_frame_metadata_to_string( metadata ); }
 const char * rs2_l500_visual_preset_to_string( rs2_l500_visual_preset preset ) { return librealsense::get_string( preset ); }

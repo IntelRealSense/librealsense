@@ -188,11 +188,13 @@ namespace librealsense
         assert( _device_watcher->is_stopped() );
 
 #ifdef BUILD_WITH_DDS
-        if( rsutils::json::get< bool >( settings, "dds-discovery", true ) )
+        if( rsutils::json::get< bool >( settings, std::string( "dds-discovery", 13 ), true ) )
         {
-            realdds::dds_domain_id domain_id = rsutils::json::get< int >( settings, "dds-domain", 0 );
-            std::string participant_name
-                = rsutils::json::get< std::string >( settings, "dds-participant-name", rsutils::os::executable_name() );
+            realdds::dds_domain_id domain_id
+                = rsutils::json::get< int >( settings, std::string( "dds-domain", 10 ), 0 );
+            std::string participant_name = rsutils::json::get< std::string >( settings,
+                                                                              std::string( "dds-participant-name", 20 ),
+                                                                              rsutils::os::executable_name() );
 
             auto & domain = dds_domain_context_by_id[domain_id];
             _dds_participant = domain.participant.instance();
@@ -200,7 +202,7 @@ namespace librealsense
             {
                 _dds_participant->init( domain_id, participant_name );
             }
-            else if( rsutils::json::has_value( settings, "dds-participant-name" )
+            else if( rsutils::json::has_value( settings, std::string( "dds-participant-name", 20 ) )
                      && participant_name != _dds_participant->get()->get_qos().name().to_string() )
             {
                 throw std::runtime_error(
@@ -213,7 +215,8 @@ namespace librealsense
             // The DDS device watcher should always be on
             if( _dds_watcher && _dds_watcher->is_stopped() )
             {
-                start_dds_device_watcher( rsutils::json::get< size_t >( settings, "dds-message-timeout-ms", 5000 ) );
+                start_dds_device_watcher(
+                    rsutils::json::get< size_t >( settings, std::string( "dds-message-timeout-ms", 22 ), 5000 ) );
             }
         }
 #endif //BUILD_WITH_DDS
@@ -648,23 +651,23 @@ namespace librealsense
 
         void add_frame_metadata( frame * const f, json && dds_md )
         {
-            json const & md_header = dds_md["header"];
-            json const & md = dds_md["metadata"];
+            json const & md_header = dds_md[std::string( "header", 6 )];
+            json const & md = dds_md[std::string( "metadata", 8 )];
 
             // Always expected metadata
-            f->additional_data.timestamp = rsutils::json::get< rs2_time_t >( md_header, "timestamp" );
-            f->additional_data.timestamp_domain = rsutils::json::get< rs2_timestamp_domain >( md_header, "timestamp-domain" );
+            f->additional_data.timestamp = rsutils::json::get< rs2_time_t >( md_header, std::string( "timestamp", 9 ) );
+            f->additional_data.timestamp_domain
+                = rsutils::json::get< rs2_timestamp_domain >( md_header, std::string( "timestamp-domain", 16 ) );
 
             // Expected metadata for all depth images
-            if( rsutils::json::has( md_header, "depth-units" ) )
-                f->additional_data.depth_units = rsutils::json::get< float >( md_header, "depth-units" );
+            rsutils::json::get_ex( md_header, std::string( "depth-units", 11 ), &f->additional_data.depth_units );
 
             // Other metadata fields. Metadata fields that are present but unknown by librealsense will be ignored.
             auto & metadata = reinterpret_cast< metadata_array & >( f->additional_data.metadata_blob );
             for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
             {
                 auto key = static_cast< rs2_frame_metadata_value >( i );
-                const char * keystr = rs2_frame_metadata_to_string( key );
+                std::string const & keystr = librealsense::get_string( key );
                 try
                 {
                     metadata[key] = { true, rsutils::json::get< rs2_metadata_type >( md, keystr ) };
@@ -1121,7 +1124,7 @@ namespace librealsense
                 _dds_dev->on_metadata_available(
                     [this]( json && dds_md )
                     {
-                        std::string stream_name = rsutils::json::get< std::string >( dds_md, "stream-name" );
+                        std::string stream_name = rsutils::json::get< std::string >( dds_md, std::string( "stream-name", 11 ) );
                         auto it = _stream_name_to_owning_sensor.find( stream_name );
                         if( it != _stream_name_to_owning_sensor.end() )
                             it->second->handle_new_metadata( stream_name, std::move( dds_md ) );
