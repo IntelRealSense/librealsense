@@ -660,7 +660,7 @@ namespace librealsense
                 f->additional_data.depth_units = rsutils::json::get< float >( md_header, "depth-units" );
 
             // Other metadata fields. Metadata fields that are present but unknown by librealsense will be ignored.
-            auto metadata = reinterpret_cast< metadata_array & >( f->additional_data.metadata_blob );
+            auto & metadata = reinterpret_cast< metadata_array & >( f->additional_data.metadata_blob );
             for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
             {
                 auto key = static_cast< rs2_frame_metadata_value >( i );
