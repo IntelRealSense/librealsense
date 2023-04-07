@@ -8,12 +8,12 @@ from rspy import log, test
 dds.debug( True )
 from time import sleep
 
-participant = dds.participant()
-participant.init( 123, "test-metadata" )
+p_server = dds.participant()
+p_server.init( 123, "test-metadata-server" )
 
 # set up a server device
 import d435i
-device_server = dds.device_server( participant, d435i.device_info.topic_root )
+device_server = dds.device_server( p_server, d435i.device_info.topic_root )
 color_stream = dds.color_stream_server( "Color",  "RGB Camera" )
 color_stream.enable_metadata()  # not there in d435i by default
 color_stream.init_profiles( d435i.color_stream_profiles(), 0 )
@@ -22,7 +22,9 @@ color_stream.set_intrinsics( d435i.color_stream_intrinsics() )
 device_server.init( [color_stream], [], {} )
 
 # set up the client device and keep all its streams - this is connected directly and we can get notifications on it!
-device_direct = dds.device( participant, participant.create_guid(), d435i.device_info )
+p_client = dds.participant()
+p_client.init( 123, "test-metadata-client" )
+device_direct = dds.device( p_client, p_client.create_guid(), d435i.device_info )
 device_direct.run( 1000 )  # this will throw if something's wrong
 test.check( device_direct.is_running(), abort_if_failed=True )
 for stream_direct in device_direct.streams():
@@ -38,7 +40,7 @@ def on_image_available( stream, image ):
     image_received.set()
 
 stream_direct.on_data_available( on_image_available )
-stream_direct.open( topic_name, dds.subscriber( participant ) )
+stream_direct.open( topic_name, dds.subscriber( p_client ) )
 stream_direct.start_streaming()
 
 def detect_image():
@@ -125,7 +127,7 @@ test.finish()
 #############################################################################################
 #
 test.start( "Broadcast the device" )  # otherwise librs won't see it
-broadcaster = dds.device_broadcaster( participant )
+broadcaster = dds.device_broadcaster( p_server )
 broadcaster.run()
 broadcaster.add_device( d435i.device_info )
 test.finish()
@@ -136,7 +138,7 @@ test.start( "Initialize librs device" )
 import pyrealsense2 as rs
 rs.log_to_console( rs.log_severity.debug )
 from dds import wait_for_devices
-context = rs.context( '{"dds-domain":123,"dds-participant-name":"librs"}' )
+context = rs.context( '{"dds-domain":123,"dds-participant-name":"test-metadata-librs"}' )
 only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
 devices = wait_for_devices( context, only_sw_devices )
 test.check( devices is not None, abort_if_failed=True )
