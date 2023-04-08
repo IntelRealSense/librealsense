@@ -35,6 +35,7 @@ class dds_stream_server;
 class dds_notification_server;
 class dds_topic_reader;
 class dds_topic_writer;
+class dds_device_broadcaster;
 struct image_header;
 
 
@@ -63,6 +64,8 @@ public:
     // to subscribe.
     void init( const std::vector< std::shared_ptr< dds_stream_server > > & streams,
                const dds_options & options, const extrinsics_map & extr );
+
+    void broadcast( topics::device_info const & );
 
     bool is_valid() const { return( nullptr != _notification_server.get() ); }
     bool operator!() const { return ! is_valid(); }
@@ -99,8 +102,9 @@ private:
     std::shared_ptr< dds_notification_server > _notification_server;
     std::shared_ptr< dds_topic_reader > _control_reader;
     std::shared_ptr< dds_topic_writer > _metadata_writer;
+    std::shared_ptr< dds_device_broadcaster > _broadcaster;
     dispatcher _control_dispatcher;
-    
+
     control_callback _open_streams_callback = nullptr;
     set_option_callback _set_option_callback = nullptr;
     query_option_callback _query_option_callback = nullptr;

@@ -16,15 +16,14 @@ participant = server.participant()
 participant.init( 123, "test-watcher-server" )
 test.check( participant.is_valid() )
 
-broadcaster = server.device_broadcaster( participant )
-broadcaster.run()
+publisher = server.publisher( participant )
 
 di = server.device_info()
 di.name = 'my device'
 di.serial = '12345'
 di.product_line = 'PL'
 di.topic_root = 'testing/my/device/sn'
-broadcaster.add_device( di  )
+broadcaster1 = server.device_broadcaster( publisher, di )
 
 from time import sleep
 sleep(1)  # give the client some time with it
@@ -34,12 +33,12 @@ di.name = 'another device'
 di.serial = '67890'
 di.product_line = 'PL'
 di.topic_root = 'testing/my/device2/sn'
-broadcaster.add_device( di  )
+broadcaster2 = server.device_broadcaster( publisher, di )
 
 from time import sleep
 sleep(1)  # give the client some time with it
 
-broadcaster = None
+broadcaster1 = broadcaster2 = None
 participant = None
 test.finish()
 #

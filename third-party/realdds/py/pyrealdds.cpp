@@ -453,10 +453,7 @@ PYBIND11_MODULE(NAME, m) {
 
     using realdds::dds_device_broadcaster;
     py::class_< dds_device_broadcaster >( m, "device_broadcaster" )
-        .def( py::init< std::shared_ptr< dds_participant > const & >() )
-        .def( "run", &dds_device_broadcaster::run )
-        .def( "add_device", &dds_device_broadcaster::add_device )
-        .def( "remove_device", &dds_device_broadcaster::remove_device );
+        .def( py::init< std::shared_ptr< dds_publisher > const &, device_info const & >() );
 
     using realdds::dds_option_range;
     py::class_< dds_option_range >( m, "dds_option_range" )
@@ -616,7 +613,8 @@ PYBIND11_MODULE(NAME, m) {
                       streams.push_back( name2stream.second );
                   return streams;
               } )
-        .def( "publish_metadata", &dds_device_server::publish_metadata, py::call_guard< py::gil_scoped_release >() );
+        .def( "publish_metadata", &dds_device_server::publish_metadata, py::call_guard< py::gil_scoped_release >() )
+        .def( "broadcast", &dds_device_server::broadcast );
 
     using realdds::dds_stream;
     py::class_< dds_stream, std::shared_ptr< dds_stream > > stream_client_base( m, "stream", stream_base );
