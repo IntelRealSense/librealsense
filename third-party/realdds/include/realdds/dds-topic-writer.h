@@ -30,7 +30,7 @@ class dds_publisher;
 // You may choose to create one via a 'publisher' that manages the activities of several writers and determines when the
 // data is actually sent. By default, data is sent as soon as the writer’s write() function is called.
 //
-class dds_topic_writer : public eprosima::fastdds::dds::DataWriterListener
+class dds_topic_writer : protected eprosima::fastdds::dds::DataWriterListener
 {
     std::shared_ptr< dds_topic > const _topic;
     std::shared_ptr< dds_publisher > const _publisher;
@@ -48,6 +48,7 @@ public:
     bool is_running() const { return ( get() != nullptr ); }
 
     std::shared_ptr< dds_topic > const & topic() const { return _topic; }
+    std::shared_ptr< dds_publisher > const & publisher() const { return _publisher; }
 
     typedef std::function< void( eprosima::fastdds::dds::PublicationMatchedStatus const & ) >
         on_publication_matched_callback;
