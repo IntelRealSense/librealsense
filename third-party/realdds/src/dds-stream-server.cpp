@@ -137,14 +137,14 @@ void dds_stream_server::run_stream()
             {
                 if( auto self = weak_this.lock() )
                     try
-                {
-                    LOG_DEBUG( status.current_count << " total readers on '" << self->name() << "'" );
-                    on_readers_changed( self, status.current_count );
-                }
-                catch( std::exception const & e )
-                {
-                    LOG_ERROR( "exception from 'on_readers_changed': " << e.what() );
-                }
+                    {
+                        LOG_DEBUG( status.current_count << " total readers on '" << self->name() << "'" );
+                        on_readers_changed( self, status.current_count );
+                    }
+                    catch( std::exception const & e )
+                    {
+                        LOG_ERROR( "exception from 'on_readers_changed': " << e.what() );
+                    }
             } );
     }
     
