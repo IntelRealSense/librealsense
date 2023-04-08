@@ -49,7 +49,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         remote.run( 'topic.write( """' + sample1_json + '""" )', timeout=5 )
         msg = topic.read()
         test.check( topic.empty() )
-        test.check_equal( json.loads( msg.json_data() ), sample1 )
+        test.check_equal( msg.json_data(), sample1 )
     except:
         test.unexpected_exception()
     remote.run( 'topic.stop()', timeout=5 )
@@ -72,9 +72,9 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         msg2 = topic.read()
         msg3 = topic.read()
         test.check( topic.empty() )
-        test.check_equal( json.loads( msg1.json_data() ), sample1 )
-        test.check_equal( json.loads( msg2.json_data() ), sample2 )
-        test.check_equal( json.loads( msg3.json_data() ), sample3 )
+        test.check_equal( msg1.json_data(), sample1 )
+        test.check_equal( msg2.json_data(), sample2 )
+        test.check_equal( msg3.json_data(), sample3 )
     except:
         test.unexpected_exception()
     remote.run( 'topic.stop()', timeout=5 )
@@ -97,8 +97,8 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         msg2 = r2.read()
         test.check( r1.empty() )
         test.check( r2.empty() )
-        test.check_equal( json.loads( msg1.json_data() ), sample1 )
-        test.check_equal( json.loads( msg2.json_data() ), sample1 )
+        test.check_equal( msg1.json_data(), sample1 )
+        test.check_equal( msg2.json_data(), sample1 )
     except:
         test.unexpected_exception()
     remote.run( 'topic.stop()', timeout=5 )
