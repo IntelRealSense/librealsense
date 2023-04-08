@@ -27,6 +27,11 @@ class Storage;
 }  // namespace base
 }  // namespace el
 #endif
+namespace rsutils {
+namespace string {
+class slice;
+}  // namespace string
+}  // namespace rsutils
 
 
 namespace realdds {
@@ -73,6 +78,10 @@ public:
     // The prefix is a combination of (vendor, host, process, participant-id).
     //
     dds_guid const & guid() const;
+
+    // Returns this participant's name from the QoS
+    //
+    rsutils::string::slice name() const;
 
     // Utility to create a custom GUID, to help
     //
