@@ -640,7 +640,7 @@ class remote:
     sees '--nested' in the command-line.
     """
 
-    class Error( Exception ):
+    class Error( RuntimeError ):
         def __init__( self, message ):
             super().__init__( message )
 
@@ -711,6 +711,9 @@ class remote:
                     # caught in the main... Instead we have to wait until the remote is ready...
                 elif line.startswith( 'Traceback '):
                     self._exception = [line[:-1]]
+                elif line.startswith( '  File "' ):
+                    # Some exception are syntax errors in the command, which would not have a 'Traceback'...
+                    self._exception = [line[:-1]]
                 print( '['+self._nested_indent+']', line, end='', flush=True )
             else:
                 print( line, end='', flush=True )
@@ -740,11 +743,17 @@ class remote:
         #
         self._thread.start()
 
-    def _raise_if_needed( self ):
+    def _raise_if_needed( self, how='raise' ):
         if self._exception:
             what = self._exception[-1]
             self._exception = None
-            raise remote.Error( what )
+            if how == 'raise':
+                raise remote.Error( what )
+            print_stack_( traceback.format_stack()[:-2] )
+            log.out( f'      {what}' )
+            if how == 'abort':
+                self.wait()
+                abort()
 
     def wait_until_ready( self, timeout=30 ):
         """
@@ -754,7 +763,7 @@ class remote:
         if not self._initialized_event.wait( timeout ):
             raise RuntimeError( f'{self._name} timeout' )
 
-    def run( self, command, on_ready=None, timeout=None ):
+    def run( self, command, on_ready=None, timeout=5, on_fail='raise' ):
         """
         Run in a command asynchronously in the remote process: returns immediately without waiting for the command to
         finish.
@@ -773,7 +782,7 @@ class remote:
         if event:
             if not event.wait( timeout ):
                 raise RuntimeError( f'{self._name} command timed out' )
-            self._raise_if_needed()
+            self._raise_if_needed( on_fail )
 
     def wait( self, timeout = 30 ):
         """

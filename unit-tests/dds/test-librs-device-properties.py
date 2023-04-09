@@ -29,7 +29,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     test.start( "Test D435i" )
     try:
-        remote.run( 'instance = broadcast_device( d435i, d435i.device_info )', timeout=5 )
+        remote.run( 'instance = broadcast_device( d435i, d435i.device_info )' )
         n_devs = 0
         for dev in dds.wait_for_devices( context, only_sw_devices ):
             n_devs += 1
@@ -48,7 +48,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         if test.check( 'Motion Module' in sensors ):
             sensor = sensors['Motion Module']
             test.check_equal( len(sensor.get_stream_profiles()), len(d435i.accel_stream_profiles())+len(d435i.gyro_stream_profiles()) )
-        remote.run( 'close_server( instance )', timeout=5 )
+        remote.run( 'close_server( instance )' )
     except:
         test.unexpected_exception()
     dev = None
@@ -58,7 +58,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     test.start( "Test D405" )
     try:
-        remote.run( 'instance = broadcast_device( d405, d405.device_info )', timeout=5 )
+        remote.run( 'instance = broadcast_device( d405, d405.device_info )' )
         n_devs = 0
         for dev in dds.wait_for_devices( context, only_sw_devices ):
             n_devs += 1
@@ -72,7 +72,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             sensor = sensors.get('Stereo Module')
             test.check_equal( len(sensor.get_stream_profiles()),
                               len(d405.depth_stream_profiles())+2*len(d405.ir_stream_profiles())+len(d405.color_stream_profiles())+len(d405.colored_infrared_stream_profiles()) )
-        remote.run( 'close_server( instance )', timeout=5 )
+        remote.run( 'close_server( instance )' )
     except:
         test.unexpected_exception()
     dev = None
@@ -82,7 +82,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     test.start( "Test D455" )
     try:
-        remote.run( 'instance = broadcast_device( d455, d455.device_info )', timeout=5 )
+        remote.run( 'instance = broadcast_device( d455, d455.device_info )' )
         n_devs = 0
         for dev in dds.wait_for_devices( context, only_sw_devices ):
             n_devs += 1
@@ -101,7 +101,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         if test.check( 'Motion Module' in sensors ):
             sensor = sensors['Motion Module']
             test.check_equal( len(sensor.get_stream_profiles()), len(d455.accel_stream_profiles())+len(d455.gyro_stream_profiles()) )
-        remote.run( 'close_server( instance )', timeout=5 )
+        remote.run( 'close_server( instance )' )
     except:
         test.unexpected_exception()
     dev = None

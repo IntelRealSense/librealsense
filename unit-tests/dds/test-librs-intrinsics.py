@@ -25,12 +25,12 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     test.start( "D435i intrinsics" )
     try:
-        remote.run( 'instance = broadcast_device( d435i, d435i.device_info )', timeout=5 )
+        remote.run( 'instance = broadcast_device( d435i, d435i.device_info )' )
         n_devs = 0
         for dev in dds.wait_for_devices( context, only_sw_devices ):
             n_devs += 1
         test.check_equal( n_devs, 1 )
-        
+
         sensors = {sensor.get_info( rs.camera_info.name ) : sensor for sensor in dev.query_sensors()}
 
         sensor = sensors['Stereo Module']
@@ -48,7 +48,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
                     test.check_equal( depth_profile.get_intrinsics().ppy, 48.239837646484375 )
                     test.check_equal( depth_profile.get_intrinsics().fx, 418.2646789550781 )
                     test.check_equal( depth_profile.get_intrinsics().fy, 418.2646789550781 )
-                    
+
             if profile.stream_type() == rs.stream.infrared and profile.stream_index() == 1 :
                 ir1_profile = profile.as_video_stream_profile()
                 if ir1_profile.width() == 1280 and ir1_profile.height() == 720 :
@@ -116,8 +116,8 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
                 test.check_equal_lists( accel_profile.get_motion_intrinsics().data, [[1.0,0.0,0.0,0.0],[0.0,1.0,0.0,0.0],[0.0,0.0,1.0,0.0]] )
                 test.check_equal_lists( accel_profile.get_motion_intrinsics().noise_variances, [0.0,0.0,0.0] )
                 test.check_equal_lists( accel_profile.get_motion_intrinsics().bias_variances, [0.0,0.0,0.0] )
-        
-        remote.run( 'close_server( instance )', timeout=5 )
+
+        remote.run( 'close_server( instance )' )
     except:
         test.unexpected_exception()
     dev = None
