@@ -17,9 +17,21 @@ class Timer:
     def start(self):
         self._sw.reset()
 
+    # Get the original timeout, in seconds
+    def get_timeout(self):
+        return self._delta
+
+    # Return how much time (seconds) passed since we started
+    def get_elapsed(self):
+        return self._sw.get_elapsed()
+
+    # Return how much time (seconds) is left before we expire (negative if already expired)
+    def time_left(self):
+        return self.get_timeout() - self.get_elapsed()
+
     # Check if timer time expired
     def has_expired(self):
-        return self._sw.get_elapsed() >= self._delta
+        return self.time_left() < 0
 
     # Force time expiration
     def set_expired(self):
