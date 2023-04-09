@@ -5,26 +5,29 @@
 
 import pyrealdds as dds
 from rspy import log, test
-dds.debug( True )
 from time import sleep
+from rspy.stopwatch import Stopwatch
 
-p_server = dds.participant()
-p_server.init( 123, "test-metadata-server" )
+dds.debug( True, 'C  ' )
+log.nested = 'C  '
 
-# set up a server device
 import d435i
-device_server = dds.device_server( p_server, d435i.device_info.topic_root )
-color_stream = dds.color_stream_server( "Color",  "RGB Camera" )
-color_stream.enable_metadata()  # not there in d435i by default
-color_stream.init_profiles( d435i.color_stream_profiles(), 0 )
-color_stream.init_options( [] )
-color_stream.set_intrinsics( d435i.color_stream_intrinsics() )
-device_server.init( [color_stream], [], {} )
+
+
+# run the server in another process: GHA has some issue with it in the same process...
+import os.path
+cwd = os.path.dirname(os.path.realpath(__file__))
+remote_script = os.path.join( cwd, 'metadata-server.py' )
+remote = test.remote( remote_script, nested_indent="  S" )
+remote.start()
+remote.wait_until_ready()
+
+
+participant = dds.participant()
+participant.init( 123, "test-metadata-client" )
 
 # set up the client device and keep all its streams - this is connected directly and we can get notifications on it!
-p_client = dds.participant()
-p_client.init( 123, "test-metadata-client" )
-device_direct = dds.device( p_client, p_client.create_guid(), d435i.device_info )
+device_direct = dds.device( participant, participant.create_guid(), d435i.device_info )
 device_direct.run( 1000 )  # this will throw if something's wrong
 test.check( device_direct.is_running(), abort_if_failed=True )
 for stream_direct in device_direct.streams():
@@ -40,7 +43,7 @@ def on_image_available( stream, image ):
     image_received.set()
 
 stream_direct.on_data_available( on_image_available )
-stream_direct.open( topic_name, dds.subscriber( p_client ) )
+stream_direct.open( topic_name, dds.subscriber( participant ) )
 stream_direct.start_streaming()
 
 def detect_image():
@@ -71,7 +74,6 @@ class image_expected:
             wait_for_image( timeout=self._timeout, count=self._count )
 
 
-from rspy.stopwatch import Stopwatch
 metadata_received = threading.Event()
 metadata_content = []
 
@@ -113,13 +115,14 @@ class metadata_expected:
                 if test.check( len(metadata_content), description = 'Expected metadata but got none' ):
                     test.check_equal( metadata_content[0], self._md )
 
+
 #############################################################################################
 #
 test.start( "No librs syncer; direct from server" )
 try:
     md = { 'stream-name' : 'Color', 'invalid-metadata' : True }
     with metadata_expected( md ):
-        device_server.publish_metadata( md )
+        remote.run( f'device_server.publish_metadata( {md} )' )
 except:
     test.unexpected_exception()
 test.finish()
@@ -127,9 +130,7 @@ test.finish()
 #############################################################################################
 #
 test.start( "Broadcast the device" )  # otherwise librs won't see it
-broadcaster = dds.device_broadcaster( p_server )
-broadcaster.run()
-broadcaster.add_device( d435i.device_info )
+remote.run( 'broadcast()' )
 test.finish()
 #
 #############################################################################################
@@ -152,6 +153,8 @@ test.check_equal( sensor.get_info( rs.camera_info.name ), 'RGB Camera', abort_if
 del sensors
 profile = rs.video_stream_profile( sensor.get_stream_profiles()[0] )  # take the first one
 log.d( f'using profile {profile}')
+encoding = dds.stream_format.from_rs2( profile.format() )
+remote.run( f'img = new_image( {profile.width()}, {profile.height()}, {profile.bytes_per_pixel()} )', on_fail='abort' )
 sensor.open( [profile] )
 queue = rs.frame_queue( 100 )
 sensor.start( queue )
@@ -163,7 +166,8 @@ test.start( "Metadata alone should not come out" )
 try:
     with metadata_expected( count=20 ):
         for i in range(20):
-            device_server.publish_metadata({ 'stream-name' : 'Color', 'header' : { 'frame-id' : str(i) }, 'metadata' : {} })
+            md = { 'stream-name' : 'Color', 'header' : { 'frame-id' : str(i) }, 'metadata' : {} }
+            remote.run( f'device_server.publish_metadata( {md} )' )
     sleep( 0.25 )  # plus some extra for librs...
     test.check_false( queue.poll_for_frame() )  # we didn't send any images, shouldn't get any frames!
 except:
@@ -174,27 +178,24 @@ test.finish()
 #
 test.start( "Metadata after an image" )
 try:
-    timestamp = dds.now()
-    img = dds.image_msg()
-    img.width = profile.width()
-    img.height = profile.height()
-    img.data = bytearray( img.width * img.height * profile.bytes_per_pixel() )
-    img.timestamp = timestamp
     i += 1
-    color_stream.start_streaming( dds.stream_format.from_rs2( profile.format() ), img.width, img.height )
+    timestamp = dds.now()
+    remote.run( f'img.timestamp = dds.time.from_ns( {timestamp.to_ns()} )' )
+    remote.run( f'color_stream.start_streaming( dds.stream_format( "{encoding}" ), img.width, img.height )' )
     # It will take the image a lot longer to get anywhere than the metadata
     with image_expected():
-        color_stream.publish_image( img, i )
+        remote.run( f'publish_image( img, {i} )' )
     sleep( 0.25 )  # plus some extra for librs...
     test.check_false( queue.poll_for_frame() )  # the image should still be pending in the syncer
     with metadata_expected():
-        device_server.publish_metadata({
+        md = {
             'stream-name' : 'Color',
             'header' : {'frame-id':str(i), 'timestamp':timestamp.to_double(), 'timestamp-domain':int(rs.timestamp_domain.system_time) },
             'metadata': {
                 "White Balance" : 0xbaad
                 }
-            })
+        }
+        remote.run( f'device_server.publish_metadata( {md} )' )
     f = queue.wait_for_frame( 250 )  # A frame should now be available
     log.d( '---->', f )
     if test.check( f ) and test.check_equal( f.get_frame_number(), 20 ):
@@ -206,7 +207,7 @@ try:
 except:
     test.unexpected_exception()
 finally:
-    color_stream.stop_streaming()
+    remote.run( 'color_stream.stop_streaming()', on_fail='catch' )
 test.finish()
 #
 #############################################################################################
@@ -220,4 +221,5 @@ test.finish()
 #
 #############################################################################################
 #
+remote.wait()
 test.print_results_and_exit()
