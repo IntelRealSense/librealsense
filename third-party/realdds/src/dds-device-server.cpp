@@ -10,8 +10,10 @@
 #include <realdds/dds-stream-profile.h>
 #include <realdds/dds-notification-server.h>
 #include <realdds/dds-topic-reader.h>
+#include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/topics/dds-topic-names.h>
+#include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/flexible/flexible-msg.h>
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-writer.h>
@@ -195,6 +197,16 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
         _control_reader.reset();
         throw;
     }
+}
+
+
+void dds_device_server::broadcast( topics::device_info const & device_info )
+{
+    if( _broadcaster )
+        DDS_THROW( runtime_error, "device server was already broadcast" );
+    if( device_info.topic_root != _topic_root )
+        DDS_THROW( runtime_error, "topic roots do not match" );
+    _broadcaster = std::make_shared< dds_device_broadcaster >( _publisher, device_info );
 }
 
 

@@ -36,10 +36,14 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
                 if( ! msg.is_valid() )
                     continue;
 
-                topics::device_info device_info = topics::device_info::from_json( msg.json_data() );
-
                 eprosima::fastrtps::rtps::GUID_t guid;
                 eprosima::fastrtps::rtps::iHandle2GUID( guid, info.publication_handle );
+
+                auto device = dds_device::find( guid );
+                if( device )
+                    continue;
+
+                topics::device_info device_info = topics::device_info::from_json( msg.json_data() );
 
                 LOG_DEBUG( "DDS device (" << _participant->print( guid ) << ") detected:"
                                           << "\n\tName: " << device_info.name
@@ -50,7 +54,7 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
                                           << "\n\tLocked: " << ( device_info.locked ? "yes" : "no" ) );
 
                 // Add a new device record into our dds devices map
-                auto device = dds_device::create( _participant, guid, device_info );
+                device = dds_device::create( _participant, guid, device_info );
                 {
                     std::lock_guard< std::mutex > lock( _devices_mutex );
                     _dds_devices[guid] = device;

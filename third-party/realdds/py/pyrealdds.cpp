@@ -7,6 +7,7 @@
 #include <realdds/topics/flexible/flexiblePubSubTypes.h>
 #include <realdds/topics/image/image-msg.h>
 #include <realdds/topics/ros2/ros2imagePubSubTypes.h>
+#include <realdds/topics/dds-topic-names.h>
 #include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
@@ -163,6 +164,10 @@ PYBIND11_MODULE(NAME, m) {
     //      topic = dds.topic( p, dds.types.device_info(), "realsense/device-info" )
     auto types = m.def_submodule( "types", "all the types that " SNAME " can work with" );
 
+    // The 'topics' submodule will contain pointers to the topic names:
+    auto topics = m.def_submodule( "topics", "all the topics that " SNAME " knows" );
+    topics.attr( "device_info" ) = realdds::topics::DEVICE_INFO_TOPIC_NAME;
+
     // We need to declare a basic TypeSupport or else dds_topic ctor won't work
     using eprosima::fastdds::dds::TypeSupport;
     py::class_< TypeSupport > topic_type( types, "topic_type" );
@@ -290,6 +295,8 @@ PYBIND11_MODULE(NAME, m) {
         .def_readwrite( "product_id", &device_info::product_id )
         .def_readwrite( "locked", &device_info::locked )
         .def_readwrite( "topic_root", &device_info::topic_root )
+        .def_static( "from_json", &device_info::from_json )
+        .def( "to_json", &device_info::to_json )
         .def( "__repr__",
               []( device_info const & self ) {
                   std::ostringstream os;
@@ -409,9 +416,10 @@ PYBIND11_MODULE(NAME, m) {
             py::arg( "reader" ), py::arg( "sample" ) = nullptr,
             py::call_guard< py::gil_scoped_release >() )
         .def_static( "create_topic", static_cast<flexible_msg_create_topic *>( &flexible_msg::create_topic ))
-        .def( "json_data", []( flexible_msg const & self ) {
-            return std::string( (char const *)self._data.data(), self._data.size() );
-        } )
+        .def( "json_data", &flexible_msg::json_data )
+        .def( "json_string",
+              []( flexible_msg const & self )
+              { return std::string( (char const *)self._data.data(), self._data.size() ); } )
         .def( "write_to", &flexible_msg::write_to, py::call_guard< py::gil_scoped_release >() );
 
 
@@ -453,10 +461,7 @@ PYBIND11_MODULE(NAME, m) {
 
     using realdds::dds_device_broadcaster;
     py::class_< dds_device_broadcaster >( m, "device_broadcaster" )
-        .def( py::init< std::shared_ptr< dds_participant > const & >() )
-        .def( "run", &dds_device_broadcaster::run )
-        .def( "add_device", &dds_device_broadcaster::add_device )
-        .def( "remove_device", &dds_device_broadcaster::remove_device );
+        .def( py::init< std::shared_ptr< dds_publisher > const &, device_info const & >() );
 
     using realdds::dds_option_range;
     py::class_< dds_option_range >( m, "dds_option_range" )
@@ -616,7 +621,8 @@ PYBIND11_MODULE(NAME, m) {
                       streams.push_back( name2stream.second );
                   return streams;
               } )
-        .def( "publish_metadata", &dds_device_server::publish_metadata, py::call_guard< py::gil_scoped_release >() );
+        .def( "publish_metadata", &dds_device_server::publish_metadata, py::call_guard< py::gil_scoped_release >() )
+        .def( "broadcast", &dds_device_server::broadcast );
 
     using realdds::dds_stream;
     py::class_< dds_stream, std::shared_ptr< dds_stream > > stream_client_base( m, "stream", stream_base );

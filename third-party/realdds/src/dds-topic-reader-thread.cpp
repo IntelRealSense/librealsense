@@ -58,8 +58,6 @@ void dds_topic_reader_thread::run( qos const & rqos )
 
             while( ! _stopped.get_trigger_value() )
             {
-                _stopped.set_trigger_value( false );
-
                 eprosima::fastdds::dds::ConditionSeq active_conditions;
                 wait_set.wait( active_conditions, eprosima::fastrtps::c_TimeInfinite );
 

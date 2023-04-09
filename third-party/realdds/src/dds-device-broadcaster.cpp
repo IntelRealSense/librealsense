@@ -6,233 +6,155 @@
 #include <realdds/dds-participant.h>
 #include <realdds/dds-publisher.h>
 #include <realdds/dds-topic-writer.h>
+#include <realdds/dds-topic.h>
 #include <realdds/dds-utilities.h>
-#include <realdds/dds-guid.h>
 #include <realdds/topics/dds-topic-names.h>
 #include <realdds/topics/flexible/flexible-msg.h>
-#include <realdds/topics/flexible/flexiblePubSubTypes.h>
 
+#include <fastdds/dds/publisher/DataWriter.hpp>
+#include <fastdds/dds/core/condition/WaitSet.hpp>
+#include <fastdds/dds/core/condition/GuardCondition.hpp>
+
+#include <rsutils/shared-ptr-singleton.h>
 #include <rsutils/string/slice.h>
 using rsutils::string::slice;
 
-#include <iostream>
 
-using namespace eprosima::fastdds::dds;
-using namespace realdds;
+namespace realdds {
 
-// We want to know when readers join our topic
-class dds_device_broadcaster::dds_client_listener : public realdds::dds_topic_writer //dds_topic_writer is a listener
+
+// Singleton, per participant
+// Manages the thread from which broadcast messages are sent
+//
+class detail::broadcast_manager
 {
+    std::thread _th;
+    std::shared_ptr< dds_topic_writer > _writer;
+    eprosima::fastdds::dds::GuardCondition _stopped;
+    eprosima::fastdds::dds::GuardCondition _ready_for_broadcast;
+
+    std::mutex _broadcasters_mutex;
+    std::set< dds_device_broadcaster * > _broadcasters;
+
 public:
-    dds_client_listener( std::shared_ptr< dds_topic > const & topic,
-                         std::shared_ptr< dds_publisher > const & publisher,
-                         dds_device_broadcaster * owner )
-        : dds_topic_writer( topic, publisher )
-        , _owner( owner )
+    broadcast_manager( std::shared_ptr< dds_publisher > const & publisher )
     {
-    }
+        auto topic = topics::flexible_msg::create_topic( publisher->get_participant(), topics::DEVICE_INFO_TOPIC_NAME );
 
-    std::atomic_bool _new_reader_joined = { false };  // Used to indicate that a new reader has joined for this writer
-
-protected:
-    void on_publication_matched( eprosima::fastdds::dds::DataWriter * writer,
-                                 eprosima::fastdds::dds::PublicationMatchedStatus const & info ) override
-    {
-        if( info.current_count_change == 1 )
-        {
-            // We send the work to the dispatcher to avoid waiting on the mutex here.
-            _owner->_dds_device_dispatcher.invoke( [this]( dispatcher::cancellable_timer ) {
-                {
-                    std::lock_guard< std::mutex > lock( _owner->_new_client_mutex ); //TODO - mutxe locking needed here? Dispatcher needed here?
-                    _new_reader_joined = true;
-                    _owner->_trigger_msg_send = true;
-                }
-                _owner->_new_client_cv.notify_all();
+        // We keep our own writer just for the thread status notifications
+        _writer = std::make_shared< dds_topic_writer >( topic, publisher );
+        _writer->on_publication_matched(
+            [this]( eprosima::fastdds::dds::PublicationMatchedStatus const & status )
+            {
+                LOG_DEBUG( _writer->topic()->get_participant()->name()
+                           << ": " << status.current_count << " total watchers for broadcast ("
+                           << ( status.current_count_change >= 0 ? "+" : "" ) << status.current_count_change << ")" );
+                // We get called from the participant thread; trigger our own thread for actual broadcast
+                if( status.current_count_change > 0 )
+                    _ready_for_broadcast.set_trigger_value( true );
             } );
-        }
-        else if( info.current_count_change == -1 )
+        _writer->run();
+
+        _th = std::thread(
+            [this]()
+            {
+                LOG_DEBUG( _writer->topic()->get_participant()->name() << ": broadcaster thread running" );
+                eprosima::fastdds::dds::WaitSet wait_set;
+                //auto & publication_matched = _writer->get()->get_statuscondition();
+                //publication_matched.set_enabled_statuses( eprosima::fastdds::dds::StatusMask::publication_matched() );
+                //wait_set.attach_condition( publication_matched );
+                wait_set.attach_condition( _ready_for_broadcast );
+                wait_set.attach_condition( _stopped );
+
+                while( ! _stopped.get_trigger_value() )
+                {
+                    eprosima::fastdds::dds::ConditionSeq active_conditions;
+                    wait_set.wait( active_conditions, eprosima::fastrtps::c_TimeInfinite );
+                    if( _stopped.get_trigger_value() )
+                        break;
+                    // Let multiple broadcasts gather and do it only once
+                    std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+                    _ready_for_broadcast.set_trigger_value( false );
+
+                    std::lock_guard< std::mutex > lock( _broadcasters_mutex );
+                    LOG_DEBUG( _writer->topic()->get_participant()->name() << ": broadcasting" );
+                    for( dds_device_broadcaster const * broadcaster : _broadcasters )
+                        broadcaster->broadcast();
+                }
+                LOG_DEBUG( _writer->topic()->get_participant()->name() << ": broadcaster thread stopped" );
+            } );
+    }
+
+    ~broadcast_manager()
+    {
+        if( _th.joinable() )
         {
-        }
-        else
-        {
-            LOG_ERROR( std::to_string( info.current_count_change )
-                       << " is not a valid value for on_publication_matched" );
+            _stopped.set_trigger_value( true );
+            _th.join();
         }
     }
 
-private:
-    dds_device_broadcaster * _owner;
+    std::shared_ptr< dds_topic_writer > register_broadcaster( dds_device_broadcaster * broadcaster )
+    {
+        // Each broadcaster (for a single device) gets its own writer, with a GUID, from which its broadcasts will be
+        // made. This lets the watcher associate the GUID with that specific device, and can tell when the GUID
+        // disappears that the device is no longer online...
+        auto writer = std::make_shared< dds_topic_writer >( _writer->topic(), _writer->publisher() );
+        writer->run();
+        {
+            std::lock_guard< std::mutex > lock( _broadcasters_mutex );
+            _broadcasters.insert( broadcaster );
+        }
+        return writer;
+    }
+
+    void unregister_broadcaster( dds_device_broadcaster * broadcaster )
+    {
+        std::lock_guard< std::mutex > lock( _broadcasters_mutex );
+        _broadcasters.erase( broadcaster );
+    }
 };
 
 
-dds_device_broadcaster::dds_device_broadcaster( std::shared_ptr< dds_participant > const & participant )
-    : _trigger_msg_send( false )
-    , _participant( participant )
-    , _publisher( std::make_shared< dds_publisher >( participant ) )
-    , _dds_device_dispatcher( 10 )
-    , _new_client_handler( [this]( dispatcher::cancellable_timer ) {
-        // We wait until the new reader callback indicate a new reader has joined or until the active object is stopped
-        if( _active )
-        {
-            std::unique_lock< std::mutex > lock( _new_client_mutex );
-            _new_client_cv.wait( lock, [this]() { return ! _active || _trigger_msg_send.load(); } );
-            if( _active && _trigger_msg_send.load() )
-            {
-                _trigger_msg_send = false;
-                _dds_device_dispatcher.invoke( [this]( dispatcher::cancellable_timer ) {
-                    for( auto const & sn_and_handle : _device_handle_by_sn )
-                    {
-                        if( sn_and_handle.second.client_listener->_new_reader_joined )
-                        {
-                            if( send_device_info_msg( sn_and_handle.second ) )
-                            {
-                                sn_and_handle.second.client_listener->_new_reader_joined = false;
-                            }
-                        }
-                    }
-                } );
-            }
-        }
-    } )
+static std::map< realdds::dds_guid, rsutils::shared_ptr_singleton< detail::broadcast_manager > >
+    participant_broadcast_manager;
+
+
+dds_device_broadcaster::dds_device_broadcaster( std::shared_ptr< dds_publisher > const & publisher,
+                                                topics::device_info const & dev_info )
+    : _device_info( dev_info )
 {
-    if( ! _participant )
-        DDS_THROW( runtime_error, "dds_device_broadcaster called with a null participant" );
+    if( ! publisher )
+        DDS_THROW( runtime_error, "null publisher" );
+
+    auto participant_guid = publisher->get_participant()->guid();
+    _manager = participant_broadcast_manager[participant_guid].instance( publisher );
+    _writer = _manager->register_broadcaster( this );
+
+    broadcast();  // possible we have no subscribers, but can't hurt
 }
 
-bool dds_device_broadcaster::run()
+
+void dds_device_broadcaster::broadcast() const
 {
-    if( _active )
-        DDS_THROW( runtime_error, "dds_device_broadcaster::run() called when already-active" );
-
-    _dds_device_dispatcher.start();
-    _new_client_handler.start();
-    _active = true;
-    return true;
-}
-
-void dds_device_broadcaster::add_device( device_info const & dev_info )
-{
-    if( ! _active )
-        DDS_THROW( runtime_error, "dds_device_broadcaster::add_device called before run()" );
-    // Post the connected device
-    handle_device_changes( {}, { dev_info } );
-}
-
-void dds_device_broadcaster::remove_device( device_info const & dev_info )
-{
-    if( ! _active )
-        DDS_THROW( runtime_error, "dds_device_broadcaster::remove_device called before run()" );
-    // Post the disconnected device
-    handle_device_changes( { dev_info.serial }, {} );
-}
-
-void dds_device_broadcaster::handle_device_changes( const std::vector< std::string > & devices_to_remove,
-                                                    const std::vector< device_info > & devices_to_add )
-{
-    // We want to be as quick as possible and not wait for DDS in any way -- so we handle
-    // device changes in the background, using invoke:
-    _dds_device_dispatcher.invoke( [this, devices_to_add, devices_to_remove]( dispatcher::cancellable_timer ) {
-        try
-        {
-            for( auto const & dev_to_remove : devices_to_remove )
-            {
-                remove_dds_device( dev_to_remove );
-            }
-
-            for( auto const & dev_to_add : devices_to_add )
-            {
-                if( ! add_dds_device( dev_to_add ) )
-                {
-                    LOG_ERROR( "Error creating a DDS writer" );
-                }
-            }
-        }
-        catch( ... )
-        {
-            LOG_ERROR( "Unknown error when trying to remove/add a DDS device" );
-        }
-    } );
-}
-
-void dds_device_broadcaster::remove_dds_device( const std::string & serial_number )
-{
-    auto it = _device_handle_by_sn.find( serial_number );
-    if( it == _device_handle_by_sn.end() )
-    {
-        LOG_ERROR( "failed to remove non-existing device by serial number " << serial_number );
-        return;
-    }
-    auto & handle = it->second;
-
-    handle.client_listener.reset(); // deleting the writer notifies the clients (through DDS middleware)
-    _device_handle_by_sn.erase( it );
-}
-
-bool dds_device_broadcaster::add_dds_device( const device_info & dev_info )
-{
-    if( _device_handle_by_sn.find( dev_info.serial ) == _device_handle_by_sn.end() )
-    {
-        if( ! create_device_writer( dev_info ) )
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-bool dds_device_broadcaster::create_device_writer( const device_info & dev_info )
-{
-    if( ! _topic )
-        _topic = topics::flexible_msg::create_topic( _publisher->get_participant(), topics::DEVICE_INFO_TOPIC_NAME );
-
-    // Create a data writer for the topic
-    auto writer = std::make_shared< dds_client_listener >( _topic, _publisher, this );
-    if( ! writer )
-        return false;
-
-    dds_topic_writer::qos wqos( RELIABLE_RELIABILITY_QOS ); //RELIABLE_RELIABILITY_QOS default but worth mentioning
-    writer->run( wqos );
-
-    auto it_inserted = _device_handle_by_sn.emplace( dev_info.serial,
-                                                     dds_device_handle{ dev_info, writer } );
-    assert( it_inserted.second );
-
-    return true;
-}
-
-bool dds_device_broadcaster::send_device_info_msg( const dds_device_handle & handle )
-{
-    // Publish the device info, but only after a matching reader is found.
-    topics::flexible_msg msg( handle.info.to_json() );
-
-    // Post a DDS message with the new added device
     try
     {
+        topics::flexible_msg msg( _device_info.to_json() );
         LOG_DEBUG( "sending device-info message " << slice( msg.custom_data< char const >(), msg._data.size() ) );
-        msg.write_to( *handle.client_listener );
-        return true;
+        msg.write_to( *_writer );
     }
-    catch( ... )
+    catch( std::exception const & e )
     {
-        LOG_ERROR( "Error writing new device message for device : " << handle.info.serial );
+        LOG_ERROR( "Error sending device-info message for S/N " << _device_info.serial << ": " << e.what() );
     }
-    return false;
 }
+
 
 dds_device_broadcaster::~dds_device_broadcaster()
 {
-    // Mark this class as inactive and wake up the active object do we can properly stop it.
-    _active = false; 
-    _new_client_cv.notify_all(); 
-    
-    _dds_device_dispatcher.stop();
-    _new_client_handler.stop();
-
-    // TODO - Will be destructed anyway by shared_ptr, worth mentioning explicitly?
-    for( auto & sn_and_handle : _device_handle_by_sn )
-    {
-        sn_and_handle.second.client_listener.reset(); // deleting the writer notifies the clients (through DDS middleware)
-    }
-    _device_handle_by_sn.clear();
+    _manager->unregister_broadcaster( this );
+    // _th ref count will be decreased and, if no others hold it, destroyed -- thereby stopping the thread
 }
+
+
+}  // namespace realdds

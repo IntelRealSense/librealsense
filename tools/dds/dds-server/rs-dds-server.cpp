@@ -3,12 +3,12 @@
 
 #include <rsutils/easylogging/easyloggingpp.h>
 
-#include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
 #include <realdds/dds-participant.h>
 #include <realdds/dds-option.h>
 #include <realdds/dds-log-consumer.h>
+#include <realdds/topics/device-info-msg.h>
 
 #include "lrs-device-watcher.h"
 #include "lrs-device-controller.h"
@@ -108,14 +108,6 @@ try
     auto participant = std::make_shared< dds_participant >();
     participant->init( domain, "rs-dds-server" );
 
-    // Run the DDS device broadcaster
-    dds_device_broadcaster broadcaster( participant );
-    if( !broadcaster.run() )
-    {
-        std::cerr << "Failure running the DDS Device Broadcaster" << std::endl;
-        return EXIT_FAILURE;
-    }
-
     struct device_handler
     {
         topics::device_info info;
@@ -139,9 +131,6 @@ try
 
             auto dev_info = rs2_device_to_info( dev );
 
-            // Broadcast the new connected device to all listeners
-            broadcaster.add_device( dev_info );
-
             // Create a dds-device-server for this device
             auto dds_device_server
                 = std::make_shared< realdds::dds_device_server >( participant, dev_info.topic_root );
@@ -150,6 +139,9 @@ try
             std::shared_ptr< tools::lrs_device_controller > lrs_device_controller
                 = std::make_shared< tools::lrs_device_controller >( dev, dds_device_server );
 
+            // Finally, we're ready to broadcast it
+            dds_device_server->broadcast( dev_info );
+
             // Keep a pair of device controller and server per RS device
             device_handlers_list.emplace( dev, device_handler{ dev_info, dds_device_server, lrs_device_controller } );
         },
@@ -157,9 +149,6 @@ try
         [&]( rs2::device dev ) {
             // Remove the dds-server for this device
             auto const & handler = device_handlers_list.at( dev );
-
-            // Remove this device from the DDS device broadcaster
-            broadcaster.remove_device( handler.info );
 
             device_handlers_list.erase( dev );
         } );
