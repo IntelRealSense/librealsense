@@ -30,7 +30,8 @@ class detail::broadcast_manager
 {
     std::thread _th;
     std::shared_ptr< dds_topic_writer > _writer;
-    eprosima::fastdds::dds::GuardCondition _stopped, _ready_for_broadcast;
+    eprosima::fastdds::dds::GuardCondition _stopped;
+    eprosima::fastdds::dds::GuardCondition _ready_for_broadcast;
 
     std::mutex _broadcasters_mutex;
     std::set< dds_device_broadcaster * > _broadcasters;
