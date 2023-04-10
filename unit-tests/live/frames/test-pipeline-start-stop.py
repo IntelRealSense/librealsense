@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
-# test:device D400*
+# test:device each(D400*)
 
 import pyrealsense2 as rs
 from rspy.stopwatch import Stopwatch
@@ -22,6 +22,7 @@ def verify_frame_received(config):
     pipe = rs.pipeline()
     start_call_stopwatch = Stopwatch()
     pipe.start(config)
+    # wait_for_frames will through if no frames received so no assert is needed
     f = pipe.wait_for_frames()
     delay = start_call_stopwatch.get_elapsed()
     log.out("After ", delay, " [sec] got first frame of ", f)
