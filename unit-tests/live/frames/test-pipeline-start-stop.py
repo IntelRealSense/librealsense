@@ -11,7 +11,7 @@ import platform
 
 
 # Start depth + color streams and measure the time from stream opened until first frame arrived using pipeline API.
-# Verify that the time do not exceeds the maximum time allowed
+# Verify that the time does not exceed the maximum time allowed
 # Note - Using Windows Media Foundation to handle power management between USB actions take time (~27 ms)
 
 
