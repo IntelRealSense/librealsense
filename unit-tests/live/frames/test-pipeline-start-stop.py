@@ -31,7 +31,7 @@ def verify_frame_received(config):
 ################################################################################################
 test.start("Testing pipeline start/stop stress test")
 for i in range(10):
-    log.out("starting iteration #", i, "/", 10)
+    log.out("starting iteration #", i + 1, "/", 10)
     cfg = rs.config()
     cfg.enable_all_streams()
     verify_frame_received(cfg)
