@@ -24,7 +24,7 @@ remote.wait_until_ready()
 
 
 participant = dds.participant()
-participant.init( 123, "test-metadata-client" )
+participant.init( 123, "client" )
 
 # set up the client device and keep all its streams - this is connected directly and we can get notifications on it!
 device_direct = dds.device( participant, participant.create_guid(), d435i.device_info )
@@ -118,66 +118,55 @@ class metadata_expected:
 
 #############################################################################################
 #
-test.start( "No librs syncer; direct from server" )
-try:
+with test.closure( "No librs syncer; direct from server" ):
     md = { 'stream-name' : 'Color', 'invalid-metadata' : True }
     with metadata_expected( md ):
         remote.run( f'device_server.publish_metadata( {md} )' )
-except:
-    test.unexpected_exception()
-test.finish()
 #
 #############################################################################################
 #
-test.start( "Broadcast the device" )  # otherwise librs won't see it
-remote.run( 'broadcast()' )
-test.finish()
+with test.closure( "Broadcast the device" ):  # otherwise librs won't see it
+    remote.run( 'broadcast()' )
 #
 #############################################################################################
 #
-test.start( "Initialize librs device" )
-import pyrealsense2 as rs
-rs.log_to_console( rs.log_severity.debug )
-from dds import wait_for_devices
-context = rs.context( '{"dds-domain":123,"dds-participant-name":"test-metadata-librs"}' )
-only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
-devices = wait_for_devices( context, only_sw_devices )
-test.check( devices is not None, abort_if_failed=True )
-test.check_equal( len(devices), 1, abort_if_failed=True )
-device = devices[0]
-del devices
-sensors = device.sensors
-test.check_equal( len(sensors), 1, abort_if_failed=True )
-sensor = sensors[0]
-test.check_equal( sensor.get_info( rs.camera_info.name ), 'RGB Camera', abort_if_failed=True )
-del sensors
-profile = rs.video_stream_profile( sensor.get_stream_profiles()[0] )  # take the first one
-log.d( f'using profile {profile}')
-encoding = dds.stream_format.from_rs2( profile.format() )
-remote.run( f'img = new_image( {profile.width()}, {profile.height()}, {profile.bytes_per_pixel()} )', on_fail='abort' )
-sensor.open( [profile] )
-queue = rs.frame_queue( 100 )
-sensor.start( queue )
-test.finish()
+with test.closure( "Initialize librs device", abort_if_failed=True ):
+    import pyrealsense2 as rs
+    rs.log_to_console( rs.log_severity.debug )
+    from dds import wait_for_devices
+    context = rs.context( '{"dds-domain":123,"dds-participant-name":"librs"}' )
+    only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
+    devices = wait_for_devices( context, only_sw_devices )
+    test.check( devices is not None, abort_if_failed=True )
+    test.check_equal( len(devices), 1, abort_if_failed=True )
+    device = devices[0]
+    del devices
+    sensors = device.sensors
+    test.check_equal( len(sensors), 1, abort_if_failed=True )
+    sensor = sensors[0]
+    test.check_equal( sensor.get_info( rs.camera_info.name ), 'RGB Camera', abort_if_failed=True )
+    del sensors
+    profile = rs.video_stream_profile( sensor.get_stream_profiles()[0] )  # take the first one
+    log.d( f'using profile {profile}')
+    encoding = dds.stream_format.from_rs2( profile.format() )
+    remote.run( f'img = new_image( {profile.width()}, {profile.height()}, {profile.bytes_per_pixel()} )', on_fail='abort' )
+    sensor.open( [profile] )
+    queue = rs.frame_queue( 100 )
+    sensor.start( queue )
 #
 #############################################################################################
 #
-test.start( "Metadata alone should not come out" )
-try:
+with test.closure( "Metadata alone should not come out" ):
     with metadata_expected( count=20 ):
         for i in range(20):
             md = { 'stream-name' : 'Color', 'header' : { 'frame-id' : str(i) }, 'metadata' : {} }
             remote.run( f'device_server.publish_metadata( {md} )' )
     sleep( 0.25 )  # plus some extra for librs...
     test.check_false( queue.poll_for_frame() )  # we didn't send any images, shouldn't get any frames!
-except:
-    test.unexpected_exception()
-test.finish()
 #
 #############################################################################################
 #
-test.start( "Metadata after an image" )
-try:
+with test.closure( "Metadata after an image" ):
     i += 1
     timestamp = dds.now()
     remote.run( f'img.timestamp = dds.time.from_ns( {timestamp.to_ns()} )' )
@@ -204,20 +193,12 @@ try:
         if test.check( f.supports_frame_metadata( rs.frame_metadata_value.white_balance ) ):
             test.check_equal( f.get_frame_metadata( rs.frame_metadata_value.white_balance ), 0xbaad )
     test.check_false( queue.poll_for_frame() )  # the image should still be pending in the syncer
-except:
-    test.unexpected_exception()
-finally:
-    remote.run( 'color_stream.stop_streaming()', on_fail='catch' )
-test.finish()
+remote.run( 'color_stream.stop_streaming()', on_fail='catch' )
 #
 #############################################################################################
 #
-test.start( "Metadata without a stream name is ignored" )
-try:
+with test.closure( "Metadata without a stream name is ignored" ):
     pass
-except:
-    test.unexpected_exception()
-test.finish()
 #
 #############################################################################################
 #
