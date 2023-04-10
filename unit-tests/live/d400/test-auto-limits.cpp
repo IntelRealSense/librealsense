@@ -6,6 +6,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 //#test:device D400* !D457
+// auto-limits option is deprecated currently
+//#test:donotrun
 
 #include "../../catch.h"
 #include "../../unit-tests-common.h"

@@ -52,7 +52,7 @@ def append_testing_profiles(dev) -> None:
 
     for s in dev.sensors:
         for p in s.profiles:
-            if not is_contain_profile(testing_profiles, p):
+            if not is_contain_profile(testing_profiles, p) and p.is_default():
                 testing_profiles[p] = s
 
 
