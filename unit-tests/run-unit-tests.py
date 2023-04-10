@@ -389,7 +389,7 @@ def test_wrapper( test, configuration = None, repetition = 1 ):
     global n_tests, rslog
     n_tests += 1
     #
-    if not log.is_debug_on() or log.is_color_on():
+    if not log.is_debug_on():
         log.progress( '-I- Running', configuration_str( configuration, repetition, suffix=' ' ) + test.name, '...' )
     #
     log_path = test.get_log()
