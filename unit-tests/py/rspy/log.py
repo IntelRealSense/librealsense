@@ -160,7 +160,7 @@ def i( *args ):
 
 
 def f( *args ):
-    out( '-F-', *args )
+    out( *args, line_prefix = red + '-F-' + reset + ' ' )
     sys.exit(1)
 
 
