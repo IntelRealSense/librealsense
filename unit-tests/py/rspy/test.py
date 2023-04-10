@@ -22,8 +22,9 @@ n_assertions = 0
 n_failed_assertions = 0
 n_tests = 0
 n_failed_tests = 0
+failed_tests = []
 test_failed = False
-test_in_progress = False
+test_in_progress = None
 test_info = {} # Dictionary for holding additional information to print in case of a failed check.
 
 # if --context flag was sent, the test is running under a specific context which could affect its run
@@ -210,8 +211,7 @@ def check_failed( abort_if_failed = False ):
 
 
 def abort():
-    log.e( "Aborting test" )
-    sys.exit( 1 )
+    log.f( "Aborting" )
 
 
 def check( exp, description = None, abort_if_failed = False ):
@@ -299,17 +299,25 @@ def unreachable( abort_if_failed = False ):
     check_failed( abort_if_failed )
 
 
+def _unexpected_exception( type, e, tb ):
+    """
+    Used to assert that an except block is not reached. It's different from unreachable because it expects
+    to be in an except block and prints the stack of the error and not the call-stack for this function
+    """
+    print_stack_( traceback.format_list( traceback.extract_tb( tb )))
+    for line in traceback.format_exception_only( type, e ):
+        log.out( line[:-1], line_prefix = '    ' )
+    log.out( '      Unexpected exception!' )
+    check_failed()
+
+
 def unexpected_exception():
     """
     Used to assert that an except block is not reached. It's different from unreachable because it expects
     to be in an except block and prints the stack of the error and not the call-stack for this function
     """
     type,e,tb = sys.exc_info()
-    print_stack_( traceback.format_list( traceback.extract_tb( tb )))
-    for line in traceback.format_exception_only( type, e ):
-        log.out( line[:-1], line_prefix = '    ' )
-    log.out( '      Unexpected exception!' )
-    check_failed()
+    return _unexpected_exception( type, e, tb )
 
 
 def check_equal_lists(result, expected, abort_if_failed = False):
@@ -419,7 +427,7 @@ def check_frame_drops(frame, previous_frame_number, allowed_drops = 1, allow_fra
     :return: False if dropped too many frames or frames were out of order, True otherwise
     """
     global test_in_progress
-    if not test_in_progress: 
+    if test_in_progress is None:
         return True
     frame_number = frame.get_frame_number()
     failed = False
@@ -501,8 +509,9 @@ def fail():
 
 def check_test_in_progress( in_progress = True ):
     global test_in_progress
-    if test_in_progress != in_progress:
-        if test_in_progress:
+    actually_in_progress = test_in_progress is not None
+    if actually_in_progress != in_progress:
+        if actually_in_progress:
             raise RuntimeError( "test case is already running" )
         else:
             raise RuntimeError( "no test case is running" )
@@ -517,23 +526,26 @@ def start(*test_name):
     global n_tests, test_failed, test_in_progress
     n_tests += 1
     test_failed = False
-    test_in_progress = True
+    test_in_progress = test_name
     reset_info( persistent = True )
     log.i( 'Test:', *test_name )
 
 
-def finish():
+def finish( abort_if_failed=False ):
     """
     Used at the end of each test to check if it passed and print the answer
     """
     check_test_in_progress()
-    global test_failed, n_failed_tests, test_in_progress
+    global test_failed, failed_tests, n_failed_tests, test_in_progress
     if test_failed:
         n_failed_tests += 1
+        failed_tests.append( test_in_progress )
         log.e("Test failed")
+        if abort_if_failed:
+            abort()
     else:
         log.i("Test passed")
-    test_in_progress = False
+    test_in_progress = None
 
 
 def print_separator():
@@ -543,8 +555,24 @@ def print_separator():
     """
     check_test_in_progress( False )
     global n_tests
-    if n_tests:
-        log.out( '\n___' )
+    log.out( '\n___' )
+
+
+class closure:
+    """
+    Automatic wrapper around a test start/finish, with a try and unexpected_exception at the end
+    """
+    def __init__( self, *test_name, abort_if_failed=False ):
+        self._abort_if_failed = abort_if_failed
+        self._name = test_name
+    def __enter__( self ):
+        start( *self._name )
+        return self
+    def __exit__( self, type, value, traceback ):
+        if type is not None:
+            # An exception was thrown
+            _unexpected_exception( type, value, traceback )
+        finish( self._abort_if_failed )
 
 
 def print_results_and_exit():
@@ -553,10 +581,12 @@ def print_results_and_exit():
     in run-unit-tests and with the C++ format using Catch
     """
     print_separator()
-    global n_assertions, n_tests, n_failed_assertions, n_failed_tests
+    global n_assertions, n_tests, n_failed_assertions, n_failed_tests, failed_tests
     if n_failed_tests or n_failed_assertions:
         passed = n_assertions - n_failed_assertions
         log.out("test cases:", n_tests, "|" , n_failed_tests,  "failed")
+        for name in failed_tests:
+            log.d( f'    {name}' )
         log.out("assertions:", n_assertions, "|", passed, "passed |", n_failed_assertions, "failed")
         sys.exit(1)
     log.out("All tests passed (" + str(n_assertions) + " assertions in " + str(n_tests) + " test cases)")
