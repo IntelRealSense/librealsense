@@ -125,15 +125,25 @@ with test.closure( "Enqueue 1 image after some metadata -> drops + match" ):
     test.check( last_metadata ) and test.check_equal( last_metadata['frame-id'], '2' )
     test.check_equal( len(dropped_metadata), 2 )  # 0 and 1
 
-with test.closure( "Enqueue 1 image then non-matching metadata -> nothing out" ):
+with test.closure( "Enqueue 1 image then earlier metadata -> nothing out; metadata is dropped" ):
     syncer = new_syncer()
     syncer.enqueue_frame( 1, new_image( 1 ) )
     test.check_equal( last_image, None )
     test.check_equal( last_metadata, None )
     test.check_equal( len(dropped_metadata), 0 )
-    for i in range(4):
-        syncer.enqueue_metadata( 2+i, new_metadata( 2+i ) )
+    syncer.enqueue_metadata( 0, new_metadata( 0 ) )
     test.check_equal( last_image, None )
+    test.check_equal( last_metadata, None )
+    test.check_equal( len(dropped_metadata), 1 )  # not going to be any frame for it
+
+with test.closure( "Enqueue 1 image then later metadata -> image out" ):
+    syncer = new_syncer()
+    syncer.enqueue_frame( 1, new_image( 1 ) )
+    test.check_equal( last_image, None )
+    test.check_equal( last_metadata, None )
+    test.check_equal( len(dropped_metadata), 0 )
+    syncer.enqueue_metadata( 2, new_metadata( 2 ) )
+    test.check( last_image ) and test.check_equal( last_image.frame_id, '1' )
     test.check_equal( last_metadata, None )
     test.check_equal( len(dropped_metadata), 0 )
 

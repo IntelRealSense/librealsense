@@ -40,20 +40,24 @@ void dds_metadata_syncer::search_for_match()
         return;
 
     // We're looking for metadata with the same ID as the next frame
-    auto const frame_key = _frame_queue.front().first;
+    auto frame_key = _frame_queue.front().first;
 
     // Throw away any old metadata (with ID < the frame) since the frame ID will keep increasing
     while( ! _metadata_queue.empty() )
     {
         auto const md_key = _metadata_queue.front().first;
+        while( frame_key < md_key )
+        {
+            // newer metadata: we can release the frame
+            handle_frame_without_metadata();
+            // and advance to the next, if there is any:
+            if( _frame_queue.empty() )
+                return;
+            frame_key = _frame_queue.front().first;
+        }
         if( frame_key == md_key )
         {
             handle_match();
-            break;
-        }
-        if( frame_key < md_key )
-        {
-            // newer metadata: keep it, wait for a frame to arrive
             break;
         }
         // Metadata without frame, remove it from queue and check next
