@@ -7,11 +7,9 @@ from rspy.stopwatch import Stopwatch
 # It supply basic timer API, start, has_expired..
 class Timer:
 
-    _delta = 0
-    _sw = Stopwatch()
-
     def __init__(self, timeout_in_sec):
         self._delta = timeout_in_sec
+        self._sw = Stopwatch()
 
     # Start timer
     def start(self):
