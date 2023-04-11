@@ -13,7 +13,7 @@
 import pyrealdds as dds
 from rspy import log, test
 from time import sleep
-from rspy.stopwatch import Stopwatch
+from rspy.timer import Timer
 
 dds.debug( True, 'C  ' )
 log.nested = 'C  '
@@ -58,14 +58,13 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         image_received.clear()
 
     def wait_for_image( timeout=1, count=None ):
-        while timeout > 0:
-            sw = Stopwatch()
-            if not image_received.wait( timeout ):
+        timer = Timer( timeout )
+        while not timer.has_expired():
+            if not image_received.wait( timer.time_left() ):
                 raise TimeoutError( 'timeout waiting for image' )
             if count is None  or  count <= len(image_content):
                 return
             image_received.clear()
-            timeout -= sw.get_elapsed()
         if count is None:
             raise TimeoutError( 'timeout waiting for image' )
         raise TimeoutError( f'timeout waiting for {count} images; {len(image_content)} received' )
@@ -96,14 +95,13 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         metadata_received.clear()
 
     def wait_for_metadata( timeout=1, count=None ):
-        while timeout > 0:
-            sw = Stopwatch()
-            if not metadata_received.wait( timeout ):
+        timer = Timer( timeout )
+        while not timer.has_expired():
+            if not metadata_received.wait( timer.time_left() ):
                 raise TimeoutError( 'timeout waiting for metadata' )
             if count is None  or  count <= len(metadata_content):
                 return
             metadata_received.clear()
-            timeout -= sw.get_elapsed()
         if count is None:
             raise TimeoutError( 'timeout waiting for metadata' )
         raise TimeoutError( f'timeout waiting for {count} metadata; {len(metadata_content)} received' )
