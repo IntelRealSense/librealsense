@@ -784,6 +784,11 @@ class remote:
             if how == 'abort':
                 self.wait()
                 abort()
+            if how == 'log':
+                pass
+            else:
+                raise ValueError( f'invalid failure handler "{how}" should be raise, abort, or log' )
+
 
     def wait_until_ready( self, timeout=30 ):
         """
@@ -800,6 +805,10 @@ class remote:
         :param command: the line, as if you typed it in an interactive shell
         :param on_ready: a callback that will be called when the command finishes
         :param timeout: if not None, how long to wait for the command to finish
+        :param on_fail: how to handle exceptions on the server
+                        'raise' to raise them as remote.Error()
+                        'abort' to test.abort()
+                        'log' to log and ignore
         """
         log.d( self._name, 'running:', command )
         assert self._interactive

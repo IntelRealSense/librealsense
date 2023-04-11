@@ -196,7 +196,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             if test.check( f.supports_frame_metadata( rs.frame_metadata_value.white_balance ) ):
                 test.check_equal( f.get_frame_metadata( rs.frame_metadata_value.white_balance ), 0xbaad )
         test.check_false( queue.poll_for_frame() )  # the image should still be pending in the syncer
-    remote.run( 'color_stream.stop_streaming()', on_fail='catch' )
+    remote.run( 'color_stream.stop_streaming()', on_fail='log' )
     #
     #############################################################################################
     #

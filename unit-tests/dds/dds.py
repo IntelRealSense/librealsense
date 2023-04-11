@@ -47,7 +47,7 @@ def wait_for_devices( context, mask, n=1, timeout=3, throw=None ):
     """
     Since DDS devices may take time to be recognized and then initialized, we try over time:
 
-    @param n
+    :param n:
         If a float ('2.') then an exact match is expected (3 devices will not fit 2.) and throw
         is on by default; otherwise, the minimum number of devices acceptable (throw is off)
     """
