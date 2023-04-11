@@ -45,7 +45,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     image_received = threading.Event()
     image_content = []
     def on_image_available( stream, image ):
-        log.d( f'-----> image {image}')
+        log.d( f'----> image {image}')
         image_content.append( image )
         image_received.set()
 
@@ -84,7 +84,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     metadata_content = []
 
     def on_metadata_available( device, md ):
-        log.d( f'-----> metadata {md}')
+        log.d( f'----> metadata[{len(metadata_content)}]= {md}')
         metadata_content.append( md )
         metadata_received.set()
 
@@ -135,7 +135,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     #############################################################################################
     #
-    with test.closure( "Initialize librs device", abort_if_failed=True ):
+    with test.closure( "Initialize librs device", on_fail=test.ABORT ):
         import pyrealsense2 as rs
         rs.log_to_console( rs.log_severity.debug )
         from dds import wait_for_devices

@@ -27,6 +27,13 @@ test_failed = False
 test_in_progress = None
 test_info = {} # Dictionary for holding additional information to print in case of a failed check.
 
+
+# These are 'on_fail' argument possible values:
+ABORT = 'abort'  # call test.abort()
+RAISE = 'raise'  # raise an exception
+LOG   = 'log'    # log it and continue
+
+
 # if --context flag was sent, the test is running under a specific context which could affect its run
 context = []
 if '--context' in sys.argv:
@@ -300,10 +307,6 @@ def unreachable( abort_if_failed = False ):
 
 
 def _unexpected_exception( type, e, tb ):
-    """
-    Used to assert that an except block is not reached. It's different from unreachable because it expects
-    to be in an except block and prints the stack of the error and not the call-stack for this function
-    """
     print_stack_( traceback.format_list( traceback.extract_tb( tb )))
     for line in traceback.format_exception_only( type, e ):
         log.out( line[:-1], line_prefix = '    ' )
@@ -531,7 +534,7 @@ def start(*test_name):
     log.i( 'Test:', *test_name )
 
 
-def finish( abort_if_failed=False ):
+def finish( on_fail=LOG ):
     """
     Used at the end of each test to check if it passed and print the answer
     """
@@ -541,8 +544,10 @@ def finish( abort_if_failed=False ):
         n_failed_tests += 1
         failed_tests.append( test_in_progress )
         log.e("Test failed")
-        if abort_if_failed:
+        if on_fail == ABORT:
             abort()
+        if on_fail == RAISE:
+            raise RuntimeError( f'test "{test_in_progress}" failed' )
     else:
         log.i("Test passed")
     test_in_progress = None
@@ -562,8 +567,8 @@ class closure:
     """
     Automatic wrapper around a test start/finish, with a try and unexpected_exception at the end
     """
-    def __init__( self, *test_name, abort_if_failed=False ):
-        self._abort_if_failed = abort_if_failed
+    def __init__( self, *test_name, on_fail=LOG ):
+        self._on_fail = on_fail
         self._name = test_name
     def __enter__( self ):
         start( *self._name )
@@ -572,7 +577,11 @@ class closure:
         if type is not None:
             # An exception was thrown
             _unexpected_exception( type, value, traceback )
-        finish( self._abort_if_failed )
+        finish( on_fail=self._on_fail )
+        # "If an exception is supplied, and the method wishes to suppress the exception (i.e.,
+        # prevent it from being propagated), it should return a true value."
+        # https://docs.python.org/3/reference/datamodel.html#with-statement-context-managers
+        return True  # otherwise the exception will keep propagating
 
 
 def print_results_and_exit():
@@ -777,14 +786,14 @@ class remote:
         if self._exception:
             what = self._exception[-1]
             self._exception = None
-            if how == 'raise':
+            if how == RAISE:
                 raise remote.Error( what )
             print_stack_( traceback.format_stack()[:-2] )
             log.out( f'      {what}' )
-            if how == 'abort':
+            if how == ABORT:
                 self.wait()
                 abort()
-            if how == 'log':
+            if how == LOG:
                 pass
             else:
                 raise ValueError( f'invalid failure handler "{how}" should be raise, abort, or log' )
@@ -798,7 +807,7 @@ class remote:
         if not self._initialized_event.wait( timeout ):
             raise RuntimeError( f'{self._name} timeout' )
 
-    def run( self, command, on_ready=None, timeout=5, on_fail='raise' ):
+    def run( self, command, on_ready=None, timeout=5, on_fail=RAISE ):
         """
         Run in a command asynchronously in the remote process: returns immediately without waiting for the command to
         finish.
@@ -854,6 +863,9 @@ class remote:
                 process.wait( timeout=0.2 )
                 self._status = process.returncode
                 log.d( self._name, 'exited with status', self._status )
+                if self._initialized_event is not None:
+                    # Unexpected, but known to happen (process terminated while we're waiting for it to be ready)
+                    raise RuntimeError( f'{self._name} exited with status {self._status}' )
             except subprocess.TimeoutExpired:
                 log.d( self._name, 'process terminate timed out' )
 

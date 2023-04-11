@@ -23,7 +23,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     #############################################################################################
     #
-    with test.closure( "Start two devices", abort_if_failed=True ):
+    with test.closure( "Start two devices", on_fail=test.ABORT ):
         remote.run( 'instance = broadcast_device( d435i, d435i.device_info )' )
         remote.run( 'instance2 = broadcast_device( d405, d405.device_info )' )
 
@@ -37,13 +37,13 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     #############################################################################################
     #
-    with test.closure( "Start a third", abort_if_failed=True ):
+    with test.closure( "Start a third", on_fail=test.ABORT ):
         remote.run( 'instance3 = broadcast_device( d455, d455.device_info )' )
         dds.wait_for_devices( context, only_sw_devices, n=3. )
     #
     #############################################################################################
     #
-    with test.closure( "Close the first", abort_if_failed=True ):
+    with test.closure( "Close the first", on_fail=test.ABORT ):
         dds.devices_updated.clear()
         remote.run( 'close_server( instance )' )
         remote.run( 'instance = None', timeout=1 )
@@ -51,27 +51,27 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     #############################################################################################
     #
-    with test.closure( "Add a fourth", abort_if_failed=True ):
+    with test.closure( "Add a fourth", on_fail=test.ABORT ):
         remote.run( 'instance4 = broadcast_device( d435i, d435i.device_info )' )
         dds.wait_for_devices( context, only_sw_devices, n=3. )
     #
     #############################################################################################
     #
-    with test.closure( "Close the second", abort_if_failed=True ):
+    with test.closure( "Close the second", on_fail=test.ABORT ):
         remote.run( 'close_server( instance2 )' )
         remote.run( 'instance2 = None', timeout=1 )
         dds.wait_for_devices( context, only_sw_devices, n=2. )
     #
     #############################################################################################
     #
-    with test.closure( "Close the third", abort_if_failed=True ):
+    with test.closure( "Close the third", on_fail=test.ABORT ):
         remote.run( 'close_server( instance3 )' )
         remote.run( 'instance2 = None', timeout=1 )
         dds.wait_for_devices( context, only_sw_devices, n=1. )
     #
     #############################################################################################
     #
-    with test.closure( "Close the last", abort_if_failed=True ):
+    with test.closure( "Close the last", on_fail=test.ABORT ):
         remote.run( 'close_server( instance4 )' )
         dds.wait_for_devices( context, only_sw_devices, n=0. )
     #
