@@ -9,7 +9,7 @@
         static const std::string s##T##_##X##_str = STRX( X );                                                         \
         return s##T##_##X##_str.c_str();                                                                               \
     }
-#define STRARR( T, X ) arr[RS2_##T##_##X] = STRX( X )
+#define STRARR( ARRAY, T, X ) ARRAY[RS2_##T##_##X] = STRX( X )
 
 
 static std::string const unknown_value_str( UNKNOWN_VALUE );
@@ -511,7 +511,7 @@ std::string const & get_string( rs2_frame_metadata_value value )
     static auto str_array = []()
     {
         std::vector< std::string > arr( RS2_FRAME_METADATA_COUNT );
-#define CASE( X ) STRARR( FRAME_METADATA, X );
+#define CASE( X ) STRARR( arr, FRAME_METADATA, X );
         CASE( FRAME_COUNTER )
         CASE( FRAME_TIMESTAMP )
         CASE( SENSOR_TIMESTAMP )
@@ -555,12 +555,12 @@ std::string const & get_string( rs2_frame_metadata_value value )
         CASE( SUB_PRESET_INFO )
         CASE( CALIB_INFO )
         CASE( CRC )
-        return arr;
+#undef CASE
+            return arr;
     }();
     if( ! is_valid( value ) )
         return unknown_value_str;
     return str_array[value];
-#undef CASE
 }
 
 const char * get_string( rs2_timestamp_domain value )
