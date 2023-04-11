@@ -2,7 +2,7 @@
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 # test:device L500*
-# test:device D400*
+# test:device each(D400*)
 # test:donotrun:!nightly
 # test:timeout 250
 # timeout = (seconds_till_steady_state + seconds_to_count_frames) * tested_fps.size() * 2 + 10. (2 because depth + color, 10 spare)
@@ -30,15 +30,21 @@ def measure_fps(sensor, profile):
     first_frame_received = False
     frames_received = 0
     first_frame_stopwatch = Stopwatch()
+    prev_frame_number = 0
 
     def frame_cb(frame):
         global first_frame_seconds
-        nonlocal steady_state, frames_received, first_frame_received
+        nonlocal steady_state, frames_received, first_frame_received, prev_frame_number
+        current_frame_number = frame.get_frame_number()
         if not first_frame_received:
             first_frame_seconds = first_frame_stopwatch.get_elapsed()
             first_frame_received = True
+        else:
+            if current_frame_number > prev_frame_number + 1:
+                log.e( f'Frame drop detected. Current frame number {current_frame_number} previous was {prev_frame_number}' )
         if steady_state:
             frames_received += 1
+        prev_frame_number = current_frame_number
 
     sensor.open(profile)
     sensor.start(frame_cb)
