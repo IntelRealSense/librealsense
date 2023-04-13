@@ -27,16 +27,6 @@ typedef struct rs2_safety_extrinsics_table
     sc_float3 translation; // Metric units
 } rs2_safety_extrinsics_table;
 
-enum rs2_safety_zone_type_values
-{
-    zone_danger = 0,
-    zone_warning = 1,
-    zone_mask = 2,
-    zone_max = 3
-};
-typedef uint8_t rs2_safety_zone_type;
-
-
 enum rs2_safety_mos_type_value
 {
     mos_hand = 0,
@@ -47,11 +37,11 @@ enum rs2_safety_mos_type_value
 
 typedef uint8_t rs2_safety_mos_type;
 
-typedef enum rs2_safety_zone_flags
+typedef struct sc_2d_pixel
 {
-    is_mandatory = (1u << 0),
-    is_valid = (1u << 1)
-} rs2_safety_zone_flags;
+    uint16_t i;
+    uint16_t j;
+} sc_2d_pixel;
 
 typedef struct rs2_safety_preset_header
 {
@@ -65,31 +55,32 @@ typedef struct rs2_safety_platform
 {
     rs2_safety_extrinsics_table transformation_link; // Sensor->System Rigid-body Transformation (System CS is ""Leveled World"" assumed)
     float robot_height; // meters. Used to calculate the max height for collision scanning
-    float robot_mass; // mass of SRSS (kg)
+    float robot_mass; // mass of SRSS (kg) - For reference only
     uint8_t reserved[16];  // Can be modified  by changing the table minor version, without breaking back - compat
 } rs2_safety_platform;
 
 typedef struct rs2_safety_zone
 {
-    uint16_t flags; // see safety_zone_flags enumeration
-    rs2_safety_zone_type zone_type; // see zone_type enumeration
-
     sc_float2 zone_polygon[4]; // The zone polygon (area) is defined by its four corners, ordered
                             // Internal requirements: 
                             // - Trinagular or simple quadrilateral shape
                             // - Concave or convex, self-intersections not allowed
                             // - Area must be greater than zero, thus at least 3 out of 4 vertices must be different
 
-    sc_float2 masking_zone_v_boundary; // For Mask Zone type, denotes the min and max height of the masking region
-                                    // masking_zone_height.x = min, masking_zone_height.y = max
-
     // Safety Zone Actuator properties
     uint8_t safety_trigger_confidence; // number of consecutive frames to raise safety signal
 
     sc_float2 minimum_object_size; // MOS is two-dimentional: {diameter (mm), length (mm) }
-    rs2_safety_mos_type mos_target_type; // based on guidance from  IEC 62998-2
-    uint8_t reserved[16];
+    rs2_safety_mos_type mos_target_type; // enumerated- hand/leg/body
+    uint8_t reserved[8]; // Can be modified  by changing the table minor version, without breaking back-compat
 } rs2_safety_zone;
+
+typedef struct rs2_safety_2d_masking_zone
+{
+    uint16_t attributes; // Bitmask, enumerated: (0x1 <<0) - is_valid: specifies whether the specifc zone was defined by user in this preset
+    float minimal_range; // in meters in forward direction (leveled CS)
+    sc_2d_pixel region_of_interests[4]; // (i,j) pairs of 4 two-dimentional quadrilateral points
+} rs2_safety_2d_masking_zone;
 
 typedef struct rs2_safety_environment
 {
@@ -97,8 +88,8 @@ typedef struct rs2_safety_environment
     float safety_trigger_duration; // duration in seconds to keep safety signal high after safety MCU is back to normal
 
     // Platform dynamics properties
-    float max_linear_velocity; // m/sec
-    float max_angular_velocity; // rad/sec
+    float linear_velocity; // m/sec
+    float angular_velocity; // rad/sec
     float payload_weight; // a typical mass of the carriage payload in kg
 
     // Environmetal properties
@@ -106,14 +97,16 @@ typedef struct rs2_safety_environment
     float  surface_height; // min height above surface to be used for obstacle avoidance (meter)
     uint8_t surface_confidence; // min fill rate required for safe floor detection [0...100%]
 
-    uint8_t             reserved[16]; // Can be modified  by changing the table minor version, without breaking back-compat
+    uint8_t             reserved[15]; // Can be modified  by changing the table minor version, without breaking back-compat
 } rs2_safety_environment;
 
 
 typedef struct rs2_safety_preset
 {
     rs2_safety_platform platform_config; // left camera intrinsic data, normilized
-    rs2_safety_zone safety_zones[4]; // Zones: 0 - Danger; 1- Warning; (2,3) - Mask (optiononal)
+    rs2_safety_zone safety_zones[2]; // Zones: 0 - Danger; 1- Warning;
+    rs2_safety_2d_masking_zone masking_zones[8]; // Masking Zones #0-7
+    uint8_t reserved[16]; // Can be modified  by changing the table minor version, without breaking back-compat
     rs2_safety_environment environment; // Provides input for Zone planning and safety algo execution
 } rs2_safety_preset;
 

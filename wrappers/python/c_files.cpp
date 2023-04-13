@@ -164,6 +164,12 @@ void init_c_files(py::module &m) {
         .def_readwrite("y", &sc_float3x3::y, "y")
         .def_readwrite("z", &sc_float3x3::z, "z");
 
+    py::class_<sc_2d_pixel> pixel2D(m, "pixel2D"); // No docstring in C++
+    pixel2D.def(py::init<>())
+        .def(py::init<>())
+        .def_readwrite("i", &sc_2d_pixel::i, "i")
+        .def_readwrite("j", &sc_2d_pixel::j, "j");
+
     py::class_<rs2_safety_extrinsics_table> safety_extrinsics_table(m, "safety_extrinsics_table"); // No docstring in C++
     safety_extrinsics_table.def(py::init<>())
         .def(py::init<sc_float3x3, sc_float3>())
@@ -182,36 +188,50 @@ void init_c_files(py::module &m) {
         .def_readwrite("transformation_link", &rs2_safety_platform::transformation_link, "Transformation Link")
         .def_readwrite("robot_height", &rs2_safety_platform::robot_height, "Robot Height")
         .def_readwrite("robot_mass", &rs2_safety_platform::robot_mass, "Robot Mass")
-        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_safety_platform, reserved, uint8_t, sizeof(rs2_safety_zone::reserved)), "Reserved");
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_safety_platform, reserved, uint8_t, sizeof(rs2_safety_platform::reserved)), "Reserved");
 
     py::class_<rs2_safety_zone> safety_zone(m, "safety_zone"); // No docstring in C++
     safety_zone.def(py::init<>())
-        .def_readwrite("flags", &rs2_safety_zone::flags, "Flags")
-        .def_readwrite("zone_type", &rs2_safety_zone::zone_type, "Zone Type")
         .def_property("zone_polygon",
             [](const rs2_safety_zone& self)
             {
                 return reinterpret_cast<const std::array<sc_float2, 4>&> (self.zone_polygon);
             },
             [](rs2_safety_zone& self, std::array< sc_float2, 4> arr) {
-                self.zone_polygon[0] = arr[0];
-                self.zone_polygon[1] = arr[1];
-                self.zone_polygon[2] = arr[2];
-                self.zone_polygon[3] = arr[3];
+                for (int i = 0; i < 4; i++)
+                {
+                    self.zone_polygon[i] = arr[i];
+                }
             },
             "Zone Polygon")
-        .def_readwrite("masking_zone_v_boundary", &rs2_safety_zone::masking_zone_v_boundary, "Masking Zone v Boundary")
         .def_readwrite("safety_trigger_confidence", &rs2_safety_zone::safety_trigger_confidence, "Safety Trigger Confidence")
         .def_readwrite("minimum_object_size", &rs2_safety_zone::minimum_object_size, "Minimum Object Size")
         .def_readwrite("mos_target_type", &rs2_safety_zone::mos_target_type, "MOS Target Type")
         .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_safety_zone, reserved, uint8_t, sizeof(rs2_safety_zone::reserved)), "Reserved");
 
+    py::class_<rs2_safety_2d_masking_zone> masking_zone(m, "masking_zone"); // No docstring in C++
+    masking_zone.def(py::init<>())
+        .def_readwrite("attributes", &rs2_safety_2d_masking_zone::attributes, "Attributes")
+        .def_readwrite("minimal_range", &rs2_safety_2d_masking_zone::minimal_range, "Minimal Range")
+        .def_property("region_of_interests",
+            [](const rs2_safety_2d_masking_zone& self)
+            {
+                return reinterpret_cast<const std::array<sc_2d_pixel, 4>&> (self.region_of_interests);
+            },
+            [](rs2_safety_2d_masking_zone& self, std::array< sc_2d_pixel, 4> arr) {
+                for (int i = 0; i < 4; i++)
+                {
+                    self.region_of_interests[i] = arr[i];
+                }
+            },
+            "Region Of Interests");
+
     py::class_<rs2_safety_environment> safety_environment(m, "safety_environment"); // No docstring in C++
     safety_environment.def(py::init<>())
         .def_readwrite("grid_cell_size", &rs2_safety_environment::grid_cell_size, "Grid Cell Size")
         .def_readwrite("safety_trigger_duration", &rs2_safety_environment::safety_trigger_duration, "Safety Trigger Duration")
-        .def_readwrite("max_linear_velocity", &rs2_safety_environment::max_linear_velocity, "Max Linear Velocity")
-        .def_readwrite("max_angular_velocity", &rs2_safety_environment::max_angular_velocity, "Max Angular Velocity")
+        .def_readwrite("linear_velocity", &rs2_safety_environment::linear_velocity, "Linear Velocity")
+        .def_readwrite("angular_velocity", &rs2_safety_environment::angular_velocity, "Angular Velocity")
         .def_readwrite("payload_weight", &rs2_safety_environment::payload_weight, "Payload Weight")
         .def_readwrite("surface_inclination", &rs2_safety_environment::surface_inclination, "Surface Inclination")
         .def_readwrite("surface_height", &rs2_safety_environment::surface_height, "Surface Height")
@@ -224,16 +244,28 @@ void init_c_files(py::module &m) {
         .def_property("safety_zones",
             [](const rs2_safety_preset& self)
             {
-                return reinterpret_cast<const std::array<rs2_safety_zone, 4>&> (self.safety_zones);
+                return reinterpret_cast<const std::array<rs2_safety_zone, 2>&> (self.safety_zones);
             },
-            [](rs2_safety_preset& self, std::array< rs2_safety_zone, 4> arr)
+            [](rs2_safety_preset& self, std::array< rs2_safety_zone, 2> arr)
             {
                 self.safety_zones[0] = arr[0];
                 self.safety_zones[1] = arr[1];
-                self.safety_zones[2] = arr[2];
-                self.safety_zones[3] = arr[3];
             },
             "Safety Zones")
+        .def_property("masking_zones",
+            [](const rs2_safety_preset& self)
+            {
+                return reinterpret_cast<const std::array<rs2_safety_2d_masking_zone, 8>&> (self.masking_zones);
+            },
+            [](rs2_safety_preset& self, std::array< rs2_safety_2d_masking_zone, 8> arr)
+            {
+                for (int i = 0; i < 8; i++)
+                {
+                    self.masking_zones[i] = arr[i];
+                }
+            },
+            "Masking Zones")
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_safety_preset, reserved, uint8_t, sizeof(rs2_safety_preset::reserved)), "Reserved")
         .def_readwrite("environment", &rs2_safety_preset::environment, "Environment")
         .def("__eq__", [](const rs2_safety_preset& self, const rs2_safety_preset& other) {
                 return self == other;

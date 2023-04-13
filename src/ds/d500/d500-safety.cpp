@@ -225,7 +225,8 @@ namespace librealsense
 
         // prepare vecotr of data to be sent (header + sp)
         rs2_safety_preset_with_header data;
-        data.header = { 1, 0xc0db, 405, computed_crc32 };
+        uint16_t version = ((uint16_t)0x02 << 8) | 0x01;  // major=0x02, minor=0x01 --> ver = major.minor
+        data.header = { version, 0xc0db, sizeof(rs2_safety_preset), computed_crc32 };
         data.safety_preset = sp;
         auto data_as_ptr = reinterpret_cast<const uint8_t*>(&data);
 

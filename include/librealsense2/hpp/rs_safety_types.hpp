@@ -17,26 +17,6 @@ inline std::string sc_reserved_arr_to_string(const uint8_t* data)
     return ss.str();
 }
 
-inline std::string sc_zone_type_to_string(rs2_safety_zone_type const& szt) {
-    std::string result;
-    switch (szt)
-    {
-    case rs2_safety_zone_type_values::zone_danger:
-        result = "DANGER";
-        break;
-    case rs2_safety_zone_type_values::zone_warning:
-        result = "WARNING";
-        break;
-    case rs2_safety_zone_type_values::zone_mask:
-        result = "MASK";
-        break;
-    default:
-        result = "UNKNOWN";
-        break;
-    }
-    return result;
-}
-
 inline std::string sc_mos_target_to_string(rs2_safety_mos_type const& mos) {
     std::string result;
     switch (mos)
@@ -59,14 +39,10 @@ inline std::string sc_mos_target_to_string(rs2_safety_mos_type const& mos) {
 
 inline std::ostream& operator<<(std::ostream& out, rs2_safety_zone const& sz)
 {
-    out << "\t\t" << "Flags: " << sz.flags;
-    out << "\n\t\t" << "Zone Type: " << sc_zone_type_to_string(sz.zone_type);
     out << "\n\t\t" << "Zone Polygon - Point #0: { x:" << sz.zone_polygon[0].x << ", y:" << sz.zone_polygon[0].y << " }";
     out << "\n\t\t" << "Zone Polygon - Point #1: { x:" << sz.zone_polygon[1].x << ", y:" << sz.zone_polygon[1].y << " }";
     out << "\n\t\t" << "Zone Polygon - Point #2: { x:" << sz.zone_polygon[2].x << ", y:" << sz.zone_polygon[2].y << " }";
     out << "\n\t\t" << "Zone Polygon - Point #3: { x:" << sz.zone_polygon[3].x << ", y:" << sz.zone_polygon[3].y << " }";
-    out << "\n\t\t" << "Masking Zone Boundaries - Min Height: " << sz.masking_zone_v_boundary.x << " [m]";
-    out << "\n\t\t" << "Masking Zone Boundaries - Max Height: " << sz.masking_zone_v_boundary.y << " [m]";
     out << "\n\t\t" << "Safety Trigger Confidence: " << sz.safety_trigger_confidence;
     out << "\n\t\t" << "Minimum Object Size - Diameter: " << sz.minimum_object_size.x << " [mm]";
     out << "\n\t\t" << "Minimum Object Size - Length: " << sz.minimum_object_size.y << " [mm]";
@@ -74,18 +50,29 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_zone const& sz)
     out << "\n\t\t" << "Reserved[16]: " << sc_reserved_arr_to_string(sz.reserved);
     return out;
 }
-//
+
+inline std::ostream& operator<<(std::ostream& out, rs2_safety_2d_masking_zone const& mz)
+{
+    out << "\n\t\t" << "Masking Zone Attributes: " << mz.attributes;
+    out << "\n\t\t" << "Masking Zone Minimal Range: " << mz.minimal_range;
+    for (int pixel = 0 ; pixel < 4 ; pixel++)
+    {
+        out << "\n\t\t" << "Mask pixel #" << pixel << ": (" << mz.region_of_interests[pixel].i << "," << mz.region_of_interests[pixel].j << ")";
+    }
+    return out;
+}
+
 inline std::ostream& operator<<(std::ostream& out, rs2_safety_environment const& se)
 {
     out << "\t\t" << "Grid Cell Size: " << se.grid_cell_size << " [cm^2]";
     out << "\n\t\t" << "Safety Trigger Duration: " << se.safety_trigger_duration << " [sec]";
-    out << "\n\t\t" << "Max Linear Velocity: " << se.max_linear_velocity << " [m/sec]";
-    out << "\n\t\t" << "Max Angular Velocity: " << se.max_angular_velocity << " [rad/sec]";
+    out << "\n\t\t" << "Linear Velocity: " << se.linear_velocity << " [m/sec]";
+    out << "\n\t\t" << "Angular Velocity: " << se.angular_velocity << " [rad/sec]";
     out << "\n\t\t" << "Payload Weight: " << se.payload_weight << " [kg]";
     out << "\n\t\t" << "Surface Inclination: " << se.surface_inclination << " [deg]";
     out << "\n\t\t" << "Surface Height: " << se.surface_height << " [m]";
     out << "\n\t\t" << "Surface Confidence: " << (int)(se.surface_confidence) << " [%]";
-    out << "\n\t\t" << "Reserved[16]: " << sc_reserved_arr_to_string(se.reserved);
+    out << "\n\t\t" << "Reserved[15]: " << sc_reserved_arr_to_string(se.reserved);
     return out;
 }
 
@@ -107,10 +94,13 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_preset const& sp)
     out << "\n\t\t" << "Robot Height: " << sp.platform_config.robot_height << " [m]";
     out << "\n\t\t" << "Robot Mass: " << sp.platform_config.robot_mass << " [kg]";
     out << "\n\t\t" << "Resereved[16]: " << sc_reserved_arr_to_string(sp.platform_config.reserved);
-    out << "\n\t" << "Safety Zone #0:" << "\n" << sp.safety_zones[0];
-    out << "\n\t" << "Safety Zone #1:" << "\n" << sp.safety_zones[1];
-    out << "\n\t" << "Safety Zone #2:" << "\n" << sp.safety_zones[2];
-    out << "\n\t" << "Safety Zone #3:" << "\n" << sp.safety_zones[3];
+    out << "\n\t" << "Safety Zone #0 (Danger):" << "\n" << sp.safety_zones[0];
+    out << "\n\t" << "Safety Zone #1 (Warning):" << "\n" << sp.safety_zones[1];
+    for (int i = 0; i < 8; i++)
+    {
+        out << "\n\t" << "2D Masking Zone #" << i << ":" << "\n" << sp.masking_zones[i];
+    }
+    out << "\n\t" << "Reserved[16]: " << sc_reserved_arr_to_string(sp.reserved);
     out << "\n\t" << "Environment:" << "\n" << sp.environment;
     return out;
 }
