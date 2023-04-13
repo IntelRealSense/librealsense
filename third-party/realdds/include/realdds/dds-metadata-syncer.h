@@ -72,23 +72,9 @@ public:
     void enqueue_frame( key_type, frame_holder && );
     void enqueue_metadata( key_type, metadata_type && );
 
-    dds_metadata_syncer & on_frame_release( on_frame_release_callback cb )
-    {
-        _on_frame_release = cb;
-        return *this;
-    }
-
-    dds_metadata_syncer & on_frame_ready( on_frame_ready_callback cb )
-    {
-        _on_frame_ready = cb;
-        return *this;
-    }
-
-    dds_metadata_syncer & on_metadata_dropped( on_metadata_dropped_callback cb )
-    {
-        _on_metadata_dropped = cb;
-        return *this;
-    }
+    void on_frame_release( on_frame_release_callback cb ) { _on_frame_release = cb; }
+    void on_frame_ready( on_frame_ready_callback cb ) { _on_frame_ready = cb; }
+    void on_metadata_dropped( on_metadata_dropped_callback cb ) { _on_metadata_dropped = cb; }
 
     void clear()
     {

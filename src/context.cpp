@@ -734,16 +734,16 @@ namespace librealsense
                 auto & dds_stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
                 // Opening it will start streaming on the server side automatically
                 dds_stream->open( "rt/" + _dev->device_info().topic_root + '_' + dds_stream->name(), _dev->subscriber());
-                _stream_name_to_syncer[dds_stream->name()]
-                    .on_frame_release( frame_releaser )
-                    .on_frame_ready(
-                        [this]( syncer_type::frame_holder && fh, json && md )
-                        {
-                            if( ! md.empty() )
-                                add_frame_metadata( static_cast< frame * >( fh.get() ), std::move( md ) );
-                            // else the frame should already have empty metadata!
-                            invoke_new_frame( static_cast< frame * >( fh.release() ), nullptr, nullptr );
-                        } );
+                auto & syncer = _stream_name_to_syncer[dds_stream->name()];
+                syncer.on_frame_release( frame_releaser );
+                syncer.on_frame_ready(
+                    [this]( syncer_type::frame_holder && fh, json && md )
+                    {
+                        if( ! md.empty() )
+                            add_frame_metadata( static_cast< frame * >( fh.get() ), std::move( md ) );
+                        // else the frame should already have empty metadata!
+                        invoke_new_frame( static_cast< frame * >( fh.release() ), nullptr, nullptr );
+                    } );
 
                 if( Is< realdds::dds_video_stream >( dds_stream ) )
                 {
