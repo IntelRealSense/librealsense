@@ -25,6 +25,12 @@ namespace realdds {
 //     - frames may be issued without metadata if none is found
 //     - metadata by itself is never issued
 //
+// A few assumptions are made:
+//     - metadata and frames arrive from different threads, so can happen concurrently
+//     - frames are enqueued in strictly increasing order (keys) from the same thread
+//          - else no guarantee is made to callback ordering!
+//     - metadata is likely to arrive first because the messages are much smaller
+//
 class dds_metadata_syncer
 {
 public:
@@ -68,6 +74,8 @@ private:
     on_frame_ready_callback _on_frame_ready = nullptr;
     on_metadata_dropped_callback _on_metadata_dropped = nullptr;
 
+    key_type _last_frame_id = 0;
+
 public:
     void enqueue_frame( key_type, frame_holder && );
     void enqueue_metadata( key_type, metadata_type && );
@@ -92,9 +100,10 @@ public:
 
 private:
     // Call these under lock:
-    void search_for_match();
-    void handle_match();
-    void handle_frame_without_metadata();
+    void search_for_match( std::unique_lock< std::mutex > & );
+    void handle_match( std::unique_lock< std::mutex > & );
+    void handle_frame_without_metadata( std::unique_lock< std::mutex > & );
+    void drop_metadata( std::unique_lock< std::mutex > & );
 };
 
 
