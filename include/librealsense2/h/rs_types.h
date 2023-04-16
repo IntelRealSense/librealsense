@@ -223,6 +223,8 @@ typedef enum rs2_extension
     RS2_EXTENSION_CALIBRATION_CHANGE_DEVICE,
     RS2_EXTENSION_SAFETY_SENSOR,
     RS2_EXTENSION_DEPTH_MAPPING_SENSOR,
+    RS2_EXTENSION_VERTICES_FRAME,
+    RS2_EXTENSION_ATTRIBUTES_FRAME,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);

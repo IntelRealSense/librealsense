@@ -7,7 +7,7 @@
 
 namespace librealsense {
 
-float3 * points::get_vertices()
+float3 * vertices_frame::get_vertices()
 {
     get_frame_data();  // call GetData to ensure data is in main memory
     auto xyz = (float3 *)data.data();
@@ -149,6 +149,24 @@ float2 * points::get_texture_coordinates()
     auto xyz = (float3 *)data.data();
     auto ijs = (float2 *)( xyz + get_vertex_count() );
     return ijs;
+}
+
+float3* attributes_frame::get_vertices()
+{
+    get_frame_data();  // call GetData to ensure data is in main memory
+    auto frame_data = data.data();
+    std::vector<byte> vertices(frame_data, frame_data + 12 * 320 * 180);
+
+    return (float3 *)vertices.data();
+}
+
+byte* attributes_frame::get_attributes()
+{
+    get_frame_data();  // call GetData to ensure data is in main memory
+    auto frame_data = data.data();
+    std::vector<byte> vertices(frame_data + 12 * 320 * 180, frame_data + 13 * 320 * 180);
+
+    return vertices.data();
 }
 
 }  // namespace librealsense

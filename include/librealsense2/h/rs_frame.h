@@ -274,6 +274,14 @@ rs2_pixel* rs2_get_frame_texture_coordinates(const rs2_frame* frame, rs2_error**
 int rs2_get_frame_points_count(const rs2_frame* frame, rs2_error** error);
 
 /**
+* When called on Vertices frame type, this method returns a pointer to an array of attributes
+* \param[in] frame       Vertices frame
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                Pointer to an array of attributes, lifetime is managed by the frame
+*/
+void* rs2_get_frame_attributes(const rs2_frame* frame, rs2_error** error);
+
+/**
 * Returns the stream profile that was used to start the stream of this frame
 * \param[in] frame       frame reference, owned by the user
 * \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
