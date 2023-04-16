@@ -41,7 +41,7 @@ def measure_fps(sensor, profile):
             first_frame_received = True
         else:
             if current_frame_number > prev_frame_number + 1:
-                log.e( f'Frame drop detected. Current frame number {current_frame_number} previous was {prev_frame_number}' )
+                log.w( f'Frame drop detected. Current frame number {current_frame_number} previous was {prev_frame_number}' )
         if steady_state:
             frames_received += 1
         prev_frame_number = current_frame_number
@@ -101,7 +101,8 @@ for requested_fps in tested_fps:
     cs = dev.first_color_sensor()
     #Set auto-exposure option as it might take precedence over requested FPS
     if product_line == "D400":
-        ds.set_option(rs.option.enable_auto_exposure, 1)
+        cs.set_option(rs.option.enable_auto_exposure, 1)
+        cs.set_option(rs.option.auto_exposure_priority, 0) # AE priority should be 0 for constant FPS
     elif product_line == "L500":
         cs.set_option(rs.option.enable_auto_exposure, 0)
 
