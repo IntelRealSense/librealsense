@@ -120,25 +120,25 @@ namespace librealsense
             make_attribute_parser(&md_occupancy::frame_timestamp,
                 md_occupancy_attributes::frame_timestamp_attribute, md_prop_offset));
 
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_A,
-            make_attribute_parser(&md_occupancy::floor_plane_equation_a,
-                md_occupancy_attributes::floor_plane_equation_a_attribute, md_prop_offset));
-
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_B,
-            make_attribute_parser(&md_occupancy::floor_plane_equation_b,
-                md_occupancy_attributes::floor_plane_equation_b_attribute, md_prop_offset));
-
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_C,
-            make_attribute_parser(&md_occupancy::floor_plane_equation_c,
-                md_occupancy_attributes::floor_plane_equation_c_attribute, md_prop_offset));
-
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_D,
-            make_attribute_parser(&md_occupancy::floor_plane_equation_d,
-                md_occupancy_attributes::floor_plane_equation_d_attribute, md_prop_offset));
-
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_PRESET_ID,
             make_attribute_parser(&md_occupancy::safety_preset_id,
                 md_occupancy_attributes::safety_preset_id_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SENSOR_ANGLE_ROLL,
+            make_attribute_parser(&md_occupancy::sensor_roll_angle,
+                md_occupancy_attributes::sensor_roll_angle_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SENSOR_ANGLE_PITCH,
+            make_attribute_parser(&md_occupancy::sensor_pitch_angle,
+                md_occupancy_attributes::sensor_pitch_angle_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_MEDIAN_HEIGHT,
+            make_attribute_parser(&md_occupancy::floor_median_height,
+                md_occupancy_attributes::floor_median_height_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_FILL_RATE,
+            make_attribute_parser(&md_occupancy::floor_fill_rate,
+                md_occupancy_attributes::floor_fill_rate_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS,
             make_attribute_parser(&md_occupancy::grid_rows,
@@ -175,25 +175,25 @@ namespace librealsense
             make_attribute_parser(&md_point_cloud::frame_timestamp,
                 md_point_cloud_attributes::frame_timestamp_attribute, md_prop_offset));
 
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_A,
-            make_attribute_parser(&md_point_cloud::floor_plane_equation_a,
-                md_point_cloud_attributes::floor_plane_equation_a_attribute, md_prop_offset));
-
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_B,
-            make_attribute_parser(&md_point_cloud::floor_plane_equation_b,
-                md_point_cloud_attributes::floor_plane_equation_b_attribute, md_prop_offset));
-
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_C,
-            make_attribute_parser(&md_point_cloud::floor_plane_equation_c,
-                md_point_cloud_attributes::floor_plane_equation_c_attribute, md_prop_offset));
-
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_D,
-            make_attribute_parser(&md_point_cloud::floor_plane_equation_d,
-                md_point_cloud_attributes::floor_plane_equation_d_attribute, md_prop_offset));
-
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_PRESET_ID,
             make_attribute_parser(&md_point_cloud::safety_preset_id,
                 md_point_cloud_attributes::safety_preset_id_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SENSOR_ANGLE_ROLL,
+            make_attribute_parser(&md_point_cloud::sensor_roll_angle,
+                md_point_cloud_attributes::sensor_roll_angle_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SENSOR_ANGLE_PITCH,
+            make_attribute_parser(&md_point_cloud::sensor_pitch_angle,
+                md_point_cloud_attributes::sensor_pitch_angle_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_MEDIAN_HEIGHT,
+            make_attribute_parser(&md_point_cloud::floor_median_height,
+                md_point_cloud_attributes::floor_median_height_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_FILL_RATE,
+            make_attribute_parser(&md_point_cloud::floor_fill_rate,
+                md_point_cloud_attributes::floor_fill_rate_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_NUMBER_OF_3D_VERTICES,
             make_attribute_parser(&md_point_cloud::number_of_3d_vertices,

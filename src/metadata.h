@@ -273,11 +273,11 @@ namespace librealsense
         frame_counter_attribute          = (1u << 0),
         depth_frame_counter_attribute    = (1u << 1),
         frame_timestamp_attribute        = (1u << 2),
-        floor_plane_equation_a_attribute = (1u << 3),
-        floor_plane_equation_b_attribute = (1u << 4),
-        floor_plane_equation_c_attribute = (1u << 5),
-        floor_plane_equation_d_attribute = (1u << 6),
-        safety_preset_id_attribute       = (1u << 7),
+        safety_preset_id_attribute       = (1u << 3),
+        sensor_roll_angle_attribute      = (1u << 4),
+        sensor_pitch_angle_attribute     = (1u << 5),
+        floor_median_height_attribute    = (1u << 6),
+        floor_fill_rate_attribute        = (1u << 7),
         grid_rows_attribute              = (1u << 8),
         grid_columns_attribute           = (1u << 9),
         cell_size_attribute              = (1u << 10),
@@ -291,11 +291,11 @@ namespace librealsense
         frame_counter_attribute          = (1u << 0),
         depth_frame_counter_attribute    = (1u << 1),
         frame_timestamp_attribute        = (1u << 2),
-        floor_plane_equation_a_attribute = (1u << 3),
-        floor_plane_equation_b_attribute = (1u << 4),
-        floor_plane_equation_c_attribute = (1u << 5),
-        floor_plane_equation_d_attribute = (1u << 6),
-        safety_preset_id_attribute       = (1u << 7),
+        safety_preset_id_attribute       = (1u << 3),
+        sensor_roll_angle_attribute      = (1u << 4),
+        sensor_pitch_angle_attribute     = (1u << 5),
+        floor_median_height_attribute    = (1u << 6),
+        floor_fill_rate_attribute        = (1u << 7),
         number_of_3d_vertices_attribute  = (1u << 8),
         payload_crc32_attribute          = (1u << 31)
     };
@@ -734,16 +734,15 @@ namespace librealsense
         uint32_t    frame_counter;
         uint32_t    depth_frame_counter;
         uint32_t    frame_timestamp;
-        uint32_t    floor_plane_equation_a;
-        uint32_t    floor_plane_equation_b;
-        uint32_t    floor_plane_equation_c;
-        uint32_t    floor_plane_equation_d;
         uint8_t     safety_preset_id;
+        uint32_t    sensor_roll_angle;
+        uint32_t    sensor_pitch_angle;
+        uint32_t    floor_median_height;
+        uint8_t     floor_fill_rate;
         uint16_t    grid_rows;
         uint16_t    grid_columns;
         uint8_t     cell_size;
-        uint8_t     reserved[32];
-        uint16_t    padding;
+        uint8_t     reserved[29];
         uint32_t    payload_crc32;
     };
     REGISTER_MD_TYPE(md_occupancy, md_type::META_DATA_INTEL_OCCUPANCY_ID)
@@ -757,14 +756,13 @@ namespace librealsense
         uint32_t    frame_counter;
         uint32_t    depth_frame_counter;
         uint32_t    frame_timestamp;
-        uint32_t    floor_plane_equation_a;
-        uint32_t    floor_plane_equation_b;
-        uint32_t    floor_plane_equation_c;
-        uint32_t    floor_plane_equation_d;
         uint8_t     safety_preset_id;
+        uint32_t    sensor_roll_angle;
+        uint32_t    sensor_pitch_angle;
+        uint32_t    floor_median_height;
+        uint8_t     floor_fill_rate;
         uint16_t    number_of_3d_vertices;
         uint8_t     reserved[32];
-        uint16_t    padding;
         uint32_t    payload_crc32;
     };
     REGISTER_MD_TYPE(md_point_cloud, md_type::META_DATA_INTEL_POINT_CLOUD_ID)
