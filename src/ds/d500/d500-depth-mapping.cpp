@@ -18,11 +18,11 @@ namespace librealsense
         // point cloud - needed a standard format, with 32 bit per pixel:
         // From uvcvideo2.h linux standard file:
         // #define V4L2_PIX_FMT_ARGB32  v4l2_fourcc('B', 'A', '2', '4') /* 32  ARGB-8-8-8-8  */
-        {rs_fourcc('B','A','2','4'), RS2_FORMAT_XYZ32F}
+        {rs_fourcc('P','A','L','8'), RS2_FORMAT_RAW8}
     };
     const std::map<uint32_t, rs2_stream> mapping_fourcc_to_rs2_stream = {
         {rs_fourcc('G','R','E','Y'), RS2_STREAM_OCCUPANCY},
-        {rs_fourcc('B','A','2','4'), RS2_STREAM_POINT_CLOUD}
+        {rs_fourcc('P','A','L','8'), RS2_STREAM_POINT_CLOUD}
     };
 
     d500_depth_mapping::d500_depth_mapping(std::shared_ptr<context> ctx,
@@ -207,7 +207,7 @@ namespace librealsense
     void d500_depth_mapping::register_processing_blocks(std::shared_ptr<d500_depth_mapping_sensor> mapping_ep)
     {
         mapping_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW8, RS2_STREAM_OCCUPANCY));
-        mapping_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_XYZ32F, RS2_STREAM_POINT_CLOUD));
+        mapping_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW8, RS2_STREAM_POINT_CLOUD));
     }
 
 
@@ -215,12 +215,34 @@ namespace librealsense
     {
         auto lock = environment::get_instance().get_extrinsics_graph().lock();
         auto results = synthetic_sensor::init_stream_profiles();
-
+        stream_profiles relevant_results;
         for (auto p : results)
+        {
+            if (p->get_stream_type() == RS2_STREAM_OCCUPANCY)
+            {
+                auto&& video = dynamic_cast<video_stream_profile_interface*>(p.get());
+                const auto&& profile = to_profile(p.get());
+                if (profile.width == 2880)
+                    continue;
+                relevant_results.push_back(std::move(p));
+            }
+            else if (p->get_stream_type() == RS2_STREAM_POINT_CLOUD)
+            {
+                auto&& video = dynamic_cast<video_stream_profile_interface*>(p.get());
+                const auto&& profile = to_profile(p.get());
+                if (profile.width == 256)
+                    continue;
+                relevant_results.push_back(std::move(p));
+            }
+        }
+
+        for (auto p : relevant_results)
         {
             // Register stream types
             if (p->get_stream_type() == RS2_STREAM_OCCUPANCY)
                 assign_stream(_owner->_occupancy_stream, p);
+            else if (p->get_stream_type() == RS2_STREAM_POINT_CLOUD)
+                assign_stream(_owner->_point_cloud_stream, p);
 
             auto&& video = dynamic_cast<video_stream_profile_interface*>(p.get());
             const auto&& profile = to_profile(p.get());
@@ -237,7 +259,7 @@ namespace librealsense
                 });
         }
 
-        return results;
+        return relevant_results;
     }
 
     rs2_intrinsics d500_depth_mapping_sensor::get_intrinsics(const stream_profile& profile) const

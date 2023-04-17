@@ -931,9 +931,15 @@ namespace librealsense
                     int currFps = frameRateMax.numerator / frameRateMax.denominator;
 
                     uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1);
+
+                    if (width == 2880 && height == 260)
+                    {
+                        device_fourcc = 0x50414C38; // PAL8 used instead of FGREY in order to distinguish  between occupancy and point cloud streams
+                    }
+
                     if (fourcc_map.count(device_fourcc))
                         device_fourcc = fourcc_map.at(device_fourcc);
-
+                    
                     stream_profile sp;
                     sp.width = width;
                     sp.height = height;
