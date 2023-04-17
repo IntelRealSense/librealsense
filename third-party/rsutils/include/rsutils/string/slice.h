@@ -73,12 +73,20 @@ public:
 
     value_type front() const { return *begin(); }
     value_type back() const { return end()[-1]; }
+
+    const_iterator c_str() const { return begin(); }
 };
 
 
 inline std::ostream & operator<<( std::ostream & os, slice const & str )
 {
     return os.write( str.begin(), str.length() );
+}
+
+
+inline bool operator==( std::string const & left, slice const & right )
+{
+    return 0 == left.compare( 0, std::string::npos, right.begin(), right.length() );
 }
 
 

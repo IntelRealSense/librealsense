@@ -109,7 +109,7 @@ namespace librealsense
     public:
         const char* get_value_description(float val) const override
         {
-            return get_string((T)((int)val));
+            return get_string((T)((int)val)).c_str();
         }
     };
 

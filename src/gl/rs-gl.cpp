@@ -34,39 +34,49 @@ struct rs2_gl_context
     std::shared_ptr<gl::context> ctx;
 };
 
+static std::string const unknown_value_str( UNKNOWN_VALUE );
+
 namespace librealsense
 {
-    RS2_ENUM_HELPERS(rs2_gl_extension, GL_EXTENSION)
+    RS2_ENUM_HELPERS( rs2_gl_extension, GL_EXTENSION )
 
-    const char* get_string(rs2_gl_extension value)
+    static auto const rs2_gl_extension_strings = []()
     {
-        switch (value)
-        {
-        case RS2_GL_EXTENSION_VIDEO_FRAME: return "GL Video Frame";
-        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
-        }
+        std::vector< std::string > arr( RS2_GL_EXTENSION_COUNT );
+        arr[RS2_GL_EXTENSION_VIDEO_FRAME].assign( "GL Video Frame" );
+        return arr;
+    }();
+    std::string const & get_string( rs2_gl_extension value )
+    {
+        if( ! is_valid( value ) )
+            return unknown_value_str;
+        return rs2_gl_extension_strings[value];
     }
 }
 
-const char* rs2_gl_extension_to_string(rs2_gl_extension ex) { return librealsense::get_string(ex); }
+const char* rs2_gl_extension_to_string(rs2_gl_extension ex) { return librealsense::get_string(ex).c_str(); }
 
 namespace librealsense
 {
     RS2_ENUM_HELPERS(rs2_gl_matrix_type, GL_MATRIX)
 
-    const char* get_string(rs2_gl_matrix_type value)
+    static auto const rs2_gl_matrix_type_strings = []()
     {
-        switch (value)
-        {
-        case RS2_GL_MATRIX_TRANSFORMATION: return "Transformation Matrix";
-        case RS2_GL_MATRIX_PROJECTION: return "Projection Matrix";
-        case RS2_GL_MATRIX_CAMERA: return "Camera Matrix";
-        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
-        }
+        std::vector< std::string > arr( RS2_GL_MATRIX_COUNT );
+        arr[RS2_GL_MATRIX_TRANSFORMATION].assign( "Transformation Matrix" );
+        arr[RS2_GL_MATRIX_PROJECTION].assign( "Projection Matrix" );
+        arr[RS2_GL_MATRIX_CAMERA].assign( "Camera Matrix" );
+        return arr;
+    }();
+    std::string const & get_string( rs2_gl_matrix_type value )
+    {
+        if( ! is_valid( value ) )
+            return unknown_value_str;
+        return rs2_gl_matrix_type_strings[value];
     }
 }
 
-const char* rs2_gl_matrix_type_to_string(rs2_gl_matrix_type type) { return librealsense::get_string(type); }
+const char* rs2_gl_matrix_type_to_string(rs2_gl_matrix_type type) { return librealsense::get_string(type).c_str(); }
 
 rs2_processing_block* rs2_gl_create_yuy_decoder(int api_version, rs2_error** error) BEGIN_API_CALL
 {

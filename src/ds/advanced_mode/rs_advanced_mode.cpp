@@ -9,35 +9,7 @@
 #include "core/advanced_mode.h"
 #include "api.h"
 
-#define STRCASE(T, X) case RS2_##T##_##X: {\
-        static std::string s##T##_##X##_str = make_less_screamy(#X);\
-        return s##T##_##X##_str.c_str(); }
-
-namespace librealsense
-{
-    RS2_ENUM_HELPERS(rs2_rs400_visual_preset, RS400_VISUAL_PRESET)
-
-    const char* get_string(rs2_rs400_visual_preset value)
-    {
-        #define CASE(X) STRCASE(RS400_VISUAL_PRESET, X)
-        switch (value)
-        {
-        CASE(CUSTOM)
-        CASE(HAND)
-        CASE(HIGH_ACCURACY)
-        CASE(HIGH_DENSITY)
-        CASE(MEDIUM_DENSITY)
-        CASE(DEFAULT)
-        CASE(REMOVE_IR_PATTERN)
-        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
-        }
-        #undef CASE
-    }
-}
-
 using namespace librealsense;
-
-const char* rs2_rs400_visual_preset_to_string(rs2_rs400_visual_preset preset){ return get_string(preset); }
 
 void rs2_toggle_advanced_mode(rs2_device* dev, int enable, rs2_error** error) BEGIN_API_CALL
 {
