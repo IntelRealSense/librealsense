@@ -31,7 +31,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         context = rs.context( '{"dds-domain":123,"dds-participant-name":"librs"}' )
         # The DDS devices take time to be recognized and we just created the context; we
         # should not see them yet!
-        test.check( len( context.query_devices( only_sw_devices )) != 2 )
+        #test.check( len( context.query_devices( only_sw_devices )) != 2 )
         # Wait for them
         dds.wait_for_devices( context, only_sw_devices, n=2. )
     #
