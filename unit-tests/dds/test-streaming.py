@@ -35,7 +35,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     test.start( "Test 1W:1R, 1 message..." )
     try:
-        remote.run( 'topic = flexible.writer( participant, "1w1r" )', timeout=5 )
+        remote.run( 'topic = flexible.writer( participant, "1w1r" )' )
         # NOTE: technically, we could combine everything into a single command:
         #      Topic("blah").write( ... )
         # and it would do everything, including destroy the Topic instance with the writer etc.
@@ -45,14 +45,14 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         # We may wait for the data before we even see the writer... so wait for the writer first!
         topic.wait_for_writers()
         # Same for the writer:
-        remote.run( 'topic.wait_for_readers()', timeout=5 )
-        remote.run( 'topic.write( """' + sample1_json + '""" )', timeout=5 )
+        remote.run( 'topic.wait_for_readers()' )
+        remote.run( 'topic.write( """' + sample1_json + '""" )' )
         msg = topic.read()
         test.check( topic.empty() )
         test.check_equal( msg.json_data(), sample1 )
     except:
         test.unexpected_exception()
-    remote.run( 'topic.stop()', timeout=5 )
+    remote.run( 'topic.stop()' )
     topic.wait_for_writers( 0 )
     topic = None
     test.finish()
@@ -61,13 +61,13 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     test.start( "Test 1W:1R, N messages..." )
     try:
-        remote.run( 'topic = flexible.writer( participant, "1w1rNm" )', timeout=5 )
+        remote.run( 'topic = flexible.writer( participant, "1w1rNm" )' )
         topic = flexible.reader( participant, "1w1rNm" )
         topic.wait_for_writers()
-        remote.run( 'topic.wait_for_readers()', timeout=5 )
-        remote.run( 'topic.write( """' + sample1_json + '""" )', timeout=5 )
-        remote.run( 'topic.write( """' + sample2_json + '""" )', timeout=5 )
-        remote.run( 'topic.write( """' + sample3_json + '""" )', timeout=5 )
+        remote.run( 'topic.wait_for_readers()' )
+        remote.run( 'topic.write( """' + sample1_json + '""" )' )
+        remote.run( 'topic.write( """' + sample2_json + '""" )' )
+        remote.run( 'topic.write( """' + sample3_json + '""" )' )
         msg1 = topic.read()
         msg2 = topic.read()
         msg3 = topic.read()
@@ -77,7 +77,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         test.check_equal( msg3.json_data(), sample3 )
     except:
         test.unexpected_exception()
-    remote.run( 'topic.stop()', timeout=5 )
+    remote.run( 'topic.stop()' )
     topic.wait_for_writers( 0 )
     topic = None
     test.finish()
@@ -86,13 +86,13 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     test.start( "Test 1W:2R, one message..." )
     try:
-        remote.run( 'topic = flexible.writer( participant, "1w2r" )', timeout=5 )
+        remote.run( 'topic = flexible.writer( participant, "1w2r" )' )
         r1 = flexible.reader( participant, "1w2r" )
         r2 = flexible.reader( participant, r1.handle )
         r1.wait_for_writers()
         r2.wait_for_writers()
-        remote.run( 'topic.wait_for_readers( 2 )', timeout=5 )
-        remote.run( 'topic.write( """' + sample1_json + '""" )', timeout=5 )
+        remote.run( 'topic.wait_for_readers( 2 )' )
+        remote.run( 'topic.write( """' + sample1_json + '""" )' )
         msg1 = r1.read()
         msg2 = r2.read()
         test.check( r1.empty() )
@@ -101,7 +101,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         test.check_equal( msg2.json_data(), sample1 )
     except:
         test.unexpected_exception()
-    remote.run( 'topic.stop()', timeout=5 )
+    remote.run( 'topic.stop()' )
     r1.wait_for_writers( 0 )
     r2.wait_for_writers( 0 )
     r1 = r2 = None

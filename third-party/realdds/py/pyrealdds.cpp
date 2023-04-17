@@ -24,6 +24,7 @@
 #include <realdds/dds-subscriber.h>
 #include <realdds/dds-log-consumer.h>
 #include <realdds/dds-stream-sensor-bridge.h>
+#include <realdds/dds-metadata-syncer.h>
 
 #include <rsutils/easylogging/easyloggingpp.h>
 
@@ -331,10 +332,23 @@ PYBIND11_MODULE(NAME, m) {
         .def( "source_timestamp", []( SampleInfo const & self ) { return self.source_timestamp.to_ns(); } )
         .def( "reception_timestamp", []( SampleInfo const & self ) { return self.reception_timestamp.to_ns(); } );
 
-    // We need a timestamp function that returns timestamps in the same domain as the sample-info timestamps
+
+    using realdds::dds_time;
     using realdds::dds_nsec;
+    py::class_< dds_time >( m, "time" )
+        .def( py::init<>() )
+        .def_readwrite( "seconds", &dds_time::seconds )
+        .def_readwrite( "nanosec", &dds_time::nanosec )
+        .def( "to_ns", &dds_time::to_ns )
+        .def_static( "from_ns", []( dds_nsec ns ) { return realdds::time_from( ns ); } )
+        .def_static( "from_double", []( long double d ) { return realdds::dds_time( d ); } )
+        .def( "to_double", &realdds::time_to_double )
+        .def( "__repr__", &realdds::time_to_string );
+
+
+    // We need a timestamp function that returns timestamps in the same domain as the sample-info timestamps
     using realdds::timestr;
-    m.def( "now", []() { return realdds::now().to_ns(); } );
+    m.def( "now", []() { return realdds::now(); } );
 
     py::enum_< timestr::no_suffix_t >( m, "no_suffix_t" );
     m.attr( "no_suffix" ) = timestr::no_suffix;
@@ -349,6 +363,17 @@ PYBIND11_MODULE(NAME, m) {
     m.def( "timestr", []( dds_nsec dt, timestr::rel_t, timestr::no_suffix_t ) { return timestr( dt, timestr::rel, timestr::no_suffix ).to_string(); } );
     m.def( "timestr", []( dds_nsec t1, dds_nsec t2 ) { return timestr( t1, t2 ).to_string(); } );
     m.def( "timestr", []( dds_nsec t1, dds_nsec t2, timestr::no_suffix_t ) { return timestr( t1, t2, timestr::no_suffix ).to_string(); } );
+
+    m.def( "timestr", []( dds_time t, dds_time start, timestr::no_suffix_t ) { return timestr( t, start, timestr::no_suffix ).to_string(); } );
+    m.def( "timestr", []( dds_time t, dds_nsec start, timestr::no_suffix_t ) { return timestr( t, start, timestr::no_suffix ).to_string(); } );
+    m.def( "timestr", []( dds_nsec t, dds_time start, timestr::no_suffix_t ) { return timestr( t, start, timestr::no_suffix ).to_string(); } );
+    m.def( "timestr", []( dds_time t, timestr::no_suffix_t ) { return timestr( t, timestr::no_suffix ).to_string(); } );
+    
+    m.def( "timestr", []( dds_time t, dds_time start ) { return timestr( t, start ).to_string(); } );
+    m.def( "timestr", []( dds_time t, dds_nsec start ) { return timestr( t, start ).to_string(); } );
+    m.def( "timestr", []( dds_nsec t, dds_time start ) { return timestr( t, start ).to_string(); } );
+    m.def( "timestr", []( dds_time t ) { return timestr( t ).to_string(); } );
+
 
     typedef std::shared_ptr< dds_topic > flexible_msg_create_topic( std::shared_ptr< dds_participant > const &,
                                                                     char const * );
@@ -424,19 +449,24 @@ PYBIND11_MODULE(NAME, m) {
 
 
     using image_msg = realdds::topics::device::image;
-    py::class_< image_msg >( m, "image_msg" )
+    py::class_< image_msg, std::shared_ptr< image_msg > >( m, "image_msg" )
         .def( py::init<>() )
+        .def_readwrite( "frame_id", &image_msg::frame_id )
         .def_readwrite( "data", &image_msg::raw_data )
         .def_readwrite( "width", &image_msg::width )
         .def_readwrite( "height", &image_msg::height )
+        .def_readwrite( "timestamp", &image_msg::timestamp )
         .def( "__repr__",
               []( image_msg const & self )
               {
                   std::ostringstream os;
-                  os << "<" SNAME ".image_msg ";
-                  os << self.raw_data.size();
-                  os << ' ';
-                  os << self.width << 'x' << self.height;
+                  os << "<" SNAME ".image_msg";
+                  if( self.width > 0 && self.height > 0 )
+                  {
+                      os << ' ' << self.width << 'x' << self.height;
+                      os << 'x' << (self.raw_data.size() / (self.width * self.height));
+                  }
+                  os << " @ " << realdds::time_to_string( self.timestamp );
                   os << ">";
                   return os.str();
               } )
@@ -643,8 +673,13 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_video_stream;
     py::class_< dds_video_stream, std::shared_ptr< dds_video_stream > >
         video_stream_client_base( m, "video_stream", stream_client_base );
-    video_stream_client_base
-        .def( "set_intrinsics", &dds_video_stream::set_intrinsics );
+    video_stream_client_base  //
+        .def( "set_intrinsics", &dds_video_stream::set_intrinsics )
+        .def( FN_FWD( dds_video_stream,
+                      on_data_available,
+                      ( dds_video_stream &, image_msg && ),
+                      ( image_msg && i ),
+                      callback( self, std::move( i ) ); ) );
 
     using realdds::dds_depth_stream;
     py::class_< dds_depth_stream, std::shared_ptr< dds_depth_stream > >( m, "depth_stream", video_stream_client_base )
@@ -779,4 +814,52 @@ PYBIND11_MODULE(NAME, m) {
         .def( "add_implicit_profiles", &dds_stream_sensor_bridge::add_implicit_profiles )
         .def( "commit", &dds_stream_sensor_bridge::commit )
         .def( "is_streaming", &dds_stream_sensor_bridge::is_streaming );
+
+    // Custom syncer with its own frame management over image_msg
+    struct dds_metadata_syncer : realdds::dds_metadata_syncer
+    {
+        typedef std::shared_ptr< image_msg > frame_type;  // the base case for image_msg (see above)
+
+    private:
+        typedef realdds::dds_metadata_syncer super;
+
+        static void frame_releaser( void * frame )
+        {
+            // frame is really a pointer to a shared object that we create on the heap
+            delete static_cast< frame_type * >( frame );
+        }
+
+    public:
+        dds_metadata_syncer()
+        {
+            on_frame_release( frame_releaser );
+        }
+
+        void enqueue_frame( key_type key, frame_type const & img )
+        {
+            // We need to keep the image alive and somehow point to it at the same time
+            super::enqueue_frame( key, hold( new std::shared_ptr< image_msg >( img ) ) );
+        }
+
+        frame_type get_frame( frame_holder const & fh ) const
+        {
+            return *static_cast< frame_type * >( fh.get() );
+        }
+    };
+
+    py::class_< dds_metadata_syncer >( m, "metadata_syncer" )
+        .def( py::init<>() )
+        .def( FN_FWD( dds_metadata_syncer,
+                      on_frame_ready,
+                      ( dds_metadata_syncer::frame_type, nlohmann::json && ),
+                      ( dds_metadata_syncer::frame_holder && fh, nlohmann::json && metadata ),
+                      callback( self.get_frame( fh ), std::move( metadata ) ); ) )
+        .def( FN_FWD( dds_metadata_syncer,
+                      on_metadata_dropped,
+                      ( dds_metadata_syncer::key_type, nlohmann::json && ),
+                      ( dds_metadata_syncer::key_type key, nlohmann::json && metadata ),
+                      callback( key, std::move( metadata ) ); ) )
+        .def( "enqueue_frame", &dds_metadata_syncer::enqueue_frame )
+        .def( "enqueue_metadata", &dds_metadata_syncer::enqueue_metadata )
+        .def( "clear", &dds_metadata_syncer::clear );
 }

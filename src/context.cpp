@@ -25,6 +25,7 @@
 #include <realdds/dds-device.h>
 #include <realdds/dds-stream.h>
 #include <realdds/dds-stream-profile.h>
+#include <realdds/dds-metadata-syncer.h>
 #include "software-device.h"
 #include <librealsense2/h/rs_internal.h>
 #include <realdds/topics/device-info-msg.h>
@@ -187,11 +188,13 @@ namespace librealsense
         assert( _device_watcher->is_stopped() );
 
 #ifdef BUILD_WITH_DDS
-        if( rsutils::json::get< bool >( settings, "dds-discovery", true ) )
+        if( rsutils::json::get< bool >( settings, std::string( "dds-discovery", 13 ), true ) )
         {
-            realdds::dds_domain_id domain_id = rsutils::json::get< int >( settings, "dds-domain", 0 );
-            std::string participant_name
-                = rsutils::json::get< std::string >( settings, "dds-participant-name", rsutils::os::executable_name() );
+            realdds::dds_domain_id domain_id
+                = rsutils::json::get< int >( settings, std::string( "dds-domain", 10 ), 0 );
+            std::string participant_name = rsutils::json::get< std::string >( settings,
+                                                                              std::string( "dds-participant-name", 20 ),
+                                                                              rsutils::os::executable_name() );
 
             auto & domain = dds_domain_context_by_id[domain_id];
             _dds_participant = domain.participant.instance();
@@ -199,7 +202,7 @@ namespace librealsense
             {
                 _dds_participant->init( domain_id, participant_name );
             }
-            else if( rsutils::json::has_value( settings, "dds-participant-name" )
+            else if( rsutils::json::has_value( settings, std::string( "dds-participant-name", 20 ) )
                      && participant_name != _dds_participant->get()->get_qos().name().to_string() )
             {
                 throw std::runtime_error(
@@ -212,7 +215,8 @@ namespace librealsense
             // The DDS device watcher should always be on
             if( _dds_watcher && _dds_watcher->is_stopped() )
             {
-                start_dds_device_watcher( rsutils::json::get< size_t >( settings, "dds-message-timeout-ms", 5000 ) );
+                start_dds_device_watcher(
+                    rsutils::json::get< size_t >( settings, std::string( "dds-message-timeout-ms", 22 ), 5000 ) );
             }
         }
 #endif //BUILD_WITH_DDS
@@ -477,140 +481,17 @@ namespace librealsense
     };
 
 
-    // Frame data and metadata are sent as two seperate streams.
-    // They are synchronized using frame_id for matching data+metadata sets.
-    class frame_metadata_syncer
-    {
-    public:
-        // We don't want the queue to get large, it means lots of drops and data that we store to (probably) throw later
-        static constexpr size_t max_md_queue_size = 8;
-        // If a metadata is lost we wait for it until the next frame arrives, causing a small delay but we prefer passing
-        // the frame late and without metadata over losing it.
-        static constexpr size_t max_frame_queue_size = 2;
-
-        // We synchronize using some abstract "id" used to identify each frame and its metadata. We don't need to know
-        // the nature of the id; only that it is increasing in value over time so that, given id1 > id2, then id1
-        // happened after id2.
-        typedef uint64_t id_type;
-
-    private:
-        struct synced_frame
-        {
-            id_type _sync_id;
-            frame_holder _frame;
-        };
-
-        struct synced_metadata
-        {
-            id_type _sync_id;
-            nlohmann::json _md;
-        };
-
-    public:
-        void enqueue_frame( id_type id, frame * f )
-        {
-            std::lock_guard< std::mutex > lock( _queues_lock );
-            _frame_queue.push_back( synced_frame{ id, f } );
-            search_for_match();  // Call under lock
-        }
-
-        void enqueue_metadata( id_type id, nlohmann::json && md )
-        {
-            std::lock_guard< std::mutex > lock( _queues_lock );
-            while( _metadata_queue.size() >= max_md_queue_size )
-            {
-                LOG_DEBUG( "throwing away metadata: " << _metadata_queue.front()._md.dump() );
-                _metadata_queue.pop_front(); // Throw oldest
-            }
-
-            //LOG_DEBUG( "enqueueing metadata: " << md.dump() );
-            _metadata_queue.push_back( synced_metadata{ id, std::move( md ) } );
-            search_for_match();  // Call under lock
-        }
-
-        typedef std::function< void( frame_holder &&, nlohmann::json && metadata ) > on_frame_ready;
-
-        void reset( on_frame_ready cb = nullptr )
-        {
-            std::lock_guard< std::mutex > lock( _queues_lock );
-            _frame_queue.clear();
-            _metadata_queue.clear();
-            _on_frame_ready = cb;
-        }
-
-    private:
-        // Call under lock
-        void search_for_match()
-        {
-            // Wait for frame + metadata set, but if metadata is lost pass frame to the user anyway
-            if( _frame_queue.empty() || ( _metadata_queue.empty() && _frame_queue.size() < max_frame_queue_size ) )
-                return;
-
-            // Sync using frame ID. Frame IDs are assumed to be increasing with time
-            auto frame_id = _frame_queue.front()._sync_id;
-            auto md_id = _metadata_queue.empty()
-                           ? frame_id + 1  // If no metadata force call to handle_frame_no_metadata
-                           : _metadata_queue.front()._sync_id;
-
-            while( frame_id > md_id && _metadata_queue.size() > 1 )
-            {
-                // Metadata without frame, remove it from queue and check next
-                _metadata_queue.pop_front();
-                md_id = _metadata_queue.front()._sync_id;
-            }
-
-            if( frame_id == md_id )
-                handle_match();
-            else
-                handle_frame_without_metadata();
-        }
-
-        // Call under lock
-        void handle_match()
-        {
-            auto & fh = _frame_queue.front()._frame;
-
-            json md;
-            if( ! _metadata_queue.empty() )
-            {
-                md = std::move( _metadata_queue.front()._md );
-                _metadata_queue.pop_front();
-            }
-
-            if( _on_frame_ready )
-                _on_frame_ready( std::move( fh ), std::move( md ) );
-
-            _frame_queue.pop_front();
-        }
-
-        // Call under lock
-        void handle_frame_without_metadata()
-        {
-            auto & fh = _frame_queue.front()._frame;
-
-            json md;
-            if( _on_frame_ready )
-                _on_frame_ready( std::move( fh ), std::move( md ) );
-
-            _frame_queue.pop_front();
-        }
-
-        on_frame_ready _on_frame_ready = nullptr;
-
-        std::deque< synced_frame > _frame_queue;
-        std::deque< synced_metadata > _metadata_queue;
-        std::mutex _queues_lock;
-    };
-
-
     class dds_sensor_proxy : public software_sensor
     {
         std::shared_ptr< realdds::dds_device > const _dev;
         std::string const _name;
         bool const _md_enabled;
 
+        typedef realdds::dds_metadata_syncer syncer_type;
+        static void frame_releaser( syncer_type::frame_type * f ) { static_cast< frame * >( f )->release(); }
+
         std::map< sid_index, std::shared_ptr< realdds::dds_stream > > _streams;
-        std::map< std::string, frame_metadata_syncer > _stream_name_to_syncer;
+        std::map< std::string, syncer_type > _stream_name_to_syncer;
 
     public:
         dds_sensor_proxy( std::string const & sensor_name,
@@ -731,7 +612,7 @@ namespace librealsense
 
         void handle_video_data( realdds::topics::device::image && dds_frame,
                                 const std::shared_ptr< stream_profile_interface > & profile,
-                                frame_metadata_syncer & syncer )
+                                syncer_type & syncer )
         {
             frame_additional_data data;  // with NO metadata by default!
             data.timestamp; // from metadata
@@ -758,7 +639,7 @@ namespace librealsense
             if( _md_enabled )
             {
                 syncer.enqueue_frame( data.frame_number,  // for now, we use this as the synced-to ID
-                                      new_frame );
+                                      syncer.hold( new_frame ) );
             }
             else
             {
@@ -770,23 +651,23 @@ namespace librealsense
 
         void add_frame_metadata( frame * const f, json && dds_md )
         {
-            json const & md_header = dds_md["header"];
-            json const & md = dds_md["metadata"];
+            json const & md_header = dds_md[std::string( "header", 6 )];
+            json const & md = dds_md[std::string( "metadata", 8 )];
 
             // Always expected metadata
-            f->additional_data.timestamp = rsutils::json::get< rs2_time_t >( md_header, "timestamp" );
-            f->additional_data.timestamp_domain = rsutils::json::get< rs2_timestamp_domain >( md_header, "timestamp-domain" );
+            f->additional_data.timestamp = rsutils::json::get< rs2_time_t >( md_header, std::string( "timestamp", 9 ) );
+            f->additional_data.timestamp_domain
+                = rsutils::json::get< rs2_timestamp_domain >( md_header, std::string( "timestamp-domain", 16 ) );
 
             // Expected metadata for all depth images
-            if( rsutils::json::has( md_header, "depth-units" ) )
-                f->additional_data.depth_units = rsutils::json::get< float >( md_header, "depth-units" );
+            rsutils::json::get_ex( md_header, std::string( "depth-units", 11 ), &f->additional_data.depth_units );
 
             // Other metadata fields. Metadata fields that are present but unknown by librealsense will be ignored.
-            auto metadata = reinterpret_cast< metadata_array & >( f->additional_data.metadata_blob );
+            auto & metadata = reinterpret_cast< metadata_array & >( f->additional_data.metadata_blob );
             for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
             {
                 auto key = static_cast< rs2_frame_metadata_value >( i );
-                const char * keystr = rs2_frame_metadata_to_string( key );
+                std::string const & keystr = librealsense::get_string( key );
                 try
                 {
                     metadata[key] = { true, rsutils::json::get< rs2_metadata_type >( md, keystr ) };
@@ -801,7 +682,7 @@ namespace librealsense
 
         void handle_motion_data( realdds::topics::device::image && dds_frame,
                                  const std::shared_ptr< stream_profile_interface > & profile,
-                                 frame_metadata_syncer & syncer )
+                                 syncer_type & syncer )
         {
             frame_additional_data data;  // with NO metadata by default!
             data.timestamp;              // from metadata
@@ -821,7 +702,7 @@ namespace librealsense
             if( _md_enabled )
             {
                 syncer.enqueue_frame( data.frame_number,  // for now, we use this as the synced-to ID
-                                      new_frame );
+                                      syncer.hold( new_frame ));
             }
             else
             {
@@ -853,13 +734,15 @@ namespace librealsense
                 auto & dds_stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
                 // Opening it will start streaming on the server side automatically
                 dds_stream->open( "rt/" + _dev->device_info().topic_root + '_' + dds_stream->name(), _dev->subscriber());
-                _stream_name_to_syncer[dds_stream->name()].reset(
-                    [this]( frame_holder && fh, json && md )
+                auto & syncer = _stream_name_to_syncer[dds_stream->name()];
+                syncer.on_frame_release( frame_releaser );
+                syncer.on_frame_ready(
+                    [this]( syncer_type::frame_holder && fh, json && md )
                     {
                         if( ! md.empty() )
-                            add_frame_metadata( static_cast< frame * >( fh.frame ), std::move( md ) );
+                            add_frame_metadata( static_cast< frame * >( fh.get() ), std::move( md ) );
                         // else the frame should already have empty metadata!
-                        invoke_new_frame( std::move( fh ), nullptr, nullptr );
+                        invoke_new_frame( static_cast< frame * >( fh.release() ), nullptr, nullptr );
                     } );
 
                 if( Is< realdds::dds_video_stream >( dds_stream ) )
@@ -880,7 +763,6 @@ namespace librealsense
                     throw std::runtime_error( "Unsupported stream type" );
 
                 dds_stream->start_streaming();
-
             }
 
             software_sensor::start( callback );
@@ -888,6 +770,8 @@ namespace librealsense
 
         void stop()
         {
+            _stream_name_to_syncer.clear();
+
             for( auto & profile : sensor_base::get_active_streams() )
             {
                 auto & dds_stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
@@ -1240,7 +1124,7 @@ namespace librealsense
                 _dds_dev->on_metadata_available(
                     [this]( json && dds_md )
                     {
-                        std::string stream_name = rsutils::json::get< std::string >( dds_md, "stream-name" );
+                        std::string stream_name = rsutils::json::get< std::string >( dds_md, std::string( "stream-name", 11 ) );
                         auto it = _stream_name_to_owning_sensor.find( stream_name );
                         if( it != _stream_name_to_owning_sensor.end() )
                             it->second->handle_new_metadata( stream_name, std::move( dds_md ) );

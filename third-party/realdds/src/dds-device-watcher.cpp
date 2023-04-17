@@ -134,8 +134,6 @@ void dds_device_watcher::init()
 
     if( ! _device_info_topic->is_running() )
         _device_info_topic->run( dds_topic_reader::qos() );
-
-    LOG_DEBUG( "DDS device watcher is running" );
 }
 
 

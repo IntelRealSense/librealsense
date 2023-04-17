@@ -4,6 +4,7 @@
 #pragma once
 
 #include "dds-stream-base.h"
+#include "dds-trinsics.h"
 
 #include <string>
 #include <vector>

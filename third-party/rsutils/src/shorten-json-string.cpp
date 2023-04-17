@@ -15,6 +15,8 @@ static char get_block_close( char const ch )
         return ']';
     if( ch == '{' )
         return '}';
+    if( ch == '"' )
+        return '"';
     return 0;
 }
 
@@ -31,34 +33,49 @@ static bool is_block_open( char const ch )
 //        {"one":1,"two":[1,2,3],"three":{"longassblock":{"insideblock":89012}},"four":4}
 // Find the first inside block, including the enclosing delimiters (parenthesis or square brackets):
 //                       ^______^        ^_____________________________________^
+// 
+// @param target_item_it
+//      if p_array_item is not null, points to a place inside the block for which we want to find the item that contains
+//      it: the item is the array element (so comma-delimited) inside the block that spans this place.
+//      E.g.:                [1,"2 [ ha ha to 3",3]
+//                              |---------^----| target_item_it
+//      the array element is    |     here     |
+// @param p_array_item
+//      on output will point to the beginning of the array element identified by target_item_it - must not be nullptr if
+//      target_item_it is not nullptr!
 //
-static slice find_inside_block( slice const & outside )
+static slice find_inside_block( slice const & outside,
+                                slice::const_iterator const target_item_it = nullptr,
+                                slice::const_iterator * p_array_item = nullptr )
 {
+    assert( ! target_item_it || p_array_item );
+
     // find an opening
     slice::const_iterator it = outside.begin() + 1;  // opening {, separating comma, etc.
-    bool in_quote = false;
-    while( it < outside.end() && ( in_quote || ! is_block_open( *it ) ) )
+    if( it <= target_item_it )
+        *p_array_item = it;
+    while( it < outside.end() && ! is_block_open( *it ) )
     {
-        if( *it == '"' )
-            in_quote = ! in_quote;
+        if( *it == ',' && it < target_item_it )
+            *p_array_item = it + 1;
         ++it;
     }
     if( it >= outside.end() )
         return slice();
-    assert( ! in_quote );
     auto const begin = it;
     char const open = *begin;
 
     // find the closing
     char const close = get_block_close( *it );
     int nesting = 0;
+    bool in_quote = false;
     while( 1 )
     {
         if( ++it == outside.end() )
             // Something is invalid
             return slice();
 
-        if( *it == '"' )
+        if( close != '"' && *it == '"' )
             in_quote = ! in_quote;
         else if( ! in_quote )
         {
@@ -89,7 +106,7 @@ static slice find_inside_block( slice const & outside )
 //         49 {"a[1]":1,"b[2":3,"d":[1,2,{3,4,5,6 ... },6,7,8]}
 //         50 {"a[1]":1,"b[2":3,"d":[1,2,{3,4,5,6,7,8,9},6,7,8]}   <--   original json string
 //
-ellipsis shorten_json_string( slice const & str, size_t max_length )
+ellipsis shorten_json_string( slice const & str, size_t const max_length )
 {
     if( str.length() <= max_length )
         // Already short enough
@@ -100,7 +117,9 @@ ellipsis shorten_json_string( slice const & str, size_t max_length )
     // Try to find an inside block that can be taken out
     ellipsis result;
     slice range = str;
-    while( slice block = find_inside_block( range ) )
+    slice::const_iterator const last_possible_break = str.begin() + max_length - 6;
+    slice::const_iterator last_item_break = last_possible_break;
+    while( slice block = find_inside_block( range, last_possible_break, &last_item_break ) )
     {
         // Removing the whole block is one option:
         //        0123456789012345678901234567890123456789012345678
@@ -135,7 +154,7 @@ ellipsis shorten_json_string( slice const & str, size_t max_length )
 
     // The minimal solution is to shorten the current block at the end (if we can't find anything else)
     if( ! result )
-        result = ellipsis( slice( str.begin(), str.begin() + max_length - 6 ), slice( str.end() - 1, str.end() ) );
+        result = ellipsis( slice( str.begin(), last_item_break ), slice( str.end() - 1, str.end() ) );
     return result;
 }
 

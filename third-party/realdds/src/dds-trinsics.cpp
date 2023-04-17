@@ -1,12 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
-#include <realdds/dds-defines.h>
+#include <realdds/dds-trinsics.h>
 #include <realdds/dds-utilities.h>
+
+#include <rsutils/json.h>
 
 
 namespace realdds {
-
 
 
 nlohmann::json video_intrinsics::to_json() const

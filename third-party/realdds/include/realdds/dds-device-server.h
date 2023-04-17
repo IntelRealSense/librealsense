@@ -5,6 +5,7 @@
 
 #include <realdds/dds-option.h>
 #include <realdds/dds-defines.h>
+#include <realdds/dds-trinsics.h>
 
 #include <rsutils/concurrency/concurrency.h>
 #include <nlohmann/json_fwd.hpp>

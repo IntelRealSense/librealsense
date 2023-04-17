@@ -4,6 +4,9 @@
 #pragma once
 
 
+#include <realdds/dds-defines.h>
+#include <fastdds/rtps/common/Time_t.h>
+
 #include <string>
 #include <memory>
 #include <vector>
@@ -75,6 +78,7 @@ public:
     std::string frame_id;
     int width = -1;
     int height = -1;
+    dds_time timestamp;
 };
 
 

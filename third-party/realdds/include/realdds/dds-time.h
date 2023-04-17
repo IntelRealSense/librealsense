@@ -11,7 +11,7 @@
 
 namespace realdds {
 
-    
+
 inline dds_time now()
 {
     dds_time t;
@@ -22,10 +22,30 @@ inline dds_time now()
 
 inline dds_time time_from( dds_nsec nanoseconds )
 {
-    dds_time t;
-    t.from_ns( nanoseconds );
-    return t;
+    // see eprosima::fastrtps::rtps::Time_t::from_ns() which includes unneeded fraction calculation
+    auto res = std::lldiv( nanoseconds, 1000000000ull );
+    return dds_time( static_cast< int32_t >( res.quot ),
+                     static_cast< uint32_t >( res.rem ) );
 }
+
+
+// There's another version of Time_t that also calculates a fraction unnecessarily, so:
+inline dds_time time_from( eprosima::fastrtps::rtps::Time_t const & rtps )
+{
+    return dds_time( rtps.seconds(), rtps.nanosec() );
+}
+
+
+inline long double time_to_double( dds_time const & t )
+{
+    long double sec = t.seconds;
+    long double nsec = t.nanosec;
+    nsec /= 1000000000ULL;
+    return sec + nsec;
+}
+
+
+std::string time_to_string( dds_time const & t );
 
 
 // Easy way to format DDS time to a legible string, in milliseconds

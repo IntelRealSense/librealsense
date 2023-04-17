@@ -78,6 +78,7 @@ if _have_color:
         sys.stdout.write( '\0337' )  # save cursor
         print( *args, end = clear_eol )
         sys.stdout.write( '\0338' )  # restore cursor
+        sys.stdout.flush()
         _progress = args
 else:
     red = yellow = gray = reset = cr = clear_eos = ''
@@ -160,7 +161,7 @@ def i( *args ):
 
 
 def f( *args ):
-    out( '-F-', *args )
+    out( *args, line_prefix = red + '-F-' + reset + ' ' )
     sys.exit(1)
 
 
@@ -208,5 +209,6 @@ def split():
     except:
         # this happens under github actions, for example, or when a terminal does not exist
         screen_width = 60
-    out( '\n' + '_' * screen_width )
+    out()
+    out( '_' * screen_width )
 

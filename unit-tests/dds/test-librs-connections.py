@@ -23,53 +23,57 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     #############################################################################################
     #
-    test.start( "Multiple cameras disconnection/reconnection" )
-    try:
-        remote.run( 'instance = broadcast_device( d435i, d435i.device_info )', timeout=5 )
-        remote.run( 'instance2 = broadcast_device( d405, d405.device_info )', timeout=5 )
-        
-        #Create context after remote device is ready to test discovery on start-up
-        #Later on, other connections will test discovery using the callback functions
-        context = rs.context( '{"dds-domain":123}' )
-        n_devs = dds.wait_for_devices( context, only_sw_devices )
-        test.check_equal( len(n_devs), 2 )
-        
-        remote.run( 'instance3 = broadcast_device( d455, d455.device_info )', timeout=5 )
-        sleep( 1 ) # Wait for device to be received and built, otherwise wait_for_devices will return immediately with previous devices
-        n_devs = dds.wait_for_devices( context, only_sw_devices )
-        test.check_equal( len(n_devs), 3 )
-        
-        remote.run( 'close_server( instance )', timeout=5 )
+    with test.closure( "Start two devices", on_fail=test.ABORT ):
+        remote.run( 'instance = broadcast_device( d435i, d435i.device_info )' )
+        remote.run( 'instance2 = broadcast_device( d405, d405.device_info )' )
+
+        # Create context after remote device is ready to test discovery on start-up
+        context = rs.context( '{"dds-domain":123,"dds-participant-name":"librs"}' )
+        # The DDS devices take time to be recognized and we just created the context; we
+        # should not see them yet!
+        #test.check( len( context.query_devices( only_sw_devices )) != 2 )
+        # Wait for them
+        dds.wait_for_devices( context, only_sw_devices, n=2. )
+    #
+    #############################################################################################
+    #
+    with test.closure( "Start a third", on_fail=test.ABORT ):
+        remote.run( 'instance3 = broadcast_device( d455, d455.device_info )' )
+        dds.wait_for_devices( context, only_sw_devices, n=3. )
+    #
+    #############################################################################################
+    #
+    with test.closure( "Close the first", on_fail=test.ABORT ):
+        dds.devices_updated.clear()
+        remote.run( 'close_server( instance )' )
         remote.run( 'instance = None', timeout=1 )
-        sleep( 0.5 ) # Give client device time to close
-        n_devs = dds.wait_for_devices( context, only_sw_devices )
-        test.check_equal( len(n_devs), 2 )
-        
-        remote.run( 'instance4 = broadcast_device( d435i, d435i.device_info )', timeout=5 )
-        sleep( 1 ) # Wait for device to be received and built, otherwise wait_for_devices will return immediately with previous devices
-        n_devs = dds.wait_for_devices( context, only_sw_devices )
-        test.check_equal( len(n_devs), 3 )
-        
-        remote.run( 'close_server( instance2 )', timeout=5 )
+        dds.wait_for_devices( context, only_sw_devices, n=2. )
+    #
+    #############################################################################################
+    #
+    with test.closure( "Add a fourth", on_fail=test.ABORT ):
+        remote.run( 'instance4 = broadcast_device( d435i, d435i.device_info )' )
+        dds.wait_for_devices( context, only_sw_devices, n=3. )
+    #
+    #############################################################################################
+    #
+    with test.closure( "Close the second", on_fail=test.ABORT ):
+        remote.run( 'close_server( instance2 )' )
         remote.run( 'instance2 = None', timeout=1 )
-        sleep( 0.5 ) # Give client device time to close
-        n_devs = dds.wait_for_devices( context, only_sw_devices )
-        test.check_equal( len(n_devs), 2 )
-        
-        remote.run( 'close_server( instance3 )', timeout=5 )
+        dds.wait_for_devices( context, only_sw_devices, n=2. )
+    #
+    #############################################################################################
+    #
+    with test.closure( "Close the third", on_fail=test.ABORT ):
+        remote.run( 'close_server( instance3 )' )
         remote.run( 'instance2 = None', timeout=1 )
-        sleep( 0.5 ) # Give client device time to close
-        n_devs = dds.wait_for_devices( context, only_sw_devices )
-        test.check_equal( len(n_devs), 1 )
-        
-        remote.run( 'close_server( instance4 )', timeout=5 )
-        n_devs = dds.wait_for_devices( context, only_sw_devices )
-        sleep( 0.5 ) # Give client device time to close
-        test.check_equal( n_devs, None )
-    except:
-        test.unexpected_exception()
-    dev = None
-    test.finish()
+        dds.wait_for_devices( context, only_sw_devices, n=1. )
+    #
+    #############################################################################################
+    #
+    with test.closure( "Close the last", on_fail=test.ABORT ):
+        remote.run( 'close_server( instance4 )' )
+        dds.wait_for_devices( context, only_sw_devices, n=0. )
     #
     #############################################################################################
 

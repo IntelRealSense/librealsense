@@ -22,9 +22,17 @@ n_assertions = 0
 n_failed_assertions = 0
 n_tests = 0
 n_failed_tests = 0
+failed_tests = []
 test_failed = False
-test_in_progress = False
+test_in_progress = None
 test_info = {} # Dictionary for holding additional information to print in case of a failed check.
+
+
+# These are 'on_fail' argument possible values:
+ABORT = 'abort'  # call test.abort()
+RAISE = 'raise'  # raise an exception
+LOG   = 'log'    # log it and continue
+
 
 # if --context flag was sent, the test is running under a specific context which could affect its run
 context = []
@@ -210,8 +218,7 @@ def check_failed( abort_if_failed = False ):
 
 
 def abort():
-    log.e( "Aborting test" )
-    sys.exit( 1 )
+    log.f( "Aborting" )
 
 
 def check( exp, description = None, abort_if_failed = False ):
@@ -299,17 +306,21 @@ def unreachable( abort_if_failed = False ):
     check_failed( abort_if_failed )
 
 
+def _unexpected_exception( type, e, tb ):
+    print_stack_( traceback.format_list( traceback.extract_tb( tb )))
+    for line in traceback.format_exception_only( type, e ):
+        log.out( line[:-1], line_prefix = '    ' )
+    log.out( '      Unexpected exception!' )
+    check_failed()
+
+
 def unexpected_exception():
     """
     Used to assert that an except block is not reached. It's different from unreachable because it expects
     to be in an except block and prints the stack of the error and not the call-stack for this function
     """
     type,e,tb = sys.exc_info()
-    print_stack_( traceback.format_list( traceback.extract_tb( tb )))
-    for line in traceback.format_exception_only( type, e ):
-        log.out( line[:-1], line_prefix = '    ' )
-    log.out( '      Unexpected exception!' )
-    check_failed()
+    return _unexpected_exception( type, e, tb )
 
 
 def check_equal_lists(result, expected, abort_if_failed = False):
@@ -419,7 +430,7 @@ def check_frame_drops(frame, previous_frame_number, allowed_drops = 1, allow_fra
     :return: False if dropped too many frames or frames were out of order, True otherwise
     """
     global test_in_progress
-    if not test_in_progress: 
+    if test_in_progress is None:
         return True
     frame_number = frame.get_frame_number()
     failed = False
@@ -501,8 +512,9 @@ def fail():
 
 def check_test_in_progress( in_progress = True ):
     global test_in_progress
-    if test_in_progress != in_progress:
-        if test_in_progress:
+    actually_in_progress = test_in_progress is not None
+    if actually_in_progress != in_progress:
+        if actually_in_progress:
             raise RuntimeError( "test case is already running" )
         else:
             raise RuntimeError( "no test case is running" )
@@ -517,23 +529,28 @@ def start(*test_name):
     global n_tests, test_failed, test_in_progress
     n_tests += 1
     test_failed = False
-    test_in_progress = True
+    test_in_progress = test_name
     reset_info( persistent = True )
     log.i( 'Test:', *test_name )
 
 
-def finish():
+def finish( on_fail=LOG ):
     """
     Used at the end of each test to check if it passed and print the answer
     """
     check_test_in_progress()
-    global test_failed, n_failed_tests, test_in_progress
+    global test_failed, failed_tests, n_failed_tests, test_in_progress
     if test_failed:
         n_failed_tests += 1
+        failed_tests.append( test_in_progress )
         log.e("Test failed")
+        if on_fail == ABORT:
+            abort()
+        if on_fail == RAISE:
+            raise RuntimeError( f'test "{test_in_progress}" failed' )
     else:
         log.i("Test passed")
-    test_in_progress = False
+    test_in_progress = None
 
 
 def print_separator():
@@ -543,8 +560,28 @@ def print_separator():
     """
     check_test_in_progress( False )
     global n_tests
-    if n_tests:
-        log.out( '\n___' )
+    log.out( '\n___' )
+
+
+class closure:
+    """
+    Automatic wrapper around a test start/finish, with a try and unexpected_exception at the end
+    """
+    def __init__( self, *test_name, on_fail=LOG ):
+        self._on_fail = on_fail
+        self._name = test_name
+    def __enter__( self ):
+        start( *self._name )
+        return self
+    def __exit__( self, type, value, traceback ):
+        if type is not None:
+            # An exception was thrown
+            _unexpected_exception( type, value, traceback )
+        finish( on_fail=self._on_fail )
+        # "If an exception is supplied, and the method wishes to suppress the exception (i.e.,
+        # prevent it from being propagated), it should return a true value."
+        # https://docs.python.org/3/reference/datamodel.html#with-statement-context-managers
+        return True  # otherwise the exception will keep propagating
 
 
 def print_results_and_exit():
@@ -553,10 +590,12 @@ def print_results_and_exit():
     in run-unit-tests and with the C++ format using Catch
     """
     print_separator()
-    global n_assertions, n_tests, n_failed_assertions, n_failed_tests
+    global n_assertions, n_tests, n_failed_assertions, n_failed_tests, failed_tests
     if n_failed_tests or n_failed_assertions:
         passed = n_assertions - n_failed_assertions
         log.out("test cases:", n_tests, "|" , n_failed_tests,  "failed")
+        for name in failed_tests:
+            log.d( f'    {name}' )
         log.out("assertions:", n_assertions, "|", passed, "passed |", n_failed_assertions, "failed")
         sys.exit(1)
     log.out("All tests passed (" + str(n_assertions) + " assertions in " + str(n_tests) + " test cases)")
@@ -640,7 +679,7 @@ class remote:
     sees '--nested' in the command-line.
     """
 
-    class Error( Exception ):
+    class Error( RuntimeError ):
         def __init__( self, message ):
             super().__init__( message )
 
@@ -711,6 +750,9 @@ class remote:
                     # caught in the main... Instead we have to wait until the remote is ready...
                 elif line.startswith( 'Traceback '):
                     self._exception = [line[:-1]]
+                elif line.startswith( '  File "' ):
+                    # Some exception are syntax errors in the command, which would not have a 'Traceback'...
+                    self._exception = [line[:-1]]
                 print( '['+self._nested_indent+']', line, end='', flush=True )
             else:
                 print( line, end='', flush=True )
@@ -740,11 +782,22 @@ class remote:
         #
         self._thread.start()
 
-    def _raise_if_needed( self ):
+    def _raise_if_needed( self, how='raise' ):
         if self._exception:
             what = self._exception[-1]
             self._exception = None
-            raise remote.Error( what )
+            if how == RAISE:
+                raise remote.Error( what )
+            print_stack_( traceback.format_stack()[:-2] )
+            log.out( f'      {what}' )
+            if how == ABORT:
+                self.wait()
+                abort()
+            if how == LOG:
+                pass
+            else:
+                raise ValueError( f'invalid failure handler "{how}" should be raise, abort, or log' )
+
 
     def wait_until_ready( self, timeout=30 ):
         """
@@ -754,13 +807,17 @@ class remote:
         if not self._initialized_event.wait( timeout ):
             raise RuntimeError( f'{self._name} timeout' )
 
-    def run( self, command, on_ready=None, timeout=None ):
+    def run( self, command, on_ready=None, timeout=5, on_fail=RAISE ):
         """
         Run in a command asynchronously in the remote process: returns immediately without waiting for the command to
         finish.
         :param command: the line, as if you typed it in an interactive shell
         :param on_ready: a callback that will be called when the command finishes
         :param timeout: if not None, how long to wait for the command to finish
+        :param on_fail: how to handle exceptions on the server
+                        'raise' to raise them as remote.Error()
+                        'abort' to test.abort()
+                        'log' to log and ignore
         """
         log.d( self._name, 'running:', command )
         assert self._interactive
@@ -773,7 +830,7 @@ class remote:
         if event:
             if not event.wait( timeout ):
                 raise RuntimeError( f'{self._name} command timed out' )
-            self._raise_if_needed()
+            self._raise_if_needed( on_fail )
 
     def wait( self, timeout = 30 ):
         """
@@ -806,6 +863,9 @@ class remote:
                 process.wait( timeout=0.2 )
                 self._status = process.returncode
                 log.d( self._name, 'exited with status', self._status )
+                if self._initialized_event is not None:
+                    # Unexpected, but known to happen (process terminated while we're waiting for it to be ready)
+                    raise RuntimeError( f'{self._name} exited with status {self._status}' )
             except subprocess.TimeoutExpired:
                 log.d( self._name, 'process terminate timed out' )
 

@@ -126,7 +126,7 @@ void dds_notification_server::send_notification( topics::flexible_msg && notific
         LOG_ERROR( "error while trying to enqueue a notification" );
     _new_instant_notification = true;
     _send_notification_cv.notify_all();
-};
+}
 
 
 void dds_notification_server::add_discovery_notification( topics::flexible_msg && notification )
@@ -135,7 +135,7 @@ void dds_notification_server::add_discovery_notification( topics::flexible_msg &
         DDS_THROW( runtime_error, "cannot add discovery notification while server is running" );
 
     _discovery_notifications.push_back( notification.to_raw() );
-};
+}
 
 
 void dds_notification_server::send_discovery_notifications()
