@@ -2249,6 +2249,8 @@ namespace rs2
     {
         if (model.profile.stream_type() == RS2_STREAM_SAFETY)
             return false;
+
+        return true;
     }
 
     void viewer_model::show_top_bar(ux_window& window, const rect& viewer_rect, const device_models_list& devices)
