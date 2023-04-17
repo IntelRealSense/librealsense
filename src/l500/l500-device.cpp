@@ -439,7 +439,10 @@ namespace librealsense
         for (int sector_index = first_sector; sector_index < sector_count; sector_index++)
         {
             command cmdFES(ivcam2::FES);
-            cmdFES.require_response = false;
+            // On both FES & FWB commands We don't really need the response but we see that setting
+            // false and sending many commands cause a failure. 
+            // Looks like the FW is expecting it.
+            cmdFES.require_response = true;
             cmdFES.param1 = int(sector_index);
             cmdFES.param2 = 1;
             auto res = hwm->send(cmdFES);
@@ -451,7 +454,7 @@ namespace librealsense
                     break;
                 int packet_size = std::min((int)(HW_MONITOR_COMMAND_SIZE - (i % HW_MONITOR_COMMAND_SIZE)), (int)(ivcam2::FLASH_SECTOR_SIZE - i));
                 command cmdFWB(ivcam2::FWB);
-                cmdFWB.require_response = false;
+                cmdFWB.require_response = true;
                 cmdFWB.param1 = int(index);
                 cmdFWB.param2 = packet_size;
                 cmdFWB.data.assign(image.data() + index, image.data() + index + packet_size);

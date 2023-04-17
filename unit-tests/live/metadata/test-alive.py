@@ -1,5 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+import time
 
 # test:device each(D400*)
 
@@ -49,9 +50,10 @@ def append_testing_profiles(dev) -> None:
     """
     global testing_profiles
 
+    # We only pick default profiles to avoid starting unsupported profiles
     for s in dev.sensors:
         for p in s.profiles:
-            if not is_contain_profile(testing_profiles, p):
+            if not is_contain_profile(testing_profiles, p) and p.is_default():
                 testing_profiles[p] = s
 
 
@@ -104,5 +106,6 @@ for profile, sensor in testing_profiles.items():
         test.finish()
 
     close_resources(sensor)
+    time.sleep(0.3)  # better sleep before stopping/starting streaming, so we can let the device recover properly.
 
 test.print_results_and_exit()
