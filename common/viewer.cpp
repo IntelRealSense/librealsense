@@ -2245,7 +2245,7 @@ namespace rs2
         }
     }
 
-    bool viewer_model::should_render_frame(rs2::stream_model& model)
+    const bool viewer_model::should_render_frame(const rs2::stream_model& model)
     {
         if (model.profile.stream_type() == RS2_STREAM_SAFETY)
             return false;
