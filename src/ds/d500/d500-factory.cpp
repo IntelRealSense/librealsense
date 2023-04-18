@@ -80,7 +80,7 @@ namespace librealsense
     class rs_d585s_device : public d500_active,
         public d500_color,
         public d500_safety,
-        //public d500_depth_mapping,
+        public d500_depth_mapping,
         public d500_motion,
         public ds_advanced_mode_base,
         public firmware_logger_device
@@ -94,7 +94,7 @@ namespace librealsense
             d500_active(ctx, group),
             d500_color(ctx, group),
             d500_safety(ctx, group),
-            //d500_depth_mapping(ctx, group),
+            d500_depth_mapping(ctx, group),
             d500_motion(ctx, group),
             ds_advanced_mode_base(d500_device::_hw_monitor, get_depth_sensor()),
             firmware_logger_device(ctx, group, d500_device::_hw_monitor,
@@ -248,7 +248,8 @@ namespace librealsense
 
     std::shared_ptr<matcher> rs_d585s_device::create_matcher(const frame_holder& frame) const
     {
-        std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get(), _safety_stream.get()};
+        std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get(), 
+            _safety_stream.get(), _occupancy_stream.get(), _point_cloud_stream.get()};
         std::vector<stream_interface*> mm_streams = { _ds_motion_common->get_accel_stream().get(),
                                                       _ds_motion_common->get_gyro_stream().get() };
         streams.insert(streams.end(), mm_streams.begin(), mm_streams.end());
