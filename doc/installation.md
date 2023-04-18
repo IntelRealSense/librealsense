@@ -1,45 +1,64 @@
 # Linux Ubuntu Installation
 
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#about-the-project">Ubuntu Build Dependencies</a>
+    </li>
+    <li>
+      <a href="#getting-started">Getting Started</a>
+      <ul>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#installation">Dependencies</a></li>
+        <li><a href="#installation">Installation</a></li>
+        <li><a href="#installation">Building</a></li>
+      </ul>
+    </li>
+  </ol>
+</details>
+
 **Note:** Due to the USB 3.0 translation layer between native hardware and virtual machine, the *librealsense* team does not support installation in a VM. If you do choose to try it, we recommend using VMware Workstation Player, and not Oracle VirtualBox for proper emulation of the USB3 controller.
 <br><br> Please ensure to work with the supported Kernel versions listed here and verify that the kernel is updated properly according to the instructions.
 
-## Ubuntu Build Dependencies
-The scripts and commands below invoke `wget, git, add-apt-repository` which may be blocked by router settings or a firewall. Infrequently, apt-get mirrors or repositories may also timeout. For *librealsense* users behind an enterprise firewall, configuring the system-wide Ubuntu proxy generally resolves most timeout issues.
-
 ## Prerequisites
+
+**Note:** The scripts and commands below invoke `wget, git, add-apt-repository` which may be blocked by router settings or a firewall. Infrequently, apt-get mirrors or repositories may also timeout. For *librealsense* users behind an enterprise firewall, configuring the system-wide Ubuntu proxy generally resolves most timeout issues.
+
 **Important:** Running RealSense Depth Cameras on Linux requires patching and inserting modified kernel drivers. Some OEM/Vendors choose to lock the kernel for modifications. Unlocking this capability may require modification of BIOS settings
 
-  **Make Ubuntu Up-to-date:**  
-  * Update Ubuntu distribution, including getting the latest stable kernel:
-    * `sudo apt-get update && sudo apt-get upgrade && sudo apt-get dist-upgrade`  <br />  
+## Install Dependencies
 
-**Note:** On stock Ubuntu 14 LTS systems and kernels prior to 4.4.0-04 the standard `apt-get upgrade` command is not sufficient to bring the distribution to the latest recommended baseline.  
-  It is recommended to upgrade the distribution with:   
-  * `sudo apt-get install --install-recommends linux-generic-lts-xenial xserver-xorg-core-lts-xenial xserver-xorg-lts-xenial xserver-xorg-video-all-lts-xenial xserver-xorg-input-all-lts-xenial libwayland-egl1-mesa-lts-xenial `<br />    
+1. Make Ubuntu up-to-date including the latest stable kernel:
+   ```sh
+   sudo apt-get update && sudo apt-get upgrade && sudo apt-get dist-upgrade
+   ```
+2. Install the core packages required to build _librealsense_ binaries and the affected kernel modules:
+   ```sh
+   sudo apt-get install libssl-dev libusb-1.0-0-dev libudev-dev pkg-config libgtk-3-dev cmake
+   ```
+3. Install tools
+   ```sh
+   sudo apt-get install git wget cmake
+   ```
+   
 
-  * Update OS Boot and reboot to enforce the correct kernel selection with <br />`sudo update-grub && sudo reboot`<br />
+## Install librealsense
 
-  * Interrupt the boot process at Grub2 Boot Menu -> "Advanced Options for Ubuntu" and select the kernel version installed in the previous step. Press and hold SHIFT if the Boot menu is not presented.
-  * Complete the boot, login and verify that a supported kernel version (4.**[4,8,10,13,15,16]**]) is in place with `uname -r`  
+1. Clone/Download the latest stable version of _librealsense_ in one of the following ways:
 
-
-**Download/Clone librealsense github repository:**  
-  * Get *librealsense* sources in one of the following ways:<br />
-
-    - Install *git* and download the complete source tree.<br />
-      `sudo apt-get install git`<br />
-      `git clone https://github.com/IntelRealSense/librealsense.git`<br />
-
-    - Download and unzip the latest stable version from `master` branch:
-        https://github.com/IntelRealSense/librealsense/archive/master.zip  
+   * Clone the _librealsense_ repo
+     ```sh
+     git clone https://github.com/IntelRealSense/librealsense.git
+     ```
+   * Download and unzip the latest stable version from `master` branch<br/>
+     [IntelRealSense.zip](https://github.com/IntelRealSense/librealsense/archive/master.zip)
 
 **Prepare Linux Backend and the Dev. Environment:**  
   1. Navigate to *librealsense* root directory to run the following scripts.<br />
      Unplug any connected Intel RealSense camera.<br />  
 
-  2. Install the core packages required to build *librealsense* binaries and the affected kernel modules:  
- 
-     `sudo apt-get install libssl-dev libusb-1.0-0-dev libudev-dev pkg-config libgtk-3-dev cmake`  <br /><br />
      Distribution-specific packages:<br />
      * Ubuntu 14 or when running Ubuntu 16.04 live-disk:<br />
       `./scripts/install_glfw3.sh`  <br />
