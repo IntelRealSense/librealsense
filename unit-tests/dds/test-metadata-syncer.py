@@ -41,14 +41,14 @@ last_image = None
 last_metadata = None
 def on_frame_ready( image, metadata ):
     global last_image, last_metadata
-    log.d( f"{image_id(image):-<4}> {dds.now()} [{threading.get_native_id()}] frame ready: {image=} {metadata=}" )
-    test.check( last_image is None  or  last_image.timestamp.seconds < image.timestamp.seconds )
+    log.d( f'{image_id(image):-<4}> {dds.now()} [{threading.get_native_id()}] frame ready: {image=} {metadata=}' )
+    test.check( last_image is None  or  image_id( last_image ) < image_id( image ) )
     last_image = image
     last_metadata = metadata
 
 dropped_metadata = []
 def on_metadata_dropped( key, metadata ):
-    log.d( f'Mdrop {dds.now()} [{threading.get_native_id()}] metadata dropped: {key=} {metadata=}' )
+    log.d( f' drop {dds.now()} [{threading.get_native_id()}] metadata dropped: {key=} {metadata=}' )
     dropped_metadata.append( key )
 
 
@@ -81,21 +81,21 @@ def new_metadata( id, timestamp=None ):
     return md
 
 
-with test.closure( "Enqueue 1 image -> nothing should come out" ):
+with test.closure( 'Enqueue 1 image -> nothing should come out' ):
     syncer = new_syncer()
     syncer.enqueue_frame( 1, new_image( 1 ) )
     test.check_equal( last_image, None )
     test.check_equal( last_metadata, None )
     test.check_equal( len(dropped_metadata), 0 )
 
-with test.closure( "Enqueue 1 metadata -> nothing should come out" ):
+with test.closure( 'Enqueue 1 metadata -> nothing should come out' ):
     syncer = new_syncer()
     syncer.enqueue_metadata( 1, new_metadata( 1 ) )
     test.check_equal( last_image, None )
     test.check_equal( last_metadata, None )
     test.check_equal( len(dropped_metadata), 0 )
 
-with test.closure( "Enqueue many metadata -> nothing out; should get drops" ):
+with test.closure( 'Enqueue many metadata -> nothing out; should get drops' ):
     syncer = new_syncer()
     for i in range( dds.metadata_syncer.max_md_queue_size*2 ):
         syncer.enqueue_metadata( i, new_metadata( i ) )
@@ -103,14 +103,14 @@ with test.closure( "Enqueue many metadata -> nothing out; should get drops" ):
     test.check_equal( last_metadata, None )
     test.check_equal( len(dropped_metadata), dds.metadata_syncer.max_md_queue_size )
 
-with test.closure( "Enqueue many images -> some out (no md); no drops" ):
+with test.closure( 'Enqueue many images -> some out (no md); no drops' ):
     syncer = new_syncer()
     for i in range( dds.metadata_syncer.max_frame_queue_size*3 ):
         syncer.enqueue_frame( i, new_image( i ) )
     test.check( last_image ) and test.check_equal( image_id( last_image ), i - dds.metadata_syncer.max_frame_queue_size )
     test.check_equal( last_metadata, None )  # Note: not {}, but None!
 
-with test.closure( "Enqueue image+metadata -> out" ):
+with test.closure( 'Enqueue image+metadata -> out' ):
     syncer = new_syncer()
     syncer.enqueue_frame( 1, new_image( 1 ) )
     test.check_equal( last_image, None )
@@ -121,7 +121,7 @@ with test.closure( "Enqueue image+metadata -> out" ):
     test.check( last_metadata ) and test.check_equal( md_id( last_metadata ), 1 )
     test.check_equal( len(dropped_metadata), 0 )
 
-with test.closure( "Enqueue metadata+image -> out" ):
+with test.closure( 'Enqueue metadata+image -> out' ):
     syncer = new_syncer()
     syncer.enqueue_metadata( 1, new_metadata( 1 ) )
     test.check_equal( last_image, None )
@@ -132,7 +132,7 @@ with test.closure( "Enqueue metadata+image -> out" ):
     test.check( last_metadata ) and test.check_equal( md_id( last_metadata ), 1 )
     test.check_equal( len(dropped_metadata), 0 )
 
-with test.closure( "Enqueue 1 image after some metadata -> drops + match" ):
+with test.closure( 'Enqueue 1 image after some metadata -> drops + match' ):
     syncer = new_syncer()
     for i in range(4):
         syncer.enqueue_metadata( i, new_metadata( i ) )
@@ -144,7 +144,7 @@ with test.closure( "Enqueue 1 image after some metadata -> drops + match" ):
     test.check( last_metadata ) and test.check_equal( md_id( last_metadata ), 2 )
     test.check_equal( len(dropped_metadata), 2 )  # 0 and 1
 
-with test.closure( "Enqueue 1 image then earlier metadata -> nothing out; metadata is dropped" ):
+with test.closure( 'Enqueue 1 image then earlier metadata -> nothing out; metadata is dropped' ):
     syncer = new_syncer()
     syncer.enqueue_frame( 1, new_image( 1 ) )
     test.check_equal( last_image, None )
@@ -155,7 +155,7 @@ with test.closure( "Enqueue 1 image then earlier metadata -> nothing out; metada
     test.check_equal( last_metadata, None )
     test.check_equal( len(dropped_metadata), 1 )  # not going to be any frame for it
 
-with test.closure( "Enqueue 1 image then later metadata -> image out" ):
+with test.closure( 'Enqueue 1 image then later metadata -> image out' ):
     syncer = new_syncer()
     syncer.enqueue_frame( 1, new_image( 1 ) )
     test.check_equal( last_image, None )
@@ -166,7 +166,7 @@ with test.closure( "Enqueue 1 image then later metadata -> image out" ):
     test.check_equal( last_metadata, None )
     test.check_equal( len(dropped_metadata), 0 )
 
-with test.closure( "Enqueue 2 images then matching metadata for the second -> both out" ):
+with test.closure( 'Enqueue 2 images then matching metadata for the second -> both out' ):
     syncer = new_syncer()
     syncer.enqueue_frame( 1, new_image( 1 ) )
     test.check_equal( last_image, None )
@@ -181,7 +181,7 @@ with test.closure( "Enqueue 2 images then matching metadata for the second -> bo
     test.check( last_metadata ) and test.check_equal( md_id( last_metadata ), 2 )
     test.check_equal( len(dropped_metadata), 0 )
 
-with test.closure( "Enqueue during callback" ):
+with test.closure( 'Enqueue during callback' ):
     def enqueue_during_callback( image, metadata ):
         on_frame_ready( image, metadata )
         id = image_id( image ) + 1
@@ -203,16 +203,29 @@ with test.closure( "Enqueue during callback" ):
     test.check_equal( len(dropped_metadata), 0 )
 
 
-def two_threads( callback_time, time_between_frames=0.033, n=10 ):
+def two_threads( callback_time, time_between_frames=0.033, n=10, order='metadata-first' ):
     """
     Generate frames periodically. Enqueue images and metadata from two separate threads just as in
     a DDS client (thread per reader).
+
+    :param order: either 'image-first' or 'metadata-first'; signifies the order in which we want to
+                  receive messages, to try and control which thread generates the image-metadata
+                  match & callback
+
+    Note that, in the client, it's likely that the metadata is received first because it's a much-
+    smaller message. I.e., the MD will be received, cached, and when the image arrives the match
+    will be made and the callback will be called from the image thread. While this shouldn't block
+    the syncer, it does block the image-receiving thread so, if the callback takes long enough,
+    we'll see additional metadata being received and cached. If we specify 'image-first' then the
+    opposite happens: the MD thread will block and we'll see images arriving during the callback,
+    meaning images will build up and eventually being freed without metadata meaning the callback
+    will be called from two different threads, possibly concurrently!
     """
-    have_frame = threading.Event()
+    have_image = threading.Event()
     have_md = threading.Event()
-    have_frame.clear()
+    have_image.clear()
     have_md.clear()
-    frames = []
+    images = []
     mds = []
 
     def frame_handler( image, metadata ):
@@ -233,61 +246,79 @@ def two_threads( callback_time, time_between_frames=0.033, n=10 ):
             log.d( f'{i:>5} {dds.now()} [{threadid}] generate @ {timestamp}' )
             image = new_image( i, timestamp )
             md = new_metadata( i, timestamp )
-            frames.append( image )
+            images.append( image )
             mds.append( md )
-            have_frame.set()
+            have_image.set()
             have_md.set()
             sleep( time_between_frames )
 
-    def frame_thread():
+    metadata_first = order == 'metadata-first'
+    image_first = order == 'image-first'
+
+    def image_thread():
         # This thread enqueues the images
         threadid = threading.get_native_id()
-        nonlocal syncer, n
+        nonlocal syncer, n, metadata_first
         for i in range(n):
-            have_frame.wait()
-            image = frames.pop( 0 )
-            if not frames:
-                have_frame.clear()
-            idstr = f'F{image_id(image)}'
+            have_image.wait()
+            image = images.pop( 0 )
+            if not images:
+                have_image.clear()
+            if metadata_first:
+                sleep( 0.005 )  # delay a bit, to try and control the narrative
+            idstr = f'i{image_id(image)}'
             log.d( f'{idstr:>5} {dds.now()} [{threadid}] enqueue {image}' )
             syncer.enqueue_frame( i, image )
 
     def md_thread():
         # This thread enqueues the metadata
         threadid = threading.get_native_id()
-        sleep( 0.005 )
-        nonlocal syncer, n
+        nonlocal syncer, n, image_first
         for i in range(n):
             have_md.wait()
             md = mds.pop( 0 )
             if not mds:
                 have_md.clear()
-            idstr = f'M{int(md["timestamp"])}'
+            if image_first:
+                sleep( 0.005 )  # delay a bit, to try and control the narrative
+            idstr = f'm{md_id(md)}'
             log.d( f'{idstr:>5} {dds.now()} [{threadid}] enqueue {md}' )
             syncer.enqueue_metadata( i, md )
 
-    gen_th = threading.Thread( target=generator_thread )
-    f_th = threading.Thread( target=frame_thread )
+    f_th = threading.Thread( target=image_thread )
     m_th = threading.Thread( target=md_thread )
 
-    gen_th.start()
-    f_th.start()
-    m_th.start()
-    gen_th.join()
+    if metadata_first:
+        m_th.start()
+        f_th.start()
+    else:
+        f_th.start()
+        m_th.start()
+    generator_thread()
     f_th.join()
     m_th.join()
 
 
-with test.closure( "Two threads, slow callback -> MD drops & parallel callbacks" ):
+with test.closure( 'Two threads, slow callback on MD thread -> parallel callbacks; MD doesn\'t arrive in time -> drops' ):
 
-    two_threads( callback_time=0.1 )  # longer than time-between-frames, on purpose!
+    two_threads( callback_time=0.1,  # longer than time-between-frames, on purpose!
+                 order='image-first' )
 
     test.check( last_image ) and test.check_equal( image_id( last_image ), 9 )
     test.check( last_metadata ) and test.check_equal( md_id( last_metadata ), 9 )
-    # On GHA, threading is less "evolved"; on a real CPU we see actual dropped metadata
-    #test.check_equal( len(dropped_metadata), 3 )
+    test.check( len(dropped_metadata) > 0 )
 
-with test.closure( "Two threads, fast callback -> no drops, no parallel callbacks" ):
+with test.closure( 'Two threads, slow callback on image thread -> metadata builds up with eventual drops' ):
+
+    two_threads( callback_time=0.1,  # longer than time-between-frames, on purpose!
+                 n=dds.metadata_syncer.max_md_queue_size*2,
+                 order='metadata-first' )
+
+    test.check( last_image ) and test.check_equal( image_id( last_image ), dds.metadata_syncer.max_md_queue_size*2 - 1 )
+    test.check( last_metadata ) and test.check_equal( md_id( last_metadata ), dds.metadata_syncer.max_md_queue_size*2 - 1 )
+    test.check( len(dropped_metadata) > 0 )
+
+with test.closure( 'Two threads, fast callback -> no drops, no parallel callbacks' ):
 
     two_threads( callback_time=0.01 )  # shorter than time-between-frames
 
