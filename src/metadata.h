@@ -884,7 +884,7 @@ namespace librealsense
         md_safety_info          intel_safety_info;
     };
 
-    struct md_mapping_mode
+    union md_mapping_mode
     {
         md_occupancy       intel_occupancy;
         md_point_cloud     intel_point_cloud;
