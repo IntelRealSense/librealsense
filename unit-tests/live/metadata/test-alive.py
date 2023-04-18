@@ -59,7 +59,7 @@ def append_testing_profiles(dev) -> None:
 
 def is_value_keep_increasing(metadata_value, number_frames_to_test=50) -> bool:
     """
-    Check that a given counter in metadata increases.
+    Check that a given counter in metadata increases
     :param metadata_value: that we need to check
     :param number_frames_to_test: amount frames that we want to test
     :return: true if the counter value keep increasing otherwise false
