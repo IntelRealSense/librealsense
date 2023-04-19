@@ -34,6 +34,14 @@ RAISE = 'raise'  # raise an exception
 LOG   = 'log'    # log it and continue
 
 
+class CheckFailed( Exception ):
+    """
+    This is the raised exception when RAISE is specified above
+    """
+    def __init__( self, message ):
+        super().__init__( message )
+
+
 # if --context flag was sent, the test is running under a specific context which could affect its run
 context = []
 if '--context' in sys.argv:
@@ -202,7 +210,7 @@ def check_passed():
     return True
 
 
-def check_failed( abort_if_failed = False ):
+def check_failed( on_fail=LOG ):
     """
     Function for when a check fails
     :return: always False (so you can 'return check_failed()'
@@ -212,8 +220,12 @@ def check_failed( abort_if_failed = False ):
     n_failed_assertions += 1
     test_failed = True
     print_info()
-    if abort_if_failed:
+    if on_fail == ABORT:
         abort()
+    if on_fail == RAISE:
+        raise CheckFailed( f'on_fail=RAISE' )
+    if on_fail != LOG:
+        log.e( f'Invalid \'on_fail\' argument \'{on_fail}\': should be {ABORT}, {RAISE}, or {LOG}' )
     return False
 
 
@@ -221,11 +233,11 @@ def abort():
     log.f( "Aborting" )
 
 
-def check( exp, description = None, abort_if_failed = False ):
+def check( exp, description=None, on_fail=LOG ):
     """
     Basic function for asserting expressions.
     :param exp: An expression to be asserted, if false the assertion failed
-    :param abort_if_failed: If True and assertion failed the test will be aborted
+    :param on_fail: How to behave on failure: see constants above
     :return: True if assertion passed, False otherwise
     """
     if not exp:
@@ -234,23 +246,23 @@ def check( exp, description = None, abort_if_failed = False ):
             log.out( f'        {description}' )
         else:
             log.out( f'        check failed; received {exp}' )
-        return check_failed( abort_if_failed )
+        return check_failed( on_fail )
     return check_passed()
 
 
-def check_false( exp, description = None, abort_if_failed = False ):
+def check_false( exp, description=None, on_fail=LOG ):
     """
     Opposite of check()
     """
-    return check( not exp, description, abort_if_failed )
+    return check( not exp, description, on_fail )
 
 
-def check_equal(result, expected, abort_if_failed = False):
+def check_equal( result, expected, on_fail=LOG ):
     """
     Used for asserting a variable has the expected value
     :param result: The actual value of a variable
     :param expected: The expected value of the variable
-    :param abort_if_failed:  If True and assertion failed the test will be aborted
+    :param on_fail: How to behave on failure; see constants above
     :return: True if assertion passed, False otherwise
     """
     if type(expected) == list:
@@ -259,51 +271,51 @@ def check_equal(result, expected, abort_if_failed = False):
         print_stack()
         log.out( "        left  type:", type(result) )
         log.out( "        right type:", type(expected) )
-        return check_failed( abort_if_failed )
+        return check_failed( on_fail )
     if result != expected:
         print_stack()
         log.out( "        left  :", result )
         log.out( "        right :", expected )
-        return check_failed( abort_if_failed )
+        return check_failed( on_fail )
     return check_passed()
 
 
-def check_between( result, min, max, abort_if_failed = False ):
+def check_between( result, min, max, on_fail=LOG ):
     """
     Used for asserting a variable is between two values
     :param result: The actual value of a variable
     :param min: The minimum expected value of the result
     :param max: The maximum expected value of the result
-    :param abort_if_failed:  If True and assertion failed the test will be aborted
+    :param on_fail: How to behave on failure; see constants above
     :return: True if assertion passed, False otherwise
     """
     if result < min  or  result > max:
         print_stack()
         log.out( "       result :", result )
         log.out( "      between :", min, '-', max )
-        return check_failed( abort_if_failed )
+        return check_failed( on_fail )
     return check_passed()
 
 
-def check_approx_abs( result, expected, abs_err, abort_if_failed = False ):
+def check_approx_abs( result, expected, abs_err, on_fail=LOG ):
     """
     Used for asserting a variable has the expected value, plus/minus 'abs_err'
     :param result: The actual value of a variable
     :param expected: The expected value of the result
     :param abs_err: How far away from expected we're allowed to get
-    :param abort_if_failed:  If True and assertion failed the test will be aborted
+    :param on_fail: How to behave on failure; see constants above
     :return: True if assertion passed, False otherwise
     """
-    return check_between( result, expected - abs_err, expected + abs_err, abort_if_failed )
+    return check_between( result, expected - abs_err, expected + abs_err, on_fail )
 
 
-def unreachable( abort_if_failed = False ):
+def unreachable( on_fail=LOG ):
     """
     Used to assert that a certain section of code (exp: an if block) is not reached
-    :param abort_if_failed: If True and this function is reached the test will be aborted
+    :param on_fail: How to behave; see constants above
     """
     print_stack()
-    check_failed( abort_if_failed )
+    check_failed( on_fail )
 
 
 def _unexpected_exception( type, e, tb ):
@@ -323,13 +335,13 @@ def unexpected_exception():
     return _unexpected_exception( type, e, tb )
 
 
-def check_equal_lists(result, expected, abort_if_failed = False):
+def check_equal_lists( result, expected, on_fail=LOG ):
     """
     Used to assert that 2 lists are identical. python "equality" (using ==) requires same length & elements
     but not necessarily same ordering. Here we require exactly the same, including ordering.
     :param result: The actual list
     :param expected: The expected list
-    :param abort_if_failed:  If True and assertion failed the test will be aborted
+    :param on_fail: How to behave on failure; see constants above
     :return: True if assertion passed, False otherwise
     """
     failed = False
@@ -348,17 +360,17 @@ def check_equal_lists(result, expected, abort_if_failed = False):
         print_stack()
         log.out( "        result list  :", result )
         log.out( "        expected list:", expected )
-        return check_failed( abort_if_failed )
+        return check_failed( on_fail )
     return check_passed()
 
 
-def check_float_lists(result, expected, epsilon=1e-6, abort_if_failed = False):
+def check_float_lists( result, expected, epsilon=1e-6, on_fail=LOG ):
     """
     Like check_equal_lists but checks that floats diff is less then epsilon, not exactly equal
     :param result: The actual list
     :param expected: The expected list
     :param epsilon:  allowed difference between appropriate elements in the lists.
-    :param abort_if_failed:  If True and assertion failed the test will be aborted
+    :param on_fail: How to behave on failure; see constants above
     :return: True if assertion passed, False otherwise
     """
     failed = False
@@ -377,17 +389,17 @@ def check_float_lists(result, expected, epsilon=1e-6, abort_if_failed = False):
         print_stack()
         log.out( "    result list  :", result )
         log.out( "    expected list:", expected )
-        return check_failed( abort_if_failed )
+        return check_failed( on_fail )
     return check_passed()
 
 
-def check_exception(exception, expected_type, expected_msg = None, abort_if_failed = False):
+def check_exception( exception, expected_type, expected_msg=None, on_fail=LOG ):
     """
     Used to assert a certain type of exception was raised, placed in the except block
     :param exception: The exception that was raised
     :param expected_type: The expected type of exception
     :param expected_msg: The expected message in the exception
-    :param abort_if_failed:  If True and assertion failed the test will be aborted
+    :param on_fail: How to behave on failure; see constants above
     :return: True if assertion passed, False otherwise
     """
     failed = False
@@ -401,12 +413,12 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
     if failed:
         print_stack()
         log.out( *failed )
-        return check_failed( abort_if_failed )
+        return check_failed( on_fail )
     log.d( 'expected exception:', exception )
     return check_passed()
 
 
-def check_throws( _lambda, expected_type, expected_msg = None, abort_if_failed = False ):
+def check_throws( _lambda, expected_type, expected_msg=None, on_fail=LOG ):
     """
     We expect the lambda, when called, to raise an exception!
     """
@@ -415,10 +427,10 @@ def check_throws( _lambda, expected_type, expected_msg = None, abort_if_failed =
     try:
         _lambda()
     except Exception as e:
-        return check_exception( e, expected_type, expected_msg, abort_if_failed )
+        return check_exception( e, expected_type, expected_msg, on_fail )
     print_stack()
     log.out( f'        expected {expected_type} but no exception was thrown' )
-    return check_failed( abort_if_failed )
+    return check_failed( on_fail )
 
 
 def check_frame_drops(frame, previous_frame_number, allowed_drops = 1, allow_frame_counter_reset = False):
@@ -547,6 +559,7 @@ def finish( on_fail=LOG ):
         if on_fail == ABORT:
             abort()
         if on_fail == RAISE:
+            # This is a test failure, not a check failure, so we don't use CheckFailed
             raise RuntimeError( f'test "{test_in_progress}" failed' )
     else:
         log.i("Test passed")
@@ -576,7 +589,8 @@ class closure:
     def __exit__( self, type, value, traceback ):
         if type is not None:
             # An exception was thrown
-            _unexpected_exception( type, value, traceback )
+            if type != CheckFailed:  # if CheckFailed, the relevant info was already supplied
+                _unexpected_exception( type, value, traceback )
         finish( on_fail=self._on_fail )
         # "If an exception is supplied, and the method wishes to suppress the exception (i.e.,
         # prevent it from being propagated), it should return a true value."
@@ -680,6 +694,9 @@ class remote:
     """
 
     class Error( RuntimeError ):
+        """
+        Raised when an exception is raised on the remote side, unexpectedly so not the same as CheckFailed
+        """
         def __init__( self, message ):
             super().__init__( message )
 
