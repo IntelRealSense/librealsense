@@ -469,7 +469,7 @@ def recovery():
     return { device.serial_number for device in _device_by_sn.values() if device.handle.is_update_device() }
 
 
-def enable_only( serial_numbers, recycle = False, timeout = 5 ):
+def enable_only( serial_numbers, recycle = False, timeout = 10 ):
     """
     Enable only the devices corresponding to the given serial-numbers. This can work either
     with or without Acroname: without, the devices will simply be HW-reset, but other devices

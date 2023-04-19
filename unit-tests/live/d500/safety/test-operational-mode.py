@@ -82,6 +82,10 @@ test.check_equal(safety_sensor.get_option(rs.option.safety_mode), SERVICE_MODE)
 # Verify that on SERVICE mode we get no frames
 test.check_throws( lambda: verify_frames_received(pipe, profile, 1) , RuntimeError )
 
+# Restore Run mode
+safety_sensor.set_option(rs.option.safety_mode, RUN_MODE) 
+test.check_equal(safety_sensor.get_option(rs.option.safety_mode), RUN_MODE)
+
 pipe.stop()
 test.finish()
 

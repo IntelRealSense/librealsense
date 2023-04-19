@@ -3,6 +3,7 @@
 
 # Currently, we exclude D457 as it's failing
 # test:device each(D400*) !D457
+# test:device each(D500*) 
 
 import pyrealsense2 as rs
 from rspy.stopwatch import Stopwatch
