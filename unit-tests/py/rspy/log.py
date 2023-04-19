@@ -66,10 +66,10 @@ if _have_color:
         if end:
             clear_to_eol = len(_progress) > 0  and  end[-1] == '\n'
             if clear_to_eol:
-                sys.stdout.write( s + clear_eol + end )
+                _write( s + clear_eol + end )
                 progress( *_progress )
             else:
-                sys.stdout.write( s + end )
+                _write( s + end )
         else:
             _write( s )
     def progress(*args):
@@ -84,9 +84,10 @@ else:
     red = yellow = gray = reset = cr = clear_eos = ''
     def out( *args, sep = ' ', end = '\n', line_prefix = None, color = None ):
         s = indent( sep.join( [str(s) for s in args] ), line_prefix )
-        _write( s )
         if end:
-            sys.stdout.write( end )
+            _write( s + end )
+        else:
+            _write( s )
     def progress(*args):
         if args:
             print( *args )

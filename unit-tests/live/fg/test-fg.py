@@ -4,7 +4,7 @@
 #test:device L500*
 
 import pyrealsense2 as rs
-from rspy import test,ac
+from rspy import test
 
 devices = test.find_devices_by_product_line_or_exit(rs.product_line.L500)
 depth_sensor = devices[0].first_depth_sensor()

@@ -806,6 +806,8 @@ class remote:
         """
         if not self._initialized_event.wait( timeout ):
             raise RuntimeError( f'{self._name} timeout' )
+        if not self.is_running():
+            raise RuntimeError( f'{self._name} exited with status {self._status}' )
 
     def run( self, command, on_ready=None, timeout=5, on_fail=RAISE ):
         """
@@ -863,11 +865,12 @@ class remote:
                 process.wait( timeout=0.2 )
                 self._status = process.returncode
                 log.d( self._name, 'exited with status', self._status )
+            except subprocess.TimeoutExpired:
+                log.d( self._name, 'process terminate timed out; no status' )
+            finally:
                 if self._initialized_event is not None:
                     # Unexpected, but known to happen (process terminated while we're waiting for it to be ready)
-                    raise RuntimeError( f'{self._name} exited with status {self._status}' )
-            except subprocess.TimeoutExpired:
-                log.d( self._name, 'process terminate timed out' )
+                    self._initialized_event.set()
 
     def stop( self ):
         """

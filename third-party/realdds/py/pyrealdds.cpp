@@ -847,7 +847,8 @@ PYBIND11_MODULE(NAME, m) {
         }
     };
 
-    py::class_< dds_metadata_syncer >( m, "metadata_syncer" )
+    py::class_< dds_metadata_syncer > metadata_syncer( m, "metadata_syncer" );
+    metadata_syncer  //
         .def( py::init<>() )
         .def( FN_FWD( dds_metadata_syncer,
                       on_frame_ready,
@@ -862,4 +863,6 @@ PYBIND11_MODULE(NAME, m) {
         .def( "enqueue_frame", &dds_metadata_syncer::enqueue_frame )
         .def( "enqueue_metadata", &dds_metadata_syncer::enqueue_metadata )
         .def( "clear", &dds_metadata_syncer::clear );
+    metadata_syncer.attr( "max_frame_queue_size" ) = dds_metadata_syncer::max_frame_queue_size;
+    metadata_syncer.attr( "max_md_queue_size" ) = dds_metadata_syncer::max_md_queue_size;
 }
