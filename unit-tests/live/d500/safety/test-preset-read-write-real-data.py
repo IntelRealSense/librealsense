@@ -39,9 +39,6 @@ def get_random_preset():
     p3 = rs.float2(random.uniform(-10, 10), random.uniform(-10, 10))
     p4 = rs.float2(random.uniform(-10, 10), random.uniform(-10, 10))
 
-    # zone boundary
-    zone_boundary = rs.float2(random.uniform(0, 10), random.uniform(0, 10))
-
     # MOS (minimum object size)
     mos = rs.float2(random.uniform(0, 10), random.uniform(0, 10))
 

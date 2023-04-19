@@ -8,12 +8,16 @@
 #include <iostream>
 #include <sstream>
 #include <cstring>
+#include <iomanip>
 
-inline std::string sc_reserved_arr_to_string(const uint8_t* data)
+inline std::string sc_reserved_arr_to_string(const uint8_t* data, size_t len)
 {
     std::stringstream ss;
-    for (auto i = 0; i < 16; i++)
-        ss << " [" << i << "] = " << data[i] << "\t";
+    for (auto i = 0; i < len; i++) {
+        std::stringstream hex_represntation;
+        hex_represntation << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(data[i]);
+        ss << " [" << i << "]=0x " << hex_represntation.str() << "\t";
+    }
     return ss.str();
 }
 
@@ -47,7 +51,7 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_zone const& sz)
     out << "\n\t\t" << "Minimum Object Size - Diameter: " << sz.minimum_object_size.x << " [mm]";
     out << "\n\t\t" << "Minimum Object Size - Length: " << sz.minimum_object_size.y << " [mm]";
     out << "\n\t\t" << "Minimum Object Size - Target Type: " << sc_mos_target_to_string(sz.mos_target_type);
-    out << "\n\t\t" << "Reserved[16]: " << sc_reserved_arr_to_string(sz.reserved);
+    out << "\n\t\t" << "Reserved[8]: " << sc_reserved_arr_to_string(sz.reserved, 8);
     return out;
 }
 
@@ -72,7 +76,7 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_environment const&
     out << "\n\t\t" << "Surface Inclination: " << se.surface_inclination << " [deg]";
     out << "\n\t\t" << "Surface Height: " << se.surface_height << " [m]";
     out << "\n\t\t" << "Surface Confidence: " << (int)(se.surface_confidence) << " [%]";
-    out << "\n\t\t" << "Reserved[15]: " << sc_reserved_arr_to_string(se.reserved);
+    out << "\n\t\t" << "Reserved[15]: " << sc_reserved_arr_to_string(se.reserved, 15);
     return out;
 }
 
@@ -93,14 +97,14 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_preset const& sp)
     out << "\n\t\t" << "Transformation Link:" << "\n" << sp.platform_config.transformation_link;
     out << "\n\t\t" << "Robot Height: " << sp.platform_config.robot_height << " [m]";
     out << "\n\t\t" << "Robot Mass: " << sp.platform_config.robot_mass << " [kg]";
-    out << "\n\t\t" << "Resereved[16]: " << sc_reserved_arr_to_string(sp.platform_config.reserved);
+    out << "\n\t\t" << "Resereved[16]: " << sc_reserved_arr_to_string(sp.platform_config.reserved, 16);
     out << "\n\t" << "Safety Zone #0 (Danger):" << "\n" << sp.safety_zones[0];
     out << "\n\t" << "Safety Zone #1 (Warning):" << "\n" << sp.safety_zones[1];
     for (int i = 0; i < 8; i++)
     {
         out << "\n\t" << "2D Masking Zone #" << i << ":" << "\n" << sp.masking_zones[i];
     }
-    out << "\n\t" << "Reserved[16]: " << sc_reserved_arr_to_string(sp.reserved);
+    out << "\n\t" << "Reserved[16]: " << sc_reserved_arr_to_string(sp.reserved, 16);
     out << "\n\t" << "Environment:" << "\n" << sp.environment;
     return out;
 }
