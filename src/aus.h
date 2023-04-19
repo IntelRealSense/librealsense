@@ -248,6 +248,8 @@ namespace librealsense
         std::vector<std::uint8_t>  get_data()
         {
             json j;
+            _jason_creation_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+            j["jason creation date and time"] = std::ctime(&_jason_creation_time);
             j["librealsense_version"] = _librealsense_version;
             j["os_name"] = _os_name;
             j["platform_name"] = _platform_name;
@@ -266,6 +268,7 @@ namespace librealsense
         std::mutex _m;
 
         long long _start_time;
+        long long _jason_creation_time;
 
         std::string _librealsense_version;
         std::string _os_name;
