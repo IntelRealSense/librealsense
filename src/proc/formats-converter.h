@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "proc/processing-blocks-factory.h"
-#include "core/streaming.h"
+#include "processing-blocks-factory.h"
+#include "../core/streaming.h"
 
 #include <vector>
 #include <unordered_set>
@@ -22,7 +22,7 @@ namespace librealsense
         void register_processing_block( const std::vector< processing_block_factory > & pbfs );
 
         stream_profiles get_all_possible_target_profiles( const stream_profiles & from_profiles );
-        stream_profiles formats_converter::get_source_of_profiles( stream_profiles target_profiles );
+        stream_profiles get_source_of_profiles( stream_profiles target_profiles );
         //std::vector< processing_block > get_converters( std::vector< stream_profile > ) const;
         void clear_cached_source_list();
 
