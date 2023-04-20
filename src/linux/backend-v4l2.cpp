@@ -565,7 +565,7 @@ namespace librealsense
                 static const std::regex video_dev_pattern("(\\/video\\d+)$");
 
                 std::string path = "/sys/class/video4linux/" + name;
-                std::string real_path{};
+                std::string real_path {""};
                 char buff[PATH_MAX] = {0};
                 if (realpath(path.c_str(), buff) != nullptr)
                 {
