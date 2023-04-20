@@ -1,3 +1,5 @@
+<a name="readme-top"></a>
+
 # Linux Ubuntu Installation
 
 <!-- TABLE OF CONTENTS -->
@@ -5,28 +7,31 @@
   <summary>Table of Contents</summary>
   <ol>
     <li>
-      <a href="#about-the-project">Ubuntu Build Dependencies</a>
+      <a href="#prerequisites">Prerequisites</a>
     </li>
     <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Dependencies</a></li>
-        <li><a href="#installation">Installation</a></li>
-        <li><a href="#installation">Building</a></li>
-      </ul>
+        <a href="#install-dependencies">Install Dependencies</a>
+    </li>
+    <li>
+        <a href="#install-librealsense2">Install librealsense2</a>
+    </li>
+    <li>
+        <a href="#building-librealsense2-sdk">Building librealsense2 SDK</a>
+    </li>
+    <li>
+        <a href="#troubleshooting-installation-and-patch-related-issues">Troubleshooting Installation and Patch-related Issues</a>
     </li>
   </ol>
 </details>
 
 **Note:** Due to the USB 3.0 translation layer between native hardware and virtual machine, the *librealsense* team does not support installation in a VM. <br/>
 If you do choose to try it, we recommend using VMware Workstation Player, and not Oracle VirtualBox for proper emulation of the USB3 controller.
-<br/><br/> Please ensure to work with the supported Kernel versions listed here and verify that the kernel is updated properly according to the instructions.
+<br/><br/> Please ensure to work with the supported Kernel versions listed [here](https://github.com/IntelRealSense/librealsense/releases/) and verify that the kernel is updated properly according to the instructions.
 
 ## Prerequisites
 
 **Note:** The scripts and commands below invoke `wget, git, add-apt-repository` which may be blocked by router settings or a firewall. <br/>
-Infrequently, apt-get mirrors or repositories may also timeout. For *librealsense* users behind an enterprise firewall, <br/>
+Infrequently, apt-get mirrors or repositories may also cause timeout. For _librealsense_ users behind an enterprise firewall, <br/>
 configuring the system-wide Ubuntu proxy generally resolves most timeout issues.
 
 **Important:** Running RealSense Depth Cameras on Linux requires patching and inserting modified kernel drivers. <br/>
@@ -49,54 +54,43 @@ Some OEM/Vendors choose to lock the kernel for modifications. Unlocking this cap
    ```
 4. Prepare Linux Backend and the Dev. Environment
    <br/>
-   Unplug any connected Intel RealSense camera.
-   <br/><br/>
-   **Distribution-specific packages:**
-   * Ubuntu 16.04 live-disk:
-      Navigate to _librealsense_ root directory to run the following script:
-      ```sh
-      ./scripts/install_glfw3.sh
-      ```
-   * Ubuntu 16:
-     ```sh
-     sudo apt-get install libglfw3-dev
-     ```
-   * Ubuntu 18/20/22:
-     ```sh
-     sudo apt-get install libglfw3-dev libgl1-mesa-dev libglu1-mesa-dev at
-     ```
+   Unplug any connected Intel RealSense camera and run:
+   <br/>
+   ```sh
+   sudo apt-get install libglfw3-dev libgl1-mesa-dev libglu1-mesa-dev at
+   ```
 5. Install IDE (Optional):
    <br/>
    We use [QtCreator](https://wiki.qt.io/Install_Qt_5_on_Ubuntu) as an IDE for Linux development on Ubuntu.
 
 ## Install librealsense2
 
-1. Clone/Download the latest stable version of _librealsense_ in one of the following ways:
-   * Clone the _librealsense_ repo
+1. Clone/Download the latest stable version of _librealsense2_ in one of the following ways:
+   * Clone the _librealsense2_ repo
      ```sh
      git clone https://github.com/IntelRealSense/librealsense.git
      ```
-   * Download and unzip the latest stable version from `master` branch<br/>
+   * Download and unzip the latest stable _librealsense2_ version from `master` branch <br/>
      [IntelRealSense.zip](https://github.com/IntelRealSense/librealsense/archive/master.zip)
 
    **Note**: <br/>
       * on graphic sub-system utilization: <br/>
       *glfw3*, *mesa* and *gtk* packages are required if you plan to build the SDK's OpenGL-enabled examples. <br/>
-       The *librealsense* core library and a range of demos/tools are designed for headless environment deployment.
+       The *librealsens2e* core library and a range of demos/tools are designed for headless environment deployment.
       * `libudev-dev` installation is optional but recommended, <br/>
         when the `libudev-dev` is installed the SDK will use an event-driven approach for triggering USB detection and enumeration, <br/>
         if not the SDK will use a timer polling approach which is less sensitive for device detection.
 
-2. Run Intel Realsense permissions script from _librealsense_ root directory:
+2. Run Intel Realsense permissions script from _librealsense2_ root directory:
    ```sh
    ./scripts/setup_udev_rules.sh
    ```
-   Notice: One can always remove permissions by running: `./scripts/setup_udev_rules.sh --uninstall`
+   Notice: You can always remove permissions by running: `./scripts/setup_udev_rules.sh --uninstall`
 
 3. Build and apply patched kernel modules for:
    * Ubuntu with Kernel 4.16 <br/>
      `./scripts/patch-ubuntu-kernel-4.16.sh`
-   * Ubuntu 16/18/20 with LTS kernel (< 5.13) <br/>
+   * Ubuntu 18/20 with LTS kernel (< 5.13) <br/>
      `./scripts/patch-realsense-ubuntu-lts.sh`
    * Ubuntu 20/22 (focal/jammy) with LTS kernel 5.13, 5.15 <br/>
      `./scripts/patch-realsense-ubuntu-lts-hwe.sh`
@@ -124,7 +118,7 @@ Some OEM/Vendors choose to lock the kernel for modifications. Unlocking this cap
    >  Check the patched modules installation by examining the generated log as well as inspecting the latest entries in kernel log:<br />
        `sudo dmesg | tail -n 50`<br />
        The log should indicate that a new _uvcvideo_ driver has been registered.  
-       Refer to [Troubleshooting](#Troubleshooting) in case of errors/warning reports.2
+       Refer to [Troubleshooting](#troubleshooting-installation-and-patch-related-issues) in case of errors/warning reports.2
    
 ## Building librealsense2 SDK
 
@@ -153,19 +147,24 @@ Some OEM/Vendors choose to lock the kernel for modifications. Unlocking this cap
     sudo make uninstall && make clean && make && sudo make -j$(($(nproc)-1)) install
     ```
     <br/>
-    The shared object will be installed in `/usr/local/lib`, header files in `/usr/local/include`.<br />
-    The binary demos, tutorials and test files will be copied into `/usr/local/bin`<br />
 
-    This enhancement may significantly improve the build time. The side-effect, however, is that it may cause a low-end platform to hang randomly.<br />
-    **Note:** Linux build configuration is presently configured to use the V4L2 backend by default.<br />
-    **Note:** If you encounter the following error during compilation `gcc: internal compiler error` it might indicate that you do not have enough memory or swap space on your machine. Try closing memory consuming applications, and if you are running inside a VM, increase available RAM to at least 2 GB.<br />
+    **FYI:** The shared object will be installed in `/usr/local/lib`, header files in `/usr/local/include`. <br/>
+    The binary demos, tutorials and test files will be copied into `/usr/local/bin` <br/><br/>
+
+    This enhancement may significantly improve the build time. The side effect, however, is that it may cause a low-end platform to hang randomly. <br/>
+    **Note:** Linux build configuration is presently configured to use the V4L2 backend by default. <br/><br/>
+    **Note:** If you encounter the following error during compilation `gcc: internal compiler error` <br/>
+    it might indicate that you do not have enough memory or swap space on your machine. <br/>
+    Try closing memory consuming applications, and if you are running inside a VM, increase available RAM to at least 2 GB. <br/><br/>
     **Note:** You can find more information about the available configuration options on [this wiki page](https://github.com/IntelRealSense/librealsense/wiki/Build-Configuration).
 
-## <a name="Troubleshooting"></a>Troubleshooting Installation and Patch-related Issues
+## Troubleshooting Installation and Patch-related Issues
 
-Error    |      Cause   | Correction Steps |
--------- | ------------ | ---------------- |
-`git.launchpad... access timeout` | Behind Firewall | Configure Proxy Server |
-`dmesg:... uvcvideo: module verification failed: signature and/or required key missing - tainting kernel` | A standard warning issued since Kernel 4.4-30+ | Notification only - does not affect module's functionality |
-`sudo modprobe uvcvideo` produces `dmesg: uvc kernel module is not loaded` | The patched module kernel version is incompatible with the resident kernel | Verify the actual kernel version with `uname -r`.<br />Revert and proceed from [Make Ubuntu Up-to-date](#make-ubuntu-up-to-date) step |
-Execution of `./scripts/patch-video-formats-ubuntu-xenial.sh`  fails with `fatal error: openssl/opensslv.h` | Missing Dependency | Install *openssl* package from [Video4Linux backend preparation](#video4linux-backend-preparation) step |
+| Error                                                                                                      | Cause                                                                      | Correction Steps                                                                                                                    |
+|------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| `git.launchpad... access timeout`                                                                          | Behind Firewall                                                            | Configure Proxy Server                                                                                                              |
+| `dmesg:... uvcvideo: module verification failed: signature and/or required key missing - tainting kernel`  | A standard warning issued since Kernel 4.4-30+                             | Notification only - does not affect module's functionality                                                                          |
+| `sudo modprobe uvcvideo` produces `dmesg: uvc kernel module is not loaded`                                 | The patched module kernel version is incompatible with the resident kernel | Verify the actual kernel version with `uname -r`.<br />Revert and proceed from [Make Ubuntu Up-to-date](#install-dependencies) step |
+| Execution of `./scripts/patch-video-formats-ubuntu-xenial.sh` fails with `fatal error: openssl/opensslv.h` | Missing Dependency                                                         | Install _openssl_ package                                                                                                           |
+
+  <p align="right">(<a href="#readme-top">back to top</a>)</p>
