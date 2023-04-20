@@ -78,7 +78,8 @@ for requested_fps in tested_fps:
     ds = dev.first_depth_sensor()
     # Set auto-exposure option as it might take precedence over requested FPS
     if product_line == "D400":
-        ds.set_option(rs.option.enable_auto_exposure, 1)
+        if ds.supports(rs.option.enable_auto_exposure):
+            ds.set_option(rs.option.enable_auto_exposure, 1)
 
     try:
         dp = next(p for p in ds.profiles
@@ -102,8 +103,10 @@ for requested_fps in tested_fps:
     cs = dev.first_color_sensor()
     # Set auto-exposure option as it might take precedence over requested FPS
     if product_line == "D400":
-        cs.set_option(rs.option.enable_auto_exposure, 1)
-        cs.set_option(rs.option.auto_exposure_priority, 0) # AE priority should be 0 for constant FPS
+        if cs.supports(rs.option.enable_auto_exposure):
+            cs.set_option(rs.option.enable_auto_exposure, 1)
+        if cs.supports(rs.option.auto_exposure_priority):
+            cs.set_option(rs.option.auto_exposure_priority, 0) # AE priority should be 0 for constant FPS
     elif product_line == "L500":
         cs.set_option(rs.option.enable_auto_exposure, 0)
 
