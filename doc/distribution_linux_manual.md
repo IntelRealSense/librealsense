@@ -151,7 +151,6 @@ Some OEM/Vendors choose to lock the kernel for modifications. Unlocking this cap
     **FYI:** The shared object will be installed in `/usr/local/lib`, header files in `/usr/local/include`. <br/>
     The binary demos, tutorials and test files will be copied into `/usr/local/bin` <br/><br/>
 
-    This enhancement may significantly improve the build time. The side effect, however, is that it may cause a low-end platform to hang randomly. <br/>
     **Note:** Linux build configuration is presently configured to use the V4L2 backend by default. <br/><br/>
     **Note:** If you encounter the following error during compilation `gcc: internal compiler error` <br/>
     it might indicate that you do not have enough memory or swap space on your machine. <br/>
