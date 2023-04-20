@@ -1329,33 +1329,6 @@ void log_callback_end( uint32_t fps,
         });
     }
 
-    std::shared_ptr<stream_profile_interface> synthetic_sensor::clone_profile(const std::shared_ptr<stream_profile_interface>& profile)
-    {
-        auto cloned = std::make_shared<stream_profile_base>(platform::stream_profile{});
-        if (!cloned)
-            throw librealsense::invalid_value_exception("null pointer passed for argument \"cloned\".");
-
-        if (auto vsp = std::dynamic_pointer_cast<video_stream_profile>(profile))
-        {
-            cloned = std::make_shared<video_stream_profile>(platform::stream_profile{});
-            std::dynamic_pointer_cast<video_stream_profile>(cloned)->set_dims(vsp->get_width(), vsp->get_height());
-        }
-
-        if (auto msp = std::dynamic_pointer_cast<motion_stream_profile>(profile))
-        {
-            cloned = std::make_shared<motion_stream_profile>(platform::stream_profile{});
-        }
-
-        register_profile(cloned);
-        cloned->set_unique_id(profile->get_unique_id());
-        cloned->set_format(profile->get_format());
-        cloned->set_stream_index(profile->get_stream_index());
-        cloned->set_stream_type(profile->get_stream_type());
-        cloned->set_framerate(profile->get_framerate());
-
-        return cloned;
-    }
-
     void synthetic_sensor::register_processing_block_options(const processing_block & pb)
     {
         // Register the missing processing block's options to the sensor
@@ -1390,222 +1363,26 @@ void log_callback_end( uint32_t fps,
         }
     }
 
-    bool synthetic_sensor::is_duplicated_profile(const std::shared_ptr<stream_profile_interface>& duplicate, const stream_profiles& profiles)
-    {
-        // Check if the given profile (duplicate parameter) is already found in profiles list.
-        const auto&& is_duplicate_predicate = [&duplicate](const std::shared_ptr<stream_profile_interface>& spi) {
-            return to_profile(spi.get()) == to_profile(duplicate.get());
-        };
-
-        return std::any_of(begin(profiles), end(profiles), is_duplicate_predicate);
-    }
-
     stream_profiles synthetic_sensor::init_stream_profiles()
     {
-        stream_profiles result_profiles;
-        auto profiles = _raw_sensor->get_stream_profiles( PROFILE_TAG_ANY | PROFILE_TAG_DEBUG );
+        stream_profiles from_profiles = _raw_sensor->get_stream_profiles( PROFILE_TAG_ANY | PROFILE_TAG_DEBUG );
+        stream_profiles result_profiles = _formats_converter.get_all_possible_target_profiles( from_profiles );
 
-        for (auto&& pbf : _pb_factories)
-        {
-            const auto&& sources = pbf->get_source_info();
-            const auto&& targets = pbf->get_target_info();
+        _owner->tag_profiles( result_profiles );
+        sort_profiles( &result_profiles );
 
-            for (auto&& source : sources)
-            {
-                // add profiles that are supported by the device
-                for (auto& profile : profiles)
-                {
-                    if (profile->get_format() == source.format &&
-                        (source.stream == profile->get_stream_type() || source.stream == RS2_STREAM_ANY))
-                    {
-                        for (auto target : targets)
-                        {
-                            target.fps = profile->get_framerate();
-
-                            auto&& cloned_profile = clone_profile(profile);
-                            cloned_profile->set_format(target.format);
-                            cloned_profile->set_stream_index(target.index);
-                            cloned_profile->set_stream_type(target.stream);
-
-                            auto&& cloned_vsp = As<video_stream_profile, stream_profile_interface>(cloned_profile);
-                            if (cloned_vsp)
-                            {
-                                const auto&& res = target.stream_resolution({ cloned_vsp->get_width(), cloned_vsp->get_height() });
-                                target.height = res.height;
-                                target.width = res.width;
-                                cloned_vsp->set_dims(target.width, target.height);
-                            }
-
-                            // Add the cloned profile to the supported profiles by this processing block factory,
-                            // for later processing validation in resolving the request.
-                            _pbf_supported_profiles[pbf.get()].push_back(cloned_profile);
-
-                            // cache the source to target mapping
-                            _source_to_target_profiles_map[profile].push_back(cloned_profile);
-                            // cache each target profile to its source profiles which were generated from.
-                            _target_to_source_profiles_map[target].push_back(profile);
-
-                            // disregard duplicated from profiles list
-                            if (is_duplicated_profile(cloned_profile, result_profiles))
-                                continue;
-
-                            // Only injective cloning in many to one mapping.
-                            // One to many is not affected.
-                            if (sources.size() > 1 && target.format != source.format)
-                                continue;
-
-                            result_profiles.push_back(cloned_profile);
-                        }
-                    }
-                }
-            }
-        }
-
-        _owner->tag_profiles(result_profiles);
-        sort_profiles(&result_profiles);
         return result_profiles;
-    }
-
-    std::pair<std::shared_ptr<processing_block_factory>, stream_profiles> synthetic_sensor::find_requests_best_pb_match(const stream_profiles& requests)
-    {
-        // Find and retrieve best fitting processing block to the given requests, and the requests which were the best fit.
-
-        // For video stream, the best fitting processing block is defined as the processing block which its sources
-        // covers the maximum amount of requests.
-
-        stream_profiles best_match_requests;
-        std::shared_ptr<processing_block_factory> best_match_processing_block_factory;
-
-        int max_satisfied_req = 0;
-        int best_source_size = 0;
-        int satisfied_count = 0;
-
-        for (auto&& pbf : _pb_factories)
-        {
-            auto satisfied_req = pbf->find_satisfied_requests(requests, _pbf_supported_profiles[pbf.get()]);
-            satisfied_count = (int)satisfied_req.size();
-            if (satisfied_count > max_satisfied_req
-                || (satisfied_count == max_satisfied_req
-                    && pbf->get_source_info().size() < best_source_size))
-            {
-                max_satisfied_req = satisfied_count;
-                best_source_size = (int)pbf->get_source_info().size();
-                best_match_processing_block_factory = pbf;
-                best_match_requests = satisfied_req;
-            }
-        }
-
-        return { best_match_processing_block_factory, best_match_requests };
-    }
-
-    void synthetic_sensor::add_source_profile_missing_data(std::shared_ptr<stream_profile_interface>& target)
-    {
-        // Add the missing data to the desired source profile.
-        // This is needed because we duplicate the source profile into multiple target profiles in the init_stream_profiles() method.
-
-        // Update the source profile's fields with the correlated target profile.
-        // This profile will be propagated to the generated frame received from the backend sensor.
-
-        auto source_profile_ = _target_to_source_profiles_map[to_profile(target.get())];
-        auto source_profile = source_profile_[0];
-        source_profile->set_stream_index(target->get_stream_index());
-        source_profile->set_unique_id(target->get_unique_id());
-        source_profile->set_stream_type(target->get_stream_type());
-        auto&& vsp = As<video_stream_profile, stream_profile_interface>(source_profile);
-        const auto&& cvsp = As<video_stream_profile, stream_profile_interface>(target);
-        if (vsp)
-        {
-            vsp->set_intrinsics([cvsp]() {
-
-                if (cvsp)
-                    return cvsp->get_intrinsics();
-                else
-                    return rs2_intrinsics{};
-            });
-
-            vsp->set_dims(cvsp->get_width(), cvsp->get_height());
-        }
-    }
-
-    void synthetic_sensor::add_source_profiles_missing_data()
-    {
-        // Add missing data to all of the source profiles.
-        // init_stream_profiles() cloned the source profiles and converted them into target profiles.
-        // we must pass the missing data from the target profiles to the source profiles.
-        for (auto&& entry : _target_to_source_profiles_map)
-        {
-            for (auto&& source : entry.second)
-                add_source_profile_missing_data(source);
-        }
-    }
-
-    stream_profiles synthetic_sensor::resolve_requests(const stream_profiles& requests)
-    {
-        // Convert the requests into profiles which are supported by the sensor.
-
-        std::unordered_set<std::shared_ptr<stream_profile_interface>> resolved_req_set;
-        stream_profiles resolved_req;
-        stream_profiles unhandled_reqs(requests);
-
-        // cache the requests
-        for (auto&& req : requests)
-        {
-            _cached_requests[req->get_format()].push_back(req);
-        }
-
-        // while not finished handling all of the requests do
-        while (!unhandled_reqs.empty())
-        {
-            // find the best fitting processing block - the one which resolves the most requests.
-            const auto&& best_match = find_requests_best_pb_match(unhandled_reqs);
-            auto&& best_pbf = best_match.first;
-            auto&& best_reqs = best_match.second;
-
-            // mark as handled resolved requests
-            for (auto&& req : best_reqs)
-            {
-                const auto&& matching_req_predicate = [&req](const std::shared_ptr<stream_profile_interface>& sp) {
-                    return to_profile(req.get()) == to_profile(sp.get());
-                };
-                unhandled_reqs.erase(std::remove_if(begin(unhandled_reqs), end(unhandled_reqs), matching_req_predicate));
-            }
-
-            // Retrieve source profile from cached map and generate the relevant processing block.
-            std::unordered_set<std::shared_ptr<stream_profile_interface>> current_resolved_reqs;
-            auto best_pb = best_pbf->generate();
-            register_processing_block_options(*best_pb);
-            for (auto&& req : best_reqs)
-            {
-                auto&& target = to_profile(req.get());
-                auto&& mapped_source_profiles = _target_to_source_profiles_map[target];
-
-                for (auto&& source_profile : mapped_source_profiles)
-                {
-                    if (best_pbf->has_source(source_profile))
-                    {
-                        resolved_req_set.insert(source_profile);
-                        current_resolved_reqs.insert(source_profile);
-
-                        _profiles_to_processing_block[source_profile].insert(best_pb);
-                    }
-                }
-            }
-            const stream_profiles&& print_current_resolved_reqs = { current_resolved_reqs.begin(), current_resolved_reqs.end() };
-            LOG_INFO("Request: " << best_reqs << "\nResolved to: " << print_current_resolved_reqs);
-        }
-        resolved_req = { resolved_req_set.begin(), resolved_req_set.end() };
-        return resolved_req;
     }
 
     void synthetic_sensor::open(const stream_profiles& requests)
     {
         std::lock_guard<std::mutex> lock(_synthetic_configure_lock);
 
-        for (auto source : requests)
-            add_source_profile_missing_data(source);
+        //for (auto source : requests)
+        //    add_source_profile_missing_data(source);
 
-        const auto&& resolved_req = resolve_requests(requests);
-
+        const auto&& resolved_req = _formats_converter.get_source_of_profiles( requests );
+        //TODO - need to register converters options as sensor options?
         _raw_sensor->set_source_owner(this);
         try
         {
@@ -1631,13 +1408,13 @@ void log_callback_end( uint32_t fps,
     {
         std::lock_guard<std::mutex> lock(_synthetic_configure_lock);
         _raw_sensor->close();
-        for (auto&& entry : _profiles_to_processing_block)
-        {
-            for (auto&& pb : entry.second)
-                unregister_processing_block_options(*pb);
-        }
-        _profiles_to_processing_block.erase(begin(_profiles_to_processing_block), end(_profiles_to_processing_block));
-        _cached_requests.erase(_cached_requests.begin(), _cached_requests.end());
+        //for (auto&& entry : _profiles_to_processing_block)
+        //{
+        //    for (auto&& pb : entry.second)
+        //        unregister_processing_block_options(*pb);
+        //}
+        _formats_converter.set_frames_callback( nullptr );
+        _formats_converter.clear_cached_source_list();
         set_active_streams({});
         _post_process_callback.reset();
     }
@@ -1651,21 +1428,6 @@ void log_callback_end( uint32_t fps,
         };
     }
 
-    std::shared_ptr<stream_profile_interface> synthetic_sensor::filter_frame_by_requests(const frame_interface* f)
-    {
-        const auto&& cached_req = _cached_requests.find(f->get_stream()->get_format());
-        if (cached_req == _cached_requests.end())
-            return nullptr;
-
-        auto&& reqs = cached_req->second;
-        auto&& req_it = std::find_if(begin(reqs), end(reqs), [&f](const std::shared_ptr<stream_profile_interface>& req) {
-            return (req->get_stream_index() == f->get_stream()->get_stream_index() &&
-                req->get_stream_type() == f->get_stream()->get_stream_type());
-        });
-
-        return req_it != end(reqs) ? *req_it : nullptr;
-    }
-
     void synthetic_sensor::start(frame_callback_ptr callback)
     {
         std::lock_guard<std::mutex> lock(_synthetic_configure_lock);
@@ -1673,63 +1435,12 @@ void log_callback_end( uint32_t fps,
         // Set the post-processing callback as the user callback.
         // This callback might be modified by other object.
         set_frames_callback(callback);
+        _formats_converter.set_frames_callback( callback );
 
-        // After processing callback
-        const auto&& output_cb = make_callback([&](frame_holder f) {
-            std::vector<frame_interface*> processed_frames;
-            processed_frames.push_back(f.frame);
-
-            auto&& composite = dynamic_cast<composite_frame*>(f.frame);
-            if (composite)
-            {
-                for (auto i = 0; i < composite->get_embedded_frames_count(); i++)
-                {
-                    processed_frames.push_back( composite->get_frame( (int)i ) );
-                }
-            }
-
-            // process only frames which aren't composite.
-            for (auto&& fr : processed_frames)
-            {
-                if (!dynamic_cast<composite_frame*>(fr))
-                {
-                    auto&& cached_profile = filter_frame_by_requests(fr);
-
-                    if (cached_profile)
-                    {
-                        fr->set_stream(cached_profile);
-                    }
-                    else
-                        continue;
-
-                    fr->acquire();
-                    _post_process_callback->on_frame((rs2_frame*)fr);
-                }
-            }
-        });
-
-        // Set callbacks for all of the relevant processing blocks
-        for (auto&& pb_entry : _profiles_to_processing_block)
-        {
-            auto&& pbs = pb_entry.second;
-            for (auto&& pb : pbs)
-                if (pb)
-                {
-                    pb->set_output_callback(output_cb);
-                }
-        }
 
         // Invoke processing blocks callback
         const auto&& process_cb = make_callback([&, this](frame_holder f) {
-            if (!f)
-                return;
-
-            auto&& pbs = _profiles_to_processing_block[f->get_stream()];
-            for (auto&& pb : pbs)
-            {
-                f->acquire();
-                pb->invoke(f.frame);
-            }
+            _formats_converter.convert_frame( f );
         });
 
         // Call the processing block on the frame
@@ -1748,22 +1459,21 @@ void log_callback_end( uint32_t fps,
         return 0.0f;
     }
 
-    void synthetic_sensor::register_processing_block(const std::vector<stream_profile>& from,
-        const std::vector<stream_profile>& to,
-        std::function<std::shared_ptr<processing_block>(void)> generate_func)
+    void synthetic_sensor::register_processing_block(const std::vector< stream_profile > & from,
+                                                     const std::vector< stream_profile > & to,
+                                                     std::function< std::shared_ptr< processing_block >( void ) > generate_func )
     {
-        _pb_factories.push_back(std::make_shared<processing_block_factory>(from, to, generate_func));
+        _formats_converter.register_processing_block( from, to, generate_func );
     }
 
-    void synthetic_sensor::register_processing_block(const processing_block_factory& pbf)
+    void synthetic_sensor::register_processing_block( const processing_block_factory & pbf )
     {
-        _pb_factories.push_back(std::make_shared<processing_block_factory>(pbf));
+        _formats_converter.register_processing_block( pbf );
     }
 
-    void synthetic_sensor::register_processing_block(const std::vector<processing_block_factory>& pbfs)
+    void synthetic_sensor::register_processing_block( const std::vector< processing_block_factory > & pbfs )
     {
-        for (auto&& pbf : pbfs)
-            register_processing_block(pbf);
+        _formats_converter.register_processing_block( pbfs );
     }
 
     frame_callback_ptr synthetic_sensor::get_frames_callback() const
