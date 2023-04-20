@@ -9,8 +9,8 @@ This document describes how to use the Intel RealSense D400 cameras on Raspberry
 ## Installation Instructions
 1. Install [Ubuntu MATE](https://ubuntu-mate.org/) on your [Raspberry PI 3](https://www.raspberrypi.org/products/raspberry-pi-3-model-b/).
 
-2. Clone and compile the latest [Intel&reg; RealSense&trade; SDK 2.0](https://github.com/IntelRealSense/librealsense/releases/latest) by following the instructions under [Linux Installation](https://github.com/IntelRealSense/librealsense/blob/development/doc/distribution_linux_manual.md).
-In the section [Prerequisites](https://github.com/IntelRealSense/librealsense/blob/development/doc/distribution_linux_manual.md##prerequisites), proceed with the steps till (not including) the kernel patches instructions.
+2. Clone and compile the latest [Intel&reg; RealSense&trade; SDK 2.0](https://github.com/IntelRealSense/librealsense/releases/latest) by following the instructions under [Linux Installation](https://github.com/IntelRealSense/librealsense/blob/development/doc/installation_linux_manual.md).
+In the section [Prerequisites](https://github.com/IntelRealSense/librealsense/blob/development/doc/installation_linux_manual.md##prerequisites), proceed with the steps till (not including) the kernel patches instructions.
 
 > **Note**: In some cases the RAM capacity is not sufficient to compile the SDK, so if the compilation process crashes or exits with an error-code try to create a [swap file](https://www.howtoforge.com/ubuntu-swap-file) and then recompile the SDK.
 

@@ -124,7 +124,7 @@ The method has not yet been verified on the **Jetson Nano** board.
 * **Build librealsense2 SDK**  
   
   * Navigate to the SDK's root directory.  
-  * Follow the [Ubuntu installation guide](./distribution_linux_manual.md) to install the missing components and configuration items:
+  * Follow the [Ubuntu installation guide](./installation_linux_manual.md) to install the missing components and configuration items:
 
     ```sh
     sudo apt-get install git libssl-dev libusb-1.0-0-dev libudev-dev pkg-config libgtk-3-dev -y

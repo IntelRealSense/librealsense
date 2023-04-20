@@ -1,6 +1,6 @@
 # LibUVC-backend installation
 
-> If kernel patching is not possible, or any steps during official [distribution_linux_manual.md](./distribution_linux_manual.md) fail,
+> If kernel patching is not possible, or any steps during official [installation_linux_manual.md](./installation_linux_manual.md) fail,
 > you should try **libuvc-backend** version of librealsense
 > This method is not officially validated but can run on wider range of platforms including older / newer kernel version
 
