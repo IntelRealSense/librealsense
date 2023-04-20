@@ -707,7 +707,7 @@ namespace librealsense
             {
                 for (auto opt : _hw_options)
                 {
-                    bool success;
+                    bool success = true;
                     defaults[opt.first] = opt.second->query_new_fw_default(success);
 
                     if (!success)
