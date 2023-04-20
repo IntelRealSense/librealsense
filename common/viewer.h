@@ -113,7 +113,7 @@ namespace rs2
         void update_3d_camera(ux_window& win, const rect& viewer_rect, bool force = false);
 
         // Check if we should render the current frame (sometimes we have information only frames and the frame data itself has no visual affect)
-        const bool should_render_frame(const rs2::stream_model& model);
+        bool should_render_frame(const rs2::stream_model& model) const;
 
         void show_top_bar(ux_window& window, const rect& viewer_rect, const device_models_list& devices);
 
