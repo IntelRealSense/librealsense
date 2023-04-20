@@ -150,8 +150,8 @@ stream_profiles formats_converter::get_source_of_profiles( stream_profiles targe
             source_profile->set_stream_index( target_profile->get_stream_index() );
             source_profile->set_unique_id( target_profile->get_unique_id() );
             source_profile->set_stream_type( target_profile->get_stream_type() );
-            auto & source_video_profile = As<video_stream_profile, stream_profile_interface>( source_profile );
-            const auto & target_video_profile = As<video_stream_profile, stream_profile_interface>( target_profile );
+            auto source_video_profile = As<video_stream_profile, stream_profile_interface>( source_profile );
+            const auto target_video_profile = As<video_stream_profile, stream_profile_interface>( target_profile );
             if( source_video_profile )
             {
                 source_video_profile->set_intrinsics( [target_video_profile]() {
@@ -338,7 +338,7 @@ std::shared_ptr<stream_profile_interface> formats_converter::filter_frame_by_req
         return nullptr;
 
     auto & reqs = cached_req->second;
-    auto & req_it = std::find_if( begin( reqs ), end( reqs ), [&f]( const std::shared_ptr<stream_profile_interface> & req ) {
+    auto req_it = std::find_if( begin( reqs ), end( reqs ), [&f]( const std::shared_ptr<stream_profile_interface> & req ) {
         return ( req->get_stream_index() == f->get_stream()->get_stream_index() &&
                  req->get_stream_type() == f->get_stream()->get_stream_type() );
         } );
