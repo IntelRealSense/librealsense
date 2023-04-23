@@ -4,7 +4,7 @@
 #pragma once
 
 
-#include "flexible-msg.h"
+#include <realdds/topics/flexible-msg.h>
 
 #include <nlohmann/json_fwd.hpp>
 

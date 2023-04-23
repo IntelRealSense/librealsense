@@ -29,8 +29,8 @@
 #include "software-device.h"
 #include <librealsense2/h/rs_internal.h>
 #include <realdds/topics/device-info-msg.h>
-#include <realdds/topics/image/image-msg.h>
-#include <realdds/topics/flexible/flexible-msg.h>
+#include <realdds/topics/image-msg.h>
+#include <realdds/topics/flexible-msg.h>
 #include <rsutils/shared-ptr-singleton.h>
 #include <rsutils/os/executable-name.h>
 #include <rsutils/deferred.h>

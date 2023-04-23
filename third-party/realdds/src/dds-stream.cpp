@@ -6,8 +6,8 @@
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-reader-thread.h>
 #include <realdds/dds-subscriber.h>
-#include <realdds/topics/image/image-msg.h>
-#include <realdds/topics/flexible/flexible-msg.h>
+#include <realdds/topics/image-msg.h>
+#include <realdds/topics/flexible-msg.h>
 #include <realdds/dds-exceptions.h>
 
 #include <rsutils/json.h>

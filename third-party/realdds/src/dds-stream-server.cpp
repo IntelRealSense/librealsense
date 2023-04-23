@@ -8,8 +8,8 @@
 #include <realdds/dds-participant.h>
 #include <realdds/dds-publisher.h>
 #include <realdds/dds-utilities.h>
-#include <realdds/topics/image/image-msg.h>
-#include <realdds/topics/flexible/flexible-msg.h>
+#include <realdds/topics/image-msg.h>
+#include <realdds/topics/flexible-msg.h>
 #include <realdds/topics/ros2/ros2imagePubSubTypes.h>
 #include <realdds/dds-time.h>
 

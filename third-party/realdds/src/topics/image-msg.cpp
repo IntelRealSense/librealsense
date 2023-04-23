@@ -2,7 +2,7 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include <realdds/topics/ros2/ros2image.h>
-#include <realdds/topics/image/image-msg.h>
+#include <realdds/topics/image-msg.h>
 #include <realdds/topics/ros2/ros2imagePubSubTypes.h>
 
 #include <realdds/dds-topic.h>

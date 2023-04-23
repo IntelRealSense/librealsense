@@ -8,7 +8,7 @@
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-guid.h>
 #include <realdds/topics/dds-topic-names.h>
-#include <realdds/topics/flexible/flexible-msg.h>
+#include <realdds/topics/flexible-msg.h>
 #include <realdds/topics/device-info-msg.h>
 
 #include <rsutils/json.h>

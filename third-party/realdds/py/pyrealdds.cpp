@@ -3,9 +3,9 @@
 
 #include <realdds/dds-defines.h>
 #include <realdds/dds-participant.h>
-#include <realdds/topics/flexible/flexible-msg.h>
+#include <realdds/topics/flexible-msg.h>
 #include <realdds/topics/flexible/flexiblePubSubTypes.h>
-#include <realdds/topics/image/image-msg.h>
+#include <realdds/topics/image-msg.h>
 #include <realdds/topics/ros2/ros2imagePubSubTypes.h>
 #include <realdds/topics/dds-topic-names.h>
 #include <realdds/dds-device-broadcaster.h>

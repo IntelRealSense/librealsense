@@ -9,7 +9,7 @@
 #include <realdds/dds-topic.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/topics/dds-topic-names.h>
-#include <realdds/topics/flexible/flexible-msg.h>
+#include <realdds/topics/flexible-msg.h>
 
 #include <fastdds/dds/publisher/DataWriter.hpp>
 #include <fastdds/dds/core/condition/WaitSet.hpp>

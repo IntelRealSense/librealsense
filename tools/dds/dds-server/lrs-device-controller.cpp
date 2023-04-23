@@ -8,7 +8,7 @@
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/json.h>
 
-#include <realdds/topics/flexible/flexible-msg.h>
+#include <realdds/topics/flexible-msg.h>
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
 
