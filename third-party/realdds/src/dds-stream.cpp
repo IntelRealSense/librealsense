@@ -32,7 +32,7 @@ void dds_video_stream::open( std::string const & topic_name, std::shared_ptr< dd
         DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
 
     // Topics with same name and type can be created multiple times (multiple open() calls) without an error.
-    auto topic = topics::device::image_msg::create_topic( subscriber->get_participant(), topic_name.c_str() );
+    auto topic = topics::image_msg::create_topic( subscriber->get_participant(), topic_name.c_str() );
 
     // To support automatic streaming (without the need to handle start/stop-streaming commands) the reader is created
     // here and destroyed on close()
@@ -50,7 +50,7 @@ void dds_motion_stream::open( std::string const & topic_name, std::shared_ptr< d
         DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
 
     // Topics with same name and type can be created multiple times (multiple open() calls) without an error.
-    auto topic = topics::device::image_msg::create_topic( subscriber->get_participant(), topic_name.c_str() );
+    auto topic = topics::image_msg::create_topic( subscriber->get_participant(), topic_name.c_str() );
 
     // To support automatic streaming (without the need to handle start/stop-streaming commands) the reader is created
     // here and destroyed on close()
@@ -81,9 +81,9 @@ void dds_stream::start_streaming()
 
 void dds_video_stream::handle_data()
 {
-    topics::device::image_msg frame;
+    topics::image_msg frame;
     eprosima::fastdds::dds::SampleInfo info;
-    while( _reader && topics::device::image_msg::take_next( *_reader, &frame, &info ) )
+    while( _reader && topics::image_msg::take_next( *_reader, &frame, &info ) )
     {
         if( ! frame.is_valid() )
             continue;
@@ -96,9 +96,9 @@ void dds_video_stream::handle_data()
 
 void dds_motion_stream::handle_data()
 {
-    topics::device::image_msg frame;
+    topics::image_msg frame;
     eprosima::fastdds::dds::SampleInfo info;
-    while( _reader && topics::device::image_msg::take_next( *_reader, &frame, &info ) )
+    while( _reader && topics::image_msg::take_next( *_reader, &frame, &info ) )
     {
         if( is_streaming() && _on_data_available )
             _on_data_available( std::move( frame ) );

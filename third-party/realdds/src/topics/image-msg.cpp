@@ -15,7 +15,6 @@
 
 namespace realdds {
 namespace topics {
-namespace device {
 
 
 image_msg::image_msg( sensor_msgs::msg::Image && rhs )
@@ -81,6 +80,5 @@ image_msg::take_next( dds_topic_reader & reader, image_msg * output, eprosima::f
     DDS_API_CALL_THROW( "image_msg::take_next", status );
 }
 
-}  // namespace device
 }  // namespace topics
 }  // namespace realdds

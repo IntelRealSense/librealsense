@@ -36,7 +36,6 @@ class dds_topic_reader;
 
 
 namespace topics {
-namespace device {
 
 
 class image_msg
@@ -82,6 +81,5 @@ public:
 };
 
 
-}  // namespace device
 }  // namespace topics
 }  // namespace realdds
