@@ -115,7 +115,7 @@ void dds_video_stream_server::open( std::string const & topic_name, std::shared_
     if( profiles().empty() )
         DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
 
-    auto topic = topics::device::image::create_topic( publisher->get_participant(), topic_name.c_str() );
+    auto topic = topics::device::image_msg::create_topic( publisher->get_participant(), topic_name.c_str() );
     _writer = std::make_shared< dds_topic_writer >( topic, publisher );
 
 
@@ -159,7 +159,7 @@ void dds_motion_stream_server::open( std::string const & topic_name, std::shared
     if( profiles().empty() )
         DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
 
-    auto topic = topics::device::image::create_topic( publisher->get_participant(), topic_name.c_str() );
+    auto topic = topics::device::image_msg::create_topic( publisher->get_participant(), topic_name.c_str() );
     _writer = std::make_shared< dds_topic_writer >( topic, publisher );
 
 

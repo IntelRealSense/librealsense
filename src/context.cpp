@@ -610,7 +610,7 @@ namespace librealsense
             software_sensor::open( profiles );
         }
 
-        void handle_video_data( realdds::topics::device::image && dds_frame,
+        void handle_video_data( realdds::topics::device::image_msg && dds_frame,
                                 const std::shared_ptr< stream_profile_interface > & profile,
                                 syncer_type & syncer )
         {
@@ -680,7 +680,7 @@ namespace librealsense
             }
         }
 
-        void handle_motion_data( realdds::topics::device::image && dds_frame,
+        void handle_motion_data( realdds::topics::device::image_msg && dds_frame,
                                  const std::shared_ptr< stream_profile_interface > & profile,
                                  syncer_type & syncer )
         {
@@ -748,14 +748,14 @@ namespace librealsense
                 if( Is< realdds::dds_video_stream >( dds_stream ) )
                 {
                     As< realdds::dds_video_stream >( dds_stream )->on_data_available(
-                        [profile, this, dds_stream]( realdds::topics::device::image && dds_frame ) {
+                        [profile, this, dds_stream]( realdds::topics::device::image_msg && dds_frame ) {
                             handle_video_data( std::move( dds_frame ), profile, _stream_name_to_syncer[dds_stream->name()] );
                         } );
                 }
                 else if( Is< realdds::dds_motion_stream >( dds_stream ) )
                 {
                     As< realdds::dds_motion_stream >( dds_stream )->on_data_available(
-                        [profile, this, dds_stream]( realdds::topics::device::image && dds_frame ) {
+                        [profile, this, dds_stream]( realdds::topics::device::image_msg && dds_frame ) {
                             handle_motion_data( std::move( dds_frame ), profile, _stream_name_to_syncer[dds_stream->name()] );
                         } );
                 }

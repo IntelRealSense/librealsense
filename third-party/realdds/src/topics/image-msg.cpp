@@ -18,7 +18,7 @@ namespace topics {
 namespace device {
 
 
-image::image( sensor_msgs::msg::Image && rhs )
+image_msg::image_msg( sensor_msgs::msg::Image && rhs )
 {
     raw_data = std::move( rhs.data() );
     frame_id = std::move( rhs.header().frame_id() );
@@ -28,7 +28,7 @@ image::image( sensor_msgs::msg::Image && rhs )
 }
 
 
-image & image::operator=( sensor_msgs::msg::Image && rhs )
+image_msg & image_msg::operator=( sensor_msgs::msg::Image && rhs )
 {
     raw_data = std::move( rhs.data() );
     frame_id = std::move( rhs.header().frame_id() );
@@ -41,16 +41,16 @@ image & image::operator=( sensor_msgs::msg::Image && rhs )
 
 
 /*static*/ std::shared_ptr< dds_topic >
-image::create_topic( std::shared_ptr< dds_participant > const & participant, char const * topic_name )
+image_msg::create_topic( std::shared_ptr< dds_participant > const & participant, char const * topic_name )
 {
     return std::make_shared< dds_topic >( participant,
-                                          eprosima::fastdds::dds::TypeSupport( new image::type ),
+                                          eprosima::fastdds::dds::TypeSupport( new image_msg::type ),
                                           topic_name );
 }
 
 
 /*static*/ bool
-image::take_next( dds_topic_reader & reader, image * output, eprosima::fastdds::dds::SampleInfo * info )
+image_msg::take_next( dds_topic_reader & reader, image_msg * output, eprosima::fastdds::dds::SampleInfo * info )
 {
     sensor_msgs::msg::Image raw_data;
     eprosima::fastdds::dds::SampleInfo info_;
@@ -78,7 +78,7 @@ image::take_next( dds_topic_reader & reader, image * output, eprosima::fastdds::
         // This is an expected return code and is not an error
         return false;
     }
-    DDS_API_CALL_THROW( "image::take_next", status );
+    DDS_API_CALL_THROW( "image_msg::take_next", status );
 }
 
 }  // namespace device

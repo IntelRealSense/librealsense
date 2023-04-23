@@ -448,7 +448,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "write_to", &flexible_msg::write_to, py::call_guard< py::gil_scoped_release >() );
 
 
-    using image_msg = realdds::topics::device::image;
+    using image_msg = realdds::topics::device::image_msg;
     py::class_< image_msg, std::shared_ptr< image_msg > >( m, "image_msg" )
         .def( py::init<>() )
         .def_readwrite( "frame_id", &image_msg::frame_id )
