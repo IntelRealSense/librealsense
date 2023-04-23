@@ -138,7 +138,7 @@ void points::export_to_ply( const std::string & fname, const frame_holder & text
     }
 }
 
-size_t points::get_vertex_count() const
+size_t vertices_frame::get_vertex_count() const
 {
     return data.size() / ( sizeof( float3 ) + sizeof( int2 ) );
 }
@@ -149,6 +149,11 @@ float2 * points::get_texture_coordinates()
     auto xyz = (float3 *)data.data();
     auto ijs = (float2 *)( xyz + get_vertex_count() );
     return ijs;
+}
+
+size_t attributes_frame::get_vertex_count() const
+{
+    return size_t(320*180);
 }
 
 float3* attributes_frame::get_vertices()

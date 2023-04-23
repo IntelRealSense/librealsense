@@ -35,6 +35,9 @@ namespace librealsense
         case RS2_EXTENSION_DISPARITY_FRAME:
             return std::make_shared<frame_archive<disparity_frame>>(in_max_frame_queue_size, ts, parsers);
 
+        case RS2_EXTENSION_ATTRIBUTES_FRAME:
+            return std::make_shared<frame_archive<attributes_frame>>(in_max_frame_queue_size, ts, parsers);
+
         default:
             throw std::runtime_error("Requested frame type is not supported!");
         }

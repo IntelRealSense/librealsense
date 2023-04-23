@@ -1499,8 +1499,9 @@ int rs2_is_frame_extendable_to(const rs2_frame* f, rs2_extension extension_type,
     case RS2_EXTENSION_DEPTH_FRAME              : return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::depth_frame)     != nullptr;
     case RS2_EXTENSION_DISPARITY_FRAME          : return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::disparity_frame) != nullptr;
     case RS2_EXTENSION_MOTION_FRAME             : return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::motion_frame)    != nullptr;
-    case RS2_EXTENSION_POSE_FRAME               : return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::pose_frame) != nullptr;
-    case RS2_EXTENSION_VERTICES_FRAME      : return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::pose_frame)      != nullptr;
+    case RS2_EXTENSION_POSE_FRAME               : return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::pose_frame)      != nullptr;
+    case RS2_EXTENSION_VERTICES_FRAME           : return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::vertices_frame)  != nullptr;
+    case RS2_EXTENSION_ATTRIBUTES_FRAME         : return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::attributes_frame) != nullptr;
 
     default:
         return false;
@@ -2208,7 +2209,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, composite)
 rs2_vertex* rs2_get_frame_vertices(const rs2_frame* frame, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame);
-    auto points = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::points);
+    auto points = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::vertices_frame);
     return (rs2_vertex*)points->get_vertices();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
@@ -2233,7 +2234,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
 int rs2_get_frame_points_count(const rs2_frame* frame, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame);
-    auto points = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::points);
+    auto points = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::vertices_frame);
     return static_cast<int>(points->get_vertex_count());
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame)

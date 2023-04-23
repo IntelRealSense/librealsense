@@ -766,7 +766,7 @@ namespace rs2
         }
         /**
         * Retrieve the vertices of the point cloud
-        * \param[in] vertex* - pointer of vertex sturcture
+        * \param[out] vertex* - pointer of vertex sturcture
         */
         const vertex* get_vertices() const
         {
@@ -836,6 +836,7 @@ namespace rs2
 
     class points_with_attribute : public frame_with_vertices
     {
+    public:
         /**
         * Extends the frame class with additional point cloud related attributes and functions
         */
@@ -858,15 +859,15 @@ namespace rs2
         }
 
         /**
-        * Retrieve the vertices of the point cloud
-        * \param[in] vertex* - pointer of attributes sturcture
+        * Retrieve the attributes of the point cloud stream
+        * \param[out] attributes* - pointer of attributes sturcture
         */
-        const void* get_attributes() const
+        const uint8_t* get_attributes() const
         {
             rs2_error* e = nullptr;
             auto res = rs2_get_frame_attributes(get(), &e);
             error::handle(e);
-            return res;
+            return (uint8_t * )res;
         }
     };
 
@@ -1087,6 +1088,13 @@ namespace rs2
                     f = ir;
             }
             return f;
+        }
+
+        points_with_attribute get_point_cloud_frame() const
+        {
+            auto f = first_or_default(RS2_STREAM_POINT_CLOUD);
+
+            return f.as<points_with_attribute>();
         }
         /**
         * Retrieve the first infrared frame, if no frame is found, return an empty frame instance.
