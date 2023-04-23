@@ -86,7 +86,6 @@ stream_profiles formats_converter::get_all_possible_target_profiles( const strea
             }
         }
     }
-
     return to_profiles;
 }
 
@@ -94,19 +93,35 @@ std::shared_ptr< stream_profile_interface > formats_converter::clone_profile( co
 {
     std::shared_ptr< stream_profile_interface > cloned = nullptr;
 
-    if( auto vsp = std::dynamic_pointer_cast< video_stream_profile >( profile ) )
+    auto vsp = std::dynamic_pointer_cast< video_stream_profile >( profile );
+    auto msp = std::dynamic_pointer_cast< motion_stream_profile >( profile );
+    if( vsp )
     {
-        cloned = vsp->clone();
+        cloned = std::make_shared< video_stream_profile >( platform::stream_profile{} );
+        if( !cloned )
+            throw librealsense::invalid_value_exception( "failed to clone profile" );
+
+        auto video_clone = std::dynamic_pointer_cast< video_stream_profile >( cloned );
+        video_clone->set_dims( vsp->get_width(), vsp->get_height() );
+        std::dynamic_pointer_cast< video_stream_profile >( cloned )->set_intrinsics( [video_clone]() {
+            return video_clone->get_intrinsics();
+        } );
     }
-    else if( auto msp = std::dynamic_pointer_cast< motion_stream_profile >( profile ) )
+    else if( msp )
     {
-        cloned = msp->clone();
+        cloned = std::make_shared< motion_stream_profile >( platform::stream_profile{} );
+        if( !cloned )
+            throw librealsense::invalid_value_exception( "failed to clone profile" );
+
+        auto motion_clone = std::dynamic_pointer_cast< motion_stream_profile >( cloned );
+        std::dynamic_pointer_cast< motion_stream_profile >( cloned )->set_intrinsics( [motion_clone]() {
+            return motion_clone->get_intrinsics();
+        } );
     }
     else
         throw librealsense::not_implemented_exception( "Unsupported profile type to clone" );
 
-    if( !cloned )
-        throw librealsense::invalid_value_exception( "failed to clone profile" );
+    cloned->set_framerate( profile->get_framerate() );
 
     // No need to set the ID, when calling get_all_possible_target_profiles the from_profiles don't have an assigned ID
     // yet, it will be assigned according to stream later on.
