@@ -598,8 +598,18 @@ PYBIND11_MODULE(NAME, m) {
     video_stream_server_base
         .def( "set_intrinsics", &dds_video_stream_server::set_intrinsics )
         .def( "publish_image",
-              []( dds_video_stream_server & self, image_msg const & img, uint64_t frame_id )
-              { self.publish( img.raw_data.data(), img.raw_data.size(), frame_id ); } );
+              []( dds_video_stream_server & self, image_msg const & img )
+              {
+                  // We don't have C++ 'std::move' explicit semantics in Python, so we create a copy.
+                  // Notice there's no copy constructor on purpose (!) so we do it manually...
+                  image_msg img_copy;
+                  img_copy.raw_data = img.raw_data;
+                  img_copy.timestamp = img.timestamp;
+                  img_copy.frame_id = img.frame_id;
+                  img_copy.width = img.width;
+                  img_copy.height = img.height;
+                  self.publish_image( std::move( img_copy ) );
+              } );
 
     using realdds::dds_depth_stream_server;
     py::class_< dds_depth_stream_server, std::shared_ptr< dds_depth_stream_server > >( m, "depth_stream_server", video_stream_server_base )

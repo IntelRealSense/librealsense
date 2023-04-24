@@ -13,6 +13,9 @@
 
 
 namespace realdds {
+namespace topics {
+class image_msg;
+}
 
 
 class dds_topic;
@@ -49,10 +52,9 @@ public:
     void close();
 
     bool is_streaming() const override { return _streaming; }
-    void start_streaming( const image_header & header );
+    void start_streaming( const image_header & );
     void stop_streaming();
-
-    virtual void publish( const uint8_t * data, size_t size, unsigned long long id );
+    image_header const & get_image_header() const { return _image_header; }
 
     std::shared_ptr< dds_topic > const & get_topic() const override;
 
@@ -84,6 +86,8 @@ public:
 
     void set_intrinsics( const std::set< video_intrinsics > & intrinsics ) { _intrinsics = intrinsics; }
     const std::set< video_intrinsics > & get_intrinsics() const { return _intrinsics; }
+
+    virtual void publish_image( topics::image_msg && );
 
 private:
     void check_profile( std::shared_ptr< dds_stream_profile > const & ) const override;
@@ -158,6 +162,8 @@ public:
 
     void set_intrinsics( const motion_intrinsics & intrinsics ) { _intrinsics = intrinsics; }
     const motion_intrinsics & get_intrinsics() const { return _intrinsics; }
+
+    virtual void publish_motion( topics::image_msg && );
 
 private:
     void check_profile( std::shared_ptr< dds_stream_profile > const & ) const override;

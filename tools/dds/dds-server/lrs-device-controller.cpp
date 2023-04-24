@@ -8,6 +8,7 @@
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/json.h>
 
+#include <realdds/topics/image-msg.h>
 #include <realdds/topics/flexible-msg.h>
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
@@ -500,7 +501,16 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                 auto & server = it->second;
                 if( _bridge.is_streaming( server ) )
                 {
-                    server->publish( static_cast< const uint8_t * >( f.get_data() ), f.get_data_size(), f.get_frame_number() );
+                    realdds::topics::image_msg image;
+                    auto data = static_cast< const uint8_t * >( f.get_data() );
+                    image.raw_data.assign( data, data + f.get_data_size() );
+                    image.frame_id = std::to_string( f.get_frame_number() );
+                    image.height = server->get_image_header().height;
+                    image.width = server->get_image_header().width;
+                    if( auto video = std::dynamic_pointer_cast< realdds::dds_video_stream_server >( server ) )
+                        video->publish_image( std::move( image ) );
+                    else if( auto motion = std::dynamic_pointer_cast< realdds::dds_motion_stream_server >( server ) )
+                        motion->publish_motion( std::move( image ) );
                     publish_frame_metadata( f );
                 }
             }

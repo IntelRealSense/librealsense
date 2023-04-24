@@ -17,8 +17,7 @@
 #include <fastdds/dds/publisher/DataWriter.hpp>
 
 
-using namespace eprosima::fastdds::dds;
-using namespace realdds;
+namespace realdds {
 
 
 dds_stream_server::dds_stream_server( std::string const & stream_name, std::string const & sensor_name )
@@ -148,7 +147,7 @@ void dds_stream_server::run_stream()
             } );
     }
     
-    _writer->run( dds_topic_writer::qos( BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
+    _writer->run( dds_topic_writer::qos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
 }
 
 
@@ -202,24 +201,66 @@ void dds_stream_server::close()
     _writer.reset();
 }
 
-void dds_stream_server::publish( const uint8_t * data, size_t size, unsigned long long id )
+void dds_video_stream_server::publish_image( topics::image_msg && image )
 {
     if( ! is_streaming() )
         DDS_THROW( runtime_error, "stream '" + name() + "' cannot publish before start_streaming()" );
 
+    if( image.height != _image_header.height )
+        DDS_THROW( runtime_error,
+                   "image height (" + std::to_string( image.height ) + ") does not match stream header ("
+                       + std::to_string( _image_header.height ) + ")" );
+    if( image.width != _image_header.width )
+        DDS_THROW( runtime_error,
+                   "image width (" + std::to_string( image.width ) + ") does not match stream header ("
+                       + std::to_string( _image_header.width ) + ")" );
+
     // LOG_DEBUG( "publishing a DDS video frame for topic: " << _writer->topic()->get()->get_name() );
     sensor_msgs::msg::Image raw_image;
-    raw_image.header().frame_id() = std::to_string( id );
-    auto const now = realdds::now();
-    raw_image.header().stamp().sec() = now.seconds;
-    raw_image.header().stamp().nanosec() = now.nanosec;
+    raw_image.header().frame_id() = image.frame_id;
+    raw_image.header().stamp().sec() = image.timestamp.seconds;
+    raw_image.header().stamp().nanosec() = image.timestamp.nanosec;
     raw_image.encoding() = _image_header.format.to_string();
     raw_image.height() = _image_header.height;
     raw_image.width() = _image_header.width;
-    raw_image.step() = uint32_t( size / _image_header.height );
+    raw_image.step() = uint32_t( image.raw_data.size() / _image_header.height );
     raw_image.is_bigendian() = false;
-    raw_image.data().assign( data, data + size );
-    LOG_DEBUG( "publishing '" << name() << "' frame " << std::dec << id << " " << raw_image.encoding() );
+    raw_image.data() = std::move( image.raw_data );
+    LOG_DEBUG( "publishing '" << name() << "' " << raw_image.encoding() << " frame @ " << time_to_string( image.timestamp ) );
 
     DDS_API_CALL( _writer->get()->write( &raw_image ) );
 }
+
+
+void dds_motion_stream_server::publish_motion( topics::image_msg && image )
+{
+    if( ! is_streaming() )
+        DDS_THROW( runtime_error, "stream '" + name() + "' cannot publish before start_streaming()" );
+
+    if( image.height != _image_header.height )
+        DDS_THROW( runtime_error,
+                   "image height (" + std::to_string( image.height ) + ") does not match stream header ("
+                       + std::to_string( _image_header.height ) + ")" );
+    if( image.width != _image_header.width )
+        DDS_THROW( runtime_error,
+                   "image width (" + std::to_string( image.width ) + ") does not match stream header ("
+                       + std::to_string( _image_header.width ) + ")" );
+
+    // LOG_DEBUG( "publishing a DDS video frame for topic: " << _writer->topic()->get()->get_name() );
+    sensor_msgs::msg::Image raw_image;
+    raw_image.header().frame_id() = image.frame_id;
+    raw_image.header().stamp().sec() = image.timestamp.seconds;
+    raw_image.header().stamp().nanosec() = image.timestamp.nanosec;
+    raw_image.encoding() = _image_header.format.to_string();
+    raw_image.height() = _image_header.height;
+    raw_image.width() = _image_header.width;
+    raw_image.step() = uint32_t( image.raw_data.size() / _image_header.height );
+    raw_image.is_bigendian() = false;
+    raw_image.data() = std::move( image.raw_data );
+    LOG_DEBUG( "publishing '" << name() << "' " << raw_image.encoding() << " frame @ "
+                              << time_to_string( image.timestamp ) );
+
+    DDS_API_CALL( _writer->get()->write( &raw_image ) );
+}
+
+}  // namespace realdds
