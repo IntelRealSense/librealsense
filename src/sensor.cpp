@@ -1478,14 +1478,14 @@ void log_callback_end( uint32_t fps,
 
     frame_callback_ptr synthetic_sensor::get_frames_callback() const
     {
-        return _post_process_callback;
+        return _formats_converter.get_frames_callback();
     }
 
     void synthetic_sensor::set_frames_callback(frame_callback_ptr callback)
     {
         // This callback is mutable, might be modified.
         // For instance, record_sensor modifies this callback in order to hook it to record frames.
-        _post_process_callback = callback;
+        _formats_converter.set_frames_callback( callback );
     }
 
     void synthetic_sensor::register_notifications_callback(notifications_callback_ptr callback)

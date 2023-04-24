@@ -27,6 +27,7 @@ namespace librealsense
         void clear_cached_source_list();
 
         void set_frames_callback( frame_callback_ptr callback );
+        frame_callback_ptr get_frames_callback() const { return _converted_frames_callback; }
         void convert_frame( frame_holder & f );
 
     protected:
