@@ -130,6 +130,8 @@ namespace librealsense
         else
             temp_jw_smooth<uint16_t>(const_cast<void*>(tgt.get_data()), _last_frame.data(), _history.data());
 
+        librealsense::aus_on_process_frame(f, "Temporal Filter");
+
         return tgt;
     }
 

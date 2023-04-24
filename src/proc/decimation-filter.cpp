@@ -252,6 +252,8 @@ namespace librealsense
     {
         update_output_profile(f);
 
+        librealsense::aus_on_process_frame(f, "Decimation Filter");
+
         auto src = f.as<rs2::video_frame>();
         rs2::stream_profile profile = f.get_profile();
         rs2_format format = profile.format();

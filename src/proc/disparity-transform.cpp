@@ -63,6 +63,7 @@ namespace librealsense
                 convert<float, uint16_t>(src.get_data(), const_cast<void*>(tgt.get_data()));
         }
 
+        librealsense::aus_on_process_frame(f, _transform_to_disparity? "Depth to Disparity" : "Disparity to Depth");
         return tgt;
     }
 

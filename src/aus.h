@@ -245,6 +245,20 @@ namespace librealsense
             }
         }
 
+        void on_process_frame(const rs2::frame & f, std::string ppf_name)
+        {
+            std::string device_name = ((frame_interface*)f.get())->get_sensor()->get_device().get_info(RS2_CAMERA_INFO_NAME);
+            if ( _ppf_used_per_device.find(device_name) == _ppf_used_per_device.end())
+            {
+                std::set<std::string> new_set = {ppf_name};
+                _ppf_used_per_device.insert(std::make_pair(device_name, new_set));
+            }
+            else
+            {
+                _ppf_used_per_device[device_name].insert(ppf_name);
+            }
+        }
+
         std::vector<std::uint8_t>  get_data()
         {
             json j;
@@ -258,14 +272,19 @@ namespace librealsense
             {
                 j[pair.first] = std::to_string(pair.second->get());
             }
+
+            j["ppf_used_per_device"] = _ppf_used_per_device;
+
             auto str = j.dump(4);
-            return std::vector<uint8_t>(str.begin(), str.end());
+            return std::vector<uint8_t>(str.begin(), str.end()); 
         }
+
 
     private:
         std::unordered_map<std::string, std::shared_ptr<aus_value>>_mp;
         std::unordered_map<std::string, std::string > _mp_devices_manager;
         std::mutex _m;
+        std::unordered_map<std::string, std::set<std::string>> _ppf_used_per_device;
 
         long long _start_time;
         long long _jason_creation_time;

@@ -111,6 +111,7 @@ namespace librealsense
             }
         }
 
+        librealsense::aus_on_process_frame(f, "HDR Merge Filter");
         // 7. return the merge frame
         if (_depth_merged_frame)
             return _depth_merged_frame;

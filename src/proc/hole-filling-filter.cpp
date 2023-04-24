@@ -72,6 +72,8 @@ namespace librealsense
         else
             apply_hole_filling<uint16_t>(const_cast<void*>(tgt.get_data()));
 
+        librealsense::aus_on_process_frame(f, "Hole Filling Filter");
+
         return tgt;
     }
 

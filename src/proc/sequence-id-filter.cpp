@@ -47,6 +47,8 @@ namespace librealsense
         auto unique_id = f.get_profile().unique_id();
         auto current_key = std::make_pair(seq_id, unique_id);
 
+        librealsense::aus_on_process_frame(f, "Filter By Sequence id");
+
         if (is_selected_id(seq_id + 1))
         {
             _last_frames[current_key] = f;

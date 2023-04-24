@@ -218,6 +218,7 @@ namespace librealsense
     std::vector<std::string> aus_get_counters_list();
     class device_interface;
     void aus_on_device_changed(std::shared_ptr<device_interface> device);
+    void aus_on_process_frame(const rs2::frame & f, std::string ppf_name);
     void aus_system_counter_increment(std::string suffix, std::string device_name);
     void aus_system_timer_start(std::string suffix, std::string device_name);
     void aus_system_timer_stop(std::string suffix, std::string device_name);

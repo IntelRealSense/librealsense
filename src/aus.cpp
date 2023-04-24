@@ -81,6 +81,11 @@ void librealsense::aus_on_device_changed(std::shared_ptr<device_interface> devic
     aus_data_obj.on_device_changed(device);
 }
 
+void librealsense::aus_on_process_frame(const rs2::frame & f, std::string ppf_name)
+{
+    aus_data_obj.on_process_frame(f, ppf_name);
+}
+
 std::vector<uint8_t> librealsense::aus_get_data()
 {
     return aus_data_obj.get_data();
@@ -136,6 +141,11 @@ NOT_SUPPORTED(void librealsense::aus_system_timer_start(std::string suffix, std:
 NOT_SUPPORTED(void librealsense::aus_system_timer_stop(std::string suffix, std::string device_name));
 
 void librealsense::aus_on_device_changed(std::shared_ptr<device_interface> device)
+{
+    return;
+}
+
+void aus_on_process_frame(const rs2::frame & f, std::string ppf_name)
 {
     return;
 }
