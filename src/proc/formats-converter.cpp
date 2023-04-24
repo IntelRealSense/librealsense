@@ -59,8 +59,11 @@ stream_profiles formats_converter::get_all_possible_target_profiles( const strea
                         auto && cloned_vsp = As< video_stream_profile, stream_profile_interface >( cloned_profile );
                         if( cloned_vsp )
                         {
-                            target.height = cloned_vsp->get_height();
-                            target.width = cloned_vsp->get_width();
+                            // Converter may rotate the image, invoke stream_resolution function to get actual result
+                            const auto res = target.stream_resolution( { cloned_vsp->get_width(), cloned_vsp->get_height() } );
+                            target.height = res.height;
+                            target.width = res.width;
+                            cloned_vsp->set_dims( target.width, target.height );
                         }
 
                         // Cache pbf supported profiles for efficiency in find_pbf_matching_most_profiles
@@ -72,7 +75,7 @@ stream_profiles formats_converter::get_all_possible_target_profiles( const strea
                         // Duplicates in the list happen when 2 from_profiles have conversion to same target.
                         // In this case it is faster to check if( _target_to_source_profiles_map[target].size() > 1 )
                         // rather then if( is_profile_in_list( cloned_profile, to_profiles ) )
-                        if( _target_to_source_profiles_map[target].size() > 1 )
+                        if( is_profile_in_list( cloned_profile, to_profiles ) )
                             continue;
 
                         // Only injective cloning in many to one mapping.
