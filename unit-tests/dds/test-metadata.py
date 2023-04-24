@@ -36,7 +36,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     # set up the client device and keep all its streams - this is connected directly and we can get notifications on it!
     device_direct = dds.device( participant, participant.create_guid(), d435i.device_info )
     device_direct.run( 1000 )  # this will throw if something's wrong
-    test.check( device_direct.is_running(), abort_if_failed=True )
+    test.check( device_direct.is_running(), on_fail=test.ABORT )
     for stream_direct in device_direct.streams():
         pass  # should be only one
     topic_name = 'rt/' + d435i.device_info.topic_root + '_' + stream_direct.name()
@@ -143,9 +143,9 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
         device = wait_for_devices( context, only_sw_devices, n=1. )[0]
         sensors = device.sensors
-        test.check_equal( len(sensors), 1, abort_if_failed=True )
+        test.check_equal( len(sensors), 1, on_fail=test.RAISE )
         sensor = sensors[0]
-        test.check_equal( sensor.get_info( rs.camera_info.name ), 'RGB Camera', abort_if_failed=True )
+        test.check_equal( sensor.get_info( rs.camera_info.name ), 'RGB Camera', on_fail=test.RAISE )
         del sensors
         profile = rs.video_stream_profile( sensor.get_stream_profiles()[0] )  # take the first one
         log.d( f'using profile {profile}')
