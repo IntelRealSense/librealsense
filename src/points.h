@@ -26,8 +26,10 @@ class attributes_frame : public vertices_frame
 {
 public:
     float3* get_vertices() override;
-    byte* get_attributes();
+    uint8_t* get_attributes();
     size_t get_vertex_count() const override;
+private:
+    static const int OFFSET_TO_ATTRIBUTES = 12 * 320 * 180;
 };
 MAP_EXTENSION( RS2_EXTENSION_ATTRIBUTES_FRAME, librealsense::attributes_frame );
 

@@ -159,19 +159,13 @@ size_t attributes_frame::get_vertex_count() const
 float3* attributes_frame::get_vertices()
 {
     get_frame_data();  // call GetData to ensure data is in main memory
-    auto frame_data = data.data();
-    std::vector<byte> vertices(frame_data, frame_data + 12 * 320 * 180);
-
-    return (float3 *)vertices.data();
+    return (float3 *)data.data();
 }
 
-byte* attributes_frame::get_attributes()
+uint8_t* attributes_frame::get_attributes()
 {
     get_frame_data();  // call GetData to ensure data is in main memory
-    auto frame_data = data.data();
-    std::vector<byte> vertices(frame_data + 12 * 320 * 180, frame_data + 13 * 320 * 180);
-
-    return vertices.data();
+    return (data.data() + OFFSET_TO_ATTRIBUTES);
 }
 
 }  // namespace librealsense
