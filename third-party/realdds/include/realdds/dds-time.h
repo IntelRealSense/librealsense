@@ -24,6 +24,11 @@ inline dds_time time_from( dds_nsec nanoseconds )
 {
     // see eprosima::fastrtps::rtps::Time_t::from_ns() which includes unneeded fraction calculation
     auto res = std::lldiv( nanoseconds, 1000000000ull );
+    if( res.rem < 0 )
+    {
+        --res.quot;
+        res.rem += 1000000000ull;
+    }
     return dds_time( static_cast< int32_t >( res.quot ),
                      static_cast< uint32_t >( res.rem ) );
 }
