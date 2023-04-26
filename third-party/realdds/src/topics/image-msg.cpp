@@ -20,7 +20,6 @@ namespace topics {
 image_msg::image_msg( sensor_msgs::msg::Image && rhs )
 {
     raw_data = std::move( rhs.data() );
-    frame_id = std::move( rhs.header().frame_id() );
     width    = std::move( rhs.width() );
     height   = std::move( rhs.height() );
     timestamp = dds_time( rhs.header().stamp().sec(), rhs.header().stamp().nanosec() );
@@ -30,7 +29,6 @@ image_msg::image_msg( sensor_msgs::msg::Image && rhs )
 image_msg & image_msg::operator=( sensor_msgs::msg::Image && rhs )
 {
     raw_data = std::move( rhs.data() );
-    frame_id = std::move( rhs.header().frame_id() );
     width    = std::move( rhs.width() );
     height   = std::move( rhs.height() );
     timestamp = dds_time( rhs.header().stamp().sec(), rhs.header().stamp().nanosec() );

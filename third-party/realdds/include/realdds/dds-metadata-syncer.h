@@ -74,8 +74,6 @@ private:
     on_frame_ready_callback _on_frame_ready = nullptr;
     on_metadata_dropped_callback _on_metadata_dropped = nullptr;
 
-    key_type _last_frame_id = 0;
-
 public:
     void enqueue_frame( key_type, frame_holder && );
     void enqueue_metadata( key_type, metadata_type && );

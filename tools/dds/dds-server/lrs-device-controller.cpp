@@ -504,14 +504,15 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                     realdds::topics::image_msg image;
                     auto data = static_cast< const uint8_t * >( f.get_data() );
                     image.raw_data.assign( data, data + f.get_data_size() );
-                    image.frame_id = std::to_string( f.get_frame_number() );
                     image.height = server->get_image_header().height;
                     image.width = server->get_image_header().width;
+                    image.timestamp  // in sec.nsec
+                        = realdds::dds_time( static_cast< long double >( f.get_timestamp() ) / 1e3 );
                     if( auto video = std::dynamic_pointer_cast< realdds::dds_video_stream_server >( server ) )
                         video->publish_image( std::move( image ) );
                     else if( auto motion = std::dynamic_pointer_cast< realdds::dds_motion_stream_server >( server ) )
                         motion->publish_motion( std::move( image ) );
-                    publish_frame_metadata( f );
+                    publish_frame_metadata( f, image.timestamp );
                 }
             }
         } );
@@ -583,12 +584,12 @@ void lrs_device_controller::start_streaming( const json & msg )
 }
 
 
-void lrs_device_controller::publish_frame_metadata( const rs2::frame & f )
+void lrs_device_controller::publish_frame_metadata( const rs2::frame & f, realdds::dds_time const & timestamp )
 {
     nlohmann::json md_header = nlohmann::json::object( {
-        { "frame-id", std::to_string( f.get_frame_number() ) },
-        { "timestamp", f.get_timestamp() },
-        { "timestamp-domain", f.get_frame_timestamp_domain() }
+        { "frame-number", f.get_frame_number() },               // communicated; up to client to pick up
+        { "timestamp", timestamp.to_ns() },                     // syncer key: needs to match the image timestamp, bit-for-bit!
+        { "timestamp-domain", f.get_frame_timestamp_domain() }  // needed if we're dealing with different domains!
     } );
     if( f.is< rs2::depth_frame >() )
         md_header["depth-units"] = f.as< rs2::depth_frame >().get_units();

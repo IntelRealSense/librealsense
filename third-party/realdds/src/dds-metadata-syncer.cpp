@@ -16,9 +16,6 @@ void dds_metadata_syncer::enqueue_frame( key_type id, frame_holder && frame )
         DDS_THROW( runtime_error,
                    "frame " + std::to_string( id ) + " cannot be enqueued after "
                        + std::to_string( _frame_queue.back().first ) );
-    if( id - _last_frame_id > 1 && _last_frame_id )
-        LOG_DEBUG( "frame drop: expecting " << _last_frame_id + 1 << "; got " << id );
-    _last_frame_id = id;
     // We must push the new one before releasing the lock, else someone else may push theirs ahead of ours
     _frame_queue.push_back( key_frame{ id, std::move( frame ) } );
     while( _frame_queue.size() > max_frame_queue_size )

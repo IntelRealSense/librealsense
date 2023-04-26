@@ -337,13 +337,18 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_nsec;
     py::class_< dds_time >( m, "time" )
         .def( py::init<>() )
+        .def( py::init< int32_t, uint32_t >() )  // sec, nsec
+        .def( py::init< long double >() )        // inexact (1.001 -> 1.000999999)
+        .def( py::init( []( dds_nsec ns ) { return realdds::time_from( ns ); } ) )           // exact
         .def_readwrite( "seconds", &dds_time::seconds )
         .def_readwrite( "nanosec", &dds_time::nanosec )
         .def( "to_ns", &dds_time::to_ns )
         .def_static( "from_ns", []( dds_nsec ns ) { return realdds::time_from( ns ); } )
         .def_static( "from_double", []( long double d ) { return realdds::dds_time( d ); } )
         .def( "to_double", &realdds::time_to_double )
-        .def( "__repr__", &realdds::time_to_string );
+        .def( "__repr__", &realdds::time_to_string )
+        .def( pybind11::self == pybind11::self )
+        .def( pybind11::self != pybind11::self );
 
 
     // We need a timestamp function that returns timestamps in the same domain as the sample-info timestamps
@@ -451,7 +456,6 @@ PYBIND11_MODULE(NAME, m) {
     using image_msg = realdds::topics::image_msg;
     py::class_< image_msg, std::shared_ptr< image_msg > >( m, "image_msg" )
         .def( py::init<>() )
-        .def_readwrite( "frame_id", &image_msg::frame_id )
         .def_readwrite( "data", &image_msg::raw_data )
         .def_readwrite( "width", &image_msg::width )
         .def_readwrite( "height", &image_msg::height )
@@ -605,7 +609,6 @@ PYBIND11_MODULE(NAME, m) {
                   image_msg img_copy;
                   img_copy.raw_data = img.raw_data;
                   img_copy.timestamp = img.timestamp;
-                  img_copy.frame_id = img.frame_id;
                   img_copy.width = img.width;
                   img_copy.height = img.height;
                   self.publish_image( std::move( img_copy ) );

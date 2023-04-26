@@ -20,6 +20,7 @@
 #include "context.h"
 #include "fw-update/fw-update-factory.h"
 #ifdef BUILD_WITH_DDS
+#include <realdds/dds-time.h>
 #include <realdds/dds-device-watcher.h>
 #include <realdds/dds-participant.h>
 #include <realdds/dds-device.h>
@@ -62,6 +63,14 @@ struct dds_domain_context
 // Two contexts with the same participant name on different domain-ids are using two different participants!
 //
 static std::map< realdds::dds_domain_id, dds_domain_context > dds_domain_context_by_id;
+
+// Constants for Json lookups
+static const std::string frame_number_key( "frame-number", 12 );
+static const std::string metadata_key( "metadata", 8 );
+static const std::string timestamp_key( "timestamp", 9 );
+static const std::string timestamp_domain_key( "timestamp-domain", 16 );
+static const std::string depth_units_key( "depth-units", 11 );
+static const std::string metadata_header_key( "header", 6 );
 
 #endif // BUILD_WITH_DDS
 
@@ -490,8 +499,14 @@ namespace librealsense
         typedef realdds::dds_metadata_syncer syncer_type;
         static void frame_releaser( syncer_type::frame_type * f ) { static_cast< frame * >( f )->release(); }
 
+        struct streaming_impl
+        {
+            syncer_type syncer;
+            std::atomic< unsigned long long > last_frame_number{ 0 };
+        };
+
         std::map< sid_index, std::shared_ptr< realdds::dds_stream > > _streams;
-        std::map< std::string, syncer_type > _stream_name_to_syncer;
+        std::map< std::string, streaming_impl > _streaming_by_name;
 
     public:
         dds_sensor_proxy( std::string const & sensor_name,
@@ -612,14 +627,14 @@ namespace librealsense
 
         void handle_video_data( realdds::topics::image_msg && dds_frame,
                                 const std::shared_ptr< stream_profile_interface > & profile,
-                                syncer_type & syncer )
+                                streaming_impl & streaming )
         {
             frame_additional_data data;  // with NO metadata by default!
-            data.timestamp; // from metadata
-            data.timestamp_domain; // from metadata
-            data.depth_units; // from metadata
-            if( ! rsutils::string::string_to_value( dds_frame.frame_id, data.frame_number ))
-                data.frame_number = 0;
+            data.timestamp               // in ms
+                = static_cast< rs2_time_t >( realdds::time_to_double( dds_frame.timestamp ) * 1e3 );
+            data.timestamp_domain;  // from metadata, or leave default (hardware domain)
+            data.depth_units;       // from metadata
+            data.frame_number;      // filled in only once metadata is known
 
             auto vid_profile = dynamic_cast< video_stream_profile_interface * >( profile.get() );
             if( ! vid_profile )
@@ -638,8 +653,8 @@ namespace librealsense
 
             if( _md_enabled )
             {
-                syncer.enqueue_frame( data.frame_number,  // for now, we use this as the synced-to ID
-                                      syncer.hold( new_frame ) );
+                streaming.syncer.enqueue_frame( dds_frame.timestamp.to_ns(),
+                                                streaming.syncer.hold( new_frame ) );
             }
             else
             {
@@ -649,18 +664,49 @@ namespace librealsense
             }
         }
 
-        void add_frame_metadata( frame * const f, json && dds_md )
+        void add_frame_metadata( frame * const f, json && dds_md, streaming_impl & streaming )
         {
-            json const & md_header = dds_md[std::string( "header", 6 )];
-            json const & md = dds_md[std::string( "metadata", 8 )];
+            if( dds_md.empty() )
+            {
+                // Without MD, we have no way of knowing the frame-number - we assume it's one higher than
+                // the last
+                f->additional_data.last_frame_number = streaming.last_frame_number.fetch_add( 1 );
+                f->additional_data.frame_number = f->additional_data.last_frame_number + 1;
+                // the frame should already have empty metadata, so no need to do anything else
+                return;
+            }
 
-            // Always expected metadata
-            f->additional_data.timestamp = rsutils::json::get< rs2_time_t >( md_header, std::string( "timestamp", 9 ) );
-            f->additional_data.timestamp_domain
-                = rsutils::json::get< rs2_timestamp_domain >( md_header, std::string( "timestamp-domain", 16 ) );
+            json const & md_header = dds_md[metadata_header_key];
+            json const & md = dds_md[metadata_key];
+
+            // A frame number is "optional". If the server supplies it, we try to use it for the simple fact that,
+            // otherwise, we have no way of detecting drops without some advanced heuristic tracking the FPS and
+            // timestamps. If not supplied, we use an increasing counter.
+            // Note that if we have no metadata, we have no frame-numbers! So we need a way of generating them
+            if( rsutils::json::get_ex( md_header, frame_number_key, &f->additional_data.frame_number ) )
+            {
+                f->additional_data.last_frame_number = streaming.last_frame_number.exchange( f->additional_data.frame_number );
+                if( f->additional_data.frame_number != f->additional_data.last_frame_number + 1
+                    && f->additional_data.last_frame_number )
+                {
+                    LOG_DEBUG( "frame drop? expecting " << f->additional_data.last_frame_number + 1 << "; got "
+                               << f->additional_data.frame_number );
+                }
+            }
+            else
+            {
+                f->additional_data.last_frame_number = streaming.last_frame_number.fetch_add( 1 );
+                f->additional_data.frame_number = f->additional_data.last_frame_number + 1;
+            }
+
+            // Timestamp is already set in the frame - must be communicated in the metadata, but only for syncing
+            // purposes, so we ignore here. The domain is optional, and really only rs-dds-server communicates it
+            // because the source is librealsense...
+            f->additional_data.timestamp;
+            rsutils::json::get_ex( md_header, timestamp_domain_key, &f->additional_data.timestamp_domain );
 
             // Expected metadata for all depth images
-            rsutils::json::get_ex( md_header, std::string( "depth-units", 11 ), &f->additional_data.depth_units );
+            rsutils::json::get_ex( md_header, depth_units_key, &f->additional_data.depth_units );
 
             // Other metadata fields. Metadata fields that are present but unknown by librealsense will be ignored.
             auto & metadata = reinterpret_cast< metadata_array & >( f->additional_data.metadata_blob );
@@ -682,14 +728,14 @@ namespace librealsense
 
         void handle_motion_data( realdds::topics::image_msg && dds_frame,
                                  const std::shared_ptr< stream_profile_interface > & profile,
-                                 syncer_type & syncer )
+                                 streaming_impl & streaming )
         {
             frame_additional_data data;  // with NO metadata by default!
-            data.timestamp;              // from metadata
-            data.timestamp_domain;       // from metadata
-            data.depth_units;            // from metadata
-            if( ! rsutils::string::string_to_value( dds_frame.frame_id, data.frame_number ) )
-                data.frame_number = 0;
+            data.timestamp
+                = static_cast< rs2_time_t >( realdds::time_to_double( dds_frame.timestamp ) * 1e-3 );  // milliseconds
+            data.timestamp_domain;  // from metadata, or leave default (hardware domain)
+            data.depth_units;       // from metadata
+            data.frame_number;      // filled in only once metadata is known
 
             auto new_frame_interface
                 = allocate_new_frame( RS2_EXTENSION_MOTION_FRAME, profile.get(), std::move( data ) );
@@ -701,8 +747,8 @@ namespace librealsense
 
             if( _md_enabled )
             {
-                syncer.enqueue_frame( data.frame_number,  // for now, we use this as the synced-to ID
-                                      syncer.hold( new_frame ));
+                streaming.syncer.enqueue_frame( dds_frame.timestamp.to_ns(),
+                                                streaming.syncer.hold( new_frame ) );
             }
             else
             {
@@ -717,10 +763,10 @@ namespace librealsense
             if( ! _md_enabled )
                 return;
 
-            auto it = _stream_name_to_syncer.find( stream_name );
-            if( it != _stream_name_to_syncer.end() )
-                it->second.enqueue_metadata(
-                    std::stoull( rsutils::json::get< std::string >( dds_md["header"], "frame-id" ) ),
+            auto it = _streaming_by_name.find( stream_name );
+            if( it != _streaming_by_name.end() )
+                it->second.syncer.enqueue_metadata(
+                    rsutils::json::get< realdds::dds_nsec >( dds_md[metadata_header_key], timestamp_key ),
                     std::move( dds_md ) );
             else
                 throw std::runtime_error( "Stream '" + stream_name
@@ -734,14 +780,12 @@ namespace librealsense
                 auto & dds_stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
                 // Opening it will start streaming on the server side automatically
                 dds_stream->open( "rt/" + _dev->device_info().topic_root + '_' + dds_stream->name(), _dev->subscriber());
-                auto & syncer = _stream_name_to_syncer[dds_stream->name()];
-                syncer.on_frame_release( frame_releaser );
-                syncer.on_frame_ready(
-                    [this]( syncer_type::frame_holder && fh, json && md )
+                auto & streaming = _streaming_by_name[dds_stream->name()];
+                streaming.syncer.on_frame_release( frame_releaser );
+                streaming.syncer.on_frame_ready(
+                    [this, &streaming]( syncer_type::frame_holder && fh, json && md )
                     {
-                        if( ! md.empty() )
-                            add_frame_metadata( static_cast< frame * >( fh.get() ), std::move( md ) );
-                        // else the frame should already have empty metadata!
+                        add_frame_metadata( static_cast< frame * >( fh.get() ), std::move( md ), streaming );
                         invoke_new_frame( static_cast< frame * >( fh.release() ), nullptr, nullptr );
                     } );
 
@@ -749,14 +793,14 @@ namespace librealsense
                 {
                     As< realdds::dds_video_stream >( dds_stream )->on_data_available(
                         [profile, this, dds_stream]( realdds::topics::image_msg && dds_frame ) {
-                            handle_video_data( std::move( dds_frame ), profile, _stream_name_to_syncer[dds_stream->name()] );
+                            handle_video_data( std::move( dds_frame ), profile, _streaming_by_name[dds_stream->name()] );
                         } );
                 }
                 else if( Is< realdds::dds_motion_stream >( dds_stream ) )
                 {
                     As< realdds::dds_motion_stream >( dds_stream )->on_data_available(
                         [profile, this, dds_stream]( realdds::topics::image_msg && dds_frame ) {
-                            handle_motion_data( std::move( dds_frame ), profile, _stream_name_to_syncer[dds_stream->name()] );
+                            handle_motion_data( std::move( dds_frame ), profile, _streaming_by_name[dds_stream->name()] );
                         } );
                 }
                 else
@@ -770,7 +814,7 @@ namespace librealsense
 
         void stop()
         {
-            _stream_name_to_syncer.clear();
+            _streaming_by_name.clear();
 
             for( auto & profile : sensor_base::get_active_streams() )
             {

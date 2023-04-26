@@ -217,23 +217,38 @@ void dds_video_stream_server::publish_image( topics::image_msg && image )
 
     // LOG_DEBUG( "publishing a DDS video frame for topic: " << _writer->topic()->get()->get_name() );
     sensor_msgs::msg::Image raw_image;
-    raw_image.header().frame_id() = image.frame_id;
+    
+    // "The frame_id in a message specifies the point of reference for data contained in that message."
+    // 
+    // I.e., the frame_id in a ROS header is the ID of the sensor collecting the data, and only relevant
+    // in context of a "/tf" topic that describes transformations between "frame" entities in the world.
+    // 
+    // See here: https://answers.ros.org/question/34684/header-frame_id/
+    //
+    // For us, for now, we specify the name of the sensor and the device that owns it (TODO):
+    //
+    raw_image.header().frame_id() = sensor_name();
+
     raw_image.header().stamp().sec() = image.timestamp.seconds;
     raw_image.header().stamp().nanosec() = image.timestamp.nanosec;
+
     raw_image.encoding() = _image_header.format.to_string();
     raw_image.height() = _image_header.height;
     raw_image.width() = _image_header.width;
     raw_image.step() = uint32_t( image.raw_data.size() / _image_header.height );
-    raw_image.is_bigendian() = false;
-    raw_image.data() = std::move( image.raw_data );
-    LOG_DEBUG( "publishing '" << name() << "' " << raw_image.encoding() << " frame @ " << time_to_string( image.timestamp ) );
 
+    raw_image.is_bigendian() = false;
+
+    raw_image.data() = std::move( image.raw_data );
+
+    LOG_DEBUG( "publishing '" << name() << "' " << raw_image.encoding() << " frame @ " << time_to_string( image.timestamp ) );
     DDS_API_CALL( _writer->get()->write( &raw_image ) );
 }
 
 
 void dds_motion_stream_server::publish_motion( topics::image_msg && image )
 {
+    // Same as publish_image() for now
     if( ! is_streaming() )
         DDS_THROW( runtime_error, "stream '" + name() + "' cannot publish before start_streaming()" );
 
@@ -248,7 +263,7 @@ void dds_motion_stream_server::publish_motion( topics::image_msg && image )
 
     // LOG_DEBUG( "publishing a DDS video frame for topic: " << _writer->topic()->get()->get_name() );
     sensor_msgs::msg::Image raw_image;
-    raw_image.header().frame_id() = image.frame_id;
+    raw_image.header().frame_id() = sensor_name();
     raw_image.header().stamp().sec() = image.timestamp.seconds;
     raw_image.header().stamp().nanosec() = image.timestamp.nanosec;
     raw_image.encoding() = _image_header.format.to_string();
