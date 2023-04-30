@@ -1500,8 +1500,7 @@ int rs2_is_frame_extendable_to(const rs2_frame* f, rs2_extension extension_type,
     case RS2_EXTENSION_DISPARITY_FRAME          : return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::disparity_frame) != nullptr;
     case RS2_EXTENSION_MOTION_FRAME             : return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::motion_frame)    != nullptr;
     case RS2_EXTENSION_POSE_FRAME               : return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::pose_frame)      != nullptr;
-    case RS2_EXTENSION_VERTICES_FRAME           : return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::vertices_frame)  != nullptr;
-    case RS2_EXTENSION_ATTRIBUTES_FRAME         : return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::attributes_frame) != nullptr;
+    case RS2_EXTENSION_LABELED_POINTS         : return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::labeled_points) != nullptr;
 
     default:
         return false;
@@ -2209,7 +2208,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, composite)
 rs2_vertex* rs2_get_frame_vertices(const rs2_frame* frame, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame);
-    auto points = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::vertices_frame);
+    auto points = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::points);
     return (rs2_vertex*)points->get_vertices();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
@@ -2234,16 +2233,32 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
 int rs2_get_frame_points_count(const rs2_frame* frame, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame);
-    auto points = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::vertices_frame);
+    auto points = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::points);
     return static_cast<int>(points->get_vertex_count());
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
 
-void* rs2_get_frame_attributes(const rs2_frame* frame, rs2_error** error) BEGIN_API_CALL
+rs2_vertex* rs2_get_frame_labeled_vertices(const rs2_frame* frame, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame);
-    auto attributes_frame = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::attributes_frame);
-    return attributes_frame->get_attributes();
+    auto labeled_points = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::labeled_points);
+    return (rs2_vertex*)labeled_points->get_vertices();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
+
+int rs2_get_frame_labeled_points_count(const rs2_frame* frame, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(frame);
+    auto labeled_points = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::labeled_points);
+    return static_cast<int>(labeled_points->get_vertex_count());
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
+
+void* rs2_get_frame_labels(const rs2_frame* frame, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(frame);
+    auto labeled_points = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::labeled_points);
+    return (void*)labeled_points->get_labels();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
 

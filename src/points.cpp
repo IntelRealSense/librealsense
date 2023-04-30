@@ -7,11 +7,10 @@
 
 namespace librealsense {
 
-float3 * vertices_frame::get_vertices()
+float3 * points::get_vertices() const
 {
     get_frame_data();  // call GetData to ensure data is in main memory
-    auto xyz = (float3 *)data.data();
-    return xyz;
+    return (float3*)data.data();
 }
 
 std::tuple< uint8_t, uint8_t, uint8_t >
@@ -138,7 +137,7 @@ void points::export_to_ply( const std::string & fname, const frame_holder & text
     }
 }
 
-size_t vertices_frame::get_vertex_count() const
+size_t points::get_vertex_count() const
 {
     return data.size() / ( sizeof( float3 ) + sizeof( int2 ) );
 }
@@ -151,21 +150,21 @@ float2 * points::get_texture_coordinates()
     return ijs;
 }
 
-size_t attributes_frame::get_vertex_count() const
+size_t labeled_points::get_vertex_count() const
 {
     return size_t(320*180);
 }
 
-float3* attributes_frame::get_vertices()
+float3* labeled_points::get_vertices() const
 {
     get_frame_data();  // call GetData to ensure data is in main memory
     return (float3 *)data.data();
 }
 
-uint8_t* attributes_frame::get_attributes()
+uint8_t* labeled_points::get_labels() const
 {
     get_frame_data();  // call GetData to ensure data is in main memory
-    return (data.data() + OFFSET_TO_ATTRIBUTES);
+    return (uint8_t *) (data.data() + OFFSET_TO_LABELS);
 }
 
 }  // namespace librealsense

@@ -735,24 +735,24 @@ namespace rs2
         float u, v;
         operator const float*() const { return &u; }
     };
-
-    class frame_with_vertices : public frame
+ 
+    class points : public frame
     {
     public:
         /**
         * Extends the frame class with additional point cloud related attributes and functions
         */
-        frame_with_vertices() : frame(), _size(0) {}
+        points() : frame(), _size(0) {}
 
         /**
         * Extends the frame class with additional point cloud related attributes and functions
         * \param[in] frame - existing frame instance
         */
-        frame_with_vertices(const frame& f)
+        points(const frame& f)
             : frame(f), _size(0)
         {
             rs2_error* e = nullptr;
-            if (!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_VERTICES_FRAME, &e) == 0 && !e))
+            if (!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_POINTS, &e) == 0 && !e))
             {
                 reset();
             }
@@ -766,7 +766,7 @@ namespace rs2
         }
         /**
         * Retrieve the vertices of the point cloud
-        * \param[out] vertex* - pointer of vertex sturcture
+        * \param[in] vertex* - pointer of vertex sturcture
         */
         const vertex* get_vertices() const
         {
@@ -774,38 +774,6 @@ namespace rs2
             auto res = rs2_get_frame_vertices(get(), &e);
             error::handle(e);
             return (const vertex*)res;
-        }
-
-        size_t size() const
-        {
-            return _size;
-        }
-
-    private:
-        size_t _size;
-    };
-
-    class points : public frame_with_vertices
-    {
-    public:
-        /**
-        * Extends the frame class with additional point cloud related attributes and functions
-        */
-        points() : frame_with_vertices(){}
-
-        /**
-        * Extends the frame class with additional point cloud related attributes and functions
-        * \param[in] frame - existing frame instance
-        */
-        points(const frame& f)
-            : frame_with_vertices(f)
-        {
-            rs2_error* e = nullptr;
-            if (!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_POINTS, &e) == 0 && !e))
-            {
-                reset();
-            }
-            error::handle(e);
         }
 
         /**
@@ -832,43 +800,77 @@ namespace rs2
             error::handle(e);
             return (const texture_coordinate*)res;
         }
+
+        size_t size() const
+        {
+            return _size;
+        }
+
+    private:
+        size_t _size;
     };
 
-    class points_with_attribute : public frame_with_vertices
+
+    class labeled_points : public frame
     {
     public:
         /**
         * Extends the frame class with additional point cloud related attributes and functions
         */
-        points_with_attribute() 
-            : frame_with_vertices() {}
+        labeled_points() : frame(), _size(0) {}
 
         /**
         * Extends the frame class with additional point cloud related attributes and functions
         * \param[in] frame - existing frame instance
         */
-        points_with_attribute(const frame& f)
-            : frame_with_vertices(f)
+        labeled_points(const frame& f)
+            : frame(f), _size(0)
         {
             rs2_error* e = nullptr;
-            if (!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_ATTRIBUTES_FRAME, &e) == 0 && !e))
+            if (!f || (rs2_is_frame_extendable_to(f.get(), RS2_EXTENSION_LABELED_POINTS, &e) == 0 && !e))
             {
                 reset();
             }
             error::handle(e);
+
+            if (get())
+            {
+                _size = rs2_get_frame_labeled_points_count(get(), &e);
+                error::handle(e);
+            }
+        }
+
+        /**
+        * Retrieve the vertices of the point cloud
+        * \param[in] vertex* - pointer of vertex sturcture
+        */
+        const vertex* get_vertices() const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_get_frame_labeled_vertices(get(), &e);
+            error::handle(e);
+            return (const vertex*)res;
         }
 
         /**
         * Retrieve the attributes of the point cloud stream
         * \param[out] attributes* - pointer of attributes sturcture
         */
-        const uint8_t* get_attributes() const
+        const uint8_t* get_labels() const
         {
             rs2_error* e = nullptr;
-            auto res = rs2_get_frame_attributes(get(), &e);
+            auto res = rs2_get_frame_labels(get(), &e);
             error::handle(e);
             return (uint8_t * )res;
         }
+
+        size_t size() const
+        {
+            return _size;
+        }
+
+    private:
+        size_t _size;
     };
 
     class depth_frame : public video_frame
@@ -1090,11 +1092,11 @@ namespace rs2
             return f;
         }
 
-        points_with_attribute get_point_cloud_frame() const
+        labeled_points get_point_cloud_frame() const
         {
             auto f = first_or_default(RS2_STREAM_POINT_CLOUD);
 
-            return f.as<points_with_attribute>();
+            return f.as<labeled_points>();
         }
         /**
         * Retrieve the first infrared frame, if no frame is found, return an empty frame instance.

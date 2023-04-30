@@ -6,31 +6,26 @@
 
 namespace librealsense {
 
-class vertices_frame : public frame
+class points : public frame
 {
 public:
-    virtual float3* get_vertices();
-    virtual size_t get_vertex_count() const;
-};
-MAP_EXTENSION( RS2_EXTENSION_VERTICES_FRAME, librealsense::vertices_frame );
-
-class points : public vertices_frame
-{
-public:
+    float3* get_vertices() const;
+    size_t get_vertex_count() const;
     void export_to_ply( const std::string & fname, const frame_holder & texture );
     float2 * get_texture_coordinates();
 };
 MAP_EXTENSION( RS2_EXTENSION_POINTS, librealsense::points );
 
-class attributes_frame : public vertices_frame
+class labeled_points : public frame
 {
 public:
-    float3* get_vertices() override;
-    uint8_t* get_attributes();
-    size_t get_vertex_count() const override;
+    float3* get_vertices() const;
+    size_t get_vertex_count() const;
+    uint8_t* get_labels() const;
 private:
-    static const int OFFSET_TO_ATTRIBUTES = 12 * 320 * 180;
+    static const int LABELS_RESOLUTION = 320 * 180;
+    static const int OFFSET_TO_LABELS = 3 * sizeof(float) * LABELS_RESOLUTION;
 };
-MAP_EXTENSION( RS2_EXTENSION_ATTRIBUTES_FRAME, librealsense::attributes_frame );
+MAP_EXTENSION( RS2_EXTENSION_LABELED_POINTS, librealsense::labeled_points );
 
 }  // namespace librealsense
