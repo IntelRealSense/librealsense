@@ -178,6 +178,9 @@ stream_profiles formats_converter::get_source_of_profiles( stream_profiles targe
                     else
                         return rs2_intrinsics {};
                 } );
+
+                //Hack for L515 confidence. Requesting source resolution from the camera, getting frame size of target (*2 y axis resolution)
+                source_video_profile->set_dims( target_video_profile->get_width(), target_video_profile->get_height() );
             }
         }
     }
