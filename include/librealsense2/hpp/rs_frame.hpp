@@ -1094,7 +1094,7 @@ namespace rs2
 
         labeled_points get_point_cloud_frame() const
         {
-            auto f = first_or_default(RS2_STREAM_POINT_CLOUD);
+            auto f = first_or_default(RS2_STREAM_LABELED_POINT_CLOUD);
 
             return f.as<labeled_points>();
         }

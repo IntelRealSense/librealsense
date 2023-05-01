@@ -22,14 +22,14 @@ namespace librealsense
     };
     const std::map<uint32_t, rs2_stream> mapping_fourcc_to_rs2_stream = {
         {rs_fourcc('G','R','E','Y'), RS2_STREAM_OCCUPANCY},
-        {rs_fourcc('P','A','L','8'), RS2_STREAM_POINT_CLOUD}
+        {rs_fourcc('P','A','L','8'), RS2_STREAM_LABELED_POINT_CLOUD}
     };
 
     d500_depth_mapping::d500_depth_mapping(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
         : device(ctx, group), d500_device(ctx, group),
         _occupancy_stream(new stream(RS2_STREAM_OCCUPANCY)),
-        _point_cloud_stream(new stream(RS2_STREAM_POINT_CLOUD))
+        _point_cloud_stream(new stream(RS2_STREAM_LABELED_POINT_CLOUD))
     {
         using namespace ds;
 
@@ -207,7 +207,7 @@ namespace librealsense
     void d500_depth_mapping::register_processing_blocks(std::shared_ptr<d500_depth_mapping_sensor> mapping_ep)
     {
         mapping_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW8, RS2_STREAM_OCCUPANCY));
-        mapping_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW8, RS2_STREAM_POINT_CLOUD));
+        mapping_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW8, RS2_STREAM_LABELED_POINT_CLOUD));
     }
 
 
@@ -226,7 +226,7 @@ namespace librealsense
                     continue;
                 relevant_results.push_back(std::move(p));
             }
-            else if (p->get_stream_type() == RS2_STREAM_POINT_CLOUD)
+            else if (p->get_stream_type() == RS2_STREAM_LABELED_POINT_CLOUD)
             {
                 auto&& video = dynamic_cast<video_stream_profile_interface*>(p.get());
                 const auto&& profile = to_profile(p.get());
@@ -241,7 +241,7 @@ namespace librealsense
             // Register stream types
             if (p->get_stream_type() == RS2_STREAM_OCCUPANCY)
                 assign_stream(_owner->_occupancy_stream, p);
-            else if (p->get_stream_type() == RS2_STREAM_POINT_CLOUD)
+            else if (p->get_stream_type() == RS2_STREAM_LABELED_POINT_CLOUD)
                 assign_stream(_owner->_point_cloud_stream, p);
 
             auto&& video = dynamic_cast<video_stream_profile_interface*>(p.get());
