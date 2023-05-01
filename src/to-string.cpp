@@ -47,7 +47,7 @@ const char * get_string( rs2_stream value )
     CASE( CONFIDENCE )
     CASE( SAFETY )
     CASE( OCCUPANCY )
-    CASE( POINT_CLOUD )
+    CASE( LABELED_POINT_CLOUD )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
@@ -280,6 +280,7 @@ const char * get_string( rs2_extension value )
     CASE( CALIBRATION_CHANGE_DEVICE )
     CASE( SAFETY_SENSOR )
     CASE( DEPTH_MAPPING_SENSOR )
+    CASE( LABELED_POINTS )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;

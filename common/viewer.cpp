@@ -1248,7 +1248,7 @@ namespace rs2
     {
         // patch for safety sensor
         if (model.profile.stream_type() == RS2_STREAM_SAFETY || 
-            model.profile.stream_type() == RS2_STREAM_POINT_CLOUD)
+            model.profile.stream_type() == RS2_STREAM_LABELED_POINT_CLOUD)
         {
             // The following values have been chosen so that the safety stream's
             // metadata could be shown entirely (without that,, the safety window

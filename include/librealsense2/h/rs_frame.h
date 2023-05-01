@@ -274,6 +274,31 @@ rs2_pixel* rs2_get_frame_texture_coordinates(const rs2_frame* frame, rs2_error**
 int rs2_get_frame_points_count(const rs2_frame* frame, rs2_error** error);
 
 /**
+* When called on Labeled Points frame type, this method returns a pointer to an array of 3D vertices of the model
+* The coordinate system is: X right, Y up, Z away from the camera. Units: Meters
+* \param[in] frame       Labeled Points frame
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                Pointer to an array of vertices, lifetime is managed by the frame
+*/
+rs2_vertex* rs2_get_frame_labeled_vertices(const rs2_frame* frame, rs2_error** error);
+
+/**
+* When called on Labeled Points frame type, this method returns the number of vertices in the frame
+* \param[in] frame       Labeled Points frame
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                Number of vertices
+*/
+int rs2_get_frame_labeled_points_count(const rs2_frame* frame, rs2_error** error);
+
+/**
+* When called on Labeled Points frame type, this method returns a pointer to an array of labels
+* \param[in] frame       Vertices frame
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                Pointer to an array of attributes, lifetime is managed by the frame
+*/
+void* rs2_get_frame_labels(const rs2_frame* frame, rs2_error** error);
+
+/**
 * Returns the stream profile that was used to start the stream of this frame
 * \param[in] frame       frame reference, owned by the user
 * \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored

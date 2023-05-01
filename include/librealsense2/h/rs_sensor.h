@@ -54,7 +54,7 @@ typedef enum rs2_stream
     RS2_STREAM_CONFIDENCE                       , /**< 4 bit per-pixel depth confidence level */
     RS2_STREAM_SAFETY                           , /**< safety info */
     RS2_STREAM_OCCUPANCY                        , /**< occupancy info */
-    RS2_STREAM_POINT_CLOUD                      , /**< point cloud stream */
+    RS2_STREAM_LABELED_POINT_CLOUD              , /**< labeled point cloud stream */
     RS2_STREAM_COUNT
 } rs2_stream;
 const char* rs2_stream_to_string(rs2_stream stream);
