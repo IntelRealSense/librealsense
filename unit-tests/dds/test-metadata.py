@@ -160,41 +160,74 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     with test.closure( "Metadata alone should not come out" ):
         with metadata_expected( count=20 ):
             for i in range(20):
-                md = { 'stream-name' : 'Color', 'header' : { 'frame-id' : str(i) }, 'metadata' : {} }
+                md = { 'stream-name' : 'Color', 'header' : { 'i' : i }, 'metadata' : {} }
                 remote.run( f'device_server.publish_metadata( {md} )' )
         sleep( 0.25 )  # plus some extra for librs...
         test.check_false( queue.poll_for_frame() )  # we didn't send any images, shouldn't get any frames!
     #
     #############################################################################################
     #
-    with test.closure( "Metadata after an image" ):
-        i += 1
+    with test.closure( 'MD after an image, without frame-number' ):
         timestamp = dds.now()
-        remote.run( f'img.timestamp = dds.time.from_ns( {timestamp.to_ns()} )' )
         remote.run( f'color_stream.start_streaming( dds.stream_format( "{encoding}" ), img.width, img.height )' )
         # It will take the image a lot longer to get anywhere than the metadata
         with image_expected():
-            remote.run( f'publish_image( img, {i} )' )
+            remote.run( f'publish_image( img, dds.time.from_ns( {timestamp.to_ns()} ))' )
         sleep( 0.25 )  # plus some extra for librs...
         test.check_false( queue.poll_for_frame() )  # the image should still be pending in the syncer
         with metadata_expected():
             md = {
                 'stream-name' : 'Color',
-                'header' : {'frame-id':str(i), 'timestamp':timestamp.to_double(), 'timestamp-domain':int(rs.timestamp_domain.system_time) },
+                'header' : {
+                    'timestamp' : timestamp.to_ns()
+                    },
                 'metadata': {
-                    "White Balance" : 0xbaad
+                    'White Balance' : 0xbaad
                     }
             }
             remote.run( f'device_server.publish_metadata( {md} )' )
         f = queue.wait_for_frame( 250 )  # A frame should now be available
         log.d( '---->', f )
-        if test.check( f ) and test.check_equal( f.get_frame_number(), 20 ):
-            test.check_equal( f.get_timestamp(), timestamp.to_double() )
+        if test.check( f ) and test.check_equal( f.get_frame_number(), 1 ):     # first frame so far!
+            test.check_approx_abs( f.get_timestamp() * 1e-3, image_content[0].timestamp.to_double(), 1e-6 )  # frames are in ms
             test.check_false( f.supports_frame_metadata( rs.frame_metadata_value.actual_fps ) )
             if test.check( f.supports_frame_metadata( rs.frame_metadata_value.white_balance ) ):
                 test.check_equal( f.get_frame_metadata( rs.frame_metadata_value.white_balance ), 0xbaad )
         test.check_false( queue.poll_for_frame() )  # the image should still be pending in the syncer
-    remote.run( 'color_stream.stop_streaming()', on_fail='log' )
+    #
+    #############################################################################################
+    #
+    with test.closure( 'Image after MD, with frame-number' ):
+        timestamp = dds.now()
+        with metadata_expected():
+            md = {
+                'stream-name' : 'Color',
+                'header' : {
+                    'frame-number' : 1234,
+                    'timestamp' : timestamp.to_ns()
+                    },
+                'metadata': {
+                    'Temperature' : 0xf00d
+                    }
+            }
+            remote.run( f'device_server.publish_metadata( {md} )' )
+        sleep( 0.25 )
+        test.check_false( queue.poll_for_frame() )
+        with image_expected():
+            remote.run( f'publish_image( img, dds.time.from_ns( {timestamp.to_ns()} ))' )
+        f = queue.wait_for_frame( 250 )
+        log.d( '---->', f )
+        if test.check( f ) and test.check_equal( f.get_frame_number(), 1234 ):
+            test.check_approx_abs( f.get_timestamp() * 1e-3, image_content[0].timestamp.to_double(), 1e-6 )  # frames are in ms
+            test.check_false( f.supports_frame_metadata( rs.frame_metadata_value.white_balance ) )
+            if test.check( f.supports_frame_metadata( rs.frame_metadata_value.temperature ) ):
+                test.check_equal( f.get_frame_metadata( rs.frame_metadata_value.temperature ), 0xf00d )
+        test.check_false( queue.poll_for_frame() )  # the image should still be pending in the syncer
+    #
+    #############################################################################################
+    #
+    with test.closure( "Stop streaming" ):
+        remote.run( 'color_stream.stop_streaming()', on_fail='log' )
     #
     #############################################################################################
     #

@@ -4,7 +4,7 @@
 #pragma once
 
 
-#include <realdds/topics/flexible/flexible-msg.h>
+#include <realdds/topics/flexible-msg.h>
 #include <rsutils/concurrency/concurrency.h>
 
 #include <memory>

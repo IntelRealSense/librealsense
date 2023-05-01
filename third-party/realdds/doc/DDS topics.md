@@ -159,10 +159,10 @@ For instance, using `rs2::sensor.open( profile )` will be converted to DDS **ope
 
 ## Metadata
 
-Metadata samples are refering to a specific, streaming, stream. They include some mandatory fields in the header, i.e. frame ID and timestamp, and other fields that are relevant to the specific frame and its type, e.g, "exposure" for images.
+Metadata samples are refering to a specific, streaming, stream. They include some mandatory fields in the header, i.e. frame number and timestamp, and other fields that are relevant to the specific frame and its type, e.g, "exposure" for images.
 
     "stream-name":"color",
-    "header":{"frame-id":"1234", "timestamp":"123456789", "timestamp-domain":"0"},
+    "header":{"frame-number":1234, "timestamp":123456789, "timestamp-domain":0},
     "metadata":{"Exposure":"123", "Gain":"456"}
 
 

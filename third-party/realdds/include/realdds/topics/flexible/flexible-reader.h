@@ -4,7 +4,7 @@
 #pragma once
 
 
-#include "flexible-msg.h"
+#include <realdds/topics/flexible-msg.h>
 
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
 

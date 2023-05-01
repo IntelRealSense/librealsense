@@ -40,8 +40,9 @@ def new_image( width, height, bpp, timestamp_as_ns = None ):
     return i
 
 
-def publish_image( img, id ):
-    color_stream.publish_image( img, id )
+def publish_image( img, timestamp ):
+    img.timestamp = timestamp
+    color_stream.publish_image( img )
 
 
 # From here down, we're in "interactive" mode (see test-metadata.py)

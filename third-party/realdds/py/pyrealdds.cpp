@@ -3,9 +3,9 @@
 
 #include <realdds/dds-defines.h>
 #include <realdds/dds-participant.h>
-#include <realdds/topics/flexible/flexible-msg.h>
+#include <realdds/topics/flexible-msg.h>
 #include <realdds/topics/flexible/flexiblePubSubTypes.h>
-#include <realdds/topics/image/image-msg.h>
+#include <realdds/topics/image-msg.h>
 #include <realdds/topics/ros2/ros2imagePubSubTypes.h>
 #include <realdds/topics/dds-topic-names.h>
 #include <realdds/dds-device-broadcaster.h>
@@ -337,13 +337,18 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_nsec;
     py::class_< dds_time >( m, "time" )
         .def( py::init<>() )
+        .def( py::init< int32_t, uint32_t >() )  // sec, nsec
+        .def( py::init< long double >() )        // inexact (1.001 -> 1.000999999)
+        .def( py::init( []( dds_nsec ns ) { return realdds::time_from( ns ); } ) )           // exact
         .def_readwrite( "seconds", &dds_time::seconds )
         .def_readwrite( "nanosec", &dds_time::nanosec )
         .def( "to_ns", &dds_time::to_ns )
         .def_static( "from_ns", []( dds_nsec ns ) { return realdds::time_from( ns ); } )
         .def_static( "from_double", []( long double d ) { return realdds::dds_time( d ); } )
         .def( "to_double", &realdds::time_to_double )
-        .def( "__repr__", &realdds::time_to_string );
+        .def( "__repr__", &realdds::time_to_string )
+        .def( pybind11::self == pybind11::self )
+        .def( pybind11::self != pybind11::self );
 
 
     // We need a timestamp function that returns timestamps in the same domain as the sample-info timestamps
@@ -448,10 +453,9 @@ PYBIND11_MODULE(NAME, m) {
         .def( "write_to", &flexible_msg::write_to, py::call_guard< py::gil_scoped_release >() );
 
 
-    using image_msg = realdds::topics::device::image;
+    using image_msg = realdds::topics::image_msg;
     py::class_< image_msg, std::shared_ptr< image_msg > >( m, "image_msg" )
         .def( py::init<>() )
-        .def_readwrite( "frame_id", &image_msg::frame_id )
         .def_readwrite( "data", &image_msg::raw_data )
         .def_readwrite( "width", &image_msg::width )
         .def_readwrite( "height", &image_msg::height )
@@ -598,8 +602,17 @@ PYBIND11_MODULE(NAME, m) {
     video_stream_server_base
         .def( "set_intrinsics", &dds_video_stream_server::set_intrinsics )
         .def( "publish_image",
-              []( dds_video_stream_server & self, image_msg const & img, uint64_t frame_id )
-              { self.publish( img.raw_data.data(), img.raw_data.size(), frame_id ); } );
+              []( dds_video_stream_server & self, image_msg const & img )
+              {
+                  // We don't have C++ 'std::move' explicit semantics in Python, so we create a copy.
+                  // Notice there's no copy constructor on purpose (!) so we do it manually...
+                  image_msg img_copy;
+                  img_copy.raw_data = img.raw_data;
+                  img_copy.timestamp = img.timestamp;
+                  img_copy.width = img.width;
+                  img_copy.height = img.height;
+                  self.publish_image( std::move( img_copy ) );
+              } );
 
     using realdds::dds_depth_stream_server;
     py::class_< dds_depth_stream_server, std::shared_ptr< dds_depth_stream_server > >( m, "depth_stream_server", video_stream_server_base )

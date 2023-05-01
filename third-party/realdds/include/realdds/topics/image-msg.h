@@ -36,25 +36,24 @@ class dds_topic_reader;
 
 
 namespace topics {
-namespace device {
 
-    
-class image
+
+class image_msg
 {
 public:
     using type = sensor_msgs::msg::ImagePubSubType;
 
-    image() = default;
+    image_msg() = default;
 
-    //Disable copy
-    image( const image & ) = delete;
-    image & operator=( const image & ) = delete;
+    // Disable copy
+    image_msg( const image_msg & ) = delete;
+    image_msg & operator=( const image_msg & ) = delete;
 
-    //move is OK
-    image( image && ) = default;
-    image( sensor_msgs::msg::Image && );
-    image & operator=( image && ) = default;
-    image & operator=( sensor_msgs::msg::Image && );
+    // Move is OK
+    image_msg( image_msg && ) = default;
+    image_msg( sensor_msgs::msg::Image && );
+    image_msg & operator=( image_msg && ) = default;
+    image_msg & operator=( sensor_msgs::msg::Image && );
 
     bool is_valid() const { return width != -1 && height != -1; }
     void invalidate() { width = -1; }
@@ -71,17 +70,15 @@ public:
     //Note - copies the data.
     //TODO - add an API for a function that loans the data and enables the user to free it later.
     static bool take_next( dds_topic_reader &,
-                           image * output,
+                           image_msg * output,
                            eprosima::fastdds::dds::SampleInfo * optional_info = nullptr );
 
-    std::vector<uint8_t> raw_data;
-    std::string frame_id;
+    std::vector< uint8_t > raw_data;
     int width = -1;
     int height = -1;
     dds_time timestamp;
 };
 
 
-}  // namespace device
 }  // namespace topics
 }  // namespace realdds

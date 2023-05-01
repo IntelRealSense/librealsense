@@ -607,7 +607,7 @@ def print_results_and_exit():
     global n_assertions, n_tests, n_failed_assertions, n_failed_tests, failed_tests
     if n_failed_tests or n_failed_assertions:
         passed = n_assertions - n_failed_assertions
-        log.out("test cases:", n_tests, "|" , n_failed_tests,  "failed")
+        log.out( f'test cases: {n_tests} | {log.red}{n_failed_tests} failed{log.reset}' )
         for name in failed_tests:
             log.d( f'    {name}' )
         log.out("assertions:", n_assertions, "|", passed, "passed |", n_failed_assertions, "failed")
@@ -762,7 +762,7 @@ class remote:
                 continue
             if line.find( '['+self._nested_indent+'] ' ) < 0:
                 if self._exception:
-                    self._exception += [line[:-1]]
+                    self._exception.append( line[:-1] )
                     # We cannot raise an error here -- it'll just exit the thread and not be
                     # caught in the main... Instead we have to wait until the remote is ready...
                 elif line.startswith( 'Traceback '):
@@ -801,7 +801,9 @@ class remote:
 
     def _raise_if_needed( self, how='raise' ):
         if self._exception:
-            what = self._exception[-1]
+            what = self._exception.pop()
+            while self._exception and ( what.startswith( 'Invoked with:' ) or what.startswith( '  ' ) or what.startswith( '\n' )):
+                what = self._exception.pop() + '\n  ' + what
             self._exception = None
             if how == RAISE:
                 raise remote.Error( what )

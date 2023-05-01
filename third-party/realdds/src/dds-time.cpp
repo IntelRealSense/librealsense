@@ -13,7 +13,8 @@ std::string time_to_string( dds_time const & t )
     std::string nsec = std::to_string( t.nanosec );
     if( t.nanosec )
     {
-        nsec.insert( 0, 9 - nsec.length(), '0' );
+        // DDS spec 2.3.2: "the nanosec field must verify 0 <= nanosec < 1000000000"
+        nsec.insert( 0, 9 - nsec.length(), '0' );  // will throw if more than 9 digits!
         while( nsec.length() > 1 && nsec.back() == '0' )
             nsec.pop_back();
     }

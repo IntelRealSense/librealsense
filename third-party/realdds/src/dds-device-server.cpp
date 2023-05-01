@@ -14,7 +14,7 @@
 #include <realdds/dds-utilities.h>
 #include <realdds/topics/dds-topic-names.h>
 #include <realdds/topics/device-info-msg.h>
-#include <realdds/topics/flexible/flexible-msg.h>
+#include <realdds/topics/flexible-msg.h>
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-writer.h>
 #include <realdds/dds-option.h>
