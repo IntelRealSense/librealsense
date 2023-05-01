@@ -1584,6 +1584,7 @@ namespace rs2
     void stream_model::show_frame(const rect& stream_rect, const mouse_info& g, std::string& error_message)
     {
         auto zoom_val = 1.f;
+        // Allow mouse scrolling for zoom when not displaying scrollable metadata
         if (stream_rect.contains(g.cursor) && !show_metadata)
         {
             static const auto wheel_step = 0.1f;
