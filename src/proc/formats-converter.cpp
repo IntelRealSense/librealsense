@@ -8,12 +8,11 @@ namespace librealsense
 {
 
 void formats_converter::register_processing_block( const std::vector< stream_profile > & from,
-                                                    const std::vector< stream_profile > & to,
-                                                    std::function< std::shared_ptr< processing_block >( void ) > generate_func )
+                                                   const std::vector< stream_profile > & to,
+                                                   std::function< std::shared_ptr< processing_block >( void ) > generate_func )
 {
     _pb_factories.push_back( std::make_shared< processing_block_factory >( from, to, generate_func ) );
 }
-
 
 void formats_converter::register_processing_block( const processing_block_factory & pbf )
 {
@@ -48,7 +47,6 @@ stream_profiles formats_converter::get_all_possible_target_profiles( const strea
                     // targets are saved with format and type only. Updating fps and resolution before using as key
                     for( auto target : targets )
                     {
-
                         target.fps = from_profile->get_framerate();
 
                         auto && cloned_profile = clone_profile( from_profile );
@@ -75,7 +73,7 @@ stream_profiles formats_converter::get_all_possible_target_profiles( const strea
                         // Duplicates in the list happen when 2 from_profiles have conversion to same target.
                         // In this case it is faster to check if( _target_to_source_profiles_map[target].size() > 1 )
                         // rather then if( is_profile_in_list( cloned_profile, to_profiles ) )
-                        if( is_profile_in_list( cloned_profile, to_profiles ) )
+                        if( _target_to_source_profiles_map[target].size() > 1 )
                             continue;
 
                         // Only injective cloning in many to one mapping.
@@ -89,10 +87,12 @@ stream_profiles formats_converter::get_all_possible_target_profiles( const strea
             }
         }
     }
+
     return to_profiles;
 }
 
-std::shared_ptr< stream_profile_interface > formats_converter::clone_profile( const std::shared_ptr< stream_profile_interface > & profile ) const
+std::shared_ptr< stream_profile_interface >
+formats_converter::clone_profile( const std::shared_ptr< stream_profile_interface > & profile ) const
 {
     std::shared_ptr< stream_profile_interface > cloned = nullptr;
 
@@ -101,7 +101,7 @@ std::shared_ptr< stream_profile_interface > formats_converter::clone_profile( co
     if( vsp )
     {
         cloned = std::make_shared< video_stream_profile >( platform::stream_profile{} );
-        if( !cloned )
+        if( ! cloned )
             throw librealsense::invalid_value_exception( "failed to clone profile" );
 
         auto video_clone = std::dynamic_pointer_cast< video_stream_profile >( cloned );
@@ -113,7 +113,7 @@ std::shared_ptr< stream_profile_interface > formats_converter::clone_profile( co
     else if( msp )
     {
         cloned = std::make_shared< motion_stream_profile >( platform::stream_profile{} );
-        if( !cloned )
+        if( ! cloned )
             throw librealsense::invalid_value_exception( "failed to clone profile" );
 
         auto motion_clone = std::dynamic_pointer_cast< motion_stream_profile >( cloned );
@@ -138,7 +138,8 @@ std::shared_ptr< stream_profile_interface > formats_converter::clone_profile( co
     return cloned;
 }
 
-bool formats_converter::is_profile_in_list( const std::shared_ptr< stream_profile_interface > & profile, const stream_profiles & profiles ) const
+bool formats_converter::is_profile_in_list( const std::shared_ptr< stream_profile_interface > & profile,
+                                            const stream_profiles & profiles ) const
 {
     // Converting to stream_profile to avoid dynamic casting to video/motion_stream_profile
     const auto && is_duplicate_predicate = [&profile]( const std::shared_ptr< stream_profile_interface > & spi ) {
@@ -148,57 +149,24 @@ bool formats_converter::is_profile_in_list( const std::shared_ptr< stream_profil
     return std::any_of( begin( profiles ), end( profiles ), is_duplicate_predicate );
 }
 
-//std::vector< processing_block > formats_converter::get_converters( std::vector< stream_profile > ) const
-//{
-//
-//}
-
+// Not passing const & because we modify target_profiles, would otherwise need to create a copy
 void formats_converter::prepare_to_convert( stream_profiles target_profiles )
 {
     clear_active_cache();
 
     // Add missing data to source profiles (was not available during get_all_possible_target_profiles)
-    for( auto & target_profile : target_profiles )
-    {
-        //TODO - original code only updates source[0], why?
-        for( auto & source_profile : _target_to_source_profiles_map[to_profile( target_profile.get() )] )
-        {
-            source_profile->set_unique_id( target_profile->get_unique_id() );
-            source_profile->set_stream_index( target_profile->get_stream_index() );
-            source_profile->set_unique_id( target_profile->get_unique_id() );
-            source_profile->set_stream_type( target_profile->get_stream_type() );
-            auto source_video_profile = As<video_stream_profile, stream_profile_interface>( source_profile );
-            const auto target_video_profile = As<video_stream_profile, stream_profile_interface>( target_profile );
-            if( source_video_profile )
-            {
-                source_video_profile->set_intrinsics( [target_video_profile]() {
-                    if( target_video_profile )
-                        return target_video_profile->get_intrinsics();
-                    else
-                        return rs2_intrinsics {};
-                } );
+    update_source_data( target_profiles );
 
-                //Hack for L515 confidence. Requesting source resolution from the camera, getting frame size of target (*2 y axis resolution)
-                source_video_profile->set_dims( target_video_profile->get_width(), target_video_profile->get_height() );
-            }
-        }
-    }
+    // Caching target profiles to set as processed frames profile before calling user callback
+    cache_target_profiles( target_profiles );
 
-    // cache the requests
-    for( auto && target_profile : target_profiles )
-    {
-        // Caching target profiles to set as processed frames profile before calling user callback
-        _format_to_target_profiles[target_profile->get_format()].push_back( target_profile );
-    }
-
-    // while not finished handling all of the requests do
     while( ! target_profiles.empty() )
     {
         const auto & best_match = find_pbf_matching_most_profiles( target_profiles );
         auto & best_match_pbf = best_match.first;
         auto & best_match_target_profiles = best_match.second;
 
-        // mark as handled resolved requests
+        // Mark matching profiles as handled
         for( auto & profile : best_match_target_profiles )
         {
             const auto & matching_profiles_predicate = [&profile]( const std::shared_ptr<stream_profile_interface> & sp ) {
@@ -210,7 +178,6 @@ void formats_converter::prepare_to_convert( stream_profiles target_profiles )
         // Retrieve source profile from cached map and generate the relevant processing block.
         std::unordered_set<std::shared_ptr<stream_profile_interface>> current_resolved_reqs;
         auto best_pb = best_match_pbf->generate();
-        //register_processing_block_options( *best_pb );
         for( const auto & target_profile : best_match_target_profiles )
         {
             auto & mapped_source_profiles = _target_to_source_profiles_map[to_profile( target_profile.get() )];
@@ -228,6 +195,45 @@ void formats_converter::prepare_to_convert( stream_profiles target_profiles )
         }
         const stream_profiles & print_current_resolved_reqs = { current_resolved_reqs.begin(), current_resolved_reqs.end() };
         LOG_INFO( "Request: " << best_match_target_profiles << "\nResolved to: " << print_current_resolved_reqs );
+    }
+}
+
+void formats_converter::update_source_data( const stream_profiles & target_profiles )
+{
+    for( auto & target_profile : target_profiles )
+    {
+        // TODO - original code only updates source[0], why?
+        for( auto & source_profile : _target_to_source_profiles_map[to_profile( target_profile.get() )] )
+        {
+            source_profile->set_unique_id( target_profile->get_unique_id() );
+            source_profile->set_stream_index( target_profile->get_stream_index() );
+            source_profile->set_unique_id( target_profile->get_unique_id() );
+            source_profile->set_stream_type( target_profile->get_stream_type() );
+            auto source_video_profile = As< video_stream_profile, stream_profile_interface >( source_profile );
+            const auto target_video_profile = As< video_stream_profile, stream_profile_interface >( target_profile );
+            if( source_video_profile )
+            {
+                source_video_profile->set_intrinsics( [target_video_profile]()
+                {
+                    if( target_video_profile )
+                        return target_video_profile->get_intrinsics();
+                    else
+                        return rs2_intrinsics{};
+                } );
+
+                // Hack for L515 confidence.
+                // Requesting source resolution from the camera, getting frame size of target (*2 y axis resolution)
+                source_video_profile->set_dims( target_video_profile->get_width(), target_video_profile->get_height() );
+            }
+        }
+    }
+}
+
+void formats_converter::cache_target_profiles( const stream_profiles & target_profiles )
+{
+    for( auto && target_profile : target_profiles )
+    {
+        _format_to_target_profiles[target_profile->get_format()].push_back( target_profile );
     }
 }
 
@@ -255,7 +261,9 @@ std::vector< std::shared_ptr< processing_block > > formats_converter::get_active
 
     for( auto & source_converters : _source_profile_to_converters )
     {
-        active_converters.insert( active_converters.end(), source_converters.second.begin(), source_converters.second.end() );
+        active_converters.insert( active_converters.end(),
+                                  source_converters.second.begin(),
+                                  source_converters.second.end() );
     }
 
     return active_converters;
@@ -270,7 +278,7 @@ formats_converter::find_pbf_matching_most_profiles( const stream_profiles & prof
     // covers the maximum amount of requests.
 
     stream_profiles best_match_profiles;
-    std::shared_ptr<processing_block_factory> best_match_processing_block_factory;
+    std::shared_ptr< processing_block_factory > best_match_processing_block_factory;
 
     size_t best_source_size = 0;
     size_t max_satisfied_count = 0;
@@ -293,13 +301,11 @@ formats_converter::find_pbf_matching_most_profiles( const stream_profiles & prof
     return { best_match_processing_block_factory, best_match_profiles };
 }
 
-template<class T>
+template< class T >
 frame_callback_ptr make_callback( T callback )
 {
-    return {
-        new internal_frame_callback<T>( callback ),
-        []( rs2_frame_callback * p ) { p->release(); }
-    };
+    return { new internal_frame_callback< T >( callback ),
+             []( rs2_frame_callback * p ) { p->release(); } };
 }
 
 void formats_converter::set_frames_callback( frame_callback_ptr callback )
@@ -323,13 +329,12 @@ void formats_converter::set_frames_callback( frame_callback_ptr callback )
         // Process only frames which aren't composite.
         for( auto && fr : frames_to_be_processed )
         {
-            if( !dynamic_cast< composite_frame * >( fr ) )
+            if( ! dynamic_cast< composite_frame * >( fr ) )
             {
-                //TODO - find out why we need to find a target profile with the same format+index+type as the frame profile
-                // and save if back to the frame. Different unique_id?
-                // Reason - viewer uses syncher and matcher that uses rs2::stream_profile.clone() that generate a new ID
-                // for the clone and than the match can fail.
-                auto && cached_profile = filter_frame_by_requests( fr );
+                // We find a target profile with the same format+index+type as the frame profile and save it back
+                // to the frame. Reason - viewer uses syncher and matcher that uses rs2::stream_profile.clone()
+                // that generates a new ID for the clone and than the match can fail.
+                auto & cached_profile = filter_frame_by_requests( fr );
 
                 if( cached_profile )
                 {
@@ -340,7 +345,7 @@ void formats_converter::set_frames_callback( frame_callback_ptr callback )
 
                 fr->acquire();
                 if( _converted_frames_callback )
-                    _converted_frames_callback->on_frame( ( rs2_frame * )fr );
+                    _converted_frames_callback->on_frame( (rs2_frame *)fr );
             }
         }
     } );
@@ -359,7 +364,7 @@ void formats_converter::set_frames_callback( frame_callback_ptr callback )
 
 void formats_converter::convert_frame( frame_holder & f )
 {
-    if( !f )
+    if( ! f )
         return;
 
     auto & converters = _source_profile_to_converters[f->get_stream()];
@@ -370,18 +375,19 @@ void formats_converter::convert_frame( frame_holder & f )
     }
 }
 
-//////////////////
-std::shared_ptr<stream_profile_interface> formats_converter::filter_frame_by_requests( const frame_interface * f )
+std::shared_ptr< stream_profile_interface > formats_converter::filter_frame_by_requests( const frame_interface * f )
 {
     const auto & cached_req = _format_to_target_profiles.find( f->get_stream()->get_format() );
     if( cached_req == _format_to_target_profiles.end() )
         return nullptr;
 
     auto & reqs = cached_req->second;
-    auto req_it = std::find_if( begin( reqs ), end( reqs ), [&f]( const std::shared_ptr<stream_profile_interface> & req ) {
-        return ( req->get_stream_index() == f->get_stream()->get_stream_index() &&
-                 req->get_stream_type() == f->get_stream()->get_stream_type() );
-        } );
+    auto req_it = std::find_if( begin( reqs ),
+                                end( reqs ),
+                                [&f]( const std::shared_ptr< stream_profile_interface > & req ) {
+                                    return ( req->get_stream_index() == f->get_stream()->get_stream_index() &&
+                                             req->get_stream_type() == f->get_stream()->get_stream_type() );
+                                } );
 
     return req_it != end( reqs ) ? *req_it : nullptr;
 }

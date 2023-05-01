@@ -33,6 +33,8 @@ namespace librealsense
 
     protected:
         void clear_active_cache();
+        void update_source_data( const stream_profiles & target_profiles );
+        void cache_target_profiles( const stream_profiles & target_profiles );
 
         std::shared_ptr< stream_profile_interface > clone_profile( const std::shared_ptr< stream_profile_interface > & profile ) const;
         bool is_profile_in_list( const std::shared_ptr< stream_profile_interface > & profile, const stream_profiles & profiles ) const;
