@@ -334,7 +334,7 @@ void formats_converter::set_frames_callback( frame_callback_ptr callback )
                 // We find a target profile with the same format+index+type as the frame profile and save it back
                 // to the frame. Reason - viewer uses syncher and matcher that uses rs2::stream_profile.clone()
                 // that generates a new ID for the clone and than the match can fail.
-                auto & cached_profile = filter_frame_by_requests( fr );
+                auto cached_profile = filter_frame_by_requests( fr );
 
                 if( cached_profile )
                 {
