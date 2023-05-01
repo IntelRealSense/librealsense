@@ -82,5 +82,15 @@ inline std::ostream & operator<<( std::ostream & os, slice const & str )
 }
 
 
+inline bool operator==( std::string const & left, slice const & right )
+{
+    return 0 == left.compare( 0, std::string::npos, right.begin(), right.length() );
+}
+inline bool operator!=( std::string const & left, slice const & right )
+{
+    return 0 != left.compare( 0, std::string::npos, right.begin(), right.length() );
+}
+
+
 }  // namespace string
 }  // namespace rsutils
