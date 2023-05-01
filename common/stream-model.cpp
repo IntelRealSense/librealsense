@@ -843,7 +843,6 @@ namespace rs2
               "Viewer FPS captures how many frames the application manages to render.\n"
               "Frame drops can occur for variety of reasons." } );
 
-        stream_details.push_back( { "", "", "" } );
     }
 
     void stream_model::draw_stream_metadata( const double timestamp,
@@ -861,7 +860,7 @@ namespace rs2
 
         if( timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME )
         {
-            stream_details.push_back( { no_md, "", "" } );
+            stream_details.push_back( { no_md } );
         }
 
         std::map< rs2_frame_metadata_value, std::string > descriptions = {
@@ -926,9 +925,6 @@ namespace rs2
 
         for( auto && at : stream_details )
         {
-            if (at.name == "")
-                continue;
-
             ImGui::SetCursorScreenPos( { screen_pos.x + space_from_left, line_y } ); // create space from left for metadata labels column
 
             ImGui::PushStyleColor( ImGuiCol_FrameBg, transparent );
@@ -953,6 +949,7 @@ namespace rs2
                             ImColor( alpha( sensor_bg, 0.1f ) ) );
 
                     ImGui::SetCursorScreenPos( { screen_pos.x + space_from_left, line_y } ); // create space from left for metadata labels column.
+                    ImGui::PushItemWidth(warning_size.x + 5);
 
                     std::string metadata_id = rsutils::string::from() << "##" << at.name << "-" << profile.unique_id();
                     ImGui::InputText( metadata_id.c_str(),
@@ -1210,9 +1207,10 @@ namespace rs2
         }
     }
 
+    // This function contains a cursor behavior on IMU stream with no metadata on
     void stream_model::show_stream_imu(ImFont* font, const rect &stream_rect, const  rs2_vector& axis, const mouse_info& mouse)
     {
-        if (stream_rect.contains(mouse.cursor))
+        if (stream_rect.contains(mouse.cursor) && !show_metadata)
         {
             const auto precision = 3;
             rs2_stream stream_type = profile.stream_type();
