@@ -307,6 +307,7 @@ void log_callback_end( uint32_t fps,
 
         if (_metadata_modifier)
             _metadata_modifier(additional_data);
+        fr->additional_data = additional_data;
 
         // update additional data
         additional_data.timestamp = timestamp_reader->get_frame_timestamp(fr);
