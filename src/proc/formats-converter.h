@@ -22,15 +22,18 @@ namespace librealsense
         void register_processing_block( const std::vector< processing_block_factory > & pbfs );
 
         stream_profiles get_all_possible_target_profiles( const stream_profiles & from_profiles );
-        stream_profiles get_source_of_profiles( stream_profiles target_profiles );
-        //std::vector< processing_block > get_converters( std::vector< stream_profile > ) const;
-        void clear_cached_source_list();
+        void prepare_to_convert( stream_profiles target_profiles );
+
+        stream_profiles get_active_source_profiles() const;
+        std::vector< std::shared_ptr< processing_block > > get_active_converters() const;
 
         void set_frames_callback( frame_callback_ptr callback );
         frame_callback_ptr get_frames_callback() const { return _converted_frames_callback; }
         void convert_frame( frame_holder & f );
 
     protected:
+        void clear_active_cache();
+
         std::shared_ptr< stream_profile_interface > clone_profile( const std::shared_ptr< stream_profile_interface > & profile ) const;
         bool is_profile_in_list( const std::shared_ptr< stream_profile_interface > & profile, const stream_profiles & profiles ) const;
 

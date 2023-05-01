@@ -153,10 +153,9 @@ bool formats_converter::is_profile_in_list( const std::shared_ptr< stream_profil
 //
 //}
 
-stream_profiles formats_converter::get_source_of_profiles( stream_profiles target_profiles )
+void formats_converter::prepare_to_convert( stream_profiles target_profiles )
 {
-    std::unordered_set<std::shared_ptr<stream_profile_interface>> resolved_req_set;
-    stream_profiles resolved_req;
+    clear_active_cache();
 
     // Add missing data to source profiles (was not available during get_all_possible_target_profiles)
     for( auto & target_profile : target_profiles )
@@ -220,7 +219,6 @@ stream_profiles formats_converter::get_source_of_profiles( stream_profiles targe
             {
                 if( best_match_pbf->has_source( source_profile ) )
                 {
-                    resolved_req_set.insert( source_profile );
                     current_resolved_reqs.insert( source_profile );
 
                     // Caching processing blocks to set their callback during sensor::start
@@ -231,9 +229,36 @@ stream_profiles formats_converter::get_source_of_profiles( stream_profiles targe
         const stream_profiles & print_current_resolved_reqs = { current_resolved_reqs.begin(), current_resolved_reqs.end() };
         LOG_INFO( "Request: " << best_match_target_profiles << "\nResolved to: " << print_current_resolved_reqs );
     }
+}
 
-    resolved_req = { resolved_req_set.begin(), resolved_req_set.end() };
-    return resolved_req;
+void formats_converter::clear_active_cache()
+{
+    _source_profile_to_converters.clear();
+    _format_to_target_profiles.clear();
+}
+
+stream_profiles formats_converter::get_active_source_profiles() const
+{
+    stream_profiles active_source_profiles;
+
+    for( auto & iter : _source_profile_to_converters )
+    {
+        active_source_profiles.push_back( iter.first );
+    }
+
+    return active_source_profiles;
+}
+
+std::vector< std::shared_ptr< processing_block > > formats_converter::get_active_converters() const
+{
+    std::vector< std::shared_ptr< processing_block > > active_converters;
+
+    for( auto & source_converters : _source_profile_to_converters )
+    {
+        active_converters.insert( active_converters.end(), source_converters.second.begin(), source_converters.second.end() );
+    }
+
+    return active_converters;
 }
 
 std::pair< std::shared_ptr< processing_block_factory >, stream_profiles >
@@ -266,12 +291,6 @@ formats_converter::find_pbf_matching_most_profiles( const stream_profiles & prof
     }
 
     return { best_match_processing_block_factory, best_match_profiles };
-}
-
-void formats_converter::clear_cached_source_list()
-{
-    _source_profile_to_converters.clear();
-    _format_to_target_profiles.clear();
 }
 
 template<class T>

@@ -1377,11 +1377,13 @@ void log_callback_end( uint32_t fps,
     {
         std::lock_guard<std::mutex> lock(_synthetic_configure_lock);
 
-        //for (auto source : requests)
-        //    add_source_profile_missing_data(source);
+        _formats_converter.prepare_to_convert( requests );
+        
+        const auto & resolved_req = _formats_converter.get_active_source_profiles();
+        std::vector< std::shared_ptr< processing_block > > active_pbs = _formats_converter.get_active_converters();
+        for( auto & pb : active_pbs )
+            register_processing_block_options( *pb );
 
-        const auto&& resolved_req = _formats_converter.get_source_of_profiles( requests );
-        //TODO - need to register converters options as sensor options?
         _raw_sensor->set_source_owner(this);
         try
         {
@@ -1407,13 +1409,12 @@ void log_callback_end( uint32_t fps,
     {
         std::lock_guard<std::mutex> lock(_synthetic_configure_lock);
         _raw_sensor->close();
-        //for (auto&& entry : _profiles_to_processing_block)
-        //{
-        //    for (auto&& pb : entry.second)
-        //        unregister_processing_block_options(*pb);
-        //}
+
+        std::vector< std::shared_ptr< processing_block > > active_pbs = _formats_converter.get_active_converters();
+        for( auto & pb : active_pbs )
+            unregister_processing_block_options( *pb );
+
         _formats_converter.set_frames_callback( nullptr );
-        _formats_converter.clear_cached_source_list();
         set_active_streams({});
         _post_process_callback.reset();
     }
