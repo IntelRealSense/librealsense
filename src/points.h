@@ -23,8 +23,8 @@ public:
     size_t get_vertex_count() const;
     uint8_t* get_labels() const;
 private:
-    static const int LABELS_RESOLUTION = 320 * 180;
-    static const int OFFSET_TO_LABELS = 3 * sizeof(float) * LABELS_RESOLUTION;
+    static const size_t LABELS_RESOLUTION = 320 * 180;
+    static const size_t OFFSET_TO_LABELS = 3 * sizeof(float) * LABELS_RESOLUTION;
 };
 MAP_EXTENSION( RS2_EXTENSION_LABELED_POINTS, librealsense::labeled_points );
 

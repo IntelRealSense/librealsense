@@ -152,7 +152,7 @@ float2 * points::get_texture_coordinates()
 
 size_t labeled_points::get_vertex_count() const
 {
-    return size_t(320*180);
+    return LABELS_RESOLUTION;
 }
 
 float3* labeled_points::get_vertices() const
