@@ -61,7 +61,8 @@ namespace librealsense
                                                RS2_EXTENSION_DEPTH_FRAME,
                                                RS2_EXTENSION_DISPARITY_FRAME,
                                                RS2_EXTENSION_MOTION_FRAME,
-                                               RS2_EXTENSION_POSE_FRAME };
+                                               RS2_EXTENSION_POSE_FRAME,
+                                               RS2_EXTENSION_LABELED_POINTS};
 
         for (auto type : supported)
         {

@@ -86,10 +86,10 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_SAFETY_FUSA_EVENT,
     RS2_FRAME_METADATA_SAFETY_FUSA_ACTION,
     RS2_FRAME_METADATA_SAFETY_PRESET_ID,
-    RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_A,
-    RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_B,
-    RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_C,
-    RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_D,
+    RS2_FRAME_METADATA_SENSOR_ANGLE_ROLL,
+    RS2_FRAME_METADATA_SENSOR_ANGLE_PITCH,
+    RS2_FRAME_METADATA_FLOOR_MEDIAN_HEIGHT,
+    RS2_FRAME_METADATA_FLOOR_FILL_RATE,
     RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS,
     RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS,
     RS2_FRAME_METADATA_OCCUPANCY_CELL_SIZE,
@@ -272,6 +272,31 @@ rs2_pixel* rs2_get_frame_texture_coordinates(const rs2_frame* frame, rs2_error**
 * \return                Number of vertices
 */
 int rs2_get_frame_points_count(const rs2_frame* frame, rs2_error** error);
+
+/**
+* When called on Labeled Points frame type, this method returns a pointer to an array of 3D vertices of the model
+* The coordinate system is: X right, Y up, Z away from the camera. Units: Meters
+* \param[in] frame       Labeled Points frame
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                Pointer to an array of vertices, lifetime is managed by the frame
+*/
+rs2_vertex* rs2_get_frame_labeled_vertices(const rs2_frame* frame, rs2_error** error);
+
+/**
+* When called on Labeled Points frame type, this method returns the number of vertices in the frame
+* \param[in] frame       Labeled Points frame
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                Number of vertices
+*/
+int rs2_get_frame_labeled_points_count(const rs2_frame* frame, rs2_error** error);
+
+/**
+* When called on Labeled Points frame type, this method returns a pointer to an array of labels
+* \param[in] frame       Vertices frame
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                Pointer to an array of attributes, lifetime is managed by the frame
+*/
+void* rs2_get_frame_labels(const rs2_frame* frame, rs2_error** error);
 
 /**
 * Returns the stream profile that was used to start the stream of this frame

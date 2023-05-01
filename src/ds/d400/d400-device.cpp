@@ -810,13 +810,8 @@ namespace librealsense
                     { (float)RS2_DEPTH_AUTO_EXPOSURE_REGULAR, "Regular" },
                     { (float)RS2_DEPTH_AUTO_EXPOSURE_ACCELERATED, "Accelerated" } } , false);
 
-                std::vector< std::pair< std::shared_ptr< option >, std::string > > options_and_reasons
-                    = { std::make_pair( enable_auto_exposure,
-                                        "Depth auto exposure mode cannot be set when auto exposure is enabled" ) };
-
                 depth_sensor.register_option(
-                    RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE,
-                    std::make_shared< gated_option >( depth_auto_exposure_mode, options_and_reasons ) );
+                    RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE, depth_auto_exposure_mode );
             }
 
             //EXPOSURE

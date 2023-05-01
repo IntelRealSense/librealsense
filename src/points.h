@@ -9,12 +9,23 @@ namespace librealsense {
 class points : public frame
 {
 public:
-    float3 * get_vertices();
-    void export_to_ply( const std::string & fname, const frame_holder & texture );
+    float3* get_vertices() const;
     size_t get_vertex_count() const;
+    void export_to_ply( const std::string & fname, const frame_holder & texture );
     float2 * get_texture_coordinates();
 };
-
 MAP_EXTENSION( RS2_EXTENSION_POINTS, librealsense::points );
+
+class labeled_points : public frame
+{
+public:
+    float3* get_vertices() const;
+    size_t get_vertex_count() const;
+    uint8_t* get_labels() const;
+private:
+    static const size_t LABELS_RESOLUTION = 320 * 180;
+    static const size_t OFFSET_TO_LABELS = 3 * sizeof(float) * LABELS_RESOLUTION;
+};
+MAP_EXTENSION( RS2_EXTENSION_LABELED_POINTS, librealsense::labeled_points );
 
 }  // namespace librealsense

@@ -1247,7 +1247,8 @@ namespace rs2
     void force_minimum_size_for_display(rs2::stream_model& model)
     {
         // patch for safety sensor
-        if (model.profile.stream_type() == RS2_STREAM_SAFETY)
+        if (model.profile.stream_type() == RS2_STREAM_SAFETY || 
+            model.profile.stream_type() == RS2_STREAM_LABELED_POINT_CLOUD)
         {
             // The following values have been chosen so that the safety stream's
             // metadata could be shown entirely (without that,, the safety window
@@ -2245,10 +2246,12 @@ namespace rs2
         }
     }
 
-    bool viewer_model::should_render_frame(rs2::stream_model& model)
+    bool viewer_model::should_render_frame(const rs2::stream_model& model) const
     {
         if (model.profile.stream_type() == RS2_STREAM_SAFETY)
             return false;
+
+        return true;
     }
 
     void viewer_model::show_top_bar(ux_window& window, const rect& viewer_rect, const device_models_list& devices)

@@ -587,6 +587,12 @@ namespace librealsense
                     gain_option,
                     enable_auto_exposure));
 
+            if ((_device_capabilities & ds_caps::CAP_GLOBAL_SHUTTER) == ds_caps::CAP_GLOBAL_SHUTTER)
+            {
+                auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>(*_hw_monitor, &depth_sensor);
+                depth_sensor.register_option(RS2_OPTION_EMITTER_ALWAYS_ON,emitter_always_on_opt);
+            }
+
             if ((_device_capabilities & ds_caps::CAP_INTERCAM_HW_SYNC) == ds_caps::CAP_INTERCAM_HW_SYNC)
             {
                 if ((_device_capabilities & ds_caps::CAP_GLOBAL_SHUTTER) == ds_caps::CAP_GLOBAL_SHUTTER)

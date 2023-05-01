@@ -426,10 +426,9 @@ namespace rs2
             if (is_multiple_resolutions_supported())
             {
                 ui.is_multiple_resolutions = true;
-                auto default_res = std::make_pair(1280, 960);
                 for (auto res_array : profile_id_to_res)
                 {
-                    if (get_default_selection_index(res_array.second, default_res, &selection_index))
+                    if (get_default_selection_index(res_array.second, default_resolution, &selection_index))
                     {
                         ui.selected_res_id_map[res_array.first] = selection_index;
                     }

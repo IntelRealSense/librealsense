@@ -47,7 +47,7 @@ const char * get_string( rs2_stream value )
     CASE( CONFIDENCE )
     CASE( SAFETY )
     CASE( OCCUPANCY )
-    CASE( POINT_CLOUD )
+    CASE( LABELED_POINT_CLOUD )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
@@ -280,6 +280,7 @@ const char * get_string( rs2_extension value )
     CASE( CALIBRATION_CHANGE_DEVICE )
     CASE( SAFETY_SENSOR )
     CASE( DEPTH_MAPPING_SENSOR )
+    CASE( LABELED_POINTS )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
@@ -585,10 +586,10 @@ const char * get_string( rs2_frame_metadata_value value )
     CASE( SAFETY_FUSA_EVENT )
     CASE( SAFETY_FUSA_ACTION )
     CASE( SAFETY_PRESET_ID )
-    CASE( FLOOR_PLANE_EQUATION_A )
-    CASE( FLOOR_PLANE_EQUATION_B )
-    CASE( FLOOR_PLANE_EQUATION_C )
-    CASE( FLOOR_PLANE_EQUATION_D )
+    CASE( SENSOR_ANGLE_ROLL  )
+    CASE( SENSOR_ANGLE_PITCH )
+    CASE( FLOOR_MEDIAN_HEIGHT )
+    CASE( FLOOR_FILL_RATE )
     CASE( OCCUPANCY_GRID_ROWS)
     CASE( OCCUPANCY_GRID_COLUMNS )
     CASE( OCCUPANCY_CELL_SIZE )

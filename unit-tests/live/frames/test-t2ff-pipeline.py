@@ -2,7 +2,7 @@
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 # test:device L500*
-# test:device D400*
+# test:device each(D400*)
 
 
 import pyrealsense2 as rs

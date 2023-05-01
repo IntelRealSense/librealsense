@@ -18,18 +18,18 @@ namespace librealsense
         // point cloud - needed a standard format, with 32 bit per pixel:
         // From uvcvideo2.h linux standard file:
         // #define V4L2_PIX_FMT_ARGB32  v4l2_fourcc('B', 'A', '2', '4') /* 32  ARGB-8-8-8-8  */
-        {rs_fourcc('B','A','2','4'), RS2_FORMAT_XYZ32F}
+        {rs_fourcc('P','A','L','8'), RS2_FORMAT_RAW8}
     };
     const std::map<uint32_t, rs2_stream> mapping_fourcc_to_rs2_stream = {
         {rs_fourcc('G','R','E','Y'), RS2_STREAM_OCCUPANCY},
-        {rs_fourcc('B','A','2','4'), RS2_STREAM_POINT_CLOUD}
+        {rs_fourcc('P','A','L','8'), RS2_STREAM_LABELED_POINT_CLOUD}
     };
 
     d500_depth_mapping::d500_depth_mapping(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
         : device(ctx, group), d500_device(ctx, group),
         _occupancy_stream(new stream(RS2_STREAM_OCCUPANCY)),
-        _point_cloud_stream(new stream(RS2_STREAM_POINT_CLOUD))
+        _point_cloud_stream(new stream(RS2_STREAM_LABELED_POINT_CLOUD))
     {
         using namespace ds;
 
@@ -120,25 +120,25 @@ namespace librealsense
             make_attribute_parser(&md_occupancy::frame_timestamp,
                 md_occupancy_attributes::frame_timestamp_attribute, md_prop_offset));
 
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_A,
-            make_attribute_parser(&md_occupancy::floor_plane_equation_a,
-                md_occupancy_attributes::floor_plane_equation_a_attribute, md_prop_offset));
-
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_B,
-            make_attribute_parser(&md_occupancy::floor_plane_equation_b,
-                md_occupancy_attributes::floor_plane_equation_b_attribute, md_prop_offset));
-
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_C,
-            make_attribute_parser(&md_occupancy::floor_plane_equation_c,
-                md_occupancy_attributes::floor_plane_equation_c_attribute, md_prop_offset));
-
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_D,
-            make_attribute_parser(&md_occupancy::floor_plane_equation_d,
-                md_occupancy_attributes::floor_plane_equation_d_attribute, md_prop_offset));
-
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_PRESET_ID,
             make_attribute_parser(&md_occupancy::safety_preset_id,
                 md_occupancy_attributes::safety_preset_id_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SENSOR_ANGLE_ROLL,
+            make_attribute_parser(&md_occupancy::sensor_roll_angle,
+                md_occupancy_attributes::sensor_roll_angle_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SENSOR_ANGLE_PITCH,
+            make_attribute_parser(&md_occupancy::sensor_pitch_angle,
+                md_occupancy_attributes::sensor_pitch_angle_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_MEDIAN_HEIGHT,
+            make_attribute_parser(&md_occupancy::floor_median_height,
+                md_occupancy_attributes::floor_median_height_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_FILL_RATE,
+            make_attribute_parser(&md_occupancy::floor_fill_rate,
+                md_occupancy_attributes::floor_fill_rate_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS,
             make_attribute_parser(&md_occupancy::grid_rows,
@@ -153,7 +153,7 @@ namespace librealsense
                 md_occupancy_attributes::cell_size_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_CRC,
-            make_attribute_parser_with_crc(&md_occupancy::payload_crc32,
+            make_attribute_parser(&md_occupancy::payload_crc32,
                 md_occupancy_attributes::payload_crc32_attribute, md_prop_offset));
     }
 
@@ -175,39 +175,39 @@ namespace librealsense
             make_attribute_parser(&md_point_cloud::frame_timestamp,
                 md_point_cloud_attributes::frame_timestamp_attribute, md_prop_offset));
 
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_A,
-            make_attribute_parser(&md_point_cloud::floor_plane_equation_a,
-                md_point_cloud_attributes::floor_plane_equation_a_attribute, md_prop_offset));
-
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_B,
-            make_attribute_parser(&md_point_cloud::floor_plane_equation_b,
-                md_point_cloud_attributes::floor_plane_equation_b_attribute, md_prop_offset));
-
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_C,
-            make_attribute_parser(&md_point_cloud::floor_plane_equation_c,
-                md_point_cloud_attributes::floor_plane_equation_c_attribute, md_prop_offset));
-
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_D,
-            make_attribute_parser(&md_point_cloud::floor_plane_equation_d,
-                md_point_cloud_attributes::floor_plane_equation_d_attribute, md_prop_offset));
-
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_PRESET_ID,
             make_attribute_parser(&md_point_cloud::safety_preset_id,
                 md_point_cloud_attributes::safety_preset_id_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SENSOR_ANGLE_ROLL,
+            make_attribute_parser(&md_point_cloud::sensor_roll_angle,
+                md_point_cloud_attributes::sensor_roll_angle_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SENSOR_ANGLE_PITCH,
+            make_attribute_parser(&md_point_cloud::sensor_pitch_angle,
+                md_point_cloud_attributes::sensor_pitch_angle_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_MEDIAN_HEIGHT,
+            make_attribute_parser(&md_point_cloud::floor_median_height,
+                md_point_cloud_attributes::floor_median_height_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_FILL_RATE,
+            make_attribute_parser(&md_point_cloud::floor_fill_rate,
+                md_point_cloud_attributes::floor_fill_rate_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_NUMBER_OF_3D_VERTICES,
             make_attribute_parser(&md_point_cloud::number_of_3d_vertices,
                 md_point_cloud_attributes::number_of_3d_vertices_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_CRC,
-            make_attribute_parser_with_crc(&md_point_cloud::payload_crc32,
+            make_attribute_parser(&md_point_cloud::payload_crc32,
                 md_point_cloud_attributes::payload_crc32_attribute, md_prop_offset));
     }
 
     void d500_depth_mapping::register_processing_blocks(std::shared_ptr<d500_depth_mapping_sensor> mapping_ep)
     {
         mapping_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW8, RS2_STREAM_OCCUPANCY));
-        mapping_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_XYZ32F, RS2_STREAM_POINT_CLOUD));
+        mapping_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW8, RS2_STREAM_LABELED_POINT_CLOUD));
     }
 
 
@@ -215,12 +215,34 @@ namespace librealsense
     {
         auto lock = environment::get_instance().get_extrinsics_graph().lock();
         auto results = synthetic_sensor::init_stream_profiles();
-
+        stream_profiles relevant_results;
         for (auto p : results)
+        {
+            if (p->get_stream_type() == RS2_STREAM_OCCUPANCY)
+            {
+                auto&& video = dynamic_cast<video_stream_profile_interface*>(p.get());
+                const auto&& profile = to_profile(p.get());
+                if (profile.width == 2880)
+                    continue;
+                relevant_results.push_back(std::move(p));
+            }
+            else if (p->get_stream_type() == RS2_STREAM_LABELED_POINT_CLOUD)
+            {
+                auto&& video = dynamic_cast<video_stream_profile_interface*>(p.get());
+                const auto&& profile = to_profile(p.get());
+                if (profile.width == 256)
+                    continue;
+                relevant_results.push_back(std::move(p));
+            }
+        }
+
+        for (auto p : relevant_results)
         {
             // Register stream types
             if (p->get_stream_type() == RS2_STREAM_OCCUPANCY)
                 assign_stream(_owner->_occupancy_stream, p);
+            else if (p->get_stream_type() == RS2_STREAM_LABELED_POINT_CLOUD)
+                assign_stream(_owner->_point_cloud_stream, p);
 
             auto&& video = dynamic_cast<video_stream_profile_interface*>(p.get());
             const auto&& profile = to_profile(p.get());
@@ -237,7 +259,7 @@ namespace librealsense
                 });
         }
 
-        return results;
+        return relevant_results;
     }
 
     rs2_intrinsics d500_depth_mapping_sensor::get_intrinsics(const stream_profile& profile) const
