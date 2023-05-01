@@ -71,6 +71,7 @@ static const std::string timestamp_key( "timestamp", 9 );
 static const std::string timestamp_domain_key( "timestamp-domain", 16 );
 static const std::string depth_units_key( "depth-units", 11 );
 static const std::string metadata_header_key( "header", 6 );
+static const std::string stream_name_key( "stream-name", 11 );
 
 #endif // BUILD_WITH_DDS
 
@@ -770,7 +771,7 @@ namespace librealsense
                     std::move( dds_md ) );
             else
                 throw std::runtime_error( "Stream '" + stream_name
-                                          + "' received metadata for unsupported frame type" );
+                                          + "' received metadata but does not enable metadata" );
         }
 
         void start( frame_callback_ptr callback ) override
@@ -789,18 +790,22 @@ namespace librealsense
                         invoke_new_frame( static_cast< frame * >( fh.release() ), nullptr, nullptr );
                     } );
 
-                if( Is< realdds::dds_video_stream >( dds_stream ) )
+                if( auto dds_video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( dds_stream ) )
                 {
-                    As< realdds::dds_video_stream >( dds_stream )->on_data_available(
-                        [profile, this, dds_stream]( realdds::topics::image_msg && dds_frame ) {
-                            handle_video_data( std::move( dds_frame ), profile, _streaming_by_name[dds_stream->name()] );
+                    dds_video_stream->on_data_available(
+                        [profile, this, &streaming]( realdds::topics::image_msg && dds_frame )
+                        {
+                            if( _is_streaming )
+                                handle_video_data( std::move( dds_frame ), profile, streaming );
                         } );
                 }
-                else if( Is< realdds::dds_motion_stream >( dds_stream ) )
+                else if( auto dds_motion_stream = std::dynamic_pointer_cast< realdds::dds_motion_stream >( dds_stream ) )
                 {
-                    As< realdds::dds_motion_stream >( dds_stream )->on_data_available(
-                        [profile, this, dds_stream]( realdds::topics::image_msg && dds_frame ) {
-                            handle_motion_data( std::move( dds_frame ), profile, _streaming_by_name[dds_stream->name()] );
+                    dds_motion_stream->on_data_available(
+                        [profile, this, &streaming]( realdds::topics::image_msg && dds_frame )
+                        {
+                            if( _is_streaming )
+                                handle_motion_data( std::move( dds_frame ), profile, streaming );
                         } );
                 }
                 else
@@ -1168,7 +1173,7 @@ namespace librealsense
                 _dds_dev->on_metadata_available(
                     [this]( json && dds_md )
                     {
-                        std::string stream_name = rsutils::json::get< std::string >( dds_md, std::string( "stream-name", 11 ) );
+                        std::string stream_name = rsutils::json::get< std::string >( dds_md, stream_name_key );
                         auto it = _stream_name_to_owning_sensor.find( stream_name );
                         if( it != _stream_name_to_owning_sensor.end() )
                             it->second->handle_new_metadata( stream_name, std::move( dds_md ) );
