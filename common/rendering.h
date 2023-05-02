@@ -477,44 +477,16 @@ namespace rs2
             // Allow upload of points frame type
             if (auto pc = frame.as<points>())
             {
-                if (!frame.is<gl::gpu_frame>())
-                {
-                    // Points can be uploaded as two different
-                    // formats: XYZ for verteces and UV for texture coordinates
-                    if (prefered_format == RS2_FORMAT_XYZ32F)
-                    {
-                        // Upload vertices
-                        data = pc.get_vertices();
-                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
-                    }
-                    else
-                    {
-                        // Upload texture coordinates
-                        data = pc.get_texture_coordinates();
-                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, width, height, 0, GL_RG, GL_FLOAT, data);
-                    }
-
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                }
-                else
-                {
-                    // Update texture_id based on desired format
-                    if (prefered_format == RS2_FORMAT_XYZ32F) texture_id = 0;
-                    else texture_id = 1;
-                }
+                upload_points(pc, width, height, prefered_format);
+            }
+            // Allow upload of labeled points frame type
+            else if (auto lpc = frame.as<labeled_points>())
+            {
+                upload_labeled_points(lpc, width, height);
             }
             else if (frame.get_profile().stream_type() == RS2_STREAM_OCCUPANCY)
             {
-                if (!frame.supports_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS) ||
-                    !frame.supports_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS))
-                    throw std::runtime_error("Occupancy rows / columns could not be read from frame metadata");
-
-                auto occup_cols = static_cast<int>(frame.get_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS)); // width
-                auto occup_rows = static_cast<int>(frame.get_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS));    // height
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, occup_cols, occup_rows, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                upload_occupancy_frame(frame, data);
             }
             else
             {
@@ -718,6 +690,69 @@ namespace rs2
             glBindTexture(GL_TEXTURE_2D, 0);
 
             last_queue[1].enqueue(rendered_frame);
+        }
+
+        void upload_points(const points& pc, int width, int height, rs2_format prefered_format)
+        {
+            if (!pc.is<gl::gpu_frame>())
+            {
+                // Points can be uploaded as two different
+                // formats: XYZ for verteces and UV for texture coordinates
+                if (prefered_format == RS2_FORMAT_XYZ32F)
+                {
+                    // Upload vertices
+                    auto data = pc.get_vertices();
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
+                }
+                else
+                {
+                    // Upload texture coordinates
+                    auto data = pc.get_texture_coordinates();
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, width, height, 0, GL_RG, GL_FLOAT, data);
+                }
+
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            }
+            else
+            {
+                // Update texture_id based on desired format
+                if (prefered_format == RS2_FORMAT_XYZ32F) texture_id = 0;
+                else texture_id = 1;
+            }
+        }
+
+        void upload_labeled_points(const labeled_points& lpc, int width, int height)
+        {
+            if (!lpc.is<gl::gpu_frame>())
+            {
+                // Upload vertices
+                auto data = lpc.get_vertices();
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, 320, 180, 0, GL_RGB, GL_FLOAT, (const void*)data);
+
+                // TODO: use of labels 
+                auto labels = lpc.get_labels();
+
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            }
+            else
+            {
+                texture_id = 1;
+            }
+        }
+
+        void upload_occupancy_frame(const rs2::frame& frame, const void* data)
+        {
+            if (!frame.supports_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS) ||
+                !frame.supports_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS))
+                throw std::runtime_error("Occupancy rows / columns could not be read from frame metadata");
+
+            auto occup_cols = static_cast<int>(frame.get_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS)); // width
+            auto occup_rows = static_cast<int>(frame.get_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS));    // height
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, occup_cols, occup_rows, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         }
 
         static void  draw_axes(float axis_size = 1.f, float axisWidth = 4.f)

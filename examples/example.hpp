@@ -20,6 +20,8 @@
 
 #include "../third-party/stb_easy_font.h"
 #include "example-utils.hpp"
+#include "common/labeled-point-cloud-utilities.h"
+#include "common/float3.h"
 
 #ifndef PI
 #define PI  3.14159265358979323846
@@ -996,30 +998,6 @@ void draw_pointcloud(float width, float height, glfw_state& app_state, rs2::poin
     glPopAttrib();
 }
 
-std::map<uint8_t, float3> get_label_to_color3f()
-{
-    static const float3 BLACK_COL       = { 0.0f, 0.0f, 0.0f };
-    static const float3 RED_COL         = { 1.0f, 0.0f, 0.0f };
-    static const float3 GREEN_COL       = { 0.0f, 1.0f, 0.0f };
-    static const float3 BLUE_COL        = { 0.0f, 0.0f, 1.0f };
-    static const float3 YELLOW_COL      = { 0.0f, 1.0f, 1.0f };
-    static const float3 TURQUOISE_COL   = { 1.0f, 1.0f, 1.0f };
-    static const float3 MAGENTA_COL     = { 1.0f, 0.0f, 1.0f };
-    static const float3 WHITE_COL       = { 1.0f, 1.0f, 1.0f };
-    std::map<uint8_t, float3> label_to_color3f;
-
-    label_to_color3f[0] = BLACK_COL;
-    label_to_color3f[1] = WHITE_COL;
-    label_to_color3f[2] = RED_COL;
-    label_to_color3f[3] = GREEN_COL;
-    label_to_color3f[4] = BLUE_COL;
-    label_to_color3f[5] = YELLOW_COL;
-    label_to_color3f[6] = TURQUOISE_COL;
-    label_to_color3f[7] = MAGENTA_COL;
-
-    return label_to_color3f;
-}
-
 // Handles all the OpenGL calls needed to display the labeled point cloud
 void draw_labeled_pointcloud(float width, float height, glfw_state& app_state, 
     const std::vector< std::pair<uint8_t, std::vector<rs2::vertex> > >& labels_to_vertices)
@@ -1058,13 +1036,13 @@ void draw_labeled_pointcloud(float width, float height, glfw_state& app_state,
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, 0x812F); // GL_CLAMP_TO_EDGE
     glBegin(GL_POINTS);
 
-    auto label_to_color3f = get_label_to_color3f();
+    auto label_to_color3f = rs2::labeled_point_cloud_utilities::get_label_to_color3f();
     /* this segment actually renders the labeled pointcloud */
     for (int i = 0; i < labels_to_vertices.size(); ++i)
     {
         auto label = labels_to_vertices[i].first;
         auto vertices = labels_to_vertices[i].second;
-        auto color = label_to_color3f[label];
+        auto color = label_to_color3f[static_cast<rs2_point_cloud_label>(label)];
 
         for (auto&& v : vertices)
         {

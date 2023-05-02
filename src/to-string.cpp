@@ -217,6 +217,28 @@ const char * get_string( rs2_safety_mode mode )
 #undef CASE
 }
 
+const char* get_string(rs2_point_cloud_label label)
+{
+#define CASE( X ) STRCASE( POINT_CLOUD_LABEL, X )
+    switch (label)
+    {
+        CASE(UNKNOWN)
+        CASE(UNDEFINED)
+        CASE(INVALID)
+        CASE(GROUND)
+        CASE(NEAR_GROUND)
+        CASE(OBSTACLE)
+        CASE(OVERHEAD)
+        CASE(ABOVE_CEILING_HEIGHT)
+        CASE(GAP)
+        CASE(MASKED)
+    default:
+        assert(!is_valid(label));
+        return UNKNOWN_VALUE;
+    }
+#undef CASE
+}
+
 const char * get_string( rs2_extension value )
 {
 #define CASE( X ) STRCASE( EXTENSION, X )
@@ -721,4 +743,5 @@ const char * rs2_host_perf_mode_to_string( rs2_host_perf_mode mode ) { return li
 const char * rs2_emitter_frequency_mode_to_string( rs2_emitter_frequency_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_depth_auto_exposure_mode_to_string( rs2_depth_auto_exposure_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_safety_mode_to_string( rs2_safety_mode mode ) { return librealsense::get_string( mode ); }
+const char * rs2_point_cloud_label_to_string(rs2_point_cloud_label label) { return librealsense::get_string(label); }
 
