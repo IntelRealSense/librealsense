@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #include "proc/formats-converter.h"
 #include "stream.h"
@@ -70,10 +70,11 @@ stream_profiles formats_converter::get_all_possible_target_profiles( const strea
                         // Cache each target profile to its source profiles which were generated from.
                         _target_to_source_profiles_map[target].push_back( from_profile );
 
-                        // Duplicates in the list happen when 2 from_profiles have conversion to same target.
+                        // TODO - Duplicates in the list happen when 2 from_profiles have conversion to same target.
                         // In this case it is faster to check if( _target_to_source_profiles_map[target].size() > 1 )
-                        // rather then if( is_profile_in_list( cloned_profile, to_profiles ) )
-                        if( _target_to_source_profiles_map[target].size() > 1 )
+                        // rather then if( is_profile_in_list( cloned_profile, to_profiles ) ), but L500 unit-tests
+                        // fail if we change. Need to understand difference
+                        if( is_profile_in_list( cloned_profile, to_profiles ) )
                             continue;
 
                         // Only injective cloning in many to one mapping.
