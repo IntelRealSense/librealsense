@@ -9,36 +9,16 @@
 #include <array>
 #include <chrono>
 #include "ivcam/sr300.h"
-#include "ds/ds5/ds5-factory.h"
+#include "ds/d400/d400-factory.h"
 #include "l500/l500-factory.h"
 #include "ds/ds-timestamp.h"
 #include "backend.h"
-#include "mock/recorder.h"
 #include <media/ros/ros_reader.h>
 #include "types.h"
 #include "stream.h"
 #include "environment.h"
 #include "context.h"
 #include "fw-update/fw-update-factory.h"
-
-template<unsigned... Is> struct seq{};
-template<unsigned N, unsigned... Is>
-struct gen_seq : gen_seq<N-1, N-1, Is...>{};
-template<unsigned... Is>
-struct gen_seq<0, Is...> : seq<Is...>{};
-
-template<unsigned N1, unsigned... I1, unsigned N2, unsigned... I2>
-constexpr std::array<char const, N1+N2-1> concat(char const (&a1)[N1], char const (&a2)[N2], seq<I1...>, seq<I2...>){
-  return {{ a1[I1]..., a2[I2]... }};
-}
-
-template<unsigned N1, unsigned N2>
-constexpr std::array<char const, N1+N2-1> concat(char const (&a1)[N1], char const (&a2)[N2]){
-  return concat(a1, a2, gen_seq<N1-1>{}, gen_seq<N2>{});
-}
-
-// The string is used to retrieve the version embedded into .so file on Linux
-constexpr auto rs2_api_version = concat("VERSION: ",RS2_API_VERSION_STR);
 
 template<>
 bool contains(const std::shared_ptr<librealsense::device_info>& first,
@@ -91,33 +71,17 @@ namespace librealsense
         {rs_fourcc('M','J','P','G'), RS2_STREAM_COLOR},
     };
 
-    context::context(backend_type type,
-                     const char* filename,
-                     const char* section,
-                     rs2_recording_mode mode,
-                     std::string min_api_version)
+    context::context( backend_type type )
         : _devices_changed_callback(nullptr, [](rs2_devices_changed_callback*){})
     {
         static bool version_logged=false;
         if (!version_logged)
         {
             version_logged = true;
-            LOG_DEBUG("Librealsense " << std::string(std::begin(rs2_api_version),std::end(rs2_api_version)));
+            LOG_DEBUG( "Librealsense VERSION: " << RS2_API_VERSION_STR );
         }
 
-        switch(type)
-        {
-        case backend_type::standard:
-            _backend = platform::create_backend();
-            break;
-        case backend_type::record:
-            _backend = std::make_shared<platform::record_backend>(platform::create_backend(), filename, section, mode);
-            break;
-        case backend_type::playback:
-            _backend = std::make_shared<platform::playback_backend>(filename, section, min_api_version);
-            break;
-            // Strongly-typed enum. Default is redundant
-        }
+        _backend = platform::create_backend();
 
        environment::get_instance().set_time_service(_backend->create_time_service());
 
@@ -333,8 +297,8 @@ namespace librealsense
 
         if (mask & RS2_PRODUCT_LINE_D400)
         {
-            auto ds5_devices = ds5_info::pick_ds5_devices(ctx, devices);
-            std::copy(begin(ds5_devices), end(ds5_devices), std::back_inserter(list));
+            auto d400_devices = d400_info::pick_d400_devices(ctx, devices);
+            std::copy(begin(d400_devices), end(d400_devices), std::back_inserter(list));
         }
 
         if( mask & RS2_PRODUCT_LINE_L500 )

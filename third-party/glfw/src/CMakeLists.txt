@@ -118,6 +118,10 @@ target_compile_options(glfw PRIVATE
                        "$<$<C_COMPILER_ID:Clang>:-Wall>"
                        "$<$<C_COMPILER_ID:GNU>:-Wall>")
 
+if (UNIX)
+    target_compile_options(glfw PRIVATE -Wno-pedantic)
+endif (UNIX)
+
 if (BUILD_SHARED_LIBS)
     if (WIN32)
         if (MINGW)

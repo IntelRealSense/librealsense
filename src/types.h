@@ -282,14 +282,14 @@ namespace librealsense
             std::lock_guard<std::mutex> lock(other._mtx);
             if (!other._was_init)
             {
-                _init = move(other._init);
+                _init = std::move(other._init);
                 _was_init = false;
             }
             else
             {
-                _init = move(other._init);
+                _init = std::move(other._init);
                 _was_init = true;
-                _ptr = move(other._ptr);
+                _ptr = std::move(other._ptr);
             }
         }
 
@@ -304,14 +304,14 @@ namespace librealsense
             std::lock_guard<std::mutex> lock2(other._mtx);
             if (!other._was_init)
             {
-                _init = move(other._init);
+                _init = std::move(other._init);
                 _was_init = false;
             }
             else
             {
-                _init = move(other._init);
+                _init = std::move(other._init);
                 _was_init = true;
-                _ptr = move(other._ptr);
+                _ptr = std::move(other._ptr);
             }
 
             return *this;
@@ -359,6 +359,18 @@ namespace librealsense
     };
 
     typedef float float_4[4];
+
+    /** \brief Metadata fields that are utilized internally by librealsense
+    Provides extention to the r2_frame_metadata list of attributes*/
+    enum frame_metadata_internal
+    {
+        RS2_FRAME_METADATA_HW_TYPE = RS2_FRAME_METADATA_COUNT + 1, /**< 8-bit Module type: RS4xx, IVCAM*/
+        RS2_FRAME_METADATA_SKU_ID, /**< 8-bit SKU Id*/
+        RS2_FRAME_METADATA_FORMAT, /**< 16-bit Frame format*/
+        RS2_FRAME_METADATA_WIDTH, /**< 16-bit Frame width. pixels*/
+        RS2_FRAME_METADATA_HEIGHT, /**< 16-bit Frame height. pixels*/
+        RS2_FRAME_METADATA_ACTUAL_COUNT
+    };
 
     /////////////////////////////
     // Enumerated type support //
@@ -416,6 +428,7 @@ namespace librealsense
     RS2_ENUM_HELPERS_CUSTOMIZED(rs2_digital_gain, RS2_DIGITAL_GAIN_HIGH, RS2_DIGITAL_GAIN_LOW)
     RS2_ENUM_HELPERS(rs2_host_perf_mode, HOST_PERF)
     RS2_ENUM_HELPERS(rs2_emitter_frequency_mode, EMITTER_FREQUENCY)
+    RS2_ENUM_HELPERS(rs2_depth_auto_exposure_mode, DEPTH_AUTO_EXPOSURE)
 
 
     ////////////////////////////////////////////

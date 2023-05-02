@@ -1042,7 +1042,7 @@ namespace rs2
     {
     public:
         /**
-        * Create decoder for Huffman-code compressed Depth frames
+        * Deprecated!  - Create decoder for Huffman-code compressed Depth frames
         */
         depth_huffman_decoder() : filter(init())
         {}

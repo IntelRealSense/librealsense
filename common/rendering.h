@@ -17,6 +17,7 @@
 #include "float2.h"
 #include "rect.h"
 #include "animated.h"
+#include "plane.h"
 
 #include <vector>
 #include <algorithm>
@@ -111,20 +112,6 @@ namespace rs2
         return b * t + a * (1 - t);
     }
 
-    struct plane
-    {
-        float a;
-        float b;
-        float c;
-        float d;
-    };
-    inline bool operator==(const plane& lhs, const plane& rhs) { return lhs.a == rhs.a && lhs.b == rhs.b && lhs.c == rhs.c && lhs.d == rhs.d; }
-
-    inline float evaluate_plane(const plane& plane, const float3& point)
-    {
-        return plane.a * point.x + plane.b * point.y + plane.c * point.z + plane.d;
-    }
-
     inline float3 lerp(const float3& a, const float3& b, float t)
     {
         return b * t + a * (1 - t);
@@ -161,11 +148,6 @@ namespace rs2
             }
         }
         return res;
-    }
-
-    inline float operator*(const float3& a, const float3& b)
-    {
-        return a.x*b.x + a.y*b.y + a.z*b.z;
     }
 
     inline bool is_valid(const plane_3d& p)
@@ -406,7 +388,6 @@ namespace rs2
         std::shared_ptr<colorizer> colorize;
         std::shared_ptr<yuy_decoder> yuy2rgb;
         std::shared_ptr<y411_decoder> y411;
-        std::shared_ptr<depth_huffman_decoder> depth_decode;
         bool zoom_preview = false;
         rect curr_preview_rect{};
         int texture_id = 0;
@@ -465,13 +446,6 @@ namespace rs2
             int height = 0;
             int stride = 0;
             auto format = frame.get_profile().format();
-
-            // Decode compressed data required for mouse pointer depth calculations
-            if (RS2_FORMAT_Z16H==format)
-            {
-                frame = depth_decode->process(frame);
-                format = frame.get_profile().format();
-            }
 
             last_queue[0].enqueue(frame);
 

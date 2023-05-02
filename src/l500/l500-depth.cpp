@@ -318,7 +318,7 @@ namespace librealsense
 
     float l500_depth_sensor::read_baseline() const
     {
-        const int baseline_address = 0xa00e0868;
+        const uint32_t baseline_address = 0xa00e0868;
         command cmd(ivcam2::fw_cmd::MRD, baseline_address, baseline_address + 4);
         auto res = _owner->_hw_monitor->send(cmd);
         if (res.size() < 1)
@@ -417,7 +417,7 @@ namespace librealsense
 
             auto host_perf = get_option(RS2_OPTION_HOST_PERFORMANCE).query();
 
-            if (host_perf == RS2_HOST_PERF_LOW || host_perf == RS2_HOST_PERF_HIGH)
+            if (static_cast<int>(host_perf) == RS2_HOST_PERF_LOW || static_cast<int>(host_perf) == RS2_HOST_PERF_HIGH)
             {
                 // TPROC USB Granularity and TRB threshold settings for improved performance and stability
                 // on hosts with weak cpu and system performance
@@ -429,7 +429,7 @@ namespace librealsense
                 int ep3_usb_trb = 3;           // 3 KB
                 int ep4_usb_trb = 3;           // 3 KB
 
-                if (host_perf == RS2_HOST_PERF_LOW)
+                if (static_cast<int>(host_perf) == RS2_HOST_PERF_LOW)
                 {
                     ep2_usb_trb = 16;          // 16 KB
                     ep3_usb_trb = 12;          // 12 KB
@@ -466,7 +466,7 @@ namespace librealsense
                     LOG_WARNING("FAILED TO UPDATE depth usb tproc granularity and TRB threshold. performance and stability maybe impacted on certain platforms.");
                 }
             }
-            else if (host_perf == RS2_HOST_PERF_DEFAULT)
+            else if (static_cast<int>(host_perf) == RS2_HOST_PERF_DEFAULT)
             {
                 LOG_DEBUG("Default host performance mode, Depth/IR/Confidence usb tproc granularity and TRB threshold not changed");
             }

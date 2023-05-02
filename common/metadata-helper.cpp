@@ -1,3 +1,6 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+
 #include "metadata-helper.h"
 
 #ifdef WIN32
@@ -54,7 +57,7 @@ namespace rs2
     public:
         static bool parse_device_id(const std::string& id, device_id* res)
         {
-            static const std::regex regex("pid_([0-9a-f]+)&mi_([0-9]+)#[0-9a-f]&([0-9a-f]+)&[\\s\\S]*\\{([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\}", std::regex_constants::icase);
+            static const std::regex regex("pid_([0-9a-f]+)&mi_([0-9a-f]+)#[0-9a-f]&([0-9a-f]+)&[\\s\\S]*\\{([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\}", std::regex_constants::icase);
 
             std::match_results<std::string::const_iterator> match;
 
@@ -198,49 +201,41 @@ namespace rs2
             return result == TRUE;
         }
 
-        bool elevate_to_admin()
+        void enable_metadata_with_new_admin_process()
         {
-            if (!is_running_as_admin())
+            wchar_t szPath[MAX_PATH];
+            if (GetModuleFileName(NULL, szPath, ARRAYSIZE(szPath)))
             {
-                wchar_t szPath[MAX_PATH];
-                if (GetModuleFileName(NULL, szPath, ARRAYSIZE(szPath)))
+                SHELLEXECUTEINFO sei = { sizeof(sei) };
+
+                sei.lpVerb = L"runas";
+                sei.fMask = SEE_MASK_NOCLOSEPROCESS;
+                sei.lpFile = szPath;
+                sei.hwnd = NULL;
+                sei.nShow = SW_NORMAL;
+                auto cmd_line = get_command_line_param();
+                std::wstring wcmd(cmd_line.begin(), cmd_line.end());
+                sei.lpParameters = wcmd.c_str();
+
+                if (!ShellExecuteEx(&sei))
                 {
-                    SHELLEXECUTEINFO sei = { sizeof(sei) };
-
-                    sei.lpVerb = L"runas";
-                    sei.fMask = SEE_MASK_NOCLOSEPROCESS;
-                    sei.lpFile = szPath;
-                    sei.hwnd = NULL;
-                    sei.nShow = SW_NORMAL;
-                    auto cmd_line = get_command_line_param();
-                    std::wstring wcmd(cmd_line.begin(), cmd_line.end());
-                    sei.lpParameters = wcmd.c_str();
-
-                    if (ShellExecuteEx(&sei) != ERROR_SUCCESS)
-                    {
-                        rs2::log(RS2_LOG_SEVERITY_WARN, "Unable to elevate to admin privilege to enable metadata!");
-                        return false;
-                    }
-                    else
-                    {
-                        WaitForSingleObject(sei.hProcess, INFINITE);
-                        DWORD exitCode = 0;
-                        GetExitCodeProcess(sei.hProcess, &exitCode);
-                        CloseHandle(sei.hProcess);
-                        if (exitCode)
-                            throw std::runtime_error("Failed to set metadata registry keys!");
-                        return true;
-                    }
+                    auto errstr = std::system_category().message(GetLastError());
+                    std::string msg = "Unable to elevate to admin privilege to enable metadata! " + errstr;
+                    rs2::log(RS2_LOG_SEVERITY_WARN, msg.c_str());
                 }
                 else
                 {
-                    rs2::log(RS2_LOG_SEVERITY_WARN, "Unable to fetch module name!");
-                    return false;
+                    WaitForSingleObject(sei.hProcess, INFINITE);
+                    DWORD exitCode = 0;
+                    GetExitCodeProcess(sei.hProcess, &exitCode);
+                    CloseHandle(sei.hProcess);
+                    if (exitCode)
+                        throw std::runtime_error("Failed to set metadata registry keys!");
                 }
             }
             else
             {
-                return true;
+                rs2::log(RS2_LOG_SEVERITY_WARN, "Unable to fetch module name!");
             }
         }
 
@@ -288,7 +283,11 @@ namespace rs2
 
         void enable_metadata() override
         {
-            if (elevate_to_admin()) // Elevation to admin was succesful?
+            if (!is_running_as_admin())
+            {
+                enable_metadata_with_new_admin_process();
+            }
+            else
             {
                 std::vector<device_id> dids;
 
@@ -311,7 +310,8 @@ namespace rs2
                                     {
                                         std::string port = sen.get_info(RS2_CAMERA_INFO_PHYSICAL_PORT);
                                         device_id did;
-                                        if (parse_device_id(port, &did)) dids.push_back(did);
+                                        if (parse_device_id(port, &did))
+                                            dids.push_back(did);
                                     }
                                 }
                             }
@@ -345,7 +345,7 @@ namespace rs2
                             }
                         }
                     }
-                });
+                    });
                 if (failure) throw std::runtime_error("Unable to write to metadata registry key!");
             }
         }

@@ -1,9 +1,13 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+
+#include <rs-config.h>
 #include "calibration-model.h"
-#include "model-views.h"
+#include "device-model.h"
 #include "os.h"
 #include "ux-window.h"
 
-#include "../src/ds/ds5/ds5-private.h"
+#include "../src/ds/d400/d400-private.h"
 
 
 using namespace rs2;
@@ -146,8 +150,8 @@ void calibration_model::update(ux_window& window, std::string& error_message)
         to_open = false;
     }
 
-    auto table = (librealsense::ds::coefficients_table*)_calibration.data();
-    auto orig_table = (librealsense::ds::coefficients_table*)_original.data();
+    auto table = (librealsense::ds::d400_coefficients_table*)_calibration.data();
+    auto orig_table = (librealsense::ds::d400_coefficients_table*)_original.data();
     bool changed = false;
 
     const float w = 620;
@@ -210,7 +214,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
                     load_float3x4("world2left_rot", table->world2left_rot);
                     load_float3x4("world2right_rot", table->world2right_rot);
 
-                    for (int i = 0; i < librealsense::ds::max_ds5_rect_resolutions; i++)
+                    for (int i = 0; i < librealsense::ds::max_ds_rect_resolutions; i++)
                     {
                         table->rect_params[i].x = cf.get(std::string( rsutils::string::from() << "rectified." << i << ".fx").c_str());
                         table->rect_params[i].y = cf.get(std::string( rsutils::string::from() << "rectified." << i << ".fy").c_str());
@@ -262,9 +266,9 @@ void calibration_model::update(ux_window& window, std::string& error_message)
                     save_float3x4("world2left_rot", table->world2left_rot);
                     save_float3x4("world2right_rot", table->world2right_rot);
 
-                    for (int i = 0; i < librealsense::ds::max_ds5_rect_resolutions; i++)
+                    for (int i = 0; i < librealsense::ds::max_ds_rect_resolutions; i++)
                     {
-                        auto xy = librealsense::ds::resolutions_list[(librealsense::ds::ds5_rect_resolutions)i];
+                        auto xy = librealsense::ds::resolutions_list[(librealsense::ds::ds_rect_resolutions)i];
                         int w = xy.x; int h = xy.y;
 
                         cf.set(std::string( rsutils::string::from() << "rectified." << i << ".width").c_str(), w);
@@ -299,6 +303,8 @@ void calibration_model::update(ux_window& window, std::string& error_message)
                     dev.as<rs2::auto_calibrated_device>().reset_to_factory_calibration();
                     _calibration = dev.as<rs2::auto_calibrated_device>().get_calibration_table();
                     _original = _calibration;
+                    table = reinterpret_cast< librealsense::ds::d400_coefficients_table * >( _calibration.data() );
+                    orig_table = reinterpret_cast< librealsense::ds::d400_coefficients_table * >( _original.data() );
                     changed = true;
 
                     if (auto nm = _not_model.lock())
@@ -362,9 +368,9 @@ void calibration_model::update(ux_window& window, std::string& error_message)
         std::vector<std::string> resolution_names;
         std::vector<const char*> resolution_names_char;
         std::vector<int> resolution_offset;
-        for (int i = 0; i < librealsense::ds::max_ds5_rect_resolutions; i++)
+        for (int i = 0; i < librealsense::ds::max_ds_rect_resolutions; i++)
         {
-            auto xy = librealsense::ds::resolutions_list[(librealsense::ds::ds5_rect_resolutions)i];
+            auto xy = librealsense::ds::resolutions_list[(librealsense::ds::ds_rect_resolutions)i];
             int w = xy.x; int h = xy.y;
             if (w != 0) {
                 resolution_offset.push_back(i);
@@ -444,6 +450,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
                     dev.as<rs2::auto_calibrated_device>().set_calibration_table(_calibration);
                     dev.as<rs2::auto_calibrated_device>().write_calibration();
                     _original = _calibration;
+                    orig_table = reinterpret_cast< librealsense::ds::d400_coefficients_table * >( _original.data() );
                     ImGui::CloseCurrentPopup();
                 }
                 catch (const std::exception& ex)

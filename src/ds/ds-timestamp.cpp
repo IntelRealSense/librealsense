@@ -31,9 +31,7 @@ namespace librealsense
             LOG_ERROR("Frame is not valid. Failed to downcast to librealsense::frame.");
             return false;
         }
-        auto md = f->additional_data.metadata_blob;
         auto mds = f->additional_data.metadata_size;
-
         if (mds)
             return true;
 
@@ -352,7 +350,7 @@ namespace librealsense
         }
 
         // The timewstamp shall be trimmed back to 32 bit to allow HID/UVC intra-stream sync
-        // See ds5_iio_hid_timestamp_reader description
+        // See d400_iio_hid_timestamp_reader description
         auto timestamp = *((uint32_t*)((const uint8_t*)f->get_frame_data() + timestamp_offset));
         // TODO - verify units with custom report
         return static_cast<rs2_time_t>(timestamp) * TIMESTAMP_USEC_TO_MSEC;

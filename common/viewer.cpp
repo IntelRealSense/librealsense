@@ -49,64 +49,6 @@ namespace rs2
             s.frame_ready(std::move(f));
     }) {}
 
-    void viewer_model::render_pose(rs2::rect stream_rect, float buttons_heights)
-    {
-        int num_of_pose_buttons = 2; // trajectory, info
-
-        // Draw selection buttons on the pose header, the buttons are global to all the streaming devices
-        ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_pose_buttons - 5, buttons_heights });
-
-        bool color_icon = pose_info_object_button.is_pressed(); //draw trajectory is on - color the icon
-        if (color_icon)
-        {
-            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-        }
-
-        // Draw info object button (is not synchronized with the info buttons in the 2D view)
-        if (ImGui::Button(pose_info_object_button.get_icon().c_str(), { 24, buttons_heights }))
-        {
-            pose_info_object_button.toggle_button();
-        }
-        if (ImGui::IsItemHovered())
-        {
-            ImGui::SetTooltip("%s", pose_info_object_button.get_tooltip().c_str());
-        }
-        if (color_icon)
-        {
-            ImGui::PopStyleColor(2);
-        }
-
-        // Draw grid object button
-        ImGui::SameLine();
-
-        color_icon = trajectory_button.is_pressed(); //draw trajectory is on - color the icon
-        if (color_icon)
-        {
-            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-        }
-        if (ImGui::Button(trajectory_button.get_icon().c_str(), { 24, buttons_heights }))
-        {
-            trajectory_button.toggle_button();
-            for (auto&& s : streams)
-            {
-                if (s.second.profile.stream_type() == RS2_STREAM_POSE)
-                    streams[s.second.profile.unique_id()].dev->tm2.record_trajectory(trajectory_button.is_pressed());
-            }
-        }
-        if (color_icon)
-        {
-            ImGui::PopStyleColor(2);
-        }
-        if (ImGui::IsItemHovered())
-        {
-            ImGui::SetTooltip("%s", trajectory_button.get_tooltip().c_str());
-        }
-
-        //ImGui::End();
-    }
-
     // Need out of class declaration to take reference
     const rs2_option save_to_ply::OPTION_IGNORE_COLOR;
     const rs2_option save_to_ply::OPTION_PLY_MESH;
@@ -735,22 +677,6 @@ namespace rs2
         }
         left += 60;
 
-        // -------------------- Trajectory (T265) -------------------
-
-        active = trajectory_button.is_pressed();
-        if (big_button(&active, win, 5 + left, 0, u8"\uf1b0",
-            "Route", false, pose_render, "Show 6-dof Pose Trajectory\nRequires T265 tracking device"))
-        {
-            trajectory_button.toggle_button();
-            for (auto&& s : streams)
-            {
-                if (s.second.profile.stream_type() == RS2_STREAM_POSE)
-                    streams[s.second.profile.unique_id()].dev->tm2.record_trajectory(trajectory_button.is_pressed());
-            }
-        }
-
-        left += 60;
-
         // -------------------- Export ------------------
 
         static config_file temp_cfg;
@@ -1275,13 +1201,28 @@ namespace rs2
         auto cell_width = static_cast<float>(r.w / factor);
         auto cell_height = static_cast<float>(r.h / complement);
 
-        auto it = active_streams.begin();
+        // using the active streams sorted acc to stream type and stream index
+        // typical order will then be: depth, color, ir1, ir2, motion....
+        std::vector<stream_model*> active_streams_ordered;
+        for (auto&& active_stream : active_streams)
+        {
+            active_streams_ordered.push_back(active_stream);
+        }
+
+        std::sort(active_streams_ordered.begin(), active_streams_ordered.end(),
+            [](const stream_model* sm1, const stream_model* sm2)
+            {
+                return (sm1->profile.stream_type() < sm2->profile.stream_type()) ||
+                    ((sm1->profile.stream_type() == sm2->profile.stream_type()) && (sm1->profile.stream_index() < sm2->profile.stream_index()));
+            });
+
+        auto it = active_streams_ordered.begin();
         for (auto x = 0; x < factor; x++)
         {
             for (auto y = 0; y < complement; y++)
             {
                 // There might be spare boxes at the end (3 streams in 2x2 array for example)
-                if (it == active_streams.end()) break;
+                if (it == active_streams_ordered.end()) break;
 
                 rect rxy = { r.x + x * cell_width, r.y + y * cell_height + top_bar_height,
                     cell_width, cell_height - top_bar_height };
@@ -1415,16 +1356,6 @@ namespace rs2
                     continue;
                 }
 
-                if( f.is< pose_frame >() )  // Aggregate the trajectory in pause mode to make the
-                                            // path consistent
-                {
-                    auto dev = streams[f.get_profile().unique_id()].dev;
-                    if( dev )
-                    {
-                        dev->tm2.update_model_trajectory( f.as< pose_frame >(), ! paused );
-                    }
-                }
-
                 auto texture = upload_frame( std::move( f ) );
 
                 if( ( selected_tex_source_uid == -1 && f.get_profile().format() == RS2_FORMAT_Z16 )
@@ -1552,7 +1483,7 @@ namespace rs2
             top_y_ruler = s_model.curr_info_rect.y + s_model.curr_info_rect.h + ruler_distance_offset;
         }
 
-        static const auto left_x_colored_ruler_offset = 50;
+        static const auto left_x_colored_ruler_offset = 55;
         static const auto colored_ruler_width = 20;
         const auto left_x_colored_ruler = stream_width - left_x_colored_ruler_offset;
         const auto right_x_colored_ruler = stream_width - (left_x_colored_ruler_offset - colored_ruler_width);
@@ -2069,67 +2000,6 @@ namespace rs2
             { 0 , 0, 1, 0 },
             { 0, 0, 0, 1 }
         };
-        rs2::matrix4 rx(_rx);
-        rs2::matrix4 rz(_rz);
-
-        int stream_num = 0; // counter to locate the pose info window correctly (currently works for up to 3 streaming devices)
-        pose_frame pose = frame{};
-        for (auto&& stream : streams)
-        {
-            if (stream.second.profile.stream_type() == RS2_STREAM_POSE)
-            {
-                auto f = stream.second.texture->get_last_frame();
-                if (!f.is<pose_frame>())
-                {
-                    continue;
-                }
-
-                pose = f;
-                rs2_pose pose_data = pose.get_pose_data();
-
-                auto t = pose_to_world_transformation(pose_data);
-                float model[4][4];
-                t.to_column_major((float*)model);
-                auto m = model;
-
-                r1 = m * rx;
-                r2 = rz * m * rx;
-
-                // set the pose transformation as the model matrix to draw the axis
-                glMatrixMode(GL_MODELVIEW);
-                glPushMatrix();
-                glLoadMatrixf(view);
-
-                glMultMatrixf((float*)_rx);
-
-                streams[f.get_profile().unique_id()].dev->tm2.draw_trajectory(trajectory_button.is_pressed());
-
-                // remove model matrix from the rest of the render
-                glPopMatrix();
-
-                _cam_renderer.set_matrix(RS2_GL_MATRIX_CAMERA, r2 * view_mat);
-                _cam_renderer.set_matrix(RS2_GL_MATRIX_PROJECTION, perspective_mat);
-
-                if (f)
-                {
-                    glDisable(GL_DEPTH_TEST);
-                    glEnable(GL_BLEND);
-
-                    glBlendFunc(GL_ONE, GL_ONE);
-
-                    // Render camera model (based on source_frame camera type)
-                    f.apply_filter(_cam_renderer);
-
-                    glDisable(GL_BLEND);
-                    glEnable(GL_DEPTH_TEST);
-                }
-
-                stream_num++;
-            }
-        }
-
-
-        check_gl_error();
 
         {
             float tiles = 24;
@@ -2163,7 +2033,7 @@ namespace rs2
 
         check_gl_error();
 
-        if (!pose && !_pc_selected)
+        if (!_pc_selected)
         {
             glMatrixMode(GL_MODELVIEW);
             glPushMatrix();

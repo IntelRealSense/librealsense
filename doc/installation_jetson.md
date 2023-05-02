@@ -9,11 +9,11 @@
 ### 1. Prerequisites
 
 * NVIDIA® **Jetson Nano™**, **Jetson TX2™** and **Jetson AGX Xavier™** board (may also work on other Jetson devices)
-* RealSense **D415**, **D435**, **D435i**, **D455**, **L515**, **SR300** and **T265** Camera devices.
+* RealSense **D415**, **D435**, **D435i**, **D455**, **L515** and **SR300** Camera devices.
 
 ### 2. Establish Developer's Environment
 
-Follow [official instructions](https://developer.nvidia.com/embedded/learn/getting-started-jetson) to get your board ready. This guide will assume you are using **NVIDIA® L4T Ubuntu 16.04/18.04** image. Note that in most cases it is necessary to install a toll named "SDK Manager" to flash and install **Jetson** boards with both the L4T (Linux for Tegra) and NVIDIA-specific software packages (CUDA, Tensor Flow, AI, etc.)
+Follow [official instructions](https://developer.nvidia.com/embedded/learn/getting-started-jetson) to get your board ready. This guide will assume you are using **NVIDIA® L4T Ubuntu 16.04/18.04/20.04** image with kernels 4.9/5.10. Note that in most cases it is necessary to install a toll named "SDK Manager" to flash and install **Jetson** boards with both the L4T (Linux for Tegra) and NVIDIA-specific software packages (CUDA, Tensor Flow, AI, etc.)
 For **Jetson Nano™** we strongly recommend enabling the Barrel Jack connector for extra power (See [jetsonhacks.com/jetson-nano-use-more-power/](https://www.jetsonhacks.com/2019/04/10/jetson-nano-use-more-power/) to learn how)
 
 ![Jetson Nano](./img/jetson.jpg)
@@ -36,10 +36,10 @@ If that's the case, what is the dilemma?
 
 In order to enable the full capabilities of RealSense devices certain modifications in the kernel (driver) modules shall be applied, such as support of Depth-related streaming formats and access to per-frame metadata attributes. There is a small set of generic kernel changes that are mostly retrofitted with more advanced kernel versions aimed at improving the overall drivers stability.
 
-NVIDIA's L4T delivers an Ubuntu-based distribution with a customized kernel based on version 4.9. The way the kernel is configured and deployed is different from a desktop Ubuntu image with two notable differences being the list of kernel modules included in default configuration and the way a new image is flashed.
+NVIDIA's L4T delivers an Ubuntu-based distribution with a customized kernel based on version 4.9/5.10. The way the kernel is configured and deployed is different from a desktop Ubuntu image with two notable differences being the list of kernel modules included in default configuration and the way a new image is flashed.
 
 And while it is possible to rebuild and flash a new kernel image the procedure can be perceived as challenging and shall be performed with extra caution.
-This guide comes with a script that allows to modify the kernel modules with Librealsense2-related patches without replacing the kernel image. The script has been verified with **Jetson AGX Xavier™** board using L4T versions 4.2.3, 4.3 and 4.4 (Sept 2020). Scroll to the end of the guide for details.
+This guide comes with a script that allows to modify the kernel modules with Librealsense2-related patches without replacing the kernel image. The script has been verified with **Jetson AGX Xavier™** board using L4T versions 4.2.3, 4.3, 4.4 (Sept 2020) and 5.0.2. Scroll to the end of the guide for details.
 
 ### 4. Install with Debian Packages
  The minimum JetPack SDK required to run the precompiled Debians is [JetPack version 4.4.1](https://developer.nvidia.com/jetpack-sdk-441-archive) ( L4T 32.4.4 , CUDA version 10.2).
@@ -78,8 +78,6 @@ Note that a lower version may not work due to non compatible CUDA versions limit
 
 ![d400](./img/jetson-d400.png)
 
-![t265](./img/jetson-t265.png)
-
 You can also double-TAB after typing `rs-` to see the full list of SDK examples.
 
 ## Building from Source using **RSUSB** Backend
@@ -92,7 +90,7 @@ You can also double-TAB after typing `rs-` to see the full list of SDK examples.
 
 ⮕ Use the V4L Native backend by applying the kernel patching
 
-The method was verified with **Jetson AGX** boards with JetPack **4.2.3**[L4T 32.2.1,32.2.3], **4.3**[L4T 32.3.1], **4.4**[L4T 32.4.3] and **4.5.1**[L4T 32.5.1].
+The method was verified with **Jetson AGX** boards with JetPack **4.2.3**[L4T 32.2.1,32.2.3], **4.3**[L4T 32.3.1], **4.4**[L4T 32.4.3], **4.5.1**[L4T 32.5.1] and **5.0.2**[L4T 35.1.0].
 
 The method has not yet been verified on the **Jetson Nano** board.
 
