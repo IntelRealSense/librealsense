@@ -996,6 +996,92 @@ void draw_pointcloud(float width, float height, glfw_state& app_state, rs2::poin
     glPopAttrib();
 }
 
+std::map<uint8_t, float3> get_label_to_color3f()
+{
+    static const float3 BLACK_COL       = { 0.0f, 0.0f, 0.0f };
+    static const float3 RED_COL         = { 1.0f, 0.0f, 0.0f };
+    static const float3 GREEN_COL       = { 0.0f, 1.0f, 0.0f };
+    static const float3 BLUE_COL        = { 0.0f, 0.0f, 1.0f };
+    static const float3 YELLOW_COL      = { 0.0f, 1.0f, 1.0f };
+    static const float3 TURQUOISE_COL   = { 1.0f, 1.0f, 1.0f };
+    static const float3 MAGENTA_COL     = { 1.0f, 0.0f, 1.0f };
+    static const float3 WHITE_COL       = { 1.0f, 1.0f, 1.0f };
+    std::map<uint8_t, float3> label_to_color3f;
+
+    label_to_color3f[0] = BLACK_COL;
+    label_to_color3f[1] = WHITE_COL;
+    label_to_color3f[2] = RED_COL;
+    label_to_color3f[3] = GREEN_COL;
+    label_to_color3f[4] = BLUE_COL;
+    label_to_color3f[5] = YELLOW_COL;
+    label_to_color3f[6] = TURQUOISE_COL;
+    label_to_color3f[7] = MAGENTA_COL;
+
+    return label_to_color3f;
+}
+
+// Handles all the OpenGL calls needed to display the labeled point cloud
+void draw_labeled_pointcloud(float width, float height, glfw_state& app_state, 
+    const std::vector< std::pair<uint8_t, std::vector<rs2::vertex> > >& labels_to_vertices)
+{
+    if (labels_to_vertices.size() == 0)
+        return;
+
+    // OpenGL commands that prep screen for the pointcloud
+    glLoadIdentity();
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+    glClearColor(153.f / 255, 153.f / 255, 153.f / 255, 1);
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    gluPerspective(60, width / height, 0.01f, 10.0f);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    gluLookAt(0, 0, 0, 0, 0, 1, 0, 1, 0);
+
+    glTranslatef(0, 0, +0.5f + app_state.offset_y * 0.05f);
+    glRotated(app_state.pitch, 1, 0, 0);
+    glRotated(app_state.yaw, 0, 1, 0);
+    glTranslatef(0, 0, -0.5f);
+
+    glPointSize(width / 640);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_TEXTURE_2D);
+
+    glBindTexture(GL_TEXTURE_2D, app_state.tex.get_gl_handle());
+    float tex_border_color[] = { 0.8f, 0.8f, 0.8f, 0.8f };
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F); // GL_CLAMP_TO_EDGE
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, 0x812F); // GL_CLAMP_TO_EDGE
+    glBegin(GL_POINTS);
+
+    auto label_to_color3f = get_label_to_color3f();
+    /* this segment actually renders the labeled pointcloud */
+    for (int i = 0; i < labels_to_vertices.size(); ++i)
+    {
+        auto label = labels_to_vertices[i].first;
+        auto vertices = labels_to_vertices[i].second;
+        auto color = label_to_color3f[label];
+
+        for (auto&& v : vertices)
+        {
+            GLfloat vert[3] = {-v.y, v.z, -v.x};
+            glVertex3fv(vert);
+            glColor3f(color.x, color.y, color.z);
+        }
+    }
+
+    // OpenGL cleanup
+    glEnd();
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glPopAttrib();
+}
+
 void quat2mat(rs2_quaternion& q, GLfloat H[16])  // to column-major matrix
 {
     H[0] = 1 - 2 * q.y * q.y - 2 * q.z * q.z; H[4] = 2 * q.x * q.y - 2 * q.z * q.w;     H[8] = 2 * q.x * q.z + 2 * q.y * q.w;     H[12] = 0.0f;
