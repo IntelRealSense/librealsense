@@ -356,7 +356,7 @@ class AUS(QMainWindow):
         self.device_combo = QComboBox(self)
         self.device_combo.addItem("All devices")
         self.device_combo.addItems([key[16::] for key in self.ppf_data])
-        groupBox = QGroupBox("PPF")
+        groupBox = QGroupBox("Post processing filters")
         groupBox.setFont(QFont('Times', 8))
 
         self.button_dispaly_device_option = QPushButton('Display ppf list', self)
