@@ -843,6 +843,7 @@ namespace rs2
               "Viewer FPS captures how many frames the application manages to render.\n"
               "Frame drops can occur for variety of reasons." } );
 
+        stream_details.push_back( { "", "", "" } );
     }
 
     void stream_model::draw_stream_metadata( const double timestamp,
@@ -860,7 +861,7 @@ namespace rs2
 
         if( timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME )
         {
-            stream_details.push_back( { no_md } );
+            stream_details.push_back( { no_md, "", ""} );
         }
 
         std::map< rs2_frame_metadata_value, std::string > descriptions = {
@@ -914,8 +915,8 @@ namespace rs2
         ImGui::SetCursorScreenPos( { stream_rect.x, stream_rect.y } );
 
         // Creating layer for metadata
-        std::string profile_id = rsutils::string::from() << "##Metadata-" << profile.unique_id();
-        ImGui::BeginChild( profile_id.c_str(), ImVec2( stream_rect.w + 2, stream_rect.h ) );
+        std::string metadata_layer_id = rsutils::string::from() << "##Metadata-" << profile.unique_id();
+        ImGui::BeginChild( metadata_layer_id.c_str(), ImVec2( stream_rect.w + 2, stream_rect.h ) );
         auto screen_pos = ImGui::GetCursorScreenPos( );
         const float space_between_columns = 20.f;
         const float space_between_lines = 4.f;
@@ -930,12 +931,13 @@ namespace rs2
             ImGui::PushStyleColor( ImGuiCol_FrameBg, transparent );
             ImGui::PushStyleColor( ImGuiCol_TextSelectedBg, light_blue );
 
-            if( at.name == no_md )
+            if ( at.name == "" ) {
+                line_y += ImGui::GetTextLineHeight() + space_between_lines; // Create space separation between stream details and metatada
+            }
+            else if( at.name == no_md )
             {
                 std::vector<std::string> warning_lines = { "Per-frame metadata is not enabled at the OS level!", "Please follow the installation guide for the details." };
                 ImGui::PushStyleColor( ImGuiCol_Text, redish );
-
-                line_y += ImGui::GetTextLineHeight() + space_between_lines; // create space from up before a warning.
 
                 // This loop print 2 lines of the warning. This is work around solution because InputText can't show text after new line character.
                 for (int i = 0; i < warning_lines.size(); i++) {
@@ -957,7 +959,7 @@ namespace rs2
                                       warning_lines[i].size(),
                                       ImGuiInputTextFlags_ReadOnly );
 
-                    line_y += ImGui::GetTextLineHeight() + space_between_lines;
+                    line_y += ImGui::GetTextLineHeight() + space_between_lines; // Move down to the next line
                 }
 
                 ImGui::PopStyleColor(); // remove redish text color.
@@ -1015,7 +1017,7 @@ namespace rs2
                 
                 ImGui::PopItemWidth();
 
-                line_y += ImGui::GetTextLineHeight() + space_between_lines;
+                line_y += ImGui::GetTextLineHeight() + space_between_lines; // Move down to the next line
             }
 
             ImGui::PopStyleColor( 2 ); // pop transparent ImGuiCol_FrameBg, pop light_blue ImGuiCol_TextSelectedBg.
