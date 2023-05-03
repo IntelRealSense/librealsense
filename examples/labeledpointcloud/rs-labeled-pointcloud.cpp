@@ -11,9 +11,6 @@
 // Helper functions
 void register_glfw_callbacks(window& app, glfw_state& app_state);
 
-std::vector< std::pair<uint8_t, std::vector<rs2::vertex> > > 
-prepare_data(const std::vector<rs2::vertex>& vertices_vec, const std::vector<uint8_t>&  labels_vec, size_t vertices_size);
-
 int main(int argc, char * argv[]) try
 {
     // Create a simple OpenGL window for rendering:
@@ -52,7 +49,8 @@ int main(int argc, char * argv[]) try
         std::vector<uint8_t> labels_vec;
         labels_vec.insert(labels_vec.begin(), labels, labels + vertices_size);
 
-        std::vector< std::pair<uint8_t, std::vector<rs2::vertex> > > labels_to_vertices = prepare_data(vertices_vec, labels_vec, vertices_size);
+        std::vector< std::pair<uint8_t, std::vector<rs2::vertex> > > labels_to_vertices = 
+            rs2::labeled_point_cloud_utilities::prepare_labeled_points_data(vertices_vec, labels_vec, vertices_size);
 
         // Draw the labeled pointcloud
         draw_labeled_pointcloud(app.width(), app.height(), app_state, labels_to_vertices);
@@ -71,33 +69,3 @@ catch (const std::exception & e)
     return EXIT_FAILURE;
 }
 
-std::vector< std::pair<uint8_t, std::vector<rs2::vertex> > >
-prepare_data(const std::vector<rs2::vertex>& vertices_vec, const std::vector<uint8_t>& labels_vec, size_t vertices_size)
-{
-    std::vector< std::pair<uint8_t, std::vector<rs2::vertex> > > labels_to_vertices;
-
-    for (int i = 0; i < vertices_size; ++i)
-    {
-        auto it = std::find_if(labels_to_vertices.begin(), labels_to_vertices.end(),
-            [&](const std::pair<uint8_t, std::vector<rs2::vertex> >& p) {return p.first == labels_vec[i]; });
-        if (it == labels_to_vertices.end())
-            labels_to_vertices.push_back(std::make_pair(labels_vec[i], std::vector<rs2::vertex>()));
-    }
-    std::sort(labels_to_vertices.begin(), labels_to_vertices.end(),
-        [&](const auto& left, const auto& right)
-        {
-            return left.first < right.first;
-        });
-
-    for (int i = 0; i < vertices_size; ++i)
-    {
-        auto it = std::find_if(labels_to_vertices.begin(), labels_to_vertices.end(),
-            [&](const std::pair<uint8_t, std::vector<rs2::vertex> >& p) {return p.first == labels_vec[i]; });
-        if (it == labels_to_vertices.end())
-            throw std::runtime_error("Should not happen");
-
-        it->second.push_back(vertices_vec[i]);
-    }
-
-    return labels_to_vertices;
-}

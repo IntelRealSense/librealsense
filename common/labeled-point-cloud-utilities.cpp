@@ -52,7 +52,7 @@ namespace rs2
                 labels_to_vertices.push_back(std::make_pair(labels_vec[i], std::vector<rs2::vertex>()));
         }
         std::sort(labels_to_vertices.begin(), labels_to_vertices.end(),
-            [&](const auto& left, const auto& right)
+            [&](const std::pair<uint8_t, std::vector<rs2::vertex> >& left, const std::pair<uint8_t, std::vector<rs2::vertex> >& right)
             {
                 return left.first < right.first;
             });
