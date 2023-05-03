@@ -106,7 +106,7 @@ namespace librealsense
     public:
         ds_motion_common(device* owner,
             firmware_version fw_version,
-            const ds::d400_caps& device_capabilities,
+            const ds::ds_caps& device_capabilities,
             std::shared_ptr<hw_monitor> hwm);
 
         rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const;
@@ -147,14 +147,14 @@ namespace librealsense
         void set_roi_method();
         void register_streams_to_extrinsic_groups();
         std::vector<platform::uvc_device_info> filter_device_by_capability(const std::vector<platform::uvc_device_info>& devices,
-            ds::d400_caps caps);
+            ds::ds_caps caps);
 
         friend class ds_motion_sensor;
         friend class ds_fisheye_sensor;
 
         device* _owner;
         firmware_version _fw_version;
-        ds::d400_caps _device_capabilities;
+        ds::ds_caps _device_capabilities;
         std::shared_ptr<hw_monitor> _hw_monitor;
 
         std::shared_ptr<mm_calib_handler> _mm_calib;

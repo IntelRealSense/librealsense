@@ -112,7 +112,10 @@ namespace librealsense
         std::shared_ptr<stream_profile_interface> clone() const override
         {
             auto res = std::make_shared<video_stream_profile>(platform::stream_profile{});
+            if( !res )
+                throw librealsense::invalid_value_exception( "Stream profiles failed in clone." );
             auto id = environment::get_instance().generate_stream_id();
+
             res->set_unique_id( id );
             LOG_DEBUG( "video_stream_profile::clone, id= " << id );
             res->set_dims(get_width(), get_height());

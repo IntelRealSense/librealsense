@@ -10,24 +10,6 @@
 
 namespace librealsense
 {
-    emitter_frequency::emitter_frequency(
-        uvc_sensor& ep, const std::map< float, std::string >& description_per_value)
-        : uvc_xu_option(ep,
-            ds::depth_xu,
-            ds::DS5_EMITTER_FREQUENCY,
-            "Controls the emitter frequency, 57 [KHZ] / 91 [KHZ]",
-            description_per_value)
-    {
-    }
-
-    void emitter_frequency::set(float value)
-    {
-        if (_ep.is_streaming())
-            throw wrong_api_call_sequence_exception("Setting the emitter frequency during streaming is not allowed");
-
-        uvc_xu_option::set(value);
-        _recording_function(*this);
-    }
 
     asic_temperature_option_mipi::asic_temperature_option_mipi(std::shared_ptr<hw_monitor> hwm, rs2_option opt)
         : _hw_monitor(hwm), _option(opt)
@@ -238,11 +220,11 @@ namespace librealsense
     {
         if (value == 0)
         {
-            return "Thermal compensation is disabled";
+            return "Disabled";
         }
         else
         {
-            return "Thermal compensation is enabled";
+            return "Enabled";
         }
     }
 

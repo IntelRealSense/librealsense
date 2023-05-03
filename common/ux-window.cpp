@@ -1,11 +1,17 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
 #include <glad/glad.h>
-
+#include <rs-config.h>
 #include "ux-window.h"
 
-#include "model-views.h"
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+
+#include "device-model.h"
 #include "os.h"
 
 // We use STB image to load the splash-screen from memory

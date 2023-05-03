@@ -7,6 +7,8 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include <librealsense2/hpp/rs_record_playback.hpp> // for downcasts
 #include <common/metadata-helper.h>
 
+#include <iostream>
+
 void init_device(py::module &m) {
     /** rs_device.hpp **/
     py::class_<rs2::device> device(m, "device"); // No docstring in C++

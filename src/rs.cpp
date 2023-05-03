@@ -41,7 +41,6 @@
 #include "pipeline/pipeline.h"
 #include "environment.h"
 #include "proc/temporal-filter.h"
-#include "proc/depth-decompress.h"
 #include "software-device.h"
 #include "global_timestamp_reader.h"
 #include "auto-calibrated-device.h"
@@ -633,6 +632,8 @@ rs2_stream_profile* rs2_clone_video_stream_profile(const rs2_stream_profile* mod
 
     auto vid = std::dynamic_pointer_cast<video_stream_profile_interface>(sp);
     auto i = *intr;
+
+    VALIDATE_NOT_NULL(vid)
     vid->set_intrinsics([i]() { return i; });
     vid->set_dims(width, height);
 
@@ -1597,7 +1598,7 @@ int rs2_is_processing_block_extendable_to(const rs2_processing_block* f, rs2_ext
     case RS2_EXTENSION_TEMPORAL_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::temporal_filter) != nullptr;
     case RS2_EXTENSION_HOLE_FILLING_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::hole_filling_filter) != nullptr;
     case RS2_EXTENSION_ZERO_ORDER_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::zero_order) != nullptr;
-    case RS2_EXTENSION_DEPTH_HUFFMAN_DECODER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::depth_decompression_huffman) != nullptr;
+    case RS2_EXTENSION_DEPTH_HUFFMAN_DECODER: throw not_implemented_exception( "deprecated" );
     case RS2_EXTENSION_HDR_MERGE: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::hdr_merge) != nullptr;
     case RS2_EXTENSION_SEQUENCE_ID_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::sequence_id_filter) != nullptr;
   
@@ -2423,9 +2424,8 @@ NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
 rs2_processing_block* rs2_create_huffman_depth_decompress_block(rs2_error** error) BEGIN_API_CALL
 {
-    auto block = std::make_shared<librealsense::depth_decompression_huffman>();
+    throw not_implemented_exception( "deprecated" );
 
-    return new rs2_processing_block{ block };
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 

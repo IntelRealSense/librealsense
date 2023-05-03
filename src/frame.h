@@ -23,6 +23,18 @@ class depth_sensor;
 typedef std::multimap< rs2_frame_metadata_value, std::shared_ptr< md_attribute_parser_base > >
     metadata_parser_map;
 
+#pragma pack( push, 1 )
+struct metadata_array_value
+{
+    bool is_valid;
+    rs2_metadata_type value;
+};
+#pragma pack( pop )
+
+static_assert( sizeof( metadata_array_value ) == sizeof( rs2_metadata_type ) + 1,
+               "unexpected size for metadata array members" );
+
+
 /*
     Each frame is attached with a static header
     This is a quick and dirty way to manage things like timestamp,
@@ -57,7 +69,7 @@ struct frame_additional_data : frame_header
 {
     uint32_t metadata_size = 0;
     bool fisheye_ae_mode = false;  // TODO: remove in future release
-    std::array< uint8_t, MAX_META_DATA_SIZE > metadata_blob;
+    std::array< uint8_t, RS2_FRAME_METADATA_ACTUAL_COUNT * sizeof( metadata_array_value ) > metadata_blob;
     rs2_time_t last_timestamp = 0;
     unsigned long long last_frame_number = 0;
     bool is_blocking  = false;  // when running from recording, this bit indicates
@@ -74,7 +86,7 @@ struct frame_additional_data : frame_header
     frame_additional_data( rs2_time_t in_timestamp,
                            unsigned long long in_frame_number,
                            rs2_time_t in_system_time,
-                           uint8_t md_size,
+                           uint32_t md_size,
                            const uint8_t * md_buf,
                            rs2_time_t backend_time,
                            rs2_time_t last_timestamp,
@@ -90,9 +102,8 @@ struct frame_additional_data : frame_header
         , depth_units( in_depth_units )
         , raw_size( transmitted_size )
     {
-        // Copy up to 255 bytes to preserve metadata as raw data
         if( metadata_size )
-            std::copy( md_buf, md_buf + std::min( md_size, MAX_META_DATA_SIZE ), metadata_blob.begin() );
+            std::copy( md_buf, md_buf + std::min( size_t( md_size ), metadata_blob.size() ), metadata_blob.begin() );
     }
 };
 

@@ -224,7 +224,6 @@ def query( monitor_changes = True ):
     _context = rs.context()
     _device_by_sn = dict()
     try:
-        log.d( 'discovering devices ...' )
         log.debug_indent()
         for retry in range(3):
             try:
