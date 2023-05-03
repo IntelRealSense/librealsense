@@ -20,8 +20,6 @@
 
 #include "../third-party/stb_easy_font.h"
 #include "example-utils.hpp"
-#include "common/labeled-point-cloud-utilities.h"
-#include "common/float3.h"
 
 #ifndef PI
 #define PI  3.14159265358979323846
@@ -987,68 +985,6 @@ void draw_pointcloud(float width, float height, glfw_state& app_state, rs2::poin
             // upload the point and texture coordinates only for points we have depth data for
             glVertex3fv(vertices[i]);
             glTexCoord2fv(tex_coords[i]);
-        }
-    }
-
-    // OpenGL cleanup
-    glEnd();
-    glPopMatrix();
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glPopAttrib();
-}
-
-// Handles all the OpenGL calls needed to display the labeled point cloud
-void draw_labeled_pointcloud(float width, float height, glfw_state& app_state, 
-    const std::vector< std::pair<uint8_t, std::vector<rs2::vertex> > >& labels_to_vertices)
-{
-    if (labels_to_vertices.size() == 0)
-        return;
-
-    // OpenGL commands that prep screen for the pointcloud
-    glLoadIdentity();
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
-
-    glClearColor(153.f / 255, 153.f / 255, 153.f / 255, 1);
-    glClear(GL_DEPTH_BUFFER_BIT);
-
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    gluPerspective(60, width / height, 0.01f, 10.0f);
-
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    gluLookAt(0, 0, 0, 0, 0, 1, 0, 1, 0);
-
-    glTranslatef(0, 0, +0.5f + app_state.offset_y * 0.05f);
-    glRotated(app_state.pitch, 1, 0, 0);
-    glRotated(app_state.yaw, 0, 1, 0);
-    glTranslatef(0, 0, -0.5f);
-
-    glPointSize(width / 640);
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_TEXTURE_2D);
-
-    glBindTexture(GL_TEXTURE_2D, app_state.tex.get_gl_handle());
-    float tex_border_color[] = { 0.8f, 0.8f, 0.8f, 0.8f };
-    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex_border_color);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F); // GL_CLAMP_TO_EDGE
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, 0x812F); // GL_CLAMP_TO_EDGE
-    glBegin(GL_POINTS);
-
-    auto label_to_color3f = rs2::labeled_point_cloud_utilities::get_label_to_color3f();
-    /* this segment actually renders the labeled pointcloud */
-    for (int i = 0; i < labels_to_vertices.size(); ++i)
-    {
-        auto label = labels_to_vertices[i].first;
-        auto vertices = labels_to_vertices[i].second;
-        auto color = label_to_color3f[static_cast<rs2_point_cloud_label>(label)];
-
-        for (auto&& v : vertices)
-        {
-            GLfloat vert[3] = {-v.y, v.z, -v.x};
-            glVertex3fv(vert);
-            glColor3f(color.x, color.y, color.z);
         }
     }
 
