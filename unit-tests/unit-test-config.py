@@ -75,7 +75,25 @@ if not os.path.isdir( dir ) or not os.path.isdir( builddir ):
 root = repo.root.replace( '\\' , '/' )
 src = root + '/src'
 
+
+def surround_links_with_quotes(links):
+    """
+    This function replace spaces with '/ ' string.
+    This replacement fix bug unit-test installation
+    because spaces in links can't be read from cmake files properly.
+    """
+    if links and type(links) is str:
+        return '"' + links + '"'
+    if links and type(links) is list:
+        return ['"' + link + '"' if link[0] != '$' else link for link in links]  #
+    else:
+        raise TypeError
+
+
 def generate_cmake( builddir, testdir, testname, filelist, custom_main ):
+    filelist = surround_links_with_quotes(filelist)
+    root_directory = surround_links_with_quotes(root)
+
     makefile = builddir + '/' + testdir + '/CMakeLists.txt'
     log.d( '   creating:', makefile )
     handle = open( makefile, 'w' )
@@ -90,9 +108,9 @@ project( ''' + testname + ''' )
 set( SRC_FILES ''' + filelist + '''
 )
 add_executable( ''' + testname + ''' ${SRC_FILES} )
-source_group( "Common Files" FILES ${CATCH_FILES} ''' + dir + '''/test.cpp''' )
+source_group( "Common Files" FILES ${CATCH_FILES} ''' + '"' + dir + '''/test.cpp''' + '"')
     if not custom_main:
-        handle.write( ' ' + dir + '/unit-test-default-main.cpp' )
+        handle.write(' "' + dir + '/unit-test-default-main.cpp' + '"')
     handle.write( ''' )
 target_link_libraries( ''' + testname + ''' ${DEPENDENCIES} )
 
@@ -101,7 +119,7 @@ set_target_properties( ''' + testname + ''' PROPERTIES FOLDER "Unit-Tests/''' + 
 using_easyloggingpp( ${PROJECT_NAME} SHARED )
 
 # Add the repo root directory (so includes into src/ will be specific: <src/...>)
-target_include_directories(''' + testname + ''' PRIVATE ''' + root + ''')
+target_include_directories(''' + testname + ''' PRIVATE ''' + root_directory + ''')
 
 ''' )
     handle.close()
