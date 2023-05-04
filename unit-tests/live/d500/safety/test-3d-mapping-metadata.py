@@ -2,10 +2,10 @@
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 # test:device D585S
-# test:donotrun
+#test:donotrun:!windows
 
 import pyrealsense2 as rs
-from rspy import test,log
+from rspy import test, log
 from metadata_common import *
 
 occupancy_metadata_values = [rs.frame_metadata_value.frame_counter,
@@ -51,6 +51,12 @@ prev_counter = 0
 prev_ts = 0
 
 
+def reset_measurements():
+    global prev_counter, prev_ts
+    prev_counter = 0
+    prev_ts = 0
+
+
 def check_counter_and_timestamp_increase(frame, fps):
     global prev_counter, prev_ts
     if prev_counter == 0 and prev_ts == 0:
@@ -61,11 +67,11 @@ def check_counter_and_timestamp_increase(frame, fps):
         current_ts = frame.get_frame_metadata(rs.frame_metadata_value.frame_timestamp)
         test.info("prev_counter", prev_counter)
         test.info("current_counter", current_counter)
-        test.check(current_counter > prev_counter) # D500 has a skip frames mechanism on low fps meaning no sequential frame numbers
+        test.check(
+            current_counter > prev_counter)  # D500 has a skip frames mechanism on low fps meaning no sequential frame numbers
         test.check((current_ts - prev_ts) / 1000 < 2 * 1000 / fps)
         prev_counter = current_counter
         prev_ts = current_ts
-
 
 
 ################# Checking occupancy metadata required fileds are received ##################
@@ -83,11 +89,11 @@ while iterations < 20:
 pipe.stop()
 test.finish()
 
-################# Checking point cloud metadata required fileds are received ##################
-test.start("Checking point cloud stream metadata received")
+################# Checking labeled point cloud metadata required fileds are received ##################
+test.start("Checking labeled point cloud stream metadata received")
 
 cfg = rs.config()
-cfg.enable_stream(rs.stream.point_cloud)
+cfg.enable_stream(rs.stream.labeled_point_cloud)
 pipe = rs.pipeline()
 pipe.start(cfg)
 iterations = 0
@@ -102,10 +108,11 @@ test.finish()
 test.start("Checking occupancy stream metadata frame counter and timestamp increasing")
 cfg = rs.config()
 fps = 30
-cfg.enable_stream(rs.stream.occupancy, rs.format.occupancy, fps)
+cfg.enable_stream(rs.stream.occupancy, rs.format.raw8, fps)
 pipe = rs.pipeline()
 pipe.start(cfg)
 iterations = 0
+reset_measurements()
 while iterations < 20:
     iterations += 1
     f = pipe.wait_for_frames()
@@ -113,14 +120,15 @@ while iterations < 20:
 pipe.stop()
 test.finish()
 
-################# Checking point cloud frame counter and timestamp increasing ##################
-test.start("Checking point cloud stream metadata frame counter and timestamp increasing")
+################# Checking labeled point cloud frame counter and timestamp increasing ##################
+test.start("Checking labeled point cloud stream metadata frame counter and timestamp increasing")
 cfg = rs.config()
 fps = 30
-cfg.enable_stream(rs.stream.point_cloud, rs.format.xyz32, fps)
+cfg.enable_stream(rs.stream.labeled_point_cloud, rs.format.raw8, fps)
 pipe = rs.pipeline()
 pipe.start(cfg)
 iterations = 0
+reset_measurements()
 while iterations < 20:
     iterations += 1
     f = pipe.wait_for_frames()

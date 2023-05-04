@@ -22,6 +22,7 @@
 #include <arcball_camera.h>
 #include <rsutils/string/trim-newlines.h>
 #include "../common/utilities/imgui/wrap.h"
+#include <common/labeled-point-cloud-utilities.h>
 
 namespace rs2
 {
@@ -1308,6 +1309,7 @@ namespace rs2
     {
         std::shared_ptr<texture_buffer> texture_frame = nullptr;
         points p;
+        labeled_points lab_points;
         frame f{};
         gc_streams();
 
@@ -1372,6 +1374,12 @@ namespace rs2
                     continue;
                 }
 
+                if (f.is<labeled_points>())
+                {
+                    if (!paused)
+                        lab_points = f.as<labeled_points>();
+                }
+
                 auto texture = upload_frame( std::move( f ) );
 
                 if( ( selected_tex_source_uid == -1 && f.get_profile().format() == RS2_FORMAT_Z16 )
@@ -1407,7 +1415,8 @@ namespace rs2
 
         try
         {
-            draw_viewport( viewer_rect, window, devices, error_message, texture_frame, p );
+            draw_viewport( viewer_rect, window, devices, error_message, 
+                texture_frame, p, lab_points );
 
             modal_notification_on = not_model->draw( window,
                                                      static_cast< int >( window.width() ),
@@ -1924,7 +1933,7 @@ namespace rs2
     }
 
     void viewer_model::render_3d_view(const rect& viewer_rect, ux_window& win,
-        std::shared_ptr<texture_buffer> texture, rs2::points points)
+        std::shared_ptr<texture_buffer> texture, rs2::points points, rs2::labeled_points labeled_points)
     {
         auto top_bar_height = 60.f;
 
@@ -1935,6 +1944,11 @@ namespace rs2
         if (texture)
         {
             last_texture = texture;
+        }
+
+        if (labeled_points)
+        {
+            last_labeled_points = labeled_points;
         }
 
         auto bottom_y = win.framebuf_height() - viewer_rect.y - viewer_rect.h;
@@ -2229,6 +2243,55 @@ namespace rs2
         }
 
         check_gl_error();
+
+        if (last_labeled_points)
+        {
+            auto vf_profile = last_labeled_points.get_profile().as<video_stream_profile>();
+            // Non-linear correspondence customized for non-flat surface exploration
+            if (vf_profile.width() <= 0)
+                throw std::runtime_error("Profile width must be greater than 0.");
+
+            glPointSize(std::sqrt(viewer_rect.w / vf_profile.width()));
+
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
+
+            glBegin(GL_POINTS);
+            {
+                auto vertices = last_labeled_points.get_vertices();
+                auto vertices_size = last_labeled_points.size();
+
+                std::vector<rs2::vertex> vertices_vec;
+                vertices_vec.insert(vertices_vec.begin(), vertices, vertices + vertices_size);
+
+                auto labels = last_labeled_points.get_labels();
+
+                std::vector<uint8_t> labels_vec;
+                labels_vec.insert(labels_vec.begin(), labels, labels + vertices_size);
+
+                std::vector< std::pair<uint8_t, std::vector<rs2::vertex> > > labels_to_vertices =
+                    labeled_point_cloud_utilities::prepare_labeled_points_data(vertices_vec, labels_vec, vertices_size);
+
+                auto label_to_color3f = labeled_point_cloud_utilities::get_label_to_color3f();
+                /* this segment actually renders the labeled pointcloud */
+                for (int i = 0; i < labels_to_vertices.size(); ++i)
+                {
+                    auto label = labels_to_vertices[i].first;
+                    auto vertices = labels_to_vertices[i].second;
+                    auto color = label_to_color3f[static_cast<rs2_point_cloud_label>(label)];
+
+                    for (auto&& v : vertices)
+                    {
+                        GLfloat vert[3] = { -v.y, -v.z, v.x };
+                        glVertex3fv(vert);
+                        glColor3f(color.x, color.y, color.z);
+                    }
+                }
+            }
+            glEnd();
+
+            glColor4f(1.f, 1.f, 1.f, 1.f);
+        }
 
         _measurements.draw(win);
 
@@ -3267,7 +3330,7 @@ namespace rs2
 
     void viewer_model::draw_viewport(const rect& viewer_rect,
         ux_window& window, int devices, std::string& error_message,
-        std::shared_ptr<texture_buffer> texture, points points)
+        std::shared_ptr<texture_buffer> texture, points points, labeled_points labeled_points)
     {
         if (!modal_notification_on)
             updates->draw(not_model, window, error_message);
@@ -3300,7 +3363,7 @@ namespace rs2
             rect fb_size{ 0, 0, (float)window.framebuf_width(), (float)window.framebuf_height() };
             rect new_rect = viewer_rect.normalize(window_size).unnormalize(fb_size);
 
-            render_3d_view(new_rect, window, texture, points);
+            render_3d_view(new_rect, window, texture, points, labeled_points);
 
             auto rect_copy = viewer_rect;
             rect_copy.y += 60;

@@ -118,7 +118,7 @@ namespace rs2
         void show_top_bar(ux_window& window, const rect& viewer_rect, const device_models_list& devices);
 
         void render_3d_view(const rect& view_rect, ux_window& win,
-            std::shared_ptr<texture_buffer> texture, rs2::points points);
+            std::shared_ptr<texture_buffer> texture, rs2::points points, rs2::labeled_points);
 
         void render_2d_view(const rect& view_rect, ux_window& win, int output_height,
             ImFont *font1, ImFont *font2, size_t dev_model_num, const mouse_info &mouse, std::string& error_message);
@@ -153,7 +153,8 @@ namespace rs2
 
         void draw_viewport(const rect& viewer_rect,
             ux_window& window, int devices, std::string& error_message,
-            std::shared_ptr<texture_buffer> texture, rs2::points  f = rs2::points());
+            std::shared_ptr<texture_buffer> texture, rs2::points  f = rs2::points(), 
+            rs2::labeled_points lp = rs2::labeled_points());
 
         bool allow_3d_source_change = true;
         bool allow_stream_close = true;
@@ -244,6 +245,8 @@ namespace rs2
 
         rs2::points last_points;
         std::shared_ptr<texture_buffer> last_texture;
+        
+        rs2::labeled_points last_labeled_points;
 
         // Infinite pan / rotate feature:
         bool manipulating = false;
