@@ -66,6 +66,12 @@ namespace librealsense
             write_pose_frame(stream_id, timestamp, std::move(frame));
             return;
         }
+
+        if (Is<labeled_points>(frame.frame))
+        {
+            write_labeled_points_frame(stream_id, timestamp, std::move(frame));
+            return;
+        }
     }
 
     void ros_writer::write_snapshot(uint32_t device_index, const nanoseconds& timestamp, rs2_extension type, const std::shared_ptr<extension_snapshot>& snapshot)
@@ -308,6 +314,27 @@ namespace librealsense
         write_message(md_topic, timestamp, frame_num_msg);
 
         // Write the rest of the frame metadata and stream extrinsics
+        write_additional_frame_messages(stream_id, timestamp, frame);
+    }
+
+    void ros_writer::write_labeled_points_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_holder&& frame)
+    {
+        sensor_msgs::Image image;
+
+        image.width = static_cast<uint32_t>(380);
+        image.height = static_cast<uint32_t>(260);
+        image.step = static_cast<uint32_t>(380);
+        convert(RS2_FORMAT_RGB8, image.encoding);
+        image.is_bigendian = is_big_endian();
+        auto size = image.step * image.height;
+        auto p_data = frame->get_frame_data();
+        image.data.assign(p_data, p_data + size);
+        image.header.seq = static_cast<uint32_t>(frame->get_frame_number());
+        std::chrono::duration<double, std::milli> timestamp_ms(frame->get_frame_timestamp());
+        image.header.stamp = rs2rosinternal::Time(std::chrono::duration<double>(timestamp_ms).count());
+        image.header.version = "1"; // the field is unused and therefore assigned for ROSbag versions control
+        auto image_topic = ros_topic::frame_data_topic(stream_id);
+        write_message(image_topic, timestamp, image);
         write_additional_frame_messages(stream_id, timestamp, frame);
     }
 
