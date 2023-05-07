@@ -15,11 +15,11 @@ namespace topics {
     device_info ret;
 
     ret.name         = rsutils::json::get< std::string >( j, "name" );
-    ret.serial       = rsutils::json::get< std::string >( j, "serial" );
-    ret.product_line = rsutils::json::get< std::string >( j, "product-line" );
-    ret.product_id   = rsutils::json::get< std::string >( j, "product-id" );
+    rsutils::json::get_ex( j, "serial", &ret.serial );
+    rsutils::json::get_ex( j, "product-line", &ret.product_line );
+    rsutils::json::get_ex( j, "product-id", &ret.product_id );
     ret.topic_root   = rsutils::json::get< std::string >( j, "topic-root" );
-    ret.locked       = rsutils::json::get< bool >( j, "locked" );
+    rsutils::json::get_ex( j, "locked", &ret.locked );
 
     return ret;
 }
