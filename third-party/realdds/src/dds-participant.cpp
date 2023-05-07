@@ -188,8 +188,6 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
                        + std::to_string( domain_id ) );
     }
 
-    _domain_listener = std::make_shared< listener_impl >( *this );
-
     DomainParticipantQos pqos;
     pqos.name( participant_name );
 
@@ -208,11 +206,14 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
     pqos.transport().use_builtin_transports = false;
     pqos.transport().user_transports.push_back( udp_transport );
 
+    _participant_factory = DomainParticipantFactory::get_shared_instance();
+
     // Listener will call DataReaderListener::on_data_available for a specific reader,
     // not SubscriberListener::on_data_on_readers for any reader
     // ( See note on https://fast-dds.docs.eprosima.com/en/v2.7.0/fastdds/dds_layer/core/entity/entity.html )
     StatusMask par_mask = StatusMask::all() >> StatusMask::data_on_readers();
-    _participant_factory = DomainParticipantFactory::get_shared_instance();
+    _domain_listener = std::make_shared< listener_impl >( *this );
+
     _participant
         = DDS_API_CALL( _participant_factory->create_participant( domain_id, pqos, _domain_listener.get(), par_mask ) );
 
