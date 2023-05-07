@@ -1,23 +1,24 @@
 
-The files in this directory are, for the most part, automatically generated from files in
-    `third-party/realdds/include/topics/*/*.idl`
-
-
-## Topic list
+# Topic List
 
 The various topics are arranged hierarchically:
 
 * `realsense/`
-    * `device-info` — device name, serial-number, product-line, lock status, and topic root enumeration
-    * `<model>_<serial-number>/` — topic root per device pointed-to in device-info
-        * `control` — client -> camera messaging
-        * `notification` — camera -> client notifications, responses, etc.
-* `rt/realsense/` — [ROS2](#ros2)-compatible streams
-    * `<model>_<serial-number>_<stream-name>` — Image/Imu stream supported by the device (e.g., Depth, Infrared, Color, Gyro, etc.)
+    * `device-info` — [device discovery](../../doc/discovery.md) ([flexible](flexible/))
+    * `<model>_<serial-number>/` — topic root per device in [device-info](../../doc/discovery.md) (all in [flexible](flexible/) format)
+        * `notification` — [server notifications](../../doc/notifications.md), responses, etc.
+        * `control` — [client requests to server](../../doc/control.md)
+        * `metadata` — [optional stream information](../../doc/metadata.md)
+* `rt/realsense/` — ROS2-compatible [streams](../../doc/streaming.md)
+    * `<model>_<serial-number>_<stream-name>` — [Image](https://github.com/ros2/common_interfaces/blob/rolling/sensor_msgs/msg/Image.msg)/[Imu](https://github.com/ros2/common_interfaces/blob/rolling/sensor_msgs/msg/Imu.msg) stream supported by the device (e.g., Depth, Infrared, Color, Gyro, etc.)
 
-For a complete overview of the topics structure please refer to [DDS ICD](https://github.com/IntelRealSense/librealsense/blob/dds/third-party/realdds/doc/DDS%20ICD.md)
+# Interface Definition Files
 
-## Generating
+The code for each message type in this directory is generated from IDL files if the message format is defined by RealDDS.
+
+For [ROS](#ros2), the IDLs are not available.
+
+# Generation
 
 A utility from FastDDS called [FastDDSGen](https://fast-dds.docs.eprosima.com/en/latest/fastddsgen/introduction/introduction.html#fastddsgen-intro) is required to convert the [IDL](https://fast-dds.docs.eprosima.com/en/latest/fastddsgen/dataTypes/dataTypes.html) files to the headers that're needed.
 Unfortunately, this utility requires a java installation and sometimes not even the latest.
@@ -60,7 +61,7 @@ Instead, we found it easiest to download a Docker image for FastDDS (last used i
     * Certain `#include` statements (mainly in the .cpp files moved into src/) need to be updated (e.g., `#include "flexible.h"`  changed to `#include <realdds/topics/flexible/flexible.h>`)
     * Copyright notices in all the files needs updating to LibRealSense's
 
-## ROS2
+# ROS2
 
 All the ROS2 topics are under `ros2/`. The IDLs are not part of this repo and the source code was pre-generated then modified appropriately.
 
