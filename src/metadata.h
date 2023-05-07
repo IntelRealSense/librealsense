@@ -732,18 +732,18 @@ namespace librealsense
         uint32_t    version;
         uint32_t    flags;
         uint32_t    frame_counter;
-        uint32_t    depth_frame_counter;
-        uint32_t    frame_timestamp;
-        uint8_t     safety_preset_id;
-        float       sensor_roll_angle;
-        float       sensor_pitch_angle;
-        float       floor_median_height;
-        uint8_t     floor_fill_rate;
-        uint16_t    grid_rows;
-        uint16_t    grid_columns;
-        uint8_t     cell_size;
-        uint8_t     reserved[29];
-        uint32_t    payload_crc32;
+        uint32_t    depth_frame_counter;   // counter of the depth frame upon which it was calculated 
+        uint32_t    frame_timestamp;       // HW Timestamp for Occupancy map, calculated in AICV 
+        uint8_t     safety_preset_id;      // Safety Preset at the time of Occupancy grid generation 
+        float       sensor_roll_angle;     // In degrees. Relative to X (forward) axis. Positive value is CCW
+        float       sensor_pitch_angle;    // In degrees. Relative to Y (left) axis. Positive value is CCW 
+        float       floor_median_height;   // In meters. Relative to the “leveled pointcloud” CS 
+        uint8_t     floor_fill_rate;       // Percentage 
+        uint16_t    grid_rows;             // Number of rows in the grid. Max value is 250 (corresponding to 5M width with 2cm tile) 
+        uint16_t    grid_columns;          // Number of columns in the grid. Max value is 320 (corresponding to ~6.5M depth with 2cm tile) 
+        uint8_t     cell_size;             // Edge size of each tile, measured in cm 
+        uint8_t     reserved[29];          // Zero-ed
+        uint32_t    payload_crc32;         // Crc32 for the occupancy grid payload data only, not including the metadata header. 
     };
     REGISTER_MD_TYPE(md_occupancy, md_type::META_DATA_INTEL_OCCUPANCY_ID)
 
@@ -754,17 +754,17 @@ namespace librealsense
         uint32_t    version;
         uint32_t    flags;
         uint32_t    frame_counter;
-        uint32_t    depth_frame_counter;
-        uint32_t    frame_timestamp;
-        uint8_t     safety_preset_id;
-        float       sensor_roll_angle;
-        float       sensor_pitch_angle;
-        float       floor_median_height;
-        uint8_t     floor_fill_rate;
-        uint16_t    number_of_3d_vertices;
-        uint8_t     reserved[32];
-        uint32_t    payload_crc32;
-    };
+        uint32_t    depth_frame_counter;  // counter of the depth frame upon which it was calculated 
+        uint32_t    frame_timestamp;      // HW Timestamp for Occupancy map, calculated in AICV 
+        uint8_t     safety_preset_id;     // Safety Preset at the time of Occupancy grid generation 
+        float       sensor_roll_angle;    // In degrees. Relative to X (forward) axis. Positive value is CCW
+        float       sensor_pitch_angle;   // In degrees. Relative to Y (left) axis. Positive value is CCW 
+        float       floor_median_height;  // In meters. Relative to the “leveled pointcloud” CS 
+        uint8_t     floor_fill_rate;      // Percentage 
+        uint16_t    number_of_3d_vertices;// The max number of points is 320X240 
+        uint8_t     reserved[32];         // Zero-ed
+        uint32_t    payload_crc32;        // Crc32 for the occupancy grid payload data only, not including the metadata header.
+    };                                    
     REGISTER_MD_TYPE(md_point_cloud, md_type::META_DATA_INTEL_POINT_CLOUD_ID)
 
     struct md_intrinsic_pinhole_cam_model
