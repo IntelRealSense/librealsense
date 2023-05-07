@@ -735,9 +735,9 @@ namespace librealsense
         uint32_t    depth_frame_counter;
         uint32_t    frame_timestamp;
         uint8_t     safety_preset_id;
-        uint32_t    sensor_roll_angle;
-        uint32_t    sensor_pitch_angle;
-        uint32_t    floor_median_height;
+        float       sensor_roll_angle;
+        float       sensor_pitch_angle;
+        float       floor_median_height;
         uint8_t     floor_fill_rate;
         uint16_t    grid_rows;
         uint16_t    grid_columns;
@@ -757,9 +757,9 @@ namespace librealsense
         uint32_t    depth_frame_counter;
         uint32_t    frame_timestamp;
         uint8_t     safety_preset_id;
-        uint32_t    sensor_roll_angle;
-        uint32_t    sensor_pitch_angle;
-        uint32_t    floor_median_height;
+        float       sensor_roll_angle;
+        float       sensor_pitch_angle;
+        float       floor_median_height;
         uint8_t     floor_fill_rate;
         uint16_t    number_of_3d_vertices;
         uint8_t     reserved[32];
