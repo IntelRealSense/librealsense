@@ -53,9 +53,9 @@ Most objects in RealDDS are prefixed with `dds_` and exist in the `realdds::` na
 
 # Usage
 
-To enable DDS devices in *librealsense*, make sure `BUILD_WITH_DDS` is turned on in CMake. Make sure to check out the [`rs-dds-server` tool](../../tools/dds/dds-server) to turn any camera into a DDS device.
+To enable DDS devices in *librealsense*, make sure `BUILD_WITH_DDS` is turned on in CMake. Make sure to check out the [`rs-dds-server` tool](../../tools/dds/dds-server) to turn any RealSense camera into a DDS device.
 
-The client for DDS devices is the librealsense Viewer: when built with `BUILD_WITH_DDS`, the Viewer will discover any devices available and should be able to stream from them, control them, and generally treat them like any other device.
+The client for DDS devices is librealsense and anything built with it, notably the Viewer: when built with `BUILD_WITH_DDS`, the Viewer will discover any devices available and should be able to stream from them, control them, and generally treat them like any other device.
 
 Alternatively, one can use RealDDS to bypass librealsense. This will avoid some overhead but will also hide many of the capabilities that librealsense enables.
 

@@ -11,7 +11,7 @@ It does not include connecting to those devices, talking to them, or anything el
 
 # Domains
 
-DDS domains separate logical systems so they do not interfere with one another on the network. Domains are numbered 0-255. Discovery on domain 0 will not detect devices on domain 1.
+DDS domains separate logical systems so they do not interfere with one another on the network. Domains are numbered 0-232. Discovery on domain 0 will not detect devices on domain 1.
 
 All documentation assumes a single domain shared between all entities.
 
@@ -25,6 +25,12 @@ Only one topic is used for discovery:
 This topic is not meant for consumption by ROS, and is not meant to be visible there.
 
 
+#### Quality of Service
+
+- Reliability: `RELIABLE`
+- Durability: `VOLATILE`
+
+
 # Protocol
 
 The requirement is very simple: whenever a server detects a client, it should broadcast its device-info so the client can see it.
@@ -36,7 +42,7 @@ The DDS subsystem enables this by notifying a publisher (the server) that a subs
 
 The device-info is general information about the device, plus how to access it.
 
-It should not change over time.
+It should not change over the device lifetime.
 
 One device-info per device. At this time, only one device-info per message.
 

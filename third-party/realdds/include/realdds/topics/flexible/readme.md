@@ -31,3 +31,11 @@ If CUSTOM, the bytes are to be interpreted by the client using its own data stru
 
 The DDS topic type is:
 >realdds::topics::raw::flexible
+
+
+## Quality of Service
+
+All flexible topics are usually reliable (as opposed to data streams that are best-effort), unless otherwise stated.
+
+- Reliability: `RELIABLE`
+- Durability: `VOLATILE`

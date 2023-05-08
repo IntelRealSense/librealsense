@@ -1,5 +1,5 @@
 
-See the [list of topics used](../include/realdds/topics/topics.md) for a general overview of the topic structure.
+See the [list of topics used](../include/realdds/topics/) for a general overview of the topic structure.
 
 
 # The DDS Device
@@ -8,10 +8,10 @@ A DDS device is a collection of topics on which information flows.
 
 Specifically:
 * `<topic-root>/`
-    * `notification` — server notifications, responses, etc.
-    * `control` — client requests to server
-    * `metadata` — optional stream information
-* `rt/<topic-root>_` — [ROS2](#ros2)-compatible streams
+    * `notification` — [server notifications, responses, etc.](notifications.md)
+    * `control` — [client requests to server](control.md)
+    * `metadata` — [optional stream information](metadata.md)
+* `rt/<topic-root>_` — ROS2-compatible [streams](streaming.md)
     * `<stream-name>` — [Image](https://github.com/ros2/common_interfaces/blob/rolling/sensor_msgs/msg/Image.msg)/[Imu](https://github.com/ros2/common_interfaces/blob/rolling/sensor_msgs/msg/Imu.msg) streams
 
 

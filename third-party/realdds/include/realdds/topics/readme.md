@@ -4,12 +4,12 @@
 The various topics are arranged hierarchically:
 
 * `realsense/`
-    * `device-info` — [device discovery](../../doc/discovery.md) ([flexible](flexible/))
+    * `device-info` — [device discovery](../../../doc/discovery.md) ([flexible](flexible/))
     * `<model>_<serial-number>/` — topic root per device in [device-info](../../doc/discovery.md) (all in [flexible](flexible/) format)
-        * `notification` — [server notifications](../../doc/notifications.md), responses, etc.
-        * `control` — [client requests to server](../../doc/control.md)
-        * `metadata` — [optional stream information](../../doc/metadata.md)
-* `rt/realsense/` — ROS2-compatible [streams](../../doc/streaming.md)
+        * `notification` — [server notifications, responses, etc.](../../../doc/notifications.md)
+        * `control` — [client requests to server](../../../doc/control.md)
+        * `metadata` — [optional stream information](../../../doc/metadata.md)
+* `rt/realsense/` — ROS2-compatible [streams](../../../doc/streaming.md)
     * `<model>_<serial-number>_<stream-name>` — [Image](https://github.com/ros2/common_interfaces/blob/rolling/sensor_msgs/msg/Image.msg)/[Imu](https://github.com/ros2/common_interfaces/blob/rolling/sensor_msgs/msg/Imu.msg) stream supported by the device (e.g., Depth, Infrared, Color, Gyro, etc.)
 
 # Interface Definition Files
@@ -23,7 +23,7 @@ For [ROS](#ros2), the IDLs are not available.
 A utility from FastDDS called [FastDDSGen](https://fast-dds.docs.eprosima.com/en/latest/fastddsgen/introduction/introduction.html#fastddsgen-intro) is required to convert the [IDL](https://fast-dds.docs.eprosima.com/en/latest/fastddsgen/dataTypes/dataTypes.html) files to the headers that're needed.
 Unfortunately, this utility requires a java installation and sometimes not even the latest.
 
-Instead, we found it easiest to download a Docker image for FastDDS (last used is version 2.7.1) and generate the files within.
+Instead, we found it easiest to download a Docker image for FastDDS (last used is version 2.9.1) and generate the files within.
 
 1. Download the Docker image from [here](https://www.eprosima.com/index.php?option=com_ars&view=browses&layout=normal) (link was valid at time of writing; if no longer, register with eProsima and update it)
 
