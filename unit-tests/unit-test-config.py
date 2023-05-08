@@ -109,9 +109,9 @@ project( ''' + testname + ''' )
 set( SRC_FILES ''' + filelist + '''
 )
 add_executable( ''' + testname + ''' ${SRC_FILES} )
-source_group( "Common Files" FILES ${CATCH_FILES} ''' + '"' + directory + '''/test.cpp''' + '"')
+source_group( "Common Files" FILES ${CATCH_FILES} ''' + directory + '''/test.cpp''')
     if not custom_main:
-        handle.write(' "' + directory + '/unit-test-default-main.cpp' + '"')
+        handle.write(' ' + directory + '/unit-test-default-main.cpp')
     handle.write( ''' )
 target_link_libraries( ''' + testname + ''' ${DEPENDENCIES} )
 
