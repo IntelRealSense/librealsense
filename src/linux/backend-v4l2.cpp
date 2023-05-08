@@ -1877,6 +1877,11 @@ namespace librealsense
                                     static_cast<float>(frame_interval.discrete.denominator) /
                                     static_cast<float>(frame_interval.discrete.numerator);
 
+                                if (frame_size.discrete.width == 2880 && frame_size.discrete.height == 260)
+                                {
+                                    fourcc = 0x50414c38; // PAL8 used instead of GREY in order to distinguish between occupancy and point cloud streams
+                                }
+
                                 stream_profile p{};
                                 p.format = fourcc;
                                 p.width = frame_size.discrete.width;
