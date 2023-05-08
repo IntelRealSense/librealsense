@@ -326,9 +326,22 @@ PYBIND11_MODULE(NAME, m) {
         .value( "cbor", flexible_msg::data_format::CBOR )
         .value( "custom", flexible_msg::data_format::CUSTOM );
 
+    using eprosima::fastrtps::rtps::SampleIdentity;
+    py::class_< SampleIdentity >( m, "sample_identity" )  //
+        .def( "__repr__",
+              []( SampleIdentity const & self )
+              {
+                  std::ostringstream os;
+                  os << to_string( self.writer_guid() );
+                  os << '.';
+                  os << self.sequence_number();
+                  return os.str();
+              } );
+
     using eprosima::fastdds::dds::SampleInfo;
     py::class_< SampleInfo >( m, "sample_info" )  //
         .def( py::init<>() )
+        .def( "identity", []( SampleInfo const & self ) { return self.sample_identity; } )
         .def( "source_timestamp", []( SampleInfo const & self ) { return self.source_timestamp.to_ns(); } )
         .def( "reception_timestamp", []( SampleInfo const & self ) { return self.reception_timestamp.to_ns(); } );
 
