@@ -74,7 +74,7 @@ The C++ type should be `unsigned long long`.
 
 ### Combining Multiple Notifications
 
-E.g., combining a log notification with a another could look like:
+E.g., combining a log notification with another could look like:
 
 ```JSON
 [

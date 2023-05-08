@@ -16,6 +16,13 @@ DDS domains separate logical systems so they do not interfere with one another o
 All documentation assumes a single domain shared between all entities.
 
 
+# Participant
+
+A server is a participant in the system, and may publish multiple devices. As an entity in the DDS, it should be named in a way to be easily identifiable and looked up:
+
+- If for a single device, it is suggested to use the same topic root syntax `<model>_<serial>` as below, e.g. `D457_457123`.
+
+
 # realsense/device-info
 
 Only one topic is used for discovery:
@@ -87,5 +94,5 @@ When a context is created, a JSON representation may be passed to it, e.g.: `{"d
 | Field                | Description                            |
 |----------------------|------------------------------------------------------|
 | dds-discovery        | Default to `true`; set to `false` to turn off DDS in this context
-| dds-domain           | The domain number to use (0-255); `0` is the default
+| dds-domain           | The domain number to use (0-232); `0` is the default
 | dds-participant-name | The name given this context (how other participants will see it); defaults to the executable name
