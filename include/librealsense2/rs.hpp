@@ -51,7 +51,7 @@ namespace rs2
         rs2_enable_rolling_log_file( max_size, &e );
         error::handle( e );
     }
-
+    
     /*
         Interface to the log message data we expose.
     */

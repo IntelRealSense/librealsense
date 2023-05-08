@@ -16,7 +16,6 @@
 #include <csignal>
 
 #include "os.h"
-#include <rsutils/os/os.h>
 #include "metadata-helper.h"
 #include "rendering.h"
 #include <rsutils/string/windows.h>
@@ -99,7 +98,7 @@ void report_error(std::string error)
         ss << "| | |\n";
         ss << "|---|---|\n";
         ss << "|**librealsense**|" << rs2::api_version_to_string(rs2_get_api_version(&e)) << (rs2::is_debug() ? " DEBUG" : " RELEASE") << "|\n";
-        ss << "|**OS**|" << rsutils::get_os_name() << "|\n\n";
+        ss << "|**OS**|" << rs2::get_os_name() << "|\n\n";
         ss << "Intel RealSense Viewer / Depth Quality Tool has crashed with the following error message:\n";
         ss << "```\n";
         ss << error;
