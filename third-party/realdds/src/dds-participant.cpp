@@ -107,7 +107,7 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
                 name = pinfo.name;
                 // When remote participant is active before this participant, listener callback can happen before
                 // create_participant funciton returns and _owner.name() can be used.
-                rsutils::string::slice & owner_name = _owner.get() ? _owner.name() : rsutils::string::slice( "" );
+                rsutils::string::slice owner_name = _owner.get() ? _owner.name() : rsutils::string::slice( "" );
                 LOG_DEBUG( owner_name << ": +participant '" << name << "' " << guid );
                 participants.emplace( info.info.m_guid.guidPrefix, std::move( pinfo ) );
             }
