@@ -10,6 +10,8 @@ namespace realdds {
 
 std::string time_to_string( dds_time const & t )
 {
+    if( t == eprosima::fastrtps::c_TimeInvalid )
+        return std::string( "INVALID", 7 );
     std::string nsec = std::to_string( t.nanosec );
     if( t.nanosec )
     {
