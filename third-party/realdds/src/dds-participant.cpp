@@ -105,7 +105,12 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
                 std::lock_guard< std::mutex > lock( participants_mutex );
                 participant_info pinfo( info.info.m_participantName, info.info.m_guid.guidPrefix );
                 name = pinfo.name;
-                LOG_DEBUG( _owner.name() << ": +participant '" << name << "' " << guid );
+                // When remote participant is active before this participant, listener callback can happen before
+                // create_participant function returns and _owner.name() can be used.
+                rsutils::string::slice owner_name;
+                if( _owner.get() )
+                    owner_name = _owner.name();
+                LOG_DEBUG( owner_name << ": +participant '" << name << "' " << guid );
                 participants.emplace( info.info.m_guid.guidPrefix, std::move( pinfo ) );
             }
             _owner.on_participant_added( info.info.m_guid, name.c_str() );
