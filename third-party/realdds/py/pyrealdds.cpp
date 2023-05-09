@@ -874,8 +874,7 @@ PYBIND11_MODULE(NAME, m) {
                       ( dds_metadata_syncer::key_type key, nlohmann::json && metadata ),
                       callback( key, std::move( metadata ) ); ) )
         .def( "enqueue_frame", &dds_metadata_syncer::enqueue_frame )
-        .def( "enqueue_metadata", &dds_metadata_syncer::enqueue_metadata )
-        .def( "clear", &dds_metadata_syncer::clear );
+        .def( "enqueue_metadata", &dds_metadata_syncer::enqueue_metadata );
     metadata_syncer.attr( "max_frame_queue_size" ) = dds_metadata_syncer::max_frame_queue_size;
     metadata_syncer.attr( "max_md_queue_size" ) = dds_metadata_syncer::max_md_queue_size;
 }

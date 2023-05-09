@@ -349,15 +349,31 @@ void dds_sensor_proxy::start( frame_callback_ptr callback )
 
 void dds_sensor_proxy::stop()
 {
-    _streaming_by_name.clear();
-
     for( auto & profile : sensor_base::get_active_streams() )
     {
         auto & dds_stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
+
+        if( auto dds_video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( dds_stream ) )
+        {
+            dds_video_stream->on_data_available( nullptr );
+        }
+        else if( auto dds_motion_stream = std::dynamic_pointer_cast< realdds::dds_motion_stream >( dds_stream ) )
+        {
+            dds_motion_stream->on_data_available( nullptr );
+        }
+        else
+            throw std::runtime_error( "Unsupported stream type" );
+
         dds_stream->stop_streaming();
         dds_stream->close();
+
+        _streaming_by_name[dds_stream->name()].syncer.on_frame_ready( nullptr );
     }
 
+    // Must be done after dds_stream->stop_streaming or we will need to add validity checks to on_data_available
+    _streaming_by_name.clear();
+
+    // Resets frame source. Nullify streams on_data_available before calling stop.
     software_sensor::stop();
 }
 
