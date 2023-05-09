@@ -1351,7 +1351,8 @@ namespace librealsense
         }
         stream_profiles streams;
         //The below regex matches both stream info messages and also video \ imu stream info (both have the same prefix)
-        rosbag::View stream_infos_view(m_file, RegexTopicQuery("/device_" + std::to_string(device_index) + "/sensor_" + std::to_string(sensor_index) + R"RRR(/(\w)+_(\d)+/info)RRR"));
+        auto regex_const_char = R"RRR(/([a-zA-Z0-9_ ])+_(\d)+/info)RRR";
+        rosbag::View stream_infos_view(m_file, RegexTopicQuery("/device_" + std::to_string(device_index) + "/sensor_" + std::to_string(sensor_index) + regex_const_char));
         for (auto infos_view : stream_infos_view)
         {
             if (infos_view.isType<realsense_msgs::StreamInfo>() == false)
