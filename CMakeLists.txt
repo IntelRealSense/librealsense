@@ -1,5 +1,6 @@
 #  minimum required cmake version: 3.1.0
 cmake_minimum_required(VERSION 3.1.0)
+set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
 project(librealsense2 LANGUAGES CXX C)
 
 # Allow librealsense2 and all of the nested project to include the main repo folder
