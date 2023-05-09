@@ -336,6 +336,24 @@ namespace rs2
             }
         }
 
+        // Initialize selected_labeled_points_source_uid for clearing it when needed
+        for (auto&& s : streams)
+        {
+            if (s.second.is_stream_visible() &&
+                s.second.profile.stream_type() == RS2_STREAM_LABELED_POINT_CLOUD)
+            {
+                auto stream_origin_iter = streams_origin.find(s.second.profile.unique_id());
+                if (selected_labeled_points_source_uid == -1)
+                {
+                    if (stream_origin_iter != streams_origin.end() &&
+                        streams.find(stream_origin_iter->second) != streams.end())
+                    {
+                        selected_labeled_points_source_uid = stream_origin_iter->second;
+                    }
+                }
+            }
+        }
+
         // Initialize and prepare depth and texture sources
         int selected_depth_source = -1;
         std::vector<std::string> depth_sources_str;
@@ -930,6 +948,11 @@ namespace rs2
             {
                 last_points = points();
                 selected_depth_source_uid = -1;
+            }
+
+            if (selected_labeled_points_source_uid == i)
+            {
+                last_labeled_points = labeled_points();
             }
 
             if (selected_tex_source_uid == i)

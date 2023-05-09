@@ -169,6 +169,7 @@ namespace rs2
         std::atomic<int> zo_sensors;
 
         int selected_depth_source_uid = -1;
+        int selected_labeled_points_source_uid = -1;
         int selected_tex_source_uid = -1;
         std::vector<int> last_tex_sources;
         double texture_update_time = 0.0;
