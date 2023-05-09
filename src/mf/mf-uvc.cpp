@@ -932,7 +932,7 @@ namespace librealsense
 
                     uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1);
 
-                    if (width == 2880 && height == 260)
+                    if (this->_info.pid == 0x0b6b && width == 2880 && height == 260) // pid 0x0B6B is for RS_D585S_PID
                     {
                         device_fourcc = 0x50414C38; // PAL8 used instead of FGREY in order to distinguish  between occupancy and point cloud streams
                     }
