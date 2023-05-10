@@ -2,6 +2,7 @@
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 # test:device each(D400*)
+# test:device each(D500*) 
 # test:donotrun:!nightly
 # test:timeout 250
 # timeout = (seconds_till_steady_state + seconds_to_count_frames) * tested_fps.size() * 2 + 10. (2 because depth + color, 10 spare)
