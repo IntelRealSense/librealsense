@@ -16,7 +16,7 @@ dds_metadata_syncer::dds_metadata_syncer() :
 
 dds_metadata_syncer::~dds_metadata_syncer()
 {
-    *_is_alive = false;
+    _is_alive.reset();
 
     std::lock_guard< std::mutex > lock( _queues_lock );
     _frame_queue.clear();
@@ -27,7 +27,7 @@ dds_metadata_syncer::~dds_metadata_syncer()
 void dds_metadata_syncer::enqueue_frame( key_type id, frame_holder && frame )
 {
     std::weak_ptr< bool > alive = _is_alive;
-    if( ! alive.lock() || ! *_is_alive ) // Check if was or being destructed by other thread
+    if( ! alive.lock() ) // Check if was destructed by another thread
         return;
 
     std::unique_lock< std::mutex > lock( _queues_lock );
@@ -51,7 +51,7 @@ void dds_metadata_syncer::enqueue_frame( key_type id, frame_holder && frame )
 void dds_metadata_syncer::enqueue_metadata( key_type id, metadata_type && md )
 {
     std::weak_ptr< bool > alive = _is_alive;
-    if( !alive.lock() || !*_is_alive ) // Check if was or being destructed by other thread
+    if( !alive.lock() ) // Check if was destructed by another thread
         return;
 
     std::unique_lock< std::mutex > lock( _queues_lock );
@@ -115,7 +115,7 @@ bool dds_metadata_syncer::handle_match( std::unique_lock< std::mutex > & lock )
     {
         lock.unlock();
         _on_frame_ready( std::move( fh ), std::move( md ) );
-        if( !alive.lock() || !*_is_alive ) // Check if was destructed by other thread during callback
+        if( !alive.lock() ) // Check if was destructed by another thread during callback
             return false;
         lock.lock();
     }
@@ -136,7 +136,7 @@ bool dds_metadata_syncer::handle_frame_without_metadata( std::unique_lock< std::
         lock.unlock();
         metadata_type md;
         _on_frame_ready( std::move( fh ), std::move( md ) );
-        if( !alive.lock() || !*_is_alive ) // Check if was destructed by other thread during callback
+        if( !alive.lock() ) // Check if was destructed by another thread during callback
             return false;
         lock.lock();
     }
@@ -156,7 +156,7 @@ bool dds_metadata_syncer::drop_metadata( std::unique_lock< std::mutex > & lock )
     {
         lock.unlock();
         _on_metadata_dropped( key, std::move( md ) );
-        if( !alive.lock() || !*_is_alive ) // Check if was destructed by other thread during callback
+        if( !alive.lock() ) // Check if was destructed by another thread during callback
             return false;
         lock.lock();
     }
