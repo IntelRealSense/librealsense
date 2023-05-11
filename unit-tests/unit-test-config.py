@@ -84,6 +84,8 @@ def add_slash_before_spaces(links):
     if links and type(links) is str:
         return links.replace(' ', '\ ')
     if links and type(links) is list:
+        # Build list comprehension of strings with backslash before spaces in case the link.
+        # In case we have Cmake variable we are not perform changes.
         return [link.replace(' ', '\ ') if link[0] != '$' else link for link in links]
     else:
         raise TypeError
