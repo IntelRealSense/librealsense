@@ -299,7 +299,6 @@ namespace librealsense
         // The frame pixels/data are stored in the continuation object!
         if( pixels )
             frame->attach_continuation( frame_continuation( on_release, pixels ) );
-        //auto callback = frame->get_owner()->begin_callback();
         _source.invoke_callback( std::move( frame ) );
     }
 
