@@ -147,5 +147,18 @@ namespace librealsense
                 kvp.second->flush();
         }
     }
+
+    rs2_extension frame_source::stream_to_frame_types(rs2_stream stream)
+    {
+        // TODO: explicitly return video_frame for relevant streams and default to an error?
+        switch (stream)
+        {
+        case RS2_STREAM_DEPTH:  return RS2_EXTENSION_DEPTH_FRAME;
+        case RS2_STREAM_ACCEL:
+        case RS2_STREAM_GYRO:   return RS2_EXTENSION_MOTION_FRAME;
+        case RS2_STREAM_LABELED_POINT_CLOUD: return RS2_EXTENSION_LABELED_POINTS;
+        default:                return RS2_EXTENSION_VIDEO_FRAME;
+        }
+    }
 }
 
