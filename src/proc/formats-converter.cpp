@@ -203,10 +203,8 @@ void formats_converter::update_source_data( const stream_profiles & target_profi
 {
     for( auto & target_profile : target_profiles )
     {
-        // TODO - original code only updates source[0], why?
         for( auto & source_profile : _target_to_source_profiles_map[to_profile( target_profile.get() )] )
         {
-            source_profile->set_unique_id( target_profile->get_unique_id() );
             source_profile->set_stream_index( target_profile->get_stream_index() );
             source_profile->set_unique_id( target_profile->get_unique_id() );
             source_profile->set_stream_type( target_profile->get_stream_type() );

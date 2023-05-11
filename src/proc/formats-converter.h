@@ -4,7 +4,6 @@
 #pragma once
 
 #include "processing-blocks-factory.h"
-#include "../core/streaming.h"
 
 #include <vector>
 #include <unordered_set>
