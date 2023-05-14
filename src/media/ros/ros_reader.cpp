@@ -412,6 +412,7 @@ namespace librealsense
         return remaining;
     }
 
+
     frame_holder ros_reader::create_image_from_message(const rosbag::MessageInstance &image_data) const
     {
         LOG_DEBUG("Trying to create an image frame from message");
@@ -441,27 +442,47 @@ namespace librealsense
             get_frame_metadata(m_file, info_topic, stream_id, image_data, additional_data);
         }
 
-        frame_interface* frame = m_frame_source->alloc_frame((stream_id.stream_type == RS2_STREAM_DEPTH) ? RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME,
+        frame_interface* frame = m_frame_source->alloc_frame(
+            frame_source::stream_to_frame_types(stream_id.stream_type),
             msg->data.size(), additional_data, true);
         if (frame == nullptr)
         {
             LOG_WARNING("Failed to allocate new frame");
             return nullptr;
         }
-        librealsense::video_frame* video_frame = static_cast<librealsense::video_frame*>(frame);
-        video_frame->assign(msg->width, msg->height, msg->step, msg->step / msg->width * 8);
-        rs2_format stream_format;
-        convert(msg->encoding, stream_format);
-        //attaching a temp stream to the frame. Playback sensor should assign the real stream
-        frame->set_stream(std::make_shared<video_stream_profile>(platform::stream_profile{}));
-        frame->get_stream()->set_format(stream_format);
-        frame->get_stream()->set_stream_index(int(stream_id.stream_index));
-        frame->get_stream()->set_stream_type(stream_id.stream_type);
-        video_frame->data = std::move(msg->data);
-        librealsense::frame_holder fh{ video_frame };
-        LOG_DEBUG("Created image frame: " << stream_id << " " << video_frame->get_width() << "x" << video_frame->get_height() << " " << stream_format);
+        if (stream_id.stream_type != RS2_STREAM_LABELED_POINT_CLOUD)
+        {
+            librealsense::video_frame* video_frame = static_cast<librealsense::video_frame*>(frame);
+            video_frame->assign(msg->width, msg->height, msg->step, msg->step / msg->width * 8);
+            rs2_format stream_format;
+            convert(msg->encoding, stream_format);
+            //attaching a temp stream to the frame. Playback sensor should assign the real stream
+            frame->set_stream(std::make_shared<video_stream_profile>(platform::stream_profile{}));
+            frame->get_stream()->set_format(stream_format);
+            frame->get_stream()->set_stream_index(int(stream_id.stream_index));
+            frame->get_stream()->set_stream_type(stream_id.stream_type);
+            video_frame->data = std::move(msg->data);
+            librealsense::frame_holder fh{ video_frame };
+            LOG_DEBUG("Created image frame: " << stream_id << " " << video_frame->get_width() << "x" << video_frame->get_height() << " " << stream_format);
 
-        return fh;
+            return fh;
+        }
+        else
+        {
+            librealsense::labeled_points* lab_points = static_cast<librealsense::labeled_points*>(frame);
+            rs2_format stream_format;
+            convert(msg->encoding, stream_format);
+            //attaching a temp stream to the frame. Playback sensor should assign the real stream
+            frame->set_stream(std::make_shared<stream_profile_base>(platform::stream_profile{}));
+            frame->get_stream()->set_format(stream_format);
+            frame->get_stream()->set_stream_index(int(stream_id.stream_index));
+            frame->get_stream()->set_stream_type(stream_id.stream_type);
+            lab_points->data = std::move(msg->data);
+            librealsense::frame_holder fh{ lab_points };
+            LOG_DEBUG("Created image frame: " << stream_id << " " << stream_format);
+
+            return fh;
+        }
     }
 
     frame_holder ros_reader::create_motion_sample(const rosbag::MessageInstance &motion_data) const
@@ -868,6 +889,10 @@ namespace librealsense
         {
             sensor_extensions[RS2_EXTENSION_SAFETY_SENSOR] = std::make_shared<safety_sensor_snapshot>();
         }
+        if (is_depth_mapping_sensor(sensor_name))
+        {
+            sensor_extensions[RS2_EXTENSION_DEPTH_MAPPING_SENSOR] = std::make_shared<depth_mapping_sensor_snapshot>();
+        }
     }
 
     void ros_reader::update_l500_depth_sensor(const rosbag::Bag & file, uint32_t sensor_index, const nanoseconds & time, uint32_t file_version, snapshot_collection & sensor_extensions, uint32_t version, std::string pid, std::string sensor_name)
@@ -891,39 +916,36 @@ namespace librealsense
         }
     }
 
-    bool ros_reader::is_depth_sensor(std::string sensor_name)
+    bool ros_reader::is_depth_sensor(const std::string& sensor_name)
     {
-        if (sensor_name.compare("Stereo Module") == 0 || sensor_name.compare("Coded-Light Depth Sensor") == 0)
-            return true;
-        return false;
+        return (sensor_name.compare("Stereo Module") == 0 || sensor_name.compare("Coded-Light Depth Sensor") == 0);
     }
 
-    bool ros_reader::is_color_sensor(std::string sensor_name)
+    bool ros_reader::is_color_sensor(const std::string& sensor_name)
     {
         if (sensor_name.compare("RGB Camera") == 0)
             return true;
         return false;
     }
 
-    bool ros_reader::is_motion_module_sensor(std::string sensor_name)
+    bool ros_reader::is_motion_module_sensor(const std::string& sensor_name)
     {
-        if (sensor_name.compare("Motion Module") == 0)
-            return true;
-        return false;
+        return (sensor_name.compare("Motion Module") == 0);
     }
 
-    bool ros_reader::is_fisheye_module_sensor(std::string sensor_name)
+    bool ros_reader::is_fisheye_module_sensor(const std::string& sensor_name)
     {
-        if (sensor_name.compare("Wide FOV Camera") == 0)
-            return true;
-        return false;
+        return (sensor_name.compare("Wide FOV Camera") == 0);
     }
 
-    bool ros_reader::is_safety_module_sensor(std::string sensor_name)
+    bool ros_reader::is_safety_module_sensor(const std::string& sensor_name)
     {
-        if (sensor_name.compare("Safety Camera") == 0)
-            return true;
-        return false;
+        return (sensor_name.compare("Safety Camera") == 0);
+    }
+
+    bool ros_reader::is_depth_mapping_sensor(const std::string& sensor_name)
+    {
+        return (sensor_name.compare("Depth Mapping Camera") == 0);
     }
 
     bool ros_reader::is_ds_PID(int pid)
@@ -1351,7 +1373,8 @@ namespace librealsense
         }
         stream_profiles streams;
         //The below regex matches both stream info messages and also video \ imu stream info (both have the same prefix)
-        rosbag::View stream_infos_view(m_file, RegexTopicQuery("/device_" + std::to_string(device_index) + "/sensor_" + std::to_string(sensor_index) + R"RRR(/(\w)+_(\d)+/info)RRR"));
+        auto regex_const_char = R"RRR(/([a-zA-Z0-9_ ])+_(\d)+/info)RRR";
+        rosbag::View stream_infos_view(m_file, RegexTopicQuery("/device_" + std::to_string(device_index) + "/sensor_" + std::to_string(sensor_index) + regex_const_char));
         for (auto infos_view : stream_infos_view)
         {
             if (infos_view.isType<realsense_msgs::StreamInfo>() == false)

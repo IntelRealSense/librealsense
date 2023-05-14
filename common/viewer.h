@@ -169,6 +169,7 @@ namespace rs2
         std::atomic<int> zo_sensors;
 
         int selected_depth_source_uid = -1;
+        int selected_labeled_points_source_uid = -1;
         int selected_tex_source_uid = -1;
         std::vector<int> last_tex_sources;
         double texture_update_time = 0.0;
@@ -229,6 +230,8 @@ namespace rs2
         float calculate_ruler_max_distance(const std::vector<float>& distances) const;
 
         void set_export_popup(ImFont* large_font, ImFont* font, rect stream_rect, std::string& error_message, config_file& temp_cfg);
+        void init_depth_uid(int& selected_depth_source, std::vector<std::string>& depth_sources_str, std::vector<int>& depth_sources);
+        void init_labeled_points_uid();
 
         streams_layout _layout;
         streams_layout _old_layout;

@@ -84,11 +84,12 @@ namespace librealsense
         void update_l500_depth_sensor(const rosbag::Bag& file, uint32_t sensor_index, const nanoseconds& time, uint32_t file_version, snapshot_collection& sensor_extensions, uint32_t version, std::string pid, std::string sensor_name);
         void add_sensor_extension(snapshot_collection & sensor_extensions, std::string sensor_name);
        
-        bool is_depth_sensor(std::string sensor_name);
-        bool is_color_sensor(std::string sensor_name);
-        bool is_motion_module_sensor(std::string sensor_name);
-        bool is_fisheye_module_sensor(std::string sensor_name);
-        bool is_safety_module_sensor(std::string sensor_name);
+        bool is_depth_sensor(const std::string& sensor_name);
+        bool is_color_sensor(const std::string& sensor_name);
+        bool is_motion_module_sensor(const std::string& sensor_name);
+        bool is_fisheye_module_sensor(const std::string& sensor_name); 
+        bool is_safety_module_sensor(const std::string& sensor_name);
+        bool is_depth_mapping_sensor(const std::string& sensor_name);
         bool is_ds_PID(int pid);
         bool is_sr300_PID(int pid);
         bool is_l500_PID(int pid);

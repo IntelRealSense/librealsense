@@ -15,9 +15,9 @@ namespace librealsense
 {
     const std::map<uint32_t, rs2_format> mapping_fourcc_to_rs2_format = {
         {rs_fourcc('G','R','E','Y'), RS2_FORMAT_RAW8},
-        // point cloud - needed a standard format, with 32 bit per pixel:
-        // From uvcvideo2.h linux standard file:
-        // #define V4L2_PIX_FMT_ARGB32  v4l2_fourcc('B', 'A', '2', '4') /* 32  ARGB-8-8-8-8  */
+        // point cloud - w/a done in backend in order to distinguish between occupancy
+        // and labeled point cloud streams - PAL8 instead of GREY 
+        // because both are received as GREY 
         {rs_fourcc('P','A','L','8'), RS2_FORMAT_RAW8}
     };
     const std::map<uint32_t, rs2_stream> mapping_fourcc_to_rs2_stream = {
