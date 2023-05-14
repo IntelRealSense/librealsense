@@ -22,6 +22,7 @@ public:
     float3* get_vertices() const;
     size_t get_vertex_count() const;
     uint8_t* get_labels() const;
+    static const size_t BYTES_PER_PIXEL = 13;
 private:
     static const size_t LABELS_RESOLUTION = 320 * 180;
     static const size_t OFFSET_TO_LABELS = 3 * sizeof(float) * LABELS_RESOLUTION;

@@ -157,7 +157,19 @@ namespace librealsense
         case RS2_STREAM_ACCEL:
         case RS2_STREAM_GYRO:   return RS2_EXTENSION_MOTION_FRAME;
         case RS2_STREAM_LABELED_POINT_CLOUD: return RS2_EXTENSION_LABELED_POINTS;
-        default:                return RS2_EXTENSION_VIDEO_FRAME;
+
+        case RS2_STREAM_COLOR:
+        case RS2_STREAM_INFRARED:
+        case RS2_STREAM_FISHEYE:
+        case RS2_STREAM_GPIO:
+        case RS2_STREAM_POSE:
+        case RS2_STREAM_CONFIDENCE:
+        case RS2_STREAM_SAFETY:
+        case RS2_STREAM_OCCUPANCY:
+            return RS2_EXTENSION_VIDEO_FRAME;
+        
+        default:
+            throw std::runtime_error("could not find matching extension with stream type '" + std::string(get_string(stream)) + "'");
         }
     }
 }

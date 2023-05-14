@@ -321,12 +321,12 @@ namespace librealsense
     {
         sensor_msgs::Image image;
 
-        image.width = static_cast<uint32_t>(320);
-        image.height = static_cast<uint32_t>(180);
-        image.step = static_cast<uint32_t>(320);
+        auto labeled_points_frame = dynamic_cast<librealsense::labeled_points*>(frame.frame);
+        assert(labeled_points_frame != nullptr);
+
         convert(RS2_FORMAT_RAW8, image.encoding);
         image.is_bigendian = is_big_endian();
-        auto size = 2880 * 260;
+        auto size = labeled_points_frame->get_vertex_count() * librealsense::labeled_points::BYTES_PER_PIXEL;
         auto p_data = frame->get_frame_data();
         image.data.assign(p_data, p_data + size);
         image.header.seq = static_cast<uint32_t>(frame->get_frame_number());

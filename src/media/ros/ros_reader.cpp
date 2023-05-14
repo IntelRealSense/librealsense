@@ -470,7 +470,6 @@ namespace librealsense
         else
         {
             librealsense::labeled_points* lab_points = static_cast<librealsense::labeled_points*>(frame);
-            //lab_points->assign(msg->width, msg->height, msg->step, msg->step / msg->width * 8);
             rs2_format stream_format;
             convert(msg->encoding, stream_format);
             //attaching a temp stream to the frame. Playback sensor should assign the real stream
