@@ -1476,7 +1476,7 @@ namespace rs2
                         {
                             int width = 0;
                             int height = 0;
-                            std::vector<std::pair<int, int>> selected_resolutions;
+                            std::map<rs2_stream, std::pair<int, int>> stream_to_selected_resolution;
                             if (!ui.is_multiple_resolutions)
                             {
                                 width = res_values[ui.selected_res_id].first;
@@ -1489,10 +1489,11 @@ namespace rs2
                             {
                                 for (auto it = profile_id_to_res.begin(); it != profile_id_to_res.end(); ++it)
                                 {
-                                    selected_resolutions.push_back(it->second[ui.selected_res_id_map[it->first]]);
+                                    stream_to_selected_resolution[p.stream_type()] = it->second[ui.selected_res_id_map[it->first]];
                                 }
                                 error_message << "\n{" << stream_display_names[stream] << ","
-                                    << selected_resolutions[0].first << "x" << selected_resolutions[0].second << " at " << fps << "Hz, "
+                                    << stream_to_selected_resolution[p.stream_type()].first << "x" 
+                                    << stream_to_selected_resolution[p.stream_type()].second << " at " << fps << "Hz, "
                                     << rs2_format_to_string(format) << "} ";
                             }
 
@@ -1516,10 +1517,7 @@ namespace rs2
                                     else
                                     {
                                         std::pair<int, int> cur_res;
-                                        if (p.stream_type() == RS2_STREAM_DEPTH)
-                                            cur_res = selected_resolutions[0];
-                                        else
-                                            cur_res = selected_resolutions[1];
+                                        cur_res = stream_to_selected_resolution[p.stream_type()];
                                         if (vid_prof.width() == cur_res.first && vid_prof.height() == cur_res.second)
                                             results.push_back(p);
                                     }
