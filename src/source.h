@@ -48,6 +48,8 @@ namespace librealsense
 
         void set_max_publish_list_size(int qsize) {_max_publish_list_size = qsize; }
 
+        static rs2_extension stream_to_frame_types(rs2_stream stream);
+
     private:
         friend class syncer_process_unit;
 

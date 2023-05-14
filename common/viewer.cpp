@@ -339,42 +339,13 @@ namespace rs2
         int selected_depth_source = -1;
         std::vector<std::string> depth_sources_str;
         std::vector<int> depth_sources;
-        int i = 0;
-        for (auto&& s : streams)
-        {
-            if (s.second.is_stream_visible() &&
-                s.second.profile.stream_type() == RS2_STREAM_DEPTH)
-            {
-                auto stream_origin_iter = streams_origin.find(s.second.profile.unique_id());
-                if (selected_depth_source_uid == -1)
-                {
-                    if ( stream_origin_iter != streams_origin.end() &&
-                        streams.find( stream_origin_iter->second ) != streams.end())
-                    {
-                        selected_depth_source_uid = stream_origin_iter->second;
-                    }
-                }
-                if ( stream_origin_iter != streams_origin.end() && stream_origin_iter->second == selected_depth_source_uid)
-                {
-                    selected_depth_source = i;
-                }
-
-                depth_sources.push_back(s.second.profile.unique_id());
-
-                auto dev_name = s.second.dev ? s.second.dev->dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
-                auto stream_name = rs2_stream_to_string(s.second.profile.stream_type());
-
-                depth_sources_str.push_back( rsutils::string::from() << dev_name << " " << stream_name );
-
-                i++;
-            }
-        }
+        init_depth_uid(selected_depth_source, depth_sources_str, depth_sources);
 
         int selected_tex_source = 0;
         std::vector<std::string> tex_sources_str;
         std::vector<int> tex_sources;
         std::vector<rs2::stream_profile> tex_profiles;
-        i = 0;
+        int i = 0;
         for (auto&& s : streams)
         {
             if (s.second.is_stream_visible() &&
@@ -3348,5 +3319,40 @@ namespace rs2
         }
 
         return results;
+    }
+
+    void viewer_model::init_depth_uid(int& selected_depth_source, std::vector<std::string>& depth_sources_str, std::vector<int>& depth_sources)
+    {
+        int i = 0;
+
+        for (auto&& s : streams)
+        {
+            if (s.second.is_stream_visible() &&
+                s.second.profile.stream_type() == RS2_STREAM_DEPTH)
+            {
+                auto stream_origin_iter = streams_origin.find(s.second.profile.unique_id());
+                if (selected_depth_source_uid == -1)
+                {
+                    if (stream_origin_iter != streams_origin.end() &&
+                        streams.find(stream_origin_iter->second) != streams.end())
+                    {
+                        selected_depth_source_uid = stream_origin_iter->second;
+                    }
+                }
+                if (stream_origin_iter != streams_origin.end() && stream_origin_iter->second == selected_depth_source_uid)
+                {
+                    selected_depth_source = i;
+                }
+
+                depth_sources.push_back(s.second.profile.unique_id());
+
+                auto dev_name = s.second.dev ? s.second.dev->dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
+                auto stream_name = rs2_stream_to_string(s.second.profile.stream_type());
+
+                depth_sources_str.push_back(rsutils::string::from() << dev_name << " " << stream_name);
+
+                i++;
+            }
+        }
     }
 }
