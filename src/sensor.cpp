@@ -452,7 +452,7 @@ void log_callback_end( uint32_t fps,
                         expected_size = static_cast<int>(f.frame_size);
 
                     frame_holder fh = _source.alloc_frame(
-                        stream_to_frame_types( req_profile_base->get_stream_type() ),
+                        frame_source::stream_to_frame_types( req_profile_base->get_stream_type() ),
                         expected_size,
                         fr->additional_data,
                         true );
@@ -738,18 +738,6 @@ void log_callback_end( uint32_t fps,
         stream_profiles result{ video_profiles.begin(), video_profiles.end() };
         result.insert(result.end(), motion_profiles.begin(), motion_profiles.end());
         return result;
-    }
-
-    rs2_extension uvc_sensor::stream_to_frame_types(rs2_stream stream) const
-    {
-        // TODO: explicitly return video_frame for relevant streams and default to an error?
-        switch (stream)
-        {
-        case RS2_STREAM_DEPTH:  return RS2_EXTENSION_DEPTH_FRAME;
-        case RS2_STREAM_ACCEL:
-        case RS2_STREAM_GYRO:   return RS2_EXTENSION_MOTION_FRAME;
-        default:                return RS2_EXTENSION_VIDEO_FRAME;
-        }
     }
 
     bool info_container::supports_info(rs2_camera_info info) const
