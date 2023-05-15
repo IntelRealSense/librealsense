@@ -47,7 +47,7 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_zone const& sz)
     out << "\n\t\t" << "Zone Polygon - Point #1: { x:" << sz.zone_polygon[1].x << ", y:" << sz.zone_polygon[1].y << " }";
     out << "\n\t\t" << "Zone Polygon - Point #2: { x:" << sz.zone_polygon[2].x << ", y:" << sz.zone_polygon[2].y << " }";
     out << "\n\t\t" << "Zone Polygon - Point #3: { x:" << sz.zone_polygon[3].x << ", y:" << sz.zone_polygon[3].y << " }";
-    out << "\n\t\t" << "Safety Trigger Confidence: " << (int)sz.safety_trigger_confidence;
+    out << "\n\t\t" << "Safety Trigger Confidence: " << (int)(sz.safety_trigger_confidence);
     out << "\n\t\t" << "Minimum Object Size - Diameter: " << sz.minimum_object_size.x << " [mm]";
     out << "\n\t\t" << "Minimum Object Size - Length: " << sz.minimum_object_size.y << " [mm]";
     out << "\n\t\t" << "Minimum Object Size - Target Type: " << sc_mos_target_to_string(sz.mos_target_type);
@@ -61,7 +61,7 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_2d_masking_zone co
     out << "\n\t\t" << "Masking Zone Minimal Range: " << mz.minimal_range;
     for (int pixel = 0 ; pixel < 4 ; pixel++)
     {
-        out << "\n\t\t" << "Mask pixel #" << pixel << ": (" << (int)mz.region_of_interests[pixel].i << "," << (int)mz.region_of_interests[pixel].j << ")";
+        out << "\n\t\t" << "Mask pixel #" << pixel << ": (" << (int)(mz.region_of_interests[pixel].i) << "," << (int)(mz.region_of_interests[pixel].j) << ")";
     }
     return out;
 }
