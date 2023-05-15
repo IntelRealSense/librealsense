@@ -867,6 +867,11 @@ namespace rs2
                 { RS2_FRAME_METADATA_POWER_LINE_FREQUENCY                 , "Power Line Frequency for anti-flickering Off/50Hz/60Hz/Auto. " },
             };
 
+
+            //add_descriptions_for_d500_metadata_fields(descriptions);
+            std::string product_line = this->dev->dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
+            if (product_line == "D500")
+                add_d500_metadata_descriptions(descriptions);
             for (auto i = 0; i < RS2_FRAME_METADATA_COUNT; i++)
             {
                 auto&& kvp = frame_md.md_attributes[i];
@@ -959,6 +964,35 @@ namespace rs2
         }
 
         ImGui::PopStyleColor(5);
+    }
+
+    void stream_model::add_d500_metadata_descriptions(std::map<rs2_frame_metadata_value, std::string>& descriptions) const
+    {
+        descriptions[RS2_FRAME_METADATA_SAFETY_DEPTH_FRAME_COUNTER] = "Counter of the depth frame upon which the stream was calculated";
+        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL1] = "Designates the “Yellow” zone status: 0x1 – High, 0x0 - Low";
+        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL1_ORIGIN] = "When l1 is low – equals to frame_counter in safety_header - For l1=0x1 : hold the Frame id on last transition to “High” state";
+        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL2] = "Designates the “Red” zone status: 0x1 – High, 0x0 - Low";
+        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL2_ORIGIN] = "When l2 is low – equals to frame_counter in safety_header - For l2=0x1 : hold the Frame id on last transition to “High” state";
+        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL1_VERDICT] = "Current verdict for l1 Safety Signal - May differ from l1_signal due to additional logics applied";
+        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL2_VERDICT] = "Current verdict for l2 Safety Signal - May differ from l2_signal due to additional logics applied";
+        descriptions[RS2_FRAME_METADATA_SAFETY_HUMAN_VOTE_RESULT] = "Bitmask, enumerated";
+        descriptions[RS2_FRAME_METADATA_SAFETY_HARA_EVENTS] = "Bitmask, enumerated";
+        descriptions[RS2_FRAME_METADATA_SAFETY_SOC_FUSA_EVENTS] = "Bitmask, enumerated";
+        descriptions[RS2_FRAME_METADATA_SAFETY_SOC_FUSA_ACTION] = "Bitmask, enumerated";
+        descriptions[RS2_FRAME_METADATA_SAFETY_FUSA_EVENT] = "";
+        descriptions[RS2_FRAME_METADATA_SAFETY_FUSA_ACTION] = "";
+        descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_ID] = "Designates the Safety Zone index in [0..63] range used in algo pipe";
+        descriptions[RS2_FRAME_METADATA_SENSOR_ANGLE_ROLL] = "In degrees. Relative to X (forward) axis. Positive value is CCW";
+        descriptions[RS2_FRAME_METADATA_SENSOR_ANGLE_PITCH] = "In degrees. Relative to Y (left) axis. Positive value is CCW";
+        descriptions[RS2_FRAME_METADATA_FLOOR_MEDIAN_HEIGHT] = "In meters. Relative to the leveled pointcloud CS";
+        descriptions[RS2_FRAME_METADATA_FLOOR_DETECTION] = "Percentage";
+        descriptions[RS2_FRAME_METADATA_CLIFF_DETECTION] = "Percentage";
+        descriptions[RS2_FRAME_METADATA_DEPTH_FILL_RATE] = "Signed value in range of [0..100]. Use [x = 101] if not applicable";
+        descriptions[RS2_FRAME_METADATA_DEPTH_STDEV] = "Spatial accuracy in millimetric units";
+        descriptions[RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS] = "Number of rows in the grid. Max value is 250 (corresponding to 5M width with 2cm tile)";
+        descriptions[RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS] = "Number of columns in the grid. Max value is 320 (corresponding to ~6.5M depth with 2cm tile)";
+        descriptions[RS2_FRAME_METADATA_OCCUPANCY_CELL_SIZE] = "Edge size of each tile, measured in cm ";
+        descriptions[RS2_FRAME_METADATA_NUMBER_OF_3D_VERTICES] = "The max number of points is 320X240";
     }
 
     void stream_model::show_stream_footer(ImFont* font, const rect &stream_rect, const mouse_info& mouse, const std::map<int, stream_model> &streams, viewer_model& viewer)
