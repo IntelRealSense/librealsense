@@ -16,7 +16,7 @@ inline std::string sc_reserved_arr_to_string(const uint8_t* data, size_t len)
     for (auto i = 0; i < len; i++) {
         std::stringstream hex_represntation;
         hex_represntation << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(data[i]);
-        ss << " [" << i << "]=0x " << hex_represntation.str() << "\t";
+        ss << " [" << i << "]=0x" << hex_represntation.str() << "\t";
     }
     return ss.str();
 }
