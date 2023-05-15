@@ -92,75 +92,23 @@ namespace librealsense
             if (!table)
                 throw invalid_value_exception(rsutils::string::from() << "table is null");
 
-            if (width > 0 && height > 0)
-            {
-                rs2_intrinsics intrinsics;
-                intrinsics.width = width;
-                intrinsics.height = height;
+            if (!(width > 0 && height > 0))
+                throw invalid_value_exception(rsutils::string::from() << "width and height are not positive");
 
-                auto rect_params = compute_rect_params_from_resolution(table->left_coefficients_table.base_instrinsics, width, height);
+            rs2_intrinsics intrinsics;
+            intrinsics.width = width;
+            intrinsics.height = height;
 
-                // DS5U - assume ideal intrinsic params
-                if ((rect_params.x == rect_params.y) && (rect_params.z == rect_params.w))
-                {
-                    rect_params.x = rect_params.y = intrinsics.width * 1.5f;
-                    rect_params.z = intrinsics.width * 0.5f;
-                    rect_params.w = intrinsics.height * 0.5f;
-                }
-                intrinsics.fx = rect_params[0];
-                intrinsics.fy = rect_params[1];
-                intrinsics.ppx = rect_params[2];
-                intrinsics.ppy = rect_params[3];
-                intrinsics.model = RS2_DISTORTION_BROWN_CONRADY;
-                memset(intrinsics.coeffs, 0, sizeof(intrinsics.coeffs));  // All coefficients are zeroed since rectified depth is defined as CS origin
+            auto rect_params = compute_rect_params_from_resolution(table->left_coefficients_table.base_instrinsics, width, height);
 
-                // In case of the special 848x100 resolution adjust the intrinsics
-                if (width == 848 && height == 100)
-                {
-                    intrinsics.height = 100;
-                    intrinsics.ppy -= 190;
-                }
+            intrinsics.fx = rect_params[0];
+            intrinsics.fy = rect_params[1];
+            intrinsics.ppx = rect_params[2];
+            intrinsics.ppy = rect_params[3];
+            intrinsics.model = RS2_DISTORTION_BROWN_CONRADY;
+            memset(intrinsics.coeffs, 0, sizeof(intrinsics.coeffs));  // All coefficients are zeroed since rectified depth is defined as CS origin
 
-                return intrinsics;
-            }
-            else
-            {
-                // Intrinsics not found in the calibration table - use the generic calculation
-                ds_rect_resolutions resolution = res_1920_1080;
-                rs2_intrinsics intrinsics;
-                intrinsics.width = width;
-                intrinsics.height = height;
-
-                auto rect_params = float4(); // TODO - REMI static_cast<const float4>();  table->ds_rect_params[resolution]);
-                // DS5U - assume ideal intrinsic params
-                if ((rect_params.x == rect_params.y) && (rect_params.z == rect_params.w))
-                {
-                    rect_params.x = rect_params.y = intrinsics.width * 1.5f;
-                    rect_params.z = intrinsics.width * 0.5f;
-                    rect_params.w = intrinsics.height * 0.5f;
-                }
-
-                // Special resolution for auto-calibration requires special treatment...
-                if (width == 256 && height == 144)
-                {
-                    intrinsics.fx = rect_params[0];
-                    intrinsics.fy = rect_params[1];
-                    intrinsics.ppx = rect_params[2] - 832;
-                    intrinsics.ppy = rect_params[3] - 468;
-                }
-                else
-                {
-                    intrinsics.fx = rect_params[0] * width / resolutions_list[resolution].x;
-                    intrinsics.fy = rect_params[1] * height / resolutions_list[resolution].y;
-                    intrinsics.ppx = rect_params[2] * width / resolutions_list[resolution].x;
-                    intrinsics.ppy = rect_params[3] * height / resolutions_list[resolution].y;
-                }
-
-                intrinsics.model = RS2_DISTORTION_BROWN_CONRADY;
-                memset(intrinsics.coeffs, 0, sizeof(intrinsics.coeffs));  // All coefficients are zeroed since rectified depth is defined as CS origin
-
-                return intrinsics;
-            }
+            return intrinsics;
         }
 
         rs2_intrinsics get_d500_color_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)
@@ -169,75 +117,24 @@ namespace librealsense
             if (!table)
                 throw invalid_value_exception(rsutils::string::from() << "table is null");
 
-            if (width > 0 && height > 0)
-            {
-                rs2_intrinsics intrinsics;
-                intrinsics.width = width;
-                intrinsics.height = height;
+            if (!(width > 0 && height > 0))
+                throw invalid_value_exception(rsutils::string::from() << "width and height are not positive");
 
-                auto rect_params = compute_rect_params_from_resolution(table->rgb_coefficients_table.base_instrinsics, width, height);
+            rs2_intrinsics intrinsics;
+            intrinsics.width = width;
+            intrinsics.height = height;
 
-                // DS5U - assume ideal intrinsic params
-                if ((rect_params.x == rect_params.y) && (rect_params.z == rect_params.w))
-                {
-                    rect_params.x = rect_params.y = intrinsics.width * 1.5f;
-                    rect_params.z = intrinsics.width * 0.5f;
-                    rect_params.w = intrinsics.height * 0.5f;
-                }
-                intrinsics.fx = rect_params[0];
-                intrinsics.fy = rect_params[1];
-                intrinsics.ppx = rect_params[2];
-                intrinsics.ppy = rect_params[3];
-                intrinsics.model = table->rgb_coefficients_table.distortion_model;
-                librealsense::copy(intrinsics.coeffs, table->rgb_coefficients_table.distortion_coeffs, sizeof(intrinsics.coeffs));
+            auto rect_params = compute_rect_params_from_resolution(table->rgb_coefficients_table.base_instrinsics, width, height);
 
-                // In case of the special 848x100 resolution adjust the intrinsics
-                if (width == 848 && height == 100)
-                {
-                    intrinsics.height = 100;
-                    intrinsics.ppy -= 190;
-                }
+            intrinsics.fx = rect_params[0];
+            intrinsics.fy = rect_params[1];
+            intrinsics.ppx = rect_params[2];
+            intrinsics.ppy = rect_params[3];
+            intrinsics.model = table->rgb_coefficients_table.distortion_model;
+            librealsense::copy(intrinsics.coeffs, table->rgb_coefficients_table.distortion_coeffs, sizeof(intrinsics.coeffs));
 
-                return intrinsics;
-            }
-            else
-            {
-                // Intrinsics not found in the calibration table - use the generic calculation
-                ds_rect_resolutions resolution = res_1920_1080;
-                rs2_intrinsics intrinsics;
-                intrinsics.width = width;
-                intrinsics.height = height;
 
-                auto rect_params = float4(); // TODO - REMI static_cast<const float4>();  table->ds_rect_params[resolution]);
-                // DS5U - assume ideal intrinsic params
-                if ((rect_params.x == rect_params.y) && (rect_params.z == rect_params.w))
-                {
-                    rect_params.x = rect_params.y = intrinsics.width * 1.5f;
-                    rect_params.z = intrinsics.width * 0.5f;
-                    rect_params.w = intrinsics.height * 0.5f;
-                }
-
-                // Special resolution for auto-calibration requires special treatment...
-                if (width == 256 && height == 144)
-                {
-                    intrinsics.fx = rect_params[0];
-                    intrinsics.fy = rect_params[1];
-                    intrinsics.ppx = rect_params[2] - 832;
-                    intrinsics.ppy = rect_params[3] - 468;
-                }
-                else
-                {
-                    intrinsics.fx = rect_params[0] * width / resolutions_list[resolution].x;
-                    intrinsics.fy = rect_params[1] * height / resolutions_list[resolution].y;
-                    intrinsics.ppx = rect_params[2] * width / resolutions_list[resolution].x;
-                    intrinsics.ppy = rect_params[3] * height / resolutions_list[resolution].y;
-                }
-
-                intrinsics.model = table->rgb_coefficients_table.distortion_model;
-                librealsense::copy(intrinsics.coeffs, table->rgb_coefficients_table.distortion_coeffs, sizeof(intrinsics.coeffs));
-
-                return intrinsics;
-            }
+            return intrinsics;
         }
 
         pose get_d500_color_stream_extrinsic(const std::vector<uint8_t>& raw_data)
