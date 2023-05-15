@@ -342,7 +342,7 @@ handle = open( cmakefile, 'w' )
 handle.write( '''
 
 set( CATCH_FILES
-    ''' + dir + '''/catch/catch.hpp
+    ''' + add_slash_before_spaces(dir) + '''/catch/catch.hpp
 )
 
 ''' )
