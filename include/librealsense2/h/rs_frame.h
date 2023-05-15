@@ -72,31 +72,31 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_SUB_PRESET_INFO                      , /**< Sub-preset information */
     RS2_FRAME_METADATA_CALIB_INFO                           , /**< FW-controlled frame counter to be using in Calibration scenarios */
     RS2_FRAME_METADATA_CRC                                  , /**< CRC checksum of the Metadata */
-    RS2_FRAME_METADATA_SAFETY_DEPTH_FRAME_COUNTER,
-    RS2_FRAME_METADATA_SAFETY_LEVEL1,
-    RS2_FRAME_METADATA_SAFETY_LEVEL1_ORIGIN,
-    RS2_FRAME_METADATA_SAFETY_LEVEL2,
-    RS2_FRAME_METADATA_SAFETY_LEVEL2_ORIGIN,
-    RS2_FRAME_METADATA_SAFETY_LEVEL1_VERDICT,
-    RS2_FRAME_METADATA_SAFETY_LEVEL2_VERDICT,
-    RS2_FRAME_METADATA_SAFETY_HUMAN_VOTE_RESULT,
-    RS2_FRAME_METADATA_SAFETY_HARA_EVENTS,
-    RS2_FRAME_METADATA_SAFETY_SOC_FUSA_EVENTS,
-    RS2_FRAME_METADATA_SAFETY_SOC_FUSA_ACTION,
-    RS2_FRAME_METADATA_SAFETY_FUSA_EVENT,
-    RS2_FRAME_METADATA_SAFETY_FUSA_ACTION,
-    RS2_FRAME_METADATA_SAFETY_PRESET_ID,
-    RS2_FRAME_METADATA_SENSOR_ANGLE_ROLL,
-    RS2_FRAME_METADATA_SENSOR_ANGLE_PITCH,
-    RS2_FRAME_METADATA_FLOOR_MEDIAN_HEIGHT,
-    RS2_FRAME_METADATA_FLOOR_DETECTION,
-    RS2_FRAME_METADATA_CLIFF_DETECTION,
-    RS2_FRAME_METADATA_DEPTH_FILL_RATE,
-    RS2_FRAME_METADATA_DEPTH_STDEV,
-    RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS,
-    RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS,
-    RS2_FRAME_METADATA_OCCUPANCY_CELL_SIZE,
-    RS2_FRAME_METADATA_NUMBER_OF_3D_VERTICES,
+    RS2_FRAME_METADATA_SAFETY_DEPTH_FRAME_COUNTER           , /**< Counter of the depth frame upon which the stream was calculated  */
+    RS2_FRAME_METADATA_SAFETY_LEVEL1                        , /**< Designates the “Yellow” zone status: 0x1 – High, 0x0 - Low  */
+    RS2_FRAME_METADATA_SAFETY_LEVEL1_ORIGIN                 , /**< When l1 is low – equals to frame_counter in safety_header - For l1=0x1 : hold the Frame id on last transition to “High” state */
+    RS2_FRAME_METADATA_SAFETY_LEVEL2                        , /**< Designates the “Red” zone status: 0x1 – High, 0x0 - Low */
+    RS2_FRAME_METADATA_SAFETY_LEVEL2_ORIGIN                 , /**< When l2 is low – equals to frame_counter in safety_header - For l1=0x1 : hold the Frame id on last transition to “High” state */
+    RS2_FRAME_METADATA_SAFETY_LEVEL1_VERDICT                , /**< Current verdict for l1 Safety Signal - May differ from l1_signal due to additional logics applied */
+    RS2_FRAME_METADATA_SAFETY_LEVEL2_VERDICT                , /**< Current verdict for l2 Safety Signal - May differ from l2_signal due to additional logics applied */
+    RS2_FRAME_METADATA_SAFETY_HUMAN_VOTE_RESULT             , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_HARA_EVENTS                   , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_SOC_FUSA_EVENTS               , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_SOC_FUSA_ACTION               , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_FUSA_EVENT                    , /**<  */
+    RS2_FRAME_METADATA_SAFETY_FUSA_ACTION                   , /**<  */
+    RS2_FRAME_METADATA_SAFETY_PRESET_ID                     , /**< Designates the Safety Zone index in [0..63] range used in AICV algo pipe */
+    RS2_FRAME_METADATA_SENSOR_ANGLE_ROLL                    , /**< In degrees. Relative to X (forward) axis. Positive value is CCW */
+    RS2_FRAME_METADATA_SENSOR_ANGLE_PITCH                   , /**< In degrees. Relative to Y (left) axis. Positive value is CCW  */
+    RS2_FRAME_METADATA_FLOOR_MEDIAN_HEIGHT                  , /**< In meters. Relative to the “leveled pointcloud” CS  */
+    RS2_FRAME_METADATA_FLOOR_DETECTION                      , /**< Percentage */
+    RS2_FRAME_METADATA_CLIFF_DETECTION                      , /**< Percentage */
+    RS2_FRAME_METADATA_DEPTH_FILL_RATE                      , /**< Signed value in range of [0..100]. Use [x = 101] if not applicable */
+    RS2_FRAME_METADATA_DEPTH_STDEV                          , /**< Spatial accuracy in millimetric units */
+    RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS                  , /**< Number of rows in the grid. Max value is 250 (corresponding to 5M width with 2cm tile) */
+    RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS               , /**< Number of columns in the grid. Max value is 320 (corresponding to ~6.5M depth with 2cm tile) */
+    RS2_FRAME_METADATA_OCCUPANCY_CELL_SIZE                  , /**< Edge size of each tile, measured in cm  */
+    RS2_FRAME_METADATA_NUMBER_OF_3D_VERTICES                , /**< The max number of points is 320X240 */
     RS2_FRAME_METADATA_COUNT
 } rs2_frame_metadata_value;
 const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata);

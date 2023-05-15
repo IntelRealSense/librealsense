@@ -86,6 +86,7 @@ namespace rs2
 
         // Turn on showing metadata.
         void show_metadata_by_default(const rs2::stream_profile& p);
+        void add_d500_metadata_descriptions(std::map<rs2_frame_metadata_value, std::string>& descriptions) const;
     };
 
     

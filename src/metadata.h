@@ -750,7 +750,7 @@ namespace librealsense
                                                      // [0..1023] - valid range
                                                      // [1024] - attribute was not calculated / not applicable
                                                      // [1025 - 0xFFFF] undefined / invalid range
-        uint8_t     safety_preset_id;                // Number of rows in the grid. Max value is 250 (corresponding to 5M width with 2cm tile) 
+        uint8_t     safety_preset_id;                // Designates the Safety Zone index in [0..63] range used in AICV algo pipe
         uint8_t     reserved[14];                    // Zero-ed
         uint16_t    grid_rows;                       // Number of rows in the grid. Max value is 250 (corresponding to 5M width with 2cm tile) 
         uint16_t    grid_columns;                    // Number of columns in the grid. Max value is 320 (corresponding to ~6.5M depth with 2cm tile) 
@@ -779,10 +779,10 @@ namespace librealsense
                                                      // [0..1023] - valid range
                                                      // [1024] - attribute was not calculated / not applicable
                                                      // [1025 - 0xFFFF] undefined / invalid range
-        uint8_t     safety_preset_id;                // Number of rows in the grid. Max value is 250 (corresponding to 5M width with 2cm tile) 
+        uint8_t     safety_preset_id;                // Designates the Safety Zone index in [0..63] range used in AICV algo pipe
         uint8_t     reserved[14];                    // Zero-ed
         uint16_t    number_of_3d_vertices;           // The max number of points is 320X240 
-        uint8_t     reserved2[18];                    // Zero-ed
+        uint8_t     reserved2[18];                   // Zero-ed
         uint32_t    payload_crc32;                   // Crc32 for the occupancy grid payload data only, not including the metadata header.
     };                                    
     REGISTER_MD_TYPE(md_point_cloud, md_type::META_DATA_INTEL_POINT_CLOUD_ID)
