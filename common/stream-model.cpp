@@ -972,7 +972,7 @@ namespace rs2
         descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL1] = "Designates the “Yellow” zone status: 0x1 – High, 0x0 - Low";
         descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL1_ORIGIN] = "When l1 is low – equals to frame_counter in safety_header - For l1=0x1 : hold the Frame id on last transition to “High” state";
         descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL2] = "Designates the “Red” zone status: 0x1 – High, 0x0 - Low";
-        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL2_ORIGIN] = "When l2 is low – equals to frame_counter in safety_header - For l1=0x1 : hold the Frame id on last transition to “High” state";
+        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL2_ORIGIN] = "When l2 is low – equals to frame_counter in safety_header - For l2=0x1 : hold the Frame id on last transition to “High” state";
         descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL1_VERDICT] = "Current verdict for l1 Safety Signal - May differ from l1_signal due to additional logics applied";
         descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL2_VERDICT] = "Current verdict for l2 Safety Signal - May differ from l2_signal due to additional logics applied";
         descriptions[RS2_FRAME_METADATA_SAFETY_HUMAN_VOTE_RESULT] = "Bitmask, enumerated";
@@ -981,7 +981,7 @@ namespace rs2
         descriptions[RS2_FRAME_METADATA_SAFETY_SOC_FUSA_ACTION] = "Bitmask, enumerated";
         descriptions[RS2_FRAME_METADATA_SAFETY_FUSA_EVENT] = "";
         descriptions[RS2_FRAME_METADATA_SAFETY_FUSA_ACTION] = "";
-        descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_ID] = "Designates the Safety Zone index in [0..63] range used in AICV algo pipe";
+        descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_ID] = "Designates the Safety Zone index in [0..63] range used in algo pipe";
         descriptions[RS2_FRAME_METADATA_SENSOR_ANGLE_ROLL] = "In degrees. Relative to X (forward) axis. Positive value is CCW";
         descriptions[RS2_FRAME_METADATA_SENSOR_ANGLE_PITCH] = "In degrees. Relative to Y (left) axis. Positive value is CCW";
         descriptions[RS2_FRAME_METADATA_FLOOR_MEDIAN_HEIGHT] = "In meters. Relative to the leveled pointcloud CS";

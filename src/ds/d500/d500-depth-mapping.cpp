@@ -145,7 +145,7 @@ namespace librealsense
                 md_occupancy_attributes::floor_median_height_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DEPTH_STDEV,
-            make_attribute_parser(&md_occupancy::depth_stdev_mm,
+            make_attribute_parser(&md_occupancy::depth_stdev,
                 md_occupancy_attributes::depth_stdev_mm_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_PRESET_ID,
@@ -212,7 +212,7 @@ namespace librealsense
                 md_point_cloud_attributes::floor_median_height_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DEPTH_STDEV,
-            make_attribute_parser(&md_point_cloud::depth_stdev_mm,
+            make_attribute_parser(&md_point_cloud::depth_stdev,
                 md_point_cloud_attributes::depth_stdev_mm_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_PRESET_ID,

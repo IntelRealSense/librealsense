@@ -717,7 +717,7 @@ namespace librealsense
         uint8_t     level1_signal;                  // Designates the “Yellow” zone status: 0x1 – High, 0x0 - Low 
         uint32_t    level1_frame_counter_origin;    // When l1 is low – equals to frame_counter in safety_header - For l1=0x1 : hold the Frame id on last transition to “High” state 
         uint8_t     level2_signal;                  // Designates the “Red” zone status: 0x1 – High, 0x0 - Low 
-        uint32_t    level2_frame_counter_origin;    // When l2 is low – equals to frame_counter in safety_header - For l1=0x1 : hold the Frame id on last transition to “High” state 
+        uint32_t    level2_frame_counter_origin;    // When l2 is low – equals to frame_counter in safety_header - For l2=0x1 : hold the Frame id on last transition to “High” state 
         uint8_t     level1_verdict;                 // Current verdict for l1 Safety Signal - May differ from l1_signal due to additional logics applied
         uint8_t     level2_verdict;                 // Current verdict for l2 Safety Signal - May differ from l2_signal due to additional logics applied
         uint32_t    human_safety_vote_result;       // Bitmask, enumerated
@@ -739,18 +739,18 @@ namespace librealsense
         uint32_t    flags;
         uint32_t    frame_counter;
         uint32_t    depth_frame_counter;             // counter of the depth frame upon which it was calculated 
-        uint64_t    frame_timestamp;                 // HW Timestamp for Occupancy map, calculated in AICV 
+        uint64_t    frame_timestamp;                 // HW Timestamp for Occupancy map, calculated in lower level algo
         uint8_t     floor_detection;                 // Percentage
         uint8_t     cliff_detection;                 // Percentage
         uint8_t     depth_fill_rate;                 // signed value in range of [0..100]. Use [x = 101] if not applicable
         float       sensor_roll_angle;               // In degrees. Relative to X (forward) axis. Positive value is CCW
         float       sensor_pitch_angle;              // In degrees. Relative to Y (left) axis. Positive value is CCW 
         float       floor_median_height;             // In meters. Relative to the “leveled pointcloud” CS 
-        uint16_t    depth_stdev_mm;                  // Spatial accuracy in millimetric units: 
+        uint16_t    depth_stdev;                  // Spatial accuracy in millimetric units: 
                                                      // [0..1023] - valid range
                                                      // [1024] - attribute was not calculated / not applicable
                                                      // [1025 - 0xFFFF] undefined / invalid range
-        uint8_t     safety_preset_id;                // Designates the Safety Zone index in [0..63] range used in AICV algo pipe
+        uint8_t     safety_preset_id;                // Designates the Safety Zone index in [0..63] range used in algo pipe
         uint8_t     reserved[14];                    // Zero-ed
         uint16_t    grid_rows;                       // Number of rows in the grid. Max value is 250 (corresponding to 5M width with 2cm tile) 
         uint16_t    grid_columns;                    // Number of columns in the grid. Max value is 320 (corresponding to ~6.5M depth with 2cm tile) 
@@ -768,18 +768,18 @@ namespace librealsense
         uint32_t    flags;
         uint32_t    frame_counter;
         uint32_t    depth_frame_counter;             // counter of the depth frame upon which it was calculated 
-        uint64_t    frame_timestamp;                 // HW Timestamp for Occupancy map, calculated in AICV 
+        uint64_t    frame_timestamp;                 // HW Timestamp for Occupancy map, calculated in lower level algo
         uint8_t     floor_detection;                 // Percentage
         uint8_t     cliff_detection;                 // Percentage
         uint8_t     depth_fill_rate;                 // signed value in range of [0..100]. Use [x = 101] if not applicable
         float       sensor_roll_angle;               // In degrees. Relative to X (forward) axis. Positive value is CCW
         float       sensor_pitch_angle;              // In degrees. Relative to Y (left) axis. Positive value is CCW 
         float       floor_median_height;             // In meters. Relative to the “leveled pointcloud” CS 
-        uint16_t    depth_stdev_mm;                  // Spatial accuracy in millimetric units: 
+        uint16_t    depth_stdev;                  // Spatial accuracy in millimetric units: 
                                                      // [0..1023] - valid range
                                                      // [1024] - attribute was not calculated / not applicable
                                                      // [1025 - 0xFFFF] undefined / invalid range
-        uint8_t     safety_preset_id;                // Designates the Safety Zone index in [0..63] range used in AICV algo pipe
+        uint8_t     safety_preset_id;                // Designates the Safety Zone index in [0..63] range used in algo pipe
         uint8_t     reserved[14];                    // Zero-ed
         uint16_t    number_of_3d_vertices;           // The max number of points is 320X240 
         uint8_t     reserved2[18];                   // Zero-ed
