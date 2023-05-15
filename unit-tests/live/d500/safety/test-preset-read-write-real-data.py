@@ -39,39 +39,43 @@ def get_random_preset():
     p3 = rs.float2(random.uniform(-10, 10), random.uniform(-10, 10))
     p4 = rs.float2(random.uniform(-10, 10), random.uniform(-10, 10))
 
-    # zone boundary
-    zone_boundary = rs.float2(random.uniform(0, 10), random.uniform(0, 10))
-
     # MOS (minimum object size)
     mos = rs.float2(random.uniform(0, 10), random.uniform(0, 10))
 
-    # safety zone #1
+    # safety zone #0 (will be used twice: as danger and as warning zones)
     safety_zone = rs.safety_zone()
-    safety_zone.flags = 3  # valid and mandatory (first two bits are 1)
-    safety_zone.zone_type = random.randint(0, 2)  # 0=danger, 1=warning, 2=mask_zone
     safety_zone.zone_polygon = [p1, p2, p3, p4]
-    safety_zone.masking_zone_v_boundary = zone_boundary
     safety_zone.safety_trigger_confidence = random.randint(0, 255)  # number of consecutive frames to raise safety signal
     safety_zone.minimum_object_size = mos
     safety_zone.mos_target_type = random.randint(0, 2)  # 0=hand, 1=leg, 2=body
-    safety_zone.reserved = random.sample(range(0, 255), 16)
+    safety_zone.reserved = random.sample(range(0, 255), 8)
+
+    # masking zone #0 (will be used 8 times)
+    masking_zone = rs.masking_zone()
+    masking_zone.attributes = 0x01
+    masking_zone.minimal_range = random.uniform(0, 50) # m
+    pixel = rs.pixel2D() # will be used 4 times
+    pixel.i = random.randint(0, 255)
+    pixel.j = random.randint(0, 255)
+    masking_zone.region_of_interests = [pixel] * 4
 
     # safety environment
     safety_environment = rs.safety_environment()
     safety_environment.grid_cell_size = random.uniform(0, 100)  # cm
     safety_environment.safety_trigger_duration = random.uniform(0, 900)  # sec
-    safety_environment.max_angular_velocity = random.uniform(0, 40)  # rad/sec
-    safety_environment.max_linear_velocity = random.uniform(0, 40)  # m/sec
+    safety_environment.angular_velocity = random.uniform(0, 40)  # rad/sec
+    safety_environment.linear_velocity = random.uniform(0, 40)  # m/sec
     safety_environment.payload_weight = random.uniform(0, 1000)  # kg
     safety_environment.surface_confidence = random.randint(0, 100)  # [0..100%]
     safety_environment.surface_height = random.uniform(0, 1)  # [m]
     safety_environment.surface_inclination = random.uniform(0, 360)  # angle in degrees
-    safety_environment.reserved = random.sample(range(0, 255), 16)
+    safety_environment.reserved = random.sample(range(0, 255), 15)
 
-    # init safety preset
     safety_preset = rs.safety_preset()
     safety_preset.platform_config = safety_platform
-    safety_preset.safety_zones = [safety_zone, safety_zone, safety_zone, safety_zone]
+    safety_preset.safety_zones = [safety_zone] * 2
+    safety_preset.masking_zones = [masking_zone] * 8
+    safety_preset.reserved = [0] * 16
     safety_preset.environment = safety_environment
 
     return safety_preset
