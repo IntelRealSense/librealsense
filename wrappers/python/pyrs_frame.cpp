@@ -20,7 +20,7 @@ void init_frame(py::module &m) {
     auto get_frame_data = [](const rs2::frame& self) ->  BufData
     {
         if (auto vf = self.as<rs2::video_frame>()) {
-            std::map<size_t, std::string> bytes_per_pixel_to_format = { { 1, std::string("@B") },{ 2, std::string("@H") },{ 3, std::string("@I") },{ 4, std::string("@I") } };
+            std::map<size_t, std::string> bytes_per_pixel_to_format = { { 1, std::string("@B") },{ 2, std::string("@H") },{ 3, std::string("@I") },{ 4, /*std::string("@I")*/py::format_descriptor<float>::format() } };
             switch (vf.get_profile().format()) {
             case RS2_FORMAT_RGB8: case RS2_FORMAT_BGR8:
                 return BufData(const_cast<void*>(vf.get_data()), 1, bytes_per_pixel_to_format[1], 3,
