@@ -798,7 +798,7 @@ namespace librealsense
         uint32_t    vision_safety_verdict;          // Bitmask: see details above the struct
         uint16_t    safety_hara_status;             // Bitmask: see details above the struct
         uint8_t     safety_preset_integrity;        // Bitmask: see details above the struct
-        uint8_t     safety_preset_id_selected;      // Safety Preset index set via Adaptive Field selection GPIO 
+        uint8_t     safety_preset_id_selected;      // Safety Preset index set via Adaptive Field selection GPIO
         uint8_t     safety_preset_id_used;          // Safety Preset index used in the latest Vision Safety algo processing - retrieved from cpfpVisionSafetyResults message
         uint8_t     vision_reserved[11];            // zeroed
         // Soc Monitor

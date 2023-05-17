@@ -79,20 +79,20 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_SAFETY_LEVEL2_ORIGIN                 , /**< When l2 is low - equals to frame_counter in safety_header - For l2=0x1 : hold the Frame id on last transition to “High” state */
     RS2_FRAME_METADATA_SAFETY_LEVEL1_VERDICT                , /**< Current verdict for l1 Safety Signal - May differ from l1_signal due to additional logics applied */
     RS2_FRAME_METADATA_SAFETY_LEVEL2_VERDICT                , /**< Current verdict for l2 Safety Signal - May differ from l2_signal due to additional logics applied */
-    RS2_FRAME_METADATA_SAFETY_OPERATIONAL_MODE              , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_OPERATIONAL_MODE              , /**< Reflects the SC operational mode (XU control) */
     RS2_FRAME_METADATA_SAFETY_VISION_VERDICT                , /**< Bitmask, enumerated */
     RS2_FRAME_METADATA_SAFETY_HARA_EVENTS                   , /**< Bitmask, enumerated */
     RS2_FRAME_METADATA_SAFETY_PRESET_INTEGRITY              , /**< Bitmask, enumerated */
-    RS2_FRAME_METADATA_SAFETY_PRESET_ID_SELECTED            , /**< Bitmask, enumerated */
-    RS2_FRAME_METADATA_SAFETY_PRESET_ID_USED                , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_PRESET_ID_SELECTED            , /**< Safety Preset index set via Adaptive Field selection GPIO */
+    RS2_FRAME_METADATA_SAFETY_PRESET_ID_USED                , /**< Safety Preset index used in the latest Vision Safety algo processing */
     RS2_FRAME_METADATA_SAFETY_SOC_FUSA_EVENTS               , /**< Bitmask, enumerated */
     RS2_FRAME_METADATA_SAFETY_SOC_FUSA_ACTION               , /**< Bitmask, enumerated */
     RS2_FRAME_METADATA_SAFETY_SOC_STATUS                    , /**< Bitmask, enumerated */
-    RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT                 , /**<  */
-    RS2_FRAME_METADATA_SAFETY_MB_FUSA_ACTION                , /**<  */
-    RS2_FRAME_METADATA_SAFETY_MB_STATUS                     , /**<  */
-    RS2_FRAME_METADATA_SAFETY_SMCU_STATUS                   , /**<  */
-    RS2_FRAME_METADATA_SAFETY_SMCU_STATE                    , /**<  */
+    RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT                 , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_MB_FUSA_ACTION                , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_MB_STATUS                     , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_SMCU_STATUS                   , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_SMCU_STATE                    , /**< Bitmask, enumerated */
     RS2_FRAME_METADATA_SAFETY_PRESET_ID                     , /**< Designates the Safety Zone index in [0..63] range used in algo pipe */
     RS2_FRAME_METADATA_SENSOR_ANGLE_ROLL                    , /**< In degrees. Relative to X (forward) axis. Positive value is CCW */
     RS2_FRAME_METADATA_SENSOR_ANGLE_PITCH                   , /**< In degrees. Relative to Y (left) axis. Positive value is CCW  */
