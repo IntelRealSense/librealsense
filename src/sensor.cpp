@@ -1354,7 +1354,7 @@ void log_callback_end( uint32_t fps,
     stream_profiles synthetic_sensor::init_stream_profiles()
     {
         stream_profiles from_profiles = _raw_sensor->get_stream_profiles( PROFILE_TAG_ANY | PROFILE_TAG_DEBUG );
-        stream_profiles result_profiles = _formats_converter.get_all_possible_target_profiles( from_profiles );
+        stream_profiles result_profiles = _formats_converter.get_all_possible_profiles( from_profiles );
 
         _owner->tag_profiles( result_profiles );
         sort_profiles( &result_profiles );
@@ -1452,17 +1452,17 @@ void log_callback_end( uint32_t fps,
                                                      const std::vector< stream_profile > & to,
                                                      std::function< std::shared_ptr< processing_block >( void ) > generate_func )
     {
-        _formats_converter.register_processing_block( from, to, generate_func );
+        _formats_converter.register_converter( from, to, generate_func );
     }
 
     void synthetic_sensor::register_processing_block( const processing_block_factory & pbf )
     {
-        _formats_converter.register_processing_block( pbf );
+        _formats_converter.register_converter( pbf );
     }
 
     void synthetic_sensor::register_processing_block( const std::vector< processing_block_factory > & pbfs )
     {
-        _formats_converter.register_processing_block( pbfs );
+        _formats_converter.register_converters( pbfs );
     }
 
     frame_callback_ptr synthetic_sensor::get_frames_callback() const
