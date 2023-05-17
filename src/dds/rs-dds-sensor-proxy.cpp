@@ -315,8 +315,11 @@ void dds_sensor_proxy::start( frame_callback_ptr callback )
         streaming.syncer.on_frame_ready(
             [this, &streaming]( syncer_type::frame_holder && fh, nlohmann::json && md )
             {
-                add_frame_metadata( static_cast< frame * >( fh.get() ), std::move( md ), streaming );
-                invoke_new_frame( static_cast< frame * >( fh.release() ), nullptr, nullptr );
+                if( _is_streaming ) // stop was not called
+                {
+                    add_frame_metadata( static_cast< frame * >( fh.get() ), std::move( md ), streaming );
+                    invoke_new_frame( static_cast< frame * >( fh.release() ), nullptr, nullptr );
+                }
             } );
 
         if( auto dds_video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( dds_stream ) )
@@ -349,16 +352,33 @@ void dds_sensor_proxy::start( frame_callback_ptr callback )
 
 void dds_sensor_proxy::stop()
 {
-    _streaming_by_name.clear();
-
     for( auto & profile : sensor_base::get_active_streams() )
     {
         auto & dds_stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
+
+        if( auto dds_video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( dds_stream ) )
+        {
+            dds_video_stream->on_data_available( nullptr );
+        }
+        else if( auto dds_motion_stream = std::dynamic_pointer_cast< realdds::dds_motion_stream >( dds_stream ) )
+        {
+            dds_motion_stream->on_data_available( nullptr );
+        }
+        else
+            throw std::runtime_error( "Unsupported stream type" );
+
         dds_stream->stop_streaming();
         dds_stream->close();
+
+        _streaming_by_name[dds_stream->name()].syncer.on_frame_ready( nullptr );
     }
 
+    // Resets frame source. Nullify streams on_data_available before calling stop.
     software_sensor::stop();
+
+    // Must be done after dds_stream->stop_streaming or we will need to add validity checks to on_data_available,
+    // and after software_sensor::stop cause to make sure _is_streaming is false
+    _streaming_by_name.clear();
 }
 
 

@@ -74,20 +74,18 @@ private:
     on_frame_ready_callback _on_frame_ready = nullptr;
     on_metadata_dropped_callback _on_metadata_dropped = nullptr;
 
+    std::shared_ptr< bool > _is_alive; // Ensures object can be accessed
+
 public:
+    dds_metadata_syncer();
+    virtual ~dds_metadata_syncer();
+
     void enqueue_frame( key_type, frame_holder && );
     void enqueue_metadata( key_type, metadata_type && );
 
     void on_frame_release( on_frame_release_callback cb ) { _on_frame_release = cb; }
     void on_frame_ready( on_frame_ready_callback cb ) { _on_frame_ready = cb; }
     void on_metadata_dropped( on_metadata_dropped_callback cb ) { _on_metadata_dropped = cb; }
-
-    void clear()
-    {
-        std::lock_guard< std::mutex > lock( _queues_lock );
-        _frame_queue.clear();
-        _metadata_queue.clear();
-    }
 
     // Helper to create frame_holder
     template< class Frame >
@@ -99,9 +97,9 @@ public:
 private:
     // Call these under lock:
     void search_for_match( std::unique_lock< std::mutex > & );
-    void handle_match( std::unique_lock< std::mutex > & );
-    void handle_frame_without_metadata( std::unique_lock< std::mutex > & );
-    void drop_metadata( std::unique_lock< std::mutex > & );
+    bool handle_match( std::unique_lock< std::mutex > & );
+    bool handle_frame_without_metadata( std::unique_lock< std::mutex > & );
+    bool drop_metadata( std::unique_lock< std::mutex > & );
 };
 
 
