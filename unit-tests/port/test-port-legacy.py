@@ -6,9 +6,7 @@ from rspy import test
 from threading import Thread
 import tempfile
 import os.path
-import time
 import numpy as np
-import array
 
 ################################################################################################
 test.start("Unit transform test")
@@ -80,10 +78,7 @@ t.start()
 
 for i in range(expected_frames):
     synced_f = sync.wait_for_frames()
-    if synced_f.is_frameset:
-        f = synced_f.get_depth_frame()
-    else:
-        f = synced_f
+    f = synced_f.get_depth_frame()
 
     f_format = f.get_profile().format()
     test.check_equal(rs.format.z16, f_format)
