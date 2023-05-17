@@ -14,6 +14,7 @@
 #include "imgui-fonts-monofont.hpp"
 
 #include "os.h"
+#include <rsutils/os/rsutils-os.h>
 #include "viewer.h"
 #include "on-chip-calib.h"
 #include "subdevice-model.h"
@@ -122,7 +123,7 @@ namespace rs2
         ss << "| | |\n";
         ss << "|---|---|\n";
         ss << "|**librealsense**|" << api_version_to_string(rs2_get_api_version(&e)) << (is_debug() ? " DEBUG" : " RELEASE") << "|\n";
-        ss << "|**OS**|" << get_os_name() << "|\n";
+        ss << "|**OS**|" << rsutils::get_os_name() << "|\n";
 
         for (auto& dm : devices)
         {
