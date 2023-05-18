@@ -149,13 +149,29 @@ namespace librealsense
             make_attribute_parser(&md_safety_info::level2_verdict, 
                 md_safety_info_attributes::level2_verdict_attribute, md_prop_offset));
 
-        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_HUMAN_VOTE_RESULT,
-            make_attribute_parser(&md_safety_info::human_safety_vote_result, 
-                md_safety_info_attributes::human_safety_vote_result_attribute, md_prop_offset));
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_OPERATIONAL_MODE,
+            make_attribute_parser(&md_safety_info::operational_mode,
+                md_safety_info_attributes::operational_mode_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_VISION_VERDICT,
+            make_attribute_parser(&md_safety_info::vision_safety_verdict,
+                md_safety_info_attributes::vision_safety_verdict_attribute, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_HARA_EVENTS,
-            make_attribute_parser(&md_safety_info::hara_events, 
-                md_safety_info_attributes::hara_events_attribute, md_prop_offset));
+            make_attribute_parser(&md_safety_info::safety_hara_status,
+                md_safety_info_attributes::safety_hara_status_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_PRESET_INTEGRITY,
+            make_attribute_parser(&md_safety_info::safety_preset_integrity,
+                md_safety_info_attributes::safety_preset_integrity_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_PRESET_ID_SELECTED,
+            make_attribute_parser(&md_safety_info::safety_preset_id_selected,
+                md_safety_info_attributes::safety_preset_id_selected_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_PRESET_ID_USED,
+            make_attribute_parser(&md_safety_info::safety_preset_id_used,
+                md_safety_info_attributes::safety_preset_id_used_attribute, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_FUSA_EVENTS,
             make_attribute_parser(&md_safety_info::soc_fusa_events, 
@@ -165,13 +181,29 @@ namespace librealsense
             make_attribute_parser(&md_safety_info::soc_fusa_action, 
                 md_safety_info_attributes::soc_fusa_action_attribute, md_prop_offset));
 
-        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_FUSA_EVENT,
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_STATUS,
+            make_attribute_parser(&md_safety_info::soc_status,
+                md_safety_info_attributes::soc_status_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT,
             make_attribute_parser(&md_safety_info::mb_fusa_event, 
                 md_safety_info_attributes::mb_fusa_event_attribute, md_prop_offset));
 
-        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_FUSA_ACTION,
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_MB_FUSA_ACTION,
             make_attribute_parser(&md_safety_info::mb_fusa_action, 
                 md_safety_info_attributes::mb_fusa_action_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_MB_STATUS,
+            make_attribute_parser(&md_safety_info::mb_status,
+                md_safety_info_attributes::mb_status_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SMCU_STATUS,
+            make_attribute_parser(&md_safety_info::smcu_status,
+                md_safety_info_attributes::smcu_status_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SMCU_STATE,
+            make_attribute_parser(&md_safety_info::smcu_state,
+                md_safety_info_attributes::smcu_state_attribute, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_CRC,
             make_attribute_parser_with_crc(&md_safety_info::crc32,
