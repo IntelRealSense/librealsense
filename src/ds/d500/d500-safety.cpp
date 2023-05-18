@@ -155,7 +155,7 @@ namespace librealsense
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_VISION_VERDICT,
             make_attribute_parser(&md_safety_info::vision_safety_verdict,
-                md_safety_info_attributes::operational_mode_attribute, md_prop_offset));
+                md_safety_info_attributes::vision_safety_verdict_attribute, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_HARA_EVENTS,
             make_attribute_parser(&md_safety_info::safety_hara_status,
@@ -194,8 +194,8 @@ namespace librealsense
                 md_safety_info_attributes::mb_fusa_action_attribute, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_MB_STATUS,
-            make_attribute_parser(&md_safety_info::mb_fusa_action,
-                md_safety_info_attributes::mb_fusa_action_attribute, md_prop_offset));
+            make_attribute_parser(&md_safety_info::mb_status,
+                md_safety_info_attributes::mb_status_attribute, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SMCU_STATUS,
             make_attribute_parser(&md_safety_info::smcu_status,

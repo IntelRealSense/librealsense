@@ -9,7 +9,14 @@ from metadata_common import *
 safety_metadata_values = [rs.frame_metadata_value.frame_counter,
                           rs.frame_metadata_value.frame_timestamp,
                           rs.frame_metadata_value.safety_level1,
-                          rs.frame_metadata_value.safety_level2]
+                          rs.frame_metadata_value.safety_level2]#,
+                          #rs.frame_metadata_value.safety_level1_verdict,
+                          #rs.frame_metadata_value.safety_level2_verdict,
+                          #rs.frame_metadata_value.safety_operational_mode,
+                          #rs.frame_metadata_value.safety_vision_verdict,
+                          #rs.frame_metadata_value.safety_hara_events,
+                          #rs.frame_metadata_value.safety_preset_integrity,
+                          #rs.frame_metadata_value.safety_preset_id_used]
 
 def check_safety_metadata(frame):
     for md_value in safety_metadata_values:
