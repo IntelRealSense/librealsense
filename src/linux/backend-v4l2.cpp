@@ -869,8 +869,8 @@ namespace librealsense
 
                     info.mi = vs.compare("imu") ? 0 : 4;
                     info.unique_id += "-" + std::to_string(i);
+                    info.uvc_capabilities &= ~(V4L2_CAP_META_CAPTURE); // clean caps
                     mipi_rs_enum_nodes.emplace_back(info, video_path);
-
                     // Get metadata node
                     // Check if file on video_md_path is exists
                     vfd = open(video_md_path.c_str(), O_RDONLY | O_NONBLOCK);
@@ -2201,7 +2201,8 @@ namespace librealsense
 
         void v4l_uvc_meta_device::streamon() const
         {
-            if (_md_fd != -1)
+            bool jetson_platform = is_platform_jetson();
+            if ((_md_fd != -1) && jetson_platform)
             {
                 // D457 development - added for mipi device, for IR because no metadata there
                 // Metadata stream shall be configured first to allow sync with video node
@@ -2210,6 +2211,12 @@ namespace librealsense
 
             // Invoke UVC streaming request
             v4l_uvc_device::streamon();
+
+            // Metadata stream configured last for IPU6 and it will be in sync with video node
+            if ((_md_fd != -1) && !jetson_platform)
+            {
+                stream_ctl_on(_md_fd, _md_type);
+            }
 
         }
 
@@ -2337,10 +2344,18 @@ namespace librealsense
                 throw linux_backend_exception("ioctl(VIDIOC_G_FMT): " + _md_name + " node is not metadata capture");
 
             bool success = false;
+
             for (const uint32_t& request : { V4L2_META_FMT_D4XX, V4L2_META_FMT_UVC})
             {
                 // Configure metadata format - try d4xx, then fallback to currently retrieve UVC default header of 12 bytes
-                memcpy(fmt.fmt.raw_data,&request,sizeof(request));
+                memcpy(fmt.fmt.raw_data, &request, sizeof(request));
+                /* use only for IPU6? */
+                if ((_dev.cap.capabilities & V4L2_CAP_VIDEO_CAPTURE_MPLANE) && !is_platform_jetson())
+                {
+                    fmt.fmt.meta.dataformat = request;
+                    fmt.fmt.meta.width      = profile.width;
+                    fmt.fmt.meta.height     = 1;
+                }
 
                 if(xioctl(_md_fd, VIDIOC_S_FMT, &fmt) >= 0)
                 {
