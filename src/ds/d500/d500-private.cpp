@@ -63,25 +63,38 @@ namespace librealsense
         // crop_xy = (calib_org.image_size * scale_ratio - new_size_xy) / 2;
         // calib_new.principal_point = (calib_org.principal_point + 0.5).*scale_ratio - crop_xy - 0.5;
         // calib_new.focal_length = calib_org.focal_length.*scale_ratio;
-        float4 compute_rect_params_from_resolution(const mini_intrinsics& base_intrinsics, uint32_t width, uint32_t height)
+        float4 compute_rect_params_from_resolution(const mini_intrinsics& base_intrinsics, uint32_t width, uint32_t height, bool force_symetry = false)
         {
             if (base_intrinsics.image_width == 0 || base_intrinsics.image_height == 0)
                 throw invalid_value_exception(rsutils::string::from() << 
                     "resolution in base_intrinsics is 0: width = " << base_intrinsics.image_width <<
                     ", height = " << base_intrinsics.image_height);
 
-            auto scale_ratio_x = static_cast<float>(width) / base_intrinsics.image_width;
-            auto scale_ratio_y = static_cast<float>(height) / base_intrinsics.image_height;
+            mini_intrinsics relevant_intrinsics = base_intrinsics;
+
+            // cropping the frame in case symetry is needed, so that the principal point is at the middle
+            if (force_symetry)
+            {
+                relevant_intrinsics.image_width = 1 + 2 * 
+                    static_cast<int>(std::min<float>(base_intrinsics.ppx, base_intrinsics.image_width - 1 - base_intrinsics.ppx));
+                relevant_intrinsics.image_height = 1 + 2 * 
+                    static_cast<int>(std::min<float>(base_intrinsics.ppy, base_intrinsics.image_height - 1 - base_intrinsics.ppy));
+                relevant_intrinsics.ppx = (relevant_intrinsics.image_width - 1) / 2.f;
+                relevant_intrinsics.ppy = (relevant_intrinsics.image_height - 1) / 2.f;
+            }
+
+            auto scale_ratio_x = static_cast<float>(width) / relevant_intrinsics.image_width;
+            auto scale_ratio_y = static_cast<float>(height) / relevant_intrinsics.image_height;
             auto scale_ratio = std::max<float>(scale_ratio_x, scale_ratio_y);
 
-            auto crop_x = (base_intrinsics.image_width * scale_ratio - width) * 0.5f;
-            auto crop_y = (base_intrinsics.image_height * scale_ratio - height) * 0.5f;
+            auto crop_x = (relevant_intrinsics.image_width * scale_ratio - width) * 0.5f;
+            auto crop_y = (relevant_intrinsics.image_height * scale_ratio - height) * 0.5f;
 
-            auto new_ppx = (base_intrinsics.ppx + 0.5f) * scale_ratio - crop_x - 0.5f;
-            auto new_ppy = (base_intrinsics.ppy + 0.5f) * scale_ratio - crop_y - 0.5f;
+            auto new_ppx = (relevant_intrinsics.ppx + 0.5f) * scale_ratio - crop_x - 0.5f;
+            auto new_ppy = (relevant_intrinsics.ppy + 0.5f) * scale_ratio - crop_y - 0.5f;
 
-            auto new_fx = base_intrinsics.fx * scale_ratio;
-            auto new_fy = base_intrinsics.fy * scale_ratio;
+            auto new_fx = relevant_intrinsics.fx * scale_ratio;
+            auto new_fy = relevant_intrinsics.fy * scale_ratio;
 
             return { new_fx, new_fy, new_ppx, new_ppy };
         }
@@ -99,7 +112,7 @@ namespace librealsense
             intrinsics.width = width;
             intrinsics.height = height;
 
-            auto rect_params = compute_rect_params_from_resolution(table->left_coefficients_table.base_instrinsics, width, height);
+            auto rect_params = compute_rect_params_from_resolution(table->left_coefficients_table.base_instrinsics, width, height, true);
 
             intrinsics.fx = rect_params[0];
             intrinsics.fy = rect_params[1];
@@ -124,7 +137,7 @@ namespace librealsense
             intrinsics.width = width;
             intrinsics.height = height;
 
-            auto rect_params = compute_rect_params_from_resolution(table->rgb_coefficients_table.base_instrinsics, width, height);
+            auto rect_params = compute_rect_params_from_resolution(table->rgb_coefficients_table.base_instrinsics, width, height, true);
 
             intrinsics.fx = rect_params[0];
             intrinsics.fy = rect_params[1];
