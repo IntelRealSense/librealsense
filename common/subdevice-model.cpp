@@ -1679,9 +1679,17 @@ namespace rs2
         {
             int depth_res_id, ir1_res_id, ir2_res_id;
             get_depth_ir_mismatch_resolutions_ids(depth_res_id, ir1_res_id, ir2_res_id);
-            streaming_map[depth_res_id] = true;
-            streaming_map[ir1_res_id] = true;
-            streaming_map[ir2_res_id] = true;
+
+            for (size_t i = 0; i < profiles.size(); i++)
+            {
+                if (profiles[i].stream_type() == RS2_STREAM_DEPTH)
+                    streaming_map[depth_res_id] = true;
+                else if (profiles[i].stream_type() == RS2_STREAM_INFRARED)
+                {
+                    streaming_map[ir1_res_id] = true;
+                    streaming_map[ir2_res_id] = true;
+                }
+            }
         }
 
         if (s->is< color_sensor >())
