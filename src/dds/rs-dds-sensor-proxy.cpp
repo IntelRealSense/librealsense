@@ -3,6 +3,7 @@
 
 #include "rs-dds-sensor-proxy.h"
 #include "rs-dds-option.h"
+#include "rs-dds-internal-data.h"
 
 #include <realdds/dds-device.h>
 #include <realdds/dds-time.h>
@@ -60,6 +61,93 @@ void dds_sensor_proxy::add_dds_stream( sid_index sidx, std::shared_ptr< realdds:
 }
 
 
+std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_video_stream( rs2_video_stream video_stream,
+                                                                                bool is_default )
+{
+    auto profile = std::make_shared< video_stream_profile >( platform::stream_profile{ (uint32_t)video_stream.width,
+                                                                                       (uint32_t)video_stream.height,
+                                                                                       (uint32_t)video_stream.fps,
+                                                                                       0 } );
+    profile->set_dims( video_stream.width, video_stream.height );
+    profile->set_format( video_stream.fmt );
+    profile->set_framerate( video_stream.fps );
+    profile->set_stream_index( video_stream.index );
+    profile->set_stream_type( video_stream.type );
+    profile->set_unique_id( video_stream.uid );
+    profile->set_intrinsics( [=]() {
+        return video_stream.intrinsics;
+    } );
+    if( is_default )
+        profile->tag_profile( profile_tag::PROFILE_TAG_DEFAULT );
+    _raw_rs_profiles.push_back( profile );
+
+    return profile;
+}
+
+
+std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_motion_stream( rs2_motion_stream motion_stream,
+                                                                                 bool is_default )
+{
+    auto profile = std::make_shared< motion_stream_profile >( platform::stream_profile{ 0,
+                                                                                        0,
+                                                                                        (uint32_t)motion_stream.fps,
+                                                                                        0 } );
+    profile->set_format( motion_stream.fmt );
+    profile->set_framerate( motion_stream.fps );
+    profile->set_stream_index( motion_stream.index );
+    profile->set_stream_type( motion_stream.type );
+    profile->set_unique_id( motion_stream.uid );
+    profile->set_intrinsics( [=]() { return motion_stream.intrinsics; } );
+    if( is_default )
+        profile->tag_profile( profile_tag::PROFILE_TAG_DEFAULT );
+    _raw_rs_profiles.push_back( profile );
+
+    return profile;
+}
+
+
+void dds_sensor_proxy::initialization_done( std::string product_id, std::string product_line )
+{
+    auto converters = dds_rs_internal_data::get_profile_converters( product_id, product_line );
+    _formats_converter.register_converters( converters );
+    _profiles = _formats_converter.get_all_possible_profiles( _raw_rs_profiles );
+
+    auto tags = dds_rs_internal_data::get_profiles_tags( product_id, product_line );
+    for( auto & profile : _profiles )
+        for( auto & tag : tags )
+            if( ( tag.stream == RS2_STREAM_ANY || tag.stream == profile->get_stream_type() ) &&
+                ( tag.format == RS2_FORMAT_ANY || tag.format == profile->get_format() ) &&
+                ( tag.fps == -1 || tag.fps == profile->get_framerate() ) &&
+                ( tag.stream_index == -1 || tag.stream_index == profile->get_stream_index() ) )
+            {
+                if( auto vp = dynamic_cast< video_stream_profile_interface * >( profile.get() ) )
+                { // For video the resolution should match as well
+                    if( ( tag.width == -1 || tag.width == vp->get_width() ) &&
+                        ( tag.height == -1 || tag.height == vp->get_height() ) )
+                        profile->tag_profile( tag.tag );
+                }
+                else
+                    profile->tag_profile( tag.tag );
+            }
+
+    //// Add unique ID based on the dds_stream matching the profile. Connect the profile to the extrinsics graph.
+    //// TODO - Need to override intrinsics function?
+    //for( auto & profile : _profiles )
+    //    for( auto & stream : _streams )
+    //    {
+    //        // Currently, stream names are based on profile type name and index
+    //        std::string profile_type_str = get_string( profile->get_stream_type() );
+    //        std::string stream_name_substr = stream.second->name().substr( 0, profile_type_str.size() );
+    //        if( stream_name_substr == profile_type_str )
+    //        {
+    //            profile->set_unique_id( stream.first.sid );
+    //            profile->set_stream_index( stream.first.index );
+    //            environment::get_instance().get_extrinsics_graph().register_same_extrinsics( *stream, *target );
+    //        }
+    //    }
+}
+
+
 std::shared_ptr< realdds::dds_video_stream_profile >
 dds_sensor_proxy::find_profile( sid_index sidx, realdds::dds_video_stream_profile const & profile ) const
 {
@@ -111,14 +199,19 @@ dds_sensor_proxy::find_profile( sid_index sidx, realdds::dds_motion_stream_profi
 
 void dds_sensor_proxy::open( const stream_profiles & profiles )
 {
+    _formats_converter.prepare_to_convert( profiles );
+
+    const auto & source_profiles = _formats_converter.get_active_source_profiles();
+    // TODO - register processing block options?
+
     realdds::dds_stream_profiles realdds_profiles;
-    for( size_t i = 0; i < profiles.size(); ++i )
+    for( size_t i = 0; i < source_profiles.size(); ++i )
     {
-        auto & sp = profiles[i];
+        auto & sp = source_profiles[i];
         sid_index sidx( sp->get_unique_id(), sp->get_stream_index() );
         if( Is< video_stream_profile >( sp ) )
         {
-            const auto && vsp = As< video_stream_profile >( profiles[i] );
+            const auto && vsp = As< video_stream_profile >( source_profiles[i] );
             auto video_profile = find_profile(
                 sidx,
                 realdds::dds_video_stream_profile( sp->get_framerate(),
@@ -134,7 +227,7 @@ void dds_sensor_proxy::open( const stream_profiles & profiles )
         {
             auto motion_profile = find_profile(
                 sidx,
-                realdds::dds_motion_stream_profile( profiles[i]->get_framerate(),
+                realdds::dds_motion_stream_profile( source_profiles[i]->get_framerate(),
                                                     realdds::dds_stream_format::from_rs2( sp->get_format() ) ) );
             if( motion_profile )
                 realdds_profiles.push_back( motion_profile );
@@ -147,12 +240,12 @@ void dds_sensor_proxy::open( const stream_profiles & profiles )
         }
     }
 
-    if( profiles.size() > 0 )
+    if( source_profiles.size() > 0 )
     {
         _dev->open( realdds_profiles );
     }
 
-    software_sensor::open( profiles );
+    software_sensor::open( source_profiles );
 }
 
 

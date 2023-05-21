@@ -207,6 +207,54 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< context > ctx, std::shared_
             {
                 sensor_info.proxy->add_processing_block( filter_name );
             }
+
+            sensor_info.proxy->initialization_done( dev->device_info().product_id, dev->device_info().product_line );
+
+            // Set profile's ID and index based on the dds_stream. Connect the profile to the extrinsics graph.
+            // TODO - Need to override intrinsics function?
+            for( auto & profile : sensor_info.proxy->get_stream_profiles() )
+            {
+                profile->set_unique_id( sidx.sid );
+                profile->set_stream_index( sidx.index );
+                _stream_name_to_profiles[stream->name()].push_back( profile );  // for extrinsics
+
+                // Handle intrinsics
+                if( video_stream )
+                {
+                    auto vsp = std::dynamic_pointer_cast< video_stream_profile >( profile );
+                    auto & stream_intrinsics = video_stream->get_intrinsics();
+                    auto it = std::find_if( stream_intrinsics.begin(),
+                                            stream_intrinsics.end(),
+                                            [vsp]( const realdds::video_intrinsics & intr ) {
+                                                return vsp->get_width() == intr.width && vsp->get_height() == intr.height;
+                                            } );
+                    if( it != stream_intrinsics.end() )  // Some profiles don't have intrinsics
+                    {
+                        rs2_intrinsics intr;
+                        intr.width  = it->width;
+                        intr.height = it->height;
+                        intr.ppx    = it->principal_point_x;
+                        intr.ppy    = it->principal_point_y;
+                        intr.fx     = it->focal_lenght_x;
+                        intr.fy     = it->focal_lenght_y;
+                        intr.model  = static_cast< rs2_distortion >( it->distortion_model );
+                        memcpy( intr.coeffs, it->distortion_coeffs.data(), sizeof( intr.coeffs ) );
+                        vsp->set_intrinsics( [intr]() {
+                            return intr;
+                        } );
+                    }
+                }
+                if( motion_stream )
+                {
+                    auto msp = std::dynamic_pointer_cast< motion_stream_profile >( profile );
+                    auto & stream_intrinsics = motion_stream->get_intrinsics();
+                    rs2_motion_device_intrinsic intr;
+                    memcpy( intr.data, stream_intrinsics.data.data(), sizeof( intr.data ) );
+                    memcpy( intr.noise_variances, stream_intrinsics.noise_variances.data(), sizeof( intr.noise_variances ) );
+                    memcpy( intr.bias_variances, stream_intrinsics.bias_variances.data(), sizeof( intr.bias_variances ) );
+                    msp->set_intrinsics( [intr]() { return intr; } );
+                }
+            }
         } );  // End foreach_stream lambda
 
 

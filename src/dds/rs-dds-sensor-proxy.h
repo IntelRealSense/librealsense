@@ -3,11 +3,12 @@
 
 #pragma once
 
-#include <src/software-device.h>
-
-#include <realdds/dds-metadata-syncer.h>
 
 #include "sid_index.h"
+#include <src/software-device.h>
+#include <src/proc/formats-converter.h>
+
+#include <realdds/dds-metadata-syncer.h>
 
 #include <nlohmann/json_fwd.hpp>
 #include <memory>
@@ -50,6 +51,11 @@ class dds_sensor_proxy : public software_sensor
     std::map< sid_index, std::shared_ptr< realdds::dds_stream > > _streams;
     std::map< std::string, streaming_impl > _streaming_by_name;
 
+    formats_converter _formats_converter;
+    // DDS profiles are stored in _streams, _source_rs_profiles stores librealsense representation of them,
+    // software_device::_profiles stores librealsense profiles after conversion
+    stream_profiles _raw_rs_profiles;
+
 public:
     dds_sensor_proxy( std::string const & sensor_name,
                       software_device * owner,
@@ -58,6 +64,9 @@ public:
     const std::string & get_name() const { return _name; }
 
     void add_dds_stream( sid_index sidx, std::shared_ptr< realdds::dds_stream > const & stream );
+    std::shared_ptr<stream_profile_interface> add_video_stream( rs2_video_stream video_stream, bool is_default ) override;
+    std::shared_ptr<stream_profile_interface> add_motion_stream( rs2_motion_stream motion_stream, bool is_default ) override;
+    void initialization_done( std::string product_id, std::string product_line ); // Not adding streams or profiles after this
 
     void open( const stream_profiles & profiles ) override;
     void start( frame_callback_ptr callback ) override;
@@ -88,7 +97,7 @@ private:
 
     void add_frame_metadata( frame * const, nlohmann::json && metadata, streaming_impl & );
 
-    friend class dds_device_proxy;  // currently calls handle_new_metadata
+    friend class dds_device_proxy;  // Currently calls handle_new_metadata
 };
 
 
