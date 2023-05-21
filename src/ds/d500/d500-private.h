@@ -156,8 +156,8 @@ namespace librealsense
             mini_intrinsics           base_instrinsics;
             uint32_t                  distortion_non_parametric;
             rs2_distortion            distortion_model;          /**< Distortion model of the image */
-            float                     distortion_coeffs[5];      /**< Distortion coefficients. Order for Brown-Conrady: [k1, k2, p1, p2, k3]. Order for F-Theta Fish-eye: [k1, k2, k3, k4, 0]. Other models are subject to their own interpretations */
-            uint8_t                   reserved[36];
+            float                     distortion_coeffs[13];     /**< Distortion coefficients. Order for Brown-Conrady: [k1, k2, p1, p2, k3]. Order for F-Theta Fish-eye: [k1, k2, k3, k4, 0]. Other models are subject to their own interpretations */
+            uint8_t                   reserved[4];
             float                     radial_distortion_lut_range_degs;
             float                     radial_distortion_lut_focal_length;
             d500_undist_configuration undist_config;

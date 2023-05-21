@@ -124,6 +124,83 @@ namespace librealsense
             return intrinsics;
         }
 
+
+        // Algorithm prepared by Oscar Pelc in matlab:
+        // % ### Adapt the calibration table to the undistorted image
+        //     calib_undist = calib_sensor;
+        // % # The intrinsic parameters
+        //     % #      The intrinsics of the IPU output(derived independently in the IPU configuratoin SW)
+        //     calib_out_ext = FOV.Adapt_Intrinsics(calib_rectified, undist_size_xy, force_fov_symmetry);
+        // K_fe = [calib_out_ext.focal_length(1), 0, calib_out_ext.principal_point(1); ...
+        //     0, calib_out_ext.focal_length(2), calib_out_ext.principal_point(2); ...
+        //     0, 0, 1];
+        // % #      A translation from the fisheye distortion output to the Brown distortion input
+        //     focal_length_change = calib_sensor.distortion_params(6:7);
+        // principal_point_shift = calib_sensor.distortion_params(8:9);
+        // K_trans = [1 + focal_length_change(1), 0, principal_point_shift(1); ...
+        //     0, 1 + focal_length_change(2), principal_point_shift(2); ...
+        //     0, 0, 1];
+        // % #      The updated parameters
+        //     calib_undist.image_width = calib_out_ext.image_width;
+        // calib_undist.image_height = calib_out_ext.image_height;
+        // K_brown = K_fe * K_trans;
+        // calib_undist.principal_point = K_brown([1, 2], 3)';
+        //     calib_undist.focal_length = [K_brown(1, 1), K_brown(2, 2)];
+        // % # Distortion: only Brown
+        //     calib_undist.distortion_model = 1;
+        // calib_undist.distortion_params(6: end) = 0;
+        // % # Rotation: unchanged
+        void correct_fisheye_distortion(ds::d500_rgb_calibration_table& rgb_calib_table, rs2_intrinsics& intrinsics)
+        {
+            auto& rgb_coefficients_table = rgb_calib_table.rgb_coefficients_table;
+
+            // matrix with the intrinsics - after they have been adapted to required resolution
+            // k_fe matrix - set as column-major matrix below
+            //  {intrinsics.fx,       0      , intrinsics.ppx}
+            //  {      0      , intrinsics.fy, intrinsics.ppy}
+            //  {      0      ,       0      ,        1      }
+            float3x3 k_fe;
+            k_fe.x = { intrinsics.fx, 0 ,0 };
+            k_fe.y = { 0, intrinsics.fy, 0 };
+            k_fe.z = { intrinsics.ppx, intrinsics.ppy, 1 };
+
+            // translation from fisheye distortion output to Brown distortion input
+            auto focal_length_change_x = rgb_coefficients_table.distortion_coeffs[5];
+            auto focal_length_change_y = rgb_coefficients_table.distortion_coeffs[6];
+            auto principal_point_change_x = rgb_coefficients_table.distortion_coeffs[7];
+            auto principal_point_change_y = rgb_coefficients_table.distortion_coeffs[8];
+            // k_trans matrix - set as column-major matrix below
+            // {1 + focal_length_change_x,              0           , principal_point_change_x },
+            // {            0            , 1 + focal_length_change_y, principal_point_change_y },
+            // {            0            ,              0           ,            1             } };
+            float3x3 k_trans;
+            k_trans.x = { 1 + focal_length_change_x, 0, 0 };
+            k_trans.y = { 0, 1 + focal_length_change_y, 0 };
+            k_trans.z = { principal_point_change_x, principal_point_change_y, 1 };
+
+            auto k_brown = k_fe * k_trans;
+
+            intrinsics.ppx = k_brown.z.x;
+            intrinsics.ppy = k_brown.z.y;
+            intrinsics.fx = k_brown.x.x;
+            intrinsics.fy = k_brown.y.y;
+
+            // update values in the distortion params of the calibration table
+            rgb_coefficients_table.distortion_model = RS2_DISTORTION_BROWN_CONRADY;
+            rgb_coefficients_table.distortion_coeffs[5] = 0;
+            rgb_coefficients_table.distortion_coeffs[6] = 0;
+            rgb_coefficients_table.distortion_coeffs[7] = 0;
+            rgb_coefficients_table.distortion_coeffs[8] = 0;
+            rgb_coefficients_table.distortion_coeffs[9] = 0;
+            rgb_coefficients_table.distortion_coeffs[10] = 0;
+            rgb_coefficients_table.distortion_coeffs[11] = 0;
+            rgb_coefficients_table.distortion_coeffs[12] = 0;
+            // updating crc after values have been modified
+            auto ptr = reinterpret_cast<uint8_t*>(&rgb_calib_table);
+            std::vector<uint8_t> raw_data(ptr, ptr + sizeof(rgb_calib_table));
+            rgb_calib_table.header.crc32 = calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header));
+        }
+
         rs2_intrinsics get_d500_color_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)
         {
             auto table = check_calib<ds::d500_rgb_calibration_table>(raw_data);
@@ -137,7 +214,7 @@ namespace librealsense
             intrinsics.width = width;
             intrinsics.height = height;
 
-            auto rect_params = compute_rect_params_from_resolution(table->rgb_coefficients_table.base_instrinsics, width, height, true);
+            auto rect_params = compute_rect_params_from_resolution(table->rgb_coefficients_table.base_instrinsics, width, height);
 
             intrinsics.fx = rect_params[0];
             intrinsics.fy = rect_params[1];
@@ -146,6 +223,7 @@ namespace librealsense
             intrinsics.model = table->rgb_coefficients_table.distortion_model;
             librealsense::copy(intrinsics.coeffs, table->rgb_coefficients_table.distortion_coeffs, sizeof(intrinsics.coeffs));
 
+            correct_fisheye_distortion(const_cast<ds::d500_rgb_calibration_table&>(*table), intrinsics);
 
             return intrinsics;
         }
