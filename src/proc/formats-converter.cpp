@@ -107,9 +107,7 @@ formats_converter::clone_profile( const std::shared_ptr< stream_profile_interfac
 
         auto video_clone = std::dynamic_pointer_cast< video_stream_profile >( cloned );
         video_clone->set_dims( vsp->get_width(), vsp->get_height() );
-        std::dynamic_pointer_cast< video_stream_profile >( cloned )->set_intrinsics( [video_clone]() {
-            return video_clone->get_intrinsics();
-        } );
+        video_clone->set_intrinsics( [vsp]() { return vsp->get_intrinsics(); } );
     }
     else if( msp )
     {
@@ -118,9 +116,7 @@ formats_converter::clone_profile( const std::shared_ptr< stream_profile_interfac
             throw librealsense::invalid_value_exception( "failed to clone profile" );
 
         auto motion_clone = std::dynamic_pointer_cast< motion_stream_profile >( cloned );
-        std::dynamic_pointer_cast< motion_stream_profile >( cloned )->set_intrinsics( [motion_clone]() {
-            return motion_clone->get_intrinsics();
-        } );
+        motion_clone->set_intrinsics( [msp]() { return msp->get_intrinsics(); } );
     }
     else
         throw librealsense::not_implemented_exception( "Unsupported profile type to clone" );
@@ -203,16 +199,16 @@ void formats_converter::update_target_profiles_data( const stream_profiles & fro
 {
     for( auto & from_profile : from_profiles )
     {
-        for( auto & target_profile : _target_profiles_to_raw_profiles[to_profile( from_profile.get() )] )
+        for( auto & raw_profile : _target_profiles_to_raw_profiles[to_profile( from_profile.get() )] )
         {
-            target_profile->set_stream_index( from_profile->get_stream_index() );
-            target_profile->set_unique_id( from_profile->get_unique_id() );
-            target_profile->set_stream_type( from_profile->get_stream_type() );
-            auto video_target_profile = As< video_stream_profile, stream_profile_interface >( target_profile );
+            raw_profile->set_stream_index( from_profile->get_stream_index() );
+            raw_profile->set_unique_id( from_profile->get_unique_id() );
+            raw_profile->set_stream_type( from_profile->get_stream_type() );
+            auto video_raw_profile = As< video_stream_profile, stream_profile_interface >( raw_profile );
             const auto video_from_profile = As< video_stream_profile, stream_profile_interface >( from_profile );
-            if( video_target_profile )
+            if( video_raw_profile )
             {
-                video_target_profile->set_intrinsics( [video_from_profile]()
+                video_raw_profile->set_intrinsics( [video_from_profile]()
                 {
                     if( video_from_profile )
                         return video_from_profile->get_intrinsics();
@@ -222,7 +218,7 @@ void formats_converter::update_target_profiles_data( const stream_profiles & fro
 
                 // Hack for L515 confidence.
                 // Requesting source resolution from the camera, getting frame size of target (*2 y axis resolution)
-                video_target_profile->set_dims( video_from_profile->get_width(), video_from_profile->get_height() );
+                video_raw_profile->set_dims( video_from_profile->get_width(), video_from_profile->get_height() );
             }
         }
     }
