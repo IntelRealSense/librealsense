@@ -1487,10 +1487,12 @@ namespace rs2
                             }
                             else
                             {
-                                for (auto it = profile_id_to_res.begin(); it != profile_id_to_res.end(); ++it)
-                                {
-                                    stream_to_selected_resolution[p.stream_type()] = it->second[ui.selected_res_id_map[it->first]];
-                                }
+                                int depth_res_id, ir1_res_id, ir2_res_id;
+                                get_depth_ir_mismatch_resolutions_ids(depth_res_id, ir1_res_id, ir2_res_id);
+                                int res_id = (p.stream_type() == RS2_STREAM_DEPTH) ? depth_res_id : ir1_res_id;
+
+                                stream_to_selected_resolution[p.stream_type()] = profile_id_to_res[res_id][ui.selected_res_id_map[res_id]];
+  
                                 error_message << "\n{" << stream_display_names[stream] << ","
                                     << stream_to_selected_resolution[p.stream_type()].first << "x" 
                                     << stream_to_selected_resolution[p.stream_type()].second << " at " << fps << "Hz, "
