@@ -2349,12 +2349,24 @@ namespace librealsense
             {
                 // Configure metadata format - try d4xx, then fallback to currently retrieve UVC default header of 12 bytes
                 memcpy(fmt.fmt.raw_data, &request, sizeof(request));
-                /* use only for IPU6? */
+                // use only for IPU6?
                 if ((_dev.cap.capabilities & V4L2_CAP_VIDEO_CAPTURE_MPLANE) && !is_platform_jetson())
                 {
-                    fmt.fmt.meta.dataformat = request;
-                    fmt.fmt.meta.width      = profile.width;
-                    fmt.fmt.meta.height     = 1;
+                    /* Sakari patch for videodev2.h. This structure will be within kernel > 6.4 */
+                    struct v4l2_meta_format {
+                        uint32_t    dataformat;
+                        uint32_t    buffersize;
+                        uint32_t    width;
+                        uint32_t    height;
+                        uint32_t    bytesperline;
+                    } meta;
+                    // copy fmt from g_fmt ioctl
+                    memcpy(&meta, fmt.fmt.raw_data, sizeof(meta));
+                    // set fmt width, d4xx metadata is only one line
+                    meta.dataformat = request;
+                    meta.width      = profile.width;
+                    meta.height     = 1;
+                    memcpy(fmt.fmt.raw_data, &meta, sizeof(meta));
                 }
 
                 if(xioctl(_md_fd, VIDIOC_S_FMT, &fmt) >= 0)
