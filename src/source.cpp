@@ -146,5 +146,27 @@ namespace librealsense
                 kvp.second->flush();
         }
     }
+
+    rs2_extension frame_source::stream_to_frame_types(rs2_stream stream)
+    {
+        // TODO: explicitly return video_frame for relevant streams and default to an error?
+        switch (stream)
+        {
+        case RS2_STREAM_DEPTH:  return RS2_EXTENSION_DEPTH_FRAME;
+        case RS2_STREAM_ACCEL:
+        case RS2_STREAM_GYRO:   return RS2_EXTENSION_MOTION_FRAME;
+
+        case RS2_STREAM_COLOR:
+        case RS2_STREAM_INFRARED:
+        case RS2_STREAM_FISHEYE:
+        case RS2_STREAM_GPIO:
+        case RS2_STREAM_POSE:
+        case RS2_STREAM_CONFIDENCE:
+            return RS2_EXTENSION_VIDEO_FRAME;
+
+        default:
+            throw std::runtime_error("could not find matching extension with stream type '" + std::string(get_string(stream)) + "'");
+        }
+    }
 }
 
