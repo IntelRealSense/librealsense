@@ -150,9 +150,13 @@ namespace librealsense
         //     calib_undist.distortion_model = 1;
         // calib_undist.distortion_params(6: end) = 0;
         // % # Rotation: unchanged
-        void correct_fisheye_distortion(ds::d500_rgb_calibration_table& rgb_calib_table, rs2_intrinsics& intrinsics)
+        void update_table_to_correct_fisheye_distortion(ds::d500_rgb_calibration_table& rgb_calib_table, rs2_intrinsics& intrinsics)
         {
             auto& rgb_coefficients_table = rgb_calib_table.rgb_coefficients_table;
+
+            // checking if the fisheye distortion is needed
+            if (rgb_coefficients_table.distortion_model == RS2_DISTORTION_BROWN_CONRADY)
+                return;
 
             // matrix with the intrinsics - after they have been adapted to required resolution
             // k_fe matrix - set as column-major matrix below
@@ -223,7 +227,7 @@ namespace librealsense
             intrinsics.model = table->rgb_coefficients_table.distortion_model;
             librealsense::copy(intrinsics.coeffs, table->rgb_coefficients_table.distortion_coeffs, sizeof(intrinsics.coeffs));
 
-            correct_fisheye_distortion(const_cast<ds::d500_rgb_calibration_table&>(*table), intrinsics);
+            update_table_to_correct_fisheye_distortion(const_cast<ds::d500_rgb_calibration_table&>(*table), intrinsics);
 
             return intrinsics;
         }

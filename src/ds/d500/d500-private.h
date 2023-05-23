@@ -104,31 +104,6 @@ namespace librealsense
             {d500_calibration_table_id::imu_calibration_id, 192}
         };
 
-        struct d500_calibration
-        {
-            uint16_t         version;                        // major.minor
-            rs2_intrinsics   left_imager_intrinsic;
-            rs2_intrinsics   right_imager_intrinsic;
-            rs2_intrinsics   depth_intrinsic[max_ds_rect_resolutions];
-            rs2_extrinsics   left_imager_extrinsic;
-            rs2_extrinsics   right_imager_extrinsic;
-            rs2_extrinsics   depth_extrinsic;
-            std::map<d500_calibration_table_id, bool> data_present;
-
-            d500_calibration() : version(0), left_imager_intrinsic({}), right_imager_intrinsic({}),
-                left_imager_extrinsic({}), right_imager_extrinsic({}), depth_extrinsic({})
-            {
-                for (auto i = 0; i < max_ds_rect_resolutions; i++)
-                    depth_intrinsic[i] = {};
-                data_present.emplace(d500_calibration_table_id::depth_calibration_id, false);
-                data_present.emplace(d500_calibration_table_id::rgb_calibration_id, false);
-                //data_present.emplace(d500_calibration_table_id::fisheye_calibration_id, false);
-                //data_present.emplace(d500_calibration_table_id::imu_calibration_id, false);
-                //data_present.emplace(d500_calibration_table_id::lens_shading_id, false);
-                //data_present.emplace(d500_calibration_table_id::projector_id, false);
-            }
-        };
-
         struct d500_undist_configuration
         {
             uint32_t     fx;
@@ -141,6 +116,7 @@ namespace librealsense
             uint32_t     y_scale_in;
         };
 
+        // Calibration implemented according to version 3.1
         struct mini_intrinsics
         {
             uint16_t    image_width;    /**< Width of the image in pixels */
