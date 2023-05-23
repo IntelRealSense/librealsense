@@ -16,7 +16,7 @@
 #include <csignal>
 
 #include "os.h"
-#include <rsutils/os/rsutils-os.h>
+#include <rsutils/os/os.h>
 #include "metadata-helper.h"
 #include "rendering.h"
 #include <rsutils/string/windows.h>

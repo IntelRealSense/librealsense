@@ -14,7 +14,7 @@
 #include "imgui-fonts-monofont.hpp"
 
 #include "os.h"
-#include <rsutils/os/rsutils-os.h>
+#include <rsutils/os/os.h>
 #include "viewer.h"
 #include "on-chip-calib.h"
 #include "subdevice-model.h"
