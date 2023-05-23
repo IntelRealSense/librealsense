@@ -123,7 +123,7 @@ namespace rs2
         ss << "| | |\n";
         ss << "|---|---|\n";
         ss << "|**librealsense**|" << api_version_to_string(rs2_get_api_version(&e)) << (is_debug() ? " DEBUG" : " RELEASE") << "|\n";
-        ss << "|**OS**|" << rsutils::get_os_name() << "|\n";
+        ss << "|**OS**|" << rsutils::os::get_os_name() << "|\n";
 
         for (auto& dm : devices)
         {
