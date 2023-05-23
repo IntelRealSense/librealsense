@@ -270,6 +270,7 @@ typedef enum rs2_point_cloud_label
     RS2_POINT_CLOUD_LABEL_ABOVE_CEILING_HEIGHT,     // This point belongs to something above the ceiling height
     RS2_POINT_CLOUD_LABEL_GAP,                      // This point belongs to a Gap Region
     RS2_POINT_CLOUD_LABEL_MASKED,                   // This point belongs to a Masked Region
+    RS2_POINT_CLOUD_LABEL_CROPPED,                  // This point belongs to a Cropped Region
     RS2_POINT_CLOUD_LABEL_COUNT
 } rs2_point_cloud_label;
 const char* rs2_point_cloud_label_to_string(rs2_point_cloud_label label);
