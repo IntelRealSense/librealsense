@@ -63,25 +63,38 @@ namespace librealsense
         // crop_xy = (calib_org.image_size * scale_ratio - new_size_xy) / 2;
         // calib_new.principal_point = (calib_org.principal_point + 0.5).*scale_ratio - crop_xy - 0.5;
         // calib_new.focal_length = calib_org.focal_length.*scale_ratio;
-        float4 compute_rect_params_from_resolution(const mini_intrinsics& base_intrinsics, uint32_t width, uint32_t height)
+        float4 compute_rect_params_from_resolution(const mini_intrinsics& base_intrinsics, uint32_t width, uint32_t height, bool force_symetry = false)
         {
             if (base_intrinsics.image_width == 0 || base_intrinsics.image_height == 0)
                 throw invalid_value_exception(rsutils::string::from() << 
                     "resolution in base_intrinsics is 0: width = " << base_intrinsics.image_width <<
                     ", height = " << base_intrinsics.image_height);
 
-            auto scale_ratio_x = static_cast<float>(width) / base_intrinsics.image_width;
-            auto scale_ratio_y = static_cast<float>(height) / base_intrinsics.image_height;
+            mini_intrinsics relevant_intrinsics = base_intrinsics;
+
+            // cropping the frame in case symetry is needed, so that the principal point is at the middle
+            if (force_symetry)
+            {
+                relevant_intrinsics.image_width = 1 + 2 * 
+                    static_cast<int>(std::min<float>(base_intrinsics.ppx, base_intrinsics.image_width - 1 - base_intrinsics.ppx));
+                relevant_intrinsics.image_height = 1 + 2 * 
+                    static_cast<int>(std::min<float>(base_intrinsics.ppy, base_intrinsics.image_height - 1 - base_intrinsics.ppy));
+                relevant_intrinsics.ppx = (relevant_intrinsics.image_width - 1) / 2.f;
+                relevant_intrinsics.ppy = (relevant_intrinsics.image_height - 1) / 2.f;
+            }
+
+            auto scale_ratio_x = static_cast<float>(width) / relevant_intrinsics.image_width;
+            auto scale_ratio_y = static_cast<float>(height) / relevant_intrinsics.image_height;
             auto scale_ratio = std::max<float>(scale_ratio_x, scale_ratio_y);
 
-            auto crop_x = (base_intrinsics.image_width * scale_ratio - width) * 0.5f;
-            auto crop_y = (base_intrinsics.image_height * scale_ratio - height) * 0.5f;
+            auto crop_x = (relevant_intrinsics.image_width * scale_ratio - width) * 0.5f;
+            auto crop_y = (relevant_intrinsics.image_height * scale_ratio - height) * 0.5f;
 
-            auto new_ppx = (base_intrinsics.ppx + 0.5f) * scale_ratio - crop_x - 0.5f;
-            auto new_ppy = (base_intrinsics.ppy + 0.5f) * scale_ratio - crop_y - 0.5f;
+            auto new_ppx = (relevant_intrinsics.ppx + 0.5f) * scale_ratio - crop_x - 0.5f;
+            auto new_ppy = (relevant_intrinsics.ppy + 0.5f) * scale_ratio - crop_y - 0.5f;
 
-            auto new_fx = base_intrinsics.fx * scale_ratio;
-            auto new_fy = base_intrinsics.fy * scale_ratio;
+            auto new_fx = relevant_intrinsics.fx * scale_ratio;
+            auto new_fy = relevant_intrinsics.fy * scale_ratio;
 
             return { new_fx, new_fy, new_ppx, new_ppy };
         }
@@ -92,75 +105,104 @@ namespace librealsense
             if (!table)
                 throw invalid_value_exception(rsutils::string::from() << "table is null");
 
-            if (width > 0 && height > 0)
-            {
-                rs2_intrinsics intrinsics;
-                intrinsics.width = width;
-                intrinsics.height = height;
+            if (!(width > 0 && height > 0))
+                throw invalid_value_exception(rsutils::string::from() << "width and height are not positive");
 
-                auto rect_params = compute_rect_params_from_resolution(table->left_coefficients_table.base_instrinsics, width, height);
+            rs2_intrinsics intrinsics;
+            intrinsics.width = width;
+            intrinsics.height = height;
 
-                // DS5U - assume ideal intrinsic params
-                if ((rect_params.x == rect_params.y) && (rect_params.z == rect_params.w))
-                {
-                    rect_params.x = rect_params.y = intrinsics.width * 1.5f;
-                    rect_params.z = intrinsics.width * 0.5f;
-                    rect_params.w = intrinsics.height * 0.5f;
-                }
-                intrinsics.fx = rect_params[0];
-                intrinsics.fy = rect_params[1];
-                intrinsics.ppx = rect_params[2];
-                intrinsics.ppy = rect_params[3];
-                intrinsics.model = RS2_DISTORTION_BROWN_CONRADY;
-                memset(intrinsics.coeffs, 0, sizeof(intrinsics.coeffs));  // All coefficients are zeroed since rectified depth is defined as CS origin
+            auto rect_params = compute_rect_params_from_resolution(table->rectified_intrinsics, width, height, true);
 
-                // In case of the special 848x100 resolution adjust the intrinsics
-                if (width == 848 && height == 100)
-                {
-                    intrinsics.height = 100;
-                    intrinsics.ppy -= 190;
-                }
+            intrinsics.fx = rect_params[0];
+            intrinsics.fy = rect_params[1];
+            intrinsics.ppx = rect_params[2];
+            intrinsics.ppy = rect_params[3];
+            intrinsics.model = RS2_DISTORTION_BROWN_CONRADY;
+            memset(intrinsics.coeffs, 0, sizeof(intrinsics.coeffs));  // All coefficients are zeroed since rectified depth is defined as CS origin
 
-                return intrinsics;
-            }
-            else
-            {
-                // Intrinsics not found in the calibration table - use the generic calculation
-                ds_rect_resolutions resolution = res_1920_1080;
-                rs2_intrinsics intrinsics;
-                intrinsics.width = width;
-                intrinsics.height = height;
+            return intrinsics;
+        }
 
-                auto rect_params = float4(); // TODO - REMI static_cast<const float4>();  table->ds_rect_params[resolution]);
-                // DS5U - assume ideal intrinsic params
-                if ((rect_params.x == rect_params.y) && (rect_params.z == rect_params.w))
-                {
-                    rect_params.x = rect_params.y = intrinsics.width * 1.5f;
-                    rect_params.z = intrinsics.width * 0.5f;
-                    rect_params.w = intrinsics.height * 0.5f;
-                }
 
-                // Special resolution for auto-calibration requires special treatment...
-                if (width == 256 && height == 144)
-                {
-                    intrinsics.fx = rect_params[0];
-                    intrinsics.fy = rect_params[1];
-                    intrinsics.ppx = rect_params[2] - 832;
-                    intrinsics.ppy = rect_params[3] - 468;
-                }
-                else
-                {
-                    intrinsics.fx = rect_params[0] * width / resolutions_list[resolution].x;
-                    intrinsics.fy = rect_params[1] * height / resolutions_list[resolution].y;
-                    intrinsics.ppx = rect_params[2] * width / resolutions_list[resolution].x;
-                    intrinsics.ppy = rect_params[3] * height / resolutions_list[resolution].y;
-                }
+        // Algorithm prepared by Oscar Pelc in matlab:
+        // % ### Adapt the calibration table to the undistorted image
+        //     calib_undist = calib_sensor;
+        // % # The intrinsic parameters
+        //     % #      The intrinsics of the IPU output(derived independently in the IPU configuratoin SW)
+        //     calib_out_ext = FOV.Adapt_Intrinsics(calib_rectified, undist_size_xy, force_fov_symmetry);
+        // K_fe = [calib_out_ext.focal_length(1), 0, calib_out_ext.principal_point(1); ...
+        //     0, calib_out_ext.focal_length(2), calib_out_ext.principal_point(2); ...
+        //     0, 0, 1];
+        // % #      A translation from the fisheye distortion output to the Brown distortion input
+        //     focal_length_change = calib_sensor.distortion_params(6:7);
+        // principal_point_shift = calib_sensor.distortion_params(8:9);
+        // K_trans = [1 + focal_length_change(1), 0, principal_point_shift(1); ...
+        //     0, 1 + focal_length_change(2), principal_point_shift(2); ...
+        //     0, 0, 1];
+        // % #      The updated parameters
+        //     calib_undist.image_width = calib_out_ext.image_width;
+        // calib_undist.image_height = calib_out_ext.image_height;
+        // K_brown = K_fe * K_trans;
+        // calib_undist.principal_point = K_brown([1, 2], 3)';
+        //     calib_undist.focal_length = [K_brown(1, 1), K_brown(2, 2)];
+        // % # Distortion: only Brown
+        //     calib_undist.distortion_model = 1;
+        // calib_undist.distortion_params(6: end) = 0;
+        // % # Rotation: unchanged
+        void update_table_to_correct_fisheye_distortion(ds::d500_rgb_calibration_table& rgb_calib_table, rs2_intrinsics& intrinsics)
+        {
+            auto& rgb_coefficients_table = rgb_calib_table.rgb_coefficients_table;
 
-                intrinsics.model = RS2_DISTORTION_BROWN_CONRADY;
-                memset(intrinsics.coeffs, 0, sizeof(intrinsics.coeffs));  // All coefficients are zeroed since rectified depth is defined as CS origin
+            // checking if the fisheye distortion is needed
+            if (rgb_coefficients_table.distortion_model == RS2_DISTORTION_BROWN_CONRADY)
+                return;
 
-                return intrinsics;
-            }
+            // matrix with the intrinsics - after they have been adapted to required resolution
+            // k_fe matrix - set as column-major matrix below
+            //  {intrinsics.fx,       0      , intrinsics.ppx}
+            //  {      0      , intrinsics.fy, intrinsics.ppy}
+            //  {      0      ,       0      ,        1      }
+            float3x3 k_fe;
+            k_fe.x = { intrinsics.fx, 0 ,0 };
+            k_fe.y = { 0, intrinsics.fy, 0 };
+            k_fe.z = { intrinsics.ppx, intrinsics.ppy, 1 };
+
+            // translation from fisheye distortion output to Brown distortion input
+            auto focal_length_change_x = rgb_coefficients_table.distortion_coeffs[5];
+            auto focal_length_change_y = rgb_coefficients_table.distortion_coeffs[6];
+            auto principal_point_change_x = rgb_coefficients_table.distortion_coeffs[7];
+            auto principal_point_change_y = rgb_coefficients_table.distortion_coeffs[8];
+            // k_trans matrix - set as column-major matrix below
+            // {1 + focal_length_change_x,              0           , principal_point_change_x },
+            // {            0            , 1 + focal_length_change_y, principal_point_change_y },
+            // {            0            ,              0           ,            1             } };
+            float3x3 k_trans;
+            k_trans.x = { 1 + focal_length_change_x, 0, 0 };
+            k_trans.y = { 0, 1 + focal_length_change_y, 0 };
+            k_trans.z = { principal_point_change_x, principal_point_change_y, 1 };
+
+            auto k_brown = k_fe * k_trans;
+
+            intrinsics.ppx = k_brown.z.x;
+            intrinsics.ppy = k_brown.z.y;
+            intrinsics.fx = k_brown.x.x;
+            intrinsics.fy = k_brown.y.y;
+
+            // update values in the distortion params of the calibration table
+            rgb_coefficients_table.distortion_model = RS2_DISTORTION_BROWN_CONRADY;
+            rgb_coefficients_table.distortion_coeffs[5] = 0;
+            rgb_coefficients_table.distortion_coeffs[6] = 0;
+            rgb_coefficients_table.distortion_coeffs[7] = 0;
+            rgb_coefficients_table.distortion_coeffs[8] = 0;
+            rgb_coefficients_table.distortion_coeffs[9] = 0;
+            rgb_coefficients_table.distortion_coeffs[10] = 0;
+            rgb_coefficients_table.distortion_coeffs[11] = 0;
+            rgb_coefficients_table.distortion_coeffs[12] = 0;
+            // updating crc after values have been modified
+            auto ptr = reinterpret_cast<uint8_t*>(&rgb_calib_table);
+            std::vector<uint8_t> raw_data(ptr, ptr + sizeof(rgb_calib_table));
+            rgb_calib_table.header.crc32 = calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header));
         }
 
         rs2_intrinsics get_d500_color_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)
@@ -169,75 +211,25 @@ namespace librealsense
             if (!table)
                 throw invalid_value_exception(rsutils::string::from() << "table is null");
 
-            if (width > 0 && height > 0)
-            {
-                rs2_intrinsics intrinsics;
-                intrinsics.width = width;
-                intrinsics.height = height;
+            if (!(width > 0 && height > 0))
+                throw invalid_value_exception(rsutils::string::from() << "width and height are not positive");
 
-                auto rect_params = compute_rect_params_from_resolution(table->rgb_coefficients_table.base_instrinsics, width, height);
+            rs2_intrinsics intrinsics;
+            intrinsics.width = width;
+            intrinsics.height = height;
 
-                // DS5U - assume ideal intrinsic params
-                if ((rect_params.x == rect_params.y) && (rect_params.z == rect_params.w))
-                {
-                    rect_params.x = rect_params.y = intrinsics.width * 1.5f;
-                    rect_params.z = intrinsics.width * 0.5f;
-                    rect_params.w = intrinsics.height * 0.5f;
-                }
-                intrinsics.fx = rect_params[0];
-                intrinsics.fy = rect_params[1];
-                intrinsics.ppx = rect_params[2];
-                intrinsics.ppy = rect_params[3];
-                intrinsics.model = table->rgb_coefficients_table.distortion_model;
-                librealsense::copy(intrinsics.coeffs, table->rgb_coefficients_table.distortion_coeffs, sizeof(intrinsics.coeffs));
+            auto rect_params = compute_rect_params_from_resolution(table->rectified_intrinsics, width, height);
 
-                // In case of the special 848x100 resolution adjust the intrinsics
-                if (width == 848 && height == 100)
-                {
-                    intrinsics.height = 100;
-                    intrinsics.ppy -= 190;
-                }
+            intrinsics.fx = rect_params[0];
+            intrinsics.fy = rect_params[1];
+            intrinsics.ppx = rect_params[2];
+            intrinsics.ppy = rect_params[3];
+            intrinsics.model = table->rgb_coefficients_table.distortion_model;
+            librealsense::copy(intrinsics.coeffs, table->rgb_coefficients_table.distortion_coeffs, sizeof(intrinsics.coeffs));
 
-                return intrinsics;
-            }
-            else
-            {
-                // Intrinsics not found in the calibration table - use the generic calculation
-                ds_rect_resolutions resolution = res_1920_1080;
-                rs2_intrinsics intrinsics;
-                intrinsics.width = width;
-                intrinsics.height = height;
+            update_table_to_correct_fisheye_distortion(const_cast<ds::d500_rgb_calibration_table&>(*table), intrinsics);
 
-                auto rect_params = float4(); // TODO - REMI static_cast<const float4>();  table->ds_rect_params[resolution]);
-                // DS5U - assume ideal intrinsic params
-                if ((rect_params.x == rect_params.y) && (rect_params.z == rect_params.w))
-                {
-                    rect_params.x = rect_params.y = intrinsics.width * 1.5f;
-                    rect_params.z = intrinsics.width * 0.5f;
-                    rect_params.w = intrinsics.height * 0.5f;
-                }
-
-                // Special resolution for auto-calibration requires special treatment...
-                if (width == 256 && height == 144)
-                {
-                    intrinsics.fx = rect_params[0];
-                    intrinsics.fy = rect_params[1];
-                    intrinsics.ppx = rect_params[2] - 832;
-                    intrinsics.ppy = rect_params[3] - 468;
-                }
-                else
-                {
-                    intrinsics.fx = rect_params[0] * width / resolutions_list[resolution].x;
-                    intrinsics.fy = rect_params[1] * height / resolutions_list[resolution].y;
-                    intrinsics.ppx = rect_params[2] * width / resolutions_list[resolution].x;
-                    intrinsics.ppy = rect_params[3] * height / resolutions_list[resolution].y;
-                }
-
-                intrinsics.model = table->rgb_coefficients_table.distortion_model;
-                librealsense::copy(intrinsics.coeffs, table->rgb_coefficients_table.distortion_coeffs, sizeof(intrinsics.coeffs));
-
-                return intrinsics;
-            }
+            return intrinsics;
         }
 
         pose get_d500_color_stream_extrinsic(const std::vector<uint8_t>& raw_data)

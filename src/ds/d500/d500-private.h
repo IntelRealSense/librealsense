@@ -104,31 +104,6 @@ namespace librealsense
             {d500_calibration_table_id::imu_calibration_id, 192}
         };
 
-        struct d500_calibration
-        {
-            uint16_t         version;                        // major.minor
-            rs2_intrinsics   left_imager_intrinsic;
-            rs2_intrinsics   right_imager_intrinsic;
-            rs2_intrinsics   depth_intrinsic[max_ds_rect_resolutions];
-            rs2_extrinsics   left_imager_extrinsic;
-            rs2_extrinsics   right_imager_extrinsic;
-            rs2_extrinsics   depth_extrinsic;
-            std::map<d500_calibration_table_id, bool> data_present;
-
-            d500_calibration() : version(0), left_imager_intrinsic({}), right_imager_intrinsic({}),
-                left_imager_extrinsic({}), right_imager_extrinsic({}), depth_extrinsic({})
-            {
-                for (auto i = 0; i < max_ds_rect_resolutions; i++)
-                    depth_intrinsic[i] = {};
-                data_present.emplace(d500_calibration_table_id::depth_calibration_id, false);
-                data_present.emplace(d500_calibration_table_id::rgb_calibration_id, false);
-                //data_present.emplace(d500_calibration_table_id::fisheye_calibration_id, false);
-                //data_present.emplace(d500_calibration_table_id::imu_calibration_id, false);
-                //data_present.emplace(d500_calibration_table_id::lens_shading_id, false);
-                //data_present.emplace(d500_calibration_table_id::projector_id, false);
-            }
-        };
-
         struct d500_undist_configuration
         {
             uint32_t     fx;
@@ -141,6 +116,7 @@ namespace librealsense
             uint32_t     y_scale_in;
         };
 
+        // Calibration implemented according to version 3.1
         struct mini_intrinsics
         {
             uint16_t    image_width;    /**< Width of the image in pixels */
@@ -156,8 +132,8 @@ namespace librealsense
             mini_intrinsics           base_instrinsics;
             uint32_t                  distortion_non_parametric;
             rs2_distortion            distortion_model;          /**< Distortion model of the image */
-            float                     distortion_coeffs[5];      /**< Distortion coefficients. Order for Brown-Conrady: [k1, k2, p1, p2, k3]. Order for F-Theta Fish-eye: [k1, k2, k3, k4, 0]. Other models are subject to their own interpretations */
-            uint8_t                   reserved[36];
+            float                     distortion_coeffs[13];     /**< Distortion coefficients. Order for Brown-Conrady: [k1, k2, p1, p2, k3]. Order for F-Theta Fish-eye: [k1, k2, k3, k4, 0]. Other models are subject to their own interpretations */
+            uint8_t                   reserved[4];
             float                     radial_distortion_lut_range_degs;
             float                     radial_distortion_lut_focal_length;
             d500_undist_configuration undist_config;
