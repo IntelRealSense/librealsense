@@ -112,7 +112,7 @@ namespace librealsense
             intrinsics.width = width;
             intrinsics.height = height;
 
-            auto rect_params = compute_rect_params_from_resolution(table->left_coefficients_table.base_instrinsics, width, height, true);
+            auto rect_params = compute_rect_params_from_resolution(table->rectified_intrinsics, width, height, true);
 
             intrinsics.fx = rect_params[0];
             intrinsics.fy = rect_params[1];
@@ -214,7 +214,7 @@ namespace librealsense
             intrinsics.width = width;
             intrinsics.height = height;
 
-            auto rect_params = compute_rect_params_from_resolution(table->rgb_coefficients_table.base_instrinsics, width, height);
+            auto rect_params = compute_rect_params_from_resolution(table->rectified_intrinsics, width, height);
 
             intrinsics.fx = rect_params[0];
             intrinsics.fy = rect_params[1];
