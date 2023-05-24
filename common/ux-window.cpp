@@ -63,14 +63,7 @@ namespace rs2
         config_file::instance().set_default(configurations::window::saved_size, false);
 
         config_file::instance().set_default(configurations::viewer::is_measuring, false);
-        config_file::instance().set_default(configurations::viewer::log_to_console,
-#ifdef WIN32
-                                             // In Windows, there is no console by default
-                                             false
-#else
-                                             true
-#endif
-        );
+        config_file::instance().set_default(configurations::viewer::log_to_console, true);
         config_file::instance().set_default(configurations::viewer::log_to_file, false);
         config_file::instance().set_default(configurations::viewer::log_severity, 2);
         config_file::instance().set_default(configurations::viewer::metric_system, true);

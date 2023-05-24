@@ -7,11 +7,7 @@
 #endif
 
 
-namespace rsutils {
-namespace os {
-
-
-void reopen_console_streams()
+static void reopen_console_streams()
 {
 #if defined( WIN32 )
     // Need to re-open the standard streams if we have a console attached
@@ -31,7 +27,11 @@ void reopen_console_streams()
 }
 
 
-void ensure_console()
+namespace rsutils {
+namespace os {
+
+
+void ensure_console( bool create_if_none )
 {
 #if defined( WIN32 )
     if( AttachConsole( ATTACH_PARENT_PROCESS ) )
@@ -49,7 +49,11 @@ void ensure_console()
         {
             // "If the specified process does not have a console"
             // "If the specified process does not exist"
-            if( AllocConsole() )
+            if( ! create_if_none )
+            {
+                LOG_DEBUG( "parent process has no console; none created" );
+            }
+            else if( AllocConsole() )
             {
                 reopen_console_streams();
             }

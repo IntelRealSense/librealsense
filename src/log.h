@@ -182,7 +182,7 @@ namespace librealsense
         void log_to_console(rs2_log_severity min_severity)
         {
             if( min_severity != RS2_LOG_SEVERITY_NONE )
-                rsutils::os::ensure_console();
+                rsutils::os::ensure_console( false );  // don't create if none available
             minimum_console_severity = min_severity;
             open();
         }
