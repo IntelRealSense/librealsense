@@ -144,8 +144,6 @@ for camera in $mux_list; do
     fi
     create_dfu_dev=1 # will create DFU device link for camera
     # metadata link
-    # skip all metadata nodes for now
-    continue
     # skip IR metadata node for now.
     [[ ${camera_names["${sens}"]} == 'ir' ]] && continue
     # skip IMU metadata node.
