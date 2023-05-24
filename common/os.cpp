@@ -361,23 +361,6 @@ Some auxillary functionalities might be affected. Please report this message if 
         return j == prefix.end();
     }
 
-    std::string get_os_name()
-    {
-#ifdef _WIN32
-        return "Windows";
-#else
-#ifdef __APPLE__
-        return "Mac OS";
-#else
-#ifdef __linux__
-        return "Linux";
-#else
-        return "Unknown";
-#endif
-#endif
-#endif
-    }
-    
     bool is_debug()
     {
 #ifndef NDEBUG
