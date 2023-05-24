@@ -16,7 +16,7 @@ build_usbcore_modules=0
 rebuild_ko=0
 debug_uvc=0
 retpoline_retrofit=0
-
+skip_hid_patch=0
 #Parse input
 while test $# -gt 0; do
 	case "$1" in
@@ -76,6 +76,10 @@ if [[ ( ${xhci_patch} -eq 1 ) && ( ${k_maj_min} -ne 404 ) ]]; then
 	echo -e "\e[43mThe xhci_patch flag is compatible with LTS branch 4.4 only, currently selected kernel is $(uname -r)\e[0m"
 	exit 1
 fi
+k_tick=$(echo ${kernel_version[2]} | awk -F'-' '{print $2}')
+# For version 5.15.0-72 hid patch already applied
+[ $k_maj_min -gt 515 ] && skip_hid_patch=1
+[ $k_maj_min -eq 515 ] && [ $k_tick -ge 72 ] && skip_hid_patch=1
 
 # Construct branch name from distribution codename {xenial,bionic,..} and kernel version
 # ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
@@ -162,8 +166,10 @@ then
 		patch -p1 < ../scripts/realsense-camera-formats-${ubuntu_codename}-${kernel_branch}.patch || patch -p1 < ../scripts/realsense-camera-formats-${ubuntu_codename}-master.patch
 		echo -e "\e[32mApplying realsense-metadata patch\e[0m"
 		patch -p1 < ../scripts/realsense-metadata-${ubuntu_codename}-${kernel_branch}.patch || patch -p1 < ../scripts/realsense-metadata-${ubuntu_codename}-master.patch
-		echo -e "\e[32mApplying realsense-hid patch\e[0m"
-		patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-${kernel_branch}.patch || patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-master.patch
+		if [ ${skip_hid_patch} -eq 0 ]; then
+			echo -e "\e[32mApplying realsense-hid patch\e[0m"
+			patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-${kernel_branch}.patch ||  patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-master.patch
+		fi
 		echo -e "\e[32mApplying realsense-powerlinefrequency-fix patch\e[0m"
 		patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix.patch
 		# Applying 3rd-party patch that affects USB2 behavior
@@ -242,9 +248,11 @@ cp $KBASE/Module.symvers .
 
 echo -e "\e[32mCompiling uvc module\e[0m"
 make -j -C $KBASE M=$KBASE/drivers/media/usb/uvc/ modules
-echo -e "\e[32mCompiling accelerometer and gyro modules\e[0m"
-make -j -C $KBASE M=$KBASE/drivers/iio/accel modules
-make -j -C $KBASE M=$KBASE/drivers/iio/gyro modules
+if [ $skip_hid_patch -eq 0 ]; then
+	echo -e "\e[32mCompiling accelerometer and gyro modules\e[0m"
+	make -j -C $KBASE M=$KBASE/drivers/iio/accel modules
+	make -j -C $KBASE M=$KBASE/drivers/iio/gyro modules
+fi
 echo -e "\e[32mCompiling v4l2-core modules\e[0m"
 make -j -C $KBASE M=$KBASE/drivers/media/v4l2-core modules
 if [[ ( $xhci_patch -eq 1 ) || ( $debug_uvc -eq 1 ) ]]; then
@@ -254,8 +262,10 @@ fi
 
 # Copy the patched modules to a  location
 cp $KBASE/drivers/media/usb/uvc/uvcvideo.ko ~/$LINUX_BRANCH-uvcvideo.ko
-cp $KBASE/drivers/iio/accel/hid-sensor-accel-3d.ko ~/$LINUX_BRANCH-hid-sensor-accel-3d.ko
-cp $KBASE/drivers/iio/gyro/hid-sensor-gyro-3d.ko ~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko
+if [ $skip_hid_patch -eq 0 ]; then
+	cp $KBASE/drivers/iio/accel/hid-sensor-accel-3d.ko ~/$LINUX_BRANCH-hid-sensor-accel-3d.ko
+	cp $KBASE/drivers/iio/gyro/hid-sensor-gyro-3d.ko ~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko
+fi
 cp $KBASE/drivers/media/v4l2-core/videodev.ko ~/$LINUX_BRANCH-videodev.ko
 if [[ ( $xhci_patch -eq 1 ) || ( $debug_uvc -eq 1 ) ]]; then
 	cp $KBASE/drivers/media/common/videobuf2/videobuf2-common.ko ~/$LINUX_BRANCH-videobuf2-common.ko
@@ -317,8 +327,9 @@ if [[ ( ${k_maj_min} -ge 500 ) && ( $debug_uvc -eq 1 ) ]]; then
 	try_module_insert videobuf2-common ~/$LINUX_BRANCH-videobuf2-common.ko /lib/modules/`uname -r`/kernel/drivers/media/common/videobuf2/videobuf2-common.ko
 fi
 try_module_insert uvcvideo            ~/$LINUX_BRANCH-uvcvideo.ko            /lib/modules/`uname -r`/kernel/drivers/media/usb/uvc/uvcvideo.ko
-try_module_insert hid_sensor_accel_3d ~/$LINUX_BRANCH-hid-sensor-accel-3d.ko /lib/modules/`uname -r`/kernel/drivers/iio/accel/hid-sensor-accel-3d.ko
-try_module_insert hid_sensor_gyro_3d  ~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko  /lib/modules/`uname -r`/kernel/drivers/iio/gyro/hid-sensor-gyro-3d.ko
-
+if [ $skip_hid_patch -eq 0 ]; then
+	try_module_insert hid_sensor_accel_3d ~/$LINUX_BRANCH-hid-sensor-accel-3d.ko /lib/modules/`uname -r`/kernel/drivers/iio/accel/hid-sensor-accel-3d.ko
+	try_module_insert hid_sensor_gyro_3d  ~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko  /lib/modules/`uname -r`/kernel/drivers/iio/gyro/hid-sensor-gyro-3d.ko
+fi
 echo -e "\e[92m\n\e[1mScript has completed. Please consult the installation guide for further instruction.\n\e[0m"
 
