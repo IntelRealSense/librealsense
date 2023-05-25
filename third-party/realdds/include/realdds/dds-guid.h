@@ -15,12 +15,19 @@ namespace realdds {
 // participant's guid if you want to shorten
 //
 std::string print( dds_guid const & guid,
-                   dds_guid_prefix const & base_prefix = eprosima::fastrtps::rtps::c_Guid_Unknown.guidPrefix );
+                   dds_guid_prefix const & base_prefix = eprosima::fastrtps::rtps::c_Guid_Unknown.guidPrefix,
+                   bool readable_name = true );
+
+// Same as above, without a base prefix
+inline std::string print( dds_guid const & guid, bool readable_name )
+{
+    return print( guid, eprosima::fastrtps::rtps::c_Guid_Unknown.guidPrefix, readable_name );
+}
 
 // Same as above, with a guid base for flexibility
-inline std::string print( dds_guid const & guid, dds_guid const & base_guid )
+inline std::string print( dds_guid const & guid, dds_guid const & base_guid, bool readable_name = true )
 {
-    return print( guid, base_guid.guidPrefix );
+    return print( guid, base_guid.guidPrefix, readable_name );
 }
 
 
