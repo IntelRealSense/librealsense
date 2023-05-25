@@ -16,6 +16,16 @@
 #include <string>
 #include <functional>
 
+
+namespace eprosima {
+namespace fastdds {
+namespace dds {
+struct SampleInfo;
+}  // namespace dds
+}  // namespace fastdds
+}  // namespace eprosima
+
+
 namespace realdds {
 
 
@@ -86,15 +96,13 @@ public:
 
 private:
     void on_control_message_received();
-    void handle_control_message( topics::flexible_msg control_message );
+    void handle_control_message( std::string const & id,
+                                 nlohmann::json const & control_message,
+                                 nlohmann::json & reply );
 
-    void handle_set_option( const nlohmann::json & msg );
-    void handle_query_option( const nlohmann::json & msg );
+    void handle_set_option( const nlohmann::json & msg, nlohmann::json & reply );
+    void handle_query_option( const nlohmann::json & msg, nlohmann::json & reply );
     std::shared_ptr< dds_option > find_option( const std::string & option_name, const std::string & owner_name );
-    void send_set_option_success( uint32_t counter );
-    void send_set_option_failure( uint32_t counter, const std::string & fail_reason );
-    void send_query_option_success( uint32_t counter, float value );
-    void send_query_option_failure( uint32_t counter, const std::string & fail_reason );
 
     std::shared_ptr< dds_publisher > _publisher;
     std::shared_ptr< dds_subscriber > _subscriber;

@@ -15,12 +15,26 @@
 #include <fastdds/dds/subscriber/DataReader.hpp>
 
 #include <rsutils/time/timer.h>
-#include <rsutils/json.h>
+#include <rsutils/string/shorten-json-string.h>
+#include <rsutils/string/slice.h>
 
 #include <cassert>
 
 
 using nlohmann::json;
+using rsutils::string::shorten_json_string;
+
+
+static std::string const id_key( "id", 2 );
+static std::string const id_set_option( "set-option", 10 );
+static std::string const id_query_option( "query-option", 12 );
+static std::string const value_key( "value", 5 );
+static std::string const status_key( "status", 6 );
+static std::string const status_ok( "ok", 2 );
+static std::string const option_name_key( "option-name", 11 );
+static std::string const owner_name_key( "owner-name", 10 );
+static std::string const explanation_key( "explanation", 11 );
+static std::string const control_key( "control", 7 );
 
 
 namespace realdds {
@@ -89,28 +103,106 @@ void dds_device::impl::run( size_t message_timeout_ms )
     if( ! init() )
         DDS_THROW( runtime_error, "failed getting stream data from '" + _info.topic_root + "'" );
 
-    // Start handling options only after init() is done
-    _notifications_reader->on_data_available( [&]() {
-        topics::flexible_msg notification;
-        eprosima::fastdds::dds::SampleInfo info;
-        while( topics::flexible_msg::take_next( *_notifications_reader, &notification, &info ) )
+    std::map< std::string, char const * (dds_device::impl::*)( nlohmann::json const & ) > id_fn_map{
+        { id_set_option, &dds_device::impl::on_option_value },
+        { id_query_option, &dds_device::impl::on_option_value },
+    };
+
+    _notifications_reader->on_data_available(
+        [&, id_fn_map = std::move( id_fn_map )]()
         {
-            if( ! notification.is_valid() )
-                continue;
-            auto j = notification.json_data();
-            auto id = rsutils::json::get< std::string >( j, "id" );
-            if( id == "set-option" || id == "query-option" )
+            topics::flexible_msg notification;
+            eprosima::fastdds::dds::SampleInfo info;
+            while( topics::flexible_msg::take_next( *_notifications_reader, &notification, &info ) )
             {
-                _option_response_queue.push( j );
-                _option_cv.notify_all();
+                if( ! notification.is_valid() )
+                    continue;
+                auto j = notification.json_data();
+                auto id = rsutils::json::get< std::string >( j, id_key );
+                auto it = id_fn_map.find( id );
+                if( it != id_fn_map.end() )
+                {
+                    char const * const error_string = ( this->*( it->second ) )( j );
+                    if( error_string )
+                    {
+                        rsutils::string::slice json_string( notification.custom_data< char const >(),
+                                                            notification._data.size() );
+                        LOG_DEBUG( "failed handling '" << id << "' notification: '" << error_string
+                                                       << "'  json: " << shorten_json_string( json_string, 450 ) );
+                    }
+                    if( id == id_set_option || id == id_query_option )
+                    {
+                        _option_response_queue.push( j );
+                        _option_cv.notify_all();
+                    }
+                }
+                else
+                {
+                    rsutils::string::slice json_string( notification.custom_data< char const >(),
+                                                        notification._data.size() );
+                    LOG_DEBUG( "unknown '" << id << "' notification:  " << shorten_json_string( json_string, 450 ) );
+                }
             }
-        }
-    } );
+        } );
 
     LOG_DEBUG( "device '" << _info.topic_root << "' (" << _participant->print( _guid )
                           << ") initialized successfully" );
     _running = true;
 }
+
+
+char const * dds_device::impl::on_option_value( nlohmann::json const & j )
+{
+    // This is the notification for "set-option" or "query-option", meaning someone sent a control request to set/get an
+    // option value. In either case a value will be sent; we want to update ours accordingly to reflect the latest:
+    if( rsutils::json::get( j, status_key, status_ok ) != status_ok )
+    {
+        // Ignore errors
+        return "status not OK";
+    }
+    float new_value;
+    if( ! rsutils::json::get_ex( j, value_key, &new_value ) )
+    {
+        return "missing value";
+    }
+    // We need the original control request as part of the reply, otherwise we can't know what option this is for
+    auto it = j.find( control_key );
+    if( it == j.end() )
+    {
+        return "missing control";
+    }
+    nlohmann::json const & control = it.value();
+    if( ! control.is_object() )
+    {
+        return "control is not an object";
+    }
+    std::string option_name;
+    if( ! rsutils::json::get_ex( control, option_name_key, &option_name ) )
+    {
+        return "missing control/option-name";
+    }
+    std::string owner_name;
+    if( ! rsutils::json::get_ex( control, owner_name_key, &owner_name ) )
+    {
+        return "missing control/owner-name";
+    }
+    // Find the option and set its value
+    auto stream_it = _streams.find( owner_name );
+    if( stream_it == _streams.end() )
+    {
+        return "owner not found";
+    }
+    for( auto & option : stream_it->second->options() )
+    {
+        if( option->get_name() == option_name )
+        {
+            option->set_value( new_value );
+            return nullptr;  // no error
+        }
+    }
+    return "option not found";
+}
+
 
 void dds_device::impl::open( const dds_stream_profiles & profiles )
 {
@@ -130,78 +222,88 @@ void dds_device::impl::open( const dds_stream_profiles & profiles )
     }
 
     nlohmann::json j = {
-        { "id", "open-streams" },
+        { id_key, "open-streams" },
         { "stream-profiles", stream_profiles },
     };
 
     write_control_message( j );
 }
 
+
 void dds_device::impl::set_option_value( const std::shared_ptr< dds_option > & option, float new_value )
 {
     if( ! option )
         DDS_THROW( runtime_error, "must provide an option to set" );
 
-    uint32_t this_message_counter = _control_message_counter++;
-
     nlohmann::json j = {
-        { "id", "set-option" },
-        { "counter", this_message_counter },
-        { "option-name", option->get_name() },
-        { "owner-name", option->owner_name() },
-        { "value", new_value },
+        { id_key, id_set_option },
+        { option_name_key, option->get_name() },
+        { owner_name_key, option->owner_name() },
+        { value_key, new_value }
     };
 
-    write_control_message( j );
+    nlohmann::json reply;
+    write_control_message( j, &reply );
 
-    std::unique_lock< std::mutex > lock( _option_mutex );
-    if( ! _option_cv.wait_for( lock, std::chrono::milliseconds( _message_timeout_ms ), [&](){
-        return !_option_response_queue.empty() && _option_response_queue.front()["counter"] == this_message_counter;
-    } ) )
-        throw std::runtime_error( "Did not receive reply while setting option " + option->get_name() );
-
-    auto response = _option_response_queue.front();
-    _option_response_queue.pop();
-    if( rsutils::json::get< bool >( response, "successful" ) )
-        option->set_value( new_value );
-    else
-        throw std::runtime_error( rsutils::json::get< std::string >( response, "failure-reason" ) );
+    if( rsutils::json::get( reply, status_key, status_ok ) != status_ok )
+        throw std::runtime_error(
+            rsutils::json::get< std::string >( reply, explanation_key, "failed to set-option; no explanation" ) );
+    //option->set_value( new_value );
 }
+
 
 float dds_device::impl::query_option_value( const std::shared_ptr< dds_option > & option )
 {
     if( !option )
         DDS_THROW( runtime_error, "must provide an option to query" );
 
-    uint32_t this_message_counter = _control_message_counter++;
-
     nlohmann::json j = {
-        { "id", "query-option" },
-        { "counter", this_message_counter },
-        { "option-name", option->get_name() },
-        { "owner-name", option->owner_name() },
+        { id_key, id_query_option },
+        { option_name_key, option->get_name() },
+        { owner_name_key, option->owner_name() }
     };
 
-    write_control_message( j );
+    nlohmann::json reply;
+    write_control_message( j, &reply );
 
-    std::unique_lock< std::mutex > lock( _option_mutex );
-    if( ! _option_cv.wait_for( lock, std::chrono::milliseconds( _message_timeout_ms ), [&]() {
-        return !_option_response_queue.empty() && _option_response_queue.front()["counter"] == this_message_counter;
-    } ) )
-        throw std::runtime_error( "Did not receive reply while querying option " + option->get_name() );
-
-    auto response = _option_response_queue.front();
-    _option_response_queue.pop();
-    if( rsutils::json::get< bool >( response, "successful" ) )
-        return rsutils::json::get< float >( response, "value" );
-    else
-        throw std::runtime_error( rsutils::json::get< std::string >( response, "failure-reason" ) );
+    if( rsutils::json::get( reply, status_key, status_ok ) != status_ok )
+        throw std::runtime_error(
+            rsutils::json::get< std::string >( reply, explanation_key, "failed to query-option; no explanation" ) );
+    return rsutils::json::get< float >( reply, value_key );
 }
 
-void dds_device::impl::write_control_message( topics::flexible_msg && msg )
+
+void dds_device::impl::write_control_message( topics::flexible_msg && msg, nlohmann::json * reply )
 {
     assert( _control_writer != nullptr );
-    msg.write_to( *_control_writer );
+    auto this_sequence_number = msg.write_to( *_control_writer );
+    if( reply )
+    {
+        std::unique_lock< std::mutex > lock( _option_mutex );
+        if( ! _option_cv.wait_for( lock,
+                                   std::chrono::milliseconds( _message_timeout_ms ),
+                                   [&]()
+                                   {
+                                       if( _option_response_queue.empty() )
+                                           return false;
+                                       nlohmann::json const & j = _option_response_queue.front();
+                                       auto it = j.find( "sample" );
+                                       if( it == j.end() )
+                                           return false;
+                                       nlohmann::json const & sample = *it;  // ["<prefix>.<id>",<sequence-number>]
+                                       if( sample.size() != 2 )
+                                           return false;
+                                       auto const sequence_number = rsutils::json::get< uint64_t >( sample, 1 );
+                                       if( sequence_number != this_sequence_number )
+                                           return false;
+                                       return true;
+                                   } ) )
+        {
+            throw std::runtime_error( "timeout waiting for reply" );
+        }
+        *reply = std::move( _option_response_queue.front() );
+        _option_response_queue.pop();
+    }
 }
 
 void dds_device::impl::create_notifications_reader()
@@ -289,7 +391,7 @@ bool dds_device::impl::init()
                 if( ! notification.is_valid() )
                     continue;
                 auto j = notification.json_data();
-                auto id = rsutils::json::get< std::string >( j, "id" );
+                auto id = rsutils::json::get< std::string >( j, id_key );
                 if( state_type::WAIT_FOR_DEVICE_HEADER == state && id == "device-header" )
                 {
                     n_streams_expected = rsutils::json::get< size_t >( j, "n-streams" );
