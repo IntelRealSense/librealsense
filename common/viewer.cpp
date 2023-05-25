@@ -838,6 +838,10 @@ namespace rs2
         {
             rs2::log_to_console(min_severity);
         }
+        else
+        {
+            rs2::log_to_console( RS2_LOG_SEVERITY_NONE );
+        }
         if (config_file::instance().get_or_default(
             configurations::viewer::log_to_file, false))
         {
