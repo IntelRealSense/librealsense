@@ -76,10 +76,11 @@ public:
     // WARNING: this moves the message content!
     raw::flexible to_raw();
     // WARNING: this moves the message content!
-    void write_to( dds_topic_writer & );
+    // Returns some unique (to the writer) identifier for the sample that was sent, or 0 if unsuccessful
+    uint64_t write_to( dds_topic_writer & );
 
     flexible_msg() = default;
-    flexible_msg( raw::flexible&& );
+    flexible_msg( raw::flexible && );
     flexible_msg( nlohmann::json const &, uint32_t version = 0 );
     flexible_msg( data_format format, nlohmann::json const &, uint32_t version = 0 );
 
