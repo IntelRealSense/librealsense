@@ -171,7 +171,7 @@ then
 			patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-${kernel_branch}.patch ||  patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-master.patch
 		fi
 		echo -e "\e[32mApplying realsense-powerlinefrequency-fix patch\e[0m"
-		patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix.patch
+		patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix.patch || patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix-${ubuntu_codename}.patch
 		# Applying 3rd-party patch that affects USB2 behavior
 		# See reference https://patchwork.kernel.org/patch/9907707/
 		if [ ${k_maj_min} -lt 418 ];
