@@ -145,10 +145,9 @@ std::vector< processing_block_factory > dds_rs_internal_data::get_profile_conver
         }
         else
         {
-            tmp = processing_block_factory::create_pbf_vector< yuy2_converter >(
-                                   RS2_FORMAT_YUYV,
-                                   target_formats( RS2_FORMAT_YUYV ),
-                                   RS2_STREAM_COLOR );
+            tmp = processing_block_factory::create_pbf_vector< yuy2_converter >( RS2_FORMAT_YUYV,
+                                                                                 target_formats( RS2_FORMAT_YUYV ),
+                                                                                 RS2_STREAM_COLOR );
             for( auto & it : tmp )
                 factories.push_back( std::move( it ) );
             factories.push_back( processing_block_factory::create_id_pbf( RS2_FORMAT_RAW16, RS2_STREAM_COLOR ) );
@@ -179,9 +178,11 @@ std::vector< processing_block_factory > dds_rs_internal_data::get_profile_conver
         // Motion convertion is done on the camera side.
         // Intrinsics table is being read from the camera flash and it is too much to set here, this file is ment as a
         // temporary solution, the camera should send all this data in a designated topic.
-        factories.push_back( { { { RS2_FORMAT_MOTION_XYZ32F } },
-                               { { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL },
-                                 { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO } },
+        factories.push_back( { { { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL } },
+                               { { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL } },
+                               []() { return std::make_shared< identity_processing_block >(); } } );
+        factories.push_back( { { { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO } },
+                               { { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO } },
                                []() { return std::make_shared< identity_processing_block >(); } } );
     }
     //else if( product_line == "L500" )

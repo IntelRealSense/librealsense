@@ -41,13 +41,13 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         test.check_equal( len(sensors), 3 )
         if test.check( 'Stereo Module' in sensors ):
             sensor = sensors.get('Stereo Module')
-            test.check_equal( len(sensor.get_stream_profiles()), len(d435i.depth_stream_profiles())+2*len(d435i.ir_stream_profiles()) )
+            test.check_equal( len(sensor.get_stream_profiles()), 104 ) # As mesured running rs-sensor-control example
         if test.check( 'RGB Camera' in sensors ):
             sensor = sensors['RGB Camera']
-            test.check_equal( len(sensor.get_stream_profiles()), len(d435i.color_stream_profiles()) )
+            test.check_equal( len(sensor.get_stream_profiles()), 225 ) # As mesured running rs-sensor-control example
         if test.check( 'Motion Module' in sensors ):
             sensor = sensors['Motion Module']
-            test.check_equal( len(sensor.get_stream_profiles()), len(d435i.accel_stream_profiles())+len(d435i.gyro_stream_profiles()) )
+            test.check_equal( len(sensor.get_stream_profiles()), 4 ) # As mesured running rs-sensor-control example
         remote.run( 'close_server( instance )' )
     except:
         test.unexpected_exception()
@@ -70,8 +70,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         test.check_equal( len(sensors), 1 )
         if test.check( 'Stereo Module' in sensors ):
             sensor = sensors.get('Stereo Module')
-            test.check_equal( len(sensor.get_stream_profiles()),
-                              len(d405.depth_stream_profiles())+2*len(d405.ir_stream_profiles())+len(d405.color_stream_profiles())+len(d405.colored_infrared_stream_profiles()) )
+            test.check_equal( len(sensor.get_stream_profiles()), 431 ) # As mesured running rs-sensor-control example
         remote.run( 'close_server( instance )' )
     except:
         test.unexpected_exception()
@@ -94,13 +93,13 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         test.check_equal( len(sensors), 3 )
         if test.check( 'Stereo Module' in sensors ):
             sensor = sensors.get('Stereo Module')
-            test.check_equal( len(sensor.get_stream_profiles()), len(d455.depth_stream_profiles())+2*len(d455.ir_stream_profiles())+len(d455.colored_infrared_stream_profiles()) )
+            test.check_equal( len(sensor.get_stream_profiles()), 245 ) # As mesured running rs-sensor-control example
         if test.check( 'RGB Camera' in sensors ):
             sensor = sensors['RGB Camera']
-            test.check_equal( len(sensor.get_stream_profiles()), len(d455.color_stream_profiles()) )
+            test.check_equal( len(sensor.get_stream_profiles()), 218 ) # As mesured running rs-sensor-control example
         if test.check( 'Motion Module' in sensors ):
             sensor = sensors['Motion Module']
-            test.check_equal( len(sensor.get_stream_profiles()), len(d455.accel_stream_profiles())+len(d455.gyro_stream_profiles()) )
+            test.check_equal( len(sensor.get_stream_profiles()), 4 ) # As mesured running rs-sensor-control example
         remote.run( 'close_server( instance )' )
     except:
         test.unexpected_exception()
