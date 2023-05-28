@@ -12,6 +12,9 @@
 
 namespace realdds {
 class dds_device;
+class dds_stream;
+class dds_video_stream;
+class dds_motion_stream;
 }  // namespace realdds
 
 
@@ -36,6 +39,14 @@ class dds_device_proxy : public software_device
     std::map< std::string, std::vector< std::shared_ptr< stream_profile_interface > > > _stream_name_to_profiles;
     std::map< std::string, std::shared_ptr< librealsense::stream > > _stream_name_to_librs_stream;
     std::map< std::string, std::shared_ptr< dds_sensor_proxy > > _stream_name_to_owning_sensor;
+
+    int get_index_from_stream_name( const std::string & name ) const;
+    void set_profile_intrinsics( std::shared_ptr< stream_profile_interface > & profile,
+                                 const std::shared_ptr< realdds::dds_stream > & stream ) const;
+    void set_video_profile_intrinsics( std::shared_ptr< stream_profile_interface > profile,
+                                       std::shared_ptr< realdds::dds_video_stream > stream ) const;
+    void set_motion_profile_intrinsics( std::shared_ptr< stream_profile_interface > profile,
+                                       std::shared_ptr< realdds::dds_motion_stream > stream ) const;
 
 public:
     dds_device_proxy( std::shared_ptr< context > ctx, std::shared_ptr< realdds::dds_device > const & dev );

@@ -113,6 +113,12 @@ void dds_sensor_proxy::initialization_done( std::string product_id, std::string 
     _profiles = _formats_converter.get_all_possible_profiles( _raw_rs_profiles );
 
     auto tags = dds_rs_internal_data::get_profiles_tags( product_id, product_line );
+    tag_profiles( tags );
+}
+
+
+void dds_sensor_proxy::tag_profiles( const std::vector<librealsense::tagged_profile> & tags )
+{
     for( auto & profile : _profiles )
         for( auto & tag : tags )
             if( ( tag.stream == RS2_STREAM_ANY || tag.stream == profile->get_stream_type() ) &&

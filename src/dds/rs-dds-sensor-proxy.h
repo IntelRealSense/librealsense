@@ -83,6 +83,8 @@ public:
     const std::map< sid_index, std::shared_ptr< realdds::dds_stream > > & streams() const { return _streams; }
 
 private:
+    void tag_profiles( const std::vector<librealsense::tagged_profile> & tags );
+
     std::shared_ptr< realdds::dds_video_stream_profile >
     find_profile( sid_index sidx, realdds::dds_video_stream_profile const & profile ) const;
 
