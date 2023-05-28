@@ -13,12 +13,12 @@
 
 namespace librealsense {
 
-static const std::string RS405_PID = "0x0B5B";
-static const std::string RS415_PID = "0x0AD3";
-static const std::string RS435_RGB_PID = "0x0B07";
-static const std::string RS435I_PID = "0x0B3A";
-static const std::string RS455_PID = "0x0B5C";
-static const std::string RS457_PID = "0xABCD";
+static const std::string RS405_PID = "0B5B";
+static const std::string RS415_PID = "0AD3";
+static const std::string RS435_RGB_PID = "0B07";
+static const std::string RS435I_PID = "0B3A";
+static const std::string RS455_PID = "0B5C";
+static const std::string RS457_PID = "ABCD";
 
 
 std::vector< rs2_format > target_formats( rs2_format source_format )
@@ -176,13 +176,13 @@ std::vector< processing_block_factory > dds_rs_internal_data::get_profile_conver
                                  { RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2 } },
                                []() { return std::make_shared< y8i_to_y8y8 >(); } } );
 
-        //factories.emplace(
-        //    factories.end(),
-        //    processing_block_factory(
-        //        { { RS2_FORMAT_MOTION_XYZ32F } },
-        //        { { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL }, { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO } },
-        //        [&, mm_correct_opt]()
-        //        { return std::make_shared< motion_to_accel_gyro >( _mm_calib, mm_correct_opt ); } ) );
+        // Motion convertion is done on the camera side.
+        // Intrinsics table is being read from the camera flash and it is too much to set here, this file is ment as a
+        // temporary solution, the camera should send all this data in a designated topic.
+        factories.push_back( { { { RS2_FORMAT_MOTION_XYZ32F } },
+                               { { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL },
+                                 { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO } },
+                               []() { return std::make_shared< identity_processing_block >(); } } );
     }
     //else if( product_line == "L500" )
     //{

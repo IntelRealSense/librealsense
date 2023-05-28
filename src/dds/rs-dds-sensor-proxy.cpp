@@ -129,22 +129,6 @@ void dds_sensor_proxy::initialization_done( std::string product_id, std::string 
                 else
                     profile->tag_profile( tag.tag );
             }
-
-    //// Add unique ID based on the dds_stream matching the profile. Connect the profile to the extrinsics graph.
-    //// TODO - Need to override intrinsics function?
-    //for( auto & profile : _profiles )
-    //    for( auto & stream : _streams )
-    //    {
-    //        // Currently, stream names are based on profile type name and index
-    //        std::string profile_type_str = get_string( profile->get_stream_type() );
-    //        std::string stream_name_substr = stream.second->name().substr( 0, profile_type_str.size() );
-    //        if( stream_name_substr == profile_type_str )
-    //        {
-    //            profile->set_unique_id( stream.first.sid );
-    //            profile->set_stream_index( stream.first.index );
-    //            environment::get_instance().get_extrinsics_graph().register_same_extrinsics( *stream, *target );
-    //        }
-    //    }
 }
 
 
@@ -396,6 +380,16 @@ void dds_sensor_proxy::add_frame_metadata( frame * const f, nlohmann::json && dd
 }
 
 
+template<class T>
+frame_callback_ptr make_callback( T callback )
+{
+    return {
+        new internal_frame_callback<T>( callback ),
+        []( rs2_frame_callback * p ) { p->release(); }
+    };
+}
+
+
 void dds_sensor_proxy::start( frame_callback_ptr callback )
 {
     for( auto & profile : sensor_base::get_active_streams() )
@@ -439,7 +433,12 @@ void dds_sensor_proxy::start( frame_callback_ptr callback )
         dds_stream->start_streaming();
     }
 
-    software_sensor::start( callback );
+    _formats_converter.set_frames_callback( callback );
+    const auto && process_cb = make_callback( [&, this]( frame_holder f ) {
+        _formats_converter.convert_frame( f );
+    } );
+
+    software_sensor::start( process_cb );
 }
 
 

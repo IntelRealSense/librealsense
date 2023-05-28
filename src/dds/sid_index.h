@@ -10,7 +10,7 @@ namespace librealsense {
 
 struct sid_index
 {
-    int sid;    // Stream ID; assigned based on the stream TYPE, really
+    int sid;    // Stream ID; assigned based on an atomic counter
     int index;  // Used to distinguish similar streams like IR L / R, 0 otherwise
 
     sid_index( int sid_, int index_ )

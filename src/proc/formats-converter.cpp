@@ -70,7 +70,7 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
                         // Cache mapping of each target profile to profiles it is converting from.
                         _target_profiles_to_raw_profiles[target].push_back( raw_profile );
 
-                        // TODO - Duplicates in the list happen when 2 from_profiles have conversion to same target.
+                        // TODO - Duplicates in the list happen when 2 raw_profiles have conversion to same target.
                         // In this case it is faster to check if( _target_to_source_profiles_map[target].size() > 1 )
                         // rather then if( is_profile_in_list( cloned_profile, to_profiles ) ), but L500 unit-tests
                         // fail if we change. Need to understand difference
@@ -173,7 +173,7 @@ void formats_converter::prepare_to_convert( stream_profiles from_profiles )
         }
 
         // Retrieve source profile from cached map and generate the relevant processing block.
-        std::unordered_set<std::shared_ptr<stream_profile_interface>> current_resolved_reqs;
+        std::unordered_set< std::shared_ptr< stream_profile_interface > > current_resolved_reqs;
         auto best_pb = factory_of_best_match->generate();
         for( const auto & from_profile : from_profiles_of_best_match )
         {
@@ -183,6 +183,12 @@ void formats_converter::prepare_to_convert( stream_profiles from_profiles )
             {
                 if( factory_of_best_match->has_source( raw_profile ) )
                 {
+                    // When using DDS the server may split one stream of data into multiple dds_streams, e.g. Y8I
+                    // infrared data. When grouping these dds_streams under one sensor we get multiple instances of the
+                    // same profile, but the server should only open one to streaming
+                    if( is_profile_in_list( raw_profile, { current_resolved_reqs.begin(), current_resolved_reqs.end() } ) )
+                        continue;
+
                     current_resolved_reqs.insert( raw_profile );
 
                     // Caching converters to invoke appropriate converters for received frames

@@ -80,6 +80,8 @@ public:
     bool processing_block_exists( processing_blocks const & blocks, std::string const & block_name ) const;
     void create_processing_block( std::string & filter_name );
 
+    const std::map< sid_index, std::shared_ptr< realdds::dds_stream > > & streams() const { return _streams; }
+
 private:
     std::shared_ptr< realdds::dds_video_stream_profile >
     find_profile( sid_index sidx, realdds::dds_video_stream_profile const & profile ) const;
