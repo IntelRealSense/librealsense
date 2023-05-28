@@ -108,6 +108,7 @@ private:
     std::shared_ptr< dds_subscriber > _subscriber;
     std::string _topic_root;
     std::map< std::string, std::shared_ptr< dds_stream_server > > _stream_name_to_server;
+    dds_options _options;
     std::shared_ptr< dds_notification_server > _notification_server;
     std::shared_ptr< dds_topic_reader > _control_reader;
     std::shared_ptr< dds_topic_writer > _metadata_writer;

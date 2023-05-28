@@ -65,8 +65,10 @@ dds_device_server::~dds_device_server()
 }
 
 
-static void on_discovery_device_header( size_t const n_streams, const dds_options & options,
-                                        const extrinsics_map & extr, dds_notification_server & notifications )
+static void on_discovery_device_header( size_t const n_streams,
+                                        const dds_options & options,
+                                        const extrinsics_map & extr,
+                                        dds_notification_server & notifications )
 {
     auto extrinsics_json = json::array();
     for( auto & ex : extr )
@@ -175,6 +177,7 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
         // If a previous init failed (e.g., one of the streams has no profiles):
         _stream_name_to_server.clear();
 
+        _options = options;
         on_discovery_device_header( streams.size(), options, extr, *_notification_server );
         for( auto & stream : streams )
         {
@@ -315,19 +318,25 @@ void dds_device_server::handle_control_message( std::string const & id,
 void dds_device_server::handle_set_option( const nlohmann::json & j, nlohmann::json & reply )
 {
     auto option_name = rsutils::json::get< std::string >( j, option_name_key );
-    auto owner_name = rsutils::json::get< std::string >( j, owner_name_key );
+    std::string owner_name;  // default is empty, for a device option
+    rsutils::json::get_ex( j, owner_name_key, &owner_name );
 
     std::shared_ptr< dds_option > opt = find_option( option_name, owner_name );
     if( opt )
     {
         float value = rsutils::json::get< float >( j, value_key );
-        _set_option_callback( opt, value ); //Handle setting option outside realdds
+        if( _set_option_callback )
+            _set_option_callback( opt, value ); //Handle setting option outside realdds
         opt->set_value( value ); //Update option object. Do second to check if _set_option_callback did not throw
         reply[value_key] = value;
     }
     else
     {
-        DDS_THROW( runtime_error, owner_name + " does not support option " + option_name );
+        if( owner_name.empty() )
+            owner_name = "device";
+        else
+            owner_name = "'" + owner_name + "'";
+        DDS_THROW( runtime_error, owner_name + " option '" + option_name + "' not found" );
     }
 }
 
@@ -335,18 +344,32 @@ void dds_device_server::handle_set_option( const nlohmann::json & j, nlohmann::j
 void dds_device_server::handle_query_option( const nlohmann::json & j, nlohmann::json & reply )
 {
     auto option_name = rsutils::json::get< std::string >( j, option_name_key );
-    auto owner_name = rsutils::json::get< std::string >( j, owner_name_key );
+    std::string owner_name;  // default is empty, for a device option
+    rsutils::json::get_ex( j, owner_name_key, &owner_name );
 
     std::shared_ptr< dds_option > opt = find_option( option_name, owner_name );
     if( opt )
     {
-        float value = _query_option_callback( opt ); //Handle query outside realdds
-        opt->set_value( value ); //Ensure realdds option is up to date with actual value (might change, e.g temperature)
+        float value;
+        if( _query_option_callback )
+        {
+            value = _query_option_callback( opt );
+            // Ensure realdds option is up to date with actual value from callback
+            opt->set_value( value );
+        }
+        else
+        {
+            value = opt->get_value();
+        }
         reply[value_key] = value;
     }
     else
     {
-        DDS_THROW( runtime_error, owner_name + " does not support option " + option_name );
+        if( owner_name.empty() )
+            owner_name = "device";
+        else
+            owner_name = "'" + owner_name + "'";
+        DDS_THROW( runtime_error, owner_name + " option '" + option_name + "' not found" );
     }
 }
 
@@ -354,13 +377,19 @@ void dds_device_server::handle_query_option( const nlohmann::json & j, nlohmann:
 std::shared_ptr< dds_option > realdds::dds_device_server::find_option( const std::string & option_name,
                                                                        const std::string & owner_name )
 {
-    if( _topic_root == owner_name )
+    if( owner_name.empty() )
     {
-        //TODO - handle device option
+        for( auto & option : _options )
+        {
+            if( option->get_name() == option_name )
+            {
+                return option;
+            }
+        }
     }
     else
     {
-        //Find option in owner stream
+        // Find option in owner stream
         for( auto & stream_it : _stream_name_to_server )
         {
             if( stream_it.first == owner_name )

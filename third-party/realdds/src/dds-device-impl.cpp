@@ -127,7 +127,7 @@ void dds_device::impl::run( size_t message_timeout_ms )
                     {
                         rsutils::string::slice json_string( notification.custom_data< char const >(),
                                                             notification._data.size() );
-                        LOG_DEBUG( "failed handling '" << id << "' notification: '" << error_string
+                        LOG_ERROR( "failed handling '" << id << "' notification: '" << error_string
                                                        << "'  json: " << shorten_json_string( json_string, 450 ) );
                     }
                     if( id == id_set_option || id == id_query_option )
@@ -181,18 +181,20 @@ char const * dds_device::impl::on_option_value( nlohmann::json const & j )
     {
         return "missing control/option-name";
     }
-    std::string owner_name;
-    if( ! rsutils::json::get_ex( control, owner_name_key, &owner_name ) )
-    {
-        return "missing control/owner-name";
-    }
+    
     // Find the option and set its value
-    auto stream_it = _streams.find( owner_name );
-    if( stream_it == _streams.end() )
+    dds_options const * options = &_options;
+    std::string owner_name;  // default = empty = device option
+    if( rsutils::json::get_ex( control, owner_name_key, &owner_name ) && !owner_name.empty() )
     {
-        return "owner not found";
+        auto stream_it = _streams.find( owner_name );
+        if( stream_it == _streams.end() )
+        {
+            return "owner not found";
+        }
+        options = &stream_it->second->options();
     }
-    for( auto & option : stream_it->second->options() )
+    for( auto & option : *options )
     {
         if( option->get_name() == option_name )
         {
@@ -235,12 +237,13 @@ void dds_device::impl::set_option_value( const std::shared_ptr< dds_option > & o
     if( ! option )
         DDS_THROW( runtime_error, "must provide an option to set" );
 
-    nlohmann::json j = {
+    nlohmann::json j = nlohmann::json::object({
         { id_key, id_set_option },
         { option_name_key, option->get_name() },
-        { owner_name_key, option->owner_name() },
         { value_key, new_value }
-    };
+    });
+    if( ! option->owner_name().empty() )
+        j[owner_name_key] = option->owner_name();
 
     nlohmann::json reply;
     write_control_message( j, &reply );
@@ -257,11 +260,12 @@ float dds_device::impl::query_option_value( const std::shared_ptr< dds_option > 
     if( !option )
         DDS_THROW( runtime_error, "must provide an option to query" );
 
-    nlohmann::json j = {
+    nlohmann::json j = nlohmann::json::object({
         { id_key, id_query_option },
-        { option_name_key, option->get_name() },
-        { owner_name_key, option->owner_name() }
-    };
+        { option_name_key, option->get_name() }
+    });
+    if( ! option->owner_name().empty() )
+        j[owner_name_key] = option->owner_name();
 
     nlohmann::json reply;
     write_control_message( j, &reply );
@@ -416,9 +420,10 @@ bool dds_device::impl::init()
                     {
                         LOG_DEBUG( "... device-options: " << j["options"].size() << " options received" );
 
+                        std::string owner_name;  // for device options, this is empty!
                         for( auto & option_json : j["options"] )
                         {
-                            auto option = dds_option::from_json( option_json, _info.name );
+                            auto option = dds_option::from_json( option_json, owner_name );
                             _options.push_back( option );
                         }
                     }
