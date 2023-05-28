@@ -963,7 +963,7 @@ namespace rs2
             }
         }
 
-        ImGui::PopStyleColor(5);
+        ImGui::EndChild();
     }
 
     void stream_model::add_d500_metadata_descriptions(std::map<rs2_frame_metadata_value, std::string>& descriptions) const
@@ -1010,6 +1010,7 @@ namespace rs2
             || (profile.stream_type() == RS2_STREAM_GPIO)
             || (profile.stream_type() == RS2_STREAM_POSE);
 
+        // This scope contains a cursor behavior on visual stream with no metadata on
         if (stream_rect.contains(mouse.cursor) && !non_visual_stream && !show_metadata)
         {
             std::stringstream ss;
@@ -1185,9 +1186,10 @@ namespace rs2
         }
     }
 
+    // This function contains a cursor behavior on IMU stream with no metadata on
     void stream_model::show_stream_imu(ImFont* font, const rect &stream_rect, const  rs2_vector& axis, const mouse_info& mouse)
     {
-        if (stream_rect.contains(mouse.cursor))
+        if (stream_rect.contains(mouse.cursor) && !show_metadata)
         {
             const auto precision = 3;
             rs2_stream stream_type = profile.stream_type();
@@ -1561,7 +1563,8 @@ namespace rs2
     void stream_model::show_frame(const rect& stream_rect, const mouse_info& g, std::string& error_message)
     {
         auto zoom_val = 1.f;
-        if (stream_rect.contains(g.cursor))
+        // Allow mouse scrolling for zoom when not displaying scrollable metadata
+        if (stream_rect.contains(g.cursor) && !show_metadata)
         {
             static const auto wheel_step = 0.1f;
             auto mouse_wheel_value = -g.mouse_wheel * 0.1f;

@@ -65,7 +65,5 @@ namespace rs2
 
     std::string url_encode(const std::string &value);
 
-    std::string get_os_name();
-
     bool is_debug();
 }

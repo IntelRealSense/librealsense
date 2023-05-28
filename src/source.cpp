@@ -167,7 +167,6 @@ namespace librealsense
         case RS2_STREAM_SAFETY:
         case RS2_STREAM_OCCUPANCY:
             return RS2_EXTENSION_VIDEO_FRAME;
-        
         default:
             throw std::runtime_error("could not find matching extension with stream type '" + std::string(get_string(stream)) + "'");
         }
