@@ -8,7 +8,6 @@
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-topic-writer.h>
 #include <realdds/dds-utilities.h>
-#include <realdds/dds-time.h>
 
 #include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/publisher/DataWriter.hpp>

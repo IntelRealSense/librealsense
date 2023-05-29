@@ -59,6 +59,7 @@ Returns or sets the current `value` of an option within a device.
 - `owner-name` is the name of the owner
     - for a device option, this may be omitted
     - for a stream option, this is the unique stream name within the device
+- for `set-option`, `value` is the new value (float)
 
 ```JSON
 {
@@ -84,3 +85,5 @@ The reply should include the original control, plus:
 ```
 
 Both querying and setting options involve a very similar reply that can be handled in the same manner.
+
+A new option value should conform to the specific option's value range as communicated when the device was [initialized](initialization.md).
