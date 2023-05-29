@@ -828,5 +828,21 @@ namespace rs2
             error::handle(e);
         }
     };
+
+    class depth_mapping_sensor : public sensor
+    {
+    public:
+        depth_mapping_sensor(sensor s)
+            : sensor(s.get())
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_DEPTH_MAPPING_SENSOR, &e) == 0 && !e)
+            {
+                _sensor.reset();
+            }
+            error::handle(e);
+        }
+        operator bool() const { return _sensor.get() != nullptr; }
+    };
 }
 #endif // LIBREALSENSE_RS2_SENSOR_HPP
