@@ -44,9 +44,9 @@ public:
 
     std::map< std::string, std::shared_ptr< dds_stream > > _streams;
 
-    std::mutex _option_mutex;
-    std::condition_variable _option_cv;
-    std::queue< nlohmann::json > _option_response_queue;
+    std::mutex _replies_mutex;
+    std::condition_variable _replies_cv;
+    std::map< dds_sequence_number, nlohmann::json > _replies;
 
     std::shared_ptr< dds_topic_reader > _notifications_reader;
     std::shared_ptr< dds_topic_reader > _metadata_reader;
@@ -78,7 +78,10 @@ private:
     bool init();
 
     // notification handlers
-    char const * on_option_value( nlohmann::json const & );
+    typedef std::map< std::string, void ( dds_device::impl::* )( nlohmann::json const & ) > notification_handlers;
+    static notification_handlers const _notification_handlers;
+    void handle_notification( nlohmann::json const & );
+    void on_option_value( nlohmann::json const & );
 
     on_metadata_available_callback _on_metadata_available = nullptr;
 

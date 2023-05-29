@@ -48,6 +48,11 @@ An error is a reply where the `status` is not OK:
 ```
 
 
+### Combining Multiple Controls
+
+Unlike [notifications](notifications.md), this is not possible.
+
+
 ## Control Messages
 
 ### `query-option` & `set-option`

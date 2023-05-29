@@ -74,7 +74,7 @@ The C++ type should be `unsigned long long`.
 
 ### Combining Multiple Notifications
 
-E.g., combining a log notification with another could look like:
+Combining multiple log notifications can be done by packaging them together into an array:
 
 ```JSON
 [
@@ -83,4 +83,9 @@ E.g., combining a log notification with another could look like:
 ]
 ```
 
-**At this time this is not possible**: multiple notifications must be sent. This may change later.
+
+### Notification Source
+
+Anybody can write to the notifications topic; but only a single participant is ever the real device - this is the participant from which the [device-info](discovery.md) was published.
+
+It is recommended that the device implementation on the Client ignore notifications that do not originate from this participant.
