@@ -5,7 +5,6 @@
 
 #include <stdint.h>
 
-#include <rsutils/json.h>
 
 namespace eprosima {
 namespace fastrtps {
@@ -30,6 +29,7 @@ using dds_guid = eprosima::fastrtps::rtps::GUID_t;
 using dds_guid_prefix = eprosima::fastrtps::rtps::GuidPrefix_t;
 using dds_entity_id = eprosima::fastrtps::rtps::EntityId_t;
 typedef int dds_domain_id;
+typedef uint64_t dds_sequence_number;  // sample_identity.sequence_number()
 
 
 }  // namespace realdds

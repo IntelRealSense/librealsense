@@ -130,7 +130,7 @@ raw::flexible flexible_msg::to_raw()
 }
 
 
-uint64_t flexible_msg::write_to( dds_topic_writer & writer )
+dds_sequence_number flexible_msg::write_to( dds_topic_writer & writer )
 {
     auto raw_msg = to_raw();
 

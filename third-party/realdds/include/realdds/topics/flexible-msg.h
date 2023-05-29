@@ -5,6 +5,7 @@
 
 
 #include "flexible/flexible.h"
+#include <realdds/dds-defines.h>
 
 #include <string>
 #include <memory>
@@ -77,7 +78,7 @@ public:
     raw::flexible to_raw();
     // WARNING: this moves the message content!
     // Returns some unique (to the writer) identifier for the sample that was sent, or 0 if unsuccessful
-    uint64_t write_to( dds_topic_writer & );
+    dds_sequence_number write_to( dds_topic_writer & );
 
     flexible_msg() = default;
     flexible_msg( raw::flexible && );
