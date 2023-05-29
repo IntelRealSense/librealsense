@@ -22,7 +22,7 @@
 #include <proc/temporal-filter.h>
 #include <proc/threshold.h>
 
-#include <nlohmann/json.hpp>
+#include <rsutils/json.h>
 
 
 namespace librealsense {

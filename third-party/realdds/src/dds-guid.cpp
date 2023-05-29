@@ -10,14 +10,17 @@ namespace realdds {
 
 
 std::string print( dds_guid const & guid,
-                   dds_guid_prefix const & base_prefix )
+                   dds_guid_prefix const & base_prefix,
+                   bool readable_name )
 {
     std::ostringstream output;
     if( guid != eprosima::fastrtps::rtps::c_Guid_Unknown )
     {
         if( guid.guidPrefix != base_prefix )
         {
-            std::string participant = dds_participant::name_from_guid( guid );
+            std::string participant;
+            if( readable_name )
+                participant = dds_participant::name_from_guid( guid );
             if( ! participant.empty() )
             {
                 output << participant;

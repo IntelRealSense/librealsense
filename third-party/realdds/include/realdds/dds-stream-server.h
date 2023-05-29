@@ -10,6 +10,7 @@
 #include <memory>
 #include <string>
 #include <set>
+#include <functional>
 
 
 namespace realdds {

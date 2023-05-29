@@ -18,6 +18,7 @@
 #include <rsutils/shared-ptr-singleton.h>
 #include <rsutils/string/slice.h>
 using rsutils::string::slice;
+#include <rsutils/json.h>
 
 
 namespace realdds {

@@ -27,8 +27,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     #############################################################################################
     #
-    test.start( "Test no options" )
-    try:
+    with test.closure( "Test no options" ):
         remote.run( 'test_no_options()' )
         device = dds.device( participant, participant.create_guid(), info )
         device.run( 1000 )  # If no device is available in 30 seconds, this will throw
@@ -45,15 +44,11 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
                 test.unreachable() # Test no stream option
 
         remote.run( 'close_server()' )
-    except:
-        test.unexpected_exception()
     device = None
-    test.finish()
     #
     #############################################################################################
     #
-    test.start( "Test device options discovery" )
-    try:
+    with test.closure( "Test device options discovery" ):
         test_values = list(range(17))
         remote.run( 'test_device_options_discovery(' + str( test_values ) + ')' )
         device = dds.device( participant, participant.create_guid(), info )
@@ -65,16 +60,19 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         for index, option in enumerate( options ):
             test.check_equal( option.get_value(), float( test_values[index] ) )
 
+        option.set_value( -1. )  # only on client!
+        test.check_equal( device.query_option_value( option ), float( test_values[index] ) )
+        test.check_equal( option.get_value(), float( test_values[index] ) )  # from server
+
+        device.set_option_value( option, -2. )  # TODO this is not valid for the option range!
+        test.check_equal( option.get_value(), -2. )
+
         remote.run( 'close_server()' )
-    except:
-        test.unexpected_exception()
     device = None
-    test.finish()
     #
     #############################################################################################
     #
-    test.start( "Test stream options discovery" )
-    try:
+    with test.closure( "Test stream options discovery" ):
         #send values to be checked later as string parameter to the function
         remote.run( 'test_stream_options_discovery(1, 0, 123456, 123, 12, "opt3 of s1")' )
         device = dds.device( participant, participant.create_guid(), info )
@@ -91,16 +89,21 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             test.check_equal( options[1].get_range().default_value, 12. )
             test.check_equal( options[2].get_description(), "opt3 of s1" )
 
+        option = options[1]
+        test.check_equal( option.get_value(), 0. )  # not default!?
+        option.set_value( 1. )  # only on client!
+        test.check_equal( device.query_option_value( option ), 0. )
+        test.check_equal( option.get_value(), 0. )  # from server
+
+        device.set_option_value( option, 12. )
+        test.check_equal( option.get_value(), 12. )
+
         remote.run( 'close_server()' )
-    except:
-        test.unexpected_exception()
     device = None
-    test.finish()
     #
     #############################################################################################
     #
-    test.start( "Test device and multiple stream options discovery" )
-    try:
+    with test.closure( "Test device and multiple stream options discovery" ):
         test_values = list(range(5))
         remote.run( 'test_device_and_multiple_stream_options_discovery(' + str( test_values ) + ', ' + str( test_values ) + ')' )
         device = dds.device( participant, participant.create_guid(), info )
@@ -119,10 +122,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
                 test.check_equal( option.get_value(), float( test_values[index] ) )
 
         remote.run( 'close_server()' )
-    except:
-        test.unexpected_exception()
     device = None
-    test.finish()
     #
     #############################################################################################
 

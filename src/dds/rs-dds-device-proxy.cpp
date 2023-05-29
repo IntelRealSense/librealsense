@@ -14,6 +14,8 @@
 #include <src/stream.h>
 #include <src/environment.h>
 
+#include <rsutils/json.h>
+
 
 namespace librealsense {
 

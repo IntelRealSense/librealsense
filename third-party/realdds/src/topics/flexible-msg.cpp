@@ -130,14 +130,20 @@ raw::flexible flexible_msg::to_raw()
 }
 
 
-void flexible_msg::write_to( dds_topic_writer & writer )
+dds_sequence_number flexible_msg::write_to( dds_topic_writer & writer )
 {
     auto raw_msg = to_raw();
-    bool success = DDS_API_CALL( writer.get()->write( &raw_msg ) );
+
+    eprosima::fastrtps::rtps::WriteParams params;
+    bool success = DDS_API_CALL( writer.get()->write( &raw_msg, params ) );
     if( ! success )
     {
         LOG_ERROR( "Error writing message" );
+        return 0;
     }
+    // The params will contain, after the write, the sequence number (incremented automatically) for the sample that was
+    // sent. The source_timestamp is always INVALID for some reason.
+    return params.sample_identity().sequence_number().to64long();
 }
 
 

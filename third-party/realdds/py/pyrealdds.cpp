@@ -774,6 +774,8 @@ PYBIND11_MODULE(NAME, m) {
                   self.foreach_option( [&]( std::shared_ptr< dds_option > const & option ) { options.push_back( option ); } );
                   return options;
               } )
+        .def( "set_option_value", &dds_device::set_option_value )
+        .def( "query_option_value", &dds_device::query_option_value )
         .def( "__repr__", []( dds_device const & self ) {
             std::ostringstream os;
             os << "<" SNAME ".device ";
