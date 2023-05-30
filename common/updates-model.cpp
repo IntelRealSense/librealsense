@@ -3,7 +3,8 @@
 
 #include <glad/glad.h>
 #include "updates-model.h"
-#include "model-views.h"
+#include "device-model.h"
+#include "ux-window.h"
 #include "os.h"
 #include <stb_image.h>
 #include "sw-update/http-downloader.h"

@@ -5,6 +5,10 @@
 
 #include <unordered_set>
 #include "model-views.h"
+#include "device-model.h"
+#include "subdevice-model.h"
+#include "stream-model.h"
+#include "post-processing-filters.h"
 #include "notifications.h"
 #include "skybox.h"
 #include "measurement.h"
@@ -221,6 +225,7 @@ namespace rs2
         float calculate_ruler_max_distance(const std::vector<float>& distances) const;
 
         void set_export_popup(ImFont* large_font, ImFont* font, rect stream_rect, std::string& error_message, config_file& temp_cfg);
+        void init_depth_uid(int& selected_depth_source, std::vector<std::string>& depth_sources_str, std::vector<int>& depth_sources);
 
         streams_layout _layout;
         streams_layout _old_layout;

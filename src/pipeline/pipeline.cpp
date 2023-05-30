@@ -263,7 +263,7 @@ namespace librealsense
                 }
                 catch (const std::exception& e)
                 {
-                    throw std::runtime_error( rsutils::string::from() << "Device disconnected. Failed to recconect: "
+                    throw std::runtime_error( rsutils::string::from() << "Device disconnected. Failed to reconnect: "
                                                                       << e.what() << timeout_ms );
                 }
             }

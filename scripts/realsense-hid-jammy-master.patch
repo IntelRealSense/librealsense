@@ -1,8 +1,13 @@
-commit 3df208ef6648357775bf092a4a57bdcb02dfeb5c
-Author: Yu MENG <yu1.meng@intel.com>
-Date:   Thu Jun 23 16:02:48 2022 +0800
+From eb0cf2d5c279e97def7f2d33e30a646ac5583cc0 Mon Sep 17 00:00:00 2001
+From: Dmitry Perchanov <dmitry.perchanov@intel.com>
+Date: Wed, 24 May 2023 19:44:01 +0300
+Subject: [PATCH] fix the retval in [accel|gyro]_3d_capture_sample
 
-    fix the retval in [accel|gyro]_3d_capture_sample
+Signed-off-by: Dmitry Perchanov <dmitry.perchanov@intel.com>
+---
+ drivers/iio/accel/hid-sensor-accel-3d.c | 1 +
+ drivers/iio/gyro/hid-sensor-gyro-3d.c   | 1 +
+ 2 files changed, 2 insertions(+)
 
 diff --git a/drivers/iio/accel/hid-sensor-accel-3d.c b/drivers/iio/accel/hid-sensor-accel-3d.c
 index a2def6f93..5eac7ea19 100644
@@ -28,3 +33,6 @@ index 8f0ad022c..698c50da1 100644
  	break;
  	default:
  		break;
+-- 
+2.34.1
+

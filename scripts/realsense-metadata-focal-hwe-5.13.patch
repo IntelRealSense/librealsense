@@ -279,7 +279,7 @@ index 9a791d8ef..89e76e5da 100644
 +	  .idProduct		= 0x0b6a,
 +	  .bInterfaceClass	= USB_CLASS_VIDEO,
 +	  .bInterfaceSubClass	= 1,
-+	  .bInterfaceProtocol	= 0,
++	  .bInterfaceProtocol	= UVC_PC_PROTOCOL_15,
 +	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
 +	  /* Intel S585 Safety Camera */
 +	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
@@ -288,7 +288,7 @@ index 9a791d8ef..89e76e5da 100644
 +	  .idProduct		= 0x0b6b,
 +	  .bInterfaceClass	= USB_CLASS_VIDEO,
 +	  .bInterfaceSubClass	= 1,
-+	  .bInterfaceProtocol	= 0,
++	  .bInterfaceProtocol	= UVC_PC_PROTOCOL_15,
 +	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
  	/* Generic USB Video Class */
  	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, UVC_PC_PROTOCOL_UNDEFINED) },
