@@ -352,7 +352,6 @@ namespace rs2
                     push_back_if_not_exists(res_values, std::pair<int, int>(vid_prof.width(), vid_prof.height()));
                     push_back_if_not_exists(resolutions, res.str());
                     push_back_if_not_exists(resolutions_per_stream[profile.stream_type()], std::pair<int, int>(vid_prof.width(), vid_prof.height()));
-                    push_back_if_not_exists(profile_id_to_res[profile.unique_id()], std::pair<int, int>(vid_prof.width(), vid_prof.height()));
                 }
 
                 std::stringstream fps;
@@ -1813,23 +1812,4 @@ namespace rs2
         // TODO: Once auto-calib makes it into the API, switch to querying camera info
     }
 
-    void subdevice_model::get_depth_ir_mismatch_resolutions_ids(int& depth_res_id, int& ir1_res_id, int& ir2_res_id) const
-    {
-        // may happen for example when using playback file with only IR1
-        if (profile_id_to_res.size() != 3)
-            return;
-        auto it = profile_id_to_res.begin();
-        if (it != profile_id_to_res.end())
-        {
-            depth_res_id = it->first;
-            if (++it != profile_id_to_res.end())
-            {
-                ir1_res_id = it->first;
-                if (++it != profile_id_to_res.end())
-                {
-                    ir2_res_id = it->first;
-                }
-            }
-        }
-    }
 }

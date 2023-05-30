@@ -123,8 +123,6 @@ namespace rs2
         void restore_ui_selection() { ui = last_valid_ui; }
         void store_ui_selection() { last_valid_ui = ui; }
 
-        void get_depth_ir_mismatch_resolutions_ids(int& depth_res_id, int& ir1_res_id, int& ir2_res_id) const;
-
         template<typename T>
         bool get_default_selection_index(const std::vector<T>& values, const T& def, int* index)
         {
@@ -168,7 +166,6 @@ namespace rs2
         subdevice_ui_selection last_valid_ui;
 
         std::vector<std::pair<int, int>> res_values;
-        std::map<int, std::vector<std::pair<int, int>>> profile_id_to_res; // used for depth and ir mixed resolutions
         std::map<int, std::vector<int>> fps_values_per_stream;
         std::vector<int> shared_fps_values;
         bool show_single_fps_list = false;
