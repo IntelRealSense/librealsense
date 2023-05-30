@@ -31,8 +31,8 @@ PYBIND11_MODULE(NAME, m) {
 
     m.def( "split", &rsutils::string::split );
 
-    m.def("get_os_name", &rsutils::get_os_name);
-    m.def("get_platform_name", &rsutils::get_platform_name);
+    m.def("get_os_name", &rsutils::os::get_os_name);
+    m.def("get_platform_name", &rsutils::os::get_platform_name);
 
     using rsutils::version;
     py::class_< version >( m, "version" )
