@@ -83,13 +83,13 @@ __global__ void kernel_unpack_yuy2_rgb8_cuda(const uint8_t * src, uint8_t *dst, 
         int odx = i * 6;
 
         dst[odx] = clamp((298 * c + 409 * e + 128) >> 8);
-        dst[odx + 1] = clamp((298 * c - 100 * d - 409 * e + 128) >> 8);
+        dst[odx + 1] = clamp((298 * c - 100 * d - 208 * e + 128) >> 8);
         dst[odx + 2] = clamp((298 * c + 516 * d + 128) >> 8);
 
         c = y1 - 16;
 
         dst[odx + 3] = clamp((298 * c + 409 * e + 128) >> 8);
-        dst[odx + 4] = clamp((298 * c - 100 * d - 409 * e + 128) >> 8);
+        dst[odx + 4] = clamp((298 * c - 100 * d - 208 * e + 128) >> 8);
         dst[odx + 5] = clamp((298 * c + 516 * d + 128) >> 8);
 
 #undef clamp
@@ -124,13 +124,13 @@ __global__ void kernel_unpack_yuy2_bgr8_cuda(const uint8_t * src, uint8_t *dst, 
         int odx = i * 6;
 
         dst[odx + 2] = clamp((298 * c + 409 * e + 128) >> 8);
-        dst[odx + 1] = clamp((298 * c - 100 * d - 409 * e + 128) >> 8);
+        dst[odx + 1] = clamp((298 * c - 100 * d - 208 * e + 128) >> 8);
         dst[odx] = clamp((298 * c + 516 * d + 128) >> 8);
 
         c = y1 - 16;
 
         dst[odx + 5] = clamp((298 * c + 409 * e + 128) >> 8);
-        dst[odx + 4] = clamp((298 * c - 100 * d - 409 * e + 128) >> 8);
+        dst[odx + 4] = clamp((298 * c - 100 * d - 208 * e + 128) >> 8);
         dst[odx + 3] = clamp((298 * c + 516 * d + 128) >> 8);
 
 #undef clamp
@@ -165,14 +165,14 @@ __global__ void kernel_unpack_yuy2_rgba8_cuda(const uint8_t * src, uint8_t *dst,
         int odx = i * 8;
 
         dst[odx] = clamp((298 * c + 409 * e + 128) >> 8);
-        dst[odx + 1] = clamp((298 * c - 100 * d - 409 * e + 128) >> 8);
+        dst[odx + 1] = clamp((298 * c - 100 * d - 208 * e + 128) >> 8);
         dst[odx + 2] = clamp((298 * c + 516 * d + 128) >> 8);
         dst[odx + 3] = 255;
 
         c = y1 - 16;
 
         dst[odx + 4] = clamp((298 * c + 409 * e + 128) >> 8);
-        dst[odx + 5] = clamp((298 * c - 100 * d - 409 * e + 128) >> 8);
+        dst[odx + 5] = clamp((298 * c - 100 * d - 208 * e + 128) >> 8);
         dst[odx + 6] = clamp((298 * c + 516 * d + 128) >> 8);
         dst[odx + 7] = 255;
 
@@ -209,14 +209,14 @@ __global__ void kernel_unpack_yuy2_bgra8_cuda(const uint8_t * src, uint8_t *dst,
 
         dst[odx + 3] = 255;
         dst[odx + 2] = clamp((298 * c + 409 * e + 128) >> 8);
-        dst[odx + 1] = clamp((298 * c - 100 * d - 409 * e + 128) >> 8);
+        dst[odx + 1] = clamp((298 * c - 100 * d - 208 * e + 128) >> 8);
         dst[odx] = clamp((298 * c + 516 * d + 128) >> 8);
 
         c = y1 - 16;
 
         dst[odx + 7] = 255;
         dst[odx + 6] = clamp((298 * c + 409 * e + 128) >> 8);
-        dst[odx + 5] = clamp((298 * c - 100 * d - 409 * e + 128) >> 8);
+        dst[odx + 5] = clamp((298 * c - 100 * d - 208 * e + 128) >> 8);
         dst[odx + 4] = clamp((298 * c + 516 * d + 128) >> 8);
 
 #undef clamp
