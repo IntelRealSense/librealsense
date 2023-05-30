@@ -283,8 +283,8 @@ void init_frame(py::module &m) {
         return BufData(verts, sizeof(rs2::vertex), "@fff", self.size());
             }, "Retrieve the vertices of the labeled point cloud", py::keep_alive<0, 1>())
         .def("get_labels", [](rs2::labeled_points& self) {
-                auto labels = const_cast<uint8_t*>(self.get_labels());
-                return BufData(labels, sizeof(uint8_t), "@fff", self.size());
+        auto labels = const_cast<uint8_t*>(self.get_labels());
+        return BufData(labels, sizeof(uint8_t), "@B", self.size());
             }, "Retrieve the labels of the labeled point cloud", py::keep_alive<0, 1>());
 
     // TODO: Deprecate composite_frame, replace with frameset
