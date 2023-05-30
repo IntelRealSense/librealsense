@@ -86,7 +86,7 @@ for i in range(expected_frames):
     depth_distance = ut.process(f)
 
     origin_frame = np.hstack(np.asarray(f.get_data(), dtype=np.uint16))
-    ut_frame = np.hstack(np.asarray(depth_distance.get_data()))
+    ut_frame = np.hstack(np.asarray(depth_distance.get_data())).view(dtype=np.float32)
 
     depth_distance_format = depth_distance.get_profile().format()
     test.check_equal(rs.format.distance, depth_distance_format)
@@ -96,7 +96,5 @@ for i in range(expected_frames):
         test.check_equal(ut_frame[j], frame_data_units_transformed)
 
 test.finish()
-
 ################################################################################################
-
 test.print_results_and_exit()
