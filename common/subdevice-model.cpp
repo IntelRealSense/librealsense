@@ -426,12 +426,9 @@ namespace rs2
             if (is_multiple_resolutions_supported())
             {
                 ui.is_multiple_resolutions = true;
-                for (auto res_array : profile_id_to_res)
+                for (auto res_array : resolutions_per_stream)
                 {
-                    if (get_default_selection_index(res_array.second, default_resolution, &selection_index))
-                    {
-                        ui.selected_res_id_map[res_array.first] = selection_index;
-                    }
+                    ui.selected_stream_to_res[res_array.first] = default_resolution;
                 }
             }
             else
@@ -469,10 +466,18 @@ namespace rs2
 
             if (ui.is_multiple_resolutions)
             {
-                for (auto it = ui.selected_res_id_map.begin(); it != ui.selected_res_id_map.end(); ++it)
+                for (auto it = ui.selected_stream_to_res.begin(); it != ui.selected_stream_to_res.end(); ++it)
                 {
-                    while (it->second >= 0 && !is_selected_combination_supported())
-                        it->second--;
+                    if (!is_selected_combination_supported())
+                    {
+                        auto cur_stream = it->first;
+                        auto resolutions_for_current_stream = resolutions_per_stream[cur_stream];
+                        auto res_it = resolutions_for_current_stream.end() - 1;
+                        ui.selected_stream_to_res[cur_stream] = *res_it;
+
+                        while (res_it->first && !is_selected_combination_supported())
+                            --res_it;
+                    }
                 }
             }
             else
@@ -765,15 +770,39 @@ namespace rs2
         return res;
     }
 
+    int subdevice_model::get_res_id_in_resolutions_array(const std::vector<const char*>& res_chars, const std::pair<int, int>& res) const
+    {
+        int id = -1;
+        std::stringstream ss;
+        ss << res.first << "x" << res.second;
+        for (int i = 0; i < res_chars.size(); ++i)
+        {
+            auto cur_res = std::string(res_chars[i]);
+            if (cur_res == ss.str())
+            {
+                id = i;
+                break;
+            }
+        }
+        return id;
+    }
+
+    std::pair<int, int> subdevice_model::get_resolution_from_res_chars_id(const std::vector<const char*>& res_chars, int id_in_res_chars) const
+    {
+        std::string res_str = res_chars[id_in_res_chars];
+        std::pair<int, int> res;
+        auto width_str = res_str.substr(0, res_str.find('x'));
+        auto height_str = res_str.substr(res_str.find('x') + 1, res_str.size());
+        res.first = std::atoi(width_str.c_str());
+        res.second = std::atoi(height_str.c_str());
+
+        return res;
+    }
+
     bool subdevice_model::draw_resolutions_combo_box_multiple_resolutions(std::string& error_message, std::string& label, std::function<void()> streaming_tooltip, float col0, float col1,
-        int stream_type_id, int depth_res_id)
+        rs2_stream stream_type)
     {
         bool res = false;
-
-        rs2_stream stream_type = RS2_STREAM_DEPTH;
-        if (stream_type_id != depth_res_id)
-            stream_type = RS2_STREAM_INFRARED;
-
 
         auto res_pairs = resolutions_per_stream[stream_type];
         std::vector<std::string> resolutions_str;
@@ -785,9 +814,16 @@ namespace rs2
         }
 
         auto res_chars = get_string_pointers(resolutions_str);
+
+        std::map<const char*, std::pair<int, std::pair<int, int>>> res_char_to_id_and_res;
+        for (int i = 0; i < res_chars.size(); ++i)
+        {
+            res_char_to_id_and_res[res_chars[i]] = std::make_pair(i, res_pairs[i]);
+        }
+        
         if (res_chars.size() > 0)
         {
-            if (!(streaming && !streaming_map[stream_type_id]))
+            if (!(streaming && !streaming_map[stream_type]))
             {
                 // resolution
                 // Draw combo-box with all resolution options for this stream type
@@ -798,17 +834,19 @@ namespace rs2
                 label = rsutils::string::from() << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
                     << s->get_info(RS2_CAMERA_INFO_NAME) << " resolution for " << rs2_stream_to_string(stream_type);
 
+                int id_in_res_chars = get_res_id_in_resolutions_array(res_chars, ui.selected_stream_to_res[stream_type]);
                 if (!allow_change_resolution_while_streaming && streaming)
                 {
-                    ImGui::Text("%s", res_chars[ui.selected_res_id_map[stream_type_id]]);
+                    ImGui::Text("%s", res_chars[id_in_res_chars]);
                     streaming_tooltip();
                 }
                 else
                 {
                     ImGui::PushItemWidth(-1);
                     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-                    auto tmp_selected_res_id = ui.selected_res_id_map[stream_type_id];
-                    if (ImGui::Combo(label.c_str(), &tmp_selected_res_id, res_chars.data(),
+                    auto tmp_selected_res = ui.selected_stream_to_res[stream_type];
+
+                    if (ImGui::Combo(label.c_str(), &id_in_res_chars, res_chars.data(),
                         static_cast<int>(res_chars.size())))
                     {
                         res = true;
@@ -818,8 +856,8 @@ namespace rs2
                         // DQT app will handle the sensor mode when the streaming is off (while reseting the stream)
                         if (s->supports(RS2_OPTION_SENSOR_MODE) && !allow_change_resolution_while_streaming)
                         {
-                            auto width = res_values[tmp_selected_res_id].first;
-                            auto height = res_values[tmp_selected_res_id].second;
+                            auto width = tmp_selected_res.first;
+                            auto height = tmp_selected_res.second;
                             auto res = resolution_from_width_height(width, height);
                             if (res >= RS2_SENSOR_MODE_VGA && res < RS2_SENSOR_MODE_COUNT)
                             {
@@ -852,7 +890,7 @@ namespace rs2
                         }
                         else
                         {
-                            ui.selected_res_id_map[stream_type_id] = tmp_selected_res_id;
+                            ui.selected_stream_to_res[stream_type] = get_resolution_from_res_chars_id(res_chars, id_in_res_chars);
                         }
                     }
                     ImGui::PopStyleColor();
@@ -866,28 +904,18 @@ namespace rs2
         return res;
     }
 
-    bool subdevice_model::draw_formats_combo_box_multiple_resolutions(std::string& error_message, std::string& label, std::function<void()> streaming_tooltip, float col0, float col1,
-        int stream_type_id)
+    bool subdevice_model::draw_formats_combo_box_multiple_resolutions(std::string& error_message, std::string& label, std::function<void()> streaming_tooltip, 
+        float col0, float col1, rs2_stream stream_type)
     {
         bool res = false;
-
-        std::map<rs2_stream, std::vector<int>> stream_to_index;
-        int depth_res_id, ir1_res_id, ir2_res_id;
-        get_depth_ir_mismatch_resolutions_ids(depth_res_id, ir1_res_id, ir2_res_id);
-        stream_to_index[RS2_STREAM_DEPTH] = { depth_res_id };
-        stream_to_index[RS2_STREAM_INFRARED] = { ir1_res_id, ir2_res_id };
-
-        rs2_stream stream_type = RS2_STREAM_DEPTH;
-        if (stream_type_id != depth_res_id)
-            stream_type = RS2_STREAM_INFRARED;
-
 
         for (auto&& f : formats)
         {
             if (f.second.size() == 0)
                 continue;
 
-            if (std::find(stream_to_index[stream_type].begin(), stream_to_index[stream_type].end(), f.first) == stream_to_index[stream_type].end())
+            if (stream_type == RS2_STREAM_DEPTH && f.second[0] != std::string("Z16") ||
+                stream_type == RS2_STREAM_INFRARED && f.second[0] == std::string("Z16"))
                 continue;
 
             auto formats_chars = get_string_pointers(f.second);
@@ -961,22 +989,19 @@ namespace rs2
             return false;
         }
 
-        int depth_res_id, ir1_res_id, ir2_res_id;
-        get_depth_ir_mismatch_resolutions_ids(depth_res_id, ir1_res_id, ir2_res_id);
-
-        std::vector<uint32_t> stream_types_ids;
-        stream_types_ids.push_back(depth_res_id);
-        stream_types_ids.push_back(ir1_res_id);
-        for (auto&& stream_type_id : stream_types_ids)
+        std::vector<rs2_stream> relevant_streams = { RS2_STREAM_DEPTH, RS2_STREAM_INFRARED };
+        for (auto&& stream_type : relevant_streams)
         {
             // resolution
             // Draw combo-box with all resolution options for this stream type
-            res &= draw_resolutions_combo_box_multiple_resolutions(error_message, label, streaming_tooltip, col0, col1, stream_type_id, depth_res_id);
+            res &= draw_resolutions_combo_box_multiple_resolutions(error_message, label, streaming_tooltip, col0, col1, stream_type);
 
             // stream and formats
             // Draw combo-box with all format options for current stream type
-            res &= draw_formats_combo_box_multiple_resolutions(error_message, label, streaming_tooltip, col0, col1, stream_type_id);
+            res &= draw_formats_combo_box_multiple_resolutions(error_message, label, streaming_tooltip, col0, col1, stream_type);
         }
+
+        
 
         return res;
     }
@@ -1082,13 +1107,13 @@ namespace rs2
             }
             else
             {
-                auto res_vec = profile_id_to_res[p.unique_id()];
+                auto res_vec = resolutions_per_stream[p.stream_type()];
                 for (int i = 0; i < res_vec.size(); i++)
                 {
                     if (auto vid_prof = p.as<video_stream_profile>())
                         if (res_vec[i].first == vid_prof.width() && res_vec[i].second == vid_prof.height())
                         {
-                            ui.selected_res_id_map[p.unique_id()] = i;
+                            ui.selected_stream_to_res[p.stream_type()] = res_vec[i];
                             break;
                         }
                 }
@@ -1155,9 +1180,9 @@ namespace rs2
         }
         else
         {
-            for (auto it = profile_id_to_res.begin(); it != profile_id_to_res.end(); ++it)
+            for (auto it = resolutions_per_stream.begin(); it != resolutions_per_stream.end(); ++it)
             {
-                selected_resolutions.push_back(it->second[ui.selected_res_id_map[it->first]]);
+                selected_resolutions.push_back(ui.selected_stream_to_res[it->first]);
             }
         }
         std::sort(profiles.begin(), profiles.end(), [&](stream_profile a, stream_profile b) {
@@ -1227,9 +1252,9 @@ namespace rs2
         }
         else
         {
-            for (auto it = profile_id_to_res.begin(); it != profile_id_to_res.end(); ++it)
+            for (auto it = resolutions_per_stream.begin(); it != resolutions_per_stream.end(); ++it)
             {
-                selected_resolutions.push_back(it->second[ui.selected_res_id_map[it->first]]);
+                selected_resolutions.push_back(ui.selected_stream_to_res[it->first]);
             }
         }
 
@@ -1247,7 +1272,7 @@ namespace rs2
                     break;
             }
         }
-        else if (ui.is_multiple_resolutions && (ui.selected_res_id_map != last_valid_ui.selected_res_id_map))
+        else if (ui.is_multiple_resolutions && (ui.selected_stream_to_res != last_valid_ui.selected_stream_to_res))
         {
             get_sorted_profiles(sorted_profiles);
             std::map<int, std::map<int, stream_profile>> profiles_by_fps;
@@ -1487,11 +1512,7 @@ namespace rs2
                             }
                             else
                             {
-                                int depth_res_id, ir1_res_id, ir2_res_id;
-                                get_depth_ir_mismatch_resolutions_ids(depth_res_id, ir1_res_id, ir2_res_id);
-                                int res_id = (p.stream_type() == RS2_STREAM_DEPTH) ? depth_res_id : ir1_res_id;
-
-                                stream_to_selected_resolution[p.stream_type()] = profile_id_to_res[res_id][ui.selected_res_id_map[res_id]];
+                                stream_to_selected_resolution[p.stream_type()] = ui.selected_stream_to_res[p.stream_type()];
   
                                 error_message << "\n{" << stream_display_names[stream] << ","
                                     << stream_to_selected_resolution[p.stream_type()].first << "x" 
@@ -1558,11 +1579,8 @@ namespace rs2
 
         if (ui.is_multiple_resolutions)
         {
-            int depth_res_id, ir1_res_id, ir2_res_id;
-            get_depth_ir_mismatch_resolutions_ids(depth_res_id, ir1_res_id, ir2_res_id);
-            streaming_map[depth_res_id] = false;
-            streaming_map[ir1_res_id] = false;
-            streaming_map[ir2_res_id] = false;
+            streaming_map[RS2_STREAM_DEPTH] = false;
+            streaming_map[RS2_STREAM_INFRARED] = false;
         }
 
         if (profiles[0].stream_type() == RS2_STREAM_COLOR)
@@ -1679,18 +1697,9 @@ namespace rs2
 
         if (ui.is_multiple_resolutions)
         {
-            int depth_res_id, ir1_res_id, ir2_res_id;
-            get_depth_ir_mismatch_resolutions_ids(depth_res_id, ir1_res_id, ir2_res_id);
-
             for (size_t i = 0; i < profiles.size(); i++)
             {
-                if (profiles[i].stream_type() == RS2_STREAM_DEPTH)
-                    streaming_map[depth_res_id] = true;
-                else if (profiles[i].stream_type() == RS2_STREAM_INFRARED)
-                {
-                    streaming_map[ir1_res_id] = true;
-                    streaming_map[ir2_res_id] = true;
-                }
+                streaming_map[profiles[i].stream_type()] = true;
             }
         }
 
@@ -1806,6 +1815,9 @@ namespace rs2
 
     void subdevice_model::get_depth_ir_mismatch_resolutions_ids(int& depth_res_id, int& ir1_res_id, int& ir2_res_id) const
     {
+        // may happen for example when using playback file with only IR1
+        if (profile_id_to_res.size() != 3)
+            return;
         auto it = profile_id_to_res.begin();
         if (it != profile_id_to_res.end())
         {
