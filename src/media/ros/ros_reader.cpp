@@ -5,7 +5,6 @@
 #include "ros_reader.h"
 #include "ds/ds-device-common.h"
 #include "ds/d400/d400-private.h"
-#include "ivcam/sr300.h"
 #include "l500/l500-depth.h"
 #include "proc/disparity-transform.h"
 #include "proc/decimation-filter.h"
@@ -927,24 +926,6 @@ namespace librealsense
         return it5 != rs400_sku_pid.end();
     }
 
-    bool ros_reader::is_sr300_PID(int pid)
-    {
-        std::vector<int> sr300_PIDs =
-        {
-            SR300_PID,
-            SR300v2_PID,
-            SR306_PID,
-            SR306_PID_DBG
-        };
-
-        auto it = std::find_if(sr300_PIDs.begin(), sr300_PIDs.end(), [&](int sr300_pid)
-        {
-            return pid == sr300_pid;
-        });
-
-        return it != sr300_PIDs.end();
-    }
-
     bool ros_reader::is_l500_PID(int pid)
     {
         return pid == L500_PID;
@@ -972,19 +953,6 @@ namespace librealsense
                 return std::make_shared<recommended_proccesing_blocks_snapshot>(processing_blocks{});
             }
             throw io_exception("Unrecognized sensor name" + sensor_name);
-        }
-
-        if (is_sr300_PID(int_pid))
-        {
-            if (is_depth_sensor(sensor_name))
-            {
-                return std::make_shared<recommended_proccesing_blocks_snapshot>(sr300_camera::sr300_depth_sensor::get_sr300_depth_recommended_proccesing_blocks());
-            }
-            else if (is_color_sensor(sensor_name))
-            {
-                return std::make_shared<recommended_proccesing_blocks_snapshot>(get_color_recommended_proccesing_blocks());
-            }
-            throw io_exception("Unrecognized sensor name");
         }
 
         if (is_l500_PID(int_pid))
