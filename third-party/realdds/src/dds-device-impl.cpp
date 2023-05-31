@@ -87,6 +87,10 @@ std::ostream& operator<<( std::ostream& s, state_type st )
 /*static*/ dds_device::impl::notification_handlers const dds_device::impl::_notification_handlers{
     { id_set_option, &dds_device::impl::on_option_value },
     { id_query_option, &dds_device::impl::on_option_value },
+    { "device-header", &dds_device::impl::on_known_notification },
+    { "device-options", &dds_device::impl::on_known_notification },
+    { "stream-header", &dds_device::impl::on_known_notification },
+    { "stream-options", &dds_device::impl::on_known_notification },
 };
 
 
@@ -240,6 +244,12 @@ void dds_device::impl::on_option_value( nlohmann::json const & j )
         }
     }
     throw std::runtime_error( "option not found" );
+}
+
+
+void dds_device::impl::on_known_notification( nlohmann::json const & j )
+{
+    // This is a known notification, but we don't want to do anything for it
 }
 
 

@@ -82,6 +82,7 @@ private:
     static notification_handlers const _notification_handlers;
     void handle_notification( nlohmann::json const & );
     void on_option_value( nlohmann::json const & );
+    void on_known_notification( nlohmann::json const & );
 
     on_metadata_available_callback _on_metadata_available = nullptr;
 
