@@ -9,7 +9,6 @@ option(COM_MULTITHREADED "Set OFF to initialize COM library with COINIT_APARTMEN
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 option(BUILD_UNIT_TESTS "Build LibCI unit tests. If enabled, additional test data may be downloaded" OFF)
 option(BUILD_LEGACY_LIVE_TEST "Build the live-test.exe test used in Travis. If enabled, additional test data may be downloaded" OFF)
-option(BUILD_INTERNAL_UNIT_TESTS "Test package for components under librealsense namespace, requires BUILD_SHARED_LIBS=OFF and BUILD_UNIT_TESTS=ON" OFF)
 option(BUILD_EXAMPLES "Build examples (not including graphical examples -- see BUILD_GRAPHICAL_EXAMPLES)" ON)
 option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples (Viewer & DQT) -- Implies BUILD_GLSL_EXTENSIONS" ON)
 option(BUILD_CV_EXAMPLES "Build OpenCV examples" OFF)
