@@ -40,7 +40,7 @@ Some OEM/Vendors choose to lock the kernel for modifications. Unlocking this cap
    **Cmake Note:** certain _librealsense_ [CMAKE](https://cmake.org/download/) flags (e.g. CUDA) require version 3.8+ which is currently not made available via apt manager for Ubuntu LTS.
 3. Install build tools
    ```sh
-   sudo apt-get install git wget cmake
+   sudo apt-get install git wget cmake build-essential
    ```
 4. Prepare Linux Backend and the Dev. Environment \
    Unplug any connected Intel RealSense camera and run:
