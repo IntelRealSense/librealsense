@@ -36,6 +36,8 @@ void init_pipeline(py::module &m) {
                                    "It also allows the user to find a matching device for the config filters and the pipeline, in order to select a device explicitly, "
                                    "and modify its controls before streaming starts.");
     config.def(py::init<>())
+        // NOTE: do not overload functions with default arg, python cannot distinguish between enums
+        // We specifically only allow "enable_stream" functions with unique arguments count (LibRS SDK allow overrun as it's C/C++ types)
         .def("enable_stream", (void (rs2::config::*)(rs2_stream, int, int, int, rs2_format, int)) &rs2::config::enable_stream, "Enable a device stream explicitly, with selected stream parameters.\n"
              "The method allows the application to request a stream with specific configuration.\n"
              "If no stream is explicitly enabled, the pipeline configures the device and its streams according to the attached computer vision modules and processing blocks "
@@ -45,11 +47,11 @@ void init_pipeline(py::module &m) {
              "Multiple enable stream calls for the same stream override each other, and the last call is maintained.\n"
              "Upon calling resolve(), the config checks for conflicts between the application configuration requests and the attached computer vision "
              "modules and processing blocks requirements, and fails if conflicts are found.\n"
-             "Before resolve() is called, no conflict check is done.", "stream_type"_a, "stream_index"_a, "width"_a, "height"_a, "format"_a = RS2_FORMAT_ANY, "framerate"_a = 0)
-        .def("enable_stream", (void (rs2::config::*)(rs2_stream, int)) &rs2::config::enable_stream, "Stream type and possibly also stream index. Other parameters are resolved internally.", "stream_type"_a, "stream_index"_a = -1)
-        .def("enable_stream", (void (rs2::config::*)(rs2_stream, rs2_format, int))&rs2::config::enable_stream, "Stream type and format, and possibly frame rate. Other parameters are resolved internally.", "stream_type"_a, "format"_a, "framerate"_a = 0)
-        .def("enable_stream", (void (rs2::config::*)(rs2_stream, int, int, rs2_format, int)) &rs2::config::enable_stream, "Stream type and resolution, and possibly format and frame rate. Other parameters are resolved internally.", "stream_type"_a, "width"_a, "height"_a, "format"_a = RS2_FORMAT_ANY, "framerate"_a = 0)
-        .def("enable_stream", (void (rs2::config::*)(rs2_stream, int, rs2_format, int)) &rs2::config::enable_stream, "Stream type, index, and format, and possibly framerate. Other parameters are resolved internally.", "stream_type"_a, "stream_index"_a, "format"_a, "framerate"_a = 0)
+             "Before resolve() is called, no conflict check is done.", "stream_type"_a, "stream_index"_a, "width"_a, "height"_a, "format"_a, "framerate"_a)
+        .def("enable_stream", (void (rs2::config::*)(rs2_stream, int)) &rs2::config::enable_stream, "Stream type and possibly also stream index. Other parameters are resolved internally.", "stream_type"_a, "stream_index"_a)
+        .def("enable_stream", (void (rs2::config::*)(rs2_stream, rs2_format, int))&rs2::config::enable_stream, "Stream type and format, and possibly frame rate. Other parameters are resolved internally.", "stream_type"_a, "format"_a, "framerate"_a)
+        .def("enable_stream", (void (rs2::config::*)(rs2_stream, int, int, rs2_format, int)) &rs2::config::enable_stream, "Stream type and resolution, and possibly format and frame rate. Other parameters are resolved internally.", "stream_type"_a, "width"_a, "height"_a, "format"_a, "framerate"_a)
+        .def("enable_stream", (void (rs2::config::*)(rs2_stream, int, rs2_format, int)) &rs2::config::enable_stream, "Stream type, index, and format, and possibly framerate. Other parameters are resolved internally.", "stream_type"_a, "stream_index"_a, "format"_a, "framerate"_a)
         .def("enable_all_streams", &rs2::config::enable_all_streams, "Enable all device streams explicitly.\n"
              "The conditions and behavior of this method are similar to those of enable_stream().\n"
              "This filter enables all raw streams of the selected device. The device is either selected explicitly by the application, "
