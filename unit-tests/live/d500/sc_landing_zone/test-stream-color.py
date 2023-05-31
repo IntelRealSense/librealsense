@@ -25,39 +25,22 @@ def check_color_streaming(width, height, fps):
 width = 640
 height = 360
 
-fps = 5
-test.start("Checking color " + repr(width) + "x" + repr(height) + " streaming with fps " + repr(fps))
-check_color_streaming(width, height, fps)
-test.finish()
+fps_arr = [5, 15, 30]
 
-fps = 15
-test.start("Checking color " + repr(width) + "x" + repr(height) + " streaming with fps " + repr(fps))
-check_color_streaming(width, height, fps)
-test.finish()
-
-fps = 30
-test.start("Checking color " + repr(width) + "x" + repr(height) + " streaming with fps " + repr(fps))
-check_color_streaming(width, height, fps)
-test.finish()
+for fps in fps_arr:
+    test.start("Checking color " + repr(width) + "x" + repr(height) + " streaming with fps " + repr(fps))
+    check_color_streaming(width, height, fps)
+    test.finish()
 
 
 ################# Checking color 320x180 streaming with fps 5/15/30 ##################
 width = 1280
 height = 720
 
-fps = 5
-test.start("Checking color " + repr(width) + "x" + repr(height) + " streaming with fps " + repr(fps))
-check_color_streaming(width, height, fps)
-test.finish()
-
-fps = 15
-test.start("Checking color " + repr(width) + "x" + repr(height) + " streaming with fps " + repr(fps))
-check_color_streaming(width, height, fps)
-test.finish()
-
-fps = 30
-test.start("Checking color " + repr(width) + "x" + repr(height) + " streaming with fps " + repr(fps))
-check_color_streaming(width, height, fps)
-test.finish()
+fps_arr = [5, 15, 30]
+for fps in fps_arr:
+    test.start("Checking color " + repr(width) + "x" + repr(height) + " streaming with fps " + repr(fps))
+    check_color_streaming(width, height, fps)
+    test.finish()
 
 test.print_results_and_exit()
