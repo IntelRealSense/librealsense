@@ -471,6 +471,9 @@ namespace rs2
                     {
                         auto cur_stream = it->first;
                         auto resolutions_for_current_stream = resolutions_per_stream[cur_stream];
+                        if (resolutions_for_current_stream.size() == 0)
+                            throw std::runtime_error("Multiple Resolution Issue, please check your requested resolution");
+
                         auto res_it = resolutions_for_current_stream.end() - 1;
                         ui.selected_stream_to_res[cur_stream] = *res_it;
 
@@ -783,6 +786,9 @@ namespace rs2
                 break;
             }
         }
+        if (id == -1)
+            throw std::runtime_error("Multiple Resolution Issue, please check the requested resolution");
+
         return id;
     }
 
@@ -999,8 +1005,6 @@ namespace rs2
             // Draw combo-box with all format options for current stream type
             res &= draw_formats_combo_box_multiple_resolutions(error_message, label, streaming_tooltip, col0, col1, stream_type);
         }
-
-        
 
         return res;
     }
