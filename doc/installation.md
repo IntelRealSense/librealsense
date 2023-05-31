@@ -9,36 +9,37 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
 ## Prerequisites
 **Important:** Running RealSense Depth Cameras on Linux requires patching and inserting modified kernel drivers. Some OEM/Vendors choose to lock the kernel for modifications. Unlocking this capability may require modification of BIOS settings
 
-  **Make Ubuntu Up-to-date:**  
+  **Make Ubuntu Up-to-date:**
   * Update Ubuntu distribution, including getting the latest stable kernel:
-    * `sudo apt-get update && sudo apt-get upgrade && sudo apt-get dist-upgrade`  <br />  
+    * `sudo apt-get update && sudo apt-get upgrade && sudo apt-get dist-upgrade`  <br />
 
-**Note:** On stock Ubuntu 14 LTS systems and kernels prior to 4.4.0-04 the standard `apt-get upgrade` command is not sufficient to bring the distribution to the latest recommended baseline.  
-  It is recommended to upgrade the distribution with:   
+**Note:** On stock Ubuntu 14 LTS systems and kernels prior to 4.4.0-04 the standard `apt-get upgrade` command is not sufficient to bring the distribution to the latest recommended baseline.
+  It is recommended to upgrade the distribution with:
   * `sudo apt-get install --install-recommends linux-generic-lts-xenial xserver-xorg-core-lts-xenial xserver-xorg-lts-xenial xserver-xorg-video-all-lts-xenial xserver-xorg-input-all-lts-xenial libwayland-egl1-mesa-lts-xenial `<br />    
 
   * Update OS Boot and reboot to enforce the correct kernel selection with <br />`sudo update-grub && sudo reboot`<br />
 
   * Interrupt the boot process at Grub2 Boot Menu -> "Advanced Options for Ubuntu" and select the kernel version installed in the previous step. Press and hold SHIFT if the Boot menu is not presented.
-  * Complete the boot, login and verify that a supported kernel version (4.**[4,8,10,13,15,16]**]) is in place with `uname -r`  
+  * Complete the boot, login and verify that a supported kernel version (4.**[4,8,10,13,15,16]**]) is in place with `uname -r`
 
 
-**Download/Clone librealsense github repository:**  
+**Download/Clone librealsense github repository:**
   * Get *librealsense* sources in one of the following ways:<br />
 
-    - Download the complete source tree with *git*<br />
+    - Install *git* and download the complete source tree.<br />
+      `sudo apt-get install git`<br />
       `git clone https://github.com/IntelRealSense/librealsense.git`<br />
 
     - Download and unzip the latest stable version from `master` branch:
-        https://github.com/IntelRealSense/librealsense/archive/master.zip  
+        https://github.com/IntelRealSense/librealsense/archive/master.zip
 
-**Prepare Linux Backend and the Dev. Environment:**  
+**Prepare Linux Backend and the Dev. Environment:**
   1. Navigate to *librealsense* root directory to run the following scripts.<br />
-     Unplug any connected Intel RealSense camera.<br />  
+     Unplug any connected Intel RealSense camera.<br />
 
-  2. Install the core packages required to build *librealsense* binaries and the affected kernel modules:  
+  2. Install the core packages required to build *librealsense* binaries and the affected kernel modules:
  
-     `sudo apt-get install git libssl-dev libusb-1.0-0-dev libudev-dev pkg-config libgtk-3-dev cmake`  <br /><br />
+     `sudo apt-get install libssl-dev libusb-1.0-0-dev libudev-dev pkg-config libgtk-3-dev cmake`  <br /><br />
      Distribution-specific packages:<br />
      * Ubuntu 14 or when running Ubuntu 16.04 live-disk:<br />
       `./scripts/install_glfw3.sh`  <br />
@@ -64,7 +65,7 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
     *`./scripts/setup_udev_rules.sh --uninstall`*
 
   4. Build and apply patched kernel modules for: <br />
-   * **Ubuntu 20/22 (focal/jammy) with LTS kernel 5.13, 5.15 **<br />
+   * **Ubuntu 20/22 (focal/jammy) with LTS kernel 5.13, 5.15, 5.19 **<br />
       `./scripts/patch-realsense-ubuntu-lts-hwe.sh`<br />
    * **Ubuntu 14/16/18/20 with LTS kernel (< 5.13) **<br />
       `./scripts/patch-realsense-ubuntu-lts.sh`<br />

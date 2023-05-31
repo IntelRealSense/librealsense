@@ -216,11 +216,11 @@ const char * librealsense::polling_errors_disable::get_value_description(float v
 {
     if (value == 0)
     {
-        return "Disable error polling";
+        return "Disabled";
     }
     else
     {
-        return "Enable error polling";
+        return "Enabled";
     }
 }
 

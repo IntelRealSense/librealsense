@@ -360,7 +360,7 @@ Some auxillary functionalities might be affected. Please report this message if 
             i++, j++);
         return j == prefix.end();
     }
-   
+
     bool is_debug()
     {
 #ifndef NDEBUG

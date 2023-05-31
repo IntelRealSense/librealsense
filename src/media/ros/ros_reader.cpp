@@ -14,7 +14,6 @@
 #include "proc/temporal-filter.h"
 #include "proc/hole-filling-filter.h"
 #include "proc/zero-order.h"
-#include "proc/depth-decompress.h"
 #include "proc/hdr-merge.h"
 #include "proc/sequence-id-filter.h"
 #include "std_msgs/Float32MultiArray.h"
@@ -441,7 +440,8 @@ namespace librealsense
             get_frame_metadata(m_file, info_topic, stream_id, image_data, additional_data);
         }
 
-        frame_interface* frame = m_frame_source->alloc_frame((stream_id.stream_type == RS2_STREAM_DEPTH) ? RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME,
+        frame_interface* frame = m_frame_source->alloc_frame(
+            frame_source::stream_to_frame_types(stream_id.stream_type),
             msg->data.size(), additional_data, true);
         if (frame == nullptr)
         {
@@ -1457,8 +1457,6 @@ namespace librealsense
             return std::make_shared<ExtensionToType<RS2_EXTENSION_HOLE_FILLING_FILTER>::type>();
         case RS2_EXTENSION_ZERO_ORDER_FILTER:
             return std::make_shared<ExtensionToType<RS2_EXTENSION_ZERO_ORDER_FILTER>::type>();
-        case RS2_EXTENSION_DEPTH_HUFFMAN_DECODER:
-            return std::make_shared<ExtensionToType<RS2_EXTENSION_DEPTH_HUFFMAN_DECODER>::type>();
         case RS2_EXTENSION_HDR_MERGE:
             return std::make_shared<ExtensionToType<RS2_EXTENSION_HDR_MERGE>::type>();
         case RS2_EXTENSION_SEQUENCE_ID_FILTER:

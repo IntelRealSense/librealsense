@@ -10,6 +10,7 @@ jobs:
 
   build_lrs_ros2_package:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       matrix:
         ros_distribution:

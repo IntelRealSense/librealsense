@@ -6,6 +6,7 @@
 #include <limits>
 #include <sstream>
 
+
 namespace librealsense
 {
     std::string hw_monitor::get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length)
@@ -63,14 +64,41 @@ namespace librealsense
         memcpy(bufferToSend, &tmp_size, sizeof(uint16_t)); // Length doesn't include header
     }
 
+    command hw_monitor::build_command_from_data(const std::vector<uint8_t> data)
+    {
+        uint32_t offset = 4; // skipping over first 4 bytes
+        uint8_t opcode = data[offset];
+        // despite the fact that the opcode is only uint8, we need to step over 4 bytes, 
+        // as done in hw_monitor::fill_usb_buffer - the method that constructs the data for usb buffer
+        offset += sizeof(uint32_t); 
 
-    void hw_monitor::execute_usb_command(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize) const
+        uint32_t param1 = *reinterpret_cast<const uint32_t*>(data.data() + offset);
+        offset += sizeof(uint32_t);
+
+        uint32_t param2 = *reinterpret_cast<const uint32_t*>(data.data() + offset);
+        offset += sizeof(uint32_t);
+
+        uint32_t param3 = *reinterpret_cast<const uint32_t*>(data.data() + offset);
+        offset += sizeof(uint32_t);
+
+        uint32_t param4 = *reinterpret_cast<const uint32_t*>(data.data() + offset);
+        offset += sizeof(uint32_t);
+
+        command cmd { opcode, param1, param2, param3, param4 };
+        if (data.size() > size_of_command_without_data)
+            cmd.data.insert(cmd.data.begin(), data.begin() + offset, data.end());
+
+        return cmd;
+    }
+
+    void hw_monitor::execute_usb_command(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, 
+        size_t & inSize, bool require_response) const
     {
         std::vector<uint8_t> out_vec(out, out + outSize);
-        auto res = _locked_transfer->send_receive(out_vec);
+        auto res = _locked_transfer->send_receive(out_vec, 5000, require_response);
 
         // read
-        if (in && inSize)
+        if (require_response && in && inSize)
         {
             if (res.size() < static_cast<int>(sizeof(uint32_t)))
                 throw invalid_value_exception("Incomplete bulk usb transfer!");
@@ -92,7 +120,7 @@ namespace librealsense
     {
         details.receivedCommandDataLength = receivedCmdLen;
 
-        if (details.oneDirection) return;
+        if (!details.require_response) return;
 
         if (details.receivedCommandDataLength < 4)
             throw invalid_value_exception("received incomplete response to usb command");
@@ -111,7 +139,8 @@ namespace librealsense
         uint32_t op{};
         size_t receivedCmdLen = HW_MONITOR_BUFFER_SIZE;
 
-        execute_usb_command(details.sendCommandData.data(), details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen);
+        execute_usb_command(details.sendCommandData.data(), details.sizeOfSendCommandData, op,
+            outputBuffer, receivedCmdLen, details.require_response);
         update_cmd_details(details, receivedCmdLen, outputBuffer);
     }
 
@@ -127,7 +156,7 @@ namespace librealsense
         auto opCodeXmit = static_cast<uint32_t>(newCommand.cmd);
 
         hwmon_cmd_details details;
-        details.oneDirection = newCommand.oneDirection;
+        details.require_response = newCommand.require_response;
         details.timeOut = newCommand.timeOut;
 
         fill_usb_buffer(opCodeXmit,
@@ -142,15 +171,15 @@ namespace librealsense
 
         if (locked_transfer)
         {
-            return _locked_transfer->send_receive({ details.sendCommandData.begin(),details.sendCommandData.end()});
+            return _locked_transfer->send_receive({ details.sendCommandData.begin(),details.sendCommandData.end() });
         }
 
         send_hw_monitor_command(details);
 
         // Error/exit conditions
-        if( p_response )
+        if (p_response)
             *p_response = hwm_Success;
-        if( newCommand.oneDirection )
+        if( !newCommand.require_response )
             return std::vector<uint8_t>();
 
         librealsense::copy(newCommand.receivedOpcode, details.receivedOpcode.data(), 4);
@@ -159,18 +188,18 @@ namespace librealsense
 
         // endian?
         auto opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2],
-                                    details.receivedOpcode[1], details.receivedOpcode[0]);
+            details.receivedOpcode[1], details.receivedOpcode[0]);
         if (opCodeAsUint32 != opCodeXmit)
         {
             auto err_type = static_cast<hwmon_response>(opCodeAsUint32);
-            std::string err = hwmon_error_string( cmd, err_type );
-            LOG_DEBUG( err );
-            if( p_response )
+            std::string err = hwmon_error_string(cmd, err_type);
+            LOG_DEBUG(err);
+            if (p_response)
             {
                 *p_response = err_type;
                 return std::vector<uint8_t>();
             }
-            throw invalid_value_exception( err );
+            throw invalid_value_exception(err);
         }
 
         return std::vector<uint8_t>(newCommand.receivedCommandData,
@@ -187,7 +216,9 @@ namespace librealsense
     {
         int length;
         std::vector<uint8_t> result;
-        result.resize(IVCAM_MONITOR_MAX_BUFFER_SIZE);
+        size_t length_of_command_with_data = dataLength + size_of_command_without_data;
+        auto init_size = (length_of_command_with_data > IVCAM_MONITOR_MAX_BUFFER_SIZE) ? length_of_command_with_data : IVCAM_MONITOR_MAX_BUFFER_SIZE;
+        result.resize(init_size);
         fill_usb_buffer(opcode, param1, param2, param3, param4, data, static_cast<int>(dataLength), result.data(), length);
         result.resize(length);
         return result;
