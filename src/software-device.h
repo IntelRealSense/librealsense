@@ -106,10 +106,10 @@ namespace librealsense
         void start(frame_callback_ptr callback) override;
         void stop() override;
 
-        void on_video_frame(rs2_software_video_frame frame);
-        void on_motion_frame(rs2_software_motion_frame frame);
-        void on_pose_frame(rs2_software_pose_frame frame);
-        void on_notification(rs2_software_notification notif);
+        void on_video_frame( rs2_software_video_frame const & );
+        void on_motion_frame( rs2_software_motion_frame const & );
+        void on_pose_frame( rs2_software_pose_frame const & );
+        void on_notification( rs2_software_notification const & );
         void add_read_only_option(rs2_option option, float val);
         void update_read_only_option(rs2_option option, float val);
         void add_option(rs2_option option, option_range range, bool is_writable);
@@ -117,7 +117,7 @@ namespace librealsense
     private:
         friend class software_device;
         stream_profiles _profiles;
-        std::map<rs2_frame_metadata_value, rs2_metadata_type> _metadata_map;
+        std::array< metadata_array_value, RS2_FRAME_METADATA_ACTUAL_COUNT > _metadata_map;
         uint64_t _unique_id;
 
         class stereo_extension : public depth_stereo_sensor

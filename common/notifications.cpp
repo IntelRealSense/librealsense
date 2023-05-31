@@ -756,21 +756,32 @@ namespace rs2
 
     void notification_model::invoke(std::function<void()> action)
     {
-        single_consumer_queue<bool> q;
-        dispatch_queue.enqueue([&q, &action](){
+        // We use a weak_ptr for making sure the queue object is
+        // alive when we access it from the dispatcher thread
+        auto sptr_q = std::make_shared<single_consumer_queue<bool>> ();
+        std::weak_ptr<single_consumer_queue<bool>> wptr_q( sptr_q );
+
+        dispatch_queue.enqueue([wptr_q, &action](){
             try
             {
                 action();
-                q.enqueue(true);
+                auto q = wptr_q.lock();
+                if( ! q )
+                    return;
+                q->enqueue( true );
             }
             catch(...)
             {
-                q.enqueue(false);
+                auto q = wptr_q.lock();
+                if( ! q )
+                    return;
+                q->enqueue(false);
             }
         });
         bool res;
-        if (!q.dequeue(&res, 100000) || !res)
+        if (!sptr_q->dequeue(&res, 100000) || !res)
             throw std::runtime_error("Invoke operation failed!");
+
     }
 
     void process_manager::start(invoker invoke)

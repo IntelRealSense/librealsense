@@ -519,6 +519,11 @@ TEST_CASE("HDR Streaming - checking sequence id", "[hdr][live][using_pipeline]")
                         else
                         {
                             sequence_id = (sequence_id == 0) ? 1 : 0;
+                            if (sequence_id != depth_seq_id)
+                            {
+                                std::cout << "sequence_id != depth_seq_id" << std::endl;
+                                std::cout << "iteration = " << iteration << ", iterations_for_preparation = " << iterations_for_preparation << std::endl;
+                            }
                             REQUIRE(sequence_id == depth_seq_id);
                             REQUIRE(sequence_id == ir_seq_id);
                         }
@@ -746,6 +751,11 @@ TEST_CASE("HDR Start Stop - recover manual exposure and gain", "[HDR]")
                         else if (iteration >= iteration_to_check_after_disable)
                         {
                             REQUIRE(frame_gain == gain_before_hdr);
+                            if (frame_exposure != exposure_before_hdr)
+                            {
+                                std::cout << "frame_exposure != exposure_before_hdr" << std::endl;
+                                std::cout << "iteration = " << iteration << ", iteration_to_check_after_disable = " << iteration_to_check_after_disable << std::endl;
+                            }
                             REQUIRE(frame_exposure == exposure_before_hdr);
                         }
                     }

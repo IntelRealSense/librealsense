@@ -352,10 +352,14 @@ namespace librealsense
 
             for( auto i = 0; i < MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP; i++ )
             {
-                // If the device was detected as removed we assume the device is entering update mode
-                // Note: if no device status callback is registered we will wait the whole time and it is OK
+                // If the device was detected as removed we assume the device is entering update
+                // mode Note: if no device status callback is registered we will wait the whole time
+                // and it is OK
                 if( ! is_valid() )
+                {
+                    this_thread::sleep_for( milliseconds( DELAY_FOR_CONNECTION ) );
                     return;
+                }
 
                 this_thread::sleep_for( milliseconds( DELAY_FOR_RETRIES ) );
             }

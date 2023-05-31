@@ -27,7 +27,7 @@ namespace rs2
                 return DB_LOAD_FAILURE;
             }
 
-            std::string platform = rsutils::get_platform_name();
+            std::string platform = rsutils::os::get_platform_name();
 
             std::string up_str(to_string(policy));
             std::string comp_str(to_string(component));
@@ -57,7 +57,7 @@ namespace rs2
             // Check if server versions are loaded
             if (!_server_versions_loaded) return false;
 
-            std::string platform = rsutils::get_platform_name();
+            std::string platform = rsutils::os::get_platform_name();
 
             std::string component_str(to_string(component));
 

@@ -3,7 +3,7 @@
 
 #include "measurement.h"
 #include "ux-window.h"
-
+#include <rs-config.h>
 #include <librealsense2/hpp/rs_export.hpp>
 
 #include "opengl3.h"

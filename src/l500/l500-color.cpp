@@ -240,7 +240,7 @@ namespace librealsense
             auto model = intrinsic.resolution.intrinsic_resolution[i];
             if( model.height == height && model.width == width )
             {
-                rs2_intrinsics intrinsics;
+                rs2_intrinsics intrinsics = {};
                 intrinsics.width = model.width;
                 intrinsics.height = model.height;
                 intrinsics.fx = model.ipm.focal_length.x;

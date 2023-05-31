@@ -135,8 +135,8 @@ namespace librealsense
         {
             _start_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
             _librealsense_version = RS2_API_VERSION_STR;
-            _os_name = rsutils::get_os_name();
-            _platform_name = rsutils::get_platform_name();
+            _os_name = rsutils::os::get_os_name();
+            _platform_name = rsutils::os::get_platform_name();
 
         }
 

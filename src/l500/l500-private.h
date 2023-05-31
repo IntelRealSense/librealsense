@@ -44,7 +44,7 @@ namespace librealsense
         const platform::extension_unit depth_xu = { 0, 3, 2,
         { 0xC9606CCB, 0x594C, 0x4D25,{ 0xaf, 0x47, 0xcc, 0xc4, 0x96, 0x43, 0x59, 0x95 } } };
 
-        const int REGISTER_CLOCK_0 = 0x9003021c;
+        const uint32_t REGISTER_CLOCK_0 = 0x9003021c;
 
         const uint16_t L515_IMU_TABLE   = 0x0243;  // IMU calibration table on L515
 

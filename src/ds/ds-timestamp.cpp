@@ -31,9 +31,7 @@ namespace librealsense
             LOG_ERROR("Frame is not valid. Failed to downcast to librealsense::frame.");
             return false;
         }
-        auto md = f->additional_data.metadata_blob;
         auto mds = f->additional_data.metadata_size;
-
         if (mds)
             return true;
 

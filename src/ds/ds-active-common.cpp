@@ -11,7 +11,7 @@ namespace librealsense
     ds_active_common::ds_active_common(uvc_sensor& raw_depth_ep,
         synthetic_sensor& depth_ep,
         device* owner,
-        d400_caps device_capabilities,
+        ds_caps device_capabilities,
         std::shared_ptr<hw_monitor> hw_monitor,
         firmware_version fw_version) :
         _raw_depth_ep(raw_depth_ep),
@@ -25,7 +25,7 @@ namespace librealsense
     {
         //Projector's capacity is established based on actual HW capabilities
         auto pid = _owner->_pid;
-        if ((pid != RS_USB2_PID) && ((_device_capabilities & d400_caps::CAP_ACTIVE_PROJECTOR) == d400_caps::CAP_ACTIVE_PROJECTOR))
+        if ((pid != RS_USB2_PID) && ((_device_capabilities & ds_caps::CAP_ACTIVE_PROJECTOR) == ds_caps::CAP_ACTIVE_PROJECTOR))
         {
             //EMITTER ENABLED OPTION
             auto emitter_enabled = std::make_shared<emitter_option>(_raw_depth_ep);
@@ -81,11 +81,14 @@ namespace librealsense
             if ((pid == ds::RS457_PID || pid == ds::RS455_PID)
                 && _fw_version >= firmware_version("5.14.0"))
             {
-                auto emitter_freq = std::make_shared<emitter_frequency>(
+                auto emitter_freq = std::make_shared<uvc_xu_option<uint16_t>>(
                     _raw_depth_ep,
+                    ds::depth_xu,
+                    ds::DS5_EMITTER_FREQUENCY,
+                    "Controls the emitter frequency, 57 [KHZ] / 91 [KHZ]",
                     std::map<float, std::string>{
                         { (float)RS2_EMITTER_FREQUENCY_57_KHZ, "57 KHZ" },
-                    { (float)RS2_EMITTER_FREQUENCY_91_KHZ, "91 KHZ" } });
+                    { (float)RS2_EMITTER_FREQUENCY_91_KHZ, "91 KHZ" } }, false);
 
                 _depth_ep.register_option(RS2_OPTION_EMITTER_FREQUENCY, emitter_freq);
             }

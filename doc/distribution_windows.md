@@ -39,13 +39,6 @@ After plugging the camera into a USB3 port, you should be able to see the newly 
     
 5. Open the `Intel® RealSense™ Samples` solution:
 
-    Note: Visual Studio 2022 uses the 64-bit `Program Files` folder rather than the 32-bit `Program Files (x86)` where librealsense is located. </br>
-    To fix this, open `Program Files (x86)/Intel RealSense SDK 2.0/intel.realsense.prop` (elevated permissions may be needed) and change librealsenseSDK macro: </br>
-
-    * `<librealsenseSDK>$(ProgramFiles)\Intel RealSense SDK 2.0</librealsenseSDK>` </br>
-    to </br>
-    * `<librealsenseSDK>$(MSBuildProgramFiles32)\Intel RealSense SDK 2.0</librealsenseSDK>`  </br>
-
     ![Step 5](./img/win_shortcuts.PNG)
 
 6. Press `F5` to compile and run the demos:

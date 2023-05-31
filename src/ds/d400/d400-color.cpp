@@ -44,10 +44,10 @@ namespace librealsense
 
         _color_calib_table_raw = [this]()
         {
-            return get_raw_calibration_table(rgb_calibration_id);
+            return get_d400_raw_calibration_table(d400_calibration_table_id::rgb_calibration_id);
         };
 
-        _color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>([this]() { return from_pose(get_color_stream_extrinsic(*_color_calib_table_raw)); });
+        _color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>([this]() { return from_pose(get_d400_color_stream_extrinsic(*_color_calib_table_raw)); });
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
         register_stream_to_extrinsic_group(*_color_stream, 0);
 
@@ -120,7 +120,7 @@ namespace librealsense
         auto& raw_color_ep = get_raw_color_sensor();
     
         _ds_color_common = std::make_shared<ds_color_common>(raw_color_ep, color_ep, 
-            _fw_version, _hw_monitor, this, ds::ds_device_type::ds5);
+            _fw_version, _hw_monitor, this);
 
         register_options();
         if (_pid != ds::RS457_PID)
@@ -326,9 +326,9 @@ namespace librealsense
 
     rs2_intrinsics d400_color_sensor::get_intrinsics(const stream_profile& profile) const
     {
-        return get_intrinsic_by_resolution(
+        return get_d400_intrinsic_by_resolution(
             *_owner->_color_calib_table_raw,
-            ds::calibration_table_id::rgb_calibration_id,
+            ds::d400_calibration_table_id::rgb_calibration_id,
             profile.width, profile.height);
     }
 

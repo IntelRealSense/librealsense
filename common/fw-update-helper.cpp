@@ -105,38 +105,10 @@ namespace rs2
         return image;
     }
 
-    std::vector<int> parse_fw_version(const std::string& fw)
-    {
-        std::vector<int> rv;
-        size_t pos = 0;
-        std::string delimiter = ".";
-        auto str = fw + delimiter;
-        while ((pos = str.find(delimiter)) != std::string::npos) {
-            auto s = str.substr(0, pos);
-            int val = std::stoi(s);
-            rv.push_back(val);
-            str.erase(0, pos + delimiter.length());
-        }
-        return rv;
-    }
-
     bool is_upgradeable(const std::string& curr, const std::string& available)
     {
         if (curr == "" || available == "") return false;
-
-        size_t fw_string_size = 4;
-        auto c = parse_fw_version(curr);
-        auto a = parse_fw_version(available);
-        if (a.size() != fw_string_size || c.size() != fw_string_size)
-            return false;
-
-        for (int i = 0; i < fw_string_size; i++) {
-            if (c[i] > a[i])
-                return false;
-            if (c[i] < a[i])
-                return true;
-        }
-        return false; //equle
+        return rsutils::version( curr ) < rsutils::version( available );
     }
 
     bool firmware_update_manager::check_for(
