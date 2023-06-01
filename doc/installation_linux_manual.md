@@ -27,7 +27,7 @@ configuring the system-wide Ubuntu proxy generally resolves most timeout issues.
 Some OEM/Vendors choose to lock the kernel for modifications. Unlocking this capability may require modification of BIOS settings
 
 
-## Install Dependencies
+## Install dependencies
 
 1. Make Ubuntu up-to-date including the latest stable kernel:
    ```sh
