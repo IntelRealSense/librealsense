@@ -277,7 +277,12 @@ int main(int argc, const char** argv) try
 {
 
 #ifdef BUILD_EASYLOGGINGPP
-    rs2::log_to_console(RS2_LOG_SEVERITY_INFO);
+#if defined( WIN32 )
+    // In Windows, we have no console unless we start the viewer from one; without one, calling log_to_console will
+    // ensure a console, so we want to avoid it by default!
+    if( GetStdHandle( STD_OUTPUT_HANDLE ) )
+#endif
+        rs2::log_to_console( RS2_LOG_SEVERITY_INFO );
 #endif
 
     std::shared_ptr<device_models_list> device_models = std::make_shared<device_models_list>();
@@ -289,8 +294,8 @@ int main(int argc, const char** argv) try
     device_changes devices_connection_changes(ctx);
     std::vector<std::pair<std::string, std::string>> device_names;
 
-    std::string error_message{ "" };
-    std::string label{ "" };
+    std::string error_message;
+    std::string label;
 
     device_model* device_to_remove = nullptr;
     bool is_ip_device_connected = false;

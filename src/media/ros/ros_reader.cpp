@@ -441,7 +441,7 @@ namespace librealsense
         }
 
         frame_interface * frame = m_frame_source->alloc_frame(
-            ( stream_id.stream_type == RS2_STREAM_DEPTH ) ? RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME,
+            frame_source::stream_to_frame_types(stream_id.stream_type),
             msg->data.size(),
             std::move( additional_data ),
             true );
