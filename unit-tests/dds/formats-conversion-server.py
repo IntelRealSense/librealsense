@@ -17,49 +17,89 @@ device_info.serial = "123"
 device_info.product_line = "D400"
 device_info.topic_root = "root_" + device_info.serial
 
+# Used to created a device_server per test case, but it currently creates problems when creating a second device while
+# the first did not yet close. Changing to one device_server with different sensor per test case.
 
-def test_one_video_profile_per_stream( format_strings ):
-    profiles = []
+def create_server():
     stream_servers = []
-    counter = 0
-    for format_string in format_strings:
-        profile = dds.video_stream_profile( 30, dds.stream_format( format_string ), 1280, 720 )
-        profiles.append( profile )
-        if format_string == "16UC1":
-            stream_server = dds.depth_stream_server( "server" + str( counter ), "sensor" )
-        elif format_string == "yuv422_yuy2" or format_string == "UYVY":
-            stream_server = dds.color_stream_server( "server" + str( counter ), "sensor" )
-        else:
-            stream_server = dds.ir_stream_server( "server" + str( counter ), "sensor" )
-        stream_server.init_profiles( profiles, 0 )
-        log.d( stream_server.profiles() )
-        stream_servers.append( stream_server )
-        counter = counter + 1
-    
-    global dev_server
-    dev_server = dds.device_server( participant, device_info.topic_root )
-    dev_server.init( stream_servers, [], {} )
-    dev_server.broadcast( device_info )
+
+    # Y8I
+    profile = dds.video_stream_profile( 30, dds.stream_format( "Y8I" ), 1280, 720 )
+    stream_server = dds.ir_stream_server( "Y8I-stream", "Y8I-sensor" ) # Stream name is assumed to contain only index after '_', cannot use "Y8I_stream"
+    stream_server.init_profiles( [ profile ], 0 )
+    stream_servers.append( stream_server )
+
+    # Y12I
+    profile = dds.video_stream_profile( 30, dds.stream_format( "Y12I" ), 1280, 720 )
+    stream_server = dds.ir_stream_server( "Y12I-stream", "Y12I-sensor" )
+    stream_server.init_profiles( [ profile ], 0 )
+    stream_servers.append( stream_server )
+
+    # Y8
+    profile = dds.video_stream_profile( 30, dds.stream_format( "mono8" ), 1280, 720 )
+    stream_server = dds.ir_stream_server( "Y8-stream", "Y8-sensor" )
+    stream_server.init_profiles( [ profile ], 0 )
+    stream_servers.append( stream_server )
+
+    # YUYV
+    profile = dds.video_stream_profile( 30, dds.stream_format( "yuv422_yuy2" ), 1280, 720 )
+    stream_server = dds.color_stream_server( "YUYV-stream", "YUYV-sensor" )
+    stream_server.init_profiles( [ profile ], 0 )
+    stream_servers.append( stream_server )
+
+    # UYVY
+    profile = dds.video_stream_profile( 30, dds.stream_format( "UYVY" ), 1280, 720 )
+    stream_server = dds.color_stream_server( "UYVY-stream", "UYVY-sensor" )
+    stream_server.init_profiles( [ profile ], 0 )
+    stream_servers.append( stream_server )
+
+    # Z16
+    profile = dds.video_stream_profile( 30, dds.stream_format( "16UC1" ), 1280, 720 )
+    stream_server = dds.depth_stream_server( "Z16-stream", "Z16-sensor" )
+    stream_server.init_profiles( [ profile ], 0 )
+    stream_servers.append( stream_server )
+
+    # MXYZ Accel
+    profile = dds.motion_stream_profile( 30, dds.stream_format( "MXYZ" ) )
+    stream_server = dds.accel_stream_server( "accel-stream", "accel-sensor" )
+    stream_server.init_profiles( [ profile ], 0 )
+    stream_servers.append( stream_server )
+
+    # MXYZ Gyro
+    profile = dds.motion_stream_profile( 30, dds.stream_format( "MXYZ" ) )
+    stream_server = dds.gyro_stream_server( "gyro-stream", "gyro-sensor" )
+    stream_server.init_profiles( [ profile ], 0 )
+    stream_servers.append( stream_server )
 
 
-def test_multiple_video_profiles_per_stream( format_strings, frequencies, stream_type = "depth" ):
+    # multiple MXYZ Accel
     profiles = []
-    stream_servers = []
-    counter = 0
-    for format_string in format_strings:
-        profile = dds.video_stream_profile( frequencies[counter], dds.stream_format( format_string ), 1280, 720 )
-        profiles.append( profile )
-        counter = counter + 1
-
-    if stream_type == "depth":
-        stream_server = dds.depth_stream_server( "server", "sensor" )
-    elif stream_type == "color":
-        stream_server = dds.color_stream_server( "server", "sensor" )
-    else:
-        stream_server = dds.ir_stream_server( "server", "sensor" )
-
+    profiles.append( dds.motion_stream_profile( 63, dds.stream_format( "MXYZ" ) ) )
+    profiles.append( dds.motion_stream_profile( 200, dds.stream_format( "MXYZ" ) ) )
+    profiles.append( dds.motion_stream_profile( 250, dds.stream_format( "MXYZ" ) ) )
+    profiles.append( dds.motion_stream_profile( 400, dds.stream_format( "MXYZ" ) ) )
+    stream_server = dds.accel_stream_server( "multiple-accel-stream", "multiple-accel-sensor" )
     stream_server.init_profiles( profiles, 0 )
-    log.d( stream_server.profiles() )
+    stream_servers.append( stream_server )
+
+    # multiple color profiles
+    profiles = []
+    profiles.append( dds.video_stream_profile( 5, dds.stream_format( "yuv422_yuy2" ), 1280, 720 ) )
+    profiles.append( dds.video_stream_profile( 15, dds.stream_format( "yuv422_yuy2" ), 1280, 720 ) )
+    profiles.append( dds.video_stream_profile( 30, dds.stream_format( "yuv422_yuy2" ), 1280, 720 ) )
+    stream_server = dds.color_stream_server( "multiple-color-stream", "multiple-color-sensor" )
+    stream_server.init_profiles( profiles, 0 )
+    stream_servers.append( stream_server )
+
+    # multiple depth profiles
+    profiles = []
+    profiles.append( dds.video_stream_profile( 5, dds.stream_format( "16UC1" ), 1280, 720 ) )
+    profiles.append( dds.video_stream_profile( 10, dds.stream_format( "16UC1" ), 1280, 720 ) )
+    profiles.append( dds.video_stream_profile( 15, dds.stream_format( "16UC1" ), 1280, 720 ) )
+    profiles.append( dds.video_stream_profile( 20, dds.stream_format( "16UC1" ), 1280, 720 ) )
+    profiles.append( dds.video_stream_profile( 30, dds.stream_format( "16UC1" ), 1280, 720 ) )
+    stream_server = dds.depth_stream_server( "multiple-depth-stream", "multiple-depth-sensor" )
+    stream_server.init_profiles( profiles, 0 )
     stream_servers.append( stream_server )
 
     global dev_server
@@ -68,95 +108,6 @@ def test_multiple_video_profiles_per_stream( format_strings, frequencies, stream
     dev_server.broadcast( device_info )
 
 
-def test_one_motion_profile_per_stream( format_strings, stream_type = "accel" ):
-    profiles = []
-    stream_servers = []
-    counter = 0
-    for format_string in format_strings:
-        profile = dds.motion_stream_profile( 30, dds.stream_format( format_string ) )
-        profiles.append( profile )
-        if stream_type == "accel":
-            stream_server = dds.accel_stream_server( "server" + str( counter ), "sensor" )
-        else:
-            stream_server = dds.gyro_stream_server( "server" + str( counter ), "sensor" )
-        stream_server.init_profiles( profiles, 0 )
-        log.d( stream_server.profiles() )
-        stream_servers.append( stream_server )
-        counter = counter + 1
-
-    global dev_server
-    dev_server = dds.device_server( participant, device_info.topic_root )
-    dev_server.init( stream_servers, [], {} )
-    dev_server.broadcast( device_info )
-
-
-def test_multiple_motion_profiles_per_stream( format_strings, frequencies, stream_type = "accel" ):
-    profiles = []
-    stream_servers = []
-    counter = 0
-    for format_string in format_strings:
-        profile = dds.motion_stream_profile( frequencies[counter], dds.stream_format( format_string ) )
-        profiles.append( profile )
-        counter = counter + 1
-
-    if stream_type == "accel":
-        stream_server = dds.accel_stream_server( "server", "sensor" )
-    else:
-        stream_server = dds.gyro_stream_server( "server", "sensor" )
-    stream_server.init_profiles( profiles, 0 )
-    log.d( stream_server.profiles() )
-    stream_servers.append( stream_server )
-
-    global dev_server
-    dev_server = dds.device_server( participant, device_info.topic_root )
-    dev_server.init( stream_servers, [], {} )
-    dev_server.broadcast( device_info )
-
-    
-def test_Y8I_stream():
-    test_one_video_profile_per_stream( { "Y8I" } )
-
-
-def test_Y12I_stream():
-    test_one_video_profile_per_stream( { "Y12I" } )
- 
- 
-def test_Y8_stream():
-    test_one_video_profile_per_stream( { "mono8" } )
-
-
-def test_YUYV_stream():
-    test_one_video_profile_per_stream( { "yuv422_yuy2" } )
-
-
-def test_UYVY_stream():
-    test_one_video_profile_per_stream( { "UYVY" } )
-    
-    
-def test_Z16_stream():
-    test_one_video_profile_per_stream( { "16UC1" } )
-    
-    
-def test_accel_stream():
-    test_one_motion_profile_per_stream( { "MXYZ" }, "accel" )
-
-
-def test_gyro_stream():
-    test_one_motion_profile_per_stream( { "MXYZ" }, "gyro" )
-
-
-def test_multiple_accel_profiles():
-    test_multiple_motion_profiles_per_stream( [ "MXYZ", "MXYZ", "MXYZ", "MXYZ" ], [ 63, 200, 250, 400 ], "accel" )
-
-
-def test_multiple_color_profiles():
-    test_multiple_video_profiles_per_stream( [ "yuv422_yuy2", "yuv422_yuy2", "yuv422_yuy2" ], [ 5, 15, 30 ], "color" )
-
-
-def test_multiple_depth_profiles():
-    test_multiple_video_profiles_per_stream( [ "16UC1", "16UC1", "16UC1", "16UC1", "16UC1" ], [ 5, 10, 15, 20, 30 ], "depth" )     
-
-    
 def close_server():
     global dev_server
     dev_server = None
