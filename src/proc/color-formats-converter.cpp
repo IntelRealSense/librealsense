@@ -487,6 +487,50 @@ namespace librealsense
         auto n = width * height;
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
 
+#if defined __SSSE3__ && ! defined ANDROID
+        static bool do_avx = has_avx();
+
+        auto src = reinterpret_cast<const __m128i*>(s);
+        auto dst = reinterpret_cast<__m128i*>(d[0]);
+
+#pragma omp parallel for
+        for (int j = 0; j < height / 2; ++j)
+        {
+            std::vector<__m128i> source_chunks;
+            source_chunks.resize(2 * width / 16);
+#pragma omp parallel for
+            for (int i = 0; i < 2 * width / 16; ++i)
+            {
+                auto offset_to_current_2_y_lines_for_src = (3 * width * j) / 16;
+                auto offset_to_current_2_y_lines_for_dst = (2 * width * j) / 16;
+
+                source_chunks[i] = _mm_loadu_si128(&src[offset_to_current_2_y_lines_for_src + i]);
+
+                if (FORMAT == RS2_FORMAT_Y8)
+                {
+                    // Align all Y components and output 2 lines of Y at once
+                    _mm_storeu_si128(&dst[offset_to_current_2_y_lines_for_dst + i], source_chunks[i]);
+                    //continue;
+                }
+            }
+        }
+
+        /*for (int i = 0; i < n / 16; i++)
+        {
+            // Load 8 M420 pixels each into two 16-byte registers
+            __m128i s0 = _mm_loadu_si128(&src[i]);
+            __m128i s1 = _mm_loadu_si128(&src[i + 1]);
+
+            if (FORMAT == RS2_FORMAT_Y8)
+            {
+                // Align all Y components and output 16 pixels (16 bytes) at once
+                __m128i y0 = _mm_shuffle_epi8(s0, _mm_setr_epi8(1, 3, 5, 7, 9, 11, 13, 15, 0, 2, 4, 6, 8, 10, 12, 14));
+                __m128i y1 = _mm_shuffle_epi8(s1, _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15));
+                _mm_storeu_si128(&dst[i], _mm_alignr_epi8(y0, y1, 8));
+                continue;
+            }
+        }*/
+#else
         auto src = reinterpret_cast<const uint8_t*>(s);
         auto dst = reinterpret_cast<uint8_t*>(d[0]);
 
@@ -539,7 +583,8 @@ namespace librealsense
             parse_one_line<FORMAT>(start_of_y, start_of_uv, &dst, width);
             parse_one_line<FORMAT>(start_of_second_line, start_of_uv, &dst, width);
         }
-        return;       
+        return;
+#endif
     }
 
     void unpack_yuy2(rs2_format dst_format, rs2_stream dst_stream, byte * const d[], const byte * s, int w, int h, int actual_size)
