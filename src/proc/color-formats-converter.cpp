@@ -502,34 +502,35 @@ namespace librealsense
             for (int i = 0; i < 2 * width / 16; ++i)
             {
                 auto offset_to_current_2_y_lines_for_src = (3 * width * j) / 16;
-                auto offset_to_current_2_y_lines_for_dst = (2 * width * j) / 16;
+                
 
                 source_chunks[i] = _mm_loadu_si128(&src[offset_to_current_2_y_lines_for_src + i]);
 
                 if (FORMAT == RS2_FORMAT_Y8)
                 {
+                    auto offset_to_current_2_y_lines_for_dst = (2 * width * j) / 16;
                     // Align all Y components and output 2 lines of Y at once
                     _mm_storeu_si128(&dst[offset_to_current_2_y_lines_for_dst + i], source_chunks[i]);
-                    //continue;
+                    continue;
+                }
+
+                if (FORMAT == RS2_FORMAT_Y16)
+                {
+                    auto bpp = 2;
+                    auto offset_to_current_2_y_lines_for_dst = (2 * width * j) / 16 * bpp;
+                    const __m128i zero = _mm_set1_epi8(0);
+                    __m128i y16__0_7 = _mm_unpacklo_epi8(source_chunks[i], zero);
+                    __m128i y16__8_F = _mm_unpackhi_epi8(source_chunks[i], zero);
+                    __m128i y16_0_7_epi_16 = _mm_slli_epi16(y16__0_7, 8);
+                    __m128i y16_8_F_epi_16 = _mm_slli_epi16(y16__8_F, 8);
+                    // Align all Y components and output 2 lines of Y at once
+                    _mm_storeu_si128(&dst[offset_to_current_2_y_lines_for_dst + i * 2], _mm_slli_epi16(y16__0_7, 8));
+                    _mm_storeu_si128(&dst[offset_to_current_2_y_lines_for_dst + i * 2 + 1], _mm_slli_epi16(y16__8_F, 8));
+                    continue;
                 }
             }
         }
 
-        /*for (int i = 0; i < n / 16; i++)
-        {
-            // Load 8 M420 pixels each into two 16-byte registers
-            __m128i s0 = _mm_loadu_si128(&src[i]);
-            __m128i s1 = _mm_loadu_si128(&src[i + 1]);
-
-            if (FORMAT == RS2_FORMAT_Y8)
-            {
-                // Align all Y components and output 16 pixels (16 bytes) at once
-                __m128i y0 = _mm_shuffle_epi8(s0, _mm_setr_epi8(1, 3, 5, 7, 9, 11, 13, 15, 0, 2, 4, 6, 8, 10, 12, 14));
-                __m128i y1 = _mm_shuffle_epi8(s1, _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15));
-                _mm_storeu_si128(&dst[i], _mm_alignr_epi8(y0, y1, 8));
-                continue;
-            }
-        }*/
 #else
         auto src = reinterpret_cast<const uint8_t*>(s);
         auto dst = reinterpret_cast<uint8_t*>(d[0]);
