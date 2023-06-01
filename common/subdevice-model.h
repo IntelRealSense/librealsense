@@ -64,7 +64,7 @@ namespace rs2
     struct subdevice_ui_selection
     {
         int selected_res_id = 0;
-        std::map<int, int> selected_res_id_map; // used for depth and ir mixed resolutions
+        std::map<rs2_stream, std::pair<int, int> > selected_stream_to_res; // used for depth and ir mixed resolutions
         bool is_multiple_resolutions = false; // used for depth and ir mixed resolutions
         int selected_shared_fps_id = 0;
         std::map<int, int> selected_fps_id;
@@ -123,8 +123,6 @@ namespace rs2
         void restore_ui_selection() { ui = last_valid_ui; }
         void store_ui_selection() { last_valid_ui = ui; }
 
-        void get_depth_ir_mismatch_resolutions_ids(int& depth_res_id, int& ir1_res_id, int& ir2_res_id) const;
-
         template<typename T>
         bool get_default_selection_index(const std::vector<T>& values, const T& def, int* index)
         {
@@ -168,7 +166,6 @@ namespace rs2
         subdevice_ui_selection last_valid_ui;
 
         std::vector<std::pair<int, int>> res_values;
-        std::map<int, std::vector<std::pair<int, int>>> profile_id_to_res; // used for depth and ir mixed resolutions
         std::map<int, std::vector<int>> fps_values_per_stream;
         std::vector<int> shared_fps_values;
         bool show_single_fps_list = false;
@@ -182,7 +179,7 @@ namespace rs2
         int next_option = 0;
         std::vector<rs2_option> supported_options;
         bool streaming = false;
-        std::map<int, bool> streaming_map; // used for depth and ir mixed resolutions
+        std::map<rs2_stream, bool> streaming_map; // used for depth and ir mixed resolutions
         bool allow_change_resolution_while_streaming = false;
         bool allow_change_fps_while_streaming = false;
         rect normalized_zoom{ 0, 0, 1, 1 };
@@ -222,10 +219,12 @@ namespace rs2
         bool draw_streams_and_formats(std::string& error_message, std::string& label, std::function<void()> streaming_tooltip, float col0, float col1);
         bool draw_res_stream_formats(std::string& error_message, std::string& label, std::function<void()> streaming_tooltip, float col0, float col1);
         bool draw_resolutions_combo_box_multiple_resolutions(std::string& error_message, std::string& label, std::function<void()> streaming_tooltip, float col0, float col1,
-            int stream_type_id, int depth_res_id);
+            rs2_stream stream_type);
         bool draw_formats_combo_box_multiple_resolutions(std::string& error_message, std::string& label, std::function<void()> streaming_tooltip, float col0, float col1,
-            int stream_type_id);
+            rs2_stream stream_type);
         bool is_multiple_resolutions_supported() const;
+        int get_res_id_in_resolutions_array(const std::vector<const char*>& res_chars, const std::pair<int, int>& res) const;
+        std::pair<int, int> get_resolution_from_res_chars_id(const std::vector<const char*>& res_chars, int id_in_res_chars) const;
         std::pair<int, int> get_max_resolution(rs2_stream stream) const;
         void sort_resolutions(std::vector<std::pair<int, int>>& resolutions) const;
         bool is_ir_calibration_profile() const;

@@ -2111,33 +2111,24 @@ namespace rs2
 
                     //Find Resolution
                     std::pair<int, int> requested_res{ kvp.second.width,kvp.second.height };
-                    size_t res_id = 0;
-                    for (; res_id < sub->res_values.size(); res_id++)
-                    {
-                        if (sub->res_values[res_id] == requested_res)
-                            break;
-                    }
-                    if (res_id == sub->res_values.size())
-                    {
-                        throw std::runtime_error( rsutils::string::from()
-                                                  << "No match found for requested resolution: " << requested_res.first
-                                                  << "x" << requested_res.second );
-                    }
                     if (!sub->ui.is_multiple_resolutions)
-                        sub->ui.selected_res_id = static_cast<int>(res_id);
-                    else
                     {
-                        int depth_res_id, ir1_res_id, ir2_res_id;
-                        sub->get_depth_ir_mismatch_resolutions_ids(depth_res_id, ir1_res_id, ir2_res_id);
-
-                        if (kvp.first.first == RS2_STREAM_DEPTH)
-                        sub->ui.selected_res_id_map[depth_res_id] = static_cast<int>(res_id);
-                        else
+                        size_t res_id = 0;
+                        for (; res_id < sub->res_values.size(); res_id++)
                         {
-                            sub->ui.selected_res_id_map[ir1_res_id] = static_cast<int>(res_id);
-                            sub->ui.selected_res_id_map[ir2_res_id] = static_cast<int>(res_id);
+                            if (sub->res_values[res_id] == requested_res)
+                                break;
                         }
+                        if (res_id == sub->res_values.size())
+                        {
+                            throw std::runtime_error(rsutils::string::from()
+                                << "No match found for requested resolution: " << requested_res.first
+                                << "x" << requested_res.second);
+                        }
+                        sub->ui.selected_res_id = static_cast<int>(res_id);
                     }
+                    else
+                        sub->ui.selected_stream_to_res[kvp.first.first] = requested_res;
                 }
             }
         }
