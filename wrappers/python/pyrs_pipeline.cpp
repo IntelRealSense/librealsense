@@ -37,7 +37,7 @@ void init_pipeline(py::module &m) {
                                    "and modify its controls before streaming starts.");
     config.def(py::init<>())
         // NOTE: do not overload functions with default arg, python cannot distinguish between enums
-        // We specifically only allow "enable_stream" functions with unique arguments count (LibRS SDK allow overrun as it's C/C++ types)
+        // We specifically only allow "enable_stream" functions with unique arguments count (LibRS SDK allow overload as it's C/C++ types)
         .def("enable_stream", (void (rs2::config::*)(rs2_stream, int, int, int, rs2_format, int)) &rs2::config::enable_stream, "Enable a device stream explicitly, with selected stream parameters.\n"
              "The method allows the application to request a stream with specific configuration.\n"
              "If no stream is explicitly enabled, the pipeline configures the device and its streams according to the attached computer vision modules and processing blocks "
