@@ -16,7 +16,7 @@ namespace rs2
     {
         static const float3 ORANGE_COL = { 1.0f, 0.65f, 0.2f };
         static const float3 DARK_PURPLE_COL = { 0.2f, 0.1f, 0.2f };
-        static const float3 BROWN_COL = { 0.6f, 0.3f, 0.0f };
+        static const float3 WHITE_COL = { 1.0f, 1.0f, 1.0f };
         static const float3 GREEN_COL = { 0.0f, 1.0f, 0.0f };
         static const float3 RED_COL = { 1.0f, 0.0f, 0.0f };
         static const float3 TURQUOISE_COL = { 0.0f, 1.0f, 1.0f };
@@ -29,7 +29,7 @@ namespace rs2
         label_to_color3f[RS2_POINT_CLOUD_LABEL_UNKNOWN] = ORANGE_COL;
         label_to_color3f[RS2_POINT_CLOUD_LABEL_UNDEFINED] = DARK_PURPLE_COL;
         label_to_color3f[RS2_POINT_CLOUD_LABEL_INVALID] = DARK_PURPLE_COL;
-        label_to_color3f[RS2_POINT_CLOUD_LABEL_GROUND] = BROWN_COL;
+        label_to_color3f[RS2_POINT_CLOUD_LABEL_GROUND] = WHITE_COL;
         label_to_color3f[RS2_POINT_CLOUD_LABEL_NEAR_GROUND] = GREEN_COL;
         label_to_color3f[RS2_POINT_CLOUD_LABEL_OBSTACLE] = RED_COL;
         label_to_color3f[RS2_POINT_CLOUD_LABEL_OVERHEAD] = TURQUOISE_COL;
