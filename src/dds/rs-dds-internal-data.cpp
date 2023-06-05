@@ -46,7 +46,7 @@ std::vector< rs2_format > target_formats( rs2_format source_format )
 std::vector< tagged_profile > dds_rs_internal_data::get_profiles_tags( const std::string & product_id,
                                                                        const std::string & product_line )
 {
-    std::vector<tagged_profile> tags;
+    std::vector< tagged_profile > tags;
 
     if( product_id == RS405_PID )
     {
@@ -95,8 +95,8 @@ std::vector< tagged_profile > dds_rs_internal_data::get_profiles_tags( const std
         tags.push_back( { RS2_STREAM_INFRARED, 1, 1280, 720, RS2_FORMAT_RGB8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT } );
         tags.push_back( { RS2_STREAM_INFRARED, 2, 1280, 720, RS2_FORMAT_RGB8, 30, profile_tag::PROFILE_TAG_SUPERSET } );
     }
-    else
-        throw std::runtime_error( "Unsupported product id or product line" );
+
+    // For other devices empty tags will be returned, no default profile defined.
 
     return tags;
 }
@@ -169,8 +169,8 @@ std::vector< processing_block_factory > dds_rs_internal_data::get_profile_conver
                                { { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO } },
                                []() { return std::make_shared< identity_processing_block >(); } } );
     }
-    else
-        throw std::runtime_error( "Unsupported product id or product line" );
+
+    // For other devices empty factories will be returned, raw profiles will be used.
 
     return factories;
 }

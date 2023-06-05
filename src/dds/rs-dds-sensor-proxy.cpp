@@ -109,11 +109,23 @@ std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_motion_stream(
 void dds_sensor_proxy::initialization_done( const std::string & product_id, const std::string & product_line )
 {
     auto converters = dds_rs_internal_data::get_profile_converters( product_id, product_line );
+    handle_no_converters( converters );
     _formats_converter.register_converters( converters );
     _profiles = _formats_converter.get_all_possible_profiles( _raw_rs_profiles );
 
     auto tags = dds_rs_internal_data::get_profiles_tags( product_id, product_line );
     tag_profiles( tags );
+}
+
+
+void dds_sensor_proxy::handle_no_converters( std::vector<librealsense::processing_block_factory> & converters )
+{
+    if( converters.empty() )
+        // Create "identity converter" for each raw profile
+        for( auto & raw_profile : _raw_rs_profiles )
+            converters.push_back( processing_block_factory::create_id_pbf( raw_profile->get_format(),
+                                                                           raw_profile->get_stream_type(),
+                                                                           raw_profile->get_stream_index() ) );
 }
 
 
