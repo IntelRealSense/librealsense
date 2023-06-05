@@ -12,7 +12,7 @@ participant = dds.participant()
 participant.init( 123, "formats-conversion-server" )
 
 device_info = dds.device_info()
-device_info.name = "formats-coversion-device"
+device_info.name = "formats-conversion-device"
 device_info.serial = "123"
 device_info.product_line = "D400"
 device_info.topic_root = "root_" + device_info.serial

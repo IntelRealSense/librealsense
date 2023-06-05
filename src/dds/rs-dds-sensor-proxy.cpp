@@ -106,7 +106,7 @@ std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_motion_stream(
 }
 
 
-void dds_sensor_proxy::initialization_done( std::string product_id, std::string product_line )
+void dds_sensor_proxy::initialization_done( const std::string & product_id, const std::string & product_line )
 {
     auto converters = dds_rs_internal_data::get_profile_converters( product_id, product_line );
     _formats_converter.register_converters( converters );

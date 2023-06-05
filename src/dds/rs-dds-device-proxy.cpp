@@ -136,6 +136,12 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< context > ctx, std::shared_
         int sensor_index = 0;
     };
     std::map< std::string, sensor_info > sensor_name_to_info;
+
+    // dds_streams bear stream type and index information, we add it to a dds_sensor_proxy mapped by a newly generated
+    // unique ID. After the sensor initialization we get all the "final" profiles from formats-converter with type and
+    // index but without IDs. We need to find the dds_stream that each profile was created from so we create a map from
+    // type and index to dds_stream ID and index, because the dds_sensor_proxy holds a map from sidx to dds_stream. We
+    // need both the ID from that map key and the stream itself (for intrinsics information)
     std::map< sid_index, sid_index > type_and_index_to_dds_stream_sidx;
 
     _dds_dev->foreach_stream(
@@ -295,13 +301,11 @@ int dds_device_proxy::get_index_from_stream_name( const std::string & name ) con
 void dds_device_proxy::set_profile_intrinsics( std::shared_ptr< stream_profile_interface > & profile,
                                                const std::shared_ptr< realdds::dds_stream > & stream ) const
 {
-    auto video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( stream );
-    auto motion_stream = std::dynamic_pointer_cast< realdds::dds_motion_stream >( stream );
-    if( video_stream )
+    if( auto video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( stream ) )
     {
         set_video_profile_intrinsics( profile, video_stream );
     }
-    if( motion_stream )
+    else if( auto motion_stream = std::dynamic_pointer_cast< realdds::dds_motion_stream >( stream ) )
     {
         set_motion_profile_intrinsics( profile, motion_stream );
     }

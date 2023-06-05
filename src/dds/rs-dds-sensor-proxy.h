@@ -52,8 +52,8 @@ class dds_sensor_proxy : public software_sensor
     std::map< std::string, streaming_impl > _streaming_by_name;
 
     formats_converter _formats_converter;
-    // DDS profiles are stored in _streams, _source_rs_profiles stores librealsense representation of them,
-    // software_device::_profiles stores librealsense profiles after conversion
+    // DDS profiles are stored in _streams, _raw_rs_profiles stores librealsense representation of them,
+    // software_device::_profiles stores librealsense profiles after conversion from raw to a user friendly format.
     stream_profiles _raw_rs_profiles;
 
 public:
@@ -66,7 +66,8 @@ public:
     void add_dds_stream( sid_index sidx, std::shared_ptr< realdds::dds_stream > const & stream );
     std::shared_ptr<stream_profile_interface> add_video_stream( rs2_video_stream video_stream, bool is_default ) override;
     std::shared_ptr<stream_profile_interface> add_motion_stream( rs2_motion_stream motion_stream, bool is_default ) override;
-    void initialization_done( std::string product_id, std::string product_line ); // Not adding streams or profiles after this
+    // Not adding streams or profiles after this
+    void initialization_done( const std::string & product_id, const std::string & product_line );
 
     void open( const stream_profiles & profiles ) override;
     void start( frame_callback_ptr callback ) override;

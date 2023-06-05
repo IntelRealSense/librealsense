@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
 
@@ -29,7 +29,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     #############################################################################################
     #
-    with test.closure( "Test Y8 conversion", on_fail=test.ABORT ):
+    with test.closure( "Test Y8 conversion", on_fail=test.RAISE ):
         if test.check( 'Y8-sensor' in sensors ):
             sensor = sensors.get('Y8-sensor')
             profiles = sensor.get_stream_profiles()
@@ -40,7 +40,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     #############################################################################################
     #
-    with test.closure( "Test Y8I conversion", on_fail=test.ABORT ):
+    with test.closure( "Test Y8I conversion", on_fail=test.RAISE ):
         if test.check( 'Y8I-sensor' in sensors ):
             sensor = sensors.get('Y8I-sensor')
             profiles = sensor.get_stream_profiles()
@@ -53,7 +53,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     #############################################################################################
     #
-    with test.closure( "Test Y12I conversion", on_fail=test.ABORT ):
+    with test.closure( "Test Y12I conversion", on_fail=test.RAISE ):
         if test.check( 'Y12I-sensor' in sensors ):
             sensor = sensors.get('Y12I-sensor')
             profiles = sensor.get_stream_profiles()
@@ -66,7 +66,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     #############################################################################################
     #
-    with test.closure( "Test YUYV conversion", on_fail=test.ABORT ):
+    with test.closure( "Test YUYV conversion", on_fail=test.RAISE ):
         if test.check( 'YUYV-sensor' in sensors ):
             sensor = sensors.get('YUYV-sensor')
             profiles = sensor.get_stream_profiles()
@@ -82,7 +82,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     #############################################################################################
     #
-    with test.closure( "Test UYVY conversion", on_fail=test.ABORT ):
+    with test.closure( "Test UYVY conversion", on_fail=test.RAISE ):
         if test.check( 'UYVY-sensor' in sensors ):
             sensor = sensors.get('UYVY-sensor')
             profiles = sensor.get_stream_profiles()
@@ -96,7 +96,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     #############################################################################################
     #
-    with test.closure( "Test Z16 conversion", on_fail=test.ABORT ):
+    with test.closure( "Test Z16 conversion", on_fail=test.RAISE ):
         if test.check( 'Z16-sensor' in sensors ):
             sensor = sensors.get('Z16-sensor')
             profiles = sensor.get_stream_profiles()
@@ -107,7 +107,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     #############################################################################################
     #
-    with test.closure( "Test accel conversion", on_fail=test.ABORT ):
+    with test.closure( "Test accel conversion", on_fail=test.RAISE ):
         if test.check( 'accel-sensor' in sensors ):
             sensor = sensors.get('accel-sensor')
             profiles = sensor.get_stream_profiles()
@@ -118,7 +118,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     #############################################################################################
     #
-    with test.closure( "Test gyro conversion", on_fail=test.ABORT ):
+    with test.closure( "Test gyro conversion", on_fail=test.RAISE ):
         if test.check( 'gyro-sensor' in sensors ):
             sensor = sensors.get('gyro-sensor')
             profiles = sensor.get_stream_profiles()
@@ -129,7 +129,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     #############################################################################################
     #
-    with test.closure( "Test multiple accel profiles one stream", on_fail=test.ABORT ):
+    with test.closure( "Test multiple accel profiles one stream", on_fail=test.RAISE ):
         if test.check( 'multiple-accel-sensor' in sensors ):
             sensor = sensors.get('multiple-accel-sensor')
             profiles = sensor.get_stream_profiles()
@@ -141,7 +141,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     #############################################################################################
     #
-    with test.closure( "Test multiple color profiles one stream", on_fail=test.ABORT ):
+    with test.closure( "Test multiple color profiles one stream", on_fail=test.RAISE ):
         if test.check( 'multiple-color-sensor' in sensors ):
             sensor = sensors.get('multiple-color-sensor')
             profiles = sensor.get_stream_profiles()
@@ -158,7 +158,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     #############################################################################################
     #
-    with test.closure( "Test multiple depth profiles one stream", on_fail=test.ABORT ):
+    with test.closure( "Test multiple depth profiles one stream", on_fail=test.RAISE ):
         if test.check( 'multiple-depth-sensor' in sensors ):
             sensor = sensors.get('multiple-depth-sensor')
             profiles = sensor.get_stream_profiles()
