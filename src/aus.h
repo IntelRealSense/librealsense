@@ -262,7 +262,7 @@ namespace librealsense
 
         void on_start_stream(int uniqe_id)
         {
-            long long current_time = std::chrono::system_clock::to_time_t(
+            std::time_t current_time = std::chrono::system_clock::to_time_t(
                 std::chrono::system_clock::now());
             std::string str_current_time = std::ctime(&current_time);
             _unique_profile_id_per_stream[uniqe_id] = str_current_time.substr(11, 8);
@@ -275,8 +275,8 @@ namespace librealsense
             std::string str_current_time = std::ctime(&_stop_time);
             if (_sensors_per_device.find(sensor_name) == _sensors_per_device.end())
             {
-                std::unordered_map < std::string, std::list<std::pair<std::string, std::string>>> new_map;
-                std::list < std::pair<std::string, std::string>> new_list;
+                std::unordered_map < std::string, std::vector<std::pair<std::string, std::string>>> new_map;
+                std::vector<std::pair<std::string, std::string>> new_list;
                 new_list.push_back(std::make_pair(_unique_profile_id_per_stream[uniqe_id], str_current_time.substr(11, 8)));
                 new_map.insert(std::make_pair(device_name, new_list));
                 _sensors_per_device.insert(std::make_pair(sensor_name, new_map));
@@ -285,7 +285,7 @@ namespace librealsense
             {
                 if (_sensors_per_device[sensor_name].find(device_name) == _sensors_per_device[sensor_name].end())
                 {
-                    std::list < std::pair<std::string, std::string>> new_list;
+                    std::vector< std::pair<std::string, std::string>> new_list;
                     new_list.push_back(std::make_pair(_unique_profile_id_per_stream[uniqe_id], str_current_time.substr(11, 8)));
                     _sensors_per_device[sensor_name].insert(std::make_pair(device_name, new_list));
                 }
@@ -326,7 +326,7 @@ namespace librealsense
         std::unordered_map<std::string, std::string > _mp_devices_manager;
         std::mutex _m;
         std::unordered_map<std::string, std::set<std::string>> _ppf_used_per_device;
-        std::unordered_map<std::string, std::unordered_map<std::string, std::list<std::pair<std::string, std::string>>>> _sensors_per_device;
+        std::unordered_map<std::string, std::unordered_map<std::string, std::vector<std::pair<std::string, std::string>>>> _sensors_per_device;
         std::unordered_map<int, std::string> _unique_profile_id_per_stream;
 
         long long _start_time;
