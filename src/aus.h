@@ -270,7 +270,7 @@ namespace librealsense
 
         void on_stop_stream(int uniqe_id, std::string device_name, std::string sensor_name)
         {
-            long long _stop_time = std::chrono::system_clock::to_time_t(
+            std::time_t _stop_time = std::chrono::system_clock::to_time_t(
                 std::chrono::system_clock::now());
             std::string str_current_time = std::ctime(&_stop_time);
             if (_sensors_per_device.find(sensor_name) == _sensors_per_device.end())
@@ -329,8 +329,8 @@ namespace librealsense
         std::unordered_map<std::string, std::unordered_map<std::string, std::vector<std::pair<std::string, std::string>>>> _sensors_per_device;
         std::unordered_map<int, std::string> _unique_profile_id_per_stream;
 
-        long long _start_time;
-        long long _jason_creation_time;
+        std::time_t _start_time;
+        std::time_t _jason_creation_time;
 
         std::string _librealsense_version;
         std::string _os_name;
