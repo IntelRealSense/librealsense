@@ -134,9 +134,9 @@ jobs:
        New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 
     - name: Install_numpy
-          shell: bash
-          run: |
-            python3 -m pip install numpy
+      shell: bash
+      run: |
+        python3 -m pip install numpy
         
     - name: Check_API
       shell: bash
@@ -342,9 +342,9 @@ jobs:
         sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7;
 
     - name: Install_numpy
-          shell: bash
-          run: |
-            python3 -m pip install numpy
+      shell: bash
+      run: |
+        python3 -m pip install numpy
         
     - name: Check_API
       shell: bash
