@@ -78,11 +78,6 @@ jobs:
       run: |
        New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 
-    - name: Install_numpy
-      shell: bash
-      run: |
-        python3 -m pip install numpy
-        
     - name: Check_API
       shell: bash
       run: |
@@ -94,6 +89,7 @@ jobs:
       shell: bash
       run: |
        mkdir ${{env.WIN_BUILD_DIR}}
+       python3 -m pip install numpy
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
@@ -132,11 +128,6 @@ jobs:
       shell: powershell
       run: |
        New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
-
-    - name: Install_numpy
-      shell: bash
-      run: |
-        python3 -m pip install numpy
         
     - name: Check_API
       shell: bash
@@ -148,7 +139,8 @@ jobs:
     - name: PreBuild
       shell: bash
       run: |
-       mkdir ${{env.WIN_BUILD_DIR}}
+       mkdir ${{env.WIN_BUILD_DIR}} 
+       python3 -m pip install numpy
 
     - name: Configure CMake
       shell: bash
@@ -292,12 +284,8 @@ jobs:
         # We force compiling with GCC 7 because the default installed GCC 9 compiled with LTO and gives an internal compiler error
         sudo apt-get install gcc-7 g++-7;
         sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7;
-
-    - name: Install_numpy
-      shell: bash
-      run: |
         python3 -m pip install numpy
-        
+
     - name: Check_API
       shell: bash
       run: |
@@ -340,12 +328,8 @@ jobs:
         # We force compiling with GCC 7 because the default installed GCC 9 compiled with LTO and gives an internal compiler error
         sudo apt-get install gcc-7 g++-7;
         sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7;
-
-    - name: Install_numpy
-      shell: bash
-      run: |
         python3 -m pip install numpy
-        
+
     - name: Check_API
       shell: bash
       run: |
