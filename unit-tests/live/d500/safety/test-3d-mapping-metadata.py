@@ -2,7 +2,7 @@
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 # test:device D585S
-#test:donotrun:!windows
+
 
 import pyrealsense2 as rs
 from rspy import test, log
