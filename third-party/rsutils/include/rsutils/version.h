@@ -5,6 +5,9 @@
 
 #include <string>
 #include <iosfwd>
+#if __cplusplus >= 201103L
+#include <cstdint>
+#endif
 
 
 struct tm;
