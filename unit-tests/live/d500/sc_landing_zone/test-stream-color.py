@@ -21,26 +21,15 @@ def check_color_streaming(width, height, fps):
     pipe.stop()
 
 
-################# Checking color 640x360 streaming with fps 5/15/30 ##################
-width = 640
-height = 360
+################# Checking color streaming with res 640x360 / 1280x720  fps 5/15/30 ##################
 
+res_arr = [[640, 360], [1280, 720]]
 fps_arr = [5, 15, 30]
 
-for fps in fps_arr:
-    test.start("Checking color " + repr(width) + "x" + repr(height) + " streaming with fps " + repr(fps))
-    check_color_streaming(width, height, fps)
-    test.finish()
-
-
-################# Checking color 320x180 streaming with fps 5/15/30 ##################
-width = 1280
-height = 720
-
-fps_arr = [5, 15, 30]
-for fps in fps_arr:
-    test.start("Checking color " + repr(width) + "x" + repr(height) + " streaming with fps " + repr(fps))
-    check_color_streaming(width, height, fps)
-    test.finish()
+for res in res_arr:
+    for fps in fps_arr:
+        test.start("Checking color " + repr(res[0]) + "x" + repr(res[1]) + " streaming with fps " + repr(fps))
+        check_color_streaming(res[0], res[1], fps)
+        test.finish()
 
 test.print_results_and_exit()

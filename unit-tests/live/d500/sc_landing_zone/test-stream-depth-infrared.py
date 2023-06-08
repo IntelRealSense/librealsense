@@ -23,24 +23,11 @@ def check_depth_and_ir_streaming(fps):
 
 ################# Checking depth and IR streaming with fps 5/15/30/60 ##################
 
-fps = 5
-test.start("Checking depth and IR streaming with fps " + repr(fps))
-check_depth_and_ir_streaming(fps)
-test.finish()
+fps_arr = [5, 15, 30, 60]
 
-fps = 15
-test.start("Checking depth and IR streaming with fps 15")
-check_depth_and_ir_streaming(fps)
-test.finish()
-
-fps = 30
-test.start("Checking depth and IR streaming with fps 30")
-check_depth_and_ir_streaming(fps)
-test.finish()
-
-fps = 60
-test.start("Checking depth and IR streaming with fps 60")
-check_depth_and_ir_streaming(fps)
-test.finish()
+for fps in fps_arr:
+    test.start("Checking depth and IR streaming with fps " + repr(fps))
+    check_depth_and_ir_streaming(fps)
+    test.finish()
 
 test.print_results_and_exit()

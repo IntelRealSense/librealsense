@@ -20,53 +20,15 @@ def check_depth_dpp_streaming(width, height, fps):
     pipe.stop()
 
 
-################# Checking depth dpp 640x360 streaming with fps 5/15/30/60 ##################
-width = 640
-height = 360
+################# Checking depth dpp streaming with res 640x360 / 320x180 and fps 5/15/30/60 ##################
 
-fps = 5
-test.start("Checking depth dpp " + repr(width) + "x" + repr(height) + " streaming with fps " + repr(fps))
-check_depth_dpp_streaming(width, height, fps)
-test.finish()
+res_arr = [[640, 360], [320, 180]]
+fps_arr = [5, 15, 30, 60]
 
-fps = 15
-test.start("Checking depth dpp " + repr(width) + "x" + repr(height) + " streaming with fps " + repr(fps))
-check_depth_dpp_streaming(width, height, fps)
-test.finish()
-
-fps = 30
-test.start("Checking depth dpp " + repr(width) + "x" + repr(height) + " streaming with fps " + repr(fps))
-check_depth_dpp_streaming(width, height, fps)
-test.finish()
-
-fps = 60
-test.start("Checking depth dpp " + repr(width) + "x" + repr(height) + " streaming with fps " + repr(fps))
-check_depth_dpp_streaming(width, height, fps)
-test.finish()
-
-
-################# Checking depth dpp 320x180 streaming with fps 5/15/30/60 ##################
-width = 320
-height = 180
-
-fps = 5
-test.start("Checking depth dpp " + repr(width) + "x" + repr(height) + " streaming with fps " + repr(fps))
-check_depth_dpp_streaming(width, height, fps)
-test.finish()
-
-fps = 15
-test.start("Checking depth dpp " + repr(width) + "x" + repr(height) + " streaming with fps " + repr(fps))
-check_depth_dpp_streaming(width, height, fps)
-test.finish()
-
-fps = 30
-test.start("Checking depth dpp " + repr(width) + "x" + repr(height) + " streaming with fps " + repr(fps))
-check_depth_dpp_streaming(width, height, fps)
-test.finish()
-
-fps = 60
-test.start("Checking depth dpp " + repr(width) + "x" + repr(height) + " streaming with fps " + repr(fps))
-check_depth_dpp_streaming(width, height, fps)
-test.finish()
+for res in res_arr:
+    for fps in fps_arr:
+        test.start("Checking depth dpp " + repr(res[0]) + "x" + repr(res[1]) + " streaming with fps " + repr(fps))
+        check_depth_dpp_streaming(res[0], res[1], fps)
+        test.finish()
 
 test.print_results_and_exit()
