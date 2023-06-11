@@ -219,6 +219,17 @@ bool option_model::is_enum() const
     return true;
 }
 
+std::string option_model::get_combo_box_text(bool use_option_name, const char * description) const
+{
+    std::string txt;
+    if (opt == RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE)
+        txt = "Depth Auto Exposure:";
+    else
+        txt = rsutils::string::from()
+        << (use_option_name ? endpoint->get_option_name(opt) : description) << ":";
+    return txt;
+}
+
 bool option_model::draw_combobox( notifications_model & model,
                                   std::string & error_message,
                                   const char * description,
@@ -226,8 +237,7 @@ bool option_model::draw_combobox( notifications_model & model,
                                   bool use_option_name )
 {
     bool item_clicked = false;
-    std::string txt = rsutils::string::from()
-                   << ( use_option_name ? endpoint->get_option_name( opt ) : description ) << ":";
+    std::string txt = get_combo_box_text(use_option_name, description);
 
     auto pos_x = ImGui::GetCursorPosX();
 

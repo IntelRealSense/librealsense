@@ -42,6 +42,7 @@ namespace rs2
     private:
         bool is_all_integers() const;
         bool is_enum() const;
+        std::string get_combo_box_text(bool use_option_name, const char* description) const;
         bool is_checkbox() const;
         bool draw_checkbox( notifications_model& model, std::string& error_message, const char* description );
         bool draw_combobox( notifications_model& model, std::string& error_message, const char* description, bool new_line, bool use_option_name );

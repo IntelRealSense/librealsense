@@ -327,7 +327,7 @@ const char * get_string( rs2_option value )
     CASE( VISUAL_PRESET )
     CASE( TOTAL_FRAME_DROPS )
     CASE( EMITTER_ENABLED )
-    case RS2_OPTION_AUTO_EXPOSURE_MODE:  return "Fisheye Auto Exposure Mode";
+    CASE( AUTO_EXPOSURE_MODE )
     CASE( POWER_LINE_FREQUENCY )
     CASE( ASIC_TEMPERATURE )
     CASE( ERROR_POLLING_ENABLED )
@@ -401,7 +401,7 @@ const char * get_string( rs2_option value )
     CASE( AUTO_EXPOSURE_LIMIT_TOGGLE )
     CASE( AUTO_GAIN_LIMIT_TOGGLE )
     CASE( EMITTER_FREQUENCY )
-    case RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE:  return "Auto Exposure Mode";
+    CASE( DEPTH_AUTO_EXPOSURE_MODE )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
