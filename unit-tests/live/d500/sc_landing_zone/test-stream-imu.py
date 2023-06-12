@@ -2,7 +2,7 @@
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 # test:device D585S
-
+#test:donotrun until HSD is solved: https://hsdes.intel.com/appstore/article/#/13010957807
 import pyrealsense2 as rs
 from rspy import test, log
 import time
