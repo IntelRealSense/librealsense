@@ -76,6 +76,8 @@ namespace librealsense
         float get_stereo_baseline_mm() const;
 
         ds::ds_caps parse_device_capabilities( const std::vector<uint8_t>& gvd_buf ) const;
+        void get_gvd_details(const std::vector<uint8_t>& gvd_buff, uint16_t* gvd_version, uint32_t* payload_size,
+            uint32_t* crc32, std::string& optical_module_sn) const;
 
         bool check_symmetrization_enabled() const;
         //TODO - add these to device class as pure virtual methods

@@ -456,6 +456,7 @@ namespace librealsense
         std::string device_name = (rs500_sku_names.end() != rs500_sku_names.find(_pid)) ? rs500_sku_names.at(_pid) : "RS5xx";
 
         std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
+        std::vector<uint8_t> d500_gvd_buff(HW_MONITOR_BUFFER_SIZE);
 
         auto& depth_sensor = get_depth_sensor();
         auto& raw_depth_sensor = get_raw_depth_sensor();
@@ -475,6 +476,15 @@ namespace librealsense
             //_recommended_fw_version = firmware_version(D4XX_RECOMMENDED_FIRMWARE_VERSION);
             _device_capabilities = parse_device_capabilities( gvd_buff );
             advanced_mode = is_camera_in_advanced_mode();
+
+            _hw_monitor->get_gvd(d500_gvd_buff.size(), d500_gvd_buff.data(), D500_GVD);
+            
+            uint16_t d500_gvd_version;
+            uint32_t d500_gvd_payload_size;
+            uint32_t d500_gvd_crc32;
+            std::string optical_module_sn;
+            get_gvd_details(d500_gvd_buff, &d500_gvd_version, &d500_gvd_payload_size, 
+                &d500_gvd_crc32, optical_module_sn);
 
             auto _usb_mode = usb3_type;
             usb_type_str = usb_spec_names.at(_usb_mode);
@@ -808,5 +818,14 @@ namespace librealsense
         auto res = _hw_monitor->send(cmd);
         uint32_t val = *reinterpret_cast<uint32_t*>(res.data());
         return val == 1;
+    }
+	
+    void d500_device::get_gvd_details(const std::vector<uint8_t>& gvd_buff, uint16_t* gvd_version, uint32_t* payload_size,
+        uint32_t* crc32, std::string& optical_module_sn) const
+    {
+        *gvd_version = *reinterpret_cast<const uint16_t*>(gvd_buff.data() + static_cast<int>(ds::d500_gvd_fields::version_offset));
+        *payload_size = *reinterpret_cast<const uint32_t*>(gvd_buff.data() + static_cast<int>(ds::d500_gvd_fields::payload_size_offset));
+        *crc32 = *reinterpret_cast<const uint32_t*>(gvd_buff.data() + static_cast<int>(ds::d500_gvd_fields::crc32_offset));
+        optical_module_sn = _hw_monitor->get_module_serial_string(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::module_serial_offset));
     }
 }

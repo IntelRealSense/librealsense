@@ -57,18 +57,21 @@ namespace librealsense
         enum class d500_gvd_fields      // gvd fields for Safety Camera
         {
             // Keep sorted
-            d500_gvd_camera_fw_version_offset = 12,
-            d500_gvd_is_camera_locked_offset = 25,
-            d500_gvd_module_serial_offset = 48,
-            d500_gvd_module_asic_serial_offset = 64,
-            d500_gvd_fisheye_sensor_lb = 112,
-            d500_gvd_fisheye_sensor_hb = 113,
-            d500_gvd_imu_acc_chip_id = 124,
-            d500_gvd_depth_sensor_type = 166,
-            d500_gvd_active_projector = 170,
-            d500_gvd_rgb_sensor = 174,
-            d500_gvd_imu_sensor = 178,
-            d500_gvd_motion_module_fw_version_offset = 212
+            version_offset = 0,                  //ES1
+            payload_size_offset = 0x2,           //ES1
+            crc32_offset = 0x6,                  //ES1
+            camera_fw_version_offset = 0x8c,
+            is_camera_locked_offset = 0x9e,
+            module_serial_offset = 0x34,         //ES1
+            module_asic_serial_offset = 0x80,
+            //fisheye_sensor_lb = 112,
+            //fisheye_sensor_hb = 113,
+            imu_acc_chip_id = 0x1c8,
+            //depth_sensor_type = 166,
+            active_projector = 0x1a,
+            rgb_sensor = 0x17,
+            imu_sensor = 0x19,
+            //motion_module_fw_version_offset = 212
         };
 
         enum class d500_calibration_table_id
