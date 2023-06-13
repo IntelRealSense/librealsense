@@ -44,9 +44,7 @@ for ssp in sensors_and_stream_profiles:
     waiting_for_test = True
     while waiting_for_test and not wait_for_frames_timer.has_expired():
         time.sleep(0.5)
-    if wait_for_frames_timer.has_expired():
-        log.i("timer expired: " + "no frame arrived before " + repr(MAX_TIME_TO_WAIT_FOR_FRAMES) + " sec")
-        test.fail()
+    test.check(not wait_for_frames_timer.has_expired())
     sensor.stop()
     sensor.close()
 
