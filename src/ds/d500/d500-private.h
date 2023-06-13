@@ -161,8 +161,10 @@ namespace librealsense
             uint8_t                   reserved[48];
         };
 
-        rs2_intrinsics get_d500_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, d500_calibration_table_id table_id, uint32_t width, uint32_t height);
-        rs2_intrinsics get_d500_depth_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
+        rs2_intrinsics get_d500_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, d500_calibration_table_id table_id, 
+            uint32_t width, uint32_t height, bool is_symmetrization_enabled = false);
+        rs2_intrinsics get_d500_depth_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, 
+		    uint32_t width, uint32_t height, bool is_symmetrization_enabled = false);
         rs2_intrinsics get_d500_color_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         pose get_d500_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
 

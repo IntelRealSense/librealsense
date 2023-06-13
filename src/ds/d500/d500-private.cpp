@@ -40,13 +40,14 @@ namespace librealsense
             return false;
         }
 
-        rs2_intrinsics get_d500_intrinsic_by_resolution(const vector<uint8_t>& raw_data, d500_calibration_table_id table_id, uint32_t width, uint32_t height)
+        rs2_intrinsics get_d500_intrinsic_by_resolution(const vector<uint8_t>& raw_data, d500_calibration_table_id table_id, 
+            uint32_t width, uint32_t height, bool is_symmetrization_enabled)
         {
             switch (table_id)
             {
             case d500_calibration_table_id::depth_calibration_id:
             {
-                return get_d500_depth_intrinsic_by_resolution(raw_data, width, height);
+                return get_d500_depth_intrinsic_by_resolution(raw_data, width, height, is_symmetrization_enabled);
             }
             case d500_calibration_table_id::rgb_calibration_id:
             {
@@ -99,7 +100,8 @@ namespace librealsense
             return { new_fx, new_fy, new_ppx, new_ppy };
         }
 
-        rs2_intrinsics get_d500_depth_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)
+        rs2_intrinsics get_d500_depth_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, uint32_t width, 
+            uint32_t height, bool is_symmetrization_enabled)
         {
             auto table = check_calib<ds::d500_coefficients_table>(raw_data);
             if (!table)
@@ -112,7 +114,8 @@ namespace librealsense
             intrinsics.width = width;
             intrinsics.height = height;
 
-            auto rect_params = compute_rect_params_from_resolution(table->rectified_intrinsics, width, height, false);
+            auto rect_params = compute_rect_params_from_resolution(table->rectified_intrinsics, 
+                width, height, is_symmetrization_enabled);
 
             intrinsics.fx = rect_params[0];
             intrinsics.fy = rect_params[1];
@@ -218,7 +221,8 @@ namespace librealsense
             intrinsics.width = width;
             intrinsics.height = height;
 
-            auto rect_params = compute_rect_params_from_resolution(table->rectified_intrinsics, width, height);
+            auto rect_params = compute_rect_params_from_resolution(table->rectified_intrinsics, 
+                width, height, false);
 
             intrinsics.fx = rect_params[0];
             intrinsics.fy = rect_params[1];
