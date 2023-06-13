@@ -477,14 +477,21 @@ namespace librealsense
             _device_capabilities = parse_device_capabilities( gvd_buff );
             advanced_mode = is_camera_in_advanced_mode();
 
-            _hw_monitor->get_gvd(d500_gvd_buff.size(), d500_gvd_buff.data(), D500_GVD);
+            try {
+                _hw_monitor->get_gvd(d500_gvd_buff.size(), d500_gvd_buff.data(), D500_GVD);
+
+                uint16_t d500_gvd_version;
+                uint32_t d500_gvd_payload_size;
+                uint32_t d500_gvd_crc32;
+                std::string optical_module_sn;
+                get_gvd_details(d500_gvd_buff, &d500_gvd_version, &d500_gvd_payload_size,
+                    &d500_gvd_crc32, optical_module_sn);
+            }
+            catch (...)
+            {
+                LOG_WARNING("D500 GVD reading failed");
+            }
             
-            uint16_t d500_gvd_version;
-            uint32_t d500_gvd_payload_size;
-            uint32_t d500_gvd_crc32;
-            std::string optical_module_sn;
-            get_gvd_details(d500_gvd_buff, &d500_gvd_version, &d500_gvd_payload_size, 
-                &d500_gvd_crc32, optical_module_sn);
 
             auto _usb_mode = usb3_type;
             usb_type_str = usb_spec_names.at(_usb_mode);
