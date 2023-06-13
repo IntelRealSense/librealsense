@@ -462,10 +462,142 @@ namespace librealsense
                 *dst += sizeof out;
                 continue;
             }
-
-            
         }
     }
+
+#if defined __SSSE3__ && ! defined ANDROID
+    // This method receives 1 line of y and one line of uv.
+    // source_chunks_y  // yyyyyyyyyyyyyyyy
+    // source_chunks_uv // uvuvuvuvuvuvuvuv
+    // Each coupling is done as: 2 bytes of y coupled with 2 bytes of uv (one u, and one v)
+    template<rs2_format FORMAT> 
+    void sse_parse_one_line(const std::vector<__m128i> source_chunks_y, const std::vector<__m128i> source_chunks_uv, __m128i* dst)
+    {
+#pragma omp parallel for
+        for (int i = 0; i < source_chunks_y.size(); ++i)
+        {
+            const __m128i zero = _mm_set1_epi8(0);
+            __m128i y16__0_7 = _mm_unpacklo_epi8(source_chunks_y[i], zero);
+            __m128i y16__8_F = _mm_unpackhi_epi8(source_chunks_y[i], zero);
+
+            const __m128i evens_odds = _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15);  // to get uuuuuuuuvvvvvvvv
+
+            __m128i uuuuuuuuvvvvvvvv = _mm_shuffle_epi8(source_chunks_uv[i], evens_odds);
+            __m128i u = _mm_unpacklo_epi8(uuuuuuuuvvvvvvvv, uuuuuuuuvvvvvvvv); // uu duplicated
+            __m128i v = _mm_unpackhi_epi8(uuuuuuuuvvvvvvvv, uuuuuuuuvvvvvvvv); // vv duplicated
+
+            __m128i u16__0_7 = _mm_unpacklo_epi8(u, zero);                         // convert to 16 bit
+            __m128i u16__8_F = _mm_unpackhi_epi8(u, zero);                         // convert to 16 bit
+            __m128i v16__0_7 = _mm_unpacklo_epi8(v, zero);                         // convert to 16 bit
+            __m128i v16__8_F = _mm_unpackhi_epi8(v, zero);                         // convert to 16 bit
+            
+            const __m128i n100 = _mm_set1_epi16(100 << 4);
+            const __m128i n208 = _mm_set1_epi16(208 << 4);
+            const __m128i n298 = _mm_set1_epi16(298 << 4);
+            const __m128i n409 = _mm_set1_epi16(409 << 4);
+            const __m128i n516 = _mm_set1_epi16(516 << 4);
+            
+            __m128i c16__0_7 = _mm_slli_epi16(_mm_subs_epi16(y16__0_7, _mm_set1_epi16(16)), 4);
+            __m128i d16__0_7 = _mm_slli_epi16(_mm_subs_epi16(u16__0_7, _mm_set1_epi16(128)), 4); // perhaps could have done these u,v to d,e before the duplication
+            __m128i e16__0_7 = _mm_slli_epi16(_mm_subs_epi16(v16__0_7, _mm_set1_epi16(128)), 4);
+            __m128i r16__0_7 = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_add_epi16(_mm_mulhi_epi16(c16__0_7, n298), _mm_mulhi_epi16(e16__0_7, n409))))));                                                 // (298 * c + 409 * e + 128) ; //
+            __m128i g16__0_7 = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_sub_epi16(_mm_sub_epi16(_mm_mulhi_epi16(c16__0_7, n298), _mm_mulhi_epi16(d16__0_7, n100)), _mm_mulhi_epi16(e16__0_7, n208)))))); // (298 * c - 100 * d - 208 * e + 128)
+            __m128i b16__0_7 = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_add_epi16(_mm_mulhi_epi16(c16__0_7, n298), _mm_mulhi_epi16(d16__0_7, n516))))));                                                 // clampbyte((298 * c + 516 * d + 128) >> 8);
+
+                                                                                                                                                                                                                             // Compute R, G, B values for second 8 pixels
+            __m128i c16__8_F = _mm_slli_epi16(_mm_subs_epi16(y16__8_F, _mm_set1_epi16(16)), 4);
+            __m128i d16__8_F = _mm_slli_epi16(_mm_subs_epi16(u16__8_F, _mm_set1_epi16(128)), 4); // perhaps could have done these u,v to d,e before the duplication
+            __m128i e16__8_F = _mm_slli_epi16(_mm_subs_epi16(v16__8_F, _mm_set1_epi16(128)), 4);
+            __m128i r16__8_F = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_add_epi16(_mm_mulhi_epi16(c16__8_F, n298), _mm_mulhi_epi16(e16__8_F, n409))))));                                                 // (298 * c + 409 * e + 128) ; //
+            __m128i g16__8_F = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_sub_epi16(_mm_sub_epi16(_mm_mulhi_epi16(c16__8_F, n298), _mm_mulhi_epi16(d16__8_F, n100)), _mm_mulhi_epi16(e16__8_F, n208)))))); // (298 * c - 100 * d - 208 * e + 128)
+            __m128i b16__8_F = _mm_min_epi16(_mm_set1_epi16(255), _mm_max_epi16(zero, ((_mm_add_epi16(_mm_mulhi_epi16(c16__8_F, n298), _mm_mulhi_epi16(d16__8_F, n516))))));                                                 // clampbyte((298 * c + 516 * d + 128) >> 8);
+
+            
+
+            if (FORMAT == RS2_FORMAT_RGB8 || FORMAT == RS2_FORMAT_RGBA8)
+            {
+                // Shuffle separate R, G, B values into four registers storing four pixels each in (R, G, B, A) order
+                __m128i rg8__0_7 = _mm_unpacklo_epi8(_mm_shuffle_epi8(r16__0_7, evens_odds), _mm_shuffle_epi8(g16__0_7, evens_odds)); // hi to take the odds which are the upper bytes we care about
+                __m128i ba8__0_7 = _mm_unpacklo_epi8(_mm_shuffle_epi8(b16__0_7, evens_odds), _mm_set1_epi8(-1));
+                __m128i rgba_0_3 = _mm_unpacklo_epi16(rg8__0_7, ba8__0_7);
+                __m128i rgba_4_7 = _mm_unpackhi_epi16(rg8__0_7, ba8__0_7);
+
+                __m128i rg8__8_F = _mm_unpacklo_epi8(_mm_shuffle_epi8(r16__8_F, evens_odds), _mm_shuffle_epi8(g16__8_F, evens_odds)); // hi to take the odds which are the upper bytes we care about
+                __m128i ba8__8_F = _mm_unpacklo_epi8(_mm_shuffle_epi8(b16__8_F, evens_odds), _mm_set1_epi8(-1));
+                __m128i rgba_8_B = _mm_unpacklo_epi16(rg8__8_F, ba8__8_F);
+                __m128i rgba_C_F = _mm_unpackhi_epi16(rg8__8_F, ba8__8_F);
+
+                if (FORMAT == RS2_FORMAT_RGBA8)
+                {
+                    // Store 16 pixels (64 bytes) at once
+                    _mm_storeu_si128(&dst[i * 4], rgba_0_3);
+                    _mm_storeu_si128(&dst[i * 4 + 1], rgba_4_7);
+                    _mm_storeu_si128(&dst[i * 4 + 2], rgba_8_B);
+                    _mm_storeu_si128(&dst[i * 4 + 3], rgba_C_F);
+
+                    continue;
+                }
+
+                if (FORMAT == RS2_FORMAT_RGB8)
+                {
+                    // Shuffle rgb triples to the start and end of each register
+                    __m128i rgb0 = _mm_shuffle_epi8(rgba_0_3, _mm_setr_epi8(3, 7, 11, 15, 0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14));
+                    __m128i rgb1 = _mm_shuffle_epi8(rgba_4_7, _mm_setr_epi8(0, 1, 2, 4, 3, 7, 11, 15, 5, 6, 8, 9, 10, 12, 13, 14));
+                    __m128i rgb2 = _mm_shuffle_epi8(rgba_8_B, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 3, 7, 11, 15, 10, 12, 13, 14));
+                    __m128i rgb3 = _mm_shuffle_epi8(rgba_C_F, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 3, 7, 11, 15));
+
+                    // Align registers and store 16 pixels (48 bytes) at once
+                    _mm_storeu_si128(&dst[i * 3], _mm_alignr_epi8(rgb1, rgb0, 4));
+                    _mm_storeu_si128(&dst[i * 3 + 1], _mm_alignr_epi8(rgb2, rgb1, 8));
+                    _mm_storeu_si128(&dst[i * 3 + 2], _mm_alignr_epi8(rgb3, rgb2, 12));
+
+                    continue;
+                }
+            }
+
+            if (FORMAT == RS2_FORMAT_BGR8 || FORMAT == RS2_FORMAT_BGRA8)
+            {
+                // Shuffle separate R, G, B values into four registers storing four pixels each in (B, G, R, A) order
+                __m128i bg8__0_7 = _mm_unpacklo_epi8(_mm_shuffle_epi8(b16__0_7, evens_odds), _mm_shuffle_epi8(g16__0_7, evens_odds)); // hi to take the odds which are the upper bytes we care about
+                __m128i ra8__0_7 = _mm_unpacklo_epi8(_mm_shuffle_epi8(r16__0_7, evens_odds), _mm_set1_epi8(-1));
+                __m128i bgra_0_3 = _mm_unpacklo_epi16(bg8__0_7, ra8__0_7);
+                __m128i bgra_4_7 = _mm_unpackhi_epi16(bg8__0_7, ra8__0_7);
+
+                __m128i bg8__8_F = _mm_unpacklo_epi8(_mm_shuffle_epi8(b16__8_F, evens_odds), _mm_shuffle_epi8(g16__8_F, evens_odds)); // hi to take the odds which are the upper bytes we care about
+                __m128i ra8__8_F = _mm_unpacklo_epi8(_mm_shuffle_epi8(r16__8_F, evens_odds), _mm_set1_epi8(-1));
+                __m128i bgra_8_B = _mm_unpacklo_epi16(bg8__8_F, ra8__8_F);
+                __m128i bgra_C_F = _mm_unpackhi_epi16(bg8__8_F, ra8__8_F);
+
+                if (FORMAT == RS2_FORMAT_BGRA8)
+                {
+                    // Store 16 pixels (64 bytes) at once
+                    _mm_storeu_si128(&dst[i * 4], bgra_0_3);
+                    _mm_storeu_si128(&dst[i * 4 + 1], bgra_4_7);
+                    _mm_storeu_si128(&dst[i * 4 + 2], bgra_8_B);
+                    _mm_storeu_si128(&dst[i * 4 + 3], bgra_C_F);
+
+                    continue;
+                }
+
+                if (FORMAT == RS2_FORMAT_BGR8)
+                {
+                    // Shuffle rgb triples to the start and end of each register
+                    __m128i bgr0 = _mm_shuffle_epi8(bgra_0_3, _mm_setr_epi8(3, 7, 11, 15, 0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14));
+                    __m128i bgr1 = _mm_shuffle_epi8(bgra_4_7, _mm_setr_epi8(0, 1, 2, 4, 3, 7, 11, 15, 5, 6, 8, 9, 10, 12, 13, 14));
+                    __m128i bgr2 = _mm_shuffle_epi8(bgra_8_B, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 3, 7, 11, 15, 10, 12, 13, 14));
+                    __m128i bgr3 = _mm_shuffle_epi8(bgra_C_F, _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 3, 7, 11, 15));
+
+                    // Align registers and store 16 pixels (48 bytes) at once
+                    _mm_storeu_si128(&dst[i * 3], _mm_alignr_epi8(bgr1, bgr0, 4));
+                    _mm_storeu_si128(&dst[i * 3 + 1], _mm_alignr_epi8(bgr2, bgr1, 8));
+                    _mm_storeu_si128(&dst[i * 3 + 2], _mm_alignr_epi8(bgr3, bgr2, 12));
+
+                    continue;
+                }
+            }
+        }
+    }
+#endif
 
     /////////////////////////////
     // M420 unpacking routines //
@@ -493,24 +625,26 @@ namespace librealsense
         auto src = reinterpret_cast<const __m128i*>(s);
         auto dst = reinterpret_cast<__m128i*>(d[0]);
 
+        std::vector<__m128i> source_chunks_y;
+        source_chunks_y.resize(2 * width / 16);
+
+        std::vector<__m128i> source_chunks_uv;
+        source_chunks_uv.resize(width / 16);
 #pragma omp parallel for
         for (int j = 0; j < height / 2; ++j)
         {
-            std::vector<__m128i> source_chunks;
-            source_chunks.resize(2 * width / 16);
 #pragma omp parallel for
             for (int i = 0; i < 2 * width / 16; ++i)
             {
                 auto offset_to_current_2_y_lines_for_src = (3 * width * j) / 16;
                 
-
-                source_chunks[i] = _mm_loadu_si128(&src[offset_to_current_2_y_lines_for_src + i]);
+                source_chunks_y[i] = _mm_loadu_si128(&src[offset_to_current_2_y_lines_for_src + i]);
 
                 if (FORMAT == RS2_FORMAT_Y8)
                 {
                     auto offset_to_current_2_y_lines_for_dst = (2 * width * j) / 16;
                     // Align all Y components and output 2 lines of Y at once
-                    _mm_storeu_si128(&dst[offset_to_current_2_y_lines_for_dst + i], source_chunks[i]);
+                    _mm_storeu_si128(&dst[offset_to_current_2_y_lines_for_dst + i], source_chunks_y[i]);
                     continue;
                 }
 
@@ -519,15 +653,36 @@ namespace librealsense
                     auto bpp = 2;
                     auto offset_to_current_2_y_lines_for_dst = (2 * width * j) / 16 * bpp;
                     const __m128i zero = _mm_set1_epi8(0);
-                    __m128i y16__0_7 = _mm_unpacklo_epi8(source_chunks[i], zero);
-                    __m128i y16__8_F = _mm_unpackhi_epi8(source_chunks[i], zero);
+                    __m128i y16__0_7 = _mm_unpacklo_epi8(source_chunks_y[i], zero);
+                    __m128i y16__8_F = _mm_unpackhi_epi8(source_chunks_y[i], zero);
                     __m128i y16_0_7_epi_16 = _mm_slli_epi16(y16__0_7, 8);
                     __m128i y16_8_F_epi_16 = _mm_slli_epi16(y16__8_F, 8);
-                    // Align all Y components and output 2 lines of Y at once
-                    _mm_storeu_si128(&dst[offset_to_current_2_y_lines_for_dst + i * 2], _mm_slli_epi16(y16__0_7, 8));
-                    _mm_storeu_si128(&dst[offset_to_current_2_y_lines_for_dst + i * 2 + 1], _mm_slli_epi16(y16__8_F, 8));
+                    // Align all Y components and output 2 _m128i of Y at once
+                    _mm_storeu_si128(&dst[offset_to_current_2_y_lines_for_dst + i * 2], y16_0_7_epi_16);
+                    _mm_storeu_si128(&dst[offset_to_current_2_y_lines_for_dst + i * 2 + 1], y16_8_F_epi_16);
                     continue;
                 }
+
+                auto offset_to_current_uv_line_for_src = offset_to_current_2_y_lines_for_src + 2 * width / 16;
+                if ( i < width / 16)
+                    source_chunks_uv[i] = _mm_load_si128(&src[offset_to_current_uv_line_for_src + i]);
+            }
+
+            if (FORMAT == RS2_FORMAT_RGB8 || FORMAT == RS2_FORMAT_RGBA8 || FORMAT == RS2_FORMAT_BGR8 || FORMAT == RS2_FORMAT_BGRA8)
+            {
+                int bpp = 3;
+                if (FORMAT == RS2_FORMAT_RGBA8 || FORMAT == RS2_FORMAT_BGRA8)
+                    bpp = 4;
+
+                auto offset_to_current_first_line_for_dst = (2 * width * j) / 16 * bpp;
+                auto offset_to_current_second_line_for_dst = offset_to_current_first_line_for_dst + width * bpp / 16;
+
+                auto mid_iterator_y = source_chunks_y.begin() + static_cast<int>((source_chunks_y.size() * 0.5f));
+                std::vector<__m128i> first_line_y(source_chunks_y.begin(), mid_iterator_y);
+                std::vector<__m128i> second_line_y(mid_iterator_y, source_chunks_y.end());
+
+                sse_parse_one_line<FORMAT>(first_line_y, source_chunks_uv, &dst[offset_to_current_first_line_for_dst]);
+                sse_parse_one_line<FORMAT>(second_line_y, source_chunks_uv, &dst[offset_to_current_second_line_for_dst]);
             }
         }
 
@@ -640,7 +795,7 @@ namespace librealsense
             unpack_m420<RS2_FORMAT_BGRA8>(d, s, w, h, actual_size);
             break;
         default:
-            LOG_ERROR("Unsupported format for YUY2 conversion.");
+            LOG_ERROR("Unsupported format for M420 conversion.");
             break;
         }
     }
