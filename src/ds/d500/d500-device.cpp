@@ -131,7 +131,7 @@ namespace librealsense
             return get_d500_intrinsic_by_resolution(
                 *_owner->_coefficients_table_raw,
                 ds::d500_calibration_table_id::depth_calibration_id,
-                profile.width, profile.height, _owner->is_symmetrization_enabled());
+                profile.width, profile.height, _owner->_is_symmetrization_enabled);
         }
 
         void set_frame_metadata_modifier(on_frame_md callback) override
@@ -484,6 +484,8 @@ namespace librealsense
             else  // Backend fails to provide USB descriptor  - occurs with RS3 build. Requires further work
                 usb_modality = false;
 
+            _is_symmetrization_enabled = check_symmetrization_enabled();
+
             depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16H, RS2_STREAM_DEPTH));
 
             depth_sensor.register_processing_block(
@@ -800,7 +802,7 @@ namespace librealsense
         return command{ ds::FRB, 0x17a000, 0x3f8 };
     }
 
-    bool d500_device::is_symmetrization_enabled() const
+    bool d500_device::check_symmetrization_enabled() const
     {
         command cmd{ ds::MRD, 0x80000004, 0x80000008 };
         auto res = _hw_monitor->send(cmd);
