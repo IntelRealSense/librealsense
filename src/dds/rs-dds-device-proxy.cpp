@@ -223,7 +223,11 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< context > ctx, std::shared_
             sid_index sidx = type_and_index_to_dds_stream_sidx[type_and_index];
             auto stream_iter = streams.find( sidx );
             if( stream_iter == streams.end() )
+            {
+                LOG_DEBUG( "Did not find dds_stream of profile (" << profile->get_stream_type() << ", "
+                                                                  << profile->get_stream_index() << ")" );
                 continue;
+            }
 
             profile->set_unique_id( stream_iter->first.sid );
             set_profile_intrinsics( profile, stream_iter->second );
