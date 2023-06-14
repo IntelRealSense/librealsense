@@ -206,7 +206,7 @@ namespace librealsense
             _stream_filter.format = static_cast<rs2_format>((int)val);
         });
 
-        auto index_selector = std::make_shared<ptr_option<int>>(-1, std::numeric_limits<int>::max(), 1, -1, &_stream_filter.index, "Stream index");
+        auto index_selector = std::make_shared<ptr_option<int>>(-1, 16, 1, -1, &_stream_filter.index, "Stream index");
         std::weak_ptr<ptr_option<int>> index_selector_ref = index_selector;
         index_selector->on_set([this, index_selector_ref](float val)
         {

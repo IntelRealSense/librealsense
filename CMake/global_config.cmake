@@ -59,10 +59,6 @@ macro(global_set_flags)
         add_definitions(-DBUILD_SHARED_LIBS)
     endif()
 
-    if (BUILD_INTERNAL_UNIT_TESTS)
-        add_definitions(-DBUILD_INTERNAL_UNIT_TESTS)
-    endif()
-
     if (BUILD_WITH_CUDA)
         include(CMake/cuda_config.cmake)
     endif()

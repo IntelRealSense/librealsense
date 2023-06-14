@@ -110,7 +110,7 @@ namespace librealsense
             }
             else
                 throw invalid_value_exception( rsutils::string::from() << "RS4XX: RGB modules inconsistency - "
-                                                                         << color_devs_info.size() << " found" );
+                                                                         << color_devs_info_mi0.size() << " found" );
         }
     }
 
