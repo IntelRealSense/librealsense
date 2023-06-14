@@ -486,6 +486,9 @@ namespace librealsense
                 std::string optical_module_sn;
                 get_gvd_details(d500_gvd_buff, &d500_gvd_version, &d500_gvd_payload_size,
                     &d500_gvd_crc32, optical_module_sn);
+                auto computed_crc = calc_crc32(d500_gvd_buff.data(), d500_gvd_buff.size());
+                if (computed_crc != d500_gvd_crc32)
+                    throw std::runtime_error("CRC mismatch in D500 GVD");
             }
             catch (...)
             {
