@@ -18,7 +18,7 @@ points = rs.points()
 pipe = rs.pipeline()
 config = rs.config()
 # Enable depth stream
-config.enable_stream(rs.stream.depth, rs.format.z16, 30)
+config.enable_stream(rs.stream.depth)
 
 # Start streaming with chosen configuration
 pipe.start(config)
