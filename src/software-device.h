@@ -96,9 +96,9 @@ namespace librealsense
     public:
         software_sensor(std::string name, software_device* owner);
 
-        std::shared_ptr<stream_profile_interface> add_video_stream(rs2_video_stream video_stream, bool is_default=false);
-        std::shared_ptr<stream_profile_interface> add_motion_stream(rs2_motion_stream motion_stream, bool is_default = false);
-        std::shared_ptr<stream_profile_interface> add_pose_stream(rs2_pose_stream pose_stream, bool is_default = false);
+        virtual std::shared_ptr<stream_profile_interface> add_video_stream(rs2_video_stream video_stream, bool is_default = false);
+        virtual std::shared_ptr<stream_profile_interface> add_motion_stream(rs2_motion_stream motion_stream, bool is_default = false);
+        virtual std::shared_ptr<stream_profile_interface> add_pose_stream(rs2_pose_stream pose_stream, bool is_default = false);
 
         bool extend_to(rs2_extension extension_type, void** ptr) override;
 
@@ -134,9 +134,10 @@ namespace librealsense
 
         software_recommended_proccesing_blocks & get_software_recommended_proccesing_blocks() { return _pbs; }
 
+        stream_profiles _profiles;
+
     private:
         friend class software_device;
-        stream_profiles _profiles;
         uint64_t _unique_id;
 
         class stereo_extension : public depth_stereo_sensor

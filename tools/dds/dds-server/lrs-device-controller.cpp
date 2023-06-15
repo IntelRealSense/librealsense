@@ -275,7 +275,7 @@ extrinsics_map get_extrinsics_map( const rs2::device & dev )
     {
         auto stream_profiles = sensor.get_stream_profiles();
         std::for_each( stream_profiles.begin(), stream_profiles.end(), [&]( const rs2::stream_profile & sp ) {
-            std::string stream_name = sp.stream_name();
+            std::string stream_name = stream_name_from_rs2( sp );
             if( stream_name_to_rs2_stream_profile.count( stream_name ) == 0 )
                 stream_name_to_rs2_stream_profile[stream_name] = sp; // Any profile of this stream will do, take the first
         } );

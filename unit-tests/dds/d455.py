@@ -68,150 +68,150 @@ def colored_infrared_stream():
 def colored_infrared_stream_profiles():
     return [
         dds.video_stream_profile( 30, dds.stream_format("UYVY"), 1280, 720 ),
-        dds.video_stream_profile( 30, dds.stream_format("BGRA"), 1280, 720 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGBA"), 1280, 720 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGB2"), 1280, 720 ),
-        dds.video_stream_profile( 30, dds.stream_format("rgb8"), 1280, 720 ),
+        # dds.video_stream_profile( 30, dds.stream_format("BGRA"), 1280, 720 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGBA"), 1280, 720 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGB2"), 1280, 720 ),
+        # dds.video_stream_profile( 30, dds.stream_format("rgb8"), 1280, 720 ),
         dds.video_stream_profile( 15, dds.stream_format("UYVY"), 1280, 720 ),
-        dds.video_stream_profile( 15, dds.stream_format("BGRA"), 1280, 720 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGBA"), 1280, 720 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGB2"), 1280, 720 ),
-        dds.video_stream_profile( 15, dds.stream_format("rgb8"), 1280, 720 ),
+        # dds.video_stream_profile( 15, dds.stream_format("BGRA"), 1280, 720 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGBA"), 1280, 720 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGB2"), 1280, 720 ),
+        # dds.video_stream_profile( 15, dds.stream_format("rgb8"), 1280, 720 ),
         dds.video_stream_profile( 5 , dds.stream_format("UYVY"), 1280, 720 ),
-        dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 1280, 720 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 1280, 720 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 1280, 720 ),
-        dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 1280, 720 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 1280, 720 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 1280, 720 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 1280, 720 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 1280, 720 ),
         dds.video_stream_profile( 90, dds.stream_format("UYVY"), 848, 480 ),
-        dds.video_stream_profile( 90, dds.stream_format("BGRA"), 848, 480 ),
-        dds.video_stream_profile( 90, dds.stream_format("RGBA"), 848, 480 ),
-        dds.video_stream_profile( 90, dds.stream_format("RGB2"), 848, 480 ),
-        dds.video_stream_profile( 90, dds.stream_format("rgb8"), 848, 480 ),
+        # dds.video_stream_profile( 90, dds.stream_format("BGRA"), 848, 480 ),
+        # dds.video_stream_profile( 90, dds.stream_format("RGBA"), 848, 480 ),
+        # dds.video_stream_profile( 90, dds.stream_format("RGB2"), 848, 480 ),
+        # dds.video_stream_profile( 90, dds.stream_format("rgb8"), 848, 480 ),
         dds.video_stream_profile( 60, dds.stream_format("UYVY"), 848, 480 ),
-        dds.video_stream_profile( 60, dds.stream_format("BGRA"), 848, 480 ),
-        dds.video_stream_profile( 60, dds.stream_format("RGBA"), 848, 480 ),
-        dds.video_stream_profile( 60, dds.stream_format("RGB2"), 848, 480 ),
-        dds.video_stream_profile( 60, dds.stream_format("rgb8"), 848, 480 ),
+        # dds.video_stream_profile( 60, dds.stream_format("BGRA"), 848, 480 ),
+        # dds.video_stream_profile( 60, dds.stream_format("RGBA"), 848, 480 ),
+        # dds.video_stream_profile( 60, dds.stream_format("RGB2"), 848, 480 ),
+        # dds.video_stream_profile( 60, dds.stream_format("rgb8"), 848, 480 ),
         dds.video_stream_profile( 30, dds.stream_format("UYVY"), 848, 480 ),
-        dds.video_stream_profile( 30, dds.stream_format("BGRA"), 848, 480 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGBA"), 848, 480 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGB2"), 848, 480 ),
-        dds.video_stream_profile( 30, dds.stream_format("rgb8"), 848, 480 ),
+        # dds.video_stream_profile( 30, dds.stream_format("BGRA"), 848, 480 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGBA"), 848, 480 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGB2"), 848, 480 ),
+        # dds.video_stream_profile( 30, dds.stream_format("rgb8"), 848, 480 ),
         dds.video_stream_profile( 15, dds.stream_format("UYVY"), 848, 480 ),
-        dds.video_stream_profile( 15, dds.stream_format("BGRA"), 848, 480 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGBA"), 848, 480 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGB2"), 848, 480 ),
-        dds.video_stream_profile( 15, dds.stream_format("rgb8"), 848, 480 ),
+        # dds.video_stream_profile( 15, dds.stream_format("BGRA"), 848, 480 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGBA"), 848, 480 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGB2"), 848, 480 ),
+        # dds.video_stream_profile( 15, dds.stream_format("rgb8"), 848, 480 ),
         dds.video_stream_profile( 5 , dds.stream_format("UYVY"), 848, 480 ),
-        dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 848, 480 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 848, 480 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 848, 480 ),
-        dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 848, 480 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 848, 480 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 848, 480 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 848, 480 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 848, 480 ),
         dds.video_stream_profile( 100, dds.stream_format("UYVY"), 848, 100 ),
-        dds.video_stream_profile( 100, dds.stream_format("BGRA"), 848, 100 ),
-        dds.video_stream_profile( 100, dds.stream_format("RGBA"), 848, 100 ),
-        dds.video_stream_profile( 100, dds.stream_format("RGB2"), 848, 100 ),
-        dds.video_stream_profile( 100, dds.stream_format("rgb8"), 848, 100 ),
+        # dds.video_stream_profile( 100, dds.stream_format("BGRA"), 848, 100 ),
+        # dds.video_stream_profile( 100, dds.stream_format("RGBA"), 848, 100 ),
+        # dds.video_stream_profile( 100, dds.stream_format("RGB2"), 848, 100 ),
+        # dds.video_stream_profile( 100, dds.stream_format("rgb8"), 848, 100 ),
         dds.video_stream_profile( 90, dds.stream_format("UYVY"), 640, 480 ),
-        dds.video_stream_profile( 90, dds.stream_format("BGRA"), 640, 480 ),
-        dds.video_stream_profile( 90, dds.stream_format("RGBA"), 640, 480 ),
-        dds.video_stream_profile( 90, dds.stream_format("RGB2"), 640, 480 ),
-        dds.video_stream_profile( 90, dds.stream_format("rgb8"), 640, 480 ),
+        # dds.video_stream_profile( 90, dds.stream_format("BGRA"), 640, 480 ),
+        # dds.video_stream_profile( 90, dds.stream_format("RGBA"), 640, 480 ),
+        # dds.video_stream_profile( 90, dds.stream_format("RGB2"), 640, 480 ),
+        # dds.video_stream_profile( 90, dds.stream_format("rgb8"), 640, 480 ),
         dds.video_stream_profile( 60, dds.stream_format("UYVY"), 640, 480 ),
-        dds.video_stream_profile( 60, dds.stream_format("BGRA"), 640, 480 ),
-        dds.video_stream_profile( 60, dds.stream_format("RGBA"), 640, 480 ),
-        dds.video_stream_profile( 60, dds.stream_format("RGB2"), 640, 480 ),
-        dds.video_stream_profile( 60, dds.stream_format("rgb8"), 640, 480 ),
+        # dds.video_stream_profile( 60, dds.stream_format("BGRA"), 640, 480 ),
+        # dds.video_stream_profile( 60, dds.stream_format("RGBA"), 640, 480 ),
+        # dds.video_stream_profile( 60, dds.stream_format("RGB2"), 640, 480 ),
+        # dds.video_stream_profile( 60, dds.stream_format("rgb8"), 640, 480 ),
         dds.video_stream_profile( 30, dds.stream_format("UYVY"), 640, 480 ),
-        dds.video_stream_profile( 30, dds.stream_format("BGRA"), 640, 480 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGBA"), 640, 480 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGB2"), 640, 480 ),
-        dds.video_stream_profile( 30, dds.stream_format("rgb8"), 640, 480 ),
+        # dds.video_stream_profile( 30, dds.stream_format("BGRA"), 640, 480 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGBA"), 640, 480 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGB2"), 640, 480 ),
+        # dds.video_stream_profile( 30, dds.stream_format("rgb8"), 640, 480 ),
         dds.video_stream_profile( 15, dds.stream_format("UYVY"), 640, 480 ),
-        dds.video_stream_profile( 15, dds.stream_format("BGRA"), 640, 480 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGBA"), 640, 480 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGB2"), 640, 480 ),
-        dds.video_stream_profile( 15, dds.stream_format("rgb8"), 640, 480 ),
+        # dds.video_stream_profile( 15, dds.stream_format("BGRA"), 640, 480 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGBA"), 640, 480 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGB2"), 640, 480 ),
+        # dds.video_stream_profile( 15, dds.stream_format("rgb8"), 640, 480 ),
         dds.video_stream_profile( 5 , dds.stream_format("UYVY"), 640, 480 ),
-        dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 640, 480 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 640, 480 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 640, 480 ),
-        dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 640, 480 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 640, 480 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 640, 480 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 640, 480 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 640, 480 ),
         dds.video_stream_profile( 90, dds.stream_format("UYVY"), 640, 360 ),
-        dds.video_stream_profile( 90, dds.stream_format("BGRA"), 640, 360 ),
-        dds.video_stream_profile( 90, dds.stream_format("RGBA"), 640, 360 ),
-        dds.video_stream_profile( 90, dds.stream_format("RGB2"), 640, 360 ),
-        dds.video_stream_profile( 90, dds.stream_format("rgb8"), 640, 360 ),
+        # dds.video_stream_profile( 90, dds.stream_format("BGRA"), 640, 360 ),
+        # dds.video_stream_profile( 90, dds.stream_format("RGBA"), 640, 360 ),
+        # dds.video_stream_profile( 90, dds.stream_format("RGB2"), 640, 360 ),
+        # dds.video_stream_profile( 90, dds.stream_format("rgb8"), 640, 360 ),
         dds.video_stream_profile( 60, dds.stream_format("UYVY"), 640, 360 ),
-        dds.video_stream_profile( 60, dds.stream_format("BGRA"), 640, 360 ),
-        dds.video_stream_profile( 60, dds.stream_format("RGBA"), 640, 360 ),
-        dds.video_stream_profile( 60, dds.stream_format("RGB2"), 640, 360 ),
-        dds.video_stream_profile( 60, dds.stream_format("rgb8"), 640, 360 ),
+        # dds.video_stream_profile( 60, dds.stream_format("BGRA"), 640, 360 ),
+        # dds.video_stream_profile( 60, dds.stream_format("RGBA"), 640, 360 ),
+        # dds.video_stream_profile( 60, dds.stream_format("RGB2"), 640, 360 ),
+        # dds.video_stream_profile( 60, dds.stream_format("rgb8"), 640, 360 ),
         dds.video_stream_profile( 30, dds.stream_format("UYVY"), 640, 360 ),
-        dds.video_stream_profile( 30, dds.stream_format("BGRA"), 640, 360 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGBA"), 640, 360 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGB2"), 640, 360 ),
-        dds.video_stream_profile( 30, dds.stream_format("rgb8"), 640, 360 ),
+        # dds.video_stream_profile( 30, dds.stream_format("BGRA"), 640, 360 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGBA"), 640, 360 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGB2"), 640, 360 ),
+        # dds.video_stream_profile( 30, dds.stream_format("rgb8"), 640, 360 ),
         dds.video_stream_profile( 15, dds.stream_format("UYVY"), 640, 360 ),
-        dds.video_stream_profile( 15, dds.stream_format("BGRA"), 640, 360 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGBA"), 640, 360 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGB2"), 640, 360 ),
-        dds.video_stream_profile( 15, dds.stream_format("rgb8"), 640, 360 ),
+        # dds.video_stream_profile( 15, dds.stream_format("BGRA"), 640, 360 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGBA"), 640, 360 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGB2"), 640, 360 ),
+        # dds.video_stream_profile( 15, dds.stream_format("rgb8"), 640, 360 ),
         dds.video_stream_profile( 5 , dds.stream_format("UYVY"), 640, 360 ),
-        dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 640, 360 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 640, 360 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 640, 360 ),
-        dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 640, 360 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 640, 360 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 640, 360 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 640, 360 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 640, 360 ),
         dds.video_stream_profile( 90, dds.stream_format("UYVY"), 480, 270 ),
-        dds.video_stream_profile( 90, dds.stream_format("BGRA"), 480, 270 ),
-        dds.video_stream_profile( 90, dds.stream_format("RGBA"), 480, 270 ),
-        dds.video_stream_profile( 90, dds.stream_format("RGB2"), 480, 270 ),
-        dds.video_stream_profile( 90, dds.stream_format("rgb8"), 480, 270 ),
+        # dds.video_stream_profile( 90, dds.stream_format("BGRA"), 480, 270 ),
+        # dds.video_stream_profile( 90, dds.stream_format("RGBA"), 480, 270 ),
+        # dds.video_stream_profile( 90, dds.stream_format("RGB2"), 480, 270 ),
+        # dds.video_stream_profile( 90, dds.stream_format("rgb8"), 480, 270 ),
         dds.video_stream_profile( 60, dds.stream_format("UYVY"), 480, 270 ),
-        dds.video_stream_profile( 60, dds.stream_format("BGRA"), 480, 270 ),
-        dds.video_stream_profile( 60, dds.stream_format("RGBA"), 480, 270 ),
-        dds.video_stream_profile( 60, dds.stream_format("RGB2"), 480, 270 ),
-        dds.video_stream_profile( 60, dds.stream_format("rgb8"), 480, 270 ),
+        # dds.video_stream_profile( 60, dds.stream_format("BGRA"), 480, 270 ),
+        # dds.video_stream_profile( 60, dds.stream_format("RGBA"), 480, 270 ),
+        # dds.video_stream_profile( 60, dds.stream_format("RGB2"), 480, 270 ),
+        # dds.video_stream_profile( 60, dds.stream_format("rgb8"), 480, 270 ),
         dds.video_stream_profile( 30, dds.stream_format("UYVY"), 480, 270 ),
-        dds.video_stream_profile( 30, dds.stream_format("BGRA"), 480, 270 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGBA"), 480, 270 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGB2"), 480, 270 ),
-        dds.video_stream_profile( 30, dds.stream_format("rgb8"), 480, 270 ),
+        # dds.video_stream_profile( 30, dds.stream_format("BGRA"), 480, 270 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGBA"), 480, 270 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGB2"), 480, 270 ),
+        # dds.video_stream_profile( 30, dds.stream_format("rgb8"), 480, 270 ),
         dds.video_stream_profile( 15, dds.stream_format("UYVY"), 480, 270 ),
-        dds.video_stream_profile( 15, dds.stream_format("BGRA"), 480, 270 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGBA"), 480, 270 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGB2"), 480, 270 ),
-        dds.video_stream_profile( 15, dds.stream_format("rgb8"), 480, 270 ),
+        # dds.video_stream_profile( 15, dds.stream_format("BGRA"), 480, 270 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGBA"), 480, 270 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGB2"), 480, 270 ),
+        # dds.video_stream_profile( 15, dds.stream_format("rgb8"), 480, 270 ),
         dds.video_stream_profile( 5 , dds.stream_format("UYVY"), 480, 270 ),
-        dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 480, 270 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 480, 270 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 480, 270 ),
-        dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 480, 270 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 480, 270 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 480, 270 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 480, 270 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 480, 270 ),
         dds.video_stream_profile( 90, dds.stream_format("UYVY"), 424, 240 ),
-        dds.video_stream_profile( 90, dds.stream_format("BGRA"), 424, 240 ),
-        dds.video_stream_profile( 90, dds.stream_format("RGBA"), 424, 240 ),
-        dds.video_stream_profile( 90, dds.stream_format("RGB2"), 424, 240 ),
-        dds.video_stream_profile( 90, dds.stream_format("rgb8"), 424, 240 ),
+        # dds.video_stream_profile( 90, dds.stream_format("BGRA"), 424, 240 ),
+        # dds.video_stream_profile( 90, dds.stream_format("RGBA"), 424, 240 ),
+        # dds.video_stream_profile( 90, dds.stream_format("RGB2"), 424, 240 ),
+        # dds.video_stream_profile( 90, dds.stream_format("rgb8"), 424, 240 ),
         dds.video_stream_profile( 60, dds.stream_format("UYVY"), 424, 240 ),
-        dds.video_stream_profile( 60, dds.stream_format("BGRA"), 424, 240 ),
-        dds.video_stream_profile( 60, dds.stream_format("RGBA"), 424, 240 ),
-        dds.video_stream_profile( 60, dds.stream_format("RGB2"), 424, 240 ),
-        dds.video_stream_profile( 60, dds.stream_format("rgb8"), 424, 240 ),
+        # dds.video_stream_profile( 60, dds.stream_format("BGRA"), 424, 240 ),
+        # dds.video_stream_profile( 60, dds.stream_format("RGBA"), 424, 240 ),
+        # dds.video_stream_profile( 60, dds.stream_format("RGB2"), 424, 240 ),
+        # dds.video_stream_profile( 60, dds.stream_format("rgb8"), 424, 240 ),
         dds.video_stream_profile( 30, dds.stream_format("UYVY"), 424, 240 ),
-        dds.video_stream_profile( 30, dds.stream_format("BGRA"), 424, 240 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGBA"), 424, 240 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGB2"), 424, 240 ),
-        dds.video_stream_profile( 30, dds.stream_format("rgb8"), 424, 240 ),
+        # dds.video_stream_profile( 30, dds.stream_format("BGRA"), 424, 240 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGBA"), 424, 240 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGB2"), 424, 240 ),
+        # dds.video_stream_profile( 30, dds.stream_format("rgb8"), 424, 240 ),
         dds.video_stream_profile( 15, dds.stream_format("UYVY"), 424, 240 ),
-        dds.video_stream_profile( 15, dds.stream_format("BGRA"), 424, 240 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGBA"), 424, 240 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGB2"), 424, 240 ),
-        dds.video_stream_profile( 15, dds.stream_format("rgb8"), 424, 240 ),
-        dds.video_stream_profile( 5 , dds.stream_format("UYVY"), 424, 240 ),
-        dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 424, 240 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 424, 240 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 424, 240 ),
-        dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 424, 240 )
+        # dds.video_stream_profile( 15, dds.stream_format("BGRA"), 424, 240 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGBA"), 424, 240 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGB2"), 424, 240 ),
+        # dds.video_stream_profile( 15, dds.stream_format("rgb8"), 424, 240 ),
+        dds.video_stream_profile( 5 , dds.stream_format("UYVY"), 424, 240 ) #,
+        # dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 424, 240 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 424, 240 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 424, 240 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 424, 240 )
         ]
 
 
@@ -259,46 +259,46 @@ def depth_stream():
 
 def ir_stream_profiles():
     return [
-        dds.video_stream_profile( 30, dds.stream_format("mono8"), 1280, 800 ),
-        dds.video_stream_profile( 25, dds.stream_format("Y16"), 1280, 800 ),
-        dds.video_stream_profile( 15, dds.stream_format("Y16"), 1280, 800 ),
-        dds.video_stream_profile( 15, dds.stream_format("mono8"), 1280, 800 ),
-        dds.video_stream_profile( 30, dds.stream_format("mono8"), 1280, 720 ),
-        dds.video_stream_profile( 15, dds.stream_format("mono8"), 1280, 720 ),
-        dds.video_stream_profile( 5 , dds.stream_format("mono8"), 1280, 720 ),
-        dds.video_stream_profile( 90, dds.stream_format("mono8"), 848, 480 ),
-        dds.video_stream_profile( 60, dds.stream_format("mono8"), 848, 480 ),
-        dds.video_stream_profile( 30, dds.stream_format("mono8"), 848, 480 ),
-        dds.video_stream_profile( 15, dds.stream_format("mono8"), 848, 480 ),
-        dds.video_stream_profile( 5 , dds.stream_format("mono8"), 848, 480 ),
-        dds.video_stream_profile( 100, dds.stream_format("mono8"), 848, 100 ),
-        dds.video_stream_profile( 90, dds.stream_format("mono8"), 640, 480 ),
-        dds.video_stream_profile( 60, dds.stream_format("mono8"), 640, 480 ),
-        dds.video_stream_profile( 30, dds.stream_format("mono8"), 640, 480 ),
-        dds.video_stream_profile( 15, dds.stream_format("mono8"), 640, 480 ),
-        dds.video_stream_profile( 5 , dds.stream_format("mono8"), 640, 480 ),
-        dds.video_stream_profile( 25, dds.stream_format("Y16"), 640, 400 ),
-        dds.video_stream_profile( 15, dds.stream_format("Y16"), 640, 400 ),
-        dds.video_stream_profile( 90, dds.stream_format("mono8"), 640, 360 ),
-        dds.video_stream_profile( 60, dds.stream_format("mono8"), 640, 360 ),
-        dds.video_stream_profile( 30, dds.stream_format("mono8"), 640, 360 ),
-        dds.video_stream_profile( 15, dds.stream_format("mono8"), 640, 360 ),
-        dds.video_stream_profile( 5 , dds.stream_format("mono8"), 640, 360 ),
-        dds.video_stream_profile( 90, dds.stream_format("mono8"), 480, 270 ),
-        dds.video_stream_profile( 60, dds.stream_format("mono8"), 480, 270 ),
-        dds.video_stream_profile( 30, dds.stream_format("mono8"), 480, 270 ),
-        dds.video_stream_profile( 15, dds.stream_format("mono8"), 480, 270 ),
-        dds.video_stream_profile( 5 , dds.stream_format("mono8"), 480, 270 ),
-        dds.video_stream_profile( 90, dds.stream_format("mono8"), 424, 240 ),
-        dds.video_stream_profile( 60, dds.stream_format("mono8"), 424, 240 ),
-        dds.video_stream_profile( 30, dds.stream_format("mono8"), 424, 240 ),
-        dds.video_stream_profile( 15, dds.stream_format("mono8"), 424, 240 ),
-        dds.video_stream_profile( 5 , dds.stream_format("mono8"), 424, 240 )
+        dds.video_stream_profile( 30, dds.stream_format("Y8I"), 1280, 800 ),
+        dds.video_stream_profile( 25, dds.stream_format("Y12I"), 1280, 800 ),
+        dds.video_stream_profile( 15, dds.stream_format("Y12I"), 1280, 800 ),
+        dds.video_stream_profile( 15, dds.stream_format("Y8I"), 1280, 800 ),
+        dds.video_stream_profile( 30, dds.stream_format("Y8I"), 1280, 720 ),
+        dds.video_stream_profile( 15, dds.stream_format("Y8I"), 1280, 720 ),
+        dds.video_stream_profile( 5 , dds.stream_format("Y8I"), 1280, 720 ),
+        dds.video_stream_profile( 90, dds.stream_format("Y8I"), 848, 480 ),
+        dds.video_stream_profile( 60, dds.stream_format("Y8I"), 848, 480 ),
+        dds.video_stream_profile( 30, dds.stream_format("Y8I"), 848, 480 ),
+        dds.video_stream_profile( 15, dds.stream_format("Y8I"), 848, 480 ),
+        dds.video_stream_profile( 5 , dds.stream_format("Y8I"), 848, 480 ),
+        dds.video_stream_profile( 100, dds.stream_format("Y8I"), 848, 100 ),
+        dds.video_stream_profile( 90, dds.stream_format("Y8I"), 640, 480 ),
+        dds.video_stream_profile( 60, dds.stream_format("Y8I"), 640, 480 ),
+        dds.video_stream_profile( 30, dds.stream_format("Y8I"), 640, 480 ),
+        dds.video_stream_profile( 15, dds.stream_format("Y8I"), 640, 480 ),
+        dds.video_stream_profile( 5 , dds.stream_format("Y8I"), 640, 480 ),
+        dds.video_stream_profile( 25, dds.stream_format("Y12I"), 640, 400 ),
+        dds.video_stream_profile( 15, dds.stream_format("Y12I"), 640, 400 ),
+        dds.video_stream_profile( 90, dds.stream_format("Y8I"), 640, 360 ),
+        dds.video_stream_profile( 60, dds.stream_format("Y8I"), 640, 360 ),
+        dds.video_stream_profile( 30, dds.stream_format("Y8I"), 640, 360 ),
+        dds.video_stream_profile( 15, dds.stream_format("Y8I"), 640, 360 ),
+        dds.video_stream_profile( 5 , dds.stream_format("Y8I"), 640, 360 ),
+        dds.video_stream_profile( 90, dds.stream_format("Y8I"), 480, 270 ),
+        dds.video_stream_profile( 60, dds.stream_format("Y8I"), 480, 270 ),
+        dds.video_stream_profile( 30, dds.stream_format("Y8I"), 480, 270 ),
+        dds.video_stream_profile( 15, dds.stream_format("Y8I"), 480, 270 ),
+        dds.video_stream_profile( 5 , dds.stream_format("Y8I"), 480, 270 ),
+        dds.video_stream_profile( 90, dds.stream_format("Y8I"), 424, 240 ),
+        dds.video_stream_profile( 60, dds.stream_format("Y8I"), 424, 240 ),
+        dds.video_stream_profile( 30, dds.stream_format("Y8I"), 424, 240 ),
+        dds.video_stream_profile( 15, dds.stream_format("Y8I"), 424, 240 ),
+        dds.video_stream_profile( 5 , dds.stream_format("Y8I"), 424, 240 )
         ]
 
 
 def ir_stream( number ):
-    stream = dds.ir_stream_server( "Infrared " + str(number), "Stereo Module" )
+    stream = dds.ir_stream_server( "Infrared_" + str(number), "Stereo Module" )
     stream.init_profiles( ir_stream_profiles(), 0 )
     stream.init_options( stereo_module_options() )
     return stream
@@ -306,199 +306,199 @@ def ir_stream( number ):
 
 def color_stream_profiles():
     return [
-        dds.video_stream_profile( 30, dds.stream_format("rgb8"), 1280, 800 ),
+        # dds.video_stream_profile( 30, dds.stream_format("rgb8"), 1280, 800 ),
         dds.video_stream_profile( 30, dds.stream_format("BYR2"), 1280, 800 ),
-        dds.video_stream_profile( 30, dds.stream_format("Y16"), 1280, 800 ),
-        dds.video_stream_profile( 30, dds.stream_format("BGRA"), 1280, 800 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGBA"), 1280, 800 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGB2"), 1280, 800 ),
+        # dds.video_stream_profile( 30, dds.stream_format("Y16"), 1280, 800 ),
+        # dds.video_stream_profile( 30, dds.stream_format("BGRA"), 1280, 800 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGBA"), 1280, 800 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGB2"), 1280, 800 ),
         dds.video_stream_profile( 30, dds.stream_format("yuv422_yuy2"), 1280, 800 ),
-        dds.video_stream_profile( 15, dds.stream_format("rgb8"), 1280, 800 ),
-        dds.video_stream_profile( 15, dds.stream_format("Y16"), 1280, 800 ),
-        dds.video_stream_profile( 15, dds.stream_format("BGRA"), 1280, 800 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGBA"), 1280, 800 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGB2"), 1280, 800 ),
+        # dds.video_stream_profile( 15, dds.stream_format("rgb8"), 1280, 800 ),
+        # dds.video_stream_profile( 15, dds.stream_format("Y16"), 1280, 800 ),
+        # dds.video_stream_profile( 15, dds.stream_format("BGRA"), 1280, 800 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGBA"), 1280, 800 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGB2"), 1280, 800 ),
         dds.video_stream_profile( 15, dds.stream_format("yuv422_yuy2"), 1280, 800 ),
-        dds.video_stream_profile( 10, dds.stream_format("rgb8"), 1280, 800 ),
-        dds.video_stream_profile( 10, dds.stream_format("Y16"), 1280, 800 ),
-        dds.video_stream_profile( 10, dds.stream_format("BGRA"), 1280, 800 ),
-        dds.video_stream_profile( 10, dds.stream_format("RGBA"), 1280, 800 ),
-        dds.video_stream_profile( 10, dds.stream_format("RGB2"), 1280, 800 ),
+        # dds.video_stream_profile( 10, dds.stream_format("rgb8"), 1280, 800 ),
+        # dds.video_stream_profile( 10, dds.stream_format("Y16"), 1280, 800 ),
+        # dds.video_stream_profile( 10, dds.stream_format("BGRA"), 1280, 800 ),
+        # dds.video_stream_profile( 10, dds.stream_format("RGBA"), 1280, 800 ),
+        # dds.video_stream_profile( 10, dds.stream_format("RGB2"), 1280, 800 ),
         dds.video_stream_profile( 10, dds.stream_format("yuv422_yuy2"), 1280, 800 ),
-        dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 1280, 800 ),
-        dds.video_stream_profile( 5 , dds.stream_format("Y16"), 1280, 800 ),
-        dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 1280, 800 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 1280, 800 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 1280, 800 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 1280, 800 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("Y16"), 1280, 800 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 1280, 800 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 1280, 800 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 1280, 800 ),
         dds.video_stream_profile( 5 , dds.stream_format("yuv422_yuy2"), 1280, 800 ),
-        dds.video_stream_profile( 30, dds.stream_format("rgb8"), 1280, 720 ),
-        dds.video_stream_profile( 30, dds.stream_format("Y16"), 1280, 720 ),
-        dds.video_stream_profile( 30, dds.stream_format("BGRA"), 1280, 720 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGBA"), 1280, 720 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGB2"), 1280, 720 ),
+        # dds.video_stream_profile( 30, dds.stream_format("rgb8"), 1280, 720 ),
+        # dds.video_stream_profile( 30, dds.stream_format("Y16"), 1280, 720 ),
+        # dds.video_stream_profile( 30, dds.stream_format("BGRA"), 1280, 720 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGBA"), 1280, 720 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGB2"), 1280, 720 ),
         dds.video_stream_profile( 30, dds.stream_format("yuv422_yuy2"), 1280, 720 ),
-        dds.video_stream_profile( 15, dds.stream_format("rgb8"), 1280, 720 ),
-        dds.video_stream_profile( 15, dds.stream_format("Y16"), 1280, 720 ),
-        dds.video_stream_profile( 15, dds.stream_format("BGRA"), 1280, 720 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGBA"), 1280, 720 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGB2"), 1280, 720 ),
+        # dds.video_stream_profile( 15, dds.stream_format("rgb8"), 1280, 720 ),
+        # dds.video_stream_profile( 15, dds.stream_format("Y16"), 1280, 720 ),
+        # dds.video_stream_profile( 15, dds.stream_format("BGRA"), 1280, 720 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGBA"), 1280, 720 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGB2"), 1280, 720 ),
         dds.video_stream_profile( 15, dds.stream_format("yuv422_yuy2"), 1280, 720 ),
-        dds.video_stream_profile( 10, dds.stream_format("rgb8"), 1280, 720 ),
-        dds.video_stream_profile( 10, dds.stream_format("Y16"), 1280, 720 ),
-        dds.video_stream_profile( 10, dds.stream_format("BGRA"), 1280, 720 ),
-        dds.video_stream_profile( 10, dds.stream_format("RGBA"), 1280, 720 ),
-        dds.video_stream_profile( 10, dds.stream_format("RGB2"), 1280, 720 ),
+        # dds.video_stream_profile( 10, dds.stream_format("rgb8"), 1280, 720 ),
+        # dds.video_stream_profile( 10, dds.stream_format("Y16"), 1280, 720 ),
+        # dds.video_stream_profile( 10, dds.stream_format("BGRA"), 1280, 720 ),
+        # dds.video_stream_profile( 10, dds.stream_format("RGBA"), 1280, 720 ),
+        # dds.video_stream_profile( 10, dds.stream_format("RGB2"), 1280, 720 ),
         dds.video_stream_profile( 10, dds.stream_format("yuv422_yuy2"), 1280, 720 ),
-        dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 1280, 720 ),
-        dds.video_stream_profile( 5 , dds.stream_format("Y16"), 1280, 720 ),
-        dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 1280, 720 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 1280, 720 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 1280, 720 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 1280, 720 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("Y16"), 1280, 720 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 1280, 720 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 1280, 720 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 1280, 720 ),
         dds.video_stream_profile( 5 , dds.stream_format("yuv422_yuy2"), 1280, 720 ),
-        dds.video_stream_profile( 60, dds.stream_format("rgb8"), 848, 480 ),
-        dds.video_stream_profile( 60, dds.stream_format("Y16"), 848, 480 ),
-        dds.video_stream_profile( 60, dds.stream_format("BGRA"), 848, 480 ),
-        dds.video_stream_profile( 60, dds.stream_format("RGBA"), 848, 480 ),
-        dds.video_stream_profile( 60, dds.stream_format("RGB2"), 848, 480 ),
+        # dds.video_stream_profile( 60, dds.stream_format("rgb8"), 848, 480 ),
+        # dds.video_stream_profile( 60, dds.stream_format("Y16"), 848, 480 ),
+        # dds.video_stream_profile( 60, dds.stream_format("BGRA"), 848, 480 ),
+        # dds.video_stream_profile( 60, dds.stream_format("RGBA"), 848, 480 ),
+        # dds.video_stream_profile( 60, dds.stream_format("RGB2"), 848, 480 ),
         dds.video_stream_profile( 60, dds.stream_format("yuv422_yuy2"), 848, 480 ),
-        dds.video_stream_profile( 30, dds.stream_format("rgb8"), 848, 480 ),
-        dds.video_stream_profile( 30, dds.stream_format("Y16"), 848, 480 ),
-        dds.video_stream_profile( 30, dds.stream_format("BGRA"), 848, 480 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGBA"), 848, 480 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGB2"), 848, 480 ),
+        # dds.video_stream_profile( 30, dds.stream_format("rgb8"), 848, 480 ),
+        # dds.video_stream_profile( 30, dds.stream_format("Y16"), 848, 480 ),
+        # dds.video_stream_profile( 30, dds.stream_format("BGRA"), 848, 480 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGBA"), 848, 480 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGB2"), 848, 480 ),
         dds.video_stream_profile( 30, dds.stream_format("yuv422_yuy2"), 848, 480 ),
-        dds.video_stream_profile( 15, dds.stream_format("rgb8"), 848, 480 ),
-        dds.video_stream_profile( 15, dds.stream_format("Y16"), 848, 480 ),
-        dds.video_stream_profile( 15, dds.stream_format("BGRA"), 848, 480 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGBA"), 848, 480 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGB2"), 848, 480 ),
+        # dds.video_stream_profile( 15, dds.stream_format("rgb8"), 848, 480 ),
+        # dds.video_stream_profile( 15, dds.stream_format("Y16"), 848, 480 ),
+        # dds.video_stream_profile( 15, dds.stream_format("BGRA"), 848, 480 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGBA"), 848, 480 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGB2"), 848, 480 ),
         dds.video_stream_profile( 15, dds.stream_format("yuv422_yuy2"), 848, 480 ),
-        dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 848, 480 ),
-        dds.video_stream_profile( 5 , dds.stream_format("Y16"), 848, 480 ),
-        dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 848, 480 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 848, 480 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 848, 480 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 848, 480 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("Y16"), 848, 480 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 848, 480 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 848, 480 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 848, 480 ),
         dds.video_stream_profile( 5 , dds.stream_format("yuv422_yuy2"), 848, 480 ),
-        dds.video_stream_profile( 60, dds.stream_format("rgb8"), 640, 480 ),
-        dds.video_stream_profile( 60, dds.stream_format("Y16"), 640, 480 ),
-        dds.video_stream_profile( 60, dds.stream_format("BGRA"), 640, 480 ),
-        dds.video_stream_profile( 60, dds.stream_format("RGBA"), 640, 480 ),
-        dds.video_stream_profile( 60, dds.stream_format("RGB2"), 640, 480 ),
+        # dds.video_stream_profile( 60, dds.stream_format("rgb8"), 640, 480 ),
+        # dds.video_stream_profile( 60, dds.stream_format("Y16"), 640, 480 ),
+        # dds.video_stream_profile( 60, dds.stream_format("BGRA"), 640, 480 ),
+        # dds.video_stream_profile( 60, dds.stream_format("RGBA"), 640, 480 ),
+        # dds.video_stream_profile( 60, dds.stream_format("RGB2"), 640, 480 ),
         dds.video_stream_profile( 60, dds.stream_format("yuv422_yuy2"), 640, 480 ),
-        dds.video_stream_profile( 30, dds.stream_format("rgb8"), 640, 480 ),
-        dds.video_stream_profile( 30, dds.stream_format("Y16"), 640, 480 ),
-        dds.video_stream_profile( 30, dds.stream_format("BGRA"), 640, 480 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGBA"), 640, 480 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGB2"), 640, 480 ),
+        # dds.video_stream_profile( 30, dds.stream_format("rgb8"), 640, 480 ),
+        # dds.video_stream_profile( 30, dds.stream_format("Y16"), 640, 480 ),
+        # dds.video_stream_profile( 30, dds.stream_format("BGRA"), 640, 480 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGBA"), 640, 480 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGB2"), 640, 480 ),
         dds.video_stream_profile( 30, dds.stream_format("yuv422_yuy2"), 640, 480 ),
-        dds.video_stream_profile( 15, dds.stream_format("rgb8"), 640, 480 ),
-        dds.video_stream_profile( 15, dds.stream_format("Y16"), 640, 480 ),
-        dds.video_stream_profile( 15, dds.stream_format("BGRA"), 640, 480 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGBA"), 640, 480 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGB2"), 640, 480 ),
+        # dds.video_stream_profile( 15, dds.stream_format("rgb8"), 640, 480 ),
+        # dds.video_stream_profile( 15, dds.stream_format("Y16"), 640, 480 ),
+        # dds.video_stream_profile( 15, dds.stream_format("BGRA"), 640, 480 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGBA"), 640, 480 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGB2"), 640, 480 ),
         dds.video_stream_profile( 15, dds.stream_format("yuv422_yuy2"), 640, 480 ),
-        dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 640, 480 ),
-        dds.video_stream_profile( 5 , dds.stream_format("Y16"), 640, 480 ),
-        dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 640, 480 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 640, 480 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 640, 480 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 640, 480 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("Y16"), 640, 480 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 640, 480 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 640, 480 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 640, 480 ),
         dds.video_stream_profile( 5 , dds.stream_format("yuv422_yuy2"), 640, 480 ),
-        dds.video_stream_profile( 90, dds.stream_format("rgb8"), 640, 360 ),
-        dds.video_stream_profile( 90, dds.stream_format("Y16"), 640, 360 ),
-        dds.video_stream_profile( 90, dds.stream_format("BGRA"), 640, 360 ),
-        dds.video_stream_profile( 90, dds.stream_format("RGBA"), 640, 360 ),
-        dds.video_stream_profile( 90, dds.stream_format("RGB2"), 640, 360 ),
+        # dds.video_stream_profile( 90, dds.stream_format("rgb8"), 640, 360 ),
+        # dds.video_stream_profile( 90, dds.stream_format("Y16"), 640, 360 ),
+        # dds.video_stream_profile( 90, dds.stream_format("BGRA"), 640, 360 ),
+        # dds.video_stream_profile( 90, dds.stream_format("RGBA"), 640, 360 ),
+        # dds.video_stream_profile( 90, dds.stream_format("RGB2"), 640, 360 ),
         dds.video_stream_profile( 90, dds.stream_format("yuv422_yuy2"), 640, 360 ),
-        dds.video_stream_profile( 60, dds.stream_format("rgb8"), 640, 360 ),
-        dds.video_stream_profile( 60, dds.stream_format("Y16"), 640, 360 ),
-        dds.video_stream_profile( 60, dds.stream_format("BGRA"), 640, 360 ),
-        dds.video_stream_profile( 60, dds.stream_format("RGBA"), 640, 360 ),
-        dds.video_stream_profile( 60, dds.stream_format("RGB2"), 640, 360 ),
+        # dds.video_stream_profile( 60, dds.stream_format("rgb8"), 640, 360 ),
+        # dds.video_stream_profile( 60, dds.stream_format("Y16"), 640, 360 ),
+        # dds.video_stream_profile( 60, dds.stream_format("BGRA"), 640, 360 ),
+        # dds.video_stream_profile( 60, dds.stream_format("RGBA"), 640, 360 ),
+        # dds.video_stream_profile( 60, dds.stream_format("RGB2"), 640, 360 ),
         dds.video_stream_profile( 60, dds.stream_format("yuv422_yuy2"), 640, 360 ),
-        dds.video_stream_profile( 30, dds.stream_format("rgb8"), 640, 360 ),
-        dds.video_stream_profile( 30, dds.stream_format("Y16"), 640, 360 ),
-        dds.video_stream_profile( 30, dds.stream_format("BGRA"), 640, 360 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGBA"), 640, 360 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGB2"), 640, 360 ),
+        # dds.video_stream_profile( 30, dds.stream_format("rgb8"), 640, 360 ),
+        # dds.video_stream_profile( 30, dds.stream_format("Y16"), 640, 360 ),
+        # dds.video_stream_profile( 30, dds.stream_format("BGRA"), 640, 360 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGBA"), 640, 360 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGB2"), 640, 360 ),
         dds.video_stream_profile( 30, dds.stream_format("yuv422_yuy2"), 640, 360 ),
-        dds.video_stream_profile( 15, dds.stream_format("rgb8"), 640, 360 ),
-        dds.video_stream_profile( 15, dds.stream_format("Y16"), 640, 360 ),
-        dds.video_stream_profile( 15, dds.stream_format("BGRA"), 640, 360 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGBA"), 640, 360 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGB2"), 640, 360 ),
+        # dds.video_stream_profile( 15, dds.stream_format("rgb8"), 640, 360 ),
+        # dds.video_stream_profile( 15, dds.stream_format("Y16"), 640, 360 ),
+        # dds.video_stream_profile( 15, dds.stream_format("BGRA"), 640, 360 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGBA"), 640, 360 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGB2"), 640, 360 ),
         dds.video_stream_profile( 15, dds.stream_format("yuv422_yuy2"), 640, 360 ),
-        dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 640, 360 ),
-        dds.video_stream_profile( 5 , dds.stream_format("Y16"), 640, 360 ),
-        dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 640, 360 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 640, 360 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 640, 360 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 640, 360 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("Y16"), 640, 360 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 640, 360 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 640, 360 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 640, 360 ),
         dds.video_stream_profile( 5 , dds.stream_format("yuv422_yuy2"), 640, 360 ),
-        dds.video_stream_profile( 90, dds.stream_format("rgb8"), 480, 270 ),
-        dds.video_stream_profile( 90, dds.stream_format("Y16"), 480, 270 ),
-        dds.video_stream_profile( 90, dds.stream_format("BGRA"), 480, 270 ),
-        dds.video_stream_profile( 90, dds.stream_format("RGBA"), 480, 270 ),
-        dds.video_stream_profile( 90, dds.stream_format("RGB2"), 480, 270 ),
+        # dds.video_stream_profile( 90, dds.stream_format("rgb8"), 480, 270 ),
+        # dds.video_stream_profile( 90, dds.stream_format("Y16"), 480, 270 ),
+        # dds.video_stream_profile( 90, dds.stream_format("BGRA"), 480, 270 ),
+        # dds.video_stream_profile( 90, dds.stream_format("RGBA"), 480, 270 ),
+        # dds.video_stream_profile( 90, dds.stream_format("RGB2"), 480, 270 ),
         dds.video_stream_profile( 90, dds.stream_format("yuv422_yuy2"), 480, 270 ),
-        dds.video_stream_profile( 60, dds.stream_format("rgb8"), 480, 270 ),
-        dds.video_stream_profile( 60, dds.stream_format("Y16"), 480, 270 ),
-        dds.video_stream_profile( 60, dds.stream_format("BGRA"), 480, 270 ),
-        dds.video_stream_profile( 60, dds.stream_format("RGBA"), 480, 270 ),
-        dds.video_stream_profile( 60, dds.stream_format("RGB2"), 480, 270 ),
+        # dds.video_stream_profile( 60, dds.stream_format("rgb8"), 480, 270 ),
+        # dds.video_stream_profile( 60, dds.stream_format("Y16"), 480, 270 ),
+        # dds.video_stream_profile( 60, dds.stream_format("BGRA"), 480, 270 ),
+        # dds.video_stream_profile( 60, dds.stream_format("RGBA"), 480, 270 ),
+        # dds.video_stream_profile( 60, dds.stream_format("RGB2"), 480, 270 ),
         dds.video_stream_profile( 60, dds.stream_format("yuv422_yuy2"), 480, 270 ),
-        dds.video_stream_profile( 30, dds.stream_format("rgb8"), 480, 270 ),
-        dds.video_stream_profile( 30, dds.stream_format("Y16"), 480, 270 ),
-        dds.video_stream_profile( 30, dds.stream_format("BGRA"), 480, 270 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGBA"), 480, 270 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGB2"), 480, 270 ),
+        # dds.video_stream_profile( 30, dds.stream_format("rgb8"), 480, 270 ),
+        # dds.video_stream_profile( 30, dds.stream_format("Y16"), 480, 270 ),
+        # dds.video_stream_profile( 30, dds.stream_format("BGRA"), 480, 270 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGBA"), 480, 270 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGB2"), 480, 270 ),
         dds.video_stream_profile( 30, dds.stream_format("yuv422_yuy2"), 480, 270 ),
-        dds.video_stream_profile( 15, dds.stream_format("rgb8"), 480, 270 ),
-        dds.video_stream_profile( 15, dds.stream_format("Y16"), 480, 270 ),
-        dds.video_stream_profile( 15, dds.stream_format("BGRA"), 480, 270 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGBA"), 480, 270 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGB2"), 480, 270 ),
+        # dds.video_stream_profile( 15, dds.stream_format("rgb8"), 480, 270 ),
+        # dds.video_stream_profile( 15, dds.stream_format("Y16"), 480, 270 ),
+        # dds.video_stream_profile( 15, dds.stream_format("BGRA"), 480, 270 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGBA"), 480, 270 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGB2"), 480, 270 ),
         dds.video_stream_profile( 15, dds.stream_format("yuv422_yuy2"), 480, 270 ),
-        dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 480, 270 ),
-        dds.video_stream_profile( 5 , dds.stream_format("Y16"), 480, 270 ),
-        dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 480, 270 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 480, 270 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 480, 270 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 480, 270 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("Y16"), 480, 270 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 480, 270 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 480, 270 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 480, 270 ),
         dds.video_stream_profile( 5 , dds.stream_format("yuv422_yuy2"), 480, 270 ),
-        dds.video_stream_profile( 90, dds.stream_format("rgb8"), 424, 240 ),
-        dds.video_stream_profile( 90, dds.stream_format("Y16"), 424, 240 ),
-        dds.video_stream_profile( 90, dds.stream_format("BGRA"), 424, 240 ),
-        dds.video_stream_profile( 90, dds.stream_format("RGBA"), 424, 240 ),
-        dds.video_stream_profile( 90, dds.stream_format("RGB2"), 424, 240 ),
+        # dds.video_stream_profile( 90, dds.stream_format("rgb8"), 424, 240 ),
+        # dds.video_stream_profile( 90, dds.stream_format("Y16"), 424, 240 ),
+        # dds.video_stream_profile( 90, dds.stream_format("BGRA"), 424, 240 ),
+        # dds.video_stream_profile( 90, dds.stream_format("RGBA"), 424, 240 ),
+        # dds.video_stream_profile( 90, dds.stream_format("RGB2"), 424, 240 ),
         dds.video_stream_profile( 90, dds.stream_format("yuv422_yuy2"), 424, 240 ),
-        dds.video_stream_profile( 60, dds.stream_format("rgb8"), 424, 240 ),
-        dds.video_stream_profile( 60, dds.stream_format("Y16"), 424, 240 ),
-        dds.video_stream_profile( 60, dds.stream_format("BGRA"), 424, 240 ),
-        dds.video_stream_profile( 60, dds.stream_format("RGBA"), 424, 240 ),
-        dds.video_stream_profile( 60, dds.stream_format("RGB2"), 424, 240 ),
+        # dds.video_stream_profile( 60, dds.stream_format("rgb8"), 424, 240 ),
+        # dds.video_stream_profile( 60, dds.stream_format("Y16"), 424, 240 ),
+        # dds.video_stream_profile( 60, dds.stream_format("BGRA"), 424, 240 ),
+        # dds.video_stream_profile( 60, dds.stream_format("RGBA"), 424, 240 ),
+        # dds.video_stream_profile( 60, dds.stream_format("RGB2"), 424, 240 ),
         dds.video_stream_profile( 60, dds.stream_format("yuv422_yuy2"), 424, 240 ),
-        dds.video_stream_profile( 30, dds.stream_format("rgb8"), 424, 240 ),
-        dds.video_stream_profile( 30, dds.stream_format("Y16"), 424, 240 ),
-        dds.video_stream_profile( 30, dds.stream_format("BGRA"), 424, 240 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGBA"), 424, 240 ),
-        dds.video_stream_profile( 30, dds.stream_format("RGB2"), 424, 240 ),
+        # dds.video_stream_profile( 30, dds.stream_format("rgb8"), 424, 240 ),
+        # dds.video_stream_profile( 30, dds.stream_format("Y16"), 424, 240 ),
+        # dds.video_stream_profile( 30, dds.stream_format("BGRA"), 424, 240 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGBA"), 424, 240 ),
+        # dds.video_stream_profile( 30, dds.stream_format("RGB2"), 424, 240 ),
         dds.video_stream_profile( 30, dds.stream_format("yuv422_yuy2"), 424, 240 ),
-        dds.video_stream_profile( 15, dds.stream_format("rgb8"), 424, 240 ),
-        dds.video_stream_profile( 15, dds.stream_format("Y16"), 424, 240 ),
-        dds.video_stream_profile( 15, dds.stream_format("BGRA"), 424, 240 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGBA"), 424, 240 ),
-        dds.video_stream_profile( 15, dds.stream_format("RGB2"), 424, 240 ),
+        # dds.video_stream_profile( 15, dds.stream_format("rgb8"), 424, 240 ),
+        # dds.video_stream_profile( 15, dds.stream_format("Y16"), 424, 240 ),
+        # dds.video_stream_profile( 15, dds.stream_format("BGRA"), 424, 240 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGBA"), 424, 240 ),
+        # dds.video_stream_profile( 15, dds.stream_format("RGB2"), 424, 240 ),
         dds.video_stream_profile( 15, dds.stream_format("yuv422_yuy2"), 424, 240 ),
-        dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 424, 240 ),
-        dds.video_stream_profile( 5 , dds.stream_format("Y16"), 424, 240 ),
-        dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 424, 240 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 424, 240 ),
-        dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 424, 240 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("rgb8"), 424, 240 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("Y16"), 424, 240 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("BGRA"), 424, 240 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGBA"), 424, 240 ),
+        # dds.video_stream_profile( 5 , dds.stream_format("RGB2"), 424, 240 ),
         dds.video_stream_profile( 5 , dds.stream_format("yuv422_yuy2"), 424, 240 )
         ]
 
 
 def color_stream():
     stream = dds.color_stream_server( "Color",  "RGB Camera" )
-    stream.init_profiles( color_stream_profiles(), 25 )
+    stream.init_profiles( color_stream_profiles(), 5 )
     stream.init_options( rgb_camera_options() )
     return stream
 
@@ -935,11 +935,11 @@ def get_extrinsics():
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (0.030220000073313713,-0.007400000002235174,-0.016019999980926514)
-    extrinsics[("Accel","Infrared 1")] = extr
+    extrinsics[("Accel","Infrared_1")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (-0.06474092602729797,-0.007400000002235174,-0.016019999980926514)
-    extrinsics[("Accel","Infrared 2")] = extr
+    extrinsics[("Accel","Infrared_2")] = extr
     extr = dds.extrinsics();
     extr.rotation = (0.9999990463256836,-0.0011767612304538488,0.0007593693444505334,0.0011775976745411754,0.9999986886978149,-0.0011019925586879253,-0.0007580715464428067,0.0011028856970369816,0.9999991059303284)
     extr.translation = (0.028874816372990608,0.007493271958082914,0.015854692086577415)
@@ -959,11 +959,11 @@ def get_extrinsics():
     extr = dds.extrinsics();
     extr.rotation = (0.9999990463256836,-0.0011767612304538488,0.0007593693444505334,0.0011775976745411754,0.9999986886978149,-0.0011019925586879253,-0.0007580715464428067,0.0011028856970369816,0.9999991059303284)
     extr.translation = (0.05909481644630432,9.327199222752824e-05,-0.00016530796710867435)
-    extrinsics[("Color","Infrared 1")] = extr
+    extrinsics[("Color","Infrared_1")] = extr
     extr = dds.extrinsics();
     extr.rotation = (0.9999990463256836,-0.0011767612304538488,0.0007593693444505334,0.0011775976745411754,0.9999986886978149,-0.0011019925586879253,-0.0007580715464428067,0.0011028856970369816,0.9999991059303284)
     extr.translation = (-0.035866111516952515,9.327199222752824e-05,-0.00016530796710867435)
-    extrinsics[("Color","Infrared 2")] = extr
+    extrinsics[("Color","Infrared_2")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (-0.030220000073313713,0.007400000002235174,0.016019999980926514)
@@ -983,11 +983,11 @@ def get_extrinsics():
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (0.0,0.0,0.0)
-    extrinsics[("Depth","Infrared 1")] = extr
+    extrinsics[("Depth","Infrared_1")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (-0.09496092796325684,0.0,0.0)
-    extrinsics[("Depth","Infrared 2")] = extr
+    extrinsics[("Depth","Infrared_2")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (0.0,0.0,0.0)
@@ -1007,11 +1007,11 @@ def get_extrinsics():
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (0.030220000073313713,-0.007400000002235174,-0.016019999980926514)
-    extrinsics[("Gyro","Infrared 1")] = extr
+    extrinsics[("Gyro","Infrared_1")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (-0.06474092602729797,-0.007400000002235174,-0.016019999980926514)
-    extrinsics[("Gyro","Infrared 2")] = extr
+    extrinsics[("Gyro","Infrared_2")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (-0.030220000073313713,0.007400000002235174,0.016019999980926514)
@@ -1031,59 +1031,59 @@ def get_extrinsics():
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (0.0,0.0,0.0)
-    extrinsics[("Infrared","Infrared 1")] = extr
+    extrinsics[("Infrared","Infrared_1")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (-0.09496092796325684,0.0,0.0)
-    extrinsics[("Infrared","Infrared 2")] = extr
+    extrinsics[("Infrared","Infrared_2")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (-0.030220000073313713,0.007400000002235174,0.016019999980926514)
-    extrinsics[("Infrared 1","Accel")] = extr
+    extrinsics[("Infrared_1","Accel")] = extr
     extr = dds.extrinsics();
     extr.rotation = (0.9999990463256836,0.0011775976745411754,-0.0007580715464428067,-0.0011767612304538488,0.9999986886978149,0.0011028856970369816,0.0007593693444505334,-0.0011019925586879253,0.9999991059303284)
     extr.translation = (-0.05909452587366104,-0.0001630439655855298,0.00021000305423513055)
-    extrinsics[("Infrared 1","Color")] = extr
+    extrinsics[("Infrared_1","Color")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (0.0,0.0,0.0)
-    extrinsics[("Infrared 1","Depth")] = extr
+    extrinsics[("Infrared_1","Depth")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (-0.030220000073313713,0.007400000002235174,0.016019999980926514)
-    extrinsics[("Infrared 1","Gyro")] = extr
+    extrinsics[("Infrared_1","Gyro")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (0.0,0.0,0.0)
-    extrinsics[("Infrared 1","Infrared")] = extr
+    extrinsics[("Infrared_1","Infrared")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (-0.09496092796325684,0.0,0.0)
-    extrinsics[("Infrared 1","Infrared 2")] = extr
+    extrinsics[("Infrared_1","Infrared_2")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (0.06474092602729797,0.007400000002235174,0.016019999980926514)
-    extrinsics[("Infrared 2","Accel")] = extr
+    extrinsics[("Infrared_2","Accel")] = extr
     extr = dds.extrinsics();
     extr.rotation = (0.9999990463256836,0.0011775976745411754,-0.0007580715464428067,-0.0011767612304538488,0.9999986886978149,0.0011028856970369816,0.0007593693444505334,-0.0011019925586879253,0.9999991059303284)
     extr.translation = (0.03586631268262863,-5.1218194130342454e-05,0.00013801587920170277)
-    extrinsics[("Infrared 2","Color")] = extr
+    extrinsics[("Infrared_2","Color")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (0.09496092796325684,0.0,0.0)
-    extrinsics[("Infrared 2","Depth")] = extr
+    extrinsics[("Infrared_2","Depth")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (0.06474092602729797,0.007400000002235174,0.016019999980926514)
-    extrinsics[("Infrared 2","Gyro")] = extr
+    extrinsics[("Infrared_2","Gyro")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (0.09496092796325684,0.0,0.0)
-    extrinsics[("Infrared 2","Infrared")] = extr
+    extrinsics[("Infrared_2","Infrared")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (0.09496092796325684,0.0,0.0)
-    extrinsics[("Infrared 2","Infrared 1")] = extr
+    extrinsics[("Infrared_2","Infrared_1")] = extr
 
     return extrinsics
 
