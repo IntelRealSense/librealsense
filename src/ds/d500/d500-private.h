@@ -56,7 +56,6 @@ namespace librealsense
 
         enum class d500_gvd_fields      // gvd fields for Safety Camera
         {
-            // Keep sorted
             version_offset = 0,                  //ES1
             payload_size_offset = 0x2,           //ES1
             crc32_offset = 0x6,                  //ES1

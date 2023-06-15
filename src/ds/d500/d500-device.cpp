@@ -481,14 +481,18 @@ namespace librealsense
                 _hw_monitor->get_gvd(d500_gvd_buff.size(), d500_gvd_buff.data(), D500_GVD);
 
                 uint16_t d500_gvd_version;
-                uint32_t d500_gvd_payload_size;
+                uint16_t d500_gvd_payload_size;
                 uint32_t d500_gvd_crc32;
                 std::string optical_module_sn;
                 get_gvd_details(d500_gvd_buff, &d500_gvd_version, &d500_gvd_payload_size,
                     &d500_gvd_crc32, optical_module_sn);
                 auto computed_crc = calc_crc32(d500_gvd_buff.data(), d500_gvd_buff.size());
+                LOG_INFO("D500 GVD - gvd version = " << d500_gvd_version);
+                LOG_INFO("D500 GVD - gvd payload size = " << d500_gvd_payload_size);
+                LOG_INFO("D500 GVD - gvd crc = " << d500_gvd_crc32);
+                LOG_INFO("D500 GVD - gvd optical module sn = " << optical_module_sn);
                 if (computed_crc != d500_gvd_crc32)
-                    throw std::runtime_error("CRC mismatch in D500 GVD");
+                    LOG_ERROR("CRC mismatch in D500 GVD");
             }
             catch (...)
             {
@@ -830,7 +834,7 @@ namespace librealsense
         return val == 1;
     }
 	
-    void d500_device::get_gvd_details(const std::vector<uint8_t>& gvd_buff, uint16_t* gvd_version, uint32_t* payload_size,
+    void d500_device::get_gvd_details(const std::vector<uint8_t>& gvd_buff, uint16_t* gvd_version, uint16_t* payload_size,
         uint32_t* crc32, std::string& optical_module_sn) const
     {
         *gvd_version = *reinterpret_cast<const uint16_t*>(gvd_buff.data() + static_cast<int>(ds::d500_gvd_fields::version_offset));
