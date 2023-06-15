@@ -50,7 +50,7 @@ void init_pipeline(py::module &m) {
              "Before resolve() is called, no conflict check is done.", "stream_type"_a, "stream_index"_a, "width"_a, "height"_a, "format"_a, "framerate"_a)
         
         
-        .def("enable_stream", []( rs2::config* c, rs2_stream s ) -> void { return c->enable_stream( s, -1 ); }, "Stream type only. Other parameters are resolved internally.", "stream_type"_a )
+        .def("enable_stream", []( rs2::config* c, rs2_stream s ) -> void { return c->enable_stream( s ); }, "Stream type only. Other parameters are resolved internally.", "stream_type"_a )
         .def("enable_stream", (void (rs2::config::*)(rs2_stream, int)) &rs2::config::enable_stream, "Stream type and possibly also stream index. Other parameters are resolved internally.", "stream_type"_a, "stream_index"_a)
         .def("enable_stream", (void (rs2::config::*)(rs2_stream, rs2_format, int))&rs2::config::enable_stream, "Stream type and format, and possibly frame rate. Other parameters are resolved internally.", "stream_type"_a, "format"_a, "framerate"_a)
         .def("enable_stream", (void (rs2::config::*)(rs2_stream, int, int, rs2_format, int)) &rs2::config::enable_stream, "Stream type and resolution, and possibly format and frame rate. Other parameters are resolved internally.", "stream_type"_a, "width"_a, "height"_a, "format"_a, "framerate"_a)
