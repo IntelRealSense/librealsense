@@ -4,7 +4,7 @@
 
 #include <rs-vino/object-detection.h>
 #include <rs-vino/openvino-helpers.h>
-#include <rsutils/easylogging/easyloggingpp.h>
+#include <easylogging++.h>
 
 using namespace InferenceEngine;
 

@@ -26,23 +26,21 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
     private Colorizer mColorizer = new Colorizer();
     private Map<StreamType,Pointcloud> mPointcloud = null;
     private boolean mHasColorizedDepth = false;
-    private boolean mHasDepth = false;
 
     private boolean mHasColorYuy = false;
     private YuyDecoder mYuyDecoder = new YuyDecoder();
-    private boolean mShowPoints = false;
 
     public Map<Integer, Pair<String,Rect>> getRectangles() {
         return calcRectangles();
     }
 
     private boolean showPoints(){
-        return mShowPoints;
+        return mPointcloud != null;
     }
 
     private List<FilterInterface> createProcessingPipe(){
         List<FilterInterface> rv = new ArrayList<>();
-        if(mHasDepth && !mHasColorizedDepth && !showPoints())
+        if(!mHasColorizedDepth && !showPoints())
             rv.add(mColorizer);
 
         // convert yuyv into rgb8 for display and uv mapping
@@ -52,7 +50,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
         if(showPoints()){
             if(mHasColorRbg8 || mHasColorYuy)
                 rv.add(mPointcloud.get(StreamType.COLOR));
-            else if (mHasDepth)
+            else
                 rv.add(mPointcloud.get(StreamType.DEPTH));
         }
         return rv;
@@ -60,7 +58,6 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
 
     private FrameSet applyFilters(FrameSet frameSet, List<FilterInterface> filters){
         frameSet = frameSet.clone();
-
         for(FilterInterface f : filters){
             FrameSet newSet = frameSet.applyFilter(f);
             frameSet.close();
@@ -70,8 +67,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
     }
 
     public void upload(FrameSet frameSet) {
-        mHasColorRbg8 = mHasColorizedDepth = mHasColorYuy = mHasDepth = false;
-
+        mHasColorRbg8 = mHasColorizedDepth = mHasColorYuy = false;
         frameSet.foreach(new FrameCallback() {
             @Override
             public void onFrame(Frame f) {
@@ -80,36 +76,27 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
         });
 
         List<FilterInterface> filters = createProcessingPipe();
-
-        if (!showPoints() || (showPoints() && filters.size() > 0 && mHasDepth)) {
-            try (FrameSet processed = applyFilters(frameSet, filters)) {
-                    choosePointsTexture(processed);
-                    processed.foreach(new FrameCallback() {
-                        @Override
-                        public void onFrame(Frame f) {
-                            upload(f);
-                        }
-                    });
-            }
+        try(FrameSet processed = applyFilters(frameSet, filters)){
+            choosePointsTexture(processed);
+            processed.foreach(new FrameCallback() {
+                @Override
+                public void onFrame(Frame f) {
+                    addFrame(f);
+                    upload(f);
+                }
+            });
         }
     }
 
     private void choosePointsTexture(FrameSet frameSet){
-        if(mPointsTexture != null) mPointsTexture.close();
-        mPointsTexture = null;
-
-        if(!showPoints()) {
+        if(!showPoints())
             return;
-        }
-
         if(mHasColorRbg8 || mHasColorYuy)
             mPointsTexture = frameSet.first(StreamType.COLOR, StreamFormat.RGB8);
         else{
             try (Frame d = frameSet.first(StreamType.DEPTH, StreamFormat.Z16)) {
-                if(d != null) {
+                if(d != null)
                     mPointsTexture = mColorizer.process(d);
-                    d.close();
-                }
             }
         }
     }
@@ -124,12 +111,8 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
                 mHasColorYuy = true;
             }
 
-            if(sp.getType() == StreamType.DEPTH) {
-                mHasDepth = true;
-
-                if (sp.getFormat() == StreamFormat.RGB8) {
-                    mHasColorizedDepth = true;
-                }
+            if(sp.getType() == StreamType.DEPTH && sp.getFormat() == StreamFormat.RGB8) {
+                mHasColorizedDepth = true;
             }
         }
     }
@@ -139,14 +122,13 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
             if(!isFormatSupported(sp.getFormat()))
                 return;
             int uid = sp.getUniqueId();
-
             if(!mFrames.containsKey(uid)){
                 synchronized (mFrames) {
                     if(f.is(Extension.VIDEO_FRAME) && !showPoints())
                         mFrames.put(uid, new GLVideoFrame());
-                    else if (f.is(Extension.MOTION_FRAME) && !showPoints())
+                    if(f.is(Extension.MOTION_FRAME) && !showPoints())
                         mFrames.put(uid, new GLMotionFrame());
-                    else if (f.is(Extension.POINTS))
+                    if(f.is(Extension.POINTS))
                         mFrames.put(uid, new GLPointsFrame());
                 }
             }
@@ -167,7 +149,6 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
             GLFrame curr = mFrames.get(uid);
             if(curr == null)
                 return;
-
             curr.setFrame(f);
 
             if(mPointsTexture != null && curr instanceof GLPointsFrame){
@@ -180,30 +161,14 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
 
     public void clear() {
         synchronized (mFrames) {
-            for(Map.Entry<Integer,GLFrame> f : mFrames.entrySet()) {
-                GLFrame frame = f.getValue();
-                if (frame instanceof GLPointsFrame)
-                    ((GLPointsFrame) frame).close();
-                else
-                    frame.close();
-            }
+            for(Map.Entry<Integer,GLFrame> f : mFrames.entrySet())
+                f.getValue().close();
             mFrames.clear();
             mDeltaX = 0;
             mDeltaY = 0;
-
-            if (mPointcloud != null)
-            {
-                for(Pointcloud pc : mPointcloud.values()){
-                    pc.close();
-                }
-
-                mPointcloud = null;
-            }
-
+            mPointcloud = null;
             if(mPointsTexture != null) mPointsTexture.close();
             mPointsTexture = null;
-
-            mHasColorRbg8 = mHasColorizedDepth = mHasColorYuy = mHasDepth = false;
         }
     }
 
@@ -283,8 +248,6 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
     }
 
     public void showPointcloud(boolean showPoints) {
-        mShowPoints = showPoints;
-
         if(showPoints){
             if(mPointcloud != null)
                 return;
@@ -299,16 +262,12 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
                 pc.close();
             }
             mPointcloud = null;
-
-            if(mPointsTexture != null) mPointsTexture.close();
-            mPointsTexture = null;
         }
     }
 
     @Override
     public void close() {
         clear();
-        if (mColorizer != null) mColorizer.close();
-        if (mYuyDecoder != null) mYuyDecoder.close();
+        mColorizer.close();
     }
 }

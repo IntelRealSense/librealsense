@@ -1,11 +1,11 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 28
     defaultConfig {
         applicationId "com.intel.realsense.camera"
         minSdkVersion 19
-        targetSdkVersion 30
+        targetSdkVersion 27
         versionCode 5
         versionName "0.0.5"
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
@@ -16,7 +16,21 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    buildToolsVersion '27.0.3'
+    ndkVersion '21.0.6113669'
+    sourceSets {
+        main {
+            jni.srcDirs = []
+            jniLibs.srcDirs = ['src/main/jniLibs']
+        }
+    }
 }
+
+
 
 def getFwVersion(String productLine) {
     try {
@@ -47,6 +61,13 @@ task downloadFirmware() {
         new URL('https://librealsense.intel.com/Releases/L5xx/FW/L51X_FW_Image-' + l51xFwVersion + '.bin').withInputStream{ i -> l51xFile.withOutputStream{ it << i }}
     }
 
+    def l53xFwVersion = getFwVersion('L53X_RECOMMENDED_FIRMWARE_VERSION')
+    def l53xFile = new File("$projectDir/src/main/res/raw/fw_l53x.bin")
+    if (!l53xFile.exists()) {
+        println("downloading L53x fw: " + l53xFwVersion)
+        new URL('https://librealsense.intel.com/Releases/L5xx/FW/L53X_FW_Image-' + l53xFwVersion + '.bin').withInputStream{ i -> l53xFile.withOutputStream{ it << i }}
+    }
+
     def sr3xxFwVersion = getFwVersion('SR3XX_RECOMMENDED_FIRMWARE_VERSION')
     def sr3xxFile = new File("$projectDir/src/main/res/raw/fw_sr3xx.bin")
     if (!sr3xxFile.exists()) {
@@ -55,10 +76,13 @@ task downloadFirmware() {
     }
 }
 
+
+
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
+    implementation project(path: ':openCVLibrary')
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'

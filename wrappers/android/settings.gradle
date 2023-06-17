@@ -27,3 +27,6 @@ project(':sensor').projectDir = new File('examples/sensor')
 
 include ':stream_pipeline_callback'
 project(':stream_pipeline_callback').projectDir = new File('examples/stream_pipeline_callback')
+
+include ':openCVLibrary'
+

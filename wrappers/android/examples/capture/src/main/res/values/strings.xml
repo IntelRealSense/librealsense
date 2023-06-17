@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">RS Capture</string>
+    <string name="message1">拍照</string>
 </resources>

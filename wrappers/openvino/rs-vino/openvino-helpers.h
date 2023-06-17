@@ -25,7 +25,7 @@
 #pragma warning(pop)
 
 #include <opencv2/opencv.hpp>
-#include <rsutils/easylogging/easyloggingpp.h>
+#include <easylogging++.h>
 
 
 namespace openvino_helpers

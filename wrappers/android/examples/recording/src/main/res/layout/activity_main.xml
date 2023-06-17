@@ -37,9 +37,9 @@
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="40dp"
-        android:clickable="true"
         android:backgroundTint="#ffffff"
-        android:visibility="gone"
+        android:clickable="true"
+        android:visibility="visible"
         app:srcCompat="@android:drawable/ic_notification_overlay" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -53,4 +53,15 @@
         android:backgroundTint="#000000"
         android:visibility="gone"
         app:srcCompat="@android:drawable/ic_media_pause" />
+
+    <Button
+        android:id="@+id/Record"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="13dp"
+        android:backgroundTint="#ffffff"
+        android:clickable="true"
+        android:text="@string/message1"
+        android:visibility="visible" />
 </RelativeLayout>
