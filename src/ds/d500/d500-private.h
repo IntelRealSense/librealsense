@@ -54,22 +54,23 @@ namespace librealsense
         bool d500_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
             const platform::uvc_device_info& info, platform::usb_device_info& result);
 
+        // Keep sorted
         enum class d500_gvd_fields      // gvd fields for Safety Camera
         {
             version_offset = 0,                  //ES1
             payload_size_offset = 0x2,           //ES1
             crc32_offset = 0x6,                  //ES1
+            rgb_sensor = 0x17,
+            imu_sensor = 0x19,
+            active_projector = 0x1a,
+            module_serial_offset = 0x34,         //ES1
             camera_fw_version_offset = 0x8c,
             is_camera_locked_offset = 0x9e,
-            module_serial_offset = 0x34,         //ES1
             module_asic_serial_offset = 0x80,
             //fisheye_sensor_lb = 112,
             //fisheye_sensor_hb = 113,
             imu_acc_chip_id = 0x1c8,
             //depth_sensor_type = 166,
-            active_projector = 0x1a,
-            rgb_sensor = 0x17,
-            imu_sensor = 0x19,
             //motion_module_fw_version_offset = 212
         };
 
