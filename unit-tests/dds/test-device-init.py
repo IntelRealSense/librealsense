@@ -29,8 +29,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     #############################################################################################
     #
-    test.start( "Test 1 stream..." )
-    try:
+    with test.closure( "Test 1 stream..." ):
         remote.run( 'test_one_stream()' )
         device = dds.device( participant, participant.create_guid(), info )
         device.run( 1000 )  # If no device is available in 30 seconds, this will throw
@@ -45,15 +44,11 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             test.check_equal( profiles[0].stream(), stream )
             test.check_equal( stream.default_profile_index(), 0 )
         remote.run( 'close_server()' )
-    except:
-        test.unexpected_exception()
     device = None
-    test.finish()
     #
     #############################################################################################
     #
-    test.start( "Test motion stream..." )
-    try:
+    with test.closure( "Test motion stream..." ):
         remote.run( 'test_one_motion_stream()' )
         device = dds.device( participant, participant.create_guid(), info )
         device.run( 1000 )  # If no device is available in 30 seconds, this will throw
@@ -69,15 +64,11 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             test.check_equal( profiles[0].stream(), stream )
             test.check_equal( stream.default_profile_index(), 0 )
         remote.run( 'close_server()' )
-    except:
-        test.unexpected_exception()
     device = None
-    test.finish()
     #
     #############################################################################################
     #
-    test.start( "Test no streams..." )
-    try:
+    with test.closure( "Test no streams..." ):
         remote.run( 'test_no_streams()' )
         device = dds.device( participant, participant.create_guid(), info )
         device.run( 1000 )  # If no device is available in 30 seconds, this will throw
@@ -86,28 +77,21 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         for stream in device.streams():
             test.unreachable()
         remote.run( 'close_server()' )
-    except:
-        test.unexpected_exception()
     device = None
-    test.finish()
     #
     #############################################################################################
     #
-    test.start( "Test no profiles... (should fail on server side)" )
-    try:
-        remote.run( 'test_no_profiles()' )
-    except test.remote.Error as e:
-        # this fails because streams require at least one profile
-        test.check_exception( e, test.remote.Error, "RuntimeError: at least one profile is required to initialize stream 's1'" )
-    except:
-        test.unexpected_exception()
+    with test.closure( "Test no profiles... (should fail on server side)" ):
+        try:
+            remote.run( 'test_no_profiles()' )
+        except test.remote.Error as e:
+            # this fails because streams require at least one profile
+            test.check_exception( e, test.remote.Error, "RuntimeError: at least one profile is required to initialize stream 's1'" )
     device = None
-    test.finish()
     #
     #############################################################################################
     #
-    test.start( "Test 10 profiles..." )
-    try:
+    with test.closure( "Test 10 profiles..." ):
         remote.run( 'test_n_profiles(10)' )
         device = dds.device( participant, participant.create_guid(), info )
         device.run( 1000 )  # If no device is available in 30 seconds, this will throw
@@ -125,15 +109,11 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             test.check_equal( profiles[i].width(), i )
             test.check_equal( profiles[i].height(), v )
         remote.run( 'close_server()' )
-    except:
-        test.unexpected_exception()
     device = None
-    test.finish()
     #
     #############################################################################################
     #
-    test.start( "Test D435i..." )
-    try:
+    with test.closure( "Test D435i..." ):
         remote.run( 'test_d435i()' )
         device = dds.device( participant, participant.create_guid(), d435i.device_info )
         device.run( 1000 )  # If no device is available in 30 seconds, this will throw
@@ -142,15 +122,11 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         for stream in device.streams():
             profiles = stream.profiles()
         remote.run( 'close_server()' )
-    except:
-        test.unexpected_exception()
     device = None
-    test.finish()
     #
     #############################################################################################
     #
-    test.start( "Test discovery of another client device..." )
-    try:
+    with test.closure( "Test discovery of another client device..." ):
         remote.run( 'test_one_stream()' )
         device = dds.device( participant, participant.create_guid(), info )
         device.run( 1000 )  # If no device is available in 30 seconds, this will throw
@@ -165,10 +141,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             # should ignore them...
             remote2.run( 'close_device()' )
         remote.run( 'close_server()' )
-    except:
-        test.unexpected_exception()
     device = None
-    test.finish()
     #
     #############################################################################################
 
