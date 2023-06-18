@@ -77,6 +77,7 @@ namespace librealsense
 
         ds::ds_caps parse_device_capabilities( const std::vector<uint8_t>& gvd_buf ) const;
 
+        bool check_symmetrization_enabled() const;
         //TODO - add these to device class as pure virtual methods
         command get_firmware_logs_command() const;
         command get_flash_logs_command() const;
@@ -107,5 +108,6 @@ namespace librealsense
         lazy<std::vector<uint8_t>> _color_calib_table_raw;
         std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
         bool _is_locked = true;
+        bool _is_symmetrization_enabled = true;
     };
 }
