@@ -196,10 +196,7 @@ if pyrs_path:
     log.d( 'found python libraries in:', pyd_dirs )
     if not exe_dir:
         build_dir = find_build_dir( pyrs_path )
-        if linux:
-            exe_dir = build_dir
-        else:
-            exe_dir = pyrs_path
+        exe_dir = pyrs_path
 
 # Try to assume exe directory from inside build directory. Only works if there is only one location with tests
 if not exe_dir and build_dir:
