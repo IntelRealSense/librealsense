@@ -62,7 +62,7 @@ int main( int argc, char * argv[] )
 try
 {
     dds_domain_id domain = 0;
-    CmdLine cmd( "librealsense rs-dds-server tool, use CTRL + C to stop..", ' ' );
+    CmdLine cmd( "librealsense rs-dds-adapter tool, use CTRL + C to stop..", ' ' );
     ValueArg< dds_domain_id > domain_arg( "d",
                                           "domain",
                                           "Select domain ID to publish on",
@@ -102,11 +102,11 @@ try
         }
     }
 
-    std::cout << "Starting RS DDS Server.." << std::endl;
+    std::cout << "Starting RS DDS Adapter.." << std::endl;
 
     // Create a DDS publisher
     auto participant = std::make_shared< dds_participant >();
-    participant->init( domain, "rs-dds-server" );
+    participant->init( domain, "rs-dds-adapter" );
 
     struct device_handler
     {
@@ -155,7 +155,7 @@ try
 
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), 0);// Pend until CTRL + C is pressed 
 
-    std::cout << "Shutting down rs-dds-server..." << std::endl;
+    std::cout << "Shutting down rs-dds-adapter..." << std::endl;
 
     return EXIT_SUCCESS;
 }

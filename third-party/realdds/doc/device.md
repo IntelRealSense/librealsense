@@ -21,7 +21,7 @@ Note that topics are all using the same `<topic-root>` that is specified in the 
 
 As long as the `<topic-root>` is a valid topic path, it can be anything and is entirely determined by [Discovery](discovery.md).
 
-Currently, the topic root as used by `rs-dds-server` is built as:
+Currently, the topic root as used by `rs-dds-adapter` is built as:
 > realsense/ `<device-model>` _ `<serial-number>`
 
 
