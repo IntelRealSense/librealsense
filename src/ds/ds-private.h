@@ -108,7 +108,6 @@ namespace librealsense
             GET_HKR_CONFIG_TABLE = 0xA7, // HKR Get Internal sub calibration table
             CALIBRESTOREEPROM = 0xA8, // HKR Store EEPROM Calibration
             RGB_TNR = 0xAA,      // RGB Temporal Noise Reduction
-
             D500_GVD =0xB0      // TEMPORAL ONLY - new GVD struct for D500 devices
         };
 

@@ -59,11 +59,11 @@ namespace librealsense
         {
             version_offset = 0,                  //ES1
             payload_size_offset = 0x2,           //ES1
-            crc32_offset = 0x6,                  //ES1
+            crc32_offset = 0x4,                  //ES1
             rgb_sensor = 0x17,
             imu_sensor = 0x19,
             active_projector = 0x1a,
-            module_serial_offset = 0x34,         //ES1
+            module_serial_offset = 0x58,         //ES1
             camera_fw_version_offset = 0x8c,
             is_camera_locked_offset = 0x9e,
             module_asic_serial_offset = 0x80,
