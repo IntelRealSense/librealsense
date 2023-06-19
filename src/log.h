@@ -6,6 +6,7 @@
 #include "types.h"
 #include <rsutils/string/from.h>
 #include <rsutils/easylogging/easyloggingpp.h>
+#include <rsutils/os/ensure-console.h>
 #include <librealsense2/h/rs_types.h>  // rs2_log_severity
 
 #include <stdexcept>
@@ -180,6 +181,8 @@ namespace librealsense
 
         void log_to_console(rs2_log_severity min_severity)
         {
+            if( min_severity != RS2_LOG_SEVERITY_NONE )
+                rsutils::os::ensure_console( false );  // don't create if none available
             minimum_console_severity = min_severity;
             open();
         }

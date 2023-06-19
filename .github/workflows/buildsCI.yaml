@@ -141,8 +141,6 @@ jobs:
        mkdir ${{env.WIN_BUILD_DIR}}
 
     - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       shell: bash
       run: |        
         LRS_SRC_DIR=$(pwd)   
@@ -193,8 +191,6 @@ jobs:
        mkdir ${{env.WIN_BUILD_DIR}}
 
     - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       shell: bash
       run: |   
         LRS_SRC_DIR=$(pwd)
@@ -234,10 +230,10 @@ jobs:
     
     - name: Build
       shell: bash
-      run: | 
+      run: |
         cd build
-        cmake .. -DBUILD_SHARED_LIBS=false -DBUILD_EXAMPLES=true -DBUILD_TOOLS=true -DCHECK_FOR_UPDATES=true -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3)
-        cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -j4
+        cmake .. -DCMAKE_BUILD_TYPE=${{env.LRS_RUN_CONFIG}} -DBUILD_SHARED_LIBS=false -DBUILD_EXAMPLES=true -DBUILD_TOOLS=true -DCHECK_FOR_UPDATES=true -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3)
+        cmake --build . -- -j4
         
     - name: Test
       shell: bash
@@ -245,10 +241,10 @@ jobs:
       # We set continue-on-error: true as a workaround for not skipping the upload log step on failure,
       # The final step will check the return value from the test step and decide if to fail/pass the job
       continue-on-error: true 
-      run: | 
+      run: |
         export LRS_LOG_LEVEL="DEBUG";
-        cd build   
-        ./unit-tests/live-test -d yes -i [software-device]        
+        cd build/${{env.LRS_RUN_CONFIG}}/
+        ./live-test -d yes -i [software-device]        
 
     - name: Upload RS log artifact
       uses: actions/upload-artifact@v3
@@ -300,8 +296,8 @@ jobs:
       shell: bash
       run: |
         cd build
-        cmake .. -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=true -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=false -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3)
-        cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -j4  
+        cmake .. -DCMAKE_BUILD_TYPE=${{env.LRS_RUN_CONFIG}} -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=true -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=false -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3)
+        cmake --build . -- -j4  
 
     - name: LibCI
       # Note: requires BUILD_UNIT_TESTS or the executable C++ unit-tests won't run (and it won't complain)
@@ -343,8 +339,8 @@ jobs:
       shell: bash
       run: |
         cd build
-        cmake .. -DBUILD_SHARED_LIBS=false -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=false -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=true -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3)
-        cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -j4  
+        cmake .. -DCMAKE_BUILD_TYPE=${{env.LRS_RUN_CONFIG}} -DBUILD_SHARED_LIBS=false -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=false -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=true -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3)
+        cmake --build . -- -j4  
 
     - name: LibCI
       # Note: we specifically disable BUILD_UNIT_TESTS so the executable C++ unit-tests won't run
@@ -390,8 +386,8 @@ jobs:
       shell: bash
       run: | 
         cd build
-        cmake .. -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DCHECK_FOR_UPDATES=false -DFORCE_RSUSB_BACKEND=true -DBUILD_LEGACY_LIVE_TEST=true
-        cmake --build . --config $LRS_BUILD_CONFIG -- -j4
+        cmake .. -DCMAKE_BUILD_TYPE=${{env.LRS_BUILD_CONFIG}} -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DCHECK_FOR_UPDATES=false -DFORCE_RSUSB_BACKEND=true -DBUILD_LEGACY_LIVE_TEST=true
+        cmake --build . -- -j4
 
     - name: Test
       shell: bash
@@ -401,12 +397,12 @@ jobs:
       continue-on-error: true 
       run: | 
         export LRS_LOG_LEVEL="DEBUG";
-        cd build   
-        ./unit-tests/live-test -d yes -i [software-device]        
+        cd build/${{env.LRS_BUILD_CONFIG}}/
+        ./live-test -d yes -i [software-device]
 
     - name: Upload RS log artifact
       uses: actions/upload-artifact@v3
-      with: 
+      with:
         name: Log file - U20_SH_RSUSB_LiveTest
         path: build/*.log
 
@@ -451,8 +447,8 @@ jobs:
         # We use "greadlink -f" which is mac-os parallel command to "readlink -f" from Linux (-f to convert relative link to absolute link)
         export OPENSSL_ROOT_DIR=`greadlink -f /usr/local/opt/openssl@1.1`        
         echo "OPENSSL_ROOT_DIR = ${OPENSSL_ROOT_DIR}"
-        cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DCHECK_FOR_UPDATES=true
-        cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -j4
+        cmake .. -DCMAKE_BUILD_TYPE=${{env.LRS_BUILD_CONFIG}} -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DCHECK_FOR_UPDATES=true
+        cmake --build . -- -j4
         ls
 
 
@@ -489,7 +485,7 @@ jobs:
     - name: Build
       run: |
        cd build
-       cmake .. -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r20b/build/cmake/android.toolchain.cmake -DFORCE_RSUSB_BACKEND=true
-       cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -j4
+       cmake .. -DCMAKE_BUILD_TYPE=${{env.LRS_BUILD_CONFIG}} -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r20b/build/cmake/android.toolchain.cmake -DFORCE_RSUSB_BACKEND=true
+       cmake --build . -- -j4
        ls
   
