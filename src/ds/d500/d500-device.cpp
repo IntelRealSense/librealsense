@@ -466,7 +466,6 @@ namespace librealsense
         std::string optic_serial, asic_serial, pid_hex_str, usb_type_str;
         bool advanced_mode = false;
         bool usb_modality = true;
-        std::string optical_module_sn;
         group_multiple_fw_calls(depth_sensor, [&]() {
 
             _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), ds::fw_cmd::GVD);
@@ -477,13 +476,13 @@ namespace librealsense
             
             constexpr auto gvd_header_size = 8;
             get_gvd_details(gvd_buff, &gvd_version, &gvd_payload_size,
-                &gvd_crc32, optical_module_sn);
+                &gvd_crc32, optic_serial);
             auto gvd_payload_data = gvd_buff.data() + gvd_header_size;
             auto computed_crc = calc_crc32(gvd_payload_data, gvd_payload_size);
             LOG_INFO("gvd version = " << gvd_version);
             LOG_INFO("gvd payload size = " << gvd_payload_size);
             LOG_INFO("gvd crc = " << gvd_crc32);
-            LOG_INFO("gvd optical module sn = " << optical_module_sn);
+            LOG_INFO("gvd optical module sn = " << optic_serial);
             if (computed_crc != gvd_crc32)
                 LOG_ERROR("CRC mismatch in D500 GVD - received CRC = " << gvd_crc32 << ", computed CRC = " << computed_crc);
 
@@ -740,7 +739,7 @@ namespace librealsense
 
 
         register_info(RS2_CAMERA_INFO_NAME, device_name);
-        register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, optical_module_sn);
+        register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, optic_serial);
         register_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER, asic_serial);
         register_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, asic_serial);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, _fw_version);
