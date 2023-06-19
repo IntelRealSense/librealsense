@@ -322,7 +322,8 @@ namespace librealsense
         return _hw_monitor->send(cmd);
     }
 
-    // to be d500 adapted to new GVD
+    // The GVD structure is currently only partialy parsed
+    // Once all the fields are enabled in FW, other required fields will be parsed, as required
     ds::ds_caps d500_device::parse_device_capabilities( const std::vector<uint8_t> &gvd_buf ) const 
     {
         using namespace ds;
