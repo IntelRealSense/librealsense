@@ -35,5 +35,5 @@ First, download and install `CMake` from [cmake.org/download](https://cmake.org/
 ### Linux
 
 1. Download the latest Dlib release from [dlib.net](http://dlib.net/) and extract into a local directory (`~/work/dlib-19.17`)
-2. Follow [the instructions](https://github.com/IntelRealSense/librealsense/blob/master/doc/installation_linux_manual.md) to build `librealsense` from source, but:
+2. Follow [the instructions](https://github.com/IntelRealSense/librealsense/blob/master/doc/installation.md) to build `librealsense` from source, but:
  * Add `-DBUILD_DLIB_EXAMPLES=true -DDLIB_DIR=~/work/dlib-19.17` to your `cmake` command

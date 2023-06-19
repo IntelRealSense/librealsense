@@ -65,5 +65,5 @@ First, download and install `CMake` from [cmake.org/download](https://cmake.org/
 > Please use `git checkout 3.4` to use version 3.4
 
 2. Run `export OpenCV_DIR=~/opencv/build` (`~/opencv/build` is the folder containing `OpenCVConfig.cmake`)
-3. Follow [the instructions](https://github.com/IntelRealSense/librealsense/blob/master/doc/installation_linux_manual.md) to build `librealsense` from source
+3. Follow [the instructions](https://github.com/IntelRealSense/librealsense/blob/master/doc/installation.md) to build `librealsense` from source
 4. Add `-DBUILD_CV_EXAMPLES=true` to your `cmake` command

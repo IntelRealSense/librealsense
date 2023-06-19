@@ -100,7 +100,7 @@ In order for `librealsense2` to get access for device-generated attributes the f
 
 ## OS support
 ***Linux OS*** -  the standard Linux UVC driver does not provide metadata support.
-`librealsense2` package includes metadata patch for `uvcvideo` kernel object. The patches are intended to be deployed with Ubuntu 14, 16.01/02 LTS with kernel versions 4.4, 4.8 and 4.10, and are applied as part of Linux backend installation . See [Linux installation-guide](./installation_linux_manual.md) for more details.
+`librealsense2` package includes metadata patch for `uvcvideo` kernel object. The patches are intended to be deployed with Ubuntu 14, 16.01/02 LTS with kernel versions 4.4, 4.8 and 4.10, and are applied as part of Linux backend installation . See [Linux installation-guide](./installation.md) for more details.
 The patches were also successfully ported to Yocto-based distribution and made available for Yocto Reference Kit based on Poky 2.1.2 with kernel version 4.4.26.
 
 ***Windows OS*** - Metadata extraction is supported by Microsoft starting with Windows10. Check [Windows installation  guide](./installation_windows.md) for details.  

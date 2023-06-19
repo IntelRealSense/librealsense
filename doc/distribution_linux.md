@@ -10,7 +10,7 @@ While we strongly recommend to use DKMS package whenever possible, there are cer
  - Integration of user-specific patches/modules with `librealsense` SDK.
  - Adjusting the patches for alternative kernels/distributions.
 
-The steps are described in [Linux manual installation guide](./installation_linux_manual.md)
+The steps are described in [Linux manual installation guide](./installation.md)
 
 
 ## Installing the packages:

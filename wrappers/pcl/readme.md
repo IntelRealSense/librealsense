@@ -57,7 +57,7 @@ sudo add-apt-repository ppa:v-launchpad-jochen-sprickerhof-de/pcl
 sudo apt-get update
 sudo apt-get install libpcl-all
 ```
-2. Follow [the instructions](https://github.com/IntelRealSense/librealsense/blob/master/doc/installation_linux_manual.md) to build `librealsense` from source
+2. Follow [the instructions](https://github.com/IntelRealSense/librealsense/blob/master/doc/installation.md) to build `librealsense` from source
 3. Add `-DBUILD_PCL_EXAMPLES=true` to your `cmake` command
 4. Run `./wrappers/pcl/pcl/rs-pcl` or just `rs-pcl` if you have previously executed `sudo make install`
 
