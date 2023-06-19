@@ -823,7 +823,7 @@ namespace librealsense
         uint32_t val = *reinterpret_cast<uint32_t*>(res.data());
         return val == 1;
     }
-	
+    
     void d500_device::get_gvd_details(const std::vector<uint8_t>& gvd_buff, uint16_t* gvd_version, uint16_t* payload_size,
         uint32_t* crc32, std::string& optical_module_sn) const
     {
