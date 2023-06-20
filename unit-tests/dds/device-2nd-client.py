@@ -4,11 +4,11 @@
 import pyrealdds as dds
 from rspy import log, test
 
-dds.debug( True, log.nested )
+dds.debug( log.is_debug_on(), log.nested )
 
 
 participant = dds.participant()
-participant.init( 123, "device-2nd-client" )
+participant.init( 123, f'client-{log.nested.strip()}' )
 
 
 info = dds.device_info()

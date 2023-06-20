@@ -6,9 +6,10 @@
 import pyrealdds as dds
 from rspy import log, test
 import d435i
+from time import sleep
 
 
-dds.debug( True, 'C  ' )
+dds.debug( log.is_debug_on(), 'C  ' )
 log.nested = 'C  '
 
 
@@ -86,7 +87,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             remote.run( 'test_no_profiles()' )
         except test.remote.Error as e:
             # this fails because streams require at least one profile
-            test.check_exception( e, test.remote.Error, "RuntimeError: at least one profile is required to initialize stream 's1'" )
+            test.check_exception( e, test.remote.Error, "[remote] RuntimeError: at least one profile is required to initialize stream 's1'" )
     device = None
     #
     #############################################################################################
@@ -134,7 +135,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         test.check_equal( device.n_streams(), 1 )
         # now start another server, and have it access the device
         # NOTE: I had trouble nesting another 'with' statement here...
-        with test.remote( second_client_script, name="remote2", nested_indent="  c" ) as remote2:
+        with test.remote( second_client_script, name="remote2", nested_indent=" 2 " ) as remote2:
             remote2.wait_until_ready()
             remote2.run( 'test_second_device()' )
             # the notifications for the second client should be sent again from the server -- we
@@ -142,6 +143,34 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             remote2.run( 'close_device()' )
         remote.run( 'close_server()' )
     device = None
+    #
+    #############################################################################################
+    #
+    with test.closure( "Multiple overlapping client initializations" ):
+        remote.run( 'test_one_stream()' )
+        remote.run( 'notification_flood()' )
+        # Start another two clients and have them access the device:
+        # When the device initializations happen concurrently (which is hard to guarrantee) then
+        # initialization messages may get confused and an exception produced. We try 5 times:
+        for i in range(5):
+            if i > 0:
+                # if we get here, there was no exception; we try again with a small pause
+                log.i( f'... iteration {i+1}' )
+                sleep( 1 )
+            with test.remote( second_client_script, name="client1", nested_indent=" 1 " ) as client1:
+                client1.wait_until_ready()
+                with test.remote( second_client_script, name="client2", nested_indent=" 2 " ) as client2:
+                    client2.wait_until_ready()
+                    with test.remote( second_client_script, name="client3", nested_indent=" 3 " ) as client3:
+                        client3.wait_until_ready()
+                        with test.remote( second_client_script, name="client4", nested_indent=" 4 " ) as client4:
+                            client4.wait_until_ready()
+                            client1.run( 'test_second_device()', timeout=None )  # Don't wait until done
+                            client2.run( 'test_second_device()', timeout=None )
+                            client3.run( 'test_second_device()', timeout=None )
+                            client4.run( 'test_second_device()', timeout=None )
+        remote.run( 'close_server()' )
+
     #
     #############################################################################################
 
