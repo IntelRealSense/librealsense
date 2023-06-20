@@ -4,17 +4,11 @@
 import pyrealsense2 as rs
 from rspy import test
 from threading import Thread
-import tempfile
-import os.path
 import numpy as np
 
 ################################################################################################
 test.start("Unit transform test")
 ctx = rs.context()
-
-temp_dir = tempfile.gettempdir()
-log_filename = os.path.join(temp_dir, 'port_legacy.log')
-rs.log_to_file(rs.log_severity.debug, 'port_legacy.log')
 
 W = 640
 H = 480
