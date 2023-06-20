@@ -322,7 +322,9 @@ namespace librealsense
         return _hw_monitor->send(cmd);
     }
 
-    ds::ds_caps d500_device::parse_device_capabilities( const std::vector<uint8_t> &gvd_buf ) const // to be d500 adapted
+    // The GVD structure is currently only partialy parsed
+    // Once all the fields are enabled in FW, other required fields will be parsed, as required
+    ds::ds_caps d500_device::parse_device_capabilities( const std::vector<uint8_t> &gvd_buf ) const 
     {
         using namespace ds;
 
@@ -467,14 +469,26 @@ namespace librealsense
         bool usb_modality = true;
         group_multiple_fw_calls(depth_sensor, [&]() {
 
-            _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
-            std::string fwv;
-            _ds_device_common->get_fw_details( gvd_buff, optic_serial, asic_serial, fwv );
-            _fw_version = firmware_version(fwv);
-            // Uncomment and update to D500 recommended FW once exist
-            //_recommended_fw_version = firmware_version(D4XX_RECOMMENDED_FIRMWARE_VERSION);
-            _device_capabilities = parse_device_capabilities( gvd_buff );
-            advanced_mode = is_camera_in_advanced_mode();
+            _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), ds::fw_cmd::GVD);
+
+            uint16_t gvd_version;
+            uint16_t gvd_payload_size;
+            uint32_t gvd_crc32;
+            
+            constexpr auto gvd_header_size = 8;
+            get_gvd_details(gvd_buff, &gvd_version, &gvd_payload_size,
+                &gvd_crc32, optic_serial);
+            auto gvd_payload_data = gvd_buff.data() + gvd_header_size;
+            auto computed_crc = calc_crc32(gvd_payload_data, gvd_payload_size);
+            LOG_INFO("gvd version = " << gvd_version);
+            LOG_INFO("gvd payload size = " << gvd_payload_size);
+            LOG_INFO("gvd crc = " << gvd_crc32);
+            LOG_INFO("gvd optical module sn = " << optic_serial);
+            if (computed_crc != gvd_crc32)
+                LOG_ERROR("CRC mismatch in D500 GVD - received CRC = " << gvd_crc32 << ", computed CRC = " << computed_crc);
+
+            _device_capabilities = ds_caps::CAP_ACTIVE_PROJECTOR | ds_caps::CAP_RGB_SENSOR | ds_caps::CAP_IMU_SENSOR |
+                ds_caps::CAP_BMI_085 | ds_caps::CAP_GLOBAL_SHUTTER | ds_caps::CAP_INTERCAM_HW_SYNC;
 
             auto _usb_mode = usb3_type;
             usb_type_str = usb_spec_names.at(_usb_mode);
@@ -808,5 +822,14 @@ namespace librealsense
         auto res = _hw_monitor->send(cmd);
         uint32_t val = *reinterpret_cast<uint32_t*>(res.data());
         return val == 1;
+    }
+    
+    void d500_device::get_gvd_details(const std::vector<uint8_t>& gvd_buff, uint16_t* gvd_version, uint16_t* payload_size,
+        uint32_t* crc32, std::string& optical_module_sn) const
+    {
+        *gvd_version = *reinterpret_cast<const uint16_t*>(gvd_buff.data() + static_cast<int>(ds::d500_gvd_fields::version_offset));
+        *payload_size = *reinterpret_cast<const uint32_t*>(gvd_buff.data() + static_cast<int>(ds::d500_gvd_fields::payload_size_offset));
+        *crc32 = *reinterpret_cast<const uint32_t*>(gvd_buff.data() + static_cast<int>(ds::d500_gvd_fields::crc32_offset));
+        optical_module_sn = _hw_monitor->get_module_serial_string(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::module_serial_offset));
     }
 }
