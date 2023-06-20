@@ -677,6 +677,10 @@ PYBIND11_MODULE(NAME, m) {
                       streams.push_back( name2stream.second );
                   return streams;
               } )
+        .def(
+            "publish_notification",
+            []( dds_device_server & self, nlohmann::json const & j ) { self.publish_notification( j ); },
+            py::call_guard< py::gil_scoped_release >() )
         .def( "publish_metadata", &dds_device_server::publish_metadata, py::call_guard< py::gil_scoped_release >() )
         .def( "broadcast", &dds_device_server::broadcast );
 
