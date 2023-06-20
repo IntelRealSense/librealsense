@@ -142,7 +142,7 @@ void dds_notification_server::send_discovery_notifications()
 {
     // Send all initialization notifications
     LOG_DEBUG( "broadcasting discovery notifications" );
-    for( auto notification : _discovery_notifications )
+    for( auto & notification : _discovery_notifications )
     {
         DDS_API_CALL( _writer->get()->write( &notification ) );
     }
