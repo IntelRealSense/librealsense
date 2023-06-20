@@ -1,4 +1,4 @@
-# rs-dds-server tool
+# rs-dds-adapter tool
 
 ## Goal
 
@@ -21,8 +21,8 @@ If the tool detects a device dis/connection, it will notify the client using the
 ## Expected Output
 Assuming a running `librealsense` is found on the client side and network connection is stable, we expect to see prints like:
 
-`Participant discovered`  --> The server found a valid client
+`Participant discovered`  --> The adapter found a valid client
 
 `Device <device_name> - added` --> The device was added and a matching DDS data writer was created and publish the device information.
 
-`Device <device_name> - removed`  --> The device was removes and a matching DDS data writer was destructed.
+`Device <device_name> - removed`  --> The device was removed and a matching DDS data writer was destructed.

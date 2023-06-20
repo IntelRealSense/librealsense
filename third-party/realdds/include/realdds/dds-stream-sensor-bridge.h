@@ -23,7 +23,7 @@ namespace realdds {
 // when all streams are closed will the sensor close.
 //
 // This is how things usually work in RealSense devices, so this class is useful for anything trying to
-// bridge a RealSense device, e.g. a tool like rs-dds-server.
+// bridge a RealSense device, e.g. a tool like rs-dds-adapter.
 //
 // By default, we obviously do not know anything about RealSense and therefore do not actually start or
 // stop anything; instead we call notification functions that need implementing to customize behavior...

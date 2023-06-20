@@ -112,7 +112,7 @@ None.
 
 **Exceptions**
 1. The device is already streaming data from this sensor
-    1. The **server** will decline the request //TODO - should handle throw in rs-dds-server?
+    1. The **server** will decline the request //TODO - should handle throw in rs-dds-adapter?
     2. Terminate the use-case. //TODO - send failure *notification*? Currently not in the ICD, still WIP, will probably change to automatically stream when a reader is matched.
 
 **Constraints**
@@ -148,7 +148,7 @@ None.
 None.
 
 **Notes**
-1. When using librealsense API to control the device (as is the case with the `rs-dds-server` tool), when stoping a stream all streams in the containing sensor will be stopped.
+1. When using librealsense API to control the device (as is the case with the `rs-dds-adapter` tool), when stoping a stream all streams in the containing sensor will be stopped.
 realdds does not use a "sensor" concept to start or stop streams, it is a librealsense limitation.
 For example, if "Infrared 1" and "Infrared 2" streams of the "Stereo Module" are both streaming and one of them is requested to stop, both will stop streaming.
 

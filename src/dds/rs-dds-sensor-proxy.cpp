@@ -371,7 +371,7 @@ void dds_sensor_proxy::add_frame_metadata( frame * const f, nlohmann::json && dd
     }
 
     // Timestamp is already set in the frame - must be communicated in the metadata, but only for syncing
-    // purposes, so we ignore here. The domain is optional, and really only rs-dds-server communicates it
+    // purposes, so we ignore here. The domain is optional, and really only rs-dds-adapter communicates it
     // because the source is librealsense...
     f->additional_data.timestamp;
     rsutils::json::get_ex( md_header, timestamp_domain_key, &f->additional_data.timestamp_domain );

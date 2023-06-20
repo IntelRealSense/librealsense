@@ -1,10 +1,10 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 cmake_minimum_required( VERSION 3.1.0 )
-project( rs-dds-server )
+project( rs-dds-adapter )
 
 set(TOOL_FILES
-    rs-dds-server.cpp
+    rs-dds-adapter.cpp
     lrs-device-watcher.h
     lrs-device-watcher.cpp
     lrs-device-controller.h
