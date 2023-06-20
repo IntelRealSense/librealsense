@@ -87,6 +87,8 @@ public:
 
     bool device_changed_notifications_on() const { return _device_changed_notifications; }
 
+    bool should_use_basic_formats() const;
+
     uint16_t _pid;
 protected:
     int add_sensor(const std::shared_ptr<sensor_interface>& sensor_base);

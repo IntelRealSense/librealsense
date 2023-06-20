@@ -26,6 +26,8 @@ namespace librealsense
                                         std::function< std::shared_ptr< processing_block >( void ) > generate_func );
         void register_converter( const processing_block_factory & pbf );
         void register_converters( const std::vector< processing_block_factory > & pbfs );
+        void clear_registered_converters();
+        void drop_non_basic_formats();
 
         stream_profiles get_all_possible_profiles( const stream_profiles & raw_profiles );
         void prepare_to_convert( stream_profiles to_profiles );

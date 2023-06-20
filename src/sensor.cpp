@@ -1354,8 +1354,13 @@ void log_callback_end( uint32_t fps,
 
     stream_profiles synthetic_sensor::init_stream_profiles()
     {
-        stream_profiles from_profiles = _raw_sensor->get_stream_profiles( PROFILE_TAG_ANY | PROFILE_TAG_DEBUG );
-        stream_profiles result_profiles = _formats_converter.get_all_possible_profiles( from_profiles );
+        stream_profiles raw_profiles = _raw_sensor->get_stream_profiles( PROFILE_TAG_ANY | PROFILE_TAG_DEBUG );
+        if( _owner->should_use_basic_formats() )
+        {
+            _formats_converter.drop_non_basic_formats();
+        }
+
+        stream_profiles result_profiles = _formats_converter.get_all_possible_profiles( raw_profiles );
 
         _owner->tag_profiles( result_profiles );
         sort_profiles( &result_profiles );
@@ -1363,12 +1368,12 @@ void log_callback_end( uint32_t fps,
         return result_profiles;
     }
 
-    void synthetic_sensor::open(const stream_profiles& requests)
+    void synthetic_sensor::open(const stream_profiles & requests)
     {
         std::lock_guard<std::mutex> lock(_synthetic_configure_lock);
 
         _formats_converter.prepare_to_convert( requests );
-        
+
         const auto & resolved_req = _formats_converter.get_active_source_profiles();
         std::vector< std::shared_ptr< processing_block > > active_pbs = _formats_converter.get_active_converters();
         for( auto & pb : active_pbs )
@@ -1377,7 +1382,7 @@ void log_callback_end( uint32_t fps,
         _raw_sensor->set_source_owner(this);
         try
         {
-            _raw_sensor->open(resolved_req);
+            _raw_sensor->open( resolved_req );
         }
         catch (const std::runtime_error& e)
         {
@@ -1427,11 +1432,10 @@ void log_callback_end( uint32_t fps,
         set_frames_callback(callback);
         _formats_converter.set_frames_callback( callback );
 
-
         // Invoke processing blocks callback
-        const auto&& process_cb = make_callback([&, this](frame_holder f) {
+        const auto & process_cb = make_callback( [&, this]( frame_holder f ) {
             _formats_converter.convert_frame( f );
-        });
+        } );
 
         // Call the processing block on the frame
         _raw_sensor->start(process_cb);

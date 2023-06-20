@@ -428,3 +428,11 @@ void device::stop_activity() const
         }
     }
 }
+
+bool device::should_use_basic_formats() const
+{
+    if( _context )
+        return _context->should_use_basic_formats();
+
+    return false;
+}

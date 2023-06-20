@@ -2,6 +2,7 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include <rsutils/easylogging/easyloggingpp.h>
+#include <rsutils/json.h>
 
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
@@ -119,9 +120,11 @@ try
     std::cout << "Start listening to RS devices.." << std::endl;
 
     // Create a RealSense context
-    rs2::context ctx( "{"
-        "\"dds-discovery\" : false"
-        "}" );
+    nlohmann::json j = {
+        { "dds-discovery", false },
+        { "use-basic-formats", true }
+    };
+    rs2::context ctx( j.dump() );
 
     // Run the LRS device watcher
     tools::lrs_device_watcher dev_watcher( ctx );

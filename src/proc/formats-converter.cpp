@@ -8,8 +8,8 @@ namespace librealsense
 {
 
 void formats_converter::register_converter( const std::vector< stream_profile > & source,
-                                                   const std::vector< stream_profile > & target,
-                                                   std::function< std::shared_ptr< processing_block >( void ) > generate_func )
+                                            const std::vector< stream_profile > & target,
+                                            std::function< std::shared_ptr< processing_block >( void ) > generate_func )
 {
     _pb_factories.push_back( std::make_shared< processing_block_factory >( source, target, generate_func ) );
 }
@@ -21,8 +21,34 @@ void formats_converter::register_converter( const processing_block_factory & pbf
 
 void formats_converter::register_converters( const std::vector< processing_block_factory > & pbfs )
 {
-    for( auto && pbf : pbfs )
+    for( auto & pbf : pbfs )
         register_converter( pbf );
+}
+
+void formats_converter::clear_registered_converters()
+{
+    _pb_factories.clear();
+}
+
+void formats_converter::drop_non_basic_formats()
+{
+    for( size_t i = 0; i < _pb_factories.size(); ++i )
+    {
+        auto source = _pb_factories[i]->get_source_info();
+        auto target = _pb_factories[i]->get_target_info();
+        if( target.size() == 1 &&
+            source[0].format == target[0].format )
+            continue; // Identity, does not actually convert.
+
+        if( source[0].format == RS2_FORMAT_Y8I || source[0].format == RS2_FORMAT_Y12I )
+            continue; // Convert interleaved formats.
+
+        // Remove unwanted converters. Move to last element in vector and pop it out.
+        if( i != ( _pb_factories.size() -1 ) )
+            std::swap( _pb_factories[i], _pb_factories.back() );
+        _pb_factories.pop_back();
+        --i; // Don't advance the counter because we reduce the vector size.
+    }
 }
 
 stream_profiles formats_converter::get_all_possible_profiles( const stream_profiles & raw_profiles )
@@ -35,26 +61,26 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
 
     for( auto & raw_profile : raw_profiles )
     {
-        for( auto && pbf : _pb_factories )
+        for( auto & pbf : _pb_factories )
         {
-            const auto && sources = pbf->get_source_info();
-            for( auto && source : sources )
+            const auto & sources = pbf->get_source_info();
+            for( auto & source : sources )
             {
                 if( source.format == raw_profile->get_format() &&
                    ( source.stream == raw_profile->get_stream_type() || source.stream == RS2_STREAM_ANY ) )
                 {
-                    const auto & targets = pbf->get_target_info();
+                    auto targets = pbf->get_target_info();
                     // targets are saved with format and type only. Updating fps and resolution before using as key
-                    for( auto target : targets )
+                    for( auto & target : targets )
                     {
                         target.fps = raw_profile->get_framerate();
 
-                        auto && cloned_profile = clone_profile( raw_profile );
+                        auto cloned_profile = clone_profile( raw_profile );
                         cloned_profile->set_format( target.format );
                         cloned_profile->set_stream_index( target.index ); //TODO - shouldn't be from_profile.index?
                         cloned_profile->set_stream_type( target.stream );
 
-                        auto && cloned_vsp = As< video_stream_profile, stream_profile_interface >( cloned_profile );
+                        auto cloned_vsp = As< video_stream_profile, stream_profile_interface >( cloned_profile );
                         if( cloned_vsp )
                         {
                             // Converter may rotate the image, invoke stream_resolution function to get actual result
@@ -139,7 +165,7 @@ bool formats_converter::is_profile_in_list( const std::shared_ptr< stream_profil
                                             const stream_profiles & profiles ) const
 {
     // Converting to stream_profile to avoid dynamic casting to video/motion_stream_profile
-    const auto && is_duplicate_predicate = [&profile]( const std::shared_ptr< stream_profile_interface > & spi ) {
+    const auto & is_duplicate_predicate = [&profile]( const std::shared_ptr< stream_profile_interface > & spi ) {
         return to_profile( spi.get() ) == to_profile( profile.get() );
     };
 
@@ -232,7 +258,7 @@ void formats_converter::update_target_profiles_data( const stream_profiles & fro
 
 void formats_converter::cache_from_profiles( const stream_profiles & from_profiles )
 {
-    for( auto && from_profile : from_profiles )
+    for( auto & from_profile : from_profiles )
     {
         _format_mapping_to_from_profiles[from_profile->get_format()].push_back( from_profile );
     }
@@ -286,7 +312,7 @@ formats_converter::find_pbf_matching_most_profiles( const stream_profiles & from
 
     for( auto & pbf : _pb_factories )
     {
-        stream_profiles && satisfied_req = pbf->find_satisfied_requests( from_profiles, _pbf_supported_profiles[pbf.get()] );
+        stream_profiles satisfied_req = pbf->find_satisfied_requests( from_profiles, _pbf_supported_profiles[pbf.get()] );
         size_t satisfied_count = satisfied_req.size();
         size_t source_size = pbf->get_source_info().size();
         if( satisfied_count > max_satisfied_count ||
@@ -314,7 +340,7 @@ void formats_converter::set_frames_callback( frame_callback_ptr callback )
     _converted_frames_callback = callback;
 
     // After processing callback
-    const auto && output_cb = make_callback( [&]( frame_holder f ) {
+    const auto & output_cb = make_callback( [&]( frame_holder f ) {
         std::vector< frame_interface * > frames_to_be_processed;
         frames_to_be_processed.push_back( f.frame );
 
@@ -328,7 +354,7 @@ void formats_converter::set_frames_callback( frame_callback_ptr callback )
         }
 
         // Process only frames which aren't composite.
-        for( auto && fr : frames_to_be_processed )
+        for( auto & fr : frames_to_be_processed )
         {
             if( ! dynamic_cast< composite_frame * >( fr ) )
             {
@@ -369,7 +395,7 @@ void formats_converter::convert_frame( frame_holder & f )
         return;
 
     auto & converters = _raw_profile_to_converters[f->get_stream()];
-    for( auto && converter : converters )
+    for( auto & converter : converters )
     {
         f->acquire();
         converter->invoke( f.frame );
