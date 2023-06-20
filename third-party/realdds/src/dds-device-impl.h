@@ -77,6 +77,12 @@ private:
     void create_control_writer();
     bool init();
 
+    struct init_context;
+    void handle_device_header( init_context &, nlohmann::json const & );
+    void handle_device_options( init_context &, nlohmann::json const & );
+    void handle_stream_header( init_context &, nlohmann::json const & );
+    void handle_stream_options( init_context &, nlohmann::json const & );
+
     // notification handlers
     typedef std::map< std::string, void ( dds_device::impl::* )( nlohmann::json const & ) > notification_handlers;
     static notification_handlers const _notification_handlers;

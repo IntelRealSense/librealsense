@@ -149,7 +149,6 @@ void dds_device::impl::handle_notification( nlohmann::json const & j )
 {
     try
     {
-        char const * error_string = nullptr;
         auto id = rsutils::json::get< std::string >( j, id_key );
         auto it = _notification_handlers.find( id );
         if( it == _notification_handlers.end() )
@@ -412,81 +411,112 @@ void dds_device::impl::create_control_writer()
     _control_writer->run( wqos );
 }
 
+
+struct dds_device::impl::init_context
+{
+    state_type state = state_type::WAIT_FOR_DEVICE_HEADER;
+    size_t n_streams_expected = 0;
+    size_t n_stream_options_received = 0;
+};
+
+
 bool dds_device::impl::init()
 {
     // We expect to receive all of the sensors data under a timeout
-    rsutils::time::timer t( std::chrono::seconds( 30 ) );  // TODO: refine time out
-    state_type state = state_type::WAIT_FOR_DEVICE_HEADER;
-    std::map< std::string, int > sensor_name_to_index;
-    size_t n_streams_expected = 0;
-    size_t n_stream_options_received = 0;
-    while( ! t.has_expired() && state_type::DONE != state )
+    rsutils::time::timer timer( std::chrono::seconds( 30 ) );  // TODO: refine time out
+    init_context init;
+    while( ! timer.has_expired() && state_type::DONE != init.state )
     {
-        LOG_DEBUG( state << "..." );
+        LOG_DEBUG( init.state << "..." );
         eprosima::fastrtps::Duration_t one_second = { 1, 0 };
         if( _notifications_reader->get()->wait_for_unread_message( one_second ) )
         {
             topics::flexible_msg notification;
             eprosima::fastdds::dds::SampleInfo info;
-            while( topics::flexible_msg::take_next( *_notifications_reader, &notification, &info ) )
+            while( init.state != state_type::DONE
+                   && topics::flexible_msg::take_next( *_notifications_reader, &notification, &info ) )
             {
                 if( ! notification.is_valid() )
                     continue;
                 auto j = notification.json_data();
                 auto id = rsutils::json::get< std::string >( j, id_key );
-                if( state_type::WAIT_FOR_DEVICE_HEADER == state && id == "device-header" )
+                if( state_type::WAIT_FOR_DEVICE_HEADER == init.state && id == "device-header" )
+                    handle_device_header( init, j );
+                else if( state_type::WAIT_FOR_DEVICE_OPTIONS == init.state && id == "device-options" )
+                    handle_device_options( init, j );
+                else if( state_type::WAIT_FOR_STREAM_HEADER == init.state && id == "stream-header" )
+                    handle_stream_header( init, j );
+                else if( state_type::WAIT_FOR_STREAM_OPTIONS == init.state && id == "stream-options" )
+                    handle_stream_options( init, j );
+                else if( init.state != state_type::WAIT_FOR_DEVICE_HEADER )
                 {
-                    n_streams_expected = rsutils::json::get< size_t >( j, "n-streams" );
-                    LOG_DEBUG( "... device-header: " << n_streams_expected << " streams expected" );
-
-                    if( rsutils::json::has( j, "extrinsics" ) )
-                    {
-                        for( auto & ex : j["extrinsics"] )
-                        {
-                            std::string to_name = rsutils::json::get< std::string >( ex, 0 );
-                            std::string from_name = rsutils::json::get< std::string >( ex, 1 );
-                            extrinsics extr = extrinsics::from_json( rsutils::json::get< json >( ex, 2 ) );
-                            _extrinsics_map[std::make_pair( to_name, from_name )] = std::make_shared< extrinsics >( extr );
-                        }
-                    }
-
-                    state = state_type::WAIT_FOR_DEVICE_OPTIONS;
+                    DDS_THROW( runtime_error, "unexpected notification '" + id + "' in " + to_string( init.state ) );
                 }
-                else if( state_type::WAIT_FOR_DEVICE_OPTIONS == state && id == "device-options" )
-                {
-                    if( rsutils::json::has( j, "options" ) )
-                    {
-                        LOG_DEBUG( "... device-options: " << j["options"].size() << " options received" );
+            }
+        }
+    }
 
-                        std::string owner_name;  // for device options, this is empty!
-                        for( auto & option_json : j["options"] )
-                        {
-                            auto option = dds_option::from_json( option_json, owner_name );
-                            _options.push_back( option );
-                        }
-                    }
+    LOG_DEBUG( "... " << ( state_type::DONE == init.state ? "" : "timed out; state is " ) << init.state );
+    return ( state_type::DONE == init.state );
+}
 
-                    if( n_streams_expected )
-                        state = state_type::WAIT_FOR_STREAM_HEADER;
-                    else
-                        state = state_type::DONE;
-                }
-                else if( state_type::WAIT_FOR_STREAM_HEADER == state && id == "stream-header" )
-                {
-                    if( _streams.size() >= n_streams_expected )
-                        DDS_THROW( runtime_error,
-                                   "more streams than expected (" + std::to_string( n_streams_expected )
-                                       + ") received" );
-                    auto stream_type = rsutils::json::get< std::string >( j, "type" );
-                    auto stream_name = rsutils::json::get< std::string >( j, "name" );
 
-                    auto & stream = _streams[stream_name];
-                    if( stream )
-                        DDS_THROW( runtime_error, "stream '" + stream_name + "' already exists" );
+void dds_device::impl::handle_device_header( init_context & init, nlohmann::json const & j )
+{
+    init.n_streams_expected = rsutils::json::get< size_t >( j, "n-streams" );
+    LOG_DEBUG( "... device-header: " << init.n_streams_expected << " streams expected" );
 
-                    auto sensor_name = rsutils::json::get< std::string >( j, "sensor-name" );
-                    auto default_profile_index = rsutils::json::get< int >( j, "default-profile-index" );
-                    dds_stream_profiles profiles;
+    if( rsutils::json::has( j, "extrinsics" ) )
+    {
+        for( auto & ex : j["extrinsics"] )
+        {
+            std::string to_name = rsutils::json::get< std::string >( ex, 0 );
+            std::string from_name = rsutils::json::get< std::string >( ex, 1 );
+            extrinsics extr = extrinsics::from_json( rsutils::json::get< json >( ex, 2 ) );
+            _extrinsics_map[std::make_pair( to_name, from_name )] = std::make_shared< extrinsics >( extr );
+        }
+    }
+
+    init.state = state_type::WAIT_FOR_DEVICE_OPTIONS;
+}
+
+
+void dds_device::impl::handle_device_options( init_context & init, nlohmann::json const & j )
+{
+    if( rsutils::json::has( j, "options" ) )
+    {
+        LOG_DEBUG( "... device-options: " << j["options"].size() << " options received" );
+
+        std::string owner_name;  // for device options, this is empty!
+        for( auto & option_json : j["options"] )
+        {
+            auto option = dds_option::from_json( option_json, owner_name );
+            _options.push_back( option );
+        }
+    }
+
+    if( init.n_streams_expected )
+        init.state = state_type::WAIT_FOR_STREAM_HEADER;
+    else
+        init.state = state_type::DONE;
+}
+
+
+void dds_device::impl::handle_stream_header( init_context & init, nlohmann::json const & j )
+{
+    if( _streams.size() >= init.n_streams_expected )
+        DDS_THROW( runtime_error,
+                   "more streams than expected (" + std::to_string( init.n_streams_expected ) + ") received" );
+    auto stream_type = rsutils::json::get< std::string >( j, "type" );
+    auto stream_name = rsutils::json::get< std::string >( j, "name" );
+
+    auto & stream = _streams[stream_name];
+    if( stream )
+        DDS_THROW( runtime_error, "stream '" + stream_name + "' already exists" );
+
+    auto sensor_name = rsutils::json::get< std::string >( j, "sensor-name" );
+    auto default_profile_index = rsutils::json::get< int >( j, "default-profile-index" );
+    dds_stream_profiles profiles;
 
 #define TYPE2STREAM( S, P )                                                                                            \
     if( stream_type == #S )                                                                                            \
@@ -497,103 +527,96 @@ bool dds_device::impl::init()
     }                                                                                                                  \
     else
 
-                    TYPE2STREAM( depth, video )
-                    TYPE2STREAM( ir, video )
-                    TYPE2STREAM( color, video )
-                    TYPE2STREAM( accel, motion )
-                    TYPE2STREAM( gyro, motion )
-                    TYPE2STREAM( fisheye, video )
-                    TYPE2STREAM( confidence, video )
-                    TYPE2STREAM( pose, motion )
-                    DDS_THROW( runtime_error, "stream '" + stream_name + "' is of unknown type '" + stream_type + "'" );
+    TYPE2STREAM( depth, video )
+    TYPE2STREAM( ir, video )
+    TYPE2STREAM( color, video )
+    TYPE2STREAM( accel, motion )
+    TYPE2STREAM( gyro, motion )
+    TYPE2STREAM( fisheye, video )
+    TYPE2STREAM( confidence, video )
+    TYPE2STREAM( pose, motion )
+    DDS_THROW( runtime_error, "stream '" + stream_name + "' is of unknown type '" + stream_type + "'" );
 
-                    if( rsutils::json::get< bool >( j, "metadata-enabled" ) )
-                    {
-                        create_metadata_reader();
-                        stream->enable_metadata(); // Call before init_profiles
-                    }
+#undef TYPE2STREAM
 
-                    if( default_profile_index >= 0 && default_profile_index < profiles.size() )
-                        stream->init_profiles( profiles, default_profile_index );
-                    else
-                        DDS_THROW( runtime_error,
-                                   "stream '" + stream_name + "' default profile index "
-                                   + std::to_string( default_profile_index ) + " is out of bounds" );
-                    if( strcmp( stream->type_string(), stream_type.c_str() ) != 0 )
-                        DDS_THROW( runtime_error,
-                                   "failed to instantiate stream type '" + stream_type + "' (instead, got '"
-                                       + stream->type_string() + "')" );
+    if( rsutils::json::get< bool >( j, "metadata-enabled" ) )
+    {
+        create_metadata_reader();
+        stream->enable_metadata();  // Call before init_profiles
+    }
 
-                    LOG_DEBUG( "... stream '" << stream_name << "' (" << _streams.size() << "/" << n_streams_expected
-                                              << ") received with " << profiles.size() << " profiles" );
+    if( default_profile_index >= 0 && default_profile_index < profiles.size() )
+        stream->init_profiles( profiles, default_profile_index );
+    else
+        DDS_THROW( runtime_error,
+                   "stream '" + stream_name + "' default profile index " + std::to_string( default_profile_index )
+                       + " is out of bounds" );
+    if( strcmp( stream->type_string(), stream_type.c_str() ) != 0 )
+        DDS_THROW( runtime_error,
+                   "failed to instantiate stream type '" + stream_type + "' (instead, got '" + stream->type_string()
+                       + "')" );
 
-                    state = state_type::WAIT_FOR_STREAM_OPTIONS;
-                }
-                else if( state_type::WAIT_FOR_STREAM_OPTIONS == state && id == "stream-options" )
-                {
-                    auto stream_it = _streams.find( rsutils::json::get< std::string >( j, "stream-name" ) );
-                    if( stream_it == _streams.end() )
-                        DDS_THROW( runtime_error, std::string ( "Received stream options for stream '" ) +
-                                   rsutils::json::get< std::string >( j, "stream-name" ) +
-                                   "' whose header was not received yet" );
+    LOG_DEBUG( "... stream '" << stream_name << "' (" << _streams.size() << "/" << init.n_streams_expected
+                              << ") received with " << profiles.size() << " profiles" );
 
-                    n_stream_options_received++;
+    init.state = state_type::WAIT_FOR_STREAM_OPTIONS;
+}
 
-                    if( rsutils::json::has( j, "options" ) )
-                    {
-                        dds_options options;
-                        for( auto & option : j["options"] )
-                        {
-                            options.push_back( dds_option::from_json( option, stream_it->second->name() ) );
-                        }
 
-                        stream_it->second->init_options( options );
-                    }
+void dds_device::impl::handle_stream_options( init_context & init, nlohmann::json const & j )
+{
+    auto stream_it = _streams.find( rsutils::json::get< std::string >( j, "stream-name" ) );
+    if( stream_it == _streams.end() )
+        DDS_THROW( runtime_error,
+                   std::string( "Received stream options for stream '" )
+                       + rsutils::json::get< std::string >( j, "stream-name" )
+                       + "' whose header was not received yet" );
 
-                    if( rsutils::json::has( j, "intrinsics" ) )
-                    {
-                        auto video_stream = std::dynamic_pointer_cast< dds_video_stream >( stream_it->second );
-                        auto motion_stream = std::dynamic_pointer_cast< dds_motion_stream >( stream_it->second );
-                        if( video_stream )
-                        {
-                            std::set< video_intrinsics > intrinsics;
-                            for( auto & intr : j["intrinsics"] )
-                                intrinsics.insert( video_intrinsics::from_json( intr ) );
-                            video_stream->set_intrinsics( std::move( intrinsics ) );
-                        }
-                        if( motion_stream )
-                        {
-                            motion_stream->set_intrinsics( motion_intrinsics::from_json( j["intrinsics"][0] ) );
-                        }
-                    }
+    ++init.n_stream_options_received;
 
-                    if( rsutils::json::has( j, "recommended-filters" ) )
-                    {
-                        std::vector< std::string > filter_names;
-                        for( auto & filter : j["recommended-filters"] )
-                        {
-                            filter_names.push_back( filter );
-                        }
+    if( rsutils::json::has( j, "options" ) )
+    {
+        dds_options options;
+        for( auto & option : j["options"] )
+        {
+            options.push_back( dds_option::from_json( option, stream_it->second->name() ) );
+        }
 
-                        stream_it->second->set_recommended_filters( std::move( filter_names ) );
-                    }
+        stream_it->second->init_options( options );
+    }
 
-                    if( _streams.size() >= n_streams_expected )
-                        state = state_type::DONE;
-                    else
-                        state = state_type::WAIT_FOR_STREAM_HEADER;
-                }
-                else
-                {
-                    DDS_THROW( runtime_error, "unexpected notification '" + id + "' in " + to_string( state ) );
-                }
-            }
+    if( rsutils::json::has( j, "intrinsics" ) )
+    {
+        auto video_stream = std::dynamic_pointer_cast< dds_video_stream >( stream_it->second );
+        auto motion_stream = std::dynamic_pointer_cast< dds_motion_stream >( stream_it->second );
+        if( video_stream )
+        {
+            std::set< video_intrinsics > intrinsics;
+            for( auto & intr : j["intrinsics"] )
+                intrinsics.insert( video_intrinsics::from_json( intr ) );
+            video_stream->set_intrinsics( std::move( intrinsics ) );
+        }
+        if( motion_stream )
+        {
+            motion_stream->set_intrinsics( motion_intrinsics::from_json( j["intrinsics"][0] ) );
         }
     }
 
-    LOG_DEBUG( "... " << ( state_type::DONE == state ? "" : "timed out; state is " ) << state );
+    if( rsutils::json::has( j, "recommended-filters" ) )
+    {
+        std::vector< std::string > filter_names;
+        for( auto & filter : j["recommended-filters"] )
+        {
+            filter_names.push_back( filter );
+        }
 
-    return ( state_type::DONE == state );
+        stream_it->second->set_recommended_filters( std::move( filter_names ) );
+    }
+
+    if( _streams.size() >= init.n_streams_expected )
+        init.state = state_type::DONE;
+    else
+        init.state = state_type::WAIT_FOR_STREAM_HEADER;
 }
 
 
