@@ -4919,8 +4919,8 @@ TEST_CASE("Syncer clean_inactive_streams by frame number with software-device de
         }
     }
 }
-
-TEST_CASE("Unit transform test", "[live][software-device]") {
+//ported to python test
+TEST_CASE("Unit transform test", "[live][software-device-disabled]") {
     rs2::context ctx;
 
     if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
