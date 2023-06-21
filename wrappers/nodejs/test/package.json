@@ -1,0 +1,10 @@
+{
+  "name": "node-librealsense2-tests",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "node-librealsense": "^0.282.1"
+  }
+}

@@ -9,6 +9,6 @@ add_subdirectory(tutorial/depth)
 add_subdirectory(tutorial/capture)
 add_subdirectory(tutorial/processing)
 add_subdirectory(tutorial/software-dev)
+add_subdirectory(tutorial/pose)
 add_subdirectory(tutorial/d400-occ)
 add_subdirectory(tutorial/load-json)
-

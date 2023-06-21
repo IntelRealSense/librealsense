@@ -1,8 +1,5 @@
 package com.intel.realsense.librealsense;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class Pipeline extends LrsClass{
     public Pipeline(){
         try(RsContext ctx = new RsContext()) {
@@ -46,15 +43,6 @@ public class Pipeline extends LrsClass{
         return new FrameSet(frameHandle);
     }
 
-    public List<StreamProfile> getActiveStreams(){
-        long[] streamProfilesHandles = nGetActiveStreams(mHandle);
-        List<StreamProfile> rv = new ArrayList<>();
-        for(long h : streamProfilesHandles){
-            rv.add(new StreamProfile(h));
-        }
-        return rv;
-    }
-
     @Override
     public void close(){
         nDelete(mHandle);
@@ -68,5 +56,4 @@ public class Pipeline extends LrsClass{
     private static native long nStartWithConfigAndCallback(long handle, long configHandle, FrameCallback callback);
     private static native void nStop(long handle);
     private static native long nWaitForFrames(long handle, int timeout);
-    private static native long[] nGetActiveStreams(long handle);
 }

@@ -23,7 +23,7 @@ public class DeviceList extends LrsClass {
         }
     }
 
-    public boolean containsDevice(Device device){
+    public boolean containesDevice(Device device){
         return nContainsDevice(mHandle, device.getHandle());
     }
 

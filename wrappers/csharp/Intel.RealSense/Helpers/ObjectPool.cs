@@ -74,17 +74,23 @@ namespace Intel.RealSense
         private static object Get(Type t, IntPtr ptr)
         {
             var stack = GetPool(t);
+            int count;
             lock ((stack as ICollection).SyncRoot)
             {
-                if (stack.Count > 0)
-                {
-                    Base.PooledObject obj;
-                    obj = stack.Pop();
+                count = stack.Count;
+            }
 
-                    obj.m_instance.Reset(ptr);
-                    obj.Initialize();
-                    return obj;
+            if (count > 0)
+            {
+                Base.PooledObject obj;
+                lock ((stack as ICollection).SyncRoot)
+                {
+                    obj = stack.Pop();
                 }
+
+                obj.m_instance.Reset(ptr);
+                obj.Initialize();
+                return obj;
             }
 
             return CreateInstance(t, ptr);

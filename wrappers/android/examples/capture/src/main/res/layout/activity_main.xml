@@ -3,13 +3,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/black"
     android:orientation="horizontal">
 
     <com.intel.realsense.librealsense.GLRsSurfaceView
+        android:id="@+id/glSurfaceView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:id="@+id/glSurfaceView"/>
+        android:layout_height="match_parent" />
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:id="@+id/buttonPanel"
@@ -28,6 +29,18 @@
             android:text="Connect a RealSense camera"
             android:textColor="#ffffff"/>
     </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <Button android:text="@string/message1"
+        android:id="@+id/startRecordFab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="40dp"
+        android:backgroundTint="#ffffff"
+        android:clickable="true"
+        android:visibility="visible" />
+
 
 
 </RelativeLayout>

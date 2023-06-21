@@ -14,7 +14,7 @@ endif()
 add_subdirectory(${DLIB_DIR} build)
 
 # Add it as the source of includes??
-list(APPEND DEPENDENCIES dlib::dlib)
+set(DEPENDENCIES realsense2 dlib::dlib)
 include_directories( ../../include )
 include_directories( ${DLIB_DIR} )
 

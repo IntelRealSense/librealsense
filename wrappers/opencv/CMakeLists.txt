@@ -5,7 +5,7 @@ project(RealsenseCVExamples)
 
 find_package(OpenCV REQUIRED)
 
-list(APPEND DEPENDENCIES ${OpenCV_LIBS})
+set(DEPENDENCIES realsense2 ${OpenCV_LIBS})
 
 add_subdirectory(imshow)
 add_subdirectory(grabcuts)
