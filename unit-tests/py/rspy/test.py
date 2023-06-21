@@ -572,7 +572,6 @@ def print_separator():
     to be easier to differentiate.
     """
     check_test_in_progress( False )
-    global n_tests
     log.out( '\n___' )
 
 
@@ -741,6 +740,7 @@ class remote:
         It is in danger of HANGING UP our own process because readline blocks forever! To avoid this
         please follow the usage guidelines in the class notes.
         """
+        nested_prefix = f'[{self._nested_indent}] '
         for line in iter( self._process.stdout.readline, '' ):
             # NOTE: line will include the terminating \n EOL
             # NOTE: so readline will return '' (with no EOL) when EOF is reached - the "sentinel"
@@ -760,7 +760,7 @@ class remote:
                     # the waiting thread on the event!
                     self._raise_if_needed()
                 continue
-            if line.find( '['+self._nested_indent+'] ' ) < 0:
+            if line.find( nested_prefix ) < 0:  # there could be color codes in the line
                 if self._exception:
                     self._exception.append( line[:-1] )
                     # We cannot raise an error here -- it'll just exit the thread and not be
@@ -770,7 +770,7 @@ class remote:
                 elif line.startswith( '  File "' ):
                     # Some exception are syntax errors in the command, which would not have a 'Traceback'...
                     self._exception = [line[:-1]]
-                print( '['+self._nested_indent+']', line, end='', flush=True )
+                print( nested_prefix + line, end='', flush=True )
             else:
                 print( line, end='', flush=True )
         #
@@ -801,7 +801,7 @@ class remote:
 
     def _raise_if_needed( self, how='raise' ):
         if self._exception:
-            what = self._exception.pop()
+            what = f'[{self._name}] ' + self._exception.pop()
             while self._exception and ( what.startswith( 'Invoked with:' ) or what.startswith( '  ' ) or what.startswith( '\n' )):
                 what = self._exception.pop() + '\n  ' + what
             self._exception = None
@@ -869,6 +869,7 @@ class remote:
             if self._thread.is_alive():
                 log.d( self._name, 'waiting for thread join timed out after', timeout, 'seconds' )
         self._terminate()
+        self._raise_if_needed()
         return self.status()
 
     def _terminate( self ):

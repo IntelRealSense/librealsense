@@ -4,8 +4,10 @@
 import pyrealdds as dds
 from rspy import log, test
 import d435i
+import threading
+from time import sleep
 
-dds.debug( True, log.nested )
+dds.debug( log.is_debug_on(), log.nested )
 
 
 participant = dds.participant()
@@ -68,9 +70,28 @@ def test_d435i():
     server = d435i.build( participant )
 
 
+notification_thread = None
+def notification_flood():
+    def notification_flooder():
+        global server
+        i = 0
+        while server is not None:
+            i += 1
+            log.d( f'----> {i}' )
+            server.publish_notification( { 'id' : 'some-notification', 'counter' : i } )
+            sleep( 0.005 )
+    global notification_thread
+    notification_thread = threading.Thread( target=notification_flooder )
+    notification_thread.start()
+
+
 def close_server():
-    global server
+    global server, notification_thread
     server = None
+    if notification_thread is not None:
+        notification_thread.join()
+        notification_thread = None
+
 
 
 # From here down, we're in "interactive" mode (see test-device-init.py)

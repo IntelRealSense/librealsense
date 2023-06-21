@@ -6,9 +6,10 @@
 import pyrealdds as dds
 from rspy import log, test
 import d435i
+from time import sleep
 
 
-dds.debug( True, 'C  ' )
+dds.debug( log.is_debug_on(), 'C  ' )
 log.nested = 'C  '
 
 
@@ -29,8 +30,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     #############################################################################################
     #
-    test.start( "Test 1 stream..." )
-    try:
+    with test.closure( "Test 1 stream..." ):
         remote.run( 'test_one_stream()' )
         device = dds.device( participant, participant.create_guid(), info )
         device.run( 1000 )  # If no device is available in 30 seconds, this will throw
@@ -45,15 +45,11 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             test.check_equal( profiles[0].stream(), stream )
             test.check_equal( stream.default_profile_index(), 0 )
         remote.run( 'close_server()' )
-    except:
-        test.unexpected_exception()
     device = None
-    test.finish()
     #
     #############################################################################################
     #
-    test.start( "Test motion stream..." )
-    try:
+    with test.closure( "Test motion stream..." ):
         remote.run( 'test_one_motion_stream()' )
         device = dds.device( participant, participant.create_guid(), info )
         device.run( 1000 )  # If no device is available in 30 seconds, this will throw
@@ -69,15 +65,11 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             test.check_equal( profiles[0].stream(), stream )
             test.check_equal( stream.default_profile_index(), 0 )
         remote.run( 'close_server()' )
-    except:
-        test.unexpected_exception()
     device = None
-    test.finish()
     #
     #############################################################################################
     #
-    test.start( "Test no streams..." )
-    try:
+    with test.closure( "Test no streams..." ):
         remote.run( 'test_no_streams()' )
         device = dds.device( participant, participant.create_guid(), info )
         device.run( 1000 )  # If no device is available in 30 seconds, this will throw
@@ -86,28 +78,21 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         for stream in device.streams():
             test.unreachable()
         remote.run( 'close_server()' )
-    except:
-        test.unexpected_exception()
     device = None
-    test.finish()
     #
     #############################################################################################
     #
-    test.start( "Test no profiles... (should fail on server side)" )
-    try:
-        remote.run( 'test_no_profiles()' )
-    except test.remote.Error as e:
-        # this fails because streams require at least one profile
-        test.check_exception( e, test.remote.Error, "RuntimeError: at least one profile is required to initialize stream 's1'" )
-    except:
-        test.unexpected_exception()
+    with test.closure( "Test no profiles... (should fail on server side)" ):
+        try:
+            remote.run( 'test_no_profiles()' )
+        except test.remote.Error as e:
+            # this fails because streams require at least one profile
+            test.check_exception( e, test.remote.Error, "[remote] RuntimeError: at least one profile is required to initialize stream 's1'" )
     device = None
-    test.finish()
     #
     #############################################################################################
     #
-    test.start( "Test 10 profiles..." )
-    try:
+    with test.closure( "Test 10 profiles..." ):
         remote.run( 'test_n_profiles(10)' )
         device = dds.device( participant, participant.create_guid(), info )
         device.run( 1000 )  # If no device is available in 30 seconds, this will throw
@@ -125,15 +110,11 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             test.check_equal( profiles[i].width(), i )
             test.check_equal( profiles[i].height(), v )
         remote.run( 'close_server()' )
-    except:
-        test.unexpected_exception()
     device = None
-    test.finish()
     #
     #############################################################################################
     #
-    test.start( "Test D435i..." )
-    try:
+    with test.closure( "Test D435i..." ):
         remote.run( 'test_d435i()' )
         device = dds.device( participant, participant.create_guid(), d435i.device_info )
         device.run( 1000 )  # If no device is available in 30 seconds, this will throw
@@ -142,15 +123,11 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         for stream in device.streams():
             profiles = stream.profiles()
         remote.run( 'close_server()' )
-    except:
-        test.unexpected_exception()
     device = None
-    test.finish()
     #
     #############################################################################################
     #
-    test.start( "Test discovery of another client device..." )
-    try:
+    with test.closure( "Test discovery of another client device..." ):
         remote.run( 'test_one_stream()' )
         device = dds.device( participant, participant.create_guid(), info )
         device.run( 1000 )  # If no device is available in 30 seconds, this will throw
@@ -158,17 +135,42 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         test.check_equal( device.n_streams(), 1 )
         # now start another server, and have it access the device
         # NOTE: I had trouble nesting another 'with' statement here...
-        with test.remote( second_client_script, name="remote2", nested_indent="  c" ) as remote2:
+        with test.remote( second_client_script, name="remote2", nested_indent=" 2 " ) as remote2:
             remote2.wait_until_ready()
             remote2.run( 'test_second_device()' )
             # the notifications for the second client should be sent again from the server -- we
             # should ignore them...
             remote2.run( 'close_device()' )
         remote.run( 'close_server()' )
-    except:
-        test.unexpected_exception()
     device = None
-    test.finish()
+    #
+    #############################################################################################
+    #
+    with test.closure( "Multiple overlapping client initializations" ):
+        remote.run( 'test_one_stream()' )
+        remote.run( 'notification_flood()' )
+        # Start another two clients and have them access the device:
+        # When the device initializations happen concurrently (which is hard to guarrantee) then
+        # initialization messages may get confused and an exception produced. We try 5 times:
+        for i in range(5):
+            if i > 0:
+                # if we get here, there was no exception; we try again with a small pause
+                log.i( f'... iteration {i+1}' )
+                sleep( 1 )
+            with test.remote( second_client_script, name="client1", nested_indent=" 1 " ) as client1:
+                client1.wait_until_ready()
+                with test.remote( second_client_script, name="client2", nested_indent=" 2 " ) as client2:
+                    client2.wait_until_ready()
+                    with test.remote( second_client_script, name="client3", nested_indent=" 3 " ) as client3:
+                        client3.wait_until_ready()
+                        with test.remote( second_client_script, name="client4", nested_indent=" 4 " ) as client4:
+                            client4.wait_until_ready()
+                            client1.run( 'test_second_device()', timeout=None )  # Don't wait until done
+                            client2.run( 'test_second_device()', timeout=None )
+                            client3.run( 'test_second_device()', timeout=None )
+                            client4.run( 'test_second_device()', timeout=None )
+        remote.run( 'close_server()' )
+
     #
     #############################################################################################
 

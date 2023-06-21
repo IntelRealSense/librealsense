@@ -75,7 +75,7 @@ static void on_discovery_device_header( size_t const n_streams,
         extrinsics_json.push_back( json::array( { ex.first.first, ex.first.second, ex.second->to_json() } ) );
 
     topics::flexible_msg device_header( json{
-        { "id", "device-header" },
+        { id_key, "device-header" },
         { "n-streams", n_streams },
         { "extrinsics", std::move( extrinsics_json ) }
     } );
@@ -88,7 +88,7 @@ static void on_discovery_device_header( size_t const n_streams,
     for( auto & opt : options )
         device_options.push_back( std::move( opt->to_json() ) );
     topics::flexible_msg device_options_message( json {
-        { "id", "device-options" },
+        { id_key, "device-options" },
         { "options", std::move( device_options ) }
     } );
     json_string = slice( device_options_message.custom_data< char const >(), device_options_message._data.size() );
@@ -105,7 +105,7 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
     for( auto & sp : stream->profiles() )
         profiles.push_back( std::move( sp->to_json() ) );
     topics::flexible_msg stream_header_message( json{
-        { "id", "stream-header" },
+        { id_key, "stream-header" },
         { "type", stream->type_string() },
         { "name", stream->name() },
         { "sensor-name", stream->sensor_name() },
@@ -135,7 +135,7 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
     for( auto & filter : stream->recommended_filters() )
         stream_filters.push_back( filter );
     topics::flexible_msg stream_options_message( json {
-        { "id", "stream-options" },
+        { id_key, "stream-options" },
         { "stream-name", stream->name() },
         { "options" , std::move( stream_options ) },
         { "intrinsics" , intrinsics },

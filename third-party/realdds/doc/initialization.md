@@ -6,7 +6,7 @@ See also: [device](device.md), [notifications](notifications.md)
 
 In order to stream, a client must know the stream names, available formats, etc.
 
-The only way for a client to get these is by subscribing to the `notification` topic. When the server detects a subscriber on this topic, it will broadcast initialization messages in the following order:
+The only way for a client to get these is by subscribing to the `notification` topic. When the server detects a subscriber on this topic, it will broadcast a set of initialization messages in the following order:
 
 - `device-header`
 - `device-options` - optional
@@ -17,6 +17,19 @@ The only way for a client to get these is by subscribing to the `notification` t
 These initialization messages should only have effect on devices that are not already initialized. They are expected in the above order.
 
 Once all streams have been received, the device is initialized and ready to use. See [Streaming](streaming.md).
+
+
+## "Atomic" Initialization
+
+
+Initialization may happen interspersed with regular notifications: for example, a server that's already serving data and notifications to an existing client may see another client and broadcast initialization messages.
+
+Only one set of initialization messages can be sent at a time. I.e., if a new client is detected while initialization messages for a previous client are still outgoing, a new set of messages must go out but only once the previous set is finished.
+
+While a set of initialization messages are outgoing, all other notifications must take a back seat and wait until the set is written out.
+
+
+## Messages
 
 
 #### `device-header`
