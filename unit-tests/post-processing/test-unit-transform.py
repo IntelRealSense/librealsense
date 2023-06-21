@@ -44,7 +44,6 @@ vs.intrinsics = intrinsics
 software_sensor.add_video_stream(vs)
 
 profiles = software_sensor.get_stream_profiles()
-print(profiles)
 depth = profiles[0].as_video_stream_profile()
 
 sync = rs.syncer()
