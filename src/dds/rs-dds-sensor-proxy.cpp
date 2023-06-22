@@ -111,9 +111,6 @@ void dds_sensor_proxy::initialization_done( const std::string & product_id, cons
 {
     register_basic_converters();
     _profiles = _formats_converter.get_all_possible_profiles( _raw_rs_profiles );
-
-    auto tags = dds_rs_internal_data::get_profiles_tags( product_id, product_line );
-    tag_profiles( tags );
 }
 
 
@@ -140,7 +137,8 @@ void dds_sensor_proxy::register_basic_converters()
 
     // Infrared (converter source needs type to be handled properly by formats_converter)
     converters.push_back( { { { RS2_FORMAT_Y8, RS2_STREAM_INFRARED } },
-                            { { RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1 },
+                            { { RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 0 },
+                              { RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1 },
                               { RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2 } },
                             []() { return std::make_shared< identity_processing_block >(); } } );
     converters.push_back( { { { RS2_FORMAT_Y16, RS2_STREAM_INFRARED } },
@@ -154,6 +152,11 @@ void dds_sensor_proxy::register_basic_converters()
                             []() { return std::make_shared< identity_processing_block >(); } } );
     converters.push_back( { { { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO } },
                             { { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO } },
+                            []() { return std::make_shared< identity_processing_block >(); } } );
+
+    // Confidence
+    converters.push_back( { { { RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE } },
+                            { { RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE } },
                             []() { return std::make_shared< identity_processing_block >(); } } );
 
     _formats_converter.register_converters( converters );
@@ -497,6 +500,11 @@ void dds_sensor_proxy::stop()
     {
         auto & dds_stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
 
+        dds_stream->stop_streaming();
+        dds_stream->close();
+
+        _streaming_by_name[dds_stream->name()].syncer.on_frame_ready( nullptr );
+
         if( auto dds_video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( dds_stream ) )
         {
             dds_video_stream->on_data_available( nullptr );
@@ -507,11 +515,6 @@ void dds_sensor_proxy::stop()
         }
         else
             throw std::runtime_error( "Unsupported stream type" );
-
-        dds_stream->stop_streaming();
-        dds_stream->close();
-
-        _streaming_by_name[dds_stream->name()].syncer.on_frame_ready( nullptr );
     }
 
     // Resets frame source. Nullify streams on_data_available before calling stop.

@@ -38,7 +38,13 @@ void formats_converter::drop_non_basic_formats()
         auto target = _pb_factories[i]->get_target_info();
         if( target.size() == 1 &&
             source[0].format == target[0].format )
-            continue; // Identity, does not actually convert.
+        {
+            // Identity, does not actually convert, keep this converter, unless it is colored infrared.
+            bool colored_infrared = target[0].stream == RS2_STREAM_INFRARED && source[0].format == RS2_FORMAT_UYVY;
+
+            if( ! colored_infrared )
+                continue;
+        }
 
         if( source[0].format == RS2_FORMAT_Y8I || source[0].format == RS2_FORMAT_Y12I )
             continue; // Convert interleaved formats.
