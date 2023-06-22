@@ -83,11 +83,11 @@ bool profiles_are_compatible( std::shared_ptr< dds_stream_profile > const & p1,
     if( ! ! vp1 != ! ! vp2 )
         return false;  // types aren't the same
     if( vp1 && vp2 )
-        if( vp1->width() != vp2->width() || vp1->height() != vp2->height() )
+        if( vp1->width() != vp2->width() || vp1->height() != vp2->height() || vp1->frequency() != vp2->frequency() )
             return false;
     if( ! any_format && p1->format() != p2->format() )
         return false;
-    return p1->frequency() == p2->frequency();
+    return true;
 }
 
 
