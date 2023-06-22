@@ -22,6 +22,7 @@
 #include <proc/spatial-filter.h>
 #include <proc/temporal-filter.h>
 #include <proc/threshold.h>
+#include <proc/color-formats-converter.h>
 
 #include <rsutils/json.h>
 
@@ -108,9 +109,7 @@ std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_motion_stream(
 
 void dds_sensor_proxy::initialization_done( const std::string & product_id, const std::string & product_line )
 {
-    auto converters = dds_rs_internal_data::get_profile_converters( product_id, product_line );
-    handle_no_converters( converters );
-    _formats_converter.register_converters( converters );
+    register_basic_converters();
     _profiles = _formats_converter.get_all_possible_profiles( _raw_rs_profiles );
 
     auto tags = dds_rs_internal_data::get_profiles_tags( product_id, product_line );
@@ -118,14 +117,46 @@ void dds_sensor_proxy::initialization_done( const std::string & product_id, cons
 }
 
 
-void dds_sensor_proxy::handle_no_converters( std::vector<librealsense::processing_block_factory> & converters )
+void dds_sensor_proxy::register_basic_converters()
 {
-    if( converters.empty() )
-        // Create "identity converter" for each raw profile
-        for( auto & raw_profile : _raw_rs_profiles )
-            converters.push_back( processing_block_factory::create_id_pbf( raw_profile->get_format(),
-                                                                           raw_profile->get_stream_type(),
-                                                                           raw_profile->get_stream_index() ) );
+    std::vector< librealsense::processing_block_factory > converters;
+    std::vector< processing_block_factory > tmp;
+
+    // Color
+    converters.push_back( processing_block_factory::create_id_pbf( RS2_FORMAT_YUYV, RS2_STREAM_COLOR ) );
+    converters.push_back( processing_block_factory::create_id_pbf( RS2_FORMAT_UYVY, RS2_STREAM_COLOR ) );
+    converters.push_back( processing_block_factory::create_id_pbf( RS2_FORMAT_RGB8, RS2_STREAM_COLOR ) );
+    converters.push_back( processing_block_factory::create_id_pbf( RS2_FORMAT_RGBA8, RS2_STREAM_COLOR ) );
+    converters.push_back( processing_block_factory::create_id_pbf( RS2_FORMAT_BGR8, RS2_STREAM_COLOR ) );
+    converters.push_back( processing_block_factory::create_id_pbf( RS2_FORMAT_BGRA8, RS2_STREAM_COLOR ) );
+
+    converters.push_back( { { { RS2_FORMAT_UYVY } }, { { RS2_FORMAT_RGB8, RS2_STREAM_COLOR } },
+                            []() { return std::make_shared< uyvy_converter >( RS2_FORMAT_RGB8 ); } } );
+    converters.push_back( { { { RS2_FORMAT_YUYV } }, { { RS2_FORMAT_RGB8, RS2_STREAM_COLOR } },
+                            []() { return std::make_shared< yuy2_converter >( RS2_FORMAT_RGB8 ); } } );
+
+    // Depth
+    converters.push_back( processing_block_factory::create_id_pbf( RS2_FORMAT_Z16, RS2_STREAM_DEPTH ) );
+
+    // Infrared (converter source needs type to be handled properly by formats_converter)
+    converters.push_back( { { { RS2_FORMAT_Y8, RS2_STREAM_INFRARED } },
+                            { { RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1 },
+                              { RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2 } },
+                            []() { return std::make_shared< identity_processing_block >(); } } );
+    converters.push_back( { { { RS2_FORMAT_Y16, RS2_STREAM_INFRARED } },
+                            { { RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1 },
+                              { RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2 } },
+                            []() { return std::make_shared< identity_processing_block >(); } } );
+
+    // Motion
+    converters.push_back( { { { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL } },
+                            { { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL } },
+                            []() { return std::make_shared< identity_processing_block >(); } } );
+    converters.push_back( { { { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO } },
+                            { { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO } },
+                            []() { return std::make_shared< identity_processing_block >(); } } );
+
+    _formats_converter.register_converters( converters );
 }
 
 

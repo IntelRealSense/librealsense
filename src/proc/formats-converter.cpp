@@ -70,14 +70,20 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
                    ( source.stream == raw_profile->get_stream_type() || source.stream == RS2_STREAM_ANY ) )
                 {
                     auto targets = pbf->get_target_info();
-                    // targets are saved with format and type only. Updating fps and resolution before using as key
+                    // targets are saved with format, type and sometimes index. Updating fps and resolution before using as key
                     for( auto & target : targets )
                     {
+                        // When interleaved streams are seperated to two distinct streams (e.g. sent as DDS streams),
+                        // same converters are registered for both stream. We handle the relevant one based on index.
+                        // Currently for infrared streams only.
+                        if( source.stream == RS2_STREAM_INFRARED && raw_profile->get_stream_index() != target.index )
+                            continue;
+
                         target.fps = raw_profile->get_framerate();
 
                         auto cloned_profile = clone_profile( raw_profile );
                         cloned_profile->set_format( target.format );
-                        cloned_profile->set_stream_index( target.index ); //TODO - shouldn't be from_profile.index?
+                        cloned_profile->set_stream_index( target.index );
                         cloned_profile->set_stream_type( target.stream );
 
                         auto cloned_vsp = As< video_stream_profile, stream_profile_interface >( cloned_profile );
