@@ -368,7 +368,12 @@ namespace librealsense
 
             std::map<uint64_t, devices_changed_callback_ptr> devices_changed_callbacks;
             {
-                std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
+                std::unique_lock<std::timed_mutex> lk(_devices_changed_callbacks_mtx, std::defer_lock);
+                if (!lk.try_lock_for(std::chrono::milliseconds(500)))
+                {
+                    LOG_ERROR("Couldn't lock the _devices_changed_callbacks_mtx mutex. Exiting the callback");
+                    return;
+                }
                 devices_changed_callbacks = _devices_changed_callbacks;
             }
 
@@ -414,7 +419,9 @@ namespace librealsense
 
     uint64_t context::register_internal_device_callback(devices_changed_callback_ptr callback)
     {
-        std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
+        std::unique_lock<std::timed_mutex> lk(_devices_changed_callbacks_mtx, std::defer_lock);
+        lk.lock();
+
         auto callback_id = unique_id::generate_id();
         _devices_changed_callbacks.insert(std::make_pair(callback_id, std::move(callback)));
 
@@ -428,7 +435,9 @@ namespace librealsense
 
     void context::unregister_internal_device_callback(uint64_t cb_id)
     {
-        std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
+        std::unique_lock<std::timed_mutex> lk(_devices_changed_callbacks_mtx, std::defer_lock);
+        lk.lock();
+
         _devices_changed_callbacks.erase(cb_id);
 
         if (_devices_changed_callback == nullptr && _devices_changed_callbacks.size() == 0) // There are no register callbacks any more _device_watcher can be stopped
@@ -439,7 +448,9 @@ namespace librealsense
 
     void context::set_devices_changed_callback(devices_changed_callback_ptr callback)
     {
-        std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
+        std::unique_lock<std::timed_mutex> lk(_devices_changed_callbacks_mtx, std::defer_lock);
+        lk.lock();
+
         _devices_changed_callback = std::move(callback);
 
         if (_device_watcher->is_stopped())

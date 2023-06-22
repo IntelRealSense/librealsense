@@ -139,7 +139,8 @@ namespace librealsense
         devices_changed_callback_ptr _devices_changed_callback;
         std::map<int, std::weak_ptr<const stream_interface>> _streams;
         std::map<int, std::map<int, std::weak_ptr<lazy<rs2_extrinsics>>>> _extrinsics;
-        std::mutex _streams_mutex, _devices_changed_callbacks_mtx;
+        std::mutex _streams_mutex;
+        std::timed_mutex _devices_changed_callbacks_mtx;
     };
 
     class readonly_device_info : public device_info
