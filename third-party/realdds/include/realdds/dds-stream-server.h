@@ -16,6 +16,7 @@
 namespace realdds {
 namespace topics {
 class image_msg;
+class imu_msg;
 }
 
 
@@ -164,7 +165,7 @@ public:
     void set_intrinsics( const motion_intrinsics & intrinsics ) { _intrinsics = intrinsics; }
     const motion_intrinsics & get_intrinsics() const { return _intrinsics; }
 
-    virtual void publish_motion( topics::image_msg && );
+    virtual void publish_motion( topics::imu_msg && );
 
 private:
     void check_profile( std::shared_ptr< dds_stream_profile > const & ) const override;

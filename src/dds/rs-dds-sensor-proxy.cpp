@@ -10,6 +10,7 @@
 
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/image-msg.h>
+#include <realdds/topics/imu-msg.h>
 
 #include <src/stream.h>
 
@@ -302,13 +303,13 @@ void dds_sensor_proxy::handle_video_data( realdds::topics::image_msg && dds_fram
 }
 
 
-void dds_sensor_proxy::handle_motion_data( realdds::topics::image_msg && dds_frame,
+void dds_sensor_proxy::handle_motion_data( realdds::topics::imu_msg && imu,
                                            const std::shared_ptr< stream_profile_interface > & profile,
                                            streaming_impl & streaming )
 {
     frame_additional_data data;  // with NO metadata by default!
     data.timestamp
-        = static_cast< rs2_time_t >( realdds::time_to_double( dds_frame.timestamp ) * 1e-3 );  // milliseconds
+        = static_cast< rs2_time_t >( realdds::time_to_double( imu.timestamp() ) * 1e-3 );  // milliseconds
     data.timestamp_domain;  // from metadata, or leave default (hardware domain)
     data.depth_units;       // from metadata
     data.frame_number;      // filled in only once metadata is known
@@ -318,11 +319,24 @@ void dds_sensor_proxy::handle_motion_data( realdds::topics::image_msg && dds_fra
         return;
 
     auto new_frame = static_cast< frame * >( new_frame_interface );
-    new_frame->data = std::move( dds_frame.raw_data );
+    assert( new_frame->data.size() == size( float ) * 3 );
+    float * xyz = reinterpret_cast< float * >( new_frame->data.data() );
+    if( profile->get_stream_type() == RS2_STREAM_ACCEL )
+    {
+        xyz[0] = (float)imu.accel_data().x();
+        xyz[1] = (float)imu.accel_data().y();
+        xyz[2] = (float)imu.accel_data().z();
+    }
+    else
+    {
+        xyz[0] = (float)imu.gyro_data().x();
+        xyz[1] = (float)imu.gyro_data().y();
+        xyz[2] = (float)imu.gyro_data().z();
+    }
 
     if( _md_enabled )
     {
-        streaming.syncer.enqueue_frame( dds_frame.timestamp.to_ns(), streaming.syncer.hold( new_frame ) );
+        streaming.syncer.enqueue_frame( imu.timestamp().to_ns(), streaming.syncer.hold( new_frame ) );
     }
     else
     {
@@ -452,10 +466,10 @@ void dds_sensor_proxy::start( frame_callback_ptr callback )
         else if( auto dds_motion_stream = std::dynamic_pointer_cast< realdds::dds_motion_stream >( dds_stream ) )
         {
             dds_motion_stream->on_data_available(
-                [profile, this, &streaming]( realdds::topics::image_msg && dds_frame )
+                [profile, this, &streaming]( realdds::topics::imu_msg && imu )
                 {
                     if( _is_streaming )
-                        handle_motion_data( std::move( dds_frame ), profile, streaming );
+                        handle_motion_data( std::move( imu ), profile, streaming );
                 } );
         }
         else

@@ -15,6 +15,7 @@ namespace realdds {
 
 namespace topics {
 class image_msg;
+class imu_msg;
 class flexible_msg;
 }  // namespace topics
 
@@ -137,7 +138,7 @@ public:
 
     void open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & ) override;
 
-    typedef std::function< void( topics::image_msg && f ) > on_data_available_callback;
+    typedef std::function< void( topics::imu_msg && f ) > on_data_available_callback;
     void on_data_available( on_data_available_callback cb ) { _on_data_available = cb; }
 
     void set_intrinsics( const motion_intrinsics & intrinsics ) { _intrinsics = intrinsics; }

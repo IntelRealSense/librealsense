@@ -9,6 +9,8 @@
 #include <rsutils/json.h>
 
 #include <realdds/topics/image-msg.h>
+#include <realdds/topics/imu-msg.h>
+#include <realdds/topics/ros2/ros2vector3.h>
 #include <realdds/topics/flexible-msg.h>
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
@@ -491,48 +493,82 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
     // Create a supported streams list for initializing the relevant DDS topics
     auto supported_streams = get_supported_streams();
 
-    _bridge.on_start_sensor( [this]( std::string const & sensor_name, dds_stream_profiles const & active_profiles ) {
-        auto & sensor = _rs_sensors[sensor_name];
-        auto rs2_profiles = get_rs2_profiles( active_profiles );
-        sensor.open( rs2_profiles );
-        sensor.start( [this]( rs2::frame f ) {
-            auto stream_name = stream_name_from_rs2( f.get_profile() );
-            auto it = _stream_name_to_server.find( stream_name );
-            if( it != _stream_name_to_server.end() )
-            {
-                auto & server = it->second;
-                if( _bridge.is_streaming( server ) )
+    _bridge.on_start_sensor(
+        [this]( std::string const & sensor_name, dds_stream_profiles const & active_profiles )
+        {
+            auto & sensor = _rs_sensors[sensor_name];
+            auto rs2_profiles = get_rs2_profiles( active_profiles );
+            sensor.open( rs2_profiles );
+            sensor.start(
+                [this]( rs2::frame f )
                 {
-                    realdds::topics::image_msg image;
-                    auto data = static_cast< const uint8_t * >( f.get_data() );
-                    image.raw_data.assign( data, data + f.get_data_size() );
-                    image.height = server->get_image_header().height;
-                    image.width = server->get_image_header().width;
-                    image.timestamp  // in sec.nsec
-                        = realdds::dds_time( static_cast< long double >( f.get_timestamp() ) / 1e3 );
-                    if( auto video = std::dynamic_pointer_cast< realdds::dds_video_stream_server >( server ) )
+                    auto const stream_profile = f.get_profile();
+                    auto const stream_name = stream_name_from_rs2( stream_profile );
+                    auto it = _stream_name_to_server.find( stream_name );
+                    if( it == _stream_name_to_server.end() )
+                        return;
+
+                    auto & server = it->second;
+                    if( ! _bridge.is_streaming( server ) )
+                        return;
+
+                    auto const stream_type = stream_profile.stream_type();
+                    dds_time const timestamp  // in sec.nsec
+                        ( static_cast< long double >( f.get_timestamp() ) / 1e3 );
+
+                    if( auto video = std::dynamic_pointer_cast<realdds::dds_video_stream_server>(server) )
+                    {
+                        // RS2_STREAM_DEPTH, RS2_STREAM_COLOR, RS2_STREAM_INFRARED
+                        realdds::topics::image_msg image;
+                        auto data = static_cast<const uint8_t *>(f.get_data());
+                        image.raw_data.assign( data, data + f.get_data_size() );
+                        image.height = server->get_image_header().height;
+                        image.width = server->get_image_header().width;
+                        image.timestamp = timestamp;
                         video->publish_image( std::move( image ) );
+                        publish_frame_metadata( f, timestamp );
+                    }
                     else if( auto motion = std::dynamic_pointer_cast< realdds::dds_motion_stream_server >( server ) )
-                        motion->publish_motion( std::move( image ) );
-                    publish_frame_metadata( f, image.timestamp );
-                }
-            }
+                    {
+                        // RS2_STREAM_GYRO, RS2_STREAM_ACCEL
+                        static realdds::topics::imu_msg imu;
+                        auto xyz = reinterpret_cast< float const * >( f.get_data() );
+                        if( RS2_STREAM_ACCEL == stream_type )
+                        {
+                            imu.accel_data().x( xyz[0] );
+                            imu.accel_data().y( xyz[1] );
+                            imu.accel_data().z( xyz[2] );
+                        }
+                        else
+                        {
+                            imu.gyro_data().x( xyz[0] );
+                            imu.gyro_data().y( xyz[1] );
+                            imu.gyro_data().z( xyz[2] );
+                        }
+                        imu.timestamp( timestamp );
+                        motion->publish_motion( std::move( imu ) );
+                        // motion streams have no metadata!
+                    }
+                } );
+            std::cout << sensor_name << " sensor started" << std::endl;
         } );
-        std::cout << sensor_name << " sensor started" << std::endl;
-    } );
-    _bridge.on_stop_sensor( [this]( std::string const & sensor_name ) {
-        auto & sensor = _rs_sensors[sensor_name];
-        sensor.stop();
-        sensor.close();
-        std::cout << sensor_name << " sensor stopped" << std::endl;
-    } );
-    _bridge.on_error( [this]( std::string const & error_string ) {
-        nlohmann::json j = nlohmann::json::object( {
-            { "id", "error" },
-            { "error", error_string },
+    _bridge.on_stop_sensor(
+        [this]( std::string const & sensor_name )
+        {
+            auto & sensor = _rs_sensors[sensor_name];
+            sensor.stop();
+            sensor.close();
+            std::cout << sensor_name << " sensor stopped" << std::endl;
         } );
-        _dds_device_server->publish_notification( std::move( j ) );
-    } );
+    _bridge.on_error(
+        [this]( std::string const & error_string )
+        {
+            nlohmann::json j = nlohmann::json::object( {
+                { "id", "error" },
+                { "error", error_string },
+            } );
+            _dds_device_server->publish_notification( std::move( j ) );
+        } );
     _bridge.init( supported_streams );
 
     auto extrinsics = get_extrinsics_map( dev );

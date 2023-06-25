@@ -23,6 +23,7 @@ class dds_video_stream_profile;
 class dds_motion_stream_profile;
 namespace topics {
 class image_msg;
+class imu_msg;
 }  // namespace topics
 }  // namespace realdds
 
@@ -95,7 +96,7 @@ private:
     void handle_video_data( realdds::topics::image_msg && dds_frame,
                             const std::shared_ptr< stream_profile_interface > &,
                             streaming_impl & streaming );
-    void handle_motion_data( realdds::topics::image_msg && dds_frame,
+    void handle_motion_data( realdds::topics::imu_msg &&,
                              const std::shared_ptr< stream_profile_interface > &,
                              streaming_impl & );
     void handle_new_metadata( std::string const & stream_name, nlohmann::json && metadata );

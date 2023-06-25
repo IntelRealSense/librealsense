@@ -7,6 +7,7 @@
 #include <realdds/dds-topic-reader-thread.h>
 #include <realdds/dds-subscriber.h>
 #include <realdds/topics/image-msg.h>
+#include <realdds/topics/imu-msg.h>
 #include <realdds/topics/flexible-msg.h>
 #include <realdds/dds-exceptions.h>
 
@@ -96,12 +97,12 @@ void dds_video_stream::handle_data()
 
 void dds_motion_stream::handle_data()
 {
-    topics::image_msg frame;
+    topics::imu_msg imu;
     eprosima::fastdds::dds::SampleInfo info;
-    while( _reader && topics::image_msg::take_next( *_reader, &frame, &info ) )
+    while( _reader && topics::imu_msg::take_next( *_reader, &imu, &info ) )
     {
         if( is_streaming() && _on_data_available )
-            _on_data_available( std::move( frame ) );
+            _on_data_available( std::move( imu ) );
     }
 }
 
