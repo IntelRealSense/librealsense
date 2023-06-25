@@ -176,15 +176,27 @@ std::shared_ptr< dds_topic > const & dds_stream_server::get_topic() const
 }
 
 
-void dds_stream_server::start_streaming( const image_header & header )
+void dds_stream_server::start_streaming()
 {
     if( ! is_open() )
         DDS_THROW( runtime_error, "stream '" + name() + "' must be open before start_streaming()" );
     if( is_streaming() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is already streaming" );
 
-    _image_header = header;
     _streaming = true;
+}
+
+
+void dds_video_stream_server::start_streaming( const image_header & header )
+{
+    super::start_streaming();
+    _image_header = header;
+}
+
+
+void dds_motion_stream_server::start_streaming()
+{
+    super::start_streaming();
 }
 
 
@@ -193,9 +205,16 @@ void dds_stream_server::stop_streaming()
     if( ! is_streaming() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is not streaming" );
 
-    _image_header.invalidate();
     _streaming = false;
 }
+
+
+void dds_video_stream_server::stop_streaming()
+{
+    super::stop_streaming();
+    _image_header.invalidate();
+}
+
 
 void dds_stream_server::close()
 {
@@ -249,11 +268,9 @@ void dds_video_stream_server::publish_image( topics::image_msg && image )
 
 void dds_motion_stream_server::publish_motion( topics::imu_msg && imu )
 {
-    // Same as publish_image() for now
     if( ! is_streaming() )
         DDS_THROW( runtime_error, "stream '" + name() + "' cannot publish before start_streaming()" );
 
-    // LOG_DEBUG( "publishing a DDS video frame for topic: " << _writer->topic()->get()->get_name() );
     sensor_msgs::msg::Imu & raw_imu = imu.imu_data();
     raw_imu.header().frame_id() = sensor_name();
     LOG_DEBUG( "publishing '" << name() << "' "

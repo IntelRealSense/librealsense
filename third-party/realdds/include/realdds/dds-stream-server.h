@@ -54,9 +54,7 @@ public:
     void close();
 
     bool is_streaming() const override { return _streaming; }
-    void start_streaming( const image_header & );
-    void stop_streaming();
-    image_header const & get_image_header() const { return _image_header; }
+    virtual void stop_streaming();
 
     std::shared_ptr< dds_topic > const & get_topic() const override;
 
@@ -68,12 +66,13 @@ public:
 
 protected:
     std::shared_ptr< dds_topic_writer > _writer;
-    image_header _image_header;
     readers_changed_callback _on_readers_changed;
     bool _streaming = false;
 
     // Called at the end of open(), when the _writer has been initialized. Override to provide custom QOS etc...
     virtual void run_stream();
+
+    void start_streaming();
 };
 
 
@@ -89,12 +88,17 @@ public:
     void set_intrinsics( const std::set< video_intrinsics > & intrinsics ) { _intrinsics = intrinsics; }
     const std::set< video_intrinsics > & get_intrinsics() const { return _intrinsics; }
 
+    void start_streaming( const image_header & );
+    void stop_streaming() override;
+    image_header const & get_image_header() const { return _image_header; }
+
     virtual void publish_image( topics::image_msg && );
 
 private:
     void check_profile( std::shared_ptr< dds_stream_profile > const & ) const override;
 
     std::set< video_intrinsics > _intrinsics;
+    image_header _image_header;
 };
 
 
@@ -165,6 +169,7 @@ public:
     void set_intrinsics( const motion_intrinsics & intrinsics ) { _intrinsics = intrinsics; }
     const motion_intrinsics & get_intrinsics() const { return _intrinsics; }
 
+    void start_streaming();
     virtual void publish_motion( topics::imu_msg && );
 
 private:

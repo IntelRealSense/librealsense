@@ -516,14 +516,14 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                     dds_time const timestamp  // in sec.nsec
                         ( static_cast< long double >( f.get_timestamp() ) / 1e3 );
 
-                    if( auto video = std::dynamic_pointer_cast<realdds::dds_video_stream_server>(server) )
+                    if( auto video = std::dynamic_pointer_cast< realdds::dds_video_stream_server >( server ) )
                     {
                         // RS2_STREAM_DEPTH, RS2_STREAM_COLOR, RS2_STREAM_INFRARED
                         realdds::topics::image_msg image;
                         auto data = static_cast<const uint8_t *>(f.get_data());
                         image.raw_data.assign( data, data + f.get_data_size() );
-                        image.height = server->get_image_header().height;
-                        image.width = server->get_image_header().width;
+                        image.height = video->get_image_header().height;
+                        image.width = video->get_image_header().width;
                         image.timestamp = timestamp;
                         video->publish_image( std::move( image ) );
                         publish_frame_metadata( f, timestamp );
