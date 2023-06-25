@@ -33,13 +33,15 @@ If two streams, they should be synchronizable via identical timestamps.
 - Durability: `VOLATILE`
 
 ___
-## IMU
+## Motion
 
-High frequency is expected for IMU messages. Therefore:
+Otherwise know as IMU (Inertial Measurement Unit), this is a combined accelerometer and gyroscope stream.
+
+High frequency is expected for motion messages. Therefore:
 
 #### Topics
 
-Rather than separate topics for each of the IMU streams (Accel and Gyro), a single topic will carry both, combined.
+Rather than separate topics for each of the Accel and Gyro streams, a single topic will carry both, combined.
 
 #### Format
 
@@ -47,13 +49,13 @@ See the [ROS2 Imu format](https://github.com/ros2/common_interfaces/blob/rolling
 
 #### Metadata
 
-No metadata is expected for IMU topics.
+No metadata is expected for motion topics.
 
 #### Timestamps
 
-If only one of Accel/Gyro is requested, the other's values will remain zeroes. The timestamp will refer to the sample's time.
+If only one of Accel/Gyro is requested, the other's values can remain zeroes. The timestamp will refer to the sample's time.
 
-If both Accel and Gyro are requested, they are packaged together but their values are generated independently at different timestamps. Here, the timestamp should reflect the Gyro timestamp. The Accel values will either reflect the last values received (which may not reflect the values at that specific timestamp) or interpolated values. The latter is preferable.
+If both Accel and Gyro are requested, they are packaged together but their values may be generated independently with different timestamps. The timestamp should reflect the Gyro timestamp. The Accel values will either reflect the last values received (which may not reflect the values at that specific timestamp) or interpolated values to align with the Gyro. The latter is preferable.
 
 #### Quality of Service
 
