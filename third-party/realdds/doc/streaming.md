@@ -54,7 +54,7 @@ For video streams, the format is the [ROS2 Image format](https://github.com/ros2
 
 ### Video
 
-This is a simplified IDL for reference:
+For video streams, the format is the [ROS2 Image format](https://github.com/ros2/common_interfaces/blob/rolling/sensor_msgs/msg/Image.msg). This is a simplified IDL for reference:
 
 ```rosidl
 struct Time {
@@ -83,13 +83,20 @@ The `encoding` is the same as the currently set profile format, and shouldn't ch
 
 ### Motion
 
-This is a simplified IDL for reference:
+See the [ROS2 Imu format](https://github.com/ros2/common_interfaces/blob/rolling/sensor_msgs/msg/Imu.msg). This is a simplified IDL for reference:
 
 ```rosidl
 struct Vector3 {
     double x;
     double y;
     double z;
+};
+
+struct Quaternion {
+    double x;
+    double y;
+    double z;
+    double w;
 };
 
 struct Imu {

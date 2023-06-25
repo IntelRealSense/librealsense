@@ -32,3 +32,4 @@ Currently, the topic root as used by `rs-dds-adapter` is built as:
 * [Control](control.md)
 * [Streaming](streaming.md)
 * [Metadata](metadata.md)
+* [Stream Configurations](stream-configurations.md)
