@@ -530,11 +530,8 @@ void dds_device::impl::handle_stream_header( init_context & init, nlohmann::json
     TYPE2STREAM( depth, video )
     TYPE2STREAM( ir, video )
     TYPE2STREAM( color, video )
-    TYPE2STREAM( accel, motion )
-    TYPE2STREAM( gyro, motion )
-    TYPE2STREAM( fisheye, video )
+    TYPE2STREAM( motion, motion )
     TYPE2STREAM( confidence, video )
-    TYPE2STREAM( pose, motion )
     DDS_THROW( runtime_error, "stream '" + stream_name + "' is of unknown type '" + stream_type + "'" );
 
 #undef TYPE2STREAM

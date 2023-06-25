@@ -65,12 +65,6 @@ dds_color_stream_server::dds_color_stream_server( std::string const & stream_nam
 }
 
 
-dds_fisheye_stream_server::dds_fisheye_stream_server( std::string const & stream_name, std::string const & sensor_name )
-    : super( stream_name, sensor_name )
-{
-}
-
-
 dds_confidence_stream_server::dds_confidence_stream_server( std::string const & stream_name, std::string const & sensor_name )
     : super( stream_name, sensor_name )
 {
@@ -88,24 +82,6 @@ void dds_motion_stream_server::check_profile( std::shared_ptr< dds_stream_profil
     super::check_profile( profile );
     if( ! std::dynamic_pointer_cast< dds_motion_stream_profile >( profile ) )
         DDS_THROW( runtime_error, "profile '" + profile->to_string() + "' is not a motion profile" );
-}
-
-
-dds_accel_stream_server::dds_accel_stream_server( std::string const & stream_name, std::string const & sensor_name )
-    : super( stream_name, sensor_name )
-{
-}
-
-
-dds_gyro_stream_server::dds_gyro_stream_server( std::string const & stream_name, std::string const & sensor_name )
-    : super( stream_name, sensor_name )
-{
-}
-
-
-dds_pose_stream_server::dds_pose_stream_server( std::string const & stream_name, std::string const & sensor_name )
-    : super( stream_name, sensor_name )
-{
 }
 
 

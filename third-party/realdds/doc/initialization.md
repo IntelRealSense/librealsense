@@ -85,7 +85,7 @@ Information about a specific stream:
     - Sometimes, a single sensor may produce multiple streams, e.g. `Stereo Module` produces a `Depth` stream and also `Infrared`
     - Streaming one stream requires starting the sensor, and so may have effect on the other streams, depending on the server implementation
     - This allows streams to be grouped by the client and may affect its logic
-- `type` is one of `ir`, `depth`, `color`, `fisheye`, `confidence`, `accel`, `gyro`, `pose` - similar to the librealsense `rs2_stream` enum
+- `type` is one of `ir`, `depth`, `color`, `confidence`, `motion` - similar to the librealsense `rs2_stream` enum
 - `metadata-enabled` is `true` if a `metadata` topic for the device will be written to
 
 

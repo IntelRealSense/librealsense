@@ -109,16 +109,6 @@ public:
     char const * type_string() const override { return "color"; }
 };
 
-class dds_fisheye_stream : public dds_video_stream
-{
-    typedef dds_video_stream super;
-
-public:
-    dds_fisheye_stream( std::string const & stream_name, std::string const & sensor_name );
-
-    char const * type_string() const override { return "fisheye"; }
-};
-
 class dds_confidence_stream : public dds_video_stream
 {
     typedef dds_video_stream super;
@@ -136,6 +126,8 @@ class dds_motion_stream : public dds_stream
 public:
     dds_motion_stream( std::string const & stream_name, std::string const & sensor_name );
 
+    char const * type_string() const override { return "motion"; }
+
     void open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & ) override;
 
     typedef std::function< void( topics::imu_msg && f ) > on_data_available_callback;
@@ -150,36 +142,6 @@ protected:
 
     motion_intrinsics _intrinsics;
     on_data_available_callback _on_data_available = nullptr;
-};
-
-class dds_accel_stream : public dds_motion_stream
-{
-    typedef dds_motion_stream super;
-
-public:
-    dds_accel_stream( std::string const & stream_name, std::string const & sensor_name );
-
-    char const * type_string() const override { return "accel"; }
-};
-
-class dds_gyro_stream : public dds_motion_stream
-{
-    typedef dds_motion_stream super;
-
-public:
-    dds_gyro_stream( std::string const & stream_name, std::string const & sensor_name );
-
-    char const * type_string() const override { return "gyro"; }
-};
-
-class dds_pose_stream : public dds_motion_stream
-{
-    typedef dds_motion_stream super;
-
-public:
-    dds_pose_stream( std::string const & stream_name, std::string const & sensor_name );
-
-    char const * type_string() const override { return "pose"; }
 };
 
 

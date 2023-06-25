@@ -135,17 +135,6 @@ public:
 };
 
 
-class dds_fisheye_stream_server : public dds_video_stream_server
-{
-    typedef dds_video_stream_server super;
-
-public:
-    dds_fisheye_stream_server( std::string const & stream_name, std::string const & sensor_name );
-
-    char const * type_string() const override { return "fisheye"; }
-};
-
-
 class dds_confidence_stream_server : public dds_video_stream_server
 {
     typedef dds_video_stream_server super;
@@ -157,6 +146,8 @@ public:
 };
 
 
+// Combined Gyro and Accel stream (otherwise known as "IMU")
+//
 class dds_motion_stream_server : public dds_stream_server
 {
     typedef dds_stream_server super;
@@ -172,43 +163,12 @@ public:
     void start_streaming();
     virtual void publish_motion( topics::imu_msg && );
 
+    char const * type_string() const override { return "motion"; }
+
 private:
     void check_profile( std::shared_ptr< dds_stream_profile > const & ) const override;
 
     motion_intrinsics _intrinsics;
-};
-
-
-class dds_accel_stream_server : public dds_motion_stream_server
-{
-    typedef dds_motion_stream_server super;
-
-public:
-    dds_accel_stream_server( std::string const & stream_name, std::string const & sensor_name );
-
-    char const * type_string() const override { return "accel"; }
-};
-
-
-class dds_gyro_stream_server : public dds_motion_stream_server
-{
-    typedef dds_motion_stream_server super;
-
-public:
-    dds_gyro_stream_server( std::string const & stream_name, std::string const & sensor_name );
-
-    char const * type_string() const override { return "gyro"; }
-};
-
-
-class dds_pose_stream_server : public dds_motion_stream_server
-{
-    typedef dds_motion_stream_server super;
-
-public:
-    dds_pose_stream_server( std::string const & stream_name, std::string const & sensor_name );
-
-    char const * type_string() const override { return "pose"; }
 };
 
 

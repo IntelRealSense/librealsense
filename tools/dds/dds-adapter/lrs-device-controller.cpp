@@ -91,9 +91,19 @@ realdds::extrinsics to_realdds( const rs2_extrinsics & rs2_extr )
 static std::string stream_name_from_rs2( const rs2::stream_profile & profile )
 {
     // ROS stream names cannot contain spaces! We use underscores instead:
-    std::string stream_name = rs2_stream_to_string( profile.stream_type() );
-    if( profile.stream_index() )
-        stream_name += '_' + std::to_string( profile.stream_index() );
+    std::string stream_name;
+    switch( profile.stream_type() )
+    {
+    case RS2_STREAM_ACCEL:
+    case RS2_STREAM_GYRO:
+        stream_name = "Motion";
+        break;
+    default:
+        stream_name = rs2_stream_to_string( profile.stream_type() );
+        if( profile.stream_index() )
+            stream_name += '_' + std::to_string( profile.stream_index() );
+        break;
+    }
     return stream_name;
 }
 
@@ -125,11 +135,10 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
             case RS2_STREAM_DEPTH: CREATE_SERVER_IF_NEEDED( depth );
             case RS2_STREAM_INFRARED: CREATE_SERVER_IF_NEEDED( ir );
             case RS2_STREAM_COLOR: CREATE_SERVER_IF_NEEDED( color );
-            case RS2_STREAM_FISHEYE: CREATE_SERVER_IF_NEEDED( fisheye );
             case RS2_STREAM_CONFIDENCE: CREATE_SERVER_IF_NEEDED( confidence );
-            case RS2_STREAM_ACCEL: CREATE_SERVER_IF_NEEDED( accel );
-            case RS2_STREAM_GYRO: CREATE_SERVER_IF_NEEDED( gyro );
-            case RS2_STREAM_POSE: CREATE_SERVER_IF_NEEDED( pose );
+            case RS2_STREAM_ACCEL:
+            case RS2_STREAM_GYRO:
+                CREATE_SERVER_IF_NEEDED( motion );
             default:
                 LOG_ERROR( "unsupported stream type " << sp.stream_type() );
                 return;
@@ -138,9 +147,8 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
             // Create appropriate realdds::profile for each sensor profile and map to a stream
             auto & profiles = stream_name_to_profiles[stream_name];
             std::shared_ptr< realdds::dds_stream_profile > profile;
-            if( sp.is< rs2::video_stream_profile >() )
+            if( auto const vsp = rs2::video_stream_profile( sp ) )
             {
-                auto const & vsp = sp.as< rs2::video_stream_profile >();
                 profile = std::make_shared< realdds::dds_video_stream_profile >(
                     static_cast< int16_t >( vsp.fps() ),
                     realdds::dds_stream_format::from_rs2( vsp.format() ),
@@ -153,9 +161,8 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
                 }
                 catch( ... ) {} //Some profiles don't have intrinsics
             }
-            else if( sp.is< rs2::motion_stream_profile >() )
+            else if( auto const msp = rs2::motion_stream_profile( sp ) )
             {
-                const auto & msp = sp.as< rs2::motion_stream_profile >();
                 profile = std::make_shared< realdds::dds_motion_stream_profile >(
                     static_cast< int16_t >( msp.fps() ),
                     realdds::dds_stream_format::from_rs2( msp.format() ) );
@@ -210,13 +217,11 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
         server->init_profiles( profiles, default_profile_index );
 
         // Set stream intrinsics
-        auto video_server = std::dynamic_pointer_cast< dds_video_stream_server >( server );
-        auto motion_server = std::dynamic_pointer_cast< dds_motion_stream_server >( server );
-        if( video_server )
+        if( auto video_server = std::dynamic_pointer_cast< dds_video_stream_server >( server ) )
         {
             video_server->set_intrinsics( std::move( stream_name_to_video_intrinsics[stream_name] ) );
         }
-        if( motion_server )
+        else if( auto motion_server = std::dynamic_pointer_cast< dds_motion_stream_server >( server ) )
         {
             motion_server->set_intrinsics( std::move( stream_name_to_motion_intrinsics[stream_name] ) );
         }
