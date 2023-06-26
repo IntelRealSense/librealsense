@@ -200,8 +200,10 @@ namespace librealsense
         // DFU_DNLOAD request with the wLength field cleared to 0 and then solicits the status again.If the
         // result indicates that the device is ready and there are no errors, then the Transfer phase is complete and
         // the Manifestation phase begins.
+        // TODO: HKR DFU issue - for HKR, don't check RS2_DFU_DOWNLOAD state below.
+        // Once we figure out why this step is not working in Linux for HKR, we will remote the !d500_device from the if condition
         auto sts = messenger->control_transfer(0x21 /*DFU_DOWNLOAD_PACKET*/, RS2_DFU_DOWNLOAD, block_number, 0, NULL, 0, transferred, DEFAULT_TIMEOUT);
-        if (sts != platform::RS2_USB_STATUS_SUCCESS)
+        if (sts != platform::RS2_USB_STATUS_SUCCESS && !d500_device)
             throw std::runtime_error("Failed to send final FW packet");
 
         // After the zero length DFU_DNLOAD request terminates the Transfer
