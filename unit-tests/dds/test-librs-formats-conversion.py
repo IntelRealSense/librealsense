@@ -36,35 +36,9 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             sensor = sensors.get('Y8-sensor')
             profiles = sensor.get_stream_profiles()
 
-            test.check_equal( len( profiles ), 1 ) # Y8 stays Y8, for infrared stream indexed 1
+            test.check_equal( len( profiles ), 1 )
             test.check_equal( profiles[0].format(), rs.format.y8 )
-            test.check_equal( profiles[0].stream_index(), 1 )
-    #
-    #############################################################################################
-    #
-    with test.closure( "Test Y8I conversion"):
-        if test.check( 'Y8I-sensor' in sensors ):
-            sensor = sensors.get('Y8I-sensor')
-            profiles = sensor.get_stream_profiles()
-
-            test.check_equal( len( profiles ), 2 ) # Y8I is converted into two Y8 streams
-            test.check_equal( profiles[0].format(), rs.format.y8 )
-            test.check_equal( profiles[0].stream_index(), 1 )
-            test.check_equal( profiles[1].format(), rs.format.y8 )
-            test.check_equal( profiles[1].stream_index(), 2 )
-    #
-    #############################################################################################
-    #
-    with test.closure( "Test Y12I conversion"):
-        if test.check( 'Y12I-sensor' in sensors ):
-            sensor = sensors.get('Y12I-sensor')
-            profiles = sensor.get_stream_profiles()
-
-            test.check_equal( len( profiles ), 2 ) # Y12I is converted into two Y162 streams
-            test.check_equal( profiles[0].format(), rs.format.y16 )
-            test.check_equal( profiles[0].stream_index(), 1 )
-            test.check_equal( profiles[1].format(), rs.format.y16 )
-            test.check_equal( profiles[1].stream_index(), 2 )
+            test.check_equal( profiles[0].stream_index(), 0 )
     #
     #############################################################################################
     #
@@ -73,14 +47,9 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             sensor = sensors.get('YUYV-sensor')
             profiles = sensor.get_stream_profiles()
 
-            test.check_equal( len( profiles ), 7 ) # YUYV is converted into 7 streams - RGB8, RGBA8, BGR8, BGRA8, YUYV, Y16, Y8
-            test.check_equal( profiles[0].format(), rs.format.rgb8 )
-            test.check_equal( profiles[1].format(), rs.format.rgba8 )
-            test.check_equal( profiles[2].format(), rs.format.bgr8 )
-            test.check_equal( profiles[3].format(), rs.format.bgra8 )
-            test.check_equal( profiles[4].format(), rs.format.yuyv )
-            test.check_equal( profiles[5].format(), rs.format.y16 )
-            test.check_equal( profiles[6].format(), rs.format.y8 )
+            test.check_equal( len( profiles ), 2 ) # YUYV can stay YUYV or be converted into RGB8
+            test.check_equal( profiles[0].format(), rs.format.yuyv )
+            test.check_equal( profiles[1].format(), rs.format.rgb8 )            
     #
     #############################################################################################
     #
@@ -89,12 +58,9 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             sensor = sensors.get('UYVY-sensor')
             profiles = sensor.get_stream_profiles()
 
-            test.check_equal( len( profiles ), 5 ) # UYVY is converted into 5 streams - RGB8, RGBA8, BGR8, BGRA8, UYVY
-            test.check_equal( profiles[0].format(), rs.format.rgb8 )
-            test.check_equal( profiles[1].format(), rs.format.rgba8 )
-            test.check_equal( profiles[2].format(), rs.format.bgr8 )
-            test.check_equal( profiles[3].format(), rs.format.bgra8 )
-            test.check_equal( profiles[4].format(), rs.format.uyvy )
+            test.check_equal( len( profiles ), 2 ) # UYVY can stay UYVY or be converted into RGB8
+            test.check_equal( profiles[0].format(), rs.format.uyvy )
+            test.check_equal( profiles[1].format(), rs.format.rgb8 )            
     #
     #############################################################################################
     #
@@ -148,15 +114,10 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             sensor = sensors.get('multiple-color-sensor')
             profiles = sensor.get_stream_profiles()
 
-            test.check_equal( len( profiles ), 21 )
+            test.check_equal( len( profiles ), 6 )
             for i in range(3):
-                test.check_equal( profiles[i * 7 + 0].format(), rs.format.rgb8 )
-                test.check_equal( profiles[i * 7 + 1].format(), rs.format.rgba8 )
-                test.check_equal( profiles[i * 7 + 2].format(), rs.format.bgr8 )
-                test.check_equal( profiles[i * 7 + 3].format(), rs.format.bgra8 )
-                test.check_equal( profiles[i * 7 + 4].format(), rs.format.yuyv )
-                test.check_equal( profiles[i * 7 + 5].format(), rs.format.y16 )
-                test.check_equal( profiles[i * 7 + 6].format(), rs.format.y8 )
+                test.check_equal( profiles[i * 2 + 0].format(), rs.format.yuyv )
+                test.check_equal( profiles[i * 2 + 1].format(), rs.format.rgb8 )
     #
     #############################################################################################
     #

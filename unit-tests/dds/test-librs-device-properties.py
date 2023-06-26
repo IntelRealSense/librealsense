@@ -44,7 +44,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             test.check_equal( len(sensor.get_stream_profiles()), 104 ) # As measured running rs-sensor-control example
         if test.check( 'RGB Camera' in sensors ):
             sensor = sensors['RGB Camera']
-            test.check_equal( len(sensor.get_stream_profiles()), 225 ) # As measured running rs-sensor-control example
+            test.check_equal( len(sensor.get_stream_profiles()), 64 ) # As measured running rs-sensor-control example
         if test.check( 'Motion Module' in sensors ):
             sensor = sensors['Motion Module']
             test.check_equal( len(sensor.get_stream_profiles()), 4 ) # As measured running rs-sensor-control example
@@ -70,7 +70,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         test.check_equal( len(sensors), 1 )
         if test.check( 'Stereo Module' in sensors ):
             sensor = sensors.get('Stereo Module')
-            test.check_equal( len(sensor.get_stream_profiles()), 431 ) # As measured running rs-sensor-control example
+            test.check_equal( len(sensor.get_stream_profiles()), 146 ) # As measured running rs-sensor-control example
         remote.run( 'close_server( instance )' )
     except:
         test.unexpected_exception()
@@ -93,10 +93,10 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         test.check_equal( len(sensors), 3 )
         if test.check( 'Stereo Module' in sensors ):
             sensor = sensors.get('Stereo Module')
-            test.check_equal( len(sensor.get_stream_profiles()), 245 ) # As measured running rs-sensor-control example
+            test.check_equal( len(sensor.get_stream_profiles()), 100 ) # As measured running rs-sensor-control example
         if test.check( 'RGB Camera' in sensors ):
             sensor = sensors['RGB Camera']
-            test.check_equal( len(sensor.get_stream_profiles()), 218 ) # As measured running rs-sensor-control example
+            test.check_equal( len(sensor.get_stream_profiles()), 62 ) # As measured running rs-sensor-control example
         if test.check( 'Motion Module' in sensors ):
             sensor = sensors['Motion Module']
             test.check_equal( len(sensor.get_stream_profiles()), 4 ) # As measured running rs-sensor-control example
