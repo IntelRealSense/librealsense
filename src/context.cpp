@@ -163,6 +163,8 @@ namespace librealsense
     context::context( json const & settings )
         : context()
     {
+        _settings = settings;
+
         _backend = platform::create_backend();  // standard type
 
         environment::get_instance().set_time_service( _backend->create_time_service() );
@@ -171,8 +173,6 @@ namespace librealsense
         assert( _device_watcher->is_stopped() );
 
 #ifdef BUILD_WITH_DDS
-        _use_basic_formats = rsutils::json::get< bool >( settings, std::string( "use-basic-formats", 17 ), false );
-
         if( rsutils::json::get< bool >( settings, std::string( "dds-discovery", 13 ), true ) )
         {
             realdds::dds_domain_id domain_id

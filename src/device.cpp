@@ -5,7 +5,9 @@
 #include "core/video.h"
 #include "core/motion.h"
 #include "device.h"
+
 #include <rsutils/string/from.h>
+#include <rsutils/json.h>
 
 using namespace librealsense;
 
@@ -432,7 +434,9 @@ void device::stop_activity() const
 bool device::should_use_basic_formats() const
 {
     if( _context )
-        return _context->should_use_basic_formats();
+    {
+        return rsutils::json::get< bool >( _context->get_settings(), std::string("use-basic-formats", 17), false);
+    }
 
     return false;
 }

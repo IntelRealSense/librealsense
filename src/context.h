@@ -8,7 +8,7 @@
 #include "core/streaming.h"
 
 #include <vector>
-#include <nlohmann/json_fwd.hpp>
+#include <rsutils/json.h>
 #include "media/playback/playback_device.h"
 
 namespace librealsense
@@ -136,7 +136,7 @@ namespace librealsense
 
         void add_software_device(std::shared_ptr<device_info> software_device);
         
-        bool should_use_basic_formats() const { return _use_basic_formats; }
+        const nlohmann::json & get_settings() const { return _settings; }
 
     private:
         void on_device_changed(platform::backend_device_group old,
@@ -159,7 +159,8 @@ namespace librealsense
         void start_dds_device_watcher( size_t message_timeout_ms );
 #endif
 
-        bool _use_basic_formats = false; // Use the formats received from the camera without conversions
+        nlohmann::json _settings; // Save operation settings
+
         devices_changed_callback_ptr _devices_changed_callback;
         std::map<int, std::weak_ptr<const stream_interface>> _streams;
         std::map<int, std::map<int, std::weak_ptr<lazy<rs2_extrinsics>>>> _extrinsics;
