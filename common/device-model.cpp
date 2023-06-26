@@ -927,7 +927,7 @@ namespace rs2
         try
         {
             std::vector<uint8_t> data;
-            auto ret = file_dialog_open(open_file, "Unsigned Firmware Image\0*.bin;*.img\0", NULL, NULL);
+            auto ret = file_dialog_open(open_file, "Unsigned Firmware Image\0*.bin\0*.img\0", NULL, NULL);
             if (ret)
             {
                 std::ifstream file(ret, std::ios::binary | std::ios::in);
@@ -976,7 +976,7 @@ namespace rs2
         {
             if (data.size() == 0)
             {
-                auto ret = file_dialog_open(open_file, "Signed Firmware Image\0*.bin;*.img\0", NULL, NULL);
+                auto ret = file_dialog_open(open_file, "Signed Firmware Image\0*.bin\0*.img\0", NULL, NULL);
                 if (ret)
                 {
                     std::ifstream file(ret, std::ios::binary | std::ios::in);
@@ -2399,7 +2399,7 @@ namespace rs2
                             sub->_options_invalidated = true;
                         }
                     }
-                    auto ret = file_dialog_open(open_file, "JavaScript Object Notation (JSON | PRESET)\0*.json;*.preset\0", NULL, NULL);
+                    auto ret = file_dialog_open(open_file, "JavaScript Object Notation (JSON | PRESET)\0*.json\0*.preset\0", NULL, NULL);
                     if (ret)
                     {
                         error_message = safe_call([&]() { load_json(ret); });
