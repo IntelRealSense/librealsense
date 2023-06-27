@@ -109,8 +109,32 @@ Information about a specific stream:
 #### `stream-options`
 
 - `stream-name` is the name of the stream, same as in `stream-header`
-- `intrinsics` is an array of (width,height)-specific intrinsic values
-    - Each is itself an array of `[width, height, principal_point_x, principal_point_y, focal_lenght_x, focal_lenght_y, distortion_model,  distortion_coeffs[0], distortion_coeffs[1], distortion_coeffs[2], distortion_coeffs[3], distortion_coeffs[4]]`
+- `intrinsics` is:
+    - For video streams, an array of (width,height)-specific intrinsic values
+        - Each is itself an array of `[width, height, principal_point_x, principal_point_y, focal_lenght_x, focal_lenght_y, distortion_model,  distortion_coeffs[0], distortion_coeffs[1], distortion_coeffs[2], distortion_coeffs[3], distortion_coeffs[4]]`
+    - For motion streams, a mapping from either `accel` or `gyro` to an array of float values conforming to:
+      ```C++
+      struct rs2_motion_device_intrinsic
+      {
+          // Scale X       cross axis  cross axis  Bias X
+          // cross axis    Scale Y     cross axis  Bias Y
+          // cross axis    cross axis  Scale Z     Bias Z
+          float data[3][4];
+
+          // Variance of noise for X, Y, and Z axis
+          float noise_variances[3];  
+
+          // Variance of bias for X, Y, and Z axis
+          float bias_variances[3];   
+      }
+      ```
+    e.g.:
+      ```JSON
+      "intrinsics": {
+          "accel": [1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],
+          "gyro": [1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
+      }
+      ```
 - `options` is an array of option objects, same as `device-options` above
 
 ```JSON

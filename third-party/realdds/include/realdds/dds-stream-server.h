@@ -157,8 +157,10 @@ public:
 
     void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
 
-    void set_intrinsics( const motion_intrinsics & intrinsics ) { _intrinsics = intrinsics; }
-    const motion_intrinsics & get_intrinsics() const { return _intrinsics; }
+    void set_accel_intrinsics( const motion_intrinsics & intrinsics ) { _accel_intrinsics = intrinsics; }
+    void set_gyro_intrinsics( const motion_intrinsics & intrinsics ) { _gyro_intrinsics = intrinsics; }
+    const motion_intrinsics & get_accel_intrinsics() const { return _accel_intrinsics; }
+    const motion_intrinsics & get_gyro_intrinsics() const { return _gyro_intrinsics; }
 
     void start_streaming();
     virtual void publish_motion( topics::imu_msg && );
@@ -168,7 +170,8 @@ public:
 private:
     void check_profile( std::shared_ptr< dds_stream_profile > const & ) const override;
 
-    motion_intrinsics _intrinsics;
+    motion_intrinsics _accel_intrinsics;
+    motion_intrinsics _gyro_intrinsics;
 };
 
 

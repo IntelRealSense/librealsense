@@ -30,6 +30,11 @@ using rsutils::string::shorten_json_string;
 static std::string const id_key( "id", 2 );
 static std::string const id_set_option( "set-option", 10 );
 static std::string const id_query_option( "query-option", 12 );
+static std::string const id_open_streams( "open-streams", 12 );
+static std::string const id_device_header( "device-header", 13 );
+static std::string const id_device_options( "device-options", 14 );
+static std::string const id_stream_header( "stream-header", 13 );
+static std::string const id_stream_options( "stream-options", 14 );
 static std::string const value_key( "value", 5 );
 static std::string const sample_key( "sample", 6 );
 static std::string const status_key( "status", 6 );
@@ -87,10 +92,11 @@ std::ostream& operator<<( std::ostream& s, state_type st )
 /*static*/ dds_device::impl::notification_handlers const dds_device::impl::_notification_handlers{
     { id_set_option, &dds_device::impl::on_option_value },
     { id_query_option, &dds_device::impl::on_option_value },
-    { "device-header", &dds_device::impl::on_known_notification },
-    { "device-options", &dds_device::impl::on_known_notification },
-    { "stream-header", &dds_device::impl::on_known_notification },
-    { "stream-options", &dds_device::impl::on_known_notification },
+    { id_device_header, &dds_device::impl::on_known_notification },
+    { id_device_options, &dds_device::impl::on_known_notification },
+    { id_stream_header, &dds_device::impl::on_known_notification },
+    { id_stream_options, &dds_device::impl::on_known_notification },
+    { id_open_streams, &dds_device::impl::on_known_notification },
 };
 
 
@@ -270,7 +276,7 @@ void dds_device::impl::open( const dds_stream_profiles & profiles )
     }
 
     nlohmann::json j = {
-        { id_key, "open-streams" },
+        { id_key, id_open_streams },
         { "stream-profiles", stream_profiles },
     };
 
@@ -438,33 +444,41 @@ bool dds_device::impl::init()
             {
                 if( ! notification.is_valid() )
                     continue;
-                auto j = notification.json_data();
-                auto id = rsutils::json::get< std::string >( j, id_key );
-                if( state_type::WAIT_FOR_DEVICE_HEADER == init.state && id == "device-header" )
-                    handle_device_header( init, j );
-                else if( state_type::WAIT_FOR_DEVICE_OPTIONS == init.state && id == "device-options" )
-                    handle_device_options( init, j );
-                else if( state_type::WAIT_FOR_STREAM_HEADER == init.state && id == "stream-header" )
-                    handle_stream_header( init, j );
-                else if( state_type::WAIT_FOR_STREAM_OPTIONS == init.state && id == "stream-options" )
-                    handle_stream_options( init, j );
-                else if( init.state != state_type::WAIT_FOR_DEVICE_HEADER )
+                try
                 {
-                    DDS_THROW( runtime_error, "unexpected notification '" + id + "' in " + to_string( init.state ) );
+                    auto j = notification.json_data();
+                    auto id = rsutils::json::get< std::string >( j, id_key );
+                    if( state_type::WAIT_FOR_DEVICE_HEADER == init.state && id == id_device_header )
+                        handle_device_header( init, j );
+                    else if( state_type::WAIT_FOR_DEVICE_OPTIONS == init.state && id == id_device_options )
+                        handle_device_options( init, j );
+                    else if( state_type::WAIT_FOR_STREAM_HEADER == init.state && id == id_stream_header )
+                        handle_stream_header( init, j );
+                    else if( state_type::WAIT_FOR_STREAM_OPTIONS == init.state && id == id_stream_options )
+                        handle_stream_options( init, j );
+                    else if( init.state != state_type::WAIT_FOR_DEVICE_HEADER )
+                    {
+                        DDS_THROW( runtime_error, "unexpected notification '" + id + "' in " + to_string( init.state ) );
+                    }
+                }
+                catch( std::exception const & e )
+                {
+                    LOG_ERROR( "Error during DDS device initialization: " << e.what() );
+                    return false;
                 }
             }
         }
     }
 
     LOG_DEBUG( "... " << ( state_type::DONE == init.state ? "" : "timed out; state is " ) << init.state );
-    return ( state_type::DONE == init.state );
+    return( state_type::DONE == init.state );
 }
 
 
 void dds_device::impl::handle_device_header( init_context & init, nlohmann::json const & j )
 {
     init.n_streams_expected = rsutils::json::get< size_t >( j, "n-streams" );
-    LOG_DEBUG( "... device-header: " << init.n_streams_expected << " streams expected" );
+    LOG_DEBUG( "... " << id_device_header << ": " << init.n_streams_expected << " streams expected" );
 
     if( rsutils::json::has( j, "extrinsics" ) )
     {
@@ -485,7 +499,7 @@ void dds_device::impl::handle_device_options( init_context & init, nlohmann::jso
 {
     if( rsutils::json::has( j, "options" ) )
     {
-        LOG_DEBUG( "... device-options: " << j["options"].size() << " options received" );
+        LOG_DEBUG( "... " << id_device_options << ": " << j["options"].size() << " options received" );
 
         std::string owner_name;  // for device options, this is empty!
         for( auto & option_json : j["options"] )
@@ -582,20 +596,21 @@ void dds_device::impl::handle_stream_options( init_context & init, nlohmann::jso
         stream_it->second->init_options( options );
     }
 
-    if( rsutils::json::has( j, "intrinsics" ) )
+    auto intit = j.find( "intrinsics" );
+    if( intit != j.end() )
     {
-        auto video_stream = std::dynamic_pointer_cast< dds_video_stream >( stream_it->second );
-        auto motion_stream = std::dynamic_pointer_cast< dds_motion_stream >( stream_it->second );
-        if( video_stream )
+        nlohmann::json const & j_int = *intit;
+        if( auto video_stream = std::dynamic_pointer_cast< dds_video_stream >( stream_it->second ) )
         {
             std::set< video_intrinsics > intrinsics;
-            for( auto & intr : j["intrinsics"] )
+            for( auto & intr : j_int )
                 intrinsics.insert( video_intrinsics::from_json( intr ) );
             video_stream->set_intrinsics( std::move( intrinsics ) );
         }
-        if( motion_stream )
+        else if( auto motion_stream = std::dynamic_pointer_cast< dds_motion_stream >( stream_it->second ) )
         {
-            motion_stream->set_intrinsics( motion_intrinsics::from_json( j["intrinsics"][0] ) );
+            motion_stream->set_accel_intrinsics( motion_intrinsics::from_json( j_int["accel"] ) );
+            motion_stream->set_gyro_intrinsics( motion_intrinsics::from_json( j_int["gyro"] ) );
         }
     }
 

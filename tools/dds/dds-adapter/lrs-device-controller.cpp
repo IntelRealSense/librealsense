@@ -113,7 +113,6 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
     std::map< std::string, realdds::dds_stream_profiles > stream_name_to_profiles;
     std::map< std::string, size_t > stream_name_to_default_profile;
     std::map< std::string, std::set< realdds::video_intrinsics > > stream_name_to_video_intrinsics;
-    std::map< std::string, realdds::motion_intrinsics > stream_name_to_motion_intrinsics;
 
     // Iterate over all profiles of all sensors and build appropriate dds_stream_servers
     for( auto sensor : _rs_dev.query_sensors() )
@@ -147,6 +146,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
             // Create appropriate realdds::profile for each sensor profile and map to a stream
             auto & profiles = stream_name_to_profiles[stream_name];
             std::shared_ptr< realdds::dds_stream_profile > profile;
+            bool insert_profile = true;
             if( auto const vsp = rs2::video_stream_profile( sp ) )
             {
                 profile = std::make_shared< realdds::dds_video_stream_profile >(
@@ -167,17 +167,27 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
                     static_cast< int16_t >( msp.fps() ),
                     realdds::dds_stream_format::from_rs2( msp.format() ) );
 
-                stream_name_to_motion_intrinsics[stream_name] = to_realdds( msp.get_motion_intrinsics() );
+                auto motion_server = std::dynamic_pointer_cast< dds_motion_stream_server >( server );
+                if( RS2_STREAM_ACCEL == msp.stream_type() )
+                {
+                    insert_profile = false;  // We report only Gyro profiles
+                    motion_server->set_accel_intrinsics( to_realdds( msp.get_motion_intrinsics() ) );
+                }
+                else
+                    motion_server->set_gyro_intrinsics( to_realdds( msp.get_motion_intrinsics() ) );
             }
             else
             {
                 LOG_ERROR( "unknown profile type of uid " << sp.unique_id() );
                 return;
             }
-            if( sp.is_default() )
-                stream_name_to_default_profile[stream_name] = profiles.size();
-            profiles.push_back( profile );
-            LOG_DEBUG( stream_name << ": " << profile->to_string() );
+            if( insert_profile )
+            {
+                if( sp.is_default() )
+                    stream_name_to_default_profile[stream_name] = profiles.size();
+                profiles.push_back( profile );
+                LOG_DEBUG( stream_name << ": " << profile->to_string() );
+            }
         } );
     }
 
@@ -207,24 +217,19 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
             continue;
         }
 
-        // Set stream metadata support (currently if the device supports metadata all streams does)
-        // Must be done before calling init_profiles()
-        if( _md_enabled )
+        // Set stream intrinsics
+        if( auto video_server = std::dynamic_pointer_cast<dds_video_stream_server>(server) )
         {
-            server->enable_metadata();
+            video_server->set_intrinsics( std::move( stream_name_to_video_intrinsics[stream_name] ) );
+            // Set stream metadata support (currently if the device supports metadata all streams does)
+            // Must be done before calling init_profiles()
+            if( _md_enabled )
+            {
+                server->enable_metadata();
+            }
         }
 
         server->init_profiles( profiles, default_profile_index );
-
-        // Set stream intrinsics
-        if( auto video_server = std::dynamic_pointer_cast< dds_video_stream_server >( server ) )
-        {
-            video_server->set_intrinsics( std::move( stream_name_to_video_intrinsics[stream_name] ) );
-        }
-        else if( auto motion_server = std::dynamic_pointer_cast< dds_motion_stream_server >( server ) )
-        {
-            motion_server->set_intrinsics( std::move( stream_name_to_motion_intrinsics[stream_name] ) );
-        }
 
         // Get supported options and recommended filters for this stream
         realdds::dds_options options;
@@ -313,25 +318,18 @@ extrinsics_map get_extrinsics_map( const rs2::device & dev )
 }
 
 
-std::shared_ptr< dds_stream_profile > create_dds_stream_profile( rs2_stream type, nlohmann::json const & j )
+std::shared_ptr< dds_stream_profile > create_dds_stream_profile( std::string const & type_string, nlohmann::json const & j )
 {
-    switch( type )
-    {
-    case RS2_STREAM_DEPTH:
-    case RS2_STREAM_COLOR:
-    case RS2_STREAM_INFRARED:
-    case RS2_STREAM_FISHEYE:
-    case RS2_STREAM_CONFIDENCE:
+    if( "motion" == type_string )
+        return dds_stream_profile::from_json< dds_motion_stream_profile >( j );
+
+    static const std::set< std::string > video_types = { "depth", "color", "ir", "confidence" };
+    if( video_types.find( type_string ) != video_types.end() )
         return dds_stream_profile::from_json< dds_video_stream_profile >( j );
 
-    case RS2_STREAM_GYRO:
-    case RS2_STREAM_ACCEL:
-    case RS2_STREAM_POSE:
-        return dds_stream_profile::from_json< dds_motion_stream_profile >( j );
-    }
-
-    throw std::runtime_error( "Unsupported stream type" );
+    throw std::runtime_error( "unsupported stream type '" + type_string + "'" );
 }
+
 
 rs2_stream stream_name_to_type( std::string const & type_string )
 {
@@ -341,11 +339,8 @@ rs2_stream stream_name_to_type( std::string const & type_string )
         { "Infrared", RS2_STREAM_INFRARED },
         { "Infrared_1", RS2_STREAM_INFRARED },
         { "Infrared_2", RS2_STREAM_INFRARED },
-        { "Fisheye", RS2_STREAM_FISHEYE },
-        { "Gyro", RS2_STREAM_GYRO },
-        { "Accel", RS2_STREAM_ACCEL },
+        { "Motion", RS2_STREAM_GYRO },  // We report only gyro profiles
         { "Gpio", RS2_STREAM_GPIO },
-        { "Pose", RS2_STREAM_POSE },
         { "Confidence", RS2_STREAM_CONFIDENCE },
     };
     auto it = type_to_rs2.find( type_string );
@@ -357,26 +352,6 @@ rs2_stream stream_name_to_type( std::string const & type_string )
     return it->second;
 }
 
-rs2_stream type_string_to_rs2_stream( std::string const & type_string )
-{
-    static const std::map< std::string, rs2_stream > type_to_rs2 = {
-        { "depth", RS2_STREAM_DEPTH },
-        { "color", RS2_STREAM_COLOR },
-        { "ir", RS2_STREAM_INFRARED },
-        { "fisheye", RS2_STREAM_FISHEYE },
-        { "gyro", RS2_STREAM_GYRO },
-        { "accel", RS2_STREAM_ACCEL },
-        { "pose", RS2_STREAM_POSE },
-        { "confidence", RS2_STREAM_CONFIDENCE },
-    };
-    auto it = type_to_rs2.find( type_string );
-    if( it == type_to_rs2.end() )
-    {
-        LOG_ERROR( "Unknown stream type '" << type_string << "'" );
-        return RS2_STREAM_ANY;
-    }
-    return it->second;
-}
 
 int stream_name_to_index( std::string const & type_string )
 {
@@ -426,19 +401,22 @@ bool profiles_are_compatible( std::shared_ptr< dds_stream_profile > const & p1,
 
 
 rs2::stream_profile get_required_profile( const rs2::sensor & sensor,
+                                          std::vector< rs2::stream_profile > const & sensor_stream_profiles,
                                           std::string const & stream_name,
                                           std::shared_ptr< dds_stream_profile > const & profile )
 {
-    auto sensor_stream_profiles = sensor.get_stream_profiles();
+    auto const stream_type = stream_name_to_type( stream_name );
+    auto const stream_index = stream_name_to_index( stream_name );
+
     auto profile_iter = std::find_if( sensor_stream_profiles.begin(),
                                       sensor_stream_profiles.end(),
-                                      [&]( rs2::stream_profile sp ) {
+                                      [&]( rs2::stream_profile const & sp ) {
                                           auto vp = sp.as< rs2::video_stream_profile >();
                                           auto dds_vp = std::dynamic_pointer_cast< dds_video_stream_profile >( profile );
                                           bool video_params_match = ( vp && dds_vp ) ?
                                               vp.width() == dds_vp->width() && vp.height() == dds_vp->height() : true;
-                                          return sp.stream_type() == stream_name_to_type( stream_name )
-                                              && sp.stream_index() == stream_name_to_index( stream_name )
+                                          return sp.stream_type() == stream_type
+                                              && sp.stream_index() == stream_index
                                               && sp.fps() == profile->frequency()
                                               && sp.format() == profile->format().to_rs2()
                                               && video_params_match;
@@ -537,20 +515,23 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                     {
                         // RS2_STREAM_GYRO, RS2_STREAM_ACCEL
                         static realdds::topics::imu_msg imu;
-                        auto xyz = reinterpret_cast< float const * >( f.get_data() );
+                        auto xyz = reinterpret_cast<float const *>(f.get_data());
+                        // We will be getting gyro and accel together, from different threads:
+                        // Don't want to change something mid-send
+                        static std::mutex imu_mutex;
                         if( RS2_STREAM_ACCEL == stream_type )
                         {
+                            std::unique_lock< std::mutex > lock( imu_mutex );
                             imu.accel_data().x( xyz[0] );
                             imu.accel_data().y( xyz[1] );
                             imu.accel_data().z( xyz[2] );
+                            return;  // Don't actually publish
                         }
-                        else
-                        {
-                            imu.gyro_data().x( xyz[0] );
-                            imu.gyro_data().y( xyz[1] );
-                            imu.gyro_data().z( xyz[2] );
-                        }
+                        imu.gyro_data().x( xyz[0] );
+                        imu.gyro_data().y( xyz[1] );
+                        imu.gyro_data().z( xyz[2] );
                         imu.timestamp( timestamp );
+                        std::unique_lock< std::mutex > lock( imu_mutex );
                         motion->publish_motion( std::move( imu ) );
                         // motion streams have no metadata!
                     }
@@ -612,7 +593,7 @@ void lrs_device_controller::start_streaming( const json & msg )
         auto server = name2server->second;
 
         auto requested_profile
-            = create_dds_stream_profile( type_string_to_rs2_stream( server->type_string() ), name2profile.value() );
+            = create_dds_stream_profile( server->type_string(), name2profile.value() );
         auto profile = find_profile( server, requested_profile );
         if( ! profile )
             throw std::runtime_error( "invalid profile " + requested_profile->to_string() + " for stream '"
@@ -670,8 +651,30 @@ lrs_device_controller::get_rs2_profiles( realdds::dds_stream_profiles const & dd
             continue;
         }
         auto & sensor = it->second;
-        auto rs2_profile = get_required_profile( sensor, stream_name, dds_profile );
+        auto const sensor_stream_profiles = sensor.get_stream_profiles();
+        auto rs2_profile = get_required_profile( sensor, sensor_stream_profiles, stream_name, dds_profile );
         rs_profiles.push_back( rs2_profile );
+
+        if( rs2_profile.stream_type() == RS2_STREAM_GYRO )
+        {
+            // When we start the Gyro, we want to start the Accelerometer, too!
+            rs2::stream_profile accel_profile;
+            assert( accel_profile.fps() == 0 );
+            for( auto & sp : sensor_stream_profiles )
+            {
+                if( sp.stream_type() != RS2_STREAM_ACCEL )
+                    continue;
+                if( sp.format() != rs2_profile.format() )
+                    continue;
+                if( sp.fps() > accel_profile.fps() )
+                    accel_profile = sp;
+            }
+            if( accel_profile )
+            {
+                LOG_DEBUG( "adding accel profile @ " << accel_profile.fps() << " FPS" );
+                rs_profiles.push_back( accel_profile );
+            }
+        }
     }
     return rs_profiles;
 }

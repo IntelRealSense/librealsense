@@ -57,6 +57,14 @@ If only one of Accel/Gyro is requested, the other's values can remain zeroes. Th
 
 If both Accel and Gyro are requested, they are packaged together but their values may be generated independently with different timestamps. The timestamp should reflect the Gyro timestamp. The Accel values will either reflect the last values received (which may not reflect the values at that specific timestamp) or interpolated values to align with the Gyro. The latter is preferable.
 
+#### Motion Correction
+
+The Gyro/Accel values sent as part of the format may be the raw values output by the sensor, or values that are post-calibration (with intrinsic bias and scaling corrections applied).
+
+When raw values are output, it is up to the user to apply any intrinsic correction. Usually this would be done with librealsense if calibration of the accelerometer or gyroscope was done (see [here](../../../tools/rs-imu-calibration/)). By default, the calibration matrices are identity matrices, i.e. preserving the raw sensor values.
+
+It is recommended that the server output values post-calibration, such that librealsense is not needed. An option ("Enable Motion Correction" in librealsense) can be used to control this.
+
 #### Quality of Service
 
 - Reliability: `BEST_EFFORT`

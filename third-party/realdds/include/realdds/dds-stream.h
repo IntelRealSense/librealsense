@@ -133,14 +133,17 @@ public:
     typedef std::function< void( topics::imu_msg && f ) > on_data_available_callback;
     void on_data_available( on_data_available_callback cb ) { _on_data_available = cb; }
 
-    void set_intrinsics( const motion_intrinsics & intrinsics ) { _intrinsics = intrinsics; }
-    const motion_intrinsics & get_intrinsics() const { return _intrinsics; }
+    void set_accel_intrinsics( const motion_intrinsics & intrinsics ) { _accel_intrinsics = intrinsics; }
+    void set_gyro_intrinsics( const motion_intrinsics & intrinsics ) { _gyro_intrinsics = intrinsics; }
+    const motion_intrinsics & get_accel_intrinsics() const { return _accel_intrinsics; }
+    const motion_intrinsics & get_gyro_intrinsics() const { return _gyro_intrinsics; }
 
 protected:
     void handle_data() override;
     bool can_start_streaming() const override { return _on_data_available != nullptr; }
 
-    motion_intrinsics _intrinsics;
+    motion_intrinsics _accel_intrinsics;
+    motion_intrinsics _gyro_intrinsics;
     on_data_available_callback _on_data_available = nullptr;
 };
 

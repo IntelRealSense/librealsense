@@ -27,6 +27,15 @@ I.e.: the server must track the number of subscribers and start or stop streamin
 Note that streaming is a read-only operation and therefore can be shared: once streaming, any subscriber can see what's being streamed. See [`open-streams`](#open-streams) for information about changing what is being streamed.
 
 
+#### Multicast
+
+Network bandwidth is at a premium and multiple clients accessing the same server entails sending datagrams to each separately (by default). To save on bandwidth and efficiently read from a server, a multicast IP address is used.
+
+The address is broadcast as part of [device discovery](discovery.md).
+
+With multicast-enabled clients, the server has to send datagrams to one address, saving network bandwidth and processing time. The clients need to know to listen on this address.
+
+
 #### Multiple Streams
 
 To start multiple streams, a client must simply subscribe to multiple topics.
