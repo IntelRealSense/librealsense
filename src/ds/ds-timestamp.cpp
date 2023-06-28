@@ -134,7 +134,7 @@ namespace librealsense
 
         _has_metadata[0] = has_metadata(frame);
 
-        auto md = (librealsense::md_occupancy*)(f->additional_data.metadata_blob.data());
+        auto md = (librealsense::md_occupancy*)(f->additional_data.metadata_blob.data() + platform::uvc_header_size);
         if (_has_metadata[0] && md)
         {
             return (double)(md->frame_timestamp) * TIMESTAMP_USEC_TO_MSEC;
@@ -185,7 +185,7 @@ namespace librealsense
 
         _has_metadata[0] = has_metadata(frame);
 
-        auto md = (librealsense::md_safety_info*)(f->additional_data.metadata_blob.data());
+        auto md = (librealsense::md_safety_info*)(f->additional_data.metadata_blob.data() + platform::uvc_header_size);
         if (_has_metadata[0] && md)
         {
             return (double)(md->frame_timestamp) * TIMESTAMP_USEC_TO_MSEC;
