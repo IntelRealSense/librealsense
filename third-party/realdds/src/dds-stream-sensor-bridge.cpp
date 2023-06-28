@@ -87,7 +87,7 @@ bool profiles_are_compatible( std::shared_ptr< dds_stream_profile > const & p1,
             return false;
     if( ! any_format && p1->format() != p2->format() )
         return false;
-    return p1->frequency() == p2->frequency();;
+    return p1->frequency() == p2->frequency();
 }
 
 

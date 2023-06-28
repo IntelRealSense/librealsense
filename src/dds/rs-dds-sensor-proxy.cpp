@@ -107,7 +107,7 @@ std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_motion_stream(
 }
 
 
-void dds_sensor_proxy::initialization_done( const std::string & product_id, const std::string & product_line )
+void dds_sensor_proxy::initialization_done()
 {
     register_basic_converters();
     _profiles = _formats_converter.get_all_possible_profiles( _raw_rs_profiles );
@@ -160,27 +160,6 @@ void dds_sensor_proxy::register_basic_converters()
                             []() { return std::make_shared< identity_processing_block >(); } } );
 
     _formats_converter.register_converters( converters );
-}
-
-
-void dds_sensor_proxy::tag_profiles( const std::vector<librealsense::tagged_profile> & tags )
-{
-    for( auto & profile : _profiles )
-        for( auto & tag : tags )
-            if( ( tag.stream == RS2_STREAM_ANY || tag.stream == profile->get_stream_type() ) &&
-                ( tag.format == RS2_FORMAT_ANY || tag.format == profile->get_format() ) &&
-                ( tag.fps == -1 || tag.fps == profile->get_framerate() ) &&
-                ( tag.stream_index == -1 || tag.stream_index == profile->get_stream_index() ) )
-            {
-                if( auto vp = dynamic_cast< video_stream_profile_interface * >( profile.get() ) )
-                { // For video the resolution should match as well
-                    if( ( tag.width == -1 || tag.width == vp->get_width() ) &&
-                        ( tag.height == -1 || tag.height == vp->get_height() ) )
-                        profile->tag_profile( tag.tag );
-                }
-                else
-                    profile->tag_profile( tag.tag );
-            }
 }
 
 

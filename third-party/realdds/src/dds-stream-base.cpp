@@ -26,7 +26,7 @@ void dds_stream_base::enable_metadata()
 }
 
 
-void dds_stream_base::init_profiles( dds_stream_profiles const & profiles, int default_profile_index )
+void dds_stream_base::init_profiles( dds_stream_profiles const & profiles, size_t default_profile_index )
 {
     if( !_profiles.empty() )
         DDS_THROW( runtime_error, "stream '" + _name + "' profiles are already initialized" );
@@ -34,10 +34,10 @@ void dds_stream_base::init_profiles( dds_stream_profiles const & profiles, int d
         DDS_THROW( runtime_error, "at least one profile is required to initialize stream '" + _name + "'" );
 
     _default_profile_index = default_profile_index;
-    if( _default_profile_index < 0 || _default_profile_index >= profiles.size() )
+    if( _default_profile_index >= profiles.size() )
         DDS_THROW( runtime_error,
-            "invalid default profile index (" + std::to_string( _default_profile_index ) + " for "
-            + std::to_string( profiles.size() ) + " stream profiles" );
+                   "invalid default profile index (" + std::to_string( _default_profile_index ) + " for "
+                       + std::to_string( profiles.size() ) + " stream profiles" );
 
     auto self = weak_from_this();
     for( auto const & profile : profiles )

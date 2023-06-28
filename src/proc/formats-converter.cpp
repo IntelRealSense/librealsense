@@ -221,12 +221,6 @@ void formats_converter::prepare_to_convert( stream_profiles from_profiles )
             {
                 if( factory_of_best_match->has_source( raw_profile ) )
                 {
-                    // When using DDS the server may split one stream of data into multiple dds_streams, e.g. Y8I
-                    // infrared data. When grouping these dds_streams under one sensor we get multiple instances of the
-                    // same profile, but the server should only open one to streaming
-                    if( is_profile_in_list( raw_profile, { current_resolved_reqs.begin(), current_resolved_reqs.end() } ) )
-                        continue;
-
                     current_resolved_reqs.insert( raw_profile );
 
                     // Caching converters to invoke appropriate converters for received frames

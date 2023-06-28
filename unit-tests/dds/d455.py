@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 import pyrealdds as dds
 from rspy import log, test
@@ -499,7 +499,7 @@ def color_stream_profiles():
 
 def color_stream():
     stream = dds.color_stream_server( "Color",  "RGB Camera" )
-    stream.init_profiles( color_stream_profiles(), 9 )
+    stream.init_profiles( color_stream_profiles(), 10 )
     stream.init_options( rgb_camera_options() )
     return stream
 

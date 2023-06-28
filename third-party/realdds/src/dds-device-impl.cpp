@@ -515,7 +515,7 @@ void dds_device::impl::handle_stream_header( init_context & init, nlohmann::json
         DDS_THROW( runtime_error, "stream '" + stream_name + "' already exists" );
 
     auto sensor_name = rsutils::json::get< std::string >( j, "sensor-name" );
-    auto default_profile_index = rsutils::json::get< int >( j, "default-profile-index" );
+    size_t default_profile_index = rsutils::json::get< size_t >( j, "default-profile-index" );
     dds_stream_profiles profiles;
 
 #define TYPE2STREAM( S, P )                                                                                            \
@@ -545,7 +545,7 @@ void dds_device::impl::handle_stream_header( init_context & init, nlohmann::json
         stream->enable_metadata();  // Call before init_profiles
     }
 
-    if( default_profile_index >= 0 && default_profile_index < profiles.size() )
+    if( default_profile_index < profiles.size() )
         stream->init_profiles( profiles, default_profile_index );
     else
         DDS_THROW( runtime_error,

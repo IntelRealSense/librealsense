@@ -4,6 +4,7 @@
 #pragma once
 #include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
 #include <realdds/dds-stream-sensor-bridge.h>
+#include <realdds/dds-stream-profile.h>
 #include <nlohmann/json_fwd.hpp>
 
 #include <unordered_map>
@@ -17,7 +18,6 @@ namespace realdds {
 
 class dds_device_server;
 class dds_stream_server;
-class dds_stream_profile;
 class dds_option;
 
 } // namespace realdds
@@ -40,6 +40,13 @@ private:
 
     void start_streaming( const nlohmann::json & msg );
     void publish_frame_metadata( const rs2::frame & f, realdds::dds_time const & );
+
+    void override_default_profiles( const std::map< std::string, realdds::dds_stream_profiles > & stream_name_to_profiles,
+                                    std::map< std::string, size_t > & stream_name_to_default_profile ) const;
+    size_t get_index_of_profile( const realdds::dds_stream_profiles & profiles,
+                                 const realdds::dds_video_stream_profile & profile ) const;
+    size_t get_index_of_profile( const realdds::dds_stream_profiles & profiles,
+                                 const realdds::dds_motion_stream_profile & profile ) const;
 
     rs2::device _rs_dev;
     std::map< std::string, rs2::sensor > _rs_sensors;
