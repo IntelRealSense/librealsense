@@ -260,15 +260,15 @@ namespace librealsense
             }
         }
 
-        void on_start_stream(int uniqe_id)
+        void on_start_stream(int unique_id)
         {
             std::time_t current_time = std::chrono::system_clock::to_time_t(
                 std::chrono::system_clock::now());
             std::string str_current_time = std::ctime(&current_time);
-            _unique_profile_id_per_stream[uniqe_id] = str_current_time.substr(11, 8);
+            _unique_profile_id_per_stream[unique_id] = str_current_time.substr(11, 8);
         }
 
-        void on_stop_stream(int uniqe_id, std::string device_name, std::string sensor_name)
+        void on_stop_stream(int unique_id, std::string device_name, std::string sensor_name)
         {
             std::time_t _stop_time = std::chrono::system_clock::to_time_t(
                 std::chrono::system_clock::now());
@@ -277,7 +277,7 @@ namespace librealsense
             {
                 std::unordered_map < std::string, std::vector<std::pair<std::string, std::string>>> new_map;
                 std::vector<std::pair<std::string, std::string>> new_list;
-                new_list.push_back(std::make_pair(_unique_profile_id_per_stream[uniqe_id], str_current_time.substr(11, 8)));
+                new_list.push_back(std::make_pair(_unique_profile_id_per_stream[unique_id], str_current_time.substr(11, 8)));
                 new_map.insert(std::make_pair(device_name, new_list));
                 _sensors_per_device.insert(std::make_pair(sensor_name, new_map));
             }
@@ -286,23 +286,23 @@ namespace librealsense
                 if (_sensors_per_device[sensor_name].find(device_name) == _sensors_per_device[sensor_name].end())
                 {
                     std::vector< std::pair<std::string, std::string>> new_list;
-                    new_list.push_back(std::make_pair(_unique_profile_id_per_stream[uniqe_id], str_current_time.substr(11, 8)));
+                    new_list.push_back(std::make_pair(_unique_profile_id_per_stream[unique_id], str_current_time.substr(11, 8)));
                     _sensors_per_device[sensor_name].insert(std::make_pair(device_name, new_list));
                 }
                 else
                 {
-                    _sensors_per_device[sensor_name][device_name].push_back(std::make_pair(_unique_profile_id_per_stream[uniqe_id], str_current_time.substr(11, 8)));
+                    _sensors_per_device[sensor_name][device_name].push_back(std::make_pair(_unique_profile_id_per_stream[unique_id], str_current_time.substr(11, 8)));
     
                 }     
             }
-            _unique_profile_id_per_stream.erase(uniqe_id);
+            _unique_profile_id_per_stream.erase(unique_id);
         }
 
         std::vector<std::uint8_t>  get_data()
         {
             json j;
-            _jason_creation_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-            j["data collection end time"] = std::ctime(&_jason_creation_time);
+            _json_creation_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+            j["data collection end time"] = std::ctime(&_json_creation_time);
             j["data collection start time"] = std::ctime(&_start_time);
             j["librealsense_version"] = _librealsense_version;
             j["os_name"] = _os_name;
@@ -330,7 +330,7 @@ namespace librealsense
         std::unordered_map<int, std::string> _unique_profile_id_per_stream;
 
         std::time_t _start_time;
-        std::time_t _jason_creation_time;
+        std::time_t _json_creation_time;
 
         std::string _librealsense_version;
         std::string _os_name;
