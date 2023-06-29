@@ -13,23 +13,18 @@ jobs:
     strategy:
       matrix:
         ros_distribution:
-          - foxy
-          - galactic
           - humble
+          - iron
           - rolling
 
         include:
-          # Foxy Fitzroy
-          - docker_image: ubuntu:focal
-            ros_distribution: foxy
-
           # Galactic Geochelone
-          - docker_image: ubuntu:focal
-            ros_distribution: galactic
+          - docker_image: ubuntu:jammy
+            ros_distribution: humble
 
           # Humble Hawksbill
           - docker_image: ubuntu:jammy
-            ros_distribution: humble
+            ros_distribution: iron
 
           # Rolling Ridley
           - docker_image: ubuntu:jammy
