@@ -1,7 +1,7 @@
 env:
   global:
-    - LRS_BUILD_CONFIG=Debug
-    - LRS_RUN_CONFIG=Release
+    LRS_BUILD_CONFIG=Debug
+    LRS_RUN_CONFIG=Release
 matrix:
   include:
     - name: "Windows Testing - cpp, Win USB (Win7)"
