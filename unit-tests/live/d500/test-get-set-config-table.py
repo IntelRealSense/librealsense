@@ -18,8 +18,7 @@ test.start("Get ds5 standard buffer")
 
 # getting gvd
 gvd_opcode = 0x10
-# size should be 602 - to be checked
-gvd_size = 606
+gvd_size = 602
 cmd = dp_device.build_command(opcode=gvd_opcode)
 ans = dp_device.send_and_receive_raw_data(cmd)
 
