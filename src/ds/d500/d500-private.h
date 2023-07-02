@@ -63,7 +63,7 @@ namespace librealsense
             rgb_sensor = 0x17,
             imu_sensor = 0x19,
             active_projector = 0x1a,
-            module_serial_offset = 0x58,         //ES1
+            module_serial_offset = 0x54,         //ES1
             camera_fw_version_offset = 0x8c,
             is_camera_locked_offset = 0x9e,
             module_asic_serial_offset = 0x80,
