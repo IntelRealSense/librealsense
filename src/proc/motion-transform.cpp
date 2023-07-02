@@ -43,7 +43,9 @@ namespace librealsense
     // Librealsense output format: floating point 32bit. units rad/sec,
     template<rs2_format FORMAT> void unpack_gyro_axes(byte * const dest[], const byte * source, int width, int height, int output_size, bool is_mipi = false)
     {
-        static const double gyro_transform_factor = deg2rad(0.1);
+        // Current conversion is +-1000 deg/sec at 32.768 LSB/Deg, therefore, each LSB corresponds to 0.030517578 deg/sec angular velocity
+        // TODO - inspec the discrepancy with D4xx anticipated mode
+        static const double gyro_transform_factor = deg2rad(/*0.1*/0.030517578);
 
         copy_hid_axes<FORMAT>(dest, source, gyro_transform_factor, is_mipi);
     }
