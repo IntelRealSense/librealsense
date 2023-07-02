@@ -49,6 +49,8 @@ namespace librealsense
         auto new_f = source.allocate_video_frame(_target_stream_profile, f,
             vf.get_bytes_per_pixel(), width, height, vf.get_stride_in_bytes(), RS2_EXTENSION_DEPTH_FRAME);
 
+        librealsense::aus_on_process_frame(f, "Threshold Filter");
+
         if (new_f)
         {
             auto ptr = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)new_f.get());

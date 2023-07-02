@@ -82,8 +82,8 @@ expected_check_dict = \
         'platform_name': rsutils.get_platform_name(),
         'librealsense_version': rs.__version__
     }
-result = all([(expected_check_dict.get(key) == value or expected_check_dict.get(key) == '-1')
-              for key, value in res_dict.items()])
+result = all([(value == '-1' or res_dict.get(key) == value)
+              for key, value in expected_check_dict.items()])
 test.check_equal(result, True)
 test.finish()
 

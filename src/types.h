@@ -218,12 +218,15 @@ namespace librealsense
     std::vector<std::string> aus_get_counters_list();
     class device_interface;
     void aus_on_device_changed(std::shared_ptr<device_interface> device);
+    void aus_on_process_frame(const rs2::frame & f, std::string ppf_name);
     void aus_system_counter_increment(std::string suffix, std::string device_name);
     void aus_system_timer_start(std::string suffix, std::string device_name);
     void aus_system_timer_stop(std::string suffix, std::string device_name);
     class stream_profile_interface;
     void aus_start_active_streams_timer(std::string device_name, std::vector<std::shared_ptr<stream_profile_interface>> active_streams);
     void aus_stop_active_streams_timer(std::string device_name, std::vector<std::shared_ptr<stream_profile_interface>> active_streams);
+    void aus_on_start_stream(int unique_id);
+    void aus_on_stop_stream(int unique_id, std::string device_name, std::string sensor_name);
     std::vector<uint8_t> aus_get_data();
 
     // Enhancement for debug mode that incurs performance penalty with STL

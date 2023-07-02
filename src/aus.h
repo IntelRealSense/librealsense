@@ -81,6 +81,7 @@ namespace librealsense
 
     private:
         long long _start;
+        long long _end;
         long long _total;
         bool _is_running;
 
@@ -245,9 +246,64 @@ namespace librealsense
             }
         }
 
+        void on_process_frame(const rs2::frame & f, std::string ppf_name)
+        {
+            std::string device_name = ((frame_interface*)f.get())->get_sensor()->get_device().get_info(RS2_CAMERA_INFO_NAME);
+            if ( _ppf_used_per_device.find(device_name) == _ppf_used_per_device.end())
+            {
+                std::set<std::string> new_set = {ppf_name};
+                _ppf_used_per_device.insert(std::make_pair(device_name, new_set));
+            }
+            else
+            {
+                _ppf_used_per_device[device_name].insert(ppf_name);
+            }
+        }
+
+        void on_start_stream(int unique_id)
+        {
+            std::time_t current_time = std::chrono::system_clock::to_time_t(
+                std::chrono::system_clock::now());
+            std::string str_current_time = std::ctime(&current_time);
+            _unique_profile_id_per_stream[unique_id] = str_current_time.substr(11, 8);
+        }
+
+        void on_stop_stream(int unique_id, std::string device_name, std::string sensor_name)
+        {
+            std::time_t _stop_time = std::chrono::system_clock::to_time_t(
+                std::chrono::system_clock::now());
+            std::string str_current_time = std::ctime(&_stop_time);
+            if (_sensors_per_device.find(sensor_name) == _sensors_per_device.end())
+            {
+                std::unordered_map < std::string, std::vector<std::pair<std::string, std::string>>> new_map;
+                std::vector<std::pair<std::string, std::string>> new_list;
+                new_list.push_back(std::make_pair(_unique_profile_id_per_stream[unique_id], str_current_time.substr(11, 8)));
+                new_map.insert(std::make_pair(device_name, new_list));
+                _sensors_per_device.insert(std::make_pair(sensor_name, new_map));
+            }
+            else
+            {
+                if (_sensors_per_device[sensor_name].find(device_name) == _sensors_per_device[sensor_name].end())
+                {
+                    std::vector< std::pair<std::string, std::string>> new_list;
+                    new_list.push_back(std::make_pair(_unique_profile_id_per_stream[unique_id], str_current_time.substr(11, 8)));
+                    _sensors_per_device[sensor_name].insert(std::make_pair(device_name, new_list));
+                }
+                else
+                {
+                    _sensors_per_device[sensor_name][device_name].push_back(std::make_pair(_unique_profile_id_per_stream[unique_id], str_current_time.substr(11, 8)));
+    
+                }     
+            }
+            _unique_profile_id_per_stream.erase(unique_id);
+        }
+
         std::vector<std::uint8_t>  get_data()
         {
             json j;
+            _json_creation_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+            j["data collection end time"] = std::ctime(&_json_creation_time);
+            j["data collection start time"] = std::ctime(&_start_time);
             j["librealsense_version"] = _librealsense_version;
             j["os_name"] = _os_name;
             j["platform_name"] = _platform_name;
@@ -256,16 +312,25 @@ namespace librealsense
             {
                 j[pair.first] = std::to_string(pair.second->get());
             }
+
+            j["ppf_used_per_device"] = _ppf_used_per_device;
+            j["sensors_per_device"]= _sensors_per_device;
+
             auto str = j.dump(4);
-            return std::vector<uint8_t>(str.begin(), str.end());
+            return std::vector<uint8_t>(str.begin(), str.end()); 
         }
+
 
     private:
         std::unordered_map<std::string, std::shared_ptr<aus_value>>_mp;
         std::unordered_map<std::string, std::string > _mp_devices_manager;
         std::mutex _m;
+        std::unordered_map<std::string, std::set<std::string>> _ppf_used_per_device;
+        std::unordered_map<std::string, std::unordered_map<std::string, std::vector<std::pair<std::string, std::string>>>> _sensors_per_device;
+        std::unordered_map<int, std::string> _unique_profile_id_per_stream;
 
-        long long _start_time;
+        std::time_t _start_time;
+        std::time_t _json_creation_time;
 
         std::string _librealsense_version;
         std::string _os_name;

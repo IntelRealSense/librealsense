@@ -81,6 +81,22 @@ void librealsense::aus_on_device_changed(std::shared_ptr<device_interface> devic
     aus_data_obj.on_device_changed(device);
 }
 
+void librealsense::aus_on_process_frame(const rs2::frame & f, std::string ppf_name)
+{
+    aus_data_obj.on_process_frame(f, ppf_name);
+}
+
+void librealsense::aus_on_start_stream(int unique_id)
+{
+    aus_data_obj.on_start_stream(unique_id);
+
+}
+
+void librealsense::aus_on_stop_stream(int unique_id, std::string device_name, std::string sensor_name)
+{
+    aus_data_obj.on_stop_stream(unique_id, device_name, sensor_name);
+}
+
 std::vector<uint8_t> librealsense::aus_get_data()
 {
     return aus_data_obj.get_data();
@@ -109,6 +125,7 @@ void librealsense::aus_start_active_streams_timer(std::string device_name, std::
     for (auto profile : active_streams)
     {
         librealsense::aus_system_timer_start(rs2_stream_to_string(profile->get_stream_type()), device_name);
+        librealsense::aus_on_start_stream(profile->get_unique_id());
     }
 }
 
@@ -117,6 +134,7 @@ void librealsense::aus_stop_active_streams_timer(std::string device_name, std::v
     for (auto profile : active_streams)
     {
         librealsense::aus_system_timer_stop(rs2_stream_to_string(profile->get_stream_type()), device_name);
+        librealsense::aus_on_stop_stream(profile->get_unique_id(), device_name, rs2_stream_to_string(profile->get_stream_type()));
     }
 }
 
@@ -140,12 +158,27 @@ void librealsense::aus_on_device_changed(std::shared_ptr<device_interface> devic
     return;
 }
 
+void librealsense::aus_on_process_frame(const rs2::frame & f, std::string ppf_name)
+{
+    return;
+}
+
 void librealsense::aus_start_active_streams_timer(std::string device_name, librealsense::stream_profiles active_streams)
 {
     return;
 }
 
 void librealsense::aus_stop_active_streams_timer(std::string device_name, librealsense::stream_profiles active_streams)
+{
+    return;
+}
+
+void librealsense::aus_on_start_stream(int unique_id)
+{
+    return;
+}
+
+void librealsense::aus_on_stop_stream(int unique_id, std::string device_name, std::string sensor_name)
 {
     return;
 }

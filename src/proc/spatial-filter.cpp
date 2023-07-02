@@ -171,6 +171,8 @@ namespace librealsense
         else
             dxf_smooth<uint16_t>(const_cast<void*>(tgt.get_data()), _spatial_alpha_param, _spatial_edge_threshold, _spatial_iterations);
 
+        librealsense::aus_on_process_frame(f, "Spatial Filter");
+
         return tgt;
     }
 
