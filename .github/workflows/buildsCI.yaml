@@ -21,7 +21,7 @@ jobs:
 
 
   #--------------------------------------------------------------------------------
-  Win_SH_EX_CfU:  # Windows, shared, with Examples & Tools, and Check for Updates
+  Win_SH_EX_CfU:  # Windows, shared, with Examples & Tools, no EasyLogging and Check for Updates
     runs-on: windows-2019
     timeout-minutes: 60
     steps:
@@ -53,7 +53,7 @@ jobs:
         cd ${{env.WIN_BUILD_DIR}}
         pwd
         ls        
-        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=true -DBUILD_TOOLS=true -DCHECK_FOR_UPDATES=true
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=true -DBUILD_TOOLS=true -DCHECK_FOR_UPDATES=true -DBUILD_EASYLOGGINGPP=false
 
     - name: Build
       # Build your program with the given configuration
