@@ -18,11 +18,11 @@ jobs:
           - rolling
 
         include:
-          # Galactic Geochelone
+          # Humble Hawksbill
           - docker_image: ubuntu:jammy
             ros_distribution: humble
 
-          # Humble Hawksbill
+          # Iron Irwini
           - docker_image: ubuntu:jammy
             ros_distribution: iron
 
