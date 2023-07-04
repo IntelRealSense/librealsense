@@ -122,6 +122,8 @@ extern "C" {
         RS2_OPTION_SAFETY_PRESET_ACTIVE_INDEX, /**< Set / Get current active safety preset index**/
         RS2_OPTION_SAFETY_MODE, /**< Safety camera operation mode see rs2_safety_camera_mode for values*/
         RS2_OPTION_RGB_TNR_ENABLED, /**< RGB Temporal Noise Reduction enabling ON (1) / OFF (0)*/
+        RS2_OPTION_SAFETY_MCU_TEMPERATURE, /**< Temperature of the SMCU */
+        RS2_OPTION_LEFT_IR_TEMPERATURE, /**< Temperature of the Left IR Sensor */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 

@@ -44,4 +44,34 @@ namespace librealsense
     {
         return *_range;
     }
+
+    temperature_option::temperature_option(std::shared_ptr<hw_monitor> hwm, sensor_base* ep, 
+        temperature_component component, const char* description)
+        : _hwm(hwm), _sensor(ep), _component(component), _description(description)
+    {
+        _range = [this]()
+        {
+            return option_range{ -127, 128, 1, 30 };
+        };
+    }
+
+    float temperature_option::query() const
+    {
+        if (!is_enabled() || !_hwm)
+            throw wrong_api_call_sequence_exception("error occurred in the temperature reading");
+
+        float temperature = -1;
+        try {
+            command cmd(ds::fw_cmd::GTEMP, static_cast<int>(_component));
+            auto res = _hwm->send(cmd);
+
+            temperature = static_cast<float>(static_cast<int8_t>(res[0])) + static_cast<int8_t>(res[1]) / 256.f;
+        }
+        catch (...)
+        {
+            throw wrong_api_call_sequence_exception("hw monitor command for reading temperature failed");
+        }
+
+        return temperature;
+    }
 }

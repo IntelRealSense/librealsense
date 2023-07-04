@@ -11,6 +11,7 @@
 
 #include "d500-device.h"
 #include "d500-private.h"
+#include "d500-options.h"
 #include "ds/ds-options.h"
 #include "ds/ds-timestamp.h"
 #include "stream.h"
@@ -655,7 +656,15 @@ namespace librealsense
                     lazy<float>([default_depth_units]()
                         { return default_depth_units; })));
             }
-            
+
+            //depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
+            //    std::make_shared<temperature_option>(_hw_monitor, &raw_depth_sensor, 
+            // temperature_component::MAIN_ASIC, "temperature reading for Main ASIC"));
+
+            depth_sensor.register_option(RS2_OPTION_LEFT_IR_TEMPERATURE,
+                std::make_shared<temperature_option>(_hw_monitor, &raw_depth_sensor, 
+                    temperature_option::temperature_component::LEFT_IR, "Temperature reading for Left Infrared Sensor"));
+
             // Metadata registration
             depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc_header::timestamp));
         }); //group_multiple_fw_calls

@@ -448,6 +448,8 @@ const char * get_string( rs2_option value )
     CASE( SAFETY_PRESET_ACTIVE_INDEX )
     CASE( SAFETY_MODE )
     CASE( RGB_TNR_ENABLED )
+    CASE( SAFETY_MCU_TEMPERATURE )
+    CASE( LEFT_IR_TEMPERATURE )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;

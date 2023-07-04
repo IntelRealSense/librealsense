@@ -76,7 +76,7 @@ namespace librealsense
             DFU = 0x1E,     // Enter to FW update mode
             HWRST = 0x20,     // hardware reset
             OBW = 0x29,     // OVT bypass write
-            PROJ_TEMP_MIPI  = 0x2A,     // get ASIC temperature - with mipi device
+            GTEMP  = 0x2A,     // get ASIC temperature, with mipi device - get all temperatures, with d500 devices
             SET_ADV = 0x2B,     // set advanced mode control
             GET_ADV = 0x2C,     // get advanced mode control
             EN_ADV = 0x2D,     // enable advanced mode
