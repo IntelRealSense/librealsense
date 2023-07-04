@@ -64,8 +64,10 @@ namespace librealsense
         try {
             command cmd(ds::fw_cmd::GTEMP, static_cast<int>(_component));
             auto res = _hwm->send(cmd);
-
-            temperature = static_cast<float>(static_cast<int8_t>(res[0])) + static_cast<int8_t>(res[1]) / 256.f;
+            auto offset_for_component = 2 * (static_cast<int>(_component) - 1);
+            int8_t whole_number_part = static_cast<int8_t>(res[offset_for_component]);
+            int8_t decimal_part = static_cast<int8_t>(res[offset_for_component + 1]);
+            temperature = static_cast<float>(whole_number_part) + decimal_part / 256.f;
         }
         catch (...)
         {
