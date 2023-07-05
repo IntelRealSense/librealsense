@@ -657,9 +657,9 @@ namespace librealsense
                         { return default_depth_units; })));
             }
 
-            //depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
-            //    std::make_shared<temperature_option>(_hw_monitor, &raw_depth_sensor, 
-            // temperature_component::MAIN_ASIC, "temperature reading for Main ASIC"));
+            depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
+                std::make_shared<temperature_option>(_hw_monitor, &raw_depth_sensor, 
+                    temperature_option::temperature_component::MAIN_ASIC, "Temperature reading for Main ASIC"));
 
             depth_sensor.register_option(RS2_OPTION_LEFT_IR_TEMPERATURE,
                 std::make_shared<temperature_option>(_hw_monitor, &raw_depth_sensor, 
