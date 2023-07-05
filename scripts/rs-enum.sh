@@ -110,8 +110,10 @@ exit 0
 fi
 
 #ADL-P IPU6
+mdev=$(v4l2-ctl --list-devices | grep -A1 ipu6 | grep media)
+#media-ctl -r
 # cache media-ctl output
-dot=$(media-ctl --print-dot)
+dot=$(media-ctl -d ${mdev} --print-dot)
 # for all d457 muxes a, b, c and d
 for camera in $mux_list; do
   create_dfu_dev=0
