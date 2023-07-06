@@ -7,7 +7,6 @@
 #include "device.h"
 
 #include <rsutils/string/from.h>
-#include <rsutils/json.h>
 
 using namespace librealsense;
 
@@ -429,14 +428,4 @@ void device::stop_activity() const
             LOG_ERROR("Failed to deactivate " << snr_name);
         }
     }
-}
-
-bool device::should_use_basic_formats() const
-{
-    if( _context )
-    {
-        return rsutils::json::get< bool >( _context->get_settings(), std::string("use-basic-formats", 17), false);
-    }
-
-    return false;
 }

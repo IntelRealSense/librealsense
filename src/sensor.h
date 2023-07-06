@@ -243,6 +243,8 @@ namespace librealsense
         void register_processing_block_options(const processing_block& pb);
         void unregister_processing_block_options(const processing_block& pb);
 
+        bool should_use_basic_formats() const;
+
         std::mutex _synthetic_configure_lock;
 
         frame_callback_ptr _post_process_callback;

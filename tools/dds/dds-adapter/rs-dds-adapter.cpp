@@ -122,7 +122,7 @@ try
     // Create a RealSense context
     nlohmann::json j = {
         { "dds-discovery", false }, // Don't discover DDS devices from the network, we want local devices only 
-        { "use-basic-formats", true }  //Don't convert raw sensor formats (except interleaved) will be done by receiver
+        { "use-basic-formats", true }  // Don't convert raw sensor formats (except interleaved) will be done by receiver
     };
     rs2::context ctx( j.dump() );
 

@@ -13,6 +13,7 @@
 #include "device-calibration.h"
 
 #include <rsutils/string/from.h>
+#include <rsutils/json.h>
 
 #include <array>
 #include <set>
@@ -1355,7 +1356,7 @@ void log_callback_end( uint32_t fps,
     stream_profiles synthetic_sensor::init_stream_profiles()
     {
         stream_profiles raw_profiles = _raw_sensor->get_stream_profiles( PROFILE_TAG_ANY | PROFILE_TAG_DEBUG );
-        if( _owner->should_use_basic_formats() )
+        if( should_use_basic_formats() )
         {
             _formats_converter.drop_non_basic_formats();
         }
@@ -1522,5 +1523,15 @@ void log_callback_end( uint32_t fps,
     void fisheye_sensor::create_snapshot(std::shared_ptr<fisheye_sensor>& snapshot) const
     {
         snapshot = std::make_shared<fisheye_sensor_snapshot>();
+    }
+
+    bool synthetic_sensor::should_use_basic_formats() const
+    {
+        if( _owner->get_context() )
+        {
+            return rsutils::json::get< bool >( _owner->get_context()->get_settings(), std::string( "use-basic-formats", 17 ), false );
+        }
+
+        return false;
     }
 }
