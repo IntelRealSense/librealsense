@@ -234,7 +234,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< context > ctx, std::shared_
 
             _stream_name_to_profiles[stream_iter->second->name()].push_back( profile );  // For extrinsics
 
-            tag_default_profiles( profile, stream_iter->second );
+            tag_default_profile_of_stream( profile, stream_iter->second );
         }
     }
 
@@ -369,10 +369,10 @@ std::shared_ptr< dds_sensor_proxy > dds_device_proxy::create_sensor( const std::
 
 
 // Tagging converted profiles. dds_sensor_proxy::add_video/motion_stream tagged the raw profiles.
-void dds_device_proxy::tag_default_profiles( std::shared_ptr<stream_profile_interface> & profile,
-                                             const std::shared_ptr< realdds::dds_stream > & stream ) const
+void dds_device_proxy::tag_default_profile_of_stream( const std::shared_ptr<stream_profile_interface> & profile,
+                                             const std::shared_ptr< const realdds::dds_stream > & stream ) const
 {
-    auto const & dds_default_profile = stream->profiles()[stream->default_profile_index()];
+    auto const & dds_default_profile = stream->default_profile();
 
     if( profile->get_stream_type() == to_rs2_stream_type( stream->type_string() ) &&
         profile->get_format() == dds_default_profile->format().to_rs2() &&
@@ -391,7 +391,7 @@ void dds_device_proxy::tag_default_profiles( std::shared_ptr<stream_profile_inte
 
 void dds_device_proxy::tag_profiles( stream_profiles profiles ) const
 {
-    //Do nothing. PROFILE_TAG_DEFAULT is already added in tag_default_profiles.
+    //Do nothing. PROFILE_TAG_DEFAULT is already added in tag_default_profile_of_stream.
 }
 
 

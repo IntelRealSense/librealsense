@@ -34,8 +34,8 @@ void formats_converter::drop_non_basic_formats()
 {
     for( size_t i = 0; i < _pb_factories.size(); ++i )
     {
-        auto source = _pb_factories[i]->get_source_info();
-        auto target = _pb_factories[i]->get_target_info();
+        const auto & source = _pb_factories[i]->get_source_info();
+        const auto & target = _pb_factories[i]->get_target_info();
         if( target.size() == 1 &&
             source[0].format == target[0].format )
         {
@@ -75,17 +75,14 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
                 if( source.format == raw_profile->get_format() &&
                    ( source.stream == raw_profile->get_stream_type() || source.stream == RS2_STREAM_ANY ) )
                 {
-                    auto targets = pbf->get_target_info();
                     // targets are saved with format, type and sometimes index. Updating fps and resolution before using as key
-                    for( auto & target : targets )
+                    for( const auto & target : pbf->get_target_info() )
                     {
                         // When interleaved streams are seperated to two distinct streams (e.g. sent as DDS streams),
                         // same converters are registered for both stream. We handle the relevant one based on index.
                         // Currently for infrared streams only.
                         if( source.stream == RS2_STREAM_INFRARED && raw_profile->get_stream_index() != target.index )
                             continue;
-
-                        target.fps = raw_profile->get_framerate();
 
                         auto cloned_profile = clone_profile( raw_profile );
                         cloned_profile->set_format( target.format );
@@ -97,16 +94,14 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
                         {
                             // Converter may rotate the image, invoke stream_resolution function to get actual result
                             const auto res = target.stream_resolution( { cloned_vsp->get_width(), cloned_vsp->get_height() } );
-                            target.height = res.height;
-                            target.width = res.width;
-                            cloned_vsp->set_dims( target.width, target.height );
+                            cloned_vsp->set_dims( res.width, res.height );
                         }
 
                         // Cache pbf supported profiles for efficiency in find_pbf_matching_most_profiles
                         _pbf_supported_profiles[pbf.get()].push_back( cloned_profile );
 
                         // Cache mapping of each target profile to profiles it is converting from.
-                        _target_profiles_to_raw_profiles[target].push_back( raw_profile );
+                        _target_profiles_to_raw_profiles[cloned_profile].push_back( raw_profile );
 
                         // TODO - Duplicates in the list happen when 2 raw_profiles have conversion to same target.
                         // In this case it is faster to check if( _target_to_source_profiles_map[target].size() > 1 )
@@ -177,7 +172,7 @@ bool formats_converter::is_profile_in_list( const std::shared_ptr< stream_profil
                                             const stream_profiles & profiles ) const
 {
     // Converting to stream_profile to avoid dynamic casting to video/motion_stream_profile
-    const auto & is_duplicate_predicate = [&profile]( const std::shared_ptr< stream_profile_interface > & spi ) {
+    auto is_duplicate_predicate = [&profile]( const std::shared_ptr< stream_profile_interface > & spi ) {
         return to_profile( spi.get() ) == to_profile( profile.get() );
     };
 
@@ -215,7 +210,7 @@ void formats_converter::prepare_to_convert( stream_profiles from_profiles )
         auto best_pb = factory_of_best_match->generate();
         for( const auto & from_profile : from_profiles_of_best_match )
         {
-            auto & mapped_raw_profiles = _target_profiles_to_raw_profiles[to_profile( from_profile.get() )];
+            auto & mapped_raw_profiles = _target_profiles_to_raw_profiles[from_profile];
 
             for( const auto & raw_profile : mapped_raw_profiles )
             {
@@ -237,7 +232,7 @@ void formats_converter::update_target_profiles_data( const stream_profiles & fro
 {
     for( auto & from_profile : from_profiles )
     {
-        for( auto & raw_profile : _target_profiles_to_raw_profiles[to_profile( from_profile.get() )] )
+        for( auto & raw_profile : _target_profiles_to_raw_profiles[from_profile] )
         {
             raw_profile->set_stream_index( from_profile->get_stream_index() );
             raw_profile->set_unique_id( from_profile->get_unique_id() );
@@ -346,7 +341,7 @@ void formats_converter::set_frames_callback( frame_callback_ptr callback )
     _converted_frames_callback = callback;
 
     // After processing callback
-    const auto & output_cb = make_callback( [&]( frame_holder f ) {
+    auto output_cb = make_callback( [&]( frame_holder f ) {
         std::vector< frame_interface * > frames_to_be_processed;
         frames_to_be_processed.push_back( f.frame );
 

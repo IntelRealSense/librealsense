@@ -669,8 +669,10 @@ void lrs_device_controller::override_default_profiles( const std::map< std::stri
     std::string product_line = _rs_dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
     std::string product_id = _rs_dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID );
 
+    // Default resolution for RealSense modules, set according to system SW architect definitions
     if( product_line == "D400" )
     {
+        // For best image quality global shutter should use 848x480 resolution, rolling shutter 1280x720
         uint16_t fps = 30;
         uint16_t width = 848;
         uint16_t height = 480;

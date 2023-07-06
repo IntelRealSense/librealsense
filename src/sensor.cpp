@@ -1433,7 +1433,7 @@ void log_callback_end( uint32_t fps,
         _formats_converter.set_frames_callback( callback );
 
         // Invoke processing blocks callback
-        const auto & process_cb = make_callback( [&, this]( frame_holder f ) {
+        auto process_cb = make_callback( [&, this]( frame_holder f ) {
             _formats_converter.convert_frame( f );
         } );
 

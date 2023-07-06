@@ -8,7 +8,7 @@
 #include "core/streaming.h"
 
 #include <vector>
-#include <rsutils/json.h>
+#include <nlohmann/json.hpp>
 #include "media/playback/playback_device.h"
 
 namespace librealsense
