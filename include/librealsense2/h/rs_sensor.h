@@ -699,6 +699,24 @@ void rs2_get_safety_preset(rs2_sensor const* sensor, int index, rs2_safety_prese
 */
 void rs2_set_safety_preset(rs2_sensor const* sensor, int index, rs2_safety_preset const* sp, rs2_error** error);
 
+/**
+* rs2_get_safety_interface_config
+* \param[in]   sensor        Safety sensor
+* \param[in]   index         Index to read from
+* \param[out]  sic           Safety Interface Config struct result
+* \param[out]  error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_get_safety_interface_config(rs2_sensor const* sensor, int index, rs2_safety_interface_config* sic, rs2_error** error);
+
+/**
+* rs2_set_safety_interface_config
+* \param[in]  sensor        Safety sensor
+* \param[in]  index         Index to write to
+* \param[in]  sic           Safety Interface Config struct to set
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_set_safety_interface_config(rs2_sensor const* sensor, int index, rs2_safety_interface_config const* sic, rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

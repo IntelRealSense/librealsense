@@ -114,4 +114,37 @@ inline bool operator==(rs2_safety_preset const& self, rs2_safety_preset const& o
     return !std::memcmp(&self, &other, sizeof(rs2_safety_preset));
 }
 
+inline std::ostream& operator<<(std::ostream& out, rs2_safety_interface_config_with_header const& sic)
+{
+    out << "Safety Interface Config:\n";
+    out << "\t" << "Pins:";
+    out << "\t\t" << "direction:"             << "\t\t" << "|" << "\t\t" << "functionality \n";
+    out << "\t\t" << sic.payload.power.direction      << "\t\t" << "|" << "\t\t" << sic.payload.power.functionality << "\n";
+    out << "\t\t" << sic.payload.ossd1_b.direction    << "\t\t" << "|" << "\t\t" << sic.payload.ossd1_b.functionality << "\n";
+    out << "\t\t" << sic.payload.ossd1_a.direction    << "\t\t" << "|" << "\t\t" << sic.payload.ossd1_a.functionality << "\n";
+    out << "\t\t" << sic.payload.preset3_a.direction  << "\t\t" << "|" << "\t\t" << sic.payload.preset3_a.functionality << "\n";
+    out << "\t\t" << sic.payload.preset3_b.direction  << "\t\t" << "|" << "\t\t" << sic.payload.preset3_b.functionality << "\n";
+    out << "\t\t" << sic.payload.preset4_a.direction  << "\t\t" << "|" << "\t\t" << sic.payload.preset4_a.functionality << "\n";
+    out << "\t\t" << sic.payload.preset1_b.direction  << "\t\t" << "|" << "\t\t" << sic.payload.preset1_b.functionality << "\n";
+    out << "\t\t" << sic.payload.preset1_a.direction  << "\t\t" << "|" << "\t\t" << sic.payload.preset1_a.functionality << "\n";
+    out << "\t\t" << sic.payload.gpio_0.direction     << "\t\t" << "|" << "\t\t" << sic.payload.gpio_0.functionality << "\n";
+    out << "\t\t" << sic.payload.gpio_1.direction     << "\t\t" << "|" << "\t\t" << sic.payload.gpio_1.functionality << "\n";
+    out << "\t\t" << sic.payload.gpio_3.direction     << "\t\t" << "|" << "\t\t" << sic.payload.gpio_3.functionality << "\n";
+    out << "\t\t" << sic.payload.gpio_2.direction     << "\t\t" << "|" << "\t\t" << sic.payload.gpio_2.functionality << "\n";
+    out << "\t\t" << sic.payload.preset2_b.direction  << "\t\t" << "|" << "\t\t" << sic.payload.preset2_b.functionality << "\n";
+    out << "\t\t" << sic.payload.gpio_4.direction     << "\t\t" << "|" << "\t\t" << sic.payload.gpio_4.functionality << "\n";
+    out << "\t\t" << sic.payload.preset2_a.direction  << "\t\t" << "|" << "\t\t" << sic.payload.preset2_a.functionality << "\n";
+    out << "\t\t" << sic.payload.preset4_b.direction  << "\t\t" << "|" << "\t\t" << sic.payload.preset4_b.functionality << "\n";
+    out << "\t\t" << sic.payload.ground.direction     << "\t\t" << "|" << "\t\t" << sic.payload.ground.functionality << "\n";
+    out << "\n";
+    out << "\t\t" << "gpio stabilization interval: " << "\t\t" << sic.payload.gpio_stabilization_interval << "\n";
+    out << "\t\t" << "safety zone selection overlap time period: " << "\t\t" << sic.payload.safety_zone_selection_overlap_time_period << "\n";
+    return out;
+}
+
+inline bool operator==(rs2_safety_interface_config_with_header const& self, rs2_safety_interface_config_with_header const& other)
+{
+    return !std::memcmp(&self, &other, sizeof(rs2_safety_interface_config_with_header));
+}
+
 #endif // LIBREALSENSE_RS2_SAFETY_TYPES_HPP

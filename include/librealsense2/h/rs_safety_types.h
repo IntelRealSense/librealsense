@@ -116,6 +116,80 @@ typedef struct rs2_safety_preset_with_header
     rs2_safety_preset safety_preset;
 } rs2_safety_preset_with_header;
 
+typedef struct rs2_safety_interface_config_header
+{
+    uint16_t version;       // major.minor. Big-endian
+    uint16_t table_type;    // type
+    uint32_t table_size;    // full size including: header footer
+    uint32_t calib_version; // major.minor.index
+    uint32_t crc32;         // crc of all the data in table excluding this header/CRC
+} rs2_safety_interface_config_header;
+
+typedef enum rs2_pin_functionality
+{
+    pGND = 0,
+    p24VDC,
+    pOSSD1_A,
+    pOSSD1_B,
+    pOSSD2_A,
+    pOSSD2_B,
+    pOSSD2_A_feedback,
+    pOSSD2_B_feedback,
+    pPresetSelect1_A,
+    pPresetSelect1_B,
+    pPresetSelect2_A,
+    pPresetSelect2_B,
+    pPresetSelect3_A,
+    pPresetSelect3_B,
+    pPresetSelect4_A,
+    pPresetSelect4_B,
+    pPresetSelect5_A,
+    pPresetSelect5_B,
+    pPresetSelect6_A,
+    pPresetSelect6_B,
+    pDeviceReady,
+    pMaintenance,
+    pReset,
+    pRestartInterlock
+} rs2_pin_functionality;
+
+typedef struct rs2_safety_interface_config_pin
+{
+    uint8_t direction;
+    rs2_pin_functionality functionality;
+} rs2_safety_interface_config_pin;
+
+typedef struct rs2_safety_interface_config
+{
+    rs2_safety_interface_config_pin power;
+    rs2_safety_interface_config_pin ossd1_b;
+    rs2_safety_interface_config_pin ossd1_a;
+    rs2_safety_interface_config_pin preset3_a;
+    rs2_safety_interface_config_pin preset3_b;
+    rs2_safety_interface_config_pin preset4_a;
+    rs2_safety_interface_config_pin preset1_b;
+    rs2_safety_interface_config_pin preset1_a;
+    rs2_safety_interface_config_pin gpio_0;
+    rs2_safety_interface_config_pin gpio_1;
+    rs2_safety_interface_config_pin gpio_3;
+    rs2_safety_interface_config_pin gpio_2;
+    rs2_safety_interface_config_pin preset2_b;
+    rs2_safety_interface_config_pin gpio_4;
+    rs2_safety_interface_config_pin preset2_a;
+    rs2_safety_interface_config_pin preset4_b;
+    rs2_safety_interface_config_pin ground;
+    uint8_t gpio_stabilization_interval;
+    uint8_t safety_zone_selection_overlap_time_period;
+    uint8_t reserved[20];
+} rs2_safety_interface_config;
+
+typedef struct rs2_safety_interface_config_with_header
+{
+    rs2_safety_interface_config_header header;
+    rs2_safety_interface_config payload;
+    
+} rs2_safety_interface_config_with_header;
+
 #pragma pack(pop)
 
 #ifdef __cplusplus

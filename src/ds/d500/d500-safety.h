@@ -54,6 +54,9 @@ namespace librealsense
 
         void set_safety_preset(int index, const rs2_safety_preset& sp) const override;
         rs2_safety_preset get_safety_preset(int index) const override;
+
+        void set_safety_interface_config(const rs2_safety_interface_config& sic) const override;
+        rs2_safety_interface_config get_safety_interface_config() const override;
     protected:
         const d500_safety* _owner;
     };

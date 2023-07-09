@@ -827,6 +827,21 @@ namespace rs2
             rs2_set_safety_preset(_sensor.get(), index, &sp, &e);
             error::handle(e);
         }
+
+        rs2_safety_interface_config get_safety_interface_config(int index) const
+        {
+            rs2_error* e = nullptr;
+            rs2_safety_interface_config sic;
+            rs2_get_safety_interface_config(_sensor.get(), index, &sic, &e);
+            error::handle(e);
+            return sic;
+        }
+        void set_safety_interface_config(int index, rs2_safety_interface_config const& sic) const
+        {
+            rs2_error* e = nullptr;
+            rs2_set_safety_interface_config(_sensor.get(), index, &sic, &e);
+            error::handle(e);
+        }
     };
 
     class depth_mapping_sensor : public sensor

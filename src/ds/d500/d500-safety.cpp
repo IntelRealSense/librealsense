@@ -261,10 +261,11 @@ namespace librealsense
         //calculate CRC
         auto computed_crc32 = calc_crc32(reinterpret_cast<const uint8_t*>(&sp), sizeof(rs2_safety_preset));
 
-        // prepare vecotr of data to be sent (header + sp)
+        // prepare vector of data to be sent (header + sp)
         rs2_safety_preset_with_header data;
         uint16_t version = ((uint16_t)0x02 << 8) | 0x01;  // major=0x02, minor=0x01 --> ver = major.minor
-        data.header = { version, 0xc0db, sizeof(rs2_safety_preset_with_header), computed_crc32 };
+        data.header = { version, static_cast<uint16_t>(ds::d500_calibration_table_id::safety_preset_id), 
+            sizeof(rs2_safety_preset_with_header), computed_crc32 };
         data.safety_preset = sp;
         auto data_as_ptr = reinterpret_cast<const uint8_t*>(&data);
 
@@ -305,5 +306,60 @@ namespace librealsense
         }
 
         return result->safety_preset;
+    }
+
+    void d500_safety_sensor::set_safety_interface_config(const rs2_safety_interface_config& sic) const
+    {
+        //calculate CRC
+        auto computed_crc32 = calc_crc32(reinterpret_cast<const uint8_t*>(&sic), sizeof(rs2_safety_interface_config));
+
+        // prepare vector of data to be sent (header + sp)
+        rs2_safety_interface_config_with_header data;
+        uint16_t version = ((uint16_t)0x01 << 8) | 0x00;  // major=0x01, minor=0x00 --> ver = major.minor
+        uint32_t calib_version = 0;  // ignoring this field, as requested by sw architect
+        data.header = { version, static_cast<uint16_t>(ds::d500_calibration_table_id::safety_interterface_cfg_id), 
+            sizeof(rs2_safety_interface_config_with_header), calib_version, computed_crc32 };
+        data.payload = sic;
+        auto data_as_ptr = reinterpret_cast<const uint8_t*>(&data);
+
+        // prepare command
+        command cmd(ds::SET_HKR_CONFIG_TABLE,
+            static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
+            static_cast<int>(ds::d500_calibration_table_id::safety_interterface_cfg_id),
+            static_cast<int>(ds::d500_calib_type::d500_calib_dynamic));
+        cmd.data.insert(cmd.data.end(), data_as_ptr, data_as_ptr + sizeof(data));
+        cmd.require_response = false;
+
+        // send command 
+        _owner->_hw_monitor->send(cmd);
+    }
+    
+    rs2_safety_interface_config d500_safety_sensor::get_safety_interface_config() const
+    {
+        rs2_safety_interface_config_with_header* result;
+
+        // prepare command
+        command cmd(ds::GET_HKR_CONFIG_TABLE,
+            static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
+            static_cast<int>(ds::d500_calibration_table_id::safety_interterface_cfg_id),
+            static_cast<int>(ds::d500_calib_type::d500_calib_dynamic));
+        cmd.require_response = true;
+
+        // send command to device and get response (safety_interface_config entry + header)
+        std::vector< uint8_t > response = _owner->_hw_monitor->send(cmd);
+        if (response.size() < sizeof(rs2_safety_interface_config_with_header))
+        {
+            throw io_exception(rsutils::string::from() << "Safety Interface Config failed");
+        }
+        // check CRC before returning result       
+        auto computed_crc32 = calc_crc32(response.data() + sizeof(rs2_safety_interface_config_header), 
+            sizeof(rs2_safety_interface_config));
+        result = reinterpret_cast<rs2_safety_interface_config_with_header*>(response.data());
+        if (computed_crc32 != result->header.crc32)
+        {
+            throw invalid_value_exception(rsutils::string::from() << "Safety Interface Config invalid CRC value");
+        }
+
+        return result->payload;
     }
 }
