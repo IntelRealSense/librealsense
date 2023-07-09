@@ -62,7 +62,7 @@ namespace librealsense
             crc32_offset = 0x4,                  //ES1
             optical_module_serial_offset = 0x54,         //ES1
             mb_module_serial_offset = 0x7a,             //ES2
-            bkc_version_offset = 0xba,                  //ES2
+            fw_version_offset = 0xba,                  //ES2
             safety_sw_suite_version_offset = 0x10F      //ES2
             //rgb_sensor = 0x17,
             //imu_sensor = 0x19,
@@ -78,7 +78,7 @@ namespace librealsense
             uint32_t crc32; 
             std::string optical_module_sn;
             std::string mb_module_sn;
-            std::string bkc_version;
+            std::string fw_version;
             std::string safety_sw_suite_version;
         };
 
