@@ -60,18 +60,26 @@ namespace librealsense
             version_offset = 0,                  //ES1
             payload_size_offset = 0x2,           //ES1
             crc32_offset = 0x4,                  //ES1
-            rgb_sensor = 0x17,
-            imu_sensor = 0x19,
-            active_projector = 0x1a,
-            module_serial_offset = 0x54,         //ES1
-            camera_fw_version_offset = 0x8c,
-            is_camera_locked_offset = 0x9e,
-            module_asic_serial_offset = 0x80,
-            //fisheye_sensor_lb = 112,
-            //fisheye_sensor_hb = 113,
-            imu_acc_chip_id = 0x1c8,
-            //depth_sensor_type = 166,
-            //motion_module_fw_version_offset = 212
+            optical_module_serial_offset = 0x54,         //ES1
+            mb_module_serial_offset = 0x7a,             //ES2
+            bkc_version_offset = 0xba,                  //ES2
+            safety_sw_suite_version_offset = 0x10F      //ES2
+            //rgb_sensor = 0x17,
+            //imu_sensor = 0x19,
+            //active_projector = 0x1a,
+            //camera_fw_version_offset = 0x8c,
+            //is_camera_locked_offset = 0x9e,
+        };
+
+        struct d500_gvd_parsed_fields
+        {
+            uint16_t gvd_version;
+            uint16_t payload_size;
+            uint32_t crc32; 
+            std::string optical_module_sn;
+            std::string mb_module_sn;
+            std::string bkc_version;
+            std::string safety_sw_suite_version;
         };
 
         enum class d500_calibration_table_id
