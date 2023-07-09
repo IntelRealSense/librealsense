@@ -523,10 +523,6 @@ namespace librealsense
                 std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_EXT_TRIGGER,
                     "Generate trigger from the camera to external device once per frame"));
 
-            depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
-                std::make_shared<asic_and_projector_temperature_options>(raw_depth_sensor,
-                    RS2_OPTION_ASIC_TEMPERATURE));
-
             std::shared_ptr<option> exposure_option = nullptr;
             std::shared_ptr<option> gain_option = nullptr;
             std::shared_ptr<hdr_option> hdr_enabled_option = nullptr;

@@ -73,9 +73,13 @@ namespace librealsense
             }
             else
             {
-                _depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                std::make_shared<asic_and_projector_temperature_options>(_raw_depth_ep,
-                    RS2_OPTION_PROJECTOR_TEMPERATURE));
+                std::string product_line = _depth_ep.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
+                if (product_line == "D400")
+                {
+                    _depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
+                        std::make_shared<asic_and_projector_temperature_options>(_raw_depth_ep,
+                            RS2_OPTION_PROJECTOR_TEMPERATURE));
+                }
             }
 
             // EMITTER FREQUENCY OPTION

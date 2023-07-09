@@ -33,7 +33,7 @@ namespace librealsense
         std::shared_ptr<hw_monitor> _hwm;
         sensor_base* _sensor;
     };
-	
+    
     class temperature_option : public readonly_option
     {
     public:
