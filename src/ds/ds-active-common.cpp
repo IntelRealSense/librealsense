@@ -64,24 +64,6 @@ namespace librealsense
                 _depth_ep.register_option(RS2_OPTION_LASER_POWER, laser_power_auto_disabling);
             }
 
-            //PROJECTOR TEMPERATURE OPTION
-            if (pid == ds::RS457_PID)
-            {
-            _depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                    std::make_shared<projector_temperature_option_mipi>(_hw_monitor,
-                        RS2_OPTION_PROJECTOR_TEMPERATURE));
-            }
-            else
-            {
-                std::string product_line = _depth_ep.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-                if (product_line == "D400")
-                {
-                    _depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                        std::make_shared<asic_and_projector_temperature_options>(_raw_depth_ep,
-                            RS2_OPTION_PROJECTOR_TEMPERATURE));
-                }
-            }
-
             // EMITTER FREQUENCY OPTION
             if ((pid == ds::RS457_PID || pid == ds::RS455_PID)
                 && _fw_version >= firmware_version("5.14.0"))
