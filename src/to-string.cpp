@@ -53,6 +53,7 @@ const char * get_string( rs2_stream value )
     CASE( GPIO )
     CASE( POSE )
     CASE( CONFIDENCE )
+    CASE( MOTION )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
@@ -442,6 +443,7 @@ const char * get_string( rs2_format value )
     CASE( UYVY )
     CASE( MOTION_RAW )
     CASE( MOTION_XYZ32F )
+    CASE( COMBINED_MOTION )
     CASE( GPIO_RAW )
     CASE( 6DOF )
     CASE( Y10BPACK )

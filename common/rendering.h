@@ -624,6 +624,17 @@ namespace rs2
                     }
                     break;
                 }
+                case RS2_FORMAT_COMBINED_MOTION:
+                {
+                    auto & motion = *reinterpret_cast< const rs2_combined_motion * >( frame.get_data() );
+                    draw_motion_data( (float)motion.linear_acceleration.x,
+                                      (float)motion.linear_acceleration.y,
+                                      (float)motion.linear_acceleration.z );
+                    draw_motion_data( (float)motion.angular_velocity.x,
+                                      (float)motion.angular_velocity.y,
+                                      (float)motion.angular_velocity.z );
+                    break;
+                }
                 case RS2_FORMAT_Y16:
                 case RS2_FORMAT_Y10BPACK:
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
