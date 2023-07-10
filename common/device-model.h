@@ -64,7 +64,11 @@ namespace rs2
 {
     void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18, ImFont*& monofont);
 
-    constexpr const char* server_versions_db_url = "https://librealsense.intel.com/Releases/rs_versions_db.json";
+    // HKR branch is currently developed aside the public development branch
+    // This is why we point to a different URL where we can managed its updated separately.
+    // TODO: before merging to public branch we need to add D585S entries and revert the URL to the original one
+    //constexpr const char* server_versions_db_url = "https://librealsense.intel.com/Releases/rs_versions_db.json";
+    constexpr const char* server_versions_db_url = "https://librealsense.intel.com/Releases/rs_versions_db.json.hkr";
 
     typedef std::vector<std::unique_ptr<device_model>> device_models_list;
 
