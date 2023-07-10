@@ -47,15 +47,19 @@ Rather than separate topics for each of the Accel and Gyro streams, a single top
 
 See the [ROS2 Imu format](https://github.com/ros2/common_interfaces/blob/rolling/sensor_msgs/msg/Imu.msg).
 
+#### Units
+
+Following the ROS2 standard, acceleration should be in `m/s^2`. Rotational velocity should be in `rad/sec`.
+
 #### Metadata
 
 No metadata is expected for motion topics.
 
 #### Timestamps
 
-If only one of Accel/Gyro is requested, the other's values can remain zeroes. The timestamp will refer to the sample's time.
+The timestamp will always refer to the Gyro sample time: even if both Accel and Gyro values are generated independently with different timestamps!
 
-If both Accel and Gyro are requested, they are packaged together but their values may be generated independently with different timestamps. The timestamp should reflect the Gyro timestamp. The Accel values will either reflect the last values received (which may not reflect the values at that specific timestamp) or interpolated values to align with the Gyro. The latter is preferable.
+Any Accel values, if present, will either reflect the last values received (so may not reflect the values at that specific timestamp) or interpolated values to align with the Gyro. The latter is preferable.
 
 #### Motion Correction
 

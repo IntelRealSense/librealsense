@@ -72,8 +72,9 @@ The message format is a [flexible message](../include/realdds/topics/flexible/) 
 | product-line | The type of device (D400, L500, etc.)                  |
 | product-id   | The internal product code                              |
 | topic-root   | The path to the root topic for the device              |
+| multicast-ip | IP address on which topics will be multicast           |
 
-All are optional except `name` and `topic-root`. Any other fields will be ignored.
+All are optional except `name` and `topic-root`. Any fields not shown above will be ignored.
 
 
 # Topic Root
