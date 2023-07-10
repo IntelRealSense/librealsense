@@ -2,6 +2,7 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #if defined( WIN32 )
+#include <iostream>
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/os/hresult.h>
 #endif

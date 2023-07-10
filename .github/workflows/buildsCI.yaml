@@ -60,9 +60,50 @@ jobs:
       shell: bash
       run: |
         cd ${{env.WIN_BUILD_DIR}}
+        cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -m
+
+  #--------------------------------------------------------------------------------
+  Win_SH_EX_No_Logs:  # Windows, shared, with Examples & Tools, no EasyLogging and no Check for Updates
+    runs-on: windows-2019
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Enable Long Paths
+      shell: powershell
+      run: |
+       New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+    
+    - name: Check_API
+      shell: bash
+      run: |
+        cd scripts
+        ./api_check.sh
+        cd ..
+
+    - name: PreBuild
+      shell: bash
+      run: |
+       mkdir ${{env.WIN_BUILD_DIR}}
+    
+    - name: Configure CMake
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      shell: bash
+      run: |        
+        LRS_SRC_DIR=$(pwd)
+        cd ${{env.WIN_BUILD_DIR}}
+        pwd
+        ls        
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=true -DBUILD_TOOLS=true -DCHECK_FOR_UPDATES=false -DBUILD_EASYLOGGINGPP=false
+
+    - name: Build
+      # Build your program with the given configuration
+      shell: bash
+      run: |
+        cd ${{env.WIN_BUILD_DIR}}
         cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -m    
-
-
+        
   #--------------------------------------------------------------------------------
   Win_ST_Py_CI:  # Windows, Static, Python, Tools, libCI with executables
     runs-on: windows-2019
@@ -89,6 +130,7 @@ jobs:
       shell: bash
       run: |
        mkdir ${{env.WIN_BUILD_DIR}}
+       python3 -m pip install numpy
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
@@ -127,7 +169,7 @@ jobs:
       shell: powershell
       run: |
        New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
-
+        
     - name: Check_API
       shell: bash
       run: |
@@ -138,7 +180,8 @@ jobs:
     - name: PreBuild
       shell: bash
       run: |
-       mkdir ${{env.WIN_BUILD_DIR}}
+       mkdir ${{env.WIN_BUILD_DIR}} 
+       python3 -m pip install numpy
 
     - name: Configure CMake
       shell: bash
@@ -282,6 +325,7 @@ jobs:
         # We force compiling with GCC 7 because the default installed GCC 9 compiled with LTO and gives an internal compiler error
         sudo apt-get install gcc-7 g++-7;
         sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7;
+        python3 -m pip install numpy
 
     - name: Check_API
       shell: bash
@@ -325,6 +369,7 @@ jobs:
         # We force compiling with GCC 7 because the default installed GCC 9 compiled with LTO and gives an internal compiler error
         sudo apt-get install gcc-7 g++-7;
         sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7;
+        python3 -m pip install numpy
 
     - name: Check_API
       shell: bash
