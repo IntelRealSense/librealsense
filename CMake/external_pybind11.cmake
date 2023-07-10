@@ -61,16 +61,12 @@ function(get_pybind11)
     #         )
     # But, to do this, we need to define PYTHON_INSTALL_DIR!
     if( CMAKE_VERSION VERSION_LESS 3.12 )
-      #find_package(PythonInterp REQUIRED)
-      #find_package(PythonLibs REQUIRED)
-      option( PYTHON_INSTALL_DIR "Installation directory for Python libraries"
-            "${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/pyrealsense2"
-            )
+      find_package(PythonInterp REQUIRED)
+      find_package(PythonLibs REQUIRED)
+      set( PYTHON_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/pyrealsense2" CACHE PATH "Installation directory for Python bindings")
     else()
-      #find_package(Python REQUIRED COMPONENTS Interpreter Development)
-      option( PYTHON_INSTALL_DIR "Installation directory for Python libraries"
-            "${Python_SITEARCH}/pyrealsense2"
-            )
+      find_package(Python REQUIRED COMPONENTS Interpreter Development)
+      set( PYTHON_INSTALL_DIR "${Python_SITEARCH}/pyrealsense2" CACHE PATH "Installation directory for Python bindings")
     endif()
 
     message( STATUS #CHECK_PASS
