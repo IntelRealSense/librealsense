@@ -80,13 +80,15 @@ bool profiles_are_compatible( std::shared_ptr< dds_stream_profile > const & p1,
 {
     auto vp1 = std::dynamic_pointer_cast< realdds::dds_video_stream_profile >( p1 );
     auto vp2 = std::dynamic_pointer_cast< realdds::dds_video_stream_profile >( p2 );
-    if( ! ! vp1 != ! ! vp2 )
+    if( !! vp1 != !! vp2 )
         return false;  // types aren't the same
     if( vp1 && vp2 )
+    {
         if( vp1->width() != vp2->width() || vp1->height() != vp2->height() )
             return false;
-    if( ! any_format && p1->format() != p2->format() )
-        return false;
+        if( ! any_format && vp1->format() != vp2->format() )
+            return false;
+    }
     return p1->frequency() == p2->frequency();
 }
 
@@ -317,15 +319,15 @@ void dds_stream_sensor_bridge::start_sensor( std::string const & sensor_name, se
     {
         auto & stream = sensor.streams[profile->stream()->name()];
 
-        if( auto video = std::dynamic_pointer_cast<realdds::dds_video_stream_server>(stream.server) )
+        if( auto video = std::dynamic_pointer_cast< realdds::dds_video_stream_server >( stream.server ) )
         {
             // Prepare the server with the right header (this will change when we remove "streaming" status from
             // stream-server)
             realdds::image_header header;
-            header.format = profile->format();
-            auto video_profile = std::dynamic_pointer_cast<realdds::dds_video_stream_profile>(profile);
+            auto video_profile = std::dynamic_pointer_cast< realdds::dds_video_stream_profile >( profile );
             if( video_profile )
             {
+                header.format = video_profile->format();
                 header.width = video_profile->width();
                 header.height = video_profile->height();
             }

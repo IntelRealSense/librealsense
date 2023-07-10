@@ -164,8 +164,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
             else if( auto const msp = rs2::motion_stream_profile( sp ) )
             {
                 profile = std::make_shared< realdds::dds_motion_stream_profile >(
-                    static_cast< int16_t >( msp.fps() ),
-                    realdds::dds_stream_format::from_rs2( msp.format() ) );
+                    static_cast< int16_t >( msp.fps() ) );
 
                 auto motion_server = std::dynamic_pointer_cast< dds_motion_stream_server >( server );
                 if( RS2_STREAM_ACCEL == msp.stream_type() )
@@ -392,10 +391,12 @@ bool profiles_are_compatible( std::shared_ptr< dds_stream_profile > const & p1,
     if( ! ! vp1 != ! ! vp2 )
         return false;  // types aren't the same
     if( vp1 && vp2 )
+    {
         if( vp1->width() != vp2->width() || vp1->height() != vp2->height() )
             return false;
-    if( ! any_format && p1->format() != p2->format() )
-        return false;
+        if( ! any_format && vp1->format() != vp2->format() )
+            return false;
+    }
     return p1->frequency() == p2->frequency();
 }
 
@@ -413,12 +414,14 @@ rs2::stream_profile get_required_profile( const rs2::sensor & sensor,
                                       [&]( rs2::stream_profile const & sp ) {
                                           auto vp = sp.as< rs2::video_stream_profile >();
                                           auto dds_vp = std::dynamic_pointer_cast< dds_video_stream_profile >( profile );
-                                          bool video_params_match = ( vp && dds_vp ) ?
-                                              vp.width() == dds_vp->width() && vp.height() == dds_vp->height() : true;
+                                          bool video_params_match = ( vp && dds_vp )
+                                                                      ? vp.width() == dds_vp->width()
+                                                                            && vp.height() == dds_vp->height()
+                                                                            && vp.format() == dds_vp->format().to_rs2()
+                                                                      : true;
                                           return sp.stream_type() == stream_type
                                               && sp.stream_index() == stream_index
                                               && sp.fps() == profile->frequency()
-                                              && sp.format() == profile->format().to_rs2()
                                               && video_params_match;
                                       } );
     if( profile_iter == sensor_stream_profiles.end() )
@@ -527,7 +530,7 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                             imu.accel_data().z( xyz[2] );
                             return;  // Don't actually publish
                         }
-                        imu.gyro_data().x( xyz[0] );
+                        imu.gyro_data().x( xyz[0] );  // LRS reports rad/sec
                         imu.gyro_data().y( xyz[1] );
                         imu.gyro_data().z( xyz[2] );
                         imu.timestamp( timestamp );
