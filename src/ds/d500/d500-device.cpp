@@ -464,31 +464,29 @@ namespace librealsense
 
         using namespace platform;
 
-        std::string optic_serial, asic_serial, pid_hex_str, usb_type_str;
+        std::string asic_serial, pid_hex_str, usb_type_str;
+        d500_gvd_parsed_fields gvd_parsed_fields;
         bool advanced_mode = false;
         bool usb_modality = true;
         group_multiple_fw_calls(depth_sensor, [&]() {
 
             _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), ds::fw_cmd::GVD);
 
-            uint16_t gvd_version;
-            uint16_t gvd_payload_size;
-            uint32_t gvd_crc32;
-            
             constexpr auto gvd_header_size = 8;
-            get_gvd_details(gvd_buff, &gvd_version, &gvd_payload_size,
-                &gvd_crc32, optic_serial);
+            get_gvd_details(gvd_buff, &gvd_parsed_fields);
             auto gvd_payload_data = gvd_buff.data() + gvd_header_size;
-            auto computed_crc = calc_crc32(gvd_payload_data, gvd_payload_size);
-            LOG_INFO("gvd version = " << gvd_version);
-            LOG_INFO("gvd payload size = " << gvd_payload_size);
-            LOG_INFO("gvd crc = " << gvd_crc32);
-            LOG_INFO("gvd optical module sn = " << optic_serial);
-            if (computed_crc != gvd_crc32)
-                LOG_ERROR("CRC mismatch in D500 GVD - received CRC = " << gvd_crc32 << ", computed CRC = " << computed_crc);
+            auto computed_crc = calc_crc32(gvd_payload_data, gvd_parsed_fields.payload_size);
+            LOG_INFO("gvd version = " << gvd_parsed_fields.gvd_version);
+            LOG_INFO("gvd payload size = " << gvd_parsed_fields.payload_size);
+            LOG_INFO("gvd crc = " << gvd_parsed_fields.crc32);
+            LOG_INFO("gvd optical module sn = " << gvd_parsed_fields.optical_module_sn);
+            if (computed_crc != gvd_parsed_fields.crc32)
+                LOG_ERROR("CRC mismatch in D500 GVD - received CRC = " << gvd_parsed_fields.crc32 << ", computed CRC = " << computed_crc);
 
             _device_capabilities = ds_caps::CAP_ACTIVE_PROJECTOR | ds_caps::CAP_RGB_SENSOR | ds_caps::CAP_IMU_SENSOR |
                 ds_caps::CAP_BMI_085 | ds_caps::CAP_GLOBAL_SHUTTER | ds_caps::CAP_INTERCAM_HW_SYNC;
+
+            _fw_version = firmware_version(gvd_parsed_fields.fw_version);
 
             auto _usb_mode = usb3_type;
             usb_type_str = usb_spec_names.at(_usb_mode);
@@ -740,10 +738,10 @@ namespace librealsense
 
 
         register_info(RS2_CAMERA_INFO_NAME, device_name);
-        register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, optic_serial);
+        register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, gvd_parsed_fields.optical_module_sn);
         register_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER, asic_serial);
         register_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, asic_serial);
-        register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, _fw_version);
+        register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, gvd_parsed_fields.fw_version);
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, group.uvc_devices.front().device_path);
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
         register_info(RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode) ? "YES" : "NO"));
@@ -755,8 +753,6 @@ namespace librealsense
 
         if (usb_modality)
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
-
-        std::string curr_version= _fw_version;
     }
 
     void d500_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const
@@ -824,12 +820,14 @@ namespace librealsense
         return val == 1;
     }
     
-    void d500_device::get_gvd_details(const std::vector<uint8_t>& gvd_buff, uint16_t* gvd_version, uint16_t* payload_size,
-        uint32_t* crc32, std::string& optical_module_sn) const
+    void d500_device::get_gvd_details(const std::vector<uint8_t>& gvd_buff, ds::d500_gvd_parsed_fields* parsed_fields) const
     {
-        *gvd_version = *reinterpret_cast<const uint16_t*>(gvd_buff.data() + static_cast<int>(ds::d500_gvd_fields::version_offset));
-        *payload_size = *reinterpret_cast<const uint32_t*>(gvd_buff.data() + static_cast<int>(ds::d500_gvd_fields::payload_size_offset));
-        *crc32 = *reinterpret_cast<const uint32_t*>(gvd_buff.data() + static_cast<int>(ds::d500_gvd_fields::crc32_offset));
-        optical_module_sn = _hw_monitor->get_module_serial_string(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::module_serial_offset));
+        parsed_fields->gvd_version = *reinterpret_cast<const uint16_t*>(gvd_buff.data() + static_cast<int>(ds::d500_gvd_fields::version_offset));
+        parsed_fields->payload_size = *reinterpret_cast<const uint32_t*>(gvd_buff.data() + static_cast<int>(ds::d500_gvd_fields::payload_size_offset));
+        parsed_fields->crc32 = *reinterpret_cast<const uint32_t*>(gvd_buff.data() + static_cast<int>(ds::d500_gvd_fields::crc32_offset));
+        parsed_fields->optical_module_sn = _hw_monitor->get_module_serial_string(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::optical_module_serial_offset), 12);
+        parsed_fields->mb_module_sn = _hw_monitor->get_module_serial_string(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::mb_module_serial_offset), 12);
+        parsed_fields->fw_version = _hw_monitor->get_firmware_version_string(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::fw_version_offset));
+        parsed_fields->safety_sw_suite_version = _hw_monitor->get_firmware_version_string(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::safety_sw_suite_version_offset), 3);
     }
 }
