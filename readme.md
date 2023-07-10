@@ -3,10 +3,10 @@
 -----------------
 [![GitHub CI](../../actions/workflows/buildsCI.yaml/badge.svg?branch=development)](../../actions/workflows/buildsCI.yaml)
 
-## Overview
-**Intel® RealSense™ SDK 2.0** is a cross-platform library for Intel® RealSense™ depth cameras (D400 & L500 series and the SR300).
+Overview
+Intel® RealSense™ SDK 2.0** is a cross-platform library for Intel® RealSense™ depth cameras (D400 & L500 series and the SR300).
 
-> :pushpin: For other Intel® RealSense™ devices (F200, R200, LR200 and ZR300), please refer to the [latest legacy release](https://github.com/IntelRealSense/librealsense/tree/v1.12.1).
+:pushpin: For other Intel® RealSense™ devices (F200, R200, LR200 and ZR300), please refer to the [latest legacy release](https://github.com/IntelRealSense/librealsense/tree/v1.12.1).
 
 The SDK allows depth and color streaming, and provides intrinsic and extrinsic calibration information.
 The library also offers synthetic streams (pointcloud, depth aligned to color and vise-versa), and a built-in support for [record and playback](./doc/record-and-playback.md) of streaming sessions.
@@ -14,17 +14,17 @@ The library also offers synthetic streams (pointcloud, depth aligned to color an
 Developer kits containing the necessary hardware to use this library are available for purchase at [store.intelrealsense.com](https://store.intelrealsense.com/products.html).
 Information about the Intel® RealSense™ technology at [www.intelrealsense.com](https://www.intelrealsense.com/)
 
-> :open_file_folder: Don't have access to a RealSense camera? Check-out [sample data](./doc/sample-data.md)
+:open_file_folder: Don't have access to a RealSense camera ? Check-out sample data./doc/sample-data.md
 
-## Update on Recent Changes to the RealSense Product Line
+Update on Recent Changes to the RealSense Product Line
 
 Intel has EOLed the LiDAR, Facial Authentication, and Tracking product lines. These products have been discontinued and will no longer be available for new orders.
 
-Intel WILL continue to sell and support stereo products including the following: D410, D415, D430, , D401 ,D450 modules and D415, D435, D435i, D435f, D405, D455, D457 depth cameras. We will also continue the work to support and develop our LibRealSense open source SDK.
+Intel WILL continue to sell and support stereo products including the following: D410 , D415 , D430 , D401 , D450 modules and D415 , D435 , D435i , D435f , D405 , D455 , D457 depth camera. We will also continue the work to support and develop our LibRealSense open source SDK.
 
 In the future, Intel and the RealSense team will focus our new development on advancing innovative technologies that better support our core businesses and IDM 2.0 strategy.
 
-## Building librealsense - Using vcpkg
+Building librealsense - Using vcpkg
 
 You can download and install librealsense using the [vcpkg](https://github.com/Microsoft/vcpkg) dependency manager:
 
@@ -36,16 +36,17 @@ You can download and install librealsense using the [vcpkg](https://github.com/M
 
 The librealsense port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
 
-## Download and Install
-* **Download** - The latest releases including the Intel RealSense SDK, Viewer and Depth Quality tools are available at: [**latest releases**](https://github.com/IntelRealSense/librealsense/releases). Please check the [**release notes**](https://github.com/IntelRealSense/librealsense/wiki/Release-Notes) for the supported platforms, new features and capabilities, known issues, how to upgrade the Firmware and more.
+Download and Install
+Download - The latest releases including the Intel RealSense SDK, Viewer and Depth Quality tools are available at: [**latest releases**](https://github.com/IntelRealSense/librealsense/releases). Please check the [**release notes**](https://github.com/IntelRealSense/librealsense/wiki/Release-Notes) for the supported platforms, new features and capabilities, known issues, how to upgrade the Firmware and more.
 
-* **Install** - You can also install or build from source the SDK (on [Linux](./doc/distribution_linux.md) \ [Windows](./doc/distribution_windows.md) \ [Mac OS](doc/installation_osx.md) \ [Android](./doc/android.md) \ [Docker](./scripts/Docker/readme.md)), connect your D400 depth camera and you are ready to start writing your first application.
+Install - You can also install or build from source the SDK (on [Linux](./doc/distribution_linux.md) \ [Windows](./doc/distribution_windows.md) \ [Mac OS](doc/installation_osx.md) \ [Android](./doc/android.md) \ [Docker](./scripts/Docker/readme.md)), connect your D400 depth camera and you are ready to start writing your first application.
 
-> **Support & Issues**: If you need product support (e.g. ask a question about / are having problems with the device), please check the [FAQ & Troubleshooting](https://github.com/IntelRealSense/librealsense/wiki/Troubleshooting-Q%26A) section.
+Support & Issues 
+If you need product support (e.g. ask a question about / are having problems with the device), please check the [FAQ & Troubleshooting](https://github.com/IntelRealSense/librealsense/wiki/Troubleshooting-Q%26A) section.
 > If not covered there, please search our [Closed GitHub Issues](https://github.com/IntelRealSense/librealsense/issues?utf8=%E2%9C%93&q=is%3Aclosed) page,  [Community](https://communities.intel.com/community/tech/realsense) and [Support](https://www.intel.com/content/www/us/en/support/emerging-technologies/intel-realsense-technology.html) sites.
 > If you still cannot find an answer to your question, please [open a new issue](https://github.com/IntelRealSense/librealsense/issues/new).
 
-## What’s included in the SDK:
+What’s included in the SDK:
 | What | Description | Download link|
 | ------- | ------- | ------- |
 | **[Intel® RealSense™ Viewer](./tools/realsense-viewer)** | With this application, you can quickly access your Intel® RealSense™ Depth Camera to view the depth stream, visualize point clouds, record and playback streams, configure your camera settings, modify advanced controls, enable depth visualization and post processing  and much more. | [**Intel.RealSense.Viewer.exe**](https://github.com/IntelRealSense/librealsense/releases) |
