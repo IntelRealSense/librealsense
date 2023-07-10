@@ -76,7 +76,7 @@ std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_video_stream( 
     profile->set_stream_index( video_stream.index );
     profile->set_stream_type( video_stream.type );
     profile->set_unique_id( video_stream.uid );
-    profile->set_intrinsics( [=]() {
+    profile->set_intrinsics( [=]() {  //
         return video_stream.intrinsics;
     } );
     if( is_default )
@@ -148,11 +148,8 @@ void dds_sensor_proxy::register_basic_converters()
                             []() { return std::make_shared< identity_processing_block >(); } } );
 
     // Motion
-    converters.push_back( { { { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL } },
-                            { { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL } },
-                            []() { return std::make_shared< identity_processing_block >(); } } );
-    converters.push_back( { { { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO } },
-                            { { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO } },
+    converters.push_back( { { { RS2_FORMAT_COMBINED_MOTION, RS2_STREAM_MOTION } },
+                            { { RS2_FORMAT_COMBINED_MOTION, RS2_STREAM_MOTION } },
                             []() { return std::make_shared< identity_processing_block >(); } } );
 
     // Confidence
@@ -203,7 +200,7 @@ dds_sensor_proxy::find_profile( sid_index sidx, realdds::dds_motion_stream_profi
         for( auto & sp : stream->profiles() )
         {
             auto msp = std::static_pointer_cast< realdds::dds_motion_stream_profile >( sp );
-            if( profile.format() == msp->format() && profile.frequency() == msp->frequency() )
+            if( profile.frequency() == msp->frequency() )
             {
                 return msp;
             }
@@ -243,8 +240,7 @@ void dds_sensor_proxy::open( const stream_profiles & profiles )
         {
             auto motion_profile = find_profile(
                 sidx,
-                realdds::dds_motion_stream_profile( source_profiles[i]->get_framerate(),
-                                                    realdds::dds_stream_format::from_rs2( sp->get_format() ) ) );
+                realdds::dds_motion_stream_profile( source_profiles[i]->get_framerate() ) );
             if( motion_profile )
                 realdds_profiles.push_back( motion_profile );
             else
@@ -308,42 +304,34 @@ void dds_sensor_proxy::handle_motion_data( realdds::topics::imu_msg && imu,
                                            streaming_impl & streaming )
 {
     frame_additional_data data;  // with NO metadata by default!
-    data.timestamp
-        = static_cast< rs2_time_t >( realdds::time_to_double( imu.timestamp() ) * 1e-3 );  // milliseconds
-    data.timestamp_domain;  // from metadata, or leave default (hardware domain)
-    data.depth_units;       // from metadata
-    data.frame_number;      // filled in only once metadata is known
+    data.timestamp               // in ms
+        = static_cast< rs2_time_t >( realdds::time_to_double( imu.timestamp() ) * 1e3 );
+    data.timestamp_domain = RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME;  // leave default (hardware domain)
+    data.last_frame_number = streaming.last_frame_number.fetch_add( 1 );
+    data.frame_number = data.last_frame_number + 1;
 
     auto new_frame_interface = allocate_new_frame( RS2_EXTENSION_MOTION_FRAME, profile.get(), std::move( data ) );
     if( ! new_frame_interface )
         return;
 
     auto new_frame = static_cast< frame * >( new_frame_interface );
-    assert( new_frame->data.size() == size( float ) * 3 );
-    float * xyz = reinterpret_cast< float * >( new_frame->data.data() );
-    if( profile->get_stream_type() == RS2_STREAM_ACCEL )
-    {
-        xyz[0] = (float)imu.accel_data().x();
-        xyz[1] = (float)imu.accel_data().y();
-        xyz[2] = (float)imu.accel_data().z();
-    }
-    else
-    {
-        xyz[0] = (float)imu.gyro_data().x();
-        xyz[1] = (float)imu.gyro_data().y();
-        xyz[2] = (float)imu.gyro_data().z();
-    }
+    new_frame->data.resize( sizeof( rs2_combined_motion ) );
+    rs2_combined_motion * m = reinterpret_cast< rs2_combined_motion * >( new_frame->data.data() );
+    m->orientation.x = imu.imu_data().orientation().x();
+    m->orientation.y = imu.imu_data().orientation().y();
+    m->orientation.z = imu.imu_data().orientation().z();
+    m->orientation.w = imu.imu_data().orientation().w();
+    m->angular_velocity.x = imu.gyro_data().x();
+    m->angular_velocity.y = imu.gyro_data().y();
+    m->angular_velocity.z = imu.gyro_data().z();
+    m->linear_acceleration.x = imu.accel_data().x();
+    m->linear_acceleration.y = imu.accel_data().y();
+    m->linear_acceleration.z = imu.accel_data().z();
 
-    if( _md_enabled )
-    {
-        streaming.syncer.enqueue_frame( imu.timestamp().to_ns(), streaming.syncer.hold( new_frame ) );
-    }
-    else
-    {
-        invoke_new_frame( new_frame,
-                          nullptr,    // pixels are already inside new_frame->data
-                          nullptr );  // so no deleter is necessary
-    }
+    // No metadata for motion streams, therefore no syncer
+    invoke_new_frame( new_frame,
+                      nullptr,    // pixels are already inside new_frame->data
+                      nullptr );  // so no deleter is necessary
 }
 
 
@@ -439,7 +427,13 @@ void dds_sensor_proxy::start( frame_callback_ptr callback )
 {
     for( auto & profile : sensor_base::get_active_streams() )
     {
-        auto & dds_stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
+        auto streamit = _streams.find( sid_index( profile->get_unique_id(), profile->get_stream_index() ) );
+        if( streamit == _streams.end() )
+        {
+            LOG_ERROR( "Profile (" << profile->get_unique_id() << "," << profile->get_stream_index() << ") not found in streams!");
+            continue;
+        }
+        auto const & dds_stream = streamit->second;
         // Opening it will start streaming on the server side automatically
         dds_stream->open( "rt/" + _dev->device_info().topic_root + '_' + dds_stream->name(), _dev->subscriber() );
         auto & streaming = _streaming_by_name[dds_stream->name()];
@@ -491,7 +485,13 @@ void dds_sensor_proxy::stop()
 {
     for( auto & profile : sensor_base::get_active_streams() )
     {
-        auto & dds_stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
+        auto streamit = _streams.find( sid_index( profile->get_unique_id(), profile->get_stream_index() ) );
+        if( streamit == _streams.end() )
+        {
+            LOG_ERROR( "Profile (" << profile->get_unique_id() << "," << profile->get_stream_index() << ") not found in streams!" );
+            continue;
+        }
+        auto const & dds_stream = streamit->second;
 
         dds_stream->stop_streaming();
         dds_stream->close();
