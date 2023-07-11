@@ -474,10 +474,10 @@ namespace librealsense
     // source_chunks_uv // uvuvuvuvuvuvuvuv
     // Each coupling is done as: 2 bytes of y coupled with 2 bytes of uv (one u, and one v)
     template<rs2_format FORMAT> 
-    void m420_sse_parse_one_line(const std::vector<__m128i> source_chunks_y, const std::vector<__m128i> source_chunks_uv, __m128i* dst)
+    void m420_sse_parse_one_line(const __m128i* source_chunks_y, const __m128i* source_chunks_uv, __m128i* dst, int line_length)
     {
 #pragma omp parallel for
-        for (int i = 0; i < source_chunks_y.size(); ++i)
+        for (int i = 0; i < line_length; ++i)
         {
             const __m128i zero = _mm_set1_epi8(0);
             __m128i y16__0_7 = _mm_unpacklo_epi8(source_chunks_y[i], zero);
@@ -628,11 +628,9 @@ namespace librealsense
         auto src = reinterpret_cast<const __m128i*>(s);
         auto dst = reinterpret_cast<__m128i*>(d[0]);
 
-        std::vector<__m128i> source_chunks_y;
-        source_chunks_y.resize(2 * width / 16);
+        __m128i* source_chunks_y = new __m128i[2 * width / 16];
+        __m128i* source_chunks_uv = new __m128i[width / 16];
 
-        std::vector<__m128i> source_chunks_uv;
-        source_chunks_uv.resize(width / 16);
 #pragma omp parallel for
         for (int j = 0; j < height / 2; ++j)
         {
@@ -680,14 +678,17 @@ namespace librealsense
                 auto offset_to_current_first_line_for_dst = (2 * width * j) / 16 * bpp;
                 auto offset_to_current_second_line_for_dst = offset_to_current_first_line_for_dst + width * bpp / 16;
 
-                auto mid_iterator_y = source_chunks_y.begin() + static_cast<int>((source_chunks_y.size() * 0.5f));
-                std::vector<__m128i> first_line_y(source_chunks_y.begin(), mid_iterator_y);
-                std::vector<__m128i> second_line_y(mid_iterator_y, source_chunks_y.end());
+                auto line_length = width / 16;
+                auto first_line_y = source_chunks_y;
+                auto second_line_y = source_chunks_y + line_length;
 
-                m420_sse_parse_one_line<FORMAT>(first_line_y, source_chunks_uv, &dst[offset_to_current_first_line_for_dst]);
-                m420_sse_parse_one_line<FORMAT>(second_line_y, source_chunks_uv, &dst[offset_to_current_second_line_for_dst]);
+                m420_sse_parse_one_line<FORMAT>(first_line_y, source_chunks_uv, &dst[offset_to_current_first_line_for_dst], line_length);
+                m420_sse_parse_one_line<FORMAT>(second_line_y, source_chunks_uv, &dst[offset_to_current_second_line_for_dst], line_length);
             }
         }
+
+        delete[] source_chunks_y;
+        delete[] source_chunks_uv;
 
 #else
         auto src = reinterpret_cast<const uint8_t*>(s);
