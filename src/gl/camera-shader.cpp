@@ -14,6 +14,7 @@ struct short3
 
 #include <res/d435.h>
 #include <res/d415.h>
+#include <res/d455.h>
 #include <res/l500.h>
 
 static const char* vertex_shader_text =
@@ -124,6 +125,7 @@ namespace librealsense
             camera_mesh.push_back(load_model(uncompress_d415_obj));
             camera_mesh.push_back(load_model(uncompress_d435_obj));
             camera_mesh.push_back(load_model(uncompress_L515_obj));
+            camera_mesh.push_back(load_model(uncompress_d455_obj));
 
             register_option(RS2_OPTION_FILTER_MAGNITUDE, std::make_shared<librealsense::float_option>(option_range{ 0, 1, 0, 1 }));
             _opacity_opt = &get_option(RS2_OPTION_FILTER_MAGNITUDE);
@@ -164,6 +166,7 @@ namespace librealsense
                 if (starts_with(dev_name, "Intel RealSense D415")) index = 0;
                 if (starts_with(dev_name, "Intel RealSense D435")) index = 1;
                 if (starts_with(dev_name, "Intel RealSense L5")) index = 2;
+                if (starts_with(dev_name, "Intel RealSense D455") || starts_with(dev_name, "Intel RealSense D457")) index = 3;
             };
 
             auto opacity = clamp(_opacity_opt->query(), 0.0, 1.0);
