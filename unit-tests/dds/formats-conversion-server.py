@@ -59,26 +59,19 @@ def create_server():
     stream_server.init_profiles( [ profile ], 0 )
     stream_servers.append( stream_server )
 
-    # MXYZ Accel
-    profile = dds.motion_stream_profile( 30, dds.stream_format( "MXYZ" ) )
-    stream_server = dds.accel_stream_server( "accel-stream", "accel-sensor" )
+    # Motion
+    profile = dds.motion_stream_profile( 30 )
+    stream_server = dds.motion_stream_server( "motion-stream", "motion-sensor" )
     stream_server.init_profiles( [ profile ], 0 )
     stream_servers.append( stream_server )
-
-    # MXYZ Gyro
-    profile = dds.motion_stream_profile( 30, dds.stream_format( "MXYZ" ) )
-    stream_server = dds.gyro_stream_server( "gyro-stream", "gyro-sensor" )
-    stream_server.init_profiles( [ profile ], 0 )
-    stream_servers.append( stream_server )
-
 
     # multiple MXYZ Accel
     profiles = []
-    profiles.append( dds.motion_stream_profile( 63, dds.stream_format( "MXYZ" ) ) )
-    profiles.append( dds.motion_stream_profile( 200, dds.stream_format( "MXYZ" ) ) )
-    profiles.append( dds.motion_stream_profile( 250, dds.stream_format( "MXYZ" ) ) )
-    profiles.append( dds.motion_stream_profile( 400, dds.stream_format( "MXYZ" ) ) )
-    stream_server = dds.accel_stream_server( "multiple-accel-stream", "multiple-accel-sensor" )
+    profiles.append( dds.motion_stream_profile( 63 ) )
+    profiles.append( dds.motion_stream_profile( 200 ) )
+    profiles.append( dds.motion_stream_profile( 250 ) )
+    profiles.append( dds.motion_stream_profile( 400 ) )
+    stream_server = dds.motion_stream_server( "multiple-motion-stream", "multiple-motion-sensor" )
     stream_server.init_profiles( profiles, 0 )
     stream_servers.append( stream_server )
 

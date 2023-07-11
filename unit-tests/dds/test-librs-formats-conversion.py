@@ -76,37 +76,24 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     #############################################################################################
     #
-    with test.closure( "Test accel conversion"):
-        if test.check( 'accel-sensor' in sensors ):
-            sensor = sensors.get('accel-sensor')
+    with test.closure( "Test motion conversion" ):
+        if test.check( 'motion-sensor' in sensors ):
+            sensor = sensors.get('motion-sensor')
             profiles = sensor.get_stream_profiles()
 
             test.check_equal( len( profiles ), 1 ) # MXYZ stays MXYZ with type based on the dds_stream type
-            test.check_equal( profiles[0].format(), rs.format.motion_xyz32f )
-            test.check_equal( profiles[0].stream_type(), rs.stream.accel )
+            test.check_equal( profiles[0].stream_type(), rs.stream.motion )
     #
     #############################################################################################
     #
-    with test.closure( "Test gyro conversion"):
-        if test.check( 'gyro-sensor' in sensors ):
-            sensor = sensors.get('gyro-sensor')
-            profiles = sensor.get_stream_profiles()
-
-            test.check_equal( len( profiles ), 1 ) # MXYZ stays MXYZ with type based on the dds_stream type
-            test.check_equal( profiles[0].format(), rs.format.motion_xyz32f )
-            test.check_equal( profiles[0].stream_type(), rs.stream.gyro )
-    #
-    #############################################################################################
-    #
-    with test.closure( "Test multiple accel profiles one stream"):
-        if test.check( 'multiple-accel-sensor' in sensors ):
-            sensor = sensors.get('multiple-accel-sensor')
+    with test.closure( "Test multiple motion profiles one stream" ):
+        if test.check( 'multiple-motion-sensor' in sensors ):
+            sensor = sensors.get('multiple-motion-sensor')
             profiles = sensor.get_stream_profiles()
 
             test.check_equal( len( profiles ), 4 )
             for i in range( len( profiles ) ):
-                test.check_equal( profiles[i].format(), rs.format.motion_xyz32f )
-                test.check_equal( profiles[i].stream_type(), rs.stream.accel )
+                test.check_equal( profiles[i].stream_type(), rs.stream.motion )
     #
     #############################################################################################
     #
