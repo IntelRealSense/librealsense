@@ -546,7 +546,6 @@ PYBIND11_MODULE(NAME, m) {
     py::class_< dds_stream_profile, std::shared_ptr< dds_stream_profile > > stream_profile_base( m, "stream_profile" );
     stream_profile_base
         .def( "frequency", &dds_stream_profile::frequency )
-        .def( "format", &dds_stream_profile::format )
         .def( "stream", &dds_stream_profile::stream )
         .def( "to_string", &dds_stream_profile::to_string )
         .def( "details_to_string", &dds_stream_profile::details_to_string )
@@ -565,12 +564,13 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_video_stream_profile;
     py::class_< dds_video_stream_profile, std::shared_ptr< dds_video_stream_profile > >( m, "video_stream_profile", stream_profile_base )
         .def( py::init< int16_t, dds_stream_format, uint16_t, uint16_t >() )
+        .def( "format", &dds_video_stream_profile::format )
         .def( "width", &dds_video_stream_profile::width )
         .def( "height", &dds_video_stream_profile::height );
 
     using realdds::dds_motion_stream_profile;
     py::class_< dds_motion_stream_profile, std::shared_ptr< dds_motion_stream_profile > >( m, "motion_stream_profile", stream_profile_base )
-        .def( py::init< int16_t, dds_stream_format >() );
+        .def( py::init< int16_t >() );
 
     using realdds::dds_stream_base;
     py::class_< dds_stream_base, std::shared_ptr< dds_stream_base > > stream_base( m, "stream_base" );
@@ -646,7 +646,8 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_motion_stream_server;
     py::class_< dds_motion_stream_server, std::shared_ptr< dds_motion_stream_server > >( m, "motion_stream_server", stream_server_base )
         .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a )
-        .def( "set_intrinsics", &dds_motion_stream_server::set_intrinsics )
+        .def( "set_gyro_intrinsics", &dds_motion_stream_server::set_gyro_intrinsics )
+        .def( "set_accel_intrinsics", &dds_motion_stream_server::set_accel_intrinsics )
         .def( "start_streaming", &dds_motion_stream_server::start_streaming );
 
     using realdds::dds_device_server;
@@ -707,10 +708,6 @@ PYBIND11_MODULE(NAME, m) {
     py::class_< dds_color_stream, std::shared_ptr< dds_color_stream > >( m, "color_stream", video_stream_client_base )
         .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a );
 
-    using realdds::dds_fisheye_stream;
-    py::class_< dds_fisheye_stream, std::shared_ptr< dds_fisheye_stream > >( m, "fisheye_stream", video_stream_client_base )
-        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a );
-
     using realdds::dds_confidence_stream;
     py::class_< dds_confidence_stream, std::shared_ptr< dds_confidence_stream > >( m, "confidence_stream", video_stream_client_base )
         .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a );
@@ -719,19 +716,8 @@ PYBIND11_MODULE(NAME, m) {
     py::class_< dds_motion_stream, std::shared_ptr< dds_motion_stream > >
         motion_stream_client_base( m, "motion_stream", stream_client_base );
     motion_stream_client_base
-        .def( "set_intrinsics", &dds_motion_stream::set_intrinsics );
-
-    using realdds::dds_accel_stream;
-    py::class_< dds_accel_stream, std::shared_ptr< dds_accel_stream > >( m, "accel_stream", motion_stream_client_base )
-        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a );
-
-    using realdds::dds_gyro_stream;
-    py::class_< dds_gyro_stream, std::shared_ptr< dds_gyro_stream > >( m, "gyro_stream", motion_stream_client_base )
-        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a );
-
-    using realdds::dds_pose_stream;
-    py::class_< dds_pose_stream, std::shared_ptr< dds_pose_stream > >( m, "pose_stream", motion_stream_client_base )
-        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a );
+        .def( "set_gyro_intrinsics", &dds_motion_stream::set_gyro_intrinsics )
+        .def( "set_accel_intrinsics", &dds_motion_stream::set_accel_intrinsics );
 
     using realdds::dds_device;
     py::class_< dds_device,
