@@ -429,7 +429,7 @@ struct dds_device::impl::init_context
 bool dds_device::impl::init()
 {
     // We expect to receive all of the sensors data under a timeout
-    rsutils::time::timer timer( std::chrono::seconds( 30 ) );  // TODO: refine time out
+    rsutils::time::timer timer( std::chrono::seconds( 5 ) );
     init_context init;
     while( ! timer.has_expired() && state_type::DONE != init.state )
     {
