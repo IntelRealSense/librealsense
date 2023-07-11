@@ -5,7 +5,7 @@ import pyrealdds as dds
 from rspy import log, test
 
 
-dds.debug( True, log.nested )
+dds.debug( log.is_debug_on(), log.nested )
 
 
 participant = dds.participant()

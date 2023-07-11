@@ -7,7 +7,8 @@ from rspy import log, test
 log.nested = 'C  '
 
 import pyrealsense2 as rs
-rs.log_to_console( rs.log_severity.debug )
+if log.is_debug_on():
+    rs.log_to_console( rs.log_severity.debug )
 
 
 #############################################################################################

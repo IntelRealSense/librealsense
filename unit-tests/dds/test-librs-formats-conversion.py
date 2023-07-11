@@ -7,7 +7,8 @@ from rspy import log, test
 import pyrealsense2 as rs
 import dds
 
-rs.log_to_console( rs.log_severity.debug )
+if log.is_debug_on():
+    rs.log_to_console( rs.log_severity.debug )
 log.nested = 'C  '
 
 context = rs.context( '{"dds-domain":123,"dds-participant-name":"test-formats-conversion"}' )

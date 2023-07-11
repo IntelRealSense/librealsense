@@ -7,7 +7,7 @@ import pyrealdds as dds
 from rspy import log, test
 
 
-dds.debug( True, 'C  ' )
+dds.debug( log.is_debug_on(), 'C  ' )
 log.nested = 'C  '
 
 

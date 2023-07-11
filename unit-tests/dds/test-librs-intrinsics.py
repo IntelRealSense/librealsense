@@ -9,7 +9,8 @@ log.nested = 'C  '
 import d435i
 import dds
 import pyrealsense2 as rs
-rs.log_to_console( rs.log_severity.debug )
+if log.is_debug_on():
+    rs.log_to_console( rs.log_severity.debug )
 from time import sleep
 
 context = rs.context( '{"dds-domain":123}' )
