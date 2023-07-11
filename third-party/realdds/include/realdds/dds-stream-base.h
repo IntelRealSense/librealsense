@@ -27,7 +27,7 @@ class dds_stream_base : public std::enable_shared_from_this< dds_stream_base >
 protected:
     std::string const _name;
     std::string const _sensor_name;
-    int _default_profile_index = 0;
+    size_t _default_profile_index = 0;
     dds_stream_profiles _profiles;
     dds_options _options;
     std::vector< std::string > _recommended_filters;
@@ -40,14 +40,14 @@ public:
 
     // Init functions can only be called once!
     void enable_metadata(); // Must call before init_profiles
-    void init_profiles( dds_stream_profiles const & profiles, int default_profile_index = 0 );
+    void init_profiles( dds_stream_profiles const & profiles, size_t default_profile_index = 0 );
     void init_options( dds_options const & options );
     void set_recommended_filters( std::vector< std::string > && recommended_filters );
 
     std::string const & name() const { return _name; }
     std::string const & sensor_name() const { return _sensor_name; }
     dds_stream_profiles const & profiles() const { return _profiles; }
-    int default_profile_index() const { return _default_profile_index; }
+    size_t default_profile_index() const { return _default_profile_index; }
     dds_options const & options() const { return _options; }
     std::vector< std::string > const & recommended_filters() const { return _recommended_filters; }
     bool metadata_enabled() const { return _metadata_enabled; }
@@ -55,7 +55,7 @@ public:
     std::shared_ptr< dds_stream_profile > default_profile() const
     {
         std::shared_ptr< dds_stream_profile > profile;
-        if( default_profile_index() >= 0 && default_profile_index() < profiles().size() )
+        if( default_profile_index() < profiles().size() )
             profile = profiles()[default_profile_index()];
         return profile;
     }

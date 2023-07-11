@@ -163,6 +163,8 @@ namespace librealsense
     context::context( json const & settings )
         : context()
     {
+        _settings = settings;
+
         _backend = platform::create_backend();  // standard type
 
         environment::get_instance().set_time_service( _backend->create_time_service() );

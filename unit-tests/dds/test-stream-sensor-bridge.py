@@ -189,17 +189,17 @@ test.start( "single stream, explicit" )
 try:
     bridge.open( find_server_profile( 'Depth', '640x480 16UC1 @ 30 Hz' )),
     test.check_throws( lambda:
-        bridge.open( servers['Depth'].default_profile() ),  # 1280x720 16UC1 @ 30 Hz
-        RuntimeError, "profile <'Depth' 1280x720 16UC1 @ 30 Hz> is incompatible with already-open <'Depth' 640x480 16UC1 @ 30 Hz>" )
+        bridge.open( servers['Depth'].default_profile() ),  # 848x480 16UC1 @ 30 Hz
+        RuntimeError, "profile <'Depth' 848x480 16UC1 @ 30 Hz> is incompatible with already-open <'Depth' 640x480 16UC1 @ 30 Hz>" )
     bridge.close( servers['Depth'] )
-    bridge.open( servers['Depth'].default_profile() )  # 1280x720 16UC1 @ 30 Hz
+    bridge.open( servers['Depth'].default_profile() )  # 848x480 16UC1 @ 30 Hz
     bridge.commit()
     test.check_equal( len(active_sensors), 0 )  # not streaming yet
     start_stream( 'Depth' )
     ( test.check_equal( len(active_sensors), 1 )
         and test.check_equal( next(iter(active_sensors)), 'Stereo Module' )
         and test.check_equal( len(active_sensors['Stereo Module']), 1 )  # Depth
-        and test.check_equal( find_active_profile( 'Depth' ).to_string(), "<'Depth' 1280x720 16UC1 @ 30 Hz>" )
+        and test.check_equal( find_active_profile( 'Depth' ).to_string(), "<'Depth' 848x480 16UC1 @ 30 Hz>" )
         )
     # IR1 and IR2 are not open
     test.check_throws( lambda:
@@ -215,12 +215,12 @@ test.finish()
 #
 test.start( "explicit+implicit streams, all compatible" )
 try:
-    bridge.open( servers['Depth'].default_profile() )  # 1280x720 16UC1 @ 30 Hz
+    bridge.open( servers['Depth'].default_profile() )  # 848x480 16UC1 @ 30 Hz
     bridge.add_implicit_profiles()                     # adds IR1, IR2
     test.check_throws( lambda:
-        bridge.open( servers['Infrared_1'].default_profile() ),
-        RuntimeError, "profile <'Infrared_1' 1280x800 Y8I @ 30 Hz> is incompatible with already-open <'Depth' 1280x720 16UC1 @ 30 Hz>" )
-    bridge.open( find_server_profile( 'Infrared_1', '1280x720 Y8I @ 30 Hz' ))  # same profile, makes it explicit!
+        bridge.open( find_server_profile( 'Infrared_1', '1280x800 mono8 @ 30 Hz' ) ),
+        RuntimeError, "profile <'Infrared_1' 1280x800 mono8 @ 30 Hz> is incompatible with already-open <'Depth' 848x480 16UC1 @ 30 Hz>" )
+    bridge.open( find_server_profile( 'Infrared_1', '848x480 mono8 @ 30 Hz' ))  # same profile, makes it explicit!
     bridge.commit()
     test.check_equal( len(active_sensors), 0 )  # not streaming yet
     start_stream( 'Depth' )
@@ -240,7 +240,7 @@ test.finish()
 #
 test.start( "stream profiles reset" )
 try:
-    bridge.open( find_server_profile( 'Infrared_1', '640x480 Y8I @ 60 Hz' ))
+    bridge.open( find_server_profile( 'Infrared_1', '640x480 mono8 @ 60 Hz' ) )
     bridge.add_implicit_profiles()                     # adds Depth, IR2
     bridge.commit()
     test.check_equal( len(active_sensors), 0 )  # not streaming yet
@@ -249,7 +249,7 @@ try:
         and test.check_equal( next(iter(active_sensors)), 'Stereo Module' )
         and test.check_equal( len(active_sensors['Stereo Module']), 3 )
         )
-    test.check_equal( find_active_profile( 'Infrared_2' ).to_string(), "<'Infrared_2' 640x480 Y8I @ 60 Hz>" )
+    test.check_equal( find_active_profile( 'Infrared_2' ).to_string(), "<'Infrared_2' 640x480 mono8 @ 60 Hz>" )
     stop_stream( 'Infrared_1' )
     test.check_equal( len(active_sensors), 0 )  # not streaming again
     # We don't reset - last commit should still stand!
@@ -258,7 +258,7 @@ try:
         and test.check_equal( next(iter(active_sensors)), 'Stereo Module' )
         and test.check_equal( len(active_sensors['Stereo Module']), 3 )
         )
-    test.check_equal( find_active_profile( 'Infrared_2' ).to_string(), "<'Infrared_2' 640x480 Y8I @ 60 Hz>" )
+    test.check_equal( find_active_profile( 'Infrared_2' ).to_string(), "<'Infrared_2' 640x480 mono8 @ 60 Hz>" )
     stop_stream( 'Infrared_2' )
     test.check_equal( len(active_sensors), 0 )  # not streaming again
     # Now reset - commit should be lost and we should be back to the default profile
@@ -297,18 +297,8 @@ test.finish()
 #
 test.start( "motion module" )
 try:
-    start_stream( 'Accel' )  # MXYZ @ 200 Hz
-    test.check_equal( len(active_sensors), 1 )
-    start_stream( 'Gyro' )
-    test.check_equal( len(active_sensors), 1 )  # same sensor
-    stop_stream( 'Accel' )
-    test.check_equal( len(active_sensors), 1 )
-    stop_stream( 'Gyro' )
-    test.check_equal( len(active_sensors), 0 )
-
-    bridge.open( servers['Gyro'].default_profile() )  # MXYZ @ 400 Hz
-    # Gyro has no 400 Hz
-    with bridge_error_expected( "failure trying to start/stop 'Accel': profile <'Accel' MXYZ @ 200 Hz> is incompatible with already-open <'Gyro' MXYZ @ 400 Hz>" ):
+    bridge.open( servers['Gyro'].default_profile() )  # MXYZ @ 200 Hz
+    with bridge_error_expected( "failure trying to start/stop 'Accel': profile <'Accel' MXYZ @ 100 Hz> is incompatible with already-open <'Gyro' MXYZ @ 200 Hz>" ):
         start_stream( 'Accel' )
     # Note that while the stream shouldn't be streaming because the _SERVER_ failed, the stream still
     # has the reader open and therefore we still think is streaming...! This requires handling on
@@ -326,7 +316,7 @@ test.finish()
 #
 test.start( "motion + color" )
 try:
-    start_stream( 'Gyro' )  # MXYZ @ 400 Hz
+    start_stream( 'Gyro' )  # MXYZ @ 200 Hz
     test.check_equal( len(active_sensors), 1 )
     start_stream( 'Color' )
     test.check_equal( len(active_sensors), 2 )
@@ -344,21 +334,21 @@ test.finish()
 #
 test.start( "incompatible streams" )
 try:
-    bridge.open( servers['Infrared_1'].default_profile() )  # 1280x800 Y8I @ 30 Hz
+    bridge.open( find_server_profile( 'Infrared_1', '1280x800 mono8 @ 30 Hz' ) )
     bridge.add_implicit_profiles()  # IR2
     test.check_equal( len(active_sensors), 0 )  # not streaming yet
-    with bridge_error_expected( "failure trying to start/stop 'Depth': profile <'Depth' 1280x720 16UC1 @ 30 Hz> is incompatible with already-open <'Infrared_1' 1280x800 Y8I @ 30 Hz>" ):
+    with bridge_error_expected( "failure trying to start/stop 'Depth': profile <'Depth' 848x480 16UC1 @ 30 Hz> is incompatible with already-open <'Infrared_1' 1280x800 mono8 @ 30 Hz>" ):
         start_stream( 'Depth' )  # no depth at 1280x800, so no stream!
     test.check_equal( len(active_sensors), 0 )
     test.check_throws( lambda:
         bridge.open( servers['Depth'].default_profile() ),
-        RuntimeError, "profile <'Depth' 1280x720 16UC1 @ 30 Hz> is incompatible with already-open <'Infrared_1' 1280x800 Y8I @ 30 Hz>" )
+        RuntimeError, "profile <'Depth' 848x480 16UC1 @ 30 Hz> is incompatible with already-open <'Infrared_1' 1280x800 mono8 @ 30 Hz>" )
     test.check_throws( lambda:
-        bridge.open( find_server_profile( 'Infrared_2', '848x480 Y8I @ 30 Hz' )),
-        RuntimeError, "profile <'Infrared_2' 848x480 Y8I @ 30 Hz> is incompatible with already-open <'Infrared_1' 1280x800 Y8I @ 30 Hz>" )
+        bridge.open( find_server_profile( 'Infrared_2', '848x480 mono8 @ 30 Hz' )),
+        RuntimeError, "profile <'Infrared_2' 848x480 mono8 @ 30 Hz> is incompatible with already-open <'Infrared_1' 1280x800 mono8 @ 30 Hz>" )
     test.check_throws( lambda:
-        bridge.open( find_server_profile( 'Infrared_2', '1280x800 Y8I @ 15 Hz' )),
-        RuntimeError, "profile <'Infrared_2' 1280x800 Y8I @ 15 Hz> is incompatible with already-open <'Infrared_1' 1280x800 Y8I @ 30 Hz>" )
+        bridge.open( find_server_profile( 'Infrared_2', '1280x800 mono8 @ 15 Hz' )),
+        RuntimeError, "profile <'Infrared_2' 1280x800 mono8 @ 15 Hz> is incompatible with already-open <'Infrared_1' 1280x800 mono8 @ 30 Hz>" )
     start_stream( 'Infrared_2' )
     ( test.check_equal( len(active_sensors), 1 )
         and test.check_equal( next(iter(active_sensors)), 'Stereo Module' )
@@ -377,18 +367,18 @@ test.finish()
 #
 test.start( "open and close" )
 try:
-    bridge.open( servers['Infrared_1'].default_profile() )  # 1280x800 Y8I @ 30 Hz
+    bridge.open( servers['Infrared_1'].default_profile() )  # 848x480 mono8 @ 30 Hz
     bridge.open( servers['Infrared_1'].default_profile() )  # "compatible"
     bridge.close( servers['Infrared_1'] )
-    bridge.open( find_server_profile( 'Infrared_1', '1280x800 Y8I @ 30 Hz' ))
+    bridge.open( find_server_profile( 'Infrared_1', '1280x800 mono8 @ 30 Hz' ))
     bridge.close( servers['Infrared_1'] )
     bridge.close( servers['Infrared_1'] )
-    bridge.open( find_server_profile( 'Infrared_1', '1280x800 Y12I @ 25 Hz' ))
+    bridge.open( find_server_profile( 'Infrared_1', '1280x800 Y16 @ 25 Hz' ))
     bridge.reset()
-    bridge.open( find_server_profile( 'Infrared_1', '1280x800 Y12I @ 15 Hz' ))
+    bridge.open( find_server_profile( 'Infrared_1', '1280x800 Y16 @ 15 Hz' ))
     test.check_throws( lambda:
-        bridge.open( find_server_profile( 'Infrared_1', '1280x800 Y12I @ 25 Hz' )),
-        RuntimeError, "profile <'Infrared_1' 1280x800 Y12I @ 25 Hz> is incompatible with already-open <'Infrared_1' 1280x800 Y12I @ 15 Hz>" )
+        bridge.open( find_server_profile( 'Infrared_1', '1280x800 Y16 @ 25 Hz' )),
+        RuntimeError, "profile <'Infrared_1' 1280x800 Y16 @ 25 Hz> is incompatible with already-open <'Infrared_1' 1280x800 Y16 @ 15 Hz>" )
 except Exception:
     test.unexpected_exception()
 finally:

@@ -5,6 +5,7 @@
 #include "core/video.h"
 #include "core/motion.h"
 #include "device.h"
+
 #include <rsutils/string/from.h>
 
 using namespace librealsense;

@@ -99,7 +99,7 @@ static std::string stream_name_from_rs2( const rs2::stream_profile & profile )
 std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controller::get_supported_streams()
 {
     std::map< std::string, realdds::dds_stream_profiles > stream_name_to_profiles;
-    std::map< std::string, int > stream_name_to_default_profile;
+    std::map< std::string, size_t > stream_name_to_default_profile;
     std::map< std::string, std::set< realdds::video_intrinsics > > stream_name_to_video_intrinsics;
     std::map< std::string, realdds::motion_intrinsics > stream_name_to_motion_intrinsics;
 
@@ -166,11 +166,13 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
                 return;
             }
             if( sp.is_default() )
-                stream_name_to_default_profile[stream_name] = static_cast< int >( profiles.size() );
+                stream_name_to_default_profile[stream_name] = profiles.size();
             profiles.push_back( profile );
             LOG_DEBUG( stream_name << ": " << profile->to_string() );
         } );
     }
+
+    override_default_profiles( stream_name_to_profiles, stream_name_to_default_profile );
 
     // Iterate over the mapped streams and initialize
     std::vector< std::shared_ptr< realdds::dds_stream_server > > servers;
@@ -178,7 +180,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
     {
         auto const & stream_name = it.first;
 
-        int default_profile_index = 0;
+        size_t default_profile_index = 0;
         auto default_profile_it = stream_name_to_default_profile.find( stream_name );
         if( default_profile_it != stream_name_to_default_profile.end() )
             default_profile_index = default_profile_it->second;
@@ -655,4 +657,71 @@ float lrs_device_controller::query_option( const std::shared_ptr< realdds::dds_o
     auto & sensor = _rs_sensors[server->sensor_name()];
     rs2_option opt_type = option_name_to_type( option->get_name(), sensor );
     return sensor.get_option( opt_type );
+}
+
+
+void lrs_device_controller::override_default_profiles( const std::map< std::string, realdds::dds_stream_profiles > & stream_name_to_profiles,
+                                                       std::map< std::string, size_t > & stream_name_to_default_profile ) const
+{
+    static const std::string RS410_PID = "0AD2";
+    static const std::string RS415_PID = "0AD3";
+
+    std::string product_line = _rs_dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
+    std::string product_id = _rs_dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID );
+
+    // Default resolution for RealSense modules, set according to system SW architect definitions
+    if( product_line == "D400" )
+    {
+        // For best image quality global shutter should use 848x480 resolution, rolling shutter 1280x720
+        uint16_t fps = 30;
+        uint16_t width = 848;
+        uint16_t height = 480;
+        if( product_id == RS415_PID || product_id == RS410_PID )
+        {
+            width = 1280;
+            height = 720;
+        }
+        stream_name_to_default_profile["Depth"] = get_index_of_profile( stream_name_to_profiles.at( "Depth" ),
+            realdds::dds_video_stream_profile( fps, realdds::dds_stream_format::from_rs2( RS2_FORMAT_Z16 ), width, height ) );
+        stream_name_to_default_profile["Infrared_1"] = get_index_of_profile( stream_name_to_profiles.at( "Infrared_1" ),
+            realdds::dds_video_stream_profile( fps, realdds::dds_stream_format::from_rs2( RS2_FORMAT_Y8 ), width, height ) );
+        stream_name_to_default_profile["Infrared_2"] = get_index_of_profile( stream_name_to_profiles.at( "Infrared_2" ),
+            realdds::dds_video_stream_profile( fps, realdds::dds_stream_format::from_rs2( RS2_FORMAT_Y8 ), width, height ) );
+
+        width = 1280;
+        height = 720;
+        stream_name_to_default_profile["Color"] = get_index_of_profile( stream_name_to_profiles.at( "Color" ),
+            realdds::dds_video_stream_profile( fps, realdds::dds_stream_format::from_rs2( RS2_FORMAT_YUYV ), width, height ) );
+    }
+}
+
+
+size_t lrs_device_controller::get_index_of_profile( const realdds::dds_stream_profiles & profiles,
+                                                    const realdds::dds_video_stream_profile & profile ) const
+{
+    for( size_t i = 0; i < profiles.size(); ++i )
+    {
+        auto dds_vp = std::dynamic_pointer_cast< dds_video_stream_profile >( profiles[i] );
+        if( dds_vp->frequency() == profile.frequency()
+            && dds_vp->format() == profile.format()
+            && dds_vp->width()  == profile.width()
+            && dds_vp->height() == profile.height() )
+            return i;
+    }
+
+    return 0;
+}
+
+
+size_t lrs_device_controller::get_index_of_profile( const realdds::dds_stream_profiles & profiles,
+                                                    const realdds::dds_motion_stream_profile & profile ) const
+{
+    for( size_t i = 0; i < profiles.size(); ++i )
+    {
+        if( profiles[i]->frequency() == profile.frequency()
+            && profiles[i]->format() == profile.format() )
+            return i;
+    }
+
+    return 0;
 }

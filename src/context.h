@@ -8,7 +8,7 @@
 #include "core/streaming.h"
 
 #include <vector>
-#include <nlohmann/json_fwd.hpp>
+#include <nlohmann/json.hpp>
 #include "media/playback/playback_device.h"
 
 namespace librealsense
@@ -136,6 +136,7 @@ namespace librealsense
 
         void add_software_device(std::shared_ptr<device_info> software_device);
         
+        const nlohmann::json & get_settings() const { return _settings; }
 
     private:
         void on_device_changed(platform::backend_device_group old,
@@ -157,6 +158,8 @@ namespace librealsense
 
         void start_dds_device_watcher( size_t message_timeout_ms );
 #endif
+
+        nlohmann::json _settings; // Save operation settings
 
         devices_changed_callback_ptr _devices_changed_callback;
         std::map<int, std::weak_ptr<const stream_interface>> _streams;

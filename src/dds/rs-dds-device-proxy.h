@@ -15,6 +15,7 @@ class dds_device;
 class dds_stream;
 class dds_video_stream;
 class dds_motion_stream;
+class dds_stream_profile;
 }  // namespace realdds
 
 
@@ -51,7 +52,12 @@ class dds_device_proxy : public software_device
 public:
     dds_device_proxy( std::shared_ptr< context > ctx, std::shared_ptr< realdds::dds_device > const & dev );
 
+    void tag_default_profile_of_stream( const std::shared_ptr< stream_profile_interface > & profile,
+                                        const std::shared_ptr< const realdds::dds_stream > & stream ) const;
+
     std::shared_ptr< dds_sensor_proxy > create_sensor( const std::string & sensor_name );
+
+    void tag_profiles( stream_profiles profiles ) const override;
 };
 
 

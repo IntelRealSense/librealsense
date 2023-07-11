@@ -67,7 +67,7 @@ public:
     std::shared_ptr<stream_profile_interface> add_video_stream( rs2_video_stream video_stream, bool is_default ) override;
     std::shared_ptr<stream_profile_interface> add_motion_stream( rs2_motion_stream motion_stream, bool is_default ) override;
     // Not adding streams or profiles after this
-    void initialization_done( const std::string & product_id, const std::string & product_line );
+    void initialization_done();
 
     void open( const stream_profiles & profiles ) override;
     void start( frame_callback_ptr callback ) override;
@@ -84,9 +84,7 @@ public:
     const std::map< sid_index, std::shared_ptr< realdds::dds_stream > > & streams() const { return _streams; }
 
 private:
-    void handle_no_converters( std::vector<librealsense::processing_block_factory> & converters );
-
-    void tag_profiles( const std::vector<librealsense::tagged_profile> & tags );
+    void register_basic_converters();
 
     std::shared_ptr< realdds::dds_video_stream_profile >
     find_profile( sid_index sidx, realdds::dds_video_stream_profile const & profile ) const;

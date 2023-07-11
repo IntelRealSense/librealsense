@@ -211,7 +211,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< context > ctx, std::shared_
 
     for( auto & sensor_info : sensor_name_to_info )
     {
-        sensor_info.second.proxy->initialization_done( dev->device_info().product_id, dev->device_info().product_line );
+        sensor_info.second.proxy->initialization_done();
 
         // Set profile's ID based on the dds_stream's ID (index already set). Connect the profile to the extrinsics graph.
         for( auto & profile : sensor_info.second.proxy->get_stream_profiles() )
@@ -233,6 +233,8 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< context > ctx, std::shared_
             set_profile_intrinsics( profile, stream_iter->second );
 
             _stream_name_to_profiles[stream_iter->second->name()].push_back( profile );  // For extrinsics
+
+            tag_default_profile_of_stream( profile, stream_iter->second );
         }
     }
 
@@ -363,6 +365,33 @@ std::shared_ptr< dds_sensor_proxy > dds_device_proxy::create_sensor( const std::
         return std::make_shared< dds_depth_sensor_proxy >( sensor_name, this, _dds_dev );
 
     return std::make_shared< dds_sensor_proxy >( sensor_name, this, _dds_dev );
+}
+
+
+// Tagging converted profiles. dds_sensor_proxy::add_video/motion_stream tagged the raw profiles.
+void dds_device_proxy::tag_default_profile_of_stream( const std::shared_ptr<stream_profile_interface> & profile,
+                                             const std::shared_ptr< const realdds::dds_stream > & stream ) const
+{
+    auto const & dds_default_profile = stream->default_profile();
+
+    if( profile->get_stream_type() == to_rs2_stream_type( stream->type_string() ) &&
+        profile->get_format() == dds_default_profile->format().to_rs2() &&
+        profile->get_framerate() == dds_default_profile->frequency() )
+    {
+        auto vsp = std::dynamic_pointer_cast< video_stream_profile >( profile );
+        auto dds_vsp = std::dynamic_pointer_cast< realdds::dds_video_stream_profile >( dds_default_profile );
+        if( vsp && dds_vsp &&
+            ( vsp->get_width() != dds_vsp->width() || vsp->get_height() != dds_vsp->height() ) )
+            return; // Video profiles of incompatible resolutions
+
+        profile->tag_profile( PROFILE_TAG_DEFAULT );
+    }
+}
+
+
+void dds_device_proxy::tag_profiles( stream_profiles profiles ) const
+{
+    //Do nothing. PROFILE_TAG_DEFAULT is already added in tag_default_profile_of_stream.
 }
 
 

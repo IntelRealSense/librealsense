@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 import pyrealdds as dds
 from rspy import log, test
@@ -40,8 +40,8 @@ def build_options():
 
 def accel_stream_profiles():
     return [
-        dds.motion_stream_profile( 200, dds.stream_format("MXYZ") ),
-        dds.motion_stream_profile( 100, dds.stream_format("MXYZ") )
+        dds.motion_stream_profile( 100, dds.stream_format("MXYZ") ),
+        dds.motion_stream_profile( 200, dds.stream_format("MXYZ") )
         ]
 
 
@@ -59,8 +59,8 @@ def accel_stream():
 
 def gyro_stream_profiles():
     return [
-        dds.motion_stream_profile( 400, dds.stream_format("MXYZ") ),
-        dds.motion_stream_profile( 200, dds.stream_format("MXYZ") )
+        dds.motion_stream_profile( 200, dds.stream_format("MXYZ") ),
+        dds.motion_stream_profile( 400, dds.stream_format("MXYZ") )
         ]
 
 
@@ -115,7 +115,7 @@ def depth_stream_profiles():
 
 def depth_stream():
     stream = dds.depth_stream_server( "Depth", "Stereo Module" )
-    stream.init_profiles( depth_stream_profiles(), 0 )
+    stream.init_profiles( depth_stream_profiles(), 5 )
     stream.init_options( stereo_module_options() )
     stream.set_intrinsics( depth_stream_intrinsics() )
     return stream
@@ -123,48 +123,48 @@ def depth_stream():
 
 def ir_stream_profiles():
     return [
-        dds.video_stream_profile( 30, dds.stream_format("Y8I"), 1280,800 ),
-        dds.video_stream_profile( 25, dds.stream_format("Y12I"), 1280,800 ),
-        dds.video_stream_profile( 15, dds.stream_format("Y12I"), 1280,800 ),
-        dds.video_stream_profile( 15, dds.stream_format("Y8I"), 1280,800 ),
-        dds.video_stream_profile( 30, dds.stream_format("Y8I"), 1280,720 ),
-        dds.video_stream_profile( 15, dds.stream_format("Y8I"), 1280,720 ),
-        dds.video_stream_profile( 6, dds.stream_format("Y8I"), 1280,720 ),
-        dds.video_stream_profile( 90, dds.stream_format("Y8I"), 848,480 ),
-        dds.video_stream_profile( 60, dds.stream_format("Y8I"), 848,480 ),
-        dds.video_stream_profile( 30, dds.stream_format("Y8I"), 848,480 ),
-        dds.video_stream_profile( 15, dds.stream_format("Y8I"), 848,480 ),
-        dds.video_stream_profile( 6, dds.stream_format("Y8I"), 848,480 ),
-        dds.video_stream_profile( 300, dds.stream_format("Y8I"), 848,100 ),
-        dds.video_stream_profile( 100, dds.stream_format("Y8I"), 848,100 ),
-        dds.video_stream_profile( 90, dds.stream_format("Y8I"), 640,480 ),
-        dds.video_stream_profile( 60, dds.stream_format("Y8I"), 640,480 ),
-        dds.video_stream_profile( 30, dds.stream_format("Y8I"), 640,480 ),
-        dds.video_stream_profile( 15, dds.stream_format("Y8I"), 640,480 ),
-        dds.video_stream_profile( 6, dds.stream_format("Y8I"), 640,480 ),
-        dds.video_stream_profile( 25, dds.stream_format("Y12I"), 640,400 ),
-        dds.video_stream_profile( 15, dds.stream_format("Y12I"), 640,400 ),
-        dds.video_stream_profile( 90, dds.stream_format("Y8I"), 640,360 ),
-        dds.video_stream_profile( 60, dds.stream_format("Y8I"), 640,360 ),
-        dds.video_stream_profile( 30, dds.stream_format("Y8I"), 640,360 ),
-        dds.video_stream_profile( 15, dds.stream_format("Y8I"), 640,360 ),
-        dds.video_stream_profile( 6, dds.stream_format("Y8I"), 640,360 ),
-        dds.video_stream_profile( 90, dds.stream_format("Y8I"), 480,270 ),
-        dds.video_stream_profile( 60, dds.stream_format("Y8I"), 480,270 ),
-        dds.video_stream_profile( 30, dds.stream_format("Y8I"), 480,270 ),
-        dds.video_stream_profile( 15, dds.stream_format("Y8I"), 480,270 ),
-        dds.video_stream_profile( 6, dds.stream_format("Y8I"), 480,270 ),
-        dds.video_stream_profile( 90, dds.stream_format("Y8I"), 424,240 ),
-        dds.video_stream_profile( 60, dds.stream_format("Y8I"), 424,240 ),
-        dds.video_stream_profile( 30, dds.stream_format("Y8I"), 424,240 ),
-        dds.video_stream_profile( 15, dds.stream_format("Y8I"), 424,240 ),
-        dds.video_stream_profile( 6, dds.stream_format("Y8I"), 424,240 )
+        dds.video_stream_profile( 30, dds.stream_format("mono8"), 1280,800 ),
+        dds.video_stream_profile( 25, dds.stream_format("Y16"), 1280,800 ),
+        dds.video_stream_profile( 15, dds.stream_format("Y16"), 1280,800 ),
+        dds.video_stream_profile( 15, dds.stream_format("mono8"), 1280,800 ),
+        dds.video_stream_profile( 30, dds.stream_format("mono8"), 1280,720 ),
+        dds.video_stream_profile( 15, dds.stream_format("mono8"), 1280,720 ),
+        dds.video_stream_profile( 6, dds.stream_format("mono8"), 1280,720 ),
+        dds.video_stream_profile( 90, dds.stream_format("mono8"), 848,480 ),
+        dds.video_stream_profile( 60, dds.stream_format("mono8"), 848,480 ),
+        dds.video_stream_profile( 30, dds.stream_format("mono8"), 848,480 ),
+        dds.video_stream_profile( 15, dds.stream_format("mono8"), 848,480 ),
+        dds.video_stream_profile( 6, dds.stream_format("mono8"), 848,480 ),
+        dds.video_stream_profile( 300, dds.stream_format("mono8"), 848,100 ),
+        dds.video_stream_profile( 100, dds.stream_format("mono8"), 848,100 ),
+        dds.video_stream_profile( 90, dds.stream_format("mono8"), 640,480 ),
+        dds.video_stream_profile( 60, dds.stream_format("mono8"), 640,480 ),
+        dds.video_stream_profile( 30, dds.stream_format("mono8"), 640,480 ),
+        dds.video_stream_profile( 15, dds.stream_format("mono8"), 640,480 ),
+        dds.video_stream_profile( 6, dds.stream_format("mono8"), 640,480 ),
+        dds.video_stream_profile( 25, dds.stream_format("Y16"), 640,400 ),
+        dds.video_stream_profile( 15, dds.stream_format("Y16"), 640,400 ),
+        dds.video_stream_profile( 90, dds.stream_format("mono8"), 640,360 ),
+        dds.video_stream_profile( 60, dds.stream_format("mono8"), 640,360 ),
+        dds.video_stream_profile( 30, dds.stream_format("mono8"), 640,360 ),
+        dds.video_stream_profile( 15, dds.stream_format("mono8"), 640,360 ),
+        dds.video_stream_profile( 6, dds.stream_format("mono8"), 640,360 ),
+        dds.video_stream_profile( 90, dds.stream_format("mono8"), 480,270 ),
+        dds.video_stream_profile( 60, dds.stream_format("mono8"), 480,270 ),
+        dds.video_stream_profile( 30, dds.stream_format("mono8"), 480,270 ),
+        dds.video_stream_profile( 15, dds.stream_format("mono8"), 480,270 ),
+        dds.video_stream_profile( 6, dds.stream_format("mono8"), 480,270 ),
+        dds.video_stream_profile( 90, dds.stream_format("mono8"), 424,240 ),
+        dds.video_stream_profile( 60, dds.stream_format("mono8"), 424,240 ),
+        dds.video_stream_profile( 30, dds.stream_format("mono8"), 424,240 ),
+        dds.video_stream_profile( 15, dds.stream_format("mono8"), 424,240 ),
+        dds.video_stream_profile( 6, dds.stream_format("mono8"), 424,240 )
         ]
 
 
 def ir_stream( number ):
     stream = dds.ir_stream_server( "Infrared_" + str(number), "Stereo Module" )
-    stream.init_profiles( ir_stream_profiles(), 0 )
+    stream.init_profiles( ir_stream_profiles(), 9 )
     stream.init_options( stereo_module_options() )
     stream.set_intrinsics( ir_stream_intrinsics() )
     return stream
@@ -323,7 +323,7 @@ def color_stream_profiles():
         # dds.video_stream_profile( 15, dds.stream_format("RGBA"), 424,240 ),
         # dds.video_stream_profile( 15, dds.stream_format("RGB2"), 424,240 ),
         dds.video_stream_profile( 15, dds.stream_format("yuv422_yuy2"), 424,240 ),
-        # dds.video_stream_profile( 6, dds.stream_format("rgb8"), 424,240 ),
+        #dds.video_stream_profile( 6, dds.stream_format("rgb8"), 424,240 ),
         # dds.video_stream_profile( 6, dds.stream_format("Y16"), 424,240 ),
         # dds.video_stream_profile( 6, dds.stream_format("BGRA"), 424,240 ),
         # dds.video_stream_profile( 6, dds.stream_format("RGBA"), 424,240 ),
@@ -370,7 +370,7 @@ def color_stream_profiles():
 
 def color_stream():
     stream = dds.color_stream_server( "Color",  "RGB Camera" )
-    stream.init_profiles( color_stream_profiles(), 0 )
+    stream.init_profiles( color_stream_profiles(), 8 )
     stream.init_options( rgb_camera_options() )
     stream.set_intrinsics( color_stream_intrinsics() )
     return stream

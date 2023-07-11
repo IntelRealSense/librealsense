@@ -29,6 +29,9 @@ rs2_context* rs2_create_context(int api_version, rs2_error** error);
 *            Possible settings:
 *                dds-discovery - (bool) false to disable DDS discovery; defaults to true (requires BUILD_WITH_DDS)
 *                dds-domain - (int) the number of the domain discovery is on (requires BUILD_WITH_DDS)
+*                use-basic-formats - (bool) true to make sensors stream only "basic" types without converting to formats
+*                                    other then the raw camera formats; defaults to false.
+*                                    Convert only interleaved formats (Y8I, Y12I), no colored infrared.
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return            Context object
 */
