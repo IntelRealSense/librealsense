@@ -144,7 +144,12 @@ float dds_device::query_option_value( const std::shared_ptr< dds_option > & opti
     return _impl->query_option_value( option );
 }
 
-std::shared_ptr< extrinsics > dds_device::get_extrinsics( std::string from, std::string to ) const
+bool dds_device::has_extrinsics() const
+{
+    return ! _impl->_extrinsics_map.empty();
+}
+
+std::shared_ptr< extrinsics > dds_device::get_extrinsics( std::string const & from, std::string const & to ) const
 {
     auto iter = _impl->_extrinsics_map.find( std::make_pair( from, to ) );
     if( iter != _impl->_extrinsics_map.end() )

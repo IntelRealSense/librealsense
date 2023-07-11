@@ -287,11 +287,20 @@ extrinsics_map get_extrinsics_map( const rs2::device & dev )
     for( auto sensor : dev.query_sensors() )
     {
         auto stream_profiles = sensor.get_stream_profiles();
-        std::for_each( stream_profiles.begin(), stream_profiles.end(), [&]( const rs2::stream_profile & sp ) {
-            std::string stream_name = stream_name_from_rs2( sp );
-            if( stream_name_to_rs2_stream_profile.count( stream_name ) == 0 )
-                stream_name_to_rs2_stream_profile[stream_name] = sp; // Any profile of this stream will do, take the first
-        } );
+        std::for_each( stream_profiles.begin(),
+                       stream_profiles.end(),
+                       [&]( const rs2::stream_profile & sp )
+                       {
+                           switch( sp.stream_type() )
+                           {
+                           case RS2_STREAM_ACCEL:
+                               return;  // Ignore the accelerometer; we want the gyro extrinsics!
+                           }
+                           std::string stream_name = stream_name_from_rs2( sp );
+                           auto & rs2_stream_profile = stream_name_to_rs2_stream_profile[stream_name];
+                           if( ! rs2_stream_profile )
+                               rs2_stream_profile = sp;  // Any profile of this stream will do, take the first
+                       } );
     }
 
     // For each stream, get extrinsics to all other streams
@@ -309,6 +318,7 @@ extrinsics_map get_extrinsics_map( const rs2::device & dev )
                 const auto & extrinsics = from_profile.get_extrinsics_to( to_profile );
                 ret[std::make_pair( from_stream_name, to_stream_name )] =
                     std::make_shared< realdds::extrinsics >( to_realdds( extrinsics ) );
+                LOG_DEBUG( "have extrinsics from " << from_stream_name << " to " << to_stream_name );
             }
         }
     }

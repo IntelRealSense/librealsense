@@ -60,7 +60,8 @@ public:
     void set_option_value( const std::shared_ptr< dds_option > & option, float new_value );
     float query_option_value( const std::shared_ptr< dds_option > & option );
 
-    std::shared_ptr< extrinsics > get_extrinsics( std::string from, std::string to ) const;
+    bool has_extrinsics() const;
+    std::shared_ptr< extrinsics > get_extrinsics( std::string const & from, std::string const & to ) const;
 
     bool supports_metadata() const;
 

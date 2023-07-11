@@ -6,7 +6,6 @@
 from rspy import log, test
 log.nested = 'C  '
 
-import d435i
 import dds
 import pyrealsense2 as rs
 if log.is_debug_on():
@@ -105,18 +104,13 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
                     test.check_equal( color_profile.get_intrinsics().fy, 1362.629638671875 )
 
         sensor = sensors['Motion Module']
-        for profile in sensor.get_stream_profiles() :
-            if profile.stream_type() == rs.stream.gyro :
+        for profile in sensor.get_stream_profiles():
+            if test.check_equal( profile.stream_type(), rs.stream.motion ):
                 gyro_profile = profile.as_motion_stream_profile()
                 test.check_equal_lists( gyro_profile.get_motion_intrinsics().data, [[1.0,0.0,0.0,0.0],[0.0,1.0,0.0,0.0],[0.0,0.0,1.0,0.0]] )
                 test.check_equal_lists( gyro_profile.get_motion_intrinsics().noise_variances, [0.0,0.0,0.0] )
                 test.check_equal_lists( gyro_profile.get_motion_intrinsics().bias_variances, [0.0,0.0,0.0] )
-        for profile in sensor.get_stream_profiles() :
-            if profile.stream_type() == rs.stream.accel :
-                accel_profile = profile.as_motion_stream_profile()
-                test.check_equal_lists( accel_profile.get_motion_intrinsics().data, [[1.0,0.0,0.0,0.0],[0.0,1.0,0.0,0.0],[0.0,0.0,1.0,0.0]] )
-                test.check_equal_lists( accel_profile.get_motion_intrinsics().noise_variances, [0.0,0.0,0.0] )
-                test.check_equal_lists( accel_profile.get_motion_intrinsics().bias_variances, [0.0,0.0,0.0] )
+                # There's currently no way to get the accelerometer intrinsics (which are set the same anyway)
 
         remote.run( 'close_server( instance )' )
     except:

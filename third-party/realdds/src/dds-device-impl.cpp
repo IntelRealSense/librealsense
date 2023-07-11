@@ -484,10 +484,11 @@ void dds_device::impl::handle_device_header( init_context & init, nlohmann::json
     {
         for( auto & ex : j["extrinsics"] )
         {
-            std::string to_name = rsutils::json::get< std::string >( ex, 0 );
-            std::string from_name = rsutils::json::get< std::string >( ex, 1 );
+            std::string from_name = rsutils::json::get< std::string >( ex, 0 );
+            std::string to_name = rsutils::json::get< std::string >( ex, 1 );
+            LOG_DEBUG( "got extrinsics from " << from_name << " to " << to_name );
             extrinsics extr = extrinsics::from_json( rsutils::json::get< json >( ex, 2 ) );
-            _extrinsics_map[std::make_pair( to_name, from_name )] = std::make_shared< extrinsics >( extr );
+            _extrinsics_map[std::make_pair( from_name, to_name )] = std::make_shared< extrinsics >( extr );
         }
     }
 

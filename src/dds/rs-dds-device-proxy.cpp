@@ -138,156 +138,9 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< context > ctx, std::shared_
     // need both the ID from that map key and the stream itself (for intrinsics information)
     std::map< sid_index, sid_index > type_and_index_to_dds_stream_sidx;
 
-#if 0
-    auto & map_stream = [&sensor_name_to_info, &type_and_index_to_dds_stream_sidx, this](
-        std::shared_ptr< realdds::dds_stream > const & stream,
-        std::string const & stream_name,
-        std::string const & sensor_name,
-        rs2_stream stream_type )
-    {
-        auto & sensor_info = sensor_name_to_info[sensor_name];
-        if( !sensor_info.proxy )
-        {
-            // This is a new sensor we haven't seen yet
-            sensor_info.proxy = create_sensor( sensor_name );
-            sensor_info.sensor_index = add_sensor( sensor_info.proxy );
-            assert( sensor_info.sensor_index == _software_sensors.size() );
-            _software_sensors.push_back( sensor_info.proxy );
-        }
-        int index = get_index_from_stream_name( stream_name );
-        sid_index sidx( environment::get_instance().generate_stream_id(), index );
-        sid_index type_and_index( stream_type, index );
-        _stream_name_to_librs_stream[stream_name] = std::make_shared< librealsense::stream >( stream_type, sidx.index );
-        sensor_info.proxy->add_dds_stream( sidx, stream );
-        _stream_name_to_owning_sensor[stream_name] = sensor_info.proxy;
-        type_and_index_to_dds_stream_sidx.insert( { type_and_index, sidx } );
-        LOG_DEBUG( sidx.to_string() << " " << sensor_name << " : " << stream_name );
-
-        auto motion_stream = std::dynamic_pointer_cast< realdds::dds_motion_stream >( stream );
-        auto video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( stream );
-
-        software_sensor & sensor = get_software_sensor( sensor_info.sensor_index );
-        auto & profiles = stream->profiles();
-        auto & default_profile = stream->default_profile();
-        for( auto & profile : profiles )
-        {
-            if( video_stream )
-            {
-                auto added_stream_profile = sensor.add_video_stream(
-                    to_rs2_video_stream( stream_type,
-                                         sidx,
-                                         std::static_pointer_cast< realdds::dds_video_stream_profile >( profile ),
-                                         video_stream->get_intrinsics() ),
-                    profile == default_profile );
-                _stream_name_to_profiles[stream_name].push_back( added_stream_profile );  // for extrinsics
-            }
-            else if( motion_stream )
-            {
-                auto motion_profile = std::static_pointer_cast< realdds::dds_motion_stream_profile >( profile );
-                auto added_stream_profile
-                    = sensor.add_motion_stream( to_rs2_motion_stream( RS2_STREAM_MOTION,
-                                                                      sidx,
-                                                                      motion_profile,
-                                                                      motion_stream->get_gyro_intrinsics() ),
-                                                profile == default_profile );
-                _stream_name_to_profiles["Gyro"].push_back( added_stream_profile );  // for extrinsics
-
-                // Add the accelerometer to go with the gyro
-                _stream_name_to_profiles["Accel"].push_back(
-                    sensor.add_motion_stream( to_rs2_motion_stream( RS2_STREAM_ACCEL,
-                                                                    sidx,
-                                                                    motion_profile,
-                                                                    motion_stream->get_accel_intrinsics() ),
-                                              profile == default_profile ) );
-            }
-        }
-
-        auto & options = stream->options();
-        for( auto & option : options )
-        {
-            sensor_info.proxy->add_option( option );
-        }
-
-        auto & recommended_filters = stream->recommended_filters();
-        for( auto & filter_name : recommended_filters )
-        {
-            sensor_info.proxy->add_processing_block( filter_name );
-        }
-
-        return sensor_info;
-    };
-
-    auto map_video_stream = [&](
-        std::shared_ptr< realdds::dds_stream > const & stream,
-        std::string const & stream_name,
-        std::string const & sensor_name,
-        rs2_stream stream_type )
-    {
-        auto sensor_index = map_stream( stream, stream_name, sensor_name, stream_type ).sensor_index;
-        software_sensor & sensor = get_software_sensor( sensor_index );
-
-        auto & profiles = stream->profiles();
-        auto & default_profile = stream->default_profile();
-        for( auto & profile : profiles )
-        {
-            auto added_stream_profile = sensor.add_video_stream(
-                to_rs2_video_stream( stream_type,
-                                        sidx,
-                                        std::static_pointer_cast<realdds::dds_video_stream_profile>(profile),
-                                        video_stream->get_intrinsics() ),
-                profile == default_profile );
-            _stream_name_to_profiles[stream->name()].push_back( added_stream_profile );  // for extrinsics
-        }
-    };
-    auto map_motion_stream = [&](
-        std::shared_ptr< realdds::dds_stream > const & stream,
-        std::string const & stream_name,
-        std::string const & sensor_name,
-        rs2_stream stream_type )
-    {
-        auto sensor_index = map_stream( stream, stream_name, sensor_name, stream_type ).sensor_index;
-        software_sensor & sensor = get_software_sensor( sensor_index );
-
-        auto & profiles = stream->profiles();
-        auto & default_profile = stream->default_profile();
-        for( auto & profile : profiles )
-        {
-            auto motion_profile = std::static_pointer_cast<realdds::dds_motion_stream_profile>(profile);
-            auto added_stream_profile
-                = sensor.add_motion_stream( to_rs2_motion_stream( RS2_STREAM_MOTION,
-                                                                  sidx,
-                                                                  motion_profile,
-                                                                  motion_stream->get_gyro_intrinsics() ),
-                                            profile == default_profile );
-            _stream_name_to_profiles["Gyro"].push_back( added_stream_profile );  // for extrinsics
-
-            // Add the accelerometer to go with the gyro
-            _stream_name_to_profiles["Accel"].push_back(
-                sensor.add_motion_stream( to_rs2_motion_stream( RS2_STREAM_ACCEL,
-                                                                sidx,
-                                                                motion_profile,
-                                                                motion_stream->get_accel_intrinsics() ),
-                                          profile == default_profile ) );
-        }
-    };
-#endif
-
     _dds_dev->foreach_stream(
         [&]( std::shared_ptr< realdds::dds_stream > const & stream )
         {
-#if 0
-            if( auto motion_stream = std::dynamic_pointer_cast<realdds::dds_motion_stream>(stream) )
-            {
-                map_stream( stream, "Gyro", stream->sensor_name(), RS2_STREAM_GYRO );
-                map_stream( stream, "Accel", stream->sensor_name(), RS2_STREAM_ACCEL );
-            }
-            else
-            {
-                map_stream( stream, stream->name(), stream->sensor_name(), to_rs2_stream_type( stream->type_string() ) );
-            }
-#endif
-
-
             auto & sensor_info = sensor_name_to_info[stream->sensor_name()];
             if( ! sensor_info.proxy )
             {
@@ -327,23 +180,6 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< context > ctx, std::shared_
                 else if( motion_stream )
                 {
                     auto motion_profile = std::static_pointer_cast< realdds::dds_motion_stream_profile >( profile );
-#if 0
-                    auto added_stream_profile
-                        = sensor.add_motion_stream( to_rs2_motion_stream( stream_type,
-                                                                          sidx,
-                                                                          motion_profile,
-                                                                          motion_stream->get_gyro_intrinsics() ),
-                                                    profile == default_profile );
-                    _stream_name_to_profiles["Gyro"].push_back( added_stream_profile );  // for extrinsics
-
-                    // Add the accelerometer to go with the gyro
-                    _stream_name_to_profiles["Accel"].push_back(
-                        sensor.add_motion_stream( to_rs2_motion_stream( RS2_STREAM_ACCEL,
-                                                                        sidx,
-                                                                        motion_profile,
-                                                                        motion_stream->get_accel_intrinsics() ),
-                                                  profile == default_profile ) );
-#else
                     auto raw_motion_profile = sensor.add_motion_stream(
                         to_rs2_motion_stream( stream_type,
                                               sidx,
@@ -352,7 +188,6 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< context > ctx, std::shared_
                         profile == default_profile );
                     _stream_name_to_profiles[stream->name()].push_back( raw_motion_profile );
                     // NOTE: the raw motion profile will be cloned and overriden by the format converter!
-#endif
                 }
             }
 
@@ -425,17 +260,23 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< context > ctx, std::shared_
             } );
     }
 
-    // According to extrinsics_graph (in environment.h) we need 3 steps
+    // According to extrinsics_graph (in environment.h) we need 3 steps:
+
     // 1. Register streams with extrinsics between them
-    for( auto & from_stream : _stream_name_to_librs_stream )
+    if( _dds_dev->has_extrinsics() )
     {
-        for( auto & to_stream : _stream_name_to_librs_stream )
+        for( auto & from_stream : _stream_name_to_librs_stream )
         {
-            if( from_stream.first != to_stream.first )
+            for( auto & to_stream : _stream_name_to_librs_stream )
             {
-                const auto & dds_extr = _dds_dev->get_extrinsics( from_stream.first, to_stream.first );
-                if( dds_extr )
+                if( from_stream.first != to_stream.first )
                 {
+                    auto const dds_extr = _dds_dev->get_extrinsics( from_stream.first, to_stream.first );
+                    if( ! dds_extr )
+                    {
+                        LOG_DEBUG( "missing extrinsics from " << from_stream.first << " to " << to_stream.first );
+                        continue;
+                    }
                     rs2_extrinsics extr = to_rs2_extrinsics( dds_extr );
                     environment::get_instance().get_extrinsics_graph().register_extrinsics( *from_stream.second,
                                                                                             *to_stream.second,
@@ -444,6 +285,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< context > ctx, std::shared_
             }
         }
     }
+
     // 2. Register all profiles
     for( auto & it : _stream_name_to_profiles )
     {
@@ -452,6 +294,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< context > ctx, std::shared_
             environment::get_instance().get_extrinsics_graph().register_profile( *profile );
         }
     }
+
     // 3. Link profile to it's stream
     for( auto & it : _stream_name_to_librs_stream )
     {
