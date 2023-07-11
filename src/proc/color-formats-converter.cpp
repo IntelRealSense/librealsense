@@ -44,6 +44,9 @@ bool has_avx()
 
 #endif
 
+// explanations for converting YUV values to RGB can be found in:
+// https://en.wikipedia.org/wiki/YUV#Y%E2%80%B2UV444_to_RGB888_conversion
+
 namespace librealsense 
 {
     /////////////////////////////
@@ -355,7 +358,7 @@ namespace librealsense
     }
 
     template<rs2_format FORMAT>
-    void parse_one_line(const byte* y_one_line, const byte* uv_one_line, uint8_t** dst, int width)
+    void m420_parse_one_line(const byte* y_one_line, const byte* uv_one_line, uint8_t** dst, int width)
     {
         // building 16 pixels at each iteration 
         for (int y_pix = 0, uv_pix = 0; y_pix < width; y_pix += 16, uv_pix += 16)
@@ -471,7 +474,7 @@ namespace librealsense
     // source_chunks_uv // uvuvuvuvuvuvuvuv
     // Each coupling is done as: 2 bytes of y coupled with 2 bytes of uv (one u, and one v)
     template<rs2_format FORMAT> 
-    void sse_parse_one_line(const std::vector<__m128i> source_chunks_y, const std::vector<__m128i> source_chunks_uv, __m128i* dst)
+    void m420_sse_parse_one_line(const std::vector<__m128i> source_chunks_y, const std::vector<__m128i> source_chunks_uv, __m128i* dst)
     {
 #pragma omp parallel for
         for (int i = 0; i < source_chunks_y.size(); ++i)
@@ -681,8 +684,8 @@ namespace librealsense
                 std::vector<__m128i> first_line_y(source_chunks_y.begin(), mid_iterator_y);
                 std::vector<__m128i> second_line_y(mid_iterator_y, source_chunks_y.end());
 
-                sse_parse_one_line<FORMAT>(first_line_y, source_chunks_uv, &dst[offset_to_current_first_line_for_dst]);
-                sse_parse_one_line<FORMAT>(second_line_y, source_chunks_uv, &dst[offset_to_current_second_line_for_dst]);
+                m420_sse_parse_one_line<FORMAT>(first_line_y, source_chunks_uv, &dst[offset_to_current_first_line_for_dst]);
+                m420_sse_parse_one_line<FORMAT>(second_line_y, source_chunks_uv, &dst[offset_to_current_second_line_for_dst]);
             }
         }
 
@@ -740,7 +743,7 @@ namespace librealsense
             parse_one_line<FORMAT>(start_of_second_line, start_of_uv, &dst, width);
         }
         return;
-#endif
+#endif // __SSSE3__
     }
 
     void unpack_yuy2(rs2_format dst_format, rs2_stream dst_stream, byte * const d[], const byte * s, int w, int h, int actual_size)
