@@ -739,8 +739,8 @@ namespace librealsense
             auto start_of_uv = end_of_y;
             auto end_of_uv = start_of_uv + width;
 
-            parse_one_line<FORMAT>(start_of_y, start_of_uv, &dst, width);
-            parse_one_line<FORMAT>(start_of_second_line, start_of_uv, &dst, width);
+            m420_parse_one_line<FORMAT>(start_of_y, start_of_uv, &dst, width);
+            m420_parse_one_line<FORMAT>(start_of_second_line, start_of_uv, &dst, width);
         }
         return;
 #endif // __SSSE3__
