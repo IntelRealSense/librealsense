@@ -50,12 +50,6 @@ namespace librealsense
         using namespace ds;
         auto&& backend = ctx->get_backend();
 
-        register_stream_to_extrinsic_group(*_occupancy_stream, 0);
-        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_occupancy_stream);
-
-        register_stream_to_extrinsic_group(*_point_cloud_stream, 0);
-        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_point_cloud_stream);
-
         std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_backup(new ds_timestamp_reader(backend.create_time_service()));
         std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata_depth_mapping(std::move(ds_timestamp_reader_backup)));
 
@@ -75,6 +69,9 @@ namespace librealsense
 
         mapping_ep->register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, occupancy_devices_info.front().device_path);
 
+        // register_extrinsics
+        register_extrinsics();
+
         // register options
         register_options(mapping_ep, raw_mapping_ep);
 
@@ -85,6 +82,40 @@ namespace librealsense
         register_processing_blocks(mapping_ep);
         
         return mapping_ep;
+    }
+
+    void d500_depth_mapping::register_extrinsics()
+    {
+        // pull extrinsics from safety preset number 0
+        sc_float3 translation_from_preset;
+        sc_float3x3 rotation_from_preset;
+        read_extrinsics_from_safety_preset(&translation_from_preset, &rotation_from_preset);
+
+        // translation should be {x, y, 0}, bacause the depth mapping streams origin is at the floor height
+        sc_float3 translation = { translation_from_preset.x, translation_from_preset.y, 0 };
+
+        rs2_extrinsics depth_mapping_extrinsics;
+        copy(depth_mapping_extrinsics.rotation, &rotation_from_preset, sizeof rotation_from_preset);
+        copy(depth_mapping_extrinsics.translation, &translation, sizeof translation);
+
+        register_stream_to_extrinsic_group(*_occupancy_stream, 0);
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_occupancy_stream, depth_mapping_extrinsics);
+
+        register_stream_to_extrinsic_group(*_point_cloud_stream, 0);
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_point_cloud_stream, depth_mapping_extrinsics);
+    }
+
+    void d500_depth_mapping::read_extrinsics_from_safety_preset(sc_float3* translation, sc_float3x3* rotation)
+    {
+        command cmd(ds::SAFETY_PRESET_READ);
+        cmd.require_response = true;
+        cmd.param1 = 0; // index
+        auto res = _hw_monitor->send(cmd);
+
+        auto safety_preset = *reinterpret_cast<rs2_safety_preset_with_header*>(res.data());
+        auto extrinsics_from_preset = safety_preset.safety_preset.platform_config.transformation_link;
+        *translation = extrinsics_from_preset.translation;
+        *rotation = extrinsics_from_preset.rotation;
     }
 
     void d500_depth_mapping::register_options(std::shared_ptr<d500_depth_mapping_sensor> occupancy_ep, std::shared_ptr<uvc_sensor> raw_mapping_sensor)
@@ -100,7 +131,6 @@ namespace librealsense
         register_occupancy_metadata(raw_mapping_ep);
         register_point_cloud_metadata(raw_mapping_ep);
     }
-
 
     void d500_depth_mapping::register_occupancy_metadata(std::shared_ptr<uvc_sensor> raw_mapping_ep)
     {
@@ -233,7 +263,6 @@ namespace librealsense
         mapping_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW8, RS2_STREAM_OCCUPANCY));
         mapping_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW8, RS2_STREAM_LABELED_POINT_CLOUD));
     }
-
 
     stream_profiles d500_depth_mapping_sensor::init_stream_profiles()
     {

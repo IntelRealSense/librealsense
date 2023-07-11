@@ -23,6 +23,9 @@ namespace librealsense
 
         friend class d500_depth_mapping_sensor;
 
+        void register_extrinsics();
+        void read_extrinsics_from_safety_preset(sc_float3* translation, sc_float3x3* rotation);
+
         void register_options(std::shared_ptr<d500_depth_mapping_sensor> mapping_ep, std::shared_ptr<uvc_sensor> raw_mapping_sensor);
         void register_metadata(std::shared_ptr<uvc_sensor> mapping_ep);
         void register_processing_blocks(std::shared_ptr<d500_depth_mapping_sensor> mapping_ep);
