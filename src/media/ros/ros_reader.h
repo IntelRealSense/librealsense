@@ -89,7 +89,6 @@ namespace librealsense
         bool is_motion_module_sensor(std::string sensor_name);
         bool is_fisheye_module_sensor(std::string sensor_name);
         bool is_ds_PID(int pid);
-        bool is_sr300_PID(int pid);
         bool is_l500_PID(int pid);
         std::shared_ptr<recommended_proccesing_blocks_snapshot> read_proccesing_blocks_for_version_under_4(std::string pid, std::string sensor_name, std::shared_ptr<options_interface> options);
         std::shared_ptr<recommended_proccesing_blocks_snapshot> read_proccesing_blocks(const rosbag::Bag& file, device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp,

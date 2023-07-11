@@ -50,7 +50,7 @@ You can add more than one stream to check how multiple streams are affecting eac
 
 
 This method will not work for the depth stream. 
-**D400** will produce readable results for both `RS2_STREAM_COLOR` and `RS2_STREAM_INFRARED`. **SR300** infrared stream doesn't seem to capture the content of a screen.
+**D400** will produce readable results for both `RS2_STREAM_COLOR` and `RS2_STREAM_INFRARED`.
 
 
 In addition, if you want to run this demo with a regular web-cam, use the following code instead of using the `pipeline` object:

@@ -4,7 +4,7 @@
 [![GitHub CI](../../actions/workflows/buildsCI.yaml/badge.svg?branch=development)](../../actions/workflows/buildsCI.yaml)
 
 ## Overview
-**Intel® RealSense™ SDK 2.0** is a cross-platform library for Intel® RealSense™ depth cameras (D400 & L500 series and the SR300).
+**Intel® RealSense™ SDK 2.0** is a cross-platform library for Intel® RealSense™ depth cameras.
 
 > :pushpin: For other Intel® RealSense™ devices (F200, R200, LR200 and ZR300), please refer to the [latest legacy release](https://github.com/IntelRealSense/librealsense/tree/v1.12.1).
 

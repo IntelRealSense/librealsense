@@ -435,49 +435,4 @@ namespace librealsense
         std::shared_ptr<md_rs400_sensor_timestamp> parser(new md_rs400_sensor_timestamp(sensor_ts_parser, frame_ts_parser));
         return parser;
     }
-
-    /**\brief The SR300 metadata parser class*/
-    template<class S, class Attribute>
-    class md_sr300_attribute_parser : public md_attribute_parser_base
-    {
-    public:
-        md_sr300_attribute_parser(Attribute S::* attribute_name, unsigned long long offset, attrib_modifyer mod) :
-            _md_attribute(attribute_name), _offset(offset), _modifyer(mod){};
-
-        rs2_metadata_type get(const librealsense::frame & frm) const override
-        {
-            if (!supports(frm))
-                throw invalid_value_exception("Metadata is not available");
-
-            auto s = reinterpret_cast<const S*>((frm.additional_data.metadata_blob.data()) + _offset);
-
-            auto param = static_cast<rs2_metadata_type>((*s).*_md_attribute);
-            if (_modifyer)
-                param = _modifyer(param);
-
-            return param;
-        }
-
-        bool supports(const librealsense::frame & frm) const override
-        {
-            return (frm.additional_data.metadata_size >= (sizeof(S) + platform::uvc_header_size));
-        }
-
-    private:
-        md_sr300_attribute_parser() = delete;
-        md_sr300_attribute_parser(const md_sr300_attribute_parser&) = delete;
-
-        Attribute S::*      _md_attribute;  // Pointer to the actual data field
-        unsigned long long  _offset;        // Inner struct offset with regard to the most outer one
-        attrib_modifyer     _modifyer;      // Post-processing on received attribute
-    };
-
-    /**\brief A helper function to create a specialized attribute parser.
-    *  Return it as a pointer to a base-class*/
-    template<class S, class Attribute>
-    std::shared_ptr<md_attribute_parser_base> make_sr300_attribute_parser(Attribute S::* attribute, unsigned long long offset, attrib_modifyer  mod = nullptr)
-    {
-        std::shared_ptr<md_sr300_attribute_parser<S, Attribute>> parser(new md_sr300_attribute_parser<S, Attribute>(attribute, offset, mod));
-        return parser;
-    }
 }

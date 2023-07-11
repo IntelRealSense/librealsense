@@ -119,7 +119,6 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
         std::string device_type = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
 
         if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D400") device_type = "D400";
-        if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "SR300") device_type = "SR300";
 
         bool usb3_device = is_usb3(dev);
         int fps = usb3_device ? 30 : 15; // In USB2 Mode the devices will switch to lower FPS rates
@@ -357,17 +356,6 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
             delay_thresholds["Gyro"] = 2200;   // ms
             delay_thresholds["Confidence"] = 2000; // ms
             delay_thresholds["Infrared"] = 2000;   // ms
-        }
-
-        // SR300
-        if (device_type == "SR300")
-        {
-            delay_thresholds["Accel"] = 1200; // ms
-            delay_thresholds["Color"] = 1200; // ms
-            delay_thresholds["Depth"] = 1200; // ms
-            delay_thresholds["Gyro"] = 1200; // ms
-            delay_thresholds["Infrared 1"] = 1200; // ms
-            delay_thresholds["Infrared 2"] = 1200; // ms
         }
 
         for (const auto& stream_ : streams_delay)
