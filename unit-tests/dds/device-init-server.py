@@ -25,9 +25,9 @@ def test_one_stream():
     server.init( [s1], [], {} )
 
 def test_one_motion_stream():
-    s1p1 = dds.motion_stream_profile( 30, dds.stream_format("rgb8") )
+    s1p1 = dds.motion_stream_profile( 30 )
     s1profiles = [s1p1]
-    s1 = dds.accel_stream_server( "s2", "sensor2" )
+    s1 = dds.motion_stream_server( "s2", "sensor2" )
     s1.init_profiles( s1profiles, 0 )
     log.d( s1.profiles() )
     global server

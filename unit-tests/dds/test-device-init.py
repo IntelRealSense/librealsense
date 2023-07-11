@@ -59,9 +59,9 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             profiles = stream.profiles()
             test.check_equal( stream.name(), "s2" )
             test.check_equal( stream.sensor_name(), "sensor2" )
-            test.check_equal( stream.type_string(), "accel" )
+            test.check_equal( stream.type_string(), "motion" )
             test.check_equal( len( profiles ), 1 )
-            test.check_equal( str(profiles[0]), "<pyrealdds.accel_stream_profile 's2' rgb8 @ 30 Hz>" )
+            test.check_equal( str(profiles[0]), "<pyrealdds.motion_stream_profile 's2' @ 30 Hz>" )
             test.check_equal( profiles[0].stream(), stream )
             test.check_equal( stream.default_profile_index(), 0 )
         remote.run( 'close_server()' )
@@ -119,7 +119,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         device = dds.device( participant, participant.create_guid(), d435i.device_info )
         device.run( 1000 )  # If no device is available in 30 seconds, this will throw
         test.check( device.is_running() )
-        test.check_equal( device.n_streams(), 6 )
+        test.check_equal( device.n_streams(), 5 )
         for stream in device.streams():
             profiles = stream.profiles()
         remote.run( 'close_server()' )
