@@ -710,15 +710,15 @@ float lrs_device_controller::query_option( const std::shared_ptr< realdds::dds_o
 void lrs_device_controller::override_default_profiles( const std::map< std::string, realdds::dds_stream_profiles > & stream_name_to_profiles,
                                                        std::map< std::string, size_t > & stream_name_to_default_profile ) const
 {
-    static const std::string RS410_PID = "0AD2";
-    static const std::string RS415_PID = "0AD3";
-
-    std::string product_line = _rs_dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
-    std::string product_id = _rs_dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID );
-
     // Default resolution for RealSense modules, set according to system SW architect definitions
+    std::string const product_line = _rs_dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
     if( product_line == "D400" )
     {
+        static const std::string RS410_PID( "0AD2", 4 );
+        static const std::string RS415_PID( "0AD3", 4 );
+
+        std::string product_id = _rs_dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID );
+
         // For best image quality global shutter should use 848x480 resolution, rolling shutter 1280x720
         uint16_t fps = 30;
         uint16_t width = 848;
@@ -765,8 +765,7 @@ size_t lrs_device_controller::get_index_of_profile( const realdds::dds_stream_pr
 {
     for( size_t i = 0; i < profiles.size(); ++i )
     {
-        if( profiles[i]->frequency() == profile.frequency()
-            && profiles[i]->format() == profile.format() )
+        if( profiles[i]->frequency() == profile.frequency() )
             return i;
     }
 
