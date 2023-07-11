@@ -321,10 +321,10 @@ void dds_sensor_proxy::handle_motion_data( realdds::topics::imu_msg && imu,
     m->orientation.y = imu.imu_data().orientation().y();
     m->orientation.z = imu.imu_data().orientation().z();
     m->orientation.w = imu.imu_data().orientation().w();
-    m->angular_velocity.x = imu.gyro_data().x();
+    m->angular_velocity.x = imu.gyro_data().x();  // should be in rad/sec
     m->angular_velocity.y = imu.gyro_data().y();
     m->angular_velocity.z = imu.gyro_data().z();
-    m->linear_acceleration.x = imu.accel_data().x();
+    m->linear_acceleration.x = imu.accel_data().x();  // should be in m/s^2
     m->linear_acceleration.y = imu.accel_data().y();
     m->linear_acceleration.z = imu.accel_data().z();
 

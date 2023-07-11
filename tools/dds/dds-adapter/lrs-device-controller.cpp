@@ -525,12 +525,12 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                         if( RS2_STREAM_ACCEL == stream_type )
                         {
                             std::unique_lock< std::mutex > lock( imu_mutex );
-                            imu.accel_data().x( xyz[0] );
+                            imu.accel_data().x( xyz[0] );  // in m/s^2
                             imu.accel_data().y( xyz[1] );
                             imu.accel_data().z( xyz[2] );
                             return;  // Don't actually publish
                         }
-                        imu.gyro_data().x( xyz[0] );  // LRS reports rad/sec
+                        imu.gyro_data().x( xyz[0] );  // rad/sec, which is what we need
                         imu.gyro_data().y( xyz[1] );
                         imu.gyro_data().z( xyz[2] );
                         imu.timestamp( timestamp );
