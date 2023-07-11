@@ -12,7 +12,6 @@ target_sources(${LRS_DOTNET_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/PlaybackStatus.cs"
         "${CMAKE_CURRENT_LIST_DIR}/RecordingMode.cs"
         "${CMAKE_CURRENT_LIST_DIR}/Rs400VisualPreset.cs"
-        "${CMAKE_CURRENT_LIST_DIR}/Sr300VisualPreset.cs"
         "${CMAKE_CURRENT_LIST_DIR}/L500VisualPreset.cs"
         "${CMAKE_CURRENT_LIST_DIR}/Stream.cs"
         "${CMAKE_CURRENT_LIST_DIR}/TimestampDomain.cs"

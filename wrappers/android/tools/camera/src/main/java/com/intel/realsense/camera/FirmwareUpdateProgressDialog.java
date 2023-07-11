@@ -61,7 +61,6 @@ public class FirmwareUpdateProgressDialog extends DialogFragment {
             ProductLine pl = ProductLine.valueOf(device.getInfo(CameraInfo.PRODUCT_LINE));
             switch (pl){
                 case D400: return R.raw.fw_d4xx;
-                case SR300: return R.raw.fw_sr3xx;
                 case L500: return  R.raw.fw_l51x;
             }
         }

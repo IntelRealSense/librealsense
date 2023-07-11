@@ -236,7 +236,6 @@ typedef enum rs2_matchers
 
    RS2_MATCHER_DI_C,    //compare depth and ir based on frame number,
                         //compare the pair of corresponding depth and ir with color based on closest timestamp,
-                        //commonly used by SR300
 
    RS2_MATCHER_DLR_C,   //compare depth, left and right ir based on frame number,
                         //compare the set of corresponding depth, left and right with color based on closest timestamp,
