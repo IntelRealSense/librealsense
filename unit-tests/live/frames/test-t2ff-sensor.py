@@ -1,7 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-# test:device L500*
 # test:device each(D400*)
 
 import pyrealsense2 as rs
@@ -65,13 +64,10 @@ product_line = dev.get_info(rs.camera_info.product_line)
 if product_line == "D400":
     max_delay_for_depth_frame = 1.5
     max_delay_for_color_frame = 1.5
-elif product_line == "L500":
-    max_delay_for_depth_frame = 2.5 # L515 depth frame has a 1.5 seconds built in delay at the FW side + 1.0 second for LRS
-    max_delay_for_color_frame = 1.5
 else:
-    log.f( "This test support only D400 + L515 devices" )
+    log.f( "This test support only D400 devices" )
 
-    
+
 ds = dev.first_depth_sensor()
 cs = dev.first_color_sensor()
 

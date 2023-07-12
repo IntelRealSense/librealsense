@@ -206,25 +206,6 @@ inline stream_profile find_confidence_corresponding_to_depth(rs2::depth_sensor d
     return *confidence_profile;
 }
 
-template < class T >
-inline void start_default_l500_depth_profiles( rs2::depth_sensor depth_sens, T callback, bool with_confidence = false )
-{
-    auto depth = find_default_depth_profile( depth_sens );
-    auto ir = find_default_ir_profile( depth_sens );
-
-    if (with_confidence)
-    {
-        auto confidence = find_confidence_corresponding_to_depth( depth_sens, depth );
-        REQUIRE_NOTHROW( depth_sens.open( { depth, ir, confidence } ) );
-    }
-    else
-    {
-        REQUIRE_NOTHROW( depth_sens.open( { depth, ir } ) );
-    }
-
-    REQUIRE_NOTHROW( depth_sens.start( callback ) );
-}
-
 inline stream_profile
 find_profile( rs2::depth_sensor depth_sens, rs2_stream stream, rs2_sensor_mode mode )
 {
