@@ -9,6 +9,7 @@
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-topic-writer.h>
 #include <realdds/dds-utilities.h>
+#include <realdds/dds-time.h>
 
 #include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/publisher/DataWriter.hpp>
@@ -91,6 +92,23 @@ imu_msg::take_next( dds_topic_reader & reader, imu_msg * output, eprosima::fastd
 void imu_msg::write_to( dds_topic_writer & writer )
 {
     DDS_API_CALL( writer.get()->write( &imu_data() ) );
+}
+
+
+std::string imu_msg::to_string() const
+{
+    std::ostringstream ss;
+    if( is_valid() )
+    {
+        ss << "g[" << gyro_data().x() << ',' << gyro_data().y() << ',' << gyro_data().z();
+        ss << "] a[" << accel_data().x() << ',' << accel_data().y() << ',' << accel_data().z();
+        ss << "] @ " << time_to_string( timestamp() );
+    }
+    else
+    {
+        ss << "INVALID";
+    }
+    return ss.str();
 }
 
 

@@ -97,6 +97,8 @@ public:
                            eprosima::fastdds::dds::SampleInfo * optional_info = nullptr );
 
     void write_to( dds_topic_writer & );
+
+    std::string to_string() const;
 };
 
 

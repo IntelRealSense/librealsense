@@ -249,10 +249,7 @@ void dds_motion_stream_server::publish_motion( topics::imu_msg && imu )
 
     sensor_msgs::msg::Imu & raw_imu = imu.imu_data();
     raw_imu.header().frame_id() = sensor_name();
-    LOG_DEBUG( "publishing '" << name() << "' "
-                              << " frame @ " << time_to_string( imu.timestamp() ) << " g[" << imu.gyro_data().x() << ','
-                              << imu.gyro_data().y() << ',' << imu.gyro_data().z() << "]a[" << imu.accel_data().x()
-                              << ',' << imu.accel_data().y() << ',' << imu.accel_data().z() << "]" );
+    LOG_DEBUG( "publishing '" << name() << "' " << imu.to_string() );
 
     imu.write_to( *_writer );
 }

@@ -6,7 +6,9 @@
 #include <realdds/topics/flexible-msg.h>
 #include <realdds/topics/flexible/flexiblePubSubTypes.h>
 #include <realdds/topics/image-msg.h>
+#include <realdds/topics/imu-msg.h>
 #include <realdds/topics/ros2/ros2imagePubSubTypes.h>
+#include <realdds/topics/ros2/ros2imuPubSubTypes.h>
 #include <realdds/topics/dds-topic-names.h>
 #include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-device-server.h>
@@ -46,6 +48,25 @@ std::string to_string( realdds::dds_guid const & guid )
 {
     return realdds::print( guid );
 }
+
+
+py::list get_vector3( geometry_msgs::msg::Vector3 const & v )
+{
+    py::list obj( 3 );
+    obj[0] = py::float_( v.x() );
+    obj[1] = py::float_( v.y() );
+    obj[2] = py::float_( v.z() );
+    return std::move( obj );
+};
+
+
+void set_vector3( geometry_msgs::msg::Vector3 & v, std::array< double, 3 > const & l )
+{
+    v.x( l[0] );
+    v.y( l[1] );
+    v.z( l[2] );
+}
+
 
 }  // namespace
 
@@ -504,6 +525,47 @@ PYBIND11_MODULE(NAME, m) {
             py::call_guard< py::gil_scoped_release >() )
         .def_static( "create_topic", &image_msg::create_topic )
         /*.def("write_to", &image_msg::write_to, py::call_guard< py::gil_scoped_release >())*/;
+
+
+    using imu_msg = realdds::topics::imu_msg;
+    py::class_< imu_msg, std::shared_ptr< imu_msg > >( m, "imu_msg" )
+        .def( py::init<>() )
+        .def_property(
+            "gyro_data",
+            []( imu_msg const & self ) { return get_vector3( self.gyro_data() ); },
+            []( imu_msg & self, std::array< double, 3 > const & xyz ) { set_vector3( self.gyro_data(), xyz ); } )
+        .def_property(
+            "accel_data",
+            []( imu_msg const & self ) { return get_vector3( self.accel_data() ); },
+            []( imu_msg & self, std::array< double, 3 > const & xyz ) { set_vector3( self.accel_data(), xyz ); } )
+        .def_property(
+            "timestamp",
+            []( imu_msg const & self ) { return self.timestamp(); },
+            []( imu_msg & self, dds_time time ) { self.timestamp( time ); } )
+        .def( "__repr__",
+              []( imu_msg const & self )
+              {
+                  std::ostringstream os;
+                  os << "<" SNAME ".imu_msg " << self.to_string() << ">";
+                  return os.str();
+              } )
+        .def_static(
+            "take_next",
+            []( dds_topic_reader & reader, SampleInfo * sample )
+            {
+                auto actual_type = reader.topic()->get()->get_type_name();
+                if( actual_type != imu_msg::type().getName() )
+                    throw std::runtime_error( "can't initialize raw::imu from " + actual_type );
+                imu_msg data;
+                if( ! imu_msg::take_next( reader, &data, sample ) )
+                    assert( ! data.is_valid() );
+                return data;
+            },
+            py::arg( "reader" ),
+            py::arg( "sample" ) = nullptr,
+            py::call_guard< py::gil_scoped_release >() )
+        .def_static( "create_topic", &imu_msg::create_topic )
+        .def( "write_to", &imu_msg::write_to, py::call_guard< py::gil_scoped_release >() );
 
 
     using realdds::dds_device_broadcaster;
