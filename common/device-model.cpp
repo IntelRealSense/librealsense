@@ -1384,27 +1384,16 @@ namespace rs2
 
                 if (dev.is<rs2::updatable>() && !is_locked)
                 {
-                    // L500 devices do not support update unsigned image currently
-                    bool is_l500_device = false;
-                    if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
+                    if (ImGui::Selectable("Update Unsigned Firmware...", false, updateFwFlags))
                     {
-                        auto pl = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-                        is_l500_device = (std::string(pl) == "L500");
+                        begin_update_unsigned(viewer, error_message);
                     }
-
-                    if( ! is_l500_device )
+                    if (ImGui::IsItemHovered())
                     {
-                        if (ImGui::Selectable("Update Unsigned Firmware...", false, updateFwFlags))
-                        {
-                            begin_update_unsigned(viewer, error_message);
-                        }
-                        if (ImGui::IsItemHovered())
-                        {
-                            std::string tooltip = rsutils::string::from()
-                                               << "Install non official unsigned firmware from file to the device"
-                                               << ( is_streaming ? " (Disabled while streaming)" : "" );
-                            ImGui::SetTooltip("%s", tooltip.c_str());
-                        }
+                        std::string tooltip = rsutils::string::from()
+                                           << "Install non official unsigned firmware from file to the device"
+                                           << ( is_streaming ? " (Disabled while streaming)" : "" );
+                        ImGui::SetTooltip("%s", tooltip.c_str());
                     }
                 }
             }
@@ -2261,11 +2250,6 @@ namespace rs2
                         for (auto i = opt_model.range.min; i <= opt_model.range.max; i += opt_model.range.step)
                         {
                             std::string product = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-
-                            // Default is only there for backwards compatibility and will throw an
-                            // exception if used
-                            if (product == "L500" && (size_t)(i) == RS2_L500_VISUAL_PRESET_DEFAULT)
-                                continue;
 
                             if (std::fabs(i - opt_model.value) < 0.001f)
                             {

@@ -17,12 +17,6 @@ set(D4XX_FW_VERSION ${CMAKE_MATCH_1})
 set(D4XX_FW_SHA1 b4dfa2ceb46e9b79c2d64480b149f188f7538e65)
 set(D4XX_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/RS4xx/FW")
 
-string(REGEX MATCH "L51X_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)\"" _ ${ver})
-set(L51X_FW_VERSION ${CMAKE_MATCH_1})
-#message(STATUS "L51X_FW_VERSION: ${L51X_FW_VERSION}")
-set(L51X_FW_SHA1 ab73e5bfc520c0aa0340cada4b3e317b8fd31a4d)
-set(L51X_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/L5xx/FW")
-
 add_library(${PROJECT_NAME} STATIC empty.c)
 
 # disable link time optimization for fw by adding -fno-lto to disable -flto flag
@@ -72,7 +66,6 @@ function(target_binary url version sha1 symbol ext)
 endfunction()
 
 target_binary( "${D4XX_FW_URL}"  "${D4XX_FW_VERSION}"  "${D4XX_FW_SHA1}" D4XX_FW_Image .bin)
-target_binary( "${L51X_FW_URL}"  "${L51X_FW_VERSION}"  "${L51X_FW_SHA1}" L51X_FW_Image .bin)
 
 
 install(TARGETS ${PROJECT_NAME} EXPORT realsense2Targets
