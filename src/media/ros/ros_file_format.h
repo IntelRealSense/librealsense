@@ -23,7 +23,6 @@
 #include "geometry_msgs/Accel.h"
 #include "metadata-parser.h"
 #include "option.h"
-#include "l500/l500-depth.h"
 #include "rosbag/structures.h"
 #include <regex>
 #include "stream.h"
@@ -313,11 +312,6 @@ namespace librealsense
         static std::string post_processing_blocks_topic(const device_serializer::sensor_identifier& sensor_id)
         {
             return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "post_processing" });
-        }
-
-        static std::string l500_data_blocks_topic(const device_serializer::sensor_identifier& sensor_id)
-        {
-            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "l500_data" });
         }
 
         /*version 3 and up*/

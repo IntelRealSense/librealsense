@@ -27,7 +27,6 @@
 #include "proc/syncer-processing-block.h"
 #include "proc/decimation-filter.h"
 #include "proc/spatial-filter.h"
-#include "proc/zero-order.h"
 #include "proc/hole-filling-filter.h"
 #include "proc/color-formats-converter.h"
 #include "proc/y411-converter.h"
@@ -48,6 +47,9 @@
 #include "device-calibration.h"
 #include "calibrated-sensor.h"
 #include <librealsense2/h/rs_internal.h>
+#include "debug-stream-sensor.h"
+#include "max-usable-range-sensor.h"
+#include "fw-update/fw-update-device-interface.h"
 
 #include <rsutils/string/from.h>
 
@@ -1517,7 +1519,7 @@ int rs2_is_processing_block_extendable_to(const rs2_processing_block* f, rs2_ext
     case RS2_EXTENSION_SPATIAL_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::spatial_filter) != nullptr;
     case RS2_EXTENSION_TEMPORAL_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::temporal_filter) != nullptr;
     case RS2_EXTENSION_HOLE_FILLING_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::hole_filling_filter) != nullptr;
-    case RS2_EXTENSION_ZERO_ORDER_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::zero_order) != nullptr;
+    case RS2_EXTENSION_ZERO_ORDER_FILTER: throw not_implemented_exception( "deprecated" );
     case RS2_EXTENSION_DEPTH_HUFFMAN_DECODER: throw not_implemented_exception( "deprecated" );
     case RS2_EXTENSION_HDR_MERGE: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::hdr_merge) != nullptr;
     case RS2_EXTENSION_SEQUENCE_ID_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::sequence_id_filter) != nullptr;
@@ -2336,16 +2338,13 @@ NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
 rs2_processing_block* rs2_create_zero_order_invalidation_block(rs2_error** error) BEGIN_API_CALL
 {
-    auto block = std::make_shared<librealsense::zero_order>();
-
-    return new rs2_processing_block{ block };
+    throw not_implemented_exception( "deprecated" );
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
 rs2_processing_block* rs2_create_huffman_depth_decompress_block(rs2_error** error) BEGIN_API_CALL
 {
     throw not_implemented_exception( "deprecated" );
-
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 

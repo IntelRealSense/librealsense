@@ -6,8 +6,6 @@
 #include "usb/usb-enumerator.h"
 #include "ds/d400/d400-private.h"
 #include "ds/d400/d400-fw-update-device.h"
-#include "l500/l500-private.h"
-#include "l500/l500-fw-update-device.h"
 
 #include <rsutils/string/from.h>
 
@@ -17,6 +15,13 @@
 
 namespace librealsense
 {
+    // We keep the L500 recovery identification to not confuse it with D400
+    namespace l500_update_device
+    {
+        static const uint16_t DFU_VERSION_MASK = 0xFE;
+        static const uint16_t DFU_VERSION_VALUE = 0x4A; // On Units with old DFU payload can be 74/75 decimal
+    }
+
     bool is_l500_recovery(platform::rs_usb_device usb, bool &is_l500_device)
     {
         dfu_fw_status_payload payload;
@@ -73,9 +78,7 @@ namespace librealsense
     {
         if( ds::RS_RECOVERY_PID == usb_info.pid )
             return RS2_PRODUCT_LINE_D400;
-        if( L500_RECOVERY_PID == usb_info.pid )
-            return RS2_PRODUCT_LINE_L500;
-        if( ds::RS_USB2_RECOVERY_PID == usb_info.pid || L500_USB2_RECOVERY_PID_OLD == usb_info.pid )
+        if( ds::RS_USB2_RECOVERY_PID == usb_info.pid )
         {
             bool is_l500 = false;
             {
@@ -91,9 +94,7 @@ namespace librealsense
                 }
             }
 
-            if (is_l500)
-                return RS2_PRODUCT_LINE_L500;
-            else
+            if( ! is_l500 )
                 return RS2_PRODUCT_LINE_D400;
         }
         return 0;
@@ -127,16 +128,12 @@ namespace librealsense
                     continue;
                 if (ds::RS_RECOVERY_PID == info.pid)
                     return std::make_shared<ds_update_device>(ctx, register_device_notifications, usb);                   
-                if (L500_RECOVERY_PID == info.pid )
-                    return std::make_shared<l500_update_device>(ctx, register_device_notifications, usb);
-                if (ds::RS_USB2_RECOVERY_PID == info.pid || L500_USB2_RECOVERY_PID_OLD == info.pid)
+                if (ds::RS_USB2_RECOVERY_PID == info.pid)
                 {
                     bool dev_is_l500 = false;
                     if (is_l500_recovery(usb, dev_is_l500))
                     {
-                        if (dev_is_l500)
-                            return std::make_shared<l500_update_device>(ctx, register_device_notifications, usb);
-                        else
+                        if (! dev_is_l500)
                             return std::make_shared<ds_update_device>(ctx, register_device_notifications, usb);
                     }
                 }
