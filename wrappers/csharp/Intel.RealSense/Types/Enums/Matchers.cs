@@ -8,7 +8,6 @@ namespace Intel.RealSense
         DI,      // compare depth and ir based on frame number
         DI_C,    // compare depth and ir based on frame number,
                  // compare the pair of corresponding depth and ir with color based on closest timestamp,
-                 // commonlly used by SR300
         DLR_C,   // compare depth, left and right ir based on frame number,
                  // compare the set of corresponding depth, left and right with color based on closest timestamp,
                  // commonlly used by RS415, RS435

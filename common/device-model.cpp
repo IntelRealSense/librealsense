@@ -2180,7 +2180,6 @@ namespace rs2
                         auto itr = sub->options_metadata.find(RS2_OPTION_VISUAL_PRESET);
                         if (itr != sub->options_metadata.end())
                         {
-                            //TODO: Update to work with SR300 when the load json will update viewer configurations
                             itr->second.endpoint->set_option(RS2_OPTION_VISUAL_PRESET, RS2_RS400_VISUAL_PRESET_CUSTOM);
                         }
                     }

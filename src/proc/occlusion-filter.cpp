@@ -108,7 +108,7 @@ namespace librealsense
  
    }
     // IMPORTANT! This implementation is based on the assumption that the RGB sensor is positioned strictly to the left of the depth sensor.
-    // namely D415/D435 and SR300. The implementation WILL NOT work properly for different setups
+    // namely D415/D435. The implementation WILL NOT work properly for different setups
     // Heuristic occlusion invalidation algorithm:
     // -  Use the uv texels calculated when projecting depth to color
     // -  Scan each line from left to right and check the the U coordinate in the mapping is raising monotonically.

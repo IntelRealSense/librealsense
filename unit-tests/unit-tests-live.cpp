@@ -1134,7 +1134,7 @@ TEST_CASE("Streaming modes sanity check", "[live][mayfail]")
                         CAPTURE(video.width());
                         CAPTURE(video.height());
 
-                        bool calib_format = ((PID != "0AA5") &&
+                        bool calib_format = (
                                             (RS2_FORMAT_Y16 == video.format()) &&
                                             (RS2_STREAM_INFRARED == video.stream_type()));
                         if (!calib_format) // intrinsics are not available for calibration formats
@@ -1282,8 +1282,8 @@ TEST_CASE("Check width and height of stream intrinsics", "[live][AdvMd]")
                         CAPTURE(video.width());
                         CAPTURE(video.height());
 
-                        // Calibration formats does not provide intrinsic data, except for SR300
-                        bool calib_format = ((PID != "0AA5") &&
+                        // Calibration formats does not provide intrinsic data
+                        bool calib_format = (
                                             (RS2_FORMAT_Y16 == video.format()) &&
                                             (RS2_STREAM_INFRARED == video.stream_type()));
                         if (!calib_format)
@@ -1507,7 +1507,7 @@ struct option_bundle
     float slave_val_after;
 };
 
-enum dev_group { e_unresolved_grp, e_d400, e_sr300 };
+enum dev_group { e_unresolved_grp, e_d400 };
 
 const std::map<dev_type,dev_group> dev_map = {
     /* RS400/PSR*/      { { "0AD1", true }, e_d400},
@@ -1528,7 +1528,6 @@ const std::map<dev_type,dev_group> dev_map = {
                         { { "0B07", false }, e_d400},
     /* DS5U */          { { "0B0C", true }, e_d400},
     /* D435I */         { { "0B3A", true }, e_d400},
-    /*SR300*/           { { "0AA5", true }, e_sr300 },
 };
 
 // Testing bundled depth controls
@@ -1536,7 +1535,6 @@ const std::map<dev_group, std::vector<option_bundle> > auto_disabling_controls =
 {
     { e_d400,  { { RS2_STREAM_DEPTH, RS2_OPTION_EXPOSURE, RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.f, 0.f },
                 { RS2_STREAM_DEPTH, RS2_OPTION_GAIN, RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.f, 1.f } } },  // The value remain intact == the controls shall not affect each other
-    //{ e_sr300, { { RS2_STREAM_DEPTH, TBD, TBD, 1.f, 0.f } } }, Provision for
 };
 
 // Verify that the bundled controls (Exposure<->Aut-Exposure) are in sync
@@ -2187,7 +2185,7 @@ TEST_CASE("Auto disabling control behavior", "[live]") {
                 }
             }
 
-            if (subdevice.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)) // TODO: Add auto-disabling to SR300 options
+            if (subdevice.supports(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE))
             {
                 SECTION("Disable white balance when setting a value")
                 {
@@ -2929,7 +2927,6 @@ static const std::map< dev_type, device_profiles> pipeline_default_configuration
 /* D435/USB2*/          { { "0B07", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 15, true } },
 // TODO - IMU data profiles are pending FW timestamp fix
 /* D435I/USB3*/         { { "0B3A", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true } },
-/* SR300*/              { { "0AA5", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
 };
 
 TEST_CASE("Pipeline wait_for_frames", "[live][pipeline][using_pipeline][!mayfail]") {
@@ -3082,13 +3079,6 @@ static const std::map<dev_type, device_profiles> pipeline_custom_configurations 
     /* RS405/D460/DS5U*/{ {"0B03", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
     /* RS435_RGB/AWGC*/ { {"0B07", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true } },
     /* D435/USB2*/      { {"0B07", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 480, 270, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 424, 240, 0 } }, 30, true } },
-
-    /* SR300*/          { {"0AA5", true },{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16,  640, 240, 0 },
-                                     { RS2_STREAM_INFRARED, RS2_FORMAT_Y8,   640, 240, 1 },
-                                     { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
-
-    /* SR300*/          { {"0AA5", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },
-                                     { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
 };
 
 TEST_CASE("Pipeline enable stream", "[live][pipeline][using_pipeline]") {
@@ -3182,10 +3172,6 @@ static const std::map<dev_type, device_profiles> pipeline_autocomplete_configura
     /* RS405/DS5U*/     { {"0B03", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 0, 0, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_ANY, 0, 0, 1 } }, 30, true } },
     /* RS435_RGB/AWGC*/ { {"0B07", true },{ { /*{ RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 0, 0, 0 },*/{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 0, 0, 0 } }, 30, true } },
     /* D435/USB2*/      { {"0B07", false },{ { /*{ RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 0, 0, 0 },*/{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 0, 0, 0 } }, 60, true } },
-
-    /* SR300*/          { {"0AA5", true },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_ANY, 0, 0, 0 },
-                                     { RS2_STREAM_INFRARED, RS2_FORMAT_ANY, 0, 0, 1 },
-                                     { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 0, 0, 0 } }, 30, true } },
 };
 
 TEST_CASE("Pipeline enable stream auto complete", "[live][pipeline][using_pipeline]")
@@ -3598,10 +3584,6 @@ static const std::map<dev_type, device_profiles> pipeline_configurations_for_ext
                                      { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
     /* D435/USB2*/      { {"0B07", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 480, 270, 0 },
                                      { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 424, 240, 0 } }, 30, true } },
-
-    /* SR300*/          { {"0AA5", true },{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16, 640, 240, 0 },
-                                     { RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 640, 240, 1 },
-                                     { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
                         };
 
 TEST_CASE("Pipeline get selection", "[live][pipeline][using_pipeline]") {
@@ -3854,9 +3836,7 @@ TEST_CASE("color sensor API", "[live][options]")
         REQUIRE_NOTHROW(dev = profile.get_device());
         REQUIRE(dev);
         dev_type PID = get_PID(dev);
-        if (!librealsense::val_in_range(PID.first, { std::string("0AA5"),
-                                                     std::string("0B48"),
-                                                     std::string("0AD3"),
+        if (!librealsense::val_in_range(PID.first, { std::string("0AD3"),
                                                      std::string("0AD4"),
                                                      std::string("0AD5"),
                                                      std::string("0B01"),

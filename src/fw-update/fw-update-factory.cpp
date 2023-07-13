@@ -6,8 +6,6 @@
 #include "usb/usb-enumerator.h"
 #include "ds/d400/d400-private.h"
 #include "ds/d400/d400-fw-update-device.h"
-#include "ivcam/sr300.h"
-#include "ivcam/sr300-fw-update-device.h"
 #include "l500/l500-private.h"
 #include "l500/l500-fw-update-device.h"
 
@@ -73,8 +71,6 @@ namespace librealsense
 
     int get_product_line(const platform::usb_device_info &usb_info)
     {
-        if( SR300_RECOVERY == usb_info.pid )
-            return RS2_PRODUCT_LINE_SR300;
         if( ds::RS_RECOVERY_PID == usb_info.pid )
             return RS2_PRODUCT_LINE_D400;
         if( L500_RECOVERY_PID == usb_info.pid )
@@ -131,8 +127,6 @@ namespace librealsense
                     continue;
                 if (ds::RS_RECOVERY_PID == info.pid)
                     return std::make_shared<ds_update_device>(ctx, register_device_notifications, usb);                   
-                if (SR300_RECOVERY == info.pid)
-                    return std::make_shared<sr300_update_device>(ctx, register_device_notifications, usb);
                 if (L500_RECOVERY_PID == info.pid )
                     return std::make_shared<l500_update_device>(ctx, register_device_notifications, usb);
                 if (ds::RS_USB2_RECOVERY_PID == info.pid || L500_USB2_RECOVERY_PID_OLD == info.pid)
