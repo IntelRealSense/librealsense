@@ -70,7 +70,6 @@ void init_processing(py::module &m) {
         .def(BIND_DOWNCAST(filter, spatial_filter))
         .def(BIND_DOWNCAST(filter, temporal_filter))
         .def(BIND_DOWNCAST(filter, threshold_filter))
-        .def(BIND_DOWNCAST(filter, zero_order_invalidation))
         .def(BIND_DOWNCAST(filter, hdr_merge))
         .def(BIND_DOWNCAST(filter, sequence_id_filter))
         .def("__nonzero__", &rs2::filter::operator bool) // Called to implement truth value testing in Python 2
@@ -182,9 +181,6 @@ void init_processing(py::module &m) {
     py::class_<rs2::disparity_transform, rs2::filter> disparity_transform(m, "disparity_transform", "Converts from depth representation "
                                                                           "to disparity representation and vice - versa in depth frames");
     disparity_transform.def(py::init<bool>(), "transform_to_disparity"_a = true);
-
-    py::class_<rs2::zero_order_invalidation, rs2::filter> zero_order_invalidation(m, "zero_order_invalidation", "Fixes the zero order artifact");
-    zero_order_invalidation.def(py::init<>());
 
     py::class_<rs2::hole_filling_filter, rs2::filter> hole_filling_filter(m, "hole_filling_filter", "The processing performed depends on the selected hole filling mode.");
     hole_filling_filter.def(py::init<>())
