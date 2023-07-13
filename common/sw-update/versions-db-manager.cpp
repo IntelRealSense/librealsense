@@ -90,7 +90,7 @@ namespace rs2
             case FIRMWARE: return "FIRMWARE";
                 break;
             default:
-                LOG_ERROR("Unknown component type: " + component);
+                LOG_ERROR( "Unknown component type: " << component );
                 break;
             }
             return "";
@@ -106,7 +106,7 @@ namespace rs2
             case ESSENTIAL: return "ESSENTIAL";
                 break;
             default:
-                LOG_ERROR("Unknown policy type: " + policy);
+                LOG_ERROR( "Unknown policy type: " << policy );
                 break;
             }
             return "";
@@ -127,7 +127,7 @@ namespace rs2
                 return true;
             }
 
-            LOG_ERROR("Unknown component type: " + component_str);
+            LOG_ERROR( "Unknown component type: " << component_str );
             return false;
         }
         bool from_string(const std::string &policy_str, update_policy_type& policy_val)
@@ -144,7 +144,7 @@ namespace rs2
                 return true;
             }
 
-            LOG_ERROR("Unknown policy type: " + policy_str);
+            LOG_ERROR( "Unknown policy type: " << policy_str );
             return false;
         }
 
@@ -173,7 +173,7 @@ namespace rs2
                  }
                  else
                  {
-                     LOG_ERROR("Cannot open file: " + _dev_info_url);
+                     LOG_ERROR( "Cannot open file: " << _dev_info_url );
                  }
             }
 #endif
@@ -210,14 +210,17 @@ namespace rs2
                                 }
                                 else
                                 {
-                                    std::string error_str("Server versions file parsing error - validation fail on key: " + element_key + " value: " + it.value().get<std::string>() + " \n");
+                                    std::string error_str(
+                                        "Server versions file parsing error - validation fail on key: " + element_key
+                                        + " value: " + it.value().get< std::string >() + " \n" );
                                     LOG_ERROR(error_str);
                                     throw std::runtime_error(error_str);
                                 }
                             }
                             else
                             {
-                                std::string error_str("Server versions file parsing error - " + element_key + " should be represented as a string");
+                                std::string error_str( "Server versions file parsing error - " + element_key
+                                                       + " should be represented as a string" );
                                 LOG_ERROR(error_str);
                                 throw std::runtime_error(error_str);
                             }
