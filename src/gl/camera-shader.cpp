@@ -166,7 +166,7 @@ namespace librealsense
                 if (starts_with(dev_name, "Intel RealSense D415")) index = 0;
                 if (starts_with(dev_name, "Intel RealSense D435")) index = 1;
                 if (starts_with(dev_name, "Intel RealSense L5")) index = 2;
-                if (starts_with(dev_name, "Intel RealSense D455") || starts_with(dev_name, "Intel RealSense D457")) index = 3;
+                if (starts_with(dev_name, "Intel RealSense D45")) index = 3;
             };
 
             auto opacity = clamp(_opacity_opt->query(), 0.0, 1.0);
