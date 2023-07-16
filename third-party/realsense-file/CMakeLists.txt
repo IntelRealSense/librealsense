@@ -27,6 +27,8 @@ add_library(${PROJECT_NAME} STATIC
     ${SOURCE_FILES_COMPRESSION}
 )
 
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
+
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${ROSBAG_HEADER_DIRS}
         ${LZ4_INCLUDE_PATH}
