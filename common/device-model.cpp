@@ -1018,6 +1018,48 @@ namespace rs2
             error_message = e.what();
         }
     }
+
+    void device_model::safety_mcu_update(std::vector<uint8_t> data, viewer_model& viewer, std::string& error_message)
+    {
+        try
+        {
+            if (data.size() == 0)
+            {
+                auto ret = file_dialog_open(open_file, "SafetyMCU\0*.hex", NULL, NULL);
+                if (ret)
+                {
+                    std::ifstream file(ret, std::ios::binary | std::ios::in);
+                    if (file.good())
+                    {
+                        data = std::vector<uint8_t>((std::istreambuf_iterator<char>(file)),
+                            std::istreambuf_iterator<char>());
+                    }
+                    else
+                    {
+                        error_message = rsutils::string::from() << "Could not open file '" << ret << "'";
+                        return;
+                    }
+                }
+                else return; // Aborted by the user
+            }
+
+            auto debug_dev = dev.as<debug_protocol>();
+            uint32_t dfu_opcode = 0x1e;
+            uint32_t scmcu_dfu_param = 2;
+            auto cmd = debug_dev.build_command(dfu_opcode, scmcu_dfu_param);
+            auto res = debug_dev.send_and_receive_raw_data(cmd);
+
+        }
+        catch (const error& e)
+        {
+            error_message = error_to_string(e);
+        }
+        catch (const std::exception& e)
+        {
+            error_message = e.what();
+        }
+    }
+
     void device_model::check_for_device_updates(viewer_model& viewer, bool activated_by_user )
     {
         std::weak_ptr< updates_model > updates_model_protected( viewer.updates );
@@ -1341,7 +1383,7 @@ namespace rs2
 
                 if (dev.is<rs2::updatable>() || dev.is<rs2::update_device>())
                 {
-                    if (ImGui::Selectable("Update Firmware...", false, updateFwFlags))
+                    if (ImGui::Selectable("Update Firmware", false, updateFwFlags))
                     {
                         begin_update({}, viewer, error_message);
                     }
@@ -1353,6 +1395,17 @@ namespace rs2
                         ImGui::SetTooltip("%s", tooltip.c_str());
                     }
 
+                    if (ImGui::Selectable("Update Safety MCU", false, updateFwFlags))
+                    {
+                        safety_mcu_update({}, viewer, error_message);
+                    }
+                    if (ImGui::IsItemHovered())
+                    {
+                        std::string tooltip = rsutils::string::from()
+                            << "Install safety MCU file to the device"
+                            << (is_streaming ? " (Disabled while streaming)" : "");
+                        ImGui::SetTooltip("%s", tooltip.c_str());
+                    }
 
                     if( dev.supports( RS2_CAMERA_INFO_PRODUCT_LINE )
                         && ( dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE ) ) )
