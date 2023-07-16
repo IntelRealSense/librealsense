@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.8.0)  # source_group(TREE)
 project( rsutils )
 
 add_library( ${PROJECT_NAME} STATIC "" )
+target_compile_features( ${PROJECT_NAME} PUBLIC cxx_std_11 )
 set_target_properties( ${PROJECT_NAME} PROPERTIES FOLDER Library )
 
 target_include_directories( ${PROJECT_NAME}
