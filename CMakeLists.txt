@@ -45,11 +45,8 @@ os_set_flags()
 # macro definition located at "CMake/global_config.cmake"
 global_set_flags()
 
-if(BUILD_SHARED_LIBS)
-    add_library(${LRS_TARGET} SHARED "")
-else()
-    add_library(${LRS_TARGET} STATIC "")
-endif()
+# If no type is given explicitly the type is STATIC or SHARED based on whether the current value of the variable [BUILD_SHARED_LIBS](https://cmake.org/cmake/help/v3.10/variable/BUILD_SHARED_LIBS.html#variable:BUILD_SHARED_LIBS) is ON
+add_library(${LRS_TARGET})
 
 config_cxx_flags()
 
