@@ -172,23 +172,20 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< context > ctx, std::shared_
                 if( video_stream )
                 {
                     auto video_profile = std::static_pointer_cast< realdds::dds_video_stream_profile >( profile );
-                    auto added_stream_profile = sensor.add_video_stream(
+                    auto raw_stream_profile = sensor.add_video_stream(
                         to_rs2_video_stream( stream_type, sidx, video_profile, video_stream->get_intrinsics() ),
                         profile == default_profile );
-                    _stream_name_to_profiles[stream->name()].push_back( added_stream_profile );  // for extrinsics
+                    _stream_name_to_profiles[stream->name()].push_back( raw_stream_profile );
                 }
                 else if( motion_stream )
                 {
                     auto motion_profile = std::static_pointer_cast< realdds::dds_motion_stream_profile >( profile );
-                    auto raw_motion_profile = sensor.add_motion_stream(
-                        to_rs2_motion_stream( stream_type,
-                                              sidx,
-                                              motion_profile,
-                                              motion_stream->get_gyro_intrinsics() ),
+                    auto raw_stream_profile = sensor.add_motion_stream(
+                        to_rs2_motion_stream( stream_type, sidx, motion_profile, motion_stream->get_gyro_intrinsics() ),
                         profile == default_profile );
-                    _stream_name_to_profiles[stream->name()].push_back( raw_motion_profile );
-                    // NOTE: the raw motion profile will be cloned and overriden by the format converter!
+                    _stream_name_to_profiles[stream->name()].push_back( raw_stream_profile );
                 }
+                // NOTE: the raw profile will be cloned and overriden by the format converter!
             }
 
             auto & options = stream->options();
@@ -215,7 +212,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< context > ctx, std::shared_
             if( auto p = std::dynamic_pointer_cast< librealsense::video_stream_profile_interface >( profile ) )
             {
                 LOG_DEBUG( "    " << get_string( p->get_stream_type() ) << ' ' << p->get_stream_index() << ' '
-                                  << p->get_width() << 'x' << p->get_height() << ' ' << get_string( p->get_format() )
+                                  << get_string( p->get_format() ) << ' ' << p->get_width() << 'x' << p->get_height()
                                   << " @ " << p->get_framerate() );
             }
             else if( auto p = std::dynamic_pointer_cast<librealsense::motion_stream_profile_interface>( profile ) )

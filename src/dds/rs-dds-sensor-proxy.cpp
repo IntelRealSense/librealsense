@@ -306,7 +306,7 @@ void dds_sensor_proxy::handle_motion_data( realdds::topics::imu_msg && imu,
     frame_additional_data data;  // with NO metadata by default!
     data.timestamp               // in ms
         = static_cast< rs2_time_t >( realdds::time_to_double( imu.timestamp() ) * 1e3 );
-    data.timestamp_domain = RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME;  // leave default (hardware domain)
+    data.timestamp_domain;  // leave default (hardware domain)
     data.last_frame_number = streaming.last_frame_number.fetch_add( 1 );
     data.frame_number = data.last_frame_number + 1;
 
