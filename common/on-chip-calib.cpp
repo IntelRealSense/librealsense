@@ -76,7 +76,6 @@ namespace rs2
     
     void on_chip_calib_manager::save_laser_emitter_state()
     {
-        std::string ignored_error_message { "" };
         auto it = _sub->options_metadata.find( RS2_OPTION_EMITTER_ENABLED );
         if ( it != _sub->options_metadata.end() ) //Option supported
         {
@@ -86,7 +85,6 @@ namespace rs2
 
     void on_chip_calib_manager::save_thermal_loop_state()
     {
-        std::string ignored_error_message{ "" };
         auto it = _sub->options_metadata.find( RS2_OPTION_THERMAL_COMPENSATION );
         if( it != _sub->options_metadata.end() )  // Option supported
         {
@@ -518,7 +516,7 @@ namespace rs2
                         break;
                 }
 
-                // TODO - When implementing UV mapping - should remove from here and handle in process_flow()
+                // TODO - When implementing UV mapping calibration - should remove from here and handle in process_flow()
                 set_laser_emitter_state( off_value );
                 set_thermal_loop_state( off_value );
             }
@@ -565,7 +563,7 @@ namespace rs2
                         break;
                 }
 
-                // TODO - When implementing UV mapping - should remove from here and handle in process_flow()
+                // TODO - When implementing UV mapping calibration - should remove from here and handle in process_flow()
                 set_laser_emitter_state( off_value );
             }
             else if (action == RS2_CALIB_ACTION_FL_PLUS_CALIB)
