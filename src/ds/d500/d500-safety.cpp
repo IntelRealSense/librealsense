@@ -9,6 +9,7 @@
 
 #include "ds/ds-timestamp.h"
 #include "ds/ds-options.h"
+#include "d500-options.h"
 #include "stream.h"
 
 namespace librealsense
@@ -102,6 +103,10 @@ namespace librealsense
                                         { float( RS2_SAFETY_MODE_SERVICE ), "Service" } } );
 
         safety_ep->register_option( RS2_OPTION_SAFETY_MODE, safety_camera_oper_mode );
+
+        safety_ep->register_option(RS2_OPTION_SAFETY_MCU_TEMPERATURE,
+            std::make_shared<temperature_option>(_hw_monitor, raw_safety_sensor.get(), 
+                temperature_option::temperature_component::SMCU, "Temperature reading for Safety MCU"));
     }
 
     void d500_safety::register_metadata(std::shared_ptr<uvc_sensor> raw_safety_ep)

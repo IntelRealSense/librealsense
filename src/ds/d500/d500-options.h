@@ -3,6 +3,7 @@
 
 #include "ds/ds-private.h"
 #include "core/options.h"
+#include "option.h"
 
 #pragma once
 
@@ -31,5 +32,43 @@ namespace librealsense
         lazy<option_range> _range;
         std::shared_ptr<hw_monitor> _hwm;
         sensor_base* _sensor;
+    };
+    
+    class temperature_option : public readonly_option
+    {
+    public:
+        enum class temperature_component : uint8_t
+        {
+            LEFT_PROJ = 1,
+            LEFT_IR,
+            IMU,
+            RGB,
+            RIGHT_IR,
+            RIGHT_PROJ,
+            MAIN_ASIC,
+            SHT4XX,
+            SMCU,
+            COUNT
+        };
+        explicit temperature_option(std::shared_ptr<hw_monitor> hwm, sensor_base* ep, 
+            temperature_component component, const char* description);
+        float query() const override;
+        inline option_range get_range() const override { return *_range; }
+        inline bool is_enabled() const override { return true; }
+        
+        inline const char* get_description() const override
+        {
+            return _description;
+        }
+        virtual void enable_recording(std::function<void(const option&)> record_action) override { _record_action = record_action; }
+
+
+    private:
+        std::function<void(const option&)> _record_action = [](const option&) {};
+        lazy<option_range> _range;
+        std::shared_ptr<hw_monitor> _hwm;
+        sensor_base* _sensor;
+        temperature_component _component;
+        const char* _description;
     };
 }
