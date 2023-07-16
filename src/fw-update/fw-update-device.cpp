@@ -140,14 +140,7 @@ namespace librealsense
     {
         // checking fw compatibility (covering the case of recovery device with wrong product line fw )
         std::vector<uint8_t> buffer((uint8_t*)fw_image, (uint8_t*)fw_image + fw_image_size);
-
-        // TODO: HKR DFU issue - remove validate_image_version usage when HKR will support image versioning
-        // or set validate_image_version to false when D5XX recovery device will be supported by HKR
-        // Meanwhile, validate_image_version is always false for HKR
-        bool d500_device = true;
-        bool validate_image_version = !d500_device;
-
-        if (validate_image_version && !check_fw_compatibility(buffer))
+        if (!check_fw_compatibility(buffer))
             throw librealsense::invalid_value_exception("Device: " + get_serial_number() + " failed to update firmware\nImage is unsupported for this device or corrupted");
 
         auto messenger = _usb_device->open(FW_UPDATE_INTERFACE_NUMBER);
@@ -200,10 +193,8 @@ namespace librealsense
         // DFU_DNLOAD request with the wLength field cleared to 0 and then solicits the status again.If the
         // result indicates that the device is ready and there are no errors, then the Transfer phase is complete and
         // the Manifestation phase begins.
-        // TODO: HKR DFU issue - for HKR, don't check RS2_DFU_DOWNLOAD state below.
-        // Once we figure out why this step is not working in Linux for HKR, we will remote the !d500_device from the if condition
         auto sts = messenger->control_transfer(0x21 /*DFU_DOWNLOAD_PACKET*/, RS2_DFU_DOWNLOAD, block_number, 0, NULL, 0, transferred, DEFAULT_TIMEOUT);
-        if (sts != platform::RS2_USB_STATUS_SUCCESS && !d500_device)
+        if (sts != platform::RS2_USB_STATUS_SUCCESS)
             throw std::runtime_error("Failed to send final FW packet");
 
         // After the zero length DFU_DNLOAD request terminates the Transfer
@@ -219,14 +210,8 @@ namespace librealsense
         // WaitForDFU state sends several DFU_GETSTATUS requests, until we hit
         // either RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET or RS2_DFU_STATE_DFU_ERROR status.
         // This command also reset the device
-        
-        // TODO: HKR DFU issue - for HKR, don't check RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET state
-        // Once we will have a PID for D500 recovery we will need to check that
-        if( !wait_for_state( messenger, RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET, 20000 ) )
-        {
-            if ( !d500_device )
-                throw std::runtime_error( "Firmware manifest failed" );
-        }
+        if (!wait_for_state(messenger, RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET, 20000))
+            throw std::runtime_error("Firmware manifest failed");
     }
 
     sensor_interface& update_device::get_sensor(size_t i)
