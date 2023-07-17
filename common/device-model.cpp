@@ -1384,29 +1384,20 @@ namespace rs2
 
                 if (dev.is<rs2::updatable>() && !is_locked)
                 {
-                    // L500/D500 devices do not support update unsigned image currently
-                    bool is_l500_device = false;
-                    bool is_d500_device = false;
-                    if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
+                    // L500 devices do not support update unsigned image currently
+                    bool is_d400_device = false;
+                        is_d400_device = (std::string(pl) == "D400");
+                    if( is_l400_device )
+                    if (ImGui::Selectable("Update Unsigned Firmware...", false, updateFwFlags))
                     {
-                        auto pl = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-                        is_l500_device = (std::string(pl) == "L500");
-                        is_d500_device = (std::string(pl) == "D500");
+                        begin_update_unsigned(viewer, error_message);
                     }
-
-                    if( ! is_l500_device && ! is_d500_device )
+                    if (ImGui::IsItemHovered())
                     {
-                        if (ImGui::Selectable("Update Unsigned Firmware...", false, updateFwFlags))
-                        {
-                            begin_update_unsigned(viewer, error_message);
-                        }
-                        if (ImGui::IsItemHovered())
-                        {
-                            std::string tooltip = rsutils::string::from()
-                                               << "Install non official unsigned firmware from file to the device"
-                                               << ( is_streaming ? " (Disabled while streaming)" : "" );
-                            ImGui::SetTooltip("%s", tooltip.c_str());
-                        }
+                        std::string tooltip = rsutils::string::from()
+                                           << "Install non official unsigned firmware from file to the device"
+                                           << ( is_streaming ? " (Disabled while streaming)" : "" );
+                        ImGui::SetTooltip("%s", tooltip.c_str());
                     }
                 }
             }
@@ -2255,11 +2246,6 @@ namespace rs2
                         {
                             std::string product = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
 
-                            // Default is only there for backwards compatibility and will throw an
-                            // exception if used
-                            if (product == "L500" && (size_t)(i) == RS2_L500_VISUAL_PRESET_DEFAULT)
-                                continue;
-
                             if (std::fabs(i - opt_model.value) < 0.001f)
                             {
                                 selected = counter;
@@ -2805,8 +2791,7 @@ namespace rs2
                                         dev_syncer = viewer.syncer->create_syncer();
 
                                     std::string friendly_name = sub->s->get_info(RS2_CAMERA_INFO_NAME);
-                                    if (!viewer.zo_sensors.load() &&
-                                        ((friendly_name.find("Tracking") != std::string::npos) ||
+                                    if (((friendly_name.find("Tracking") != std::string::npos) ||
                                         (friendly_name.find("Motion") != std::string::npos)))
                                     {
                                         viewer.synchronization_enable_prev_state = viewer.synchronization_enable.load();
@@ -3051,8 +3036,6 @@ namespace rs2
 
                                 if (ImGui::Button(label.c_str(), { 30,24 }))
                                 {
-                                    if (sub->zero_order_artifact_fix && sub->zero_order_artifact_fix->is_enabled())
-                                        sub->verify_zero_order_conditions();
                                     sub->post_processing_enabled = true;
                                     config_file::instance().set(get_device_sensor_name(sub.get()).c_str(),
                                         sub->post_processing_enabled);
@@ -3170,8 +3153,6 @@ namespace rs2
 
                                             if (ImGui::Button(label.c_str(), { 25,24 }))
                                             {
-                                                if (pb->get_block()->is<zero_order_invalidation>())
-                                                    sub->verify_zero_order_conditions();
                                                 pb->enable(true);
                                                 pb->save_to_config_file();
                                             }

@@ -2,7 +2,6 @@
 # Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #test:device D400* !D457
-#test:device L500*
 
 import platform
 import pyrealsense2 as rs
@@ -20,7 +19,7 @@ previous_color_frame_number = -1
 after_set_option = False
 
 
-def get_allowed_drops(): 
+def get_allowed_drops():
     global after_set_option
     # On Linux, there is a known issue (RS5-7148) where up to 4 frame drops can occur
     # sequentially after setting control values during streaming... on Windows this
@@ -55,7 +54,7 @@ def check_color_frame_drops(frame):
     previous_color_frame_number = frame.get_frame_number()
 
 
-# Use a profile that's common to both L500 and D400
+# Use a profile that's common to all cameras
 depth_profile = next(p for p in
                      depth_sensor.profiles if p.fps() == 30
                      and p.stream_type() == rs.stream.depth
@@ -92,16 +91,11 @@ test.finish()
 if depth_sensor.supports(rs.option.visual_preset):
     if product_line == "D400":
         depth_sensor.set_option(rs.option.visual_preset, int(rs.rs400_visual_preset.default))
-    if product_line == "L500":
-        depth_sensor.set_option(rs.option.visual_preset, int(rs.l500_visual_preset.max_range))
 
 
 #############################################################################################
 
-options_to_ignore = [] 
-
-if product_line == "L500":
-    options_to_ignore = [rs.option.host_performance, rs.option.inter_cam_sync_mode]
+options_to_ignore = []
 
 # ignore reasons:
 # visual_preset       --> frame drops are expected during visual_preset change

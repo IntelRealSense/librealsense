@@ -58,7 +58,6 @@ set_target_properties(${LRS_TARGET} PROPERTIES VERSION ${REALSENSE_VERSION_STRIN
 include(include/CMakeLists.txt)
 include(src/CMakeLists.txt)
 include(third-party/CMakeLists.txt)
-include(common/utilities/CMakeLists.txt)
 
 target_link_libraries( ${LRS_TARGET} PUBLIC rsutils )
 

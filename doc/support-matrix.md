@@ -17,11 +17,3 @@ Additional platforms are tested and supported on demand, driven by community req
 ## D400 Stereoscopic Depth Cameras' Features
 Please check the Supported Features matrix at https://dev.intelrealsense.com/docs/supported-features-matrix
 
-
-## L500 Camera Notes:
-* On Chip calibration is only relevant for D400 stereo cameras
-
-The following features are not available for L500 and can be added upon demand:
-* Win7 support
-* pre-compiled binaries for: Android (7+) & JAVA, LabView and Node.js
-* LabView wrapper
