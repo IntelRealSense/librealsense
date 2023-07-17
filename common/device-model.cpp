@@ -1384,20 +1384,22 @@ namespace rs2
 
                 if (dev.is<rs2::updatable>() && !is_locked)
                 {
-                    // L500 devices do not support update unsigned image currently
-                    bool is_d400_device = false;
-                        is_d400_device = (std::string(pl) == "D400");
-                    if( is_l400_device )
-                    if (ImGui::Selectable("Update Unsigned Firmware...", false, updateFwFlags))
-                    {
-                        begin_update_unsigned(viewer, error_message);
-                    }
-                    if (ImGui::IsItemHovered())
-                    {
-                        std::string tooltip = rsutils::string::from()
-                                           << "Install non official unsigned firmware from file to the device"
-                                           << ( is_streaming ? " (Disabled while streaming)" : "" );
-                        ImGui::SetTooltip("%s", tooltip.c_str());
+                    auto pl = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
+                    bool is_d400_device = (std::string(pl) == "D400");
+                        
+                    if( is_d400_device )
+                    {    
+                        if (ImGui::Selectable("Update Unsigned Firmware...", false, updateFwFlags))
+                        {
+                            begin_update_unsigned(viewer, error_message);
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            std::string tooltip = rsutils::string::from()
+                                               << "Install non official unsigned firmware from file to the device"
+                                               << ( is_streaming ? " (Disabled while streaming)" : "" );
+                            ImGui::SetTooltip("%s", tooltip.c_str());
+                        }
                     }
                 }
             }
