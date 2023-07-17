@@ -84,59 +84,6 @@ namespace librealsense
         return mapping_ep;
     }
 
-    bool is_rotation_matrix(float3x3 mat)
-    {
-        float3x3 tr = transpose(mat);
-        float3x3 should_be_identity = tr * mat;
-        float3x3 id = { 1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f };
-        for(int i = 0; i < 3; ++i)
-            for (int j = 0; j < 3; ++j)
-            {
-                if (abs(should_be_identity(i, j) - id(i, j)) > 0.1f)
-                    return false;
-            }
-        return true;
-    }
-
-    //input: rotation matrix - column-major
-    float3 rotation_matrix_to_euler_angles(float3x3& mat)
-    {
-        float3 angles; // head, pitch, roll
-        if (!is_rotation_matrix(mat))
-            throw std::runtime_error("Rotation matrix is invalid");
-
-        double singularity_check_value = sqrt(static_cast<double>(mat(0, 0)) * static_cast<double>(mat(0, 0)) +
-                                             static_cast<double>(mat(1, 0)) * static_cast<double>(mat(1, 0)));
-        bool is_singular = (singularity_check_value < 1e-6);
-
-        if (!is_singular)
-        {
-            angles.x = static_cast<float>(atan2(static_cast<double>(mat(1, 2)), static_cast<double>(mat(2, 2))));
-            angles.y = static_cast<float>(atan2(-static_cast<double>(mat(2, 0)), singularity_check_value));
-            angles.z = static_cast<float>(atan2(static_cast<double>(mat(1, 0)), static_cast<double>(mat(0, 0))));
-        }
-        else
-        {
-            angles.x = static_cast<float>(atan2(-static_cast<double>(mat(1, 2)), static_cast<double>(mat(1, 1))));
-            angles.y = static_cast<float>(atan2(-static_cast<double>(mat(2, 0)), singularity_check_value));
-            angles.z = 0;
-        }
-        return angles;
-    }
-
-    float3x3 euler_angles_to_rotation_matrix(const float3& angles)
-    {
-        // rotation matrix around x axis
-        float3x3 rot_x = { 1, 0, 0, 0, cos(angles.x), sin(angles.x), 0, -sin(angles.x), cos(angles.x) };
-        // rotation matrix around y axis
-        float3x3 rot_y = { cos(angles.y), 0, -sin(angles.y), 0, 1, 0, sin(angles.y), 0, cos(angles.y) };
-        // rotation matrix around z axis
-        float3x3 rot_z = { cos(angles.z), sin(angles.z), 0, -sin(angles.z), cos(angles.z), 0, 0, 0, 1 };
-
-        // combined matrix
-        return rot_z * rot_y * rot_x;
-    }
-
     void d500_depth_mapping::register_extrinsics()
     {
         // pull extrinsics from safety preset number 0
@@ -144,27 +91,9 @@ namespace librealsense
         sc_float3x3 rotation_from_preset;
         read_extrinsics_from_safety_preset(&translation_from_preset, &rotation_from_preset);
 
-        // translation should be {x, y, 0}, bacause the depth mapping streams origin is at the floor height
-        sc_float3 translation = { translation_from_preset.x, translation_from_preset.y, 0 };
-
-        // rotation:
-        // optical coordingates system is: x = right, y = down, z = forward
-        // so, rotation around: x = pitch, y = heading, z = roll
-        // when getting rotation from safety preset, only the heading should be kept
-
-        float3x3 rot;
-        copy(&rot, &rotation_from_preset, sizeof rotation_from_preset);
-        float3 angles = rotation_matrix_to_euler_angles(rot);
-        angles.x = 0.f;
-        angles.y = 0.f;
-        float3x3 rotation_only_heading = euler_angles_to_rotation_matrix(angles);
-
-
         rs2_extrinsics depth_mapping_extrinsics;
-        //copy(depth_mapping_extrinsics.rotation, &rotation_only_heading, sizeof rotation_only_heading);
         copy(depth_mapping_extrinsics.rotation, &rotation_from_preset, sizeof rotation_from_preset);
         copy(depth_mapping_extrinsics.translation, &translation_from_preset, sizeof translation_from_preset);
-        //copy(depth_mapping_extrinsics.translation, &translation, sizeof translation);
 
         register_stream_to_extrinsic_group(*_occupancy_stream, 0);
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_occupancy_stream, depth_mapping_extrinsics);
