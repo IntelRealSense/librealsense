@@ -1,4 +1,12 @@
 #!/bin/bash
+# Dependency: v4l-utils
+v4l2_util=$(which v4l2-ctl)
+media_util=$(which media-ctl)
+if [ -z ${v4l2_util} ]; then
+  echo "v4l2-ctl not found, install with: sudo apt install v4l-utils"
+  exit 1
+fi
+
 # d457_bind.sh
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -24,8 +32,8 @@ declare -A media_mux_csi2_link=( [a]=0 [b]=1 [c]=2 [d]=3 )
 declare -A serdes_mux_i2c_bus=( [a]=2 [b]=2 [c]=4 [d]=4 )
 mux_list=${mux_param:-'a b c d'}
 
-mdev=$(v4l2-ctl --list-devices | grep -A1 ipu6 | grep media)
-media_ctl_cmd="$(which media-ctl) -d ${mdev}"
+mdev=$(${v4l2_util} --list-devices | grep -A1 ipu6 | grep media)
+media_ctl_cmd="${media_util} -d ${mdev}"
 #media-ctl -r
 # cache media-ctl output
 dot=$($media_ctl_cmd --print-dot)
