@@ -5,7 +5,6 @@
 #include "ds-private.h"
 
 #include "ds/d400/d400-private.h"
-#include "l500/l500-private.h"
 
 namespace librealsense
 {
@@ -15,10 +14,7 @@ namespace librealsense
         _hw_monitor(hw_monitor), _pid(pid)
     {
         _imu_eeprom_raw = [this]() {
-            if (_pid == L515_PID)
-                return get_imu_eeprom_raw_l515();
-            else
-                return get_imu_eeprom_raw();
+            return get_imu_eeprom_raw();
         };
 
         _calib_parser = [this]() {
@@ -26,8 +22,6 @@ namespace librealsense
             std::vector<uint8_t> raw(tm1_eeprom_size);
             uint16_t calib_id = dm_v2_eeprom_id; //assume DM V2 IMU as default platform
             bool valid = false;
-
-            if (_pid == L515_PID) calib_id = l500_eeprom_id;
 
             try
             {
@@ -64,14 +58,6 @@ namespace librealsense
         const int offset = 0;
         const int size = eeprom_imu_table_size;
         command cmd(MMER, offset, size);
-        return _hw_monitor->send(cmd);
-    }
-
-    std::vector<uint8_t> mm_calib_handler::get_imu_eeprom_raw_l515() const
-    {
-        // read imu calibration table on L515
-        // READ_TABLE 0x243 0
-        command cmd(ivcam2::READ_TABLE, ivcam2::L515_IMU_TABLE, 0);
         return _hw_monitor->send(cmd);
     }
 
