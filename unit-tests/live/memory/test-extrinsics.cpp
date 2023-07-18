@@ -127,11 +127,6 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
         int width = 848;
         int height = 480;
 
-        if (device_type == "L500")
-        {
-            req_fps = 30;
-            width = 640;
-        }
         auto res = configure_all_supported_streams(dev, width, height, fps);
         for (auto& s : res.first)
         {
@@ -346,17 +341,6 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
         delay_thresholds["Gyro"] = 1200; // ms
         delay_thresholds["Infrared 1"] = 1200; // ms
         delay_thresholds["Infrared 2"] = 1200; // ms
-
-        // L500
-        if (device_type == "L500")
-        {
-            delay_thresholds["Accel"] = 2200;  // ms
-            delay_thresholds["Color"] = 2000;  // ms
-            delay_thresholds["Depth"] = 2000;  // ms
-            delay_thresholds["Gyro"] = 2200;   // ms
-            delay_thresholds["Confidence"] = 2000; // ms
-            delay_thresholds["Infrared"] = 2000;   // ms
-        }
 
         for (const auto& stream_ : streams_delay)
         {

@@ -5493,66 +5493,6 @@ TEST_CASE("Sensor get recommended filters", "[live][!mayfail]") {
     }
 }
 
-TEST_CASE("L500 zero order sanity", "[live]") {
-    //Require at least one device to be plugged in
-    rs2::context ctx;
-    const int RETRIES = 30;
-
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
-    {
-        std::vector<sensor> sensors;
-        REQUIRE_NOTHROW(sensors = ctx.query_all_sensors());
-        REQUIRE(sensors.size() > 0);
-
-        for (auto sensor : sensors)
-        {
-            auto processing_blocks = sensor.get_recommended_filters();
-            auto zo = std::find_if(processing_blocks.begin(), processing_blocks.end(), [](filter f)
-            {
-                return f.is<zero_order_invalidation>();
-            });
-
-            if(zo != processing_blocks.end())
-            {
-                rs2::config c;
-                c.enable_stream(RS2_STREAM_DEPTH);
-                c.enable_stream(RS2_STREAM_INFRARED);
-                c.enable_stream(RS2_STREAM_CONFIDENCE);
-
-                rs2::pipeline p;
-                p.start(c);
-                rs2::frame frame;
-
-                std::map<rs2_stream, bool> stream_arrived;
-                stream_arrived[RS2_STREAM_DEPTH] = false;
-                stream_arrived[RS2_STREAM_INFRARED] = false;
-                stream_arrived[RS2_STREAM_CONFIDENCE] = false;
-
-                for (auto i = 0;i < RETRIES;i++)
-                {
-                    REQUIRE_NOTHROW(frame = p.wait_for_frames(15000));
-                    auto res = zo->process(frame);
-                    if (res.is<rs2::frameset>())
-                    {
-                        auto set = res.as<rs2::frameset>();
-                        REQUIRE(set.size() == stream_arrived.size());   // depth, ir, confidance
-                        for (auto&& f : set)
-                        {
-                            stream_arrived[f.get_profile().stream_type()] = true;
-                        }
-                        auto stream_missing = std::find_if(stream_arrived.begin(), stream_arrived.end(), [](std::pair< rs2_stream, bool> item)
-                        {
-                            return !item.second;
-                        });
-
-                        REQUIRE(stream_missing == stream_arrived.end());
-                    }
-                }
-            }
-        }
-    }
-}
-
 TEST_CASE("Positional_Sensors_API", "[live]")
 {
     rs2::context ctx;

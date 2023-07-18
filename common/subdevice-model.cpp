@@ -182,32 +182,12 @@ namespace rs2
 
         auto filters = s->get_recommended_filters();
 
-        auto it = std::find_if(filters.begin(), filters.end(), [&](const filter& f)
-            {
-                if (f.is<zero_order_invalidation>())
-                    return true;
-                return false;
-            });
-
-        auto is_zo = it != filters.end();
-
         for (auto&& f : s->get_recommended_filters())
         {
             auto shared_filter = std::make_shared<filter>(f);
             auto model = std::make_shared<processing_block_model>(
                 this, shared_filter->get_info(RS2_CAMERA_INFO_NAME), shared_filter,
                 [=](rs2::frame f) { return shared_filter->process(f); }, error_message);
-
-            if (is_zo)
-            {
-                if (shared_filter->is<zero_order_invalidation>())
-                {
-                    zero_order_artifact_fix = model;
-                    viewer.zo_sensors++;
-                }
-                else
-                    model->enable(false);
-            }
 
             if (shared_filter->is<hole_filling_filter>())
                 model->enable(false);
@@ -499,8 +479,6 @@ namespace rs2
 
     subdevice_model::~subdevice_model()
     {
-        if (zero_order_artifact_fix)
-            viewer.zo_sensors--;
     }
 
     void subdevice_model::sort_resolutions(std::vector<std::pair<int, int>>& resolutions) const
@@ -1625,28 +1603,9 @@ namespace rs2
         _pause = false;
     }
 
-    bool subdevice_model::can_enable_zero_order()
-    {
-        auto ir = std::find_if(profiles.begin(), profiles.end(), [&](stream_profile p) { return (p.stream_type() == RS2_STREAM_INFRARED); });
-        auto depth = std::find_if(profiles.begin(), profiles.end(), [&](stream_profile p) { return (p.stream_type() == RS2_STREAM_DEPTH); });
-
-        return !(ir == profiles.end() || depth == profiles.end() || !stream_enabled[depth->unique_id()] || !stream_enabled[ir->unique_id()]);
-    }
-
-    void subdevice_model::verify_zero_order_conditions()
-    {
-        if (!can_enable_zero_order())
-            throw std::runtime_error(rsutils::string::from()
-                << "Zero order filter requires both IR and Depth streams turned on.\nPlease "
-                "rectify the configuration and rerun");
-    }
-
     //The function decides if specific frame should be sent to the syncer
     bool subdevice_model::is_synchronized_frame(viewer_model& viewer, const frame& f)
     {
-        if (zero_order_artifact_fix && zero_order_artifact_fix->is_enabled() &&
-            (f.get_profile().stream_type() == RS2_STREAM_DEPTH || f.get_profile().stream_type() == RS2_STREAM_INFRARED || f.get_profile().stream_type() == RS2_STREAM_CONFIDENCE))
-            return true;
         if (!viewer.is_3d_view || viewer.is_3d_depth_source(f) || viewer.is_3d_texture_source(f))
             return true;
 
@@ -1655,11 +1614,6 @@ namespace rs2
 
     void subdevice_model::play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer> syncer)
     {
-        if (post_processing_enabled && zero_order_artifact_fix && zero_order_artifact_fix->is_enabled())
-        {
-            verify_zero_order_conditions();
-        }
-
         std::stringstream ss;
         ss << "Starting streaming of ";
         for (size_t i = 0; i < profiles.size(); i++)

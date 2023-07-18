@@ -24,16 +24,13 @@
 
 #ifdef INTERNAL_FW
 #include "common/fw/D4XX_FW_Image.h"
-#include "common/fw/L51X_FW_Image.h"
 #else
 #define FW_D4XX_FW_IMAGE_VERSION ""
-#define FW_L51X_FW_IMAGE_VERSION ""
 #endif // INTERNAL_FW
 
 using namespace rs2;
 using namespace rs400;
 
-#define MIN_IP_SIZE 7 //TODO: Ester - update size when host name is supported
 
 void update_viewer_configuration(viewer_model& viewer_model)
 {

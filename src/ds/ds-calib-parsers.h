@@ -31,7 +31,6 @@ namespace librealsense
         lazy< std::shared_ptr<mm_calib_parser>> _calib_parser;
         lazy<std::vector<uint8_t>>      _imu_eeprom_raw;
         std::vector<uint8_t>            get_imu_eeprom_raw() const;
-        std::vector<uint8_t>            get_imu_eeprom_raw_l515() const;
         lazy<std::vector<uint8_t>>      _fisheye_calibration_table_raw;
         uint16_t _pid;
     };

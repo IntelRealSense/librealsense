@@ -1,7 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-#test:device L500*
 #test:device each(D400*)
 
 import pyrealsense2 as rs
@@ -51,7 +50,7 @@ dev = ctx.query_devices()[0]
 
 try:
     color_sensor = dev.first_color_sensor()
-    # Using a profile common to both L500 and D400
+    # Using a profile common to known cameras
     color_profile = next(p for p in color_sensor.profiles if p.fps() == 30
                          and p.stream_type() == rs.stream.color
                          and p.format() == rs.format.yuyv
@@ -96,7 +95,7 @@ try:
 
         except:
             test.unexpected_exception()
-            
+
 except:
     print("The device found has no color sensor")
 finally:

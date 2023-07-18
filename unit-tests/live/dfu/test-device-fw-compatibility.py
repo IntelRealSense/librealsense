@@ -1,7 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-# test:device L500*
 # test:device D400*
 
 import pyrealsense2 as rs
@@ -15,9 +14,6 @@ d400_fw_min_version_3 = 'Signed_Image_UVC_5_12_12_100.bin'
 d400_fw_min_version_1_prev = 'Signed_Image_UVC_5_8_14_0.bin'
 d400_fw_min_version_2_prev = 'Signed_Image_UVC_5_12_6_0.bin'
 d400_fw_min_version_3_prev = 'Signed_Image_UVC_5_12_11_0.bin'
-
-l500_fw_min_version_valid = 'Signed_Image_UVC_1_5_1_3.bin'
-l500_fw_min_version_invalid = 'Signed_Image_UVC_1_4_1_0.bin'
 
 pid_to_min_fw_version = {  # D400 product line:
     '0AD1': d400_fw_min_version_1,  # D400
@@ -43,13 +39,7 @@ pid_to_min_fw_version = {  # D400 product line:
     '0B4D': d400_fw_min_version_2,  # D465
     '0B52': d400_fw_min_version_1,  # D416_RGB
     '0B5B': d400_fw_min_version_3,  # D405
-    '0B5C': d400_fw_min_version_2,  # D455
-    # L500 product line:
-    '0B55': l500_fw_min_version_valid,  # L500_RECOVERY
-    '0ADC': l500_fw_min_version_valid,  # L500_USB2_RECOVERY_OLD
-    '0B0D': l500_fw_min_version_valid,  # L500
-    '0B3D': l500_fw_min_version_valid,  # L515_PRE_PRQ
-    '0B64': l500_fw_min_version_valid   # L515
+    '0B5C': d400_fw_min_version_2   # D455
 }
 
 pid_to_max_fw_version = {
@@ -57,8 +47,7 @@ pid_to_max_fw_version = {
 
 fw_previous_version = {d400_fw_min_version_1: d400_fw_min_version_1_prev,
                        d400_fw_min_version_2: d400_fw_min_version_2_prev,
-                       d400_fw_min_version_3: d400_fw_min_version_3_prev,
-                       l500_fw_min_version_valid: l500_fw_min_version_invalid
+                       d400_fw_min_version_3: d400_fw_min_version_3_prev
                        }
 
 fw_next_version = {
