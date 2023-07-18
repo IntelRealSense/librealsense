@@ -119,7 +119,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< context > ctx, std::shared_
     register_info( RS2_CAMERA_INFO_NAME, dev->device_info().name );
     register_info( RS2_CAMERA_INFO_SERIAL_NUMBER, dev->device_info().serial );
     register_info( RS2_CAMERA_INFO_PRODUCT_LINE, dev->device_info().product_line );
-    register_info( RS2_CAMERA_INFO_PRODUCT_ID, dev->device_info().product_id );
+    register_info( RS2_CAMERA_INFO_PRODUCT_ID, "DDS" );
     register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, dev->device_info().topic_root );
     register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, dev->device_info().locked ? "YES" : "NO" );
 

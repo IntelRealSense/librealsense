@@ -47,11 +47,10 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
 
                 LOG_DEBUG( "DDS device (" << _participant->print( guid ) << ") detected:"
                                           << "\n\tName: " << device_info.name
-                                          << "\n\tSerial: " << device_info.serial
-                                          << "\n\tProduct line: " << device_info.product_line
-                                          << "\n\tProduct ID: " << device_info.product_id
+                                          << ( device_info.product_line.empty() ? "" : "\n\tSerial: " ) << device_info.serial
+                                          << ( device_info.product_line.empty() ? "" : "\n\tProduct line: " ) << device_info.product_line
                                           << "\n\tTopic root: " << device_info.topic_root
-                                          << "\n\tLocked: " << ( device_info.locked ? "yes" : "no" ) );
+                                          << ( device_info.locked ? "\n\tLocked: yes" : "" ) );
 
                 // Add a new device record into our dds devices map
                 device = dds_device::create( _participant, guid, device_info );

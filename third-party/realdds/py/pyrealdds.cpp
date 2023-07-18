@@ -314,7 +314,6 @@ PYBIND11_MODULE(NAME, m) {
         .def_readwrite( "name", &device_info::name )
         .def_readwrite( "serial", &device_info::serial )
         .def_readwrite( "product_line", &device_info::product_line )
-        .def_readwrite( "product_id", &device_info::product_id )
         .def_readwrite( "locked", &device_info::locked )
         .def_readwrite( "topic_root", &device_info::topic_root )
         .def_static( "from_json", &device_info::from_json )
@@ -322,18 +321,17 @@ PYBIND11_MODULE(NAME, m) {
         .def( "__repr__",
               []( device_info const & self ) {
                   std::ostringstream os;
-                  os << "<" SNAME ".device_info ";
+                  os << "<" SNAME ".device_info";
                     if( ! self.name.empty() )
-                        os << "\"" << self.name << "\" ";
+                        os << " \"" << self.name << "\"";
                     if( ! self.serial.empty() )
-                        os << "s/n \"" << self.serial << "\" ";
+                        os << " s/n \"" << self.serial << "\"";
                     if( ! self.topic_root.empty() )
-                        os << "@ \"" << self.topic_root << "\" ";
+                        os << " @ \"" << self.topic_root << "\"";
                     if( ! self.product_line.empty() )
-                        os << "product-line \"" << self.product_line << "\" ";
-                    if( !self.product_id.empty() )
-                        os << "product-id \"" << self.product_id << "\" ";
-                    os << ( self.locked ? "locked" : "unlocked" );
+                        os << " product-line \"" << self.product_line << "\"";
+                    if( self.locked )
+                        os << " locked";
                   os << ">";
                   return os.str();
               } );
