@@ -292,7 +292,6 @@ def check_log_for_fails( path_to_log, testname, configuration = None, repetition
 
 
 def get_tests():
-    log.progress( '-I- Getting tests ...' )
     global regex, build_dir, exe_dir, pyrs, current_dir, linux, context, list_only
     if regex:
         pattern = re.compile( regex )
@@ -386,8 +385,9 @@ def test_wrapper( test, configuration = None, repetition = 1 ):
     global n_tests, rslog
     n_tests += 1
     #
+    conf_str = configuration_str( configuration, repetition, suffix=' ' ) + test.name
     if not log.is_debug_on():
-        log.progress( '-I- Running', configuration_str( configuration, repetition, suffix=' ' ) + test.name, '...' )
+        log.i( f'Running {conf_str}' )
     #
     log_path = test.get_log()
     #
@@ -441,6 +441,8 @@ try:
                     log.d( '==>', exceptions )
                 finally:
                     log.debug_unindent()
+        #
+        log.progress()
     #
     log.reset_errors()
     available_tags = set()

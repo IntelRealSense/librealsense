@@ -5,7 +5,7 @@ import pyrealdds as server
 from rspy import log, test
 
 
-server.debug( True, log.nested )
+server.debug( log.is_debug_on(), log.nested )
 
 
 #############################################################################################

@@ -15,7 +15,7 @@ from rspy import log, test
 from time import sleep
 from rspy.timer import Timer
 
-dds.debug( True, 'C  ' )
+dds.debug( log.is_debug_on(), 'C  ' )
 log.nested = 'C  '
 
 import d435i
@@ -137,7 +137,8 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     with test.closure( "Initialize librs device", on_fail=test.ABORT ):
         import pyrealsense2 as rs
-        rs.log_to_console( rs.log_severity.debug )
+        if log.is_debug_on():
+            rs.log_to_console( rs.log_severity.debug )
         from dds import wait_for_devices
         context = rs.context( '{"dds-domain":123,"dds-participant-name":"librs"}' )
         only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)

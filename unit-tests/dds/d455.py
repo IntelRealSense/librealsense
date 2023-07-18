@@ -16,53 +16,29 @@ def build( participant ):
     """
     Build a D455 device server for use in DDS
     """
-    accel = accel_stream()
-    gyro = gyro_stream()
+    motion = motion_stream()
     depth = depth_stream()
-    # ir0 = colored_infrared_stream() # Colored infrared currently not sent on DDS
     ir1 = ir_stream( 1 )
     ir2 = ir_stream( 2 )
     color = color_stream()
     extrinsics = get_extrinsics()
     #
     d455 = dds.device_server( participant, device_info.topic_root )
-    # d455.init( [accel, gyro, depth, ir0, ir1, ir2, color], [], extrinsics ) # Colored infrared currently not sent on DDS
-    d455.init( [accel, gyro, depth, ir1, ir2, color], [], extrinsics )
+    d455.init( [motion, depth, ir1, ir2, color], [], extrinsics )
     return d455
-
-
-def accel_stream_profiles():
-    return [
-        dds.motion_stream_profile( 63, dds.stream_format("MXYZ") ),
-        dds.motion_stream_profile( 250, dds.stream_format("MXYZ") )
-        ]
-
-
-def accel_stream():
-    stream = dds.accel_stream_server( "Accel", "Motion Module" )
-    stream.init_profiles( accel_stream_profiles(), 0 )
-    stream.init_options( motion_module_options() )
-    return stream
 
 
 def gyro_stream_profiles():
     return [
-        dds.motion_stream_profile( 200, dds.stream_format("MXYZ") ),
-        dds.motion_stream_profile( 400, dds.stream_format("MXYZ") )
+        dds.motion_stream_profile( 200 ),
+        dds.motion_stream_profile( 400 )
         ]
 
 
-def gyro_stream():
-    stream = dds.gyro_stream_server( "Gyro", "Motion Module" )
+def motion_stream():
+    stream = dds.motion_stream_server( "Motion", "Motion Module" )
     stream.init_profiles( gyro_stream_profiles(), 0 )
     stream.init_options( motion_module_options() )
-    return stream
-
-
-def colored_infrared_stream():
-    stream = dds.ir_stream_server( "Infrared", "Stereo Module" )
-    stream.init_profiles( colored_infrared_stream_profiles(), 11 )
-    stream.init_options( stereo_module_options() )
     return stream
 
 
@@ -299,7 +275,7 @@ def ir_stream_profiles():
 
 
 def ir_stream( number ):
-    stream = dds.ir_stream_server( "Infrared_" + str(number), "Stereo Module" )
+    stream = dds.ir_stream_server( f"Infrared_{number}", "Stereo Module" )
     stream.init_profiles( ir_stream_profiles(), 9 )
     stream.init_options( stereo_module_options() )
     return stream
@@ -917,34 +893,30 @@ def motion_module_options():
 
 def get_extrinsics():
     extrinsics = {}
-    extr = dds.extrinsics();
-    extr.rotation = (0.9999990463256836,0.0011775976745411754,-0.0007580715464428067,-0.0011767612304538488,0.9999986886978149,0.0011028856970369816,0.0007593693444505334,-0.0011019925586879253,0.9999991059303284)
-    extr.translation = (-0.02887801080942154,-0.007509792689234018,-0.015841051936149597)
-    extrinsics[("Accel","Color")] = extr
-    extr = dds.extrinsics();
-    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
-    extr.translation = (0.030220000073313713,-0.007400000002235174,-0.016019999980926514)
-    extrinsics[("Accel","Depth")] = extr
-    extr = dds.extrinsics();
-    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
-    extr.translation = (0.0,0.0,0.0)
-    extrinsics[("Accel","Gyro")] = extr
-    extr = dds.extrinsics();
-    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.)
-    extr.translation = (0.030220000073313713,-0.007400000002235174,-0.016019999980926514)
-    extrinsics[("Accel","Infrared")] = extr
-    extr = dds.extrinsics();
-    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
-    extr.translation = (0.030220000073313713,-0.007400000002235174,-0.016019999980926514)
-    extrinsics[("Accel","Infrared_1")] = extr
-    extr = dds.extrinsics();
-    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
-    extr.translation = (-0.06474092602729797,-0.007400000002235174,-0.016019999980926514)
-    extrinsics[("Accel","Infrared_2")] = extr
-    extr = dds.extrinsics();
-    extr.rotation = (0.9999990463256836,-0.0011767612304538488,0.0007593693444505334,0.0011775976745411754,0.9999986886978149,-0.0011019925586879253,-0.0007580715464428067,0.0011028856970369816,0.9999991059303284)
-    extr.translation = (0.028874816372990608,0.007493271958082914,0.015854692086577415)
-    extrinsics[("Color","Accel")] = extr
+    #extr = dds.extrinsics();
+    #extr.rotation = (0.9999990463256836,0.0011775976745411754,-0.0007580715464428067,-0.0011767612304538488,0.9999986886978149,0.0011028856970369816,0.0007593693444505334,-0.0011019925586879253,0.9999991059303284)
+    #extr.translation = (-0.02887801080942154,-0.007509792689234018,-0.015841051936149597)
+    #extrinsics[("Accel","Color")] = extr
+    #extr = dds.extrinsics();
+    #extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
+    #extr.translation = (0.030220000073313713,-0.007400000002235174,-0.016019999980926514)
+    #extrinsics[("Accel","Depth")] = extr
+    #extr = dds.extrinsics();
+    #extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
+    #extr.translation = (0.0,0.0,0.0)
+    #extrinsics[("Accel","Gyro")] = extr
+    #extr = dds.extrinsics();
+    #extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
+    #extr.translation = (0.030220000073313713,-0.007400000002235174,-0.016019999980926514)
+    #extrinsics[("Accel","Infrared_1")] = extr
+    #extr = dds.extrinsics();
+    #extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
+    #extr.translation = (-0.06474092602729797,-0.007400000002235174,-0.016019999980926514)
+    #extrinsics[("Accel","Infrared_2")] = extr
+    #extr = dds.extrinsics();
+    #extr.rotation = (0.9999990463256836,-0.0011767612304538488,0.0007593693444505334,0.0011775976745411754,0.9999986886978149,-0.0011019925586879253,-0.0007580715464428067,0.0011028856970369816,0.9999991059303284)
+    #extr.translation = (0.028874816372990608,0.007493271958082914,0.015854692086577415)
+    #extrinsics[("Color","Accel")] = extr
     extr = dds.extrinsics();
     extr.rotation = (0.9999990463256836,-0.0011767612304538488,0.0007593693444505334,0.0011775976745411754,0.9999986886978149,-0.0011019925586879253,-0.0007580715464428067,0.0011028856970369816,0.9999991059303284)
     extr.translation = (0.05909481644630432,9.327199222752824e-05,-0.00016530796710867435)
@@ -952,11 +924,7 @@ def get_extrinsics():
     extr = dds.extrinsics();
     extr.rotation = (0.9999990463256836,-0.0011767612304538488,0.0007593693444505334,0.0011775976745411754,0.9999986886978149,-0.0011019925586879253,-0.0007580715464428067,0.0011028856970369816,0.9999991059303284)
     extr.translation = (0.028874816372990608,0.007493271958082914,0.015854692086577415)
-    extrinsics[("Color","Gyro")] = extr
-    extr = dds.extrinsics();
-    extr.rotation = (0.9999990463256836,-0.0011767612304538488,0.0007593693444505334,0.0011775976745411754,0.9999986886978149,-0.0011019925586879253,-0.0007580715464428067,0.0011028856970369816,0.9999991059303284)
-    extr.translation = (0.05909481644630432,9.327199222752824e-05,-0.00016530796710867435)
-    extrinsics[("Color","Infrared")] = extr
+    extrinsics[("Color","Motion")] = extr
     extr = dds.extrinsics();
     extr.rotation = (0.9999990463256836,-0.0011767612304538488,0.0007593693444505334,0.0011775976745411754,0.9999986886978149,-0.0011019925586879253,-0.0007580715464428067,0.0011028856970369816,0.9999991059303284)
     extr.translation = (0.05909481644630432,9.327199222752824e-05,-0.00016530796710867435)
@@ -965,10 +933,10 @@ def get_extrinsics():
     extr.rotation = (0.9999990463256836,-0.0011767612304538488,0.0007593693444505334,0.0011775976745411754,0.9999986886978149,-0.0011019925586879253,-0.0007580715464428067,0.0011028856970369816,0.9999991059303284)
     extr.translation = (-0.035866111516952515,9.327199222752824e-05,-0.00016530796710867435)
     extrinsics[("Color","Infrared_2")] = extr
-    extr = dds.extrinsics();
-    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
-    extr.translation = (-0.030220000073313713,0.007400000002235174,0.016019999980926514)
-    extrinsics[("Depth","Accel")] = extr
+    #extr = dds.extrinsics();
+    #extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
+    #extr.translation = (-0.030220000073313713,0.007400000002235174,0.016019999980926514)
+    #extrinsics[("Depth","Accel")] = extr
     extr = dds.extrinsics();
     extr.rotation = (0.9999990463256836,0.0011775976745411754,-0.0007580715464428067,-0.0011767612304538488,0.9999986886978149,0.0011028856970369816,0.0007593693444505334,-0.0011019925586879253,0.9999991059303284)
     extr.translation = (-0.05909452587366104,-0.0001630439655855298,0.00021000305423513055)
@@ -976,11 +944,7 @@ def get_extrinsics():
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (-0.030220000073313713,0.007400000002235174,0.016019999980926514)
-    extrinsics[("Depth","Gyro")] = extr
-    extr = dds.extrinsics();
-    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
-    extr.translation = (0.0,0.0,0.0)
-    extrinsics[("Depth","Infrared")] = extr
+    extrinsics[("Depth","Motion")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (0.0,0.0,0.0)
@@ -989,58 +953,30 @@ def get_extrinsics():
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (-0.09496092796325684,0.0,0.0)
     extrinsics[("Depth","Infrared_2")] = extr
-    extr = dds.extrinsics();
-    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
-    extr.translation = (0.0,0.0,0.0)
-    extrinsics[("Gyro","Accel")] = extr
+    #extr = dds.extrinsics();
+    #extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
+    #extr.translation = (0.0,0.0,0.0)
+    #extrinsics[("Gyro","Accel")] = extr
     extr = dds.extrinsics();
     extr.rotation = (0.9999990463256836,0.0011775976745411754,-0.0007580715464428067,-0.0011767612304538488,0.9999986886978149,0.0011028856970369816,0.0007593693444505334,-0.0011019925586879253,0.9999991059303284)
     extr.translation = (-0.02887801080942154,-0.007509792689234018,-0.015841051936149597)
-    extrinsics[("Gyro","Color")] = extr
+    extrinsics[("Motion","Color")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (0.030220000073313713,-0.007400000002235174,-0.016019999980926514)
-    extrinsics[("Gyro","Depth")] = extr
+    extrinsics[("Motion","Depth")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (0.030220000073313713,-0.007400000002235174,-0.016019999980926514)
-    extrinsics[("Gyro","Infrared")] = extr
-    extr = dds.extrinsics();
-    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
-    extr.translation = (0.030220000073313713,-0.007400000002235174,-0.016019999980926514)
-    extrinsics[("Gyro","Infrared_1")] = extr
+    extrinsics[("Motion","Infrared_1")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (-0.06474092602729797,-0.007400000002235174,-0.016019999980926514)
-    extrinsics[("Gyro","Infrared_2")] = extr
-    extr = dds.extrinsics();
-    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
-    extr.translation = (-0.030220000073313713,0.007400000002235174,0.016019999980926514)
-    extrinsics[("Infrared","Accel")] = extr
-    extr = dds.extrinsics();
-    extr.rotation = (0.9999990463256836,0.0011775976745411754,-0.0007580715464428067,-0.0011767612304538488,0.9999986886978149,0.0011028856970369816,0.0007593693444505334,-0.0011019925586879253,0.9999991059303284)
-    extr.translation = (-0.05909452587366104,-0.0001630439655855298,0.00021000305423513055)
-    extrinsics[("Infrared","Color")] = extr
-    extr = dds.extrinsics();
-    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
-    extr.translation = (0.0,0.0,0.0)
-    extrinsics[("Infrared","Depth")] = extr
-    extr = dds.extrinsics();
-    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
-    extr.translation = (-0.030220000073313713,0.007400000002235174,0.016019999980926514)
-    extrinsics[("Infrared","Gyro")] = extr
-    extr = dds.extrinsics();
-    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
-    extr.translation = (0.0,0.0,0.0)
-    extrinsics[("Infrared","Infrared_1")] = extr
-    extr = dds.extrinsics();
-    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
-    extr.translation = (-0.09496092796325684,0.0,0.0)
-    extrinsics[("Infrared","Infrared_2")] = extr
-    extr = dds.extrinsics();
-    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
-    extr.translation = (-0.030220000073313713,0.007400000002235174,0.016019999980926514)
-    extrinsics[("Infrared_1","Accel")] = extr
+    extrinsics[("Motion","Infrared_2")] = extr
+    #extr = dds.extrinsics();
+    #extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
+    #extr.translation = (-0.030220000073313713,0.007400000002235174,0.016019999980926514)
+    #extrinsics[("Infrared_1","Accel")] = extr
     extr = dds.extrinsics();
     extr.rotation = (0.9999990463256836,0.0011775976745411754,-0.0007580715464428067,-0.0011767612304538488,0.9999986886978149,0.0011028856970369816,0.0007593693444505334,-0.0011019925586879253,0.9999991059303284)
     extr.translation = (-0.05909452587366104,-0.0001630439655855298,0.00021000305423513055)
@@ -1052,19 +988,15 @@ def get_extrinsics():
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (-0.030220000073313713,0.007400000002235174,0.016019999980926514)
-    extrinsics[("Infrared_1","Gyro")] = extr
-    extr = dds.extrinsics();
-    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
-    extr.translation = (0.0,0.0,0.0)
-    extrinsics[("Infrared_1","Infrared")] = extr
+    extrinsics[("Infrared_1","Motion")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (-0.09496092796325684,0.0,0.0)
     extrinsics[("Infrared_1","Infrared_2")] = extr
-    extr = dds.extrinsics();
-    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
-    extr.translation = (0.06474092602729797,0.007400000002235174,0.016019999980926514)
-    extrinsics[("Infrared_2","Accel")] = extr
+    #extr = dds.extrinsics();
+    #extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
+    #extr.translation = (0.06474092602729797,0.007400000002235174,0.016019999980926514)
+    #extrinsics[("Infrared_2","Accel")] = extr
     extr = dds.extrinsics();
     extr.rotation = (0.9999990463256836,0.0011775976745411754,-0.0007580715464428067,-0.0011767612304538488,0.9999986886978149,0.0011028856970369816,0.0007593693444505334,-0.0011019925586879253,0.9999991059303284)
     extr.translation = (0.03586631268262863,-5.1218194130342454e-05,0.00013801587920170277)
@@ -1076,11 +1008,7 @@ def get_extrinsics():
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (0.06474092602729797,0.007400000002235174,0.016019999980926514)
-    extrinsics[("Infrared_2","Gyro")] = extr
-    extr = dds.extrinsics();
-    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
-    extr.translation = (0.09496092796325684,0.0,0.0)
-    extrinsics[("Infrared_2","Infrared")] = extr
+    extrinsics[("Infrared_2","Motion")] = extr
     extr = dds.extrinsics();
     extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
     extr.translation = (0.09496092796325684,0.0,0.0)

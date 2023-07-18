@@ -5,7 +5,7 @@
 
 import pyrealdds as dds
 from rspy import log, test
-dds.debug( True )
+dds.debug( log.is_debug_on() )
 from time import sleep
 
 participant = dds.participant()
@@ -135,58 +135,41 @@ def find_server_profile( stream_name, profile_string ):
 
 #############################################################################################
 #
-test.start( "sanity" )
-test.check_equal( len(active_sensors), 0 )
-test.finish()
+with test.closure( "sanity" ):
+    test.check_equal( len(active_sensors), 0 )
 #
 #############################################################################################
 #
-test.start( "reset and commit, nothing open" )
-try:
+with test.closure( "reset and commit, nothing open" ):
     bridge.reset()
     test.check_equal( len(active_sensors), 0 )
     bridge.commit()  # nothing to do
     bridge.commit()  # still nothing to do; no error
     bridge.open( servers['Color'].default_profile() )  # RGB sensor wasn't committed, so valid
     bridge.open( servers['Depth'].default_profile() )  # Stereo Module wasn't committed, so valid
-except Exception:
-    test.unexpected_exception()
-finally:
-    reset()
-test.finish()
+reset()
 #
 #############################################################################################
 #
-test.start( "single stream, not streaming" )
-try:
+with test.closure( "single stream, not streaming" ):
     bridge.open( servers['Color'].default_profile() )  # 1920x1080 rgb8 @ 30 Hz
     test.check_equal( len(active_sensors), 0 )
     bridge.commit()
     test.check_equal( len(active_sensors), 0 )  # nothing streaming; no need to start a sensor
-except Exception:
-    test.unexpected_exception()
-finally:
-    reset()
-test.finish()
+reset()
 #
 #############################################################################################
 #
-test.start( "single stream streaming default profile" )
-try:
+with test.closure( "single stream streaming default profile" ):
     start_stream( 'Color' )
     test.check_equal( len(active_sensors), 1 )
     stop_stream( 'Color' )
     test.check_equal( len(active_sensors), 0 )
-except Exception:
-    test.unexpected_exception()
-finally:
-    reset()
-test.finish()
+reset()
 #
 #############################################################################################
 #
-test.start( "single stream, explicit" )
-try:
+with test.closure( "single stream, explicit" ):
     bridge.open( find_server_profile( 'Depth', '640x480 16UC1 @ 30 Hz' )),
     test.check_throws( lambda:
         bridge.open( servers['Depth'].default_profile() ),  # 848x480 16UC1 @ 30 Hz
@@ -205,16 +188,11 @@ try:
     test.check_throws( lambda:
         bridge.open( servers['Infrared_1'].default_profile() ),
         RuntimeError, "sensor 'Stereo Module' was committed and cannot be changed" )
-except Exception:
-    test.unexpected_exception()
-finally:
-    reset()
-test.finish()
+reset()
 #
 #############################################################################################
 #
-test.start( "explicit+implicit streams, all compatible" )
-try:
+with test.closure( "explicit+implicit streams, all compatible" ):
     bridge.open( servers['Depth'].default_profile() )  # 848x480 16UC1 @ 30 Hz
     bridge.add_implicit_profiles()                     # adds IR1, IR2
     test.check_throws( lambda:
@@ -230,16 +208,11 @@ try:
         )
     bridge.open( find_active_profile( 'Infrared_1' ))  # already explicit, same profile: does nothing
     start_stream( 'Infrared_2' )  # starts it implicitly
-except Exception:
-    test.unexpected_exception()
-finally:
-    reset()
-test.finish()
+reset()
 #
 #############################################################################################
 #
-test.start( "stream profiles reset" )
-try:
+with test.closure( "stream profiles reset" ):
     bridge.open( find_server_profile( 'Infrared_1', '640x480 mono8 @ 60 Hz' ) )
     bridge.add_implicit_profiles()                     # adds Depth, IR2
     bridge.commit()
@@ -265,16 +238,11 @@ try:
     bridge.reset()
     start_stream( 'Infrared_2' )
     test.check_equal( find_active_profile( 'Infrared_2' ).to_string(), servers['Infrared_2'].default_profile().to_string() )
-except Exception:
-    test.unexpected_exception()
-finally:
-    reset()
-test.finish()
+reset()
 #
 #############################################################################################
 #
-test.start( "two different sensors" )
-try:
+with test.closure( "two different sensors" ):
     bridge.open( servers['Depth'].default_profile() )  # 1280x720 16UC1 @ 30 Hz
     bridge.add_implicit_profiles()                     # adds IR1, IR2
     bridge.commit()
@@ -287,53 +255,48 @@ try:
     start_stream( 'Color' )
     test.check_equal( len(active_sensors), 2 )
     test.check_equal( find_active_profile( 'Color' ).to_string(), servers['Color'].default_profile().to_string() )
-except Exception:
-    test.unexpected_exception()
-finally:
-    reset()
-test.finish()
+reset()
 #
 #############################################################################################
 #
-test.start( "motion module" )
-try:
-    bridge.open( servers['Gyro'].default_profile() )  # MXYZ @ 200 Hz
-    with bridge_error_expected( "failure trying to start/stop 'Accel': profile <'Accel' MXYZ @ 100 Hz> is incompatible with already-open <'Gyro' MXYZ @ 200 Hz>" ):
-        start_stream( 'Accel' )
+with test.closure( "incompatible profiles; start_stream failure but stream open" ):
+    bridge.open( find_server_profile( 'Infrared_1', '1280x800 mono8 @ 30 Hz' ) )
+    with bridge_error_expected( "failure trying to start/stop 'Depth': profile <'Depth' 848x480 16UC1 @ 30 Hz> is incompatible with already-open <'Infrared_1' 1280x800 mono8 @ 30 Hz>" ):
+        start_stream( 'Depth' )
     # Note that while the stream shouldn't be streaming because the _SERVER_ failed, the stream still
     # has the reader open and therefore we still think is streaming...! This requires handling on
     # the client-side (device needs some kind of on-error callback)
     test.check_throws( lambda:
-        start_stream( 'Accel' ),
-        RuntimeError, "stream 'Accel' is already open" )
-except Exception:
-    test.unexpected_exception()
-finally:
-    reset()
-test.finish()
+        start_stream( 'Depth' ),
+        RuntimeError, "stream 'Depth' is already open" )
+reset()
 #
 #############################################################################################
 #
-test.start( "motion + color" )
-try:
-    start_stream( 'Gyro' )  # MXYZ @ 200 Hz
+with test.closure( "motion module" ):
+    bridge.open( servers['Motion'].default_profile() )  # @ 200 Hz
+    start_stream( 'Motion' )
+    test.check_throws( lambda:
+        start_stream( 'Motion' ),
+        RuntimeError, "stream 'Motion' is already open" )
+reset()
+#
+#############################################################################################
+#
+with test.closure( "motion + color" ):
+    start_stream( 'Motion' )  # @ 200 Hz
     test.check_equal( len(active_sensors), 1 )
     start_stream( 'Color' )
     test.check_equal( len(active_sensors), 2 )
-    stop_stream( 'Gyro' )
+    stop_stream( 'Motion' )
     test.check_equal( len(active_sensors), 1 )
     stop_stream( 'Color' )
     test.check_equal( len(active_sensors), 0 )
-except Exception:
-    test.unexpected_exception()
-finally:
-    reset()
-test.finish()
+reset()
 #
 #############################################################################################
 #
-test.start( "incompatible streams" )
-try:
+with test.closure( "incompatible streams" ):
     bridge.open( find_server_profile( 'Infrared_1', '1280x800 mono8 @ 30 Hz' ) )
     bridge.add_implicit_profiles()  # IR2
     test.check_equal( len(active_sensors), 0 )  # not streaming yet
@@ -357,16 +320,11 @@ try:
     test.check_throws( lambda:
         bridge.open( servers['Depth'].default_profile() ),
         RuntimeError, "sensor 'Stereo Module' was committed and cannot be changed" )
-except Exception:
-    test.unexpected_exception()
-finally:
-    reset()
-test.finish()
+reset()
 #
 #############################################################################################
 #
-test.start( "open and close" )
-try:
+with test.closure( "open and close" ):
     bridge.open( servers['Infrared_1'].default_profile() )  # 848x480 mono8 @ 30 Hz
     bridge.open( servers['Infrared_1'].default_profile() )  # "compatible"
     bridge.close( servers['Infrared_1'] )
@@ -379,11 +337,7 @@ try:
     test.check_throws( lambda:
         bridge.open( find_server_profile( 'Infrared_1', '1280x800 Y16 @ 25 Hz' )),
         RuntimeError, "profile <'Infrared_1' 1280x800 Y16 @ 25 Hz> is incompatible with already-open <'Infrared_1' 1280x800 Y16 @ 15 Hz>" )
-except Exception:
-    test.unexpected_exception()
-finally:
-    reset()
-test.finish()
+reset()
 #
 #############################################################################################
 test.print_results_and_exit()

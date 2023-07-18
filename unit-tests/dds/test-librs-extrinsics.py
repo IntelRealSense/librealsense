@@ -6,10 +6,10 @@
 from rspy import log, test
 log.nested = 'C  '
 
-import d435i
 import dds
 import pyrealsense2 as rs
-rs.log_to_console( rs.log_severity.debug )
+if log.is_debug_on():
+    rs.log_to_console( rs.log_severity.debug )
 from time import sleep
 
 context = rs.context( '{"dds-domain":123}' )
@@ -59,12 +59,8 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
                 break
         sensor = sensors['Motion Module']
         for profile in sensor.get_stream_profiles() :
-            if profile.stream_type() == rs.stream.gyro :
+            if test.check_equal( profile.stream_type(), rs.stream.motion ):
                 gyro_profile = profile
-                break
-        for profile in sensor.get_stream_profiles() :
-            if profile.stream_type() == rs.stream.accel :
-                accel_profile = profile
                 break
 
         depth_to_ir1_extrinsics = depth_profile.get_extrinsics_to( ir1_profile )
@@ -91,11 +87,11 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         test.check_float_lists( color_to_depth_extrinsics.rotation, expected_rotation )
         test.check_float_lists( color_to_depth_extrinsics.translation, expected_translation )
 
-        color_to_accel_extrinsics = color_profile.get_extrinsics_to( accel_profile )
-        expected_rotation = [0.9999951720237732,0.00040659401565790176,0.0030847808811813593,-0.0004076171899214387,0.9999998807907104,0.0003310548490844667,-0.00308464583940804,-0.0003323106502648443,0.9999951720237732]
-        expected_translation = [-0.02059810981154442,0.0050893244333565235,0.011522269807755947]
-        test.check_float_lists( color_to_accel_extrinsics.rotation, expected_rotation )
-        test.check_float_lists( color_to_accel_extrinsics.translation, expected_translation )
+        #color_to_accel_extrinsics = color_profile.get_extrinsics_to( accel_profile )
+        #expected_rotation = [0.9999951720237732,0.00040659401565790176,0.0030847808811813593,-0.0004076171899214387,0.9999998807907104,0.0003310548490844667,-0.00308464583940804,-0.0003323106502648443,0.9999951720237732]
+        #expected_translation = [-0.02059810981154442,0.0050893244333565235,0.011522269807755947]
+        #test.check_float_lists( color_to_accel_extrinsics.rotation, expected_rotation )
+        #test.check_float_lists( color_to_accel_extrinsics.translation, expected_translation )
 
         gyro_to_ir1_extrinsics = gyro_profile.get_extrinsics_to( ir1_profile )
         expected_rotation = [1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0]

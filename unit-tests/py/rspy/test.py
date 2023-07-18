@@ -818,7 +818,7 @@ class remote:
                 raise ValueError( f'invalid failure handler "{how}" should be raise, abort, or log' )
 
 
-    def wait_until_ready( self, timeout=30 ):
+    def wait_until_ready( self, timeout=10 ):
         """
         The initial script can take a bit of time to load and run, and more if it does something "heavy". The user may want
         to wait until it's "ready" to take input...
@@ -853,7 +853,7 @@ class remote:
                 raise RuntimeError( f'{self._name} command timed out' )
             self._raise_if_needed( on_fail )
 
-    def wait( self, timeout = 30 ):
+    def wait( self, timeout=10 ):
         """
         Waits until all stdout has been consumed and the remote exited
         :param timeout: seconds before we stop waiting (default is big enough to be reasonable sure something

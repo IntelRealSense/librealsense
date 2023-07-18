@@ -8,7 +8,7 @@ from rspy import log, test
 
 
 import dds
-client.debug( True, 'C  ' )
+client.debug( log.is_debug_on(), 'C  ' )
 log.nested = 'C  '
 
 

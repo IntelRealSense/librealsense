@@ -7,7 +7,7 @@ import d435i
 import d405
 import d455
 
-dds.debug( True, log.nested )
+dds.debug( log.is_debug_on(), log.nested )
 
 
 participant = dds.participant()

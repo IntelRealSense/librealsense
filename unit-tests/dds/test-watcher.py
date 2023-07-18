@@ -6,7 +6,7 @@
 from rspy import log, test
 
 import pyrealdds as dds
-dds.debug( True, 'C  ' )
+dds.debug( log.is_debug_on(), 'C  ' )
 log.nested = 'C  '
 
 import threading

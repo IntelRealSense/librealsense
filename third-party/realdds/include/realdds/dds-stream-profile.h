@@ -66,7 +66,6 @@ class dds_stream_base;
 class dds_stream_profile
 {
     int16_t _frequency;  // "Frames" per second
-    dds_stream_format _format;
 
     std::weak_ptr< dds_stream_base > _stream;
 
@@ -74,9 +73,8 @@ public:
     virtual ~dds_stream_profile() {}
 
 protected:
-    dds_stream_profile( int16_t frequency, dds_stream_format format )
-        : _format( format )
-        , _frequency( frequency )
+    dds_stream_profile( int16_t frequency )
+        : _frequency( frequency )
     {
     }
     dds_stream_profile( nlohmann::json const &, int & index );
@@ -86,7 +84,6 @@ public:
     // This is for initialization and is called from dds_stream_base only!
     void init_stream( std::weak_ptr< dds_stream_base > const & stream );
 
-    dds_stream_format const & format() const { return _format; }
     int16_t frequency() const { return _frequency; }
 
     // These are for debugging - not functional
@@ -123,20 +120,23 @@ class dds_video_stream_profile : public dds_stream_profile
 {
     typedef dds_stream_profile super;
 
+    dds_stream_format _format;
     uint16_t _width;   // Resolution width [pixels]
     uint16_t _height;  // Resolution height [pixels]
 
 public:
     dds_video_stream_profile( int16_t frequency, dds_stream_format format, uint16_t width, uint16_t height )
-        : super( frequency, format )
+        : super( frequency )
         , _width( width )
         , _height( height )
+        , _format( format )
     {
     }
     dds_video_stream_profile( nlohmann::json const &, int & index );
 
     uint16_t width() const { return _width; }
     uint16_t height() const { return _height; }
+    dds_stream_format const & format() const { return _format; }
 
     std::string details_to_string() const override;
 
@@ -149,8 +149,8 @@ class dds_motion_stream_profile : public dds_stream_profile
     typedef dds_stream_profile super;
 
 public:
-    dds_motion_stream_profile( int16_t frequency, dds_stream_format format )
-        : super( frequency, format )
+    dds_motion_stream_profile( int16_t frequency )
+        : super( frequency )
     {
     }
     dds_motion_stream_profile( nlohmann::json const & j, int & index )

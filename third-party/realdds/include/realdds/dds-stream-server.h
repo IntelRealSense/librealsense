@@ -16,6 +16,7 @@
 namespace realdds {
 namespace topics {
 class image_msg;
+class imu_msg;
 }
 
 
@@ -53,9 +54,7 @@ public:
     void close();
 
     bool is_streaming() const override { return _streaming; }
-    void start_streaming( const image_header & );
-    void stop_streaming();
-    image_header const & get_image_header() const { return _image_header; }
+    virtual void stop_streaming();
 
     std::shared_ptr< dds_topic > const & get_topic() const override;
 
@@ -67,12 +66,13 @@ public:
 
 protected:
     std::shared_ptr< dds_topic_writer > _writer;
-    image_header _image_header;
     readers_changed_callback _on_readers_changed;
     bool _streaming = false;
 
     // Called at the end of open(), when the _writer has been initialized. Override to provide custom QOS etc...
     virtual void run_stream();
+
+    void start_streaming();
 };
 
 
@@ -88,12 +88,17 @@ public:
     void set_intrinsics( const std::set< video_intrinsics > & intrinsics ) { _intrinsics = intrinsics; }
     const std::set< video_intrinsics > & get_intrinsics() const { return _intrinsics; }
 
+    void start_streaming( const image_header & );
+    void stop_streaming() override;
+    image_header const & get_image_header() const { return _image_header; }
+
     virtual void publish_image( topics::image_msg && );
 
 private:
     void check_profile( std::shared_ptr< dds_stream_profile > const & ) const override;
 
     std::set< video_intrinsics > _intrinsics;
+    image_header _image_header;
 };
 
 
@@ -130,17 +135,6 @@ public:
 };
 
 
-class dds_fisheye_stream_server : public dds_video_stream_server
-{
-    typedef dds_video_stream_server super;
-
-public:
-    dds_fisheye_stream_server( std::string const & stream_name, std::string const & sensor_name );
-
-    char const * type_string() const override { return "fisheye"; }
-};
-
-
 class dds_confidence_stream_server : public dds_video_stream_server
 {
     typedef dds_video_stream_server super;
@@ -152,6 +146,8 @@ public:
 };
 
 
+// Combined Gyro and Accel stream (otherwise known as "IMU")
+//
 class dds_motion_stream_server : public dds_stream_server
 {
     typedef dds_stream_server super;
@@ -161,48 +157,21 @@ public:
 
     void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
 
-    void set_intrinsics( const motion_intrinsics & intrinsics ) { _intrinsics = intrinsics; }
-    const motion_intrinsics & get_intrinsics() const { return _intrinsics; }
+    void set_accel_intrinsics( const motion_intrinsics & intrinsics ) { _accel_intrinsics = intrinsics; }
+    void set_gyro_intrinsics( const motion_intrinsics & intrinsics ) { _gyro_intrinsics = intrinsics; }
+    const motion_intrinsics & get_accel_intrinsics() const { return _accel_intrinsics; }
+    const motion_intrinsics & get_gyro_intrinsics() const { return _gyro_intrinsics; }
 
-    virtual void publish_motion( topics::image_msg && );
+    void start_streaming();
+    virtual void publish_motion( topics::imu_msg && );
+
+    char const * type_string() const override { return "motion"; }
 
 private:
     void check_profile( std::shared_ptr< dds_stream_profile > const & ) const override;
 
-    motion_intrinsics _intrinsics;
-};
-
-
-class dds_accel_stream_server : public dds_motion_stream_server
-{
-    typedef dds_motion_stream_server super;
-
-public:
-    dds_accel_stream_server( std::string const & stream_name, std::string const & sensor_name );
-
-    char const * type_string() const override { return "accel"; }
-};
-
-
-class dds_gyro_stream_server : public dds_motion_stream_server
-{
-    typedef dds_motion_stream_server super;
-
-public:
-    dds_gyro_stream_server( std::string const & stream_name, std::string const & sensor_name );
-
-    char const * type_string() const override { return "gyro"; }
-};
-
-
-class dds_pose_stream_server : public dds_motion_stream_server
-{
-    typedef dds_motion_stream_server super;
-
-public:
-    dds_pose_stream_server( std::string const & stream_name, std::string const & sensor_name );
-
-    char const * type_string() const override { return "pose"; }
+    motion_intrinsics _accel_intrinsics;
+    motion_intrinsics _gyro_intrinsics;
 };
 
 

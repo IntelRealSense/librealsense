@@ -48,6 +48,10 @@ private:
     size_t get_index_of_profile( const realdds::dds_stream_profiles & profiles,
                                  const realdds::dds_motion_stream_profile & profile ) const;
 
+    std::shared_ptr< realdds::dds_stream_server > frame_to_streaming_server( rs2::frame const &,
+                                                                             rs2::stream_profile * = nullptr ) const;
+
+
     rs2::device _rs_dev;
     std::map< std::string, rs2::sensor > _rs_sensors;
     std::string _device_sn;

@@ -80,13 +80,15 @@ bool profiles_are_compatible( std::shared_ptr< dds_stream_profile > const & p1,
 {
     auto vp1 = std::dynamic_pointer_cast< realdds::dds_video_stream_profile >( p1 );
     auto vp2 = std::dynamic_pointer_cast< realdds::dds_video_stream_profile >( p2 );
-    if( ! ! vp1 != ! ! vp2 )
+    if( !! vp1 != !! vp2 )
         return false;  // types aren't the same
     if( vp1 && vp2 )
+    {
         if( vp1->width() != vp2->width() || vp1->height() != vp2->height() )
             return false;
-    if( ! any_format && p1->format() != p2->format() )
-        return false;
+        if( ! any_format && vp1->format() != vp2->format() )
+            return false;
+    }
     return p1->frequency() == p2->frequency();
 }
 
@@ -317,17 +319,24 @@ void dds_stream_sensor_bridge::start_sensor( std::string const & sensor_name, se
     {
         auto & stream = sensor.streams[profile->stream()->name()];
 
-        // Prepare the server with the right header (this will change when we remove "streaming" status from
-        // stream-server)
-        realdds::image_header header;
-        header.format = profile->format();
-        auto video_profile = std::dynamic_pointer_cast< realdds::dds_video_stream_profile >( profile );
-        if( video_profile )
+        if( auto video = std::dynamic_pointer_cast< realdds::dds_video_stream_server >( stream.server ) )
         {
-            header.width = video_profile->width();
-            header.height = video_profile->height();
+            // Prepare the server with the right header (this will change when we remove "streaming" status from
+            // stream-server)
+            realdds::image_header header;
+            auto video_profile = std::dynamic_pointer_cast< realdds::dds_video_stream_profile >( profile );
+            if( video_profile )
+            {
+                header.format = video_profile->format();
+                header.width = video_profile->width();
+                header.height = video_profile->height();
+            }
+            video->start_streaming( header );
         }
-        stream.server->start_streaming( header );
+        else if( auto motion = std::dynamic_pointer_cast< realdds::dds_motion_stream_server >( stream.server ) )
+        {
+            motion->start_streaming();
+        }
     }
 }
 
@@ -427,13 +436,13 @@ void dds_stream_sensor_bridge::stop_sensor( std::string const & sensor_name, sen
 }
 
 
-bool dds_stream_sensor_bridge::is_streaming( std::shared_ptr< dds_stream_server > const & server )
+bool dds_stream_sensor_bridge::is_streaming( std::shared_ptr< dds_stream_server > const & server ) const
 {
     auto name2sensor = _sensors.find( server->sensor_name() );
     if( name2sensor == _sensors.end() )
         DDS_THROW( runtime_error, "invalid sensor name '" + server->sensor_name() + "'" );
-    sensor_bridge & sensor = name2sensor->second;
-    stream_bridge & stream = sensor.streams[server->name()];
+    sensor_bridge const & sensor = name2sensor->second;
+    stream_bridge const & stream = sensor.streams.at( server->name() );
     return stream.is_streaming;
 }
 

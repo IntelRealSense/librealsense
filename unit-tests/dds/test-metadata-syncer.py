@@ -9,7 +9,7 @@ from time import sleep
 from rspy.stopwatch import Stopwatch
 import threading
 
-dds.debug( True )
+dds.debug( log.is_debug_on() )
 
 
 participant = dds.participant()

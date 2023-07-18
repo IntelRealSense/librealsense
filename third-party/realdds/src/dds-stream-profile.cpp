@@ -69,7 +69,7 @@ enum rs2_format  // copy from rs2_sensor.h
     RS2_FORMAT_Z16H,  /**< Variable-length Huffman-compressed 16-bit depth values. */
     RS2_FORMAT_FG,    /**< 16-bit per-pixel frame grabber format. */
     RS2_FORMAT_Y411,  /**< 12-bit per-pixel. */
-    RS2_FORMAT_Y16I,  /**< 12-bit per pixel interleaved. 12-bit left, 12-bit right. */
+    RS2_FORMAT_COMBINED_MOTION,
     RS2_FORMAT_COUNT  /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 };
 
@@ -84,7 +84,7 @@ int dds_stream_format::to_rs2() const
         { "W10",  RS2_FORMAT_W10 },
         { "Y16",  RS2_FORMAT_Y16 },
         { "Y12I", RS2_FORMAT_Y12I },
-        { "Y16I", RS2_FORMAT_Y16I },
+//      { "Y16I", RS2_FORMAT_Y16I },
         { "16UC1", RS2_FORMAT_Z16 },  // Used by depth streams; ROS2-compatible
         { "Z16H", RS2_FORMAT_Z16H },
         { "rgb8", RS2_FORMAT_RGB8 },  // Used by color streams; ROS2-compatible
@@ -95,7 +95,6 @@ int dds_stream_format::to_rs2() const
         { "CNF4", RS2_FORMAT_RAW8 },
         { "BYR2", RS2_FORMAT_RAW16 },
         { "R10", RS2_FORMAT_RAW10 },
-        { "MXYZ", RS2_FORMAT_MOTION_XYZ32F },
         { "Y10B", RS2_FORMAT_Y10BPACK },
     };
 
@@ -118,7 +117,7 @@ dds_stream_format dds_stream_format::from_rs2( int rs2_format )
     case RS2_FORMAT_W10: encoding = "W10"; break;
     case RS2_FORMAT_Y16: encoding = "Y16"; break;
     case RS2_FORMAT_Y12I: encoding = "Y12I"; break;
-    case RS2_FORMAT_Y16I: encoding = "Y16I"; break;
+//  case RS2_FORMAT_Y16I: encoding = "Y16I"; break;
     case RS2_FORMAT_Z16: encoding = "16UC1"; break;
     case RS2_FORMAT_Z16H: encoding = "Z16H"; break;
     case RS2_FORMAT_RGB8: encoding = "rgb8"; break;
@@ -130,7 +129,6 @@ dds_stream_format dds_stream_format::from_rs2( int rs2_format )
     case RS2_FORMAT_RAW16: encoding = "BYR2"; break;
     case RS2_FORMAT_RAW10: encoding = "R10"; break;
     case RS2_FORMAT_UYVY: encoding = "UYVY"; break;
-    case RS2_FORMAT_MOTION_XYZ32F: encoding = "MXYZ"; break;  // todo
     case RS2_FORMAT_Y10BPACK: encoding = "Y10B"; break;
     default:
         DDS_THROW( runtime_error, "cannot translate rs2_format " + std::to_string( rs2_format ) + " to any known dds_stream_format" );
@@ -141,7 +139,6 @@ dds_stream_format dds_stream_format::from_rs2( int rs2_format )
 
 dds_stream_profile::dds_stream_profile( json const & j, int & it )
     : _frequency( rsutils::json::get< int16_t >( j, it++ ) )
-    , _format( rsutils::json::get< std::string >( j, it++ ) )
 {
     // NOTE: the order of construction is the order of declaration -- therefore the to_json() function
     // should use the same ordering!
@@ -169,14 +166,14 @@ std::string dds_stream_profile::to_string() const
 std::string dds_stream_profile::details_to_string() const
 {
     std::ostringstream os;
-    os << _format.to_string() << " @ " << _frequency << " Hz";
+    os << "@ " << _frequency << " Hz";
     return os.str();
 }
 
 std::string dds_video_stream_profile::details_to_string() const
 {
     std::ostringstream os;
-    os << _width << 'x' << _height << ' ';
+    os << _width << 'x' << _height << ' ' << _format.to_string() << ' ';
     os << super::details_to_string();
     return os.str();
 }
@@ -195,12 +192,13 @@ void dds_stream_profile::init_stream( std::weak_ptr< dds_stream_base > const & s
 json dds_stream_profile::to_json() const
 {
     // NOTE: same ordering as construction!
-    return json::array( { frequency(), format().to_string() } );
+    return json::array( { frequency() } );
 }
 
 
 dds_video_stream_profile::dds_video_stream_profile( nlohmann::json const & j, int & index )
     : super( j, index )
+    , _format( rsutils::json::get< std::string >( j, index++ ) )
 {
     _width = rsutils::json::get< int16_t >( j, index++ );
     _height = rsutils::json::get< int16_t >( j, index++ );
@@ -210,6 +208,7 @@ dds_video_stream_profile::dds_video_stream_profile( nlohmann::json const & j, in
 json dds_video_stream_profile::to_json() const
 {
     auto profile = super::to_json();
+    profile += format().to_string();
     profile += width();
     profile += height();
     return profile;

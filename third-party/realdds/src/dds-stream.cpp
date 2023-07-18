@@ -7,6 +7,7 @@
 #include <realdds/dds-topic-reader-thread.h>
 #include <realdds/dds-subscriber.h>
 #include <realdds/topics/image-msg.h>
+#include <realdds/topics/imu-msg.h>
 #include <realdds/topics/flexible-msg.h>
 #include <realdds/dds-exceptions.h>
 
@@ -50,7 +51,7 @@ void dds_motion_stream::open( std::string const & topic_name, std::shared_ptr< d
         DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
 
     // Topics with same name and type can be created multiple times (multiple open() calls) without an error.
-    auto topic = topics::image_msg::create_topic( subscriber->get_participant(), topic_name.c_str() );
+    auto topic = topics::imu_msg::create_topic( subscriber->get_participant(), topic_name.c_str() );
 
     // To support automatic streaming (without the need to handle start/stop-streaming commands) the reader is created
     // here and destroyed on close()
@@ -96,12 +97,12 @@ void dds_video_stream::handle_data()
 
 void dds_motion_stream::handle_data()
 {
-    topics::image_msg frame;
+    topics::imu_msg imu;
     eprosima::fastdds::dds::SampleInfo info;
-    while( _reader && topics::image_msg::take_next( *_reader, &frame, &info ) )
+    while( _reader && topics::imu_msg::take_next( *_reader, &imu, &info ) )
     {
         if( is_streaming() && _on_data_available )
-            _on_data_available( std::move( frame ) );
+            _on_data_available( std::move( imu ) );
     }
 }
 
@@ -145,12 +146,6 @@ dds_color_stream::dds_color_stream( std::string const & stream_name, std::string
 }
 
 
-dds_fisheye_stream::dds_fisheye_stream( std::string const & stream_name, std::string const & sensor_name )
-    : super( stream_name, sensor_name )
-{
-}
-
-
 dds_confidence_stream::dds_confidence_stream( std::string const & stream_name, std::string const & sensor_name )
     : super( stream_name, sensor_name )
 {
@@ -158,24 +153,6 @@ dds_confidence_stream::dds_confidence_stream( std::string const & stream_name, s
 
 
 dds_motion_stream::dds_motion_stream( std::string const & stream_name, std::string const & sensor_name )
-    : super( stream_name, sensor_name )
-{
-}
-
-
-dds_accel_stream::dds_accel_stream( std::string const & stream_name, std::string const & sensor_name )
-    : super( stream_name, sensor_name )
-{
-}
-
-
-dds_gyro_stream::dds_gyro_stream( std::string const & stream_name, std::string const & sensor_name )
-    : super( stream_name, sensor_name )
-{
-}
-
-
-dds_pose_stream::dds_pose_stream( std::string const & stream_name, std::string const & sensor_name )
     : super( stream_name, sensor_name )
 {
 }

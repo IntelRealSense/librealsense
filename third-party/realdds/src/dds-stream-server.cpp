@@ -9,8 +9,10 @@
 #include <realdds/dds-publisher.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/topics/image-msg.h>
+#include <realdds/topics/imu-msg.h>
 #include <realdds/topics/flexible-msg.h>
 #include <realdds/topics/ros2/ros2imagePubSubTypes.h>
+#include <realdds/topics/ros2/ros2imuPubSubTypes.h>
 #include <realdds/dds-time.h>
 
 #include <fastdds/dds/topic/Topic.hpp>
@@ -63,12 +65,6 @@ dds_color_stream_server::dds_color_stream_server( std::string const & stream_nam
 }
 
 
-dds_fisheye_stream_server::dds_fisheye_stream_server( std::string const & stream_name, std::string const & sensor_name )
-    : super( stream_name, sensor_name )
-{
-}
-
-
 dds_confidence_stream_server::dds_confidence_stream_server( std::string const & stream_name, std::string const & sensor_name )
     : super( stream_name, sensor_name )
 {
@@ -86,24 +82,6 @@ void dds_motion_stream_server::check_profile( std::shared_ptr< dds_stream_profil
     super::check_profile( profile );
     if( ! std::dynamic_pointer_cast< dds_motion_stream_profile >( profile ) )
         DDS_THROW( runtime_error, "profile '" + profile->to_string() + "' is not a motion profile" );
-}
-
-
-dds_accel_stream_server::dds_accel_stream_server( std::string const & stream_name, std::string const & sensor_name )
-    : super( stream_name, sensor_name )
-{
-}
-
-
-dds_gyro_stream_server::dds_gyro_stream_server( std::string const & stream_name, std::string const & sensor_name )
-    : super( stream_name, sensor_name )
-{
-}
-
-
-dds_pose_stream_server::dds_pose_stream_server( std::string const & stream_name, std::string const & sensor_name )
-    : super( stream_name, sensor_name )
-{
 }
 
 
@@ -158,9 +136,8 @@ void dds_motion_stream_server::open( std::string const & topic_name, std::shared
     if( profiles().empty() )
         DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
 
-    auto topic = topics::image_msg::create_topic( publisher->get_participant(), topic_name.c_str() );
+    auto topic = topics::imu_msg::create_topic( publisher->get_participant(), topic_name.c_str() );
     _writer = std::make_shared< dds_topic_writer >( topic, publisher );
-
 
     run_stream();
 }
@@ -175,15 +152,27 @@ std::shared_ptr< dds_topic > const & dds_stream_server::get_topic() const
 }
 
 
-void dds_stream_server::start_streaming( const image_header & header )
+void dds_stream_server::start_streaming()
 {
     if( ! is_open() )
         DDS_THROW( runtime_error, "stream '" + name() + "' must be open before start_streaming()" );
     if( is_streaming() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is already streaming" );
 
-    _image_header = header;
     _streaming = true;
+}
+
+
+void dds_video_stream_server::start_streaming( const image_header & header )
+{
+    super::start_streaming();
+    _image_header = header;
+}
+
+
+void dds_motion_stream_server::start_streaming()
+{
+    super::start_streaming();
 }
 
 
@@ -192,9 +181,16 @@ void dds_stream_server::stop_streaming()
     if( ! is_streaming() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is not streaming" );
 
-    _image_header.invalidate();
     _streaming = false;
 }
+
+
+void dds_video_stream_server::stop_streaming()
+{
+    super::stop_streaming();
+    _image_header.invalidate();
+}
+
 
 void dds_stream_server::close()
 {
@@ -246,36 +242,16 @@ void dds_video_stream_server::publish_image( topics::image_msg && image )
 }
 
 
-void dds_motion_stream_server::publish_motion( topics::image_msg && image )
+void dds_motion_stream_server::publish_motion( topics::imu_msg && imu )
 {
-    // Same as publish_image() for now
     if( ! is_streaming() )
         DDS_THROW( runtime_error, "stream '" + name() + "' cannot publish before start_streaming()" );
 
-    if( image.height != _image_header.height )
-        DDS_THROW( runtime_error,
-                   "image height (" + std::to_string( image.height ) + ") does not match stream header ("
-                       + std::to_string( _image_header.height ) + ")" );
-    if( image.width != _image_header.width )
-        DDS_THROW( runtime_error,
-                   "image width (" + std::to_string( image.width ) + ") does not match stream header ("
-                       + std::to_string( _image_header.width ) + ")" );
+    sensor_msgs::msg::Imu & raw_imu = imu.imu_data();
+    raw_imu.header().frame_id() = sensor_name();
+    LOG_DEBUG( "publishing '" << name() << "' " << imu.to_string() );
 
-    // LOG_DEBUG( "publishing a DDS video frame for topic: " << _writer->topic()->get()->get_name() );
-    sensor_msgs::msg::Image raw_image;
-    raw_image.header().frame_id() = sensor_name();
-    raw_image.header().stamp().sec() = image.timestamp.seconds;
-    raw_image.header().stamp().nanosec() = image.timestamp.nanosec;
-    raw_image.encoding() = _image_header.format.to_string();
-    raw_image.height() = _image_header.height;
-    raw_image.width() = _image_header.width;
-    raw_image.step() = uint32_t( image.raw_data.size() / _image_header.height );
-    raw_image.is_bigendian() = false;
-    raw_image.data() = std::move( image.raw_data );
-    LOG_DEBUG( "publishing '" << name() << "' " << raw_image.encoding() << " frame @ "
-                              << time_to_string( image.timestamp ) );
-
-    DDS_API_CALL( _writer->get()->write( &raw_image ) );
+    imu.write_to( *_writer );
 }
 
 }  // namespace realdds

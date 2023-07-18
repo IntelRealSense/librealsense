@@ -12,7 +12,8 @@ import d455
 import dds
 
 import pyrealsense2 as rs
-rs.log_to_console( rs.log_severity.debug )
+if log.is_debug_on():
+    rs.log_to_console( rs.log_severity.debug )
 from time import sleep
 
 context = rs.context( '{"dds-domain":123,"dds-participant-name":"device-properties-client"}' )
@@ -47,7 +48,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             test.check_equal( len(sensor.get_stream_profiles()), 64 ) # As measured running rs-sensor-control example
         if test.check( 'Motion Module' in sensors ):
             sensor = sensors['Motion Module']
-            test.check_equal( len(sensor.get_stream_profiles()), 4 ) # As measured running rs-sensor-control example
+            test.check_equal( len(sensor.get_stream_profiles()), 2 ) # Only the Gyro profiles
         remote.run( 'close_server( instance )' )
     except:
         test.unexpected_exception()
@@ -99,7 +100,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             test.check_equal( len(sensor.get_stream_profiles()), 62 ) # As measured running rs-sensor-control example
         if test.check( 'Motion Module' in sensors ):
             sensor = sensors['Motion Module']
-            test.check_equal( len(sensor.get_stream_profiles()), 4 ) # As measured running rs-sensor-control example
+            test.check_equal( len(sensor.get_stream_profiles()), 2 ) # Only the Gyro profiles
         remote.run( 'close_server( instance )' )
     except:
         test.unexpected_exception()
