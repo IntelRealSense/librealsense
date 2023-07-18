@@ -828,18 +828,18 @@ namespace rs2
             error::handle(e);
         }
 
-        rs2_safety_interface_config get_safety_interface_config(int index) const
+        rs2_safety_interface_config get_safety_interface_config() const
         {
             rs2_error* e = nullptr;
             rs2_safety_interface_config sic;
-            rs2_get_safety_interface_config(_sensor.get(), index, &sic, &e);
+            rs2_get_safety_interface_config(_sensor.get(), &sic, &e);
             error::handle(e);
             return sic;
         }
-        void set_safety_interface_config(int index, rs2_safety_interface_config const& sic) const
+        void set_safety_interface_config(rs2_safety_interface_config const& sic) const
         {
             rs2_error* e = nullptr;
-            rs2_set_safety_interface_config(_sensor.get(), index, &sic, &e);
+            rs2_set_safety_interface_config(_sensor.get(), &sic, &e);
             error::handle(e);
         }
     };

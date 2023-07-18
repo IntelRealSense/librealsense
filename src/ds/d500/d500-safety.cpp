@@ -317,7 +317,7 @@ namespace librealsense
         rs2_safety_interface_config_with_header data;
         uint16_t version = ((uint16_t)0x01 << 8) | 0x00;  // major=0x01, minor=0x00 --> ver = major.minor
         uint32_t calib_version = 0;  // ignoring this field, as requested by sw architect
-        data.header = { version, static_cast<uint16_t>(ds::d500_calibration_table_id::safety_interterface_cfg_id), 
+        data.header = { version, static_cast<uint16_t>(ds::d500_calibration_table_id::safety_interface_cfg_id), 
             sizeof(rs2_safety_interface_config_with_header), calib_version, computed_crc32 };
         data.payload = sic;
         auto data_as_ptr = reinterpret_cast<const uint8_t*>(&data);
@@ -325,7 +325,7 @@ namespace librealsense
         // prepare command
         command cmd(ds::SET_HKR_CONFIG_TABLE,
             static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
-            static_cast<int>(ds::d500_calibration_table_id::safety_interterface_cfg_id),
+            static_cast<int>(ds::d500_calibration_table_id::safety_interface_cfg_id),
             static_cast<int>(ds::d500_calib_type::d500_calib_dynamic));
         cmd.data.insert(cmd.data.end(), data_as_ptr, data_as_ptr + sizeof(data));
         cmd.require_response = false;
@@ -341,7 +341,7 @@ namespace librealsense
         // prepare command
         command cmd(ds::GET_HKR_CONFIG_TABLE,
             static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
-            static_cast<int>(ds::d500_calibration_table_id::safety_interterface_cfg_id),
+            static_cast<int>(ds::d500_calibration_table_id::safety_interface_cfg_id),
             static_cast<int>(ds::d500_calib_type::d500_calib_dynamic));
         cmd.require_response = true;
 

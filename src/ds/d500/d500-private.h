@@ -101,7 +101,7 @@ namespace librealsense
             rgb_lut_id = 0xba,
             imu_calibration_id = 0xbb,
             safety_preset_id = 0xc0db,
-            safety_interterface_cfg_id = 0xc0dc,
+            safety_interface_cfg_id = 0xc0dc,
             max_id = -1
         };
 
@@ -118,7 +118,8 @@ namespace librealsense
             {d500_calibration_table_id::right_y_lut_id, 4160},
             {d500_calibration_table_id::rgb_calibration_id, 256},
             {d500_calibration_table_id::rgb_lut_id, 8256},
-            {d500_calibration_table_id::imu_calibration_id, 192}
+            {d500_calibration_table_id::imu_calibration_id, 192},
+            {d500_calibration_table_id::safety_interface_cfg_id, 56}
         };
 
         struct d500_undist_configuration
