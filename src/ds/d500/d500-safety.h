@@ -19,6 +19,11 @@ namespace librealsense
         d500_safety(std::shared_ptr<context> ctx,
                    const platform::backend_device_group& group);
 
+        synthetic_sensor& get_safety_sensor()
+        {
+            return dynamic_cast<synthetic_sensor&>(get_sensor(_safety_device_idx));
+        }
+
     private:
 
         friend class d500_safety_sensor;

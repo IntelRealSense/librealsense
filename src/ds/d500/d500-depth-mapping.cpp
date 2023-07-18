@@ -2,6 +2,7 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #include "d500-depth-mapping.h"
+#include "d500-safety.h"
 
 #include <vector>
 #include <map>
@@ -86,33 +87,30 @@ namespace librealsense
 
     void d500_depth_mapping::register_extrinsics()
     {
-        // pull extrinsics from safety preset number 0
-        sc_float3 translation_from_preset;
-        sc_float3x3 rotation_from_preset;
-        read_extrinsics_from_safety_preset(&translation_from_preset, &rotation_from_preset);
-
-        rs2_extrinsics depth_mapping_extrinsics;
-        copy(depth_mapping_extrinsics.rotation, &rotation_from_preset, sizeof rotation_from_preset);
-        copy(depth_mapping_extrinsics.translation, &translation_from_preset, sizeof translation_from_preset);
+        // extrinsics to depth lazy, becasue safety sensor's api is used and it may be constructed later
+        // than the depth mapping device (though it may not be the case in the device contructor's order, in ds500-factory)
+        _depth_mapping_to_depth_extrinsics = std::make_shared<lazy<rs2_extrinsics>>([this]()
+            {
+                // getting access to safety sensor api
+                auto safety_device = dynamic_cast<d500_safety*>(this);
+                auto& safety_sensor = dynamic_cast<d500_safety_sensor&>(safety_device->get_safety_sensor());
+                
+                // pull extrinsics from safety preset number 0
+                int safety_preset_index = 0;
+                rs2_safety_preset safety_preset = safety_sensor.get_safety_preset(safety_preset_index);
+               
+                auto extrinsics_from_preset = safety_preset.platform_config.transformation_link;
+                rs2_extrinsics res;
+                copy(res.rotation, &extrinsics_from_preset.rotation, sizeof extrinsics_from_preset.rotation);
+                copy(res.translation, &extrinsics_from_preset.translation, sizeof extrinsics_from_preset.translation);
+                return res;
+            });
 
         register_stream_to_extrinsic_group(*_occupancy_stream, 0);
-        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_occupancy_stream, depth_mapping_extrinsics);
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_occupancy_stream, _depth_mapping_to_depth_extrinsics);
 
         register_stream_to_extrinsic_group(*_point_cloud_stream, 0);
-        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_point_cloud_stream, depth_mapping_extrinsics);
-    }
-
-    void d500_depth_mapping::read_extrinsics_from_safety_preset(sc_float3* translation, sc_float3x3* rotation)
-    {
-        command cmd(ds::SAFETY_PRESET_READ);
-        cmd.require_response = true;
-        cmd.param1 = 0; // index
-        auto res = _hw_monitor->send(cmd);
-
-        auto safety_preset = *reinterpret_cast<rs2_safety_preset_with_header*>(res.data());
-        auto extrinsics_from_preset = safety_preset.safety_preset.platform_config.transformation_link;
-        *translation = extrinsics_from_preset.translation;
-        *rotation = extrinsics_from_preset.rotation;
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_point_cloud_stream, _depth_mapping_to_depth_extrinsics);
     }
 
     void d500_depth_mapping::register_options(std::shared_ptr<d500_depth_mapping_sensor> occupancy_ep, std::shared_ptr<uvc_sensor> raw_mapping_sensor)
