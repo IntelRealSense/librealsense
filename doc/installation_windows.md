@@ -1,18 +1,13 @@
-# Windows 8.1 & Windows 10 Installation
+# Windows 10 & Windows 11 Installation
 
 **Note:** Due to the USB 3.0 translation layer between native hardware and virtual machine, the librealsense team does not recommend or support installation in a VM.
 
-librealsense shall be built on Windows using [CMake v3.8+](https://cmake.org/download/) and Visual Studio 2015 / 2017: 
+librealsense shall be built on Windows using [CMake v3.8+](https://cmake.org/download/) and Visual Studio 2015 / 2017 / 2019: 
 (MSVC2013 and older are not fully compatible with the C++11 feature-set).
-<a name="cmake_snapshot_win">
-   ![Windows CMake](./img/windows_cmake.png)
-</a>
-![link text][Win_cmake_image]
+
+![Windows CMake](./img/windows_cmake.png)
 
 Don't forget to check `BUILD_EXAMPLES` if you wish to use librealsense samples.
-
-## Windows 8.1:
-When working on Windows 8.1, make sure you have [KB3075872](https://support.microsoft.com/en-us/kb/3075872) and [KB2919355](https://support.microsoft.com/en-us/kb/2919355) installed. These patches are addressing issues specific to 8.1 video drivers, that were later resolved in Windows 10.
 
 ## Enabling metadata on Windows
 Metadata attributes is an advanced capability provided by librealsense.
