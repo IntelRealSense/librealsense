@@ -216,16 +216,13 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
             continue;
         }
 
-        // Set stream intrinsics
-        if( auto video_server = std::dynamic_pointer_cast<dds_video_stream_server>(server) )
+        if( auto video_server = std::dynamic_pointer_cast< dds_video_stream_server >( server ) )
         {
             video_server->set_intrinsics( std::move( stream_name_to_video_intrinsics[stream_name] ) );
             // Set stream metadata support (currently if the device supports metadata all streams does)
             // Must be done before calling init_profiles()
             if( _md_enabled )
-            {
                 server->enable_metadata();
-            }
         }
 
         server->init_profiles( profiles, default_profile_index );
@@ -291,11 +288,8 @@ extrinsics_map get_extrinsics_map( const rs2::device & dev )
                        stream_profiles.end(),
                        [&]( const rs2::stream_profile & sp )
                        {
-                           switch( sp.stream_type() )
-                           {
-                           case RS2_STREAM_ACCEL:
+                           if( RS2_STREAM_ACCEL == sp.stream_type() )
                                return;  // Ignore the accelerometer; we want the gyro extrinsics!
-                           }
                            std::string stream_name = stream_name_from_rs2( sp );
                            auto & rs2_stream_profile = stream_name_to_rs2_stream_profile[stream_name];
                            if( ! rs2_stream_profile )
@@ -462,6 +456,28 @@ find_profile( std::shared_ptr< realdds::dds_stream_server > const & stream,
 }
 
 
+std::shared_ptr< realdds::dds_stream_server >
+lrs_device_controller::frame_to_streaming_server( rs2::frame const & f, rs2::stream_profile * p_profile ) const
+{
+    rs2::stream_profile profile_;
+    if( ! p_profile )
+        p_profile = &profile_;
+    rs2::stream_profile & profile = *p_profile;
+
+    profile = f.get_profile();
+    auto const stream_name = stream_name_from_rs2( profile );
+    auto it = _stream_name_to_server.find( stream_name );
+    if( it == _stream_name_to_server.end() )
+        return {};
+
+    auto & server = it->second;
+    if( ! _bridge.is_streaming( server ) )
+        return {};
+
+    return server;
+}
+
+
 lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< realdds::dds_device_server > dds_device_server )
     : _rs_dev( dev )
     , _dds_device_server( dds_device_server )
@@ -495,60 +511,68 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
             auto & sensor = _rs_sensors[sensor_name];
             auto rs2_profiles = get_rs2_profiles( active_profiles );
             sensor.open( rs2_profiles );
-            sensor.start(
-                [this]( rs2::frame f )
+            if( sensor.is< rs2::motion_sensor >() )
+            {
+                struct imu_context
                 {
-                    auto const stream_profile = f.get_profile();
-                    auto const stream_name = stream_name_from_rs2( stream_profile );
-                    auto it = _stream_name_to_server.find( stream_name );
-                    if( it == _stream_name_to_server.end() )
-                        return;
-
-                    auto & server = it->second;
-                    if( ! _bridge.is_streaming( server ) )
-                        return;
-
-                    auto const stream_type = stream_profile.stream_type();
-                    dds_time const timestamp  // in sec.nsec
-                        ( static_cast< long double >( f.get_timestamp() ) / 1e3 );
-
-                    if( auto video = std::dynamic_pointer_cast< realdds::dds_video_stream_server >( server ) )
+                    realdds::topics::imu_msg message;
+                    // We will be getting gyro and accel together, from different threads:
+                    // Don't want to change something mid-send
+                    std::mutex mutex;
+                };
+                sensor.start(
+                    [this, imu = std::make_shared< imu_context >()]( rs2::frame f )
                     {
-                        // RS2_STREAM_DEPTH, RS2_STREAM_COLOR, RS2_STREAM_INFRARED
+                        rs2::stream_profile stream_profile;
+                        auto motion = std::dynamic_pointer_cast< realdds::dds_motion_stream_server >(
+                            frame_to_streaming_server( f, &stream_profile ) );
+                        if( ! motion )
+                            return;
+
+                        auto xyz = reinterpret_cast< float const * >( f.get_data() );
+                        if( RS2_STREAM_ACCEL == stream_profile.stream_type() )
+                        {
+                            std::unique_lock< std::mutex > lock( imu->mutex );
+                            imu->message.accel_data().x( xyz[0] );  // in m/s^2
+                            imu->message.accel_data().y( xyz[1] );
+                            imu->message.accel_data().z( xyz[2] );
+                            return;  // Don't actually publish
+                        }
+                        imu->message.gyro_data().x( xyz[0] );  // rad/sec, which is what we need
+                        imu->message.gyro_data().y( xyz[1] );
+                        imu->message.gyro_data().z( xyz[2] );
+                        imu->message.timestamp(  // in sec.nsec
+                            static_cast< long double >( f.get_timestamp() ) / 1e3 );
+                        std::unique_lock< std::mutex > lock( imu->mutex );
+                        motion->publish_motion( std::move( imu->message ) );
+
+                        // motion streams have no metadata!
+                    } );
+            }
+            else
+            {
+                sensor.start(
+                    [this]( rs2::frame f )
+                    {
+                        auto video = std::dynamic_pointer_cast< realdds::dds_video_stream_server >(
+                            frame_to_streaming_server( f ) );
+                        if( ! video )
+                            return;
+
+                        dds_time const timestamp  // in sec.nsec
+                            ( static_cast< long double >( f.get_timestamp() ) / 1e3 );
+
                         realdds::topics::image_msg image;
-                        auto data = static_cast<const uint8_t *>(f.get_data());
+                        auto data = static_cast< const uint8_t * >( f.get_data() );
                         image.raw_data.assign( data, data + f.get_data_size() );
                         image.height = video->get_image_header().height;
                         image.width = video->get_image_header().width;
                         image.timestamp = timestamp;
                         video->publish_image( std::move( image ) );
+
                         publish_frame_metadata( f, timestamp );
-                    }
-                    else if( auto motion = std::dynamic_pointer_cast< realdds::dds_motion_stream_server >( server ) )
-                    {
-                        // RS2_STREAM_GYRO, RS2_STREAM_ACCEL
-                        static realdds::topics::imu_msg imu;
-                        auto xyz = reinterpret_cast<float const *>(f.get_data());
-                        // We will be getting gyro and accel together, from different threads:
-                        // Don't want to change something mid-send
-                        static std::mutex imu_mutex;
-                        if( RS2_STREAM_ACCEL == stream_type )
-                        {
-                            std::unique_lock< std::mutex > lock( imu_mutex );
-                            imu.accel_data().x( xyz[0] );  // in m/s^2
-                            imu.accel_data().y( xyz[1] );
-                            imu.accel_data().z( xyz[2] );
-                            return;  // Don't actually publish
-                        }
-                        imu.gyro_data().x( xyz[0] );  // rad/sec, which is what we need
-                        imu.gyro_data().y( xyz[1] );
-                        imu.gyro_data().z( xyz[2] );
-                        imu.timestamp( timestamp );
-                        std::unique_lock< std::mutex > lock( imu_mutex );
-                        motion->publish_motion( std::move( imu ) );
-                        // motion streams have no metadata!
-                    }
-                } );
+                    } );
+            }
             std::cout << sensor_name << " sensor started" << std::endl;
         } );
     _bridge.on_stop_sensor(

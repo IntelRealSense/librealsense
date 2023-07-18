@@ -99,7 +99,7 @@ public:
     void reset( bool by_force = false );
 
     // Return true if the stream for the given server is currently streaming
-    bool is_streaming( std::shared_ptr< dds_stream_server > const & );
+    bool is_streaming( std::shared_ptr< dds_stream_server > const & ) const;
 
     // Notifications
 public:

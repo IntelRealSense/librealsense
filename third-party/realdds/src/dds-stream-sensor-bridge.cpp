@@ -436,13 +436,13 @@ void dds_stream_sensor_bridge::stop_sensor( std::string const & sensor_name, sen
 }
 
 
-bool dds_stream_sensor_bridge::is_streaming( std::shared_ptr< dds_stream_server > const & server )
+bool dds_stream_sensor_bridge::is_streaming( std::shared_ptr< dds_stream_server > const & server ) const
 {
     auto name2sensor = _sensors.find( server->sensor_name() );
     if( name2sensor == _sensors.end() )
         DDS_THROW( runtime_error, "invalid sensor name '" + server->sensor_name() + "'" );
-    sensor_bridge & sensor = name2sensor->second;
-    stream_bridge & stream = sensor.streams[server->name()];
+    sensor_bridge const & sensor = name2sensor->second;
+    stream_bridge const & stream = sensor.streams.at( server->name() );
     return stream.is_streaming;
 }
 

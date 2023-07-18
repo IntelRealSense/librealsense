@@ -19,14 +19,6 @@ See the [ROS2 Image format](https://github.com/ros2/common_interfaces/blob/rolli
 
 This should be set to `mono8`, corresponding to `Y8` in librealsense. No interlaced formats.
 
-#### Metadata
-
-A single metadata message is expected for all messages from the same sensor (so one for depth, IR left, IR right).
-
-#### Timestamps
-
-If two streams, they should be synchronizable via identical timestamps.
-
 #### Quality of Service
 
 - Reliability: `BEST_EFFORT`
