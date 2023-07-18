@@ -3,7 +3,6 @@
 
 #include "rs-dds-sensor-proxy.h"
 #include "rs-dds-option.h"
-#include "rs-dds-internal-data.h"
 
 #include <realdds/dds-device.h>
 #include <realdds/dds-time.h>
