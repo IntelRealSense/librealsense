@@ -160,7 +160,7 @@ if current_fw_version == bundled_fw_version:
         test.print_results_and_exit()
 else:
     # It is expected that, post-recovery, the FW versions will be the same
-    test.check( not recovered, abort_if_failed = True )
+    test.check( not recovered, on_fail=test.ABORT )
 
 update_counter = get_update_counter( device )
 log.d( 'update counter:', update_counter )

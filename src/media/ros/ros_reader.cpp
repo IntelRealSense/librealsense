@@ -437,9 +437,11 @@ namespace librealsense
             get_frame_metadata(m_file, info_topic, stream_id, image_data, additional_data);
         }
 
-        frame_interface* frame = m_frame_source->alloc_frame(
+        frame_interface * frame = m_frame_source->alloc_frame(
             frame_source::stream_to_frame_types(stream_id.stream_type),
-            msg->data.size(), additional_data, true);
+            msg->data.size(),
+            std::move( additional_data ),
+            true );
         if (frame == nullptr)
         {
             LOG_WARNING("Failed to allocate new frame");
@@ -488,7 +490,10 @@ namespace librealsense
             get_frame_metadata(m_file, info_topic, stream_id, motion_data, additional_data);
         }
 
-        frame_interface* frame = m_frame_source->alloc_frame(RS2_EXTENSION_MOTION_FRAME, 3 * sizeof(float), additional_data, true);
+        frame_interface * frame = m_frame_source->alloc_frame( RS2_EXTENSION_MOTION_FRAME,
+                                                               3 * sizeof( float ),
+                                                               std::move( additional_data ),
+                                                               true );
         if (frame == nullptr)
         {
             LOG_WARNING("Failed to allocate new frame");
@@ -634,7 +639,7 @@ namespace librealsense
 
         additional_data.timestamp = timestamp_ms.count();
 
-        frame_interface* new_frame = m_frame_source->alloc_frame(frame_type, frame_size, additional_data, true);
+        frame_interface* new_frame = m_frame_source->alloc_frame(frame_type, frame_size, std::move( additional_data ), true);
         if (new_frame == nullptr)
         {
             LOG_WARNING("Failed to allocate new frame");

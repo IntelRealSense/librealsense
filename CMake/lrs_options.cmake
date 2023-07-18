@@ -45,4 +45,5 @@ else()
     option(ENABLE_EASYLOGGINGPP_ASYNC "Switch Logger to Asynchronous Mode (set OFF for Synchronous Mode)" OFF)
 endif()
 option(BUILD_PC_STITCHING "Build pointcloud-stitching example" OFF)
+option(BUILD_WITH_DDS "Use FastDDS to access camera devices through DDS topics" OFF)
  

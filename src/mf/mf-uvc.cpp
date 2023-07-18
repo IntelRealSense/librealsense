@@ -871,7 +871,12 @@ namespace librealsense
             //enable source
             CHECK_HR(MFCreateDeviceSource(_device_attrs, &_source));
             LOG_HR(_source->QueryInterface(__uuidof(IAMCameraControl), reinterpret_cast<void **>(&_camera_control)));
-            LOG_HR(_source->QueryInterface(__uuidof(IAMVideoProcAmp), reinterpret_cast<void **>(&_video_proc)));
+            // The IAMVideoProcAmp interface adjusts the qualities of an incoming video signal, such as brightness,
+            // contrast, hue, saturation, gamma, and sharpness.
+            auto hr = _source->QueryInterface( __uuidof( IAMVideoProcAmp ), reinterpret_cast< void ** >( &_video_proc ) );
+            // E_NOINTERFACE is expected... especially when no video camera
+            if( hr != E_NOINTERFACE )
+                LOG_HR_STR( "QueryInterface(IAMVideoProcAmp)", hr );
 
             //enable reader
             CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));

@@ -12,3 +12,4 @@
 5. [Data-Collect](./data-collect) - Console application capable of generating CSV report of frame statistics
 6. [Terminal](./terminal) - Troubleshooting tool that sends commands to the camera firmware
 7. [ROS Bag Inspector](./rosbag-inspector) - GUI application for inspecting `.bag` files
+8. [dds-sniffer](./dds/dds-sniffer) - Console application providing information about active DDS domain entities

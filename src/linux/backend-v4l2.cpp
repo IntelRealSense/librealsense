@@ -487,10 +487,9 @@ namespace librealsense
                 if(!(std::ifstream(path + "/version") >> val))
                     throw linux_backend_exception("Failed to read usb version specification");
 
-                auto kvp = std::find_if(usb_spec_names.begin(),usb_spec_names.end(),
-                     [&val](const std::pair<usb_spec, std::string>& kpv){ return (std::string::npos !=val.find(kpv.second));});
-                        if (kvp != std::end(usb_spec_names))
-                            res = kvp->first;
+                auto it = usb_name_to_spec.find( val );
+                if( it != usb_name_to_spec.end() )
+                    res = it->second;
             }
             return res;
         }
