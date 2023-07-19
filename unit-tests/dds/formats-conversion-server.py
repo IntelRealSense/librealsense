@@ -36,25 +36,25 @@ def create_server():
     stream_servers.append( stream_server )
 
     # Y8
-    profile = dds.video_stream_profile( 30, dds.video_encoding( "mono8" ), 1280, 720 )
+    profile = dds.video_stream_profile( 30, dds.video_encoding.y8, 1280, 720 )
     stream_server = dds.ir_stream_server( "Y8-stream", "Y8-sensor" )
     stream_server.init_profiles( [ profile ], 0 )
     stream_servers.append( stream_server )
 
     # YUYV
-    profile = dds.video_stream_profile( 30, dds.video_encoding( "yuv422_yuy2" ), 1280, 720 )
+    profile = dds.video_stream_profile( 30, dds.video_encoding.yuyv, 1280, 720 )
     stream_server = dds.color_stream_server( "YUYV-stream", "YUYV-sensor" )
     stream_server.init_profiles( [ profile ], 0 )
     stream_servers.append( stream_server )
 
     # UYVY
-    profile = dds.video_stream_profile( 30, dds.video_encoding( "UYVY" ), 1280, 720 )
+    profile = dds.video_stream_profile( 30, dds.video_encoding.uyvy, 1280, 720 )
     stream_server = dds.color_stream_server( "UYVY-stream", "UYVY-sensor" )
     stream_server.init_profiles( [ profile ], 0 )
     stream_servers.append( stream_server )
 
     # Z16
-    profile = dds.video_stream_profile( 30, dds.video_encoding( "16UC1" ), 1280, 720 )
+    profile = dds.video_stream_profile( 30, dds.video_encoding.z16, 1280, 720 )
     stream_server = dds.depth_stream_server( "Z16-stream", "Z16-sensor" )
     stream_server.init_profiles( [ profile ], 0 )
     stream_servers.append( stream_server )
@@ -65,7 +65,7 @@ def create_server():
     stream_server.init_profiles( [ profile ], 0 )
     stream_servers.append( stream_server )
 
-    # multiple MXYZ Accel
+    # multiple motion profiles
     profiles = []
     profiles.append( dds.motion_stream_profile( 63 ) )
     profiles.append( dds.motion_stream_profile( 200 ) )
@@ -77,20 +77,20 @@ def create_server():
 
     # multiple color profiles
     profiles = []
-    profiles.append( dds.video_stream_profile( 5, dds.video_encoding( "yuv422_yuy2" ), 1280, 720 ) )
-    profiles.append( dds.video_stream_profile( 15, dds.video_encoding( "yuv422_yuy2" ), 1280, 720 ) )
-    profiles.append( dds.video_stream_profile( 30, dds.video_encoding( "yuv422_yuy2" ), 1280, 720 ) )
+    profiles.append( dds.video_stream_profile( 5, dds.video_encoding.yuyv, 1280, 720 ) )
+    profiles.append( dds.video_stream_profile( 15, dds.video_encoding.yuyv, 1280, 720 ) )
+    profiles.append( dds.video_stream_profile( 30, dds.video_encoding.yuyv, 1280, 720 ) )
     stream_server = dds.color_stream_server( "multiple-color-stream", "multiple-color-sensor" )
     stream_server.init_profiles( profiles, 0 )
     stream_servers.append( stream_server )
 
     # multiple depth profiles
     profiles = []
-    profiles.append( dds.video_stream_profile( 5, dds.video_encoding( "16UC1" ), 1280, 720 ) )
-    profiles.append( dds.video_stream_profile( 10, dds.video_encoding( "16UC1" ), 1280, 720 ) )
-    profiles.append( dds.video_stream_profile( 15, dds.video_encoding( "16UC1" ), 1280, 720 ) )
-    profiles.append( dds.video_stream_profile( 20, dds.video_encoding( "16UC1" ), 1280, 720 ) )
-    profiles.append( dds.video_stream_profile( 30, dds.video_encoding( "16UC1" ), 1280, 720 ) )
+    profiles.append( dds.video_stream_profile( 5, dds.video_encoding.z16, 1280, 720 ) )
+    profiles.append( dds.video_stream_profile( 10, dds.video_encoding.z16, 1280, 720 ) )
+    profiles.append( dds.video_stream_profile( 15, dds.video_encoding.z16, 1280, 720 ) )
+    profiles.append( dds.video_stream_profile( 20, dds.video_encoding.z16, 1280, 720 ) )
+    profiles.append( dds.video_stream_profile( 30, dds.video_encoding.z16, 1280, 720 ) )
     stream_server = dds.depth_stream_server( "multiple-depth-stream", "multiple-depth-sensor" )
     stream_server.init_profiles( profiles, 0 )
     stream_servers.append( stream_server )

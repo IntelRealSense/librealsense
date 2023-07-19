@@ -586,7 +586,8 @@ PYBIND11_MODULE(NAME, m) {
         .def( "to_json", []( dds_option const & self ) { return self.to_json().dump(); } );
 
     using realdds::dds_video_encoding;
-    py::class_< dds_video_encoding >( m, "video_encoding" )
+    py::class_< dds_video_encoding > video_encoding( m, "video_encoding" );
+    video_encoding  //
         .def( py::init<>() )
         .def( py::init< std::string const & >() )
         .def( "is_valid", &dds_video_encoding::is_valid )
@@ -595,6 +596,13 @@ PYBIND11_MODULE(NAME, m) {
         .def( "__nonzero__", &dds_video_encoding::is_valid )  // Called to implement truth value testing in Python 2
         .def( "__bool__", &dds_video_encoding::is_valid )     // Called to implement truth value testing in Python 3
         .def( "__repr__", []( dds_video_encoding const & self ) { return self.to_string(); } );
+    video_encoding.attr( "z16" ) = dds_video_encoding( "16UC1" );
+    video_encoding.attr( "y8" ) = dds_video_encoding( "mono8" );
+    video_encoding.attr( "y16" ) = dds_video_encoding( "Y16" );  // todo should be mono16
+    video_encoding.attr( "byr2" ) = dds_video_encoding( "BYR2" );
+    video_encoding.attr( "yuyv" ) = dds_video_encoding( "yuv422_yuy2" );
+    video_encoding.attr( "uyvy" ) = dds_video_encoding( "UYVY" );  // todo
+    video_encoding.attr( "rgb" ) = dds_video_encoding( "rgb8" );
 
     using realdds::dds_stream_profile;
     py::class_< dds_stream_profile, std::shared_ptr< dds_stream_profile > > stream_profile_base( m, "stream_profile" );
