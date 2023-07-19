@@ -11,7 +11,7 @@ dds.debug( log.is_debug_on(), log.nested )
 participant = dds.participant()
 participant.init( 123, "formats-conversion-server" )
 
-device_info = dds.device_info()
+device_info = dds.message.device_info()
 device_info.name = "formats-conversion-device"
 device_info.serial = "123"
 device_info.product_line = "D400"

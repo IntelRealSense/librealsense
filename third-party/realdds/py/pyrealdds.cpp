@@ -3,6 +3,7 @@
 
 #include <realdds/dds-defines.h>
 #include <realdds/dds-participant.h>
+#include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/flexible-msg.h>
 #include <realdds/topics/flexible/flexiblePubSubTypes.h>
 #include <realdds/topics/image-msg.h>
@@ -181,24 +182,19 @@ PYBIND11_MODULE(NAME, m) {
               } )
         .def( "create_listener", []( dds_participant & self ) { return self.create_listener(); } );
 
-    // The 'types' submodule will contain all the known topic types in librs
-    // These are used alongside the 'dds_topic' class:
-    //      topic = dds.topic( p, dds.types.device_info(), "realsense/device-info" )
-    auto types = m.def_submodule( "types", "all the types that " SNAME " can work with" );
+    // The 'message' submodule will contain all the known message types in realdds.
+    auto message = m.def_submodule( "message", "all the messages that " SNAME " can work with" );
 
     // The 'topics' submodule will contain pointers to the topic names:
     auto topics = m.def_submodule( "topics", "all the topics that " SNAME " knows" );
     topics.attr( "device_info" ) = realdds::topics::DEVICE_INFO_TOPIC_NAME;
+    topics.attr( "device_notification" ) = realdds::topics::NOTIFICATION_TOPIC_NAME;
+    topics.attr( "device_control" ) = realdds::topics::CONTROL_TOPIC_NAME;
+    topics.attr( "device_metadata" ) = realdds::topics::METADATA_TOPIC_NAME;
 
     // We need to declare a basic TypeSupport or else dds_topic ctor won't work
     using eprosima::fastdds::dds::TypeSupport;
-    py::class_< TypeSupport > topic_type( types, "topic_type" );
-
-    // Another submodule, 'raw' is used with dds_topic to actually send and receive messages, e.g.:
-    //      reader = dds.topic_reader( topic )
-    //      ...
-    //      info = dds.device_info( dds.raw.device_info( reader ) )
-    //auto raw = m.def_submodule( "raw", "all the topics that " SNAME " can work with" );
+    py::class_< TypeSupport >( m, "topic_type" );
 
     using realdds::video_intrinsics;
     py::class_< video_intrinsics, std::shared_ptr< video_intrinsics > >( m, "video_intrinsics" )
@@ -307,10 +303,13 @@ PYBIND11_MODULE(NAME, m) {
     // and, coupled with shared_ptr usage, are very hard to get around. This is much simpler...
     using realdds::topics::device_info;
     using realdds::topics::flexible_msg;
-    types.def( "device_info", []() { return TypeSupport( new flexible_msg::type ); } );
 
-    py::class_< device_info >( m, "device_info" )
+    typedef std::shared_ptr< dds_topic > flexible_msg_create_topic( std::shared_ptr< dds_participant > const &,
+                                                                    char const * );
+
+    py::class_< device_info >( message, "device_info" )
         .def( py::init<>() )
+        .def_static( "create_topic", static_cast< flexible_msg_create_topic * >( &flexible_msg::create_topic ) )
         .def_readwrite( "name", &device_info::name )
         .def_readwrite( "serial", &device_info::serial )
         .def_readwrite( "product_line", &device_info::product_line )
@@ -337,16 +336,13 @@ PYBIND11_MODULE(NAME, m) {
               } );
 
     using realdds::topics::flexible_msg;
-    using raw_flexible = realdds::topics::raw::flexible;
-    types.def( "flexible", []() { return TypeSupport( new flexible_msg::type ); } );
-
-    py::enum_< flexible_msg::data_format >( m, "flexible.data_format" )
+    py::enum_< flexible_msg::data_format >( message, "flexible_format" )
         .value( "json", flexible_msg::data_format::JSON )
         .value( "cbor", flexible_msg::data_format::CBOR )
         .value( "custom", flexible_msg::data_format::CUSTOM );
 
     using eprosima::fastrtps::rtps::SampleIdentity;
-    py::class_< SampleIdentity >( m, "sample_identity" )  //
+    py::class_< SampleIdentity >( message, "sample_identity" )  //
         .def( "__repr__",
               []( SampleIdentity const & self )
               {
@@ -358,7 +354,7 @@ PYBIND11_MODULE(NAME, m) {
               } );
 
     using eprosima::fastdds::dds::SampleInfo;
-    py::class_< SampleInfo >( m, "sample_info" )  //
+    py::class_< SampleInfo >( message, "sample_info" )  //
         .def( py::init<>() )
         .def( "identity", []( SampleInfo const & self ) { return self.sample_identity; } )
         .def( "source_timestamp", []( SampleInfo const & self ) { return self.source_timestamp.to_ns(); } )
@@ -412,13 +408,12 @@ PYBIND11_MODULE(NAME, m) {
     m.def( "timestr", []( dds_time t ) { return timestr( t ).to_string(); } );
 
 
-    typedef std::shared_ptr< dds_topic > flexible_msg_create_topic( std::shared_ptr< dds_participant > const &,
-                                                                    char const * );
-    py::class_< flexible_msg >( m, "flexible_msg" )
+    py::class_< flexible_msg >( message, "flexible" )
         .def( py::init<>() )
         .def( py::init( []( std::string const & json_string ) {
             return flexible_msg( flexible_msg::data_format::JSON, nlohmann::json::parse( json_string ) );
         } ) )
+        .def_static( "create_topic", static_cast< flexible_msg_create_topic * >( &flexible_msg::create_topic ) )
         .def_readwrite( "data_format", &flexible_msg::_data_format )
         .def_readwrite( "version", &flexible_msg::_version )
         .def_readwrite( "data", &flexible_msg::_data )
@@ -477,7 +472,6 @@ PYBIND11_MODULE(NAME, m) {
             },
             py::arg( "reader" ), py::arg( "sample" ) = nullptr,
             py::call_guard< py::gil_scoped_release >() )
-        .def_static( "create_topic", static_cast<flexible_msg_create_topic *>( &flexible_msg::create_topic ))
         .def( "json_data", &flexible_msg::json_data )
         .def( "json_string",
               []( flexible_msg const & self )
@@ -486,8 +480,9 @@ PYBIND11_MODULE(NAME, m) {
 
 
     using image_msg = realdds::topics::image_msg;
-    py::class_< image_msg, std::shared_ptr< image_msg > >( m, "image_msg" )
+    py::class_< image_msg, std::shared_ptr< image_msg > >( message, "image" )
         .def( py::init<>() )
+        .def_static( "create_topic", &image_msg::create_topic )
         .def_readwrite( "data", &image_msg::raw_data )
         .def_readwrite( "width", &image_msg::width )
         .def_readwrite( "height", &image_msg::height )
@@ -521,13 +516,13 @@ PYBIND11_MODULE(NAME, m) {
             py::arg( "reader" ),
             py::arg( "sample" ) = nullptr,
             py::call_guard< py::gil_scoped_release >() )
-        .def_static( "create_topic", &image_msg::create_topic )
         /*.def("write_to", &image_msg::write_to, py::call_guard< py::gil_scoped_release >())*/;
 
 
     using imu_msg = realdds::topics::imu_msg;
-    py::class_< imu_msg, std::shared_ptr< imu_msg > >( m, "imu_msg" )
+    py::class_< imu_msg, std::shared_ptr< imu_msg > >( message, "imu" )
         .def( py::init<>() )
+        .def_static( "create_topic", &imu_msg::create_topic )
         .def_property(
             "gyro_data",
             []( imu_msg const & self ) { return get_vector3( self.gyro_data() ); },
@@ -562,7 +557,6 @@ PYBIND11_MODULE(NAME, m) {
             py::arg( "reader" ),
             py::arg( "sample" ) = nullptr,
             py::call_guard< py::gil_scoped_release >() )
-        .def_static( "create_topic", &imu_msg::create_topic )
         .def( "write_to", &imu_msg::write_to, py::call_guard< py::gil_scoped_release >() );
 
 

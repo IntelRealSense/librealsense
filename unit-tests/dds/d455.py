@@ -5,7 +5,7 @@ import pyrealdds as dds
 from rspy import log, test
 
 
-device_info = dds.device_info()
+device_info = dds.message.device_info()
 device_info.name = "Intel RealSense D455"
 device_info.serial = "114222251267"
 device_info.product_line = "D400"

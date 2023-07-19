@@ -5,7 +5,7 @@ import pyrealdds as dds
 from rspy import log, test
 
 
-device_info = dds.device_info()
+device_info = dds.message.device_info()
 device_info.name = "Intel RealSense D435I"
 device_info.serial = "036522070660"
 device_info.product_line = "D400"
@@ -48,19 +48,19 @@ def motion_stream():
     stream = dds.motion_stream_server( "Motion", "Motion Module" )
     stream.init_profiles( gyro_stream_profiles(), 0 )
     stream.init_options( motion_module_options() )
-    
+
     intr = dds.motion_intrinsics()
     intr.data = [[1.0,0.0,0.0,0.0],[0.0,1.0,0.0,0.0],[0.0,0.0,1.0,0.0]]
     intr.noise_variances = [0.0,0.0,0.0]
     intr.bias_variances = [0.0,0.0,0.0]
     stream.set_gyro_intrinsics( intr )
-    
+
     intr = dds.motion_intrinsics()
     intr.data = [[1.0,0.0,0.0,0.0],[0.0,1.0,0.0,0.0],[0.0,0.0,1.0,0.0]]
     intr.noise_variances = [0.0,0.0,0.0]
     intr.bias_variances = [0.0,0.0,0.0]
     stream.set_accel_intrinsics( intr )
-    
+
     return stream
 
 

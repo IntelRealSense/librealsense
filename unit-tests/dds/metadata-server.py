@@ -31,7 +31,7 @@ def broadcast():
 
 
 def new_image( width, height, bpp, timestamp_as_ns = None ):
-    i = dds.image_msg()
+    i = dds.message.image()
     i.width = width
     i.height = height
     i.data = bytearray( width * height * bpp )

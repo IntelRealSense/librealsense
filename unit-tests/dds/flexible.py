@@ -16,7 +16,7 @@ class writer:
 
     def __init__( self, participant, topic, qos = None ):
         if type(topic) is str:
-            self.handle = dds.flexible_msg.create_topic( participant, topic )
+            self.handle = dds.message.flexible.create_topic( participant, topic )
         elif type(topic) is dds.topic:
             self.handle = topic
         else:
@@ -41,7 +41,7 @@ class writer:
                 raise RuntimeError( f'timed out waiting for {n_readers} readers' )
 
     def write( self, json_string ):
-        msg = dds.flexible_msg( json_string )
+        msg = dds.message.flexible( json_string )
         now = dds.now()
         msgs = str(msg)
         msg.write_to( self.writer )
@@ -59,7 +59,7 @@ class reader:
 
     def __init__( self, participant, topic, qos = None ):
         if type(topic) is str:
-            self.handle = dds.flexible_msg.create_topic( participant, topic )
+            self.handle = dds.message.flexible.create_topic( participant, topic )
         elif type(topic) is dds.topic:
             self.handle = topic
         else:
@@ -95,8 +95,8 @@ class reader:
         #log.d( f'{topic_name}.on_data_available @{now}' )
         got_something = False
         while True:
-            sample = dds.sample_info()
-            msg = dds.flexible_msg.take_next( reader, sample )
+            sample = dds.message.sample_info()
+            msg = dds.message.flexible.take_next( reader, sample )
             if not msg:
                 if not got_something:
                     raise RuntimeError( "expected message not received!" )

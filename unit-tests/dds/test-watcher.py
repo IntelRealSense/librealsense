@@ -17,18 +17,18 @@ participant.init( 123, "client" )
 
 
 # We listen directly on the device-info topic
-device_info_topic = dds.flexible_msg.create_topic( participant, dds.topics.device_info )
+device_info_topic = dds.message.device_info.create_topic( participant, dds.topics.device_info )
 device_info = dds.topic_reader( device_info_topic )
 broadcast_received = threading.Event()
 broadcast_devices = []
 def on_device_info_available( reader ):
     while True:
-        msg = dds.flexible_msg.take_next( reader )
+        msg = dds.message.flexible.take_next( reader )
         if not msg:
             break
         j = msg.json_data()
         log.d( f'on_device_info_available {j}' )
-        di = dds.device_info.from_json( j )
+        di = dds.message.device_info.from_json( j )
         global broadcast_devices
         broadcast_devices.append( di )
     broadcast_received.set()
