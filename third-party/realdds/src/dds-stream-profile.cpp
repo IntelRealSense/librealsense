@@ -21,10 +21,10 @@ std::ostream & operator<<( std::ostream & os, dds_stream_profile const & profile
 }
 
 
-dds_stream_format::dds_stream_format( std::string const & s )
+dds_video_encoding::dds_video_encoding( std::string const & s )
 {
     if( s.length() > size )
-        DDS_THROW( runtime_error, "format is too long" );
+        DDS_THROW( runtime_error, "encoding is too long" );
     data[s.copy( data, size )] = 0;
 }
 
@@ -74,7 +74,7 @@ enum rs2_format  // copy from rs2_sensor.h
 };
 
 
-int dds_stream_format::to_rs2() const
+int dds_video_encoding::to_rs2() const
 {
     static std::map< std::string, int > fcc_to_rs2{  // copy from ds5-device.cpp
         { "yuv422_yuy2", RS2_FORMAT_YUYV },  // Used by Color streams; ROS2-compatible
@@ -101,12 +101,12 @@ int dds_stream_format::to_rs2() const
     std::string s = to_string();
     auto it = fcc_to_rs2.find( s );
     if( it == fcc_to_rs2.end() )
-        DDS_THROW( runtime_error, "invalid format '" + s + "'" );
+        DDS_THROW( runtime_error, "invalid encoding '" + s + "'" );
     return it->second;
 }
 
 
-dds_stream_format dds_stream_format::from_rs2( int rs2_format )
+dds_video_encoding dds_video_encoding::from_rs2( int rs2_format )
 {
     char const * encoding = nullptr;
     switch( rs2_format )
@@ -131,9 +131,9 @@ dds_stream_format dds_stream_format::from_rs2( int rs2_format )
     case RS2_FORMAT_UYVY: encoding = "UYVY"; break;
     case RS2_FORMAT_Y10BPACK: encoding = "Y10B"; break;
     default:
-        DDS_THROW( runtime_error, "cannot translate rs2_format " + std::to_string( rs2_format ) + " to any known dds_stream_format" );
+        DDS_THROW( runtime_error, "cannot translate rs2_format " + std::to_string( rs2_format ) + " to any known dds_video_encoding" );
     };
-    return dds_stream_format( encoding );
+    return dds_video_encoding( encoding );
 }
 
 
@@ -173,7 +173,7 @@ std::string dds_stream_profile::details_to_string() const
 std::string dds_video_stream_profile::details_to_string() const
 {
     std::ostringstream os;
-    os << _width << 'x' << _height << ' ' << _format.to_string() << ' ';
+    os << _width << 'x' << _height << ' ' << _encoding.to_string() << ' ';
     os << super::details_to_string();
     return os.str();
 }
@@ -198,7 +198,7 @@ json dds_stream_profile::to_json() const
 
 dds_video_stream_profile::dds_video_stream_profile( nlohmann::json const & j, int & index )
     : super( j, index )
-    , _format( rsutils::json::get< std::string >( j, index++ ) )
+    , _encoding( rsutils::json::get< std::string >( j, index++ ) )
 {
     _width = rsutils::json::get< int16_t >( j, index++ );
     _height = rsutils::json::get< int16_t >( j, index++ );
@@ -208,7 +208,7 @@ dds_video_stream_profile::dds_video_stream_profile( nlohmann::json const & j, in
 json dds_video_stream_profile::to_json() const
 {
     auto profile = super::to_json();
-    profile += format().to_string();
+    profile += encoding().to_string();
     profile += width();
     profile += height();
     return profile;

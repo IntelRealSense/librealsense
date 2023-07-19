@@ -175,7 +175,7 @@ dds_sensor_proxy::find_profile( sid_index sidx, realdds::dds_video_stream_profil
         {
             auto vsp = std::static_pointer_cast< realdds::dds_video_stream_profile >( sp );
             if( profile.width() == vsp->width() && profile.height() == vsp->height()
-                && profile.format() == vsp->format() && profile.frequency() == vsp->frequency() )
+                && profile.encoding() == vsp->encoding() && profile.frequency() == vsp->frequency() )
             {
                 return vsp;
             }
@@ -227,7 +227,7 @@ void dds_sensor_proxy::open( const stream_profiles & profiles )
             auto video_profile = find_profile(
                 sidx,
                 realdds::dds_video_stream_profile( sp->get_framerate(),
-                                                   realdds::dds_stream_format::from_rs2( sp->get_format() ),
+                                                   realdds::dds_video_encoding::from_rs2( sp->get_format() ),
                                                    vsp->get_width(),
                                                    vsp->get_height() ) );
             if( video_profile )

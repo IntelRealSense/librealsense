@@ -53,7 +53,7 @@ static rs2_video_stream to_rs2_video_stream( rs2_stream const stream_type,
     prof.width = profile->width();
     prof.height = profile->height();
     prof.fps = profile->frequency();
-    prof.fmt = static_cast< rs2_format >( profile->format().to_rs2() );
+    prof.fmt = static_cast< rs2_format >( profile->encoding().to_rs2() );
 
     // Handle intrinsics
     auto intr = std::find_if( intrinsics.begin(),
@@ -398,7 +398,7 @@ void dds_device_proxy::tag_default_profile_of_stream(
         if( vsp && dds_vsp )
         {
             if( vsp->get_width() != dds_vsp->width() || vsp->get_height() != dds_vsp->height()
-                || vsp->get_format() != dds_vsp->format().to_rs2() )
+                || vsp->get_format() != dds_vsp->encoding().to_rs2() )
                 return;  // Video profiles of incompatible resolutions
         }
 

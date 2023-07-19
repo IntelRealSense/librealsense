@@ -76,7 +76,7 @@ void dds_stream_sensor_bridge::on_streaming_needed( stream_bridge & stream, bool
 
 bool profiles_are_compatible( std::shared_ptr< dds_stream_profile > const & p1,
                               std::shared_ptr< dds_stream_profile > const & p2,
-                              bool any_format = false )
+                              bool any_encoding = false )
 {
     auto vp1 = std::dynamic_pointer_cast< realdds::dds_video_stream_profile >( p1 );
     auto vp2 = std::dynamic_pointer_cast< realdds::dds_video_stream_profile >( p2 );
@@ -86,7 +86,7 @@ bool profiles_are_compatible( std::shared_ptr< dds_stream_profile > const & p1,
     {
         if( vp1->width() != vp2->width() || vp1->height() != vp2->height() )
             return false;
-        if( ! any_format && vp1->format() != vp2->format() )
+        if( ! any_encoding && vp1->encoding() != vp2->encoding() )
             return false;
     }
     return p1->frequency() == p2->frequency();
@@ -96,13 +96,13 @@ bool profiles_are_compatible( std::shared_ptr< dds_stream_profile > const & p1,
 static std::shared_ptr< realdds::dds_stream_profile >
 find_profile( std::shared_ptr< realdds::dds_stream_server > const & stream,
               std::shared_ptr< realdds::dds_stream_profile > const & profile,
-              bool any_format = false )
+              bool any_encoding = false )
 {
     auto & stream_profiles = stream->profiles();
     auto it = std::find_if( stream_profiles.begin(),
                             stream_profiles.end(),
                             [&]( std::shared_ptr< realdds::dds_stream_profile > const & sp )
-                            { return profiles_are_compatible( sp, profile, any_format ); } );
+                            { return profiles_are_compatible( sp, profile, any_encoding ); } );
     std::shared_ptr< realdds::dds_stream_profile > found_profile;
     if( it != stream_profiles.end() )
         found_profile = *it;
@@ -183,7 +183,7 @@ void dds_stream_sensor_bridge::sensor_bridge::verify_compatible_profile(
         if( already_streaming.is_explicit || already_streaming.is_implicit )
         {
             // Profiles are compatible if they match resolution, FPS
-            // If they're of different types (e.g., depth vs ir), we don't care about the format
+            // If they're of different types (e.g., depth vs ir), we don't care about the encoding
             bool const different_types = profile->stream()->type_string() != already_streaming.server->type_string();
             if( ! profiles_are_compatible( profile, already_streaming.profile, different_types ) )
                 DDS_THROW( runtime_error,
@@ -327,7 +327,7 @@ void dds_stream_sensor_bridge::start_sensor( std::string const & sensor_name, se
             auto video_profile = std::dynamic_pointer_cast< realdds::dds_video_stream_profile >( profile );
             if( video_profile )
             {
-                header.format = video_profile->format();
+                header.encoding = video_profile->encoding();
                 header.width = video_profile->width();
                 header.height = video_profile->height();
             }

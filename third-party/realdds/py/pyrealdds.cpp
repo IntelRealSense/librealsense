@@ -591,16 +591,16 @@ PYBIND11_MODULE(NAME, m) {
         .def( "set_description", &dds_option::set_description )
         .def( "to_json", []( dds_option const & self ) { return self.to_json().dump(); } );
 
-    using realdds::dds_stream_format;
-    py::class_< dds_stream_format >( m, "stream_format" )
+    using realdds::dds_video_encoding;
+    py::class_< dds_video_encoding >( m, "video_encoding" )
         .def( py::init<>() )
         .def( py::init< std::string const & >() )
-        .def( "is_valid", &dds_stream_format::is_valid )
-        .def( "to_rs2", &dds_stream_format::to_rs2 )
-        .def( "from_rs2", &dds_stream_format::from_rs2 )
-        .def( "__nonzero__", &dds_stream_format::is_valid )  // Called to implement truth value testing in Python 2
-        .def( "__bool__", &dds_stream_format::is_valid )     // Called to implement truth value testing in Python 3
-        .def( "__repr__", []( dds_stream_format const & self ) { return self.to_string(); } );
+        .def( "is_valid", &dds_video_encoding::is_valid )
+        .def( "to_rs2", &dds_video_encoding::to_rs2 )
+        .def( "from_rs2", &dds_video_encoding::from_rs2 )
+        .def( "__nonzero__", &dds_video_encoding::is_valid )  // Called to implement truth value testing in Python 2
+        .def( "__bool__", &dds_video_encoding::is_valid )     // Called to implement truth value testing in Python 3
+        .def( "__repr__", []( dds_video_encoding const & self ) { return self.to_string(); } );
 
     using realdds::dds_stream_profile;
     py::class_< dds_stream_profile, std::shared_ptr< dds_stream_profile > > stream_profile_base( m, "stream_profile" );
@@ -623,8 +623,8 @@ PYBIND11_MODULE(NAME, m) {
 
     using realdds::dds_video_stream_profile;
     py::class_< dds_video_stream_profile, std::shared_ptr< dds_video_stream_profile > >( m, "video_stream_profile", stream_profile_base )
-        .def( py::init< int16_t, dds_stream_format, uint16_t, uint16_t >() )
-        .def( "format", &dds_video_stream_profile::format )
+        .def( py::init< int16_t, dds_video_encoding, uint16_t, uint16_t >() )
+        .def( "format", &dds_video_stream_profile::encoding )
         .def( "width", &dds_video_stream_profile::width )
         .def( "height", &dds_video_stream_profile::height );
 
@@ -671,8 +671,8 @@ PYBIND11_MODULE(NAME, m) {
     video_stream_server_base
         .def( "set_intrinsics", &dds_video_stream_server::set_intrinsics )
         .def( "start_streaming",
-              []( dds_video_stream_server & self, dds_stream_format format, int width, int height ) {
-                  self.start_streaming( { format, height, width } );
+              []( dds_video_stream_server & self, dds_video_encoding encoding, int width, int height ) {
+                  self.start_streaming( { encoding, height, width } );
               } )
         .def( "publish_image",
               []( dds_video_stream_server & self, image_msg const & img )
