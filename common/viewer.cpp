@@ -2211,51 +2211,7 @@ namespace rs2
 
         if (last_labeled_points)
         {
-            auto vf_profile = last_labeled_points.get_profile().as<video_stream_profile>();
-            // Non-linear correspondence customized for non-flat surface exploration
-            if (vf_profile.width() <= 0)
-                throw std::runtime_error("Profile width must be greater than 0.");
-
-            glPointSize(std::sqrt(viewer_rect.w / vf_profile.width()));
-
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
-
-            glBegin(GL_POINTS);
-            {
-                auto vertices = last_labeled_points.get_vertices();
-                auto vertices_size = last_labeled_points.size();
-
-                std::vector<rs2::vertex> vertices_vec;
-                vertices_vec.insert(vertices_vec.begin(), vertices, vertices + vertices_size);
-
-                auto labels = last_labeled_points.get_labels();
-
-                std::vector<uint8_t> labels_vec;
-                labels_vec.insert(labels_vec.begin(), labels, labels + vertices_size);
-
-                std::vector< std::pair<uint8_t, std::vector<rs2::vertex> > > labels_to_vertices =
-                    labeled_point_cloud_utilities::prepare_labeled_points_data(vertices_vec, labels_vec, vertices_size);
-
-                auto label_to_color3f = labeled_point_cloud_utilities::get_label_to_color3f();
-                /* this segment actually renders the labeled pointcloud */
-                for (int i = 0; i < labels_to_vertices.size(); ++i)
-                {
-                    auto label = labels_to_vertices[i].first;
-                    auto vertices = labels_to_vertices[i].second;
-                    auto color = label_to_color3f[static_cast<rs2_point_cloud_label>(label)];
-
-                    for (auto&& v : vertices)
-                    {
-                        GLfloat vert[3] = { -v.y, -v.z, v.x };
-                        glVertex3fv(vert);
-                        glColor3f(color.x, color.y, color.z);
-                    }
-                }
-            }
-            glEnd();
-
-            glColor4f(1.f, 1.f, 1.f, 1.f);
+            draw_3d_labeled_points(viewer_rect, last_labeled_points);
         }
 
         _measurements.draw(win);
@@ -3457,5 +3413,65 @@ namespace rs2
                 }
             }
         }
+    }
+
+    void viewer_model::draw_3d_labeled_points(const rect& viewer_rect, rs2::labeled_points labeled_points)
+    {
+        auto labeled_points_profile = last_labeled_points.get_profile().as<video_stream_profile>();
+        // Non-linear correspondence customized for non-flat surface exploration
+        if (labeled_points_profile.width() <= 0)
+            throw std::runtime_error("Profile width must be greater than 0.");
+        glPointSize(std::sqrt(viewer_rect.w / labeled_points_profile.width()));
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
+        
+        auto& lpc_stream_model = streams.at(labeled_points_profile.unique_id());
+        
+        rs2_extrinsics lpc_to_depth = lpc_stream_model.dev->get_extrinsics_to_depth();
+        auto rot = lpc_to_depth.rotation;
+        GLfloat rotation_matrix[16] = { rot[0], rot[3], rot[6], 0,
+                                        rot[1], rot[4], rot[7], 0,
+                                        rot[2], rot[5], rot[8], 0,
+                                         0    ,   0,      0,    1 };
+        glMultMatrixf(rotation_matrix);
+        glTranslatef(lpc_to_depth.translation[0], lpc_to_depth.translation[1], lpc_to_depth.translation[2]);
+        
+        glBegin(GL_POINTS);
+        {
+            auto vertices = last_labeled_points.get_vertices();
+            auto vertices_size = last_labeled_points.size();
+
+            std::vector<rs2::vertex> vertices_vec;
+            vertices_vec.insert(vertices_vec.begin(), vertices, vertices + vertices_size);
+
+            auto labels = last_labeled_points.get_labels();
+
+            std::vector<uint8_t> labels_vec;
+            labels_vec.insert(labels_vec.begin(), labels, labels + vertices_size);
+
+            std::vector< std::pair<uint8_t, std::vector<rs2::vertex> > > labels_to_vertices =
+                labeled_point_cloud_utilities::prepare_labeled_points_data(vertices_vec, labels_vec, vertices_size);
+
+            auto label_to_color3f = labeled_point_cloud_utilities::get_label_to_color3f();
+            /* this segment actually renders the labeled pointcloud */
+            for (int i = 0; i < labels_to_vertices.size(); ++i)
+            {
+                auto label = labels_to_vertices[i].first;
+                auto vertices = labels_to_vertices[i].second;
+                auto color = label_to_color3f[static_cast<rs2_point_cloud_label>(label)];
+
+                for (auto&& v : vertices)
+                {
+                    glColor3f(color.x, color.y, color.z);
+                    glVertex3fv(v);
+                }
+            }
+        }
+        glEnd();
+
+        glColor4f(1.f, 1.f, 1.f, 1.f);
+
+        check_gl_error();
     }
 }

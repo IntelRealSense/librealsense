@@ -140,6 +140,7 @@ namespace rs2
             *index = (int)(max_default - values.begin());
             return false;
         }
+        inline rs2_extrinsics get_extrinsics_to_depth() const { return _extrinsics_to_depth; }
 
         viewer_model& viewer;
         std::function<void()> on_frame = [] {};
@@ -224,11 +225,12 @@ namespace rs2
         std::pair<int, int> get_max_resolution(rs2_stream stream) const;
         void sort_resolutions(std::vector<std::pair<int, int>>& resolutions) const;
         bool is_ir_calibration_profile() const;
-
+        void set_extrinsics_to_depth_if_needed();
         // used in method get_max_resolution per stream
         std::map<rs2_stream, std::vector<std::pair<int, int>>> resolutions_per_stream;
 
         const float SHORT_RANGE_MIN_DISTANCE = 0.05f; // 5 cm
         const float SHORT_RANGE_MAX_DISTANCE = 4.0f;  // 4 meters
+        rs2_extrinsics _extrinsics_to_depth;
     };
 }
