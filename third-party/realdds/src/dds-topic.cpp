@@ -18,6 +18,11 @@ dds_topic::dds_topic( std::shared_ptr< dds_participant > const & participant,
     : _participant( participant )
     , _topic( nullptr )
 {
+    if( ! _participant )
+        DDS_THROW( runtime_error, "null participant" );
+    if( ! *_participant )
+        DDS_THROW( runtime_error, "invalid participant" );
+
     // Auto fill DDS X-Types TypeObject so other applications (e.g sniffer) can dynamically match a reader for this topic
     topic_type.get()->auto_fill_type_object( true );
     // Don't fill DDS X-Types TypeInformation, it is wasteful if you send TypeObject anyway
