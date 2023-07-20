@@ -33,6 +33,13 @@
 # i2c 	2	d4xx   	Firmware 	/dev/d4xx-dfu-c	/dev/d4xx-dfu-2
 
 # Dependency: v4l-utils
+v4l2_util=$(which v4l2-ctl)
+media_util=$(which media-ctl)
+if [ -z ${v4l2_util} ]; then
+  echo "v4l2-ctl not found, install with: sudo apt install v4l-utils"
+  exit 1
+fi
+
 #
 # parse command line parameters
 # for '-i' parameter, print links only
@@ -71,7 +78,7 @@ camera_vid=("depth" "depth-md" "color" "color-md" "ir" "imu")
 [[ $quiet -eq 0 ]] && printf "Bus\tCamera\tSensor\tNode Type\tVideo Node\tRS Link\n"
 
 # For Jetson we have simple method
-if [ -n "$(v4l2-ctl --list-devices | grep tegra)" ]; then
+if [ -n "$(${v4l2_util} --list-devices | grep tegra)" ]; then
   for ((i = 0; i < 127; i++)); do
     if [ ! -c /dev/video${i} ]; then
       break;
@@ -79,7 +86,7 @@ if [ -n "$(v4l2-ctl --list-devices | grep tegra)" ]; then
     cam_id=$((i/6))
     sens_id=$((i%6))
     vid="/dev/video${i}"
-    dev_name=$(v4l2-ctl -d ${vid} -D | grep 'Driver name' | head -n1 | awk -F' : ' '{print $2}')
+    dev_name=$(${v4l2_util} -d ${vid} -D | grep 'Driver name' | head -n1 | awk -F' : ' '{print $2}')
     dev_ln="/dev/video-rs-${camera_vid[${sens_id}]}-${cam_id}"
     bus="mipi"
     if [ "$dev_name" = "uvcvideo" ]; then
@@ -98,7 +105,7 @@ if [ -n "$(v4l2-ctl --list-devices | grep tegra)" ]; then
       [[ -e $dev_ln ]] && sudo unlink $dev_ln
       sudo ln -s $vid $dev_ln
       # Create DFU device link for camera on jetson
-      subdev=$(media-ctl --print-dot | grep "D4XX depth ${camera} | awk -F'|' '{print $2}' | awk -F'/' '{print $3}' | tr -d ' '")
+      subdev=$(${media_util} --print-dot | grep "D4XX depth ${camera} | awk -F'|' '{print $2}' | awk -F'/' '{print $3}' | tr -d ' '")
       i2cdev=$(ls -l /sys/class/video4linux/${subdev}/device | awk -F'/' '{print $9}')
       dev_dfu_name="/dev/d4xx-dfu-${i2cdev}"
       dev_dfu_ln="/dev/d4xx-dfu-${cam_id}"
@@ -110,8 +117,10 @@ exit 0
 fi
 
 #ADL-P IPU6
+mdev=$(${v4l2_util} --list-devices | grep -A1 ipu6 | grep media)
+#media-ctl -r
 # cache media-ctl output
-dot=$(media-ctl --print-dot)
+dot=$(${media_util} -d ${mdev} --print-dot)
 # for all d457 muxes a, b, c and d
 for camera in $mux_list; do
   create_dfu_dev=0
@@ -131,7 +140,7 @@ for camera in $mux_list; do
     vid=$(echo "${dot}" | grep "${vid_nd}" | grep video | tr '\\n' '\n' | grep video | awk -F'"' '{print $1}')
     [[ -z $vid ]] && continue;
     dev_ln="/dev/video-rs-${camera_names["${sens}"]}-${camera_idx[${camera}]}"
-    dev_name=$(v4l2-ctl -d $vid -D | grep Model | awk -F':' '{print $2}')
+    dev_name=$(${v4l2_util} -d $vid -D | grep Model | awk -F':' '{print $2}')
 
     [[ $quiet -eq 0 ]] && printf '%s\t%d\t%s\tStreaming\t%s\t%s\n' "$dev_name" ${camera_idx[${camera}]} ${camera_names["${sens}"]} $vid $dev_ln
 
@@ -140,7 +149,7 @@ for camera in $mux_list; do
       [[ -e $dev_ln ]] && sudo unlink $dev_ln
       sudo ln -s $vid $dev_ln
       # activate ipu6 link enumeration feature
-      v4l2-ctl -d $dev_ln -c enumerate_graph_link=1
+      ${v4l2_util} -d $dev_ln -c enumerate_graph_link=1
     fi
     create_dfu_dev=1 # will create DFU device link for camera
     # metadata link
@@ -151,14 +160,14 @@ for camera in $mux_list; do
 
     vid_num=$(echo $vid | grep -o '[0-9]\+')
     dev_md_ln="/dev/video-rs-${camera_names["${sens}"]}-md-${camera_idx[${camera}]}"
-    dev_name=$(v4l2-ctl -d "/dev/video$(($vid_num+1))" -D | grep Model | awk -F':' '{print $2}')
+    dev_name=$(${v4l2_util} -d "/dev/video$(($vid_num+1))" -D | grep Model | awk -F':' '{print $2}')
 
     [[ $quiet -eq 0 ]] && printf '%s\t%d\t%s\tMetadata\t/dev/video%s\t%s\n' "$dev_name" ${camera_idx[${camera}]} ${camera_names["${sens}"]} $(($vid_num+1)) $dev_md_ln
     # create link only in case we choose not only to show it
     if [[ $info -eq 0 ]]; then
       [[ -e $dev_md_ln ]] && sudo unlink $dev_md_ln
       sudo ln -s "/dev/video$(($vid_num+1))" $dev_md_ln
-      v4l2-ctl -d $dev_md_ln -c enumerate_graph_link=3
+      ${v4l2_util} -d $dev_md_ln -c enumerate_graph_link=3
     fi
   done
   # create DFU device link for camera
