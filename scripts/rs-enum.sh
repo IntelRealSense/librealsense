@@ -75,50 +75,79 @@ declare -A camera_names=( [depth]=depth [rgb]=color ["motion detection"]=ir [imu
 
 camera_vid=("depth" "depth-md" "color" "color-md" "ir" "imu")
 
-[[ $quiet -eq 0 ]] && printf "Bus\tCamera\tSensor\tNode Type\tVideo Node\tRS Link\n"
 
-# For Jetson we have simple method
-if [ -n "$(${v4l2_util} --list-devices | grep tegra)" ]; then
-  for ((i = 0; i < 127; i++)); do
-    if [ ! -c /dev/video${i} ]; then
-      break;
-    fi
+mdev=$(${v4l2_util} --list-devices | grep -A1 tegra | grep media)
+
+# For Jetson we have `simple` method
+if [ -n "${mdev}" ]; then
+# cache media-ctl output
+dot=$(${media_util} -d ${mdev} --print-dot)
+
+vid_dev_idx=$(echo "${dot}" | grep "DS5 mux" | grep "vi-output" | tr '\\n' '\n' | grep video | awk -F'"' '{print $1}' | grep -Po "\\d+")
+[[ -z ${vid_dev_idx} ]] && exit 0
+[[ $quiet -eq 0 ]] && printf "Bus\tCamera\tSensor\tNode Type\tVideo Node\tRS Link\n"
+  for i in $vid_dev_idx; do
+    vid="/dev/video${i}"
+    [[ ! -c "${vid}" ]] && break
     cam_id=$((i/6))
     sens_id=$((i%6))
-    vid="/dev/video${i}"
     dev_name=$(${v4l2_util} -d ${vid} -D | grep 'Driver name' | head -n1 | awk -F' : ' '{print $2}')
-    dev_ln="/dev/video-rs-${camera_vid[${sens_id}]}-${cam_id}"
-    bus="mipi"
-    if [ "$dev_name" = "uvcvideo" ]; then
-      dev_ln=$vid
-      bus="usb"
-    fi
-    if [ -n "$(echo ${camera_vid[${sens_id}]} | awk /md/)" ]; then
-	    type="Metadata"
+    bus="mipi"   
+    if [ "${dev_name}" = "tegra-video" ]; then
+    	dev_ln="/dev/video-rs-${camera_vid[${sens_id}]}-${cam_id}"
     else
-	    type="Streaming"
+        continue
     fi
+    type="Streaming"
     sensor_name=$(echo "${camera_vid[${sens_id}]}" | awk -F'-' '{print $1}')
     [[ $quiet -eq 0 ]] && printf '%s\t%d\t%s\t%s\t%s\t%s\n' ${bus} ${cam_id} ${sensor_name} ${type} ${vid} ${dev_ln}
+
     # create link only in case we choose not only to show it
-    if [[ $info -eq 0 ]] && [[ $bus != "usb" ]]; then
+    if [[ $info -eq 0 ]]; then
       [[ -e $dev_ln ]] && sudo unlink $dev_ln
       sudo ln -s $vid $dev_ln
-      # Create DFU device link for camera on jetson
-      subdev=$(${media_util} --print-dot | grep "D4XX depth ${camera} | awk -F'|' '{print $2}' | awk -F'/' '{print $3}' | tr -d ' '")
-      i2cdev=$(ls -l /sys/class/video4linux/${subdev}/device | awk -F'/' '{print $9}')
-      dev_dfu_name="/dev/d4xx-dfu-${i2cdev}"
-      dev_dfu_ln="/dev/d4xx-dfu-${cam_id}"
-      [[ -e $dev_dfu_ln ]] && sudo unlink $dev_dfu_ln
-      sudo ln -s $dev_dfu_name $dev_dfu_ln
+      if [[ "${sensor_name}" == 'depth' ]]; then
+        # Create DFU device link for camera on jetson
+        i2cdev=$(echo "${dot}" | grep  "${vid}" | tr '\\n' ' ' | awk '{print $5}')
+        dev_dfu_name="/dev/d4xx-dfu-${i2cdev}"
+        dev_dfu_ln="/dev/d4xx-dfu-${cam_id}"
+        [[ -e $dev_dfu_ln ]] && sudo unlink $dev_dfu_ln
+        sudo ln -s $dev_dfu_name $dev_dfu_ln
+      fi
+    fi
+    # find metadata
+    # skip IR and imu metadata node for now.
+    [[ ${sensor_name} == 'ir' ]] && continue
+    [[ ${sensor_name} == 'imu' ]] && continue
+
+    i=$((i+1))
+    sens_id=$((i%6))
+
+    type="Metadata"
+    vid="/dev/video${i}"
+    [[ ! -c "${vid}" ]] && break
+    dev_name=$(${v4l2_util} -d ${vid} -D | grep 'Driver name' | head -n1 | awk -F' : ' '{print $2}')
+    if [ "${dev_name}" = "tegra-embedded" ]; then
+      dev_md_ln="/dev/video-rs-${camera_vid[${sens_id}]}-${cam_id}"
+    else
+       continue
+    fi
+    sensor_name=$(echo "${camera_vid[${sens_id}]}" | awk -F'-' '{print $1}')
+    [[ $quiet -eq 0 ]] && printf '%s\t%d\t%s\t%s\t%s\t%s\n' ${bus} ${cam_id} ${sensor_name} ${type} ${vid} ${dev_md_ln}
+
+    # create link only in case we choose not only to show it
+    if [[ $info -eq 0 ]]; then
+      [[ -e $dev_md_ln ]] && sudo unlink $dev_md_ln
+      sudo ln -s $vid $dev_md_ln
     fi
   done
-exit 0
+  exit 0
 fi
 
 #ADL-P IPU6
 mdev=$(${v4l2_util} --list-devices | grep -A1 ipu6 | grep media)
-#media-ctl -r
+if [ -n "${mdev}" ]; then
+[[ $quiet -eq 0 ]] && printf "Bus\tCamera\tSensor\tNode Type\tVideo Node\tRS Link\n"
 # cache media-ctl output
 dot=$(${media_util} -d ${mdev} --print-dot)
 # for all d457 muxes a, b, c and d
@@ -182,5 +211,6 @@ for camera in $mux_list; do
     fi
   fi
 done
-
+fi
 # end of file
+
