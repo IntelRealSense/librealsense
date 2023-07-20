@@ -19,7 +19,7 @@ extern "C" {
 // Convenience blocks
 typedef struct sc_float2 { float x, y; } sc_float2;
 typedef struct sc_float3 { float x, y, z; } sc_float3;
-typedef struct sc_float3x3 { sc_float3 x, y, z; } sc_float3x3;  // column-major
+typedef struct sc_float3x3 { sc_float3 x, y, z; } sc_float3x3;  // row-major
 
 typedef struct rs2_safety_extrinsics_table
 {

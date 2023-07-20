@@ -89,7 +89,7 @@ namespace librealsense
     {
         // extrinsics to depth lazy, becasue safety sensor's api is used and it may be constructed later
         // than the depth mapping device (though it may not be the case in the device contructor's order, in ds500-factory)
-        _depth_mapping_to_depth_extrinsics = std::make_shared<lazy<rs2_extrinsics>>([this]()
+        _depth_to_depth_mapping_extrinsics = std::make_shared<lazy<rs2_extrinsics>>([this]()
             {
                 // getting access to safety sensor api
                 auto safety_device = dynamic_cast<d500_safety*>(this);
@@ -100,17 +100,24 @@ namespace librealsense
                 rs2_safety_preset safety_preset = safety_sensor.get_safety_preset(safety_preset_index);
                
                 auto extrinsics_from_preset = safety_preset.platform_config.transformation_link;
+                auto rot = extrinsics_from_preset.rotation;
+
+                // converting row-major matrix to column-major
+                float rotation_matrix[9] = { rot.x.x, rot.y.x, rot.z.x,
+                                             rot.x.y, rot.y.y, rot.z.y,
+                                             rot.x.z, rot.y.z, rot.z.z};
+
                 rs2_extrinsics res;
-                copy(res.rotation, &extrinsics_from_preset.rotation, sizeof extrinsics_from_preset.rotation);
+                copy(res.rotation, &rotation_matrix, sizeof rotation_matrix);
                 copy(res.translation, &extrinsics_from_preset.translation, sizeof extrinsics_from_preset.translation);
                 return res;
             });
 
         register_stream_to_extrinsic_group(*_occupancy_stream, 0);
-        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_occupancy_stream, _depth_mapping_to_depth_extrinsics);
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_occupancy_stream, _depth_to_depth_mapping_extrinsics);
 
         register_stream_to_extrinsic_group(*_point_cloud_stream, 0);
-        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_point_cloud_stream, _depth_mapping_to_depth_extrinsics);
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_point_cloud_stream, _depth_to_depth_mapping_extrinsics);
     }
 
     void d500_depth_mapping::register_options(std::shared_ptr<d500_depth_mapping_sensor> occupancy_ep, std::shared_ptr<uvc_sensor> raw_mapping_sensor)

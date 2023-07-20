@@ -3428,15 +3428,17 @@ namespace rs2
         
         auto& lpc_stream_model = streams.at(labeled_points_profile.unique_id());
         
-        rs2_extrinsics lpc_to_depth = lpc_stream_model.dev->get_extrinsics_to_depth();
+        rs2_extrinsics lpc_to_depth = lpc_stream_model.dev->get_extrinsics_from_depth();
         auto rot = lpc_to_depth.rotation;
         GLfloat rotation_matrix[16] = { rot[0], rot[3], rot[6], 0,
                                         rot[1], rot[4], rot[7], 0,
                                         rot[2], rot[5], rot[8], 0,
                                          0    ,   0,      0,    1 };
         glMultMatrixf(rotation_matrix);
-        glTranslatef(lpc_to_depth.translation[0], lpc_to_depth.translation[1], lpc_to_depth.translation[2]);
-        
+
+        // getting inverse of the translation, in depth coordinates, as this is the one needed by OpenGL
+        glTranslatef(-lpc_to_depth.translation[0], -lpc_to_depth.translation[1], -lpc_to_depth.translation[2]);
+
         glBegin(GL_POINTS);
         {
             auto vertices = last_labeled_points.get_vertices();

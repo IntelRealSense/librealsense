@@ -36,7 +36,7 @@ namespace librealsense
         std::shared_ptr<stream_interface> _occupancy_stream;
         std::shared_ptr<stream_interface> _point_cloud_stream;
         uint8_t _depth_mapping_device_idx;
-        std::shared_ptr<lazy<rs2_extrinsics>> _depth_mapping_to_depth_extrinsics;
+        std::shared_ptr<lazy<rs2_extrinsics>> _depth_to_depth_mapping_extrinsics;
     };
 
     class d500_depth_mapping_sensor : public synthetic_sensor,

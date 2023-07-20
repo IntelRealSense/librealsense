@@ -469,7 +469,7 @@ namespace rs2
             }
             last_valid_ui = ui;
 
-            set_extrinsics_to_depth_if_needed();
+            set_extrinsics_from_depth_if_needed();
         }
         catch (const error& e)
         {
@@ -1772,7 +1772,7 @@ namespace rs2
         // TODO: Once auto-calib makes it into the API, switch to querying camera info
     }
 
-    void subdevice_model::set_extrinsics_to_depth_if_needed()
+    void subdevice_model::set_extrinsics_from_depth_if_needed()
     {
         std::string pid = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
         std::string sensor_name = s->get_info(RS2_CAMERA_INFO_NAME);
@@ -1801,7 +1801,7 @@ namespace rs2
                     break;
                 }
             }
-            _extrinsics_to_depth = lpc_profile.get_extrinsics_to(depth_profile);
+            _extrinsics_from_depth = depth_profile.get_extrinsics_to(lpc_profile);
         }
     }
 
