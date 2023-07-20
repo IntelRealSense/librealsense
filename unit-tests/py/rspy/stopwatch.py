@@ -18,7 +18,7 @@ class Stopwatch:
         else:
             self._start = time.perf_counter()
 
-    # Get elapsed since timer creation
+    # Get elapsed since timer creation, in seconds
     def get_elapsed(self):
         return time.perf_counter() - self._start
 

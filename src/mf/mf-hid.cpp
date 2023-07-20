@@ -375,7 +375,7 @@ namespace librealsense
                 CHECK_HR(CoCreateInstance(CLSID_SensorManager, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pSensorManager)));
 
                 /* Retrieves a collection containing all sensors associated with category SENSOR_CATEGORY_ALL */
-                LOG_HR(res=pSensorManager->GetSensorsByCategory(SENSOR_CATEGORY_ALL, &pSensorCollection));
+                res=pSensorManager->GetSensorsByCategory(SENSOR_CATEGORY_ALL, &pSensorCollection);
                 if (SUCCEEDED(res))
                 {
                     /* Retrieves the count of sensors in the collection */
@@ -485,6 +485,9 @@ namespace librealsense
                         safe_release(pSensor);
                     }
                 }
+                // ERROR_NOT_FOUND is normal if no sensors are available
+                else if( res != HRESULT_FROM_WIN32( ERROR_NOT_FOUND ) )
+                    LOG_HR_STR( "pSensorManager->GetSensorsByCategory(SENSOR_CATEGORY_ALL)", res );
             }
             catch (...)
             {

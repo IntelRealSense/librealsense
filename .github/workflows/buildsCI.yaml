@@ -351,7 +351,7 @@ jobs:
 
 
   #--------------------------------------------------------------------------------
-  U20_ST_Py_DDS_CI:  # Ubuntu 2020, Static, Python, DDS, LibCI without executables
+  U20_ST_Py_DDS_RSUSB_CI:  # Ubuntu 2020, Static, Python, DDS, RSUSB, LibCI without executables
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     steps:
@@ -381,10 +381,13 @@ jobs:
         mkdir build
 
     - name: Build
+      # Note: we force RSUSB because, on Linux, the context creation will fail on GHA:
+      #     (backend-v4l2.cpp:555) Cannot access /sys/class/video4linux)
+      # And, well, we don't need any specific platform for DDS!
       shell: bash
       run: |
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=${{env.LRS_RUN_CONFIG}} -DBUILD_SHARED_LIBS=false -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=false -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=true -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3)
+        cmake .. -DCMAKE_BUILD_TYPE=${{env.LRS_RUN_CONFIG}} -DBUILD_SHARED_LIBS=false -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_UNIT_TESTS=false -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=true -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3) -DFORCE_RSUSB_BACKEND=true
         cmake --build . -- -j4  
 
     - name: LibCI
@@ -392,7 +395,7 @@ jobs:
       # This is to save time as DDS already lengthens the build...
       shell: bash
       run: |
-        python3 unit-tests/run-unit-tests.py --no-color --debug --stdout --not-live --context "dds linux"
+        python3 unit-tests/run-unit-tests.py --no-color --debug --stdout --not-live --context "dds linux" --tag dds
   
 
   #--------------------------------------------------------------------------------
