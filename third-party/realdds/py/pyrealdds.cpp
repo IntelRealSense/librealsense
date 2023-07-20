@@ -192,10 +192,6 @@ PYBIND11_MODULE(NAME, m) {
     topics.attr( "device_control" ) = realdds::topics::CONTROL_TOPIC_NAME;
     topics.attr( "device_metadata" ) = realdds::topics::METADATA_TOPIC_NAME;
 
-    // We need to declare a basic TypeSupport or else dds_topic ctor won't work
-    using eprosima::fastdds::dds::TypeSupport;
-    py::class_< TypeSupport >( m, "topic_type" );
-
     using realdds::video_intrinsics;
     py::class_< video_intrinsics, std::shared_ptr< video_intrinsics > >( m, "video_intrinsics" )
         .def( py::init<>() )
@@ -223,9 +219,6 @@ PYBIND11_MODULE(NAME, m) {
 
     using realdds::dds_topic;
     py::class_< dds_topic, std::shared_ptr< dds_topic > >( m, "topic" )
-        .def( py::init< std::shared_ptr< dds_participant > const &,
-                        eprosima::fastdds::dds::TypeSupport const &,
-                        char const * >() )
         .def( "get_participant", &dds_topic::get_participant )
         .def( "name", []( dds_topic const & self ) { return self->get_name(); } )
         .def( "__repr__", []( dds_topic const & self ) {
