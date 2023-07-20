@@ -68,7 +68,7 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_2d_masking_zone co
 
 inline std::ostream& operator<<(std::ostream& out, rs2_safety_environment const& se)
 {
-    out << "\t\t" << "Grid Cell Size: " << se.grid_cell_size << " [cm^2]";
+    out << "\t\t" << "Grid Cell Size: " << se.grid_cell_size << " [m]";
     out << "\n\t\t" << "Safety Trigger Duration: " << se.safety_trigger_duration << " [sec]";
     out << "\n\t\t" << "Linear Velocity: " << se.linear_velocity << " [m/sec]";
     out << "\n\t\t" << "Angular Velocity: " << se.angular_velocity << " [rad/sec]";

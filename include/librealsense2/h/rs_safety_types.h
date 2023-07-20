@@ -84,7 +84,7 @@ typedef struct rs2_safety_2d_masking_zone
 
 typedef struct rs2_safety_environment
 {
-    float grid_cell_size; // Denotes the square tile size for occupancy grid in cm (square)
+    float grid_cell_size; // Denotes the square tile size for occupancy grid in meters (square)
     float safety_trigger_duration; // duration in seconds to keep safety signal high after safety MCU is back to normal
 
     // Platform dynamics properties
