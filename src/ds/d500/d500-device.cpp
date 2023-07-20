@@ -830,8 +830,8 @@ namespace librealsense
         parsed_fields->gvd_version = *reinterpret_cast<const uint16_t*>(gvd_buff.data() + static_cast<int>(ds::d500_gvd_fields::version_offset));
         parsed_fields->payload_size = *reinterpret_cast<const uint32_t*>(gvd_buff.data() + static_cast<int>(ds::d500_gvd_fields::payload_size_offset));
         parsed_fields->crc32 = *reinterpret_cast<const uint32_t*>(gvd_buff.data() + static_cast<int>(ds::d500_gvd_fields::crc32_offset));
-        parsed_fields->optical_module_sn = _hw_monitor->get_module_serial_string(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::optical_module_serial_offset), 12);
-        parsed_fields->mb_module_sn = _hw_monitor->get_module_serial_string(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::mb_module_serial_offset), 12);
+        parsed_fields->optical_module_sn = _hw_monitor->get_module_serial_string(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::optical_module_serial_offset));
+        parsed_fields->mb_module_sn = _hw_monitor->get_module_serial_string(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::mb_module_serial_offset));
         parsed_fields->fw_version = _hw_monitor->get_firmware_version_string(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::fw_version_offset));
         parsed_fields->safety_sw_suite_version = _hw_monitor->get_firmware_version_string(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::safety_sw_suite_version_offset), 3);
     }
