@@ -94,8 +94,7 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_guid;
     py::class_< dds_guid >( m, "guid" )
         .def( py::init<>() )
-        .def( "__nonzero__", []( dds_guid const& self ) { return self != dds_guid::unknown(); } )  // Called to implement truth value testing in Python 2
-        .def( "__bool__", []( dds_guid const& self ) { return self != dds_guid::unknown(); } )     // Called to implement truth value testing in Python 3
+        .def( "__bool__", []( dds_guid const& self ) { return self != dds_guid::unknown(); } )
         .def( "__repr__", []( dds_guid const& self ) { return to_string( self ); } );
 
     using realdds::dds_participant;
@@ -151,8 +150,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "is_valid", &dds_participant::is_valid )
         .def( "guid", &dds_participant::guid )
         .def( "create_guid", &dds_participant::create_guid )
-        .def( "__nonzero__", &dds_participant::is_valid )  // Called to implement truth value testing in Python 2
-        .def( "__bool__", &dds_participant::is_valid )     // Called to implement truth value testing in Python 3
+        .def( "__bool__", &dds_participant::is_valid )
         .def( "name",
               []( dds_participant const & self ) {
                   eprosima::fastdds::dds::DomainParticipantQos qos;
@@ -412,8 +410,7 @@ PYBIND11_MODULE(NAME, m) {
         .def_readwrite( "data", &flexible_msg::_data )
         .def( "invalidate", &flexible_msg::invalidate )
         .def( "is_valid", &flexible_msg::is_valid )
-        .def( "__nonzero__", &flexible_msg::is_valid )  // Called to implement truth value testing in Python 2
-        .def( "__bool__", &flexible_msg::is_valid )     // Called to implement truth value testing in Python 3
+        .def( "__bool__", &flexible_msg::is_valid )
         .def( "__repr__",
               []( flexible_msg const & self ) {
                   std::ostringstream os;
@@ -586,8 +583,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "is_valid", &dds_video_encoding::is_valid )
         .def( "to_rs2", &dds_video_encoding::to_rs2 )
         .def( "from_rs2", &dds_video_encoding::from_rs2 )
-        .def( "__nonzero__", &dds_video_encoding::is_valid )  // Called to implement truth value testing in Python 2
-        .def( "__bool__", &dds_video_encoding::is_valid )     // Called to implement truth value testing in Python 3
+        .def( "__bool__", &dds_video_encoding::is_valid )
         .def( "__repr__", []( dds_video_encoding const & self ) { return self.to_string(); } );
     video_encoding.attr( "z16" ) = dds_video_encoding( "16UC1" );
     video_encoding.attr( "y8" ) = dds_video_encoding( "mono8" );
