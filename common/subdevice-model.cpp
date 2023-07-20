@@ -468,6 +468,8 @@ namespace rs2
                     ui.selected_res_id--;
             }
             last_valid_ui = ui;
+
+            set_extrinsics_from_depth_if_needed();
         }
         catch (const error& e)
         {
@@ -1768,6 +1770,39 @@ namespace rs2
 
         return s->is<rs2::depth_sensor>() && is_d400 && supported_fw;
         // TODO: Once auto-calib makes it into the API, switch to querying camera info
+    }
+
+    void subdevice_model::set_extrinsics_from_depth_if_needed()
+    {
+        std::string pid = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+        std::string sensor_name = s->get_info(RS2_CAMERA_INFO_NAME);
+        if (pid == "0B6B" && sensor_name == "Depth Mapping Camera")
+        {
+            //_labeled_point_cloud_to_depth_extrinsics
+            stream_profile depth_profile;
+
+            auto depth_sensor = dev.first<rs2::depth_sensor>();
+            auto profiles = depth_sensor.get_stream_profiles();
+            for (auto&& p : profiles)
+            {
+                if (p.stream_type() == RS2_STREAM_DEPTH)
+                {
+                    depth_profile = p;
+                    break;
+                }
+            }
+            stream_profile lpc_profile;
+            profiles = s->get_stream_profiles();
+            for (auto&& p : profiles)
+            {
+                if (p.stream_type() == RS2_STREAM_LABELED_POINT_CLOUD)
+                {
+                    lpc_profile = p;
+                    break;
+                }
+            }
+            _extrinsics_from_depth = depth_profile.get_extrinsics_to(lpc_profile);
+        }
     }
 
 }

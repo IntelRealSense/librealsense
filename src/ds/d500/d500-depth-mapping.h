@@ -23,6 +23,8 @@ namespace librealsense
 
         friend class d500_depth_mapping_sensor;
 
+        void register_extrinsics();
+
         void register_options(std::shared_ptr<d500_depth_mapping_sensor> mapping_ep, std::shared_ptr<uvc_sensor> raw_mapping_sensor);
         void register_metadata(std::shared_ptr<uvc_sensor> mapping_ep);
         void register_processing_blocks(std::shared_ptr<d500_depth_mapping_sensor> mapping_ep);
@@ -34,6 +36,7 @@ namespace librealsense
         std::shared_ptr<stream_interface> _occupancy_stream;
         std::shared_ptr<stream_interface> _point_cloud_stream;
         uint8_t _depth_mapping_device_idx;
+        std::shared_ptr<lazy<rs2_extrinsics>> _depth_to_depth_mapping_extrinsics;
     };
 
     class d500_depth_mapping_sensor : public synthetic_sensor,

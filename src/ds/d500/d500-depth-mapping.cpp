@@ -2,6 +2,7 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #include "d500-depth-mapping.h"
+#include "d500-safety.h"
 
 #include <vector>
 #include <map>
@@ -50,12 +51,6 @@ namespace librealsense
         using namespace ds;
         auto&& backend = ctx->get_backend();
 
-        register_stream_to_extrinsic_group(*_occupancy_stream, 0);
-        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_occupancy_stream);
-
-        register_stream_to_extrinsic_group(*_point_cloud_stream, 0);
-        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_point_cloud_stream);
-
         std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_backup(new ds_timestamp_reader(backend.create_time_service()));
         std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata_depth_mapping(std::move(ds_timestamp_reader_backup)));
 
@@ -75,6 +70,9 @@ namespace librealsense
 
         mapping_ep->register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, occupancy_devices_info.front().device_path);
 
+        // register_extrinsics
+        register_extrinsics();
+
         // register options
         register_options(mapping_ep, raw_mapping_ep);
 
@@ -85,6 +83,41 @@ namespace librealsense
         register_processing_blocks(mapping_ep);
         
         return mapping_ep;
+    }
+
+    void d500_depth_mapping::register_extrinsics()
+    {
+        // extrinsics to depth lazy, becasue safety sensor's api is used and it may be constructed later
+        // than the depth mapping device (though it may not be the case in the device contructor's order, in ds500-factory)
+        _depth_to_depth_mapping_extrinsics = std::make_shared<lazy<rs2_extrinsics>>([this]()
+            {
+                // getting access to safety sensor api
+                auto safety_device = dynamic_cast<d500_safety*>(this);
+                auto& safety_sensor = dynamic_cast<d500_safety_sensor&>(safety_device->get_safety_sensor());
+                
+                // pull extrinsics from safety preset number 0
+                int safety_preset_index = 0;
+                rs2_safety_preset safety_preset = safety_sensor.get_safety_preset(safety_preset_index);
+               
+                auto extrinsics_from_preset = safety_preset.platform_config.transformation_link;
+                auto rot = extrinsics_from_preset.rotation;
+
+                // converting row-major matrix to column-major
+                float rotation_matrix[9] = { rot.x.x, rot.y.x, rot.z.x,
+                                             rot.x.y, rot.y.y, rot.z.y,
+                                             rot.x.z, rot.y.z, rot.z.z};
+
+                rs2_extrinsics res;
+                copy(res.rotation, &rotation_matrix, sizeof rotation_matrix);
+                copy(res.translation, &extrinsics_from_preset.translation, sizeof extrinsics_from_preset.translation);
+                return res;
+            });
+
+        register_stream_to_extrinsic_group(*_occupancy_stream, 0);
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_occupancy_stream, _depth_to_depth_mapping_extrinsics);
+
+        register_stream_to_extrinsic_group(*_point_cloud_stream, 0);
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_point_cloud_stream, _depth_to_depth_mapping_extrinsics);
     }
 
     void d500_depth_mapping::register_options(std::shared_ptr<d500_depth_mapping_sensor> occupancy_ep, std::shared_ptr<uvc_sensor> raw_mapping_sensor)
@@ -100,7 +133,6 @@ namespace librealsense
         register_occupancy_metadata(raw_mapping_ep);
         register_point_cloud_metadata(raw_mapping_ep);
     }
-
 
     void d500_depth_mapping::register_occupancy_metadata(std::shared_ptr<uvc_sensor> raw_mapping_ep)
     {
@@ -233,7 +265,6 @@ namespace librealsense
         mapping_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW8, RS2_STREAM_OCCUPANCY));
         mapping_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW8, RS2_STREAM_LABELED_POINT_CLOUD));
     }
-
 
     stream_profiles d500_depth_mapping_sensor::init_stream_profiles()
     {
