@@ -76,7 +76,7 @@ def new_syncer( on_frame_ready=on_frame_ready, on_metadata_dropped=on_metadata_d
 
 
 def new_image_( id, width, height, bpp, timestamp=None ):
-    i = dds.image_msg()
+    i = dds.message.image()
     i.width = width
     i.height = height
     i.data = bytearray( width * height * bpp )
@@ -349,14 +349,14 @@ with test.closure( 'Two threads, slow callback -> different callbacks intervined
     while the callback is handled thread A enqueues frame2
         handle_match( frame1, metadata1 ) calls user callback in thread A context
     """
-    
+
     def frame_callback( image, metadata ):
         on_frame_ready( image, metadata )  # for reporting
         sleep( 0.1 )
         log.d( f'<{image_id(image):->4} {dds.now()} [{threading.get_native_id()}]' )
 
     syncer = new_syncer( on_frame_ready=frame_callback )
-    
+
     def frame_thread():
         threadid = threading.get_native_id()
         for i in range( 3 ):
@@ -370,9 +370,9 @@ with test.closure( 'Two threads, slow callback -> different callbacks intervined
     threadA.start()
     sleep( 0.12 ) # Between 2nd and 3rd enqueue_frame
     md = new_metadata( 1, time_stamp( 1 ) )
-    syncer.enqueue_metadata( 1, md )    
+    syncer.enqueue_metadata( 1, md )
     threadA.join()
-    
+
     if test.check( len(received_frames), 2 ):
         test.check_equal( image_id( last_image() ), 1 )
         test.check_equal( md_id( last_metadata() ), 1 )

@@ -16,7 +16,6 @@ public:
     std::string name;
     std::string serial;
     std::string product_line;
-    std::string product_id;
     std::string topic_root;
     bool locked = false;
 

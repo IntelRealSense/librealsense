@@ -151,7 +151,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
             {
                 profile = std::make_shared< realdds::dds_video_stream_profile >(
                     static_cast< int16_t >( vsp.fps() ),
-                    realdds::dds_stream_format::from_rs2( vsp.format() ),
+                    realdds::dds_video_encoding::from_rs2( vsp.format() ),
                     static_cast< uint16_t >( vsp.width() ),
                     static_cast< int16_t >( vsp.height() ) );
                 try
@@ -388,7 +388,7 @@ rs2_option option_name_to_type( const std::string & name, const rs2::sensor & se
 
 bool profiles_are_compatible( std::shared_ptr< dds_stream_profile > const & p1,
                               std::shared_ptr< dds_stream_profile > const & p2,
-                              bool any_format = false )
+                              bool any_encoding = false )
 {
     auto vp1 = std::dynamic_pointer_cast< realdds::dds_video_stream_profile >( p1 );
     auto vp2 = std::dynamic_pointer_cast< realdds::dds_video_stream_profile >( p2 );
@@ -398,7 +398,7 @@ bool profiles_are_compatible( std::shared_ptr< dds_stream_profile > const & p1,
     {
         if( vp1->width() != vp2->width() || vp1->height() != vp2->height() )
             return false;
-        if( ! any_format && vp1->format() != vp2->format() )
+        if( ! any_encoding && vp1->encoding() != vp2->encoding() )
             return false;
     }
     return p1->frequency() == p2->frequency();
@@ -421,7 +421,7 @@ rs2::stream_profile get_required_profile( const rs2::sensor & sensor,
                                           bool video_params_match = ( vp && dds_vp )
                                                                       ? vp.width() == dds_vp->width()
                                                                             && vp.height() == dds_vp->height()
-                                                                            && vp.format() == dds_vp->format().to_rs2()
+                                                                            && vp.format() == dds_vp->encoding().to_rs2()
                                                                       : true;
                                           return sp.stream_type() == stream_type
                                               && sp.stream_index() == stream_index
@@ -440,14 +440,14 @@ rs2::stream_profile get_required_profile( const rs2::sensor & sensor,
 static std::shared_ptr< realdds::dds_stream_profile >
 find_profile( std::shared_ptr< realdds::dds_stream_server > const & stream,
               std::shared_ptr< realdds::dds_stream_profile > const & profile,
-              bool any_format = false )
+              bool any_encoding = false )
 {
     auto & stream_profiles = stream->profiles();
     auto it = std::find_if( stream_profiles.begin(),
                             stream_profiles.end(),
                             [&]( std::shared_ptr< realdds::dds_stream_profile > const & sp )
                             {
-                                return profiles_are_compatible( sp, profile, any_format );
+                                return profiles_are_compatible( sp, profile, any_encoding );
                             } );
     std::shared_ptr< realdds::dds_stream_profile > found_profile;
     if( it != stream_profiles.end() )
@@ -763,16 +763,16 @@ void lrs_device_controller::override_default_profiles( const std::map< std::stri
             height = 720;
         }
         stream_name_to_default_profile["Depth"] = get_index_of_profile( stream_name_to_profiles.at( "Depth" ),
-            realdds::dds_video_stream_profile( fps, realdds::dds_stream_format::from_rs2( RS2_FORMAT_Z16 ), width, height ) );
+            realdds::dds_video_stream_profile( fps, realdds::dds_video_encoding::from_rs2( RS2_FORMAT_Z16 ), width, height ) );
         stream_name_to_default_profile["Infrared_1"] = get_index_of_profile( stream_name_to_profiles.at( "Infrared_1" ),
-            realdds::dds_video_stream_profile( fps, realdds::dds_stream_format::from_rs2( RS2_FORMAT_Y8 ), width, height ) );
+            realdds::dds_video_stream_profile( fps, realdds::dds_video_encoding::from_rs2( RS2_FORMAT_Y8 ), width, height ) );
         stream_name_to_default_profile["Infrared_2"] = get_index_of_profile( stream_name_to_profiles.at( "Infrared_2" ),
-            realdds::dds_video_stream_profile( fps, realdds::dds_stream_format::from_rs2( RS2_FORMAT_Y8 ), width, height ) );
+            realdds::dds_video_stream_profile( fps, realdds::dds_video_encoding::from_rs2( RS2_FORMAT_Y8 ), width, height ) );
 
         width = 1280;
         height = 720;
         stream_name_to_default_profile["Color"] = get_index_of_profile( stream_name_to_profiles.at( "Color" ),
-            realdds::dds_video_stream_profile( fps, realdds::dds_stream_format::from_rs2( RS2_FORMAT_YUYV ), width, height ) );
+            realdds::dds_video_stream_profile( fps, realdds::dds_video_encoding::from_rs2( RS2_FORMAT_YUYV ), width, height ) );
     }
 }
 
@@ -784,7 +784,7 @@ size_t lrs_device_controller::get_index_of_profile( const realdds::dds_stream_pr
     {
         auto dds_vp = std::dynamic_pointer_cast< dds_video_stream_profile >( profiles[i] );
         if( dds_vp->frequency() == profile.frequency()
-            && dds_vp->format() == profile.format()
+            && dds_vp->encoding() == profile.encoding()
             && dds_vp->width()  == profile.width()
             && dds_vp->height() == profile.height() )
             return i;

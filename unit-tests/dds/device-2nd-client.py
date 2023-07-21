@@ -11,7 +11,7 @@ participant = dds.participant()
 participant.init( 123, f'client-{log.nested.strip()}' )
 
 
-info = dds.device_info()
+info = dds.message.device_info()
 info.name = "2nd Device"
 info.topic_root = "realdds/device/topic-root"
 

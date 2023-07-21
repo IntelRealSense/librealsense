@@ -18,8 +18,7 @@ namespace realdds {
 
 
 // Similar to fourcc, this is a sequence of ASCII characters used to uniquely identify the data format utilized by a
-// stream. Also called an encoding, this "string" of characters defines how the data is written and, therefore, how to
-// read it back.
+// stream. This string of characters defines how the data is written and, therefore, how to read it back.
 // 
 // While fourcc is a 4-character string, we need to use encodings that are compatible with ROS for interoperability.
 // The ROS encodings are detailed here:
@@ -36,26 +35,26 @@ namespace realdds {
 // Currently, the longest format we need is "yuv422_yuy2" so 10 characters are enough to fit our needs given their ROS
 // encodings. We round it up to 16 (including the terminating null) for alignment and some flexibility.
 //
-struct dds_stream_format
+struct dds_video_encoding
 {
     static constexpr size_t size = 15;  // max length of encoding
     char data[size + 1];                // add a terminating NULL for ease
 
-    dds_stream_format()
+    dds_video_encoding()
         : data{ 0 }
     {
     }
 
-    dds_stream_format( std::string const & );
+    dds_video_encoding( std::string const & );
 
     bool is_valid() const { return data[0] != 0; }
-    bool operator==( dds_stream_format const & rhs ) const { return std::strncmp( data, rhs.data, size ) == 0; }
-    bool operator!=( dds_stream_format const & rhs ) const { return ! operator==( rhs ); }
+    bool operator==( dds_video_encoding const & rhs ) const { return std::strncmp( data, rhs.data, size ) == 0; }
+    bool operator!=( dds_video_encoding const & rhs ) const { return ! operator==( rhs ); }
 
     std::string to_string() const { return std::string( data ); }
     operator std::string() const { return to_string(); }
 
-    static dds_stream_format from_rs2( int rs2_format );
+    static dds_video_encoding from_rs2( int rs2_format );
     int to_rs2() const;
 };
 
@@ -120,23 +119,23 @@ class dds_video_stream_profile : public dds_stream_profile
 {
     typedef dds_stream_profile super;
 
-    dds_stream_format _format;
+    dds_video_encoding _encoding;
     uint16_t _width;   // Resolution width [pixels]
     uint16_t _height;  // Resolution height [pixels]
 
 public:
-    dds_video_stream_profile( int16_t frequency, dds_stream_format format, uint16_t width, uint16_t height )
+    dds_video_stream_profile( int16_t frequency, dds_video_encoding encoding, uint16_t width, uint16_t height )
         : super( frequency )
         , _width( width )
         , _height( height )
-        , _format( format )
+        , _encoding( encoding )
     {
     }
     dds_video_stream_profile( nlohmann::json const &, int & index );
 
     uint16_t width() const { return _width; }
     uint16_t height() const { return _height; }
-    dds_stream_format const & format() const { return _format; }
+    dds_video_encoding const & encoding() const { return _encoding; }
 
     std::string details_to_string() const override;
 

@@ -19,7 +19,7 @@ broadcasters = []
 
 def broadcast( props ):
     global broadcasters, publisher
-    di = dds.device_info()
+    di = dds.message.device_info()
     di.serial = props.get( 'serial', str(len(broadcasters)) )
     di.name = props.get( 'name', f'device{di.serial}' )
     di.product_line = props.get( 'product_line', '' )

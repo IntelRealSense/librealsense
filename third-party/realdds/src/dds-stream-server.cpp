@@ -228,7 +228,7 @@ void dds_video_stream_server::publish_image( topics::image_msg && image )
     raw_image.header().stamp().sec() = image.timestamp.seconds;
     raw_image.header().stamp().nanosec() = image.timestamp.nanosec;
 
-    raw_image.encoding() = _image_header.format.to_string();
+    raw_image.encoding() = _image_header.encoding.to_string();
     raw_image.height() = _image_header.height;
     raw_image.width() = _image_header.width;
     raw_image.step() = uint32_t( image.raw_data.size() / _image_header.height );

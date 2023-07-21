@@ -28,7 +28,7 @@ class dds_stream_profile;
 
 struct image_header
 {
-    dds_stream_format format;
+    dds_video_encoding encoding;
     int height = -1;
     int width = -1;
 

@@ -16,7 +16,7 @@ log.nested = 'C  '
 participant = dds.participant()
 participant.init( 123, "test-device-init" )
 
-info = dds.device_info()
+info = dds.message.device_info()
 info.name = "Test Device"
 info.topic_root = "realdds/device/topic-root"
 

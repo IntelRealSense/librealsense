@@ -150,7 +150,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         del sensors
         profile = rs.video_stream_profile( sensor.get_stream_profiles()[0] )  # take the first one
         log.d( f'using profile {profile}')
-        encoding = dds.stream_format.from_rs2( profile.format() )
+        encoding = dds.video_encoding.from_rs2( profile.format() )
         remote.run( f'img = new_image( {profile.width()}, {profile.height()}, {profile.bytes_per_pixel()} )', on_fail='abort' )
         sensor.open( [profile] )
         queue = rs.frame_queue( 100 )
@@ -170,7 +170,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     with test.closure( 'MD after an image, without frame-number' ):
         timestamp = dds.now()
-        remote.run( f'color_stream.start_streaming( dds.stream_format( "{encoding}" ), img.width, img.height )' )
+        remote.run( f'color_stream.start_streaming( dds.video_encoding( "{encoding}" ), img.width, img.height )' )
         # It will take the image a lot longer to get anywhere than the metadata
         with image_expected():
             remote.run( f'publish_image( img, dds.time.from_ns( {timestamp.to_ns()} ))' )

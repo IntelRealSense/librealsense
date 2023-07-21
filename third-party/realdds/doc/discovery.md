@@ -60,7 +60,6 @@ The message format is a [flexible message](../include/realdds/topics/flexible/) 
   "name": "Intel RealSense D405",
   "serial": "123622270732",
   "product-line": "D400",
-  "product-id": "0B5B",
   "topic-root": "realsense/D405_123622270732"
 }
 ```
@@ -70,7 +69,6 @@ The message format is a [flexible message](../include/realdds/topics/flexible/) 
 | name         | The name of the device, as it would show in the Viewer |
 | serial       | The device serial number                               |
 | product-line | The type of device (D400, L500, etc.)                  |
-| product-id   | The internal product code                              |
 | topic-root   | The path to the root topic for the device              |
 | multicast-ip | IP address on which topics will be multicast           |
 

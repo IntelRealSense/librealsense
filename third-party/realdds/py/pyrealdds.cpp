@@ -3,6 +3,7 @@
 
 #include <realdds/dds-defines.h>
 #include <realdds/dds-participant.h>
+#include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/flexible-msg.h>
 #include <realdds/topics/flexible/flexiblePubSubTypes.h>
 #include <realdds/topics/image-msg.h>
@@ -93,8 +94,7 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_guid;
     py::class_< dds_guid >( m, "guid" )
         .def( py::init<>() )
-        .def( "__nonzero__", []( dds_guid const& self ) { return self != dds_guid::unknown(); } )  // Called to implement truth value testing in Python 2
-        .def( "__bool__", []( dds_guid const& self ) { return self != dds_guid::unknown(); } )     // Called to implement truth value testing in Python 3
+        .def( "__bool__", []( dds_guid const& self ) { return self != dds_guid::unknown(); } )
         .def( "__repr__", []( dds_guid const& self ) { return to_string( self ); } );
 
     using realdds::dds_participant;
@@ -150,8 +150,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "is_valid", &dds_participant::is_valid )
         .def( "guid", &dds_participant::guid )
         .def( "create_guid", &dds_participant::create_guid )
-        .def( "__nonzero__", &dds_participant::is_valid )  // Called to implement truth value testing in Python 2
-        .def( "__bool__", &dds_participant::is_valid )     // Called to implement truth value testing in Python 3
+        .def( "__bool__", &dds_participant::is_valid )
         .def( "name",
               []( dds_participant const & self ) {
                   eprosima::fastdds::dds::DomainParticipantQos qos;
@@ -181,24 +180,15 @@ PYBIND11_MODULE(NAME, m) {
               } )
         .def( "create_listener", []( dds_participant & self ) { return self.create_listener(); } );
 
-    // The 'types' submodule will contain all the known topic types in librs
-    // These are used alongside the 'dds_topic' class:
-    //      topic = dds.topic( p, dds.types.device_info(), "realsense/device-info" )
-    auto types = m.def_submodule( "types", "all the types that " SNAME " can work with" );
+    // The 'message' submodule will contain all the known message types in realdds.
+    auto message = m.def_submodule( "message", "all the messages that " SNAME " can work with" );
 
     // The 'topics' submodule will contain pointers to the topic names:
     auto topics = m.def_submodule( "topics", "all the topics that " SNAME " knows" );
     topics.attr( "device_info" ) = realdds::topics::DEVICE_INFO_TOPIC_NAME;
-
-    // We need to declare a basic TypeSupport or else dds_topic ctor won't work
-    using eprosima::fastdds::dds::TypeSupport;
-    py::class_< TypeSupport > topic_type( types, "topic_type" );
-
-    // Another submodule, 'raw' is used with dds_topic to actually send and receive messages, e.g.:
-    //      reader = dds.topic_reader( topic )
-    //      ...
-    //      info = dds.device_info( dds.raw.device_info( reader ) )
-    //auto raw = m.def_submodule( "raw", "all the topics that " SNAME " can work with" );
+    topics.attr( "device_notification" ) = realdds::topics::NOTIFICATION_TOPIC_NAME;
+    topics.attr( "device_control" ) = realdds::topics::CONTROL_TOPIC_NAME;
+    topics.attr( "device_metadata" ) = realdds::topics::METADATA_TOPIC_NAME;
 
     using realdds::video_intrinsics;
     py::class_< video_intrinsics, std::shared_ptr< video_intrinsics > >( m, "video_intrinsics" )
@@ -227,9 +217,6 @@ PYBIND11_MODULE(NAME, m) {
 
     using realdds::dds_topic;
     py::class_< dds_topic, std::shared_ptr< dds_topic > >( m, "topic" )
-        .def( py::init< std::shared_ptr< dds_participant > const &,
-                        eprosima::fastdds::dds::TypeSupport const &,
-                        char const * >() )
         .def( "get_participant", &dds_topic::get_participant )
         .def( "name", []( dds_topic const & self ) { return self->get_name(); } )
         .def( "__repr__", []( dds_topic const & self ) {
@@ -307,14 +294,16 @@ PYBIND11_MODULE(NAME, m) {
     // and, coupled with shared_ptr usage, are very hard to get around. This is much simpler...
     using realdds::topics::device_info;
     using realdds::topics::flexible_msg;
-    types.def( "device_info", []() { return TypeSupport( new flexible_msg::type ); } );
 
-    py::class_< device_info >( m, "device_info" )
+    typedef std::shared_ptr< dds_topic > flexible_msg_create_topic( std::shared_ptr< dds_participant > const &,
+                                                                    char const * );
+
+    py::class_< device_info >( message, "device_info" )
         .def( py::init<>() )
+        .def_static( "create_topic", static_cast< flexible_msg_create_topic * >( &flexible_msg::create_topic ) )
         .def_readwrite( "name", &device_info::name )
         .def_readwrite( "serial", &device_info::serial )
         .def_readwrite( "product_line", &device_info::product_line )
-        .def_readwrite( "product_id", &device_info::product_id )
         .def_readwrite( "locked", &device_info::locked )
         .def_readwrite( "topic_root", &device_info::topic_root )
         .def_static( "from_json", &device_info::from_json )
@@ -322,33 +311,29 @@ PYBIND11_MODULE(NAME, m) {
         .def( "__repr__",
               []( device_info const & self ) {
                   std::ostringstream os;
-                  os << "<" SNAME ".device_info ";
+                  os << "<" SNAME ".device_info";
                     if( ! self.name.empty() )
-                        os << "\"" << self.name << "\" ";
+                        os << " \"" << self.name << "\"";
                     if( ! self.serial.empty() )
-                        os << "s/n \"" << self.serial << "\" ";
+                        os << " s/n \"" << self.serial << "\"";
                     if( ! self.topic_root.empty() )
-                        os << "@ \"" << self.topic_root << "\" ";
+                        os << " @ \"" << self.topic_root << "\"";
                     if( ! self.product_line.empty() )
-                        os << "product-line \"" << self.product_line << "\" ";
-                    if( !self.product_id.empty() )
-                        os << "product-id \"" << self.product_id << "\" ";
-                    os << ( self.locked ? "locked" : "unlocked" );
+                        os << " product-line \"" << self.product_line << "\"";
+                    if( self.locked )
+                        os << " locked";
                   os << ">";
                   return os.str();
               } );
 
     using realdds::topics::flexible_msg;
-    using raw_flexible = realdds::topics::raw::flexible;
-    types.def( "flexible", []() { return TypeSupport( new flexible_msg::type ); } );
-
-    py::enum_< flexible_msg::data_format >( m, "flexible.data_format" )
+    py::enum_< flexible_msg::data_format >( message, "flexible_format" )
         .value( "json", flexible_msg::data_format::JSON )
         .value( "cbor", flexible_msg::data_format::CBOR )
         .value( "custom", flexible_msg::data_format::CUSTOM );
 
     using eprosima::fastrtps::rtps::SampleIdentity;
-    py::class_< SampleIdentity >( m, "sample_identity" )  //
+    py::class_< SampleIdentity >( message, "sample_identity" )  //
         .def( "__repr__",
               []( SampleIdentity const & self )
               {
@@ -360,7 +345,7 @@ PYBIND11_MODULE(NAME, m) {
               } );
 
     using eprosima::fastdds::dds::SampleInfo;
-    py::class_< SampleInfo >( m, "sample_info" )  //
+    py::class_< SampleInfo >( message, "sample_info" )  //
         .def( py::init<>() )
         .def( "identity", []( SampleInfo const & self ) { return self.sample_identity; } )
         .def( "source_timestamp", []( SampleInfo const & self ) { return self.source_timestamp.to_ns(); } )
@@ -414,20 +399,18 @@ PYBIND11_MODULE(NAME, m) {
     m.def( "timestr", []( dds_time t ) { return timestr( t ).to_string(); } );
 
 
-    typedef std::shared_ptr< dds_topic > flexible_msg_create_topic( std::shared_ptr< dds_participant > const &,
-                                                                    char const * );
-    py::class_< flexible_msg >( m, "flexible_msg" )
+    py::class_< flexible_msg >( message, "flexible" )
         .def( py::init<>() )
         .def( py::init( []( std::string const & json_string ) {
             return flexible_msg( flexible_msg::data_format::JSON, nlohmann::json::parse( json_string ) );
         } ) )
+        .def_static( "create_topic", static_cast< flexible_msg_create_topic * >( &flexible_msg::create_topic ) )
         .def_readwrite( "data_format", &flexible_msg::_data_format )
         .def_readwrite( "version", &flexible_msg::_version )
         .def_readwrite( "data", &flexible_msg::_data )
         .def( "invalidate", &flexible_msg::invalidate )
         .def( "is_valid", &flexible_msg::is_valid )
-        .def( "__nonzero__", &flexible_msg::is_valid )  // Called to implement truth value testing in Python 2
-        .def( "__bool__", &flexible_msg::is_valid )     // Called to implement truth value testing in Python 3
+        .def( "__bool__", &flexible_msg::is_valid )
         .def( "__repr__",
               []( flexible_msg const & self ) {
                   std::ostringstream os;
@@ -479,7 +462,6 @@ PYBIND11_MODULE(NAME, m) {
             },
             py::arg( "reader" ), py::arg( "sample" ) = nullptr,
             py::call_guard< py::gil_scoped_release >() )
-        .def_static( "create_topic", static_cast<flexible_msg_create_topic *>( &flexible_msg::create_topic ))
         .def( "json_data", &flexible_msg::json_data )
         .def( "json_string",
               []( flexible_msg const & self )
@@ -488,8 +470,9 @@ PYBIND11_MODULE(NAME, m) {
 
 
     using image_msg = realdds::topics::image_msg;
-    py::class_< image_msg, std::shared_ptr< image_msg > >( m, "image_msg" )
+    py::class_< image_msg, std::shared_ptr< image_msg > >( message, "image" )
         .def( py::init<>() )
+        .def_static( "create_topic", &image_msg::create_topic )
         .def_readwrite( "data", &image_msg::raw_data )
         .def_readwrite( "width", &image_msg::width )
         .def_readwrite( "height", &image_msg::height )
@@ -523,13 +506,13 @@ PYBIND11_MODULE(NAME, m) {
             py::arg( "reader" ),
             py::arg( "sample" ) = nullptr,
             py::call_guard< py::gil_scoped_release >() )
-        .def_static( "create_topic", &image_msg::create_topic )
         /*.def("write_to", &image_msg::write_to, py::call_guard< py::gil_scoped_release >())*/;
 
 
     using imu_msg = realdds::topics::imu_msg;
-    py::class_< imu_msg, std::shared_ptr< imu_msg > >( m, "imu_msg" )
+    py::class_< imu_msg, std::shared_ptr< imu_msg > >( message, "imu" )
         .def( py::init<>() )
+        .def_static( "create_topic", &imu_msg::create_topic )
         .def_property(
             "gyro_data",
             []( imu_msg const & self ) { return get_vector3( self.gyro_data() ); },
@@ -564,7 +547,6 @@ PYBIND11_MODULE(NAME, m) {
             py::arg( "reader" ),
             py::arg( "sample" ) = nullptr,
             py::call_guard< py::gil_scoped_release >() )
-        .def_static( "create_topic", &imu_msg::create_topic )
         .def( "write_to", &imu_msg::write_to, py::call_guard< py::gil_scoped_release >() );
 
 
@@ -593,16 +575,23 @@ PYBIND11_MODULE(NAME, m) {
         .def( "set_description", &dds_option::set_description )
         .def( "to_json", []( dds_option const & self ) { return self.to_json().dump(); } );
 
-    using realdds::dds_stream_format;
-    py::class_< dds_stream_format >( m, "stream_format" )
+    using realdds::dds_video_encoding;
+    py::class_< dds_video_encoding > video_encoding( m, "video_encoding" );
+    video_encoding  //
         .def( py::init<>() )
         .def( py::init< std::string const & >() )
-        .def( "is_valid", &dds_stream_format::is_valid )
-        .def( "to_rs2", &dds_stream_format::to_rs2 )
-        .def( "from_rs2", &dds_stream_format::from_rs2 )
-        .def( "__nonzero__", &dds_stream_format::is_valid )  // Called to implement truth value testing in Python 2
-        .def( "__bool__", &dds_stream_format::is_valid )     // Called to implement truth value testing in Python 3
-        .def( "__repr__", []( dds_stream_format const & self ) { return self.to_string(); } );
+        .def( "is_valid", &dds_video_encoding::is_valid )
+        .def( "to_rs2", &dds_video_encoding::to_rs2 )
+        .def( "from_rs2", &dds_video_encoding::from_rs2 )
+        .def( "__bool__", &dds_video_encoding::is_valid )
+        .def( "__repr__", []( dds_video_encoding const & self ) { return self.to_string(); } );
+    video_encoding.attr( "z16" ) = dds_video_encoding( "16UC1" );
+    video_encoding.attr( "y8" ) = dds_video_encoding( "mono8" );
+    video_encoding.attr( "y16" ) = dds_video_encoding( "Y16" );  // todo should be mono16
+    video_encoding.attr( "byr2" ) = dds_video_encoding( "BYR2" );
+    video_encoding.attr( "yuyv" ) = dds_video_encoding( "yuv422_yuy2" );
+    video_encoding.attr( "uyvy" ) = dds_video_encoding( "UYVY" );  // todo
+    video_encoding.attr( "rgb" ) = dds_video_encoding( "rgb8" );
 
     using realdds::dds_stream_profile;
     py::class_< dds_stream_profile, std::shared_ptr< dds_stream_profile > > stream_profile_base( m, "stream_profile" );
@@ -625,8 +614,8 @@ PYBIND11_MODULE(NAME, m) {
 
     using realdds::dds_video_stream_profile;
     py::class_< dds_video_stream_profile, std::shared_ptr< dds_video_stream_profile > >( m, "video_stream_profile", stream_profile_base )
-        .def( py::init< int16_t, dds_stream_format, uint16_t, uint16_t >() )
-        .def( "format", &dds_video_stream_profile::format )
+        .def( py::init< int16_t, dds_video_encoding, uint16_t, uint16_t >() )
+        .def( "format", &dds_video_stream_profile::encoding )
         .def( "width", &dds_video_stream_profile::width )
         .def( "height", &dds_video_stream_profile::height );
 
@@ -673,8 +662,8 @@ PYBIND11_MODULE(NAME, m) {
     video_stream_server_base
         .def( "set_intrinsics", &dds_video_stream_server::set_intrinsics )
         .def( "start_streaming",
-              []( dds_video_stream_server & self, dds_stream_format format, int width, int height ) {
-                  self.start_streaming( { format, height, width } );
+              []( dds_video_stream_server & self, dds_video_encoding encoding, int width, int height ) {
+                  self.start_streaming( { encoding, height, width } );
               } )
         .def( "publish_image",
               []( dds_video_stream_server & self, image_msg const & img )
