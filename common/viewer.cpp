@@ -1358,6 +1358,7 @@ namespace rs2
                 {
                     if (!paused)
                         lab_points = f.as<labeled_points>();
+                    auto texture = upload_frame(std::move(f));
                     continue;
                 }
 
