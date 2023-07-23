@@ -149,7 +149,7 @@ namespace librealsense
             auto & domain = dds_domain_context_by_id[domain_id];
             _dds_participant = domain.participant.instance();
             if( ! _dds_participant->is_valid() )
-                _dds_participant->init( domain_id, rsutils::os::executable_name() );
+                _dds_participant->init( domain_id, rsutils::os::executable_name(), {} );
             _dds_watcher = domain.device_watcher.instance( _dds_participant );
         }
 #endif //BUILD_WITH_DDS
@@ -174,27 +174,28 @@ namespace librealsense
         assert( _device_watcher->is_stopped() );
 
 #ifdef BUILD_WITH_DDS
-        if( rsutils::json::get< bool >( settings, std::string( "dds-discovery", 13 ), true ) )
+        nlohmann::json dds_settings
+            = rsutils::json::get< nlohmann::json >( settings, std::string( "dds", 3 ), nlohmann::json::object() );
+        if( dds_settings.is_object() )
         {
             realdds::dds_domain_id domain_id
-                = rsutils::json::get< int >( settings, std::string( "dds-domain", 10 ), 0 );
-            std::string participant_name = rsutils::json::get< std::string >( settings,
-                                                                              std::string( "dds-participant-name", 20 ),
+                = rsutils::json::get< int >( dds_settings, std::string( "domain", 6 ), 0 );
+            std::string participant_name = rsutils::json::get< std::string >( dds_settings,
+                                                                              std::string( "participant", 11 ),
                                                                               rsutils::os::executable_name() );
 
             auto & domain = dds_domain_context_by_id[domain_id];
             _dds_participant = domain.participant.instance();
             if( ! _dds_participant->is_valid() )
             {
-                _dds_participant->init( domain_id, participant_name );
+                _dds_participant->init( domain_id, participant_name, std::move( dds_settings ) );
             }
-            else if( rsutils::json::has_value( settings, std::string( "dds-participant-name", 20 ) )
+            else if( rsutils::json::has_value( dds_settings, std::string( "participant", 11 ) )
                      && participant_name != _dds_participant->name() )
             {
-                throw std::runtime_error(
-                    rsutils::string::from()
-                    << "A DDS participant '" << _dds_participant->name()
-                    << "' already exists in domain " << domain_id << "; cannot create '" << participant_name << "'" );
+                throw std::runtime_error( rsutils::string::from() << "A DDS participant '" << _dds_participant->name()
+                                                                  << "' already exists in domain " << domain_id
+                                                                  << "; cannot create '" << participant_name << "'" );
             }
             _dds_watcher = domain.device_watcher.instance( _dds_participant );
 

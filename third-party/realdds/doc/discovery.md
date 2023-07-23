@@ -88,10 +88,11 @@ Librealsense manages a single point from which all other objects are derived: th
 
 The `context` has been augmented to be able to see DDS devices. This is on by default if `BUILD_WITH_DDS` is on.
 
-When a context is created, a JSON representation may be passed to it, e.g.: `{"dds-domain":123,"dds-participant-name":"librs"}`. This allows various customizations:
+When a context is created, a JSON representation may be passed to it, e.g.: `{"dds": { "domain": 123, "participant": "librs" }}`. This allows various customizations:
 
 | Field                | Description                            |
 |----------------------|------------------------------------------------------|
-| dds-discovery        | Default to `true`; set to `false` to turn off DDS in this context
-| dds-domain           | The domain number to use (0-232); `0` is the default
-| dds-participant-name | The name given this context (how other participants will see it); defaults to the executable name
+| dds                  | Set to `false` to turn off DDS in this context; otherwise a JSON object containing:
+| domain               | The domain number to use (0-232); `0` is the default
+| participant          | The name given this context (how other participants will see it); defaults to the executable name
+

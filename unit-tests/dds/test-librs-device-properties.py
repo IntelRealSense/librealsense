@@ -16,7 +16,7 @@ if log.is_debug_on():
     rs.log_to_console( rs.log_severity.debug )
 from time import sleep
 
-context = rs.context( { "dds-domain": 123, "dds-participant-name": "device-properties-client" } )
+context = rs.context( { 'dds': { 'domain': 123, 'participant': 'device-properties-client' }} )
 only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
 
 

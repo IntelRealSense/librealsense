@@ -27,8 +27,9 @@ rs2_context* rs2_create_context(int api_version, rs2_error** error);
 * \param[in] api_version Users are expected to pass their version of \c RS2_API_VERSION to make sure they are running the correct librealsense version.
 * \param[in] json_settings Pointer to a string containing a JSON configuration to use, or null if none
 *            Possible settings:
-*                dds-discovery - (bool) false to disable DDS discovery; defaults to true (requires BUILD_WITH_DDS)
-*                dds-domain - (int) the number of the domain discovery is on (requires BUILD_WITH_DDS)
+*                dds               - (requires BUILD_WITH_DDS) false (bool) to disable DDS; otherwise the DDS settings:
+*                    domain        - (int) the number of the domain discovery is on; defaults to 0
+*                    participant   - (string) the name of the participant; defaults to the name of the executable
 *                use-basic-formats - (bool) true to make sensors stream only "basic" types without converting to formats
 *                                    other then the raw camera formats; defaults to false.
 *                                    Convert only interleaved formats (Y8I, Y12I), no colored infrared.
