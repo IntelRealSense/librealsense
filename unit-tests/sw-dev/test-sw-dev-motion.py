@@ -32,11 +32,11 @@ sensor.start(sync)
 
 frame = rs.software_motion_frame()
 motion_frame_data = rs.vector()
-motion_frame_data.x = 1.0
-motion_frame_data.y = 1.0
-motion_frame_data.z = 1.0
+motion_frame_data.x = 0.111
+motion_frame_data.y = 0.222
+motion_frame_data.z = 0.333
 frame.data = motion_frame_data
-frame.timestamp = 0
+frame.timestamp = 20000
 frame.domain = rs.timestamp_domain.hardware_clock
 frame.frame_number = 0
 frame.profile = stream_profile
