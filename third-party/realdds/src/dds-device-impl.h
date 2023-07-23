@@ -60,7 +60,7 @@ public:
           dds_guid const & guid,
           topics::device_info const & info );
 
-    void run( size_t message_timeout_ms );
+    void run();
     void open( const dds_stream_profiles & profiles );
 
     void write_control_message( topics::flexible_msg &&, nlohmann::json * reply = nullptr );

@@ -33,7 +33,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     with test.closure( "Test 1 stream..." ):
         remote.run( 'test_one_stream()' )
         device = dds.device( participant, participant.create_guid(), info )
-        device.run( 1000 )  # If no device is available in 30 seconds, this will throw
+        device.run()  # If no device is available before timeout, this will throw
         test.check( device.is_running() )
         test.check_equal( device.n_streams(), 1 )
         for stream in device.streams():
@@ -52,7 +52,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     with test.closure( "Test motion stream..." ):
         remote.run( 'test_one_motion_stream()' )
         device = dds.device( participant, participant.create_guid(), info )
-        device.run( 1000 )  # If no device is available in 30 seconds, this will throw
+        device.run()  # If no device is available before timeout, this will throw
         test.check( device.is_running() )
         test.check_equal( device.n_streams(), 1 )
         for stream in device.streams():
@@ -72,7 +72,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     with test.closure( "Test no streams..." ):
         remote.run( 'test_no_streams()' )
         device = dds.device( participant, participant.create_guid(), info )
-        device.run( 1000 )  # If no device is available in 30 seconds, this will throw
+        device.run()  # If no device is available before timeout, this will throw
         test.check( device.is_running() )
         test.check_equal( device.n_streams(), 0 )
         for stream in device.streams():
@@ -95,7 +95,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     with test.closure( "Test 10 profiles..." ):
         remote.run( 'test_n_profiles(10)' )
         device = dds.device( participant, participant.create_guid(), info )
-        device.run( 1000 )  # If no device is available in 30 seconds, this will throw
+        device.run()  # If no device is available before timeout, this will throw
         test.check( device.is_running() )
         test.check_equal( device.n_streams(), 1 )
         for stream in device.streams():
@@ -117,7 +117,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     with test.closure( "Test D435i..." ):
         remote.run( 'test_d435i()' )
         device = dds.device( participant, participant.create_guid(), d435i.device_info )
-        device.run( 1000 )  # If no device is available in 30 seconds, this will throw
+        device.run()  # If no device is available before timeout, this will throw
         test.check( device.is_running() )
         test.check_equal( device.n_streams(), 5 )
         for stream in device.streams():
@@ -130,7 +130,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     with test.closure( "Test discovery of another client device..." ):
         remote.run( 'test_one_stream()' )
         device = dds.device( participant, participant.create_guid(), info )
-        device.run( 1000 )  # If no device is available in 30 seconds, this will throw
+        device.run()  # If no device is available before timeout, this will throw
         test.check( device.is_running() )
         test.check_equal( device.n_streams(), 1 )
         # now start another server, and have it access the device

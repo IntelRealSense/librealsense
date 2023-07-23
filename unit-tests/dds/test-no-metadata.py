@@ -23,7 +23,7 @@ device_server.init( [color_stream], [], {} )
 
 # set up the client device and keep all its streams
 device = dds.device( participant, participant.create_guid(), d435i.device_info )
-device.run( 1000 )  # this will throw if something's wrong
+device.run()  # this will throw if something's wrong
 test.check( device.is_running() )
 
 def on_metadata_available( device, md ):

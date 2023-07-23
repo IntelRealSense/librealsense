@@ -202,8 +202,7 @@ namespace librealsense
             // The DDS device watcher should always be on
             if( _dds_watcher && _dds_watcher->is_stopped() )
             {
-                start_dds_device_watcher(
-                    rsutils::json::get< size_t >( settings, std::string( "dds-message-timeout-ms", 22 ), 5000 ) );
+                start_dds_device_watcher();
             }
         }
 #endif //BUILD_WITH_DDS
@@ -583,10 +582,10 @@ namespace librealsense
     }
 
 #ifdef BUILD_WITH_DDS
-    void context::start_dds_device_watcher( size_t message_timeout_ms )
+    void context::start_dds_device_watcher()
     {
-        _dds_watcher->on_device_added( [this, message_timeout_ms]( std::shared_ptr< realdds::dds_device > const & dev ) {
-            dev->run( message_timeout_ms );
+        _dds_watcher->on_device_added( [this]( std::shared_ptr< realdds::dds_device > const & dev ) {
+            dev->run();
 
             std::vector<rs2_device_info> rs2_device_info_added;
             std::vector<rs2_device_info> rs2_device_info_removed;
