@@ -61,7 +61,7 @@ def get_random_preset():
 
     # safety environment
     safety_environment = rs.safety_environment()
-    safety_environment.grid_cell_size = rs.float2(random.uniform(0, 0.1))  # m
+    safety_environment.grid_cell_size = random.uniform(0, 0.1)  # m
     safety_environment.safety_trigger_duration = random.uniform(0, 900)  # sec
     safety_environment.angular_velocity = random.uniform(0, 40)  # rad/sec
     safety_environment.linear_velocity = random.uniform(0, 40)  # m/sec
