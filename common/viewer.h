@@ -232,6 +232,7 @@ namespace rs2
         void init_depth_uid(int& selected_depth_source, std::vector<std::string>& depth_sources_str, std::vector<int>& depth_sources);
         void init_labeled_points_uid();
         void draw_3d_labeled_points(const rect& viewer_rect, rs2::labeled_points labeled_points);
+        bool should_texture_frame_be_updated(const rs2::frame& f) const;
 
         streams_layout _layout;
         streams_layout _old_layout;
