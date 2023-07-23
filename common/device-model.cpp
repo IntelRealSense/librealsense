@@ -1042,13 +1042,20 @@ namespace rs2
                 }
                 else return; // Aborted by the user
             }
+            auto manager = std::make_shared<safety_mcu_update_manager>(viewer.not_model, *this, dev, viewer.ctx, data, true);
 
-            auto debug_dev = dev.as<debug_protocol>();
-            uint32_t dfu_opcode = 0x1e;
-            uint32_t scmcu_dfu_param = 2;
-            auto cmd = debug_dev.build_command(dfu_opcode, scmcu_dfu_param);
-            auto res = debug_dev.send_and_receive_raw_data(cmd);
+            auto n = std::make_shared<safety_mcu_update_notification_model>(
+                "Manual Update requested", manager, true);
+            viewer.not_model->add_notification(n);
 
+            for (auto&& n : related_notifications)
+                n->dismiss(false);
+
+            auto invoke = [n](std::function<void()> action) {
+                n->invoke(action);
+            };
+
+            manager->start(invoke);
         }
         catch (const error& e)
         {
