@@ -1358,14 +1358,13 @@ namespace rs2
                 {
                     if (!paused)
                         lab_points = f.as<labeled_points>();
-                    auto texture = upload_frame(std::move(f));
-                    continue;
                 }
 
                 auto texture = upload_frame( std::move( f ) );
 
-                if( ( selected_tex_source_uid == -1 && f.get_profile().format() == RS2_FORMAT_Z16 )
-                    || ( f.get_profile().format() != RS2_FORMAT_ANY && is_3d_texture_source( f ) ) )
+                if( f.get_profile().stream_type() != RS2_STREAM_LABELED_POINT_CLOUD && 
+                    (( selected_tex_source_uid == -1 && f.get_profile().format() == RS2_FORMAT_Z16 )
+                    || ( f.get_profile().format() != RS2_FORMAT_ANY && is_3d_texture_source( f ) ) ))
                 {
                     texture_frame = texture;
                 }
