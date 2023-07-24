@@ -1,11 +1,8 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 string(REPLACE ${PROJECT_SOURCE_DIR}/ "" _rel_path ${CMAKE_CURRENT_LIST_DIR})
-include(${_rel_path}/algo/CMakeLists.txt)
 include(${_rel_path}/core/CMakeLists.txt)
 include(${_rel_path}/ds/CMakeLists.txt)
-include(${_rel_path}/ivcam/CMakeLists.txt)
-include(${_rel_path}/l500/CMakeLists.txt)
 include(${_rel_path}/media/CMakeLists.txt)
 include(${_rel_path}/proc/CMakeLists.txt)
 include(${_rel_path}/res/CMakeLists.txt)
@@ -142,3 +139,12 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/small-heap.h"
         "${CMAKE_CURRENT_LIST_DIR}/basics.h"
 )
+
+if(BUILD_WITH_DDS)
+    file( GLOB_RECURSE RS_DDS_SOURCE_FILES
+        LIST_DIRECTORIES false
+        RELATIVE ${PROJECT_SOURCE_DIR}
+        "${CMAKE_CURRENT_LIST_DIR}/dds/*"
+        )
+    target_sources( ${LRS_TARGET} PRIVATE ${RS_DDS_SOURCE_FILES} )
+endif()

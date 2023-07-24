@@ -357,7 +357,7 @@ namespace librealsense
         {
             T rv = 0;
             if (index + sizeof(T) >= data.size())
-                throw new std::runtime_error("get_gvd_field - index out of bounds, buffer size: " +
+                throw std::runtime_error("get_gvd_field - index out of bounds, buffer size: " +
                     std::to_string(data.size()) + ", index: " + std::to_string(index));
             for (int i = 0; i < sizeof(T); i++)
                 rv += data[index + i] << (i * 8);

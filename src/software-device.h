@@ -11,16 +11,18 @@ namespace librealsense
 {
     class software_sensor;
     class software_device_info;
+    class video_stream_profile_interface;
 
     class software_device : public device
     {
     public:
         software_device();
+        software_device( std::shared_ptr< context > ctx );
         virtual ~software_device();
 
         software_sensor& add_software_sensor(const std::string& name);
 
-        software_sensor& get_software_sensor(int index);
+        software_sensor& get_software_sensor( size_t index);
 
         void set_matcher_type(rs2_matchers matcher);
         
@@ -37,7 +39,7 @@ namespace librealsense
 
         void register_destruction_callback(software_device_destruction_callback_ptr);
 
-    private:
+    protected:
         std::vector<std::shared_ptr<software_sensor>> _software_sensors;
         librealsense::software_device_destruction_callback_ptr _user_destruction_callback;
         rs2_matchers _matcher = RS2_MATCHER_DEFAULT;
@@ -83,6 +85,8 @@ namespace librealsense
         }
         ~software_recommended_proccesing_blocks() override {}
 
+        void add_processing_block( std::shared_ptr< processing_block_interface > const & block );
+
     private:
         processing_blocks _blocks;
     };
@@ -92,9 +96,9 @@ namespace librealsense
     public:
         software_sensor(std::string name, software_device* owner);
 
-        std::shared_ptr<stream_profile_interface> add_video_stream(rs2_video_stream video_stream, bool is_default=false);
-        std::shared_ptr<stream_profile_interface> add_motion_stream(rs2_motion_stream motion_stream, bool is_default = false);
-        std::shared_ptr<stream_profile_interface> add_pose_stream(rs2_pose_stream pose_stream, bool is_default = false);
+        virtual std::shared_ptr<stream_profile_interface> add_video_stream(rs2_video_stream video_stream, bool is_default = false);
+        virtual std::shared_ptr<stream_profile_interface> add_motion_stream(rs2_motion_stream motion_stream, bool is_default = false);
+        virtual std::shared_ptr<stream_profile_interface> add_pose_stream(rs2_pose_stream pose_stream, bool is_default = false);
 
         bool extend_to(rs2_extension extension_type, void** ptr) override;
 
@@ -113,11 +117,27 @@ namespace librealsense
         void add_read_only_option(rs2_option option, float val);
         void update_read_only_option(rs2_option option, float val);
         void add_option(rs2_option option, option_range range, bool is_writable);
-        void set_metadata(rs2_frame_metadata_value key, rs2_metadata_type value);
+        void set_metadata( rs2_frame_metadata_value key, rs2_metadata_type value );
+        void erase_metadata( rs2_frame_metadata_value key );
+
+    protected:
+        frame_interface * allocate_new_frame( rs2_extension, stream_profile_interface *, frame_additional_data && );
+        frame_interface * allocate_new_video_frame( video_stream_profile_interface *, int stride, int bpp, frame_additional_data && );
+        void invoke_new_frame( frame_holder &&, void const * pixels, std::function< void() > on_release );
+
+        metadata_array _metadata_map;
+
+        processing_blocks get_recommended_processing_blocks() const override
+        {
+            return _pbs.get_recommended_processing_blocks();
+        }
+
+        software_recommended_proccesing_blocks & get_software_recommended_proccesing_blocks() { return _pbs; }
+
+        stream_profiles _profiles;
+
     private:
         friend class software_device;
-        stream_profiles _profiles;
-        std::array< metadata_array_value, RS2_FRAME_METADATA_ACTUAL_COUNT > _metadata_map;
         uint64_t _unique_id;
 
         class stereo_extension : public depth_stereo_sensor
@@ -161,8 +181,6 @@ namespace librealsense
         lazy<depth_extension> _depth_extension;
 
         software_recommended_proccesing_blocks _pbs;
-
-        std::shared_ptr<stream_profile_interface> find_profile_by_uid(int uid);
     };
     MAP_EXTENSION(RS2_EXTENSION_SOFTWARE_SENSOR, software_sensor);
     MAP_EXTENSION(RS2_EXTENSION_SOFTWARE_DEVICE, software_device);

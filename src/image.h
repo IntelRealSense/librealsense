@@ -24,7 +24,6 @@ namespace librealsense
     }
 
     resolution rotate_resolution(resolution res);
-    resolution l500_confidence_resolution(resolution res);
 }
 
 #endif

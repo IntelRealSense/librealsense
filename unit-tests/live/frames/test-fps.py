@@ -1,7 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-# test:device L500*
 # test:device each(D400*)
 # test:donotrun:!nightly
 # test:timeout 250
@@ -25,7 +24,7 @@ def measure_fps(sensor, profile):
     """
     seconds_till_steady_state = 4
     seconds_to_count_frames = 20
-    
+
     steady_state = False
     first_frame_received = False
     frames_received = 0
@@ -53,11 +52,11 @@ def measure_fps(sensor, profile):
     time.sleep(seconds_till_steady_state)
 
     steady_state = True
-    
+
     time.sleep(seconds_to_count_frames) # Time to count frames
-    
-    steady_state = False # Stop counting    
-    
+
+    steady_state = False # Stop counting
+
     sensor.stop()
     sensor.close()
 
@@ -83,7 +82,7 @@ for requested_fps in tested_fps:
 
     try:
         dp = next(p for p in ds.profiles
-                  if p.fps() == requested_fps 
+                  if p.fps() == requested_fps
                   and p.stream_type() == rs.stream.depth
                   and p.format() == rs.format.z16)
     except StopIteration:
@@ -107,8 +106,6 @@ for requested_fps in tested_fps:
             cs.set_option(rs.option.enable_auto_exposure, 1)
         if cs.supports(rs.option.auto_exposure_priority):
             cs.set_option(rs.option.auto_exposure_priority, 0) # AE priority should be 0 for constant FPS
-    elif product_line == "L500":
-        cs.set_option(rs.option.enable_auto_exposure, 0)
 
     try:
         cp = next(p for p in cs.profiles

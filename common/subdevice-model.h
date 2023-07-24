@@ -17,7 +17,7 @@
 #include <array>
 #include <unordered_map>
 
-#include "../third-party/json.hpp"
+#include <nlohmann/json.hpp>
 #include "objects-in-frame.h"
 #include "processing-block-model.h"
 
@@ -109,9 +109,6 @@ namespace rs2
         bool is_paused() const;
         void pause();
         void resume();
-
-        bool can_enable_zero_order();
-        void verify_zero_order_conditions();
 
         void update_ui(std::vector<stream_profile> profiles_vec);
         void get_sorted_profiles(std::vector<stream_profile>& profiles);
@@ -207,7 +204,6 @@ namespace rs2
         std::shared_ptr<rs2::colorizer> depth_colorizer;
         std::shared_ptr<rs2::yuy_decoder> yuy2rgb;
         std::shared_ptr<rs2::y411_decoder> y411;
-        std::shared_ptr<processing_block_model> zero_order_artifact_fix;
 
         std::vector<std::shared_ptr<processing_block_model>> post_processing;
         bool post_processing_enabled = true;

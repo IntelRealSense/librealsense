@@ -4,7 +4,6 @@
 #include "record_sensor.h"
 #include "api.h"
 #include "stream.h"
-#include "l500/l500-depth.h"
 
 #include <rsutils/string/from.h>
 
@@ -170,7 +169,6 @@ bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void**
         *ext = this;
         return true;
     case RS2_EXTENSION_DEPTH_SENSOR    : return extend_to_aux<RS2_EXTENSION_DEPTH_SENSOR   >(&m_sensor, ext);
-    case RS2_EXTENSION_L500_DEPTH_SENSOR: return extend_to_aux<RS2_EXTENSION_L500_DEPTH_SENSOR   >(&m_sensor, ext);
     case RS2_EXTENSION_DEPTH_STEREO_SENSOR: return extend_to_aux<RS2_EXTENSION_DEPTH_STEREO_SENSOR   >(&m_sensor, ext);
     case RS2_EXTENSION_COLOR_SENSOR:        return extend_to_aux<RS2_EXTENSION_COLOR_SENSOR   >(&m_sensor, ext);
     case RS2_EXTENSION_MOTION_SENSOR:       return extend_to_aux<RS2_EXTENSION_MOTION_SENSOR   >(&m_sensor, ext);

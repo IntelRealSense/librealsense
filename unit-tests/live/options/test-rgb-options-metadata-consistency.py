@@ -1,7 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-#test:device L500*
 #test:device each(D400*)
 
 import pyrealsense2 as rs
@@ -36,7 +35,7 @@ def check_option_and_metadata_values(option, metadata, value_to_set, frame):
     changed = color_sensor.get_option(option)
     test.check_equal(changed, value_to_set)
     if frame.supports_frame_metadata(metadata):
-        changed_md = frame.get_frame_metadata(metadata)
+        changed_md = float( frame.get_frame_metadata(metadata) )
         test.check_equal(changed_md, value_to_set)
     else:
         print("metadata " + repr(metadata) + " not supported")
@@ -51,7 +50,7 @@ dev = ctx.query_devices()[0]
 
 try:
     color_sensor = dev.first_color_sensor()
-    # Using a profile common to both L500 and D400
+    # Using a profile common to known cameras
     color_profile = next(p for p in color_sensor.profiles if p.fps() == 30
                          and p.stream_type() == rs.stream.color
                          and p.format() == rs.format.yuyv
@@ -96,7 +95,7 @@ try:
 
         except:
             test.unexpected_exception()
-            
+
 except:
     print("The device found has no color sensor")
 finally:

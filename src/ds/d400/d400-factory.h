@@ -3,6 +3,8 @@
 #pragma once
 
 #include "d400-private.h"
+#include <src/context.h>
+
 
 namespace librealsense
 {

@@ -4,7 +4,6 @@
 # we want this test to run first so that all tests run with updated FW versions, so we give it priority 0
 #test:priority 0
 #test:device each(D400*) !D457
-#test:device each(L500*)
 
 import sys
 import os
@@ -45,9 +44,7 @@ def get_update_counter(device):
     start_index = 0x30
     size = None
 
-    if product_line == "L500":
-        size = 0x1
-    elif product_line == "D400":
+    if product_line == "D400":
         size = 0x2
     else:
         log.f( "Incompatible product line:", product_line )
@@ -60,12 +57,7 @@ def get_update_counter(device):
 def reset_update_counter( device ):
     product_line = device.get_info( rs.camera_info.product_line )
 
-    if product_line == "L500":
-        opcode = 0x0A
-        start_index = 0x30
-        size = 0x01
-        raw_cmd = rs.debug_protocol(device).build_command(opcode, start_index, size)
-    elif product_line == "D400":
+    if product_line == "D400":
         opcode = 0x86
         raw_cmd = rs.debug_protocol(device).build_command(opcode)
     else:
@@ -168,7 +160,7 @@ if current_fw_version == bundled_fw_version:
         test.print_results_and_exit()
 else:
     # It is expected that, post-recovery, the FW versions will be the same
-    test.check( not recovered, abort_if_failed = True )
+    test.check( not recovered, on_fail=test.ABORT )
 
 update_counter = get_update_counter( device )
 log.d( 'update counter:', update_counter )

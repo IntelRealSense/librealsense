@@ -138,7 +138,7 @@ rs2_sensor* rs2_get_frame_sensor(const rs2_frame* frame, rs2_error** error);
 * retrieve frame number from frame handle
 * \param[in] frame      handle returned from a callback
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return               the frame nubmer of the frame, in milliseconds since the device was started
+* \return               the frame number
 */
 unsigned long long rs2_get_frame_number(const rs2_frame* frame, rs2_error** error);
 

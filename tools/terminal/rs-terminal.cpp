@@ -228,7 +228,6 @@ int main(int argc, char** argv)
     else
     {
         cout << "Commands XML file not provided.\nyou still can send raw data to device in hexadecimal\nseparated by spaces.\n";
-        cout << "Example GVD command for the SR3XX:\n14 00 ab cd 3b 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00\n";
         cout << "Example GVD command for the D4XX:\n14 00 ab cd 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00\n";
     }
     auto auto_comp = get_auto_complete_obj(is_application_in_hex_mode, cmd_xml.commands);

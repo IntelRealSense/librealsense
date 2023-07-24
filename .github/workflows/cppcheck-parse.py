@@ -28,7 +28,7 @@ class LineError( Exception ):
         global line_number, logfile
         if line is None:
             line = line_number
-        super().__init__( f'{logile}+{line}: {message}' )
+        super().__init__( f'{logfile}+{line}: {message}' )
 
 
 handle = open( logfile, "r" )
@@ -54,32 +54,34 @@ while True:
     if not line.startswith( '<error ' ):
         raise LineError( 'unexpected line' )
 
+    #print( f'-D-{line_number}- {line}' )
     e = dict( re.findall( '(\w+)="(.*?)"', line ) )
     severity = e['severity'][0].capitalize()
     id = e['id']
-    cwe = e.get('cwe') or '-'
-    file0 = e['file0']
+    cwe = e.get( 'cwe', '-' )
+    file0 = e.get( 'file0', '' )
     msg = e['msg'].replace( '&apos;', "'" )
 
     line = nextline()
+    printed = False
     while( line.startswith( '<location ' )):
         l = dict( re.findall( '(\w+)="(.*?)"', line ) )
         file = l['file']
         line = l['line']
         column = l['column']
-        info = l.get('info') or ''
+        info = l.get( 'info', '' )
         if severity in severities:
             if 'l' in severities:
-                if file0:
+                if not printed:
                     print( f'{severity} {id:30} {file0:50} {msg}' )
                 print( f'| {"-":30} {file+"+"+line+"."+column:50} {info}' )
-            elif file0:
+            elif not printed:
                 print( f'{severity} {id:30} {file+"+"+line:50} {msg}' )
-        file0 = None
+        printed = True
         line = nextline()
-    if file0:  # no locations!?
+    if not printed:  # no locations!?
         if severity in severities:
-            print( f'{severity} {id:30} {file0:50} {msg}' )
+            print( f'{severity} {id:30} {file0 or file:50} {msg}' )
 
     if line != '</error>':
         raise LineError( 'unknown error line' )

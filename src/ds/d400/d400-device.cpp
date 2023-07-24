@@ -1,34 +1,34 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
-#include <regex>
-#include <iterator>
-
-#include "device.h"
-#include "context.h"
-#include "image.h"
-#include "metadata-parser.h"
+#include <src/device.h>
+#include <src/context.h>
+#include <src/image.h>
+#include <src/metadata-parser.h>
 
 #include "d400-device.h"
 #include "d400-private.h"
 #include "d400-options.h"
 #include "ds/ds-timestamp.h"
-#include "stream.h"
-#include "environment.h"
+#include <src/stream.h>
+#include <src/environment.h>
 #include "d400-color.h"
 #include "d400-nonmonochrome.h"
 
-#include "proc/depth-formats-converter.h"
-#include "proc/y8i-to-y8y8.h"
-#include "proc/y12i-to-y16y16.h"
-#include "proc/y12i-to-y16y16-mipi.h"
-#include "proc/color-formats-converter.h"
+#include <src/proc/depth-formats-converter.h>
+#include <src/proc/y8i-to-y8y8.h>
+#include <src/proc/y12i-to-y16y16.h>
+#include <src/proc/y12i-to-y16y16-mipi.h>
+#include <src/proc/color-formats-converter.h>
 
-#include "hdr-config.h"
+#include <src/hdr-config.h>
 #include "d400-thermal-monitor.h"
-#include "../common/fw/firmware-version.h"
-#include "fw-update/fw-update-unsigned.h"
-#include "../third-party/json.hpp"
+#include <common/fw/firmware-version.h>
+#include <src/fw-update/fw-update-unsigned.h>
+#include <nlohmann/json.hpp>
+
+#include <regex>
+#include <iterator>
 
 #ifdef HWM_OVER_XU
 constexpr bool hw_mon_over_xu = true;
@@ -1153,13 +1153,11 @@ namespace librealsense
 
     platform::usb_spec d400_device::get_usb_spec() const
     {
-        if(!supports_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
-            return platform::usb_undefined;
-        auto str = get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
-        for (auto u : platform::usb_spec_names)
+        if( supports_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
         {
-            if (u.second.compare(str) == 0)
-                return u.first;
+            auto it = platform::usb_name_to_spec.find( get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) );
+            if( it != platform::usb_name_to_spec.end() )
+                return it->second;
         }
         return platform::usb_undefined;
     }

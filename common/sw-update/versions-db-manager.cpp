@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <regex>
 
-#include "json.hpp"
+#include <nlohmann/json.hpp>
 #include "versions-db-manager.h"
 #include <types.h>
 #include <rsutils/os/os.h>
