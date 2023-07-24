@@ -57,6 +57,40 @@ void formats_converter::drop_non_basic_formats()
     }
 }
 
+std::string to_string( std::shared_ptr< stream_profile_interface > profile )
+{
+    std::string res;
+
+    if( profile )
+    {
+        res += std::string( "(" ) + rs2_stream_to_string( profile->get_stream_type() ) + std::string( ")" );
+        res += std::string( " " ) + rs2_format_to_string( profile->get_format() );
+        res += " " + std::to_string( profile->get_stream_index() );
+        if( auto vsp = As< video_stream_profile, stream_profile_interface >( profile ) )
+        {
+            res += " " + std::to_string( vsp->get_width() );
+            res += "x" + std::to_string( vsp->get_height() );
+        }
+        res += " @ " + std::to_string( profile->get_framerate() );
+    }
+
+    return res;
+}
+ 
+std::string to_string( stream_profile profile )
+{
+    std::string res;
+
+    res += std::string( "(" ) + rs2_stream_to_string( profile.stream ) + std::string( ")" );
+    res += std::string( " " ) + rs2_format_to_string( profile.format );
+    res += " " + std::to_string( profile.index );
+    res += " " + std::to_string( profile.width );
+    res += "x" + std::to_string( profile.height );
+    res += " @ " + std::to_string( profile.fps );
+
+    return res;
+}
+
 stream_profiles formats_converter::get_all_possible_profiles( const stream_profiles & raw_profiles )
 {
     // For each profile that can be used as input check all registered factories if they can create
@@ -67,6 +101,7 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
 
     for( auto & raw_profile : raw_profiles )
     {
+        LOG_DEBUG( "Getting possible profiles for raw profile: " << to_string( raw_profile ) );
         for( auto & pbf : _pb_factories )
         {
             const auto & sources = pbf->get_source_info();
@@ -101,7 +136,10 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
                         _pbf_supported_profiles[pbf.get()].push_back( cloned_profile );
 
                         // Cache mapping of each target profile to profiles it is converting from.
-                        _target_profiles_to_raw_profiles[cloned_profile].push_back( raw_profile );
+                        // Using map key type stream_profile and calling to_profile because stream_profile_interface is
+                        // abstract, can't use as key. shared_ptr< stream_profile_interface > saves pointer as key which
+                        // will result in bugs when mapping multiple raw profiles to the same converted profile.
+                        _target_profiles_to_raw_profiles[to_profile( cloned_profile.get() )].push_back( raw_profile );
 
                         // TODO - Duplicates in the list happen when 2 raw_profiles have conversion to same target.
                         // In this case it is faster to check if( _target_to_source_profiles_map[target].size() > 1 )
@@ -115,6 +153,7 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
                         if( sources.size() > 1 && target.format != source.format )
                             continue;
 
+                        LOG_DEBUG( "    Converting to " << to_string( cloned_profile ) );
                         to_profiles.push_back( cloned_profile );
                     }
                 }
@@ -210,7 +249,7 @@ void formats_converter::prepare_to_convert( stream_profiles from_profiles )
         auto best_pb = factory_of_best_match->generate();
         for( const auto & from_profile : from_profiles_of_best_match )
         {
-            auto & mapped_raw_profiles = _target_profiles_to_raw_profiles[from_profile];
+            auto & mapped_raw_profiles = _target_profiles_to_raw_profiles[to_profile( from_profile.get() )];
 
             for( const auto & raw_profile : mapped_raw_profiles )
             {
@@ -232,7 +271,7 @@ void formats_converter::update_target_profiles_data( const stream_profiles & fro
 {
     for( auto & from_profile : from_profiles )
     {
-        for( auto & raw_profile : _target_profiles_to_raw_profiles[from_profile] )
+        for( auto & raw_profile : _target_profiles_to_raw_profiles[to_profile( from_profile.get() )] )
         {
             raw_profile->set_stream_index( from_profile->get_stream_index() );
             raw_profile->set_unique_id( from_profile->get_unique_id() );
