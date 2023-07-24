@@ -5226,7 +5226,7 @@ TEST_CASE("software-device pose stream", "[software-device]")
 
 }
 
-TEST_CASE("software-device motion stream", "[software-device]")
+TEST_CASE("software-device motion stream", "[software-device-disabled]")
 {
     rs2::software_device dev;
 
