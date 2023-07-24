@@ -39,20 +39,6 @@ task downloadFirmware() {
         println("downloading D4xx fw: " + d4xxFwVersion)
         new URL('https://librealsense.intel.com/Releases/RS4xx/FW/D4XX_FW_Image-' + d4xxFwVersion + '.bin').withInputStream{ i -> d4xxFile.withOutputStream{ it << i }}
     }
-    
-    def l51xFwVersion = getFwVersion('L51X_RECOMMENDED_FIRMWARE_VERSION')
-    def l51xFile = new File("$projectDir/src/main/res/raw/fw_l51x.bin")
-    if (!l51xFile.exists()) {
-        println("downloading L51x fw: " + l51xFwVersion)
-        new URL('https://librealsense.intel.com/Releases/L5xx/FW/L51X_FW_Image-' + l51xFwVersion + '.bin').withInputStream{ i -> l51xFile.withOutputStream{ it << i }}
-    }
-
-    def sr3xxFwVersion = getFwVersion('SR3XX_RECOMMENDED_FIRMWARE_VERSION')
-    def sr3xxFile = new File("$projectDir/src/main/res/raw/fw_sr3xx.bin")
-    if (!sr3xxFile.exists()) {
-        println("downloading SR3xx fw: " + sr3xxFwVersion)
-        new URL('https://librealsense.intel.com/Releases/SR300/FW/SR3XX_FW_Image-' + sr3xxFwVersion + '.bin').withInputStream{ i -> sr3xxFile.withOutputStream{ it << i }}
-    }
 }
 
 dependencies {

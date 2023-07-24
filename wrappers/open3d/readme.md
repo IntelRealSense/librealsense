@@ -169,7 +169,7 @@ options supported by Open3D:
 -   **fps**: Common frame rate for both depth and color streams. Leave 0
     to let RealSense pick a supported frame rate.
 -   **visual_preset**: Controls depth computation on the device.
-    Supported values are specific to product line (SR300, RS400, L500).
+    Supported values are specific to product line (D400, L500).
     Leave empty to pick the default.
 
 Here is an example `json` configuration file to capture 30fps, 540p

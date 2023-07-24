@@ -104,7 +104,6 @@ That's why it is extremely useful to have an optional **texture projector** (usu
 ### Remark on Structured-Light
 
 [Structured-Light](https://en.wikipedia.org/wiki/Structured_light) is an alternative approach to depth from stereo. It relies on recognizing a specific projected pattern in a single image.
-> For customers interested in a structured-light solution Intel offers the [SR300 RealSense camera](https://software.intel.com/en-us/realsense/sr300)
 
 Having certain benefits, structured-light solutions are known to be fragile since any external interference (from either sunlight or another structured-light device) will prevent you from getting any depth. 
 

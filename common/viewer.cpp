@@ -838,6 +838,10 @@ namespace rs2
         {
             rs2::log_to_console(min_severity);
         }
+        else
+        {
+            rs2::log_to_console( RS2_LOG_SEVERITY_NONE );
+        }
         if (config_file::instance().get_or_default(
             configurations::viewer::log_to_file, false))
         {
@@ -860,7 +864,6 @@ namespace rs2
         , frameset_alloc( this )
         , synchronization_enable( true )
         , synchronization_enable_prev_state(true)
-        , zo_sensors( 0 )
         , _support_ir_reflectivity( false )
     {
 

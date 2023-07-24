@@ -221,7 +221,7 @@ def query( monitor_changes = True ):
     #
     # Get all devices, and store by serial-number
     global _device_by_sn, _context, _port_to_sn
-    _context = rs.context()
+    _context = rs.context( '{"dds-discovery":false}' )
     _device_by_sn = dict()
     try:
         log.debug_indent()
@@ -240,7 +240,11 @@ def query( monitor_changes = True ):
             # The FW update ID is always available, it seems, and is the ASIC serial number
             # whereas the Serial Number is the OPTIC serial number and is only available in
             # non-recovery devices. So we use the former...
-            sn = dev.get_info( rs.camera_info.firmware_update_id )
+            try:
+                sn = dev.get_info( rs.camera_info.firmware_update_id )
+            except RuntimeError as e:
+                log.e( f'Found device with S/N {sn} but trying to get fw-update-id failed: {e}' )
+                continue
             device = Device( sn, dev )
             _device_by_sn[sn] = device
             log.d( '... port {}:'.format( device.port is None and '?' or device.port ), sn, dev )

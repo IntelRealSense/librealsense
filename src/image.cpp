@@ -63,11 +63,6 @@ namespace librealsense
         return resolution{ res.height , res.width};
     }
 
-    resolution l500_confidence_resolution(resolution res)
-    {
-        return resolution{ res.height , res.width * 2 };
-    }
-
 }
 
 #pragma pack(pop)

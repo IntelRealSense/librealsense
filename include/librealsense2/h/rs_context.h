@@ -23,6 +23,21 @@ extern "C" {
 rs2_context* rs2_create_context(int api_version, rs2_error** error);
 
 /**
+* \brief Creates RealSense context that is required for the rest of the API, and accepts a settings JSON.
+* \param[in] api_version Users are expected to pass their version of \c RS2_API_VERSION to make sure they are running the correct librealsense version.
+* \param[in] json_settings Pointer to a string containing a JSON configuration to use, or null if none
+*            Possible settings:
+*                dds-discovery - (bool) false to disable DDS discovery; defaults to true (requires BUILD_WITH_DDS)
+*                dds-domain - (int) the number of the domain discovery is on (requires BUILD_WITH_DDS)
+*                use-basic-formats - (bool) true to make sensors stream only "basic" types without converting to formats
+*                                    other then the raw camera formats; defaults to false.
+*                                    Convert only interleaved formats (Y8I, Y12I), no colored infrared.
+* \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return            Context object
+*/
+rs2_context* rs2_create_context_ex(int api_version, const char * json_settings, rs2_error** error);
+
+/**
 * \brief Frees the relevant context object.
 * \param[in] context Object that is no longer needed
 */
@@ -95,6 +110,7 @@ rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error
 #define RS2_PRODUCT_LINE_SR300          0x04
 #define RS2_PRODUCT_LINE_L500           0x08
 #define RS2_PRODUCT_LINE_T200           0x10
+#define RS2_PRODUCT_LINE_SW_ONLY       0x100  // enable to return only SW devices, including playback
 #define RS2_PRODUCT_LINE_DEPTH      (RS2_PRODUCT_LINE_L500 | RS2_PRODUCT_LINE_SR300 | RS2_PRODUCT_LINE_D400)
 #define RS2_PRODUCT_LINE_TRACKING   RS2_PRODUCT_LINE_T200
 

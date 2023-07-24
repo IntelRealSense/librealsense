@@ -89,7 +89,6 @@ void dispatcher::stop()
     {
         std::lock_guard< std::mutex > lock(_dispatch_mutex);
         assert(_queue.empty());
-
     }
     // Signal we've stopped so any sleeping dispatched will wake up immediately
     {

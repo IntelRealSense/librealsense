@@ -3,7 +3,7 @@
 
 #include "rs-config.h"
 
-#include "../third-party/json.hpp"
+#include <nlohmann/json.hpp>
 
 #include "model-views.h"
 
