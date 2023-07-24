@@ -66,6 +66,13 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 #set -x
+if [[ $info -eq 0 ]]; then
+  if [ "$(id -u)" -ne 0 ]; then
+          echo "Please run as root." >&2
+          exit 1
+  fi
+fi
+
 mux_list=${mux_param:-'a b c d'}
 
 declare -A camera_idx=( [a]=0 [b]=1 [c]=2 [d]=3 )
@@ -104,15 +111,15 @@ vid_dev_idx=$(echo "${dot}" | grep "DS5 mux" | grep "vi-output" | tr '\\n' '\n' 
 
     # create link only in case we choose not only to show it
     if [[ $info -eq 0 ]]; then
-      [[ -e $dev_ln ]] && sudo unlink $dev_ln
-      sudo ln -s $vid $dev_ln
+      [[ -e $dev_ln ]] && unlink $dev_ln
+      ln -s $vid $dev_ln
       if [[ "${sensor_name}" == 'depth' ]]; then
         # Create DFU device link for camera on jetson
         i2cdev=$(echo "${dot}" | grep  "${vid}" | tr '\\n' ' ' | awk '{print $5}')
         dev_dfu_name="/dev/d4xx-dfu-${i2cdev}"
         dev_dfu_ln="/dev/d4xx-dfu-${cam_id}"
-        [[ -e $dev_dfu_ln ]] && sudo unlink $dev_dfu_ln
-        sudo ln -s $dev_dfu_name $dev_dfu_ln
+        [[ -e $dev_dfu_ln ]] && unlink $dev_dfu_ln
+        ln -s $dev_dfu_name $dev_dfu_ln
       fi
     fi
     # find metadata
@@ -137,8 +144,8 @@ vid_dev_idx=$(echo "${dot}" | grep "DS5 mux" | grep "vi-output" | tr '\\n' '\n' 
 
     # create link only in case we choose not only to show it
     if [[ $info -eq 0 ]]; then
-      [[ -e $dev_md_ln ]] && sudo unlink $dev_md_ln
-      sudo ln -s $vid $dev_md_ln
+      [[ -e $dev_md_ln ]] && unlink $dev_md_ln
+      ln -s $vid $dev_md_ln
     fi
   done
   exit 0
@@ -175,8 +182,8 @@ for camera in $mux_list; do
 
     # create link only in case we choose not only to show it
     if [[ $info -eq 0 ]]; then
-      [[ -e $dev_ln ]] && sudo unlink $dev_ln
-      sudo ln -s $vid $dev_ln
+      [[ -e $dev_ln ]] && unlink $dev_ln
+      ln -s $vid $dev_ln
       # activate ipu6 link enumeration feature
       ${v4l2_util} -d $dev_ln -c enumerate_graph_link=1
     fi
@@ -194,8 +201,8 @@ for camera in $mux_list; do
     [[ $quiet -eq 0 ]] && printf '%s\t%d\t%s\tMetadata\t/dev/video%s\t%s\n' "$dev_name" ${camera_idx[${camera}]} ${camera_names["${sens}"]} $(($vid_num+1)) $dev_md_ln
     # create link only in case we choose not only to show it
     if [[ $info -eq 0 ]]; then
-      [[ -e $dev_md_ln ]] && sudo unlink $dev_md_ln
-      sudo ln -s "/dev/video$(($vid_num+1))" $dev_md_ln
+      [[ -e $dev_md_ln ]] && unlink $dev_md_ln
+      ln -s "/dev/video$(($vid_num+1))" $dev_md_ln
       ${v4l2_util} -d $dev_md_ln -c enumerate_graph_link=3
     fi
   done
@@ -204,8 +211,8 @@ for camera in $mux_list; do
     dev_dfu_name="/dev/d4xx-dfu-${camera}"
     dev_dfu_ln="/dev/d4xx-dfu-${camera_idx[${camera}]}"
     if [[ $info -eq 0 ]]; then
-      [[ -e $dev_dfu_ln ]] && sudo unlink $dev_dfu_ln
-      sudo ln -s $dev_dfu_name $dev_dfu_ln
+      [[ -e $dev_dfu_ln ]] && unlink $dev_dfu_ln
+      ln -s $dev_dfu_name $dev_dfu_ln
     else
       [[ $quiet -eq 0 ]] && printf '%s\t%d\t%s\tFirmware \t%s\t%s\n' " i2c " ${camera_idx[${camera}]} "d4xx   " $dev_dfu_name $dev_dfu_ln
     fi
