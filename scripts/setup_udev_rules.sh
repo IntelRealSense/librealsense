@@ -44,29 +44,18 @@ if [ "$install" = true ]; then
         echo -e "\e[0m"
     fi
     sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/
+
     if [[ -n "${is_ipu6}" ]] || [[ -n "${is_tegra}" ]]; then
         sudo cp config/99-realsense-d4xx-mipi-dfu.rules /etc/udev/rules.d/
         sudo cp scripts/rs-enum.sh /usr/local/bin/rs-enum.sh
-    fi
-    if [[ -n "${is_ipu6}" ]]; then
         sudo cp scripts/rs_ipu6_d457_bind.sh /usr/local/bin/rs_ipu6_d457_bind.sh
-        sudo cp config/99-realsense-d4xx-ipu6.rules /etc/udev/rules.d/
-    fi
-    if [[ -n "${is_tegra}" ]]; then
-        sudo cp config/99-realsense-d4xx-tegra.rules /etc/udev/rules.d/
     fi
 else
     sudo rm /etc/udev/rules.d/99-realsense-libusb.rules
     if [[ -n "${is_ipu6}" ]] || [[ -n "${is_tegra}" ]]; then
         sudo rm /etc/udev/rules.d/99-realsense-d4xx-mipi-dfu.rules
         sudo rm /usr/local/bin/rs-enum.sh
-    fi
-    if [[ -n "${is_ipu6}" ]]; then
         sudo rm /usr/local/bin/rs_ipu6_d457_bind.sh
-        sudo rm /etc/udev/rules.d/99-realsense-d4xx-ipu6.rules
-    fi
-    if [[ -n "${is_tegra}" ]]; then
-        sudo rm /etc/udev/rules.d/99-realsense-d4xx-tegra.rules
     fi
 fi
 

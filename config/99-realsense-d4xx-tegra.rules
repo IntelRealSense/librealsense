@@ -1,3 +1,0 @@
-# Device rules for Intel RealSense MIPI devices on Jetson
-
-SUBSYSTEM=="d4xx-class", RUN+="/bin/bash -c /usr/local/bin/rs-enum.sh -q > /dev/kmsg'"

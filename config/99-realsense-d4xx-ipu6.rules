@@ -1,7 +1,0 @@
-##Version=1.0##
-# Device rules for Intel RealSense MIPI devices on IPU6
-#KERNEL=="d4xx", SUBSYSTEM=="module", RUN+="/bin/bash -c 'echo UDEV-D4XX > /dev/kmsg'"
-SUBSYSTEM=="video4linux", ATTR{name}=="DS5 mux a", RUN+="/bin/bash -c '/usr/local/bin/rs_ipu6_d457_bind.sh -m a > /dev/kmsg; /usr/local/bin/rs-enum.sh -q -m a > /dev/kmsg'"
-SUBSYSTEM=="video4linux", ATTR{name}=="DS5 mux b", RUN+="/bin/bash -c '/usr/local/bin/rs_ipu6_d457_bind.sh -m b > /dev/kmsg; /usr/local/bin/rs-enum.sh -q -m b > /dev/kmsg'"
-SUBSYSTEM=="video4linux", ATTR{name}=="DS5 mux c", RUN+="/bin/bash -c '/usr/local/bin/rs_ipu6_d457_bind.sh -m c > /dev/kmsg; /usr/local/bin/rs-enum.sh -q -m c > /dev/kmsg'"
-SUBSYSTEM=="video4linux", ATTR{name}=="DS5 mux d", RUN+="/bin/bash -c '/usr/local/bin/rs_ipu6_d457_bind.sh -m d > /dev/kmsg; /usr/local/bin/rs-enum.sh -q -m d > /dev/kmsg'"
