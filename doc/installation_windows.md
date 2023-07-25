@@ -88,4 +88,4 @@ When set, the compiler will check the target WinSDK version, and abort the build
 **Note** In case of multiple WinSDK version installed, CMake automatically selects the latest version of SDK. In some cases, however, the automatic selection may fail. Then you need to manually retarget the solution for the proper WinSDK version: 
 ![win_retarget_platform](./img/win_retarget_platform.png)
 
-**Note** Turn on "Allow desktop apps to access your camera" in Windows OS (Setting -> Privacy -> Camera).
+**Note** If the camera is not recognized by the SDK, make sure that "Allow desktop apps to access your camera" setting is set to on in Windows OS (Setting -> Privacy -> Camera)
