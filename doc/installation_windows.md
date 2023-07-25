@@ -2,7 +2,7 @@
 
 **Note:** Due to the USB 3.0 translation layer between native hardware and virtual machine, the librealsense team does not recommend or support installation in a VM.
 
-librealsense shall be built on Windows using [CMake v3.8+](https://cmake.org/download/) and Visual Studio 2015 / 2017 / 2019: 
+librealsense shall be built on Windows using [CMake v3.8+](https://cmake.org/download/) and Visual Studio 2015 / 2017 / 2019 / 2022: 
 (MSVC2013 and older are not fully compatible with the C++11 feature-set).
 
 ![Windows CMake](./img/windows_cmake.png)
@@ -87,3 +87,5 @@ When set, the compiler will check the target WinSDK version, and abort the build
 
 **Note** In case of multiple WinSDK version installed, CMake automatically selects the latest version of SDK. In some cases, however, the automatic selection may fail. Then you need to manually retarget the solution for the proper WinSDK version: 
 ![win_retarget_platform](./img/win_retarget_platform.png)
+
+**Note** Turn on "Allow desktop apps to access your camera" in Windows OS (Setting -> Privacy -> Camera).
