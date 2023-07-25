@@ -4,6 +4,8 @@
 #include "proc/formats-converter.h"
 #include "stream.h"
 
+#include <ostream>
+
 namespace librealsense
 {
 
@@ -57,38 +59,22 @@ void formats_converter::drop_non_basic_formats()
     }
 }
 
-std::string to_string( std::shared_ptr< stream_profile_interface > profile )
+std::ostream & operator<<( std::ostream & os, const std::shared_ptr< stream_profile_interface > & profile )
 {
-    std::string res;
-
     if( profile )
     {
-        res += std::string( "(" ) + rs2_stream_to_string( profile->get_stream_type() ) + std::string( ")" );
-        res += std::string( " " ) + rs2_format_to_string( profile->get_format() );
-        res += " " + std::to_string( profile->get_stream_index() );
+        os << "(" << rs2_stream_to_string( profile->get_stream_type() ) << ")";
+        os << " " << rs2_format_to_string( profile->get_format() );
+        os << " " << profile->get_stream_index();
         if( auto vsp = As< video_stream_profile, stream_profile_interface >( profile ) )
         {
-            res += " " + std::to_string( vsp->get_width() );
-            res += "x" + std::to_string( vsp->get_height() );
+            os << " " << vsp->get_width();
+            os << "x" << vsp->get_height();
         }
-        res += " @ " + std::to_string( profile->get_framerate() );
+        os << " @ " << profile->get_framerate();
     }
 
-    return res;
-}
- 
-std::string to_string( stream_profile profile )
-{
-    std::string res;
-
-    res += std::string( "(" ) + rs2_stream_to_string( profile.stream ) + std::string( ")" );
-    res += std::string( " " ) + rs2_format_to_string( profile.format );
-    res += " " + std::to_string( profile.index );
-    res += " " + std::to_string( profile.width );
-    res += "x" + std::to_string( profile.height );
-    res += " @ " + std::to_string( profile.fps );
-
-    return res;
+    return os;
 }
 
 stream_profiles formats_converter::get_all_possible_profiles( const stream_profiles & raw_profiles )
@@ -101,7 +87,7 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
 
     for( auto & raw_profile : raw_profiles )
     {
-        LOG_DEBUG( "Getting possible profiles for raw profile: " << to_string( raw_profile ) );
+        LOG_DEBUG( "Getting possible profiles for raw profile: " << raw_profile );
         for( auto & pbf : _pb_factories )
         {
             const auto & sources = pbf->get_source_info();
@@ -114,7 +100,7 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
                     for( const auto & target : pbf->get_target_info() )
                     {
                         // When interleaved streams are seperated to two distinct streams (e.g. sent as DDS streams),
-                        // same converters are registered for both stream. We handle the relevant one based on index.
+                        // same converters are registered for both streams. We handle the relevant one based on index.
                         // Currently for infrared streams only.
                         if( source.stream == RS2_STREAM_INFRARED && raw_profile->get_stream_index() != target.index )
                             continue;
@@ -131,6 +117,7 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
                             const auto res = target.stream_resolution( { cloned_vsp->get_width(), cloned_vsp->get_height() } );
                             cloned_vsp->set_dims( res.width, res.height );
                         }
+                        LOG_DEBUG( "    Converting to " << cloned_profile );
 
                         // Cache pbf supported profiles for efficiency in find_pbf_matching_most_profiles
                         _pbf_supported_profiles[pbf.get()].push_back( cloned_profile );
@@ -153,7 +140,6 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
                         if( sources.size() > 1 && target.format != source.format )
                             continue;
 
-                        LOG_DEBUG( "    Converting to " << to_string( cloned_profile ) );
                         to_profiles.push_back( cloned_profile );
                     }
                 }
