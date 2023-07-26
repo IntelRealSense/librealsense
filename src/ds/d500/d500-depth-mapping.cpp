@@ -95,8 +95,8 @@ namespace librealsense
                 auto safety_device = dynamic_cast<d500_safety*>(this);
                 auto& safety_sensor = dynamic_cast<d500_safety_sensor&>(safety_device->get_safety_sensor());
                 
-                // pull extrinsics from safety preset number 0
-                int safety_preset_index = 0;
+                // pull extrinsics from safety preset number 1
+                int safety_preset_index = 1;
                 rs2_safety_preset safety_preset = safety_sensor.get_safety_preset(safety_preset_index);
                
                 auto extrinsics_from_preset = safety_preset.platform_config.transformation_link;
