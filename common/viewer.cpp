@@ -667,6 +667,16 @@ namespace rs2
 
         left += 60;
 
+        //-----------------------------
+        if (last_labeled_points)
+        {
+            ImGui::GetWindowDrawList()->AddLine({ cursor.x + left - 1, cursor.y + 5 },
+                { cursor.x + left - 1, cursor.y + top_bar_height - 5 }, ImColor(grey));
+
+
+            // -------------------- LPC Points Size ----------------
+        }
+
 
         ImGui::PopStyleColor(5);
 
@@ -3420,7 +3430,9 @@ namespace rs2
         // Non-linear correspondence customized for non-flat surface exploration
         if (labeled_points_profile.width() <= 0)
             throw std::runtime_error("Profile width must be greater than 0.");
-        glPointSize(std::sqrt(viewer_rect.w / labeled_points_profile.width()));
+
+        static float point_size = std::sqrt(viewer_rect.w / labeled_points_profile.width());
+        glPointSize(point_size);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
