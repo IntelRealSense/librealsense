@@ -126,7 +126,7 @@ namespace librealsense
             const firmware_version& camera_fw_version,
             std::shared_ptr<time_diff_keeper> tf_keeper);
 
-        void init_hid(const std::vector<platform::hid_device_info>& hid_infos, const stream_interface& depth_stream);
+        void init_motion(bool is_infos_empty, const stream_interface& depth_stream);
 
         const std::vector<uint8_t>& get_fisheye_calibration_table() const;
 
