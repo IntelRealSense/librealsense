@@ -13,11 +13,11 @@ fw_dir = os.path.join( libci.home, 'data/FW', '' )
 d400_fw_min_version_1 = 'Signed_Image_UVC_5_8_15_0.bin'
 d400_fw_min_version_2 = 'Signed_Image_UVC_5_12_7_100.bin'
 d400_fw_min_version_3 = 'Signed_Image_UVC_5_12_12_100.bin'
-d400_fw_min_version_4 = 'Signed_Image_UVC_5.13.0.50.bin'
+d400_fw_min_version_4 = 'Signed_Image_UVC_5_13_0_50.bin'
 d400_fw_min_version_1_prev = 'Signed_Image_UVC_5_8_14_0.bin'
 d400_fw_min_version_2_prev = 'Signed_Image_UVC_5_12_6_0.bin'
 d400_fw_min_version_3_prev = 'Signed_Image_UVC_5_12_11_0.bin'
-d400_fw_min_version_4_prev = 'Signed_Image_UVC_5.12.15.150.bin'
+d400_fw_min_version_4_prev = 'Signed_Image_UVC_5_12_15_150.bin'
 
 pid_to_min_fw_version = {  # D400 product line:
     '0AD1': d400_fw_min_version_1,  # D400
