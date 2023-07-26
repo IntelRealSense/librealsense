@@ -411,6 +411,7 @@ const char * get_string( rs2_option value )
     CASE( AUTO_GAIN_LIMIT_TOGGLE )
     CASE( EMITTER_FREQUENCY )
     case RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE:  return "Auto Exposure Mode";
+    CASE( LEFT_IR_TEMPERATURE )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
@@ -457,6 +458,8 @@ const char * get_string( rs2_format value )
     CASE( Z16H )
     CASE( FG )
     CASE( Y411 )
+    CASE( Y16I )
+    CASE( M420 )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;

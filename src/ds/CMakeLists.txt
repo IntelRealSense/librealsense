@@ -2,6 +2,7 @@
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 include(${_rel_path}/ds/d400/CMakeLists.txt)
+include(${_rel_path}/ds/d500/CMakeLists.txt)
 
 target_sources(${LRS_TARGET}
     PRIVATE
