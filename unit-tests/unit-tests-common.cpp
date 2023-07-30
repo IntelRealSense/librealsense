@@ -215,7 +215,7 @@ rs2::context make_context( const char * /*id*/ )
     rs2::context ctx( rs2::context::uninitialized );
     try
     {
-        ctx = rs2::context( "{\"dds-discovery\":false}" );
+        ctx = rs2::context( "{\"dds\":false}" );
         g_found_any_section = true;
     }
     catch( ... )

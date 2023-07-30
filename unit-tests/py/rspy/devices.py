@@ -221,7 +221,7 @@ def query( monitor_changes = True ):
     #
     # Get all devices, and store by serial-number
     global _device_by_sn, _context, _port_to_sn
-    _context = rs.context( '{"dds-discovery":false}' )
+    _context = rs.context( { 'dds': False } )
     _device_by_sn = dict()
     try:
         log.debug_indent()

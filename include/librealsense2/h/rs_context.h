@@ -26,12 +26,15 @@ rs2_context* rs2_create_context(int api_version, rs2_error** error);
 * \brief Creates RealSense context that is required for the rest of the API, and accepts a settings JSON.
 * \param[in] api_version Users are expected to pass their version of \c RS2_API_VERSION to make sure they are running the correct librealsense version.
 * \param[in] json_settings Pointer to a string containing a JSON configuration to use, or null if none
-*            Possible settings:
-*                dds-discovery - (bool) false to disable DDS discovery; defaults to true (requires BUILD_WITH_DDS)
-*                dds-domain - (int) the number of the domain discovery is on (requires BUILD_WITH_DDS)
-*                use-basic-formats - (bool) true to make sensors stream only "basic" types without converting to formats
-*                                    other then the raw camera formats; defaults to false.
-*                                    Convert only interleaved formats (Y8I, Y12I), no colored infrared.
+*     Possible <setting>:<default-value> :
+*         dds: {}                      - (requires BUILD_WITH_DDS) false disables DDS; otherwise the DDS settings:
+*             domain: 0                - (int) the number of the DDS domain [0-232]
+*             participant: <exe name>  - (string) the name of the participant
+*                 (see additional settings in realdds/doc/device.md#Settings)
+*         use-basic-formats: false     - (bool) true to make sensors stream only "basic" types
+*                                        without converting to formats other than the raw camera
+*                                        formats (Convert only interleaved formats (Y8I, Y12I), no
+*                                        colored infrared)
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return            Context object
 */

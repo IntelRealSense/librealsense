@@ -146,7 +146,7 @@ PYBIND11_MODULE(NAME, m) {
                 >
         participant( m, "participant" );
     participant.def( py::init<>() )
-        .def( "init", &dds_participant::init, "domain-id"_a, "participant-name"_a )
+        .def( "init", &dds_participant::init, "domain-id"_a, "participant-name"_a, "settings"_a = nlohmann::json::object() )
         .def( "is_valid", &dds_participant::is_valid )
         .def( "guid", &dds_participant::guid )
         .def( "create_guid", &dds_participant::create_guid )
@@ -160,6 +160,7 @@ PYBIND11_MODULE(NAME, m) {
               } )
         .def( "name_from_guid", []( dds_guid const & guid ) { return dds_participant::name_from_guid( guid ); } )
         .def( "names", []( dds_participant const & self ) { return self.get()->get_participant_names(); } )
+        .def( "settings", &dds_participant::settings )
         .def( "__repr__",
               []( const dds_participant & self ) {
                   std::ostringstream os;
