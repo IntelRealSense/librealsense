@@ -13,8 +13,8 @@ macro(os_set_flags)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE})
 
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -pedantic -g -D_DEFAULT_SOURCE")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -g -Wno-missing-field-initializers")
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -pedantic -D_DEFAULT_SOURCE")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wno-missing-field-initializers")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch -Wno-multichar -Wsequence-point -Wformat -Wformat-security")
 
     execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE MACHINE)
