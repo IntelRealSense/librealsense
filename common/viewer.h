@@ -181,6 +181,14 @@ namespace rs2
         };
         shader_type selected_shader = shader_type::diffuse;
 
+        enum class lpc_points_size
+        {
+            lpc_small,
+            lpc_medium,
+            lpc_large
+        };
+        lpc_points_size selected_lpc_points_size = lpc_points_size::lpc_small;
+
         float dim_level = 1.f;
 
         bool continue_with_current_fw = false;
@@ -192,6 +200,7 @@ namespace rs2
         bool occlusion_invalidation = true;
         bool glsl_available = false;
         bool modal_notification_on = false; // a notification which was expanded
+        bool select_lpc_settings = false;
 
         press_button_model grid_object_button{ u8"\uf1cb", u8"\uf1cb",  "Configure Grid", "Configure Grid", false };
 
