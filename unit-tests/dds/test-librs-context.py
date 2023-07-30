@@ -16,7 +16,7 @@ if log.is_debug_on():
 test.start( "Multiple participants on the same domain should fail" )
 try:
     contexts = []
-    contexts.append( rs.context( { 'ddd': { 'domain': 124, 'participant': 'context1' }} ))
+    contexts.append( rs.context( { 'dds': { 'domain': 124, 'participant': 'context1' }} ))
     # another context, same domain and name -> OK
     contexts.append( rs.context( { 'dds': { 'domain': 124, 'participant': 'context1' }} ))
     # without a name -> pick up the name from the existing participant (default is "librealsense")

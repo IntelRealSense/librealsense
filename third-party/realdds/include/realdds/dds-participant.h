@@ -61,7 +61,7 @@ public:
 
     // Creates the underlying DDS participant and sets the QoS
     // If need to use callbacks set them before calling init, they may be called before init returns.
-    void init( dds_domain_id, std::string const & participant_name, nlohmann::json const & );
+    void init( dds_domain_id, std::string const & participant_name, nlohmann::json const & settings );
 
     bool is_valid() const { return ( nullptr != _participant ); }
     bool operator!() const { return ! is_valid(); }

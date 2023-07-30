@@ -116,7 +116,7 @@ void dds_device::impl::run()
     if( _running )
         DDS_THROW( runtime_error, "device '" + _info.name + "' is already running" );
 
-    _message_timeout_ms = rsutils::json::get< size_t >( _participant->settings(), "device-reply-timeout-ms", 3000 );
+    _message_timeout_ms = rsutils::json::get< size_t >( _participant->settings(), "device-reply-timeout-ms", 1000 );
 
     create_notifications_reader();
     create_control_writer();
@@ -429,8 +429,9 @@ struct dds_device::impl::init_context
 bool dds_device::impl::init()
 {
     // We expect to receive all of the sensors data under a timeout
-    rsutils::time::timer timer( std::chrono::seconds(
-        rsutils::json::get< size_t >( _participant->settings(), "device-init-timeout-ms", 5000 ) ) );
+    std::chrono::milliseconds timeout(
+        rsutils::json::get< size_t >( _participant->settings(), "device-init-timeout-ms", 5000 ) );
+    rsutils::time::timer timer( timeout );
     init_context init;
     while( ! timer.has_expired() && state_type::DONE != init.state )
     {
