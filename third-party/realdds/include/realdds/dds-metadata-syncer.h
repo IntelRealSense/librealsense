@@ -35,10 +35,10 @@ class dds_metadata_syncer
 {
 public:
     // We don't want the queue to get large, it means lots of drops and data that we store to (probably) throw later
-    static constexpr size_t max_md_queue_size = 8;
+    static const size_t max_md_queue_size;
     // If a metadata is lost we wait for it until the next frame arrives, causing a small delay but we prefer passing
     // the frame late and without metadata over losing it.
-    static constexpr size_t max_frame_queue_size = 2;
+    static const size_t max_frame_queue_size;
 
     // We synchronize using some abstract "key" used to identify each frame and its metadata. We don't need to know
     // the nature of the key; only that it is increasing in value over time so that, given key1 > key2, then key1
