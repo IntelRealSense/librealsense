@@ -20,14 +20,16 @@ Prerequisites:
 
 #### Installation:
 - Verify OS version:
- - Run `winver` command from desktop/terminal - "Version 1607" or later is expected. 
+ - Run `winver` command from desktop/terminal - "Windows 10 (Build 15063 or later, 17763+ recommended) or Windows 11" is expected.
+
  ![winver](./img/winver_Win10.png)
 
 - Install WinSDK ver10:
  - Navigate to "Control Panel" -> "Programs and Features"
  - Double-click on "Microsoft Visual Studio" and select "Modify"
  - Check that SDK version 10.0.10586 or later is present, install if needed:
- ![winsdk](./img/WinSDK_10.0.10586.png)
+
+ - ![winsdk](./img/WinSDK_10.0.10586.png)
 
  ##### Update Registry:
   - Windows OS requires a dedicated registry entry to be present for each unique video device in order to provide metadata. 
@@ -88,4 +90,8 @@ When set, the compiler will check the target WinSDK version, and abort the build
 **Note** In case of multiple WinSDK version installed, CMake automatically selects the latest version of SDK. In some cases, however, the automatic selection may fail. Then you need to manually retarget the solution for the proper WinSDK version: 
 ![win_retarget_platform](./img/win_retarget_platform.png)
 
-**Note** If the camera is not recognized by the SDK, make sure that "Allow desktop apps to access your camera" setting is set to on in Windows OS (Setting -> Privacy -> Camera)
+## Troubleshooting Issues
+
+| Error                                   | Cause                            | Correction Steps                                                                                                            |
+|-----------------------------------------|----------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| The camera is not recognized by the SDK | The SDK has not access to camera | Make sure that "Allow desktop apps to access your camera" setting is set to on in Windows OS (Setting -> Privacy -> Camera) |
