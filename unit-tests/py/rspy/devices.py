@@ -214,7 +214,7 @@ def query( monitor_changes = True ):
     if acroname:
         if not acroname.hub:
             acroname.connect()  # MAY THROW!
-            acroname.enable_ports( sleep_on_change = 8 )  # make sure all connected! timeout was 5, D500 devices takes a bit longer currently
+            acroname.enable_ports( sleep_on_change = 10 )
             if platform.system() == 'Linux':
                 global _acroname_hubs
                 _acroname_hubs = set( acroname.find_all_hubs() )
@@ -543,7 +543,7 @@ def _wait_until_removed( serial_numbers, timeout = 5 ):
         time.sleep( 1 )
 
 
-def _wait_for( serial_numbers, timeout = 5 ):
+def _wait_for( serial_numbers, timeout = 10 ):
     """
     Wait until the given serial numbers are all online
 
@@ -552,12 +552,7 @@ def _wait_for( serial_numbers, timeout = 5 ):
     :return: True if all have come online; False if timeout was reached
     """
     did_some_waiting = False
-    #
-    # In Linux, we don't have an active notification mechanism - we query devices every 5 seconds
-    # (see POLLING_DEVICES_INTERVAL_MS) - so we add extra timeout
-    if timeout and platform.system() == 'Linux':
-        timeout += 5
-    #
+
     while True:
         #
         have_all_devices = True
@@ -583,7 +578,7 @@ def _wait_for( serial_numbers, timeout = 5 ):
         did_some_waiting = True
 
 # timeout was 5, D500 devices takes a bit longer currently
-def hw_reset( serial_numbers, timeout = 8 ):
+def hw_reset( serial_numbers, timeout = 10 ):
     """
     Recycles the given devices manually, using a hardware-reset (rather than any acroname port
     reset). The devices are sent a HW-reset command and then we'll wait until they come back
