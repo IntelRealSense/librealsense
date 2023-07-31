@@ -119,6 +119,40 @@ void list_devices(rs2::context ctx)
     }
 }
 
+int write_to_mipi_device( const std::vector< uint8_t > & fw_image)
+{
+    // Write firmware to appropriate file descritptor
+    std::cout << std::endl << "Update can take up to 2 minutes" << std::endl;
+    std::ofstream fw_path_in_device( "/dev/d4xx-dfu504", std::ios::binary );
+    if( fw_path_in_device )
+    {
+        bool done = false;
+        std::thread t1(
+            [&done]()
+            {
+                for( int i = 0; i < 101 && ! done; ++i )
+                {
+                    printf( "%d%%\r", i );
+                    std::cout.flush();
+                    std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+                }
+            } );
+        fw_path_in_device.write( reinterpret_cast< const char * >( fw_image.data() ), fw_image.size() );
+        done = true;
+        t1.join();
+        printf( "    \r" );
+    }
+    else
+    {
+        std::cout << std::endl << "Firmware Update failed - wrong path or permissions missing";
+        return EXIT_FAILURE;
+    }
+    fw_path_in_device.close();
+    std::cout << std::endl << "Firmware update done" << std::endl;
+
+    return EXIT_SUCCESS;
+}
+
 int main(int argc, char** argv) try
 {
 #ifdef BUILD_EASYLOGGINGPP
@@ -353,34 +387,7 @@ int main(int argc, char** argv) try
                 return EXIT_FAILURE;
             }
 
-            // Write signed firmware to appropriate file descritptor
-            std::cout << std::endl << "Update can take up to 2 minutes" << std::endl;
-            std::ofstream fw_path_in_device( "/dev/d4xx-dfu504", std::ios::binary );
-            if( fw_path_in_device )
-            {
-                bool done = false;
-                std::thread t1([&done]() {
-                    for( int i = 0; i < 101 && ! done; ++i)
-                    {
-                        printf( "%d%%\r", i );
-                        std::cout.flush();
-                        std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
-                    }
-                } );
-                fw_path_in_device.write( reinterpret_cast< const char * >( fw_image.data() ), fw_image.size() );
-                done = true;
-                t1.join();
-                printf( "    \r" ); 
-            }
-            else
-            {
-                std::cout << std::endl << "Firmware Update failed - wrong path or permissions missing";
-                return EXIT_FAILURE;
-            }
-            fw_path_in_device.close();
-            std::cout << std::endl << "Firmware update done" << std::endl;
-
-            return EXIT_SUCCESS;
+            return write_to_mipi_device( fw_image );
         }
 
         if (unsigned_arg.isSet())
