@@ -214,7 +214,7 @@ def query( monitor_changes = True ):
     if acroname:
         if not acroname.hub:
             acroname.connect()  # MAY THROW!
-            acroname.enable_ports( sleep_on_change = 10 )
+            acroname.enable_ports( sleep_on_change = 15 )
             if platform.system() == 'Linux':
                 global _acroname_hubs
                 _acroname_hubs = set( acroname.find_all_hubs() )
@@ -578,7 +578,7 @@ def _wait_for( serial_numbers, timeout = 10 ):
         did_some_waiting = True
 
 # timeout was 5, D500 devices takes a bit longer currently
-def hw_reset( serial_numbers, timeout = 10 ):
+def hw_reset( serial_numbers, timeout = 15 ):
     """
     Recycles the given devices manually, using a hardware-reset (rather than any acroname port
     reset). The devices are sent a HW-reset command and then we'll wait until they come back
