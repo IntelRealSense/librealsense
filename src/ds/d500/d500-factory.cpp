@@ -35,13 +35,15 @@ namespace librealsense
         auto pid = _depth.front().pid;
         platform::backend_device_group group{_depth, _hwm, _hid};
 
-        switch(pid)
+
+        // to be uncommented after d500 device is added
+        /*switch (pid)
         {
 
         default:
             throw std::runtime_error(rsutils::string::from() << "Unsupported RS400 model! 0x"
                 << std::hex << std::setw(4) << std::setfill('0') <<(int)pid);
-        }
+        }*/
     }
 
     std::vector<std::shared_ptr<device_info>> d500_info::pick_d500_devices(
