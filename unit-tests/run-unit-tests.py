@@ -507,7 +507,7 @@ try:
                         log.d( 'configuration:', configuration )
                         log.debug_indent()
                         if not no_reset:
-                            devices.enable_only( serial_numbers, recycle=True, timeout=10 )
+                            devices.enable_only( serial_numbers, recycle=True )
                     except RuntimeError as e:
                         log.w( log.red + test.name + log.reset + ': ' + str( e ) )
                     else:
