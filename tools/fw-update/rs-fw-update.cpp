@@ -299,9 +299,10 @@ int main(int argc, char** argv) try
         if (!d.is<rs2::updatable>() || !(d.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) && d.supports(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID)))
             continue;
 
+        std::string usb_type = "unknown";
         if (d.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
         {
-            std::string usb_type = d.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+            usb_type = d.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
             if (usb_type.find("2.") != std::string::npos) {
                 std::cout << std::endl << "Warning! the camera is connected via USB 2 port, in case the process fails, connect the camera to a USB 3 port and try again" << std::endl;
             }
@@ -341,6 +342,34 @@ int main(int argc, char** argv) try
 
         std::cout << std::endl << "Updating device: " << std::endl;
         print_device_info(d);
+
+        // If device is D457 connected by MIPI connector
+        if( strcmp( d.get_info( RS2_CAMERA_INFO_PRODUCT_ID ), "ABCD" ) == 0 &&
+            usb_type.compare( "unknown" ) == 0)
+        {
+            if( unsigned_arg.isSet() )
+            {
+                std::cout << std::endl << "Only signed FW is currently supported for MIPI devices" << std::endl;
+                return EXIT_FAILURE;
+            }
+
+            // Write signed firmware to appropriate file descritptor
+            std::cout << std::endl << "Update can take up to 2 minutes" << std::endl;
+            std::ofstream fw_path_in_device( "/dev/d4xx-dfu504", std::ios::binary );
+            if( fw_path_in_device )
+            {
+                fw_path_in_device.write( reinterpret_cast< const char * >( fw_image.data() ), fw_image.size() );
+            }
+            else
+            {
+                std::cout << std::endl << "Firmware Update failed - wrong path or permissions missing";
+                return EXIT_FAILURE;
+            }
+            fw_path_in_device.close();
+            std::cout << std::endl << std::endl << "Firmware update done" << std::endl;
+
+            return EXIT_SUCCESS;
+        }
 
         if (unsigned_arg.isSet())
         {
