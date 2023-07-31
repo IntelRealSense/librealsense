@@ -358,7 +358,19 @@ int main(int argc, char** argv) try
             std::ofstream fw_path_in_device( "/dev/d4xx-dfu504", std::ios::binary );
             if( fw_path_in_device )
             {
+                bool done = false;
+                std::thread t1([&done]() {
+                    for( int i = 0; i < 101 && ! done; ++i)
+                    {
+                        printf( "%d%%\r", i );
+                        std::cout.flush();
+                        std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+                    }
+                } );
                 fw_path_in_device.write( reinterpret_cast< const char * >( fw_image.data() ), fw_image.size() );
+                done = true;
+                t1.join();
+                printf( "    \r" ); 
             }
             else
             {
@@ -366,7 +378,7 @@ int main(int argc, char** argv) try
                 return EXIT_FAILURE;
             }
             fw_path_in_device.close();
-            std::cout << std::endl << std::endl << "Firmware update done" << std::endl;
+            std::cout << std::endl << "Firmware update done" << std::endl;
 
             return EXIT_SUCCESS;
         }
