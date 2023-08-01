@@ -21,6 +21,10 @@ public:
 
     nlohmann::json to_json() const;
     static device_info from_json( nlohmann::json const & j );
+
+    // Substring of information already stored in the device-info that can be used to print the devide 'name'.
+    // (mostly for use with debug messages)
+    char const * debug_name() const;
 };
 
 

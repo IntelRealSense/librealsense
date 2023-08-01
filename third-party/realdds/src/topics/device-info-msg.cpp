@@ -2,6 +2,7 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include <realdds/topics/device-info-msg.h>
+#include <realdds/topics/dds-topic-names.h>
 
 #include <rsutils/json.h>
 #include <rsutils/easylogging/easyloggingpp.h>
@@ -23,6 +24,7 @@ namespace topics {
     return ret;
 }
 
+
 nlohmann::json device_info::to_json() const
 {
     auto msg = nlohmann::json( {
@@ -34,6 +36,16 @@ nlohmann::json device_info::to_json() const
     } );
     return msg;
 }
+
+
+char const * device_info::debug_name() const
+{
+    auto lpsz = topic_root.c_str();
+    if( topic_root.length() > ROOT_LEN && SEPARATOR == lpsz[ROOT_LEN-1] )
+        lpsz += ROOT_LEN;
+    return lpsz;
+}
+
 
 }  // namespace topics
 }  // namespace realdds
