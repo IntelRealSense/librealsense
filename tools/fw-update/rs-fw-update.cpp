@@ -35,13 +35,15 @@ std::vector<uint8_t> read_fw_file(std::string file_path)
     std::vector<uint8_t> rv;
 
     std::ifstream file(file_path, std::ios::in | std::ios::binary | std::ios::ate);
+    auto file_deleter = std::unique_ptr< std::ifstream, void ( * )( std::ifstream * ) >( &file,
+                                                                                         []( std::ifstream * file )
+                                                                                         { file->close(); } );
     if (file.is_open())
     {
         rv.resize(file.tellg());
 
         file.seekg(0, std::ios::beg);
         file.read((char*)rv.data(), rv.size());
-        file.close();
     }
 
     return rv;
@@ -119,18 +121,21 @@ void list_devices(rs2::context ctx)
     }
 }
 
-int write_to_mipi_device( const std::vector< uint8_t > & fw_image)
+int write_fw_to_mipi_device( const std::vector< uint8_t > & fw_image)
 {
     // Write firmware to appropriate file descritptor
     std::cout << std::endl << "Update can take up to 2 minutes" << std::endl;
     std::ofstream fw_path_in_device( "/dev/d4xx-dfu504", std::ios::binary );
+    auto file_deleter = std::unique_ptr< std::ofstream, void ( * )( std::ofstream * ) >( &fw_path_in_device,
+                                                                                         []( std::ofstream * file )
+                                                                                         { file->close(); } );
     if( fw_path_in_device )
     {
         bool done = false;
-        std::thread t1(
+        std::thread show_progress_thread(
             [&done]()
             {
-                for( int i = 0; i < 101 && ! done; ++i )
+                for( int i = 0; i < 101 && ! done; ++i ) // Show percentage [0-100]
                 {
                     printf( "%d%%\r", i );
                     std::cout.flush();
@@ -139,21 +144,34 @@ int write_to_mipi_device( const std::vector< uint8_t > & fw_image)
             } );
         fw_path_in_device.write( reinterpret_cast< const char * >( fw_image.data() ), fw_image.size() );
         done = true;
-        t1.join();
-        printf( "    \r" );
+        show_progress_thread.join();
+        printf( "    \r" ); // Delete progress, as it is not accurate, don't leave 85% when writing done
     }
     else
     {
         std::cout << std::endl << "Firmware Update failed - wrong path or permissions missing";
         return EXIT_FAILURE;
     }
-    fw_path_in_device.close();
     std::cout << std::endl << "Firmware update done" << std::endl;
 
     return EXIT_SUCCESS;
 }
 
-int main(int argc, char** argv) try
+bool is_mipi_device( const rs2::device & dev )
+{
+    std::string usb_type = "unknown";
+
+    if( dev.supports( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
+        usb_type = dev.get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR );
+
+    bool d457_device = strcmp( dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID ), "ABCD" ) == 0;
+
+    // Currently only D457 model has MIPI connection
+    return d457_device && usb_type.compare( "unknown" ) == 0;
+}
+
+int main( int argc, char ** argv )
+try
 {
 #ifdef BUILD_EASYLOGGINGPP
     rs2::log_to_console(RS2_LOG_SEVERITY_WARN);
@@ -333,10 +351,9 @@ int main(int argc, char** argv) try
         if (!d.is<rs2::updatable>() || !(d.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) && d.supports(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID)))
             continue;
 
-        std::string usb_type = "unknown";
         if (d.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
         {
-            usb_type = d.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+            std::string usb_type = d.get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR );
             if (usb_type.find("2.") != std::string::npos) {
                 std::cout << std::endl << "Warning! the camera is connected via USB 2 port, in case the process fails, connect the camera to a USB 3 port and try again" << std::endl;
             }
@@ -366,7 +383,10 @@ int main(int argc, char** argv) try
 
             auto temp = backup_arg.getValue();
             std::ofstream file(temp.c_str(), std::ios::binary);
-            file.write((const char*)flash.data(), flash.size());
+            auto file_deleter = std::unique_ptr< std::ofstream, void ( * )( std::ofstream * ) >( &file,
+                                                                                                 []( std::ofstream * file )
+                                                                                                 { file->close(); } );
+            file.write( (const char *)flash.data(), flash.size() );
         }
 
         if (!file_arg.isSet())
@@ -378,8 +398,7 @@ int main(int argc, char** argv) try
         print_device_info(d);
 
         // If device is D457 connected by MIPI connector
-        if( strcmp( d.get_info( RS2_CAMERA_INFO_PRODUCT_ID ), "ABCD" ) == 0 &&
-            usb_type.compare( "unknown" ) == 0)
+        if( is_mipi_device( d ) )
         {
             if( unsigned_arg.isSet() )
             {
@@ -387,7 +406,7 @@ int main(int argc, char** argv) try
                 return EXIT_FAILURE;
             }
 
-            return write_to_mipi_device( fw_image );
+            return write_fw_to_mipi_device( fw_image );
         }
 
         if (unsigned_arg.isSet())
