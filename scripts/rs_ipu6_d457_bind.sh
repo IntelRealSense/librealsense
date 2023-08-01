@@ -33,6 +33,8 @@ declare -A serdes_mux_i2c_bus=( [a]=2 [b]=2 [c]=4 [d]=4 )
 mux_list=${mux_param:-'a b c d'}
 
 mdev=$(${v4l2_util} --list-devices | grep -A1 ipu6 | grep media)
+[[ -z "${mdev}" ]] && exit 0
+
 media_ctl_cmd="${media_util} -d ${mdev}"
 #media-ctl -r
 # cache media-ctl output
