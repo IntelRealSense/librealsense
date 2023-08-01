@@ -7,6 +7,8 @@ import pyrealsense2 as rs
 from rspy import test, log
 import time
 
+# Constants
+FRAMES_TO_COLLECT = 10
 
 def check_color_streaming(width, height, fps):
     cfg = rs.config()
@@ -14,10 +16,10 @@ def check_color_streaming(width, height, fps):
     pipe = rs.pipeline()
     pipe.start(cfg)
     iterations = 0
-    while iterations < 3:
+    while iterations < FRAMES_TO_COLLECT:
         iterations += 1
         f = pipe.wait_for_frames()
-    test.check_equal(iterations, 3)
+    test.check_equal(iterations, FRAMES_TO_COLLECT)
     pipe.stop()
 
 
