@@ -35,6 +35,7 @@ namespace librealsense
         auto pid = _depth.front().pid;
         platform::backend_device_group group{_depth, _hwm, _hid};
 
+        return std::shared_ptr< device_interface>(nullptr);
 
         // to be uncommented after d500 device is added
         /*switch (pid)
