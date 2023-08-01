@@ -11,6 +11,7 @@
 #include <realdds/topics/dds-topic-names.h>
 #include <realdds/topics/flexible-msg.h>
 #include <realdds/dds-guid.h>
+#include <realdds/dds-time.h>
 
 #include <fastdds/dds/publisher/DataWriter.hpp>
 #include <fastdds/dds/subscriber/DataReader.hpp>
@@ -43,6 +44,9 @@ static std::string const option_name_key( "option-name", 11 );
 static std::string const owner_name_key( "owner-name", 10 );
 static std::string const explanation_key( "explanation", 11 );
 static std::string const control_key( "control", 7 );
+
+static std::string const id_log( "log", 3 );
+static std::string const entries_key( "entries", 7 );
 
 
 namespace realdds {
@@ -97,6 +101,7 @@ std::ostream& operator<<( std::ostream& s, state_type st )
     { id_stream_header, &dds_device::impl::on_known_notification },
     { id_stream_options, &dds_device::impl::on_known_notification },
     { id_open_streams, &dds_device::impl::on_known_notification },
+    { id_log, &dds_device::impl::on_log },
 };
 
 
@@ -107,7 +112,9 @@ dds_device::impl::impl( std::shared_ptr< dds_participant > const & participant,
     , _guid( guid )
     , _participant( participant )
     , _subscriber( std::make_shared< dds_subscriber >( participant ) )
+    , _reply_timeout_ms( rsutils::json::get< size_t >( participant->settings(), "device-reply-timeout-ms", 1000 ) )
 {
+    create_notifications_reader();
 }
 
 
@@ -116,34 +123,9 @@ void dds_device::impl::run()
     if( _running )
         DDS_THROW( runtime_error, "device '" + _info.name + "' is already running" );
 
-    _message_timeout_ms = rsutils::json::get< size_t >( _participant->settings(), "device-reply-timeout-ms", 1000 );
-
-    create_notifications_reader();
-    create_control_writer();
     if( ! init() )
         DDS_THROW( runtime_error, "failed getting stream data from '" + _info.topic_root + "'" );
-
-    _notifications_reader->on_data_available(
-        [&]()
-        {
-            topics::flexible_msg notification;
-            eprosima::fastdds::dds::SampleInfo info;
-            while( topics::flexible_msg::take_next( *_notifications_reader, &notification, &info ) )
-            {
-                if( ! notification.is_valid() )
-                    continue;
-                auto j = notification.json_data();
-                if( j.is_array() )
-                {
-                    for( unsigned x = 0; x < j.size(); ++x )
-                        handle_notification( j[x] );
-                }
-                else
-                {
-                    handle_notification( j );
-                }
-            }
-        } );
+    create_control_writer();
 
     LOG_DEBUG( "device '" << _info.topic_root << "' (" << _participant->print( _guid )
                           << ") initialized successfully" );
@@ -199,6 +181,9 @@ void dds_device::impl::handle_notification( nlohmann::json const & j )
 
 void dds_device::impl::on_option_value( nlohmann::json const & j )
 {
+    if( ! _running )
+        return;
+
     // This is the notification for "set-option" or "query-option", meaning someone sent a control request to set/get an
     // option value. In either case a value will be sent; we want to update ours accordingly to reflect the latest:
     if( rsutils::json::get( j, status_key, status_ok ) != status_ok )
@@ -255,6 +240,58 @@ void dds_device::impl::on_option_value( nlohmann::json const & j )
 void dds_device::impl::on_known_notification( nlohmann::json const & j )
 {
     // This is a known notification, but we don't want to do anything for it
+}
+
+
+void dds_device::impl::on_log( nlohmann::json const & j )
+{
+    // This is the notification for "log"  (see docs/notifications.md#Logging)
+    //     - `entries` is an array containing 1 or more log entries
+    auto it = j.find( entries_key );
+    if( it == j.end() )
+        throw std::runtime_error( "log entries not found" );
+    if( ! it->is_array() )
+        throw std::runtime_error( "log entries not an array" );
+    // Each log entry is a JSON array of `[timestamp, type, text, data]` containing:
+    //     - `timestamp`: when the event occurred
+    //     - `type`: one of `EWID` (Error, Warning, Info, Debug)
+    //     - `text`: any text that needs output
+    //     - `data`: optional; an object containing any pertinent information about the event
+    size_t x = 0;
+    for( auto & entry : *it )
+    {
+        try
+        {
+            if( ! entry.is_array() )
+                throw std::runtime_error( "not an array" );
+            if( entry.size() > 4 )
+                throw std::runtime_error( "too long" );
+            auto timestamp = time_from( rsutils::json::get< dds_nsec >( entry, 0 ) );
+            auto const stype = rsutils::json::get< std::string >( entry, 1 );
+            if( stype.length() != 1 || ! strchr( "EWID", stype[0] ) )
+                throw std::runtime_error( "type not one of 'EWID'" );
+            char const type = stype[0];
+            auto const text = rsutils::json::get< std::string >( entry, 2 );
+            nlohmann::json data;
+            if( entry.size() > 3 )
+            {
+                data = entry.at( 3 );
+                if( ! data.is_object() )
+                    throw std::runtime_error( "data is not an object" );
+            }
+
+            if( _on_device_log )
+                _on_device_log( timestamp, type, text, data );
+            else
+                LOG_DEBUG( "[" << _info.debug_name() << "][" << timestr( timestamp ) << "][" << type << "] " << text
+                               << " [" << data << "]" );
+        }
+        catch( std::exception const & e )
+        {
+            LOG_DEBUG( "log entry " << x << ": " << e.what() << "\n" << entry );
+        }
+        ++x;
+    }
 }
 
 
@@ -338,7 +375,7 @@ void dds_device::impl::write_control_message( topics::flexible_msg && msg, nlohm
         std::unique_lock< std::mutex > lock( _replies_mutex );
         auto & actual_reply = _replies[this_sequence_number];  // create it; initialized to null json
         if( ! _replies_cv.wait_for( lock,
-                                    std::chrono::milliseconds( _message_timeout_ms ),
+                                    std::chrono::milliseconds( _reply_timeout_ms ),
                                     [&]()
                                     {
                                         if( actual_reply.is_null() )
@@ -368,6 +405,28 @@ void dds_device::impl::create_notifications_reader()
     rqos.history().depth = 24;
 
     _notifications_reader->run( rqos );
+
+    _notifications_reader->on_data_available(
+        [&]()
+        {
+            topics::flexible_msg notification;
+            eprosima::fastdds::dds::SampleInfo info;
+            while( topics::flexible_msg::take_next( *_notifications_reader, &notification, &info ) )
+            {
+                if( ! notification.is_valid() )
+                    continue;
+                auto j = notification.json_data();
+                if( j.is_array() )
+                {
+                    for( unsigned x = 0; x < j.size(); ++x )
+                        handle_notification( j[x] );
+                }
+                else
+                {
+                    handle_notification( j );
+                }
+            }
+        } );
 }
 
 void dds_device::impl::create_metadata_reader()
@@ -488,7 +547,7 @@ void dds_device::impl::handle_device_header( init_context & init, nlohmann::json
         {
             std::string from_name = rsutils::json::get< std::string >( ex, 0 );
             std::string to_name = rsutils::json::get< std::string >( ex, 1 );
-            LOG_DEBUG( "got extrinsics from " << from_name << " to " << to_name );
+            LOG_DEBUG( "... got extrinsics from " << from_name << " to " << to_name );
             extrinsics extr = extrinsics::from_json( rsutils::json::get< json >( ex, 2 ) );
             _extrinsics_map[std::make_pair( from_name, to_name )] = std::make_shared< extrinsics >( extr );
         }

@@ -169,5 +169,10 @@ void dds_device::on_metadata_available( on_metadata_available_callback cb )
     _impl->on_metadata_available( cb );
 }
 
+void dds_device::on_device_log( on_device_log_callback cb )
+{
+    _impl->on_device_log( cb );
+}
+
 
 }  // namespace realdds

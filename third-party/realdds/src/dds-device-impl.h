@@ -47,6 +47,7 @@ public:
     std::mutex _replies_mutex;
     std::condition_variable _replies_cv;
     std::map< dds_sequence_number, nlohmann::json > _replies;
+    size_t _reply_timeout_ms;
 
     std::shared_ptr< dds_topic_reader > _notifications_reader;
     std::shared_ptr< dds_topic_reader > _metadata_reader;
@@ -71,6 +72,11 @@ public:
     typedef std::function< void( nlohmann::json && md ) > on_metadata_available_callback;
     void on_metadata_available( on_metadata_available_callback cb ) { _on_metadata_available = cb; }
 
+    typedef std::function< void(
+        dds_time const & timestamp, char type, std::string const & text, nlohmann::json const & data ) >
+        on_device_log_callback;
+    void on_device_log( on_device_log_callback cb ) { _on_device_log = cb; }
+
 private:
     void create_notifications_reader();
     void create_metadata_reader();
@@ -89,10 +95,10 @@ private:
     void handle_notification( nlohmann::json const & );
     void on_option_value( nlohmann::json const & );
     void on_known_notification( nlohmann::json const & );
+    void on_log( nlohmann::json const & );
 
     on_metadata_available_callback _on_metadata_available = nullptr;
-
-    size_t _message_timeout_ms = 5000;
+    on_device_log_callback _on_device_log = nullptr;
 };
 
 

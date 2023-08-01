@@ -68,6 +68,11 @@ public:
     typedef std::function< void( nlohmann::json && md ) > on_metadata_available_callback;
     void on_metadata_available( on_metadata_available_callback cb );
 
+    typedef std::function< void(
+        dds_time const & timestamp, char type, std::string const & text, nlohmann::json const & data ) >
+        on_device_log_callback;
+    void on_device_log( on_device_log_callback cb );
+
 private:
     class impl;
     std::shared_ptr< impl > _impl;
