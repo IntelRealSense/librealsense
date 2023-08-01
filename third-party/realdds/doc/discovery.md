@@ -87,7 +87,7 @@ When it is expected that a server will go offline, the server can elect to send 
 }
 ```
 
-The `stopping` field has no set type at this time - it just has to exist. When it's there, any client should immediately assume the server is offline.
+The `stopping` field has no set type at this time so any value will do. When it's there, any client should immediately assume the server is offline.
 
 No other fields are necessary with `stopping` -- the server is recognized by its GUID.
 
