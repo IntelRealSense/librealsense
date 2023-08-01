@@ -37,13 +37,29 @@ std::vector<uint8_t> read_fw_file(std::string file_path)
     std::ifstream file(file_path, std::ios::in | std::ios::binary | std::ios::ate);
     auto file_deleter = std::unique_ptr< std::ifstream, void ( * )( std::ifstream * ) >( &file,
                                                                                          []( std::ifstream * file )
-                                                                                         { file->close(); } );
+                                                                                         {
+                                                                                             if( file )
+                                                                                                 file->close();
+                                                                                         } );
     if (file.is_open())
     {
         rv.resize(file.tellg());
 
-        file.seekg(0, std::ios::beg);
-        file.read((char*)rv.data(), rv.size());
+        try
+        {
+            file.seekg( 0, std::ios::beg );
+            file.read( (char *)rv.data(), rv.size() );
+        }
+        catch( ... )
+        {
+            // Nothing to do, file goodbit is false
+        }
+        if( ! file.good() )
+        {
+            std::cout << std::endl << "Error reading firmware file";
+            rv.resize( 0 ); // Signal error, don't use partial read data
+        }
+        
     }
 
     return rv;
@@ -128,7 +144,10 @@ int write_fw_to_mipi_device( const std::vector< uint8_t > & fw_image)
     std::ofstream fw_path_in_device( "/dev/d4xx-dfu504", std::ios::binary );
     auto file_deleter = std::unique_ptr< std::ofstream, void ( * )( std::ofstream * ) >( &fw_path_in_device,
                                                                                          []( std::ofstream * file )
-                                                                                         { file->close(); } );
+                                                                                         {
+                                                                                             if( file )
+                                                                                                 file->close();
+                                                                                         } );
     if( fw_path_in_device )
     {
         bool done = false;
@@ -142,10 +161,22 @@ int write_fw_to_mipi_device( const std::vector< uint8_t > & fw_image)
                     std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
                 }
             } );
-        fw_path_in_device.write( reinterpret_cast< const char * >( fw_image.data() ), fw_image.size() );
+        try
+        {
+            fw_path_in_device.write( reinterpret_cast< const char * >( fw_image.data() ), fw_image.size() );
+        }
+        catch( ... )
+        {
+            // Nothing to do, file goodbit is false
+        }
         done = true;
         show_progress_thread.join();
         printf( "    \r" ); // Delete progress, as it is not accurate, don't leave 85% when writing done
+        if( ! fw_path_in_device.good() )
+        {
+            std::cout << std::endl << "Firmware Update failed - write to device error";
+            return EXIT_FAILURE;
+        }
     }
     else
     {
@@ -385,8 +416,22 @@ try
             std::ofstream file(temp.c_str(), std::ios::binary);
             auto file_deleter = std::unique_ptr< std::ofstream, void ( * )( std::ofstream * ) >( &file,
                                                                                                  []( std::ofstream * file )
-                                                                                                 { file->close(); } );
-            file.write( (const char *)flash.data(), flash.size() );
+                                                                                                 {
+                                                                                                     if( file )
+                                                                                                         file->close();
+                                                                                                 } );
+            try
+            {
+                file.write( (const char *)flash.data(), flash.size() );
+            }
+            catch( ... )
+            {
+                // Nothing to do, file goodbit is false
+            }
+            if( ! file.good() )
+            {
+                std::cout << std::endl << "Creating backup file failed";
+            }
         }
 
         if (!file_arg.isSet())
