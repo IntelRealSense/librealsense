@@ -32,7 +32,7 @@ from rspy import repo
 pyrs_dir = repo.find_pyrs_dir()
 sys.path.insert( 1, pyrs_dir )
 
-MAX_ENUMERATION_TIME = 15  # [sec] - D585S is currently takes > 10 sec, D400 had 5 sec timeout
+MAX_ENUMERATION_TIME = 20  # [sec] - D585S is currently takes > 10 sec, D400 had 5 sec timeout
 
 # We need both pyrealsense2 and acroname. We can work without acroname, but
 # without rs no devices at all will be returned.
@@ -176,7 +176,7 @@ def map_unknown_ports():
             log.d( 'enabling port', port )
             acroname.enable_ports( [port], disable_other_ports=True )
             sn = None
-            for retry in range( 5 ):
+            for retry in range( MAX_ENUMERATION_TIME ):
                 if len( enabled() ) == 1:
                     sn = list( enabled() )[0]
                     break
@@ -215,7 +215,7 @@ def query( monitor_changes = True ):
     if acroname:
         if not acroname.hub:
             acroname.connect()  # MAY THROW!
-            acroname.enable_ports( sleep_on_change = 15 )
+            acroname.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
             if platform.system() == 'Linux':
                 global _acroname_hubs
                 _acroname_hubs = set( acroname.find_all_hubs() )
@@ -742,7 +742,7 @@ if __name__ == '__main__':
             elif opt in ('--all'):
                 if not acroname:
                     log.f( 'No acroname available' )
-                acroname.enable_ports( sleep_on_change = 5 )
+                acroname.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
             elif opt in ('--port'):
                 if not acroname:
                     log.f( 'No acroname available' )
@@ -751,7 +751,7 @@ if __name__ == '__main__':
                 ports = [int(port) for port in str_ports if port.isnumeric() and int(port) in all_ports]
                 if len(ports) != len(str_ports):
                     log.f( 'Invalid ports', str_ports )
-                acroname.enable_ports( ports, disable_other_ports = True, sleep_on_change = 5 )
+                acroname.enable_ports( ports, disable_other_ports = True, sleep_on_change = MAX_ENUMERATION_TIME )
             elif opt in ('--recycle'):
                 action = 'recycle'
             else:
