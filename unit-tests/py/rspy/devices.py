@@ -32,6 +32,7 @@ from rspy import repo
 pyrs_dir = repo.find_pyrs_dir()
 sys.path.insert( 1, pyrs_dir )
 
+MAX_ENUMERATION_TIME = 15  # [sec] - D585S is currently takes > 10 sec, D400 had 5 sec timeout
 
 # We need both pyrealsense2 and acroname. We can work without acroname, but
 # without rs no devices at all will be returned.
@@ -469,7 +470,7 @@ def recovery():
     return { device.serial_number for device in _device_by_sn.values() if device.handle.is_update_device() }
 
 
-def enable_only( serial_numbers, recycle = False, timeout = 10 ):
+def enable_only( serial_numbers, recycle = False, timeout = MAX_ENUMERATION_TIME ):
     """
     Enable only the devices corresponding to the given serial-numbers. This can work either
     with or without Acroname: without, the devices will simply be HW-reset, but other devices
@@ -543,7 +544,7 @@ def _wait_until_removed( serial_numbers, timeout = 5 ):
         time.sleep( 1 )
 
 
-def _wait_for( serial_numbers, timeout = 10 ):
+def _wait_for( serial_numbers, timeout = MAX_ENUMERATION_TIME ):
     """
     Wait until the given serial numbers are all online
 
@@ -577,8 +578,7 @@ def _wait_for( serial_numbers, timeout = 10 ):
         time.sleep( 1 )
         did_some_waiting = True
 
-# timeout was 5, D500 devices takes a bit longer currently
-def hw_reset( serial_numbers, timeout = 15 ):
+def hw_reset( serial_numbers, timeout = MAX_ENUMERATION_TIME ):
     """
     Recycles the given devices manually, using a hardware-reset (rather than any acroname port
     reset). The devices are sent a HW-reset command and then we'll wait until they come back
