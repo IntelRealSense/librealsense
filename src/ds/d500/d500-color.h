@@ -45,8 +45,6 @@ namespace librealsense
         void init();
 
         friend class d500_color_sensor;
-        friend class rs435i_device;
-        friend class ds_color_common;
 
         uint8_t _color_device_idx = -1;
         bool _separate_color;

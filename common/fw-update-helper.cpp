@@ -775,12 +775,12 @@ namespace rs2
 
             // D400 devices takes 3 seconds after image transition until DFU process finish.
             // D500 only starts the process after the image is transferred and it takes much time..
-            log("Firmware Download completed, await DFU transition event\n"
+            log("Safety MCU Download completed, await DFU transition event\n"
                 "Internal write is in progress\n"
                 "Please DO NOT DISCONNECT the camera (might take a few minutes)");
             std::this_thread::sleep_for(std::chrono::seconds(60));
 
-            log("Firmware Update completed, waiting for device to reconnect");
+            log("Safety MCU Update completed, waiting for device to reconnect");
         }
         else
         {
@@ -790,7 +790,7 @@ namespace rs2
                     _progress = (ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress;
                 });
 
-            log("Firmware Update completed, waiting for device to reconnect");
+            log("Safety MCU Update completed, waiting for device to reconnect");
         }
 
         if (!check_for([this, serial]() {
@@ -895,7 +895,7 @@ namespace rs2
 
         if (update_state != RS2_FWU_STATE_COMPLETE)
         {
-            ImGui::Text("Firmware Update Recommended!");
+            ImGui::Text("Safety MCU Update Recommended!");
 
             ImGui::SetCursorScreenPos({ float(x + 5), float(y + 27) });
 
@@ -906,9 +906,9 @@ namespace rs2
             ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1.f - t));
 
             if (update_state == RS2_FWU_STATE_INITIAL_PROMPT)
-                ImGui::Text("Firmware updates offer critical bug fixes and\nunlock new camera capabilities.");
+                ImGui::Text("Safety MCU updates offer critical bug fixes and\nunlock new camera capabilities.");
             else
-                ImGui::Text("Firmware update is underway...\nPlease do not disconnect the device");
+                ImGui::Text("Safety MCU update is underway...\nPlease do not disconnect the device");
 
             ImGui::PopStyleColor();
         }
@@ -925,7 +925,7 @@ namespace rs2
             ImGui::PopFont();
 
             ImGui::SetCursorScreenPos({ float(x + 40), float(y + 35) });
-            ImGui::Text("Camera Firmware Updated Successfully");
+            ImGui::Text("Camera Safety MCU Updated Successfully");
         }
 
         ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
@@ -979,7 +979,7 @@ namespace rs2
 
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", "New firmware will be flashed to the device");
+                    ImGui::SetTooltip("%s", "New Safety MCU will be flashed to the device");
                 }
             }
             else if (update_state == RS2_FWU_STATE_IN_PROGRESS)
@@ -1050,7 +1050,7 @@ namespace rs2
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
 
-        std::string title = "Firmware Update";
+        std::string title = "Safety MCU Update";
         if (update_manager->failed()) title += " Failed";
 
         ImGui::OpenPopup(title.c_str());
