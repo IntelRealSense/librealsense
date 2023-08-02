@@ -665,7 +665,56 @@ namespace rs2
             ImGui::OpenPopup("Export");
         }
 
-        left += 60;
+        left += 70;
+
+        //-----------------------------
+        // -------------------- LPC Points Size ----------------
+        if (last_labeled_points)
+        {
+            ImGui::GetWindowDrawList()->AddLine({ cursor.x + left - 1, cursor.y + 5 },
+                { cursor.x + left - 1, cursor.y + top_bar_height - 5 }, ImColor(grey));
+
+            left += 10;
+
+            const auto lpc_popup = "LPC Draw";
+            if (big_button(&select_lpc_settings, win, left, 0, textual_icons::grid_6,
+                "Point Size", true, true,
+                "Labeled Point Cloud"))
+            {
+                ImGui::OpenPopup(lpc_popup);
+            }
+
+            ImGui::SetNextWindowPos({ cursor.x + left + 5, cursor.y + 60 });
+            if (ImGui::BeginPopup(lpc_popup))
+            {
+                select_lpc_settings = true;
+
+                bool selected = selected_lpc_points_size == lpc_points_size::lpc_small;
+                if (ImGui::MenuItem("Small", nullptr, &selected))
+                {
+                    if (selected) selected_lpc_points_size = lpc_points_size::lpc_small;
+                }
+
+                selected = selected_lpc_points_size == lpc_points_size::lpc_medium;
+                if (ImGui::MenuItem("Medium", nullptr, &selected))
+                {
+                    if (selected) selected_lpc_points_size = lpc_points_size::lpc_medium;
+                }
+
+                selected = selected_lpc_points_size == lpc_points_size::lpc_large;
+                if (ImGui::MenuItem("Large", nullptr, &selected))
+                {
+                    if (selected) selected_lpc_points_size = lpc_points_size::lpc_large;
+                }
+                ImGui::EndPopup();
+            }
+            else
+            {
+                select_lpc_settings = false;
+            }
+            left += 80;
+
+        }
 
 
         ImGui::PopStyleColor(5);
@@ -3420,7 +3469,13 @@ namespace rs2
         // Non-linear correspondence customized for non-flat surface exploration
         if (labeled_points_profile.width() <= 0)
             throw std::runtime_error("Profile width must be greater than 0.");
-        glPointSize(std::sqrt(viewer_rect.w / labeled_points_profile.width()));
+
+        float point_size = std::sqrt(viewer_rect.w / labeled_points_profile.width());
+        if (selected_lpc_points_size == lpc_points_size::lpc_medium)
+            point_size *= 3.f;
+        else if (selected_lpc_points_size == lpc_points_size::lpc_large)
+            point_size *= 5.f;
+        glPointSize(point_size);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
