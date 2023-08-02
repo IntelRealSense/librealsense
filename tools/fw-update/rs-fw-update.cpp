@@ -30,7 +30,6 @@ using namespace TCLAP;
 #define ISATTY isatty
 #define FILENO fileno
 #endif
-
 std::vector<uint8_t> read_fw_file(std::string file_path)
 {
     std::vector<uint8_t> rv;
@@ -318,7 +317,6 @@ try
                     auto recovery_sn = d.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
                     if( recovery_sn == update_serial_number )
                     {
-                        std::cout << "... found it" << std::endl;
                         cv.notify_one();
                         break;
                     }
