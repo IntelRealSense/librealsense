@@ -35,7 +35,7 @@ sys.path.insert( 1, pyrs_dir )
 MAX_ENUMERATION_TIME = 20  # [sec] - D585S is currently takes > 10 sec, D400 had 5 sec timeout
 
 # We need both pyrealsense2 and acroname. We can work without acroname, but
-# without rs no devices at all will be returned.
+# without pyrealsense2 no devices at all will be returned.
 try:
     import pyrealsense2 as rs
     log.d( rs )

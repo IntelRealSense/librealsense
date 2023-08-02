@@ -10,12 +10,13 @@ from rspy.timer import Timer
 from rspy.stopwatch import Stopwatch
 import time
 
-# hw reset test, we want to make sure the device disconnect & reconnect successfully
+# Verify reasonable enumeration time for the device
 
 dev = None
 device_removed = False
 device_added = False
 MAX_ENUM_TIME_D400 = 5 # [sec]
+MAX_ENUM_TIME_D500 = 10 # [sec] currently we set 10 - it should be targeted to 5 in the future
 
 def device_changed( info ):
     global dev, device_removed, device_added
@@ -32,6 +33,8 @@ def device_changed( info ):
 def get_max_enum_rime_by_device( dev ):
     if dev.get_info( rs.camera_info.product_line ) == "D400":
         return MAX_ENUM_TIME_D400;
+    elif dev.get_info( rs.camera_info.product_line ) == "D500":
+        return MAX_ENUM_TIME_D500;
     return 0;
 
 ################################################################################################
