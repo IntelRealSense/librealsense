@@ -677,9 +677,9 @@ namespace rs2
             left += 10;
 
             const auto lpc_popup = "LPC Draw";
-            if (big_button(&select_lpc_settings, win, left, 0, u8"\uf58d",
-                "Labeled Point Cloud", true, true,
-                "Labeled Point Cloud Settings"))
+            if (big_button(&select_lpc_settings, win, left, 0, textual_icons::grid_6,
+                "Point Size", true, true,
+                "Labeled Point Cloud"))
             {
                 ImGui::OpenPopup(lpc_popup);
             }
