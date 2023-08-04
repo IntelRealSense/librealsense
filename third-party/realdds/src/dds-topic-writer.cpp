@@ -86,7 +86,8 @@ void dds_topic_writer::run( qos const & wqos )
 void dds_topic_writer::on_publication_matched( eprosima::fastdds::dds::DataWriter *,
                                                eprosima::fastdds::dds::PublicationMatchedStatus const & info )
 {
-    // Called when the subscriber is matched (un)with a Writer
+    // Called when the subscriber is (un)matched with a Writer
+    _n_readers = info.current_count;
     if( _on_publication_matched )
         _on_publication_matched( info );
 }

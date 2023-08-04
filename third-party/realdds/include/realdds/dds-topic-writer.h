@@ -37,6 +37,8 @@ class dds_topic_writer : protected eprosima::fastdds::dds::DataWriterListener
 
     eprosima::fastdds::dds::DataWriter * _writer = nullptr;
 
+    int _n_readers = 0;
+
 public:
     dds_topic_writer( std::shared_ptr< dds_topic > const & topic );
     dds_topic_writer( std::shared_ptr< dds_topic > const & topic, std::shared_ptr< dds_publisher > const & publisher );
@@ -46,6 +48,7 @@ public:
     eprosima::fastdds::dds::DataWriter * operator->() const { return get(); }
 
     bool is_running() const { return ( get() != nullptr ); }
+    bool has_readers() const { return _n_readers > 0; }
 
     std::shared_ptr< dds_topic > const & topic() const { return _topic; }
     std::shared_ptr< dds_publisher > const & publisher() const { return _publisher; }
