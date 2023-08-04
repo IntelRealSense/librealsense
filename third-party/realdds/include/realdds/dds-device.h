@@ -25,7 +25,8 @@ class dds_participant;
 // Represents a device via the DDS system. Such a device exists as of its identification by the device-watcher, and
 // always contains a device-info and GUID of the remote DataWriter to which it belongs.
 // 
-// The device may not be ready for use (will not contain sensors, profiles, etc.) until it is "run".
+// The device may not be ready for use (will not contain sensors, profiles, etc.) until it received all handshake
+// notifications from the server, but it will start receiving notifications and be able to send controls right away.
 //
 class dds_device
 {
@@ -43,10 +44,11 @@ public:
     // The device GUID is that of the DataWriter which declares it!
     dds_guid const & guid() const;
 
-    bool is_running() const;
+    // A device is ready for use after it's gone through handshake and can start streaming
+    bool is_ready() const;
 
-    // Make the device ready for use. This may take time! Better to do it in the background...
-    void run();
+    // Wait until ready. Will throw if not ready within the timeout!
+    void wait_until_ready( size_t timeout_ns = 5000 );
 
     //----------- below this line, a device must be running!
 

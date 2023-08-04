@@ -74,14 +74,14 @@ dds_device::dds_device( std::shared_ptr< impl > impl )
 {
 }
 
-bool dds_device::is_running() const
+bool dds_device::is_ready() const
 {
-    return _impl->_running;
+    return _impl->is_ready();
 }
 
-void dds_device::run()
+void dds_device::wait_until_ready( size_t timeout_ns )
 {
-    _impl->run();
+    _impl->wait_until_ready( timeout_ns );
 }
 
 std::shared_ptr< dds_participant > const& dds_device::participant() const
