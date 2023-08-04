@@ -785,8 +785,11 @@ PYBIND11_MODULE(NAME, m) {
         .def( "device_info", &dds_device::device_info )
         .def( "participant", &dds_device::participant )
         .def( "guid", &dds_device::guid )
-        .def( "is_running", &dds_device::is_running )
-        .def( "run", &dds_device::run, py::call_guard< py::gil_scoped_release >() )
+        .def( "is_ready", &dds_device::is_ready )
+        .def( "wait_until_ready",
+              &dds_device::wait_until_ready,
+              py::call_guard< py::gil_scoped_release >(),
+              "timeout-ms"_a = 5000 )
         .def( FN_FWD( dds_device,
                       on_metadata_available,
                       ( dds_device &, py::object && ),

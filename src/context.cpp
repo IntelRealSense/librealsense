@@ -444,24 +444,14 @@ namespace librealsense
             _dds_watcher->foreach_device(
                 [&]( std::shared_ptr< realdds::dds_device > const & dev ) -> bool
                 {
-                    if( ! dev->is_running() )
+                    if( ! dev->is_ready() )
                     {
-                        LOG_DEBUG( "device '" << dev->device_info().topic_root << "' is not yet running" );
+                        LOG_DEBUG( "device '" << dev->device_info().debug_name() << "' is not yet ready" );
                         return true;
                     }
                     if( dev->device_info().product_line == "D400" )
                     {
                         if( ! ( mask & RS2_PRODUCT_LINE_D400 ) )
-                            return true;
-                    }
-                    else if( dev->device_info().product_line == "L500" )
-                    {
-                        if( ! ( mask & RS2_PRODUCT_LINE_L500 ) )
-                            return true;
-                    }
-                    else if( dev->device_info().product_line == "SR300" )
-                    {
-                        if( ! ( mask & RS2_PRODUCT_LINE_SR300 ) )
                             return true;
                     }
                     else if( ! ( mask & RS2_PRODUCT_LINE_NON_INTEL ) )
@@ -585,7 +575,7 @@ namespace librealsense
     void context::start_dds_device_watcher()
     {
         _dds_watcher->on_device_added( [this]( std::shared_ptr< realdds::dds_device > const & dev ) {
-            dev->run();
+            dev->wait_until_ready();  // make sure handshake is complete
 
             std::vector<rs2_device_info> rs2_device_info_added;
             std::vector<rs2_device_info> rs2_device_info_removed;
