@@ -107,7 +107,7 @@ void dds_stream_server::run_stream()
     if( _on_readers_changed )
     {
         std::weak_ptr< dds_stream_server > weak_this(
-            std::static_pointer_cast<dds_stream_server>(shared_from_this()) );
+            std::static_pointer_cast< dds_stream_server >( shared_from_this() ) );
         _writer->on_publication_matched(
             [weak_this, on_readers_changed = _on_readers_changed](
                 eprosima::fastdds::dds::PublicationMatchedStatus const & status )
