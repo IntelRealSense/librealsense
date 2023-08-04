@@ -85,7 +85,9 @@ public:
 
     void publish_notification( topics::flexible_msg && );
     void publish_metadata( nlohmann::json && );
-    
+
+    bool has_metadata_readers() const;
+
     typedef std::function< void( const nlohmann::json & msg ) > control_callback;
     void on_open_streams( control_callback callback ) { _open_streams_callback = std::move( callback ); }
 

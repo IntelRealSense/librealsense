@@ -239,6 +239,7 @@ void dds_device_server::publish_notification( topics::flexible_msg && notificati
     _notification_server->send_notification( std::move( notification ) );
 }
 
+
 void dds_device_server::publish_metadata( nlohmann::json && md )
 {
     if( ! _metadata_writer )
@@ -249,6 +250,12 @@ void dds_device_server::publish_metadata( nlohmann::json && md )
         "publishing metadata: " << shorten_json_string( slice( msg.custom_data< char const >(), msg._data.size() ),
                                                         300 ) );
     msg.write_to( *_metadata_writer );
+}
+
+
+bool dds_device_server::has_metadata_readers() const
+{
+    return _metadata_writer && _metadata_writer->has_readers();
 }
 
 
