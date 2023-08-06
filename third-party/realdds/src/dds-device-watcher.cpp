@@ -70,7 +70,13 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
                 // NOTE: device removals are handled via the writer-removed notification; see the
                 // listener callback in init().
                 if( _on_device_added )
-                    _on_device_added( device );
+                {
+                    std::thread(
+                        [device, on_device_added = _on_device_added]() {  //
+                            on_device_added( device );
+                        } )
+                        .detach();
+                }
             }
         } );
 
