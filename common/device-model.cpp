@@ -1403,16 +1403,20 @@ namespace rs2
                         ImGui::SetTooltip("%s", tooltip.c_str());
                     }
 
-                    if (ImGui::Selectable("Update Safety MCU", false, updateFwFlags))
+                    std::string pid_str = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+                    if (pid_str == "0B6B")
                     {
-                        safety_mcu_update({}, viewer, error_message);
-                    }
-                    if (ImGui::IsItemHovered())
-                    {
-                        std::string tooltip = rsutils::string::from()
-                            << "Install safety MCU file to the device"
-                            << (is_streaming ? " (Disabled while streaming)" : "");
-                        ImGui::SetTooltip("%s", tooltip.c_str());
+                        if (ImGui::Selectable("Update Safety MCU", false, updateFwFlags))
+                        {
+                            safety_mcu_update({}, viewer, error_message);
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            std::string tooltip = rsutils::string::from()
+                                << "Install safety MCU file to the device"
+                                << (is_streaming ? " (Disabled while streaming)" : "");
+                            ImGui::SetTooltip("%s", tooltip.c_str());
+                        }
                     }
 
                     if( dev.supports( RS2_CAMERA_INFO_PRODUCT_LINE )

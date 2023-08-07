@@ -310,7 +310,7 @@ namespace librealsense
         }
 
         // Supported recovery devices
-        if (mask & RS2_PRODUCT_LINE_D400 | mask & RS2_PRODUCT_LINE_D500) 
+        if (mask & RS2_PRODUCT_LINE_D400 || mask & RS2_PRODUCT_LINE_D500) 
         {
             auto recovery_devices = fw_update_info::pick_recovery_devices(ctx, devices.usb_devices, mask);
             std::copy(begin(recovery_devices), end(recovery_devices), std::back_inserter(list));
