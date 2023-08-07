@@ -17,15 +17,10 @@
 #include <fastdds/dds/subscriber/DataReader.hpp>
 
 #include <rsutils/time/timer.h>
-#include <rsutils/string/shorten-json-string.h>
-#include <rsutils/string/slice.h>
+#include <rsutils/string/from.h>
 #include <rsutils/json.h>
 
 #include <cassert>
-
-
-using nlohmann::json;
-using rsutils::string::shorten_json_string;
 
 
 static std::string const id_key( "id", 2 );
@@ -137,7 +132,7 @@ void dds_device::impl::wait_until_ready( size_t timeout_ms )
     do
     {
         if( timer.has_expired() )
-            DDS_THROW( runtime_error, "timeout waiting for '" + std::string( _info.debug_name() ) + "'" );
+            DDS_THROW( runtime_error, "timeout waiting for '" << _info.debug_name() << "'" );
         std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
     }
     while( ! is_ready() );
@@ -316,9 +311,9 @@ void dds_device::impl::open( const dds_stream_profiles & profiles )
     {
         auto stream = profile->stream();
         if( ! stream )
-            DDS_THROW( runtime_error, "profile " + profile->to_string() + " is not part of any stream" );
+            DDS_THROW( runtime_error, "profile " << profile->to_string() << " is not part of any stream" );
         if( stream_profiles.find( stream->name() ) != stream_profiles.end() )
-            DDS_THROW( runtime_error, "more than one profile found for stream '" + stream->name() + "'" );
+            DDS_THROW( runtime_error, "more than one profile found for stream '" << stream->name() << "'" );
 
         stream_profiles[stream->name()] = profile->to_json();
     }
@@ -501,7 +496,7 @@ void dds_device::impl::on_device_header( nlohmann::json const & j )
             std::string from_name = rsutils::json::get< std::string >( ex, 0 );
             std::string to_name = rsutils::json::get< std::string >( ex, 1 );
             LOG_DEBUG( "    ... got extrinsics from " << from_name << " to " << to_name );
-            extrinsics extr = extrinsics::from_json( rsutils::json::get< json >( ex, 2 ) );
+            extrinsics extr = extrinsics::from_json( rsutils::json::get< nlohmann::json >( ex, 2 ) );
             _extrinsics_map[std::make_pair( from_name, to_name )] = std::make_shared< extrinsics >( extr );
         }
     }
@@ -540,14 +535,13 @@ void dds_device::impl::on_stream_header( nlohmann::json const & j )
         return;
 
     if( _streams.size() >= _n_streams_expected )
-        DDS_THROW( runtime_error,
-                   "more streams than expected (" + std::to_string( _n_streams_expected ) + ") received" );
+        DDS_THROW( runtime_error, "more streams than expected (" << _n_streams_expected << ") received" );
     auto stream_type = rsutils::json::get< std::string >( j, "type" );
     auto stream_name = rsutils::json::get< std::string >( j, "name" );
 
     auto & stream = _streams[stream_name];
     if( stream )
-        DDS_THROW( runtime_error, "stream '" + stream_name + "' already exists" );
+        DDS_THROW( runtime_error, "stream '" << stream_name << "' already exists" );
 
     auto sensor_name = rsutils::json::get< std::string >( j, "sensor-name" );
     size_t default_profile_index = rsutils::json::get< size_t >( j, "default-profile-index" );
@@ -567,7 +561,7 @@ void dds_device::impl::on_stream_header( nlohmann::json const & j )
     TYPE2STREAM( color, video )
     TYPE2STREAM( motion, motion )
     TYPE2STREAM( confidence, video )
-    DDS_THROW( runtime_error, "stream '" + stream_name + "' is of unknown type '" + stream_type + "'" );
+    DDS_THROW( runtime_error, "stream '" << stream_name << "' is of unknown type '" << stream_type << "'" );
 
 #undef TYPE2STREAM
 
@@ -581,12 +575,12 @@ void dds_device::impl::on_stream_header( nlohmann::json const & j )
         stream->init_profiles( profiles, default_profile_index );
     else
         DDS_THROW( runtime_error,
-                   "stream '" + stream_name + "' default profile index " + std::to_string( default_profile_index )
-                       + " is out of bounds" );
+                   "stream '" << stream_name << "' default profile index " << default_profile_index
+                              << " is out of bounds" );
     if( strcmp( stream->type_string(), stream_type.c_str() ) != 0 )
         DDS_THROW( runtime_error,
-                   "failed to instantiate stream type '" + stream_type + "' (instead, got '" + stream->type_string()
-                       + "')" );
+                   "failed to instantiate stream type '" << stream_type << "' (instead, got '" << stream->type_string()
+                                                         << "')" );
 
     LOG_DEBUG( "... stream " << _streams.size() << "/" << _n_streams_expected << " '" << stream_name
                              << "' received with " << profiles.size() << " profiles"

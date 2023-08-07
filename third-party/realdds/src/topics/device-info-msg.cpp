@@ -38,12 +38,13 @@ nlohmann::json device_info::to_json() const
 }
 
 
-char const * device_info::debug_name() const
+rsutils::string::slice device_info::debug_name() const
 {
-    auto lpsz = topic_root.c_str();
-    if( topic_root.length() > ROOT_LEN && SEPARATOR == lpsz[ROOT_LEN-1] )
-        lpsz += ROOT_LEN;
-    return lpsz;
+    auto begin = topic_root.c_str();
+    auto end = begin + topic_root.length();
+    if( topic_root.length() > ROOT_LEN && SEPARATOR == begin[ROOT_LEN-1] )
+        begin += ROOT_LEN;
+    return{ begin, end };
 }
 
 

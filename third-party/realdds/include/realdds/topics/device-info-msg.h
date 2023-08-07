@@ -5,7 +5,7 @@
 
 #include <nlohmann/json_fwd.hpp>
 
-#include <string>
+#include <rsutils/string/slice.h>
 
 namespace realdds {
 namespace topics {
@@ -22,9 +22,9 @@ public:
     nlohmann::json to_json() const;
     static device_info from_json( nlohmann::json const & j );
 
-    // Substring of information already stored in the device-info that can be used to print the devide 'name'.
+    // Substring of information already stored in the device-info that can be used to print the device 'name'.
     // (mostly for use with debug messages)
-    char const * debug_name() const;
+    rsutils::string::slice debug_name() const;
 };
 
 
