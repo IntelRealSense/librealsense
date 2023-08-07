@@ -97,17 +97,23 @@ namespace librealsense
                 
                 // pull extrinsics from safety preset number 1
                 int safety_preset_index = 1;
-                rs2_safety_preset safety_preset = safety_sensor.get_safety_preset(safety_preset_index);
-               
+                rs2_extrinsics res;
+                rs2_safety_preset safety_preset;
+                try {
+                    safety_preset = safety_sensor.get_safety_preset(safety_preset_index);
+                }
+                catch (...)
+                {
+                    throw std::runtime_error("Safety Preset 1 not set on this device");
+                }
                 auto extrinsics_from_preset = safety_preset.platform_config.transformation_link;
                 auto rot = extrinsics_from_preset.rotation;
 
                 // converting row-major matrix to column-major
                 float rotation_matrix[9] = { rot.x.x, rot.y.x, rot.z.x,
                                              rot.x.y, rot.y.y, rot.z.y,
-                                             rot.x.z, rot.y.z, rot.z.z};
+                                             rot.x.z, rot.y.z, rot.z.z };
 
-                rs2_extrinsics res;
                 copy(res.rotation, &rotation_matrix, sizeof rotation_matrix);
                 copy(res.translation, &extrinsics_from_preset.translation, sizeof extrinsics_from_preset.translation);
                 return res;
