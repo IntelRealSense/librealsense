@@ -19,6 +19,7 @@
 #include "on-chip-calib.h"
 #include "subdevice-model.h"
 #include "device-model.h"
+#include "smcu-update-helper.h"
 
 using namespace rs400;
 using namespace nlohmann;

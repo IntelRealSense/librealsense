@@ -3174,10 +3174,10 @@ void rs2_enter_update_safety_mcu_state(const rs2_device* device, rs2_error** err
 {
     VALIDATE_NOT_NULL(device);
 
-    if (device->device->supports_info(RS2_CAMERA_INFO_PRODUCT_LINE))
+    if (device->device->supports_info(RS2_CAMERA_INFO_PRODUCT_ID))
     {
-        std::string product_line = device->device->get_info(RS2_CAMERA_INFO_PRODUCT_LINE).c_str();
-        if (product_line != "D500")
+        std::string pid = device->device->get_info(RS2_CAMERA_INFO_PRODUCT_ID).c_str();
+        if (pid != "0B6B")
             throw std::runtime_error("this device does not support safety mcu update");
     }
 
