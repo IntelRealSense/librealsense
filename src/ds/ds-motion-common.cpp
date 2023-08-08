@@ -490,9 +490,9 @@ namespace librealsense
         return hid_ep;
     }
 
-    void ds_motion_common::init_hid(const std::vector<platform::hid_device_info>& hid_infos, const stream_interface& depth_stream)
+    void ds_motion_common::init_motion(bool is_infos_empty, const stream_interface& depth_stream)
     {
-        if (!hid_infos.empty())
+        if (!is_infos_empty)
         {
             // motion correction
             _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _owner->_pid);
