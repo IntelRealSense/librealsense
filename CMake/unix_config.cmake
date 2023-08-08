@@ -4,14 +4,17 @@ macro(os_set_flags)
 
     # Put all the collaterals together, so we can find when trying to run examples/tests
     # Note: this puts the outputs under <binary>/<build-type>
-    # NOTE: do not uncomment -- this ruins our CI procedures -- otherwise it mirrors Windows, simplifies
-    # scripts, makes things easier to find... c'est la vie!
-    #set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE})
-    #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE})
+    if( "${CMAKE_BUILD_TYPE}" STREQUAL "" )
+        # This can happen according to the docs -- and in GHA...
+        message( STATUS "No output directory set; using ${CMAKE_BINARY_DIR}/Release/" )
+        set( CMAKE_BUILD_TYPE "Release" )
+    endif()
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE})
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE})
 
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -pedantic -g -D_DEFAULT_SOURCE")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -g -Wno-missing-field-initializers")
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -pedantic -D_DEFAULT_SOURCE")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wno-missing-field-initializers")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch -Wno-multichar -Wsequence-point -Wformat -Wformat-security")
 
     execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE MACHINE)
