@@ -19,6 +19,7 @@
 #include "on-chip-calib.h"
 #include "subdevice-model.h"
 #include "device-model.h"
+#include "smcu-update-helper.h"
 
 using namespace rs400;
 using namespace nlohmann;
@@ -1018,6 +1019,55 @@ namespace rs2
             error_message = e.what();
         }
     }
+
+    void device_model::safety_mcu_update(std::vector<uint8_t> data, viewer_model& viewer, std::string& error_message)
+    {
+        try
+        {
+            if (data.size() == 0)
+            {
+                auto ret = file_dialog_open(open_file, "SafetyMCU\0*.hex", NULL, NULL);
+                if (ret)
+                {
+                    std::ifstream file(ret, std::ios::binary | std::ios::in);
+                    if (file.good())
+                    {
+                        data = std::vector<uint8_t>((std::istreambuf_iterator<char>(file)),
+                            std::istreambuf_iterator<char>());
+                    }
+                    else
+                    {
+                        error_message = rsutils::string::from() << "Could not open file '" << ret << "'";
+                        return;
+                    }
+                }
+                else return; // Aborted by the user
+            }
+            auto manager = std::make_shared<safety_mcu_update_manager>(viewer.not_model, *this, dev, viewer.ctx, data, true);
+
+            auto n = std::make_shared<safety_mcu_update_notification_model>(
+                "Manual Update requested", manager, true);
+            viewer.not_model->add_notification(n);
+
+            for (auto&& n : related_notifications)
+                n->dismiss(false);
+
+            auto invoke = [n](std::function<void()> action) {
+                n->invoke(action);
+            };
+
+            manager->start(invoke);
+        }
+        catch (const error& e)
+        {
+            error_message = error_to_string(e);
+        }
+        catch (const std::exception& e)
+        {
+            error_message = e.what();
+        }
+    }
+
     void device_model::check_for_device_updates(viewer_model& viewer, bool activated_by_user )
     {
         std::weak_ptr< updates_model > updates_model_protected( viewer.updates );
@@ -1341,7 +1391,7 @@ namespace rs2
 
                 if (dev.is<rs2::updatable>() || dev.is<rs2::update_device>())
                 {
-                    if (ImGui::Selectable("Update Firmware...", false, updateFwFlags))
+                    if (ImGui::Selectable("Update Firmware", false, updateFwFlags))
                     {
                         begin_update({}, viewer, error_message);
                     }
@@ -1353,6 +1403,21 @@ namespace rs2
                         ImGui::SetTooltip("%s", tooltip.c_str());
                     }
 
+                    std::string pid_str = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+                    if (pid_str == "0B6B")
+                    {
+                        if (ImGui::Selectable("Update Safety MCU", false, updateFwFlags))
+                        {
+                            safety_mcu_update({}, viewer, error_message);
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            std::string tooltip = rsutils::string::from()
+                                << "Install safety MCU file to the device"
+                                << (is_streaming ? " (Disabled while streaming)" : "");
+                            ImGui::SetTooltip("%s", tooltip.c_str());
+                        }
+                    }
 
                     if( dev.supports( RS2_CAMERA_INFO_PRODUCT_LINE )
                         && ( dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE ) ) )

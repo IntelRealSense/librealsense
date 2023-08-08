@@ -100,6 +100,53 @@ namespace librealsense
         _ds_device_common->enter_update_state();
     }
 
+    void d500_device::enter_update_safety_mcu_state() const
+    {
+        // Stop all data streaming/exchange pipes with HW
+        stop_activity();
+
+        using namespace std;
+        using namespace std::chrono;
+
+        try
+        {
+            LOG_INFO("entering to safety mcu update state, device disconnect is expected");
+            command cmd(ds::DFU);
+            cmd.param1 = 2;
+
+            cmd.require_response = false;
+
+            _hw_monitor->send(cmd);
+
+            // We allow 6 seconds because on Linux the removal status is updated at a 5 seconds rate.
+            const int MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP = DISCONNECT_PERIOD_MS / DELAY_FOR_RETRIES;
+            for (auto i = 0; i < MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP; i++)
+            {
+                // If the device was detected as removed we assume the device is entering update
+                // mode Note: if no device status callback is registered we will wait the whole time
+                // and it is OK
+                if (!is_valid())
+                {
+                    this_thread::sleep_for(milliseconds(DELAY_FOR_CONNECTION));
+                    return;
+                }
+
+                this_thread::sleep_for(milliseconds(DELAY_FOR_RETRIES));
+            }
+
+            if (device_changed_notifications_on())
+                LOG_WARNING("Timeout waiting for device disconnect after DFU command!");
+        }
+        catch (std::exception& e)
+        {
+            LOG_WARNING(e.what());
+        }
+        catch (...)
+        {
+            LOG_ERROR("Unknown error during entering DFU state");
+        }
+    }
+
     std::vector<uint8_t> d500_device::backup_flash(update_progress_callback_ptr callback)
     {
         return _ds_device_common->backup_flash(callback);
