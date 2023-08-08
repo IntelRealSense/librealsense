@@ -186,6 +186,8 @@ PYBIND11_MODULE(NAME, m) {
 
     // The 'topics' submodule will contain pointers to the topic names:
     auto topics = m.def_submodule( "topics", "all the topics that " SNAME " knows" );
+    topics.attr( "separator" ) = realdds::topics::SEPARATOR;
+    topics.attr( "root" ) = realdds::topics::ROOT;
     topics.attr( "device_info" ) = realdds::topics::DEVICE_INFO_TOPIC_NAME;
     topics.attr( "device_notification" ) = realdds::topics::NOTIFICATION_TOPIC_NAME;
     topics.attr( "device_control" ) = realdds::topics::CONTROL_TOPIC_NAME;
@@ -402,6 +404,10 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_< flexible_msg >( message, "flexible" )
         .def( py::init<>() )
+        .def( py::init( []( py::dict const & dict, uint32_t version )
+                        { return flexible_msg( py_to_json( dict ), version ); } ),
+              "json"_a,
+              "version"_a = 0 )
         .def( py::init( []( std::string const & json_string ) {
             return flexible_msg( flexible_msg::data_format::JSON, nlohmann::json::parse( json_string ) );
         } ) )
@@ -779,13 +785,21 @@ PYBIND11_MODULE(NAME, m) {
         .def( "device_info", &dds_device::device_info )
         .def( "participant", &dds_device::participant )
         .def( "guid", &dds_device::guid )
-        .def( "is_running", &dds_device::is_running )
-        .def( "run", &dds_device::run, py::call_guard< py::gil_scoped_release >() )
+        .def( "is_ready", &dds_device::is_ready )
+        .def( "wait_until_ready",
+              &dds_device::wait_until_ready,
+              py::call_guard< py::gil_scoped_release >(),
+              "timeout-ms"_a = 5000 )
         .def( FN_FWD( dds_device,
                       on_metadata_available,
                       ( dds_device &, py::object && ),
                       ( nlohmann::json && j ),
                       callback( self, json_to_py( j ) ); ) )
+        .def( FN_FWD( dds_device,
+                      on_device_log,
+                      (dds_device &, dds_time const &, char, std::string const &, py::object && ),
+                      (dds_time const & timestamp, char type, std::string const & text, nlohmann::json const & data),
+                      callback( self, timestamp, type, text, json_to_py( data ) ); ) )
         .def( "n_streams", &dds_device::number_of_streams )
         .def( "streams",
               []( dds_device const & self ) {

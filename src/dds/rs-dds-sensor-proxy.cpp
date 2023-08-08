@@ -344,8 +344,7 @@ void dds_sensor_proxy::handle_new_metadata( std::string const & stream_name, nlo
         it->second.syncer.enqueue_metadata(
             rsutils::json::get< realdds::dds_nsec >( dds_md[metadata_header_key], timestamp_key ),
             std::move( dds_md ) );
-    else
-        throw std::runtime_error( "Stream '" + stream_name + "' received metadata but does not enable metadata" );
+    // else we're not streaming -- must be another client that's subscribed
 }
 
 

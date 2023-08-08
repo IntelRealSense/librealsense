@@ -32,7 +32,7 @@ Device behavior can be fine-tuned with certain JSON settings passed through the 
 | Field                    | Default | Type    | Description        |
 |--------------------------|---------|---------|--------------------|
 | device-reply-timeout-ms  |    1000 | size_t  | How long to wait for a control reply to arrive, in millisec
-| device-init-timeout-ms   |    5000 | size_t  | How long to try achieving device handshake, in millisec
+| disable-metadata         |   false | bool    | When true, the metadata topic will be disabled, even with metadata-enabled streams
 
 
 

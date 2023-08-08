@@ -5,7 +5,7 @@
 
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <stdexcept>
-#include <string>
+#include <rsutils/string/from.h>
 
 
 // E.g.:
@@ -14,8 +14,8 @@
 #define DDS_THROW( ERR_TYPE, WHAT )                                                                                    \
     do                                                                                                                 \
     {                                                                                                                  \
-        LOG_ERROR( "throwing: " << ( WHAT ) );                                                                         \
-        throw realdds::dds_##ERR_TYPE( WHAT );                                                                         \
+        LOG_ERROR( "throwing: " << WHAT );                                                                             \
+        throw realdds::dds_##ERR_TYPE( rsutils::string::from() << WHAT );                                              \
     }                                                                                                                  \
     while( 0 )
 

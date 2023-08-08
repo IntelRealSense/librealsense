@@ -55,7 +55,7 @@ std::shared_ptr< dds_device > dds_device::create( std::shared_ptr< dds_participa
     std::shared_ptr< dds_device > dev = find_internal( guid );
     if( ! dev )
     {
-        LOG_DEBUG( "+device (" << participant->print( guid ) << ") on " << info.topic_root );
+        LOG_DEBUG( "+device '" << info.debug_name() << "' (" << participant->print( guid ) << ") on " << info.topic_root );
         auto impl = std::make_shared< dds_device::impl >( participant, guid, info );
         // Use a custom deleter to automatically remove the device from the map when it's done with
         dev = std::shared_ptr< dds_device >( new dds_device( impl ), [guid]( dds_device * ptr ) {
@@ -74,14 +74,14 @@ dds_device::dds_device( std::shared_ptr< impl > impl )
 {
 }
 
-bool dds_device::is_running() const
+bool dds_device::is_ready() const
 {
-    return _impl->_running;
+    return _impl->is_ready();
 }
 
-void dds_device::run()
+void dds_device::wait_until_ready( size_t timeout_ns )
 {
-    _impl->run();
+    _impl->wait_until_ready( timeout_ns );
 }
 
 std::shared_ptr< dds_participant > const& dds_device::participant() const
@@ -167,6 +167,11 @@ bool dds_device::supports_metadata() const
 void dds_device::on_metadata_available( on_metadata_available_callback cb )
 {
     _impl->on_metadata_available( cb );
+}
+
+void dds_device::on_device_log( on_device_log_callback cb )
+{
+    _impl->on_device_log( cb );
 }
 
 

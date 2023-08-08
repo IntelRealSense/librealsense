@@ -4,6 +4,7 @@
 #include <realdds/dds-participant.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-guid.h>
+#include <realdds/dds-time.h>
 
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/domain/DomainParticipantListener.hpp>
@@ -194,6 +195,9 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
     }
 
     _domain_listener = std::make_shared< listener_impl >( *this );
+
+    // Initialize the timestr "start" time
+    timestr{ realdds::now() };
 
     DomainParticipantQos pqos;
     pqos.name( participant_name );
