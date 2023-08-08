@@ -37,4 +37,5 @@ if motion_sensor:
         log.d(intrinsics_gyro)
         test.check(len(str(intrinsics_gyro)) > 0)  # Checking if intrinsics has data
 
+    test.finish()
     test.print_results_and_exit()
