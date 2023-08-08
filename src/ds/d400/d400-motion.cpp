@@ -93,11 +93,6 @@ namespace librealsense
         return _ds_motion_common->create_hid_device(ctx, all_hid_infos, camera_fw_version, _tf_keeper);
     }
 
-    rs2_motion_device_intrinsic d400_motion::get_motion_intrinsics(rs2_stream stream) const
-    {
-        return d400_motion_base::get_motion_intrinsics(stream);
-    }
-
     d400_motion_base::d400_motion_base(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
         : device(ctx, group),
@@ -119,7 +114,7 @@ namespace librealsense
 
         std::vector<platform::hid_device_info> hid_infos = group.hid_devices;
 
-        _ds_motion_common->init_hid(hid_infos, *_depth_stream);
+        _ds_motion_common->init_motion(hid_infos.empty(), *_depth_stream);
         
         initialize_fisheye_sensor(ctx,group);
 
@@ -136,13 +131,15 @@ namespace librealsense
 
     d400_motion_uvc::d400_motion_uvc(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
-        : d400_motion_base(ctx, group),
-        device(ctx, group),
-        d400_device(ctx, group)
+        : device(ctx, group),
+          d400_device(ctx, group),
+          d400_motion_base(ctx, group)
     {
         using namespace ds;
 
         std::vector<platform::uvc_device_info> uvc_infos = group.uvc_devices;
+
+        _ds_motion_common->init_motion(uvc_infos.empty(), *_depth_stream);
 
         if (!uvc_infos.empty())
         {
