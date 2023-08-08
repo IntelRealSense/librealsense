@@ -3,11 +3,10 @@
 
 # test:device:jetson D457
 # test:device:!jetson D455
+# This test check existence motion intrinsic data in accel and gyro profiles.
 
 import pyrealsense2 as rs
 from rspy import test, log
-
-# This test check existence motion intrinsic data in accel and gyro profiles.
 
 device = test.find_first_device_or_exit()
 motion_sensor = device.first_motion_sensor()
