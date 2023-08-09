@@ -39,7 +39,7 @@ if [ -z ${v4l2_util} ]; then
   echo "v4l2-ctl not found, install with: sudo apt install v4l-utils"
   exit 1
 fi
-
+metadata_enabled=1
 #
 # parse command line parameters
 # for '-i' parameter, print links only
@@ -58,6 +58,10 @@ while [[ $# -gt 0 ]]; do
       mux_param=$1
       shift
     ;;
+    -n|--no-metadata)
+      metadata_enabled=0
+      shift
+    ;;
     *)
       info=0
       quiet=0
@@ -73,12 +77,11 @@ if [[ $info -eq 0 ]]; then
   fi
 fi
 
-mux_list=${mux_param:-'a b c d'}
+mux_list=${mux_param:-'a b c d e f g h'}
 
-declare -A camera_idx=( [a]=0 [b]=1 [c]=2 [d]=3 )
-declare -A d4xx_vc=([1]=1 [2]=3 [4]=5)
-declare -A d4xx_vc_named=([depth]=1 [rgb]=3 ["motion detection"]=5 [imu]=6)
-declare -A camera_names=( [depth]=depth [rgb]=color ["motion detection"]=ir [imu]=imu )
+declare -A camera_idx=( [a]=0 [b]=1 [c]=2 [d]=3 [e]=4 [f]=5 [g]=6 [h]=7)
+declare -A d4xx_vc_named=([depth]=1 [rgb]=3 [ir]=5 [imu]=6)
+declare -A camera_names=( [depth]=depth [rgb]=color [ir]=ir [imu]=imu )
 
 camera_vid=("depth" "depth-md" "color" "color-md" "ir" "imu")
 
@@ -156,10 +159,14 @@ mdev=$(${v4l2_util} --list-devices | grep -A1 ipu6 | grep media)
 if [ -n "${mdev}" ]; then
 [[ $quiet -eq 0 ]] && printf "Bus\tCamera\tSensor\tNode Type\tVideo Node\tRS Link\n"
 # cache media-ctl output
-dot=$(${media_util} -d ${mdev} --print-dot)
+dot=$(${media_util} -d ${mdev} --print-dot | grep -v dashed)
 # for all d457 muxes a, b, c and d
 for camera in $mux_list; do
   create_dfu_dev=0
+  vpad=0
+  if [ "${camera}" \> "d" ]; then
+	  vpad=6
+  fi
   for sens in "${!d4xx_vc_named[@]}"; do
     # get sensor binding from media controller
     d4xx_sens=$(echo "${dot}" | grep "D4XX $sens $camera" | awk '{print $1}')
@@ -168,9 +175,8 @@ for camera in $mux_list; do
 
     d4xx_sens_mux=$(echo "${dot}" | grep $d4xx_sens:port0 | awk '{print $3}' | awk -F':' '{print $1}')
     csi2=$(echo "${dot}" | grep $d4xx_sens_mux:port0 | awk '{print $3}' | awk -F':' '{print $1}')
-    be_soc=$(echo "${dot}" | grep $csi2:port1 | grep -v dashed | awk '{print $3}' | awk -F':' '{print $1}')
-    vid_nd=$(echo "${dot}" | grep "$be_soc:port${d4xx_vc_named[${sens}]}" | grep -v dashed | awk '{print $3}' | awk -F':' '{print $1}')
-
+    be_soc=$(echo "${dot}" | grep $csi2:port1 | awk '{print $3}' | awk -F':' '{print $1}')
+    vid_nd=$(echo "${dot}" | grep -w "$be_soc:port$((${d4xx_vc_named[${sens}]}+${vpad}))" | awk '{print $3}' | awk -F':' '{print $1}')
     [[ -z $vid_nd ]] && continue; # echo "SENS $sens NOT FOUND" && continue
 
     vid=$(echo "${dot}" | grep "${vid_nd}" | grep video | tr '\\n' '\n' | grep video | awk -F'"' '{print $1}')
@@ -189,6 +195,9 @@ for camera in $mux_list; do
     fi
     create_dfu_dev=1 # will create DFU device link for camera
     # metadata link
+    if [ "$metadata_enabled" -eq 0 ]; then
+        continue;
+    fi
     # skip IR metadata node for now.
     [[ ${camera_names["${sens}"]} == 'ir' ]] && continue
     # skip IMU metadata node.
