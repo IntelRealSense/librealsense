@@ -49,8 +49,6 @@ namespace librealsense
             const std::vector<platform::hid_device_info>& all_hid_infos,
             const firmware_version& camera_fw_version);
 
-        rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const;
-
     protected:
         friend class ds_motion_common;
         friend class ds_fisheye_sensor;
