@@ -58,7 +58,7 @@ py::list get_vector3( geometry_msgs::msg::Vector3 const & v )
     obj[1] = py::float_( v.y() );
     obj[2] = py::float_( v.z() );
     return std::move( obj );
-};
+}
 
 
 void set_vector3( geometry_msgs::msg::Vector3 & v, std::array< double, 3 > const & l )
