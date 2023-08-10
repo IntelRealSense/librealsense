@@ -55,7 +55,8 @@ public:
     void tag_default_profile_of_stream( const std::shared_ptr< stream_profile_interface > & profile,
                                         const std::shared_ptr< const realdds::dds_stream > & stream ) const;
 
-    std::shared_ptr< dds_sensor_proxy > create_sensor( const std::string & sensor_name );
+    std::shared_ptr< dds_sensor_proxy > create_sensor( std::string const & sensor_name,
+                                                       std::string const & type_string );
 
     void tag_profiles( stream_profiles profiles ) const override;
 };

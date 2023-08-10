@@ -4,6 +4,7 @@
 #include "rs-dds-device-proxy.h"
 #include "rs-dds-color-sensor-proxy.h"
 #include "rs-dds-depth-sensor-proxy.h"
+#include "rs-dds-motion-sensor-proxy.h"
 
 #include <realdds/dds-device.h>
 #include <realdds/dds-stream.h>
@@ -145,7 +146,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< context > ctx, std::shared_
             if( ! sensor_info.proxy )
             {
                 // This is a new sensor we haven't seen yet
-                sensor_info.proxy = create_sensor( stream->sensor_name() );
+                sensor_info.proxy = create_sensor( stream->sensor_name(), stream->type_string() );
                 sensor_info.sensor_index = add_sensor( sensor_info.proxy );
                 assert( sensor_info.sensor_index == _software_sensors.size() );
                 _software_sensors.push_back( sensor_info.proxy );
@@ -372,12 +373,15 @@ void dds_device_proxy::set_motion_profile_intrinsics( std::shared_ptr< stream_pr
 }
 
 
-std::shared_ptr< dds_sensor_proxy > dds_device_proxy::create_sensor( const std::string & sensor_name )
+std::shared_ptr< dds_sensor_proxy > dds_device_proxy::create_sensor( const std::string & sensor_name,
+                                                                     std::string const & type_string )
 {
-    if( sensor_name.compare( "RGB Camera" ) == 0 )
+    if( type_string == "color" )
         return std::make_shared< dds_color_sensor_proxy >( sensor_name, this, _dds_dev );
-    else if( sensor_name.compare( "Stereo Module" ) == 0 )
+    if( type_string == "depth" )
         return std::make_shared< dds_depth_sensor_proxy >( sensor_name, this, _dds_dev );
+    if( type_string == "motion" )
+        return std::make_shared< dds_motion_sensor_proxy >( sensor_name, this, _dds_dev );
 
     return std::make_shared< dds_sensor_proxy >( sensor_name, this, _dds_dev );
 }
