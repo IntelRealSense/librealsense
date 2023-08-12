@@ -129,8 +129,38 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< context > ctx, std::shared_
     {
         std::shared_ptr< dds_sensor_proxy > proxy;
         int sensor_index = 0;
+        rs2_stream type = RS2_STREAM_ANY;
     };
     std::map< std::string, sensor_info > sensor_name_to_info;
+
+    // Figure out the sensor types
+    _dds_dev->foreach_stream(
+        [&]( std::shared_ptr< realdds::dds_stream > const & stream )
+        {
+            auto & sensor = sensor_name_to_info[stream->sensor_name()];
+            if( stream->type_string() == "depth"
+                || stream->type_string() == "infrared" )
+            {
+                // If there's depth or infrared, it is a depth sensor regardless of what else is in there
+                // E.g., the D405 has a color stream in the depth sensor
+                sensor.type = RS2_STREAM_DEPTH;
+            }
+            else if( RS2_STREAM_ANY == sensor.type )
+            {
+                if( stream->type_string() == "color" )
+                {
+                    sensor.type = RS2_STREAM_COLOR;
+                }
+                else if( stream->type_string() == "motion" )
+                {
+                    sensor.type = RS2_STREAM_MOTION;
+                }
+                else
+                {
+                    // Leave it as "ANY" - we'll create a generic sensor
+                }
+            }
+        } );  // End foreach_stream lambda
 
     // dds_streams bear stream type and index information, we add it to a dds_sensor_proxy mapped by a newly generated
     // unique ID. After the sensor initialization we get all the "final" profiles from formats-converter with type and
@@ -146,7 +176,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< context > ctx, std::shared_
             if( ! sensor_info.proxy )
             {
                 // This is a new sensor we haven't seen yet
-                sensor_info.proxy = create_sensor( stream->sensor_name(), stream->type_string() );
+                sensor_info.proxy = create_sensor( stream->sensor_name(), sensor_info.type );
                 sensor_info.sensor_index = add_sensor( sensor_info.proxy );
                 assert( sensor_info.sensor_index == _software_sensors.size() );
                 _software_sensors.push_back( sensor_info.proxy );
@@ -374,16 +404,22 @@ void dds_device_proxy::set_motion_profile_intrinsics( std::shared_ptr< stream_pr
 
 
 std::shared_ptr< dds_sensor_proxy > dds_device_proxy::create_sensor( const std::string & sensor_name,
-                                                                     std::string const & type_string )
+                                                                     rs2_stream sensor_type )
 {
-    if( type_string == "color" )
-        return std::make_shared< dds_color_sensor_proxy >( sensor_name, this, _dds_dev );
-    if( type_string == "depth" )
+    switch( sensor_type )
+    {
+    case RS2_STREAM_DEPTH:
         return std::make_shared< dds_depth_sensor_proxy >( sensor_name, this, _dds_dev );
-    if( type_string == "motion" )
+    case RS2_STREAM_COLOR:
+        return std::make_shared< dds_color_sensor_proxy >( sensor_name, this, _dds_dev );
+    case RS2_STREAM_MOTION:
         return std::make_shared< dds_motion_sensor_proxy >( sensor_name, this, _dds_dev );
-
-    return std::make_shared< dds_sensor_proxy >( sensor_name, this, _dds_dev );
+    case RS2_STREAM_ANY:
+        // Generic: no type
+        return std::make_shared< dds_sensor_proxy >( sensor_name, this, _dds_dev );
+    }
+    throw std::runtime_error( rsutils::string::from()
+                              << "invalid sensor '" << sensor_name << "' type " << sensor_type );
 }
 
 
