@@ -87,7 +87,7 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
 
     for( auto & raw_profile : raw_profiles )
     {
-        LOG_DEBUG( "Getting possible profiles for raw profile: " << raw_profile );
+        LOG_DEBUG( "Raw profile: " << raw_profile );
         for( auto & pbf : _pb_factories )
         {
             const auto & sources = pbf->get_source_info();
@@ -117,7 +117,7 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
                             const auto res = target.stream_resolution( { cloned_vsp->get_width(), cloned_vsp->get_height() } );
                             cloned_vsp->set_dims( res.width, res.height );
                         }
-                        LOG_DEBUG( "    Converting to " << cloned_profile );
+                        LOG_DEBUG( "         -> " << cloned_profile );
 
                         // Cache pbf supported profiles for efficiency in find_pbf_matching_most_profiles
                         _pbf_supported_profiles[pbf.get()].push_back( cloned_profile );
