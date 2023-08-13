@@ -40,18 +40,21 @@ f = pipe.wait_for_frames()
 
 pipeline_device = profile.get_device()
 safety_sensor = pipeline_device.first_safety_sensor()
-test.check_equal(safety_sensor.get_option(rs.option.safety_mode), RUN_MODE) # verify default
+log.d( "Verify default is run mode" )
+test.check_equal( int(safety_sensor.get_option(rs.option.safety_mode)), RUN_MODE) # verify default
 
+log.d( "Command standby mode" )
 safety_sensor.set_option(rs.option.safety_mode, STANDBY_MODE) 
-test.check_equal(safety_sensor.get_option(rs.option.safety_mode), STANDBY_MODE)
+test.check_equal( int(safety_sensor.get_option(rs.option.safety_mode)), STANDBY_MODE)
 verify_frames_received(pipe, profile, count = 10)
 
 pipe.stop()
 pipe.start(cfg)
 verify_frames_received(pipe, profile, count = 10)
 
+log.d( "Command run mode" )
 safety_sensor.set_option(rs.option.safety_mode, RUN_MODE) 
-test.check_equal(safety_sensor.get_option(rs.option.safety_mode), RUN_MODE)
+test.check_equal( int(safety_sensor.get_option(rs.option.safety_mode)), RUN_MODE)
 verify_frames_received(pipe, profile, count = 10)
 
 pipe.stop()
@@ -72,19 +75,22 @@ f = pipe.wait_for_frames()
 pipeline_device = profile.get_device()
 safety_sensor = pipeline_device.first_safety_sensor()
 
+log.d( "Command run mode" )
 safety_sensor.set_option(rs.option.safety_mode, RUN_MODE) 
-test.check_equal(safety_sensor.get_option(rs.option.safety_mode), RUN_MODE)
+test.check_equal( int(safety_sensor.get_option(rs.option.safety_mode)), RUN_MODE)
 # Verify that on RUN mode we get frames
 verify_frames_received(pipe, profile, count = 10)
 
+log.d( "Command service mode" )
 safety_sensor.set_option(rs.option.safety_mode, SERVICE_MODE) 
-test.check_equal(safety_sensor.get_option(rs.option.safety_mode), SERVICE_MODE)
+test.check_equal( int(safety_sensor.get_option(rs.option.safety_mode)), SERVICE_MODE)
 # Verify that on SERVICE mode we get no frames
 test.check_throws( lambda: verify_frames_received(pipe, profile, 1) , RuntimeError )
 
 # Restore Run mode
+log.d( "Command run mode" )
 safety_sensor.set_option(rs.option.safety_mode, RUN_MODE) 
-test.check_equal(safety_sensor.get_option(rs.option.safety_mode), RUN_MODE)
+test.check_equal( int(safety_sensor.get_option(rs.option.safety_mode)), RUN_MODE)
 
 pipe.stop()
 test.finish()

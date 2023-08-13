@@ -1,9 +1,8 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
-
 # test:device each(D400*) !D457  # D457 device is known for HW reset issues..
-# test:device each(D500*)
+# test:device each(D500*) !D585S # D585S does not fully support HW reset currently
 
 import pyrealsense2 as rs
 from rspy import test, log
