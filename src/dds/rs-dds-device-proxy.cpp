@@ -235,7 +235,6 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< context > ctx, std::shared_
     for( auto & sensor_info : sensor_name_to_info )
     {
         LOG_DEBUG( sensor_info.first );
-        sensor_info.second.proxy->initialization_done();
 
         // Set profile's ID based on the dds_stream's ID (index already set). Connect the profile to the extrinsics graph.
         for( auto & profile : sensor_info.second.proxy->get_stream_profiles() )
