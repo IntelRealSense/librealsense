@@ -35,7 +35,7 @@ def check_option_and_metadata_values(option, metadata, value_to_set, frame):
     changed = color_sensor.get_option(option)
     test.check_equal(changed, value_to_set)
     if frame.supports_frame_metadata(metadata):
-        changed_md = frame.get_frame_metadata(metadata)
+        changed_md = float( frame.get_frame_metadata(metadata) )
         test.check_equal(changed_md, value_to_set)
     else:
         print("metadata " + repr(metadata) + " not supported")

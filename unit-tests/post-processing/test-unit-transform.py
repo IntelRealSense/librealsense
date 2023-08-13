@@ -86,7 +86,7 @@ for i in range(expected_frames):
 
     for j in range(W*H):
         frame_data_units_transformed = (origin_frame[j] * depth_unit)
-        test.check_equal(ut_frame[j], frame_data_units_transformed)
+        test.check_equal(ut_frame[j], np.float32(frame_data_units_transformed))
 
 test.finish()
 ################################################################################################

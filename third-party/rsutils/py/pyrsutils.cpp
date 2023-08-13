@@ -5,9 +5,11 @@
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/string/split.h>
 #include <rsutils/string/from.h>
+#include <rsutils/string/shorten-json-string.h>
 #include <rsutils/version.h>
 #include <rsutils/number/running-average.h>
 #include <rsutils/number/stabilized-value.h>
+#include <rsutils/os/executable-name.h>
 
 
 #define NAME pyrsutils
@@ -29,6 +31,20 @@ PYBIND11_MODULE(NAME, m) {
            py::arg( "logger" ) = LIBREALSENSE_ELPP_ID );
 
     m.def( "split", &rsutils::string::split );
+    m.def(
+        "shorten_json_string",
+        []( std::string const & str, size_t max_length )
+        { return rsutils::string::shorten_json_string( str, max_length ).to_string(); },
+        py::arg( "string" ),
+        py::arg( "max-length" ) = 96 );
+    m.def(
+        "shorten_json_string",
+        []( nlohmann::json const & j, size_t max_length )
+        { return rsutils::string::shorten_json_string( j.dump(), max_length ).to_string(); },
+        py::arg( "json" ),
+        py::arg( "max-length" ) = 96 );
+    m.def( "executable_path", &rsutils::os::executable_path );
+    m.def( "executable_name", &rsutils::os::executable_name, py::arg( "with_extension" ) = false );
 
     using rsutils::version;
     py::class_< version >( m, "version" )

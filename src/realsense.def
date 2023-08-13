@@ -2,6 +2,7 @@ LIBRARY
 
 EXPORTS
     rs2_create_context
+    rs2_create_context_ex
     rs2_delete_context
     rs2_create_recording_context
     rs2_create_mock_context

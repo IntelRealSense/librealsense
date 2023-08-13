@@ -26,7 +26,7 @@ namespace librealsense
         std::shared_ptr<sensor_interface> get_sensor() const override { return _sensor.lock(); }
         void set_sensor(std::shared_ptr<sensor_interface> s) override { _sensor = s; }
 
-        T alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory)
+        T alloc_frame(const size_t size, frame_additional_data && additional_data, bool requires_memory)
         {
             T backbuffer;
             //const size_t size = modes[stream].get_image_size(stream);
@@ -59,7 +59,7 @@ namespace librealsense
             {
                 backbuffer.data.resize(size, 0); // TODO: Allow users to provide a custom allocator for frame buffers
             }
-            backbuffer.additional_data = additional_data;
+            backbuffer.additional_data = std::move( additional_data );
             return backbuffer;
         }
 
@@ -160,9 +160,9 @@ namespace librealsense
             ref->release();
         }
 
-        frame_interface* alloc_and_track(const size_t size, const frame_additional_data& additional_data, bool requires_memory) override
+        frame_interface* alloc_and_track(const size_t size, frame_additional_data && additional_data, bool requires_memory) override
         {
-            auto frame = alloc_frame(size, additional_data, requires_memory);
+            auto frame = alloc_frame( size, std::move( additional_data ), requires_memory );
             return track_frame(frame);
         }
 

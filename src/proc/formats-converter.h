@@ -27,6 +27,11 @@ namespace librealsense
                                         std::function< std::shared_ptr< processing_block >( void ) > generate_func );
         void register_converter( const processing_block_factory & pbf );
         void register_converters( const std::vector< processing_block_factory > & pbfs );
+        void clear_registered_converters();
+
+        // Don't convert to types other then the raw camera formats (use only identity formats)
+        // Convert only interleaved formats (Y8I, Y12I), no colored infrared.
+        void drop_non_basic_formats();
 
         stream_profiles get_all_possible_profiles( const stream_profiles & raw_profiles );
         void prepare_to_convert( stream_profiles to_profiles );
@@ -49,7 +54,7 @@ namespace librealsense
         std::pair< std::shared_ptr< processing_block_factory >, stream_profiles >
             find_pbf_matching_most_profiles( const stream_profiles & profiles );
 
-        std::shared_ptr<stream_profile_interface> find_cached_profile_for_frame( const frame_interface * f );
+        std::shared_ptr< stream_profile_interface > find_cached_profile_for_frame( const frame_interface * f );
 
         std::vector< std::shared_ptr< processing_block_factory > > _pb_factories;
         std::unordered_map< processing_block_factory *, stream_profiles > _pbf_supported_profiles;

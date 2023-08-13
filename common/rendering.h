@@ -633,6 +633,18 @@ namespace rs2
                     }
                     break;
                 }
+                case RS2_FORMAT_COMBINED_MOTION:
+                {
+                    auto & motion = *reinterpret_cast< const rs2_combined_motion * >( frame.get_data() );
+                    draw_motion_data( (float)motion.linear_acceleration.x,
+                                      (float)motion.linear_acceleration.y,
+                                      (float)motion.linear_acceleration.z );
+                    draw_motion_data( (float)motion.angular_velocity.x,
+                                      (float)motion.angular_velocity.y,
+                                      (float)motion.angular_velocity.z,
+                                      false );  // Don't clear previous draw
+                    break;
+                }
                 case RS2_FORMAT_Y16:
                 case RS2_FORMAT_Y10BPACK:
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
@@ -871,7 +883,7 @@ namespace rs2
             draw_text((int)(xy.x - w / 2), (int)xy.y, text);
         }
 
-        void draw_motion_data(float x, float y, float z)
+        void draw_motion_data(float x, float y, float z, bool clear=true)
         {
             glMatrixMode(GL_PROJECTION);
             glPushMatrix();
@@ -880,7 +892,8 @@ namespace rs2
 
             glViewport(0, 0, 768, 768);
             glClearColor(0, 0, 0, 1);
-            glClear(GL_COLOR_BUFFER_BIT);
+            if( clear )
+                glClear(GL_COLOR_BUFFER_BIT);
 
             glMatrixMode(GL_PROJECTION);
             glLoadIdentity();
@@ -895,11 +908,14 @@ namespace rs2
 
             glRotatef(-135, 0.0f, 1.0f, 0.0f);
 
-            draw_axes();
+            if( clear )
+            {
+                draw_axes();
 
-            draw_circle(1, 0, 0, 0, 1, 0);
-            draw_circle(0, 1, 0, 0, 0, 1);
-            draw_circle(1, 0, 0, 0, 0, 1);
+                draw_circle( 1, 0, 0, 0, 1, 0 );
+                draw_circle( 0, 1, 0, 0, 0, 1 );
+                draw_circle( 1, 0, 0, 0, 0, 1 );
+            }
 
             const auto canvas_size = 230;
             const auto vec_threshold = 0.2f;

@@ -257,7 +257,7 @@ namespace librealsense
                 RS2_DISTORTION_INVERSE_BROWN_CONRADY  // The coefficients shall be use for undistort
             };
             librealsense::copy(calc_intrinsic.coeffs, table->distortion, sizeof(table->distortion));
-            LOG_DEBUG(endl << array2str((float_4&)(calc_intrinsic.fx, calc_intrinsic.fy, calc_intrinsic.ppx, calc_intrinsic.ppy)) << endl);
+            //LOG_DEBUG(endl << array2str((float_4&)(calc_intrinsic.fx, calc_intrinsic.fy, calc_intrinsic.ppx, calc_intrinsic.ppy)) << endl);
 
             static rs2_intrinsics ref{};
             if (memcmp(&calc_intrinsic, &ref, sizeof(rs2_intrinsics)))

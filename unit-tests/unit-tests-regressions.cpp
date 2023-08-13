@@ -23,8 +23,8 @@ TEST_CASE("DSO-14512", "[live]")
     {
         rs2::log_to_file(RS2_LOG_SEVERITY_DEBUG,"lrs_log.txt");
         //rs2::log_to_console(RS2_LOG_SEVERITY_DEBUG);
-        rs2::context ctx;
-        if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+        rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
+        if( ctx )
         {
             for (size_t iter = 0; iter < 10; iter++)
             {
@@ -131,11 +131,11 @@ TEST_CASE("DSO-14512", "[live]")
 
 TEST_CASE("Frame Drops", "[live]"){
     {
-        rs2::context ctx;
+        rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
         std::condition_variable cv;
         std::mutex m;
 
-        if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+        if( ctx )
         {
             //rs2::log_to_console(RS2_LOG_SEVERITY_DEBUG);
             rs2::log_to_file(RS2_LOG_SEVERITY_DEBUG,"lrs_frame_drops_repro.txt");
@@ -343,8 +343,8 @@ TEST_CASE("DSO-15050", "[live]")
     {
         rs2::log_to_file(RS2_LOG_SEVERITY_DEBUG, "lrs_log.txt");
         //rs2::log_to_console(RS2_LOG_SEVERITY_DEBUG);
-        rs2::context ctx;
-        if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+        rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
+        if( ctx )
         {
             for (size_t iter = 0; iter < 10000; iter++)
             {

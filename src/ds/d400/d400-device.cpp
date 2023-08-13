@@ -1,34 +1,34 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
-#include <regex>
-#include <iterator>
-
-#include "device.h"
-#include "context.h"
-#include "image.h"
-#include "metadata-parser.h"
+#include <src/device.h>
+#include <src/context.h>
+#include <src/image.h>
+#include <src/metadata-parser.h>
 
 #include "d400-device.h"
 #include "d400-private.h"
 #include "d400-options.h"
 #include "ds/ds-timestamp.h"
-#include "stream.h"
-#include "environment.h"
+#include <src/stream.h>
+#include <src/environment.h>
 #include "d400-color.h"
 #include "d400-nonmonochrome.h"
 
-#include "proc/depth-formats-converter.h"
-#include "proc/y8i-to-y8y8.h"
-#include "proc/y12i-to-y16y16.h"
-#include "proc/y12i-to-y16y16-mipi.h"
-#include "proc/color-formats-converter.h"
+#include <src/proc/depth-formats-converter.h>
+#include <src/proc/y8i-to-y8y8.h>
+#include <src/proc/y12i-to-y16y16.h>
+#include <src/proc/y12i-to-y16y16-mipi.h>
+#include <src/proc/color-formats-converter.h>
 
-#include "hdr-config.h"
+#include <src/hdr-config.h>
 #include "d400-thermal-monitor.h"
-#include "../common/fw/firmware-version.h"
-#include "fw-update/fw-update-unsigned.h"
-#include "../third-party/json.hpp"
+#include <common/fw/firmware-version.h>
+#include <src/fw-update/fw-update-unsigned.h>
+#include <nlohmann/json.hpp>
+
+#include <regex>
+#include <iterator>
 
 #ifdef HWM_OVER_XU
 constexpr bool hw_mon_over_xu = true;
@@ -748,7 +748,7 @@ namespace librealsense
             depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
 
             // register HDR options
-            if (!mipi_sensor && (_fw_version >= hdr_firmware_version))
+            if (_fw_version >= hdr_firmware_version)
             {
                 auto d400_depth = As<d400_depth_sensor, synthetic_sensor>(&get_depth_sensor());
                 d400_depth->init_hdr_config(exposure_range, gain_range);
@@ -934,7 +934,7 @@ namespace librealsense
         else
         {
             // used for mipi device
-            register_metadata_mipi(depth_sensor);
+            register_metadata_mipi(depth_sensor, hdr_firmware_version);
         }
         //mipi
 
@@ -1047,7 +1047,7 @@ namespace librealsense
         }
     }
 
-    void d400_device::register_metadata_mipi(const synthetic_sensor &depth_sensor) const
+    void d400_device::register_metadata_mipi(const synthetic_sensor &depth_sensor, const firmware_version& hdr_firmware_version) const
     {
         depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
 
@@ -1120,6 +1120,36 @@ namespace librealsense
                                        make_attribute_parser(&md_mipi_depth_mode::crc,
                                                              md_mipi_depth_control_attributes::crc_attribute,
                                                              md_prop_offset));
+
+        if (_fw_version >= hdr_firmware_version)
+        {
+            depth_sensor.register_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE,
+                make_attribute_parser(&md_mipi_depth_mode::sub_preset_info,
+                    md_configuration_attributes::sub_preset_info_attribute, md_prop_offset,
+                    [](const rs2_metadata_type& param) {
+                        // bit mask and offset used to get data from bitfield
+                        return (param & md_configuration::SUB_PRESET_BIT_MASK_SEQUENCE_SIZE)
+                            >> md_configuration::SUB_PRESET_BIT_OFFSET_SEQUENCE_SIZE;
+                    }));
+
+            depth_sensor.register_metadata(RS2_FRAME_METADATA_SEQUENCE_ID,
+                make_attribute_parser(&md_mipi_depth_mode::sub_preset_info,
+                    md_configuration_attributes::sub_preset_info_attribute, md_prop_offset,
+                    [](const rs2_metadata_type& param) {
+                        // bit mask and offset used to get data from bitfield
+                        return (param & md_configuration::SUB_PRESET_BIT_MASK_SEQUENCE_ID)
+                            >> md_configuration::SUB_PRESET_BIT_OFFSET_SEQUENCE_ID;
+                    }));
+
+            depth_sensor.register_metadata(RS2_FRAME_METADATA_SEQUENCE_NAME,
+                make_attribute_parser(&md_mipi_depth_mode::sub_preset_info,
+                    md_configuration_attributes::sub_preset_info_attribute, md_prop_offset,
+                    [](const rs2_metadata_type& param) {
+                        // bit mask and offset used to get data from bitfield
+                        return (param & md_configuration::SUB_PRESET_BIT_MASK_ID)
+                            >> md_configuration::SUB_PRESET_BIT_OFFSET_ID;
+                    }));
+        }
     }
 
     void d400_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const
@@ -1152,13 +1182,11 @@ namespace librealsense
 
     platform::usb_spec d400_device::get_usb_spec() const
     {
-        if(!supports_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
-            return platform::usb_undefined;
-        auto str = get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
-        for (auto u : platform::usb_spec_names)
+        if( supports_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
         {
-            if (u.second.compare(str) == 0)
-                return u.first;
+            auto it = platform::usb_name_to_spec.find( get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) );
+            if( it != platform::usb_name_to_spec.end() )
+                return it->second;
         }
         return platform::usb_undefined;
     }

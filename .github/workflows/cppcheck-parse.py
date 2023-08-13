@@ -28,7 +28,7 @@ class LineError( Exception ):
         global line_number, logfile
         if line is None:
             line = line_number
-        super().__init__( f'{logile}+{line}: {message}' )
+        super().__init__( f'{logfile}+{line}: {message}' )
 
 
 handle = open( logfile, "r" )

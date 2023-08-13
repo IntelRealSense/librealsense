@@ -11,6 +11,9 @@
 #include <limits>
 #include <thread>
 
+#include <nlohmann/json.hpp>
+using nlohmann::json;
+
 #include "tclap/CmdLine.h"
 
 using namespace std;
@@ -186,24 +189,35 @@ int main(int argc, char** argv) try
 {
     CmdLine cmd("librealsense rs-enumerate-devices tool", ' ', RS2_API_VERSION_STR);
 
+    SwitchArg debug_arg( "", "debug", "Turn on LibRS debug logs" );
     SwitchArg short_view_arg("s", "short", "Provide a one-line summary of the devices");
     SwitchArg compact_view_arg("S", "compact", "Provide a short summary of the devices");
     SwitchArg show_options_arg("o", "option", "Show all the supported options per subdevice");
-    SwitchArg show_calibration_data_arg("c", "calib_data", "Show extrinsic and intrinsic of all subdevices");
+    SwitchArg show_calibration_data_arg( "c", "calib_data", "Show extrinsic and intrinsic of all subdevices" );
     SwitchArg show_defaults("d", "defaults", "Show the default streams configuration");
+    SwitchArg only_sw_arg( "", "sw-only", "Show only software devices (playback, dds, etc. -- but not USB/HID/etc.)" );
+    SwitchArg verbose_arg( "v", "verbose", "Show extra information" );
     ValueArg<string> show_playback_device_arg("p", "playback_device", "Inspect and enumerate playback device (from file)",
         false, "", "Playback device - ROSBag record full path");
+    cmd.add(debug_arg);
     cmd.add(short_view_arg);
     cmd.add(compact_view_arg);
     cmd.add(show_options_arg);
     cmd.add(show_calibration_data_arg);
+    cmd.add(only_sw_arg);
+    cmd.add(verbose_arg);
+#ifdef BUILD_WITH_DDS
+    ValueArg< int > domain_arg( "", "dds-domain", "Set the DDS domain ID", false, 0, "domain ID" );
+    cmd.add( domain_arg );
+#endif
     cmd.add(show_defaults);
     cmd.add(show_playback_device_arg);
 
     cmd.parse(argc, argv);
 
 #ifdef BUILD_EASYLOGGINGPP
-    log_to_console(RS2_LOG_SEVERITY_ERROR);
+    bool debugging = debug_arg.getValue();
+    log_to_console(debugging ? RS2_LOG_SEVERITY_DEBUG : RS2_LOG_SEVERITY_ERROR);
 #endif
 
     bool short_view = short_view_arg.getValue();
@@ -212,6 +226,7 @@ int main(int argc, char** argv) try
     bool show_calibration_data = show_calibration_data_arg.getValue();
     bool show_modes = !(compact_view || short_view);
     auto playback_dev_file = show_playback_device_arg.getValue();
+    bool verbose = verbose_arg.getValue();
 
     if ((short_view || compact_view) && (show_options || show_calibration_data))
     {
@@ -225,23 +240,38 @@ int main(int argc, char** argv) try
     }
 
     // Obtain a list of devices currently present on the system
-    context ctx;
+    json settings;
+#ifdef BUILD_WITH_DDS
+    settings["dds-domain"] = domain_arg.getValue();
+#endif
+    context ctx( settings.dump() );
+    
     rs2::device d;
     if (!playback_dev_file.empty())
         d = ctx.load_device(playback_dev_file.data());
 
-    auto devices_list = ctx.query_devices();
-    size_t device_count = devices_list.size();
-    if (!device_count)
+    int mask = RS2_PRODUCT_LINE_ANY_INTEL;
+    if( only_sw_arg.getValue() )
+        mask |= RS2_PRODUCT_LINE_SW_ONLY;
+    auto devices_list = ctx.query_devices( mask );
+    if( only_sw_arg.getValue() )
     {
-        cout << "No device detected. Is it plugged in?\n";
-        return EXIT_SUCCESS;
+        // For SW-only devices, allow some time for DDS devices to connect
+        int tries = 3;
+        cout << "No device detected. Waiting..." << flush;
+        while( ! devices_list.size() && tries-- )
+        {
+            cout << "." << flush;
+            std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+            devices_list = ctx.query_devices( mask );
+        }
+        cout << endl;
     }
 
     // Retrieve the viable devices
     std::vector<rs2::device> devices;
 
-    for ( auto i = 0u; i < device_count; i++)
+    for ( auto i = 0u; i < devices_list.size(); i++)
     {
         try
         {
@@ -258,6 +288,13 @@ int main(int argc, char** argv) try
         }
     }
 
+    size_t device_count = devices.size();
+    if( !device_count )
+    {
+        cout << "No device detected. Is it plugged in?\n";
+        return EXIT_SUCCESS;
+    }
+
     if (short_view || compact_view)
     {
         cout << left << setw(30) << "Device Name"
@@ -265,13 +302,20 @@ int main(int argc, char** argv) try
             << setw(20) << "Firmware Version"
             << endl;
 
+        auto dev_info = []( rs2::device dev, rs2_camera_info info )
+        {
+            if( dev.supports( info ) )
+                return dev.get_info( info );
+            return "N/A";
+        };
+
         for (auto i = 0u; i < devices.size(); ++i)
         {
             auto dev = devices[i];
 
-            cout << left << setw(30) << dev.get_info(RS2_CAMERA_INFO_NAME)
-                << setw(20) << dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)
-                << setw(20) << dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION)
+            cout << left << setw(30) << dev_info(dev,RS2_CAMERA_INFO_NAME)
+                << setw(20) << dev_info(dev,RS2_CAMERA_INFO_SERIAL_NUMBER)
+                << setw(20) << dev_info(dev,RS2_CAMERA_INFO_FIRMWARE_VERSION)
                 << endl;
         }
 
@@ -359,25 +403,50 @@ int main(int argc, char** argv) try
 
         if (show_modes)
         {
-            for (auto&& sensor : dev.query_sensors())
-            {
-                cout << "Stream Profiles supported by " << sensor.get_info(RS2_CAMERA_INFO_NAME) << endl;
+            size_t w_res = 12;
+            size_t w_fps = 10;
+            size_t w_format = 10;
 
-                cout << " Supported modes:\n" << setw(16) << "    stream" << setw(16)
-                    << " resolution" << setw(10) << " fps" << setw(10) << " format" << endl;
+            for( auto&& sensor : dev.query_sensors() )
+            {
+                cout << "Stream Profiles supported by " << sensor.get_info( RS2_CAMERA_INFO_NAME ) << endl;
+                cout << " Supported modes:\n";
+
+                size_t w_stream = 10;
+                bool video_stream = false;
+                for( auto&& profile : sensor.get_stream_profiles() )
+                {
+                    w_stream = std::max( profile.stream_name().length(), w_stream );
+                    if( auto video = profile.as<video_stream_profile>() )
+                        video_stream = true;
+                }
+                w_stream += 2;
+
+                // Heading
+                if( verbose )
+                    cout << "   (UID.IDX)  ";
+                else
+                    cout << "    ";
+                cout << setw( w_stream ) << "STREAM";
+                if( video_stream )
+                    cout << setw( w_res ) << "RESOLUTION";
+                cout << setw( w_fps ) << "FPS";
+                cout << setw( w_format ) << "FORMAT";
+                cout << endl;
                 // Show which streams are supported by this device
                 for (auto&& profile : sensor.get_stream_profiles())
                 {
+                    cout << "    ";
+                    if( verbose )
+                        cout << " (" << profile.unique_id() << '.' << profile.stream_index() << ")    ";
+                    cout << setw( w_stream ) << profile.stream_name();
                     if (auto video = profile.as<video_stream_profile>())
                     {
-                        cout << "    " << profile.stream_name() << "\t  " << video.width() << "x"
-                            << video.height() << "\t@ " << profile.fps() << setw(6) << "Hz\t" << profile.format() << endl;
+                        cout << setw( w_res ) << ( std::to_string( video.width() ) + 'x' + std::to_string( video.height() ));
                     }
-                    else
-                    {
-                        cout << "    " << profile.stream_name() << "\t N/A\t\t@ " << profile.fps()
-                            << setw(6) << "Hz\t" << profile.format() << endl;
-                    }
+                    cout << setw( w_fps ) << ( "@ " + std::to_string( profile.fps() ) + "Hz" );
+                    cout << setw( w_format ) << profile.format();
+                    cout << endl;
                 }
 
                 cout << endl;

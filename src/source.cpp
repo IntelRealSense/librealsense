@@ -89,11 +89,15 @@ namespace librealsense
         _metadata_parsers.reset();
     }
 
-    frame_interface* frame_source::alloc_frame(rs2_extension type, size_t size, frame_additional_data additional_data, bool requires_memory) const
+    frame_interface * frame_source::alloc_frame( rs2_extension type,
+                                                 size_t size,
+                                                 frame_additional_data && additional_data,
+                                                 bool requires_memory ) const
     {
         auto it = _archive.find(type);
-        if (it == _archive.end()) throw wrong_api_call_sequence_exception("Requested frame type is not supported!");
-        return it->second->alloc_and_track(size, additional_data, requires_memory);
+        if( it == _archive.end() )
+            throw wrong_api_call_sequence_exception( "Requested frame type is not supported!" );
+        return it->second->alloc_and_track( size, std::move( additional_data ), requires_memory );
     }
 
     void frame_source::set_sensor(const std::shared_ptr<sensor_interface>& s)

@@ -292,30 +292,14 @@ def check_log_for_fails( path_to_log, testname, configuration = None, repetition
 
 
 def get_tests():
-    log.progress( '-I- Getting tests ...' )
-    global regex, exe_dir, pyrs, current_dir, linux, context, list_only
+    global regex, build_dir, exe_dir, pyrs, current_dir, linux, context, list_only
     if regex:
         pattern = re.compile( regex )
-    if list_only:
-        # We want to list all tests, even if they weren't built.
-        # So we look for the source files instead of using the manifest
-        for cpp_test in file.find( current_dir, '(^|/)test-.*\.cpp' ):
-            testparent = os.path.dirname( cpp_test )  # "log/internal" <-  "log/internal/test-all.py"
-            if testparent:
-                testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename( cpp_test )[
-                                                                            5:-4]  # remove .cpp
-            else:
-                testname = os.path.basename( cpp_test )[:-4]
-
-            if regex and not pattern.search( testname ):
-                continue
-
-            yield libci.ExeTest( testname, context=context )
-    elif exe_dir:
-        # In Linux, the build targets are located elsewhere than on Windows
-        # Go over all the tests from a "manifest" we take from the result of the last CMake
-        # run (rather than, for example, looking for test-* in the build-directory):
-        manifestfile = os.path.join( build_dir, 'CMakeFiles', 'TargetDirectories.txt' )
+    # In Linux, the build targets are located elsewhere than on Windows
+    # Go over all the tests from a "manifest" we take from the result of the last CMake
+    # run (rather than, for example, looking for test-* in the build-directory):
+    manifestfile = os.path.join( build_dir, 'CMakeFiles', 'TargetDirectories.txt' )
+    if os.path.isfile( manifestfile ) and exe_dir:
         # log.d( manifestfile )
         for manifest_ctx in file.grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir$)', manifestfile ):
             # We need to first create the test name so we can see if it fits the regex
@@ -339,6 +323,21 @@ def get_tests():
                 exe += '.exe'
 
             yield libci.ExeTest( testname, exe, context )
+    elif list_only:
+        # We want to list all tests, even if they weren't built.
+        # So we look for the source files instead of using the manifest
+        for cpp_test in file.find( current_dir, '(^|/)test-.*\.cpp' ):
+            testparent = os.path.dirname( cpp_test )  # "log/internal" <-  "log/internal/test-all.py"
+            if testparent:
+                testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename( cpp_test )[
+                                                                            5:-4]  # remove .cpp
+            else:
+                testname = os.path.basename( cpp_test )[:-4]
+
+            if regex and not pattern.search( testname ):
+                continue
+
+            yield libci.ExeTest( testname, context = context )
 
     # Python unit-test scripts are in the same directory as us... we want to consider running them
     # (we may not if they're live and we have no pyrealsense2.pyd):
@@ -386,8 +385,9 @@ def test_wrapper( test, configuration = None, repetition = 1 ):
     global n_tests, rslog
     n_tests += 1
     #
-    if not log.is_debug_on() or log.is_color_on():
-        log.progress( '-I- Running', configuration_str( configuration, repetition, suffix=' ' ) + test.name, '...' )
+    conf_str = configuration_str( configuration, repetition, suffix=' ' ) + test.name
+    if not log.is_debug_on():
+        log.i( f'Running {conf_str}' )
     #
     log_path = test.get_log()
     #
@@ -441,6 +441,8 @@ try:
                     log.d( '==>', exceptions )
                 finally:
                     log.debug_unindent()
+        #
+        log.progress()
     #
     log.reset_errors()
     available_tags = set()
@@ -462,8 +464,15 @@ try:
                 log.d( f'{test.name} is marked do-not-run; skipping' )
                 continue
             #
-            if required_tags and not all( tag in test.config.tags for tag in required_tags ):
-                log.d( f'{test.name} has {test.config.tags} which do not fit --tag {required_tags}; skipping' )
+            unfit_tags = []
+            for tag in required_tags:
+                if tag.startswith('!'):
+                    if tag[1:] in test.config.tags:
+                        unfit_tags.append( tag )
+                elif tag not in test.config.tags:
+                    unfit_tags.append( tag )
+            if unfit_tags:
+                log.d( f'{test.name} has {test.config.tags} which do not fit --tag {unfit_tags}; skipping' )
                 continue
             #
             if 'Windows' in test.config.flags and linux:
@@ -553,8 +562,11 @@ try:
 finally:
     #
     # Disconnect from the Acroname -- if we don't it'll crash on Linux...
+    # Before that we close all ports, no need for cameras to stay on between LibCI runs
     if not list_only and not only_not_live:
         if devices.acroname:
+            devices.acroname.disable_ports()
+            devices.wait_until_all_ports_disabled()
             devices.acroname.disconnect()
 #
 sys.exit( 0 )

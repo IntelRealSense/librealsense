@@ -356,11 +356,11 @@ namespace librealsense
 
 // Require the last enumerator value to be in format of RS2_#####_COUNT
 #define RS2_ENUM_HELPERS( TYPE, PREFIX )                                                           \
-    RS2_ENUM_HELPERS_CUSTOMIZED( TYPE, 0, RS2_##PREFIX##_COUNT - 1 )
+    RS2_ENUM_HELPERS_CUSTOMIZED( TYPE, 0, RS2_##PREFIX##_COUNT - 1, const char * )
 
 // This macro can be used directly if needed to support enumerators with no RS2_#####_COUNT last value
-#define RS2_ENUM_HELPERS_CUSTOMIZED( TYPE, FIRST, LAST )                                           \
-    LRS_EXTENSION_API const char * get_string( TYPE value );                                       \
+#define RS2_ENUM_HELPERS_CUSTOMIZED( TYPE, FIRST, LAST, STRTYPE )                                  \
+    LRS_EXTENSION_API STRTYPE get_string( TYPE value );                                       \
     inline bool is_valid( TYPE value ) { return value >= FIRST && value <= LAST; }                 \
     inline std::ostream & operator<<( std::ostream & out, TYPE value )                             \
     {                                                                                              \
@@ -388,7 +388,7 @@ namespace librealsense
     RS2_ENUM_HELPERS(rs2_distortion, DISTORTION)
     RS2_ENUM_HELPERS(rs2_option, OPTION)
     RS2_ENUM_HELPERS(rs2_camera_info, CAMERA_INFO)
-    RS2_ENUM_HELPERS(rs2_frame_metadata_value, FRAME_METADATA)
+    RS2_ENUM_HELPERS_CUSTOMIZED(rs2_frame_metadata_value, 0, RS2_FRAME_METADATA_COUNT - 1, std::string const & )
     RS2_ENUM_HELPERS(rs2_timestamp_domain, TIMESTAMP_DOMAIN)
     RS2_ENUM_HELPERS(rs2_calib_target_type, CALIB_TARGET)
     RS2_ENUM_HELPERS(rs2_sr300_visual_preset, SR300_VISUAL_PRESET)
@@ -401,9 +401,9 @@ namespace librealsense
     RS2_ENUM_HELPERS(rs2_sensor_mode, SENSOR_MODE)
     RS2_ENUM_HELPERS(rs2_l500_visual_preset, L500_VISUAL_PRESET)
     RS2_ENUM_HELPERS(rs2_calibration_type, CALIBRATION_TYPE)
-    RS2_ENUM_HELPERS_CUSTOMIZED(rs2_calibration_status, RS2_CALIBRATION_STATUS_FIRST, RS2_CALIBRATION_STATUS_LAST )
-    RS2_ENUM_HELPERS_CUSTOMIZED(rs2_ambient_light, RS2_AMBIENT_LIGHT_NO_AMBIENT, RS2_AMBIENT_LIGHT_LOW_AMBIENT)
-    RS2_ENUM_HELPERS_CUSTOMIZED(rs2_digital_gain, RS2_DIGITAL_GAIN_HIGH, RS2_DIGITAL_GAIN_LOW)
+    RS2_ENUM_HELPERS_CUSTOMIZED(rs2_calibration_status, RS2_CALIBRATION_STATUS_FIRST, RS2_CALIBRATION_STATUS_LAST, const char * )
+    RS2_ENUM_HELPERS_CUSTOMIZED(rs2_ambient_light, RS2_AMBIENT_LIGHT_NO_AMBIENT, RS2_AMBIENT_LIGHT_LOW_AMBIENT, const char * )
+    RS2_ENUM_HELPERS_CUSTOMIZED(rs2_digital_gain, RS2_DIGITAL_GAIN_HIGH, RS2_DIGITAL_GAIN_LOW, const char * )
     RS2_ENUM_HELPERS(rs2_host_perf_mode, HOST_PERF)
     RS2_ENUM_HELPERS(rs2_emitter_frequency_mode, EMITTER_FREQUENCY)
     RS2_ENUM_HELPERS(rs2_depth_auto_exposure_mode, DEPTH_AUTO_EXPOSURE)
@@ -1447,28 +1447,6 @@ namespace std {
             return hash<uint32_t>()(f);
         }
     };
-}
-
-template<class T>
-bool contains(const T& first, const T& second)
-{
-    return first == second;
-}
-
-template<class T>
-std::vector<std::shared_ptr<T>> subtract_sets(const std::vector<std::shared_ptr<T>>& first, const std::vector<std::shared_ptr<T>>& second)
-{
-    std::vector<std::shared_ptr<T>> results;
-    std::for_each(first.begin(), first.end(), [&](std::shared_ptr<T> data)
-    {
-        if (std::find_if(second.begin(), second.end(), [&](std::shared_ptr<T> new_dev) {
-            return contains(data, new_dev);
-        }) == second.end())
-        {
-            results.push_back(data);
-        }
-    });
-    return results;
 }
 
 enum res_type {

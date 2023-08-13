@@ -4,6 +4,8 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include "pyrealsense2.h"
 #include <librealsense2/rs.hpp>
 
+#include <src/image.cpp>  // bad idea? for get_image_bpp
+
 void init_frame(py::module &m) {
     py::class_<BufData> BufData_py(m, "BufData", py::buffer_protocol());
     BufData_py.def_buffer([](BufData& self)
@@ -47,6 +49,7 @@ void init_frame(py::module &m) {
         .def("stream_index", &rs2::stream_profile::stream_index, "The stream's index")
         .def("stream_type", &rs2::stream_profile::stream_type, "The stream's type")
         .def("format", &rs2::stream_profile::format, "The stream's format")
+        .def("bytes_per_pixel", []( rs2::stream_profile const & self ) { return librealsense::get_image_bpp( self.format() ) / 8; } )
         .def("fps", &rs2::stream_profile::fps, "The streams framerate")
         .def("unique_id", &rs2::stream_profile::unique_id, "Unique index assigned whent the stream was created")
         .def("clone", &rs2::stream_profile::clone, "Clone the current profile and change the type, index and format to input parameters", "type"_a, "index"_a, "format"_a)

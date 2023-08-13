@@ -325,8 +325,8 @@ sw_context init_sw_device(std::vector<std::string> sensor_names, std::vector<rs2
 
 void record_frames_all_res(processing_recordable_block& record_block, std::string file)
 {
-    rs2::context ctx;
-    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
+    if( ! ctx )
         return;
 
     std::string folder_name = get_folder_path(special_folder::temp_folder);
@@ -395,8 +395,8 @@ void validate_ppf_results(const rs2::frame& result_frame, const rs2::frame& refe
 
 void compare_processed_frames_vs_recorded_frames(processing_recordable_block& record_block, std::string file)
 {
-    rs2::context ctx;
-    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
+    if( ! ctx )
         return;
 
     std::string folder_name = get_folder_path(special_folder::temp_folder);
@@ -447,8 +447,8 @@ void compare_processed_frames_vs_recorded_frames(processing_recordable_block& re
 
 TEST_CASE("Record software-device all resolutions", "[record-bag]")
 {
-    rs2::context ctx;
-    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
+    if( ! ctx )
         return;
 
     auto dev = ctx.query_devices()[0];

@@ -13,6 +13,7 @@
 #include "device-calibration.h"
 
 #include <rsutils/string/from.h>
+#include <rsutils/json.h>
 
 #include <array>
 #include <set>
@@ -454,7 +455,7 @@ void log_callback_end( uint32_t fps,
                     frame_holder fh = _source.alloc_frame(
                         frame_source::stream_to_frame_types( req_profile_base->get_stream_type() ),
                         expected_size,
-                        fr->additional_data,
+                        std::move( fr->additional_data ),
                         true );
                     auto diff = environment::get_instance().get_time_service()->get_time() - system_time;
                     if( diff > 10 )
@@ -998,7 +999,8 @@ void log_callback_end( uint32_t fps,
 
             last_frame_number = frame_counter;
             last_timestamp = timestamp;
-            frame_holder frame = _source.alloc_frame(RS2_EXTENSION_MOTION_FRAME, data_size, fr->additional_data, true);
+            frame_holder frame
+                = _source.alloc_frame( RS2_EXTENSION_MOTION_FRAME, data_size, std::move( fr->additional_data ), true );
             memcpy( (void *)frame->get_frame_data(),
                     sensor_data.fo.pixels,
                     sizeof( byte ) * sensor_data.fo.frame_size );
@@ -1353,8 +1355,13 @@ void log_callback_end( uint32_t fps,
 
     stream_profiles synthetic_sensor::init_stream_profiles()
     {
-        stream_profiles from_profiles = _raw_sensor->get_stream_profiles( PROFILE_TAG_ANY | PROFILE_TAG_DEBUG );
-        stream_profiles result_profiles = _formats_converter.get_all_possible_profiles( from_profiles );
+        stream_profiles raw_profiles = _raw_sensor->get_stream_profiles( PROFILE_TAG_ANY | PROFILE_TAG_DEBUG );
+        if( should_use_basic_formats() )
+        {
+            _formats_converter.drop_non_basic_formats();
+        }
+
+        stream_profiles result_profiles = _formats_converter.get_all_possible_profiles( raw_profiles );
 
         _owner->tag_profiles( result_profiles );
         sort_profiles( &result_profiles );
@@ -1362,12 +1369,12 @@ void log_callback_end( uint32_t fps,
         return result_profiles;
     }
 
-    void synthetic_sensor::open(const stream_profiles& requests)
+    void synthetic_sensor::open(const stream_profiles & requests)
     {
         std::lock_guard<std::mutex> lock(_synthetic_configure_lock);
 
         _formats_converter.prepare_to_convert( requests );
-        
+
         const auto & resolved_req = _formats_converter.get_active_source_profiles();
         std::vector< std::shared_ptr< processing_block > > active_pbs = _formats_converter.get_active_converters();
         for( auto & pb : active_pbs )
@@ -1376,7 +1383,7 @@ void log_callback_end( uint32_t fps,
         _raw_sensor->set_source_owner(this);
         try
         {
-            _raw_sensor->open(resolved_req);
+            _raw_sensor->open( resolved_req );
         }
         catch (const std::runtime_error& e)
         {
@@ -1426,11 +1433,10 @@ void log_callback_end( uint32_t fps,
         set_frames_callback(callback);
         _formats_converter.set_frames_callback( callback );
 
-
         // Invoke processing blocks callback
-        const auto&& process_cb = make_callback([&, this](frame_holder f) {
+        auto process_cb = make_callback( [&, this]( frame_holder f ) {
             _formats_converter.convert_frame( f );
-        });
+        } );
 
         // Call the processing block on the frame
         _raw_sensor->start(process_cb);
@@ -1518,13 +1524,11 @@ void log_callback_end( uint32_t fps,
     {
         snapshot = std::make_shared<fisheye_sensor_snapshot>();
     }
-    
-    void safety_sensor::create_snapshot(std::shared_ptr<safety_sensor>& snapshot) const
     {
-        snapshot = std::make_shared<safety_sensor_snapshot>();
+        {
+            return rsutils::json::get< bool >( _owner->get_context()->get_settings(), std::string( "use-basic-formats", 17 ), false );
     }
 
-    void depth_mapping_sensor::create_snapshot(std::shared_ptr<depth_mapping_sensor>& snapshot) const
     {
         snapshot = std::make_shared<depth_mapping_sensor_snapshot>();
     }

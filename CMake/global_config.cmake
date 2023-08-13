@@ -80,7 +80,7 @@ macro(global_set_flags)
             add_definitions(-DCHECK_FOR_UPDATES)
         endif()
     endif()
-    
+        
     add_definitions(-D${BACKEND} -DUNICODE)
 endmacro()
 
@@ -101,7 +101,6 @@ macro(global_target_config)
             $<INSTALL_INTERFACE:include>
             PRIVATE ${USB_INCLUDE_DIRS}
     )
-
 
 
 endmacro()

@@ -3,7 +3,7 @@
 
 
 # test:device each(D400*) !D457  # D457 device is known for HW reset issues..
-# test:device each(D500*) !D585S # D585S does not fully support HW reset currently
+# test:device each(D500*)
 
 import pyrealsense2 as rs
 from rspy import test, log

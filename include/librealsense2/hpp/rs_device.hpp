@@ -7,6 +7,7 @@
 #include "rs_types.hpp"
 #include "rs_sensor.hpp"
 #include <array>
+#include <cstring>
 
 namespace rs2
 {
@@ -116,6 +117,12 @@ namespace rs2
         const std::shared_ptr<rs2_device>& get() const
         {
             return _dev;
+        }
+        bool operator<( device const & other ) const
+        {
+            return (
+                std::strcmp( get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ), other.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) )
+                < 0 );
         }
 
         template<class T>
