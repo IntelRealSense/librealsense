@@ -45,7 +45,7 @@ namespace librealsense
                         public virtual sensor_interface, public options_container, public virtual info_container, public recommended_proccesing_blocks_base
     {
     public:
-        explicit sensor_base(std::string name,
+        explicit sensor_base(std::string const & name,
                              device* device, 
                              recommended_proccesing_blocks_interface* owner);
         virtual ~sensor_base() override { _source.flush(); }
@@ -79,12 +79,6 @@ namespace librealsense
         {
             return {};
         }
-
-        std::shared_ptr<std::map<uint32_t, rs2_format>>& get_fourcc_to_rs2_format_map();
-        std::shared_ptr<std::map<uint32_t, rs2_stream>>& get_fourcc_to_rs2_stream_map();
-
-        rs2_format fourcc_to_rs2_format(uint32_t format) const;
-        rs2_stream fourcc_to_rs2_stream(uint32_t fourcc_format) const;
 
     protected:
         void raise_on_before_streaming_changes(bool streaming);
@@ -124,9 +118,6 @@ namespace librealsense
         sensor_base* _source_owner = nullptr;
         frame_source _source;
         device* _owner;
-
-        std::shared_ptr<std::map<uint32_t, rs2_format>> _fourcc_to_rs2_format;
-        std::shared_ptr<std::map<uint32_t, rs2_stream>> _fourcc_to_rs2_stream;
 
     private:
         lazy<stream_profiles> _profiles;
@@ -199,15 +190,42 @@ namespace librealsense
         }
     };
 
+    // Base class for anything that is the target of a synthetic_sensor
+    //
+    class raw_sensor_base : public sensor_base
+    {
+        typedef sensor_base super;
+
+        std::shared_ptr< std::map< uint32_t, rs2_format > > _fourcc_to_rs2_format;
+        std::shared_ptr< std::map< uint32_t, rs2_stream > > _fourcc_to_rs2_stream;
+
+    protected:
+        explicit raw_sensor_base( std::string const & name,
+                                  device * device,
+                                  recommended_proccesing_blocks_interface * owner )
+            : super( name, device, owner )
+        {
+        }
+
+        rs2_format fourcc_to_rs2_format( uint32_t ) const;
+        rs2_stream fourcc_to_rs2_stream( uint32_t ) const;
+
+    public:
+        std::shared_ptr< std::map< uint32_t, rs2_format > > & get_fourcc_to_rs2_format_map();
+        std::shared_ptr< std::map< uint32_t, rs2_stream > > & get_fourcc_to_rs2_stream_map();
+    };
+
+    // A sensor pointer to another "raw sensor", usually UVC/HID
+    //
     class synthetic_sensor :
         public sensor_base
     {
     public:
-        explicit synthetic_sensor(std::string name,
-            std::shared_ptr<sensor_base> sensor,
-            device* device,
-            const std::map<uint32_t, rs2_format>& fourcc_to_rs2_format_map = std::map<uint32_t, rs2_format>(),
-            const std::map<uint32_t, rs2_stream>& fourcc_to_rs2_stream_map = std::map<uint32_t, rs2_stream>());
+        explicit synthetic_sensor( std::string const & name,
+                                   std::shared_ptr< raw_sensor_base > const & raw_sensor,
+                                   device * device,
+                                   const std::map< uint32_t, rs2_format > & fourcc_to_rs2_format_map = {},
+                                   const std::map< uint32_t, rs2_stream > & fourcc_to_rs2_stream_map = {} );
         ~synthetic_sensor() override;
 
         virtual void register_option(rs2_option id, std::shared_ptr<option> option);
@@ -231,7 +249,7 @@ namespace librealsense
         void register_processing_block(const processing_block_factory& pbf);
         void register_processing_block(const std::vector<processing_block_factory>& pbfs);
 
-        std::shared_ptr<sensor_base> get_raw_sensor() const { return _raw_sensor; };
+        std::shared_ptr< raw_sensor_base > const & get_raw_sensor() const { return _raw_sensor; }
         frame_callback_ptr get_frames_callback() const override;
         void set_frames_callback(frame_callback_ptr callback) override;
         void register_notifications_callback(notifications_callback_ptr callback) override;
@@ -248,7 +266,7 @@ namespace librealsense
         std::mutex _synthetic_configure_lock;
 
         frame_callback_ptr _post_process_callback;
-        std::shared_ptr<sensor_base> _raw_sensor;
+        std::shared_ptr<raw_sensor_base> _raw_sensor;
         formats_converter _formats_converter;
         std::vector<rs2_option> _cached_processing_blocks_options;
     };
@@ -273,8 +291,10 @@ namespace librealsense
         rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const override;
     };
 
-    class hid_sensor : public sensor_base
+    class hid_sensor : public raw_sensor_base
     {
+        typedef raw_sensor_base super;
+
     public:
         explicit hid_sensor(std::shared_ptr<platform::hid_device> hid_device,
                             std::unique_ptr<frame_timestamp_reader> hid_iio_timestamp_reader,
@@ -321,10 +341,12 @@ namespace librealsense
         uint32_t fps_to_sampling_frequency(rs2_stream stream, uint32_t fps) const;
     };
 
-    class uvc_sensor : public sensor_base
+    class uvc_sensor : public raw_sensor_base
     {
+        typedef raw_sensor_base super;
+
     public:
-        explicit uvc_sensor(std::string name, std::shared_ptr<platform::uvc_device> uvc_device,
+        explicit uvc_sensor(std::string const & name, std::shared_ptr<platform::uvc_device> uvc_device,
                             std::unique_ptr<frame_timestamp_reader> timestamp_reader, device* dev);
         virtual ~uvc_sensor() override;
 
@@ -347,6 +369,7 @@ namespace librealsense
             power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
             return action(*_device);
         }
+
     protected:
         stream_profiles init_stream_profiles() override;
         void verify_supported_requests(const stream_profiles& requests) const;

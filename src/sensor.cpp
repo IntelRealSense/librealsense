@@ -48,21 +48,22 @@ void log_callback_end( uint32_t fps,
     /////////////////// Sensor Base //////////////////////
     //////////////////////////////////////////////////////
 
-    sensor_base::sensor_base(std::string name, device* dev,
-        recommended_proccesing_blocks_interface* owner)
-        : recommended_proccesing_blocks_base(owner),
-        _is_streaming(false),
-        _is_opened(false),
-        _notifications_processor(std::shared_ptr<notifications_processor>(new notifications_processor())),
-        _on_open(nullptr),
-        _metadata_modifier(nullptr),
-        _metadata_parsers(std::make_shared<metadata_parser_map>()),
-        _owner(dev),
-        _profiles([this]() {
-        auto profiles = this->init_stream_profiles();
-        _owner->tag_profiles(profiles);
-        return profiles;
-    })
+    sensor_base::sensor_base( std::string const & name, device * dev, recommended_proccesing_blocks_interface * owner )
+    : recommended_proccesing_blocks_base( owner )
+    , _is_streaming( false )
+    , _is_opened( false )
+    , _notifications_processor( std::shared_ptr< notifications_processor >( new notifications_processor() ) )
+    , _on_open( nullptr )
+    , _metadata_modifier( nullptr )
+    , _metadata_parsers( std::make_shared< metadata_parser_map >() )
+    , _owner( dev )
+    , _profiles(
+          [this]()
+          {
+              auto profiles = this->init_stream_profiles();
+              _owner->tag_profiles( profiles );
+              return profiles;
+          } )
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
 
@@ -154,17 +155,17 @@ void log_callback_end( uint32_t fps,
         _metadata_parsers.get()->insert(std::pair<rs2_frame_metadata_value, std::shared_ptr<md_attribute_parser_base>>(metadata, metadata_parser));
     }
 
-    std::shared_ptr<std::map<uint32_t, rs2_format>>& sensor_base::get_fourcc_to_rs2_format_map()
+    std::shared_ptr<std::map<uint32_t, rs2_format>>& raw_sensor_base::get_fourcc_to_rs2_format_map()
     {
         return _fourcc_to_rs2_format;
     }
 
-    std::shared_ptr<std::map<uint32_t, rs2_stream>>& sensor_base::get_fourcc_to_rs2_stream_map()
+    std::shared_ptr<std::map<uint32_t, rs2_stream>>& raw_sensor_base::get_fourcc_to_rs2_stream_map()
     {
         return _fourcc_to_rs2_stream;
     }
 
-    rs2_format sensor_base::fourcc_to_rs2_format(uint32_t fourcc_format) const
+    rs2_format raw_sensor_base::fourcc_to_rs2_format(uint32_t fourcc_format) const
     {
         auto it = _fourcc_to_rs2_format->find( fourcc_format );
         if( it != _fourcc_to_rs2_format->end() )
@@ -173,7 +174,7 @@ void log_callback_end( uint32_t fps,
         return RS2_FORMAT_ANY;
     }
 
-    rs2_stream sensor_base::fourcc_to_rs2_stream(uint32_t fourcc_format) const
+    rs2_stream raw_sensor_base::fourcc_to_rs2_stream(uint32_t fourcc_format) const
     {
         auto it = _fourcc_to_rs2_stream->find( fourcc_format );
         if( it != _fourcc_to_rs2_stream->end() )
@@ -812,7 +813,7 @@ void log_callback_end( uint32_t fps,
         const std::map<rs2_stream, std::map<unsigned, unsigned>>& fps_and_sampling_frequency_per_rs2_stream,
         const std::vector<std::pair<std::string, stream_profile>>& sensor_name_and_hid_profiles,
         device* dev)
-        : sensor_base("Raw Motion Module", dev, (recommended_proccesing_blocks_interface*)this), _sensor_name_and_hid_profiles(sensor_name_and_hid_profiles),
+        : super("Raw Motion Module", dev, (recommended_proccesing_blocks_interface*)this), _sensor_name_and_hid_profiles(sensor_name_and_hid_profiles),
         _fps_and_sampling_frequency_per_rs2_stream(fps_and_sampling_frequency_per_rs2_stream),
         _hid_device(hid_device),
         _is_configured_stream(RS2_STREAM_COUNT),
@@ -1101,11 +1102,11 @@ void log_callback_end( uint32_t fps,
             return fps;
     }
 
-    uvc_sensor::uvc_sensor(std::string name,
+    uvc_sensor::uvc_sensor(std::string const & name,
         std::shared_ptr<platform::uvc_device> uvc_device,
         std::unique_ptr<frame_timestamp_reader> timestamp_reader,
         device* dev)
-        : sensor_base(name, dev, (recommended_proccesing_blocks_interface*)this),
+        : super(name, dev, (recommended_proccesing_blocks_interface*)this),
         _device(std::move(uvc_device)),
         _user_count(0),
         _timestamp_reader(std::move(timestamp_reader))
@@ -1199,21 +1200,20 @@ void log_callback_end( uint32_t fps,
     ///////////////// Synthetic Sensor ///////////////////
     //////////////////////////////////////////////////////
 
-    synthetic_sensor::synthetic_sensor(std::string name,
-        std::shared_ptr<sensor_base> sensor,
-        device* device,
-        const std::map<uint32_t, rs2_format>& fourcc_to_rs2_format_map,
-        const std::map<uint32_t, rs2_stream>& fourcc_to_rs2_stream_map)
-        : sensor_base(name, device, (recommended_proccesing_blocks_interface*)this), _raw_sensor(std::move(sensor))
+    synthetic_sensor::synthetic_sensor( std::string const & name,
+                                        std::shared_ptr< raw_sensor_base > const & raw_sensor,
+                                        device * device,
+                                        const std::map< uint32_t, rs2_format > & fourcc_to_rs2_format_map,
+                                        const std::map< uint32_t, rs2_stream > & fourcc_to_rs2_stream_map )
+        : sensor_base( name, device, (recommended_proccesing_blocks_interface *)this )
+        , _raw_sensor( raw_sensor )
     {
         // synthetic sensor and its raw sensor will share the formats and streams mapping
         auto& raw_fourcc_to_rs2_format_map = _raw_sensor->get_fourcc_to_rs2_format_map();
-        _fourcc_to_rs2_format = std::make_shared<std::map<uint32_t, rs2_format>>(fourcc_to_rs2_format_map);
-        raw_fourcc_to_rs2_format_map = _fourcc_to_rs2_format;
+        raw_fourcc_to_rs2_format_map = std::make_shared<std::map<uint32_t, rs2_format>>(fourcc_to_rs2_format_map);
 
         auto& raw_fourcc_to_rs2_stream_map = _raw_sensor->get_fourcc_to_rs2_stream_map();
-        _fourcc_to_rs2_stream = std::make_shared<std::map<uint32_t, rs2_stream>>(fourcc_to_rs2_stream_map);
-        raw_fourcc_to_rs2_stream_map = _fourcc_to_rs2_stream;
+        raw_fourcc_to_rs2_stream_map = std::make_shared<std::map<uint32_t, rs2_stream>>(fourcc_to_rs2_stream_map);
     }
 
     synthetic_sensor::~synthetic_sensor()
