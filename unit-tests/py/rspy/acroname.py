@@ -182,9 +182,11 @@ def enable_ports( ports = None, disable_other_ports = False, sleep_on_change = 0
         #
         if ports is None or port in ports:
             if not is_port_enabled( port ):
+                #log.d( "enabling port", port)
                 action_result = hub.usb.setPortEnable( port )
                 if action_result != brainstem.result.Result.NO_ERROR:
                     result = False
+                    log.e("Failed to enable port", port)
                 else:
                     changed = True
         #
@@ -203,18 +205,28 @@ def enable_ports( ports = None, disable_other_ports = False, sleep_on_change = 0
     return result
 
 
-def disable_ports( ports ):
+def disable_ports( ports = None, sleep_on_change = 0 ):
     """
-    :param ports: List of port numbers
+    :param ports: List of port numbers; if not provided, disable all ports
+    :param sleep_on_change: Number of seconds to sleep if any change is made
     :return: True if no errors found, False otherwise
     """
     global hub
     result = True
-    for port in ports:
-        #
-        action_result = hub.usb.setPortDisable( port )
-        if action_result != brainstem.result.Result.NO_ERROR:
-            result = False
+    changed = False
+    for port in all_ports():
+        if ports is None or port in ports:
+            if is_port_enabled( port ):
+                    #log.d("disabling port", port)
+                    action_result = hub.usb.setPortDisable( port )
+                    if action_result != brainstem.result.Result.NO_ERROR:
+                        result = False
+                        log.e("Failed to disable port", port)
+                    else:
+                        changed = True
+    if changed and sleep_on_change:
+        import time
+        time.sleep( sleep_on_change )
     #
     return result
 
