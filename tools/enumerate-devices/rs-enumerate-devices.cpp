@@ -410,7 +410,6 @@ int main(int argc, char** argv) try
         if (show_modes)
         {
             size_t w_res = 12;
-            size_t w_fps = 10;
             size_t w_format = 10;
 
             for( auto&& sensor : dev.query_sensors() )
@@ -420,7 +419,7 @@ int main(int argc, char** argv) try
 
                 size_t w_stream = 10;
                 bool video_stream = false;
-                for( auto&& profile : sensor.get_stream_profiles() )
+                for( auto const & profile : sensor.get_stream_profiles() )
                 {
                     w_stream = std::max( profile.stream_name().length(), w_stream );
                     if( auto video = profile.as<video_stream_profile>() )
@@ -436,23 +435,72 @@ int main(int argc, char** argv) try
                 cout << setw( w_stream ) << "STREAM";
                 if( video_stream )
                     cout << setw( w_res ) << "RESOLUTION";
-                cout << setw( w_fps ) << "FPS";
                 cout << setw( w_format ) << "FORMAT";
+                cout << "FPS";
                 cout << endl;
                 // Show which streams are supported by this device
-                for (auto&& profile : sensor.get_stream_profiles())
+                if( verbose )
                 {
-                    cout << "    ";
-                    if( verbose )
-                        cout << " (" << profile.unique_id() << '.' << profile.stream_index() << ")    ";
-                    cout << setw( w_stream ) << profile.stream_name();
-                    if (auto video = profile.as<video_stream_profile>())
+                    for( auto const & profile : sensor.get_stream_profiles() )
                     {
-                        cout << setw( w_res ) << ( std::to_string( video.width() ) + 'x' + std::to_string( video.height() ));
+                        cout << "    ";
+                        cout << " (" << profile.unique_id() << '.' << profile.stream_index() << ")    ";
+                        cout << setw( w_stream ) << profile.stream_name();
+                        if( auto video = profile.as< video_stream_profile >() )
+                        {
+                            cout << setw( w_res )
+                                 << ( std::to_string( video.width() ) + 'x' + std::to_string( video.height() ) );
+                        }
+                        cout << setw( w_format ) << profile.format();
+                        cout << "@ " << profile.fps() << " Hz";
+                        cout << endl;
                     }
-                    cout << setw( w_fps ) << ( "@ " + std::to_string( profile.fps() ) + "Hz" );
-                    cout << setw( w_format ) << profile.format();
-                    cout << endl;
+                }
+                else
+                {
+                    std::ostringstream ss;
+                    int p_width = 0, p_height = 0;
+                    rs2_format p_format = RS2_FORMAT_ANY;
+                    std::string p_stream_name;
+                    auto print_last_stream = [&]()
+                    {
+                        cout << "    ";
+                        cout << setw( w_stream ) << p_stream_name;
+                        if( p_width || p_height )
+                            cout << setw( w_res ) << (std::to_string( p_width ) + 'x' + std::to_string( p_height ));
+                        cout << setw( w_format ) << p_format;
+                        cout << "@ " << ss.str() << " Hz";
+                        cout << endl;
+                    };
+                    for( auto && profile : sensor.get_stream_profiles() )
+                    {
+                        std::string stream_name = profile.stream_name();
+                        int w = 0, h = 0;
+                        if( auto video = profile.as< video_stream_profile >() )
+                        {
+                            w = video.width();
+                            h = video.height();
+                        }
+                        if( stream_name != p_stream_name || profile.format() != p_format || w != p_width
+                            || h != p_height )
+                        {
+                            if( ! ss.str().empty() )
+                            {
+                                print_last_stream();
+                                ss.str( std::string() );
+                            }
+                            p_stream_name = stream_name;
+                            p_format = profile.format();
+                            p_width = w;
+                            p_height = h;
+                        }
+                        else
+                        {
+                            ss << '/';
+                        }
+                        ss << profile.fps();
+                    }
+                    print_last_stream();
                 }
 
                 cout << endl;

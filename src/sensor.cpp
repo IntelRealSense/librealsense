@@ -1312,8 +1312,8 @@ void log_callback_end( uint32_t fps,
             // stream == RS2_STREAM_COLOR && format == RS2_FORMAT_RGB8 element works around the fact that Y16 gets priority over RGB8 when both
             // are available for pipeline stream resolution
             // Note: Sort Stream Index decsending to make sure IR1 is chosen over IR2
-            const auto&& at = std::make_tuple(a.stream, -a.index, a.width, a.height, a.fps, a.stream == RS2_STREAM_COLOR && a.format == RS2_FORMAT_RGB8, a.format);
-            const auto&& bt = std::make_tuple(b.stream, -b.index, b.width, b.height, b.fps, b.stream == RS2_STREAM_COLOR && b.format == RS2_FORMAT_RGB8, b.format);
+            const auto&& at = std::make_tuple(a.stream, -a.index, a.width, a.height, a.stream == RS2_STREAM_COLOR && a.format == RS2_FORMAT_RGB8, a.format, a.fps);
+            const auto&& bt = std::make_tuple(b.stream, -b.index, b.width, b.height, b.stream == RS2_STREAM_COLOR && b.format == RS2_FORMAT_RGB8, b.format, b.fps);
 
             return at > bt;
         });
