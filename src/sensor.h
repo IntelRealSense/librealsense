@@ -95,6 +95,10 @@ namespace librealsense
         void assign_stream(const std::shared_ptr<stream_interface>& stream,
                            std::shared_ptr<stream_profile_interface> target) const;
 
+        bool should_use_basic_formats() const;
+
+        void sort_profiles( stream_profiles & );
+
         std::shared_ptr<frame> generate_frame_from_data(const platform::frame_object& fo,
             frame_timestamp_reader* timestamp_reader,
             const rs2_time_t& last_timestamp,
@@ -239,11 +243,8 @@ namespace librealsense
         bool is_opened() const override;
 
     private:
-        void sort_profiles(stream_profiles * profiles);
         void register_processing_block_options(const processing_block& pb);
         void unregister_processing_block_options(const processing_block& pb);
-
-        bool should_use_basic_formats() const;
 
         std::mutex _synthetic_configure_lock;
 

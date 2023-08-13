@@ -1301,9 +1301,9 @@ void log_callback_end( uint32_t fps,
         return try_register_option(id, std::make_shared<uvc_pu_option>(*raw_uvc_sensor.get(), id));
     }
 
-    void synthetic_sensor::sort_profiles(stream_profiles* profiles)
+    void sensor_base::sort_profiles( stream_profiles & profiles )
     {
-        std::sort(profiles->begin(), profiles->end(), [](const std::shared_ptr<stream_profile_interface>& ap,
+        std::sort(profiles.begin(), profiles.end(), [](const std::shared_ptr<stream_profile_interface>& ap,
             const std::shared_ptr<stream_profile_interface>& bp)
         {
             const auto&& a = to_profile(ap.get());
@@ -1364,7 +1364,7 @@ void log_callback_end( uint32_t fps,
         stream_profiles result_profiles = _formats_converter.get_all_possible_profiles( raw_profiles );
 
         _owner->tag_profiles( result_profiles );
-        sort_profiles( &result_profiles );
+        sort_profiles( result_profiles );
 
         return result_profiles;
     }
@@ -1525,13 +1525,14 @@ void log_callback_end( uint32_t fps,
         snapshot = std::make_shared<fisheye_sensor_snapshot>();
     }
 
-    bool synthetic_sensor::should_use_basic_formats() const
+    bool sensor_base::should_use_basic_formats() const
     {
-        if( _owner->get_context() )
-        {
-            return rsutils::json::get< bool >( _owner->get_context()->get_settings(), std::string( "use-basic-formats", 17 ), false );
-        }
-
-        return false;
+        bool default_value = false;
+        auto context = _owner->get_context();
+        if( ! context )
+            return default_value;
+        return rsutils::json::get< bool >( context->get_settings(),
+                                           std::string( "use-basic-formats", 17 ),
+                                           default_value );
     }
 }
