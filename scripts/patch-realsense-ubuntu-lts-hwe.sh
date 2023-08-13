@@ -17,6 +17,7 @@ rebuild_ko=0
 debug_uvc=0
 retpoline_retrofit=0
 skip_hid_patch=0
+skip_hid_accel_patch=0
 #Parse input
 while test $# -gt 0; do
 	case "$1" in
@@ -80,6 +81,7 @@ k_tick=$(echo ${kernel_version[2]} | awk -F'-' '{print $2}')
 # For version 5.15.0-72 hid patch already applied
 [ $k_maj_min -gt 515 ] && skip_hid_patch=1
 [ $k_maj_min -eq 515 ] && [ $k_tick -ge 72 ] && skip_hid_patch=1
+[ $k_maj_min -eq 504 ] && [ $k_tick -ge 232 ] && skip_hid_accel_patch=1 && skip_hid_patch=1
 
 # Construct branch name from distribution codename {xenial,bionic,..} and kernel version
 # ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
@@ -169,6 +171,10 @@ then
 		if [ ${skip_hid_patch} -eq 0 ]; then
 			echo -e "\e[32mApplying realsense-hid patch\e[0m"
 			patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-${kernel_branch}.patch ||  patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-master.patch
+		fi
+		if [ ${skip_hid_accel_patch} -eq 0 ]; then
+			echo -e "\e[32mApplying realsense-hid gyro patch\e[0m"
+			patch -p1 < ../scripts/realsense-hid-focal-hwe-5.4.232.patch
 		fi
 		echo -e "\e[32mApplying realsense-powerlinefrequency-fix patch\e[0m"
 		patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix.patch || patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix-${ubuntu_codename}.patch
