@@ -41,13 +41,17 @@ namespace librealsense
         virtual void reset() = 0;
     };
 
-    class sensor_base : public std::enable_shared_from_this<sensor_base>,
-                        public virtual sensor_interface, public options_container, public virtual info_container, public recommended_proccesing_blocks_base
+    class sensor_base
+        : public std::enable_shared_from_this< sensor_base >
+        , public virtual sensor_interface
+        , public options_container
+        , public virtual info_container
+        , public recommended_proccesing_blocks_base
     {
     public:
-        explicit sensor_base(std::string const & name,
-                             device* device, 
-                             recommended_proccesing_blocks_interface* owner);
+        explicit sensor_base( std::string const & name,
+                              device * device,
+                              recommended_proccesing_blocks_interface * owner );
         virtual ~sensor_base() override { _source.flush(); }
 
         void set_source_owner(sensor_base* owner); // will direct the source to the top in the source hierarchy.
@@ -105,8 +109,6 @@ namespace librealsense
         }
 
         std::vector<byte> align_width_to_64(int width, int height, int bpp, byte* pix) const;
-
-        std::vector<platform::stream_profile> _internal_config;
 
         std::atomic<bool> _is_streaming;
         std::atomic<bool> _is_opened;
@@ -408,6 +410,7 @@ namespace librealsense
 
         std::shared_ptr<platform::uvc_device> _device;
         std::vector< platform::stream_profile > _uvc_profiles;
+        std::vector< platform::stream_profile > _internal_config;
         std::atomic<int> _user_count;
         std::mutex _power_lock;
         std::mutex _configure_lock;
