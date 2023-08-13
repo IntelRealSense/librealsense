@@ -18,6 +18,7 @@ debug_uvc=0
 retpoline_retrofit=0
 skip_hid_patch=0
 skip_hid_accel_patch=1
+skip_plf_patch=0
 #Parse input
 while test $# -gt 0; do
 	case "$1" in
@@ -83,6 +84,8 @@ k_tick=$(echo ${kernel_version[2]} | awk -F'-' '{print $2}')
 [ $k_maj_min -eq 515 ] && [ $k_tick -ge 72 ] && skip_hid_patch=1
 # linux-image-generic for focal is 5.4.0.156.152 is same hid as 5.4.232
 [ $k_maj_min -eq 504 ] && [ $k_tick -ge 156 ] && skip_hid_accel_patch=0 && skip_hid_patch=1
+# For kernel versions 6+ powerline frequency already applied
+[ $k_maj_min -eq 602 ] && skip_plf_patch=1
 
 # Construct branch name from distribution codename {xenial,bionic,..} and kernel version
 # ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
@@ -177,8 +180,10 @@ then
 			echo -e "\e[32mApplying realsense-hid gyro patch\e[0m"
 			patch -p1 < ../scripts/realsense-hid-focal-hwe-5.4.232.patch
 		fi
-		echo -e "\e[32mApplying realsense-powerlinefrequency-fix patch\e[0m"
-		patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix.patch || patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix-${ubuntu_codename}.patch
+		if [ ${skip_plf_patch} -eq 0 ]; then
+			echo -e "\e[32mApplying realsense-powerlinefrequency-fix patch\e[0m"
+			patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix.patch || patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix-${ubuntu_codename}.patch
+		fi
 		# Applying 3rd-party patch that affects USB2 behavior
 		# See reference https://patchwork.kernel.org/patch/9907707/
 		if [ ${k_maj_min} -lt 418 ];
