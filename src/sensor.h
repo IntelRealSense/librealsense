@@ -124,7 +124,6 @@ namespace librealsense
         sensor_base* _source_owner = nullptr;
         frame_source _source;
         device* _owner;
-        std::vector<platform::stream_profile> _uvc_profiles;
 
         std::shared_ptr<std::map<uint32_t, rs2_format>> _fourcc_to_rs2_format;
         std::shared_ptr<std::map<uint32_t, rs2_stream>> _fourcc_to_rs2_stream;
@@ -385,6 +384,7 @@ namespace librealsense
         };
 
         std::shared_ptr<platform::uvc_device> _device;
+        std::vector< platform::stream_profile > _uvc_profiles;
         std::atomic<int> _user_count;
         std::mutex _power_lock;
         std::mutex _configure_lock;
