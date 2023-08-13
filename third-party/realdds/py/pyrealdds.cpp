@@ -597,7 +597,7 @@ PYBIND11_MODULE(NAME, m) {
     video_encoding.attr( "y16" ) = dds_video_encoding( "Y16" );  // todo should be mono16
     video_encoding.attr( "byr2" ) = dds_video_encoding( "BYR2" );
     video_encoding.attr( "yuyv" ) = dds_video_encoding( "yuv422_yuy2" );
-    video_encoding.attr( "uyvy" ) = dds_video_encoding( "UYVY" );  // todo
+    video_encoding.attr( "uyvy" ) = dds_video_encoding( "uyvy" );
     video_encoding.attr( "rgb" ) = dds_video_encoding( "rgb8" );
 
     using realdds::dds_stream_profile;

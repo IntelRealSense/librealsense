@@ -78,7 +78,7 @@ int dds_video_encoding::to_rs2() const
 {
     static std::map< std::string, int > fcc_to_rs2{  // copy from ds5-device.cpp
         { "yuv422_yuy2", RS2_FORMAT_YUYV },  // Used by Color streams; ROS2-compatible
-        { "UYVY", RS2_FORMAT_UYVY },
+        { "uyvy", RS2_FORMAT_UYVY },
         { "mono8", RS2_FORMAT_Y8 },  // Used by IR streams; ROS2-compatible
         { "Y8I",  RS2_FORMAT_Y8I },
         { "W10",  RS2_FORMAT_W10 },
@@ -128,7 +128,7 @@ dds_video_encoding dds_video_encoding::from_rs2( int rs2_format )
     case RS2_FORMAT_RAW8: encoding = "CNF4"; break;
     case RS2_FORMAT_RAW16: encoding = "BYR2"; break;
     case RS2_FORMAT_RAW10: encoding = "R10"; break;
-    case RS2_FORMAT_UYVY: encoding = "UYVY"; break;
+    case RS2_FORMAT_UYVY: encoding = "uyvy"; break;
     case RS2_FORMAT_Y10BPACK: encoding = "Y10B"; break;
     default:
         DDS_THROW( runtime_error, "cannot translate rs2_format " + std::to_string( rs2_format ) + " to any known dds_video_encoding" );
