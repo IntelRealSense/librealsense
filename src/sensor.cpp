@@ -1524,12 +1524,24 @@ void log_callback_end( uint32_t fps,
     {
         snapshot = std::make_shared<fisheye_sensor_snapshot>();
     }
+
+    void safety_sensor::create_snapshot(std::shared_ptr<safety_sensor>& snapshot) const
     {
-        {
-            return rsutils::json::get< bool >( _owner->get_context()->get_settings(), std::string( "use-basic-formats", 17 ), false );
+        snapshot = std::make_shared<safety_sensor_snapshot>();
     }
 
+    void depth_mapping_sensor::create_snapshot(std::shared_ptr<depth_mapping_sensor>& snapshot) const
     {
         snapshot = std::make_shared<depth_mapping_sensor_snapshot>();
+    }
+
+    bool synthetic_sensor::should_use_basic_formats() const
+    {
+        if( _owner->get_context() )
+        {
+            return rsutils::json::get< bool >( _owner->get_context()->get_settings(), std::string( "use-basic-formats", 17 ), false );
+        }
+
+        return false;
     }
 }

@@ -113,8 +113,9 @@ rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error
 #define RS2_PRODUCT_LINE_SR300          0x04
 #define RS2_PRODUCT_LINE_L500           0x08
 #define RS2_PRODUCT_LINE_T200           0x10
+#define RS2_PRODUCT_LINE_D500           0x20
 #define RS2_PRODUCT_LINE_SW_ONLY       0x100  // enable to return only SW devices, including playback
-#define RS2_PRODUCT_LINE_DEPTH      (RS2_PRODUCT_LINE_L500 | RS2_PRODUCT_LINE_SR300 | RS2_PRODUCT_LINE_D400)
+#define RS2_PRODUCT_LINE_DEPTH      ( RS2_PRODUCT_LINE_L500 | RS2_PRODUCT_LINE_SR300 | RS2_PRODUCT_LINE_D400 | RS2_PRODUCT_LINE_D500 )
 #define RS2_PRODUCT_LINE_TRACKING   RS2_PRODUCT_LINE_T200
 
 /**
