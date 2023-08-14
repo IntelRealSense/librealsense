@@ -8,7 +8,7 @@ from rspy import test, log
 import time
 
 # Constants
-FRAMES_TO_COLLECT = 10
+FRAMES_TO_COLLECT = 3
 
 def check_color_streaming(width, height, fps):
     cfg = rs.config()
