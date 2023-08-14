@@ -38,12 +38,20 @@ void formats_converter::drop_non_basic_formats()
     {
         const auto & source = _pb_factories[i]->get_source_info();
         const auto & target = _pb_factories[i]->get_target_info();
-        if( target.size() == 1 &&
-            source[0].format == target[0].format )
-        {
-            // Identity, does not actually convert, keep this converter, unless it is colored infrared.
-            bool colored_infrared = target[0].stream == RS2_STREAM_INFRARED && source[0].format == RS2_FORMAT_UYVY;
 
+        bool is_identity = true;
+        for( auto & t : target )
+        {
+            if( source[0].format != t.format )
+            {
+                is_identity = false;
+                break;
+            }
+        }
+        if( is_identity )
+        {
+            // Keep this converter unless it is colored infrared
+            bool colored_infrared = target[0].stream == RS2_STREAM_INFRARED && source[0].format == RS2_FORMAT_UYVY;
             if( ! colored_infrared )
                 continue;
         }
