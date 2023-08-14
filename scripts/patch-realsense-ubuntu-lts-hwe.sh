@@ -81,7 +81,8 @@ k_tick=$(echo ${kernel_version[2]} | awk -F'-' '{print $2}')
 # For version 5.15.0-72 hid patch already applied
 [ $k_maj_min -gt 515 ] && skip_hid_patch=1
 [ $k_maj_min -eq 515 ] && [ $k_tick -ge 72 ] && skip_hid_patch=1
-[ $k_maj_min -eq 504 ] && [ $k_tick -ge 232 ] && skip_hid_accel_patch=1 && skip_hid_patch=1
+# linux-image-generic for focal is 5.4.0.156.152 is same hid as 5.4.232
+[ $k_maj_min -eq 504 ] && [ $k_tick -ge 156 ] && skip_hid_accel_patch=1 && skip_hid_patch=1
 
 # Construct branch name from distribution codename {xenial,bionic,..} and kernel version
 # ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
