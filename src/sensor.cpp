@@ -212,10 +212,15 @@ void log_callback_end( uint32_t fps,
 
     stream_profiles sensor_base::get_stream_profiles( int tag ) const
     {
-        stream_profiles results;
         bool const need_debug = (tag & profile_tag::PROFILE_TAG_DEBUG) != 0;
         bool const need_any = (tag & profile_tag::PROFILE_TAG_ANY) != 0;
-        for( auto p : *_profiles )
+        
+        auto & all_profiles = initialized_profiles();
+        if( need_debug && need_any )
+            return all_profiles;
+
+        stream_profiles results;
+        for( auto p : all_profiles )
         {
             auto curr_tag = p->get_tag();
             if( ! need_debug && ( curr_tag & profile_tag::PROFILE_TAG_DEBUG ) )
@@ -226,7 +231,6 @@ void log_callback_end( uint32_t fps,
                 results.push_back( p );
             }
         }
-
         return results;
     }
 
@@ -701,9 +705,8 @@ void log_callback_end( uint32_t fps,
         std::unordered_set<std::shared_ptr<motion_stream_profile>> motion_profiles;
         power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
 
-        _uvc_profiles = _device->get_profiles();
-
-        for (auto&& p : _uvc_profiles)
+        auto uvc_profiles = _device->get_profiles();
+        for (auto&& p : uvc_profiles)
         {
             const auto&& rs2_fmt = fourcc_to_rs2_format(p.format);
             if (rs2_fmt == RS2_FORMAT_ANY)
@@ -1059,7 +1062,6 @@ void log_callback_end( uint32_t fps,
             auto profiles = get_sensor_profiles(it->name);
             stream_requests.insert(stream_requests.end(), profiles.begin(), profiles.end());
         }
-
         return stream_requests;
     }
 
@@ -1355,13 +1357,12 @@ void log_callback_end( uint32_t fps,
 
     stream_profiles synthetic_sensor::init_stream_profiles()
     {
-        stream_profiles raw_profiles = _raw_sensor->get_stream_profiles( PROFILE_TAG_ANY | PROFILE_TAG_DEBUG );
         if( should_use_basic_formats() )
         {
             _formats_converter.drop_non_basic_formats();
         }
 
-        stream_profiles result_profiles = _formats_converter.get_all_possible_profiles( raw_profiles );
+        stream_profiles result_profiles = _formats_converter.get_all_possible_profiles( get_raw_stream_profiles() );
 
         _owner->tag_profiles( result_profiles );
         sort_profiles( result_profiles );

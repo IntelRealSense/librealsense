@@ -80,7 +80,7 @@ std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_video_stream( 
     } );
     if( is_default )
         profile->tag_profile( profile_tag::PROFILE_TAG_DEFAULT );
-    _raw_rs_profiles.push_back( profile );
+    _sw_profiles.push_back( profile );
 
     return profile;
 }
@@ -101,7 +101,7 @@ std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_motion_stream(
     profile->set_intrinsics( [=]() { return motion_stream.intrinsics; } );
     if( is_default )
         profile->tag_profile( profile_tag::PROFILE_TAG_DEFAULT );
-    _raw_rs_profiles.push_back( profile );
+    _sw_profiles.push_back( profile );
 
     return profile;
 }
@@ -112,9 +112,9 @@ stream_profiles dds_sensor_proxy::init_stream_profiles()
     register_basic_converters();
     if( should_use_basic_formats() )
         _formats_converter.drop_non_basic_formats();
-    _profiles = _formats_converter.get_all_possible_profiles( _raw_rs_profiles );
-    sort_profiles( _profiles );
-    return _profiles;
+    auto profiles = _formats_converter.get_all_possible_profiles( get_raw_stream_profiles() );
+    sort_profiles( profiles );
+    return profiles;
 }
 
 

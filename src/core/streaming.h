@@ -148,6 +148,7 @@ namespace librealsense
     public:
         virtual stream_profiles get_stream_profiles(int tag = profile_tag::PROFILE_TAG_ANY) const = 0;
         virtual stream_profiles get_active_streams() const = 0;
+        virtual stream_profiles const & get_raw_stream_profiles() const = 0;
         virtual void open(const stream_profiles& requests) = 0;
         virtual void close() = 0;
         virtual notifications_callback_ptr get_notifications_callback() const = 0;

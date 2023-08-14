@@ -85,6 +85,9 @@ namespace librealsense
         }
 
     protected:
+        // Since _profiles is private, we need a way to get the final profiles
+        stream_profiles const & initialized_profiles() const { return *_profiles; }
+
         void raise_on_before_streaming_changes(bool streaming);
         void set_active_streams(const stream_profiles& requests);
 
@@ -213,6 +216,9 @@ namespace librealsense
         rs2_stream fourcc_to_rs2_stream( uint32_t ) const;
 
     public:
+        // Raw sensor doesn't do any manipulation on the profiles from the backend
+        stream_profiles const & get_raw_stream_profiles() const override { return initialized_profiles(); }
+
         std::shared_ptr< std::map< uint32_t, rs2_format > > & get_fourcc_to_rs2_format_map();
         std::shared_ptr< std::map< uint32_t, rs2_stream > > & get_fourcc_to_rs2_stream_map();
     };
@@ -237,6 +243,9 @@ namespace librealsense
         bool try_register_pu(rs2_option id);
 
         virtual stream_profiles init_stream_profiles() override;
+
+        // Our raw profiles are the ones that the raw sensor gave us, before we manipulated them
+        stream_profiles const & get_raw_stream_profiles() const override { return _raw_sensor->get_raw_stream_profiles(); }
 
         void open(const stream_profiles& requests) override;
         void close() override;
@@ -409,7 +418,6 @@ namespace librealsense
         };
 
         std::shared_ptr<platform::uvc_device> _device;
-        std::vector< platform::stream_profile > _uvc_profiles;
         std::vector< platform::stream_profile > _internal_config;
         std::atomic<int> _user_count;
         std::mutex _power_lock;

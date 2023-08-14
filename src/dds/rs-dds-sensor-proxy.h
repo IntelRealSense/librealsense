@@ -53,9 +53,6 @@ class dds_sensor_proxy : public software_sensor
     std::map< std::string, streaming_impl > _streaming_by_name;
 
     formats_converter _formats_converter;
-    // DDS profiles are stored in _streams, _raw_rs_profiles stores librealsense representation of them,
-    // software_device::_profiles stores librealsense profiles after conversion from raw to a user friendly format.
-    stream_profiles _raw_rs_profiles;
 
 public:
     dds_sensor_proxy( std::string const & sensor_name,
