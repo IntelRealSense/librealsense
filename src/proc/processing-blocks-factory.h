@@ -25,8 +25,8 @@ namespace librealsense
 
         bool operator==(const processing_block_factory& rhs) const;
 
-        std::vector<stream_profile> get_source_info() const { return _source_info; }
-        std::vector<stream_profile> get_target_info() const { return _target_info; }
+        const std::vector<stream_profile> & get_source_info() const { return _source_info; }
+        const std::vector<stream_profile> & get_target_info() const { return _target_info; }
         std::shared_ptr<processing_block> generate();
         
         static processing_block_factory create_id_pbf(rs2_format format, rs2_stream stream, int idx = 0);

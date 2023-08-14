@@ -1,4 +1,5 @@
-#  minimum required cmake version: 3.1.0
+
+# Xenial requires 3.5, Bionic 3.10...
 cmake_minimum_required(VERSION 3.1.0)
 
 set( LRS_TARGET realsense2 )
@@ -44,11 +45,8 @@ os_set_flags()
 # macro definition located at "CMake/global_config.cmake"
 global_set_flags()
 
-if(BUILD_SHARED_LIBS)
-    add_library(${LRS_TARGET} SHARED "")
-else()
-    add_library(${LRS_TARGET} STATIC "")
-endif()
+# If no type is given explicitly the type is STATIC or SHARED based on whether the current value of the variable [BUILD_SHARED_LIBS](https://cmake.org/cmake/help/v3.10/variable/BUILD_SHARED_LIBS.html#variable:BUILD_SHARED_LIBS) is ON
+add_library(${LRS_TARGET})
 
 config_cxx_flags()
 
@@ -59,7 +57,28 @@ include(include/CMakeLists.txt)
 include(src/CMakeLists.txt)
 include(third-party/CMakeLists.txt)
 
+include(CMake/external_json.cmake)
+target_include_directories( rsutils
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/third-party/json/include>
+    )
+
 target_link_libraries( ${LRS_TARGET} PUBLIC rsutils )
+
+if(BUILD_WITH_DDS)
+    if (CMAKE_SYSTEM MATCHES "Windows" OR CMAKE_SYSTEM MATCHES "Linux")
+
+        message(STATUS "Building with FastDDS")
+        include(CMake/external_foonathan_memory.cmake)
+        include(CMake/external_fastdds.cmake)
+
+        target_link_libraries( ${LRS_TARGET} PRIVATE realdds )
+
+    else()
+        MESSAGE(STATUS "Turning off `BUILD_WITH_DDS` as it's only supported on Windows & Linux and not on ${CMAKE_SYSTEM}")
+        set(BUILD_WITH_DDS OFF)
+    endif()
+endif()
 
 # configure the project according to OS specific requirments
 # macro definition located at "CMake/<OS>_config.cmake"
@@ -98,3 +117,4 @@ if(IMPORT_DEPTH_CAM_FW)
 endif()
 
 include(CMake/embedd_udev_rules.cmake)
+

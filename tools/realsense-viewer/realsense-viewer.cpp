@@ -441,7 +441,7 @@ int main(int argc, const char** argv) try
         {
             ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
             ImGui::Columns(2, "DevicesList", false);
-            for (size_t i = 0; i < device_names.size(); i++)
+            for (int i = 0; i < device_names.size(); i++)
             {
                 bool skip = false;
                 for (auto&& dev_model : *device_models)

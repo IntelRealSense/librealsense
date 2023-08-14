@@ -16,23 +16,18 @@ jobs:
     strategy:
       matrix:
         ros_distribution:
-          - foxy
-          - galactic
           - humble
+          - iron
           - rolling
 
         include:
-          # Foxy Fitzroy
-          - docker_image: ubuntu:focal
-            ros_distribution: foxy
-
-          # Galactic Geochelone
-          - docker_image: ubuntu:focal
-            ros_distribution: galactic
-
           # Humble Hawksbill
           - docker_image: ubuntu:jammy
             ros_distribution: humble
+
+          # Iron Irwini
+          - docker_image: ubuntu:jammy
+            ros_distribution: iron
 
           # Rolling Ridley
           - docker_image: ubuntu:jammy
@@ -43,12 +38,12 @@ jobs:
     steps:
 
       - name: setup ROS environment
-        uses: ros-tooling/setup-ros@v0.4
+        uses: ros-tooling/setup-ros@v0.7
         with:
           required-ros-distributions: ${{ matrix.ros_distribution }}
 
       - name: build librealsense ROS 2
-        uses: ros-tooling/action-ros-ci@v0.2
+        uses: ros-tooling/action-ros-ci@v0.3
         with:
           import-token: ${{ secrets.GITHUB_TOKEN }}
           target-ros2-distro: ${{ matrix.ros_distribution }}

@@ -17,13 +17,15 @@ void init_types(py::module &m) {
         L500 = RS2_PRODUCT_LINE_L500,
         T200 = RS2_PRODUCT_LINE_T200,
         DEPTH = RS2_PRODUCT_LINE_DEPTH,
-        TRACKING = RS2_PRODUCT_LINE_TRACKING
+        TRACKING = RS2_PRODUCT_LINE_TRACKING,
+        sw_only = RS2_PRODUCT_LINE_SW_ONLY
     };
 
     py::enum_< product_line >( m, "product_line" )
         .value( "any", product_line::any )
         .value( "any_intel", product_line::any_intel )
         .value( "non_intel", product_line::non_intel )
+        .value( "sw_only", product_line::sw_only )
         .value( "D400", product_line::D400 )
         .value( "SR300", product_line::SR300 )
         .value( "L500", product_line::L500 )

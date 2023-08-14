@@ -6,7 +6,7 @@
 #include <set>
 #include "notifications.h"
 #include "realsense-ui-advanced-mode.h"
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 #include "sw-update/dev-updates-profile.h"
 #include <rsutils/time/periodic-timer.h>
 #include "updates-model.h"

@@ -293,10 +293,10 @@ namespace librealsense
                 throw invalid_value_exception("Calibration data CRC error, parsing aborted!");
             }
 
-            LOG_DEBUG("Loaded Valid Table: version [mjr.mnr]: 0x" <<
-                hex << setfill('0') << setw(4) << header->version << dec
-                << ", type " << header->table_type << ", size " << header->table_size
-                << ", CRC: " << hex << header->crc32);
+            //LOG_DEBUG("Loaded Valid Table: version [mjr.mnr]: 0x" <<
+            //    hex << setfill('0') << setw(4) << header->version << dec
+            //    << ", type " << header->table_type << ", size " << header->table_size
+            //    << ", CRC: " << hex << header->crc32 << dec );
             return table;
         }
 

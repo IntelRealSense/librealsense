@@ -52,6 +52,7 @@ typedef enum rs2_stream
     RS2_STREAM_GPIO                             , /**< Signals from external device connected through GPIO */
     RS2_STREAM_POSE                             , /**< 6 Degrees of Freedom pose data, calculated by RealSense device */
     RS2_STREAM_CONFIDENCE                       , /**< 4 bit per-pixel depth confidence level */
+    RS2_STREAM_MOTION                           , /**< Native stream of combined motion data (incl. accel & gyro) */
     RS2_STREAM_SAFETY                           , /**< safety info */
     RS2_STREAM_OCCUPANCY                        , /**< occupancy info */
     RS2_STREAM_LABELED_POINT_CLOUD              , /**< labeled point cloud stream */
@@ -95,6 +96,7 @@ typedef enum rs2_format
     RS2_FORMAT_Y411            , /**< 12-bit per-pixel. */
     RS2_FORMAT_Y16I            , /**< 12-bit per pixel interleaved. 12-bit left, 12-bit right. */
     RS2_FORMAT_M420            , /**< 24-bit for every pixel: y for each pixel, and u,v data for every four pixels - packed as 2 lines of y, 1 line of u,v */
+    RS2_FORMAT_COMBINED_MOTION , /**< Combined motion data, as in the combined_motion structure */
     RS2_FORMAT_COUNT             /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_format;
 const char* rs2_format_to_string(rs2_format format);
@@ -105,6 +107,14 @@ typedef struct rs2_extrinsics
     float rotation[9];    /**< Column-major 3x3 rotation matrix */
     float translation[3]; /**< Three-element translation vector, in meters */
 } rs2_extrinsics;
+
+/** \brief RS2_STREAM_MOTION / RS2_FORMAT_COMBINED_MOTION content is similar to ROS2's Imu message */
+typedef struct rs2_combined_motion
+{
+    struct { double x, y, z, w; } orientation;
+    struct { double x, y, z; } angular_velocity;
+    struct { double x, y, z; } linear_acceleration;
+} rs2_combined_motion;
 
 /**
 * Deletes sensors list, any sensors created from this list will remain unaffected

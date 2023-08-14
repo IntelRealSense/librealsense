@@ -90,7 +90,11 @@ void init_pipeline(py::module &m) {
                                        "It lets the application focus on the computer vision output of the modules, or the device output data.\n"
                                        "The pipeline can manage computer vision modules, which are implemented as a processing blocks.\n"
                                        "The pipeline is the consumer of the processing block interface, while the application consumes the computer vision interface.");
-    pipeline.def(py::init<rs2::context>(), "The caller can provide a context created by the application, usually for playback or testing purposes.", "ctx"_a = rs2::context())
+    pipeline  //
+        .def( py::init<>(), "With a default context" )
+        .def( py::init< rs2::context >(),
+              "The caller can provide a context created by the application, usually for playback or testing purposes",
+              "ctx"_a )
         // TODO: Streamline this wall of text
         .def("start", (rs2::pipeline_profile(rs2::pipeline::*)()) &rs2::pipeline::start, "Start the pipeline streaming with its default configuration.\n"
              "The pipeline streaming loop captures samples from the device, and delivers them to the attached computer vision modules and processing "

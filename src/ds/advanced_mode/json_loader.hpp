@@ -12,7 +12,7 @@
 #include <string>
 #include <iomanip>
 
-#include "../../../third-party/json.hpp"
+#include <nlohmann/json.hpp>
 #include <librealsense2/h/rs_advanced_mode_command.h>
 #include "types.h"
 #include "presets.h"

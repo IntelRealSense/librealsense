@@ -27,19 +27,19 @@ test.start("Valid get/set scenario")
 
 # default index at start should be 0
 current_index = safety_sensor.get_option(rs.option.safety_preset_active_index)
-test.check_equal(current_index, 0)
+test.check_equal( int(current_index), 0)
 
 safety_sensor.set_option(rs.option.safety_preset_active_index, 1)
 current_index = safety_sensor.get_option(rs.option.safety_preset_active_index)
-test.check_equal(current_index, 1)
+test.check_equal( int(current_index), 1)
 
 safety_sensor.set_option(rs.option.safety_preset_active_index, 20)
 current_index = safety_sensor.get_option(rs.option.safety_preset_active_index)
-test.check_equal(current_index, 20)
+test.check_equal( int(current_index), 20)
 
 safety_sensor.set_option(rs.option.safety_preset_active_index, 63)
 current_index = safety_sensor.get_option(rs.option.safety_preset_active_index)
-test.check_equal(current_index, 63)
+test.check_equal( int(current_index), 63)
 
 test.finish()
 

@@ -1,6 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
+//#cmake:add-file ../../unit-tests-common.cpp
+
 //#cmake: static!
 //#test:donotrun
 //#test:device D435
@@ -97,7 +99,7 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
 {
     // Require at least one device to be plugged in
 
-    rs2::context ctx;
+    rs2::context ctx( "{\"dds\":false}" );
     rs2::log_to_file(RS2_LOG_SEVERITY_DEBUG, "lrs_log.txt");
 
     std::cout << "Extrinsic memory leak detection started" << std::endl;

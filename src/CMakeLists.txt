@@ -141,3 +141,12 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/small-heap.h"
         "${CMAKE_CURRENT_LIST_DIR}/basics.h"
 )
+
+if(BUILD_WITH_DDS)
+    file( GLOB_RECURSE RS_DDS_SOURCE_FILES
+        LIST_DIRECTORIES false
+        RELATIVE ${PROJECT_SOURCE_DIR}
+        "${CMAKE_CURRENT_LIST_DIR}/dds/*"
+        )
+    target_sources( ${LRS_TARGET} PRIVATE ${RS_DDS_SOURCE_FILES} )
+endif()

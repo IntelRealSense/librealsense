@@ -110,21 +110,22 @@ project( ''' + testname + ''' )
 
 set( SRC_FILES ''' + filelist + '''
 )
-add_executable( ''' + testname + ''' ${SRC_FILES} )
+add_executable( ${PROJECT_NAME} ${SRC_FILES} )
 source_group( "Common Files" FILES ${CATCH_FILES} ''' + directory + '''/test.cpp''')
     if not custom_main:
         handle.write(' ' + directory + '/unit-test-default-main.cpp')
     handle.write( ''' )
-target_link_libraries( ''' + testname + ''' ${DEPENDENCIES} )
+target_link_libraries( ${PROJECT_NAME} ${DEPENDENCIES} )
 
-set_target_properties( ''' + testname + ''' PROPERTIES FOLDER "Unit-Tests/''' + os.path.dirname( testdir ) + '''" )
+set_target_properties( ${PROJECT_NAME} PROPERTIES FOLDER "Unit-Tests/''' + os.path.dirname( testdir ) + '''" )
 
 using_easyloggingpp( ${PROJECT_NAME} SHARED )
 
 # Add the repo root directory (so includes into src/ will be specific: <src/...>)
-target_include_directories(''' + testname + ''' PRIVATE ''' + root_directory + ''')
+target_include_directories( ${PROJECT_NAME} PRIVATE ''' + root + ''')
 
 ''' )
+
     handle.close()
 
 

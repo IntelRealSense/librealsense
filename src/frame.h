@@ -8,6 +8,8 @@
 #include "core/extension.h"
 #include <atomic>
 #include <array>
+#include <vector>
+#include <map>
 #include <math.h>
 
 namespace librealsense {
@@ -30,6 +32,8 @@ struct metadata_array_value
     rs2_metadata_type value;
 };
 #pragma pack( pop )
+
+typedef std::array< metadata_array_value, RS2_FRAME_METADATA_ACTUAL_COUNT > metadata_array;
 
 static_assert( sizeof( metadata_array_value ) == sizeof( rs2_metadata_type ) + 1,
                "unexpected size for metadata array members" );
@@ -69,7 +73,7 @@ struct frame_additional_data : frame_header
 {
     uint32_t metadata_size = 0;
     bool fisheye_ae_mode = false;  // TODO: remove in future release
-    std::array< uint8_t, RS2_FRAME_METADATA_ACTUAL_COUNT * sizeof( metadata_array_value ) > metadata_blob;
+    std::array< uint8_t, sizeof( metadata_array ) > metadata_blob = {};
     rs2_time_t last_timestamp = 0;
     unsigned long long last_frame_number = 0;
     bool is_blocking  = false;  // when running from recording, this bit indicates
@@ -82,6 +86,12 @@ struct frame_additional_data : frame_header
     uint32_t raw_size = 0;     // The frame transmitted size (payload only)
 
     frame_additional_data() {}
+
+    frame_additional_data( metadata_array const & metadata )
+    {
+        metadata_size = (uint32_t) sizeof( metadata );
+        memcpy( metadata_blob.data(), metadata.data(), metadata_size );
+    }
 
     frame_additional_data( rs2_time_t in_timestamp,
                            unsigned long long in_frame_number,

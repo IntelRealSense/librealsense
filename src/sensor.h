@@ -238,15 +238,12 @@ namespace librealsense
         bool is_streaming() const override;
         bool is_opened() const override;
 
-    protected:
-        void add_source_profiles_missing_data();
-
     private:
-        stream_profiles resolve_requests(const stream_profiles& requests);
-        std::shared_ptr<stream_profile_interface> filter_frame_by_requests(const frame_interface* f);
         void sort_profiles(stream_profiles * profiles);
         void register_processing_block_options(const processing_block& pb);
         void unregister_processing_block_options(const processing_block& pb);
+
+        bool should_use_basic_formats() const;
 
         std::mutex _synthetic_configure_lock;
 

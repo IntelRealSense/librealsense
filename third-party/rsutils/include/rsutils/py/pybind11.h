@@ -26,6 +26,12 @@
 // makes std::function conversions work
 #include <pybind11/functional.h>
 
+// and enable a bridge to/from nlohmann::json
+#include <pybind11_json/pybind11_json.hpp>
+constexpr auto json_to_py = pyjson::from_json;
+constexpr auto py_to_json = pyjson::to_json;
+
+
 namespace py = pybind11;
 using namespace pybind11::literals;
 

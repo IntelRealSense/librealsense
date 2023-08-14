@@ -3,9 +3,17 @@
 
 #include "types.h"
 
-#define STRCASE(T, X) case RS2_##T##_##X: {\
-        static const std::string s##T##_##X##_str = make_less_screamy(#X);\
-        return s##T##_##X##_str.c_str(); }
+#define STRX( X ) make_less_screamy( #X )
+#define STRCASE( T, X )                                                                                                \
+    case RS2_##T##_##X: {                                                                                              \
+        static const std::string s##T##_##X##_str = STRX( X );                                                         \
+        return s##T##_##X##_str.c_str();                                                                               \
+    }
+#define STRARR( ARRAY, T, X ) ARRAY[RS2_##T##_##X] = STRX( X )
+
+
+static std::string const unknown_value_str( UNKNOWN_VALUE );
+
 
 namespace librealsense {
 
@@ -45,6 +53,7 @@ const char * get_string( rs2_stream value )
     CASE( GPIO )
     CASE( POSE )
     CASE( CONFIDENCE )
+    CASE( MOTION )
     CASE( SAFETY )
     CASE( OCCUPANCY )
     CASE( LABELED_POINT_CLOUD )
@@ -482,6 +491,7 @@ const char * get_string( rs2_format value )
     CASE( UYVY )
     CASE( MOTION_RAW )
     CASE( MOTION_XYZ32F )
+    CASE( COMBINED_MOTION )
     CASE( GPIO_RAW )
     CASE( 6DOF )
     CASE( Y10BPACK )
@@ -548,92 +558,94 @@ const char * get_string( rs2_camera_info value )
 #undef CASE
 }
 
-const char * get_string( rs2_frame_metadata_value value )
+std::string const & get_string( rs2_frame_metadata_value value )
 {
-#define CASE( X ) STRCASE( FRAME_METADATA, X )
-    switch( value )
+    static auto str_array = []()
     {
-    CASE( FRAME_COUNTER )
-    CASE( FRAME_TIMESTAMP )
-    CASE( SENSOR_TIMESTAMP )
-    CASE( ACTUAL_EXPOSURE )
-    CASE( GAIN_LEVEL )
-    CASE( AUTO_EXPOSURE )
-    CASE( WHITE_BALANCE )
-    CASE( TIME_OF_ARRIVAL )
-    CASE( TEMPERATURE )
-    CASE( BACKEND_TIMESTAMP )
-    CASE( ACTUAL_FPS )
-    CASE( FRAME_LASER_POWER )
-    CASE( FRAME_LASER_POWER_MODE )
-    CASE( EXPOSURE_PRIORITY )
-    CASE( EXPOSURE_ROI_LEFT )
-    CASE( EXPOSURE_ROI_RIGHT )
-    CASE( EXPOSURE_ROI_TOP )
-    CASE( EXPOSURE_ROI_BOTTOM )
-    CASE( BRIGHTNESS )
-    CASE( CONTRAST )
-    CASE( SATURATION )
-    CASE( SHARPNESS )
-    CASE( AUTO_WHITE_BALANCE_TEMPERATURE )
-    CASE( BACKLIGHT_COMPENSATION )
-    CASE( GAMMA )
-    CASE( HUE )
-    CASE( MANUAL_WHITE_BALANCE )
-    CASE( POWER_LINE_FREQUENCY )
-    CASE( LOW_LIGHT_COMPENSATION )
-    CASE( FRAME_EMITTER_MODE )
-    CASE( FRAME_LED_POWER )
-    CASE( RAW_FRAME_SIZE )
-    CASE( GPIO_INPUT_DATA )
-    CASE( SEQUENCE_NAME )
-    CASE( SEQUENCE_ID )
-    CASE( SEQUENCE_SIZE )
-    CASE( TRIGGER )
-    CASE( PRESET )
-    CASE( INPUT_WIDTH )
-    CASE( INPUT_HEIGHT )
-    CASE( SUB_PRESET_INFO )
-    CASE( CALIB_INFO )
-    CASE( CRC )
-    CASE( SAFETY_DEPTH_FRAME_COUNTER )
-    CASE( SAFETY_LEVEL1 )
-    CASE( SAFETY_LEVEL1_ORIGIN )
-    CASE( SAFETY_LEVEL2 )
-    CASE( SAFETY_LEVEL2_ORIGIN )
-    CASE( SAFETY_LEVEL1_VERDICT )
-    CASE( SAFETY_LEVEL2_VERDICT )
-    CASE( SAFETY_OPERATIONAL_MODE )
-    CASE( SAFETY_VISION_VERDICT )
-    CASE( SAFETY_HARA_EVENTS )
-    CASE( SAFETY_PRESET_INTEGRITY )
-    CASE( SAFETY_PRESET_ID_SELECTED )
-    CASE( SAFETY_PRESET_ID_USED )
-    CASE( SAFETY_SOC_FUSA_EVENTS )
-    CASE( SAFETY_SOC_FUSA_ACTION )
-    CASE( SAFETY_SOC_STATUS )
-    CASE( SAFETY_MB_FUSA_EVENT )
-    CASE( SAFETY_MB_FUSA_ACTION )
-    CASE( SAFETY_MB_STATUS )
-    CASE( SAFETY_SMCU_STATUS )
-    CASE( SAFETY_SMCU_STATE )
-    CASE( SAFETY_PRESET_ID )
-    CASE( SENSOR_ANGLE_ROLL  )
-    CASE( SENSOR_ANGLE_PITCH )
-    CASE( FLOOR_MEDIAN_HEIGHT )
-    CASE( FLOOR_DETECTION )
-    CASE( CLIFF_DETECTION )
-    CASE( DEPTH_FILL_RATE )
-    CASE( DEPTH_STDEV )
-    CASE( OCCUPANCY_GRID_ROWS)
-    CASE( OCCUPANCY_GRID_COLUMNS )
-    CASE( OCCUPANCY_CELL_SIZE )
-    CASE( NUMBER_OF_3D_VERTICES )
-    default:
-        assert( ! is_valid( value ) );
-        return UNKNOWN_VALUE;
-    }
+        std::vector< std::string > arr( RS2_FRAME_METADATA_COUNT );
+#define CASE( X ) STRARR( arr, FRAME_METADATA, X );
+        CASE( FRAME_COUNTER )
+        CASE( FRAME_TIMESTAMP )
+        CASE( SENSOR_TIMESTAMP )
+        CASE( ACTUAL_EXPOSURE )
+        CASE( GAIN_LEVEL )
+        CASE( AUTO_EXPOSURE )
+        CASE( WHITE_BALANCE )
+        CASE( TIME_OF_ARRIVAL )
+        CASE( TEMPERATURE )
+        CASE( BACKEND_TIMESTAMP )
+        CASE( ACTUAL_FPS )
+        CASE( FRAME_LASER_POWER )
+        CASE( FRAME_LASER_POWER_MODE )
+        CASE( EXPOSURE_PRIORITY )
+        CASE( EXPOSURE_ROI_LEFT )
+        CASE( EXPOSURE_ROI_RIGHT )
+        CASE( EXPOSURE_ROI_TOP )
+        CASE( EXPOSURE_ROI_BOTTOM )
+        CASE( BRIGHTNESS )
+        CASE( CONTRAST )
+        CASE( SATURATION )
+        CASE( SHARPNESS )
+        CASE( AUTO_WHITE_BALANCE_TEMPERATURE )
+        CASE( BACKLIGHT_COMPENSATION )
+        CASE( GAMMA )
+        CASE( HUE )
+        CASE( MANUAL_WHITE_BALANCE )
+        CASE( POWER_LINE_FREQUENCY )
+        CASE( LOW_LIGHT_COMPENSATION )
+        CASE( FRAME_EMITTER_MODE )
+        CASE( FRAME_LED_POWER )
+        CASE( RAW_FRAME_SIZE )
+        CASE( GPIO_INPUT_DATA )
+        CASE( SEQUENCE_NAME )
+        CASE( SEQUENCE_ID )
+        CASE( SEQUENCE_SIZE )
+        CASE( TRIGGER )
+        CASE( PRESET )
+        CASE( INPUT_WIDTH )
+        CASE( INPUT_HEIGHT )
+        CASE( SUB_PRESET_INFO )
+        CASE( CALIB_INFO )
+        CASE( CRC )
+        CASE( SAFETY_DEPTH_FRAME_COUNTER )
+        CASE( SAFETY_LEVEL1 )
+        CASE( SAFETY_LEVEL1_ORIGIN )
+        CASE( SAFETY_LEVEL2 )
+        CASE( SAFETY_LEVEL2_ORIGIN )
+        CASE( SAFETY_LEVEL1_VERDICT )
+        CASE( SAFETY_LEVEL2_VERDICT )
+        CASE( SAFETY_OPERATIONAL_MODE )
+        CASE( SAFETY_VISION_VERDICT )
+        CASE( SAFETY_HARA_EVENTS )
+        CASE( SAFETY_PRESET_INTEGRITY )
+        CASE( SAFETY_PRESET_ID_SELECTED )
+        CASE( SAFETY_PRESET_ID_USED )
+        CASE( SAFETY_SOC_FUSA_EVENTS )
+        CASE( SAFETY_SOC_FUSA_ACTION )
+        CASE( SAFETY_SOC_STATUS )
+        CASE( SAFETY_MB_FUSA_EVENT )
+        CASE( SAFETY_MB_FUSA_ACTION )
+        CASE( SAFETY_MB_STATUS )
+        CASE( SAFETY_SMCU_STATUS )
+        CASE( SAFETY_SMCU_STATE )
+        CASE( SAFETY_PRESET_ID )
+        CASE( SENSOR_ANGLE_ROLL  )
+        CASE( SENSOR_ANGLE_PITCH )
+        CASE( FLOOR_MEDIAN_HEIGHT )
+        CASE( FLOOR_DETECTION )
+        CASE( CLIFF_DETECTION )
+        CASE( DEPTH_FILL_RATE )
+        CASE( DEPTH_STDEV )
+        CASE( OCCUPANCY_GRID_ROWS)
+        CASE( OCCUPANCY_GRID_COLUMNS )
+        CASE( OCCUPANCY_CELL_SIZE )
+        CASE( NUMBER_OF_3D_VERTICES )
 #undef CASE
+            return arr;
+    }();
+    if( ! is_valid( value ) )
+        return unknown_value_str;
+    return str_array[value];
 }
 
 const char * get_string( rs2_timestamp_domain value )
@@ -742,7 +754,7 @@ const char * rs2_exception_type_to_string( rs2_exception_type type ) { return li
 const char * rs2_playback_status_to_string( rs2_playback_status status ) { return librealsense::get_string( status ); }
 const char * rs2_extension_type_to_string( rs2_extension type ) { return librealsense::get_string( type ); }
 const char * rs2_matchers_to_string( rs2_matchers matcher ) { return librealsense::get_string( matcher ); }
-const char * rs2_frame_metadata_to_string( rs2_frame_metadata_value metadata ) { return librealsense::get_string( metadata ); }
+const char * rs2_frame_metadata_to_string( rs2_frame_metadata_value metadata ) { return librealsense::get_string( metadata ).c_str(); }
 const char * rs2_extension_to_string( rs2_extension type ) { return rs2_extension_type_to_string( type ); }
 const char * rs2_frame_metadata_value_to_string( rs2_frame_metadata_value metadata ) { return rs2_frame_metadata_to_string( metadata ); }
 const char * rs2_l500_visual_preset_to_string( rs2_l500_visual_preset preset ) { return librealsense::get_string( preset ); }

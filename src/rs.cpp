@@ -176,6 +176,15 @@ rs2_context* rs2_create_context(int api_version, rs2_error** error) BEGIN_API_CA
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
 
+rs2_context* rs2_create_context_ex(int api_version, const char * json_settings, rs2_error** error) BEGIN_API_CALL
+{
+    verify_version_compatibility(api_version);
+
+    return new rs2_context{
+        std::make_shared< librealsense::context >( json_settings ) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, json_settings)
+
 void rs2_delete_context(rs2_context* context) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(context);

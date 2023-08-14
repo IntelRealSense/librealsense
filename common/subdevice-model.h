@@ -17,7 +17,7 @@
 #include <array>
 #include <unordered_map>
 
-#include "../third-party/json.hpp"
+#include <nlohmann/json.hpp>
 #include "objects-in-frame.h"
 #include "processing-block-model.h"
 

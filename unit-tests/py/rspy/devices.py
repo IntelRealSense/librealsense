@@ -32,7 +32,7 @@ from rspy import repo
 pyrs_dir = repo.find_pyrs_dir()
 sys.path.insert( 1, pyrs_dir )
 
-MAX_ENUMERATION_TIME = 20  # [sec] - D585S is currently takes > 10 sec, D400 had 5 sec timeout
+MAX_ENUMERATION_TIME = 10  # [sec]
 
 # We need both pyrealsense2 and acroname. We can work without acroname, but
 # without pyrealsense2 no devices at all will be returned.
@@ -215,14 +215,17 @@ def query( monitor_changes = True ):
     if acroname:
         if not acroname.hub:
             acroname.connect()  # MAY THROW!
+
+            acroname.disable_ports( sleep_on_change = 5 )
             acroname.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
+
             if platform.system() == 'Linux':
                 global _acroname_hubs
                 _acroname_hubs = set( acroname.find_all_hubs() )
     #
     # Get all devices, and store by serial-number
     global _device_by_sn, _context, _port_to_sn
-    _context = rs.context()
+    _context = rs.context( { 'dds': False } )
     _device_by_sn = dict()
     try:
         log.debug_indent()
@@ -241,7 +244,11 @@ def query( monitor_changes = True ):
             # The FW update ID is always available, it seems, and is the ASIC serial number
             # whereas the Serial Number is the OPTIC serial number and is only available in
             # non-recovery devices. So we use the former...
-            sn = dev.get_info( rs.camera_info.firmware_update_id )
+            try:
+                sn = dev.get_info( rs.camera_info.firmware_update_id )
+            except RuntimeError as e:
+                log.e( f'Found device with S/N {sn} but trying to get fw-update-id failed: {e}' )
+                continue
             device = Device( sn, dev )
             _device_by_sn[sn] = device
             log.d( '... port {}:'.format( device.port is None and '?' or device.port ), sn, dev )
@@ -493,8 +500,9 @@ def enable_only( serial_numbers, recycle = False, timeout = MAX_ENUMERATION_TIME
             #
             log.d( 'recycling ports via acroname:', ports )
             #
-            acroname.disable_ports( acroname.ports() )
-            _wait_until_removed( serial_numbers, timeout = timeout )
+            enabled_devices = enabled()
+            acroname.disable_ports( )
+            _wait_until_removed( enabled_devices, timeout = timeout )
             #
             acroname.enable_ports( ports )
             #
@@ -539,6 +547,7 @@ def _wait_until_removed( serial_numbers, timeout = 5 ):
             return True
         #
         if timeout <= 0:
+            log.e( "timed out waiting for devices to be removed" )
             return False
         timeout -= 1
         time.sleep( 1 )
@@ -572,7 +581,7 @@ def _wait_for( serial_numbers, timeout = MAX_ENUMERATION_TIME ):
         #
         if timeout <= 0:
             if did_some_waiting:
-                log.d( 'timed out' )
+                log.d( 'timed out waiting for a device connection' )
             return False
         timeout -= 1
         time.sleep( 1 )
@@ -590,11 +599,20 @@ def hw_reset( serial_numbers, timeout = MAX_ENUMERATION_TIME ):
     :param timeout: Maximum # of seconds to wait for the devices to come back online
     :return: True if all devices have come back online before timeout
     """
+
+    usb_serial_numbers = { sn for sn in serial_numbers if _device_by_sn[sn].port is not None }
+
     for sn in serial_numbers:
         dev = get( sn ).handle
         dev.hardware_reset()
     #
-    _wait_until_removed( serial_numbers )
+
+    if usb_serial_numbers:
+        _wait_until_removed( usb_serial_numbers )
+    else:
+        # normally we will get here with a mipi device,
+        # we want to allow some time for the device to reinitialize as it was not disconnected
+        time.sleep(3)
     #
     return _wait_for( serial_numbers, timeout = timeout )
 

@@ -2,7 +2,7 @@
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
 #include <numeric>
-#include "../third-party/json.hpp"
+#include <nlohmann/json.hpp>
 #include "d400-device.h"
 #include "d400-private.h"
 #include "d400-thermal-monitor.h"
