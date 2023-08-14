@@ -17,7 +17,7 @@ rebuild_ko=0
 debug_uvc=0
 retpoline_retrofit=0
 skip_hid_patch=0
-skip_hid_accel_patch=1
+apply_hid_gyro_patch=0
 skip_plf_patch=0
 #Parse input
 while test $# -gt 0; do
@@ -83,7 +83,7 @@ k_tick=$(echo ${kernel_version[2]} | awk -F'-' '{print $2}')
 [ $k_maj_min -gt 515 ] && skip_hid_patch=1
 [ $k_maj_min -eq 515 ] && [ $k_tick -ge 72 ] && skip_hid_patch=1
 # linux-image-generic for focal is 5.4.0.156.152 is same hid as 5.4.232
-[ $k_maj_min -eq 504 ] && [ $k_tick -ge 156 ] && skip_hid_accel_patch=0 && skip_hid_patch=1
+[ $k_maj_min -eq 504 ] && [ $k_tick -ge 156 ] && apply_hid_gyro_patch=1 && skip_hid_patch=1
 # For kernel versions 6+ powerline frequency already applied
 [ $k_maj_min -ge 600 ] && skip_plf_patch=1
 
@@ -176,7 +176,7 @@ then
 			echo -e "\e[32mApplying realsense-hid patch\e[0m"
 			patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-${kernel_branch}.patch ||  patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-master.patch
 		fi
-		if [ ${skip_hid_accel_patch} -eq 0 ]; then
+		if [ ${apply_hid_gyro_patch} -eq 1 ]; then
 			echo -e "\e[32mApplying realsense-hid gyro patch\e[0m"
 			patch -p1 < ../scripts/realsense-hid-focal-hwe-5.4.232.patch
 		fi
