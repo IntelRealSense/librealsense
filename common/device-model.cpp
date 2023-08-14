@@ -2552,6 +2552,15 @@ namespace rs2
                     ImGui::Text(" %s", ss.str().c_str());
                     ImGui::PopStyleColor();
                 }
+                else if(device_pid == "DDS")
+                {
+                    ss.str( "" );
+                    ss << "   " << "DDS";
+                    ImGui::SameLine();
+                    ImGui::PushStyleColor(ImGuiCol_Text, white);
+                    ImGui::Text(" %s", ss.str().c_str());
+                    ImGui::PopStyleColor();
+                }
             }
         }
 
