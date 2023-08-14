@@ -3,7 +3,7 @@
 
 # we want this test to run first so that all tests run with updated FW versions, so we give it priority 0
 #test:priority 0
-#test:device each(D400*) !D457
+#test:device each(D400*)
 
 import sys
 import os
