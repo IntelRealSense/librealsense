@@ -17,7 +17,7 @@ rebuild_ko=0
 debug_uvc=0
 retpoline_retrofit=0
 skip_hid_patch=0
-skip_hid_accel_patch=0
+skip_hid_accel_patch=1
 #Parse input
 while test $# -gt 0; do
 	case "$1" in
@@ -82,7 +82,7 @@ k_tick=$(echo ${kernel_version[2]} | awk -F'-' '{print $2}')
 [ $k_maj_min -gt 515 ] && skip_hid_patch=1
 [ $k_maj_min -eq 515 ] && [ $k_tick -ge 72 ] && skip_hid_patch=1
 # linux-image-generic for focal is 5.4.0.156.152 is same hid as 5.4.232
-[ $k_maj_min -eq 504 ] && [ $k_tick -ge 156 ] && skip_hid_accel_patch=1 && skip_hid_patch=1
+[ $k_maj_min -eq 504 ] && [ $k_tick -ge 156 ] && skip_hid_accel_patch=0 && skip_hid_patch=1
 
 # Construct branch name from distribution codename {xenial,bionic,..} and kernel version
 # ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
