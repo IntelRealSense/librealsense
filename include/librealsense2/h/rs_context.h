@@ -31,10 +31,10 @@ rs2_context* rs2_create_context(int api_version, rs2_error** error);
 *             domain: 0                - (int) the number of the DDS domain [0-232]
 *             participant: <exe name>  - (string) the name of the participant
 *                 (see additional settings in realdds/doc/device.md#Settings)
-*         use-basic-formats: false     - (bool) true to make sensors stream only "basic" types
-*                                        without converting to formats other than the raw camera
-*                                        formats (Convert only interleaved formats (Y8I, Y12I), no
-*                                        colored infrared)
+*         format-conversion: full      - (string) how to convert formats
+*             full: provide all conversions (e.g., YUYV -> RGB8 etc.)
+*             basic: use mostly raw camera formats (no RGB8 etc.); convert interleaved (Y8I -> 2xY8)
+*             raw: leave all formats from camera as they are
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return            Context object
 */

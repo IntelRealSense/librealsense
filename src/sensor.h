@@ -96,7 +96,13 @@ namespace librealsense
         void assign_stream(const std::shared_ptr<stream_interface>& stream,
                            std::shared_ptr<stream_profile_interface> target) const;
 
-        bool should_use_basic_formats() const;
+        enum class format_conversion
+        {
+            raw,
+            basic,
+            full
+        };
+        format_conversion get_format_conversion() const;
 
         void sort_profiles( stream_profiles & );
 

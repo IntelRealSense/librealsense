@@ -1357,12 +1357,22 @@ void log_callback_end( uint32_t fps,
 
     stream_profiles synthetic_sensor::init_stream_profiles()
     {
-        if( should_use_basic_formats() )
+        stream_profiles result_profiles;
+        switch( get_format_conversion() )
         {
+        case format_conversion::basic:
             _formats_converter.drop_non_basic_formats();
-        }
+            // fall-thru
+        case format_conversion::full:
+            result_profiles = _formats_converter.get_all_possible_profiles( get_raw_stream_profiles() );
+            break;
 
-        stream_profiles result_profiles = _formats_converter.get_all_possible_profiles( get_raw_stream_profiles() );
+        case format_conversion::raw:
+            result_profiles = get_raw_stream_profiles();
+            // NOTE: this is not meant for actual streaming at this time -- actual behavior of the
+            // formats_converter has not been implemented!
+            break;
+        }
 
         _owner->tag_profiles( result_profiles );
         sort_profiles( result_profiles );
@@ -1372,6 +1382,9 @@ void log_callback_end( uint32_t fps,
 
     void synthetic_sensor::open(const stream_profiles & requests)
     {
+        if( get_format_conversion() == format_conversion::raw )
+            throw wrong_api_call_sequence_exception( "'raw' format-conversion is not meant for streaming" );
+
         std::lock_guard<std::mutex> lock(_synthetic_configure_lock);
 
         _formats_converter.prepare_to_convert( requests );
@@ -1526,14 +1539,20 @@ void log_callback_end( uint32_t fps,
         snapshot = std::make_shared<fisheye_sensor_snapshot>();
     }
 
-    bool sensor_base::should_use_basic_formats() const
+    sensor_base::format_conversion sensor_base::get_format_conversion() const
     {
-        bool default_value = false;
         auto context = _owner->get_context();
         if( ! context )
-            return default_value;
-        return rsutils::json::get< bool >( context->get_settings(),
-                                           std::string( "use-basic-formats", 17 ),
-                                           default_value );
+            return format_conversion::full;
+        std::string const format_conversion( "format-conversion", 17 );
+        std::string const full( "full", 4 );
+        auto const value = rsutils::json::get( context->get_settings(), format_conversion, full );
+        if( value == full )
+            return format_conversion::full;
+        if( value == "basic" )
+            return format_conversion::basic;
+        if( value == "raw" )
+            return format_conversion::raw;
+        throw invalid_value_exception( "invalid " + format_conversion + " value '" + value + "'" );
     }
 }

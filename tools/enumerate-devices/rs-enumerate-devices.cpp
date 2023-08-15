@@ -196,7 +196,7 @@ int main(int argc, char** argv) try
     SwitchArg show_calibration_data_arg( "c", "calib_data", "Show extrinsic and intrinsic of all subdevices" );
     SwitchArg show_defaults("d", "defaults", "Show the default streams configuration");
     SwitchArg only_sw_arg( "", "sw-only", "Show only software devices (playback, DDS, etc. -- but not USB/HID/etc.)" );
-    SwitchArg basic_formats_arg( "", "basic-formats", "Don't show non-raw conversions" );
+    ValueArg<string> format_arg( "", "format", "Choose which 'format-conversion' to use", false, "full", "raw/basic/FULL" );
     SwitchArg verbose_arg( "v", "verbose", "Show extra information" );
     ValueArg<string> show_playback_device_arg("p", "playback_device", "Inspect and enumerate playback device (from file)",
         false, "", "path");
@@ -206,7 +206,7 @@ int main(int argc, char** argv) try
     cmd.add(show_options_arg);
     cmd.add(show_calibration_data_arg);
     cmd.add(only_sw_arg);
-    cmd.add(basic_formats_arg);
+    cmd.add( format_arg );
     cmd.add(verbose_arg);
 #ifdef BUILD_WITH_DDS
     ValueArg< int > domain_arg( "", "dds-domain", "Set the DDS domain ID (default to 0)", false, 0, "0-232" );
@@ -248,8 +248,7 @@ int main(int argc, char** argv) try
     dds["domain"] = domain_arg.getValue();
     settings["dds"] = std::move( dds ); 
 #endif
-    if( basic_formats_arg.getValue() )
-        settings["use-basic-formats"] = true;
+    settings["format-conversion"] = format_arg.getValue();
     context ctx( settings.dump() );
     
     rs2::device d;
@@ -351,28 +350,23 @@ int main(int argc, char** argv) try
             cout << endl;
         }
 
-        if (show_defaults.getValue())
+        if( show_defaults.getValue() && ! show_modes )
         {
-            if (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
+            cout << "Default streams:" << endl;
+            for( auto && sensor : dev.query_sensors() )
             {
-                cout << "Default streams:" << endl;
-                config cfg;
-                cfg.enable_device(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-                pipeline p;
-                auto profile = cfg.resolve(p);
-                for (auto&& sp : profile.get_streams())
+                for( auto const & sp : sensor.get_stream_profiles() )
                 {
-                    cout << "    " << sp.stream_name() << " as " << sp.format() << " at " << sp.fps() << " Hz";
-                    if (auto vp = sp.as<video_stream_profile>())
+                    if( sp.is_default() )
                     {
-                        cout << "; Resolution: " << vp.width() << "x" << vp.height();
+                        cout << "    " << sp.stream_name() << " as " << sp.format() << " at " << sp.fps() << " Hz";
+                        if( auto vsp = sp.as<video_stream_profile>() )
+                        {
+                            cout << "; Resolution: " << vsp.width() << "x" << vsp.height();
+                        }
+                        cout << endl;
                     }
-                    cout << endl;
                 }
-            }
-            else
-            {
-                cout << "Cannot list default streams since the device does not provide a serial number!" << endl;
             }
             cout << endl;
         }
@@ -443,7 +437,7 @@ int main(int argc, char** argv) try
                 {
                     for( auto const & profile : sensor.get_stream_profiles() )
                     {
-                        cout << "    ";
+                        cout << ( show_defaults.getValue() && profile.is_default() ? " +  " : "    " );
                         cout << " (" << profile.unique_id() << '.' << profile.stream_index() << ")    ";
                         cout << setw( w_stream ) << profile.stream_name();
                         if( auto video = profile.as< video_stream_profile >() )
@@ -462,9 +456,11 @@ int main(int argc, char** argv) try
                     int p_width = 0, p_height = 0;
                     rs2_format p_format = RS2_FORMAT_ANY;
                     std::string p_stream_name;
+                    bool p_default = false;
                     auto print_last_stream = [&]()
                     {
-                        cout << "    ";
+                        cout << ( p_default ? " +  " : "    " );
+                        p_default = false;
                         cout << setw( w_stream ) << p_stream_name;
                         if( p_width || p_height )
                             cout << setw( w_res ) << (std::to_string( p_width ) + 'x' + std::to_string( p_height ));
@@ -498,6 +494,8 @@ int main(int argc, char** argv) try
                         {
                             ss << '/';
                         }
+                        if( profile.is_default() && show_defaults.getValue() )
+                            ss << "+", p_default = true;
                         ss << profile.fps();
                     }
                     print_last_stream();

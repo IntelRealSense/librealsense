@@ -109,10 +109,22 @@ std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_motion_stream(
 
 stream_profiles dds_sensor_proxy::init_stream_profiles()
 {
-    register_basic_converters();
-    if( should_use_basic_formats() )
-        _formats_converter.drop_non_basic_formats();
-    auto profiles = _formats_converter.get_all_possible_profiles( get_raw_stream_profiles() );
+    auto profiles = get_raw_stream_profiles();
+
+    auto format = get_format_conversion();
+    if( format_conversion::raw == format )
+    {
+        // NOTE: this is not meant for actual streaming at this time -- actual behavior of the
+        // formats_converter has not been implemented!
+    }
+    else
+    {
+        register_basic_converters();
+        if( format_conversion::basic == format )
+            _formats_converter.drop_non_basic_formats();
+        profiles = _formats_converter.get_all_possible_profiles( profiles );
+    }
+
     sort_profiles( profiles );
     return profiles;
 }
