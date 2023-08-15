@@ -1539,20 +1539,8 @@ void log_callback_end( uint32_t fps,
         snapshot = std::make_shared<fisheye_sensor_snapshot>();
     }
 
-    sensor_base::format_conversion sensor_base::get_format_conversion() const
+    format_conversion sensor_base::get_format_conversion() const
     {
-        auto context = _owner->get_context();
-        if( ! context )
-            return format_conversion::full;
-        std::string const format_conversion( "format-conversion", 17 );
-        std::string const full( "full", 4 );
-        auto const value = rsutils::json::get( context->get_settings(), format_conversion, full );
-        if( value == full )
-            return format_conversion::full;
-        if( value == "basic" )
-            return format_conversion::basic;
-        if( value == "raw" )
-            return format_conversion::raw;
-        throw invalid_value_exception( "invalid " + format_conversion + " value '" + value + "'" );
+        return _owner->get_format_conversion();
     }
 }

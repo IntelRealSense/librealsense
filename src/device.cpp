@@ -7,6 +7,7 @@
 #include "device.h"
 
 #include <rsutils/string/from.h>
+#include <rsutils/json.h>
 
 using namespace librealsense;
 
@@ -337,6 +338,23 @@ std::vector<rs2_format> device::map_supported_color_formats(rs2_format source_fo
         LOG_ERROR("Format is not supported for mapping");
     }
     return target_formats;
+}
+
+format_conversion device::get_format_conversion() const
+{
+    auto context = get_context();
+    if( ! context )
+        return format_conversion::full;
+    std::string const format_conversion( "format-conversion", 17 );
+    std::string const full( "full", 4 );
+    auto const value = rsutils::json::get( context->get_settings(), format_conversion, full );
+    if( value == full )
+        return format_conversion::full;
+    if( value == "basic" )
+        return format_conversion::basic;
+    if( value == "raw" )
+        return format_conversion::raw;
+    throw invalid_value_exception( "invalid " + format_conversion + " value '" + value + "'" );
 }
 
 void device::tag_profiles(stream_profiles profiles) const

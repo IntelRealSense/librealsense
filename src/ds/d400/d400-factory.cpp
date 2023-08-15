@@ -973,9 +973,26 @@ namespace librealsense
             int color_height = 480;
             int fps = usb3mode ?  30 : 10;
 
-            tags.push_back({ RS2_STREAM_COLOR, -1, color_width, color_height, RS2_FORMAT_RGB8, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_DEPTH, -1, depth_width, depth_height, RS2_FORMAT_Z16, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_INFRARED, -1, depth_width, depth_height, RS2_FORMAT_Y8, fps, profile_tag::PROFILE_TAG_SUPERSET });
+            auto format_conversion = get_format_conversion();
+
+            tags.push_back( { RS2_STREAM_COLOR,
+                              -1,  // index
+                              color_width, color_height,
+                              ( format_conversion == format_conversion::full ) ? RS2_FORMAT_RGB8 : RS2_FORMAT_YUYV,
+                              fps,
+                              profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT } );
+            tags.push_back( { RS2_STREAM_DEPTH,
+                              -1,  // index
+                              depth_width, depth_height,
+                              RS2_FORMAT_Z16,
+                              fps,
+                              profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT } );
+            tags.push_back( { RS2_STREAM_INFRARED,
+                              -1,  // index
+                              depth_width, depth_height,
+                              ( format_conversion == format_conversion::raw ) ? RS2_FORMAT_Y8I : RS2_FORMAT_Y8,
+                              fps,
+                              profile_tag::PROFILE_TAG_SUPERSET } );
 
             return tags;
         }

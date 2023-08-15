@@ -25,6 +25,13 @@ namespace librealsense
 
     class context;
 
+    enum class format_conversion
+    {
+        raw,
+        basic,
+        full
+    };
+
     typedef enum profile_tag
     {
         PROFILE_TAG_SUPERSET = 1, // to be included in enable_all
