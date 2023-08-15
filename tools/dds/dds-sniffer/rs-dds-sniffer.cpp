@@ -207,7 +207,8 @@ bool dds_sniffer::init( realdds::dds_domain_id domain )
             on_type_discovery( topic_name, dyn_type );
         } );
 
-    _participant.init( domain, "rs-dds-sniffer" );
+    auto settings = nlohmann::json::object();
+    _participant.init( domain, "rs-dds-sniffer", std::move( settings ) );
 
     return _participant.is_valid();
 }

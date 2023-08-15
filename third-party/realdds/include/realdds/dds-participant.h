@@ -5,6 +5,8 @@
 
 #include "dds-defines.h"
 
+#include <nlohmann/json.hpp>
+
 #include <memory>
 #include <functional>
 #include <string>
@@ -50,6 +52,8 @@ class dds_participant
 
     struct listener_impl;
 
+    nlohmann::json _settings;
+
 public:
     dds_participant() = default;
     dds_participant( const dds_participant & ) = delete;
@@ -57,13 +61,15 @@ public:
 
     // Creates the underlying DDS participant and sets the QoS
     // If need to use callbacks set them before calling init, they may be called before init returns.
-    void init( dds_domain_id, std::string const & participant_name );
+    void init( dds_domain_id, std::string const & participant_name, nlohmann::json const & settings );
 
     bool is_valid() const { return ( nullptr != _participant ); }
     bool operator!() const { return ! is_valid(); }
 
     eprosima::fastdds::dds::DomainParticipant * get() const { return _participant; }
     eprosima::fastdds::dds::DomainParticipant * operator->() const { return get(); }
+
+    nlohmann::json const & settings() const { return _settings; }
 
     // RTPS 8.2.4.2 "Every Participant has GUID <prefix, ENTITYID_PARTICIPANT>, where the constant ENTITYID_PARTICIPANT
     //     is a special value defined by the RTPS protocol. Its actual value depends on the PSM."

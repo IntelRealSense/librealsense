@@ -11,7 +11,7 @@ if log.is_debug_on():
     rs.log_to_console( rs.log_severity.debug )
 log.nested = 'C  '
 
-context = rs.context( '{"dds-domain":123,"dds-participant-name":"test-formats-conversion"}' )
+context = rs.context( { 'dds': { 'domain': 123, 'participant': 'test-formats-conversion' }} )
 only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
 
 import os.path
@@ -50,7 +50,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
 
             test.check_equal( len( profiles ), 2 ) # YUYV can stay YUYV or be converted into RGB8
             test.check_equal( profiles[0].format(), rs.format.yuyv )
-            test.check_equal( profiles[1].format(), rs.format.rgb8 )            
+            test.check_equal( profiles[1].format(), rs.format.rgb8 )
     #
     #############################################################################################
     #
@@ -61,7 +61,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
 
             test.check_equal( len( profiles ), 2 ) # UYVY can stay UYVY or be converted into RGB8
             test.check_equal( profiles[0].format(), rs.format.uyvy )
-            test.check_equal( profiles[1].format(), rs.format.rgb8 )            
+            test.check_equal( profiles[1].format(), rs.format.rgb8 )
     #
     #############################################################################################
     #

@@ -3,6 +3,8 @@
 
 # test:device D400*
 
+# Note, this test depends on files deployed on LibCI machines (Windows + Linux)!
+
 import pyrealsense2 as rs
 from rspy import test, libci
 import os
@@ -11,9 +13,11 @@ fw_dir = os.path.join( libci.home, 'data/FW', '' )
 d400_fw_min_version_1 = 'Signed_Image_UVC_5_8_15_0.bin'
 d400_fw_min_version_2 = 'Signed_Image_UVC_5_12_7_100.bin'
 d400_fw_min_version_3 = 'Signed_Image_UVC_5_12_12_100.bin'
+d400_fw_min_version_4 = 'Signed_Image_UVC_5_13_0_50.bin'
 d400_fw_min_version_1_prev = 'Signed_Image_UVC_5_8_14_0.bin'
 d400_fw_min_version_2_prev = 'Signed_Image_UVC_5_12_6_0.bin'
 d400_fw_min_version_3_prev = 'Signed_Image_UVC_5_12_11_0.bin'
+d400_fw_min_version_4_prev = 'Signed_Image_UVC_5_12_15_150.bin'
 
 pid_to_min_fw_version = {  # D400 product line:
     '0AD1': d400_fw_min_version_1,  # D400
@@ -39,7 +43,7 @@ pid_to_min_fw_version = {  # D400 product line:
     '0B4D': d400_fw_min_version_2,  # D465
     '0B52': d400_fw_min_version_1,  # D416_RGB
     '0B5B': d400_fw_min_version_3,  # D405
-    '0B5C': d400_fw_min_version_2   # D455
+    '0B5C': d400_fw_min_version_4   # D455
 }
 
 pid_to_max_fw_version = {
@@ -47,7 +51,8 @@ pid_to_max_fw_version = {
 
 fw_previous_version = {d400_fw_min_version_1: d400_fw_min_version_1_prev,
                        d400_fw_min_version_2: d400_fw_min_version_2_prev,
-                       d400_fw_min_version_3: d400_fw_min_version_3_prev
+                       d400_fw_min_version_3: d400_fw_min_version_3_prev,
+                       d400_fw_min_version_4: d400_fw_min_version_4_prev
                        }
 
 fw_next_version = {

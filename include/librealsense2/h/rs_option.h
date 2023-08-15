@@ -117,6 +117,7 @@ extern "C" {
         RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE, /**< Enable / disable color image auto-gain*/
         RS2_OPTION_EMITTER_FREQUENCY, /**< Select emitter (laser projector) frequency, see rs2_emitter_frequency for values */
         RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE, /**< Select depth sensor auto exposure mode see rs2_depth_auto_exposure_mode for values  */
+        RS2_OPTION_LEFT_IR_TEMPERATURE, /**< Temperature of the Left IR Sensor */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 

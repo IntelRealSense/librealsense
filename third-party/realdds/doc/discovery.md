@@ -75,6 +75,23 @@ The message format is a [flexible message](../include/realdds/topics/flexible/) 
 All are optional except `name` and `topic-root`. Any fields not shown above will be ignored.
 
 
+# Disconnection
+
+Under normal operation, the DDS subsystem will notify participants of entity disconnections without much delay. If a participant crashes or goes offline unexpectedly, a timeout (currently 10 seconds) is triggered and only then participants are notified.
+
+When it is expected that a server will go offline, the server can elect to send a `stopping` message so that clients can remove the device immediately rather than waiting for DDS to do its thing.
+
+```JSON
+{
+  "stopping": true
+}
+```
+
+The `stopping` field has no set type at this time so any value will do. When it's there, any client should immediately assume the server is offline.
+
+No other fields are necessary with `stopping` -- the server is recognized by its GUID.
+
+
 # Topic Root
 
 This points to the topic used as the device root. This is how to access the device; without it, we're just guessing.
@@ -88,10 +105,17 @@ Librealsense manages a single point from which all other objects are derived: th
 
 The `context` has been augmented to be able to see DDS devices. This is on by default if `BUILD_WITH_DDS` is on.
 
-When a context is created, a JSON representation may be passed to it, e.g.: `{"dds-domain":123,"dds-participant-name":"librs"}`. This allows various customizations:
+When a context is created, a JSON representation may be passed to it, e.g.: `{"dds": { "domain": 123, "participant": "librs" }}`. This allows various customizations:
 
 | Field                | Description                            |
-|----------------------|------------------------------------------------------|
-| dds-discovery        | Default to `true`; set to `false` to turn off DDS in this context
-| dds-domain           | The domain number to use (0-232); `0` is the default
-| dds-participant-name | The name given this context (how other participants will see it); defaults to the executable name
+|----------------------|----------------------------------------|
+| dds                  | Set to `false` to turn off DDS in this context; otherwise a JSON object
+
+The `dds` is there by default (i.e., not `false`). The value may contain the following settings dealing with discovery:
+
+| Field                | Description                            |
+|----------------------|----------------------------------------|
+| domain               | The domain number to use (0-232); `0` is the default
+| participant          | The name given this context (how other participants will see it); defaults to the executable name
+
+See a comprehensive list of settings under [device](device.md#Settings).

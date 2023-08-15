@@ -50,7 +50,7 @@ namespace librealsense
 
         float temperature;
         try {
-            command cmd(ds::PROJ_TEMP_MIPI);
+            command cmd(ds::GTEMP);
             auto res = _hw_monitor->send(cmd);
             temperature = static_cast<float>(res[0]);
         }

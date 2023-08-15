@@ -34,19 +34,32 @@ class flexible_msg;
 
 class dds_device::impl
 {
+    enum class state_t
+    {
+        WAIT_FOR_DEVICE_HEADER,
+        WAIT_FOR_DEVICE_OPTIONS,
+        WAIT_FOR_STREAM_HEADER,
+        WAIT_FOR_STREAM_OPTIONS,
+        READY
+    };
+    static char const * to_string( state_t );
+    void set_state( state_t );
+
+    state_t _state = state_t::WAIT_FOR_DEVICE_HEADER;
+    size_t _n_streams_expected = 0;  // needed only until ready
+
 public:
     topics::device_info const _info;
     dds_guid const _guid;
     std::shared_ptr< dds_participant > const _participant;
     std::shared_ptr< dds_subscriber > _subscriber;
 
-    bool _running = false;
-
     std::map< std::string, std::shared_ptr< dds_stream > > _streams;
 
     std::mutex _replies_mutex;
     std::condition_variable _replies_cv;
     std::map< dds_sequence_number, nlohmann::json > _replies;
+    size_t _reply_timeout_ms;
 
     std::shared_ptr< dds_topic_reader > _notifications_reader;
     std::shared_ptr< dds_topic_reader > _metadata_reader;
@@ -60,7 +73,9 @@ public:
           dds_guid const & guid,
           topics::device_info const & info );
 
-    void run( size_t message_timeout_ms );
+    void wait_until_ready( size_t timeout_ms );
+    bool is_ready() const { return state_t::READY == _state; }
+
     void open( const dds_stream_profiles & profiles );
 
     void write_control_message( topics::flexible_msg &&, nlohmann::json * reply = nullptr );
@@ -71,28 +86,31 @@ public:
     typedef std::function< void( nlohmann::json && md ) > on_metadata_available_callback;
     void on_metadata_available( on_metadata_available_callback cb ) { _on_metadata_available = cb; }
 
+    typedef std::function< void(
+        dds_time const & timestamp, char type, std::string const & text, nlohmann::json const & data ) >
+        on_device_log_callback;
+    void on_device_log( on_device_log_callback cb ) { _on_device_log = cb; }
+
 private:
     void create_notifications_reader();
     void create_metadata_reader();
     void create_control_writer();
-    bool init();
-
-    struct init_context;
-    void handle_device_header( init_context &, nlohmann::json const & );
-    void handle_device_options( init_context &, nlohmann::json const & );
-    void handle_stream_header( init_context &, nlohmann::json const & );
-    void handle_stream_options( init_context &, nlohmann::json const & );
 
     // notification handlers
+    void on_option_value( nlohmann::json const & );
+    void on_known_notification( nlohmann::json const & );
+    void on_log( nlohmann::json const & );
+    void on_device_header( nlohmann::json const & );
+    void on_device_options( nlohmann::json const & );
+    void on_stream_header( nlohmann::json const & );
+    void on_stream_options( nlohmann::json const & );
+
     typedef std::map< std::string, void ( dds_device::impl::* )( nlohmann::json const & ) > notification_handlers;
     static notification_handlers const _notification_handlers;
     void handle_notification( nlohmann::json const & );
-    void on_option_value( nlohmann::json const & );
-    void on_known_notification( nlohmann::json const & );
 
     on_metadata_available_callback _on_metadata_available = nullptr;
-
-    size_t _message_timeout_ms = 5000;
+    on_device_log_callback _on_device_log = nullptr;
 };
 
 

@@ -35,8 +35,8 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
 
     # set up the client device and keep all its streams - this is connected directly and we can get notifications on it!
     device_direct = dds.device( participant, participant.create_guid(), d435i.device_info )
-    device_direct.run( 1000 )  # this will throw if something's wrong
-    test.check( device_direct.is_running(), on_fail=test.ABORT )
+    device_direct.wait_until_ready()
+    test.check( device_direct.is_ready(), on_fail=test.ABORT )
     for stream_direct in device_direct.streams():
         pass  # should be only one
     topic_name = 'rt/' + d435i.device_info.topic_root + '_' + stream_direct.name()
@@ -140,7 +140,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         if log.is_debug_on():
             rs.log_to_console( rs.log_severity.debug )
         from dds import wait_for_devices
-        context = rs.context( '{"dds-domain":123,"dds-participant-name":"librs"}' )
+        context = rs.context( { 'dds': { 'domain': 123, 'participant': 'librs' }} )
         only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
         device = wait_for_devices( context, only_sw_devices, n=1. )[0]
         sensors = device.sensors

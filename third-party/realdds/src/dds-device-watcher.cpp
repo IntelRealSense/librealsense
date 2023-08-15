@@ -43,7 +43,15 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
                 if( device )
                     continue;
 
-                topics::device_info device_info = topics::device_info::from_json( msg.json_data() );
+                auto j = msg.json_data();
+                if( j.find( "stopping" ) != j.end() )
+                {
+                    // This device is stopping for whatever reason (e.g., HW reset); remove it
+                    LOG_DEBUG( "DDS device (" << _participant->print( guid ) << ") is stopping" );
+                    remove_device( guid );
+                    continue;
+                }
+                topics::device_info device_info = topics::device_info::from_json( j );
 
                 LOG_DEBUG( "DDS device (" << _participant->print( guid ) << ") detected:"
                                           << "\n\tName: " << device_info.name
@@ -62,7 +70,13 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
                 // NOTE: device removals are handled via the writer-removed notification; see the
                 // listener callback in init().
                 if( _on_device_added )
-                    _on_device_added( device );
+                {
+                    std::thread(
+                        [device, on_device_added = _on_device_added]() {  //
+                            on_device_added( device );
+                        } )
+                        .detach();
+                }
             }
         } );
 
@@ -110,29 +124,38 @@ dds_device_watcher::~dds_device_watcher()
 void dds_device_watcher::init()
 {
     if( ! _listener )
-        _participant->create_listener( &_listener )->on_writer_removed( [this]( dds_guid guid, char const * ) {
-            std::shared_ptr< dds_device > device;
-            {
-                std::lock_guard< std::mutex > lock( _devices_mutex );
-                auto it = _dds_devices.find( guid );
-                if( it == _dds_devices.end() )
-                    return;
-                device = it->second;
-                _dds_devices.erase( it );
-            }
-            // rest must happen outside the mutex
-            std::thread( [device, on_device_removed = _on_device_removed]() {
-                if( on_device_removed )
-                    on_device_removed( device );
-                // If we're holding the device, it will get destroyed here, from another thread.
-                // Not sure why, but if we delete the outside this thread (in the listener callback), it will cause some
-                // sort of invalid state in DDS. The thread will get killed and we won't get any notification of the
-                // remote participant getting removed... and the process will even hang on exit.
-            } ).detach();
-        } );
+        _participant->create_listener( &_listener )
+            ->on_writer_removed( [this]( dds_guid guid, char const * ) { remove_device( guid ); } );
 
     if( ! _device_info_topic->is_running() )
         _device_info_topic->run( dds_topic_reader::qos() );
+}
+
+
+void dds_device_watcher::remove_device( dds_guid const & guid )
+{
+    std::shared_ptr< dds_device > device;
+    {
+        std::lock_guard< std::mutex > lock( _devices_mutex );
+        auto it = _dds_devices.find( guid );
+        if( it == _dds_devices.end() )
+            return;
+        device = it->second;
+        _dds_devices.erase( it );
+    }
+    // rest must happen outside the mutex
+    std::thread(
+        [device, on_device_removed = _on_device_removed]()
+        {
+            if( on_device_removed )
+                on_device_removed( device );
+            // If we're holding the device, it will get destroyed here, from another thread.
+            // Not sure why, but if we delete the outside this thread (in the listener callback), it
+            // will cause some sort of invalid state in DDS. The thread will get killed and we won't get
+            // any notification of the remote participant getting removed... and the process will even
+            // hang on exit.
+        } )
+        .detach();
 }
 
 

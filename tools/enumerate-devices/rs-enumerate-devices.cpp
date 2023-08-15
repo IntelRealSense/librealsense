@@ -195,19 +195,21 @@ int main(int argc, char** argv) try
     SwitchArg show_options_arg("o", "option", "Show all the supported options per subdevice");
     SwitchArg show_calibration_data_arg( "c", "calib_data", "Show extrinsic and intrinsic of all subdevices" );
     SwitchArg show_defaults("d", "defaults", "Show the default streams configuration");
-    SwitchArg only_sw_arg( "", "sw-only", "Show only software devices (playback, dds, etc. -- but not USB/HID/etc.)" );
+    SwitchArg only_sw_arg( "", "sw-only", "Show only software devices (playback, DDS, etc. -- but not USB/HID/etc.)" );
+    SwitchArg basic_formats_arg( "", "basic-formats", "Don't show non-raw conversions" );
     SwitchArg verbose_arg( "v", "verbose", "Show extra information" );
     ValueArg<string> show_playback_device_arg("p", "playback_device", "Inspect and enumerate playback device (from file)",
-        false, "", "Playback device - ROSBag record full path");
+        false, "", "path");
     cmd.add(debug_arg);
     cmd.add(short_view_arg);
     cmd.add(compact_view_arg);
     cmd.add(show_options_arg);
     cmd.add(show_calibration_data_arg);
     cmd.add(only_sw_arg);
+    cmd.add(basic_formats_arg);
     cmd.add(verbose_arg);
 #ifdef BUILD_WITH_DDS
-    ValueArg< int > domain_arg( "", "dds-domain", "Set the DDS domain ID", false, 0, "domain ID" );
+    ValueArg< int > domain_arg( "", "dds-domain", "Set the DDS domain ID (default to 0)", false, 0, "0-232" );
     cmd.add( domain_arg );
 #endif
     cmd.add(show_defaults);
@@ -242,8 +244,12 @@ int main(int argc, char** argv) try
     // Obtain a list of devices currently present on the system
     json settings;
 #ifdef BUILD_WITH_DDS
-    settings["dds-domain"] = domain_arg.getValue();
+    json dds;
+    dds["domain"] = domain_arg.getValue();
+    settings["dds"] = std::move( dds ); 
 #endif
+    if( basic_formats_arg.getValue() )
+        settings["use-basic-formats"] = true;
     context ctx( settings.dump() );
     
     rs2::device d;

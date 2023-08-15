@@ -156,7 +156,7 @@ namespace librealsense
         std::shared_ptr< realdds::dds_participant > _dds_participant;
         std::shared_ptr< realdds::dds_device_watcher > _dds_watcher;
 
-        void start_dds_device_watcher( size_t message_timeout_ms );
+        void start_dds_device_watcher();
 #endif
 
         nlohmann::json _settings; // Save operation settings

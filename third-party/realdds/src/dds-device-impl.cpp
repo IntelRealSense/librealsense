@@ -11,20 +11,16 @@
 #include <realdds/topics/dds-topic-names.h>
 #include <realdds/topics/flexible-msg.h>
 #include <realdds/dds-guid.h>
+#include <realdds/dds-time.h>
 
 #include <fastdds/dds/publisher/DataWriter.hpp>
 #include <fastdds/dds/subscriber/DataReader.hpp>
 
 #include <rsutils/time/timer.h>
-#include <rsutils/string/shorten-json-string.h>
-#include <rsutils/string/slice.h>
+#include <rsutils/string/from.h>
 #include <rsutils/json.h>
 
 #include <cassert>
-
-
-using nlohmann::json;
-using rsutils::string::shorten_json_string;
 
 
 static std::string const id_key( "id", 2 );
@@ -44,59 +40,71 @@ static std::string const owner_name_key( "owner-name", 10 );
 static std::string const explanation_key( "explanation", 11 );
 static std::string const control_key( "control", 7 );
 
+static std::string const id_log( "log", 3 );
+static std::string const entries_key( "entries", 7 );
+
 
 namespace realdds {
 
-namespace {
 
-enum class state_type
-{
-    WAIT_FOR_DEVICE_HEADER,
-    WAIT_FOR_DEVICE_OPTIONS,
-    WAIT_FOR_STREAM_HEADER,
-    WAIT_FOR_STREAM_OPTIONS,
-    DONE
-    // Note - Assuming all profiles of a stream will be sent in a single video_stream_profiles_msg
-    // Otherwise need a stream header message with expected number of profiles for each stream
-    // But then need all stream header messages to be sent before any profile message for a simple state machine
-};
-
-char const * to_string( state_type st )
+/*static*/ char const * dds_device::impl::to_string( state_t st )
 {
     switch( st )
     {
-    case state_type::WAIT_FOR_DEVICE_HEADER:
+    case state_t::WAIT_FOR_DEVICE_HEADER:
         return "WAIT_FOR_DEVICE_HEADER";
-    case state_type::WAIT_FOR_DEVICE_OPTIONS:
+    case state_t::WAIT_FOR_DEVICE_OPTIONS:
         return "WAIT_FOR_DEVICE_OPTIONS";
-    case state_type::WAIT_FOR_STREAM_HEADER:
+    case state_t::WAIT_FOR_STREAM_HEADER:
         return "WAIT_FOR_STREAM_HEADER";
-    case state_type::WAIT_FOR_STREAM_OPTIONS:
+    case state_t::WAIT_FOR_STREAM_OPTIONS:
         return "WAIT_FOR_STREAM_OPTIONS";
-    case state_type::DONE:
-        return "DONE";
+    case state_t::READY:
+        return "READY";
     default:
         return "UNKNOWN";
     }
 }
 
-std::ostream& operator<<( std::ostream& s, state_type st )
-{
-    s << to_string( st );
-    return s;
-}
 
-}  // namespace
+void dds_device::impl::set_state( state_t new_state )
+{
+    if( new_state == _state )
+        return;
+
+    if( state_t::READY == new_state )
+    {
+        if( _metadata_reader )
+        {
+            if( rsutils::json::get( _participant->settings(), "disable-metadata", false ) )
+            {
+                LOG_DEBUG( "... metadata is available but 'disable-metadata' is set" );
+                _metadata_reader.reset();
+            }
+            else
+            {
+                LOG_DEBUG( "... metadata is enabled" );
+                dds_topic_reader::qos rqos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS );
+                rqos.history().depth = 10; // Support receive metadata from multiple streams
+                _metadata_reader->run( rqos );
+            }
+        }
+        LOG_DEBUG( "device '" << _info.debug_name() << "' (" << _participant->print( _guid ) << ") is ready" );
+    }
+
+    _state = new_state;
+}
 
 
 /*static*/ dds_device::impl::notification_handlers const dds_device::impl::_notification_handlers{
     { id_set_option, &dds_device::impl::on_option_value },
     { id_query_option, &dds_device::impl::on_option_value },
-    { id_device_header, &dds_device::impl::on_known_notification },
-    { id_device_options, &dds_device::impl::on_known_notification },
-    { id_stream_header, &dds_device::impl::on_known_notification },
-    { id_stream_options, &dds_device::impl::on_known_notification },
+    { id_device_header, &dds_device::impl::on_device_header },
+    { id_device_options, &dds_device::impl::on_device_options },
+    { id_stream_header, &dds_device::impl::on_stream_header },
+    { id_stream_options, &dds_device::impl::on_stream_options },
     { id_open_streams, &dds_device::impl::on_known_notification },
+    { id_log, &dds_device::impl::on_log },
 };
 
 
@@ -107,47 +115,27 @@ dds_device::impl::impl( std::shared_ptr< dds_participant > const & participant,
     , _guid( guid )
     , _participant( participant )
     , _subscriber( std::make_shared< dds_subscriber >( participant ) )
+    , _reply_timeout_ms( rsutils::json::get< size_t >( participant->settings(), "device-reply-timeout-ms", 1000 ) )
 {
+    create_notifications_reader();
+    create_control_writer();
 }
 
 
-void dds_device::impl::run( size_t message_timeout_ms )
+void dds_device::impl::wait_until_ready( size_t timeout_ms )
 {
-    if( _running )
-        DDS_THROW( runtime_error, "device '" + _info.name + "' is already running" );
+    if( is_ready() )
+        return;
 
-    _message_timeout_ms = message_timeout_ms;
-
-    create_notifications_reader();
-    create_control_writer();
-    if( ! init() )
-        DDS_THROW( runtime_error, "failed getting stream data from '" + _info.topic_root + "'" );
-
-    _notifications_reader->on_data_available(
-        [&]()
-        {
-            topics::flexible_msg notification;
-            eprosima::fastdds::dds::SampleInfo info;
-            while( topics::flexible_msg::take_next( *_notifications_reader, &notification, &info ) )
-            {
-                if( ! notification.is_valid() )
-                    continue;
-                auto j = notification.json_data();
-                if( j.is_array() )
-                {
-                    for( unsigned x = 0; x < j.size(); ++x )
-                        handle_notification( j[x] );
-                }
-                else
-                {
-                    handle_notification( j );
-                }
-            }
-        } );
-
-    LOG_DEBUG( "device '" << _info.topic_root << "' (" << _participant->print( _guid )
-                          << ") initialized successfully" );
-    _running = true;
+    LOG_DEBUG( "waiting for '" << _info.debug_name() << "' ..." );
+    rsutils::time::timer timer{ std::chrono::milliseconds( timeout_ms ) };
+    do
+    {
+        if( timer.has_expired() )
+            DDS_THROW( runtime_error, "timeout waiting for '" << _info.debug_name() << "'" );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
+    }
+    while( ! is_ready() );
 }
 
 
@@ -199,6 +187,9 @@ void dds_device::impl::handle_notification( nlohmann::json const & j )
 
 void dds_device::impl::on_option_value( nlohmann::json const & j )
 {
+    if( ! is_ready() )
+        return;
+
     // This is the notification for "set-option" or "query-option", meaning someone sent a control request to set/get an
     // option value. In either case a value will be sent; we want to update ours accordingly to reflect the latest:
     if( rsutils::json::get( j, status_key, status_ok ) != status_ok )
@@ -258,6 +249,58 @@ void dds_device::impl::on_known_notification( nlohmann::json const & j )
 }
 
 
+void dds_device::impl::on_log( nlohmann::json const & j )
+{
+    // This is the notification for "log"  (see docs/notifications.md#Logging)
+    //     - `entries` is an array containing 1 or more log entries
+    auto it = j.find( entries_key );
+    if( it == j.end() )
+        throw std::runtime_error( "log entries not found" );
+    if( ! it->is_array() )
+        throw std::runtime_error( "log entries not an array" );
+    // Each log entry is a JSON array of `[timestamp, type, text, data]` containing:
+    //     - `timestamp`: when the event occurred
+    //     - `type`: one of `EWID` (Error, Warning, Info, Debug)
+    //     - `text`: any text that needs output
+    //     - `data`: optional; an object containing any pertinent information about the event
+    size_t x = 0;
+    for( auto & entry : *it )
+    {
+        try
+        {
+            if( ! entry.is_array() )
+                throw std::runtime_error( "not an array" );
+            if( entry.size() > 4 )
+                throw std::runtime_error( "too long" );
+            auto timestamp = time_from( rsutils::json::get< dds_nsec >( entry, 0 ) );
+            auto const stype = rsutils::json::get< std::string >( entry, 1 );
+            if( stype.length() != 1 || ! strchr( "EWID", stype[0] ) )
+                throw std::runtime_error( "type not one of 'EWID'" );
+            char const type = stype[0];
+            auto const text = rsutils::json::get< std::string >( entry, 2 );
+            nlohmann::json data;
+            if( entry.size() > 3 )
+            {
+                data = entry.at( 3 );
+                if( ! data.is_object() )
+                    throw std::runtime_error( "data is not an object" );
+            }
+
+            if( _on_device_log )
+                _on_device_log( timestamp, type, text, data );
+            else
+                LOG_DEBUG( "[" << _info.debug_name() << "][" << timestr( timestamp ) << "][" << type << "] " << text
+                               << " [" << data << "]" );
+        }
+        catch( std::exception const & e )
+        {
+            LOG_DEBUG( "log entry " << x << ": " << e.what() << "\n" << entry );
+        }
+        ++x;
+    }
+}
+
+
 void dds_device::impl::open( const dds_stream_profiles & profiles )
 {
     if( profiles.empty() )
@@ -268,9 +311,9 @@ void dds_device::impl::open( const dds_stream_profiles & profiles )
     {
         auto stream = profile->stream();
         if( ! stream )
-            DDS_THROW( runtime_error, "profile " + profile->to_string() + " is not part of any stream" );
+            DDS_THROW( runtime_error, "profile " << profile->to_string() << " is not part of any stream" );
         if( stream_profiles.find( stream->name() ) != stream_profiles.end() )
-            DDS_THROW( runtime_error, "more than one profile found for stream '" + stream->name() + "'" );
+            DDS_THROW( runtime_error, "more than one profile found for stream '" << stream->name() << "'" );
 
         stream_profiles[stream->name()] = profile->to_json();
     }
@@ -338,7 +381,7 @@ void dds_device::impl::write_control_message( topics::flexible_msg && msg, nlohm
         std::unique_lock< std::mutex > lock( _replies_mutex );
         auto & actual_reply = _replies[this_sequence_number];  // create it; initialized to null json
         if( ! _replies_cv.wait_for( lock,
-                                    std::chrono::milliseconds( _message_timeout_ms ),
+                                    std::chrono::milliseconds( _reply_timeout_ms ),
                                     [&]()
                                     {
                                         if( actual_reply.is_null() )
@@ -360,12 +403,37 @@ void dds_device::impl::create_notifications_reader()
 
     auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + topics::NOTIFICATION_TOPIC_NAME );
 
-    _notifications_reader = std::make_shared< dds_topic_reader >( topic, _subscriber );
+    // We have some complicated topic structures. In particular, the metadata topic is created on demand while handling
+    // other notifications, which doesn't work well (deadlock) if the notification is not called from another thread. So
+    // we need the notification handling on another thread:
+    _notifications_reader = std::make_shared< dds_topic_reader_thread >( topic, _subscriber );
 
     dds_topic_reader::qos rqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
     //On discovery writer sends a burst of messages, if history is too small we might loose some of them
     //(even if reliable). Setting depth to cover known use-cases plus some spare
     rqos.history().depth = 24;
+
+    _notifications_reader->on_data_available(
+        [&]()
+        {
+            topics::flexible_msg notification;
+            eprosima::fastdds::dds::SampleInfo info;
+            while( topics::flexible_msg::take_next( *_notifications_reader, &notification, &info ) )
+            {
+                if( ! notification.is_valid() )
+                    continue;
+                auto j = notification.json_data();
+                if( j.is_array() )
+                {
+                    for( unsigned x = 0; x < j.size(); ++x )
+                        handle_notification( j[x] );
+                }
+                else
+                {
+                    handle_notification( j );
+                }
+            }
+        } );
 
     _notifications_reader->run( rqos );
 }
@@ -376,12 +444,7 @@ void dds_device::impl::create_metadata_reader()
         return;
 
     auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + topics::METADATA_TOPIC_NAME );
-
     _metadata_reader = std::make_shared< dds_topic_reader_thread >( topic, _subscriber );
-
-    dds_topic_reader::qos rqos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS );
-    rqos.history().depth = 10; // Support receive metadata from multiple streams
-
     _metadata_reader->on_data_available(
         [this]()
         {
@@ -402,7 +465,7 @@ void dds_device::impl::create_metadata_reader()
             }
         } );
 
-    _metadata_reader->run( rqos );
+    // NOTE: the metadata thread is only run() when we've reached the READY state
 }
 
 void dds_device::impl::create_control_writer()
@@ -418,67 +481,13 @@ void dds_device::impl::create_control_writer()
 }
 
 
-struct dds_device::impl::init_context
+void dds_device::impl::on_device_header( nlohmann::json const & j )
 {
-    state_type state = state_type::WAIT_FOR_DEVICE_HEADER;
-    size_t n_streams_expected = 0;
-    size_t n_stream_options_received = 0;
-};
+    if( _state != state_t::WAIT_FOR_DEVICE_HEADER )
+        return;
 
-
-bool dds_device::impl::init()
-{
-    // We expect to receive all of the sensors data under a timeout
-    rsutils::time::timer timer( std::chrono::seconds( 5 ) );
-    init_context init;
-    while( ! timer.has_expired() && state_type::DONE != init.state )
-    {
-        LOG_DEBUG( init.state << "..." );
-        eprosima::fastrtps::Duration_t one_second = { 1, 0 };
-        if( _notifications_reader->get()->wait_for_unread_message( one_second ) )
-        {
-            topics::flexible_msg notification;
-            eprosima::fastdds::dds::SampleInfo info;
-            while( init.state != state_type::DONE
-                   && topics::flexible_msg::take_next( *_notifications_reader, &notification, &info ) )
-            {
-                if( ! notification.is_valid() )
-                    continue;
-                try
-                {
-                    auto j = notification.json_data();
-                    auto id = rsutils::json::get< std::string >( j, id_key );
-                    if( state_type::WAIT_FOR_DEVICE_HEADER == init.state && id == id_device_header )
-                        handle_device_header( init, j );
-                    else if( state_type::WAIT_FOR_DEVICE_OPTIONS == init.state && id == id_device_options )
-                        handle_device_options( init, j );
-                    else if( state_type::WAIT_FOR_STREAM_HEADER == init.state && id == id_stream_header )
-                        handle_stream_header( init, j );
-                    else if( state_type::WAIT_FOR_STREAM_OPTIONS == init.state && id == id_stream_options )
-                        handle_stream_options( init, j );
-                    else if( init.state != state_type::WAIT_FOR_DEVICE_HEADER )
-                    {
-                        DDS_THROW( runtime_error, "unexpected notification '" + id + "' in " + to_string( init.state ) );
-                    }
-                }
-                catch( std::exception const & e )
-                {
-                    LOG_ERROR( "Error during DDS device initialization: " << e.what() );
-                    return false;
-                }
-            }
-        }
-    }
-
-    LOG_DEBUG( "... " << ( state_type::DONE == init.state ? "" : "timed out; state is " ) << init.state );
-    return( state_type::DONE == init.state );
-}
-
-
-void dds_device::impl::handle_device_header( init_context & init, nlohmann::json const & j )
-{
-    init.n_streams_expected = rsutils::json::get< size_t >( j, "n-streams" );
-    LOG_DEBUG( "... " << id_device_header << ": " << init.n_streams_expected << " streams expected" );
+    _n_streams_expected = rsutils::json::get< size_t >( j, "n-streams" );
+    LOG_DEBUG( "... " << id_device_header << ": " << _n_streams_expected << " streams expected" );
 
     if( rsutils::json::has( j, "extrinsics" ) )
     {
@@ -486,18 +495,21 @@ void dds_device::impl::handle_device_header( init_context & init, nlohmann::json
         {
             std::string from_name = rsutils::json::get< std::string >( ex, 0 );
             std::string to_name = rsutils::json::get< std::string >( ex, 1 );
-            LOG_DEBUG( "got extrinsics from " << from_name << " to " << to_name );
-            extrinsics extr = extrinsics::from_json( rsutils::json::get< json >( ex, 2 ) );
+            LOG_DEBUG( "    ... got extrinsics from " << from_name << " to " << to_name );
+            extrinsics extr = extrinsics::from_json( rsutils::json::get< nlohmann::json >( ex, 2 ) );
             _extrinsics_map[std::make_pair( from_name, to_name )] = std::make_shared< extrinsics >( extr );
         }
     }
 
-    init.state = state_type::WAIT_FOR_DEVICE_OPTIONS;
+    set_state( state_t::WAIT_FOR_DEVICE_OPTIONS );
 }
 
 
-void dds_device::impl::handle_device_options( init_context & init, nlohmann::json const & j )
+void dds_device::impl::on_device_options( nlohmann::json const & j )
 {
+    if( _state != state_t::WAIT_FOR_DEVICE_OPTIONS )
+        return;
+
     if( rsutils::json::has( j, "options" ) )
     {
         LOG_DEBUG( "... " << id_device_options << ": " << j["options"].size() << " options received" );
@@ -510,24 +522,26 @@ void dds_device::impl::handle_device_options( init_context & init, nlohmann::jso
         }
     }
 
-    if( init.n_streams_expected )
-        init.state = state_type::WAIT_FOR_STREAM_HEADER;
+    if( _n_streams_expected )
+        set_state( state_t::WAIT_FOR_STREAM_HEADER );
     else
-        init.state = state_type::DONE;
+        set_state( state_t::READY );
 }
 
 
-void dds_device::impl::handle_stream_header( init_context & init, nlohmann::json const & j )
+void dds_device::impl::on_stream_header( nlohmann::json const & j )
 {
-    if( _streams.size() >= init.n_streams_expected )
-        DDS_THROW( runtime_error,
-                   "more streams than expected (" + std::to_string( init.n_streams_expected ) + ") received" );
+    if( _state != state_t::WAIT_FOR_STREAM_HEADER )
+        return;
+
+    if( _streams.size() >= _n_streams_expected )
+        DDS_THROW( runtime_error, "more streams than expected (" << _n_streams_expected << ") received" );
     auto stream_type = rsutils::json::get< std::string >( j, "type" );
     auto stream_name = rsutils::json::get< std::string >( j, "name" );
 
     auto & stream = _streams[stream_name];
     if( stream )
-        DDS_THROW( runtime_error, "stream '" + stream_name + "' already exists" );
+        DDS_THROW( runtime_error, "stream '" << stream_name << "' already exists" );
 
     auto sensor_name = rsutils::json::get< std::string >( j, "sensor-name" );
     size_t default_profile_index = rsutils::json::get< size_t >( j, "default-profile-index" );
@@ -547,7 +561,7 @@ void dds_device::impl::handle_stream_header( init_context & init, nlohmann::json
     TYPE2STREAM( color, video )
     TYPE2STREAM( motion, motion )
     TYPE2STREAM( confidence, video )
-    DDS_THROW( runtime_error, "stream '" + stream_name + "' is of unknown type '" + stream_type + "'" );
+    DDS_THROW( runtime_error, "stream '" << stream_name << "' is of unknown type '" << stream_type << "'" );
 
 #undef TYPE2STREAM
 
@@ -561,30 +575,32 @@ void dds_device::impl::handle_stream_header( init_context & init, nlohmann::json
         stream->init_profiles( profiles, default_profile_index );
     else
         DDS_THROW( runtime_error,
-                   "stream '" + stream_name + "' default profile index " + std::to_string( default_profile_index )
-                       + " is out of bounds" );
+                   "stream '" << stream_name << "' default profile index " << default_profile_index
+                              << " is out of bounds" );
     if( strcmp( stream->type_string(), stream_type.c_str() ) != 0 )
         DDS_THROW( runtime_error,
-                   "failed to instantiate stream type '" + stream_type + "' (instead, got '" + stream->type_string()
-                       + "')" );
+                   "failed to instantiate stream type '" << stream_type << "' (instead, got '" << stream->type_string()
+                                                         << "')" );
 
-    LOG_DEBUG( "... stream '" << stream_name << "' (" << _streams.size() << "/" << init.n_streams_expected
-                              << ") received with " << profiles.size() << " profiles" );
+    LOG_DEBUG( "... stream " << _streams.size() << "/" << _n_streams_expected << " '" << stream_name
+                             << "' received with " << profiles.size() << " profiles"
+                             << ( stream->metadata_enabled() ? " and metadata" : "" ) );
 
-    init.state = state_type::WAIT_FOR_STREAM_OPTIONS;
+    set_state( state_t::WAIT_FOR_STREAM_OPTIONS );
 }
 
 
-void dds_device::impl::handle_stream_options( init_context & init, nlohmann::json const & j )
+void dds_device::impl::on_stream_options( nlohmann::json const & j )
 {
+    if( _state != state_t::WAIT_FOR_STREAM_OPTIONS )
+        return;
+
     auto stream_it = _streams.find( rsutils::json::get< std::string >( j, "stream-name" ) );
     if( stream_it == _streams.end() )
         DDS_THROW( runtime_error,
                    std::string( "Received stream options for stream '" )
                        + rsutils::json::get< std::string >( j, "stream-name" )
                        + "' whose header was not received yet" );
-
-    ++init.n_stream_options_received;
 
     if( rsutils::json::has( j, "options" ) )
     {
@@ -626,10 +642,10 @@ void dds_device::impl::handle_stream_options( init_context & init, nlohmann::jso
         stream_it->second->set_recommended_filters( std::move( filter_names ) );
     }
 
-    if( _streams.size() >= init.n_streams_expected )
-        init.state = state_type::DONE;
+    if( _streams.size() >= _n_streams_expected )
+        set_state( state_t::READY );
     else
-        init.state = state_type::WAIT_FOR_STREAM_HEADER;
+        set_state( state_t::WAIT_FOR_STREAM_HEADER );
 }
 
 

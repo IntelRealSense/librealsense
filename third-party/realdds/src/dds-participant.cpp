@@ -4,6 +4,7 @@
 #include <realdds/dds-participant.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-guid.h>
+#include <realdds/dds-time.h>
 
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/domain/DomainParticipantListener.hpp>
@@ -184,7 +185,7 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
 };
 
 
-void dds_participant::init( dds_domain_id domain_id, std::string const & participant_name )
+void dds_participant::init( dds_domain_id domain_id, std::string const & participant_name, nlohmann::json const & settings )
 {
     if( is_valid() )
     {
@@ -194,6 +195,9 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
     }
 
     _domain_listener = std::make_shared< listener_impl >( *this );
+
+    // Initialize the timestr "start" time
+    timestr{ realdds::now() };
 
     DomainParticipantQos pqos;
     pqos.name( participant_name );
@@ -227,8 +231,12 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
                    "failed creating participant " + participant_name + " on domain id " + std::to_string( domain_id ) );
     }
 
+    if( ! settings.is_object() )
+        DDS_THROW( runtime_error, "provided settings are invalid" );
+    _settings = settings;
+
     LOG_DEBUG( "participant '" << participant_name << "' (" << realdds::print( guid() ) << ") is up on domain "
-                               << domain_id );
+                               << domain_id << " with settings: " << _settings.dump( 4 ) );
 #ifdef BUILD_EASYLOGGINGPP
     // DDS participant destruction happens when all contexts are done with it but, in some situations (e.g., Python), it
     // means that it may happen last -- even after ELPP has already been destroyed! So, just like we keep the participant

@@ -54,6 +54,8 @@ private:
     // Restrictions: May throw
     void init();  
 
+    void remove_device( dds_guid const & );
+
     std::shared_ptr< dds_participant > _participant;
     std::shared_ptr< dds_participant::listener > _listener;
     std::shared_ptr< dds_topic_reader > _device_info_topic;

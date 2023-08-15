@@ -91,6 +91,8 @@ typedef enum rs2_format
     RS2_FORMAT_Z16H            , /**< DEPRECATED! - Variable-length Huffman-compressed 16-bit depth values. */
     RS2_FORMAT_FG              , /**< 16-bit per-pixel frame grabber format. */
     RS2_FORMAT_Y411            , /**< 12-bit per-pixel. */
+    RS2_FORMAT_Y16I            , /**< 12-bit per pixel interleaved. 12-bit left, 12-bit right. */
+    RS2_FORMAT_M420            , /**< 24-bit for every pixel: y for each pixel, and u,v data for every four pixels - packed as 2 lines of y, 1 line of u,v */
     RS2_FORMAT_COMBINED_MOTION , /**< Combined motion data, as in the combined_motion structure */
     RS2_FORMAT_COUNT             /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_format;

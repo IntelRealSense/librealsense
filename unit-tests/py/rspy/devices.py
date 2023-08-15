@@ -32,9 +32,10 @@ from rspy import repo
 pyrs_dir = repo.find_pyrs_dir()
 sys.path.insert( 1, pyrs_dir )
 
+MAX_ENUMERATION_TIME = 10  # [sec]
 
 # We need both pyrealsense2 and acroname. We can work without acroname, but
-# without rs no devices at all will be returned.
+# without pyrealsense2 no devices at all will be returned.
 try:
     import pyrealsense2 as rs
     log.d( rs )
@@ -175,7 +176,7 @@ def map_unknown_ports():
             log.d( 'enabling port', port )
             acroname.enable_ports( [port], disable_other_ports=True )
             sn = None
-            for retry in range( 5 ):
+            for retry in range( MAX_ENUMERATION_TIME ):
                 if len( enabled() ) == 1:
                     sn = list( enabled() )[0]
                     break
@@ -214,14 +215,17 @@ def query( monitor_changes = True ):
     if acroname:
         if not acroname.hub:
             acroname.connect()  # MAY THROW!
-            acroname.enable_ports( sleep_on_change = 5 )  # make sure all connected!
+
+            acroname.disable_ports( sleep_on_change = 5 )
+            acroname.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
+
             if platform.system() == 'Linux':
                 global _acroname_hubs
                 _acroname_hubs = set( acroname.find_all_hubs() )
     #
     # Get all devices, and store by serial-number
     global _device_by_sn, _context, _port_to_sn
-    _context = rs.context( '{"dds-discovery":false}' )
+    _context = rs.context( { 'dds': False } )
     _device_by_sn = dict()
     try:
         log.debug_indent()
@@ -473,7 +477,7 @@ def recovery():
     return { device.serial_number for device in _device_by_sn.values() if device.handle.is_update_device() }
 
 
-def enable_only( serial_numbers, recycle = False, timeout = 5 ):
+def enable_only( serial_numbers, recycle = False, timeout = MAX_ENUMERATION_TIME ):
     """
     Enable only the devices corresponding to the given serial-numbers. This can work either
     with or without Acroname: without, the devices will simply be HW-reset, but other devices
@@ -496,8 +500,9 @@ def enable_only( serial_numbers, recycle = False, timeout = 5 ):
             #
             log.d( 'recycling ports via acroname:', ports )
             #
-            acroname.disable_ports( acroname.ports() )
-            _wait_until_removed( serial_numbers, timeout = timeout )
+            enabled_devices = enabled()
+            acroname.disable_ports( )
+            _wait_until_removed( enabled_devices, timeout = timeout )
             #
             acroname.enable_ports( ports )
             #
@@ -542,12 +547,13 @@ def _wait_until_removed( serial_numbers, timeout = 5 ):
             return True
         #
         if timeout <= 0:
+            log.e( "timed out waiting for devices to be removed" )
             return False
         timeout -= 1
         time.sleep( 1 )
 
 
-def _wait_for( serial_numbers, timeout = 5 ):
+def _wait_for( serial_numbers, timeout = MAX_ENUMERATION_TIME ):
     """
     Wait until the given serial numbers are all online
 
@@ -556,12 +562,7 @@ def _wait_for( serial_numbers, timeout = 5 ):
     :return: True if all have come online; False if timeout was reached
     """
     did_some_waiting = False
-    #
-    # In Linux, we don't have an active notification mechanism - we query devices every 5 seconds
-    # (see POLLING_DEVICES_INTERVAL_MS) - so we add extra timeout
-    if timeout and platform.system() == 'Linux':
-        timeout += 5
-    #
+
     while True:
         #
         have_all_devices = True
@@ -580,14 +581,13 @@ def _wait_for( serial_numbers, timeout = 5 ):
         #
         if timeout <= 0:
             if did_some_waiting:
-                log.d( 'timed out' )
+                log.d( 'timed out waiting for a device connection' )
             return False
         timeout -= 1
         time.sleep( 1 )
         did_some_waiting = True
 
-
-def hw_reset( serial_numbers, timeout = 5 ):
+def hw_reset( serial_numbers, timeout = MAX_ENUMERATION_TIME ):
     """
     Recycles the given devices manually, using a hardware-reset (rather than any acroname port
     reset). The devices are sent a HW-reset command and then we'll wait until they come back
@@ -599,11 +599,20 @@ def hw_reset( serial_numbers, timeout = 5 ):
     :param timeout: Maximum # of seconds to wait for the devices to come back online
     :return: True if all devices have come back online before timeout
     """
+
+    usb_serial_numbers = { sn for sn in serial_numbers if _device_by_sn[sn].port is not None }
+
     for sn in serial_numbers:
         dev = get( sn ).handle
         dev.hardware_reset()
     #
-    _wait_until_removed( serial_numbers )
+
+    if usb_serial_numbers:
+        _wait_until_removed( usb_serial_numbers )
+    else:
+        # normally we will get here with a mipi device,
+        # we want to allow some time for the device to reinitialize as it was not disconnected
+        time.sleep(3)
     #
     return _wait_for( serial_numbers, timeout = timeout )
 
@@ -751,7 +760,7 @@ if __name__ == '__main__':
             elif opt in ('--all'):
                 if not acroname:
                     log.f( 'No acroname available' )
-                acroname.enable_ports( sleep_on_change = 5 )
+                acroname.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
             elif opt in ('--port'):
                 if not acroname:
                     log.f( 'No acroname available' )
@@ -760,7 +769,7 @@ if __name__ == '__main__':
                 ports = [int(port) for port in str_ports if port.isnumeric() and int(port) in all_ports]
                 if len(ports) != len(str_ports):
                     log.f( 'Invalid ports', str_ports )
-                acroname.enable_ports( ports, disable_other_ports = True, sleep_on_change = 5 )
+                acroname.enable_ports( ports, disable_other_ports = True, sleep_on_change = MAX_ENUMERATION_TIME )
             elif opt in ('--recycle'):
                 action = 'recycle'
             else:

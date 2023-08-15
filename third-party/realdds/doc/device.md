@@ -25,6 +25,17 @@ Currently, the topic root as used by `rs-dds-adapter` is built as:
 > realsense/ `<device-model>` _ `<serial-number>`
 
 
+## Settings
+
+Device behavior can be fine-tuned with certain JSON settings passed through the participant (and therefore from the librealsense context's `dds` settings):
+
+| Field                    | Default | Type    | Description        |
+|--------------------------|---------|---------|--------------------|
+| device-reply-timeout-ms  |    1000 | size_t  | How long to wait for a control reply to arrive, in millisec
+| disable-metadata         |   false | bool    | When true, the metadata topic will be disabled, even with metadata-enabled streams
+
+
+
 ## Continue with:
 
 * [Notifications](notifications.md)

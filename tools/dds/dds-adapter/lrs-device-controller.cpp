@@ -647,6 +647,9 @@ void lrs_device_controller::start_streaming( const json & msg )
 
 void lrs_device_controller::publish_frame_metadata( const rs2::frame & f, realdds::dds_time const & timestamp )
 {
+    if( ! _dds_device_server->has_metadata_readers() )
+        return;
+
     nlohmann::json md_header = nlohmann::json::object( {
         { "frame-number", f.get_frame_number() },               // communicated; up to client to pick up
         { "timestamp", timestamp.to_ns() },                     // syncer key: needs to match the image timestamp, bit-for-bit!

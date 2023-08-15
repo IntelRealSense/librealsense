@@ -562,8 +562,11 @@ try:
 finally:
     #
     # Disconnect from the Acroname -- if we don't it'll crash on Linux...
+    # Before that we close all ports, no need for cameras to stay on between LibCI runs
     if not list_only and not only_not_live:
         if devices.acroname:
+            devices.acroname.disable_ports()
+            devices.wait_until_all_ports_disabled()
             devices.acroname.disconnect()
 #
 sys.exit( 0 )

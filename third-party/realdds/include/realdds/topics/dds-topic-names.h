@@ -6,6 +6,14 @@
 namespace realdds {
 namespace topics {
 
+// The character used to separate topic path elements
+constexpr char SEPARATOR = '/';
+
+// Every topic should be under ROOT (which includes the separator):
+constexpr char const * ROOT = "realsense/";
+constexpr size_t ROOT_LEN = 10;
+// NOTE: actual streams will be ROS-compatible, meaning rt/ROOT
+
 constexpr char const * DEVICE_INFO_TOPIC_NAME = "realsense/device-info";
 
 // The next topic names should be concatenated to a topic root

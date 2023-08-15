@@ -58,7 +58,7 @@ py::list get_vector3( geometry_msgs::msg::Vector3 const & v )
     obj[1] = py::float_( v.y() );
     obj[2] = py::float_( v.z() );
     return std::move( obj );
-};
+}
 
 
 void set_vector3( geometry_msgs::msg::Vector3 & v, std::array< double, 3 > const & l )
@@ -146,7 +146,7 @@ PYBIND11_MODULE(NAME, m) {
                 >
         participant( m, "participant" );
     participant.def( py::init<>() )
-        .def( "init", &dds_participant::init, "domain-id"_a, "participant-name"_a )
+        .def( "init", &dds_participant::init, "domain-id"_a, "participant-name"_a, "settings"_a = nlohmann::json::object() )
         .def( "is_valid", &dds_participant::is_valid )
         .def( "guid", &dds_participant::guid )
         .def( "create_guid", &dds_participant::create_guid )
@@ -160,6 +160,7 @@ PYBIND11_MODULE(NAME, m) {
               } )
         .def( "name_from_guid", []( dds_guid const & guid ) { return dds_participant::name_from_guid( guid ); } )
         .def( "names", []( dds_participant const & self ) { return self.get()->get_participant_names(); } )
+        .def( "settings", &dds_participant::settings )
         .def( "__repr__",
               []( const dds_participant & self ) {
                   std::ostringstream os;
@@ -185,6 +186,8 @@ PYBIND11_MODULE(NAME, m) {
 
     // The 'topics' submodule will contain pointers to the topic names:
     auto topics = m.def_submodule( "topics", "all the topics that " SNAME " knows" );
+    topics.attr( "separator" ) = realdds::topics::SEPARATOR;
+    topics.attr( "root" ) = realdds::topics::ROOT;
     topics.attr( "device_info" ) = realdds::topics::DEVICE_INFO_TOPIC_NAME;
     topics.attr( "device_notification" ) = realdds::topics::NOTIFICATION_TOPIC_NAME;
     topics.attr( "device_control" ) = realdds::topics::CONTROL_TOPIC_NAME;
@@ -401,6 +404,10 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_< flexible_msg >( message, "flexible" )
         .def( py::init<>() )
+        .def( py::init( []( py::dict const & dict, uint32_t version )
+                        { return flexible_msg( py_to_json( dict ), version ); } ),
+              "json"_a,
+              "version"_a = 0 )
         .def( py::init( []( std::string const & json_string ) {
             return flexible_msg( flexible_msg::data_format::JSON, nlohmann::json::parse( json_string ) );
         } ) )
@@ -590,7 +597,7 @@ PYBIND11_MODULE(NAME, m) {
     video_encoding.attr( "y16" ) = dds_video_encoding( "Y16" );  // todo should be mono16
     video_encoding.attr( "byr2" ) = dds_video_encoding( "BYR2" );
     video_encoding.attr( "yuyv" ) = dds_video_encoding( "yuv422_yuy2" );
-    video_encoding.attr( "uyvy" ) = dds_video_encoding( "UYVY" );  // todo
+    video_encoding.attr( "uyvy" ) = dds_video_encoding( "uyvy" );
     video_encoding.attr( "rgb" ) = dds_video_encoding( "rgb8" );
 
     using realdds::dds_stream_profile;
@@ -778,13 +785,21 @@ PYBIND11_MODULE(NAME, m) {
         .def( "device_info", &dds_device::device_info )
         .def( "participant", &dds_device::participant )
         .def( "guid", &dds_device::guid )
-        .def( "is_running", &dds_device::is_running )
-        .def( "run", &dds_device::run, py::call_guard< py::gil_scoped_release >() )
+        .def( "is_ready", &dds_device::is_ready )
+        .def( "wait_until_ready",
+              &dds_device::wait_until_ready,
+              py::call_guard< py::gil_scoped_release >(),
+              "timeout-ms"_a = 5000 )
         .def( FN_FWD( dds_device,
                       on_metadata_available,
                       ( dds_device &, py::object && ),
                       ( nlohmann::json && j ),
                       callback( self, json_to_py( j ) ); ) )
+        .def( FN_FWD( dds_device,
+                      on_device_log,
+                      (dds_device &, dds_time const &, char, std::string const &, py::object && ),
+                      (dds_time const & timestamp, char type, std::string const & text, nlohmann::json const & data),
+                      callback( self, timestamp, type, text, json_to_py( data ) ); ) )
         .def( "n_streams", &dds_device::number_of_streams )
         .def( "streams",
               []( dds_device const & self ) {

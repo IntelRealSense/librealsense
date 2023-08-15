@@ -16,7 +16,7 @@ if log.is_debug_on():
     rs.log_to_console( rs.log_severity.debug )
 from time import sleep
 
-context = rs.context( '{"dds-domain":123,"dds-participant-name":"device-properties-client"}' )
+context = rs.context( { 'dds': { 'domain': 123, 'participant': 'device-properties-client' }} )
 only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
 
 
@@ -40,14 +40,20 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         test.check_equal( dev.get_info( rs.camera_info.physical_port ), d435i.device_info.topic_root )
         sensors = {sensor.get_info( rs.camera_info.name ) : sensor for sensor in dev.query_sensors()}
         test.check_equal( len(sensors), 3 )
-        if test.check( 'Stereo Module' in sensors ):
-            sensor = sensors.get('Stereo Module')
+        sensor = dev.first_depth_sensor()
+        if test.check( sensor ):
+            test.check( sensors[sensor.name] )
+            test.check_equal( sensor.name, 'Stereo Module' )
             test.check_equal( len(sensor.get_stream_profiles()), 104 ) # As measured running rs-sensor-control example
-        if test.check( 'RGB Camera' in sensors ):
-            sensor = sensors['RGB Camera']
+        sensor = dev.first_color_sensor()
+        if test.check( sensor ):
+            test.check( sensors[sensor.name] )
+            test.check_equal( sensor.name, 'RGB Camera' )
             test.check_equal( len(sensor.get_stream_profiles()), 64 ) # As measured running rs-sensor-control example
-        if test.check( 'Motion Module' in sensors ):
-            sensor = sensors['Motion Module']
+        sensor = dev.first_motion_sensor()
+        if test.check( sensor ):
+            test.check( sensors[sensor.name] )
+            test.check_equal( sensor.name, 'Motion Module' )
             test.check_equal( len(sensor.get_stream_profiles()), 2 ) # Only the Gyro profiles
         remote.run( 'close_server( instance )' )
     except:
@@ -69,8 +75,10 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         test.check_equal( dev.get_info( rs.camera_info.physical_port ), d405.device_info.topic_root )
         sensors = {sensor.get_info( rs.camera_info.name ) : sensor for sensor in dev.query_sensors()}
         test.check_equal( len(sensors), 1 )
-        if test.check( 'Stereo Module' in sensors ):
-            sensor = sensors.get('Stereo Module')
+        sensor = dev.first_depth_sensor()
+        if test.check( sensor ):
+            test.check( sensors[sensor.name] )
+            test.check_equal( sensor.name, 'Stereo Module' )
             test.check_equal( len(sensor.get_stream_profiles()), 146 ) # As measured running rs-sensor-control example
         remote.run( 'close_server( instance )' )
     except:
@@ -92,14 +100,20 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         test.check_equal( dev.get_info( rs.camera_info.physical_port ), d455.device_info.topic_root )
         sensors = {sensor.get_info( rs.camera_info.name ) : sensor for sensor in dev.query_sensors()}
         test.check_equal( len(sensors), 3 )
-        if test.check( 'Stereo Module' in sensors ):
-            sensor = sensors.get('Stereo Module')
+        sensor = dev.first_depth_sensor()
+        if test.check( sensor ):
+            test.check( sensors[sensor.name] )
+            test.check_equal( sensor.name, 'Stereo Module' )
             test.check_equal( len(sensor.get_stream_profiles()), 100 ) # As measured running rs-sensor-control example
-        if test.check( 'RGB Camera' in sensors ):
-            sensor = sensors['RGB Camera']
+        sensor = dev.first_color_sensor()
+        if test.check( sensor ):
+            test.check( sensors[sensor.name] )
+            test.check_equal( sensor.name, 'RGB Camera' )
             test.check_equal( len(sensor.get_stream_profiles()), 62 ) # As measured running rs-sensor-control example
-        if test.check( 'Motion Module' in sensors ):
-            sensor = sensors['Motion Module']
+        sensor = dev.first_motion_sensor()
+        if test.check( sensor ):
+            test.check( sensors[sensor.name] )
+            test.check_equal( sensor.name, 'Motion Module' )
             test.check_equal( len(sensor.get_stream_profiles()), 2 ) # Only the Gyro profiles
         remote.run( 'close_server( instance )' )
     except:

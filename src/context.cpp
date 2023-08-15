@@ -149,7 +149,7 @@ namespace librealsense
             auto & domain = dds_domain_context_by_id[domain_id];
             _dds_participant = domain.participant.instance();
             if( ! _dds_participant->is_valid() )
-                _dds_participant->init( domain_id, rsutils::os::executable_name() );
+                _dds_participant->init( domain_id, rsutils::os::executable_name(), {} );
             _dds_watcher = domain.device_watcher.instance( _dds_participant );
         }
 #endif //BUILD_WITH_DDS
@@ -174,35 +174,35 @@ namespace librealsense
         assert( _device_watcher->is_stopped() );
 
 #ifdef BUILD_WITH_DDS
-        if( rsutils::json::get< bool >( settings, std::string( "dds-discovery", 13 ), true ) )
+        nlohmann::json dds_settings
+            = rsutils::json::get< nlohmann::json >( settings, std::string( "dds", 3 ), nlohmann::json::object() );
+        if( dds_settings.is_object() )
         {
             realdds::dds_domain_id domain_id
-                = rsutils::json::get< int >( settings, std::string( "dds-domain", 10 ), 0 );
-            std::string participant_name = rsutils::json::get< std::string >( settings,
-                                                                              std::string( "dds-participant-name", 20 ),
+                = rsutils::json::get< int >( dds_settings, std::string( "domain", 6 ), 0 );
+            std::string participant_name = rsutils::json::get< std::string >( dds_settings,
+                                                                              std::string( "participant", 11 ),
                                                                               rsutils::os::executable_name() );
 
             auto & domain = dds_domain_context_by_id[domain_id];
             _dds_participant = domain.participant.instance();
             if( ! _dds_participant->is_valid() )
             {
-                _dds_participant->init( domain_id, participant_name );
+                _dds_participant->init( domain_id, participant_name, std::move( dds_settings ) );
             }
-            else if( rsutils::json::has_value( settings, std::string( "dds-participant-name", 20 ) )
+            else if( rsutils::json::has_value( dds_settings, std::string( "participant", 11 ) )
                      && participant_name != _dds_participant->name() )
             {
-                throw std::runtime_error(
-                    rsutils::string::from()
-                    << "A DDS participant '" << _dds_participant->name()
-                    << "' already exists in domain " << domain_id << "; cannot create '" << participant_name << "'" );
+                throw std::runtime_error( rsutils::string::from() << "A DDS participant '" << _dds_participant->name()
+                                                                  << "' already exists in domain " << domain_id
+                                                                  << "; cannot create '" << participant_name << "'" );
             }
             _dds_watcher = domain.device_watcher.instance( _dds_participant );
 
             // The DDS device watcher should always be on
             if( _dds_watcher && _dds_watcher->is_stopped() )
             {
-                start_dds_device_watcher(
-                    rsutils::json::get< size_t >( settings, std::string( "dds-message-timeout-ms", 22 ), 5000 ) );
+                start_dds_device_watcher();
             }
         }
 #endif //BUILD_WITH_DDS
@@ -444,24 +444,14 @@ namespace librealsense
             _dds_watcher->foreach_device(
                 [&]( std::shared_ptr< realdds::dds_device > const & dev ) -> bool
                 {
-                    if( ! dev->is_running() )
+                    if( ! dev->is_ready() )
                     {
-                        LOG_DEBUG( "device '" << dev->device_info().topic_root << "' is not yet running" );
+                        LOG_DEBUG( "device '" << dev->device_info().debug_name() << "' is not yet ready" );
                         return true;
                     }
                     if( dev->device_info().product_line == "D400" )
                     {
                         if( ! ( mask & RS2_PRODUCT_LINE_D400 ) )
-                            return true;
-                    }
-                    else if( dev->device_info().product_line == "L500" )
-                    {
-                        if( ! ( mask & RS2_PRODUCT_LINE_L500 ) )
-                            return true;
-                    }
-                    else if( dev->device_info().product_line == "SR300" )
-                    {
-                        if( ! ( mask & RS2_PRODUCT_LINE_SR300 ) )
                             return true;
                     }
                     else if( ! ( mask & RS2_PRODUCT_LINE_NON_INTEL ) )
@@ -582,10 +572,10 @@ namespace librealsense
     }
 
 #ifdef BUILD_WITH_DDS
-    void context::start_dds_device_watcher( size_t message_timeout_ms )
+    void context::start_dds_device_watcher()
     {
-        _dds_watcher->on_device_added( [this, message_timeout_ms]( std::shared_ptr< realdds::dds_device > const & dev ) {
-            dev->run( message_timeout_ms );
+        _dds_watcher->on_device_added( [this]( std::shared_ptr< realdds::dds_device > const & dev ) {
+            dev->wait_until_ready();  // make sure handshake is complete
 
             std::vector<rs2_device_info> rs2_device_info_added;
             std::vector<rs2_device_info> rs2_device_info_removed;

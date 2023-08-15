@@ -58,7 +58,7 @@ namespace librealsense
 
         std::vector< std::shared_ptr< processing_block_factory > > _pb_factories;
         std::unordered_map< processing_block_factory *, stream_profiles > _pbf_supported_profiles;
-        std::unordered_map< std::shared_ptr< stream_profile_interface >, stream_profiles > _target_profiles_to_raw_profiles;
+        std::unordered_map< stream_profile, stream_profiles > _target_profiles_to_raw_profiles;
 
         std::unordered_map< std::shared_ptr< stream_profile_interface >,
                             std::unordered_set< std::shared_ptr< processing_block > > > _raw_profile_to_converters;

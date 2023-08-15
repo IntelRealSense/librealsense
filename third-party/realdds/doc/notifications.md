@@ -44,17 +44,18 @@ These logs are output as notifications.
 Multiple log entries can be packaged together. It is up to the server to decide the frequency of notification. It is recommended that logs be flushed prior to any other notification being sent out, to maintain temporal cohesion in the logs.
 
 - `entries` is an array containing 1 or more log entries
-    - Each entry is a JSON object containing:
-        - `timestamp`: the event occurred (see [timestamps](#timestamps))
+    - Each log entry is a JSON array of `[timestamp, type, text, data]` containing:
+        - `timestamp`: when the event occurred (see [timestamps](#timestamps))
         - `type`: one of `EWID` (Error, Warning, Info, Debug)
         - `text`: any text that needs output
+        - `data`: optional; an object containing any pertinent information about the event
 
 ```JSON
 {
     "id": "log",
     "entries": [
-        {"timestamp": 1234567890, "type": "E", "text": "Error message"},
-        {"timestamp": 1234567892, "type": "W", "text": "Message"},
+        [1234567890, "E", "Error message", { "file": "some.cpp", "line-number": 35 }],
+        [1234567892, "W", "Message"],
         ...
     ]
 }
