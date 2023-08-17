@@ -4,7 +4,7 @@
 from argparse import ArgumentParser
 args = ArgumentParser()
 args.add_argument( '--debug', action='store_true', help='enable debug mode' )
-args.add_argument( '--quiet', action='store_true', help='No output; just the minimum FPS as a number' )
+args.add_argument( '--quiet', action='store_true', help='no output' )
 def time_arg(x):
     t = int(x)
     if t <= 0:
@@ -13,7 +13,7 @@ def time_arg(x):
 args.add_argument( '--time', metavar='<seconds>', type=time_arg, default=2, help='seconds to gather devices for (default 2)' )
 def domain_arg(x):
     t = int(x)
-    if t <= 0:
+    if t <= 0 or t > 232:
         raise ValueError( f'--domain should be [0,232]' )
     return t
 args.add_argument( '--domain', metavar='<0-232>', type=domain_arg, default=0, help='DDS domain to use (default=0)' )
@@ -36,7 +36,7 @@ import time
 dds.debug( args.debug )
 
 participant = dds.participant()
-participant.init( args.domain, 'dds-devices' )
+participant.init( args.domain, 'devices' )
 
 watcher = dds.device_watcher( participant )
 watcher.start()
@@ -47,6 +47,7 @@ time.sleep( args.time )
 def device_found( device ):
     di = device.device_info()
     print( di.topic_root )
+    return True  # keep going
 watcher.foreach_device( device_found )
 
 

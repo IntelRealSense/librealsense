@@ -14,7 +14,7 @@ def time_arg(x):
 args.add_argument( '--time', metavar='<seconds>', type=time_arg, default=5, help='how long to gather frames for (default=5)' )
 def domain_arg(x):
     t = int(x)
-    if t <= 0:
+    if t <= 0 or t > 232:
         raise ValueError( f'--domain should be [0,232]' )
     return t
 args.add_argument( '--domain', metavar='<0-232>', type=domain_arg, default=0, help='DDS domain to use (default=0)' )
@@ -43,7 +43,7 @@ if not args.with_metadata:
     settings['disable-metadata'] = True
 
 participant = dds.participant()
-participant.init( args.domain, 'print-fps', settings )
+participant.init( args.domain, 'fps', settings )
 
 # Most important is the topic-root: this assumes we know it in advance and do not have to
 # wait for a device-info message (which would complicate the code here).
