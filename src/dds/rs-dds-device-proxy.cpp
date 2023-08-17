@@ -428,10 +428,11 @@ void dds_device_proxy::tag_default_profile_of_stream(
     const std::shared_ptr< const realdds::dds_stream > & stream ) const
 {
     auto const & dds_default_profile = stream->default_profile();
+    int target_format;
     auto dds_vsp = std::dynamic_pointer_cast< realdds::dds_video_stream_profile >( dds_default_profile );
-    auto target_format = dds_vsp->encoding().to_rs2();
     if( dds_vsp )
     {
+        target_format = dds_vsp->encoding().to_rs2();
         switch( target_format )
         {
         case RS2_FORMAT_YUYV:
