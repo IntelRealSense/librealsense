@@ -221,7 +221,9 @@ void output_modes( std::vector< stream_profile > const & profiles, bool verbose,
             cout << setw( w_stream ) << profile.stream_name();
             if( auto video = profile.as< video_stream_profile >() )
             {
-                cout << setw( w_res ) << ( std::to_string( video.width() ) + 'x' + std::to_string( video.height() ) );
+                cout << setw( 4 ) << right << video.width();
+                cout << 'x';
+                cout << setw( w_res - 5 ) << left << video.height();
             }
             cout << setw( w_format ) << profile.format();
             cout << "@ " << profile.fps() << " Hz";
@@ -244,10 +246,12 @@ void output_modes( std::vector< stream_profile > const & profiles, bool verbose,
             {
                 cout << setw( w_res );
                 if( p_width == pp_w && p_height == pp_h )
-                    cout << "   |";
+                    cout << "    |";
                 else
                 {
-                    cout << (std::to_string( p_width ) + 'x' + std::to_string( p_height ));
+                    cout << setw( 4 ) << right << p_width;
+                    cout << 'x';
+                    cout << setw( w_res - 5 ) << left << p_height;
                     pp_w = p_width;
                     pp_h = p_height;
                 }
