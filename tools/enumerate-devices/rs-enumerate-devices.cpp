@@ -188,21 +188,23 @@ string get_str_formats(const set<rs2_format>& formats)
 void output_modes( std::vector< stream_profile > const & profiles, bool verbose, bool show_defaults )
 {
     size_t const w_res = 15;
-    size_t const w_format = 15;
-
+    
+    size_t w_format = 10;
     size_t w_stream = 10;
     bool video_stream = false;
     for( auto const & profile : profiles )
     {
         w_stream = std::max( profile.stream_name().length(), w_stream );
+        w_format = std::max( strlen( rs2_format_to_string( profile.format() ) ), w_format );
         if( auto video = profile.as< video_stream_profile >() )
             video_stream = true;
     }
     w_stream += 2;
+    w_format += 2;
 
     // Heading
     if( verbose )
-        cout << "   (UID.IDX)  ";
+        cout << "    (UID.IDX) ";
     else
         cout << "    ";
     cout << setw( w_stream ) << "STREAM";
@@ -217,7 +219,9 @@ void output_modes( std::vector< stream_profile > const & profiles, bool verbose,
         for( auto const & profile : profiles )
         {
             cout << ( show_defaults && profile.is_default() ? " +  " : "    " );
-            cout << " (" << profile.unique_id() << '.' << profile.stream_index() << ")    ";
+            cout << setw( 4 ) << right << ( " (" + std::to_string( profile.unique_id() ) );
+            cout << '.';
+            cout << setw( 5 ) << left << ( std::to_string( profile.stream_index() ) + ')' );
             cout << setw( w_stream ) << profile.stream_name();
             if( auto video = profile.as< video_stream_profile >() )
             {
