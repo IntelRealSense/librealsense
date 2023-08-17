@@ -168,15 +168,16 @@ matcher_factory::create_timestamp_composite_matcher( std::vector< std::shared_pt
     return std::make_shared<timestamp_composite_matcher>(matchers);
 }
 
-device::device(std::shared_ptr<context> ctx,
-               const platform::backend_device_group & group,
-               bool device_changed_notifications)
-    : _context(ctx), _group(group), _is_valid(true),
-      _device_changed_notifications(device_changed_notifications),
-      _is_alive( std::make_shared< bool >( true ) )
+device::device( std::shared_ptr< context > ctx,
+                const platform::backend_device_group & group,
+                bool device_changed_notifications )
+    : _context( ctx )
+    , _group( group )
+    , _is_valid( true )
+    , _device_changed_notifications( device_changed_notifications )
+    , _is_alive( std::make_shared< bool >( true ) )
+    , _profiles_tags( [this]() { return get_profiles_tags(); } )
 {
-    _profiles_tags = lazy<std::vector<tagged_profile>>([this]() { return get_profiles_tags(); });
-
     if (_device_changed_notifications)
     {
         std::weak_ptr< bool > weak = _is_alive;
