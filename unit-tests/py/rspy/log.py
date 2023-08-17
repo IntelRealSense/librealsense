@@ -39,11 +39,22 @@ def _stream_has_color( stream ):
         # guess false in case of error
         return False
 
+
+def find_flag( arg ):
+    for x in range( 1, len(sys.argv) ):
+        a = sys.argv[x]
+        if a == arg:
+            return x
+        if a == '--':
+            break
+    return None
+
+
 _have_no_color = False
-if '--color' in sys.argv:
+if find_flag( '--color' ):
     sys.argv.remove( '--color' )
     _have_color = True
-elif '--no-color' in sys.argv:
+elif find_flag( '--no-color' ):
     sys.argv.remove( '--no-color' )
     _have_color = False
     _have_no_color = True
@@ -146,7 +157,7 @@ def debug_on():
 def is_debug_on():
     global _debug_on
     return _debug_on
-if '--debug' in sys.argv:
+if find_flag( '--debug' ):
     sys.argv.remove( '--debug' )
     debug_on()
 def debug_indent( n = 1, indentation = '    ' ):
