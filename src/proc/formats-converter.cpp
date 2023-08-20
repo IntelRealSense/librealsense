@@ -272,7 +272,10 @@ void formats_converter::update_target_profiles_data( const stream_profiles & fro
             raw_profile->set_stream_type( from_profile->get_stream_type() );
             auto video_raw_profile = As< video_stream_profile, stream_profile_interface >( raw_profile );
             const auto video_from_profile = As< video_stream_profile, stream_profile_interface >( from_profile );
-            if( video_raw_profile )
+            // from_profile intrinsics is expected to be set by the device, otherwise a cycle of calls is created
+            // (clone_profile intrinsics function calling raw_profile function here that calls it back).
+            // Y12I indicate unrectified images, no intrinsics are available for these. Not set be the device!
+            if( video_raw_profile && video_raw_profile->get_format() != RS2_FORMAT_Y12I )
             {
                 video_raw_profile->set_intrinsics( [video_from_profile]()
                 {
