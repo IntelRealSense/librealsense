@@ -37,6 +37,8 @@ namespace librealsense
         rs2_option                  _option;
     };
 
+    class hid_sensor;
+
     class motion_module_temperature_option : public readonly_option
     {
     public:

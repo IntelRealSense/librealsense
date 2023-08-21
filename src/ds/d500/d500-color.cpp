@@ -8,6 +8,7 @@
 #include "proc/color-formats-converter.h"
 #include "d500-options.h"
 #include "d500-color.h"
+#include "backend.h"
 
 namespace librealsense
 {

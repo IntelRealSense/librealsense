@@ -10,6 +10,8 @@
 #include <iterator>
 #include <cstddef>
 
+#include <src/backend.h>
+#include <src/metadata.h>
 #include "ds/ds-timestamp.h"
 #include "d400-options.h"
 #include "stream.h"
@@ -125,7 +127,7 @@ namespace librealsense
             _motion_module_device_idx = static_cast<uint8_t>(add_sensor(hid_ep));
 
             // HID metadata attributes
-            hid_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&platform::hid_header::timestamp));
+            hid_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&hid_header::timestamp));
         }
     }
 
@@ -155,7 +157,7 @@ namespace librealsense
             _motion_module_device_idx = static_cast<uint8_t>(add_sensor(sensor_ep));
 
             // HID metadata attributes - D457 dev - check metadata parser
-            sensor_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&platform::hid_header::timestamp));
+            sensor_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&hid_header::timestamp));
         }
     }
 

@@ -176,6 +176,11 @@ namespace librealsense
 
     class matcher;
 
+    namespace platform {
+        struct backend_device_group;
+    }
+
+
     class device_interface : public virtual info_interface, public std::enable_shared_from_this<device_interface>
     {
     public:

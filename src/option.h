@@ -3,12 +3,11 @@
 
 #pragma once
 
-#include "backend.h"
 #include "archive.h"
 #include "hw-monitor.h"
 #include "sensor.h"
 #include "core/streaming.h"
-#include "command_transfer.h"
+#include "platform/command-transfer.h"
 #include "error-handling.h"
 
 #include <rsutils/string/from.h>

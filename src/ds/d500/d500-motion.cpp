@@ -10,11 +10,13 @@
 #include <iterator>
 #include <cstddef>
 
+#include <src/metadata.h>
 #include "ds/ds-timestamp.h"
 #include "ds/ds-options.h"
 #include "stream.h"
 #include "proc/motion-transform.h"
 #include "proc/auto-exposure-processor.h"
+#include "backend.h"
 
 using namespace librealsense;
 namespace librealsense
@@ -54,7 +56,7 @@ namespace librealsense
             _motion_module_device_idx = static_cast<uint8_t>(add_sensor(hid_ep));
 
             // HID metadata attributes
-            hid_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&platform::hid_header::timestamp));
+            hid_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&hid_header::timestamp));
         }
     }
 

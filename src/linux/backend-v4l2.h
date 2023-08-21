@@ -4,6 +4,8 @@
 #pragma once
 
 #include "backend.h"
+#include <src/platform/uvc-device.h>
+#include <src/metadata.h>
 #include "types.h"
 
 #include <cassert>

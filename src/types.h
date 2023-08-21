@@ -11,7 +11,6 @@
 
 #include <librealsense2/hpp/rs_types.hpp>
 
-#include "backend.h"
 #include <rsutils/concurrency/concurrency.h>
 #include "librealsense-exception.h"
 #include <rsutils/easylogging/easyloggingpp.h>
@@ -891,89 +890,6 @@ namespace librealsense
             (a.unique_id == b.unique_id);
     }
 
-    struct hid_device_info
-    {
-        std::string id;
-        std::string vid;
-        std::string pid;
-        std::string unique_id;
-        std::string device_path;
-
-        operator std::string()
-        {
-            std::stringstream s;
-            s << "id- " << id <<
-                "\nvid- " << std::hex << vid <<
-                "\npid- " << std::hex << pid <<
-                "\nunique_id- " << unique_id <<
-                "\npath- " << device_path;
-
-            return s.str();
-        }
-    };
-
-    inline bool operator==(const hid_device_info& a,
-        const hid_device_info& b)
-    {
-        return  (a.id == b.id) &&
-            (a.vid == b.vid) &&
-            (a.pid == b.pid) &&
-            (a.unique_id == b.unique_id) &&
-            (a.device_path == b.device_path);
-    }
-
-
-    struct devices_data
-    {
-        devices_data(std::vector<uvc_device_info>  uvc_devices, std::vector<usb_device_info> usb_devices, std::vector<hid_device_info> hid_devices)
-            :_uvc_devices(uvc_devices), _usb_devices(usb_devices), _hid_devices(hid_devices) {}
-
-        devices_data(std::vector<usb_device_info> usb_devices)
-            :_usb_devices(usb_devices) {}
-
-        devices_data(std::vector<uvc_device_info> uvc_devices, std::vector<usb_device_info> usb_devices)
-            :_uvc_devices(uvc_devices), _usb_devices(usb_devices) {}
-
-        std::vector<uvc_device_info> _uvc_devices;
-        std::vector<usb_device_info> _usb_devices;
-        std::vector<hid_device_info> _hid_devices;
-
-        bool operator == (const devices_data& other)
-        {
-            return !list_changed(_uvc_devices, other._uvc_devices) &&
-                !list_changed(_hid_devices, other._hid_devices);
-        }
-
-        operator std::string()
-        {
-            std::string s;
-            s = _uvc_devices.size()>0 ? "uvc devices:\n" : "";
-            for (auto uvc : _uvc_devices)
-            {
-                s += uvc;
-                s += "\n\n";
-            }
-
-            s += _usb_devices.size()>0 ? "usb devices:\n" : "";
-            for (auto usb : _usb_devices)
-            {
-                s += usb;
-                s += "\n\n";
-            }
-
-            s += _hid_devices.size()>0 ? "hid devices: \n" : "";
-            for (auto hid : _hid_devices)
-            {
-                s += hid;
-                s += "\n\n";
-            }
-            return s;
-        }
-    };
-
-
-    typedef std::function<void(devices_data old, devices_data curr)> device_changed_callback;
-
     class frame_continuation
     {
         std::function<void()> continuation;
@@ -1328,20 +1244,6 @@ namespace std {
                 ^ (hash<uint32_t>()(k.fps))
                 ^ (hash<uint32_t>()(k.format))
                 ^ (hash<uint32_t>()(k.stream));
-        }
-    };
-
-    template <>
-    struct hash<librealsense::platform::stream_profile>
-    {
-        size_t operator()(const librealsense::platform::stream_profile& k) const
-        {
-            using std::hash;
-
-            return (hash<uint32_t>()(k.height))
-                ^ (hash<uint32_t>()(k.width))
-                ^ (hash<uint32_t>()(k.fps))
-                ^ (hash<uint32_t>()(k.format));
         }
     };
 

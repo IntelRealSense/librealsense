@@ -105,6 +105,10 @@ namespace librealsense
 
     class global_time_option;
     class time_diff_keeper;
+    namespace platform {
+        struct uvc_device_info;
+        struct hid_device_info;
+    }
 
     class ds_motion_common
     {

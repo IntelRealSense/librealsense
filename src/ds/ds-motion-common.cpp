@@ -5,8 +5,10 @@
 
 #include "algo.h"
 #include "context.h"
-#include "sensor.h"
+#include "hid-sensor.h"
 #include "environment.h"
+#include "metadata.h"
+#include "backend.h"
 
 #include "global_timestamp_reader.h"
 #include "proc/auto-exposure-processor.h"

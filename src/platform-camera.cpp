@@ -6,6 +6,7 @@
 #include "environment.h"
 #include "stream.h"
 #include "proc/color-formats-converter.h"
+#include "backend.h"
 
 
 namespace librealsense {

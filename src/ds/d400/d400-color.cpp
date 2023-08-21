@@ -8,6 +8,8 @@
 #include "d400-thermal-monitor.h"
 #include "proc/color-formats-converter.h"
 #include "d400-color.h"
+#include <src/backend.h>
+
 #include <rsutils/string/from.h>
 
 namespace librealsense

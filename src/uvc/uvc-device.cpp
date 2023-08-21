@@ -2,6 +2,8 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "uvc-device.h"
+#include "uvc-parser.h"
+#include "uvc-streamer.h"
 
 #include <rsutils/string/from.h>
 
@@ -488,8 +490,8 @@ namespace librealsense
             unsigned char buffer[4] = {0};
             int32_t ret = 0;
             
-            usb_status sts;
-            uint32_t transferred;
+            usb_status sts = RS2_USB_STATUS_OTHER;
+            uint32_t transferred = 0;
             _action_dispatcher.invoke_and_wait([&, this](dispatcher::cancellable_timer c)
             {
                 if (_messenger)
@@ -577,8 +579,8 @@ namespace librealsense
             unsigned char buffer[4];
             INT_TO_DW(value, buffer);
 
-            usb_status sts;
-            uint32_t transferred;
+            usb_status sts = RS2_USB_STATUS_OTHER;
+            uint32_t transferred = 0;
 
             _action_dispatcher.invoke_and_wait([&, this](dispatcher::cancellable_timer c)
             {

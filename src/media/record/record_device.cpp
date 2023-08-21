@@ -5,6 +5,7 @@
 #include <core/motion.h>
 #include <core/advanced_mode.h>
 #include "record_device.h"
+#include <src/platform/backend-device-group.h>
 
 using namespace librealsense;
 

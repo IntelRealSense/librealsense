@@ -5,6 +5,8 @@
 #include "context.h"
 #include "image.h"
 #include "metadata-parser.h"
+#include "metadata.h"
+#include <src/backend.h>
 
 #include "d500-device.h"
 #include "d500-private.h"

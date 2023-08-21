@@ -2,11 +2,13 @@
 /* Copyright(c) 2019 Intel Corporation. All Rights Reserved. */
 #pragma once
 
-#include "../types.h"
-#include "../backend.h"
-#include "../usb/usb-device.h"
+#include "../platform/device-watcher.h"
+#include "../platform/backend-device-group.h"
+#include "../platform/uvc-device-info.h"
 
 #include <memory>
+#include <mutex>
+#include <vector>
 
 namespace librealsense
 {

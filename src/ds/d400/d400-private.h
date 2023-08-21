@@ -4,6 +4,7 @@
 #pragma once
 
 #include "ds/ds-private.h"
+#include <src/platform/backend-device-group.h>
 
 namespace librealsense
 {

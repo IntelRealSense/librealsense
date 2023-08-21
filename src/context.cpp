@@ -1,25 +1,19 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-#ifdef _MSC_VER
-#if (_MSC_VER <= 1800) // constexpr is not supported in MSVC2013
-#error( "Librealsense requires MSVC2015 or later to build. Compilation will be aborted" )
-#endif
-#endif
 
-#include <array>
-#include <chrono>
+#include "context.h"
+
 #include "ds/d400/d400-factory.h"
 #include "device.h"
 #include "ds/ds-timestamp.h"
-#include "backend.h"
 #include <media/ros/ros_reader.h>
 #include "types.h"
 #include "stream.h"
 #include "environment.h"
-#include "context.h"
 #include "fw-update/fw-update-factory.h"
 #include "proc/color-formats-converter.h"
 #include "platform-camera.h"
+#include <src/backend.h>
 
 
 #ifdef BUILD_WITH_DDS
