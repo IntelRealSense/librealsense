@@ -120,7 +120,7 @@ namespace rs2
         void start_uvmapping_viewer(bool b3D = false);
         void start_fl_plus_viewer();
         void stop_viewer();
-        void reset_device() { _dev.hardware_reset(); }
+        void reset_device();
 
     private:
         void save_laser_emitter_state();

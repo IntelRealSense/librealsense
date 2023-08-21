@@ -253,6 +253,12 @@ namespace rs2
         catch (...) {}
     }
 
+    void on_chip_calib_manager::reset_device()
+    {
+        _model.reset();
+        _dev.hardware_reset();
+    }
+
     void on_chip_calib_manager::start_gt_viewer()
     {
         try
@@ -2863,6 +2869,15 @@ namespace rs2
                             pinned = false;
                             enable_dismiss = false;
                             _progress_bar.last_progress_time = last_interacted = system_clock::now() + milliseconds(500);
+                            if( get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB )
+                            {
+                                // Workaround for FL calibration bug - outcome not used by FW registers. Need HW reset to
+                                // reload from flash. Otherwise frame is not fixed and running tare calibration (like it
+                                // is recommended by the white paper and done by QnR team) will get worse resluts than
+                                // no calibration.
+                                get_manager().stop_viewer();
+                                get_manager().reset_device();
+                            }
                         }
                         else
                         {
