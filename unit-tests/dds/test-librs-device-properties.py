@@ -49,7 +49,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         if test.check( sensor ):
             test.check( sensors[sensor.name] )
             test.check_equal( sensor.name, 'RGB Camera' )
-            test.check_equal( len(sensor.get_stream_profiles()), 64 ) # As measured running rs-sensor-control example
+            test.check_equal( len(sensor.get_stream_profiles()), 160 ) # As measured running rs-sensor-control example
         sensor = dev.first_motion_sensor()
         if test.check( sensor ):
             test.check( sensors[sensor.name] )
@@ -79,7 +79,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         if test.check( sensor ):
             test.check( sensors[sensor.name] )
             test.check_equal( sensor.name, 'Stereo Module' )
-            test.check_equal( len(sensor.get_stream_profiles()), 146 ) # As measured running rs-sensor-control example
+            test.check_equal( len(sensor.get_stream_profiles()), 230 ) # As measured running rs-sensor-control example
         remote.run( 'close_server( instance )' )
     except:
         test.unexpected_exception()
@@ -109,7 +109,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         if test.check( sensor ):
             test.check( sensors[sensor.name] )
             test.check_equal( sensor.name, 'RGB Camera' )
-            test.check_equal( len(sensor.get_stream_profiles()), 62 ) # As measured running rs-sensor-control example
+            test.check_equal( len(sensor.get_stream_profiles()), 155 ) # As measured running rs-sensor-control example
         sensor = dev.first_motion_sensor()
         if test.check( sensor ):
             test.check( sensors[sensor.name] )

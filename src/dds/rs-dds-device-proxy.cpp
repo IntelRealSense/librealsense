@@ -235,7 +235,6 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< context > ctx, std::shared_
     for( auto & sensor_info : sensor_name_to_info )
     {
         LOG_DEBUG( sensor_info.first );
-        sensor_info.second.proxy->initialization_done();
 
         // Set profile's ID based on the dds_stream's ID (index already set). Connect the profile to the extrinsics graph.
         for( auto & profile : sensor_info.second.proxy->get_stream_profiles() )
@@ -429,20 +428,43 @@ void dds_device_proxy::tag_default_profile_of_stream(
     const std::shared_ptr< const realdds::dds_stream > & stream ) const
 {
     auto const & dds_default_profile = stream->default_profile();
+    int target_format;
+    auto dds_vsp = std::dynamic_pointer_cast< realdds::dds_video_stream_profile >( dds_default_profile );
+    if( dds_vsp )
+    {
+        target_format = dds_vsp->encoding().to_rs2();
+        switch( target_format )
+        {
+        case RS2_FORMAT_YUYV:
+            // We want to change to RGB8 - that's the LibRS default
+            if( get_format_conversion() == format_conversion::full )
+                target_format = RS2_FORMAT_RGB8;
+            break;
+        }
+    }
 
     if( profile->get_stream_type() == to_rs2_stream_type( stream->type_string() ) &&
         profile->get_framerate() == dds_default_profile->frequency() )
     {
         auto vsp = std::dynamic_pointer_cast< video_stream_profile >( profile );
-        auto dds_vsp = std::dynamic_pointer_cast< realdds::dds_video_stream_profile >( dds_default_profile );
         if( vsp && dds_vsp )
         {
-            if( vsp->get_width() != dds_vsp->width() || vsp->get_height() != dds_vsp->height()
-                || vsp->get_format() != dds_vsp->encoding().to_rs2() )
-                return;  // Video profiles of incompatible resolutions
+            if( vsp->get_width() != dds_vsp->width() || vsp->get_height() != dds_vsp->height() )
+                return;  // Incompatible resolutions
+
+            if( vsp->get_format() != target_format )
+                return;  // Incompatible format
         }
 
-        profile->tag_profile( PROFILE_TAG_DEFAULT );
+        // Default  = picked up in pipeline default config (without specifying streams)
+        // Superset = picked up in pipeline with enable_all_stream() config
+        // We want color and depth to be default, and add infrared as superset
+        int tag = PROFILE_TAG_SUPERSET;
+        if( stream->type_string() == "color" || stream->type_string() == "depth" )
+            tag |= PROFILE_TAG_DEFAULT;
+        else if( stream->type_string() != "infrared" || profile->get_stream_index() >= 2 )
+            return;  // leave untagged
+        profile->tag_profile( tag );
     }
 }
 
