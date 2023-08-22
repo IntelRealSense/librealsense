@@ -43,7 +43,7 @@ namespace librealsense
 
         _ds_motion_common = std::make_shared<ds_motion_common>(this, _fw_version,
             _device_capabilities, _hw_monitor); 
-        _ds_motion_common->init_motion(hid_infos.size(), *_depth_stream);
+        _ds_motion_common->init_motion(hid_infos.empty(), *_depth_stream);
                 
         initialize_fisheye_sensor(ctx,group);
 
