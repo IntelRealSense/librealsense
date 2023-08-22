@@ -173,7 +173,10 @@ formats_converter::clone_profile( const std::shared_ptr< stream_profile_interfac
 
         auto video_clone = std::dynamic_pointer_cast< video_stream_profile >( cloned );
         video_clone->set_dims( vsp->get_width(), vsp->get_height() );
-        video_clone->set_intrinsics( [vsp]() { return vsp->get_intrinsics(); } );
+        // Do not set intrinsics. Device is setting after all profiles are returned. On update_target_profiles_data
+        // raw profile calls the set cloned intrinsics and if device is not setting a call cycle will be created.
+        // There is a default implementation throwing if no other function is set.
+        // video_clone->set_intrinsics( [vsp]() { return vsp->get_intrinsics(); } );
     }
     else if( msp )
     {
@@ -182,7 +185,7 @@ formats_converter::clone_profile( const std::shared_ptr< stream_profile_interfac
             throw librealsense::invalid_value_exception( "failed to clone profile" );
 
         auto motion_clone = std::dynamic_pointer_cast< motion_stream_profile >( cloned );
-        motion_clone->set_intrinsics( [msp]() { return msp->get_intrinsics(); } );
+        // motion_clone->set_intrinsics( [msp]() { return msp->get_intrinsics(); } );
     }
     else
         throw librealsense::not_implemented_exception( "Unsupported profile type to clone" );
@@ -272,10 +275,7 @@ void formats_converter::update_target_profiles_data( const stream_profiles & fro
             raw_profile->set_stream_type( from_profile->get_stream_type() );
             auto video_raw_profile = As< video_stream_profile, stream_profile_interface >( raw_profile );
             const auto video_from_profile = As< video_stream_profile, stream_profile_interface >( from_profile );
-            // from_profile intrinsics is expected to be set by the device, otherwise a cycle of calls is created
-            // (clone_profile intrinsics function calling raw_profile function here that calls it back).
-            // Y16 indicate unrectified images, no intrinsics are available for these. Not set be the device!
-            if( video_raw_profile && video_from_profile->get_format() != RS2_FORMAT_Y16 )
+            if( video_raw_profile )
             {
                 video_raw_profile->set_intrinsics( [video_from_profile]()
                 {
