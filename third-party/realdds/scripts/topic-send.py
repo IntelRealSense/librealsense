@@ -36,7 +36,7 @@ dds.debug( args.debug )
 settings = {}
 
 participant = dds.participant()
-participant.init( args.domain, 'fps', settings )
+participant.init( args.domain, 'topic-send', settings )
 
 message = { 'id': 'ping', 'message': args.message }
 

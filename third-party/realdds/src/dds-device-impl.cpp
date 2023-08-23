@@ -394,9 +394,7 @@ void dds_device::impl::write_control_message( topics::flexible_msg && msg, nlohm
         }
         LOG_DEBUG( "got reply: " << actual_reply );
         *reply = std::move( actual_reply );
-        LOG_DEBUG( "move OK" );
         _replies.erase( this_sequence_number );
-        LOG_DEBUG( "erase OK" );
     }
 }
 

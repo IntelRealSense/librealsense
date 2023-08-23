@@ -824,7 +824,7 @@ PYBIND11_MODULE(NAME, m) {
                 self.send_control( j, wait_for_reply ? &reply : nullptr );
                 return reply;
             },
-            "json"_a, "wait-for-reply"_a = false,
+            py::arg( "json" ), py::arg( "wait-for-reply" ) = false,
             py::call_guard< py::gil_scoped_release >() )
         .def( "__repr__", []( dds_device const & self ) {
             std::ostringstream os;
