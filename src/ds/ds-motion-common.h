@@ -108,6 +108,7 @@ namespace librealsense
     namespace platform {
         struct uvc_device_info;
         struct hid_device_info;
+        struct backend_device_group;
     }
 
     class ds_motion_common

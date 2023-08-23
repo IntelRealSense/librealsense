@@ -5,35 +5,32 @@
 
 #include <src/device-info.h>
 
-#include "playback_device.h"
-
 
 namespace librealsense {
 
 
 class playback_device_info : public device_info
 {
-    std::shared_ptr<playback_device> _dev;
+    std::string const _filename;
 
 public:
-    explicit playback_device_info( std::shared_ptr<playback_device> dev )
-        : device_info( nullptr ), _dev( dev )
+    explicit playback_device_info( std::shared_ptr< context > const & ctx, std::string const & filename )
+        : device_info( ctx )
+        , _filename( filename )
     {
-
     }
 
-    std::shared_ptr<device_interface> create_device() const override
-    {
-        return _dev;
-    }
-    platform::backend_device_group get_device_data() const override
-    {
-        return platform::backend_device_group( { platform::playback_device_info{ _dev->get_file_name() } } );
-    }
+    std::string const & get_filename() const { return _filename; }
 
-    std::shared_ptr<device_interface> create( std::shared_ptr<context>, bool ) const override
+    std::string get_address() const override { return "file://" + _filename; }
+
+    std::shared_ptr< device_interface > create_device() override;
+
+    bool is_same_as( std::shared_ptr< const device_info > const & other ) const override
     {
-        return _dev;
+        if( auto rhs = std::dynamic_pointer_cast< const playback_device_info >( other ) )
+            return _filename == rhs->_filename;
+        return false;
     }
 };
 

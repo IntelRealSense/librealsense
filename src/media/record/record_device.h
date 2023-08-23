@@ -41,7 +41,7 @@ namespace librealsense
         void pause_recording();
         void resume_recording();
         const std::string& get_filename() const;
-        platform::backend_device_group get_device_data() const override;
+        std::shared_ptr< const device_info > get_device_info() const override;
         std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const override;
         bool is_valid() const override;
 

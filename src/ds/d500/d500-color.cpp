@@ -8,6 +8,7 @@
 #include "proc/color-formats-converter.h"
 #include "d500-options.h"
 #include "d500-color.h"
+#include "d500-factory.h"
 #include "backend.h"
 
 namespace librealsense
@@ -29,13 +30,12 @@ namespace librealsense
         {rs_fourcc('M','4','2','0'), RS2_STREAM_COLOR}
     };
 
-    d500_color::d500_color(std::shared_ptr<context> ctx,
-        const platform::backend_device_group& group)
-        : d500_device(ctx, group), device(ctx, group),
+    d500_color::d500_color( std::shared_ptr< const d500_info > const & dev_info )
+        : d500_device(dev_info), device(dev_info),
           _color_stream(new stream(RS2_STREAM_COLOR)),
           _separate_color(true)
     {
-        create_color_device(ctx, group);
+        create_color_device( dev_info->get_context(), dev_info->get_group() );
         init();
     }
 

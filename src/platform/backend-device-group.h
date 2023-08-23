@@ -89,13 +89,13 @@ struct backend_device_group
     std::vector< hid_device_info > hid_devices;
     std::vector< playback_device_info > playback_devices;
 
-    bool operator==( const backend_device_group & other )
+    bool operator==( const backend_device_group & other ) const
     {
         return ! list_changed( uvc_devices, other.uvc_devices ) && ! list_changed( hid_devices, other.hid_devices )
             && ! list_changed( playback_devices, other.playback_devices );
     }
 
-    operator std::string()
+    operator std::string() const
     {
         std::string s;
         s = uvc_devices.size() > 0 ? "uvc devices:\n" : "";

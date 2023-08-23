@@ -14,6 +14,7 @@
 #include <src/metadata.h>
 #include "ds/ds-timestamp.h"
 #include "d400-options.h"
+#include "d400-info.h"
 #include "stream.h"
 #include "proc/motion-transform.h"
 #include "proc/auto-exposure-processor.h"
@@ -95,10 +96,9 @@ namespace librealsense
         return _ds_motion_common->create_hid_device(ctx, all_hid_infos, camera_fw_version, _tf_keeper);
     }
 
-    d400_motion_base::d400_motion_base(std::shared_ptr<context> ctx,
-        const platform::backend_device_group& group)
-        : device(ctx, group),
-        d400_device(ctx, group),
+    d400_motion_base::d400_motion_base( std::shared_ptr< const d400_info > const & dev_info )
+        : device(dev_info),
+        d400_device(dev_info),
         _accel_stream(new stream(RS2_STREAM_ACCEL)),
         _gyro_stream(new stream(RS2_STREAM_GYRO))
     {
@@ -106,22 +106,21 @@ namespace librealsense
             _device_capabilities, _hw_monitor);
     }
 
-    d400_motion::d400_motion(std::shared_ptr<context> ctx,
-                           const platform::backend_device_group& group)
-        : device(ctx, group), 
-        d400_device(ctx, group),
-        d400_motion_base(ctx, group)
+    d400_motion::d400_motion( std::shared_ptr< const d400_info > const & dev_info )
+        : device(dev_info), 
+        d400_device(dev_info),
+        d400_motion_base(dev_info)
     {
         using namespace ds;
 
-        std::vector<platform::hid_device_info> hid_infos = group.hid_devices;
+        std::vector<platform::hid_device_info> hid_infos = dev_info->get_group().hid_devices;
 
         _ds_motion_common->init_motion(hid_infos.empty(), *_depth_stream);
         
-        initialize_fisheye_sensor(ctx,group);
+        initialize_fisheye_sensor( dev_info->get_context(), dev_info->get_group() );
 
         // Try to add HID endpoint
-        auto hid_ep = create_hid_device(ctx, group.hid_devices, _fw_version);
+        auto hid_ep = create_hid_device(dev_info->get_context(), dev_info->get_group().hid_devices, _fw_version);
         if (hid_ep)
         {
             _motion_module_device_idx = static_cast<uint8_t>(add_sensor(hid_ep));
@@ -131,15 +130,14 @@ namespace librealsense
         }
     }
 
-    d400_motion_uvc::d400_motion_uvc(std::shared_ptr<context> ctx,
-        const platform::backend_device_group& group)
-        : device(ctx, group),
-          d400_device(ctx, group),
-          d400_motion_base(ctx, group)
+    d400_motion_uvc::d400_motion_uvc( std::shared_ptr< const d400_info > const & dev_info )
+        : device(dev_info),
+          d400_device(dev_info),
+          d400_motion_base(dev_info)
     {
         using namespace ds;
 
-        std::vector<platform::uvc_device_info> uvc_infos = group.uvc_devices;
+        std::vector<platform::uvc_device_info> uvc_infos = dev_info->get_group().uvc_devices;
 
         _ds_motion_common->init_motion(uvc_infos.empty(), *_depth_stream);
 
@@ -151,7 +149,7 @@ namespace librealsense
 
         // Try to add HID endpoint
         std::shared_ptr<synthetic_sensor> sensor_ep;
-        sensor_ep = create_uvc_device(ctx, group.uvc_devices, _fw_version);
+        sensor_ep = create_uvc_device(dev_info->get_context(), dev_info->get_group().uvc_devices, _fw_version);
         if (sensor_ep)
         {
             _motion_module_device_idx = static_cast<uint8_t>(add_sensor(sensor_ep));

@@ -26,6 +26,7 @@ namespace librealsense
     class hdr_config;
     class d400_thermal_monitor;
     class ds_devices_common;
+    class d500_info;
 
     class d500_device : public virtual device, public debug_interface, public global_time_interface, public updatable
     {
@@ -44,8 +45,7 @@ namespace librealsense
             return dynamic_cast<uvc_sensor&>(*depth_sensor.get_raw_sensor());
         }
 
-        d500_device(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group);
+        d500_device( std::shared_ptr< const d500_info > const & );
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
 

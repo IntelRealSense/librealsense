@@ -6,7 +6,6 @@
 #include "core/streaming.h"
 
 #include "device-info.h"
-#include "media/playback/playback-device-info.h"
 #include "platform/device-watcher.h"
 
 #include <nlohmann/json.hpp>
@@ -54,6 +53,7 @@ namespace librealsense
 {
     class device;
     class context;
+    class playback_device_info;
 
     enum class backend_type
     {
@@ -63,7 +63,7 @@ namespace librealsense
     namespace platform {
         class backend;
         class device_watcher;
-    };
+    }
 
     class context : public std::enable_shared_from_this<context>
     {
@@ -120,23 +120,6 @@ namespace librealsense
         std::map<int, std::weak_ptr<const stream_interface>> _streams;
         std::map< int, std::map< int, std::weak_ptr< rsutils::lazy< rs2_extrinsics > > > > _extrinsics;
         std::mutex _streams_mutex, _devices_changed_callbacks_mtx;
-    };
-
-    class readonly_device_info : public device_info
-    {
-    public:
-        readonly_device_info(std::shared_ptr<device_interface> dev) : device_info(dev->get_context()), _dev(dev) {}
-        std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx, bool register_device_notifications) const override
-        {
-            return _dev;
-        }
-
-        platform::backend_device_group get_device_data() const override
-        {
-            return _dev->get_device_data();
-        }
-    private:
-        std::shared_ptr<device_interface> _dev;
     };
 
     // Helper functions for device list manipulation:

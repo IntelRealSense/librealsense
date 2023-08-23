@@ -4,6 +4,7 @@
 #include <algorithm>
 #include "pipeline.h"
 #include "stream.h"
+#include "media/playback/playback_device.h"
 #include "media/record/record_device.h"
 #include "media/ros/ros_writer.h"
 

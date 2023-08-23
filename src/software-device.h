@@ -17,8 +17,7 @@ namespace librealsense
     class software_device : public device
     {
     public:
-        software_device();
-        software_device( std::shared_ptr< context > ctx );
+        software_device( std::shared_ptr< const device_info > const & );
         virtual ~software_device();
 
         software_sensor& add_software_sensor(const std::string& name);
@@ -27,8 +26,6 @@ namespace librealsense
 
         void set_matcher_type(rs2_matchers matcher);
         
-        std::shared_ptr<software_device_info> get_info();
-
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
         std::vector<tagged_profile> get_profiles_tags() const override
@@ -44,35 +41,38 @@ namespace librealsense
         std::vector<std::shared_ptr<software_sensor>> _software_sensors;
         librealsense::software_device_destruction_callback_ptr _user_destruction_callback;
         rs2_matchers _matcher = RS2_MATCHER_DEFAULT;
-        std::shared_ptr<software_device_info> _info;
     };
     
     class software_device_info : public device_info
     {
-        std::weak_ptr<software_device> _dev;
+        std::weak_ptr< software_device > _dev;
+        std::string _address;
+
     public:
-        explicit software_device_info(std::shared_ptr<software_device> dev)
-            : device_info(nullptr), _dev(dev)
+        explicit software_device_info( std::shared_ptr< context > const & ctx )
+            : device_info( ctx )
+            , _address()  // leave empty until set_device()
         {
         }
-        
-        std::shared_ptr<device_interface> create_device() const override
+
+        void set_device( std::shared_ptr< software_device > const & dev )
         {
-            return _dev.lock();
+            if( ! _address.empty() )
+                throw wrong_api_call_sequence_exception( "software_device_info already initialized" );
+            _dev = dev;
+            _address = rsutils::string::from() << "software-device://" << (unsigned long long)dev.get();
         }
-        platform::backend_device_group get_device_data() const override
+
+        std::string get_address() const override { return _address; }
+
+        bool is_same_as( std::shared_ptr< const device_info > const & other ) const override
         {
-            std::stringstream address;
-            address << "software-device://";
-            if (auto dev = _dev.lock())
-            {
-                auto ptr = dev.get();
-                address << (unsigned long long)ptr;
-            }
-            return platform::backend_device_group({ platform::playback_device_info{ address.str() } });
+            if( auto rhs = std::dynamic_pointer_cast<const software_device_info>(other) )
+                return _address == rhs->_address;
+            return false;
         }
-        
-        std::shared_ptr<device_interface> create(std::shared_ptr<context>, bool) const override
+
+        std::shared_ptr< device_interface > create_device() override
         {
             return _dev.lock();
         }

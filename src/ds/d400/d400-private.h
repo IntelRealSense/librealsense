@@ -8,6 +8,8 @@
 
 namespace librealsense
 {
+    class d400_info;
+
     namespace ds
     {
         const uint16_t RS400_PID = 0x0ad1; // PSR

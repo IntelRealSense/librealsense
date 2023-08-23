@@ -168,11 +168,9 @@ matcher_factory::create_timestamp_composite_matcher( std::vector< std::shared_pt
     return std::make_shared<timestamp_composite_matcher>(matchers);
 }
 
-device::device( std::shared_ptr< context > ctx,
-                const platform::backend_device_group & group,
+device::device( std::shared_ptr< const device_info > const & dev_info,
                 bool device_changed_notifications )
-    : _context( ctx )
-    , _group( group )
+    : _dev_info( dev_info )
     , _is_valid( true )
     , _device_changed_notifications( device_changed_notifications )
     , _is_alive( std::make_shared< bool >( true ) )
@@ -193,7 +191,7 @@ device::device( std::shared_ptr< context > ctx,
             std::lock_guard<std::mutex> lock(_device_changed_mtx);
             for (auto& dev_info : removed->list)
             {
-                if (dev_info.info->get_device_data() == _group)
+                if( dev_info.info->is_same_as( _dev_info ) )
                 {
                     _is_valid = false;
                     return;
@@ -201,7 +199,11 @@ device::device( std::shared_ptr< context > ctx,
             }
         });
 
-        _callback_id = _context->register_internal_device_callback({ cb, [](rs2_devices_changed_callback* p) { p->release(); } });
+        _callback_id = get_context()->register_internal_device_callback( { cb,
+                                                                           []( rs2_devices_changed_callback * p )
+                                                                           {
+                                                                               p->release();
+                                                                           } } );
     }
 }
 
@@ -211,7 +213,7 @@ device::~device()
 
     if (_device_changed_notifications)
     {
-        _context->unregister_internal_device_callback(_callback_id);
+        get_context()->unregister_internal_device_callback(_callback_id);
     }
     _sensors.clear();
 }

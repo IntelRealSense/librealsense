@@ -16,8 +16,7 @@ namespace librealsense
     class d400_color : public virtual d400_device
     {
     public:
-        d400_color(std::shared_ptr<context> ctx,
-                  const platform::backend_device_group& group);
+        d400_color( std::shared_ptr< const d400_info > const & );
 
         synthetic_sensor& get_color_sensor()
         {

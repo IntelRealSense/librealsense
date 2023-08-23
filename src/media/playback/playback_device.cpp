@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include "playback_device.h"
+#include "playback-device-info.h"
 #include "core/motion.h"
 #include "stream.h"
 #include "media/ros/ros_reader.h"
@@ -19,15 +20,24 @@ static bool is_video_stream( rs2_stream stream )
     return stream != RS2_STREAM_GYRO && stream != RS2_STREAM_ACCEL && stream != RS2_STREAM_POSE;
 }
 
-playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<device_serializer::reader> serializer) :
-    m_read_thread([]() {return std::make_shared<dispatcher>(std::numeric_limits<unsigned int>::max()); }),
-    m_context(ctx),
-    m_is_started(false),
-    m_is_paused(false),
-    m_sample_rate(1),
-    m_real_time(true),
-    m_prev_timestamp(0),
-    m_last_published_timestamp(0)
+std::shared_ptr< device_interface > playback_device_info::create_device()
+{
+    auto playback_dev
+        = std::make_shared< playback_device >( shared_from_this(),
+                                               std::make_shared< ros_reader >( _filename, get_context() ) );
+    return playback_dev;
+}
+
+playback_device::playback_device( std::shared_ptr< const device_info > const & dev_info,
+                                  std::shared_ptr< device_serializer::reader > const & serializer )
+    : m_read_thread( []() { return std::make_shared< dispatcher >( std::numeric_limits< unsigned int >::max() ); } )
+    , m_device_info( dev_info )
+    , m_is_started( false )
+    , m_is_paused( false )
+    , m_sample_rate( 1 )
+    , m_real_time( true )
+    , m_prev_timestamp( 0 )
+    , m_last_published_timestamp( 0 )
 {
     if (serializer == nullptr)
     {
@@ -187,7 +197,7 @@ playback_device::~playback_device()
 
 std::shared_ptr<context> playback_device::get_context() const
 {
-    return m_context;
+    return m_device_info->get_context();
 }
 
 sensor_interface& playback_device::get_sensor(size_t i)
@@ -397,9 +407,9 @@ bool playback_device::is_real_time() const
     return m_real_time;
 }
 
-platform::backend_device_group playback_device::get_device_data() const
+std::shared_ptr< const device_info > playback_device::get_device_info() const
 {
-    return platform::backend_device_group({ platform::playback_device_info{ m_reader->get_file_name() } });
+    return m_device_info;
 }
 
 std::pair<uint32_t, rs2_extrinsics> playback_device::get_extrinsics(const stream_interface& stream) const

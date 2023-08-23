@@ -13,15 +13,8 @@ using rsutils::deferred;
 
 namespace librealsense
 {
-    software_device::software_device()
-        : device( std::make_shared< context >( nlohmann::json::object( { { "dds", false } } ) ), {}, false )
-        , _user_destruction_callback()
-    {
-        register_info( RS2_CAMERA_INFO_NAME, "Software-Device" );
-    }
-
-    software_device::software_device( std::shared_ptr< context > ctx )
-        : device( ctx, {}, false )
+    software_device::software_device( std::shared_ptr< const device_info > const & dev_info )
+        : device( dev_info, false )
     {
     }
 
@@ -70,13 +63,6 @@ namespace librealsense
         return *_software_sensors[index];
     }
     
-    std::shared_ptr<software_device_info> software_device::get_info() {
-        if (!_info)
-            _info = std::make_shared<software_device_info>(std::dynamic_pointer_cast< software_device>(shared_from_this()));
-        
-        return _info;
-    }
-
     void software_device::set_matcher_type(rs2_matchers matcher)
     {
         _matcher = matcher;
