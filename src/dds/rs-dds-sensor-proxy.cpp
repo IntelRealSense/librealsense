@@ -80,7 +80,7 @@ std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_video_stream( 
     } );
     if( is_default )
         profile->tag_profile( profile_tag::PROFILE_TAG_DEFAULT );
-    _raw_rs_profiles.push_back( profile );
+    _sw_profiles.push_back( profile );
 
     return profile;
 }
@@ -101,62 +101,76 @@ std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_motion_stream(
     profile->set_intrinsics( [=]() { return motion_stream.intrinsics; } );
     if( is_default )
         profile->tag_profile( profile_tag::PROFILE_TAG_DEFAULT );
-    _raw_rs_profiles.push_back( profile );
+    _sw_profiles.push_back( profile );
 
     return profile;
 }
 
 
-void dds_sensor_proxy::initialization_done()
+stream_profiles dds_sensor_proxy::init_stream_profiles()
 {
-    register_basic_converters();
-    _profiles = _formats_converter.get_all_possible_profiles( _raw_rs_profiles );
+    auto profiles = get_raw_stream_profiles();
+
+    auto format = get_format_conversion();
+    if( format_conversion::raw == format )
+    {
+        // NOTE: this is not meant for actual streaming at this time -- actual behavior of the
+        // formats_converter has not been implemented!
+    }
+    else
+    {
+        register_basic_converters();
+        if( format_conversion::basic == format )
+            _formats_converter.drop_non_basic_formats();
+        profiles = _formats_converter.get_all_possible_profiles( profiles );
+    }
+
+    sort_profiles( profiles );
+    return profiles;
 }
 
 
 void dds_sensor_proxy::register_basic_converters()
 {
-    std::vector< librealsense::processing_block_factory > converters;
-    std::vector< processing_block_factory > tmp;
-
     // Color
-    converters.push_back( processing_block_factory::create_id_pbf( RS2_FORMAT_YUYV, RS2_STREAM_COLOR ) );
-    converters.push_back( processing_block_factory::create_id_pbf( RS2_FORMAT_UYVY, RS2_STREAM_COLOR ) );
-    converters.push_back( processing_block_factory::create_id_pbf( RS2_FORMAT_RGB8, RS2_STREAM_COLOR ) );
-    converters.push_back( processing_block_factory::create_id_pbf( RS2_FORMAT_RGBA8, RS2_STREAM_COLOR ) );
-    converters.push_back( processing_block_factory::create_id_pbf( RS2_FORMAT_BGR8, RS2_STREAM_COLOR ) );
-    converters.push_back( processing_block_factory::create_id_pbf( RS2_FORMAT_BGRA8, RS2_STREAM_COLOR ) );
+    _formats_converter.register_converter( processing_block_factory::create_id_pbf( RS2_FORMAT_RGB8, RS2_STREAM_COLOR ) );
+    _formats_converter.register_converter( processing_block_factory::create_id_pbf( RS2_FORMAT_RGBA8, RS2_STREAM_COLOR ) );
+    _formats_converter.register_converter( processing_block_factory::create_id_pbf( RS2_FORMAT_BGR8, RS2_STREAM_COLOR ) );
+    _formats_converter.register_converter( processing_block_factory::create_id_pbf( RS2_FORMAT_BGRA8, RS2_STREAM_COLOR ) );
 
-    converters.push_back( { { { RS2_FORMAT_UYVY } }, { { RS2_FORMAT_RGB8, RS2_STREAM_COLOR } },
-                            []() { return std::make_shared< uyvy_converter >( RS2_FORMAT_RGB8 ); } } );
-    converters.push_back( { { { RS2_FORMAT_YUYV } }, { { RS2_FORMAT_RGB8, RS2_STREAM_COLOR } },
-                            []() { return std::make_shared< yuy2_converter >( RS2_FORMAT_RGB8 ); } } );
+    _formats_converter.register_converters(
+        processing_block_factory::create_pbf_vector< uyvy_converter >(
+            RS2_FORMAT_UYVY,
+            { RS2_FORMAT_UYVY, RS2_FORMAT_YUYV, RS2_FORMAT_RGB8, RS2_FORMAT_RGBA8, RS2_FORMAT_BGR8, RS2_FORMAT_BGRA8 },
+            RS2_STREAM_COLOR ) );
+    _formats_converter.register_converters(
+        processing_block_factory::create_pbf_vector< yuy2_converter >(
+            RS2_FORMAT_YUYV,
+            { RS2_FORMAT_YUYV, RS2_FORMAT_RGB8, RS2_FORMAT_RGBA8, RS2_FORMAT_BGR8, RS2_FORMAT_BGRA8 },
+            RS2_STREAM_COLOR ) );
 
     // Depth
-    converters.push_back( processing_block_factory::create_id_pbf( RS2_FORMAT_Z16, RS2_STREAM_DEPTH ) );
+    _formats_converter.register_converter(
+        processing_block_factory::create_id_pbf( RS2_FORMAT_Z16, RS2_STREAM_DEPTH ) );
 
     // Infrared (converter source needs type to be handled properly by formats_converter)
-    converters.push_back( { { { RS2_FORMAT_Y8, RS2_STREAM_INFRARED } },
+    _formats_converter.register_converter(
+                          { { { RS2_FORMAT_Y8, RS2_STREAM_INFRARED } },
                             { { RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 0 },
                               { RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1 },
                               { RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2 } },
                             []() { return std::make_shared< identity_processing_block >(); } } );
-    converters.push_back( { { { RS2_FORMAT_Y16, RS2_STREAM_INFRARED } },
+    _formats_converter.register_converter(
+                          { { { RS2_FORMAT_Y16, RS2_STREAM_INFRARED } },
                             { { RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1 },
                               { RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2 } },
                             []() { return std::make_shared< identity_processing_block >(); } } );
 
     // Motion
-    converters.push_back( { { { RS2_FORMAT_COMBINED_MOTION, RS2_STREAM_MOTION } },
-                            { { RS2_FORMAT_COMBINED_MOTION, RS2_STREAM_MOTION } },
-                            []() { return std::make_shared< identity_processing_block >(); } } );
+    _formats_converter.register_converter( processing_block_factory::create_id_pbf( RS2_FORMAT_COMBINED_MOTION, RS2_STREAM_MOTION ) );
 
     // Confidence
-    converters.push_back( { { { RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE } },
-                            { { RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE } },
-                            []() { return std::make_shared< identity_processing_block >(); } } );
-
-    _formats_converter.register_converters( converters );
+    _formats_converter.register_converter( processing_block_factory::create_id_pbf( RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE ) );
 }
 
 

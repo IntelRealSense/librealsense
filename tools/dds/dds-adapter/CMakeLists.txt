@@ -19,7 +19,7 @@ target_include_directories( ${PROJECT_NAME} PRIVATE
 target_link_libraries( ${PROJECT_NAME} PRIVATE realdds realsense2 )
 set_target_properties (${PROJECT_NAME} PROPERTIES
     FOLDER Tools/dds
-    CXX_STANDARD 11
+    CXX_STANDARD 14
     )
 
 install( TARGETS ${PROJECT_NAME}

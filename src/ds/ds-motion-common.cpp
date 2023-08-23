@@ -47,7 +47,7 @@ namespace librealsense
         return _roi;
     }
 
-    ds_fisheye_sensor::ds_fisheye_sensor(std::shared_ptr<sensor_base> sensor, device* owner)
+    ds_fisheye_sensor::ds_fisheye_sensor( std::shared_ptr< raw_sensor_base > const & sensor, device * owner )
         : synthetic_sensor("Wide FOV Camera", sensor, owner, fisheye_fourcc_to_rs2_format, fisheye_fourcc_to_rs2_stream),
         _owner(owner)
     {}
@@ -121,21 +121,23 @@ namespace librealsense
         return uvc_raw_sensor;
     }
     
-    ds_motion_sensor::ds_motion_sensor(std::string name,
-        std::shared_ptr<sensor_base> sensor, device* owner)
-        : synthetic_sensor(name, sensor, owner),
-        _owner(owner)
-    {}
+    ds_motion_sensor::ds_motion_sensor( std::string const & name,
+                                        std::shared_ptr< raw_sensor_base > const & sensor,
+                                        device * owner )
+        : synthetic_sensor( name, sensor, owner )
+        , _owner( owner )
+    {
+    }
 
-    ds_motion_sensor::ds_motion_sensor(std::string name,
-        std::shared_ptr<sensor_base> sensor, device* owner,
-        const std::map<uint32_t, rs2_format>& motion_fourcc_to_rs2_format,
-        const std::map<uint32_t, rs2_stream>& motion_fourcc_to_rs2_stream)
-        : synthetic_sensor(name, sensor, owner,
-                           motion_fourcc_to_rs2_format,
-                           motion_fourcc_to_rs2_stream),
-        _owner(owner)
-    {}
+    ds_motion_sensor::ds_motion_sensor( std::string const & name,
+                                        std::shared_ptr< raw_sensor_base > const & sensor,
+                                        device * owner,
+                                        const std::map< uint32_t, rs2_format > & motion_fourcc_to_rs2_format,
+                                        const std::map< uint32_t, rs2_stream > & motion_fourcc_to_rs2_stream )
+        : synthetic_sensor( name, sensor, owner, motion_fourcc_to_rs2_format, motion_fourcc_to_rs2_stream )
+        , _owner( owner )
+    {
+    }
 
     rs2_motion_device_intrinsic ds_motion_sensor::get_motion_intrinsics(rs2_stream stream) const
     {

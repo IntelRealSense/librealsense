@@ -202,6 +202,8 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
         auto default_profile_it = stream_name_to_default_profile.find( stream_name );
         if( default_profile_it != stream_name_to_default_profile.end() )
             default_profile_index = default_profile_it->second;
+        else
+            LOG_ERROR( "no default profile found; using first available in " << stream_name );
 
         auto const & profiles = it.second;
         if( profiles.empty() )
@@ -751,6 +753,7 @@ void lrs_device_controller::override_default_profiles( const std::map< std::stri
     std::string const product_line = _rs_dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
     if( product_line == "D400" )
     {
+        static const std::string RS405_PID( "0B5B", 4 );
         static const std::string RS410_PID( "0AD2", 4 );
         static const std::string RS415_PID( "0AD3", 4 );
 
@@ -774,6 +777,11 @@ void lrs_device_controller::override_default_profiles( const std::map< std::stri
 
         width = 1280;
         height = 720;
+        if( product_id == RS405_PID )
+        {
+            width = 848;
+            height = 480;
+        }
         stream_name_to_default_profile["Color"] = get_index_of_profile( stream_name_to_profiles.at( "Color" ),
             realdds::dds_video_stream_profile( fps, realdds::dds_video_encoding::from_rs2( RS2_FORMAT_YUYV ), width, height ) );
     }

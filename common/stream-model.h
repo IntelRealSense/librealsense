@@ -14,7 +14,7 @@ namespace rs2
     class subdevice_model;
     class viewer_model;
 
-    void draw_rect(const rect& r, int line_width = 1);
+    void draw_rect(const rect& r, int line_width = 1, bool draw_cross = false);
 
     struct frame_metadata
     {

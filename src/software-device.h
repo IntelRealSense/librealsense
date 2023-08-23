@@ -94,7 +94,7 @@ namespace librealsense
     class software_sensor : public sensor_base, public extendable_interface
     {
     public:
-        software_sensor(std::string name, software_device* owner);
+        software_sensor( std::string const & name, software_device * owner );
 
         virtual std::shared_ptr<stream_profile_interface> add_video_stream(rs2_video_stream video_stream, bool is_default = false);
         virtual std::shared_ptr<stream_profile_interface> add_motion_stream(rs2_motion_stream motion_stream, bool is_default = false);
@@ -103,6 +103,7 @@ namespace librealsense
         bool extend_to(rs2_extension extension_type, void** ptr) override;
 
         stream_profiles init_stream_profiles() override;
+        stream_profiles const & get_raw_stream_profiles() const override { return _sw_profiles; }
 
         void open(const stream_profiles& requests) override;
         void close() override;
@@ -134,7 +135,9 @@ namespace librealsense
 
         software_recommended_proccesing_blocks & get_software_recommended_proccesing_blocks() { return _pbs; }
 
-        stream_profiles _profiles;
+        // We build profiles using add_video_stream(), etc., and feed those into init_stream_profiles() which could in
+        // theory change them: so these are our "raw" profiles before initialization...
+        stream_profiles _sw_profiles;
 
     private:
         friend class software_device;
