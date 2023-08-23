@@ -127,7 +127,7 @@ namespace rs2
             log("Safety MCU Download completed, await DFU transition event\n"
                 "Internal write is in progress\n"
                 "Please DO NOT DISCONNECT the camera (might take a few minutes)");
-            std::this_thread::sleep_for(std::chrono::seconds(60));
+            std::this_thread::sleep_for(std::chrono::seconds(30));
 
             log("Safety MCU Update completed, waiting for device to reconnect");
         }

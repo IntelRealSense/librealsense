@@ -1026,7 +1026,7 @@ namespace rs2
         {
             if (data.size() == 0)
             {
-                auto ret = file_dialog_open(open_file, "SafetyMCU\0*.hex", NULL, NULL);
+                auto ret = file_dialog_open(open_file, "SafetyMCU\0*.hex.dfu\0", NULL, NULL);
                 if (ret)
                 {
                     std::ifstream file(ret, std::ios::binary | std::ios::in);
