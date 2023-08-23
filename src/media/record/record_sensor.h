@@ -39,6 +39,7 @@ namespace librealsense
         frame_callback_ptr get_frames_callback() const override;
         void set_frames_callback(frame_callback_ptr callback) override;
         stream_profiles get_active_streams() const override;
+        stream_profiles const & get_raw_stream_profiles() const override;
         int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
         void unregister_before_start_callback(int token) override;
         signal<record_sensor, const notification&> on_notification;

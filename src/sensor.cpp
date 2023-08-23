@@ -48,21 +48,22 @@ void log_callback_end( uint32_t fps,
     /////////////////// Sensor Base //////////////////////
     //////////////////////////////////////////////////////
 
-    sensor_base::sensor_base(std::string name, device* dev,
-        recommended_proccesing_blocks_interface* owner)
-        : recommended_proccesing_blocks_base(owner),
-        _is_streaming(false),
-        _is_opened(false),
-        _notifications_processor(std::shared_ptr<notifications_processor>(new notifications_processor())),
-        _on_open(nullptr),
-        _metadata_modifier(nullptr),
-        _metadata_parsers(std::make_shared<metadata_parser_map>()),
-        _owner(dev),
-        _profiles([this]() {
-        auto profiles = this->init_stream_profiles();
-        _owner->tag_profiles(profiles);
-        return profiles;
-    })
+    sensor_base::sensor_base( std::string const & name, device * dev, recommended_proccesing_blocks_interface * owner )
+    : recommended_proccesing_blocks_base( owner )
+    , _is_streaming( false )
+    , _is_opened( false )
+    , _notifications_processor( std::shared_ptr< notifications_processor >( new notifications_processor() ) )
+    , _on_open( nullptr )
+    , _metadata_modifier( nullptr )
+    , _metadata_parsers( std::make_shared< metadata_parser_map >() )
+    , _owner( dev )
+    , _profiles(
+          [this]()
+          {
+              auto profiles = this->init_stream_profiles();
+              _owner->tag_profiles( profiles );
+              return profiles;
+          } )
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
 
@@ -154,17 +155,17 @@ void log_callback_end( uint32_t fps,
         _metadata_parsers.get()->insert(std::pair<rs2_frame_metadata_value, std::shared_ptr<md_attribute_parser_base>>(metadata, metadata_parser));
     }
 
-    std::shared_ptr<std::map<uint32_t, rs2_format>>& sensor_base::get_fourcc_to_rs2_format_map()
+    std::shared_ptr<std::map<uint32_t, rs2_format>>& raw_sensor_base::get_fourcc_to_rs2_format_map()
     {
         return _fourcc_to_rs2_format;
     }
 
-    std::shared_ptr<std::map<uint32_t, rs2_stream>>& sensor_base::get_fourcc_to_rs2_stream_map()
+    std::shared_ptr<std::map<uint32_t, rs2_stream>>& raw_sensor_base::get_fourcc_to_rs2_stream_map()
     {
         return _fourcc_to_rs2_stream;
     }
 
-    rs2_format sensor_base::fourcc_to_rs2_format(uint32_t fourcc_format) const
+    rs2_format raw_sensor_base::fourcc_to_rs2_format(uint32_t fourcc_format) const
     {
         auto it = _fourcc_to_rs2_format->find( fourcc_format );
         if( it != _fourcc_to_rs2_format->end() )
@@ -173,7 +174,7 @@ void log_callback_end( uint32_t fps,
         return RS2_FORMAT_ANY;
     }
 
-    rs2_stream sensor_base::fourcc_to_rs2_stream(uint32_t fourcc_format) const
+    rs2_stream raw_sensor_base::fourcc_to_rs2_stream(uint32_t fourcc_format) const
     {
         auto it = _fourcc_to_rs2_stream->find( fourcc_format );
         if( it != _fourcc_to_rs2_stream->end() )
@@ -211,10 +212,15 @@ void log_callback_end( uint32_t fps,
 
     stream_profiles sensor_base::get_stream_profiles( int tag ) const
     {
-        stream_profiles results;
         bool const need_debug = (tag & profile_tag::PROFILE_TAG_DEBUG) != 0;
         bool const need_any = (tag & profile_tag::PROFILE_TAG_ANY) != 0;
-        for( auto p : *_profiles )
+        
+        auto & all_profiles = initialized_profiles();
+        if( need_debug && need_any )
+            return all_profiles;
+
+        stream_profiles results;
+        for( auto p : all_profiles )
         {
             auto curr_tag = p->get_tag();
             if( ! need_debug && ( curr_tag & profile_tag::PROFILE_TAG_DEBUG ) )
@@ -225,7 +231,6 @@ void log_callback_end( uint32_t fps,
                 results.push_back( p );
             }
         }
-
         return results;
     }
 
@@ -700,9 +705,8 @@ void log_callback_end( uint32_t fps,
         std::unordered_set<std::shared_ptr<motion_stream_profile>> motion_profiles;
         power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
 
-        _uvc_profiles = _device->get_profiles();
-
-        for (auto&& p : _uvc_profiles)
+        auto uvc_profiles = _device->get_profiles();
+        for (auto&& p : uvc_profiles)
         {
             const auto&& rs2_fmt = fourcc_to_rs2_format(p.format);
             if (rs2_fmt == RS2_FORMAT_ANY)
@@ -812,7 +816,7 @@ void log_callback_end( uint32_t fps,
         const std::map<rs2_stream, std::map<unsigned, unsigned>>& fps_and_sampling_frequency_per_rs2_stream,
         const std::vector<std::pair<std::string, stream_profile>>& sensor_name_and_hid_profiles,
         device* dev)
-        : sensor_base("Raw Motion Module", dev, (recommended_proccesing_blocks_interface*)this), _sensor_name_and_hid_profiles(sensor_name_and_hid_profiles),
+        : super("Raw Motion Module", dev, (recommended_proccesing_blocks_interface*)this), _sensor_name_and_hid_profiles(sensor_name_and_hid_profiles),
         _fps_and_sampling_frequency_per_rs2_stream(fps_and_sampling_frequency_per_rs2_stream),
         _hid_device(hid_device),
         _is_configured_stream(RS2_STREAM_COUNT),
@@ -1058,7 +1062,6 @@ void log_callback_end( uint32_t fps,
             auto profiles = get_sensor_profiles(it->name);
             stream_requests.insert(stream_requests.end(), profiles.begin(), profiles.end());
         }
-
         return stream_requests;
     }
 
@@ -1101,11 +1104,11 @@ void log_callback_end( uint32_t fps,
             return fps;
     }
 
-    uvc_sensor::uvc_sensor(std::string name,
+    uvc_sensor::uvc_sensor(std::string const & name,
         std::shared_ptr<platform::uvc_device> uvc_device,
         std::unique_ptr<frame_timestamp_reader> timestamp_reader,
         device* dev)
-        : sensor_base(name, dev, (recommended_proccesing_blocks_interface*)this),
+        : super(name, dev, (recommended_proccesing_blocks_interface*)this),
         _device(std::move(uvc_device)),
         _user_count(0),
         _timestamp_reader(std::move(timestamp_reader))
@@ -1199,21 +1202,20 @@ void log_callback_end( uint32_t fps,
     ///////////////// Synthetic Sensor ///////////////////
     //////////////////////////////////////////////////////
 
-    synthetic_sensor::synthetic_sensor(std::string name,
-        std::shared_ptr<sensor_base> sensor,
-        device* device,
-        const std::map<uint32_t, rs2_format>& fourcc_to_rs2_format_map,
-        const std::map<uint32_t, rs2_stream>& fourcc_to_rs2_stream_map)
-        : sensor_base(name, device, (recommended_proccesing_blocks_interface*)this), _raw_sensor(std::move(sensor))
+    synthetic_sensor::synthetic_sensor( std::string const & name,
+                                        std::shared_ptr< raw_sensor_base > const & raw_sensor,
+                                        device * device,
+                                        const std::map< uint32_t, rs2_format > & fourcc_to_rs2_format_map,
+                                        const std::map< uint32_t, rs2_stream > & fourcc_to_rs2_stream_map )
+        : sensor_base( name, device, (recommended_proccesing_blocks_interface *)this )
+        , _raw_sensor( raw_sensor )
     {
         // synthetic sensor and its raw sensor will share the formats and streams mapping
         auto& raw_fourcc_to_rs2_format_map = _raw_sensor->get_fourcc_to_rs2_format_map();
-        _fourcc_to_rs2_format = std::make_shared<std::map<uint32_t, rs2_format>>(fourcc_to_rs2_format_map);
-        raw_fourcc_to_rs2_format_map = _fourcc_to_rs2_format;
+        raw_fourcc_to_rs2_format_map = std::make_shared<std::map<uint32_t, rs2_format>>(fourcc_to_rs2_format_map);
 
         auto& raw_fourcc_to_rs2_stream_map = _raw_sensor->get_fourcc_to_rs2_stream_map();
-        _fourcc_to_rs2_stream = std::make_shared<std::map<uint32_t, rs2_stream>>(fourcc_to_rs2_stream_map);
-        raw_fourcc_to_rs2_stream_map = _fourcc_to_rs2_stream;
+        raw_fourcc_to_rs2_stream_map = std::make_shared<std::map<uint32_t, rs2_stream>>(fourcc_to_rs2_stream_map);
     }
 
     synthetic_sensor::~synthetic_sensor()
@@ -1301,9 +1303,9 @@ void log_callback_end( uint32_t fps,
         return try_register_option(id, std::make_shared<uvc_pu_option>(*raw_uvc_sensor.get(), id));
     }
 
-    void synthetic_sensor::sort_profiles(stream_profiles* profiles)
+    void sensor_base::sort_profiles( stream_profiles & profiles )
     {
-        std::sort(profiles->begin(), profiles->end(), [](const std::shared_ptr<stream_profile_interface>& ap,
+        std::sort(profiles.begin(), profiles.end(), [](const std::shared_ptr<stream_profile_interface>& ap,
             const std::shared_ptr<stream_profile_interface>& bp)
         {
             const auto&& a = to_profile(ap.get());
@@ -1312,8 +1314,8 @@ void log_callback_end( uint32_t fps,
             // stream == RS2_STREAM_COLOR && format == RS2_FORMAT_RGB8 element works around the fact that Y16 gets priority over RGB8 when both
             // are available for pipeline stream resolution
             // Note: Sort Stream Index decsending to make sure IR1 is chosen over IR2
-            const auto&& at = std::make_tuple(a.stream, -a.index, a.width, a.height, a.fps, a.stream == RS2_STREAM_COLOR && a.format == RS2_FORMAT_RGB8, a.format);
-            const auto&& bt = std::make_tuple(b.stream, -b.index, b.width, b.height, b.fps, b.stream == RS2_STREAM_COLOR && b.format == RS2_FORMAT_RGB8, b.format);
+            const auto&& at = std::make_tuple(a.stream, -a.index, a.width, a.height, a.stream == RS2_STREAM_COLOR && a.format == RS2_FORMAT_RGB8, a.format, a.fps);
+            const auto&& bt = std::make_tuple(b.stream, -b.index, b.width, b.height, b.stream == RS2_STREAM_COLOR && b.format == RS2_FORMAT_RGB8, b.format, b.fps);
 
             return at > bt;
         });
@@ -1355,22 +1357,34 @@ void log_callback_end( uint32_t fps,
 
     stream_profiles synthetic_sensor::init_stream_profiles()
     {
-        stream_profiles raw_profiles = _raw_sensor->get_stream_profiles( PROFILE_TAG_ANY | PROFILE_TAG_DEBUG );
-        if( should_use_basic_formats() )
+        stream_profiles result_profiles;
+        switch( get_format_conversion() )
         {
+        case format_conversion::basic:
             _formats_converter.drop_non_basic_formats();
+            // fall-thru
+        case format_conversion::full:
+            result_profiles = _formats_converter.get_all_possible_profiles( get_raw_stream_profiles() );
+            break;
+
+        case format_conversion::raw:
+            result_profiles = get_raw_stream_profiles();
+            // NOTE: this is not meant for actual streaming at this time -- actual behavior of the
+            // formats_converter has not been implemented!
+            break;
         }
 
-        stream_profiles result_profiles = _formats_converter.get_all_possible_profiles( raw_profiles );
-
         _owner->tag_profiles( result_profiles );
-        sort_profiles( &result_profiles );
+        sort_profiles( result_profiles );
 
         return result_profiles;
     }
 
     void synthetic_sensor::open(const stream_profiles & requests)
     {
+        if( get_format_conversion() == format_conversion::raw )
+            throw wrong_api_call_sequence_exception( "'raw' format-conversion is not meant for streaming" );
+
         std::lock_guard<std::mutex> lock(_synthetic_configure_lock);
 
         _formats_converter.prepare_to_convert( requests );
@@ -1535,13 +1549,9 @@ void log_callback_end( uint32_t fps,
         snapshot = std::make_shared<depth_mapping_sensor_snapshot>();
     }
 
-    bool synthetic_sensor::should_use_basic_formats() const
+    format_conversion sensor_base::get_format_conversion() const
     {
-        if( _owner->get_context() )
-        {
-            return rsutils::json::get< bool >( _owner->get_context()->get_settings(), std::string( "use-basic-formats", 17 ), false );
-        }
-
-        return false;
+        return _owner->get_format_conversion();
     }
+
 }

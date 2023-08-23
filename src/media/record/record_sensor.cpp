@@ -204,6 +204,12 @@ stream_profiles record_sensor::get_active_streams() const
     return m_sensor.get_active_streams();
 }
 
+stream_profiles const & record_sensor::get_raw_stream_profiles() const
+{
+    return m_sensor.get_raw_stream_profiles();
+}
+
+
 int record_sensor::register_before_streaming_changes_callback(std::function<void(bool)> callback)
 {
     throw librealsense::not_implemented_exception("playback_sensor::register_before_streaming_changes_callback");

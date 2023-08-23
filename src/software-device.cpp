@@ -93,7 +93,7 @@ namespace librealsense
         return md_parser_map;
     }
 
-    software_sensor::software_sensor(std::string name, software_device* owner)
+    software_sensor::software_sensor( std::string const & name, software_device * owner )
         : sensor_base( name, owner, &_pbs )
         , _stereo_extension( [this]() { return stereo_extension( this ); } )
         , _depth_extension( [this]() { return depth_extension( this ); } )
@@ -130,7 +130,7 @@ namespace librealsense
         profile->set_unique_id(video_stream.uid);
         profile->set_intrinsics([=]() {return video_stream.intrinsics; });
         if (is_default) profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT);
-        _profiles.push_back(profile);
+        _sw_profiles.push_back(profile);
 
         return profile;
     }
@@ -146,7 +146,7 @@ namespace librealsense
         profile->set_unique_id(motion_stream.uid);
         profile->set_intrinsics([=]() {return motion_stream.intrinsics; });
         if (is_default) profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT);
-        _profiles.push_back(profile);
+        _sw_profiles.push_back(profile);
 
         return std::move(profile);
     }
@@ -164,7 +164,7 @@ namespace librealsense
         profile->set_stream_type(pose_stream.type);
         profile->set_unique_id(pose_stream.uid);
         if (is_default) profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT);
-        _profiles.push_back(profile);
+        _sw_profiles.push_back(profile);
 
         return std::move(profile);
     }
@@ -194,7 +194,8 @@ namespace librealsense
 
     stream_profiles software_sensor::init_stream_profiles()
     {
-        return _profiles;
+        // By default the raw profiles we're given is what we output
+        return _sw_profiles;
     }
 
     void software_sensor::open(const stream_profiles& requests)
