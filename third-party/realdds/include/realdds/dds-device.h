@@ -62,6 +62,8 @@ public:
     void set_option_value( const std::shared_ptr< dds_option > & option, float new_value );
     float query_option_value( const std::shared_ptr< dds_option > & option );
 
+    void send_control( topics::flexible_msg &&, nlohmann::json * reply = nullptr );
+
     bool has_extrinsics() const;
     std::shared_ptr< extrinsics > get_extrinsics( std::string const & from, std::string const & to ) const;
 
