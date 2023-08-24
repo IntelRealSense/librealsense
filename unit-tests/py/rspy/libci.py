@@ -89,6 +89,7 @@ class TestConfig( ABC ):  # Abstract Base Class
         self._tags = set()
         self._flags = set()
         self._timeout = 200
+        self._retries = 0
         self._context = context
         self._donotrun = False
 
@@ -99,6 +100,8 @@ class TestConfig( ABC ):  # Abstract Base Class
             log.d( 'priority:', self._priority )
         if self._timeout != 200:
             log.d( 'timeout:', self._timeout )
+        if self._retries != 0:
+            log.d( 'retries:', self._retries )
         if len( self._tags ) > 1:
             log.d( 'tags:', self._tags )
         if self._flags:
@@ -118,6 +121,10 @@ class TestConfig( ABC ):  # Abstract Base Class
     @property
     def timeout( self ):
         return self._timeout
+
+    @property
+    def retries( self ):
+        return self._retries
 
     @property
     def tags( self ):
@@ -221,6 +228,12 @@ class TestConfigFromText( TestConfig ):
             elif directive == 'timeout':
                 if len( params ) == 1 and params[0].isdigit():
                     self._timeout = int( params[0] )
+                else:
+                    log.e( source + '+' + str( line['index'] ) + ': timeout directive with invalid parameters:',
+                           params )
+            elif directive == 'retries':
+                if len( params ) == 1 and params[0].isdigit():
+                    self._retries = int( params[0] )
                 else:
                     log.e( source + '+' + str( line['index'] ) + ': timeout directive with invalid parameters:',
                            params )
