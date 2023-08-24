@@ -52,7 +52,7 @@ Mainly the number of streams to expect. The device will wait for this many strea
 
 #### `device-options`
 
-This is optional: not all devices have options.
+This is optional: not all devices have options. See [device](device.md).
 
 ```JSON
 {
@@ -64,9 +64,16 @@ This is optional: not all devices have options.
 }
 ```
 
-Each option is a floating point `value`, with a `name`, `description`, valid range (`default`, `min`, `max`, `step`).
+* A `name`
+* The `type` defaults to `float`
+    * `bool`
+    * `float` is accompanied by a valid range (`default`, `min`, `max`, `step`)
+    * `int` is accompanied by a valid range (`default`, `min`, `max`, `step`)
+    * `string` for free text, or a choice from a `choices` array, e.g. `"type":"string","choices":["Value A","Value B"]`
+* A `description` is a brief string description of the functionality this option exposes
+* The `value` of the option
 
-These options will be shown in the Viewer.
+Device options will not be shown in the Viewer.
 
 
 #### `stream-header`
@@ -152,3 +159,5 @@ Information about a specific stream:
     "stream-name":"Infrared 1"
 }
 ```
+
+Stream options are shown in the Viewer.

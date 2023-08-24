@@ -92,3 +92,22 @@ The reply should include the original control, plus:
 Both querying and setting options involve a very similar reply that can be handled in the same manner.
 
 A new option value should conform to the specific option's value range as communicated when the device was [initialized](initialization.md).
+
+
+### `hwm`
+
+Can be used to send internal commands to the hardware and may brick the device if used. May or may not be implemented, and is not documented.
+
+* `opcode` (string) is mandatory
+
+Plus any additional fields necessary. It is up to the server to validate and make sure everything is as expected.
+
+```JSON
+{
+    "id": "hwm",
+    "opcode": "WWD",
+    "data": ["kaboom"]
+}
+```
+
+A reply can be expected.
