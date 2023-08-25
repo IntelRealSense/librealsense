@@ -1155,15 +1155,6 @@ namespace librealsense
         }
     }
 
-    void d400_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const
-    {
-        //TODO: Implement
-    }
-    void d400_device::enable_recording(std::function<void(const debug_interface&)> record_action)
-    {
-        //TODO: Implement
-    }
-
     // Check if need change camera name due to number modifications on one device PID.
     void update_device_name(std::string& device_name, const ds::ds_caps cap)
     {

@@ -31,6 +31,8 @@ namespace librealsense
     public:
         virtual region_of_interest_method& get_roi_method() const = 0;
         virtual void set_roi_method(std::shared_ptr<region_of_interest_method> roi_method) = 0;
+
+        virtual ~roi_sensor_interface() = default;
     };
 
     class roi_sensor_base : public roi_sensor_interface

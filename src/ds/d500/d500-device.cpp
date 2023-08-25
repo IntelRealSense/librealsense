@@ -762,15 +762,6 @@ namespace librealsense
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
     }
 
-    void d500_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const
-    {
-        //TODO: Implement
-    }
-    void d500_device::enable_recording(std::function<void(const debug_interface&)> record_action)
-    {
-        //TODO: Implement
-    }
-
     platform::usb_spec d500_device::get_usb_spec() const
     {
         if(!supports_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))

@@ -398,14 +398,6 @@ namespace librealsense
             }
             break;
         }
-        case RS2_EXTENSION_DEBUG:
-            break;
-            //case RS2_EXTENSION_OPTION:
-            //{
-            //    auto option = SnapshotAs<RS2_EXTENSION_OPTION>(snapshot);
-            //    write_sensor_option({ device_id, sensor_id }, timestamp, *option);
-            //    break;
-            //}
         case RS2_EXTENSION_OPTIONS:
         {
             auto options = SnapshotAs<RS2_EXTENSION_OPTIONS>(snapshot);

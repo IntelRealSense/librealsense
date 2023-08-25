@@ -6,13 +6,10 @@
 #include "hw-monitor.h"
 #include "streaming.h"
 #include "option.h"
-#define RS400_ADVANCED_MODE_HPP
 #include "ds/advanced_mode/presets.h"
 #include "../../include/librealsense2/h/rs_advanced_mode_command.h"
 #include "serializable-interface.h"
 #include <rsutils/lazy.h>
-
-#undef RS400_ADVANCED_MODE_HPP
 
 
 typedef enum
@@ -56,7 +53,7 @@ namespace librealsense
     MAP_ADVANCED_MODE(STAFactor, etAFactor);
 
 
-    class ds_advanced_mode_interface : public serializable_interface, public recordable<ds_advanced_mode_interface>
+    class ds_advanced_mode_interface : public serializable_interface
     {
     public:
         virtual bool is_enabled() const = 0;
@@ -107,9 +104,6 @@ namespace librealsense
     public:
         explicit ds_advanced_mode_base(std::shared_ptr<hw_monitor> hwm,
             synthetic_sensor& depth_sensor);
-
-        void create_snapshot(std::shared_ptr<ds_advanced_mode_interface>& snapshot) const override {};
-        void enable_recording(std::function<void(const ds_advanced_mode_interface&)> recording_function) override {};
 
         virtual ~ds_advanced_mode_base() = default;
 
