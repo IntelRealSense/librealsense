@@ -265,26 +265,6 @@ namespace librealsense
 
         float get_stereo_baseline_mm() const override { return _owner->get_stereo_baseline_mm(); }
 
-        void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const override
-        {
-            snapshot = std::make_shared<depth_sensor_snapshot>(get_depth_scale());
-        }
-
-        void create_snapshot(std::shared_ptr<depth_stereo_sensor>& snapshot) const override
-        {
-            snapshot = std::make_shared<depth_stereo_sensor_snapshot>(get_depth_scale(), get_stereo_baseline_mm());
-        }
-
-        void enable_recording(std::function<void(const depth_sensor&)> recording_function) override
-        {
-            //does not change over time
-        }
-
-        void enable_recording(std::function<void(const depth_stereo_sensor&)> recording_function) override
-        {
-            //does not change over time
-        }
-
         float get_preset_max_value() const override
         {
             return static_cast<float>(RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY);

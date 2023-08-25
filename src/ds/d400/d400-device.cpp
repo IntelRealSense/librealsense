@@ -130,7 +130,11 @@ namespace librealsense
         return result;
     }
 
-    class d400_depth_sensor : public synthetic_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
+    class d400_depth_sensor
+        : public synthetic_sensor
+        , public video_sensor_interface
+        , public depth_stereo_sensor
+        , public roi_sensor_base
     {
     public:
         explicit d400_depth_sensor(d400_device* owner,
@@ -300,26 +304,6 @@ namespace librealsense
         std::shared_ptr<hdr_config> get_hdr_config() { return _hdr_cfg; }
 
         float get_stereo_baseline_mm() const override { return _owner->get_stereo_baseline_mm(); }
-
-        void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const override
-        {
-            snapshot = std::make_shared<depth_sensor_snapshot>(get_depth_scale());
-        }
-
-        void create_snapshot(std::shared_ptr<depth_stereo_sensor>& snapshot) const override
-        {
-            snapshot = std::make_shared<depth_stereo_sensor_snapshot>(get_depth_scale(), get_stereo_baseline_mm());
-        }
-
-        void enable_recording(std::function<void(const depth_sensor&)> recording_function) override
-        {
-            //does not change over time
-        }
-
-        void enable_recording(std::function<void(const depth_stereo_sensor&)> recording_function) override
-        {
-            //does not change over time
-        }
 
         float get_preset_max_value() const override
         {
@@ -899,8 +883,10 @@ namespace librealsense
 
             if (!val_in_range(_pid, { ds::RS457_PID }))
             {
-                depth_sensor.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
-                        rsutils::lazy< float >( [this]() { return get_stereo_baseline_mm(); } ) ) );
+                depth_sensor.register_option( RS2_OPTION_STEREO_BASELINE,
+                                              std::make_shared< const_value_option >(
+                                                  "Distance in mm between the stereo imagers",
+                                                  rsutils::lazy< float >( [this]() { return get_stereo_baseline_mm(); } ) ) );
             }
 
             if (advanced_mode && _fw_version >= firmware_version("5.6.3.0"))
