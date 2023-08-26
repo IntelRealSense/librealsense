@@ -214,7 +214,7 @@ void librealsense::record_device::try_add_snapshot(T* extendable, device_seriali
             if (snapshot != nullptr)
             {
                 snapshots[TypeToExtension<Ext>::value] = snapshot;
-                LOG_INFO("Added snapshot of type: " << TypeToExtension<Ext>::to_string());
+                LOG_INFO("Added snapshot of type: " << TypeToExtension<Ext>::to_string() << "  to: " << extendable->get_info( RS2_CAMERA_INFO_NAME ) );
             }
             else
             {

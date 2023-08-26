@@ -3,7 +3,6 @@
 #pragma once
 
 #include "options.h"
-#include "../types.h"
 #include "../depth-sensor.h"
 #include "../color-sensor.h"
 #include "../composite-frame.h"
@@ -13,11 +12,6 @@
 
 namespace librealsense
 {
-    namespace platform
-    {
-        class time_source;
-    }
-
     class sensor_interface;
     class archive_interface;
     class device_interface;

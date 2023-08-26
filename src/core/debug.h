@@ -2,7 +2,6 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "streaming.h"
 #include "extension.h"
 #include <vector>
 
