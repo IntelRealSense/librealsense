@@ -249,9 +249,6 @@ device_serializer::snapshot_collection librealsense::record_device::get_extensio
             try_add_snapshot< T, ExtensionToType< RS2_EXTENSION_INFO >::type >( extendable, snapshots );
             break;
         case RS2_EXTENSION_OPTIONS         : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_OPTIONS        >::type>(extendable, snapshots); break;
-        case RS2_EXTENSION_COLOR_SENSOR:        try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_COLOR_SENSOR   >::type>(extendable, snapshots); break;
-        case RS2_EXTENSION_MOTION_SENSOR:        try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_MOTION_SENSOR   >::type>(extendable, snapshots); break;
-        case RS2_EXTENSION_FISHEYE_SENSOR:        try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_FISHEYE_SENSOR   >::type>(extendable, snapshots); break;
         case RS2_EXTENSION_RECOMMENDED_FILTERS: try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_RECOMMENDED_FILTERS   >::type>(extendable, snapshots); break;
         }
     }
