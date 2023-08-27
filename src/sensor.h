@@ -146,35 +146,13 @@ namespace librealsense
     MAP_EXTENSION(RS2_EXTENSION_MOTION_SENSOR, librealsense::motion_sensor);
 
 
-    class fisheye_sensor : public recordable<fisheye_sensor>
+    class fisheye_sensor
     {
     public:
         virtual ~fisheye_sensor() = default;
-
-        void create_snapshot(std::shared_ptr<fisheye_sensor>& snapshot) const override;
-        void enable_recording(std::function<void(const fisheye_sensor&)> recording_function) override {};
     };
 
     MAP_EXTENSION(RS2_EXTENSION_FISHEYE_SENSOR, librealsense::fisheye_sensor);
-
-    class fisheye_sensor_snapshot : public virtual fisheye_sensor, public extension_snapshot
-    {
-    public:
-        fisheye_sensor_snapshot() {}
-
-        void update(std::shared_ptr<extension_snapshot> ext) override
-        {
-        }
-
-        void create_snapshot(std::shared_ptr<fisheye_sensor>& snapshot) const  override
-        {
-            snapshot = std::make_shared<fisheye_sensor_snapshot>(*this);
-        }
-        void enable_recording(std::function<void(const fisheye_sensor&)> recording_function) override
-        {
-            //empty
-        }
-    };
 
     // Base class for anything that is the target of a synthetic_sensor
     //

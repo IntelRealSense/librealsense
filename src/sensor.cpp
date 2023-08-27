@@ -718,11 +718,6 @@ void log_callback_end( uint32_t fps,
         return _raw_sensor->is_opened();
     }
 
-    void fisheye_sensor::create_snapshot(std::shared_ptr<fisheye_sensor>& snapshot) const
-    {
-        snapshot = std::make_shared<fisheye_sensor_snapshot>();
-    }
-
     format_conversion sensor_base::get_format_conversion() const
     {
         return _owner->get_format_conversion();

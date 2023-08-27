@@ -180,7 +180,9 @@ bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void**
     case RS2_EXTENSION_MOTION_SENSOR:
         *ext = As< typename ExtensionToType< RS2_EXTENSION_MOTION_SENSOR >::type >( &m_sensor );
         return *ext;
-    case RS2_EXTENSION_FISHEYE_SENSOR:      return extend_to_aux<RS2_EXTENSION_FISHEYE_SENSOR   >(&m_sensor, ext);
+    case RS2_EXTENSION_FISHEYE_SENSOR:
+        *ext = As< typename ExtensionToType< RS2_EXTENSION_FISHEYE_SENSOR >::type >( &m_sensor );
+        return *ext;
     case RS2_EXTENSION_POSE_SENSOR:         return extend_to_aux<RS2_EXTENSION_POSE_SENSOR   >(&m_sensor, ext);
 
     //Other extensions are not expected to be extensions of a sensor

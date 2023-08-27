@@ -895,8 +895,6 @@ namespace librealsense
         , public extension_snapshot
     {
     public:
-        color_sensor_snapshot() {}
-
         void update( std::shared_ptr< extension_snapshot > ext ) override {}
     };
 
@@ -905,8 +903,14 @@ namespace librealsense
         , public extension_snapshot
     {
     public:
-        motion_sensor_snapshot() {}
+        void update( std::shared_ptr< extension_snapshot > ext ) override {}
+    };
 
+    class fisheye_sensor_snapshot
+        : public virtual fisheye_sensor
+        , public extension_snapshot
+    {
+    public:
         void update( std::shared_ptr< extension_snapshot > ext ) override {}
     };
 
