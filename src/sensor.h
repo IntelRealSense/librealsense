@@ -137,36 +137,13 @@ namespace librealsense
 
     class processing_block;
 
-    class motion_sensor : public recordable<motion_sensor>
+    class motion_sensor
     {
     public:
         virtual ~motion_sensor() = default;
-
-        void create_snapshot(std::shared_ptr<motion_sensor>& snapshot) const override;
-        void enable_recording(std::function<void(const motion_sensor&)> recording_function) override {};
     };
 
     MAP_EXTENSION(RS2_EXTENSION_MOTION_SENSOR, librealsense::motion_sensor);
-
-    class motion_sensor_snapshot : public virtual motion_sensor, public extension_snapshot
-    {
-    public:
-        motion_sensor_snapshot() {}
-
-        void update(std::shared_ptr<extension_snapshot> ext) override
-        {
-        }
-
-        void create_snapshot(std::shared_ptr<motion_sensor>& snapshot) const  override
-        {
-            snapshot = std::make_shared<motion_sensor_snapshot>(*this);
-        }
-
-        void enable_recording(std::function<void(const motion_sensor&)> recording_function) override
-        {
-            //empty
-        }
-    };
 
 
     class fisheye_sensor : public recordable<fisheye_sensor>

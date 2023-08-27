@@ -900,6 +900,16 @@ namespace librealsense
         void update( std::shared_ptr< extension_snapshot > ext ) override {}
     };
 
+    class motion_sensor_snapshot
+        : public virtual motion_sensor
+        , public extension_snapshot
+    {
+    public:
+        motion_sensor_snapshot() {}
+
+        void update( std::shared_ptr< extension_snapshot > ext ) override {}
+    };
+
     }  // namespace
 
 
