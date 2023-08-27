@@ -888,6 +888,21 @@ namespace librealsense
         sensor_extensions[RS2_EXTENSION_RECOMMENDED_FILTERS] = proccesing_blocks;
     }
 
+    namespace {
+
+    class color_sensor_snapshot
+        : public virtual color_sensor
+        , public extension_snapshot
+    {
+    public:
+        color_sensor_snapshot() {}
+
+        void update( std::shared_ptr< extension_snapshot > ext ) override {}
+    };
+
+    }  // namespace
+
+
     void ros_reader::add_sensor_extension(snapshot_collection & sensor_extensions, std::string sensor_name)
     {
         if (is_color_sensor(sensor_name))
