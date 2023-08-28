@@ -3,6 +3,9 @@
 #pragma once
 
 #include "frame.h"
+#include "core/extension.h"
+#include "types.h"
+
 
 namespace librealsense {
 

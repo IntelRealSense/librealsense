@@ -8,6 +8,8 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode.h"
         "${CMAKE_CURRENT_LIST_DIR}/depth-frame.h"
         "${CMAKE_CURRENT_LIST_DIR}/disparity-frame.h"
+        "${CMAKE_CURRENT_LIST_DIR}/frame-continuation.h"
+        "${CMAKE_CURRENT_LIST_DIR}/frame-header.h"
         "${CMAKE_CURRENT_LIST_DIR}/roi.h"
         "${CMAKE_CURRENT_LIST_DIR}/motion.h"
         "${CMAKE_CURRENT_LIST_DIR}/motion-frame.h"

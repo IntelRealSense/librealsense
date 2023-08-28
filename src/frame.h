@@ -3,9 +3,10 @@
 
 #pragma once
 
-#include "types.h"
-#include "depth-sensor.h"
+#include "core/frame-continuation.h"
+#include "core/frame-header.h"
 #include "core/extension.h"
+#include "basics.h"
 #include <atomic>
 #include <array>
 #include <vector>
@@ -15,10 +16,7 @@
 namespace librealsense {
 
 
-class sensor_interface;
-class archive_interface;
 class md_attribute_parser_base;
-class depth_sensor;
 
 
 /** \brief Metadata fields that are utilized internally by librealsense
@@ -54,35 +52,6 @@ static_assert( sizeof( metadata_array_value ) == sizeof( rs2_metadata_type ) + 1
                "unexpected size for metadata array members" );
 
 
-/*
-    Each frame is attached with a static header
-    This is a quick and dirty way to manage things like timestamp,
-    frame-number, metadata, etc... Things shared between all frame extensions
-    The point of this class is to be **fixed-sized**, avoiding per frame allocations
-*/
-struct frame_header
-{
-    unsigned long long   frame_number = 0;
-    rs2_time_t           timestamp = 0;
-    rs2_timestamp_domain timestamp_domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
-    rs2_time_t           system_time = 0;       // sys-clock at the time the frame was received from the backend
-    rs2_time_t           backend_timestamp = 0; // time when the frame arrived to the backend (OS dependent)
-
-    frame_header() = default;
-    frame_header( frame_header const& ) = default;
-    frame_header( rs2_time_t in_timestamp,
-        unsigned long long in_frame_number,
-        rs2_time_t in_system_time,
-        rs2_time_t backend_time )
-        : timestamp( in_timestamp )
-        , frame_number( in_frame_number )
-        , system_time( in_system_time )
-        , backend_timestamp( backend_time )
-    {
-    }
-};
-
-std::ostream & operator<<( std::ostream & os, frame_header const & header );
 
 struct frame_additional_data : frame_header
 {
@@ -134,6 +103,8 @@ struct frame_additional_data : frame_header
 
 class stream_profile_interface;
 class archive_interface;
+class sensor_interface;
+
 
 class frame_interface
 {
@@ -142,7 +113,7 @@ public:
     virtual rs2_metadata_type get_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const = 0;
     virtual bool supports_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const = 0;
     virtual int get_frame_data_size() const = 0;
-    virtual const byte * get_frame_data() const = 0;
+    virtual const unsigned char * get_frame_data() const = 0;
     virtual rs2_time_t get_frame_timestamp() const = 0;
     virtual rs2_timestamp_domain get_frame_timestamp_domain() const = 0;
     virtual void set_timestamp( double new_ts ) = 0;
@@ -217,7 +188,7 @@ struct LRS_EXTENSION_API frame_holder
 class LRS_EXTENSION_API frame : public frame_interface
 {
 public:
-    std::vector< byte > data;
+    std::vector< unsigned char > data;
     frame_additional_data additional_data;
     std::shared_ptr< metadata_parser_map > metadata_parsers = nullptr;
     explicit frame()
@@ -238,7 +209,7 @@ public:
     rs2_metadata_type get_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const override;
     bool supports_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const override;
     int get_frame_data_size() const override;
-    const byte * get_frame_data() const override;
+    const unsigned char * get_frame_data() const override;
     rs2_time_t get_frame_timestamp() const override;
     rs2_timestamp_domain get_frame_timestamp_domain() const override;
     void set_timestamp( double new_ts ) override { additional_data.timestamp = new_ts; }

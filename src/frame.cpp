@@ -221,4 +221,45 @@ float depth_frame::get_distance( int x, int y ) const
     return pixel * get_units();
 }
 
+/*static*/ float depth_frame::query_units( const std::shared_ptr< sensor_interface > & sensor )
+{
+    if( sensor != nullptr )
+    {
+        try
+        {
+            auto depth_sensor = As< librealsense::depth_sensor >( sensor );
+            if( depth_sensor != nullptr )
+            {
+                return depth_sensor->get_depth_scale();
+            }
+            else
+            {
+                // For playback sensors
+                auto extendable = As< librealsense::extendable_interface >( sensor );
+                if( extendable
+                    && extendable->extend_to( TypeToExtension< librealsense::depth_sensor >::value,
+                                              (void **)( &depth_sensor ) ) )
+                {
+                    return depth_sensor->get_depth_scale();
+                }
+            }
+        }
+        catch( const std::exception & e )
+        {
+            LOG_ERROR( "Failed to query depth units from sensor. " << e.what() );
+        }
+        catch( ... )
+        {
+            LOG_ERROR( "Failed to query depth units from sensor" );
+        }
+    }
+    else
+    {
+        LOG_WARNING( "sensor was nullptr" );
+    }
+
+    return 0;
+}
+
+
 }  // namespace librealsense

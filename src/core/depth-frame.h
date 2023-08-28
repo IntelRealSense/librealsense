@@ -9,17 +9,16 @@
 namespace librealsense {
 
 
+class sensor_interface;
+class archive_interface;
+
+
 class depth_frame : public video_frame
 {
 public:
     depth_frame()
         : video_frame()
     {
-    }
-
-    frame_interface * publish( std::shared_ptr< archive_interface > new_owner ) override
-    {
-        return video_frame::publish( new_owner );
     }
 
     void keep() override
@@ -48,45 +47,7 @@ public:
     }
 
 protected:
-    static float query_units( const std::shared_ptr< sensor_interface > & sensor )
-    {
-        if( sensor != nullptr )
-        {
-            try
-            {
-                auto depth_sensor = As< librealsense::depth_sensor >( sensor );
-                if( depth_sensor != nullptr )
-                {
-                    return depth_sensor->get_depth_scale();
-                }
-                else
-                {
-                    // For playback sensors
-                    auto extendable = As< librealsense::extendable_interface >( sensor );
-                    if( extendable
-                        && extendable->extend_to( TypeToExtension< librealsense::depth_sensor >::value,
-                                                  (void **)( &depth_sensor ) ) )
-                    {
-                        return depth_sensor->get_depth_scale();
-                    }
-                }
-            }
-            catch( const std::exception & e )
-            {
-                LOG_ERROR( "Failed to query depth units from sensor. " << e.what() );
-            }
-            catch( ... )
-            {
-                LOG_ERROR( "Failed to query depth units from sensor" );
-            }
-        }
-        else
-        {
-            LOG_WARNING( "sensor was nullptr" );
-        }
-
-        return 0;
-    }
+    static float query_units( const std::shared_ptr< sensor_interface > & );
 
     frame_holder _original;
 };
