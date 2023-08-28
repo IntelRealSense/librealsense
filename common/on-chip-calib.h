@@ -46,6 +46,9 @@ namespace rs2
         // Get depth metrics for before/after calibration tables
         std::pair<float, float> get_metric(bool use_new);
 
+        // Send ucal end process
+        void send_ucal_end_process();
+
         void update_last_used();
 
         float ground_truth = 1200.0f;

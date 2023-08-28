@@ -923,6 +923,13 @@ namespace rs2
         return res;
     }
 
+    void on_chip_calib_manager::send_ucal_end_process()
+    {
+        auto debug_dev = _dev.as<debug_protocol>();
+        uint32_t ucal_user_decision_opcode = 0x93;
+        debug_dev.build_command(ucal_user_decision_opcode);
+    }
+
     void on_chip_calib_manager::update_last_used()
     {
         time_t rawtime;
@@ -2863,10 +2870,14 @@ namespace rs2
                             pinned = false;
                             enable_dismiss = false;
                             _progress_bar.last_progress_time = last_interacted = system_clock::now() + milliseconds(500);
+                            // sending feedback to fw
+                            get_manager().send_ucal_end_process();
                         }
                         else
                         {
                             dismiss(false);
+                            // sending feedback to fw
+                            get_manager().send_ucal_end_process();
                         }
 
                         get_manager().restore_options_controlled_by_calib();
