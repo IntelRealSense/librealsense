@@ -3,13 +3,14 @@
 
 #include "types.h"
 
+#include "core/notification.h"
+#include <librealsense2/hpp/rs_processing.hpp>
+
 #include <algorithm>
 #include <iomanip>
 #include <numeric>
 #include <fstream>
 #include <cmath>
-
-#include <librealsense2/hpp/rs_processing.hpp>
 
 const double SQRT_DBL_EPSILON = sqrt(std::numeric_limits<double>::epsilon());
 

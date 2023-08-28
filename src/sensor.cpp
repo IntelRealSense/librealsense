@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "sensor.h"
+#include "uvc-sensor.h"
 
 #include "source.h"
 #include "device.h"
@@ -10,6 +10,8 @@
 #include "proc/decimation-filter.h"
 #include "global_timestamp_reader.h"
 #include "device-calibration.h"
+#include "core/notification.h"
+#include "platform/uvc-option.h"
 #include "core/depth-frame.h"
 #include "core/stream-profile-interface.h"
 

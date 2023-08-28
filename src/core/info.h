@@ -5,6 +5,7 @@
 
 #include "info-interface.h"
 
+#include <librealsense2/h/rs_sensor.h>
 #include <map>
 #include <string>
 #include <memory>

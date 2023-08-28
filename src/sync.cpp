@@ -10,6 +10,9 @@
 #include "composite-frame.h"
 #include "core/time-service.h"
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
     const int MAX_GAP = 1000;

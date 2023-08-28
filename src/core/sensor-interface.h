@@ -4,11 +4,12 @@
 #pragma once
 
 #include "info-interface.h"
-#include "options.h"
+#include "options-container.h"
 #include "recommended-proccesing-blocks-interface.h"
 
 #include "tagged-profile.h"
 
+#include <librealsense2/hpp/rs_types.hpp>
 #include <vector>
 #include <memory>
 
@@ -43,6 +44,7 @@ public:
 
     virtual bool is_streaming() const = 0;
 
+    using notifications_callback_ptr = std::shared_ptr< rs2_notifications_callback >;
     virtual notifications_callback_ptr get_notifications_callback() const = 0;
     virtual void register_notifications_callback( notifications_callback_ptr callback ) = 0;
 

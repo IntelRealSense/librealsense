@@ -8,6 +8,7 @@
 #include <vector>
 #include "../types.h"
 #include "extension.h"
+#include "notification.h"
 #include "frame-holder.h"
 #include "stream-profile-interface.h"
 

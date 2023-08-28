@@ -9,6 +9,7 @@
 #include <src/device.h>
 #include <src/stream.h>
 #include <src/points.h>
+#include <src/core/sensor-interface.h>
 #include "device-calibration.h"
 
 #include <librealsense2/rs.hpp>

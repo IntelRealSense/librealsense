@@ -5,17 +5,10 @@
 
 #include "core/sensor-interface.h"
 
-#include "core/debug.h"
-
-#include "archive.h"
 #include "core/recommended-proccesing-blocks-base.h"
-#include "core/roi.h"
-#include "core/options.h"
 #include "source.h"
 #include "core/extension.h"
 #include "proc/formats-converter.h"
-#include "platform/stream-profile.h"
-#include "platform/frame-object.h"
 
 #include <rsutils/lazy.h>
 #include <rsutils/signal.h>
@@ -50,6 +43,8 @@ namespace librealsense
         virtual rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const = 0;
         virtual void reset() = 0;
     };
+
+    class notifications_processor;
 
     class sensor_base
         : public std::enable_shared_from_this< sensor_base >

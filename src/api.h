@@ -12,6 +12,11 @@
 #include <type_traits>
 #include <iostream>
 
+namespace librealsense {
+struct notification;
+}
+
+
 struct rs2_raw_data_buffer
 {
     std::vector<uint8_t> buffer;

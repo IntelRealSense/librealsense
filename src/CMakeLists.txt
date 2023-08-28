@@ -120,6 +120,8 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/core/time-service.h"
         "${CMAKE_CURRENT_LIST_DIR}/platform/uvc-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/platform/uvc-device-info.h"
+        "${CMAKE_CURRENT_LIST_DIR}/platform/uvc-option.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/platform/uvc-option.h"
         "${CMAKE_CURRENT_LIST_DIR}/context.h"
         "${CMAKE_CURRENT_LIST_DIR}/device.h"
         "${CMAKE_CURRENT_LIST_DIR}/device-info.h"
