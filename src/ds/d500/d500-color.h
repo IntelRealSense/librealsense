@@ -6,9 +6,11 @@
 #include "d500-device.h"
 #include "ds/ds-color-common.h"
 
+#include "stream.h"
+
+#include <rsutils/lazy.h>
 #include <map>
 
-#include "stream.h"
 
 namespace librealsense
 {
@@ -48,8 +50,8 @@ namespace librealsense
 
         uint8_t _color_device_idx = -1;
         bool _separate_color;
-        lazy<std::vector<uint8_t>> _color_calib_table_raw;
-        std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
+        rsutils::lazy< std::vector< uint8_t > > _color_calib_table_raw;
+        std::shared_ptr< rsutils::lazy< rs2_extrinsics > > _color_extrinsic;
     };
 
     class d500_color_sensor : public synthetic_sensor,

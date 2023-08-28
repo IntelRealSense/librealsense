@@ -739,7 +739,7 @@ void playback_device::register_extrinsics(const device_serializer::device_snapsh
             auto p1 = get_stream(m_sensors, e1.first);
             auto p2 = get_stream(m_sensors, e2.first);
             rs2_extrinsics x = calc_extrinsic(e1.second.second, e2.second.second);
-            auto extrinsic_fetcher = std::make_shared<lazy<rs2_extrinsics>>([x]()
+            auto extrinsic_fetcher = std::make_shared< rsutils::lazy< rs2_extrinsics > >( [x]()
             {
                 return x;
             });

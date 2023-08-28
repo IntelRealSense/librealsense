@@ -47,7 +47,8 @@ namespace librealsense
             return get_d400_raw_calibration_table(d400_calibration_table_id::rgb_calibration_id);
         };
 
-        _color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>([this]() { return from_pose(get_d400_color_stream_extrinsic(*_color_calib_table_raw)); });
+        _color_extrinsic = std::make_shared< rsutils::lazy< rs2_extrinsics > >(
+            [this]() { return from_pose( get_d400_color_stream_extrinsic( *_color_calib_table_raw ) ); } );
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
         register_stream_to_extrinsic_group(*_color_stream, 0);
 

@@ -10,6 +10,7 @@
 #include "ds/advanced_mode/presets.h"
 #include "../../include/librealsense2/h/rs_advanced_mode_command.h"
 #include "serializable-interface.h"
+#include <rsutils/lazy.h>
 
 #undef RS400_ADVANCED_MODE_HPP
 
@@ -206,11 +207,11 @@ namespace librealsense
 
         std::shared_ptr<hw_monitor> _hw_monitor;
         synthetic_sensor& _depth_sensor;
-        lazy<synthetic_sensor*> _color_sensor;
-        lazy<bool> _enabled;
+        rsutils::lazy< synthetic_sensor * > _color_sensor;
+        rsutils::lazy< bool > _enabled;
         std::shared_ptr<advanced_mode_preset_option> _preset_opt;
-        lazy<bool> _rgb_exposure_gain_bind;
-        lazy<bool> _amplitude_factor_support;
+        rsutils::lazy< bool > _rgb_exposure_gain_bind;
+        rsutils::lazy< bool > _amplitude_factor_support;
 
         preset get_all() const;
         void set_all(const preset& p);

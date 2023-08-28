@@ -5,6 +5,7 @@
 
 #include "d400-device.h"
 #include "ds/ds-motion-common.h"
+#include <rsutils/lazy.h>
 
 namespace librealsense
 {
@@ -21,9 +22,9 @@ namespace librealsense
         friend class ds_fisheye_sensor;
         friend class ds_motion_common;
 
-        std::shared_ptr<lazy<ds::imu_intrinsic>> _accel_intrinsic;
-        std::shared_ptr<lazy<ds::imu_intrinsic>> _gyro_intrinsic;
-        std::shared_ptr<lazy<rs2_extrinsics>>   _depth_to_imu;                  // Mechanical installation pose
+        std::shared_ptr< rsutils::lazy< ds::imu_intrinsic > > _accel_intrinsic;
+        std::shared_ptr< rsutils::lazy< ds::imu_intrinsic > > _gyro_intrinsic;
+        std::shared_ptr< rsutils::lazy< rs2_extrinsics > > _depth_to_imu;  // Mechanical installation pose
 
     protected:
         d400_motion_base(std::shared_ptr<context> ctx,

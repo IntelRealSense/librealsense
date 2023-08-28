@@ -3,10 +3,6 @@
 
 #pragma once
 
-#include <chrono>
-#include <memory>
-#include <vector>
-
 #include "backend.h"
 #include "archive.h"
 #include "hw-monitor.h"
@@ -16,6 +12,13 @@
 #include "core/streaming.h"
 
 #include "context.h"
+
+#include <rsutils/lazy.h>
+
+#include <chrono>
+#include <memory>
+#include <vector>
+
 
 namespace librealsense
 {
@@ -109,7 +112,7 @@ private:
     bool _is_valid, _device_changed_notifications;
     mutable std::mutex _device_changed_mtx;
     uint64_t _callback_id;
-    lazy<std::vector<tagged_profile>> _profiles_tags;
+    rsutils::lazy< std::vector< tagged_profile > > _profiles_tags;
 
     std::shared_ptr< bool > _is_alive; // Ensures object can be accessed
 };
