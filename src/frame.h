@@ -132,19 +132,10 @@ struct frame_additional_data : frame_header
     }
 };
 
-class sensor_part
-{
-public:
-    virtual std::shared_ptr< sensor_interface > get_sensor() const = 0;
-    virtual void set_sensor( std::shared_ptr< sensor_interface > s ) = 0;
-    virtual ~sensor_part() = default;
-};
-
-
 class stream_profile_interface;
 class archive_interface;
 
-class frame_interface : public sensor_part
+class frame_interface
 {
 public:
     virtual frame_header const & get_header() const = 0;
@@ -161,6 +152,9 @@ public:
     virtual rs2_time_t get_frame_system_time() const = 0;
     virtual std::shared_ptr< stream_profile_interface > get_stream() const = 0;
     virtual void set_stream( std::shared_ptr< stream_profile_interface > sp ) = 0;
+
+    virtual std::shared_ptr< sensor_interface > get_sensor() const = 0;
+    virtual void set_sensor( std::shared_ptr< sensor_interface > ) = 0;
 
     virtual void acquire() = 0;
     virtual void release() = 0;
