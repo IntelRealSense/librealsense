@@ -2891,10 +2891,10 @@ namespace rs2
                             dismiss(false);
                             // sending feedback to fw
                             get_manager().send_ucal_end_process();
-                        }
 
-                        get_manager().restore_options_controlled_by_calib();
-                        get_manager().restore_workspace([](std::function<void()> a) { a(); });
+                            get_manager().restore_options_controlled_by_calib();
+                            get_manager().restore_workspace([](std::function<void()> a) { a(); });
+                        }
                     }
 
                     if (!recommend_keep || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB)
