@@ -1,4 +1,4 @@
-From 1530931a74644f79205545b69feae3396d612c1d Mon Sep 17 00:00:00 2001
+From 04128af65169760ec4c8fba681ef278fc22b7ec1 Mon Sep 17 00:00:00 2001
 From: Dmitry Perchanov <dmitry.perchanov@intel.com>
 Date: Sun, 13 Aug 2023 12:13:21 +0300
 Subject: [PATCH] Enabling UVC Metadata attributes, Ubuntu jammy 22.04. Kernel
@@ -6,12 +6,12 @@ Subject: [PATCH] Enabling UVC Metadata attributes, Ubuntu jammy 22.04. Kernel
 
 Signed-off-by: Dmitry Perchanov <dmitry.perchanov@intel.com>
 ---
- drivers/media/usb/uvc/uvc_driver.c | 81 ++++++++++++++++++++++++++++++
+ drivers/media/usb/uvc/uvc_driver.c | 90 ++++++++++++++++++++++++++++++
  drivers/media/usb/uvc/uvcvideo.h   |  2 +-
- 2 files changed, 82 insertions(+), 1 deletion(-)
+ 2 files changed, 91 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index 362df9dd3..933d3f884 100644
+index 362df9dd3..8f65b969b 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
 @@ -2963,6 +2963,33 @@ static const struct usb_device_id uvc_ids[] = {
@@ -48,7 +48,7 @@ index 362df9dd3..933d3f884 100644
  	/* Intel RealSense D4M */
  	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
  				| USB_DEVICE_ID_MATCH_INT_INFO,
-@@ -2972,6 +2999,60 @@ static const struct usb_device_id uvc_ids[] = {
+@@ -2972,6 +2999,69 @@ static const struct usb_device_id uvc_ids[] = {
  	  .bInterfaceSubClass	= 1,
  	  .bInterfaceProtocol	= 0,
  	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
@@ -66,6 +66,15 @@ index 362df9dd3..933d3f884 100644
 +				| USB_DEVICE_ID_MATCH_INT_INFO,
 +	  .idVendor		= 0x8086,
 +	  .idProduct		= 0x0b3a,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
++	/* Intel D555e Depth Camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor		= 0x8086,
++	  .idProduct		= 0x0b56,
 +	  .bInterfaceClass	= USB_CLASS_VIDEO,
 +	  .bInterfaceSubClass	= 1,
 +	  .bInterfaceProtocol	= 0,
@@ -97,7 +106,7 @@ index 362df9dd3..933d3f884 100644
 +	  .bInterfaceSubClass	= 1,
 +	  .bInterfaceProtocol	= UVC_PC_PROTOCOL_15,
 +	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
-+	  /* Intel S585 Safety Camera */
++	  /* Intel 585 Camera */
 +	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
 +				| USB_DEVICE_ID_MATCH_INT_INFO,
 +	  .idVendor		= 0x8086,
