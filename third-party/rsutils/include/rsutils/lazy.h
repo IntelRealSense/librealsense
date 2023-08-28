@@ -10,11 +10,12 @@
 namespace rsutils {
 
 
+// Delayed initialization of T: the initializer function is called on first need of T.
+//
 template< class T >
 class lazy
 {
     mutable std::mutex _mtx;
-    mutable bool _was_init = false;
     std::function< T() > _init;
     mutable std::unique_ptr< T > _ptr;
 
@@ -33,26 +34,19 @@ public:
     {
     }
 
-    T * operator->() const { return operate(); }
+    bool is_initialized() const { return _ptr.operator bool(); }
 
+    T * operator->() { return operate(); }
+    const T * operator->() const { return operate(); }
     T & operator*() { return *operate(); }
-
     const T & operator*() const { return *operate(); }
 
     lazy( lazy && other ) noexcept
     {
         std::lock_guard< std::mutex > lock( other._mtx );
-        if( ! other._was_init )
-        {
-            _init = std::move( other._init );
-            _was_init = false;
-        }
-        else
-        {
-            _init = std::move( other._init );
-            _was_init = true;
+        _init = std::move( other._init );
+        if( other.is_initialized() )
             _ptr = std::move( other._ptr );
-        }
     }
 
     lazy & operator=( std::function< T() > func ) noexcept { return *this = lazy< T >( std::move( func ) ); }
@@ -61,40 +55,24 @@ public:
     {
         std::lock_guard< std::mutex > lock1( _mtx );
         std::lock_guard< std::mutex > lock2( other._mtx );
-        if( ! other._was_init )
-        {
-            _init = std::move( other._init );
-            _was_init = false;
-        }
-        else
-        {
-            _init = std::move( other._init );
-            _was_init = true;
+        _init = std::move( other._init );
+        if( other.is_initialized() )
             _ptr = std::move( other._ptr );
-        }
-
         return *this;
     }
 
     void reset() const
     {
         std::lock_guard< std::mutex > lock( _mtx );
-        if( _was_init )
-        {
-            _ptr.reset();
-            _was_init = false;
-        }
+        _ptr.reset();
     }
 
 private:
     T * operate() const
     {
         std::lock_guard< std::mutex > lock( _mtx );
-        if( ! _was_init )
-        {
+        if( ! is_initialized() )
             _ptr = std::unique_ptr< T >( new T( _init() ) );
-            _was_init = true;
-        }
         return _ptr.get();
     }
 };
