@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-#include "frame.h"
+#include "core/depth-frame.h"
 #include "archive.h"
 #include "metadata-parser.h"
 #include "environment.h"

@@ -5,6 +5,7 @@
 #include "environment.h"
 #include "proc/occlusion-filter.h"
 #include "proc/pointcloud.h"
+#include <src/core/depth-frame.h>
 #include "option.h"
 #include "environment.h"
 #include "context.h"
