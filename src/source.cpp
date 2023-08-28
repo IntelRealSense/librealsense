@@ -4,6 +4,7 @@
 #include "source.h"
 #include "option.h"
 #include "environment.h"
+#include "core/frame-holder.h"
 
 #include <rsutils/string/from.h>
 

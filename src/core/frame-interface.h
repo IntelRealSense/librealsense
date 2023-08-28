@@ -4,6 +4,7 @@
 
 #include <librealsense2/h/rs_frame.h>
 #include <memory>
+#include <iosfwd>
 
 
 namespace librealsense {
@@ -54,6 +55,9 @@ public:
 
     virtual ~frame_interface() = default;
 };
+
+
+std::ostream & operator<<( std::ostream &, const frame_interface & f );
 
 
 }  // namespace librealsense

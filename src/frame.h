@@ -9,47 +9,10 @@
 #include "basics.h"
 #include <atomic>
 #include <vector>
-//#include <math.h>
+#include <memory>
+
 
 namespace librealsense {
-
-
-struct LRS_EXTENSION_API frame_holder
-{
-    frame_interface * frame = nullptr;
-
-    frame_holder() = default;
-    frame_holder( const frame_holder & other ) = delete;
-    frame_holder( frame_holder && other ) { std::swap( frame, other.frame ); }
-    // non-acquiring ctor: will assume the frame has already been acquired!
-    frame_holder( frame_interface * const f ) { frame = f; }
-    ~frame_holder() { reset(); }
-
-    // return a new holder after acquiring the frame
-    frame_holder clone() const { return acquire( frame ); }
-    static frame_holder acquire( frame_interface * const f ) { if( f ) f->acquire(); return frame_holder( f ); }
-
-    operator frame_interface *() const { return frame; }
-    frame_interface * operator->() const { return frame; }
-    operator bool() const { return frame != nullptr; }
-
-    frame_holder & operator=( const frame_holder & other ) = delete;
-    frame_holder & operator=( frame_holder && other )
-    {
-        reset();
-        std::swap( frame, other.frame );
-        return *this;
-    }
-
-    void reset()
-    {
-        if( frame )
-        {
-            frame->release();
-            frame = nullptr;
-        }
-    }
-};
 
 
 // Define a movable but explicitly noncopyable buffer type to hold our frame data
@@ -59,6 +22,7 @@ public:
     std::vector< uint8_t > data;
     frame_additional_data additional_data;
     std::shared_ptr< metadata_parser_map > metadata_parsers = nullptr;
+    
     explicit frame()
         : ref_count( 0 )
         , owner( nullptr )
@@ -110,7 +74,7 @@ public:
     archive_interface * get_owner() const override;
 
     std::shared_ptr< sensor_interface > get_sensor() const override;
-    void set_sensor( std::shared_ptr< sensor_interface > s ) override;
+    void set_sensor( std::shared_ptr< sensor_interface > ) override;
 
     void mark_fixed() override { _fixed = true; }
     bool is_fixed() const override { return _fixed; }

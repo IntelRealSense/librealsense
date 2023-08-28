@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <src/core/frame-holder.h>
+
 #include <stdint.h>
 #include <vector>
 #include <mutex>

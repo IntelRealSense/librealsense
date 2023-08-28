@@ -3,6 +3,7 @@
 #pragma once
 
 #include "video-frame.h"
+#include "frame-holder.h"
 #include "extension.h"
 
 

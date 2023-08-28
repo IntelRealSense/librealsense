@@ -2,7 +2,6 @@
 # Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 target_sources(${LRS_TARGET}
     PRIVATE
-        "${CMAKE_CURRENT_LIST_DIR}/streaming.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/streaming.h"
         "${CMAKE_CURRENT_LIST_DIR}/debug.h"
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode.h"
@@ -11,6 +10,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/frame-continuation.h"
         "${CMAKE_CURRENT_LIST_DIR}/frame-additional-data.h"
         "${CMAKE_CURRENT_LIST_DIR}/frame-header.h"
+        "${CMAKE_CURRENT_LIST_DIR}/frame-holder.h"
         "${CMAKE_CURRENT_LIST_DIR}/frame-interface.h"
         "${CMAKE_CURRENT_LIST_DIR}/roi.h"
         "${CMAKE_CURRENT_LIST_DIR}/motion.h"
