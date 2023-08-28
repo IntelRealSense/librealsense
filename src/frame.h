@@ -471,16 +471,5 @@ protected:
 
 MAP_EXTENSION( RS2_EXTENSION_DISPARITY_FRAME, librealsense::disparity_frame );
 
-class motion_frame : public frame
-{
-public:
-    motion_frame()
-        : frame()
-    {
-    }
-};
-
-MAP_EXTENSION( RS2_EXTENSION_MOTION_FRAME, librealsense::motion_frame );
-
 
 }  // namespace librealsense

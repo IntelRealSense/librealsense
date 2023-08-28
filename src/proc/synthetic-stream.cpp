@@ -4,6 +4,7 @@
 #include "proc/synthetic-stream.h"
 
 #include "core/video.h"
+#include "core/motion-frame.h"
 #include "option.h"
 #include "context.h"
 #include "stream.h"

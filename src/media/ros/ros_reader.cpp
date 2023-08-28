@@ -15,6 +15,7 @@
 #include "proc/sequence-id-filter.h"
 #include "std_msgs/Float32MultiArray.h"
 #include <src/core/pose-frame.h>
+#include <src/core/motion-frame.h>
 
 #include <rsutils/string/from.h>
 
