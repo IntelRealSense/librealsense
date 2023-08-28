@@ -247,18 +247,6 @@ namespace librealsense
 
     typedef float float_4[4];
 
-    /** \brief Metadata fields that are utilized internally by librealsense
-    Provides extention to the r2_frame_metadata list of attributes*/
-    enum frame_metadata_internal
-    {
-        RS2_FRAME_METADATA_HW_TYPE = RS2_FRAME_METADATA_COUNT + 1, /**< 8-bit Module type: RS4xx, IVCAM*/
-        RS2_FRAME_METADATA_SKU_ID, /**< 8-bit SKU Id*/
-        RS2_FRAME_METADATA_FORMAT, /**< 16-bit Frame format*/
-        RS2_FRAME_METADATA_WIDTH, /**< 16-bit Frame width. pixels*/
-        RS2_FRAME_METADATA_HEIGHT, /**< 16-bit Frame height. pixels*/
-        RS2_FRAME_METADATA_ACTUAL_COUNT
-    };
-
     /////////////////////////////
     // Enumerated type support //
     /////////////////////////////
