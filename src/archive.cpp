@@ -3,6 +3,8 @@
 #include "archive.h"
 #include "metadata-parser.h"
 #include "frame-archive.h"
+#include "core/pose-frame.h"
+
 
 namespace librealsense
 {
