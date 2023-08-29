@@ -7,6 +7,7 @@
 #include <map>
 #include <memory>
 #include <array>
+#include <cstring>  // memcpy
 
 
 namespace librealsense {
@@ -70,7 +71,7 @@ struct frame_additional_data : frame_header
     frame_additional_data( metadata_array const & metadata )
     {
         metadata_size = (uint32_t)sizeof( metadata );
-        memcpy( metadata_blob.data(), metadata.data(), metadata_size );
+        std::memcpy( metadata_blob.data(), metadata.data(), metadata_size );
     }
 
     frame_additional_data( rs2_time_t in_timestamp,
