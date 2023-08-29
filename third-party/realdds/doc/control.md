@@ -94,6 +94,21 @@ Both querying and setting options involve a very similar reply that can be handl
 A new option value should conform to the specific option's value range as communicated when the device was [initialized](initialization.md).
 
 
+### `hw-reset`
+
+Can be used to cause the server to perform a "hardware reset", if available, bringing it back to the same state as after power-up.
+
+```JSON
+{
+    "id": "hw-reset"
+}
+```
+
+A reply can be expected.
+
+A [disconnection event](discovery.md#disconnection) can be expected if the reply is a success.
+
+
 ### `hwm`
 
 Can be used to send internal commands to the hardware and may brick the device if used. May or may not be implemented, and is not documented.
