@@ -90,6 +90,8 @@ namespace librealsense
             void lock() const override { _systemwide_lock.lock(); }
             void unlock() const override { _systemwide_lock.unlock(); }
 
+            bool is_platform_jetson() const override { return false;}
+
             std::string get_device_location() const override { return _location; }
             usb_spec get_usb_specification() const override { return _device_usb_spec; }
             IAMVideoProcAmp* get_video_proc() const;

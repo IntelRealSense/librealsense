@@ -144,6 +144,7 @@ namespace librealsense
             uint8_t* _start;
             uint32_t _length;
             uint32_t _original_length;
+            uint32_t _offset;
             bool _use_memory_map;
             uint32_t _index;
             v4l2_buffer _buf;
@@ -370,6 +371,8 @@ namespace librealsense
             std::string get_device_location() const override { return _device_path; }
             usb_spec get_usb_specification() const override { return _device_usb_spec; }
 
+            bool is_platform_jetson() const override {return false;}
+
         protected:
             virtual uint32_t get_cid(rs2_option option) const;
 
@@ -413,6 +416,12 @@ namespace librealsense
             std::atomic<bool> _is_started;
             std::unique_ptr<std::thread> _thread;
             std::unique_ptr<named_mutex> _named_mtx;
+            struct device {
+                enum v4l2_buf_type buf_type;
+                unsigned char num_planes;
+                struct v4l2_capability cap;
+                struct v4l2_cropcap cropcap;
+            } _dev;
             bool _use_memory_map;
             int _max_fd = 0;                    // specifies the maximal pipe number the polling process will monitor
             std::vector<int>  _fds;             // list the file descriptors to be monitored during frames polling
@@ -434,6 +443,8 @@ namespace librealsense
 
             virtual ~v4l_uvc_meta_device();
 
+            bool is_platform_jetson() const override {return false;}
+
         protected:
 
             void streamon() const;
@@ -450,6 +461,7 @@ namespace librealsense
             virtual inline std::shared_ptr<buffer> get_md_buffer(__u32 index) const {return _md_buffers[index];}
             int _md_fd = -1;
             std::string _md_name = "";
+            v4l2_buf_type _md_type = LOCAL_V4L2_BUF_TYPE_META_CAPTURE;
 
             std::vector<std::shared_ptr<buffer>> _md_buffers;
         };
@@ -469,6 +481,7 @@ namespace librealsense
             control_range get_xu_range(const extension_unit& xu, uint8_t control, int len) const override;
             control_range get_pu_range(rs2_option option) const override;
             void set_metadata_attributes(buffers_mgr& buf_mgr, __u32 bytesused, uint8_t* md_start) override;
+            bool is_platform_jetson() const override;
         protected:
             virtual uint32_t get_cid(rs2_option option) const;
             uint32_t xu_to_cid(const extension_unit& xu, uint8_t control) const; // Find the mapping of XU to the underlying control
