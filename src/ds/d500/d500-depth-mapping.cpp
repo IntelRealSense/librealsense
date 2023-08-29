@@ -11,6 +11,7 @@
 #include "ds/ds-timestamp.h"
 #include "ds/ds-options.h"
 #include "stream.h"
+#include <thread>
 
 namespace librealsense
 {
@@ -95,16 +96,37 @@ namespace librealsense
                 auto safety_device = dynamic_cast<d500_safety*>(this);
                 auto& safety_sensor = dynamic_cast<d500_safety_sensor&>(safety_device->get_safety_sensor());
                 
-                // pull extrinsics from safety preset number 1
+                // Pull extrinsics from safety preset number 1
+                // According to SRS ID 3.3.1.7.a: reading/modifiny safety presets
+                // shall be avaialble only when SC in maintainence/service operational mode
+                // TODO: Remove this w/a after ES2
                 int safety_preset_index = 1;
+                int service_operational_mode = 2;
                 rs2_extrinsics res;
                 rs2_safety_preset safety_preset;
                 try {
+
+                    auto& safety_mode_option = safety_sensor.get_option(RS2_OPTION_SAFETY_MODE);
+                    auto original_safety_mode = static_cast<int>(safety_mode_option.query());
+
+                    if(original_safety_mode != service_operational_mode)
+                    {
+                        // switch to service mode if needed
+                        safety_mode_option.set(static_cast<float>(service_operational_mode));
+                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    }
+
                     safety_preset = safety_sensor.get_safety_preset(safety_preset_index);
+
+                    if(original_safety_mode != service_operational_mode)
+                    {
+                        // switch back to original mode if needed
+                        safety_mode_option.set(static_cast<float>(original_safety_mode));
+                    }
                 }
                 catch (...)
                 {
-                    throw std::runtime_error("Safety Preset 1 not set on this device");
+                    throw std::runtime_error("Could not read safety preset at index 1");
                 }
                 auto extrinsics_from_preset = safety_preset.platform_config.transformation_link;
                 auto rot = extrinsics_from_preset.rotation;

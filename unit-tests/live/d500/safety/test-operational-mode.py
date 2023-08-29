@@ -5,6 +5,7 @@
 
 import pyrealsense2 as rs
 from rspy import test, log
+import time
 
 # Constants
 RUN_MODE     = 0 # RS2_SAFETY_MODE_RUN (RESUME)
@@ -44,7 +45,8 @@ log.d( "Verify default is run mode" )
 test.check_equal( int(safety_sensor.get_option(rs.option.safety_mode)), RUN_MODE) # verify default
 
 log.d( "Command standby mode" )
-safety_sensor.set_option(rs.option.safety_mode, STANDBY_MODE) 
+safety_sensor.set_option(rs.option.safety_mode, STANDBY_MODE)
+time.sleep(0.1)  # sleep 100 milliseconds, see SRS ID 3.3.1.13
 test.check_equal( int(safety_sensor.get_option(rs.option.safety_mode)), STANDBY_MODE)
 verify_frames_received(pipe, profile, count = 10)
 
@@ -54,6 +56,7 @@ verify_frames_received(pipe, profile, count = 10)
 
 log.d( "Command run mode" )
 safety_sensor.set_option(rs.option.safety_mode, RUN_MODE) 
+time.sleep(0.1)  # sleep 100 milliseconds, see SRS ID 3.3.1.13
 test.check_equal( int(safety_sensor.get_option(rs.option.safety_mode)), RUN_MODE)
 verify_frames_received(pipe, profile, count = 10)
 
@@ -76,20 +79,23 @@ pipeline_device = profile.get_device()
 safety_sensor = pipeline_device.first_safety_sensor()
 
 log.d( "Command run mode" )
-safety_sensor.set_option(rs.option.safety_mode, RUN_MODE) 
+safety_sensor.set_option(rs.option.safety_mode, RUN_MODE)
+time.sleep(0.1)  # sleep 100 milliseconds, see SRS ID 3.3.1.13
 test.check_equal( int(safety_sensor.get_option(rs.option.safety_mode)), RUN_MODE)
 # Verify that on RUN mode we get frames
 verify_frames_received(pipe, profile, count = 10)
 
 log.d( "Command service mode" )
-safety_sensor.set_option(rs.option.safety_mode, SERVICE_MODE) 
+safety_sensor.set_option(rs.option.safety_mode, SERVICE_MODE)
+time.sleep(0.1)  # sleep 100 milliseconds, see SRS ID 3.3.1.13
 test.check_equal( int(safety_sensor.get_option(rs.option.safety_mode)), SERVICE_MODE)
 # Verify that on SERVICE mode we get no frames
 test.check_throws( lambda: verify_frames_received(pipe, profile, 1) , RuntimeError )
 
 # Restore Run mode
 log.d( "Command run mode" )
-safety_sensor.set_option(rs.option.safety_mode, RUN_MODE) 
+safety_sensor.set_option(rs.option.safety_mode, RUN_MODE)
+time.sleep(0.1)  # sleep 100 milliseconds, see SRS ID 3.3.1.13
 test.check_equal( int(safety_sensor.get_option(rs.option.safety_mode)), RUN_MODE)
 
 pipe.stop()

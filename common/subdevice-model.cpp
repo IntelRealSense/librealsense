@@ -468,8 +468,6 @@ namespace rs2
                     ui.selected_res_id--;
             }
             last_valid_ui = ui;
-
-            set_extrinsics_from_depth_if_needed();
         }
         catch (const error& e)
         {
@@ -1616,6 +1614,8 @@ namespace rs2
 
     void subdevice_model::play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer> syncer)
     {
+        set_extrinsics_from_depth_if_needed();
+
         std::stringstream ss;
         ss << "Starting streaming of ";
         for (size_t i = 0; i < profiles.size(); i++)
