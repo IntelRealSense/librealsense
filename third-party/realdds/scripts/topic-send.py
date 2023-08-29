@@ -2,16 +2,23 @@
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 from argparse import ArgumentParser
+from argparse import ArgumentTypeError as ArgumentError  # NOTE: only ArgumentTypeError passes along the original error string
 args = ArgumentParser()
 args.add_argument( '--debug', action='store_true', help='enable debug mode' )
 args.add_argument( '--quiet', action='store_true', help='No output; just the minimum FPS as a number' )
 args.add_argument( '--device', metavar='<path>', help='the topic root for the device' )
 args.add_argument( '--topic', metavar='<path>', help='the topic on which to send flexible message, if --device is not supplied' )
-args.add_argument( '--message', metavar='<string>', help='a message to send', default='some message' )
+import json
+def json_arg(x):
+    try:
+        return json.loads(x)
+    except Exception as e:
+        raise ArgumentError( str(e) )
+args.add_argument( '--message', metavar='<json>', type=json_arg, help='a message to send', default='{"id":"ping","message":"some message"}' )
 def domain_arg(x):
     t = int(x)
     if t <= 0 or t > 232:
-        raise ValueError( f'--domain should be [0,232]' )
+        raise ArgumentError( f'--domain should be [0-232]' )
     return t
 args.add_argument( '--domain', metavar='<0-232>', type=domain_arg, default=0, help='DDS domain to use (default=0)' )
 args = args.parse_args()
@@ -38,7 +45,7 @@ settings = {}
 participant = dds.participant()
 participant.init( args.domain, 'topic-send', settings )
 
-message = { 'id': 'ping', 'message': args.message }
+message = args.message
 
 if args.device:
     info = dds.message.device_info()
@@ -53,8 +60,9 @@ if args.device:
         sys.exit( 1 )
 
     wait_for_reply = True
+    i( f'Sending {message} on {info.topic_root}' )
     reply = device.send_control( message, wait_for_reply )
-    i( f'Sent {message} on {info.topic_root}; got back {reply}' )
+    i( f'Got back {reply}' )
 
     if args.debug or not wait_for_reply:
         # Sleep a bit, to allow us to catch and display any replies
