@@ -36,7 +36,7 @@ On the client, device behavior with librealsense can be fine-tuned with certain 
 
 To control device-level options of the server's, controls need to be sent.
 The server should publish its device options as part of the initialization sequence, in the `device-options` message.
-If available, the [`get-option` and `set-option` controls](control.md#query-option--set-option) can be used (no `owner-name`) to retrieve or update the values. **Setting these options will not take effect until the device is reset.**
+If available, the [`query-option` and `set-option` controls](control.md#query-option--set-option) can be used (no `owner-name`) to retrieve or update the values. **Setting these options will not take effect until the device is reset.**
 
 The following settings may have options available for controlling:
 
