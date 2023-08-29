@@ -142,6 +142,8 @@ public:
     virtual std::string get_device_location() const = 0;
     virtual usb_spec get_usb_specification() const = 0;
 
+    virtual bool is_platform_jetson() const = 0;
+
     virtual ~uvc_device() = default;
 
 protected:
@@ -243,6 +245,8 @@ public:
 
     void lock() const override { _dev->lock(); }
     void unlock() const override { _dev->unlock(); }
+
+    bool is_platform_jetson() const override { return _dev->is_platform_jetson(); }
 
 private:
     std::shared_ptr< uvc_device > _dev;
@@ -374,6 +378,8 @@ public:
             elem->unlock();
         }
     }
+
+    bool is_platform_jetson() const override { return false; }
 
 private:
     uint32_t get_dev_index_by_profiles( const stream_profile & profile ) const
