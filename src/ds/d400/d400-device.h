@@ -99,14 +99,14 @@ namespace librealsense
 
         uint8_t _depth_device_idx;
 
-        lazy<std::vector<uint8_t>> _coefficients_table_raw;
-        lazy<std::vector<uint8_t>> _new_calib_table_raw;
+        rsutils::lazy< std::vector< uint8_t > > _coefficients_table_raw;
+        rsutils::lazy< std::vector< uint8_t > > _new_calib_table_raw;
 
         std::shared_ptr<polling_error_handler> _polling_error_handler;
         std::shared_ptr<d400_thermal_monitor> _thermal_monitor;
-        std::shared_ptr<lazy<rs2_extrinsics>> _left_right_extrinsics;
-        lazy<std::vector<uint8_t>> _color_calib_table_raw;
-        std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
+        std::shared_ptr< rsutils::lazy< rs2_extrinsics > > _left_right_extrinsics;
+        rsutils::lazy< std::vector< uint8_t > > _color_calib_table_raw;
+        std::shared_ptr< rsutils::lazy< rs2_extrinsics > > _color_extrinsic;
         bool _is_locked = true;
 
         std::shared_ptr<auto_gain_limit_option> _gain_limit_value_control;

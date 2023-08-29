@@ -10,6 +10,8 @@
 #include "../../archive.h"
 #include "../../sensor.h"
 #include "playback_sensor.h"
+#include <rsutils/lazy.h>
+
 
 namespace librealsense
 {
@@ -74,7 +76,7 @@ namespace librealsense
         bool prefetch_done();
 
     private:
-        lazy<std::shared_ptr<dispatcher>> m_read_thread;
+        rsutils::lazy< std::shared_ptr< dispatcher > > m_read_thread;
         std::shared_ptr<context> m_context;
         std::shared_ptr<device_serializer::reader> m_reader;
         device_serializer::device_snapshot m_device_description;
@@ -87,7 +89,7 @@ namespace librealsense
         std::atomic<double> m_sample_rate;
         std::atomic_bool m_real_time;
         device_serializer::nanoseconds m_prev_timestamp;
-        std::vector<std::shared_ptr<lazy<rs2_extrinsics>>> m_extrinsics_fetchers;
+        std::vector< std::shared_ptr< rsutils::lazy< rs2_extrinsics > > > m_extrinsics_fetchers;
         std::map<int, std::pair<uint32_t, rs2_extrinsics>> m_extrinsics_map;
         device_serializer::nanoseconds m_last_published_timestamp;
         std::mutex m_last_published_timestamp_mutex;

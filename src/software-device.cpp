@@ -370,8 +370,9 @@ namespace librealsense
 
     void software_sensor::add_read_only_option(rs2_option option, float val)
     {
-        register_option(option, std::make_shared<const_value_option>("bypass sensor read only option",
-            lazy<float>([=]() { return val; })));
+        register_option( option,
+                         std::make_shared< const_value_option >( "bypass sensor read only option",
+                                                                 rsutils::lazy< float >( [=]() { return val; } ) ) );
     }
 
     void software_sensor::update_read_only_option(rs2_option option, float val)

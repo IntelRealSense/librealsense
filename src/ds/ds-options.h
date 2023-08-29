@@ -8,6 +8,7 @@
 #include "algo.h"
 #include "error-handling.h"
 #include "../hdr-config.h"
+#include <rsutils/lazy.h>
 
 namespace librealsense
 {
@@ -182,7 +183,7 @@ namespace librealsense
     private:
         ds::depth_table_control get_depth_table(ds::advanced_query_mode mode) const;
         std::function<void(const option &)> _record_action = [](const option&) {};
-        lazy<option_range> _range;
+        rsutils::lazy< option_range > _range;
         hw_monitor& _hwm;
     };
 
@@ -207,7 +208,7 @@ namespace librealsense
         }
     private:
         std::function<void(const option &)> _record_action = [](const option&) {};
-        lazy<option_range> _range;
+        rsutils::lazy< option_range > _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
         int _ver;
@@ -230,7 +231,7 @@ namespace librealsense
 
     private:
         std::function<void(const option &)> _record_action = [](const option&) {};
-        lazy<option_range> _range;
+        rsutils::lazy< option_range > _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
     };
@@ -252,7 +253,7 @@ namespace librealsense
 
     private:
         std::function<void(const option &)> _record_action = [](const option&) {};
-        lazy<option_range> _range;
+        rsutils::lazy< option_range > _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
         bool _is_fw_version_using_id;
@@ -275,7 +276,7 @@ namespace librealsense
 
     private:
         std::function<void(const option &)> _record_action = [](const option&) {};
-        lazy<option_range> _range;
+        rsutils::lazy< option_range > _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
     };

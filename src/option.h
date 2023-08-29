@@ -12,6 +12,7 @@
 #include "error-handling.h"
 
 #include <rsutils/string/from.h>
+#include <rsutils/lazy.h>
 
 #include <chrono>
 #include <memory>
@@ -61,9 +62,12 @@ namespace librealsense
     {
     public:
         const_value_option(std::string desc, float val)
-            : _val(lazy<float>([val]() {return val; })), _desc(std::move(desc)) {}
+            : _val( rsutils::lazy< float >( [val]() { return val; } ) )
+            , _desc( std::move( desc ) )
+        {
+        }
 
-        const_value_option(std::string desc, lazy<float> val)
+        const_value_option( std::string desc, rsutils::lazy< float > val )
             : _val(std::move(val)), _desc(std::move(desc)) {}
 
         float query() const override { return *_val; }
@@ -77,12 +81,12 @@ namespace librealsense
             if (auto opt = As<option>(ext))
             {
                 auto new_val = opt->query();
-                _val = lazy<float>([new_val]() {return new_val; });
+                _val = rsutils::lazy< float >( [new_val]() { return new_val; } );
                 _desc = opt->get_description();
             }
         }
     private:
-        lazy<float> _val;
+        rsutils::lazy< float > _val;
         std::string _desc;
     };
 
@@ -320,7 +324,7 @@ namespace librealsense
         rs2_option _id;
         const std::map<float, std::string> _description_per_value;
         std::function<void(const option&)> _record = [](const option&) {};
-        lazy<option_range> _range;
+        rsutils::lazy< option_range > _range;
     };
 
     // XU control with exclusing access to setter/getters

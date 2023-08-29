@@ -23,6 +23,9 @@
 #include "core/extension.h"
 #include "proc/formats-converter.h"
 
+#include <rsutils/lazy.h>
+
+
 namespace librealsense
 {
     class device;
@@ -125,7 +128,7 @@ namespace librealsense
         device* _owner;
 
     private:
-        lazy<stream_profiles> _profiles;
+        rsutils::lazy< stream_profiles > _profiles;
         stream_profiles _active_profiles;
         mutable std::mutex _active_profile_mutex;
         signal<sensor_base, bool> on_before_streaming_changes;

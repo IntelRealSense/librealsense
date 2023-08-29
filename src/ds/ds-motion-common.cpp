@@ -499,11 +499,14 @@ namespace librealsense
             // motion correction
             _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _owner->_pid);
 
-            _accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
-            _gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
+            _accel_intrinsic = std::make_shared< rsutils::lazy< ds::imu_intrinsic > >(
+                [this]() { return _mm_calib->get_intrinsic( RS2_STREAM_ACCEL ); } );
+            _gyro_intrinsic = std::make_shared< rsutils::lazy< ds::imu_intrinsic > >(
+                [this]() { return _mm_calib->get_intrinsic( RS2_STREAM_GYRO ); } );
 
             // use predefined extrinsics
-            _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
+            _depth_to_imu = std::make_shared< rsutils::lazy< rs2_extrinsics > >(
+                [this]() { return _mm_calib->get_extrinsic( RS2_STREAM_ACCEL ); } );
         }
 
         // Make sure all MM streams are positioned with the same extrinsics

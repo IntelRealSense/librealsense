@@ -1,15 +1,17 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
-
 #pragma once
+
 #include <core/roi.h>
 #include <core/extension.h>
 #include <core/serialization.h>
 #include "core/streaming.h"
 #include "archive.h"
-#include <rsutils/concurrency/concurrency.h>
 #include "sensor.h"
 #include "record_sensor.h"
+#include <rsutils/concurrency/concurrency.h>
+#include <rsutils/lazy.h>
+
 
 namespace librealsense
 {
@@ -63,7 +65,7 @@ namespace librealsense
         std::shared_ptr<device_interface> m_device;
         std::vector<std::shared_ptr<record_sensor>> m_sensors;
 
-        lazy<std::shared_ptr<dispatcher>> m_write_thread;
+        rsutils::lazy< std::shared_ptr< dispatcher > > m_write_thread;
         std::shared_ptr<device_serializer::writer> m_ros_writer;
 
         std::chrono::high_resolution_clock::time_point m_capture_time_base;

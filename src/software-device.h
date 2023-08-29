@@ -6,6 +6,7 @@
 #include "device.h"
 #include "context.h"
 #include <librealsense2/h/rs_internal.h>
+#include <rsutils/lazy.h>
 
 namespace librealsense
 {
@@ -180,8 +181,8 @@ namespace librealsense
             software_sensor* _owner;
         };
 
-        lazy<stereo_extension> _stereo_extension;
-        lazy<depth_extension> _depth_extension;
+        rsutils::lazy< stereo_extension > _stereo_extension;
+        rsutils::lazy< depth_extension > _depth_extension;
 
         software_recommended_proccesing_blocks _pbs;
     };
