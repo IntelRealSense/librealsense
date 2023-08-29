@@ -933,7 +933,8 @@ namespace rs2
     {
         auto debug_dev = _dev.as<debug_protocol>();
         uint32_t ucal_user_decision_opcode = 0x93;
-        debug_dev.build_command(ucal_user_decision_opcode);
+        auto command = debug_dev.build_command(ucal_user_decision_opcode);
+        debug_dev.send_and_receive_raw_data(command);
     }
 
     void on_chip_calib_manager::update_last_used()
