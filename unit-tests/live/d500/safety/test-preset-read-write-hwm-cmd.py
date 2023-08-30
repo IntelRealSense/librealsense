@@ -24,7 +24,16 @@ safety_sensor = dev.first_safety_sensor()
 test.finish()
 
 #############################################################################################
+test.start("Valid read from index 0")
+safety_preset_at_zero = safety_sensor.get_safety_preset(0)
+test.finish()
 
+#############################################################################################
+test.start("Valid read from index 1")
+safety_preset_at_zero = safety_sensor.get_safety_preset(1)
+test.finish()
+
+#############################################################################################
 test.start("Switch to Service Mode")  # See SRS ID 3.3.1.7.a
 original_mode = safety_sensor.get_option(rs.option.safety_mode)
 safety_sensor.set_option(rs.option.safety_mode, SERVICE_MODE)
