@@ -495,6 +495,17 @@ int main( int argc, char ** argv ) try
             return write_fw_to_mipi_device( fw_image );
         }
 
+        // TODO: HKR DFU issue - remove d500_device usage when HKR supports FIRMWARE_UPDATE_ID
+        if (d.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
+        {
+            std::string product_line = d.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
+            if (product_line == "D500")
+            {
+                d500_device = true;
+                ignore_unsigned_request = true;
+            }
+        }
+
         // TODO: HKR DFU issue - Here we go to signed flow always (even if -u was provided by the user)
         // To be removed if HKR will support unsigned FW update in the future
         if (unsigned_arg.isSet() && !ignore_unsigned_request)
