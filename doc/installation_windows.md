@@ -92,6 +92,6 @@ When set, the compiler will check the target WinSDK version, and abort the build
 
 ## Troubleshooting Issues
 
-| Error                                   | Cause                            | Correction Steps                                                                                                            |
-|-----------------------------------------|----------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
-| The camera is not recognized by the SDK | The SDK has not access to camera | Make sure that "Allow desktop apps to access your camera" setting is set to on in Windows OS (Setting -> Privacy -> Camera) |
+| Error                                   | Cause                                      | Correction Steps                                                                                                            |
+|-----------------------------------------|--------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| The camera is not recognized by the SDK | The SDK does not have access to the camera | Make sure that "Allow desktop apps to access your camera" setting is set to on in Windows OS (Setting -> Privacy -> Camera) |
