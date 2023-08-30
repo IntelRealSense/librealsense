@@ -6,6 +6,7 @@
 #include <vector>
 #include <iterator>
 #include <cstddef>
+#include <thread>
 
 #include "device.h"
 #include "context.h"
@@ -144,7 +145,11 @@ namespace librealsense
         case ds::RS_D585_PID:
             return std::make_shared<rs_d585_device>(ctx, group, register_device_notifications);
         case ds::RS_D585S_PID:
-            return std::make_shared<rs_d585s_device>(ctx, group, register_device_notifications);
+        {
+            LOG_INFO( "Found D585S, sleeping for 500 [ms] before communication start" );
+            std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
+            return std::make_shared<rs_d585s_device>( ctx, group, register_device_notifications );
+        }
         default:
             throw std::runtime_error(rsutils::string::from() << "Unsupported RS400 model! 0x"
                 << std::hex << std::setw(4) << std::setfill('0') <<(int)pid);
