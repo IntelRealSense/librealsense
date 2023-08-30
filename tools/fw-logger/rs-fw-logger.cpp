@@ -3,7 +3,7 @@
 
 #include <librealsense2/rs.hpp>
 #include <librealsense2/hpp/rs_internal.hpp>
-#include <librealsense2/utilities/string/string-utilities.h>
+#include <rsutils/string/string-utilities.h>
 #include <fstream>
 #include <thread>
 #include "tclap/CmdLine.h"
@@ -89,7 +89,7 @@ int main(int argc, char* argv[])
                     }
                 }
 
-                out << "\nWaiting for RealSense device " << sn << " to connect...";
+                out << "\nWaiting for RealSense device " << sn << (!sn.empty() ? " " : "") << "to connect ...";
                 std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             }
 
@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
                         std::vector<uint8_t> msg_data = log_message.data();
                         for (int i = 0; i < msg_data.size(); ++i)
                         {
-                        sstr << utilities::string::hexify(msg_data[i]) << " ";
+                        sstr << rsutils::string::hexify(msg_data[i]) << " ";
                         }
                         fw_log_lines.push_back(sstr.str());
                     }
