@@ -6,24 +6,31 @@
 #include "core/processing.h"
 #include "proc/synthetic-stream.h"
 #include "device_hub.h"
+#include "platform/platform-device-info.h"
 
 namespace librealsense
 {
     typedef rs2::devices_changed_callback<std::function<void(rs2::event_information& info)>> hub_devices_changed_callback;
 
-    std::vector<std::shared_ptr<device_info>> filter_by_vid(std::vector<std::shared_ptr<device_info>> devices , int vid)
+    std::vector< std::shared_ptr< device_info > >
+    filter_by_vid( std::vector< std::shared_ptr< device_info > > const & devices, int vid )
     {
         std::vector<std::shared_ptr<device_info>> result;
-        for (auto dev : devices)
+        for (auto & dev : devices)
         {
-            bool filtered = false;
-            auto data = dev->get_device_data();
+            auto pdev = std::dynamic_pointer_cast< platform::platform_device_info >( dev );
+            if( ! pdev )
+            {
+                if( vid == 0 )
+                    result.push_back( dev );
+                continue;
+            }
+            auto & data = pdev->get_group();
             for (const auto& usb : data.usb_devices)
             {
                 if (usb.vid == vid || vid == 0)
                 {
                     result.push_back(dev);
-                    filtered = true;
                     break;
                 }
             }
@@ -32,7 +39,6 @@ namespace librealsense
                 if (uvc.vid == vid || vid == 0)
                 {
                     result.push_back(dev);
-                    filtered = true;
                     break;
                 }
             }

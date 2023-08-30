@@ -39,8 +39,7 @@ namespace librealsense
             return dynamic_cast<uvc_sensor&>(*depth_sensor.get_raw_sensor());
         }
 
-        d400_device(std::shared_ptr<context> ctx,
-                   const platform::backend_device_group& group);
+        d400_device( std::shared_ptr< const d400_info > const & );
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
 
@@ -116,8 +115,7 @@ namespace librealsense
     class ds5u_device : public d400_device
     {
     public:
-        ds5u_device(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group);
+        ds5u_device( std::shared_ptr< const d400_info > const & );
 
         std::shared_ptr<synthetic_sensor> create_ds5u_depth_device(std::shared_ptr<context> ctx,
             const std::vector<platform::uvc_device_info>& all_device_infos);

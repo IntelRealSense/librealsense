@@ -2,7 +2,8 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "../backend.h"
+#include <src/platform/uvc-device.h>
+#include <src/platform/uvc-device-info.h>
 #include "win/win-helpers.h"
 
 #include <mfidl.h>

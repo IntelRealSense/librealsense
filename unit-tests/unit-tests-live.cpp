@@ -7,7 +7,7 @@
 
 #include <cmath>
 #include "unit-tests-common.h"
-#include "../include/librealsense2/rs_advanced_mode.hpp"
+#include <librealsense2/rs_advanced_mode.hpp>
 #include <librealsense2/hpp/rs_types.hpp>
 #include <librealsense2/hpp/rs_frame.hpp>
 #include <iostream>

@@ -11,6 +11,9 @@
 namespace librealsense
 {
     struct frame_additional_data;
+    namespace platform {
+        class time_service;
+    }
 
     class archive_interface : public sensor_part
     {

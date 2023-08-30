@@ -1,25 +1,22 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-#ifdef _MSC_VER
-#if (_MSC_VER <= 1800) // constexpr is not supported in MSVC2013
-#error( "Librealsense requires MSVC2015 or later to build. Compilation will be aborted" )
-#endif
-#endif
 
-#include <array>
-#include <chrono>
-#include "ds/d400/d400-factory.h"
+#include "context.h"
+
+#include "ds/d400/d400-info.h"
 #include "device.h"
 #include "ds/ds-timestamp.h"
-#include "backend.h"
 #include <media/ros/ros_reader.h>
+#include "media/playback/playback-device-info.h"
 #include "types.h"
 #include "stream.h"
 #include "environment.h"
-#include "context.h"
 #include "fw-update/fw-update-factory.h"
 #include "proc/color-formats-converter.h"
 #include "platform-camera.h"
+#include <src/backend.h>
+#include <src/platform/backend-device-group.h>
+#include "software-device.h"
 
 
 #ifdef BUILD_WITH_DDS
@@ -62,12 +59,9 @@ bool contains( const T & first, const T & second )
 }
 
 template<>
-bool contains( const std::shared_ptr< librealsense::device_info > & first,
-               const std::shared_ptr< librealsense::device_info > & second )
+bool contains( librealsense::platform::backend_device_group const & first_data,
+               librealsense::platform::backend_device_group const & second_data )
 {
-    auto first_data = first->get_device_data();
-    auto second_data = second->get_device_data();
-
     for( auto && uvc : first_data.uvc_devices )
     {
         if( std::find( second_data.uvc_devices.begin(), second_data.uvc_devices.end(), uvc )
@@ -95,20 +89,31 @@ bool contains( const std::shared_ptr< librealsense::device_info > & first,
     return true;
 }
 
-template< class T >
-std::vector< std::shared_ptr< T > > subtract_sets( const std::vector< std::shared_ptr< T > > & first,
-                                                   const std::vector< std::shared_ptr< T > > & second )
+std::vector< std::shared_ptr< librealsense::device_info > >
+subtract_sets( const std::vector< std::shared_ptr< librealsense::device_info > > & first,
+               const std::vector< std::shared_ptr< librealsense::device_info > > & second )
 {
-    std::vector< std::shared_ptr< T > > results;
-    std::for_each( first.begin(), first.end(), [&]( std::shared_ptr< T > data ) {
-        if( std::find_if( second.begin(),
-                          second.end(),
-                          [&]( std::shared_ptr< T > new_dev ) { return contains( data, new_dev ); } )
-            == second.end() )
+    std::vector< std::shared_ptr< librealsense::device_info > > results;
+    std::for_each(
+        first.begin(),
+        first.end(),
+        [&]( std::shared_ptr< librealsense::device_info > const & data )
         {
-            results.push_back( data );
-        }
-    } );
+            if( std::find_if(
+                    second.begin(),
+                    second.end(),
+                    [&]( std::shared_ptr< librealsense::device_info > const & new_dev )
+                    {
+                        if( auto pnew = std::dynamic_pointer_cast< librealsense::platform::platform_device_info >( new_dev ) )
+                            if( auto pold = std::dynamic_pointer_cast<librealsense::platform::platform_device_info >( data ) )
+                                return contains( pold->get_group(), pnew->get_group() );
+                        return data->is_same_as( new_dev );
+                    } )
+                == second.end() )
+            {
+                results.push_back( data );
+            }
+        } );
     return results;
 }
 
@@ -304,7 +309,11 @@ namespace librealsense
         auto old_list = create_devices(old, old_playback_devices, RS2_PRODUCT_LINE_ANY);
         auto new_list = create_devices(curr, new_playback_devices, RS2_PRODUCT_LINE_ANY);
 
-        if (librealsense::list_changed<std::shared_ptr<device_info>>(old_list, new_list, [](std::shared_ptr<device_info> first, std::shared_ptr<device_info> second) {return *first == *second; }))
+        if( librealsense::list_changed< std::shared_ptr< device_info > >(
+                old_list,
+                new_list,
+                []( std::shared_ptr< device_info > first, std::shared_ptr< device_info > second )
+                { return first->is_same_as( second ); } ) )
         {
             std::vector<rs2_device_info> rs2_devices_info_added;
             std::vector<rs2_device_info> rs2_devices_info_removed;
@@ -314,14 +323,14 @@ namespace librealsense
             for (size_t i = 0; i < devices_info_removed.size(); i++)
             {
                 rs2_devices_info_removed.push_back({ shared_from_this(), devices_info_removed[i] });
-                LOG_DEBUG("\nDevice disconnected:\n\n" << std::string(devices_info_removed[i]->get_device_data()));
+                LOG_DEBUG( "\nDevice disconnected:\n\n" << *devices_info_removed[i] );
             }
 
             auto devices_info_added = subtract_sets(new_list, old_list);
             for (size_t i = 0; i < devices_info_added.size(); i++)
             {
                 rs2_devices_info_added.push_back({ shared_from_this(), devices_info_added[i] });
-                LOG_DEBUG("\nDevice connected:\n\n" << std::string(devices_info_added[i]->get_device_data()));
+                LOG_DEBUG( "\nDevice connected:\n\n" << *devices_info_added[i] );
             }
 
             invoke_devices_changed_callbacks( rs2_devices_info_removed, rs2_devices_info_added );
@@ -385,14 +394,14 @@ namespace librealsense
 
             std::vector<rs2_device_info> rs2_device_info_added;
             std::vector<rs2_device_info> rs2_device_info_removed;
-            std::shared_ptr< device_info > info = std::make_shared< dds_device_info >( shared_from_this(), dev );
+            auto info = std::make_shared< dds_device_info >( shared_from_this(), dev );
             rs2_device_info_added.push_back( { shared_from_this(), info } );
             invoke_devices_changed_callbacks( rs2_device_info_removed, rs2_device_info_added );
         } );
         _dds_watcher->on_device_removed( [this]( std::shared_ptr< realdds::dds_device > const & dev ) {
             std::vector<rs2_device_info> rs2_device_info_added;
             std::vector<rs2_device_info> rs2_device_info_removed;
-            std::shared_ptr< device_info > info = std::make_shared< dds_device_info >( shared_from_this(), dev );
+            auto info = std::make_shared< dds_device_info >( shared_from_this(), dev );
             rs2_device_info_removed.push_back( { shared_from_this(), info } );
             invoke_devices_changed_callbacks( rs2_device_info_removed, rs2_device_info_added );
         } );
@@ -499,8 +508,7 @@ namespace librealsense
             throw librealsense::invalid_value_exception( rsutils::string::from()
                                                          << "File \"" << file << "\" already loaded to context" );
         }
-        auto playback_dev = std::make_shared<playback_device>(shared_from_this(), std::make_shared<ros_reader>(file, shared_from_this()));
-        auto dinfo = std::make_shared<playback_device_info>(playback_dev);
+        auto dinfo = std::make_shared< playback_device_info >( shared_from_this(), file );
         auto prev_playback_devices = _playback_devices;
         _playback_devices[file] = dinfo;
         on_device_changed({}, {}, prev_playback_devices, _playback_devices);
@@ -509,16 +517,13 @@ namespace librealsense
 
     void context::add_software_device(std::shared_ptr<device_info> dev)
     {
-        auto file = dev->get_device_data().playback_devices.front().file_path;
+        auto address = dev->get_address();
 
-        auto it = _playback_devices.find(file);
+        auto it = _playback_devices.find(address);
         if (it != _playback_devices.end() && it->second.lock())
-        {
-            //Already exists
-            throw librealsense::invalid_value_exception( rsutils::string::from() << "File \"" << file << "\" already loaded to context");
-        }
+            throw librealsense::invalid_value_exception( "File \"" + address + "\" already loaded to context" );
         auto prev_playback_devices = _playback_devices;
-        _playback_devices[file] = dev;
+        _playback_devices[address] = dev;
         on_device_changed({}, {}, prev_playback_devices, _playback_devices);
     }
 

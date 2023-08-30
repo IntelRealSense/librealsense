@@ -4,6 +4,8 @@
 
 #include "sensor.h"
 #include "device-calibration.h"
+#include <set>
+
 
 namespace librealsense
 {

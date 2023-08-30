@@ -4,7 +4,7 @@
 #pragma once
 
 #include "../backend.h"
-#include "../command_transfer.h"
+#include "../platform/command-transfer.h"
 
 namespace librealsense
 {

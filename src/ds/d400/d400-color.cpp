@@ -8,6 +8,9 @@
 #include "d400-thermal-monitor.h"
 #include "proc/color-formats-converter.h"
 #include "d400-color.h"
+#include "d400-info.h"
+#include <src/backend.h>
+
 #include <rsutils/string/from.h>
 
 namespace librealsense
@@ -27,13 +30,12 @@ namespace librealsense
         {rs_fourcc('M','J','P','G'), RS2_STREAM_COLOR}
     };
 
-    d400_color::d400_color(std::shared_ptr<context> ctx,
-        const platform::backend_device_group& group)
-        : d400_device(ctx, group), device(ctx, group),
+    d400_color::d400_color( std::shared_ptr< const d400_info > const & dev_info )
+        : d400_device(dev_info), device(dev_info),
           _color_stream(new stream(RS2_STREAM_COLOR)),
           _separate_color(true)
     {
-        create_color_device(ctx, group);
+        create_color_device( dev_info->get_context(), dev_info->get_group() );
         init();
     }
 

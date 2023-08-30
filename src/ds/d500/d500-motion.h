@@ -15,8 +15,7 @@ namespace librealsense
                                                       const std::vector<platform::hid_device_info>& all_hid_infos,
                                                       const firmware_version& camera_fw_version);
 
-        d500_motion(std::shared_ptr<context> ctx,
-                   const platform::backend_device_group& group);
+        d500_motion( std::shared_ptr< const d500_info > const & );
 
         rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const;
 

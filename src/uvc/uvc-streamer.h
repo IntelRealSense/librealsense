@@ -3,7 +3,7 @@
 
 #pragma once
 #include "uvc-types.h"
-#include "../types.h"
+#include "uvc-device.h"
 
 #include "stdio.h"
 #include "stdlib.h"

@@ -50,7 +50,7 @@ inline std::string repr( rs2::device_list const & list )
 
 inline rs2::device find_first_device_or_exit()
 {
-    rs2::context ctx;
+    rs2::context ctx( "{\"dds\":false}" );
     rs2::device_list devices_list = ctx.query_devices();
     if( devices_list.size() == 0 )
     {
@@ -64,7 +64,7 @@ inline rs2::device find_first_device_or_exit()
 
 inline rs2::device_list find_devices_by_product_line_or_exit( int product )
 {
-    rs2::context ctx;
+    rs2::context ctx( "{\"dds\":false}" );
     rs2::device_list devices_list = ctx.query_devices( product );
     if( devices_list.size() == 0 )
     {
@@ -94,7 +94,7 @@ inline void exit_if_fw_version_is_under( rs2::device & dev, librealsense::firmwa
 // Can get as input a full device name or short like "L515/D435..."
 inline rs2::device find_first_device_by_name_or_exit( const std::string & dev_name )
 {
-    rs2::context ctx;
+    rs2::context ctx( "{\"dds\":false}" );
     std::vector< rs2::device > devices_list = ctx.query_devices();
 
     auto dev_iter

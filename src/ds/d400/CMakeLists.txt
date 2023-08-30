@@ -13,7 +13,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/d400-fw-update-device.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/d400-auto-calibration.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/d400-thermal-monitor.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/d400-factory.h"
+        "${CMAKE_CURRENT_LIST_DIR}/d400-info.h"
         "${CMAKE_CURRENT_LIST_DIR}/d400-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/d400-options.h"
         "${CMAKE_CURRENT_LIST_DIR}/d400-private.h"

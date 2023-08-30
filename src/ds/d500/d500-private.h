@@ -7,6 +7,10 @@
 
 namespace librealsense
 {
+    namespace platform {
+        struct uvc_device_info;
+    }
+
     namespace ds
     {
         // Safety depth XU identifiers

@@ -5,10 +5,13 @@
 #include <src/context.h>
 #include <src/image.h>
 #include <src/metadata-parser.h>
+#include <src/metadata.h>
+#include <src/backend.h>
 
 #include "d400-device.h"
 #include "d400-private.h"
 #include "d400-options.h"
+#include "d400-info.h"
 #include "ds/ds-timestamp.h"
 #include <src/stream.h>
 #include <src/environment.h>
@@ -510,9 +513,8 @@ namespace librealsense
         return depth_ep;
     }
 
-    d400_device::d400_device(std::shared_ptr<context> ctx,
-        const platform::backend_device_group& group)
-        : device(ctx, group), global_time_interface(),
+    d400_device::d400_device( std::shared_ptr< const d400_info > const & dev_info )
+        : device(dev_info), global_time_interface(),
           auto_calibrated(),
           _device_capabilities(ds::ds_caps::CAP_UNDEFINED),
           _depth_stream(new stream(RS2_STREAM_DEPTH)),
@@ -520,8 +522,8 @@ namespace librealsense
           _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),
           _color_stream(nullptr)
     {
-        _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
-        init(ctx, group);
+        _depth_device_idx = add_sensor( create_depth_device( dev_info->get_context(), dev_info->get_group().uvc_devices ) );
+        init( dev_info->get_context(), dev_info->get_group() );
     }
 
     void d400_device::init(std::shared_ptr<context> ctx,
@@ -1258,16 +1260,15 @@ namespace librealsense
         return depth_ep;
     }
 
-    ds5u_device::ds5u_device(std::shared_ptr<context> ctx,
-        const platform::backend_device_group& group)
-        : d400_device(ctx, group), device(ctx, group)
+    ds5u_device::ds5u_device( std::shared_ptr< const d400_info > const & dev_info )
+        : d400_device(dev_info), device(dev_info)
     {
         using namespace ds;
 
         // Override the basic d400 sensor with the development version
-        _depth_device_idx = assign_sensor(create_ds5u_depth_device(ctx, group.uvc_devices), _depth_device_idx);
+        _depth_device_idx = assign_sensor(create_ds5u_depth_device( dev_info->get_context(), dev_info->get_group().uvc_devices), _depth_device_idx);
 
-        init(ctx, group);
+        init( dev_info->get_context(), dev_info->get_group() );
 
         auto& depth_ep = get_depth_sensor();
 
@@ -1278,7 +1279,7 @@ namespace librealsense
         depth_ep.unregister_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
 
         // Enable laser etc.
-        auto pid = group.uvc_devices.front().pid;
+        auto pid = dev_info->get_group().uvc_devices.front().pid;
         if (pid != RS_USB2_PID)
         {
             auto& depth_ep = get_raw_depth_sensor();

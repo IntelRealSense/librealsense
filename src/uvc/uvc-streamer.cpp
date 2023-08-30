@@ -2,7 +2,6 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "uvc-streamer.h"
-#include "../backend.h"
 
 const int UVC_PAYLOAD_MAX_HEADER_LENGTH         = 1024;
 const int DEQUEUE_MILLISECONDS_TIMEOUT          = 50;

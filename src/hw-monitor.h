@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "sensor.h"
+#include "uvc-sensor.h"
 #include <mutex>
-#include "command_transfer.h"
+#include "platform/command-transfer.h"
 
 namespace librealsense
 {

@@ -109,7 +109,8 @@ namespace librealsense
         return false;
     }
 
-    update_device::update_device(const std::shared_ptr<context>& ctx, bool register_device_notifications, std::shared_ptr<platform::usb_device> usb_device)
+    update_device::update_device( std::shared_ptr< context > const & ctx,
+                                  std::shared_ptr< platform::usb_device > const & usb_device )
         : _context(ctx), _usb_device(usb_device), _physical_port( usb_device->get_info().id), _pid(hexify(usb_device->get_info().pid))
     {
         if (auto messenger = _usb_device->open(FW_UPDATE_INTERFACE_NUMBER))
@@ -244,7 +245,7 @@ namespace librealsense
         return _context;
     }
 
-    platform::backend_device_group update_device::get_device_data() const
+    std::shared_ptr< const device_info > update_device::get_device_info() const
     {
         throw std::runtime_error("update_device does not support get_device_data API");//TODO_MK
     }

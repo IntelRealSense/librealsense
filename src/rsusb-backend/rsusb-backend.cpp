@@ -8,6 +8,7 @@
 #include "../hid/hid-types.h"
 #include "../hid/hid-device.h"
 #include "../usb/usb-enumerator.h"
+#include "../platform/time-service.h"
 
 #include <chrono>
 #include <cctype> // std::tolower

@@ -17,6 +17,9 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include "core/options.h"   // Workaround for the missing DLL_EXPORT template
 #include "core/info.h"   // Workaround for the missing DLL_EXPORT template
 #include "../src/backend.h"
+#include <src/platform/time-service.h>
+#include <src/platform/command-transfer.h>
+#include <src/platform/hid-device.h>
 #include "pybackend_extras.h"
 #include "../../third-party/stb_image_write.h"
 
@@ -261,11 +264,6 @@ PYBIND11_MODULE(NAME, m) {
     py::class_<platform::hid_sensor_input> hid_sensor_input(m, "hid_sensor_input");
     hid_sensor_input.def_readwrite("index", &platform::hid_sensor_input::index)
                     .def_readwrite("name", &platform::hid_sensor_input::name);
-
-    py::class_<platform::callback_data> callback_data(m, "callback_data");
-    callback_data.def_readwrite("sensor", &platform::callback_data::sensor)
-                 .def_readwrite("sensor_input", &platform::callback_data::sensor_input)
-                 .def_readwrite("value", &platform::callback_data::value);
 
     py::class_<platform::sensor_data> sensor_data(m, "sensor_data");
     sensor_data.def_readwrite("sensor", &platform::sensor_data::sensor)

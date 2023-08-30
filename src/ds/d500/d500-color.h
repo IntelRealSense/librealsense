@@ -17,8 +17,7 @@ namespace librealsense
     class d500_color : public virtual d500_device
     {
     public:
-        d500_color(std::shared_ptr<context> ctx,
-                  const platform::backend_device_group& group);
+        d500_color( std::shared_ptr< const d500_info > const & );
 
         synthetic_sensor& get_color_sensor()
         {
