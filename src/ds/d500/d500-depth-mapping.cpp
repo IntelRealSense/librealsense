@@ -96,33 +96,15 @@ namespace librealsense
                 auto safety_device = dynamic_cast<d500_safety*>(this);
                 auto& safety_sensor = dynamic_cast<d500_safety_sensor&>(safety_device->get_safety_sensor());
                 
-                // Pull extrinsics from safety preset number 1
-                // According to SRS ID 3.3.1.7.a: reading/modifiny safety presets
-                // shall be avaialble only when SC in maintainence/service operational mode
+                // Pull extrinsic from safety preset number 1 for setting labeled point cloud extrinsic
+                // According to SRS ID 3.3.1.7.a: reading/modify safety presets
                 // TODO: Remove this w/a after ES2
                 int safety_preset_index = 1;
-                int service_operational_mode = 2;
                 rs2_extrinsics res;
                 rs2_safety_preset safety_preset;
-                try {
-
-                    auto& safety_mode_option = safety_sensor.get_option(RS2_OPTION_SAFETY_MODE);
-                    auto original_safety_mode = static_cast<int>(safety_mode_option.query());
-
-                    if(original_safety_mode != service_operational_mode)
-                    {
-                        // switch to service mode if needed
-                        safety_mode_option.set(static_cast<float>(service_operational_mode));
-                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                    }
-
+                try 
+                {
                     safety_preset = safety_sensor.get_safety_preset(safety_preset_index);
-
-                    if(original_safety_mode != service_operational_mode)
-                    {
-                        // switch back to original mode if needed
-                        safety_mode_option.set(static_cast<float>(original_safety_mode));
-                    }
                 }
                 catch (...)
                 {
