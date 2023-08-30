@@ -19,6 +19,8 @@
 using namespace TCLAP;
 
 #define WAIT_FOR_DEVICE_TIMEOUT 10
+#define SMCU_DFU_RUN_TIME 25
+#define HKR_DFU_RUN_TIME 90
 
 #if _WIN32
 #include <io.h>
@@ -30,7 +32,7 @@ using namespace TCLAP;
 #define FILENO fileno
 #endif
 
-std::vector<uint8_t> read_fw_file(std::string file_path)
+std::vector<uint8_t> read_fw_file(std::string file_path, bool smcu_dfu = false)
 {
     std::vector<uint8_t> rv;
 
@@ -56,7 +58,8 @@ std::vector<uint8_t> read_fw_file(std::string file_path)
         }
         if( ! file.good() )
         {
-            std::cout << std::endl << "Error reading firmware file";
+            std::string file_type = smcu_dfu ? "safety MCU" : "firmware";
+            std::cout << std::endl << "Error reading " + file_type + " file";
             rv.resize( 0 ); // Signal error, don't use partial read data
         }
         
@@ -82,38 +85,57 @@ void print_device_info(rs2::device d)
         ", USB type: " << camera_info[RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR] << std::endl;
 }
 
-std::vector<uint8_t> read_firmware_data(bool is_set, const std::string& file_path)
+std::vector<uint8_t> read_firmware_data(bool is_set, const std::string& file_path, bool smcu_dfu = false)
 {
+    std::string file_type = smcu_dfu ? "safety MCU" : "firmware";
     if (!is_set)
     {
-        throw rs2::error("Firmware file must be selected");
+        throw rs2::error(file_type + " file must be selected");
     }
 
     std::vector<uint8_t> fw_image = read_fw_file(file_path);
 
     if (fw_image.size() == 0)
     {
-        throw rs2::error("Failed to read firmware file");
+        throw rs2::error("Failed to read " + file_type + " file");
     }
 
     return fw_image;
 }
 
 
-void update(rs2::update_device fwu_dev, std::vector<uint8_t> fw_image)
+void update(rs2::update_device fwu_dev, std::vector<uint8_t> fw_image, bool is_d500_device = false, bool is_smcu_dfu = false)
 {  
-    std::cout << std::endl << "Firmware update started"<< std::endl << std::endl;
-
+    std::cout << std::endl << "Firmware update started. Please don't disconnect device!"<< std::endl << std::endl;
     if (ISATTY(FILENO(stdout)))
     {
-        fwu_dev.update(fw_image, [&](const float progress)
+        if(is_d500_device)
+        {
+            // for d500 devices, HKR DFU takes around 100 seconds,
+            // so we call update (which return quickly),
+            // then sleep for 100 seconds while updating a progress bar
+            fwu_dev.update(fw_image, [&](const float progress){});
+            int runtime = is_smcu_dfu ? SMCU_DFU_RUN_TIME : HKR_DFU_RUN_TIME;
+            float iteration_sleep_time_ms = (runtime / 100.0) * 1000.0;
+            for(int i=1; i <= 100; i++)
+            {
+               std::cout << "\rFirmware update progress: " << i << "[%]" << std::flush; 
+               std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(iteration_sleep_time_ms)));
+            }
+            
+        }
+        else
+        {
+            fwu_dev.update(fw_image, [&](const float progress)
             {
                 printf("\rFirmware update progress: %d[%%]", (int)(progress * 100));
             });
+        }
     }
     else
-        fwu_dev.update(fw_image, [&](const float progress){});
-    
+    {
+      fwu_dev.update(fw_image, [&](const float progress){}); 
+    }
     std::cout << std::endl << std::endl << "Firmware update done" << std::endl;
 }
 
@@ -192,10 +214,8 @@ bool query_d500_and_wait(rs2::context& ctx)
 {
     using namespace std::chrono;
     auto start = system_clock::now();
-    auto timeout = std::chrono::seconds(120);
+    auto timeout = std::chrono::seconds(10);
     auto now = system_clock::now();
-    std::cout << std::endl << "Waiting for device to wake up after FW update. It can take up to 2 minutes -  Please don't disconnect device!" << std::endl;
-
     do
     {
         std::cout << "Looking for updated device..." << std::endl;
@@ -214,7 +234,7 @@ bool query_d500_and_wait(rs2::context& ctx)
                 }
             }
             now = system_clock::now();
-            std::this_thread::sleep_for(std::chrono::seconds(5));
+            std::this_thread::sleep_for(std::chrono::seconds(2));
         }
         catch (...) {}
     } while ((now - start) < timeout);
@@ -256,7 +276,7 @@ int main( int argc, char ** argv ) try
 
     // TODO: HKR DFU issue - remove d500_device usage when HKR supports FIRMWARE_UPDATE_ID
     // For HKR, only DFU flow is enabled (signed fw update flow). see ignore_unsigned_request parameter usage below
-    bool d500_device = false;
+    bool is_d500_device = false;
     bool ignore_unsigned_request = false;
 
     CmdLine cmd("librealsense rs-fw-update tool", ' ', RS2_API_VERSION_STR);
@@ -266,19 +286,21 @@ int main( int argc, char ** argv ) try
     SwitchArg unsigned_arg("u", "unsigned", "Update unsigned firmware, available only for unlocked cameras");
     ValueArg<std::string> backup_arg("b", "backup", "Create a backup to the camera flash and saved it to the given path", false, "", "string");
     ValueArg<std::string> file_arg("f", "file", "Path of the firmware image file", false, "", "string");
+    ValueArg<std::string> smcu_arg("m", "smcu", "Path of the safety MCU image file", false, "", "string");
     ValueArg<std::string> serial_number_arg("s", "serial_number", "The serial number of the device to be update, this is mandetory if more than one device is connected", false, "", "string");
 
     cmd.add(list_devices_arg);
     cmd.add(recover_arg);
     cmd.add(unsigned_arg);
     cmd.add(file_arg);
+    cmd.add(smcu_arg);
     cmd.add(serial_number_arg);
     cmd.add(backup_arg);
 
     cmd.parse(argc, argv);
 
     if (!list_devices_arg.isSet() && !recover_arg.isSet() && !unsigned_arg.isSet() &&
-        !backup_arg.isSet() && !file_arg.isSet() && !serial_number_arg.isSet())
+        !backup_arg.isSet() && !file_arg.isSet() && !serial_number_arg.isSet() && !smcu_arg.isSet())
     {
         std::cout << std::endl << "Nothing to do, run again with -h for help" << std::endl;
         list_devices(ctx);
@@ -293,9 +315,16 @@ int main( int argc, char ** argv ) try
         return EXIT_SUCCESS;
     }
 
-    if (!file_arg.isSet() && !backup_arg.isSet())
+    if (!file_arg.isSet() && !backup_arg.isSet() && !smcu_arg.isSet())
     {
         std::cout << std::endl << "Nothing to do, run again with -h for help" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    if (file_arg.isSet() && smcu_arg.isSet())
+    {
+        std::cout << std::endl << "Can't DFU both firmware and smcu at the same time." << std::endl;
+        std::cout <<  "Recommended flow: first run firmware DFU, then SMCU DFU." << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -386,8 +415,8 @@ int main( int argc, char ** argv ) try
         for (auto&& d : info.get_new_devices())
         {
             std::lock_guard<std::mutex> lk(mutex);
-            // TODO: HKR DFU issue - remove d500_device usage when HKR supports FIRMWARE_UPDATE_ID
-            if (d500_device || d.is<rs2::update_device>() && (d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID) == update_serial_number))
+            // TODO: HKR DFU issue - remove is_d500_device usage when HKR supports FIRMWARE_UPDATE_ID
+            if (is_d500_device || d.is<rs2::update_device>() && (d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID) == update_serial_number))
                 new_fw_update_device = d;
             else
                 new_device = d;
@@ -475,82 +504,100 @@ int main( int argc, char ** argv ) try
             }
         }
 
-        if (!file_arg.isSet())
-            continue;
-
-        std::vector<uint8_t> fw_image = read_firmware_data(file_arg.isSet(), file_arg.getValue());
-
-        std::cout << std::endl << "Updating device: " << std::endl;
-        print_device_info(d);
-
-        // If device is D457 connected by MIPI connector
-        if( is_mipi_device( d ) )
-        {
-            if( unsigned_arg.isSet() )
-            {
-                std::cout << std::endl << "Only signed FW is currently supported for MIPI devices" << std::endl;
-                return EXIT_FAILURE;
-            }
-
-            return write_fw_to_mipi_device( fw_image );
-        }
-
-        // TODO: HKR DFU issue - remove d500_device usage when HKR supports FIRMWARE_UPDATE_ID
         if (d.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
         {
             std::string product_line = d.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
             if (product_line == "D500")
             {
-                d500_device = true;
+                is_d500_device = true;
                 ignore_unsigned_request = true;
             }
         }
 
-        // TODO: HKR DFU issue - Here we go to signed flow always (even if -u was provided by the user)
-        // To be removed if HKR will support unsigned FW update in the future
-        if (unsigned_arg.isSet() && !ignore_unsigned_request)
+        // FW DFU
+        if (file_arg.isSet())
         {
-            std::cout << std::endl << "Firmware update started" << std::endl << std::endl;
+            std::vector<uint8_t> fw_image = read_firmware_data(file_arg.isSet(), file_arg.getValue());
 
-            if (ISATTY(FILENO(stdout)))
+            std::cout << std::endl << "Updating device FW: " << std::endl;
+            print_device_info(d);
+
+            // If device is D457 connected by MIPI connector
+            if( !is_d500_device && is_mipi_device( d ) )
             {
-                d.as<rs2::updatable>().update_unsigned(fw_image, [&](const float progress)
-                    {
-                        printf("\rFirmware update progress: %d[%%]", (int)(progress * 100));
-                    });
+                if( unsigned_arg.isSet() )
+                {
+                    std::cout << std::endl << "Only signed FW is currently supported for MIPI devices" << std::endl;
+                    return EXIT_FAILURE;
+                }
+
+                return write_fw_to_mipi_device( fw_image );
+            }
+            
+            // TODO: HKR DFU issue - Here we go to signed flow always (even if -u was provided by the user)
+            // To be removed if HKR will support unsigned FW update in the future
+            if (unsigned_arg.isSet() && !ignore_unsigned_request)
+            {
+                std::cout << std::endl << "Firmware update started. Please don't disconnect device!" << std::endl << std::endl;
+
+                if (ISATTY(FILENO(stdout)))
+                {
+                    d.as<rs2::updatable>().update_unsigned(fw_image, [&](const float progress)
+                        {
+                            printf("\rFirmware update progress: %d[%%]", (int)(progress * 100));
+                        });
+                }
+                else
+                    d.as<rs2::updatable>().update_unsigned(fw_image, [&](const float progress){});
+                    
+                std::cout << std::endl << std::endl << "Firmware update done" << std::endl;
             }
             else
-                d.as<rs2::updatable>().update_unsigned(fw_image, [&](const float progress){});
-                
-            std::cout << std::endl << std::endl << "Firmware update done" << std::endl;
-        }
-        else
-        {
-            auto upd = d.as<rs2::updatable>();
-            // checking compatibility bewtween firmware and device
-            if (!upd.check_firmware_compatibility(fw_image))
             {
-                std::stringstream ss;
-                ss << "This firmware version is not compatible with ";
-                ss << d.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
-                std::cout << std::endl << ss.str() << std::endl;
-                return EXIT_FAILURE;
+                auto upd = d.as<rs2::updatable>();
+                // checking compatibility bewtween firmware and device
+                if (!upd.check_firmware_compatibility(fw_image))
+                {
+                    std::stringstream ss;
+                    ss << "This firmware version is not compatible with ";
+                    ss << d.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+                    std::cout << std::endl << ss.str() << std::endl;
+                    return EXIT_FAILURE;
+                }
+
+                upd.enter_update_state();
+
+                std::unique_lock<std::mutex> lk(mutex);
+                if (!cv.wait_for(lk, std::chrono::seconds(WAIT_FOR_DEVICE_TIMEOUT), [&] { return new_fw_update_device; }))
+                {
+                    std::cout << std::endl << "Failed to locate a device in DFU mode" << std::endl;
+                    return EXIT_FAILURE;
+                }
+
+                update(new_fw_update_device, fw_image, is_d500_device);
+                done = is_d500_device ? query_d500_and_wait(ctx) : true;
+                break;
             }
+        }
+        else if(smcu_arg.isSet() && is_d500_device) // SMCU DFU
+        {
+            std::vector<uint8_t> smcu_image = read_firmware_data(smcu_arg.isSet(), smcu_arg.getValue(), true);
 
-            upd.enter_update_state();
+            std::cout << std::endl << "Updating device Safety MCU:" << std::endl;
+            print_device_info(d);
 
+            auto upd = d.as<rs2::updatable>();
+            upd.enter_update_safety_mcu_state();
             std::unique_lock<std::mutex> lk(mutex);
             if (!cv.wait_for(lk, std::chrono::seconds(WAIT_FOR_DEVICE_TIMEOUT), [&] { return new_fw_update_device; }))
             {
-                std::cout << std::endl << "Failed to locate a device in FW update mode" << std::endl;
+                std::cout << std::endl << "Failed to locate a device in DFU mode" << std::endl;
                 return EXIT_FAILURE;
             }
 
-            update(new_fw_update_device, fw_image);
-            // TODO: HKR DFU issue - for D500 device, writing to flash takes between 1 to 2 minutes
-            // So, in order to complete FW update process, wait for finish writing to flash and for D500 to wake up
-            done = d500_device ? query_d500_and_wait(ctx) : true;
-            break;
+            update(new_fw_update_device, smcu_image, is_d500_device, true);
+            done = query_d500_and_wait(ctx);
+            break;    
         }
     }
 
@@ -577,17 +624,8 @@ int main( int argc, char ** argv ) try
             if (serial_number_arg.isSet() && sn != selected_serial_number)
                 continue;
 
-            // TODO: HKR DFU issue - the FW Version is not set correctly for HKR, and no FW versions are avaialble for now
-            // In the future, when HKR will support these features, remove the first part of this if 
-            if (d500_device)
-            {
-                std::cout << std::endl << "Device " << sn << " FW updated successfully." << std::endl;
-            }
-            else
-            {
-                auto fw = d.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ? d.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) : "unknown";
-                std::cout << std::endl << "Device " << sn << " successfully updated to FW: " << fw << std::endl;
-            }
+            auto fw = d.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ? d.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) : "unknown";
+            std::cout << std::endl << "Device " << sn << " successfully updated to FW: " << fw << std::endl;
         }
     }
 
