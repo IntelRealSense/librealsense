@@ -448,8 +448,6 @@ try:
         #
         exceptions = None
         if not skip_live_tests:
-            if not to_stdout:
-                log.i( 'Logs in:', libci.logdir )
             if not no_exceptions and os.path.isfile( libci.exceptionsfile ):
                 try:
                     log.d( 'loading device exceptions from:', libci.exceptionsfile )
@@ -468,6 +466,8 @@ try:
     failed_tests = []
     if context:
         log.i( 'Running under context:', context )
+    if not to_stdout:
+        log.i( 'Logs in:', libci.logdir )
     for test in prioritize_tests( get_tests() ):
         try:
             #
@@ -582,7 +582,7 @@ finally:
     # Disconnect from the Acroname -- if we don't it'll crash on Linux...
     # Before that we close all ports, no need for cameras to stay on between LibCI runs
     if not list_only and not only_not_live:
-        if devices.acroname:
+        if devices.acroname and devices.acroname.is_connected():
             devices.acroname.disable_ports()
             devices.wait_until_all_ports_disabled()
             devices.acroname.disconnect()
