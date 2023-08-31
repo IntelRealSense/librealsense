@@ -380,8 +380,10 @@ class PyTest( Test ):
         log.d( 'script:', self.path_to_script )
         Test.debug_dump( self )
 
-    @property
-    def command( self ):
+    def command( self, to_file ):
+        """
+        :param to_file: True if stdout is redirected to a file (so colors make no sense)
+        """
         cmd = [sys.executable]
         #
         # PYTHON FLAGS
@@ -404,7 +406,9 @@ class PyTest( Test ):
             if log.is_debug_on():
                 cmd += ['--debug']
             #
-            if log.is_color_on():
+            if to_file:
+                pass
+            elif log.is_color_on():
                 cmd += ['--color']
             elif log.is_color_disabled():
                 cmd += ['--no-color']
@@ -415,7 +419,7 @@ class PyTest( Test ):
 
     def run_test( self, configuration = None, log_path = None, opts = set() ):
         try:
-            cmd = self.command
+            cmd = self.command( to_file = log_path and log_path != subprocess.PIPE )
             if opts:
                 cmd += [opt for opt in opts]
             run( cmd, stdout=log_path, append=self.ran, timeout=self.config.timeout )
@@ -453,8 +457,10 @@ class ExeTest( Test ):
                 log.d( 'exe:', self.exe )
         Test.debug_dump( self )
 
-    @property
-    def command( self ):
+    def command( self, to_file ):
+        """
+        :param to_file: True if stdout is redirected to a file (so colors make no sense)
+        """
         cmd = [self.exe]
         if 'custom-args' not in self.config.flags:
             # Assume we're a Catch2 exe, so:
@@ -464,7 +470,7 @@ class ExeTest( Test ):
                 cmd += ['-d', 'yes']  # show durations for each test-case
                 # cmd += ['--success']  # show successful assertions in output
                 cmd += ['--debug']
-            # if log.is_color_on():
+            # if not to_file and log.is_color_on():
             #    cmd += ['--use-colour', 'yes']
             if self.config.context:
                 cmd += ['--context', ' '.join(self.config.context)]
@@ -474,7 +480,7 @@ class ExeTest( Test ):
         if not self.exe:
             raise RuntimeError("Tried to run test " + self.name + " with no exe file provided")
         try:
-            cmd = self.command
+            cmd = self.command( to_file = log_path and log_path != subprocess.PIPE )
             if opts:
                 cmd += [opt for opt in opts]
             run( cmd, stdout=log_path, append=self.ran, timeout=self.config.timeout )
