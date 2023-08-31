@@ -10,6 +10,8 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/motion.h"
         "${CMAKE_CURRENT_LIST_DIR}/video.h"
         "${CMAKE_CURRENT_LIST_DIR}/options.h"
+        "${CMAKE_CURRENT_LIST_DIR}/options-registry.h"
+        "${CMAKE_CURRENT_LIST_DIR}/options-registry.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/info.h"
         "${CMAKE_CURRENT_LIST_DIR}/extension.h"
         "${CMAKE_CURRENT_LIST_DIR}/processing.h"

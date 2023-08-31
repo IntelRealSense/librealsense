@@ -269,7 +269,7 @@ namespace librealsense
 
 // This macro can be used directly if needed to support enumerators with no RS2_#####_COUNT last value
 #define RS2_ENUM_HELPERS_CUSTOMIZED( TYPE, FIRST, LAST, STRTYPE )                                  \
-    LRS_EXTENSION_API STRTYPE get_string( TYPE value );                                       \
+    LRS_EXTENSION_API STRTYPE get_string( TYPE value );                                            \
     inline bool is_valid( TYPE value ) { return value >= FIRST && value <= LAST; }                 \
     inline std::ostream & operator<<( std::ostream & out, TYPE value )                             \
     {                                                                                              \
@@ -292,10 +292,15 @@ namespace librealsense
         return false;                                                                              \
     }
 
+    // For rs2_option, these make use of the registry
+    LRS_EXTENSION_API std::string const & get_string( rs2_option value );
+    bool is_valid( rs2_option value );
+    std::ostream & operator<<( std::ostream & out, rs2_option option );
+    bool try_parse( const std::string & option_name, rs2_option & result );
+
     RS2_ENUM_HELPERS(rs2_stream, STREAM)
     RS2_ENUM_HELPERS(rs2_format, FORMAT)
     RS2_ENUM_HELPERS(rs2_distortion, DISTORTION)
-    RS2_ENUM_HELPERS(rs2_option, OPTION)
     RS2_ENUM_HELPERS(rs2_camera_info, CAMERA_INFO)
     RS2_ENUM_HELPERS_CUSTOMIZED(rs2_frame_metadata_value, 0, RS2_FRAME_METADATA_COUNT - 1, std::string const & )
     RS2_ENUM_HELPERS(rs2_timestamp_domain, TIMESTAMP_DOMAIN)
