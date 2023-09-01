@@ -31,7 +31,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     with test.closure( "Test D435i" ):
         remote.run( 'instance = broadcast_device( d435i, d435i.device_info )' )
-        dds.wait_for_devices( context, only_sw_devices, n=1. )
+        dev = dds.wait_for_devices( context, only_sw_devices, n=1. )
         test.check_equal( dev.get_info( rs.camera_info.name ), d435i.device_info.name )
         test.check_equal( dev.get_info( rs.camera_info.serial_number ), d435i.device_info.serial )
         test.check_equal( dev.get_info( rs.camera_info.physical_port ), d435i.device_info.topic_root )
@@ -59,7 +59,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     with test.closure( "Test D405" ):
         remote.run( 'instance = broadcast_device( d405, d405.device_info )' )
-        dds.wait_for_devices( context, only_sw_devices, n=1. )
+        dev = dds.wait_for_devices( context, only_sw_devices, n=1. )
         test.check_equal( dev.get_info( rs.camera_info.name ), d405.device_info.name )
         test.check_equal( dev.get_info( rs.camera_info.serial_number ), d405.device_info.serial )
         test.check_equal( dev.get_info( rs.camera_info.physical_port ), d405.device_info.topic_root )
@@ -77,7 +77,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     with test.closure( "Test D455" ):
         remote.run( 'instance = broadcast_device( d455, d455.device_info )' )
-        dds.wait_for_devices( context, only_sw_devices, n=1. )
+        dev = dds.wait_for_devices( context, only_sw_devices, n=1. )
         test.check_equal( dev.get_info( rs.camera_info.name ), d455.device_info.name )
         test.check_equal( dev.get_info( rs.camera_info.serial_number ), d455.device_info.serial )
         test.check_equal( dev.get_info( rs.camera_info.physical_port ), d455.device_info.topic_root )

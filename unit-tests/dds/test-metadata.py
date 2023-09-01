@@ -142,7 +142,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         from dds import wait_for_devices
         context = rs.context( { 'dds': { 'domain': 123, 'participant': 'librs' }} )
         only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
-        device = wait_for_devices( context, only_sw_devices, n=1. )[0]
+        device = wait_for_devices( context, only_sw_devices, n=1. )
         sensors = device.sensors
         test.check_equal( len(sensors), 1, on_fail=test.RAISE )
         sensor = sensors[0]
