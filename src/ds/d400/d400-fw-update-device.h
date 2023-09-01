@@ -10,7 +10,7 @@ namespace librealsense
     class ds_update_device : public update_device
     {
     public:
-        ds_update_device( std::shared_ptr< context > const & ctx,
+        ds_update_device( std::shared_ptr< const device_info > const &,
                           std::shared_ptr< platform::usb_device > const & usb_device );
         virtual ~ds_update_device() = default;
 

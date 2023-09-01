@@ -52,9 +52,9 @@ namespace librealsense
                 if (!usb)
                     continue;
                 if (ds::RS_RECOVERY_PID == info.pid)
-                    return std::make_shared<ds_update_device>(get_context(), usb);
+                    return std::make_shared< ds_update_device >( shared_from_this(), usb );
                 if (ds::RS_USB2_RECOVERY_PID == info.pid)
-                    return std::make_shared<ds_update_device>(get_context(), usb);
+                    return std::make_shared< ds_update_device >( shared_from_this(), usb );
             }
         }
         throw std::runtime_error( rsutils::string::from()

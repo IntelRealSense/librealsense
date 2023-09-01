@@ -27,7 +27,7 @@ struct uvc_device_info
     bool has_metadata_node = false;
     std::string metadata_node_id;
 
-    operator std::string()
+    operator std::string() const
     {
         std::ostringstream s;
         s << "id- " << id << "\nvid- " << std::hex << vid << "\npid- " << std::hex << pid << "\nmi- " << std::dec << mi

@@ -11,6 +11,8 @@ namespace librealsense
 {
     class fw_update_info : public platform::platform_device_info
     {
+        typedef platform::platform_device_info super;
+
     public:
         std::shared_ptr< device_interface > create_device() override;
 
@@ -19,6 +21,8 @@ namespace librealsense
 
         explicit fw_update_info(std::shared_ptr<context> ctx, platform::usb_device_info const & dfu)
             : platform_device_info( ctx, { { dfu } } ) {}
+
+        std::string get_address() const override { return "recovery:" + super::get_address(); }
 
     private:
         const char* RECOVERY_MESSAGE = "Selected RealSense device is in recovery mode!\nEither perform a firmware update or reconnect the camera to fall-back to last working firmware if available!";
