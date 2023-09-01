@@ -37,7 +37,7 @@ public:
         for( auto & d : _group.uvc_devices )
             return d.device_path;
         for( auto & d : _group.usb_devices )
-            return d.serial;
+            return d.id;
         throw std::runtime_error( "non-standard platform-device-info" );
     }
 

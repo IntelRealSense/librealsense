@@ -230,7 +230,11 @@ namespace librealsense
             devices.usb_devices = _backend->query_usb_devices();
             devices.hid_devices = _backend->query_hid_devices();
         }
-        return create_devices( devices, _playback_devices, mask );
+        auto const list = create_devices( devices, _playback_devices, mask );
+        LOG_INFO( "Found " << list.size() << " RealSense devices (mask 0x" << std::hex << mask << ")" );
+        for( auto & item : list )
+            LOG_INFO( "... " << item->get_address() );
+        return list;
     }
 
     std::vector< std::shared_ptr< device_info > >
@@ -295,8 +299,6 @@ namespace librealsense
                 list.push_back(dev);
         }
 
-        if (list.size())
-            LOG_INFO( "Found " << list.size() << " RealSense devices (mask 0x" << std::hex << mask << ")" << std::dec );
         return list;
     }
 
@@ -315,22 +317,21 @@ namespace librealsense
                 []( std::shared_ptr< device_info > first, std::shared_ptr< device_info > second )
                 { return first->is_same_as( second ); } ) )
         {
-            std::vector<rs2_device_info> rs2_devices_info_added;
             std::vector<rs2_device_info> rs2_devices_info_removed;
 
             auto devices_info_removed = subtract_sets(old_list, new_list);
-
             for (size_t i = 0; i < devices_info_removed.size(); i++)
             {
                 rs2_devices_info_removed.push_back({ shared_from_this(), devices_info_removed[i] });
-                LOG_DEBUG( "\nDevice disconnected:\n\n" << *devices_info_removed[i] );
+                LOG_DEBUG( "Device disconnected: " << devices_info_removed[i]->get_address() );
             }
 
+            std::vector<rs2_device_info> rs2_devices_info_added;
             auto devices_info_added = subtract_sets(new_list, old_list);
             for (size_t i = 0; i < devices_info_added.size(); i++)
             {
                 rs2_devices_info_added.push_back({ shared_from_this(), devices_info_added[i] });
-                LOG_DEBUG( "\nDevice connected:\n\n" << *devices_info_added[i] );
+                LOG_DEBUG( "Device connected: " << devices_info_added[i]->get_address() );
             }
 
             invoke_devices_changed_callbacks( rs2_devices_info_removed, rs2_devices_info_added );
@@ -370,6 +371,10 @@ namespace librealsense
             {
                 _devices_changed_callback->on_devices_changed(new rs2_device_list({ shared_from_this(), removed }),
                     new rs2_device_list({ shared_from_this(), added }));
+            }
+            catch( std::exception const & e )
+            {
+                LOG_ERROR( "Exception thrown from user callback handler: " << e.what() );
             }
             catch (...)
             {

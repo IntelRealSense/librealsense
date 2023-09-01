@@ -1179,19 +1179,11 @@ namespace librealsense
                 {
                     hwm_devices.push_back(hwm);
                 }
-                else
-                {
-                    LOG_DEBUG("d400_try_fetch_usb_device(...) failed.");
-                }
 
                 auto info = std::make_shared<d400_info>( ctx, std::move( devices ), std::move( hwm_devices ), std::move( hids ) );
                 chosen.insert(chosen.end(), devices.begin(), devices.end());
                 results.push_back(info);
 
-            }
-            else
-            {
-                LOG_WARNING("DS5 group_devices is empty.");
             }
         }
 

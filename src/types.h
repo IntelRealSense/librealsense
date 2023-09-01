@@ -867,7 +867,7 @@ namespace librealsense
         uint16_t mi;
         std::string unique_id;
 
-        operator std::string()
+        operator std::string() const
         {
             std::stringstream s;
 
