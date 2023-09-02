@@ -484,6 +484,7 @@ def info( name, value, persistent = False ):
     """
     global test_info
     test_info[name] = Information(value, persistent)
+    return value
 
 
 def reset_info(persistent = False):
