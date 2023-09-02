@@ -34,6 +34,17 @@ void init_c_files(py::module &m) {
     BIND_ENUM(m, rs2_calib_target_type, RS2_CALIB_TARGET_COUNT, "Calibration target type.")
 
     BIND_ENUM(m, rs2_option, RS2_OPTION_COUNT, "Defines general configuration controls. These can generally be mapped to camera UVC controls, and can be set / queried at any time unless stated otherwise.")
+    py_rs2_option.attr( "__repr__" ) = py::cpp_function(
+        []( const py::object & arg) -> py::str
+        {
+            auto type = py::type::handle_of( arg );
+            py::object type_name = type.attr( "__name__" );
+            py::int_ arg_int( arg );
+            py::str enum_name( rs2_option_to_string( rs2_option( (int) arg_int ) ) );
+            return py::str( "<{} {} '{}'>" ).format( std::move( type_name ), arg_int, enum_name );
+        },
+        py::name( "__repr__" ),
+        py::is_method( py_rs2_option ) );
     // Force binding of deprecated (renamed) options that we still want to expose for backwards compatibility
     py_rs2_option.value("ambient_light", RS2_OPTION_AMBIENT_LIGHT);
     py_rs2_option.value( "lld_temperature", RS2_OPTION_LLD_TEMPERATURE );
