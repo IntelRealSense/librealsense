@@ -564,6 +564,7 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_option_range;
     py::class_< dds_option_range >( m, "dds_option_range" )
         .def( py::init<>() )
+        .def( py::init<>( []( float n, float x, float s, float def ) { return dds_option_range{ n, x, s, def }; } ) )
         .def_readwrite( "min", &dds_option_range::min )
         .def_readwrite( "max", &dds_option_range::max )
         .def_readwrite( "step", &dds_option_range::step )
