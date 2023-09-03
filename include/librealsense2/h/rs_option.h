@@ -121,8 +121,19 @@ extern "C" {
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
-    // This function is being deprecated. For existing options it will return option name, but for future API additions the user should call rs2_get_option_name instead.
+    /**
+    * Returns the option name if the option exists, or "UNKNOWN" otherwise.
+    * See rs2_option_from_string() for the reverse.
+    * \param[in] option    the option identifier
+    */
     const char* rs2_option_to_string(rs2_option option);
+
+    /**
+    * Get the specific rs2_option identifier given its name if found, or RS2_OPTION_COUNT if not.
+    * See rs2_option_to_string() for the reverse.
+    * \param[in] option_name    the case-sensitive option name
+    */
+    rs2_option rs2_option_from_string( const char * option_name );
 
     /** \brief For SR300 devices: provides optimized settings (presets) for specific types of usage. */
     typedef enum rs2_sr300_visual_preset
@@ -276,10 +287,10 @@ extern "C" {
     const char* rs2_get_option_name(const rs2_options* options, rs2_option option, rs2_error** error);
 
     /**
-   * get the specific option from options list
-   * \param[in] i    the index of the option
-   * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-   */
+    * get the specific option from options list
+    * \param[in] i    the index of the option
+    * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    */
     rs2_option rs2_get_option_from_list(const rs2_options_list* options, int i, rs2_error** error);
 
     /**

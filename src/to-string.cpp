@@ -2,7 +2,7 @@
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #include "types.h"
-#include "core/options.h"
+#include "core/options-registry.h"
 
 
 #define STRX( X ) make_less_screamy( #X )
@@ -703,7 +703,19 @@ const char * get_string( rs2_l500_visual_preset value )
 const char * rs2_stream_to_string( rs2_stream stream ) { return librealsense::get_string( stream ); }
 const char * rs2_format_to_string( rs2_format format ) { return librealsense::get_string( format ); }
 const char * rs2_distortion_to_string( rs2_distortion distortion ) { return librealsense::get_string( distortion ); }
-const char * rs2_option_to_string( rs2_option option ) { return librealsense::get_string( option ).c_str(); }
+
+const char * rs2_option_to_string( rs2_option option )
+{
+    return librealsense::get_string( option ).c_str();
+}
+
+rs2_option rs2_option_from_string( char const * option_name )
+{
+    return option_name
+        ? librealsense::options_registry::find_option_by_name( option_name )
+        : RS2_OPTION_COUNT;
+}
+
 const char * rs2_camera_info_to_string( rs2_camera_info info ) { return librealsense::get_string( info ); }
 const char * rs2_timestamp_domain_to_string( rs2_timestamp_domain info ) { return librealsense::get_string( info ); }
 const char * rs2_notification_category_to_string( rs2_notification_category category ) { return librealsense::get_string( category ); }
