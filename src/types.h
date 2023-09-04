@@ -247,18 +247,6 @@ namespace librealsense
 
     typedef float float_4[4];
 
-    /** \brief Metadata fields that are utilized internally by librealsense
-    Provides extention to the r2_frame_metadata list of attributes*/
-    enum frame_metadata_internal
-    {
-        RS2_FRAME_METADATA_HW_TYPE = RS2_FRAME_METADATA_COUNT + 1, /**< 8-bit Module type: RS4xx, IVCAM*/
-        RS2_FRAME_METADATA_SKU_ID, /**< 8-bit SKU Id*/
-        RS2_FRAME_METADATA_FORMAT, /**< 16-bit Frame format*/
-        RS2_FRAME_METADATA_WIDTH, /**< 16-bit Frame width. pixels*/
-        RS2_FRAME_METADATA_HEIGHT, /**< 16-bit Frame height. pixels*/
-        RS2_FRAME_METADATA_ACTUAL_COUNT
-    };
-
     /////////////////////////////
     // Enumerated type support //
     /////////////////////////////
@@ -889,57 +877,6 @@ namespace librealsense
             (a.mi == b.mi) &&
             (a.unique_id == b.unique_id);
     }
-
-    class frame_continuation
-    {
-        std::function<void()> continuation;
-        const void* protected_data = nullptr;
-
-        frame_continuation(const frame_continuation &) = delete;
-        frame_continuation & operator=(const frame_continuation &) = delete;
-    public:
-        frame_continuation() : continuation([]() {}) {}
-
-        explicit frame_continuation(std::function<void()> continuation, const void* protected_data) : continuation(continuation), protected_data(protected_data) {}
-
-
-        frame_continuation(frame_continuation && other) : continuation(std::move(other.continuation)), protected_data(other.protected_data)
-        {
-            other.continuation = []() {};
-            other.protected_data = nullptr;
-        }
-
-        void operator()()
-        {
-            continuation();
-            continuation = []() {};
-            protected_data = nullptr;
-        }
-
-        void reset()
-        {
-            protected_data = nullptr;
-            continuation = [](){};
-        }
-
-        const void* get_data() const { return protected_data; }
-
-        frame_continuation & operator=(frame_continuation && other)
-        {
-            continuation();
-            protected_data = other.protected_data;
-            continuation = other.continuation;
-            other.continuation = []() {};
-            other.protected_data = nullptr;
-            return *this;
-        }
-
-        ~frame_continuation()
-        {
-            continuation();
-        }
-
-    };
 
     // this class is a convinience wrapper for intrinsics / extrinsics validation methods
     class calibration_validator

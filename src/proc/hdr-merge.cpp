@@ -2,6 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "hdr-merge.h"
+#include <src/core/depth-frame.h>
 
 namespace librealsense
 {

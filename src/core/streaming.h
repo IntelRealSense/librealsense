@@ -97,14 +97,6 @@ namespace librealsense
     }
 
 
-    std::string frame_to_string(const frame_interface& f);
-    std::string frame_holder_to_string(const frame_holder& f);
-
-    inline std::ostream& operator<<(std::ostream& out, const frame_interface& f)
-    {
-        return out << frame_to_string(f);
-    }
-
     class recommended_proccesing_blocks_interface
     {
     public:

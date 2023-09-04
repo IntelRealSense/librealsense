@@ -10,6 +10,7 @@
 #include "proc/decimation-filter.h"
 #include "global_timestamp_reader.h"
 #include "device-calibration.h"
+#include "core/depth-frame.h"
 
 #include <rsutils/string/from.h>
 #include <rsutils/json.h>

@@ -10,6 +10,8 @@
 #include "proc/hdr-merge.h"
 #include "proc/sequence-id-filter.h"
 #include "ros_writer.h"
+#include "core/pose-frame.h"
+#include "core/motion-frame.h"
 
 #include <rsutils/string/from.h>
 

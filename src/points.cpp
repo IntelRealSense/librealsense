@@ -2,6 +2,8 @@
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 #include "points.h"
 #include "core/video.h"
+#include "core/video-frame.h"
+#include "core/frame-holder.h"
 #include <fstream>
 
 #define MIN_DISTANCE 1e-6

@@ -46,7 +46,6 @@ set(RAW_RS
     ../../src/frame.cpp
     ../../src/environment.cpp
     ../../src/to-string.cpp
-    ../../src/core/streaming.cpp
 )
 
 if(UNIX)

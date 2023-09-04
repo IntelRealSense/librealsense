@@ -3,6 +3,7 @@
 
 #include "algo.h"
 #include "option.h"
+#include "core/video-frame.h"
 
 using namespace librealsense;
 

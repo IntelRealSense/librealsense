@@ -16,6 +16,9 @@
 #include <media/ros/ros_writer.h>
 #include <media/ros/ros_reader.h>
 #include "core/advanced_mode.h"
+#include "core/pose-frame.h"
+#include "core/motion-frame.h"
+#include "core/disparity-frame.h"
 #include "source.h"
 #include "core/processing.h"
 #include "proc/synthetic-stream.h"
@@ -116,7 +119,7 @@ struct rs2_frame_queue
 {
     explicit rs2_frame_queue(int cap)
         : queue( cap, [cap]( librealsense::frame_holder const & fh ) {
-            LOG_DEBUG( "DROPPED queue (capacity= " << cap << ") frame " << frame_holder_to_string( fh ) );
+            LOG_DEBUG( "DROPPED queue (capacity= " << cap << ") frame " << fh );
         } )
     {
     }
