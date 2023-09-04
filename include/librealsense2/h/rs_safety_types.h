@@ -125,38 +125,48 @@ typedef struct rs2_safety_interface_config_header
     uint32_t crc32;         // crc of all the data in table excluding this header/CRC
 } rs2_safety_interface_config_header;
 
-typedef enum rs2_pin_functionality
+typedef enum rs2_safety_pin_direction
 {
-    pGND = 0,
-    p24VDC,
-    pOSSD1_A,
-    pOSSD1_B,
-    pOSSD2_A,
-    pOSSD2_B,
-    pOSSD2_A_feedback,
-    pOSSD2_B_feedback,
-    pPresetSelect1_A,
-    pPresetSelect1_B,
-    pPresetSelect2_A,
-    pPresetSelect2_B,
-    pPresetSelect3_A,
-    pPresetSelect3_B,
-    pPresetSelect4_A,
-    pPresetSelect4_B,
-    pPresetSelect5_A,
-    pPresetSelect5_B,
-    pPresetSelect6_A,
-    pPresetSelect6_B,
-    pDeviceReady,
-    pMaintenance,
-    pReset,
-    pRestartInterlock
-} rs2_pin_functionality;
+    RS2_SAFETY_PIN_DIRECTION_INPUT,
+    RS2_SAFETY_PIN_DIRECTION_OUTPUT,
+    RS2_SAFETY_PIN_DIRECTION_COUNT
+} rs2_safety_pin_direction;
+const char* rs2_safety_pin_direction_to_string(rs2_safety_pin_direction direction);
+
+typedef enum rs2_safety_pin_functionality
+{
+    RS2_SAFETY_PIN_FUNCTIONALITY_GND = 0,
+    RS2_SAFETY_PIN_FUNCTIONALITY_P24VDC,
+    RS2_SAFETY_PIN_FUNCTIONALITY_OSSD1_A,
+    RS2_SAFETY_PIN_FUNCTIONALITY_OSSD1_B,
+    RS2_SAFETY_PIN_FUNCTIONALITY_OSSD2_A,
+    RS2_SAFETY_PIN_FUNCTIONALITY_OSSD2_B,
+    RS2_SAFETY_PIN_FUNCTIONALITY_OSSD2_A_FEEDBACK,
+    RS2_SAFETY_PIN_FUNCTIONALITY_OSSD2_B_FEEDBACK,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT1_A,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT1_B,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT2_A,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT2_B,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT3_A,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT3_B,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT4_A,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT4_B,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT5_A,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT5_B,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT6_A,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT6_B,
+    RS2_SAFETY_PIN_FUNCTIONALITY_DEVICE_READY,
+    RS2_SAFETY_PIN_FUNCTIONALITY_MAINTENANCE,
+    RS2_SAFETY_PIN_FUNCTIONALITY_RESET,
+    RS2_SAFETY_PIN_FUNCTIONALITY_RESTART_INTERLOCK,
+    RS2_SAFETY_PIN_FUNCTIONALITY_COUNT
+} rs2_safety_pin_functionality;
+const char* rs2_safety_pin_functionality_to_string(rs2_safety_pin_functionality functionality);
 
 typedef struct rs2_safety_interface_config_pin
 {
-    uint8_t direction;
-    rs2_pin_functionality functionality;
+    rs2_safety_pin_direction direction;
+    rs2_safety_pin_functionality functionality;
 } rs2_safety_interface_config_pin;
 
 typedef struct rs2_safety_interface_config
