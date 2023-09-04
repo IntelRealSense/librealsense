@@ -310,33 +310,69 @@ namespace librealsense
 
     void d500_safety_sensor::set_safety_interface_config(const rs2_safety_interface_config& sic) const
     {
-        //calculate CRC
-        auto computed_crc32 = calc_crc32(reinterpret_cast<const uint8_t*>(&sic), sizeof(rs2_safety_interface_config));
+        // convert sic to cpp_struct
+        safety_interface_config sic_cpp(sic);
+
+        // calculate CRC
+        uint32_t computed_crc32 = calc_crc32(reinterpret_cast<const uint8_t*>(&sic_cpp), sizeof(safety_interface_config));
 
         // prepare vector of data to be sent (header + sp)
-        rs2_safety_interface_config_with_header data;
+        safety_interface_config_with_header sic_with_header(sic_cpp);
         uint16_t version = ((uint16_t)0x01 << 8) | 0x00;  // major=0x01, minor=0x00 --> ver = major.minor
         uint32_t calib_version = 0;  // ignoring this field, as requested by sw architect
-        data.header = { version, static_cast<uint16_t>(ds::d500_calibration_table_id::safety_interface_cfg_id), 
-            sizeof(rs2_safety_interface_config_with_header), calib_version, computed_crc32 };
-        data.payload = sic;
-        auto data_as_ptr = reinterpret_cast<const uint8_t*>(&data);
+        sic_with_header.header = { version, static_cast<uint16_t>(ds::d500_calibration_table_id::safety_interface_cfg_id),
+            sizeof(safety_interface_config_with_header), calib_version, computed_crc32 };
+        auto data_as_ptr = reinterpret_cast<const uint8_t*>(&sic_with_header);
 
         // prepare command
         command cmd(ds::SET_HKR_CONFIG_TABLE,
             static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
             static_cast<int>(ds::d500_calibration_table_id::safety_interface_cfg_id),
             static_cast<int>(ds::d500_calib_type::d500_calib_dynamic));
-        cmd.data.insert(cmd.data.end(), data_as_ptr, data_as_ptr + sizeof(data));
+        cmd.data.insert(cmd.data.end(), data_as_ptr, data_as_ptr + sizeof(safety_interface_config_with_header));
         cmd.require_response = false;
 
         // send command 
         _owner->_hw_monitor->send(cmd);
     }
+
+    rs2_safety_interface_config_pin d500_safety_sensor::generate_from_safety_interface_config_pin(const safety_interface_config_pin& pin) const
+    {
+        rs2_safety_interface_config_pin rs2_pin;
+        rs2_pin.direction = static_cast<rs2_safety_pin_direction>(pin._direction);
+        rs2_pin.functionality = static_cast<rs2_safety_pin_functionality>(pin._functionality);
+        return rs2_pin;
+    }
     
+    rs2_safety_interface_config d500_safety_sensor::generate_from_squeezed_structure(const safety_interface_config& cfg) const
+    {
+        rs2_safety_interface_config result;
+        result.power = generate_from_safety_interface_config_pin(cfg._power);
+        result.ossd1_b = generate_from_safety_interface_config_pin(cfg._ossd1_b);
+        result.ossd1_a = generate_from_safety_interface_config_pin(cfg._ossd1_a);
+        result.preset3_a = generate_from_safety_interface_config_pin(cfg._preset3_a);
+        result.preset3_b = generate_from_safety_interface_config_pin(cfg._preset3_b);
+        result.preset4_a = generate_from_safety_interface_config_pin(cfg._preset4_a);
+        result.preset1_b = generate_from_safety_interface_config_pin(cfg._preset1_b);
+        result.preset1_a = generate_from_safety_interface_config_pin(cfg._preset1_a);
+        result.gpio_0 = generate_from_safety_interface_config_pin(cfg._gpio_0);
+        result.gpio_1 = generate_from_safety_interface_config_pin(cfg._gpio_1);
+        result.gpio_3 = generate_from_safety_interface_config_pin(cfg._gpio_3);
+        result.gpio_2 = generate_from_safety_interface_config_pin(cfg._gpio_2);
+        result.preset2_b = generate_from_safety_interface_config_pin(cfg._preset2_b);
+        result.gpio_4 = generate_from_safety_interface_config_pin(cfg._gpio_4);
+        result.preset2_a = generate_from_safety_interface_config_pin(cfg._preset2_a);
+        result.preset4_b = generate_from_safety_interface_config_pin(cfg._preset4_b);
+        result.ground = generate_from_safety_interface_config_pin(cfg._ground);
+        result.gpio_stabilization_interval = cfg._gpio_stabilization_interval;
+        result.safety_zone_selection_overlap_time_period = cfg._safety_zone_selection_overlap_time_period;
+        
+        return result;
+    }
+
     rs2_safety_interface_config d500_safety_sensor::get_safety_interface_config() const
     {
-        rs2_safety_interface_config_with_header* result;
+        safety_interface_config_with_header* result;
 
         // prepare command
         command cmd(ds::GET_HKR_CONFIG_TABLE,
@@ -347,19 +383,19 @@ namespace librealsense
 
         // send command to device and get response (safety_interface_config entry + header)
         std::vector< uint8_t > response = _owner->_hw_monitor->send(cmd);
-        if (response.size() < sizeof(rs2_safety_interface_config_with_header))
+        if (response.size() < sizeof(safety_interface_config_with_header))
         {
             throw io_exception(rsutils::string::from() << "Safety Interface Config failed");
         }
         // check CRC before returning result       
-        auto computed_crc32 = calc_crc32(response.data() + sizeof(rs2_safety_interface_config_header), 
-            sizeof(rs2_safety_interface_config));
-        result = reinterpret_cast<rs2_safety_interface_config_with_header*>(response.data());
+        auto computed_crc32 = calc_crc32(response.data() + sizeof(safety_interface_config_header), 
+            sizeof(safety_interface_config));
+        result = reinterpret_cast<safety_interface_config_with_header*>(response.data());
         if (computed_crc32 != result->header.crc32)
         {
             throw invalid_value_exception(rsutils::string::from() << "Safety Interface Config invalid CRC value");
         }
-
-        return result->payload;
+        
+        return generate_from_squeezed_structure(result->config);
     }
 }
