@@ -48,7 +48,7 @@ public:
         return first()->supports_frame_metadata( frame_metadata );
     }
     int get_frame_data_size() const override { return first()->get_frame_data_size(); }
-    const byte * get_frame_data() const override { return first()->get_frame_data(); }
+    const uint8_t * get_frame_data() const override { return first()->get_frame_data(); }
     rs2_time_t get_frame_timestamp() const override { return first()->get_frame_timestamp(); }
     rs2_timestamp_domain get_frame_timestamp_domain() const override
     {
