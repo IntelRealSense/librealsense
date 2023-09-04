@@ -5,6 +5,7 @@
 #include "frame-holder.h"
 #include "options.h"
 #include "info.h"
+#include <src/types.h>
 #include <vector>
 #include <memory>
 
