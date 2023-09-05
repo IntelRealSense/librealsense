@@ -48,7 +48,7 @@ namespace librealsense
         template<class T>
         void add_extension(rs2_extension ex)
         {
-            _archive[ex] = std::make_shared<frame_archive<T>>(&_max_publish_list_size, _ts, _metadata_parsers);
+            _archive[ex] = std::make_shared<frame_archive<T>>(&_max_publish_list_size, _metadata_parsers);
         }
 
         void set_max_publish_list_size(int qsize) {_max_publish_list_size = qsize; }

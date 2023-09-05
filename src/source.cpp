@@ -66,7 +66,7 @@ namespace librealsense
 
         for (auto type : supported)
         {
-            _archive[type] = make_archive(type, &_max_publish_list_size, _ts, metadata_parsers);
+            _archive[type] = make_archive(type, &_max_publish_list_size, metadata_parsers);
         }
 
         _metadata_parsers = metadata_parsers;

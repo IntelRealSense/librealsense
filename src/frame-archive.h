@@ -20,7 +20,6 @@ namespace librealsense
         std::atomic<bool> recycle_frames;
         int pending_frames = 0;
         std::recursive_mutex mutex;
-        std::shared_ptr<platform::time_service> _time_service;
 
         std::weak_ptr<sensor_interface> _sensor;
         std::shared_ptr<sensor_interface> get_sensor() const override { return _sensor.lock(); }
@@ -140,12 +139,11 @@ namespace librealsense
         friend class frame;
 
     public:
-        explicit frame_archive(std::atomic<uint32_t>* in_max_frame_queue_size,
-            std::shared_ptr<platform::time_service> ts,
-            std::shared_ptr<metadata_parser_map> parsers)
-            : max_frame_queue_size(in_max_frame_queue_size),
-            recycle_frames(true), mutex(), _time_service(ts),
-            _metadata_parsers(parsers)
+        explicit frame_archive( std::atomic< uint32_t > * in_max_frame_queue_size,
+                                std::shared_ptr< metadata_parser_map > const & parsers )
+            : max_frame_queue_size( in_max_frame_queue_size )
+            , recycle_frames( true )
+            , _metadata_parsers( parsers )
         {
             published_frames_count = 0;
         }
