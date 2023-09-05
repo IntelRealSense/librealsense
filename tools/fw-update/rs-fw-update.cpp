@@ -32,6 +32,19 @@ using namespace TCLAP;
 #define FILENO fileno
 #endif
 
+bool is_d500(rs2::device& dev)
+{
+    if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
+    {
+        std::string product_line = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
+        if (product_line == "D500")
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 std::vector<uint8_t> read_fw_file(std::string file_path, bool smcu_dfu = false)
 {
     std::vector<uint8_t> rv;
@@ -111,12 +124,14 @@ void update(rs2::update_device fwu_dev, std::vector<uint8_t> fw_image, bool is_d
     {
         if(is_d500_device)
         {
-            // for d500 devices, HKR DFU takes around 100 seconds,
-            // so we call update (which return quickly),
-            // then sleep for 100 seconds while updating a progress bar
+            // TODO: HKR DFU issue
+            // For D500 devices, HKR DFU takes around 90 seconds,
+            // SMCU update takes around 25 seconds,
+            // so we call update (which return quickly after sending image to fw)
+            // then sleep for pre-defined time (seconds) while updating the progress bar
             fwu_dev.update(fw_image, [&](const float progress){});
             int runtime = is_smcu_dfu ? SMCU_DFU_RUN_TIME : HKR_DFU_RUN_TIME;
-            float iteration_sleep_time_ms = (runtime / 100.0) * 1000.0;
+            float iteration_sleep_time_ms = (static_cast<float>(runtime) / 100.0f) * 1000.0f;
             for(int i=1; i <= 100; i++)
             {
                std::cout << "\rFirmware update progress: " << i << "[%]" << std::flush; 
@@ -209,39 +224,6 @@ int write_fw_to_mipi_device(const std::vector< uint8_t >& fw_image)
     return EXIT_SUCCESS;
 }
 
-// This function returns true if D500 device was discovered during a period of time (timeout)
-bool query_d500_and_wait(rs2::context& ctx)
-{
-    using namespace std::chrono;
-    auto start = system_clock::now();
-    auto timeout = std::chrono::seconds(10);
-    auto now = system_clock::now();
-    do
-    {
-        std::cout << "Looking for updated device..." << std::endl;
-        try {
-            auto devs = ctx.query_devices(RS2_PRODUCT_LINE_D500);
-            for (uint32_t j = 0; j < devs.size(); j++)
-            {
-                auto d = devs[j];
-                if (d.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
-                {
-                    std::string product_line = d.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-                    if (product_line == "D500")
-                    {
-                        return true;
-                    }
-                }
-            }
-            now = system_clock::now();
-            std::this_thread::sleep_for(std::chrono::seconds(2));
-        }
-        catch (...) {}
-    } while ((now - start) < timeout);
-
-    std::cout << std::endl << "Timeout reached... Device not found!" << std::endl;
-    return false;
-}
 
 bool is_mipi_device(const rs2::device & dev)
 {
@@ -307,8 +289,6 @@ int main( int argc, char ** argv ) try
         return EXIT_SUCCESS;
     }
 
-    bool recovery_request = recover_arg.getValue();
-
     if (list_devices_arg.isSet())
     {
         list_devices(ctx);
@@ -368,6 +348,7 @@ int main( int argc, char ** argv ) try
         {
             update_serial_number = recovery_device.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
             ctx.set_devices_changed_callback( [&]( rs2::event_information & info ) {
+                std::lock_guard< std::mutex > lk( mutex );
                 for( auto && d : info.get_new_devices() )
                 {
                     if( d.is< rs2::update_device >() )
@@ -375,8 +356,6 @@ int main( int argc, char ** argv ) try
                     auto recovery_sn = d.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
                     if( recovery_sn == update_serial_number )
                     {
-                        std::cout << "... found it" << std::endl;
-                        std::lock_guard< std::mutex > lk( mutex );
                         cv.notify_one();
                         break;
                     }
@@ -385,7 +364,7 @@ int main( int argc, char ** argv ) try
             std::cout << std::endl << "Recovering device: " << std::endl;
             print_device_info( recovery_device );
             update( recovery_device, fw_image );
-            std::cout << "Waiting for new device..." << std::endl;
+            std::cout << std::endl << "Waiting for device to reconnect..." << std::endl;
             {
                 std::unique_lock< std::mutex > lk( mutex );
                 if( cv.wait_for( lk, std::chrono::seconds( 5 ) ) == std::cv_status::timeout )
@@ -407,22 +386,20 @@ int main( int argc, char ** argv ) try
     // Update device
     ctx.set_devices_changed_callback([&](rs2::event_information& info)
     {
-        if (info.get_new_devices().size() == 0)
+        std::lock_guard<std::mutex> lk(mutex);
+        for (auto && d : info.get_new_devices())
         {
-            return;
-        }
-
-        for (auto&& d : info.get_new_devices())
-        {
-            std::lock_guard<std::mutex> lk(mutex);
             // TODO: HKR DFU issue - remove is_d500_device usage when HKR supports FIRMWARE_UPDATE_ID
-            if (is_d500_device || d.is<rs2::update_device>() && (d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID) == update_serial_number))
+            if (is_d500_device || (d.is<rs2::update_device>() && (d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID) == update_serial_number)))
                 new_fw_update_device = d;
             else
                 new_device = d;
         }
+
         if(new_fw_update_device || new_device)
+        {
             cv.notify_one();
+        }
     });
 
     auto devs = ctx.query_devices(RS2_PRODUCT_LINE_DEPTH);
@@ -466,10 +443,19 @@ int main( int argc, char ** argv ) try
         if (sn != selected_serial_number && devs.size() != 1)
             continue;
         device_found = true;
-        auto fw = d.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
 
+        is_d500_device = is_d500(d);
+        ignore_unsigned_request = is_d500_device;
+
+        // Backup
         if (backup_arg.isSet())
         {
+            if(is_d500_device)
+            {
+                std::cout << std::endl << "Backup is not supported for D500 devices" << std::endl;
+                return EXIT_FAILURE;
+            }
+
             std::cout << std::endl << "Backing-up device flash: " << std::endl;
 
             std::vector< uint8_t > flash;
@@ -501,16 +487,6 @@ int main( int argc, char ** argv ) try
             if( ! file.good() )
             {
                 std::cout << std::endl << "Creating backup file failed";
-            }
-        }
-
-        if (d.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
-        {
-            std::string product_line = d.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-            if (product_line == "D500")
-            {
-                is_d500_device = true;
-                ignore_unsigned_request = true;
             }
         }
 
@@ -570,12 +546,12 @@ int main( int argc, char ** argv ) try
                 std::unique_lock<std::mutex> lk(mutex);
                 if (!cv.wait_for(lk, std::chrono::seconds(WAIT_FOR_DEVICE_TIMEOUT), [&] { return new_fw_update_device; }))
                 {
-                    std::cout << std::endl << "Failed to locate a device in DFU mode" << std::endl;
+                    std::cout << std::endl << "Failed to locate a device in FW update mode" << std::endl;
                     return EXIT_FAILURE;
                 }
 
                 update(new_fw_update_device, fw_image, is_d500_device);
-                done = is_d500_device ? query_d500_and_wait(ctx) : true;
+                done = true;
                 break;
             }
         }
@@ -588,15 +564,16 @@ int main( int argc, char ** argv ) try
 
             auto upd = d.as<rs2::updatable>();
             upd.enter_update_safety_mcu_state();
+
             std::unique_lock<std::mutex> lk(mutex);
             if (!cv.wait_for(lk, std::chrono::seconds(WAIT_FOR_DEVICE_TIMEOUT), [&] { return new_fw_update_device; }))
             {
-                std::cout << std::endl << "Failed to locate a device in DFU mode" << std::endl;
+                std::cout << std::endl << "Failed to locate a device in FW update mode" << std::endl;
                 return EXIT_FAILURE;
             }
 
             update(new_fw_update_device, smcu_image, is_d500_device, true);
-            done = query_d500_and_wait(ctx);
+            done = true;
             break;    
         }
     }
@@ -612,6 +589,7 @@ int main( int argc, char ** argv ) try
         return EXIT_FAILURE;
     }
 
+    std::cout << std::endl << "Waiting for device to reconnect..." << std::endl;
     std::unique_lock<std::mutex> lk(mutex);
     cv.wait_for(lk, std::chrono::seconds(WAIT_FOR_DEVICE_TIMEOUT), [&] { return !done || new_device; });
 
@@ -625,7 +603,20 @@ int main( int argc, char ** argv ) try
                 continue;
 
             auto fw = d.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ? d.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) : "unknown";
-            std::cout << std::endl << "Device " << sn << " successfully updated to FW: " << fw << std::endl;
+            if(smcu_arg.isSet())
+            {
+                std::cout << std::endl << "Device " << sn << " Safety MCU successfully updated" << std::endl;
+            }
+            else
+            {
+                std::cout << std::endl << "Device " << sn << " successfully updated to FW: " << fw << std::endl;
+                if(is_d500_device)
+                {
+                    std::cout << std::endl << "Please disconnect and reconnect safety camera manually." << std::endl;
+                }
+            }
+
+           
         }
     }
 
