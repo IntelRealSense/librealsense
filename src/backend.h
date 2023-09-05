@@ -22,11 +22,12 @@ const uint8_t MAX_META_DATA_SIZE          = 0xff; // UVC Metadata total length
 
 namespace librealsense
 {
+    class time_service;
+
     namespace platform
     {
         class device_watcher;
         class hid_device;
-        class time_service;
         class uvc_device;
         class command_transfer;
 

@@ -9,7 +9,6 @@
 
 
 namespace librealsense {
-namespace platform {
 
 
 class time_service
@@ -31,5 +30,4 @@ public:
 };
 
 
-}  // namespace platform
 }  // namespace librealsense

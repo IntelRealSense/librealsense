@@ -288,7 +288,7 @@ namespace librealsense
         _backup_timestamp_reader->reset();
     }
 
-    ds_timestamp_reader::ds_timestamp_reader(std::shared_ptr<platform::time_service> ts)
+    ds_timestamp_reader::ds_timestamp_reader(std::shared_ptr<time_service> ts)
         : counter(pins), _ts(ts)
     {
         reset();

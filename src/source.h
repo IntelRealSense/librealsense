@@ -7,7 +7,7 @@
 #include "archive.h"
 #include "metadata-parser.h"
 #include "frame-archive.h"
-#include "platform/time-service.h"
+#include "core/time-service.h"
 
 
 namespace librealsense
@@ -64,7 +64,7 @@ namespace librealsense
 
         std::atomic<uint32_t> _max_publish_list_size;
         frame_callback_ptr _callback;
-        std::shared_ptr<platform::time_service> _ts;
+        std::shared_ptr<time_service> _ts;
         std::shared_ptr<metadata_parser_map> _metadata_parsers;
     };
 }

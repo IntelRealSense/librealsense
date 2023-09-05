@@ -93,9 +93,7 @@ namespace librealsense
     };
 
 
-    namespace platform {
-        class time_service;
-    }
+    class time_service;
 
 
     class environment
@@ -107,8 +105,8 @@ namespace librealsense
 
         int generate_stream_id() { return _stream_id.fetch_add(1); }
 
-        void set_time_service(std::shared_ptr<platform::time_service> ts);
-        std::shared_ptr<platform::time_service> get_time_service();
+        void set_time_service(std::shared_ptr<time_service> ts);
+        std::shared_ptr<time_service> get_time_service();
 
         environment(const environment&) = delete;
         environment(const environment&&) = delete;
@@ -118,7 +116,7 @@ namespace librealsense
 
         extrinsics_graph _extrinsics;
         std::atomic<int> _stream_id;
-        std::shared_ptr<platform::time_service> _ts;
+        std::shared_ptr<time_service> _ts;
 
         environment(){_stream_id = 0;}
 
