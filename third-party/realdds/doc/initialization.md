@@ -43,11 +43,16 @@ This is the very first message, for example:
     "extrinsics": [
         ["Depth","Gyro",[1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0,-0.005520000122487545,0.005100000184029341,0.011739999987185001]]
         ["Depth","Infrared 2",[1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0,-0.04986396059393883,0.0,0.0]]
-    ]
+    ],
+    "presets": ["Default", "Max Range", "Max Quality"]
 }
 ```
 
 Mainly the number of streams to expect. The device will wait for this many stream headers to arrive to finish initialization.
+
+The `extrinsics` describe world coordinate transformations between any two streams in the device. This is required for proper alignment on the client.
+
+Optionally, the device may supply a `presets` array of preset names. The presets may then be applied (currently not implemented).
 
 
 #### `device-options`
