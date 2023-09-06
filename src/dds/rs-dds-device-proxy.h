@@ -58,6 +58,8 @@ public:
     std::shared_ptr< dds_sensor_proxy > create_sensor( std::string const & sensor_name, rs2_stream sensor_type );
 
     void tag_profiles( stream_profiles profiles ) const override;
+
+    void hardware_reset() override;
 };
 
 
