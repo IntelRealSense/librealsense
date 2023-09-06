@@ -2,6 +2,8 @@
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #include "types.h"
+#include "core/options-registry.h"
+
 
 #define STRX( X ) make_less_screamy( #X )
 #define STRCASE( T, X )                                                                                                \
@@ -310,114 +312,151 @@ const char * get_string( rs2_log_severity value )
 #undef CASE
 }
 
-const char * get_string( rs2_option value )
+std::string const & get_string_( rs2_option value )
 {
-#define CASE( X ) STRCASE( OPTION, X )
-    switch( value )
+    static auto str_array = []()
     {
-    CASE( BACKLIGHT_COMPENSATION )
-    CASE( BRIGHTNESS )
-    CASE( CONTRAST )
-    CASE( EXPOSURE )
-    CASE( GAIN )
-    CASE( GAMMA )
-    CASE( HUE )
-    CASE( SATURATION )
-    CASE( SHARPNESS )
-    CASE( WHITE_BALANCE )
-    CASE( ENABLE_AUTO_EXPOSURE )
-    CASE( ENABLE_AUTO_WHITE_BALANCE )
-    CASE( LASER_POWER )
-    CASE( ACCURACY )
-    CASE( MOTION_RANGE )
-    CASE( FILTER_OPTION )
-    CASE( CONFIDENCE_THRESHOLD )
-    CASE( FRAMES_QUEUE_SIZE )
-    CASE( VISUAL_PRESET )
-    CASE( TOTAL_FRAME_DROPS )
-    CASE( EMITTER_ENABLED )
-    case RS2_OPTION_AUTO_EXPOSURE_MODE:  return "Fisheye Auto Exposure Mode";
-    CASE( POWER_LINE_FREQUENCY )
-    CASE( ASIC_TEMPERATURE )
-    CASE( ERROR_POLLING_ENABLED )
-    CASE( PROJECTOR_TEMPERATURE )
-    CASE( OUTPUT_TRIGGER_ENABLED )
-    CASE( MOTION_MODULE_TEMPERATURE )
-    CASE( DEPTH_UNITS )
-    CASE( ENABLE_MOTION_CORRECTION )
-    CASE( AUTO_EXPOSURE_PRIORITY )
-    CASE( HISTOGRAM_EQUALIZATION_ENABLED )
-    CASE( MIN_DISTANCE )
-    CASE( MAX_DISTANCE )
-    CASE( COLOR_SCHEME )
-    CASE( TEXTURE_SOURCE )
-    CASE( FILTER_MAGNITUDE )
-    CASE( FILTER_SMOOTH_ALPHA )
-    CASE( FILTER_SMOOTH_DELTA )
-    CASE( STEREO_BASELINE )
-    CASE( HOLES_FILL )
-    CASE( AUTO_EXPOSURE_CONVERGE_STEP )
-    CASE( INTER_CAM_SYNC_MODE )
-    CASE( STREAM_FILTER )
-    CASE( STREAM_FORMAT_FILTER )
-    CASE( STREAM_INDEX_FILTER )
-    CASE( EMITTER_ON_OFF )
-    CASE( ZERO_ORDER_POINT_X )
-    CASE( ZERO_ORDER_POINT_Y )
-    case RS2_OPTION_LLD_TEMPERATURE:        return "LDD temperature";
-    CASE( MC_TEMPERATURE )
-    CASE( MA_TEMPERATURE )
-    CASE( APD_TEMPERATURE )
-    CASE( HARDWARE_PRESET )
-    CASE( GLOBAL_TIME_ENABLED )
-    CASE( ENABLE_MAPPING )
-    CASE( ENABLE_RELOCALIZATION )
-    CASE( ENABLE_POSE_JUMPING )
-    CASE( ENABLE_DYNAMIC_CALIBRATION )
-    CASE( DEPTH_OFFSET )
-    CASE( LED_POWER )
-    CASE( ZERO_ORDER_ENABLED )
-    CASE( ENABLE_MAP_PRESERVATION )
-    CASE( FREEFALL_DETECTION_ENABLED )
-    case RS2_OPTION_AVALANCHE_PHOTO_DIODE:  return "Receiver Gain";
-    CASE( POST_PROCESSING_SHARPENING )
-    CASE( PRE_PROCESSING_SHARPENING )
-    CASE( NOISE_FILTERING )
-    CASE( INVALIDATION_BYPASS )
-    // CASE(AMBIENT_LIGHT) // Deprecated - replaced by "DIGITAL_GAIN" option
-    CASE( DIGITAL_GAIN )
-    CASE( SENSOR_MODE )
-    CASE( EMITTER_ALWAYS_ON )
-    CASE( THERMAL_COMPENSATION )
-    CASE( TRIGGER_CAMERA_ACCURACY_HEALTH )
-    CASE( RESET_CAMERA_ACCURACY_HEALTH )
-    CASE( HOST_PERFORMANCE )
-    CASE( HDR_ENABLED )
-    CASE( SEQUENCE_NAME )
-    CASE( SEQUENCE_SIZE )
-    CASE( SEQUENCE_ID )
-    CASE( HUMIDITY_TEMPERATURE )
-    CASE( ENABLE_MAX_USABLE_RANGE )
-    case RS2_OPTION_ALTERNATE_IR:           return "Alternate IR";
-    CASE( NOISE_ESTIMATION )
-    case RS2_OPTION_ENABLE_IR_REFLECTIVITY: return "Enable IR Reflectivity";
-    CASE( AUTO_EXPOSURE_LIMIT )
-    CASE( AUTO_GAIN_LIMIT )
-    CASE( AUTO_RX_SENSITIVITY )
-    CASE( TRANSMITTER_FREQUENCY )
-    CASE( VERTICAL_BINNING )
-    CASE( RECEIVER_SENSITIVITY )
-    CASE( AUTO_EXPOSURE_LIMIT_TOGGLE )
-    CASE( AUTO_GAIN_LIMIT_TOGGLE )
-    CASE( EMITTER_FREQUENCY )
-    case RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE:  return "Auto Exposure Mode";
-    CASE( LEFT_IR_TEMPERATURE )
-    default:
-        assert( ! is_valid( value ) );
-        return UNKNOWN_VALUE;
-    }
+        std::vector< std::string > arr( RS2_OPTION_COUNT );
+#define CASE( X ) STRARR( arr, OPTION, X );
+        CASE( BACKLIGHT_COMPENSATION )
+        CASE( BRIGHTNESS )
+        CASE( CONTRAST )
+        CASE( EXPOSURE )
+        CASE( GAIN )
+        CASE( GAMMA )
+        CASE( HUE )
+        CASE( SATURATION )
+        CASE( SHARPNESS )
+        CASE( WHITE_BALANCE )
+        CASE( ENABLE_AUTO_EXPOSURE )
+        CASE( ENABLE_AUTO_WHITE_BALANCE )
+        CASE( LASER_POWER )
+        CASE( ACCURACY )
+        CASE( MOTION_RANGE )
+        CASE( FILTER_OPTION )
+        CASE( CONFIDENCE_THRESHOLD )
+        CASE( FRAMES_QUEUE_SIZE )
+        CASE( VISUAL_PRESET )
+        CASE( TOTAL_FRAME_DROPS )
+        CASE( EMITTER_ENABLED )
+        arr[RS2_OPTION_AUTO_EXPOSURE_MODE] = "Fisheye Auto Exposure Mode";
+        CASE( POWER_LINE_FREQUENCY )
+        CASE( ASIC_TEMPERATURE )
+        CASE( ERROR_POLLING_ENABLED )
+        CASE( PROJECTOR_TEMPERATURE )
+        CASE( OUTPUT_TRIGGER_ENABLED )
+        CASE( MOTION_MODULE_TEMPERATURE )
+        CASE( DEPTH_UNITS )
+        CASE( ENABLE_MOTION_CORRECTION )
+        CASE( AUTO_EXPOSURE_PRIORITY )
+        CASE( HISTOGRAM_EQUALIZATION_ENABLED )
+        CASE( MIN_DISTANCE )
+        CASE( MAX_DISTANCE )
+        CASE( COLOR_SCHEME )
+        CASE( TEXTURE_SOURCE )
+        CASE( FILTER_MAGNITUDE )
+        CASE( FILTER_SMOOTH_ALPHA )
+        CASE( FILTER_SMOOTH_DELTA )
+        CASE( STEREO_BASELINE )
+        CASE( HOLES_FILL )
+        CASE( AUTO_EXPOSURE_CONVERGE_STEP )
+        CASE( INTER_CAM_SYNC_MODE )
+        CASE( STREAM_FILTER )
+        CASE( STREAM_FORMAT_FILTER )
+        CASE( STREAM_INDEX_FILTER )
+        CASE( EMITTER_ON_OFF )
+        CASE( ZERO_ORDER_POINT_X )
+        CASE( ZERO_ORDER_POINT_Y )
+        arr[RS2_OPTION_LLD_TEMPERATURE] = "LDD temperature";
+        CASE( MC_TEMPERATURE )
+        CASE( MA_TEMPERATURE )
+        CASE( APD_TEMPERATURE )
+        CASE( HARDWARE_PRESET )
+        CASE( GLOBAL_TIME_ENABLED )
+        CASE( ENABLE_MAPPING )
+        CASE( ENABLE_RELOCALIZATION )
+        CASE( ENABLE_POSE_JUMPING )
+        CASE( ENABLE_DYNAMIC_CALIBRATION )
+        CASE( DEPTH_OFFSET )
+        CASE( LED_POWER )
+        CASE( ZERO_ORDER_ENABLED )
+        CASE( ENABLE_MAP_PRESERVATION )
+        CASE( FREEFALL_DETECTION_ENABLED )
+        arr[RS2_OPTION_AVALANCHE_PHOTO_DIODE] = "Receiver Gain";
+        CASE( POST_PROCESSING_SHARPENING )
+        CASE( PRE_PROCESSING_SHARPENING )
+        CASE( NOISE_FILTERING )
+        CASE( INVALIDATION_BYPASS )
+        // CASE(AMBIENT_LIGHT) // Deprecated - replaced by "DIGITAL_GAIN" option
+        CASE( DIGITAL_GAIN )
+        CASE( SENSOR_MODE )
+        CASE( EMITTER_ALWAYS_ON )
+        CASE( THERMAL_COMPENSATION )
+        CASE( TRIGGER_CAMERA_ACCURACY_HEALTH )
+        CASE( RESET_CAMERA_ACCURACY_HEALTH )
+        CASE( HOST_PERFORMANCE )
+        CASE( HDR_ENABLED )
+        CASE( SEQUENCE_NAME )
+        CASE( SEQUENCE_SIZE )
+        CASE( SEQUENCE_ID )
+        CASE( HUMIDITY_TEMPERATURE )
+        CASE( ENABLE_MAX_USABLE_RANGE )
+        arr[RS2_OPTION_ALTERNATE_IR] = "Alternate IR";
+        CASE( NOISE_ESTIMATION )
+        arr[RS2_OPTION_ENABLE_IR_REFLECTIVITY] = "Enable IR Reflectivity";
+        CASE( AUTO_EXPOSURE_LIMIT )
+        CASE( AUTO_GAIN_LIMIT )
+        CASE( AUTO_RX_SENSITIVITY )
+        CASE( TRANSMITTER_FREQUENCY )
+        CASE( VERTICAL_BINNING )
+        CASE( RECEIVER_SENSITIVITY )
+        CASE( AUTO_EXPOSURE_LIMIT_TOGGLE )
+        CASE( AUTO_GAIN_LIMIT_TOGGLE )
+        CASE( EMITTER_FREQUENCY )
+        arr[RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE] = "Auto Exposure Mode";
+        CASE( LEFT_IR_TEMPERATURE )
 #undef CASE
+        return arr;
+    }();
+    if( value >= 0 && value < RS2_OPTION_COUNT )
+        return str_array[value];
+    return unknown_value_str;
 }
+
+std::string const & get_string( rs2_option const option )
+{
+    if( options_registry::is_option_registered( option ) )
+        return options_registry::get_registered_option_name( option );
+    return get_string_( option );
+}
+
+
+bool is_valid( rs2_option option )
+{
+    return options_registry::is_option_registered( option )
+        || option >= 0 && option < RS2_OPTION_COUNT;
+}
+
+
+std::ostream & operator<<( std::ostream & out, rs2_option option )
+{
+    if( options_registry::is_option_registered( option ) )
+        return out << options_registry::get_registered_option_name( option );
+    if( option >= 0 && option < RS2_OPTION_COUNT )
+        return out << get_string_( option );
+    return out << (int)option;
+}
+
+
+bool try_parse( std::string const & option_name, rs2_option & res )
+{
+    auto const option = options_registry::find_option_by_name( option_name );
+    if( RS2_OPTION_COUNT == option )
+        return false;
+    res = option;
+    return true;
+}
+
 
 const char * get_string( rs2_format value )
 {
@@ -664,7 +703,19 @@ const char * get_string( rs2_l500_visual_preset value )
 const char * rs2_stream_to_string( rs2_stream stream ) { return librealsense::get_string( stream ); }
 const char * rs2_format_to_string( rs2_format format ) { return librealsense::get_string( format ); }
 const char * rs2_distortion_to_string( rs2_distortion distortion ) { return librealsense::get_string( distortion ); }
-const char * rs2_option_to_string( rs2_option option ) { return librealsense::get_string( option ); }
+
+const char * rs2_option_to_string( rs2_option option )
+{
+    return librealsense::get_string( option ).c_str();
+}
+
+rs2_option rs2_option_from_string( char const * option_name )
+{
+    return option_name
+        ? librealsense::options_registry::find_option_by_name( option_name )
+        : RS2_OPTION_COUNT;
+}
+
 const char * rs2_camera_info_to_string( rs2_camera_info info ) { return librealsense::get_string( info ); }
 const char * rs2_timestamp_domain_to_string( rs2_timestamp_domain info ) { return librealsense::get_string( info ); }
 const char * rs2_notification_category_to_string( rs2_notification_category category ) { return librealsense::get_string( category ); }

@@ -374,17 +374,12 @@ int stream_name_to_index( std::string const & type_string )
     return index;
 }
 
-rs2_option option_name_to_type( const std::string & name, const rs2::sensor & sensor )
+rs2_option option_name_to_id( const std::string & name )
 {
-    for( size_t i = 0; i < static_cast< size_t >( RS2_OPTION_COUNT ); i++ )
-    {
-        if( name.compare( sensor.get_option_name( static_cast< rs2_option >( i ) ) ) == 0 )
-        {
-            return static_cast< rs2_option >( i );
-        }
-    }
-
-    throw std::runtime_error( "Option '" + name + "' type not found" );
+    auto option_id = rs2_option_from_string( name.c_str() );
+    if( RS2_OPTION_COUNT == option_id )
+        throw std::runtime_error( "Option '" + name + "' not found" );
+    return option_id;
 }
 
 
@@ -729,8 +724,7 @@ void lrs_device_controller::set_option( const std::shared_ptr< realdds::dds_opti
         throw std::runtime_error( "no stream '" + option->owner_name() + "' in device" );
     auto server = it->second;
     auto & sensor = _rs_sensors[server->sensor_name()];
-    rs2_option opt_type = option_name_to_type( option->get_name(), sensor );
-    sensor.set_option( opt_type, new_value );
+    sensor.set_option( option_name_to_id( option->get_name() ), new_value );
 }
 
 
@@ -741,8 +735,7 @@ float lrs_device_controller::query_option( const std::shared_ptr< realdds::dds_o
         throw std::runtime_error( "no stream '" + option->owner_name() + "' in device" );
     auto server = it->second;
     auto & sensor = _rs_sensors[server->sensor_name()];
-    rs2_option opt_type = option_name_to_type( option->get_name(), sensor );
-    return sensor.get_option( opt_type );
+    return sensor.get_option( option_name_to_id( option->get_name() ) );
 }
 
 

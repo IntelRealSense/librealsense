@@ -11,6 +11,7 @@
 #include <realdds/topics/image-msg.h>
 #include <realdds/topics/imu-msg.h>
 
+#include <src/core/options-registry.h>
 #include <src/stream.h>
 
 // Processing blocks for DDS SW sensors
@@ -533,19 +534,14 @@ void dds_sensor_proxy::stop()
 
 void dds_sensor_proxy::add_option( std::shared_ptr< realdds::dds_option > option )
 {
-    // Convert name to rs2_option type
-    rs2_option option_id = RS2_OPTION_COUNT;
-    for( size_t i = 0; i < static_cast< size_t >( RS2_OPTION_COUNT ); i++ )
-    {
-        if( option->get_name().compare( get_string( static_cast< rs2_option >( i ) ) ) == 0 )
-        {
-            option_id = static_cast< rs2_option >( i );
-            break;
-        }
-    }
+    bool const ok_if_there = true;
+    auto option_id = options_registry::register_option_by_name( option->get_name(), ok_if_there );
 
-    if( option_id == RS2_OPTION_COUNT )
-        throw librealsense::invalid_value_exception( "Option " + option->get_name() + " type not found" );
+    if( ! is_valid( option_id ) )
+    {
+        LOG_ERROR( "Option '" << option->get_name() << "' not found" );
+        throw librealsense::invalid_value_exception( "Option '" + option->get_name() + "' not found" );
+    }
 
     auto opt = std::make_shared< rs_dds_option >(
         option,

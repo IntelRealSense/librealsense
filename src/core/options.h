@@ -40,7 +40,7 @@ namespace librealsense
         virtual const option& get_option(rs2_option id) const = 0;
         virtual bool supports_option(rs2_option id) const = 0;
         virtual std::vector<rs2_option> get_supported_options() const = 0;
-        virtual const char* get_option_name(rs2_option) const = 0;
+        virtual std::string const & get_option_name(rs2_option) const = 0;
         virtual ~options_interface() = default;
     };
 
@@ -116,7 +116,7 @@ namespace librealsense
 
         std::vector<rs2_option> get_supported_options() const override;
 
-        virtual const char* get_option_name(rs2_option option) const override
+        virtual std::string const & get_option_name(rs2_option option) const override
         {
             return get_string(option);
         }
