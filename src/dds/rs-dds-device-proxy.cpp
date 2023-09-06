@@ -112,8 +112,9 @@ static rs2_extrinsics to_rs2_extrinsics( const std::shared_ptr< realdds::extrins
 }
 
 
-dds_device_proxy::dds_device_proxy( std::shared_ptr< context > ctx, std::shared_ptr< realdds::dds_device > const & dev )
-    : software_device( ctx )
+dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const & dev_info,
+                                    std::shared_ptr< realdds::dds_device > const & dev )
+    : software_device( dev_info )
     , _dds_dev( dev )
 {
     LOG_DEBUG( "=====> dds-device-proxy " << this << " created on top of dds-device " << _dds_dev.get() );

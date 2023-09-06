@@ -5,6 +5,7 @@
 #include <core/motion.h>
 #include <core/advanced_mode.h>
 #include "record_device.h"
+#include <src/platform/backend-device-group.h>
 
 using namespace librealsense;
 
@@ -444,9 +445,9 @@ const std::string& librealsense::record_device::get_filename() const
 {
     return m_ros_writer->get_file_name();
 }
-platform::backend_device_group record_device::get_device_data() const
+std::shared_ptr< const device_info > record_device::get_device_info() const
 {
-    return m_device->get_device_data();
+    return m_device->get_device_info();
 }
 std::shared_ptr<matcher> record_device::create_matcher(const frame_holder& frame) const
 {

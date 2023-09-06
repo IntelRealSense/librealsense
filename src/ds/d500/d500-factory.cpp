@@ -131,14 +131,16 @@ namespace librealsense
         }
     };
 
-    std::shared_ptr<device_interface> d500_info::create(std::shared_ptr<context> ctx,
-                                                       bool register_device_notifications) const
+    std::shared_ptr< device_interface > d500_info::create_device()
     {
         using namespace ds;
 
-        if (_depth.size() == 0) throw std::runtime_error("Depth Camera not found!");
-        auto pid = _depth.front().pid;
-        platform::backend_device_group group{_depth, _hwm, _hid};
+        if( _group.uvc_devices.empty() )
+            throw std::runtime_error("Depth Camera not found!");
+
+        auto dev_info = std::dynamic_pointer_cast< const d500_info >( shared_from_this() );
+
+        auto pid = _group.uvc_devices.front().pid;
 
         switch(pid)
         {
@@ -221,7 +223,10 @@ namespace librealsense
                     LOG_DEBUG("d500_try_fetch_usb_device(...) failed.");
                 }
 
-                auto info = std::make_shared<d500_info>(ctx, devices, hwm_devices, hids);
+                auto info = std::make_shared< d500_info >( ctx,
+                                                           std::move( devices ),
+                                                           std::move( hwm_devices ),
+                                                           std::move( hids ) );
                 chosen.insert(chosen.end(), devices.begin(), devices.end());
                 results.push_back(info);
 

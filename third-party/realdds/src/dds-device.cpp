@@ -144,6 +144,11 @@ float dds_device::query_option_value( const std::shared_ptr< dds_option > & opti
     return _impl->query_option_value( option );
 }
 
+void dds_device::send_control( topics::flexible_msg && msg, nlohmann::json * reply )
+{
+    _impl->write_control_message( std::move( msg ), reply );
+}
+
 bool dds_device::has_extrinsics() const
 {
     return ! _impl->_extrinsics_map.empty();

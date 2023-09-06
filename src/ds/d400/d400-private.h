@@ -4,9 +4,12 @@
 #pragma once
 
 #include "ds/ds-private.h"
+#include <src/platform/backend-device-group.h>
 
 namespace librealsense
 {
+    class d400_info;
+
     namespace ds
     {
         const uint16_t RS400_PID = 0x0ad1; // PSR

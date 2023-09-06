@@ -70,6 +70,8 @@ class Device:
         self._name = None
         if dev.supports( rs.camera_info.name ):
             self._name = dev.get_info( rs.camera_info.name )
+            if self._name.startswith( 'Intel RealSense ' ):
+                self._name = self._name[16:]
         self._product_line = None
         if dev.supports( rs.camera_info.product_line ):
             self._product_line = dev.get_info( rs.camera_info.product_line )

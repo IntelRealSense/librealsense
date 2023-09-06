@@ -11,7 +11,6 @@
 
 #include <librealsense2/hpp/rs_types.hpp>
 
-#include "backend.h"
 #include <rsutils/concurrency/concurrency.h>
 #include "librealsense-exception.h"
 #include <rsutils/easylogging/easyloggingpp.h>
@@ -233,96 +232,6 @@ namespace librealsense
     };
 #pragma pack(pop)
 
-    template <class T>
-    class lazy
-    {
-    public:
-        lazy() : _init([]() { T t{}; return t; }) {}
-        lazy(std::function<T()> initializer) : _init(std::move(initializer)) {}
-
-        T* operator->() const
-        {
-            return operate();
-        }
-
-        T& operator*()
-        {
-            return *operate();
-        }
-
-        const T& operator*() const
-        {
-            return *operate();
-        }
-
-        lazy(lazy&& other) noexcept
-        {
-            std::lock_guard<std::mutex> lock(other._mtx);
-            if (!other._was_init)
-            {
-                _init = std::move(other._init);
-                _was_init = false;
-            }
-            else
-            {
-                _init = std::move(other._init);
-                _was_init = true;
-                _ptr = std::move(other._ptr);
-            }
-        }
-
-        lazy& operator=(std::function<T()> func) noexcept
-        {
-            return *this = lazy<T>(std::move(func));
-        }
-
-        lazy& operator=(lazy&& other) noexcept
-        {
-            std::lock_guard<std::mutex> lock1(_mtx);
-            std::lock_guard<std::mutex> lock2(other._mtx);
-            if (!other._was_init)
-            {
-                _init = std::move(other._init);
-                _was_init = false;
-            }
-            else
-            {
-                _init = std::move(other._init);
-                _was_init = true;
-                _ptr = std::move(other._ptr);
-            }
-
-            return *this;
-        }
-
-        void reset() const
-        {
-            std::lock_guard<std::mutex> lock(_mtx);
-            if (_was_init)
-            {
-                _ptr.reset();
-                _was_init = false;
-            }
-        }
-
-    private:
-        T* operate() const
-        {
-            std::lock_guard<std::mutex> lock(_mtx);
-            if (!_was_init)
-            {
-                _ptr = std::unique_ptr<T>(new T(_init()));
-                _was_init = true;
-            }
-            return _ptr.get();
-        }
-
-        mutable std::mutex _mtx;
-        mutable bool _was_init = false;
-        std::function<T()> _init;
-        mutable std::unique_ptr<T> _ptr;
-    };
-
     class unique_id
     {
     public:
@@ -337,18 +246,6 @@ namespace librealsense
     };
 
     typedef float float_4[4];
-
-    /** \brief Metadata fields that are utilized internally by librealsense
-    Provides extention to the r2_frame_metadata list of attributes*/
-    enum frame_metadata_internal
-    {
-        RS2_FRAME_METADATA_HW_TYPE = RS2_FRAME_METADATA_COUNT + 1, /**< 8-bit Module type: RS4xx, IVCAM*/
-        RS2_FRAME_METADATA_SKU_ID, /**< 8-bit SKU Id*/
-        RS2_FRAME_METADATA_FORMAT, /**< 16-bit Frame format*/
-        RS2_FRAME_METADATA_WIDTH, /**< 16-bit Frame width. pixels*/
-        RS2_FRAME_METADATA_HEIGHT, /**< 16-bit Frame height. pixels*/
-        RS2_FRAME_METADATA_ACTUAL_COUNT
-    };
 
     /////////////////////////////
     // Enumerated type support //
@@ -960,7 +857,7 @@ namespace librealsense
         uint16_t mi;
         std::string unique_id;
 
-        operator std::string()
+        operator std::string() const
         {
             std::stringstream s;
 
@@ -982,140 +879,6 @@ namespace librealsense
             (a.mi == b.mi) &&
             (a.unique_id == b.unique_id);
     }
-
-    struct hid_device_info
-    {
-        std::string id;
-        std::string vid;
-        std::string pid;
-        std::string unique_id;
-        std::string device_path;
-
-        operator std::string()
-        {
-            std::stringstream s;
-            s << "id- " << id <<
-                "\nvid- " << std::hex << vid <<
-                "\npid- " << std::hex << pid <<
-                "\nunique_id- " << unique_id <<
-                "\npath- " << device_path;
-
-            return s.str();
-        }
-    };
-
-    inline bool operator==(const hid_device_info& a,
-        const hid_device_info& b)
-    {
-        return  (a.id == b.id) &&
-            (a.vid == b.vid) &&
-            (a.pid == b.pid) &&
-            (a.unique_id == b.unique_id) &&
-            (a.device_path == b.device_path);
-    }
-
-
-    struct devices_data
-    {
-        devices_data(std::vector<uvc_device_info>  uvc_devices, std::vector<usb_device_info> usb_devices, std::vector<hid_device_info> hid_devices)
-            :_uvc_devices(uvc_devices), _usb_devices(usb_devices), _hid_devices(hid_devices) {}
-
-        devices_data(std::vector<usb_device_info> usb_devices)
-            :_usb_devices(usb_devices) {}
-
-        devices_data(std::vector<uvc_device_info> uvc_devices, std::vector<usb_device_info> usb_devices)
-            :_uvc_devices(uvc_devices), _usb_devices(usb_devices) {}
-
-        std::vector<uvc_device_info> _uvc_devices;
-        std::vector<usb_device_info> _usb_devices;
-        std::vector<hid_device_info> _hid_devices;
-
-        bool operator == (const devices_data& other)
-        {
-            return !list_changed(_uvc_devices, other._uvc_devices) &&
-                !list_changed(_hid_devices, other._hid_devices);
-        }
-
-        operator std::string()
-        {
-            std::string s;
-            s = _uvc_devices.size()>0 ? "uvc devices:\n" : "";
-            for (auto uvc : _uvc_devices)
-            {
-                s += uvc;
-                s += "\n\n";
-            }
-
-            s += _usb_devices.size()>0 ? "usb devices:\n" : "";
-            for (auto usb : _usb_devices)
-            {
-                s += usb;
-                s += "\n\n";
-            }
-
-            s += _hid_devices.size()>0 ? "hid devices: \n" : "";
-            for (auto hid : _hid_devices)
-            {
-                s += hid;
-                s += "\n\n";
-            }
-            return s;
-        }
-    };
-
-
-    typedef std::function<void(devices_data old, devices_data curr)> device_changed_callback;
-
-    class frame_continuation
-    {
-        std::function<void()> continuation;
-        const void* protected_data = nullptr;
-
-        frame_continuation(const frame_continuation &) = delete;
-        frame_continuation & operator=(const frame_continuation &) = delete;
-    public:
-        frame_continuation() : continuation([]() {}) {}
-
-        explicit frame_continuation(std::function<void()> continuation, const void* protected_data) : continuation(continuation), protected_data(protected_data) {}
-
-
-        frame_continuation(frame_continuation && other) : continuation(std::move(other.continuation)), protected_data(other.protected_data)
-        {
-            other.continuation = []() {};
-            other.protected_data = nullptr;
-        }
-
-        void operator()()
-        {
-            continuation();
-            continuation = []() {};
-            protected_data = nullptr;
-        }
-
-        void reset()
-        {
-            protected_data = nullptr;
-            continuation = [](){};
-        }
-
-        const void* get_data() const { return protected_data; }
-
-        frame_continuation & operator=(frame_continuation && other)
-        {
-            continuation();
-            protected_data = other.protected_data;
-            continuation = other.continuation;
-            other.continuation = []() {};
-            other.protected_data = nullptr;
-            return *this;
-        }
-
-        ~frame_continuation()
-        {
-            continuation();
-        }
-
-    };
 
     // this class is a convinience wrapper for intrinsics / extrinsics validation methods
     class calibration_validator
@@ -1420,20 +1183,6 @@ namespace std {
                 ^ (hash<uint32_t>()(k.fps))
                 ^ (hash<uint32_t>()(k.format))
                 ^ (hash<uint32_t>()(k.stream));
-        }
-    };
-
-    template <>
-    struct hash<librealsense::platform::stream_profile>
-    {
-        size_t operator()(const librealsense::platform::stream_profile& k) const
-        {
-            using std::hash;
-
-            return (hash<uint32_t>()(k.height))
-                ^ (hash<uint32_t>()(k.width))
-                ^ (hash<uint32_t>()(k.fps))
-                ^ (hash<uint32_t>()(k.format));
         }
     };
 

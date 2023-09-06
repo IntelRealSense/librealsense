@@ -3,6 +3,8 @@
 
 
 #include "ds-options.h"
+#include <src/hid-sensor.h>
+
 
 namespace librealsense
 {

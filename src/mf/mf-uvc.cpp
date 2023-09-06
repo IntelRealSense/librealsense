@@ -27,6 +27,7 @@ The library will be compiled without the metadata support!\n")
 #include "mf-uvc.h"
 #include "../types.h"
 #include "uvc/uvc-types.h"
+#include <src/backend.h>  // monotonic_to_realtime
 
 #include <rsutils/string/from.h>
 

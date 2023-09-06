@@ -1,18 +1,20 @@
-apply plugin: 'com.android.library'
+plugins {
+    id 'com.android.library'
+}
 
 android {
-    compileSdkVersion 30
+    namespace 'com.intel.realsense.librealsense'
+    compileSdk defaultCompileSdkVersion
 
     defaultConfig {
-        minSdkVersion 19
-        targetSdkVersion 30
-        versionCode 1
-        versionName "1.0"
+        minSdk defaultMinSdkVersion
+        targetSdk defaultTargetSdkVersion
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
 
         externalNativeBuild {
             cmake {
+                abiFilters 'arm64-v8a', 'x86_64'
                 arguments "-DFORCE_RSUSB_BACKEND=TRUE"
             }
         }
@@ -22,9 +24,6 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-        debug {
-            debuggable true
         }
     }
     externalNativeBuild {
@@ -36,9 +35,8 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-
-    implementation 'androidx.appcompat:appcompat:1.2.0'
-    testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+    implementation "androidx.appcompat:appcompat:$appcompatVersion"
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidextjunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$espressoCoreVersion"
 }

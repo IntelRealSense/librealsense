@@ -15,13 +15,13 @@
 #include "d400-active.h"
 #include "d400-private.h"
 #include "d400-options.h"
+#include "d400-info.h"
 #include "ds/ds-timestamp.h"
 
 namespace librealsense
 {
-    d400_active::d400_active(std::shared_ptr<context> ctx,
-                           const platform::backend_device_group& group)
-        : device(ctx, group), d400_device(ctx, group)
+    d400_active::d400_active( std::shared_ptr< const d400_info > const & dev_info )
+        : device(dev_info), d400_device(dev_info)
     {
         using namespace ds;
 

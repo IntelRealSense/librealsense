@@ -97,7 +97,8 @@ namespace librealsense
     class update_device : public update_device_interface
     {
     public:
-        update_device(const std::shared_ptr<context>& ctx, bool register_device_notifications, std::shared_ptr<platform::usb_device> usb_device);
+        update_device( std::shared_ptr< const device_info > const &,
+                       std::shared_ptr< platform::usb_device > const & usb_device );
         virtual ~update_device();
 
         virtual void update(const void* fw_image, int fw_image_size, update_progress_callback_ptr = nullptr) const override;
@@ -114,7 +115,7 @@ namespace librealsense
 
         virtual std::shared_ptr<context> get_context() const override;
 
-        virtual platform::backend_device_group get_device_data() const override;
+        virtual std::shared_ptr< const device_info > get_device_info() const override;
 
         virtual std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const override;
 
@@ -145,7 +146,7 @@ namespace librealsense
         void read_device_info(std::shared_ptr<platform::usb_messenger> messenger);
 
 
-        const std::shared_ptr<context> _context;
+        const std::shared_ptr< const device_info > _dev_info;
         const platform::rs_usb_device _usb_device;
         std::vector<uint8_t> _serial_number_buffer;
         std::string _highest_fw_version;

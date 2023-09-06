@@ -145,10 +145,8 @@ void dds_device::impl::handle_notification( nlohmann::json const & j )
     {
         auto id = rsutils::json::get< std::string >( j, id_key );
         auto it = _notification_handlers.find( id );
-        if( it == _notification_handlers.end() )
-            throw std::runtime_error( "unknown id" );
-
-        ( this->*( it->second ) )( j );
+        if( it != _notification_handlers.end() )
+            ( this->*( it->second ) )( j );
 
         // Check if this is a reply - maybe someone's waiting on it...
         auto sampleit = j.find( sample_key );
@@ -173,6 +171,9 @@ void dds_device::impl::handle_notification( nlohmann::json const & j )
                 }
             }
         }
+
+        if( it == _notification_handlers.end() )
+            throw std::runtime_error( "unknown id" );
     }
     catch( std::exception const & e )
     {
@@ -391,6 +392,7 @@ void dds_device::impl::write_control_message( topics::flexible_msg && msg, nlohm
         {
             throw std::runtime_error( "timeout waiting for reply #" + std::to_string( this_sequence_number ) );
         }
+        LOG_DEBUG( "got reply: " << actual_reply );
         *reply = std::move( actual_reply );
         _replies.erase( this_sequence_number );
     }

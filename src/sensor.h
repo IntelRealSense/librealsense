@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include "backend.h"
-
 #include <chrono>
 #include <memory>
 #include <vector>
@@ -22,11 +20,17 @@
 #include "source.h"
 #include "core/extension.h"
 #include "proc/formats-converter.h"
+#include "platform/stream-profile.h"
+#include "platform/frame-object.h"
+
+#include <rsutils/lazy.h>
+
 
 namespace librealsense
 {
     class device;
     class option;
+
 
     typedef std::function<void(std::vector<platform::stream_profile>)> on_open;
     typedef std::function<void(frame_additional_data &data)> on_frame_md;
@@ -125,7 +129,7 @@ namespace librealsense
         device* _owner;
 
     private:
-        lazy<stream_profiles> _profiles;
+        rsutils::lazy< stream_profiles > _profiles;
         stream_profiles _active_profiles;
         mutable std::mutex _active_profile_mutex;
         signal<sensor_base, bool> on_before_streaming_changes;
@@ -282,150 +286,6 @@ namespace librealsense
         std::vector<rs2_option> _cached_processing_blocks_options;
     };
 
-    class iio_hid_timestamp_reader : public frame_timestamp_reader
-    {
-        static const int sensors = 2;
-        bool started;
-        mutable std::vector<int64_t> counter;
-        mutable std::recursive_mutex _mtx;
-    public:
-        iio_hid_timestamp_reader();
-
-        void reset() override;
-
-        rs2_time_t get_frame_timestamp(const std::shared_ptr<frame_interface>& frame) override;
-
-        bool has_metadata(const std::shared_ptr<frame_interface>& frame) const;
-
-        unsigned long long get_frame_counter(const std::shared_ptr<frame_interface>& frame) const override;
-
-        rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const override;
-    };
-
-    class hid_sensor : public raw_sensor_base
-    {
-        typedef raw_sensor_base super;
-
-    public:
-        explicit hid_sensor(std::shared_ptr<platform::hid_device> hid_device,
-                            std::unique_ptr<frame_timestamp_reader> hid_iio_timestamp_reader,
-                            std::unique_ptr<frame_timestamp_reader> custom_hid_timestamp_reader,
-                            const std::map<rs2_stream, std::map<unsigned, unsigned>>& fps_and_sampling_frequency_per_rs2_stream,
-                            const std::vector<std::pair<std::string, stream_profile>>& sensor_name_and_hid_profiles,
-                            device* dev);
-
-        ~hid_sensor() override;
-
-        void open(const stream_profiles& requests) override;
-        void close() override;
-        void start(frame_callback_ptr callback) override;
-        void stop() override;
-
-        std::vector<uint8_t> get_custom_report_data(const std::string& custom_sensor_name,
-                                                    const std::string& report_name,
-                                                    platform::custom_sensor_report_field report_field) const;
-
-    protected:
-        stream_profiles init_stream_profiles() override;
-
-    private:
-        const std::map<rs2_stream, uint32_t> stream_and_fourcc = {{RS2_STREAM_GYRO,  rs_fourcc('G','Y','R','O')},
-                                                                  {RS2_STREAM_ACCEL, rs_fourcc('A','C','C','L')},
-                                                                  {RS2_STREAM_GPIO,  rs_fourcc('G','P','I','O')}};
-
-        const std::vector<std::pair<std::string, stream_profile>> _sensor_name_and_hid_profiles;
-        std::map<rs2_stream, std::map<uint32_t, uint32_t>> _fps_and_sampling_frequency_per_rs2_stream;
-        std::shared_ptr<platform::hid_device> _hid_device;
-        std::mutex _configure_lock;
-        std::map<std::string, std::shared_ptr<stream_profile_interface>> _configured_profiles;
-        std::vector<bool> _is_configured_stream;
-        std::vector<platform::hid_sensor> _hid_sensors;
-        std::unique_ptr<frame_timestamp_reader> _hid_iio_timestamp_reader;
-        std::unique_ptr<frame_timestamp_reader> _custom_hid_timestamp_reader;
-
-        stream_profiles get_sensor_profiles(std::string sensor_name) const;
-
-        const std::string& rs2_stream_to_sensor_name(rs2_stream stream) const;
-
-        uint32_t stream_to_fourcc(rs2_stream stream) const;
-
-        uint32_t fps_to_sampling_frequency(rs2_stream stream, uint32_t fps) const;
-    };
-
-    class uvc_sensor : public raw_sensor_base
-    {
-        typedef raw_sensor_base super;
-
-    public:
-        explicit uvc_sensor(std::string const & name, std::shared_ptr<platform::uvc_device> uvc_device,
-                            std::unique_ptr<frame_timestamp_reader> timestamp_reader, device* dev);
-        virtual ~uvc_sensor() override;
-
-        void open(const stream_profiles& requests) override;
-        void close() override;
-        void start(frame_callback_ptr callback) override;
-        void stop() override;
-        void register_xu(platform::extension_unit xu);
-        void register_pu(rs2_option id);
-
-        std::vector<platform::stream_profile> get_configuration() const { return _internal_config; }
-        std::shared_ptr<platform::uvc_device> get_uvc_device() { return _device; }
-        platform::usb_spec get_usb_specification() const { return _device->get_usb_specification(); }
-        std::string get_device_path() const { return _device->get_device_location(); }
-
-        template<class T>
-        auto invoke_powered(T action)
-            -> decltype(action(*static_cast<platform::uvc_device*>(nullptr)))
-        {
-            power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
-            return action(*_device);
-        }
-
-    protected:
-        stream_profiles init_stream_profiles() override;
-        void verify_supported_requests(const stream_profiles& requests) const;
-
-    private:
-        void acquire_power();
-        void release_power();
-        void reset_streaming();
-
-        struct power
-        {
-            explicit power(std::weak_ptr<uvc_sensor> owner)
-                : _owner(owner)
-            {
-                auto strong = _owner.lock();
-                if (strong)
-                {
-                    strong->acquire_power();
-                }
-            }
-
-            ~power()
-            {
-                if (auto strong = _owner.lock())
-                {
-                    try
-                    {
-                        strong->release_power();
-                    }
-                    catch (...) {}
-                }
-            }
-        private:
-            std::weak_ptr<uvc_sensor> _owner;
-        };
-
-        std::shared_ptr<platform::uvc_device> _device;
-        std::vector< platform::stream_profile > _internal_config;
-        std::atomic<int> _user_count;
-        std::mutex _power_lock;
-        std::mutex _configure_lock;
-        std::vector<platform::extension_unit> _xus;
-        std::unique_ptr<power> _power;
-        std::unique_ptr<frame_timestamp_reader> _timestamp_reader;
-    };
 
     processing_blocks get_color_recommended_proccesing_blocks();
     processing_blocks get_depth_recommended_proccesing_blocks();

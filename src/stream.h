@@ -8,6 +8,7 @@
 #include "context.h"
 #include "image.h"
 #include "environment.h"
+#include "platform/stream-profile.h"
 
 namespace librealsense
 {

@@ -9,6 +9,7 @@
 #include "d400-auto-calibration.h"
 #include "librealsense2/rsutil.h"
 #include "algo.h"
+#include <src/core/video-frame.h>
 
 #include <rsutils/string/from.h>
 

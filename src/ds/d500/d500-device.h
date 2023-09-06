@@ -18,11 +18,15 @@
 
 #include "ds/ds-device-common.h"
 
+#include <rsutils/lazy.h>
+
+
 namespace librealsense
 {
     class hdr_config;
     class d400_thermal_monitor;
     class ds_devices_common;
+    class d500_info;
 
     class d500_device : public virtual device, public debug_interface, public global_time_interface, public updatable
     {
@@ -41,8 +45,7 @@ namespace librealsense
             return dynamic_cast<uvc_sensor&>(*depth_sensor.get_raw_sensor());
         }
 
-        d500_device(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group);
+        d500_device( std::shared_ptr< const d500_info > const & );
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
 
@@ -101,14 +104,14 @@ namespace librealsense
 
         uint8_t _depth_device_idx;
 
-        lazy<std::vector<uint8_t>> _coefficients_table_raw;
-        lazy<std::vector<uint8_t>> _new_calib_table_raw;
+        rsutils::lazy< std::vector< uint8_t > > _coefficients_table_raw;
+        rsutils::lazy< std::vector< uint8_t > > _new_calib_table_raw;
 
         std::shared_ptr<polling_error_handler> _polling_error_handler;
         std::shared_ptr<d400_thermal_monitor> _thermal_monitor;
-        std::shared_ptr<lazy<rs2_extrinsics>> _left_right_extrinsics;
-        lazy<std::vector<uint8_t>> _color_calib_table_raw;
-        std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
+        std::shared_ptr< rsutils::lazy< rs2_extrinsics > > _left_right_extrinsics;
+        rsutils::lazy< std::vector< uint8_t > > _color_calib_table_raw;
+        std::shared_ptr< rsutils::lazy< rs2_extrinsics > > _color_extrinsic;
         bool _is_locked = true;
         bool _is_symmetrization_enabled = true;
     };

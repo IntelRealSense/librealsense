@@ -36,10 +36,12 @@ public:
     {
     }
 
-    std::shared_ptr< device_interface > create( std::shared_ptr< context > ctx,
-                                                bool register_device_notifications ) const override;
+    std::string get_address() const override;
+    void to_stream( std::ostream & ) const override;
 
-    platform::backend_device_group get_device_data() const override;
+    std::shared_ptr< device_interface > create_device() override;
+
+    bool is_same_as( std::shared_ptr< const device_info > const & other ) const override;
 };
 
 
