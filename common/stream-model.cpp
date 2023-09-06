@@ -78,7 +78,7 @@ namespace rs2
         glPopAttrib();
     }
 
-    void draw_rect(const rect& r, int line_width)
+    void draw_rect( const rect & r, int line_width, bool draw_cross )
     {
         glPushAttrib(GL_ENABLE_BIT);
 
@@ -95,6 +95,20 @@ namespace rs2
         glVertex2f(r.x + r.w, r.y);
         glVertex2f(r.x, r.y);
         glEnd();
+
+        if( draw_cross )
+        {
+            glLineStipple( 1, 0x0808 );
+            glEnable( GL_LINE_STIPPLE );
+            glBegin( GL_LINES );
+            glVertex2f( r.x, r.y + r.h / 2 );
+            glVertex2f( r.x + r.w, r.y + r.h / 2 );
+            glEnd();
+            glBegin( GL_LINES );
+            glVertex2f( r.x + r.w / 2, r.y );
+            glVertex2f( r.x + r.w / 2, r.y + r.h );
+            glEnd();
+        }
 
         glPopAttrib();
     }
@@ -1541,7 +1555,7 @@ namespace rs2
 
             r = r.normalize(_normalized_zoom.unnormalize(get_original_stream_bounds())).unnormalize(stream_rect).cut_by(stream_rect);
             glColor3f(yellow.x, yellow.y, yellow.z);
-            draw_rect(r, 2);
+            draw_rect(r, 2, true);
 
             std::string message = "Metrics Region of Interest";
             auto msg_width = stb_easy_font_width((char*)message.c_str());
