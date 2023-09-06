@@ -88,13 +88,13 @@ public:
 
     bool has_metadata_readers() const;
 
-    typedef std::function< void( const nlohmann::json & msg ) > control_callback;
-    void on_open_streams( control_callback callback ) { _open_streams_callback = std::move( callback ); }
-
     typedef std::function< void( const std::shared_ptr< realdds::dds_option > & option, float value ) > set_option_callback;
     typedef std::function< float( const std::shared_ptr< realdds::dds_option > & option ) > query_option_callback;
     void on_set_option( set_option_callback callback ) { _set_option_callback = std::move( callback ); }
     void on_query_option( query_option_callback callback ) { _query_option_callback = std::move( callback ); }
+
+    typedef std::function< bool( std::string const &, nlohmann::json const &, nlohmann::json & ) > control_callback;
+    void on_control( control_callback callback ) { _control_callback = std::move( callback ); }
 
 private:
     void on_control_message_received();
@@ -117,9 +117,9 @@ private:
     std::shared_ptr< dds_device_broadcaster > _broadcaster;
     dispatcher _control_dispatcher;
 
-    control_callback _open_streams_callback = nullptr;
     set_option_callback _set_option_callback = nullptr;
     query_option_callback _query_option_callback = nullptr;
+    control_callback _control_callback;
 
     extrinsics_map _extrinsics_map; // <from stream, to stream> to extrinsics
 };  // class dds_device_server
