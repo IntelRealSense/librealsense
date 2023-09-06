@@ -712,6 +712,17 @@ PYBIND11_MODULE(NAME, m) {
         .def( "set_accel_intrinsics", &dds_motion_stream_server::set_accel_intrinsics )
         .def( "start_streaming", &dds_motion_stream_server::start_streaming );
 
+    // To have the python code be able to modify json objects in callbacks, we need to somehow refer to the original
+    // json object as changes to translated dict will not automatically get picked up!
+    // We do this thru the [] operator:
+    //     def callback( json ):
+    //         print( json['value'] )            # calls __getitem__
+    //         json['value'] = { 'more': True }  # calls __setitem__
+    struct json_ref { nlohmann::json & j; };
+    py::class_< json_ref, std::shared_ptr< json_ref > >( m, "json_ref" )
+        .def( "__getitem__", []( json_ref const & jr, std::string const & key ) { return jr.j.at( key ); } )
+        .def( "__setitem__", []( json_ref & jr, std::string const & key, nlohmann::json const & value ) { jr.j[key] = value; } );
+
     using realdds::dds_device_server;
     py::class_< dds_device_server, std::shared_ptr< dds_device_server > >( m, "device_server" )
         .def( py::init< std::shared_ptr< dds_participant > const&, std::string const& >() )
@@ -729,7 +740,12 @@ PYBIND11_MODULE(NAME, m) {
             []( dds_device_server & self, nlohmann::json const & j ) { self.publish_notification( j ); },
             py::call_guard< py::gil_scoped_release >() )
         .def( "publish_metadata", &dds_device_server::publish_metadata, py::call_guard< py::gil_scoped_release >() )
-        .def( "broadcast", &dds_device_server::broadcast );
+        .def( "broadcast", &dds_device_server::broadcast )
+        .def( FN_FWD_R( dds_device_server, on_control,
+                        false,
+                        (dds_device_server &, std::string const &, py::object &&, json_ref &),
+                        ( std::string const & id, nlohmann::json const & control, nlohmann::json & reply ),
+                        return callback( self, id, json_to_py( control ), json_ref{ reply } ); ) );
 
     using realdds::dds_stream;
     py::class_< dds_stream, std::shared_ptr< dds_stream > > stream_client_base( m, "stream", stream_base );
@@ -804,6 +820,12 @@ PYBIND11_MODULE(NAME, m) {
                       (dds_device &, dds_time const &, char, std::string const &, py::object && ),
                       (dds_time const & timestamp, char type, std::string const & text, nlohmann::json const & data),
                       callback( self, timestamp, type, text, json_to_py( data ) ); ) )
+        .def( FN_FWD_R( dds_device,
+                        on_notification,
+                        false,
+                        (dds_device &, std::string const &, py::object &&),
+                        ( std::string const & id, nlohmann::json const & data ),
+                        return callback( self, id, json_to_py( data ) ); ) )
         .def( "n_streams", &dds_device::number_of_streams )
         .def( "streams",
               []( dds_device const & self ) {
