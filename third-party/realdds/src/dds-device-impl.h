@@ -91,6 +91,9 @@ public:
         on_device_log_callback;
     void on_device_log( on_device_log_callback cb ) { _on_device_log = cb; }
 
+    typedef std::function< bool( std::string const &, nlohmann::json const & ) > on_notification_callback;
+    void on_notification( on_notification_callback cb ) { _on_notification = cb; }
+
 private:
     void create_notifications_reader();
     void create_metadata_reader();
@@ -109,8 +112,9 @@ private:
     static notification_handlers const _notification_handlers;
     void handle_notification( nlohmann::json const & );
 
-    on_metadata_available_callback _on_metadata_available = nullptr;
-    on_device_log_callback _on_device_log = nullptr;
+    on_metadata_available_callback _on_metadata_available;
+    on_device_log_callback _on_device_log;
+    on_notification_callback _on_notification;
 };
 
 

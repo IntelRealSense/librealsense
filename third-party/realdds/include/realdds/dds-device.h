@@ -77,6 +77,9 @@ public:
         on_device_log_callback;
     void on_device_log( on_device_log_callback cb );
 
+    typedef std::function< bool( std::string const & id, nlohmann::json const & ) > on_notification_callback;
+    void on_notification( on_notification_callback );
+
 private:
     class impl;
     std::shared_ptr< impl > _impl;
