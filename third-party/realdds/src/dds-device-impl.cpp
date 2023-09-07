@@ -143,11 +143,25 @@ void dds_device::impl::handle_notification( nlohmann::json const & j )
 {
     try
     {
+        // First handle the notification
         auto id = rsutils::json::get< std::string >( j, id_key );
         auto it = _notification_handlers.find( id );
         if( it != _notification_handlers.end() )
             ( this->*( it->second ) )( j );
+        else
+            throw std::runtime_error( "unknown id" );
+    }
+    catch( std::exception const & e )
+    {
+        LOG_DEBUG( "notification error: " << e.what() << "  " << j );
+    }
+    catch( ... )
+    {
+        LOG_DEBUG( "notification error: unknown exception  " << j );
+    }
 
+    try
+    {
         // Check if this is a reply - maybe someone's waiting on it...
         auto sampleit = j.find( sample_key );
         if( sampleit != j.end() )
@@ -171,17 +185,14 @@ void dds_device::impl::handle_notification( nlohmann::json const & j )
                 }
             }
         }
-
-        if( it == _notification_handlers.end() )
-            throw std::runtime_error( "unknown id" );
     }
     catch( std::exception const & e )
     {
-        LOG_DEBUG( "notification error: " << e.what() << "  " << j );
+        LOG_DEBUG( "reply error: " << e.what() << "  " << j );
     }
     catch( ... )
     {
-        LOG_DEBUG( "notification error: unknown exception  " << j );
+        LOG_DEBUG( "reply error: unknown exception  " << j );
     }
 }
 

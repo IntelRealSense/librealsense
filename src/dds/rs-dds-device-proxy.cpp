@@ -191,7 +191,8 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
             sensor_info.proxy->add_dds_stream( sidx, stream );
             _stream_name_to_owning_sensor[stream->name()] = sensor_info.proxy;
             type_and_index_to_dds_stream_sidx.insert( { type_and_index, sidx }  );
-            LOG_DEBUG( sidx.to_string() << " " << stream->sensor_name() << " : " << stream->name() );
+            LOG_DEBUG( sidx.to_string() << " " << get_string( sensor_info.type ) << " '" << stream->sensor_name()
+                                        << "' : '" << stream->name() << "' " << get_string( stream_type ) );
 
             software_sensor & sensor = get_software_sensor( sensor_info.sensor_index );
             auto video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( stream );

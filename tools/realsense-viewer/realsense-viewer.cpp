@@ -440,7 +440,7 @@ int main(int argc, const char** argv) try
         if (ImGui::BeginPopup("select"))
         {
             ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
-            ImGui::Columns(2, "DevicesList", false);
+            ImGui::Columns(1, "DevicesList", false);
             for (int i = 0; i < device_names.size(); i++)
             {
                 bool skip = false;
@@ -448,12 +448,28 @@ int main(int argc, const char** argv) try
                     if (get_device_name(dev_model->dev) == device_names[i]) skip = true;
                 if (skip) continue;
 
+                auto dev = connected_devs[i];
+                std::string dev_type;
+                if( dev.supports( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
+                {
+                    dev_type = "USB";
+                    dev_type += dev.get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR );
+                }
+                else if( dev.supports( RS2_CAMERA_INFO_PRODUCT_ID ) )
+                {
+                    dev_type = dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID );
+                    if( dev_type == "ABCD" ) // Specific for D457
+                        dev_type = "GMSL";
+                }
+
+                std::string line = rsutils::string::from() << dev.get_info( RS2_CAMERA_INFO_NAME ) << " (" << dev_type
+                                                           << ") S/N " << device_names[i].second.c_str();
+
                 ImGui::PushID(static_cast<int>(i));
-                if (ImGui::Selectable(device_names[i].first.c_str(), false, ImGuiSelectableFlags_SpanAllColumns)/* || switch_to_newly_loaded_device*/)
+                if (ImGui::Selectable(line.c_str(), false, ImGuiSelectableFlags_SpanAllColumns)/* || switch_to_newly_loaded_device*/)
                 {
                     try
                     {
-                        auto dev = connected_devs[i];
                         device_models->emplace_back(new device_model(dev, error_message, viewer_model));
                     }
                     catch (const error& e)
@@ -466,22 +482,6 @@ int main(int argc, const char** argv) try
                     }
                 }
                 ImGui::PopID();
-
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(255, 255, 255, 255));
-                    ImGui::NextColumn();
-                    ImGui::Text("S/N: %s", device_names[i].second.c_str());
-                    ImGui::NextColumn();
-                    ImGui::PopStyleColor();
-                }
-                else
-                {
-                    ImGui::NextColumn();
-                    ImGui::Text("S/N: %s", device_names[i].second.c_str());
-                    ImGui::NextColumn();
-                }
-
             }
 
             if (new_devices_count > 1) ImGui::Separator();
@@ -493,8 +493,6 @@ int main(int argc, const char** argv) try
                     add_playback_device(ctx, *device_models, error_message, viewer_model, ret);
                 }
             }
-            ImGui::NextColumn();
-            ImGui::Text("%s", "");
             ImGui::NextColumn();
 
             bool close_ip_popup = false;
@@ -582,10 +580,6 @@ int main(int argc, const char** argv) try
                 }
                 ImGui::PopStyleColor(3);
                 ImGui::PopStyleVar(1);
-
-                ImGui::NextColumn();
-                ImGui::Text("%s", "");
-                ImGui::NextColumn();
             }
 
             if (close_ip_popup)

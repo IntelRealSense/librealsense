@@ -674,7 +674,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options)
 const char* rs2_get_option_name(const rs2_options* options,rs2_option option, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    return options->options->get_option_name(option);
+    return options->options->get_option_name(option).c_str();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, option, options)
 

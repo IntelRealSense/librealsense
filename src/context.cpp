@@ -231,7 +231,7 @@ namespace librealsense
             devices.hid_devices = _backend->query_hid_devices();
         }
         auto const list = create_devices( devices, _playback_devices, mask );
-        LOG_INFO( "Found " << list.size() << " RealSense devices (mask 0x" << std::hex << mask << ")" );
+        LOG_INFO( "Found " << list.size() << " RealSense devices (mask 0x" << std::hex << mask << std::dec << ")" );
         for( auto & item : list )
             LOG_INFO( "... " << item->get_address() );
         return list;
