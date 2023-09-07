@@ -866,6 +866,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "__repr__", []( dds_device const & self ) {
             std::ostringstream os;
             os << "<" SNAME ".device";
+            os << " " << realdds::print( self.guid(), self.participant()->guid() );
             if( ! self.device_info().name.empty() )
                 os << " \"" << self.device_info().name << "\"";
             os << " @ " << self.device_info().debug_name();
