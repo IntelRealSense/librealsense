@@ -214,11 +214,11 @@ void uvc_sensor::open( const stream_profiles & requests )
 
                         fh->set_timestamp_domain( timestamp_domain );
                         fh->set_stream( req_profile_base );
-                    }
 
-                    diff = environment::get_instance().get_time_service()->get_time() - system_time;
-                    if( diff > 10 )
-                        LOG_DEBUG( "!! Frame memcpy took " << diff << " msec" );
+                        diff = environment::get_instance().get_time_service()->get_time() - system_time;
+                        if (diff > 10)
+                            LOG_DEBUG("!! Frame memcpy took " << diff << " msec");
+                    }
 
                     // calling the continuation method, and releasing the backend frame buffer
                     // since the content of the OS frame buffer has been copied, it can released ASAP
