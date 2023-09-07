@@ -11,7 +11,7 @@
 #include "d500-device.h"
 #include "d500-private.h"
 #include "d500-options.h"
-#include "d500-factory.h"
+#include "d500-info.h"
 #include "ds/ds-options.h"
 #include "ds/ds-timestamp.h"
 #include "stream.h"
