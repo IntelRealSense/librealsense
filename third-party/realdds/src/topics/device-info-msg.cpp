@@ -29,11 +29,14 @@ nlohmann::json device_info::to_json() const
 {
     auto msg = nlohmann::json( {
         { "name", name },
-        { "serial", serial },
-        { "product-line", product_line },
         { "topic-root", topic_root },
-        { "locked", locked },
     } );
+    if( ! serial.empty() )
+        msg["serial"] = serial;
+    if( ! product_line.empty() )
+        msg["product-line"] = product_line;
+    if( ! locked )
+        msg["locked"] = false;
     return msg;
 }
 
