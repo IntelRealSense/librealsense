@@ -95,7 +95,15 @@ PYBIND11_MODULE(NAME, m) {
     py::class_< dds_guid >( m, "guid" )
         .def( py::init<>() )
         .def( "__bool__", []( dds_guid const& self ) { return self != dds_guid::unknown(); } )
-        .def( "__repr__", []( dds_guid const& self ) { return to_string( self ); } );
+        .def( "__repr__", []( dds_guid const & self ) { return to_string( self ); } )
+        // Following two (hash and ==) are needed if we want to be able to use guids as dictionary keys
+        .def( "__hash__",
+              []( dds_guid const & self )
+              {
+                  return std::hash< std::string >{}(
+                      realdds::print( self, false ) );  // use hex; not the human-readable name
+              } )
+        .def( py::self == py::self );
 
     using realdds::dds_participant;
     using eprosima::fastrtps::types::ReturnCode_t;
@@ -282,6 +290,7 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_topic_writer;
     py::class_< dds_topic_writer, std::shared_ptr< dds_topic_writer > >( m, "topic_writer" )
         .def( py::init< std::shared_ptr< dds_topic > const & >() )
+        .def( "guid", &dds_topic_writer::guid )
         .def( FN_FWD( dds_topic_writer,
                       on_publication_matched,
                       (dds_topic_writer &, int),
@@ -727,6 +736,7 @@ PYBIND11_MODULE(NAME, m) {
     py::class_< dds_device_server, std::shared_ptr< dds_device_server > >( m, "device_server" )
         .def( py::init< std::shared_ptr< dds_participant > const&, std::string const& >() )
         .def( "init", &dds_device_server::init )
+        .def( "guid", &dds_device_server::guid )
         .def( "streams",
               []( dds_device_server const & self )
               {
@@ -801,9 +811,10 @@ PYBIND11_MODULE(NAME, m) {
     py::class_< dds_device,
         std::shared_ptr< dds_device >  // handled with a shared_ptr
     >( m, "device" )
-        .def( py::init( &dds_device::create ) )
+        .def( py::init< std::shared_ptr< dds_participant > const &, device_info const & >() )
         .def( "device_info", &dds_device::device_info )
         .def( "participant", &dds_device::participant )
+        .def( "server_guid", &dds_device::server_guid )
         .def( "guid", &dds_device::guid )
         .def( "is_ready", &dds_device::is_ready )
         .def( "wait_until_ready",
@@ -854,12 +865,10 @@ PYBIND11_MODULE(NAME, m) {
             py::call_guard< py::gil_scoped_release >() )
         .def( "__repr__", []( dds_device const & self ) {
             std::ostringstream os;
-            os << "<" SNAME ".device ";
-            os << self.participant()->print( self.guid() );
+            os << "<" SNAME ".device";
             if( ! self.device_info().name.empty() )
                 os << " \"" << self.device_info().name << "\"";
-            if( ! self.device_info().serial.empty() )
-                os << " s/n \"" << self.device_info().serial << "\"";
+            os << " @ " << self.device_info().debug_name();
             os << ">";
             return os.str();
         } );
