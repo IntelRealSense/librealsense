@@ -10,7 +10,7 @@
 namespace realdds {
 
 
-constexpr auto & unknown_guid = eprosima::fastrtps::rtps::c_Guid_Unknown;
+static constexpr auto & unknown_guid = eprosima::fastrtps::rtps::c_Guid_Unknown;
 
 
 // Custom GUID printer: attempts a more succinct representation
