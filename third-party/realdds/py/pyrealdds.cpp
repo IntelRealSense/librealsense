@@ -753,7 +753,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "broadcast", &dds_device_server::broadcast )
         .def( FN_FWD_R( dds_device_server, on_control,
                         false,
-                        (dds_device_server &, std::string const &, py::object &&, json_ref &),
+                        (dds_device_server &, std::string const &, py::object &&, json_ref &&),
                         ( std::string const & id, nlohmann::json const & control, nlohmann::json & reply ),
                         return callback( self, id, json_to_py( control ), json_ref{ reply } ); ) );
 
