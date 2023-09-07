@@ -37,10 +37,15 @@ namespace librealsense {
         return false;                                                                                                  \
     }
 
+// For rs2_option, these make use of the registry
+LRS_EXTENSION_API std::string const & get_string( rs2_option value );
+bool is_valid( rs2_option value );
+std::ostream & operator<<( std::ostream & out, rs2_option option );
+bool try_parse( const std::string & option_name, rs2_option & result );
+
 RS2_ENUM_HELPERS( rs2_stream, STREAM )
 RS2_ENUM_HELPERS( rs2_format, FORMAT )
 RS2_ENUM_HELPERS( rs2_distortion, DISTORTION )
-RS2_ENUM_HELPERS( rs2_option, OPTION )
 RS2_ENUM_HELPERS( rs2_camera_info, CAMERA_INFO )
 RS2_ENUM_HELPERS_CUSTOMIZED( rs2_frame_metadata_value, 0, RS2_FRAME_METADATA_COUNT - 1, std::string const & )
 RS2_ENUM_HELPERS( rs2_timestamp_domain, TIMESTAMP_DOMAIN )
