@@ -13,7 +13,7 @@
 #include <src/metadata.h>
 #include "ds/ds-timestamp.h"
 #include "ds/ds-options.h"
-#include "d500-factory.h"
+#include "d500-info.h"
 #include "stream.h"
 #include "proc/motion-transform.h"
 #include "proc/auto-exposure-processor.h"

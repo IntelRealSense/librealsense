@@ -12,7 +12,7 @@
 #include "image.h"
 #include "metadata-parser.h"
 
-#include "d500-factory.h"
+#include "d500-info.h"
 #include "d500-private.h"
 #include "ds/ds-options.h"
 #include "ds/ds-timestamp.h"
@@ -49,12 +49,12 @@ namespace librealsense
         }*/
     }
 
-    std::vector<std::shared_ptr<device_info>> d500_info::pick_d500_devices(
+    std::vector<std::shared_ptr<d500_info>> d500_info::pick_d500_devices(
         std::shared_ptr<context> ctx,
         platform::backend_device_group& group)
     {
         std::vector<platform::uvc_device_info> chosen;
-        std::vector<std::shared_ptr<device_info>> results;
+        std::vector<std::shared_ptr<d500_info>> results;
 
         auto valid_pid = filter_by_product(group.uvc_devices, ds::rs500_sku_pid);
         auto group_devices = group_devices_and_hids_by_unique_id(group_devices_by_unique_id(valid_pid), group.hid_devices);
