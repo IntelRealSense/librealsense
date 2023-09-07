@@ -219,6 +219,7 @@ include_directories(
     ../../common
     ../../third-party
     ../../third-party/tinyfiledialogs
+    ../../third-party/tclap/include
     ${GLFW_SOURCE_DIR}/include
     ../../third-party/imgui
     ../../third-party/glad
