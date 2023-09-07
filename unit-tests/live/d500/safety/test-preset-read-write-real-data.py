@@ -4,6 +4,8 @@
 #test:device D585S
 # we initialize all safety zone , this to start all safety tests with a known table which is 0 (hard coded in FW)
 #test:priority 1
+# Disabled until RSDEV-537 is fixed
+#test:donotrun
 import pyrealsense2 as rs
 import random
 from rspy import test, log
