@@ -29,7 +29,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     with test.closure( "Test no options" ):
         remote.run( 'test_no_options()' )
-        device = dds.device( participant, participant.create_guid(), info )
+        device = dds.device( participant, info )
         device.wait_until_ready()
 
         options = device.options();
@@ -50,7 +50,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     with test.closure( "Test device options discovery" ):
         test_values = list(range(17))
         remote.run( 'test_device_options_discovery(' + str( test_values ) + ')' )
-        device = dds.device( participant, participant.create_guid(), info )
+        device = dds.device( participant, info )
         device.wait_until_ready()
 
         options = device.options();
@@ -73,7 +73,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     with test.closure( "Test stream options discovery" ):
         #send values to be checked later as string parameter to the function
         remote.run( 'test_stream_options_discovery(1, 0, 123456, 123, 12, "opt3 of s1")' )
-        device = dds.device( participant, participant.create_guid(), info )
+        device = dds.device( participant, info )
         device.wait_until_ready()
         test.check_equal( device.n_streams(), 1 )
         for stream in device.streams():
@@ -103,7 +103,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     with test.closure( "Test device and multiple stream options discovery" ):
         test_values = list(range(5))
         remote.run( 'test_device_and_multiple_stream_options_discovery(' + str( test_values ) + ', ' + str( test_values ) + ')' )
-        device = dds.device( participant, participant.create_guid(), info )
+        device = dds.device( participant, info )
         device.wait_until_ready()
 
         options = device.options();
