@@ -126,7 +126,7 @@ namespace librealsense
         std::vector<uint8_t> ans_from_hwmc = send(cmd);
         std::vector<uint8_t> rv;
         uint32_t opcode_data = static_cast<uint32_t>(cmd.cmd);
-        rv.insert(rv.end(), &opcode_data, &opcode_data + sizeof(opcode_data));
+        rv.insert(rv.end(), reinterpret_cast<uint8_t*>(&opcode_data), reinterpret_cast<uint8_t*>(&opcode_data) + sizeof(opcode_data));
         rv.insert(rv.end(), ans_from_hwmc.begin(), ans_from_hwmc.end());
         return rv;
     }
