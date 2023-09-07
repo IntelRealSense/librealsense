@@ -57,6 +57,13 @@ dds_device_server::dds_device_server( std::shared_ptr< dds_participant > const &
 }
 
 
+dds_guid const & dds_device_server::guid() const
+{
+    return _notification_server ? _notification_server->guid() : unknown_guid;
+}
+
+
+
 dds_device_server::~dds_device_server()
 {
     _stream_name_to_server.clear();

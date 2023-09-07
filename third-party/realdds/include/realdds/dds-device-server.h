@@ -70,6 +70,8 @@ public:
     dds_device_server( std::shared_ptr< dds_participant > const & participant, const std::string & topic_root );
     ~dds_device_server();
 
+    dds_guid const & guid() const;
+
     // A server is not valid until init() is called with a list of streams that we want to publish.
     // On successful return from init(), each of the streams will be alive so clients will be able
     // to subscribe.
