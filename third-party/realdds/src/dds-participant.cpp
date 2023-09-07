@@ -277,7 +277,7 @@ rsutils::string::slice dds_participant::name() const
 
 std::string dds_participant::print( dds_guid const & guid_to_print ) const
 {
-    return realdds::print( guid_to_print, guid() );
+    return realdds::print( guid_to_print, unknown_guid );
 }
 
 

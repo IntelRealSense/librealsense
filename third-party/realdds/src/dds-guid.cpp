@@ -14,7 +14,7 @@ std::string print( dds_guid const & guid,
                    bool readable_name )
 {
     std::ostringstream output;
-    if( guid != eprosima::fastrtps::rtps::c_Guid_Unknown )
+    if( guid != unknown_guid )
     {
         if( guid.guidPrefix != base_prefix )
         {
@@ -31,7 +31,7 @@ std::string print( dds_guid const & guid,
                 char old_fill = output.fill( '0' );
 
                 size_t i = 0;
-                if( base_prefix != eprosima::fastrtps::rtps::c_Guid_Unknown.guidPrefix )
+                if( base_prefix != unknown_guid.guidPrefix )
                 {
                     while( i < base_prefix.size && guid.guidPrefix.value[i] == base_prefix.value[i] )
                         ++i;
