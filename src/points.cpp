@@ -10,7 +10,7 @@
 
 namespace librealsense {
 
-float3 * points::get_vertices() const
+float3 * points::get_vertices()
 {
     get_frame_data();  // call GetData to ensure data is in main memory
     return (float3*)data.data();
@@ -158,7 +158,7 @@ size_t labeled_points::get_vertex_count() const
     return LABELS_RESOLUTION;
 }
 
-float3* labeled_points::get_vertices() const
+float3* labeled_points::get_vertices()
 {
     get_frame_data();  // call GetData to ensure data is in main memory
     return (float3 *)data.data();

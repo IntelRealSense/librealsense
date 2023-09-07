@@ -10,7 +10,9 @@
 #include "ds/ds-timestamp.h"
 #include "ds/ds-options.h"
 #include "d500-options.h"
+#include "d500-info.h"
 #include "stream.h"
+#include "backend.h"
 
 namespace librealsense
 {
@@ -21,22 +23,21 @@ namespace librealsense
         {rs_fourcc('G','R','E','Y'), RS2_STREAM_SAFETY}
     };
 
-    d500_safety::d500_safety(std::shared_ptr<context> ctx,
-        const platform::backend_device_group& group)
-        : device(ctx, group), d500_device(ctx, group),
+    d500_safety::d500_safety(std::shared_ptr< const d500_info > const & dev_info  )
+        : device( dev_info ), d500_device( dev_info ),
         _safety_stream(new stream(RS2_STREAM_SAFETY))
     {
         using namespace ds;
 
         const uint32_t safety_stream_mi = 11;
-        auto safety_devs_info = filter_by_mi(group.uvc_devices, safety_stream_mi);
+        auto safety_devs_info = filter_by_mi( dev_info->get_group().uvc_devices, safety_stream_mi);
         
         if (safety_devs_info.size() != 1)
             throw invalid_value_exception(rsutils::string::from() << "RS5XX models with Safety are expected to include a single safety device! - "
                 << safety_devs_info.size() << " found");
 
-        auto safety_ep = create_safety_device(ctx, safety_devs_info);
-        _safety_device_idx = add_sensor(safety_ep);
+        auto safety_ep = create_safety_device( dev_info->get_context(), safety_devs_info );
+        _safety_device_idx = add_sensor( safety_ep );
     }
 
     std::shared_ptr<synthetic_sensor> d500_safety::create_safety_device(std::shared_ptr<context> ctx,

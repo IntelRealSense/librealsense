@@ -4,8 +4,7 @@
 #include "context.h"
 
 #include "ds/d400/d400-info.h"
-#include "ds/d500/d500-factory.h"
-#include "device.h"
+#include "ds/d500/d500-info.h"
 #include "ds/ds-timestamp.h"
 #include <media/ros/ros_reader.h>
 #include "media/playback/playback-device-info.h"
