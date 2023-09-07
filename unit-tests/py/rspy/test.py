@@ -76,7 +76,7 @@ if '--nested' in sys.argv:
     sys.argv.pop( nested_index )
     # Use a special prompt when interactive mode is requested (-i)
     if sys.flags.interactive and not hasattr( sys, 'ps1' ):
-        sys.ps1 = '___\n'  # sys.ps2 will get the default '...'
+        sys.ps1 = '___ready\n'  # sys.ps2 will get the default '...'
 
 
 def set_env_vars( env_vars ):
@@ -484,6 +484,7 @@ def info( name, value, persistent = False ):
     """
     global test_info
     test_info[name] = Information(value, persistent)
+    return value
 
 
 def reset_info(persistent = False):
@@ -597,7 +598,7 @@ class closure:
         return True  # otherwise the exception will keep propagating
 
 
-def print_results_and_exit():
+def print_results():
     """
     Used to print the results of the tests in the file. The format has to agree with the expected format in check_log()
     in run-unit-tests and with the C++ format using Catch
@@ -612,10 +613,14 @@ def print_results_and_exit():
         log.out("assertions:", n_assertions, "|", passed, "passed |", n_failed_assertions, "failed")
         sys.exit(1)
     log.out("All tests passed (" + str(n_assertions) + " assertions in " + str(n_tests) + " test cases)")
+
+
+def print_results_and_exit():
+    print_results()
     sys.exit(0)
 
 
-def nested_cmd( script, nested_indent = 'svr', interactive = False, cwd = None ):
+def nested_cmd( script, nested_indent='svr', interactive=False, cwd=None ):
     """
     Builds the command list for running a nested script, given the current context etc.
 
@@ -653,7 +658,7 @@ def nested_cmd( script, nested_indent = 'svr', interactive = False, cwd = None )
     if log.is_color_on():
         cmd += ['--color']
     #
-    cmd += ['--nested', nested_indent]
+    cmd += ['--nested', nested_indent or '']
     #
     return cmd
 
@@ -740,27 +745,23 @@ class remote:
         It is in danger of HANGING UP our own process because readline blocks forever! To avoid this
         please follow the usage guidelines in the class notes.
         """
-        nested_prefix = f'[{self._nested_indent}] '
+        nested_prefix = self._nested_indent and f'[{self._nested_indent}] ' or ''
         for line in iter( self._process.stdout.readline, '' ):
             # NOTE: line will include the terminating \n EOL
             # NOTE: so readline will return '' (with no EOL) when EOF is reached - the "sentinel"
             #       2nd argument to iter() - and we'll break out of the loop
-            if line == '___\n':
+            if line == '___ready\n':
                 log.d( self._name, self._exception and 'raised an error' or 'is ready' )
-                if self._on_ready:  # a queue of callbacks
-                    callback = self._on_ready.pop(0)
-                    if callback:
-                        callback()
                 if self._events:
                     event = self._events.pop(0)
                     if event:
                         event.set()
                 else:
-                    # We raise the error here only as a last resort: we prefer handling it over to
+                    # We raise the error here only as a last resort: we prefer handing it over to
                     # the waiting thread on the event!
                     self._raise_if_needed()
                 continue
-            if line.find( nested_prefix ) < 0:  # there could be color codes in the line
+            if not nested_prefix or line.find( nested_prefix ) < 0:  # there could be color codes in the line
                 if self._exception:
                     self._exception.append( line[:-1] )
                     # We cannot raise an error here -- it'll just exit the thread and not be
@@ -789,52 +790,47 @@ class remote:
         self._thread = threading.Thread( target = remote._output_reader, args=(self,) )
         #
         # We allow waiting until the script is ready for input: see wait_until_ready()
-        self._initialized_event = threading.Event()
-        def set_initialized():
-            nonlocal self
-            self._initialized_event = None
-            self._raise_if_needed()
-        self._on_ready = [ set_initialized ]
-        self._events = [ self._initialized_event ]
+        import threading
+        self._ready = threading.Event()
+        self._events = [ self._ready ]
         #
         self._thread.start()
 
-    def _raise_if_needed( self, how='raise' ):
+    def _raise_if_needed( self, on_fail=RAISE ):
         if self._exception:
             what = f'[{self._name}] ' + self._exception.pop()
             while self._exception and ( what.startswith( 'Invoked with:' ) or what.startswith( '  ' ) or what.startswith( '\n' )):
                 what = self._exception.pop() + '\n  ' + what
             self._exception = None
-            if how == RAISE:
+            if on_fail == RAISE:
                 raise remote.Error( what )
             print_stack_( traceback.format_stack()[:-2] )
             log.out( f'      {what}' )
-            if how == ABORT:
+            if on_fail == ABORT:
                 self.wait()
                 abort()
-            if how == LOG:
+            if on_fail == LOG:
                 pass
             else:
                 raise ValueError( f'invalid failure handler "{how}" should be raise, abort, or log' )
 
 
-    def wait_until_ready( self, timeout=10 ):
+    def wait_until_ready( self, timeout=10, on_fail=RAISE ):
         """
         The initial script can take a bit of time to load and run, and more if it does something "heavy". The user may want
         to wait until it's "ready" to take input...
         """
-        if not self._initialized_event.wait( timeout ):
-            raise RuntimeError( f'{self._name} timeout' )
+        if not self._ready.wait( timeout ):
+            raise RuntimeError( f'{self._name} timed out' )
+        self._raise_if_needed( on_fail=on_fail )
         if not self.is_running():
             raise RuntimeError( f'{self._name} exited with status {self._status}' )
 
-    def run( self, command, on_ready=None, timeout=5, on_fail=RAISE ):
+    def run( self, command, timeout=5, on_fail=RAISE ):
         """
-        Run in a command asynchronously in the remote process: returns immediately without waiting for the command to
-        finish.
+        Run a command asynchronously in the remote process
         :param command: the line, as if you typed it in an interactive shell
-        :param on_ready: a callback that will be called when the command finishes
-        :param timeout: if not None, how long to wait for the command to finish
+        :param timeout: if not None, how long to wait for the command to finish; otherwise returns immediately
         :param on_fail: how to handle exceptions on the server
                         'raise' to raise them as remote.Error()
                         'abort' to test.abort()
@@ -842,16 +838,13 @@ class remote:
         """
         log.d( self._name, 'running:', command )
         assert self._interactive
-        self._on_ready.append( on_ready )  # even if None
-        import threading
-        event = timeout and threading.Event() or None
-        self._events.append( event )
+        self._events.append( self._ready )
+        self._ready.clear()
         self._process.stdin.write( command + '\n' )
         self._process.stdin.flush()
-        if event:
-            if not event.wait( timeout ):
-                raise RuntimeError( f'{self._name} command timed out' )
-            self._raise_if_needed( on_fail )
+        if timeout:
+            self.wait_until_ready( timeout=timeout, on_fail=on_fail )
+
 
     def wait( self, timeout=10 ):
         """
@@ -888,9 +881,8 @@ class remote:
             except subprocess.TimeoutExpired:
                 log.d( self._name, 'process terminate timed out; no status' )
             finally:
-                if self._initialized_event is not None:
-                    # Unexpected, but known to happen (process terminated while we're waiting for it to be ready)
-                    self._initialized_event.set()
+                # Unexpected, but known to happen (process terminated while we're waiting for it to be ready)
+                self._ready.set()
 
     def stop( self ):
         """
@@ -898,8 +890,59 @@ class remote:
         If you want to wait until it finishes and all stdout is consumed, use wait()
         """
         if self.is_running():
-            log.d( 'stopping', self_name, 'process' )
+            log.d( 'stopping', self._name, 'process' )
             self._terminate()
             self._thread.join()
             self._thread = None
 
+
+    class fork:
+        """
+        Using the remote is nice, but the two scripts live separately which could be annoying.
+        Instead, we could do something similar to a 'fork' in Linux, e.g.:
+
+        from rspy import log, test
+        with test.remote.fork() as remote:
+            if remote is None:
+                log.i( "This is the forked code" )
+                raise StopIteration()  # skip to the end of the with statement
+            log.i( "This is the parent code" )
+        """
+
+        def __init__( self, script=None, **kwargs ):
+            # We add a 'forked' to the command-line of the forked process
+            if log.nested is not None:
+                self._instance = None
+            else:
+                self._instance = remote( script or sys.argv[0], **kwargs )
+                #self._instance._cmd += ['forked']
+
+        def __enter__( self ):
+            """
+            Called when entering a 'with' statement. We automatically start and wait until ready:
+            """
+            if self._instance is not None:
+                try:
+                    self._instance.start()
+                    self._instance.wait_until_ready()
+                except:
+                    if not self.__exit__( *sys.exc_info() ):
+                        raise
+            return self._instance  # return the remote; None if we're the fork
+
+        def __exit__( self, exc_type, exc_value, traceback ):
+            """
+            Called when exiting scope of a 'with' statement, so we can properly clean up.
+            """
+            if exc_type is None:
+                if self._instance is not None:
+                    self._instance.wait()
+            elif exc_type is StopIteration:
+                # A StopIteration can be used to get out of the 'with' statement easily
+                #
+                # "If an exception is supplied, and the method wishes to suppress the exception (i.e.,
+                # prevent it from being propagated), it should return a true value."
+                # https://docs.python.org/3/reference/datamodel.html#with-statement-context-managers
+                return True  # otherwise the exception will keep propagating
+            elif self._instance is not None:
+                self._instance.stop()
