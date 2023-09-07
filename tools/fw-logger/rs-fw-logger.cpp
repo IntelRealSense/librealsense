@@ -29,10 +29,12 @@ int main(int argc, char* argv[])
 {
     int default_polling_interval_ms = 100;
     CmdLine cmd("librealsense rs-fw-logger example tool", ' ', RS2_API_VERSION_STR);
+    ValueArg<string> sn_arg("s", "sn", "camera serial number", false, "", "camera serial number");
     ValueArg<string> xml_arg("l", "load", "Full file path of HW Logger Events XML file", false, "", "Load HW Logger Events XML file");
     ValueArg<string> out_arg("o", "out", "Full file path of output file", false, "", "Print Fw logs to output file");
     ValueArg<int> polling_interval_arg("p", "polling_interval", "Time Interval between each log messages polling (in milliseconds)", false, default_polling_interval_ms, "");
     SwitchArg flash_logs_arg("f", "flash", "Flash Logs Request", false);
+    cmd.add(sn_arg);
     cmd.add(xml_arg);
     cmd.add(out_arg);
     cmd.add(polling_interval_arg);
@@ -47,6 +49,7 @@ int main(int argc, char* argv[])
     // write to file if it is open, else write to console
     std::ostream& out = (!output_file.is_open() ? std::cout : output_file);
 
+    auto sn = sn_arg.getValue();
     auto xml_full_file_path = xml_arg.getValue();
     auto polling_interval_ms = polling_interval_arg.getValue();
     if (polling_interval_ms < 25 || polling_interval_ms > 300)
@@ -66,9 +69,32 @@ int main(int argc, char* argv[])
     {
         try
         {
-            out << "\nWaiting for RealSense device to connect...\n";
-            auto dev = hub.wait_for_device();
-            out << "RealSense device was connected...\n";
+            rs2::device dev;
+            bool found = false;
+
+            while(!found)
+            {
+                auto devs = ctx.query_devices();
+                out << "\n" << devs.size() << " realSense devices detected.";
+
+                for (rs2::device d : devs)
+                {
+                    string serial = d.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+
+                    if (sn.empty() || (!sn.empty() && serial.compare(sn) == 0))
+                    {
+                        dev = d;
+                        found = true;
+                        break;
+                    }
+                }
+
+                out << "\nWaiting for RealSense device " << sn << (!sn.empty() ? " " : "") << "to connect ...";
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            }
+
+            string serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+            out << "\nRealSense device " << serial << " was connected for logging.\n";
 
             setvbuf(stdout, NULL, _IONBF, 0); // unbuffering stdout
 

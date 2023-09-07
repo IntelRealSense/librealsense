@@ -13,7 +13,7 @@
 #include "image.h"
 #include "metadata-parser.h"
 
-#include "d500-factory.h"
+#include "d500-info.h"
 #include "d500-private.h"
 #include "ds/ds-options.h"
 #include "ds/ds-timestamp.h"
@@ -36,18 +36,20 @@ namespace librealsense
         public firmware_logger_device
     {
     public:
-        rs_d585_device(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group,
-            bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-            d500_device(ctx, group),
-            d500_active(ctx, group),
-            d500_color(ctx, group),
-            d500_motion(ctx, group),
-            ds_advanced_mode_base(d500_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(ctx, group, d500_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command()) {}
+        rs_d585_device( std::shared_ptr< const d500_info > const & dev_info,
+                        bool register_device_notifications )
+            : device( dev_info, register_device_notifications )
+            , d500_device( dev_info )
+            , d500_active( dev_info )
+            , d500_color( dev_info )
+            , d500_motion( dev_info )
+            , ds_advanced_mode_base( d500_device::_hw_monitor, get_depth_sensor() )
+            , firmware_logger_device( dev_info,
+                                      d500_device::_hw_monitor,
+                                      get_firmware_logs_command(),
+                                      get_flash_logs_command() )
+        {
+        }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -87,20 +89,22 @@ namespace librealsense
         public firmware_logger_device
     {
     public:
-        rs_d585s_device(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group,
-            bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-            d500_device(ctx, group),
-            d500_active(ctx, group),
-            d500_color(ctx, group),
-            d500_safety(ctx, group),
-            d500_depth_mapping(ctx, group),
-            d500_motion(ctx, group),
-            ds_advanced_mode_base(d500_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(ctx, group, d500_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command()) {}
+        rs_d585s_device( std::shared_ptr< const d500_info > const & dev_info,
+                         bool register_device_notifications )
+            : device( dev_info, register_device_notifications )
+            , d500_device( dev_info )
+            , d500_active( dev_info )
+            , d500_color( dev_info )
+            , d500_safety( dev_info )
+            , d500_depth_mapping( dev_info )
+            , d500_motion( dev_info )
+            , ds_advanced_mode_base( d500_device::_hw_monitor, get_depth_sensor() )
+            , firmware_logger_device( dev_info,
+                                      d500_device::_hw_monitor,
+                                      get_firmware_logs_command(),
+                                      get_flash_logs_command() )
+        {
+        }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -131,24 +135,27 @@ namespace librealsense
         }
     };
 
-    std::shared_ptr<device_interface> d500_info::create(std::shared_ptr<context> ctx,
-                                                       bool register_device_notifications) const
+    std::shared_ptr< device_interface > d500_info::create_device()
     {
         using namespace ds;
 
-        if (_depth.size() == 0) throw std::runtime_error("Depth Camera not found!");
-        auto pid = _depth.front().pid;
-        platform::backend_device_group group{_depth, _hwm, _hid};
+        if( _group.uvc_devices.empty() )
+            throw std::runtime_error("Depth Camera not found!");
+
+        auto const dev_info = std::dynamic_pointer_cast< const d500_info >( shared_from_this() );
+        bool const register_device_notifications = true;
+
+        auto pid = _group.uvc_devices.front().pid;
 
         switch(pid)
         {
         case ds::RS_D585_PID:
-            return std::make_shared<rs_d585_device>(ctx, group, register_device_notifications);
+            return std::make_shared<rs_d585_device>( dev_info, register_device_notifications );
         case ds::RS_D585S_PID:
         {
             LOG_INFO( "Found D585S, sleeping for 500 [ms] before communication start" );
             std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
-            return std::make_shared<rs_d585s_device>( ctx, group, register_device_notifications );
+            return std::make_shared<rs_d585s_device>( dev_info, register_device_notifications );
         }
         default:
             throw std::runtime_error(rsutils::string::from() << "Unsupported RS400 model! 0x"
@@ -156,12 +163,12 @@ namespace librealsense
         }
     }
 
-    std::vector<std::shared_ptr<device_info>> d500_info::pick_d500_devices(
+    std::vector<std::shared_ptr<d500_info>> d500_info::pick_d500_devices(
         std::shared_ptr<context> ctx,
         platform::backend_device_group& group)
     {
         std::vector<platform::uvc_device_info> chosen;
-        std::vector<std::shared_ptr<device_info>> results;
+        std::vector<std::shared_ptr<d500_info>> results;
 
         auto valid_pid = filter_by_product(group.uvc_devices, ds::rs500_sku_pid);
         auto group_devices = group_devices_and_hids_by_unique_id(group_devices_by_unique_id(valid_pid), group.hid_devices);
@@ -221,7 +228,10 @@ namespace librealsense
                     LOG_DEBUG("d500_try_fetch_usb_device(...) failed.");
                 }
 
-                auto info = std::make_shared<d500_info>(ctx, devices, hwm_devices, hids);
+                auto info = std::make_shared< d500_info >( ctx,
+                                                           std::move( devices ),
+                                                           std::move( hwm_devices ),
+                                                           std::move( hids ) );
                 chosen.insert(chosen.end(), devices.begin(), devices.end());
                 results.push_back(info);
 

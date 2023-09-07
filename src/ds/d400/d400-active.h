@@ -12,8 +12,7 @@ namespace librealsense
     class d400_active : public virtual d400_device
     {
     public:
-        d400_active(std::shared_ptr<context> ctx,
-                   const platform::backend_device_group& group);
+        d400_active( std::shared_ptr< const d400_info > const & );
     private:
         std::shared_ptr<ds_active_common> _ds_active_common;
     };

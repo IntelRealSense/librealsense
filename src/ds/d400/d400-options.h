@@ -10,6 +10,9 @@
 #include "error-handling.h"
 #include "../../hdr-config.h"
 
+#include <rsutils/lazy.h>
+
+
 namespace librealsense
 {
 
@@ -48,7 +51,9 @@ namespace librealsense
         rs2_option                  _option;
         std::shared_ptr<hw_monitor>  _hw_monitor;
     };
+
     class limits_option;
+
     class auto_exposure_limit_option : public option_base
     {
     public:
@@ -67,7 +72,7 @@ namespace librealsense
 
     private:
         std::function<void(const option&)> _record_action = [](const option&) {};
-        lazy<option_range> _range;
+        rsutils::lazy< option_range > _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
         std::weak_ptr<limits_option> _exposure_limit_toggle;
@@ -91,7 +96,7 @@ namespace librealsense
 
     private:
         std::function<void(const option&)> _record_action = [](const option&) {};
-        lazy<option_range> _range;
+        rsutils::lazy< option_range > _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
         std::weak_ptr<limits_option> _gain_limit_toggle;

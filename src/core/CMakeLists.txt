@@ -2,16 +2,25 @@
 # Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 target_sources(${LRS_TARGET}
     PRIVATE
-        "${CMAKE_CURRENT_LIST_DIR}/streaming.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/streaming.h"
         "${CMAKE_CURRENT_LIST_DIR}/debug.h"
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode.h"
+        "${CMAKE_CURRENT_LIST_DIR}/depth-frame.h"
+        "${CMAKE_CURRENT_LIST_DIR}/disparity-frame.h"
+        "${CMAKE_CURRENT_LIST_DIR}/frame-continuation.h"
+        "${CMAKE_CURRENT_LIST_DIR}/frame-additional-data.h"
+        "${CMAKE_CURRENT_LIST_DIR}/frame-header.h"
+        "${CMAKE_CURRENT_LIST_DIR}/frame-holder.h"
+        "${CMAKE_CURRENT_LIST_DIR}/frame-interface.h"
         "${CMAKE_CURRENT_LIST_DIR}/roi.h"
         "${CMAKE_CURRENT_LIST_DIR}/motion.h"
+        "${CMAKE_CURRENT_LIST_DIR}/motion-frame.h"
         "${CMAKE_CURRENT_LIST_DIR}/video.h"
+        "${CMAKE_CURRENT_LIST_DIR}/video-frame.h"
         "${CMAKE_CURRENT_LIST_DIR}/options.h"
         "${CMAKE_CURRENT_LIST_DIR}/info.h"
         "${CMAKE_CURRENT_LIST_DIR}/extension.h"
+        "${CMAKE_CURRENT_LIST_DIR}/pose-frame.h"
         "${CMAKE_CURRENT_LIST_DIR}/processing.h"
         "${CMAKE_CURRENT_LIST_DIR}/serialization.h"
 )

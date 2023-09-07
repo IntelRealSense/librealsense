@@ -17,7 +17,7 @@ namespace librealsense
         _matcher->set_callback( [this]( frame_holder f, syncronization_environment env ) {
             if( env.log )
             {
-                LOG_DEBUG( "<-- queueing " << frame_holder_to_string( f ) );
+                LOG_DEBUG( "<-- queueing " << f );
             }
 
             // We get here from within a dispatch() call, already protected by a mutex -- so only
@@ -52,7 +52,7 @@ namespace librealsense
                 get_source().frame_ready(std::move(frame));
                 return;
             }
-            LOG_DEBUG( "--> syncing " << frame_holder_to_string( frame ));
+            LOG_DEBUG( "--> syncing " << frame );
             {
                 std::lock_guard<std::mutex> lock(_mutex);
                 if( ! _matcher->get_active() )

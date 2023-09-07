@@ -1,17 +1,17 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <vector>
-#include <string>
-
 #include "device.h"
 #include "context.h"
 #include "image.h"
 #include "metadata-parser.h"
+#include "metadata.h"
+#include <src/backend.h>
 
 #include "d500-device.h"
 #include "d500-private.h"
 #include "d500-options.h"
+#include "d500-info.h"
 #include "ds/ds-options.h"
 #include "ds/ds-timestamp.h"
 #include "stream.h"
@@ -29,6 +29,8 @@
 #include "../common/fw/firmware-version.h"
 #include "fw-update/fw-update-unsigned.h"
 #include <nlohmann/json.hpp>
+#include <vector>
+#include <string>
 
 #ifdef HWM_OVER_XU
 constexpr bool hw_mon_over_xu = true;
@@ -439,17 +441,17 @@ namespace librealsense
         return depth_ep;
     }
 
-    d500_device::d500_device(std::shared_ptr<context> ctx,
-        const platform::backend_device_group& group)
-        : device(ctx, group), global_time_interface(),
+    d500_device::d500_device( std::shared_ptr< const d500_info > const & dev_info )
+        : device(dev_info), global_time_interface(),
           _device_capabilities(ds::ds_caps::CAP_UNDEFINED),
           _depth_stream(new stream(RS2_STREAM_DEPTH)),
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
           _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),
           _color_stream(nullptr)
     {
-        _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
-        init(ctx, group);
+        _depth_device_idx
+            = add_sensor( create_depth_device( dev_info->get_context(), dev_info->get_group().uvc_devices ) );
+        init( dev_info->get_context(), dev_info->get_group() );
     }
 
     void d500_device::init(std::shared_ptr<context> ctx,
@@ -485,7 +487,8 @@ namespace librealsense
 
         // Define Left-to-Right extrinsics calculation (lazy)
         // Reference CS - Right-handed; positive [X,Y,Z] point to [Left,Up,Forward] accordingly.
-        _left_right_extrinsics = std::make_shared<lazy<rs2_extrinsics>>([this]()
+        _left_right_extrinsics = std::make_shared< rsutils::lazy< rs2_extrinsics > >(
+            [this]()
             {
                 rs2_extrinsics ext = identity_matrix();
                 auto table = check_calib<d500_coefficients_table>(*_coefficients_table_raw);
@@ -675,7 +678,7 @@ namespace librealsense
                 roi_sensor->set_roi_method(std::make_shared<ds_auto_exposure_roi_method>(*_hw_monitor));
 
             depth_sensor.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
-                lazy<float>([this]() { return get_stereo_baseline_mm(); })));
+                    rsutils::lazy< float >( [this]() { return get_stereo_baseline_mm(); } ) ) );
 
             if (advanced_mode)
             {
@@ -694,8 +697,7 @@ namespace librealsense
             {
                 float default_depth_units = 0.001f; //meters
                 depth_sensor.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
-                    lazy<float>([default_depth_units]()
-                        { return default_depth_units; })));
+                        rsutils::lazy< float >( [default_depth_units]() { return default_depth_units; } ) ) );
             }
 
             depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,

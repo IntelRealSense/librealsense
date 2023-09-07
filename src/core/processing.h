@@ -1,8 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-
 #pragma once
-#include "streaming.h"
+
+#include "frame-holder.h"
+#include "options.h"
+#include "info.h"
+#include <vector>
+#include <memory>
+
 
 namespace librealsense
 {
@@ -16,6 +21,8 @@ struct rs2_source
 
 namespace librealsense
 {
+    class stream_profile_interface;
+
     class synthetic_source_interface
     {
     public:

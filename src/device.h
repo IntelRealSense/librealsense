@@ -3,11 +3,6 @@
 
 #pragma once
 
-#include <chrono>
-#include <memory>
-#include <vector>
-
-#include "backend.h"
 #include "archive.h"
 #include "hw-monitor.h"
 #include "option.h"
@@ -16,6 +11,13 @@
 #include "core/streaming.h"
 
 #include "context.h"
+
+#include <rsutils/lazy.h>
+
+#include <chrono>
+#include <memory>
+#include <vector>
+
 
 namespace librealsense
 {
@@ -60,14 +62,9 @@ public:
 
     size_t find_sensor_idx(const sensor_interface& s) const;
 
-    std::shared_ptr<context> get_context() const override {
-        return _context;
-    }
+    std::shared_ptr< context > get_context() const override { return _dev_info->get_context(); }
 
-    platform::backend_device_group get_device_data() const override
-    {
-        return _group;
-    }
+    std::shared_ptr< const device_info > get_device_info() const override { return _dev_info; }
 
     std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const override;
 
@@ -96,20 +93,17 @@ protected:
     void register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t groupd_index);
     std::vector<rs2_format> map_supported_color_formats(rs2_format source_format);
 
-    explicit device(std::shared_ptr<context> ctx,
-                    const platform::backend_device_group & group,
-                    bool device_changed_notifications = true);
+    explicit device( std::shared_ptr< const device_info > const &, bool device_changed_notifications = true );
 
     std::map<int, std::pair<uint32_t, std::shared_ptr<const stream_interface>>> _extrinsics;
 
 private:
     std::vector<std::shared_ptr<sensor_interface>> _sensors;
-    std::shared_ptr<context> _context;
-    const platform::backend_device_group _group;
+    std::shared_ptr< const device_info > _dev_info;
     bool _is_valid, _device_changed_notifications;
     mutable std::mutex _device_changed_mtx;
     uint64_t _callback_id;
-    lazy<std::vector<tagged_profile>> _profiles_tags;
+    rsutils::lazy< std::vector< tagged_profile > > _profiles_tags;
 
     std::shared_ptr< bool > _is_alive; // Ensures object can be accessed
 };

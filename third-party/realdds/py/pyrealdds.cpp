@@ -816,6 +816,16 @@ PYBIND11_MODULE(NAME, m) {
               } )
         .def( "set_option_value", &dds_device::set_option_value )
         .def( "query_option_value", &dds_device::query_option_value )
+        .def(
+            "send_control",
+            []( dds_device & self, nlohmann::json const & j, bool wait_for_reply )
+            {
+                nlohmann::json reply;
+                self.send_control( j, wait_for_reply ? &reply : nullptr );
+                return reply;
+            },
+            py::arg( "json" ), py::arg( "wait-for-reply" ) = false,
+            py::call_guard< py::gil_scoped_release >() )
         .def( "__repr__", []( dds_device const & self ) {
             std::ostringstream os;
             os << "<" SNAME ".device ";

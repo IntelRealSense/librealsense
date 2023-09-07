@@ -3,6 +3,8 @@
 
 #include "config.h"
 #include "pipeline.h"
+#include "platform/platform-device-info.h"
+#include "media/playback/playback-device-info.h"
 
 namespace librealsense
 {
@@ -246,14 +248,9 @@ namespace librealsense
             //Check if the file is already loaded to context, and if so return that device
             for (auto&& d : ctx->query_devices(RS2_PRODUCT_LINE_ANY))
             {
-                auto playback_devs = d->get_device_data().playback_devices;
-                for (auto&& p : playback_devs)
-                {
-                    if (p.file_path == file)
-                    {
-                        return d->create_device();
-                    }
-                }
+                auto pdev = std::dynamic_pointer_cast< playback_device_info >( d );
+                if( pdev && pdev->get_filename() == file )
+                    return pdev->create_device();
             }
 
             return ctx->add_device(file)->create_device();

@@ -3,23 +3,33 @@
 #pragma once
 
 #include "frame.h"
+#include "core/extension.h"
+#include "types.h"
+
+#include <string>
+
 
 namespace librealsense {
+
+
+class frame_holder;
+
 
 class points : public frame
 {
 public:
-    float3* get_vertices() const;
-    size_t get_vertex_count() const;
+    float3 * get_vertices();
     void export_to_ply( const std::string & fname, const frame_holder & texture );
+    size_t get_vertex_count() const;
     float2 * get_texture_coordinates();
+
 };
 MAP_EXTENSION( RS2_EXTENSION_POINTS, librealsense::points );
 
 class labeled_points : public frame
 {
 public:
-    float3* get_vertices() const;
+    float3* get_vertices();
     size_t get_vertex_count() const;
     uint8_t* get_labels() const;
     // bytes per pixel = 1 vertex + 1 label

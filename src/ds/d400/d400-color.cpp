@@ -8,6 +8,9 @@
 #include "d400-thermal-monitor.h"
 #include "proc/color-formats-converter.h"
 #include "d400-color.h"
+#include "d400-info.h"
+#include <src/backend.h>
+
 #include <rsutils/string/from.h>
 
 namespace librealsense
@@ -27,13 +30,12 @@ namespace librealsense
         {rs_fourcc('M','J','P','G'), RS2_STREAM_COLOR}
     };
 
-    d400_color::d400_color(std::shared_ptr<context> ctx,
-        const platform::backend_device_group& group)
-        : d400_device(ctx, group), device(ctx, group),
+    d400_color::d400_color( std::shared_ptr< const d400_info > const & dev_info )
+        : d400_device(dev_info), device(dev_info),
           _color_stream(new stream(RS2_STREAM_COLOR)),
           _separate_color(true)
     {
-        create_color_device(ctx, group);
+        create_color_device( dev_info->get_context(), dev_info->get_group() );
         init();
     }
 
@@ -47,7 +49,8 @@ namespace librealsense
             return get_d400_raw_calibration_table(d400_calibration_table_id::rgb_calibration_id);
         };
 
-        _color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>([this]() { return from_pose(get_d400_color_stream_extrinsic(*_color_calib_table_raw)); });
+        _color_extrinsic = std::make_shared< rsutils::lazy< rs2_extrinsics > >(
+            [this]() { return from_pose( get_d400_color_stream_extrinsic( *_color_calib_table_raw ) ); } );
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
         register_stream_to_extrinsic_group(*_color_stream, 0);
 
@@ -217,9 +220,16 @@ namespace librealsense
         }
         else
         {
-            // Work-around for discrepancy between the RGB YUYV descriptor and the parser . Use UYUV parser instead
-            color_ep.register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_COLOR));
-            color_ep.register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
+            auto uvc_dev = raw_color_ep.get_uvc_device();
+            if (uvc_dev->is_platform_jetson())
+            {
+                // Work-around for discrepancy between the RGB YUYV descriptor and the parser . Use UYUV parser instead
+                color_ep.register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
+            }
+            else
+            {
+                color_ep.register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
+            }
         }
         
         if (_pid == ds::RS465_PID)

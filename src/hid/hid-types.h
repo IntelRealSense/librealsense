@@ -42,7 +42,7 @@ namespace librealsense
       HID_REQUEST_SET_PROTOCOL = 0xb
     };
 
-    #pragma pack(push, 1)
+#pragma pack(push, 1)
     struct REALSENSE_FEATURE_REPORT {
       unsigned char reportId;
       unsigned char connectionType;
@@ -68,41 +68,9 @@ namespace librealsense
       unsigned char customValue6;
       unsigned char customValue7;
     };
-
 #pragma pack(pop)
+
     static_assert(sizeof(REALSENSE_HID_REPORT) == SIZE_OF_HID_IMU_FRAME, "HID IMU Frame struct expected size is 32 bytes");
-
-    struct hid_device_info
-    {
-        std::string id;
-        std::string vid;
-        std::string pid;
-        std::string unique_id;
-        std::string device_path;
-        std::string serial_number;
-
-        operator std::string()
-        {
-            std::stringstream s;
-            s << "id- " << id <<
-                "\nvid- " << std::hex << vid <<
-                "\npid- " << std::hex << pid <<
-                "\nunique_id- " << unique_id <<
-                "\npath- " << device_path;
-
-            return s.str();
-        }
-    };
-
-    inline bool operator==(const hid_device_info& a,
-        const hid_device_info& b)
-    {
-        return  (a.id == b.id) &&
-            (a.vid == b.vid) &&
-            (a.pid == b.pid) &&
-            (a.unique_id == b.unique_id) &&
-            (a.device_path == b.device_path);
-    }
 
 #pragma pack(push, 1)
     struct FEATURE_REPORT

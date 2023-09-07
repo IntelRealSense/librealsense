@@ -18,6 +18,8 @@
 #include "proc/colorizer.h"
 #include "proc/temporal-filter.h"
 
+#include <src/backend.h>
+
 namespace librealsense
 {
     using namespace ds;

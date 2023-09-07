@@ -77,9 +77,17 @@ def wait_for_devices( context, mask, n=1, timeout=3, throw=None ):
         #
         devices = context.query_devices( mask )
         if len(devices) >= n:
-            if not exact or len(devices) == n:
+            if not exact:
+                return devices
+            if len(devices) == n:
+                if n == 1:
+                    return devices[0]
                 return devices
     if throw:
         raise TimeoutError( f'timeout waiting for {n} device(s)' )
     log.d( f'timeout waiting for {n} device(s)' )
+    if exact and n == 1:
+        if devices:
+            return device[0]
+        return None
     return devices

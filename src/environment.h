@@ -4,8 +4,10 @@
 #pragma once
 #include "core/streaming.h"
 #include "types.h"
+#include <rsutils/lazy.h>
 #include <memory>
 #include <mutex>
+#include <set>
 
 namespace librealsense
 {
@@ -40,7 +42,9 @@ namespace librealsense
         extrinsics_graph();
         void register_same_extrinsics(const stream_interface& from, const stream_interface& to);
         void register_profile(const stream_interface& profile);
-        void register_extrinsics(const stream_interface& from, const stream_interface& to, std::weak_ptr<lazy<rs2_extrinsics>> extr);
+        void register_extrinsics( const stream_interface & from,
+                                  const stream_interface & to,
+                                  std::weak_ptr< rsutils::lazy< rs2_extrinsics > > extr );
         void register_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics extr);
         void override_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics const & extr);
         bool try_fetch_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics* extr);
@@ -70,16 +74,16 @@ namespace librealsense
 
         extrinsics_lock lock();
 
-        std::map<int, std::map<int, std::weak_ptr<lazy<rs2_extrinsics>>>> _extrinsics;
+        std::map< int, std::map< int, std::weak_ptr< rsutils::lazy< rs2_extrinsics > > > > _extrinsics;
         std::map<int, std::weak_ptr<const stream_interface>> _streams;
 
     private:
         std::mutex _mutex;
-        std::shared_ptr<lazy<rs2_extrinsics>> _id;
+        std::shared_ptr< rsutils::lazy< rs2_extrinsics > > _id;
         // Required by current implementation to hold the reference instead of the device for certain types. TODO
-        std::vector<std::shared_ptr<lazy<rs2_extrinsics>>> _external_extrinsics;
+        std::vector< std::shared_ptr< rsutils::lazy< rs2_extrinsics > > > _external_extrinsics;
 
-        std::shared_ptr<lazy<rs2_extrinsics>> fetch_edge(int from, int to);
+        std::shared_ptr< rsutils::lazy< rs2_extrinsics > > fetch_edge( int from, int to );
         bool try_fetch_extrinsics(int from, int to, std::set<int>& visited, rs2_extrinsics* extr);
         void cleanup_extrinsics();
         int find_stream_profile(const stream_interface& p, bool add_if_not_there = true);
@@ -87,6 +91,11 @@ namespace librealsense
         std::atomic<int> _locks_count;
 
     };
+
+
+    namespace platform {
+        class time_service;
+    }
 
 
     class environment

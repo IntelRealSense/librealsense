@@ -11,10 +11,14 @@
 #include "core/debug.h"
 #include "core/motion.h"
 #include "core/extension.h"
+#include "media/playback/playback-device-info.h"
 #include "media/record/record_device.h"
 #include <media/ros/ros_writer.h>
 #include <media/ros/ros_reader.h>
 #include "core/advanced_mode.h"
+#include "core/pose-frame.h"
+#include "core/motion-frame.h"
+#include "core/disparity-frame.h"
 #include "source.h"
 #include "core/processing.h"
 #include "proc/synthetic-stream.h"
@@ -115,7 +119,7 @@ struct rs2_frame_queue
 {
     explicit rs2_frame_queue(int cap)
         : queue( cap, [cap]( librealsense::frame_holder const & fh ) {
-            LOG_DEBUG( "DROPPED queue (capacity= " << cap << ") frame " << frame_holder_to_string( fh ) );
+            LOG_DEBUG( "DROPPED queue (capacity= " << cap << ") frame " << fh );
         } )
     {
     }
@@ -209,7 +213,7 @@ rs2_device* rs2_device_hub_wait_for_device(const rs2_device_hub* hub, rs2_error*
 {
     VALIDATE_NOT_NULL(hub);
     auto dev = hub->hub->wait_for_device();
-    return new rs2_device{ hub->hub->get_context(), std::make_shared<readonly_device_info>(dev), dev };
+    return new rs2_device{ dev };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, hub)
 
@@ -254,21 +258,6 @@ rs2_sensor_list* rs2_query_sensors(const rs2_device* device, rs2_error** error) 
 {
     VALIDATE_NOT_NULL(device);
 
-    std::vector<rs2_device_info> results;
-    try
-    {
-        auto dev = device->device;
-        for (unsigned int i = 0; i < dev->get_sensors_count(); i++)
-        {
-            rs2_device_info d{ device->ctx, device->info };
-            results.push_back(d);
-        }
-    }
-    catch (...)
-    {
-        LOG_WARNING("Could not open device!");
-    }
-
     return new rs2_sensor_list{ *device };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
@@ -308,10 +297,7 @@ rs2_device* rs2_create_device(const rs2_device_list* info_list, int index, rs2_e
     VALIDATE_NOT_NULL(info_list);
     VALIDATE_RANGE(index, 0, (int)info_list->list.size() - 1);
 
-    return new rs2_device{ info_list->ctx,
-                          info_list->list[index].info,
-                          info_list->list[index].info->create_device()
-    };
+    return new rs2_device{ info_list->list[index].info->create_device() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, info_list, index)
 
@@ -956,14 +942,14 @@ int rs2_device_list_contains(const rs2_device_list* info_list, const rs2_device*
     VALIDATE_NOT_NULL(info_list);
     VALIDATE_NOT_NULL(device);
 
+    auto dev_info = device->device->get_device_info();
+    if( ! dev_info )
+        return 0;
+
     for (auto info : info_list->list)
     {
-        // TODO: This is incapable of detecting playback devices
-        // Need to extend, if playback, compare filename or something
-        if (device->info && device->info->get_device_data() == info.info->get_device_data())
-        {
+        if( dev_info->is_same_as( info.info ) )
             return 1;
-        }
     }
     return 0;
 }
@@ -988,8 +974,7 @@ rs2_sensor* rs2_get_frame_sensor(const rs2_frame* frame, rs2_error** error) BEGI
     VALIDATE_NOT_NULL(frame);
     std::shared_ptr<librealsense::sensor_interface> sensor( ((frame_interface*)frame)->get_sensor() );
     device_interface& dev = sensor->get_device();
-    auto dev_info = std::make_shared<librealsense::readonly_device_info>(dev.shared_from_this());
-    rs2_device dev2{ dev.get_context(), dev_info, dev.shared_from_this() };
+    rs2_device dev2{ dev.shared_from_this() };
     return new rs2_sensor(dev2, sensor.get());
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
@@ -1565,7 +1550,7 @@ rs2_device* rs2_context_add_device(rs2_context* ctx, const char* file, rs2_error
     VALIDATE_NOT_NULL(file);
 
     auto dev_info = ctx->ctx->add_device(file);
-    return new rs2_device{ ctx->ctx, dev_info, dev_info->create_device() };
+    return new rs2_device{ dev_info->create_device() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, file)
 
@@ -1573,9 +1558,11 @@ void rs2_context_add_software_device(rs2_context* ctx, rs2_device* dev, rs2_erro
 {
     VALIDATE_NOT_NULL(ctx);
     VALIDATE_NOT_NULL(dev);
-    auto software_dev = VALIDATE_INTERFACE(dev->device, librealsense::software_device);
+    VALIDATE_INTERFACE(dev->device, librealsense::software_device);
     
-    ctx->ctx->add_software_device(software_dev->get_info());
+    auto dev_info = std::make_shared< software_device_info >( ctx->ctx );
+    dev_info->set_device( std::dynamic_pointer_cast< software_device >( dev->device ) );
+    ctx->ctx->add_software_device( dev_info );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, ctx, dev)
 
@@ -1715,8 +1702,6 @@ rs2_device* rs2_create_record_device_ex(const rs2_device* device, const char* fi
     VALIDATE_NOT_NULL(file);
 
     return new rs2_device({
-        device->ctx,
-        device->info,
         std::make_shared<record_device>(device->device, std::make_shared<ros_writer>(file, compression_enabled != 0))
         });
 }
@@ -1946,8 +1931,7 @@ rs2_device* rs2_pipeline_profile_get_device(rs2_pipeline_profile* profile, rs2_e
     VALIDATE_NOT_NULL(profile);
 
     auto dev = profile->profile->get_device();
-    auto dev_info = std::make_shared<librealsense::readonly_device_info>(dev);
-    return new rs2_device{ dev->get_context(), dev_info , dev };
+    return new rs2_device{ dev };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, profile)
 
@@ -2554,8 +2538,12 @@ NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0)
 
 rs2_device* rs2_create_software_device(rs2_error** error) BEGIN_API_CALL
 {
-    auto dev = std::make_shared<software_device>();
-    return new rs2_device{ dev->get_context(), std::make_shared<readonly_device_info>(dev), dev };
+    // We're not given a context...
+    auto ctx = std::make_shared< context >( nlohmann::json::object( { { "dds", false } } ) );
+    auto dev_info = std::make_shared< software_device_info >( ctx );
+    auto dev = std::make_shared< software_device >( dev_info );
+    dev_info->set_device( dev );
+    return new rs2_device{ dev };
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0)
 
@@ -2720,9 +2708,6 @@ void rs2_software_sensor_detach(rs2_sensor* sensor, rs2_error** error) BEGIN_API
 {
     VALIDATE_NOT_NULL(sensor);
     auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
-    // Are the first two necessary?
-    sensor->parent.ctx.reset();
-    sensor->parent.info.reset();
     sensor->parent.device.reset();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor)

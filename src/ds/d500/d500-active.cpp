@@ -14,14 +14,15 @@
 
 #include "d500-active.h"
 #include "d500-private.h"
+#include "d500-info.h"
 #include "ds/ds-options.h"
 #include "ds/ds-timestamp.h"
 
 namespace librealsense
 {
-    d500_active::d500_active(std::shared_ptr<context> ctx,
-                           const platform::backend_device_group& group)
-        : device(ctx, group), d500_device(ctx, group)
+    d500_active::d500_active( std::shared_ptr< const d500_info > const & dev_info )
+    : device( dev_info )
+    , d500_device( dev_info )
     {
         using namespace ds;
 

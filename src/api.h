@@ -28,8 +28,6 @@ struct rs2_notification
 
 struct rs2_device
 {
-    std::shared_ptr<librealsense::context> ctx;
-    std::shared_ptr<librealsense::device_info> info;
     std::shared_ptr<librealsense::device_interface> device;
 };
 

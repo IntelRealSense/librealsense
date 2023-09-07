@@ -7,6 +7,9 @@
 #include "mf-backend.h"
 #include "mf-uvc.h"
 #include "mf-hid.h"
+#include <src/platform/time-service.h>
+#include <src/platform/device-watcher.h>
+#include <src/platform/command-transfer.h>
 #include "usb/usb-device.h"
 #include "usb/usb-enumerator.h"
 #include "../types.h"

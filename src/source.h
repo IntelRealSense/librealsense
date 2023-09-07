@@ -7,6 +7,8 @@
 #include "archive.h"
 #include "metadata-parser.h"
 #include "frame-archive.h"
+#include "platform/time-service.h"
+
 
 namespace librealsense
 {

@@ -99,14 +99,6 @@ namespace librealsense
     }
 
 
-    std::string frame_to_string(const frame_interface& f);
-    std::string frame_holder_to_string(const frame_holder& f);
-
-    inline std::ostream& operator<<(std::ostream& out, const frame_interface& f)
-    {
-        return out << frame_to_string(f);
-    }
-
     class recommended_proccesing_blocks_interface
     {
     public:
@@ -177,6 +169,8 @@ namespace librealsense
 
 
     class matcher;
+    class device_info;
+
 
     class device_interface : public virtual info_interface, public std::enable_shared_from_this<device_interface>
     {
@@ -193,7 +187,7 @@ namespace librealsense
 
         virtual std::shared_ptr<context> get_context() const = 0;
 
-        virtual platform::backend_device_group get_device_data() const = 0;
+        virtual std::shared_ptr< const device_info > get_device_info() const = 0;
 
         virtual std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const = 0;
 

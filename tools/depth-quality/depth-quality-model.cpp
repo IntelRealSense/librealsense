@@ -63,19 +63,12 @@ namespace rs2
 
             int requested_fps = usb3_device ? 30 : 15;
 
+            // open Depth and Infrared streams using default profile
             {
                 rs2::config cfg_default;
-                // Preferred configuration Depth + Synthetic Color
-                cfg_default.enable_stream(RS2_STREAM_DEPTH, -1, 0, 0, RS2_FORMAT_Z16, requested_fps);
-                cfg_default.enable_stream(RS2_STREAM_INFRARED, -1, 0, 0, RS2_FORMAT_RGB8, requested_fps);
+                cfg_default.enable_stream(RS2_STREAM_DEPTH, -1);
+                cfg_default.enable_stream(RS2_STREAM_INFRARED, -1);
                 cfgs.emplace_back(cfg_default);
-            }
-            // Use Infrared luminocity as a secondary video in case synthetic chroma is not supported
-            {
-                rs2::config cfg_alt;
-                cfg_alt.enable_stream(RS2_STREAM_DEPTH, -1, 0, 0, RS2_FORMAT_Z16, requested_fps);
-                cfg_alt.enable_stream(RS2_STREAM_INFRARED, -1, 0, 0, RS2_FORMAT_Y8, requested_fps);
-                cfgs.emplace_back(cfg_alt);
             }
 
             for (auto& cfg : cfgs)

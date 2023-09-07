@@ -233,19 +233,26 @@ for dir in pyd_dirs:
     os.environ["PYTHONPATH"] += os.pathsep + dir
 
 
-def configuration_str( configuration, repetition = 1, prefix = '', suffix = '' ):
+def configuration_str( configuration, repetition=1, retry=0, sns=None, prefix='', suffix='' ):
     """ Return a string repr (with a prefix and/or suffix) of the configuration or '' if it's None """
     s = ''
     if configuration is not None:
-        s += '[' + ' '.join( configuration ) + ']'
+        s += '[' + ' '.join( configuration )
+        if sns is not None:
+            s += ' -> ' + ' '.join( [f'{devices.get(sn).name}_{sn}' for sn in sns] )
+        s += ']'
+    elif sns is not None:
+        s += '[' + ' '.join( [f'{devices.get(sn).name}_{sn}' for sn in sns] ) + ']'
     if repetition:
         s += '[' + str(repetition+1) + ']'
+    if retry:
+        s += f'[retry {retry}]'
     if s:
         s = prefix + s + suffix
     return s
 
 
-def check_log_for_fails( path_to_log, testname, configuration = None, repetition = 1 ):
+def check_log_for_fails( path_to_log, testname, configuration=None, repetition=1, sns=None ):
     # Normal logs are expected to have in last line:
     #     "All tests passed (11 assertions in 1 test case)"
     # Tests that have failures, however, will show:
@@ -279,13 +286,13 @@ def check_log_for_fails( path_to_log, testname, configuration = None, repetition
             desc = str( total - passed ) + ' of ' + str( total ) + ' failed'
 
         if log.is_verbose_on():
-            log.e( log.red + testname + log.reset + ': ' + configuration_str( configuration, repetition, suffix=' ' ) + desc )
+            log.e( log.red + testname + log.reset + ': ' + configuration_str( configuration, repetition, suffix=' ', sns=sns ) + desc )
             log.i( 'Log: >>>' )
             log.out()
             file.cat( path_to_log )
             log.out( '<<<' )
         else:
-            log.e( log.red + testname + log.reset + ': ' + configuration_str( configuration, repetition,
+            log.e( log.red + testname + log.reset + ': ' + configuration_str( configuration, repetition, sns=sns,
                                                                               suffix=' ' ) + desc + '; see ' + path_to_log )
         return True
     return False
@@ -381,13 +388,12 @@ def devices_by_test_config( test, exceptions ):
             continue
 
 
-def test_wrapper( test, configuration = None, repetition = 1 ):
-    global n_tests, rslog
-    n_tests += 1
+def test_wrapper_( test, configuration=None, repetition=1, retry=0, sns=None ):
+    global rslog
     #
-    conf_str = configuration_str( configuration, repetition, suffix=' ' ) + test.name
     if not log.is_debug_on():
-        log.i( f'Running {conf_str}' )
+        conf_str = configuration_str( configuration, repetition, retry=retry, prefix='  ', sns=sns )
+        log.i( f'Running {test.name}{conf_str}' )
     #
     log_path = test.get_log()
     #
@@ -396,19 +402,31 @@ def test_wrapper( test, configuration = None, repetition = 1 ):
         opts.add( '--rslog' )
     try:
         test.run_test( configuration = configuration, log_path = log_path, opts = opts )
-        return True
     except FileNotFoundError as e:
         log.e( log.red + test.name + log.reset + ':', str( e ) + configuration_str( configuration, repetition, prefix=' ' ) )
     except subprocess.TimeoutExpired:
         log.e( log.red + test.name + log.reset + ':', configuration_str( configuration, repetition, suffix=' ' ) + 'timed out' )
     except subprocess.CalledProcessError as cpe:
-        if not check_log_for_fails( log_path, test.name, configuration, repetition ):
+        if not check_log_for_fails( log_path, test.name, configuration, repetition, sns=sns ):
             # An unexpected error occurred
             log.e( log.red + test.name + log.reset + ':',
                    configuration_str( configuration, repetition, suffix=' ' ) + 'exited with non-zero value (' + str(
                        cpe.returncode ) + ')' )
+    else:
+        return True
     return False
 
+
+def test_wrapper( test, configuration=None, repetition=1, sns=None ):
+    global n_tests
+    n_tests += 1
+    for retry in range( test.config.retries + 1 ):
+        if test_wrapper_( test, configuration, repetition, retry, sns ):
+            return True
+        log._n_errors -= 1
+        time.sleep( 1 )  # small pause between tries
+    log._n_errors += 1
+    return False
 
 # Run all tests
 try:
@@ -430,8 +448,6 @@ try:
         #
         exceptions = None
         if not skip_live_tests:
-            if not to_stdout:
-                log.i( 'Logs in:', libci.logdir )
             if not no_exceptions and os.path.isfile( libci.exceptionsfile ):
                 try:
                     log.d( 'loading device exceptions from:', libci.exceptionsfile )
@@ -450,6 +466,8 @@ try:
     failed_tests = []
     if context:
         log.i( 'Running under context:', context )
+    if not to_stdout:
+        log.i( 'Logs in:', libci.logdir )
     for test in prioritize_tests( get_tests() ):
         try:
             #
@@ -520,7 +538,7 @@ try:
                     except RuntimeError as e:
                         log.w( log.red + test.name + log.reset + ': ' + str( e ) )
                     else:
-                        test_ok = test_wrapper( test, configuration, repetition ) and test_ok
+                        test_ok = test_wrapper( test, configuration, repetition, sns=serial_numbers ) and test_ok
                     finally:
                         log.debug_unindent()
             if not test_ok:
@@ -564,7 +582,7 @@ finally:
     # Disconnect from the Acroname -- if we don't it'll crash on Linux...
     # Before that we close all ports, no need for cameras to stay on between LibCI runs
     if not list_only and not only_not_live:
-        if devices.acroname:
+        if devices.acroname and devices.acroname.is_connected():
             devices.acroname.disable_ports()
             devices.wait_until_all_ports_disabled()
             devices.acroname.disconnect()

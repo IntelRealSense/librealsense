@@ -5,6 +5,7 @@
 
 #include "types.h"
 #include "../small-heap.h"
+#include <src/platform/frame-object.h>
 
 #include <vector>
 #include <unordered_map>

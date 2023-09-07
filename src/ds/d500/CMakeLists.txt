@@ -17,9 +17,9 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/d500-motion.h"
         "${CMAKE_CURRENT_LIST_DIR}/d500-active.h"
         "${CMAKE_CURRENT_LIST_DIR}/d500-private.h"
-        "${CMAKE_CURRENT_LIST_DIR}/d500-factory.h"
         "${CMAKE_CURRENT_LIST_DIR}/d500-safety.h"
         "${CMAKE_CURRENT_LIST_DIR}/d500-depth-mapping.h"
         "${CMAKE_CURRENT_LIST_DIR}/hw_monitor_extended_buffers.h"
         "${CMAKE_CURRENT_LIST_DIR}/d500-options.h"
+        "${CMAKE_CURRENT_LIST_DIR}/d500-info.h"
 )

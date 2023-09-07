@@ -2,12 +2,15 @@
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 #include "points.h"
 #include "core/video.h"
+#include "core/video-frame.h"
+#include "core/frame-holder.h"
+#include <fstream>
 
 #define MIN_DISTANCE 1e-6
 
 namespace librealsense {
 
-float3 * points::get_vertices() const
+float3 * points::get_vertices()
 {
     get_frame_data();  // call GetData to ensure data is in main memory
     return (float3*)data.data();
@@ -155,7 +158,7 @@ size_t labeled_points::get_vertex_count() const
     return LABELS_RESOLUTION;
 }
 
-float3* labeled_points::get_vertices() const
+float3* labeled_points::get_vertices()
 {
     get_frame_data();  // call GetData to ensure data is in main memory
     return (float3 *)data.data();

@@ -115,11 +115,7 @@ def find_all_hubs():
 
 
 def is_connected():
-    try:
-        connect()
-        return True
-    except Exception:
-        return False
+    return hub is not None and hub.isConnected()
 
 
 def disconnect():

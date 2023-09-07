@@ -2,6 +2,7 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include "playback_sensor.h"
+#include "playback_device.h"
 #include "core/motion.h"
 #include <map>
 #include "types.h"

@@ -39,8 +39,7 @@ namespace librealsense
             return dynamic_cast<uvc_sensor&>(*depth_sensor.get_raw_sensor());
         }
 
-        d400_device(std::shared_ptr<context> ctx,
-                   const platform::backend_device_group& group);
+        d400_device( std::shared_ptr< const d400_info > const & );
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
 
@@ -100,14 +99,14 @@ namespace librealsense
 
         uint8_t _depth_device_idx;
 
-        lazy<std::vector<uint8_t>> _coefficients_table_raw;
-        lazy<std::vector<uint8_t>> _new_calib_table_raw;
+        rsutils::lazy< std::vector< uint8_t > > _coefficients_table_raw;
+        rsutils::lazy< std::vector< uint8_t > > _new_calib_table_raw;
 
         std::shared_ptr<polling_error_handler> _polling_error_handler;
         std::shared_ptr<d400_thermal_monitor> _thermal_monitor;
-        std::shared_ptr<lazy<rs2_extrinsics>> _left_right_extrinsics;
-        lazy<std::vector<uint8_t>> _color_calib_table_raw;
-        std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
+        std::shared_ptr< rsutils::lazy< rs2_extrinsics > > _left_right_extrinsics;
+        rsutils::lazy< std::vector< uint8_t > > _color_calib_table_raw;
+        std::shared_ptr< rsutils::lazy< rs2_extrinsics > > _color_extrinsic;
         bool _is_locked = true;
 
         std::shared_ptr<auto_gain_limit_option> _gain_limit_value_control;
@@ -117,8 +116,7 @@ namespace librealsense
     class ds5u_device : public d400_device
     {
     public:
-        ds5u_device(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group);
+        ds5u_device( std::shared_ptr< const d400_info > const & );
 
         std::shared_ptr<synthetic_sensor> create_ds5u_depth_device(std::shared_ptr<context> ctx,
             const std::vector<platform::uvc_device_info>& all_device_infos);

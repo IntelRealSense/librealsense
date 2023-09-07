@@ -1,4 +1,5 @@
 #include "../src/types.h"
+#include <src/platform/uvc-device.h>
 
 using namespace librealsense;
 
