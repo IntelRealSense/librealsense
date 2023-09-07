@@ -6,6 +6,7 @@
 #include <realdds/dds-participant.h>
 #include <realdds/dds-publisher.h>
 #include <realdds/dds-utilities.h>
+#include <realdds/dds-guid.h>
 
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/publisher/Publisher.hpp>
@@ -34,6 +35,12 @@ dds_topic_writer::~dds_topic_writer()
 {
     if( _writer )
         DDS_API_CALL_NO_THROW( _publisher->get()->delete_datawriter( _writer ) );
+}
+
+
+dds_guid const & dds_topic_writer::guid() const
+{
+    return _writer ? _writer->guid() : unknown_guid;
 }
 
 
