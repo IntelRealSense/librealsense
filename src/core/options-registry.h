@@ -9,6 +9,15 @@
 namespace librealsense {
 
 
+// This registry is used to register options that have custom names. I.e., names that do not have values in
+// librealsense's built-in rs2_option enumeration.
+// 
+// If you need an option "X", it must first be registered. The name and the rs2_option value for it will then be
+// associated.
+// 
+// Such options need unique identifiers that are obviously not in rs2_option and yet must seem like they are. Since
+// rs2_option is intergral in nature, we use negative values to identify registered options.
+//
 class options_registry
 {
 public:
