@@ -3,76 +3,19 @@
 
 #include <realdds/dds-device.h>
 #include <realdds/dds-participant.h>
+#include <realdds/dds-topic-writer.h>
 #include "dds-device-impl.h"
 
 
 namespace realdds {
 
 
-namespace {
-
-// The map from guid to device is global
-typedef std::map< dds_guid, std::weak_ptr< dds_device > > guid_to_device_map;
-guid_to_device_map guid_to_device;
-std::mutex devices_mutex;
-
-}  // namespace
-
-
-std::shared_ptr< dds_device > dds_device::find( dds_guid const & guid )
+dds_device::dds_device( std::shared_ptr< dds_participant > const & participant, topics::device_info const & info )
+    : _impl( std::make_shared< dds_device::impl >( participant, info ) )
 {
-    std::lock_guard< std::mutex > lock( devices_mutex );
-    return find_internal( guid );
+    LOG_DEBUG( "+device '" << info.debug_name() << "' on " << info.topic_root );
 }
 
-std::shared_ptr< dds_device > dds_device::find_internal( dds_guid const & guid )
-{
-    // Assumes devices_mutex is locked outside this function to protect access to guid_to_device
-
-    std::shared_ptr< dds_device > dev;
-
-    auto it = guid_to_device.find( guid );
-    if( it != guid_to_device.end() )
-    {
-        dev = it->second.lock();
-        if( ! dev )
-        {
-            // The device is no longer in use; clear it out
-            guid_to_device.erase( it );
-        }
-    }
-
-    return dev;
-}
-
-std::shared_ptr< dds_device > dds_device::create( std::shared_ptr< dds_participant > const & participant,
-                                                  dds_guid const & guid,
-                                                  topics::device_info const & info )
-{
-    // Locking before find_internal() to avoid a device created between search and creation
-    std::lock_guard< std::mutex > lock( devices_mutex );
-
-    std::shared_ptr< dds_device > dev = find_internal( guid );
-    if( ! dev )
-    {
-        LOG_DEBUG( "+device '" << info.debug_name() << "' (" << participant->print( guid ) << ") on " << info.topic_root );
-        auto impl = std::make_shared< dds_device::impl >( participant, guid, info );
-        // Use a custom deleter to automatically remove the device from the map when it's done with
-        dev = std::shared_ptr< dds_device >( new dds_device( impl ), [guid]( dds_device * ptr ) {
-            std::lock_guard< std::mutex > lock( devices_mutex );
-            guid_to_device.erase( guid );
-            delete ptr;
-        } );
-        guid_to_device.emplace( guid, dev );
-    }
-
-    return dev;
-}
-
-dds_device::dds_device( std::shared_ptr< impl > impl )
-    : _impl( impl )
-{
-}
 
 bool dds_device::is_ready() const
 {
@@ -99,9 +42,14 @@ topics::device_info const & dds_device::device_info() const
     return _impl->_info;
 }
 
+dds_guid const & dds_device::server_guid() const
+{
+    return _impl->_server_guid;
+}
+
 dds_guid const & dds_device::guid() const
 {
-    return _impl->_guid;
+    return _impl->guid();
 }
 
 size_t dds_device::number_of_streams() const
