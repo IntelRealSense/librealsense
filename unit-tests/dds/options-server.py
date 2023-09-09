@@ -31,7 +31,7 @@ def test_device_options_discovery( values ):
     s1.init_profiles( s1profiles, 0 )
     dev_opts = []
     for index, value in enumerate( values ):
-        option = dds.dds_option( "opt" + str( index ), "device" )
+        option = dds.option( "opt" + str( index ), "device" )
         option.set_value( value )
         dev_opts.append( option )
     global server
@@ -43,16 +43,16 @@ def test_stream_options_discovery( value, min, max, step, default, description )
     s1profiles = [s1p1]
     s1 = dds.depth_stream_server( "s1", "sensor" )
     s1.init_profiles( s1profiles, 0 )
-    so1 = dds.dds_option( "opt1", "s1" )
+    so1 = dds.option( "opt1", "s1" )
     so1.set_value( value )
-    so2 = dds.dds_option( "opt2", "s1" )
-    range = dds.dds_option_range()
+    so2 = dds.option( "opt2", "s1" )
+    range = dds.option_range()
     range.min = min
     range.max = max
     range.step = step
     range.default_value = default
     so2.set_range( range )
-    so3 = dds.dds_option( "opt3", "s1" )
+    so3 = dds.option( "opt3", "s1" )
     so3.set_description( description)
     s1.init_options( [so1, so2, so3] )
     global server
@@ -62,12 +62,12 @@ def test_stream_options_discovery( value, min, max, step, default, description )
 def test_device_and_multiple_stream_options_discovery( dev_values, stream_values ):
     dev_options = []
     for index, value in enumerate( dev_values ):
-        option = dds.dds_option( "opt" + str( index ), "device" )
+        option = dds.option( "opt" + str( index ), "device" )
         option.set_value( value )
         dev_options.append( option )
     stream_options = []
     for index, value in enumerate( stream_values ):
-        option = dds.dds_option( "opt" + str( index ), "sensor" )
+        option = dds.option( "opt" + str( index ), "sensor" )
         option.set_value( value )
         stream_options.append( option )
 
