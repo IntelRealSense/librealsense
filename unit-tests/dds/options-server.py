@@ -46,12 +46,7 @@ def test_stream_options_discovery( value, min, max, step, default, description )
     so1 = dds.option( "opt1", "s1" )
     so1.set_value( value )
     so2 = dds.option( "opt2", "s1" )
-    range = dds.option_range()
-    range.min = min
-    range.max = max
-    range.step = step
-    range.default_value = default
-    so2.set_range( range )
+    so2.set_range( dds.option_range( min, max, step, default ) )
     so3 = dds.option( "opt3", "s1" )
     so3.set_description( description)
     s1.init_options( [so1, so2, so3] )
