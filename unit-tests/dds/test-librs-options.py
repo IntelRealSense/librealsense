@@ -2,7 +2,7 @@
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
-#test:retries 2
+#test:retries:gha 2
 
 from rspy import log, test
 with test.remote.fork( nested_indent=None ) as remote:
