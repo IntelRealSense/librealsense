@@ -3,6 +3,7 @@
 
 # test:device:jetson D457
 # test:device:!jetson D455
+# test:device:!jetson each(D500*)
 # This test check existence motion intrinsic data in accel and gyro profiles.
 
 import pyrealsense2 as rs
