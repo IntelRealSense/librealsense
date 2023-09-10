@@ -7,6 +7,8 @@ import pyrealsense2 as rs
 from rspy import test, log
 import time
 
+# Constants
+FRAMES_TO_COLLECT = 3
 
 def check_sc_streaming(stream):
     cfg = rs.config()
@@ -14,10 +16,10 @@ def check_sc_streaming(stream):
     pipe = rs.pipeline()
     pipe.start(cfg)
     iterations = 0
-    while iterations < 3:
+    while iterations < FRAMES_TO_COLLECT:
         iterations += 1
         f = pipe.wait_for_frames()
-    test.check_equal(iterations, 3)
+    test.check_equal(iterations, FRAMES_TO_COLLECT)
     pipe.stop()
 
 
