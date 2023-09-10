@@ -23,11 +23,11 @@ with test.remote.fork( nested_indent=None ) as remote:
             s1 = dds.color_stream_server( 's1', 'sensor' )
             s1.init_profiles( s1profiles, 0 )
             options = []
-            option = dds.option( 'Backlight Compensation', 'RGB Camera' )
+            option = dds.option( 'Backlight Compensation' )
             option.set_range( dds.option_range( 0, 1, 1, 0 ) )
             option.set_description( 'Backlight custom description' )
             options.append( option )
-            option = dds.option( 'Custom Option', 'RGB Camera' )
+            option = dds.option( 'Custom Option' )
             option.set_range( dds.option_range( 0, 1, 1, 0 ) )
             option.set_description( 'Something' )
             options.append( option )

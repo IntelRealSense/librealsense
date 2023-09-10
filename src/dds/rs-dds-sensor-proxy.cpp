@@ -543,46 +543,14 @@ void dds_sensor_proxy::add_option( std::shared_ptr< realdds::dds_option > option
         throw librealsense::invalid_value_exception( "Option '" + option->get_name() + "' not found" );
     }
 
+    if( get_option_handler( option_id ) )
+        throw std::runtime_error( "option '" + option->get_name() + "' already exists in sensor" );
+
     auto opt = std::make_shared< rs_dds_option >(
         option,
-        [&]( const std::string & name, float value ) { set_option( name, value ); },
-        [&]( const std::string & name ) -> float { return query_option( name ); } );
+        [=]( const std::string & name, float value ) { _dev->set_option_value( option, value ); },
+        [=]( const std::string & name ) -> float { return _dev->query_option_value( option ); } );
     register_option( option_id, opt );
-}
-
-
-void dds_sensor_proxy::set_option( const std::string & name, float value ) const
-{
-    // Sensor is setting the option for all supporting streams (with same value)
-    for( auto & stream : _streams )
-    {
-        for( auto & dds_opt : stream.second->options() )
-        {
-            if( dds_opt->get_name().compare( name ) == 0 )
-            {
-                _dev->set_option_value( dds_opt, value );
-                break;
-            }
-        }
-    }
-}
-
-
-float dds_sensor_proxy::query_option( const std::string & name ) const
-{
-    for( auto & stream : _streams )
-    {
-        for( auto & dds_opt : stream.second->options() )
-        {
-            if( dds_opt->get_name().compare( name ) == 0 )
-            {
-                // Assumes value is same for all relevant streams in the sensor, values are always set together
-                return _dev->query_option_value( dds_opt );
-            }
-        }
-    }
-
-    throw std::runtime_error( "Could not find a stream that supports option " + name );
 }
 
 
