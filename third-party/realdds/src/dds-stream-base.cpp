@@ -52,9 +52,12 @@ void dds_stream_base::init_profiles( dds_stream_profiles const & profiles, size_
 
 void dds_stream_base::init_options( dds_options const & options )
 {
-    if( !_options.empty() )
+    if( ! _options.empty() )
         DDS_THROW( runtime_error, "stream '" + _name + "' options are already initialized" );
 
+    auto this_stream = shared_from_this();
+    for( auto option : options )
+        option->init_stream( this_stream );
     _options = options;
 }
 

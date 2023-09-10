@@ -584,9 +584,9 @@ PYBIND11_MODULE(NAME, m) {
 
     using realdds::dds_option;
     py::class_< dds_option, std::shared_ptr< dds_option > >( m, "option" )
-        .def( py::init< std::string const &, std::string const & >() )
+        .def( py::init< std::string const & >() )
         .def( "get_name", &dds_option::get_name )
-        .def( "owner_name", &dds_option::owner_name )
+        .def( "stream", &dds_option::stream )
         .def( "get_value", &dds_option::get_value )
         .def( "set_value", &dds_option::set_value )
         .def( "get_range", &dds_option::get_range )
