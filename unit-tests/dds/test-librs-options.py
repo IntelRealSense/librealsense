@@ -22,16 +22,10 @@ with test.remote.fork( nested_indent=None ) as remote:
             s1profiles = [s1p1]
             s1 = dds.color_stream_server( 's1', 'sensor' )
             s1.init_profiles( s1profiles, 0 )
-            options = []
-            option = dds.option( 'Backlight Compensation' )
-            option.set_range( dds.option_range( 0, 1, 1, 0 ) )
-            option.set_description( 'Backlight custom description' )
-            options.append( option )
-            option = dds.option( 'Custom Option' )
-            option.set_range( dds.option_range( 0, 1, 1, 0 ) )
-            option.set_description( 'Something' )
-            options.append( option )
-            s1.init_options( options )
+            s1.init_options( [
+                dds.option( 'Backlight Compensation', dds.option_range( 0, 1, 1, 0 ), 'Backlight custom description' ),
+                dds.option( 'Custom Option', dds.option_range( 0, 1, 1, 0 ), 'Something' )
+                ] )
             server = dds.device_server( participant, device_info.topic_root )
             server.init( [s1], [], {} )
 

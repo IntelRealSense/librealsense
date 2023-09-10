@@ -254,19 +254,20 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
                         continue;  // Added automatically for every sensor_base
 
                     std::string option_name = sensor.get_option_name( option_id );
-                    auto dds_opt = std::make_shared< realdds::dds_option >( option_name );
                     try
                     {
+                        auto dds_opt = std::make_shared< realdds::dds_option >(
+                            option_name,
+                            to_realdds( sensor.get_option_range( option_id ) ),
+                            sensor.get_option_description( option_id ) );
                         dds_opt->set_value( sensor.get_option( option_id ) );
-                        dds_opt->set_range( to_realdds( sensor.get_option_range( option_id ) ) );
-                        dds_opt->set_description( sensor.get_option_description( option_id ) );
+                        stream_options.push_back( dds_opt );  // TODO - filter options relevant for stream type
                     }
                     catch( ... )
                     {
                         LOG_ERROR( "Cannot query details of option " << option_id );
-                        continue;  // Some options can be queried only if certain conditions exist skip them for now
+                        // Some options can be queried only if certain conditions exist skip them for now
                     }
-                    stream_options.push_back( dds_opt );  // TODO - filter options relevant for stream type
                 }
                 // sensor.stop();
                 // sensor.close();

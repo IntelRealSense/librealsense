@@ -87,12 +87,13 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             test.check_equal( options[2].get_description(), "opt3 of s1" )
 
         option = options[1]
-        test.check_equal( option.get_value(), 0. )  # not default!?
+        test.check_equal( option.get_value(), option.get_range().default_value )
         option.set_value( 1. )  # only on client!
-        test.check_equal( device.query_option_value( option ), 0. )
-        test.check_equal( option.get_value(), 0. )  # from server
+        test.check_equal( option.get_value(), 1. )
+        test.check_equal( device.query_option_value( option ), option.get_range().default_value )  # from server
+        test.check_equal( option.get_value(), option.get_range().default_value )  # client got updated!
 
-        device.set_option_value( option, 12. )
+        device.set_option_value( option, 12. )  # updates server & client
         test.check_equal( option.get_value(), 12. )
 
         remote.run( 'close_server()' )

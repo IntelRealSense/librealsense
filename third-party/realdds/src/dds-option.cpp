@@ -11,8 +11,11 @@ using nlohmann::json;
 namespace realdds {
 
 
-dds_option::dds_option( const std::string & name )
+dds_option::dds_option( const std::string & name, dds_option_range const & range, std::string const & description )
     : _name( name )
+    , _range( range )
+    , _value( range.default_value )
+    , _description( description )
 {
 }
 
