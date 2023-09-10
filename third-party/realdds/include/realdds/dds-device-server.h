@@ -119,8 +119,8 @@ private:
     std::shared_ptr< dds_device_broadcaster > _broadcaster;
     dispatcher _control_dispatcher;
 
-    set_option_callback _set_option_callback = nullptr;
-    query_option_callback _query_option_callback = nullptr;
+    set_option_callback _set_option_callback;
+    query_option_callback _query_option_callback;
     control_callback _control_callback;
 
     extrinsics_map _extrinsics_map; // <from stream, to stream> to extrinsics
