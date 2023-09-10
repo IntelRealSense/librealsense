@@ -95,7 +95,15 @@ PYBIND11_MODULE(NAME, m) {
     py::class_< dds_guid >( m, "guid" )
         .def( py::init<>() )
         .def( "__bool__", []( dds_guid const& self ) { return self != dds_guid::unknown(); } )
-        .def( "__repr__", []( dds_guid const& self ) { return to_string( self ); } );
+        .def( "__repr__", []( dds_guid const & self ) { return to_string( self ); } )
+        // Following two (hash and ==) are needed if we want to be able to use guids as dictionary keys
+        .def( "__hash__",
+              []( dds_guid const & self )
+              {
+                  return std::hash< std::string >{}(
+                      realdds::print( self, false ) );  // use hex; not the human-readable name
+              } )
+        .def( py::self == py::self );
 
     using realdds::dds_participant;
     using eprosima::fastrtps::types::ReturnCode_t;
@@ -282,6 +290,7 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_topic_writer;
     py::class_< dds_topic_writer, std::shared_ptr< dds_topic_writer > >( m, "topic_writer" )
         .def( py::init< std::shared_ptr< dds_topic > const & >() )
+        .def( "guid", &dds_topic_writer::guid )
         .def( FN_FWD( dds_topic_writer,
                       on_publication_matched,
                       (dds_topic_writer &, int),
@@ -712,10 +721,22 @@ PYBIND11_MODULE(NAME, m) {
         .def( "set_accel_intrinsics", &dds_motion_stream_server::set_accel_intrinsics )
         .def( "start_streaming", &dds_motion_stream_server::start_streaming );
 
+    // To have the python code be able to modify json objects in callbacks, we need to somehow refer to the original
+    // json object as changes to translated dict will not automatically get picked up!
+    // We do this thru the [] operator:
+    //     def callback( json ):
+    //         print( json['value'] )            # calls __getitem__
+    //         json['value'] = { 'more': True }  # calls __setitem__
+    struct json_ref { nlohmann::json & j; };
+    py::class_< json_ref, std::shared_ptr< json_ref > >( m, "json_ref" )
+        .def( "__getitem__", []( json_ref const & jr, std::string const & key ) { return jr.j.at( key ); } )
+        .def( "__setitem__", []( json_ref & jr, std::string const & key, nlohmann::json const & value ) { jr.j[key] = value; } );
+
     using realdds::dds_device_server;
     py::class_< dds_device_server, std::shared_ptr< dds_device_server > >( m, "device_server" )
         .def( py::init< std::shared_ptr< dds_participant > const&, std::string const& >() )
         .def( "init", &dds_device_server::init )
+        .def( "guid", &dds_device_server::guid )
         .def( "streams",
               []( dds_device_server const & self )
               {
@@ -729,7 +750,12 @@ PYBIND11_MODULE(NAME, m) {
             []( dds_device_server & self, nlohmann::json const & j ) { self.publish_notification( j ); },
             py::call_guard< py::gil_scoped_release >() )
         .def( "publish_metadata", &dds_device_server::publish_metadata, py::call_guard< py::gil_scoped_release >() )
-        .def( "broadcast", &dds_device_server::broadcast );
+        .def( "broadcast", &dds_device_server::broadcast )
+        .def( FN_FWD_R( dds_device_server, on_control,
+                        false,
+                        (dds_device_server &, std::string const &, py::object &&, json_ref &&),
+                        ( std::string const & id, nlohmann::json const & control, nlohmann::json & reply ),
+                        return callback( self, id, json_to_py( control ), json_ref{ reply } ); ) );
 
     using realdds::dds_stream;
     py::class_< dds_stream, std::shared_ptr< dds_stream > > stream_client_base( m, "stream", stream_base );
@@ -785,9 +811,10 @@ PYBIND11_MODULE(NAME, m) {
     py::class_< dds_device,
         std::shared_ptr< dds_device >  // handled with a shared_ptr
     >( m, "device" )
-        .def( py::init( &dds_device::create ) )
+        .def( py::init< std::shared_ptr< dds_participant > const &, device_info const & >() )
         .def( "device_info", &dds_device::device_info )
         .def( "participant", &dds_device::participant )
+        .def( "server_guid", &dds_device::server_guid )
         .def( "guid", &dds_device::guid )
         .def( "is_ready", &dds_device::is_ready )
         .def( "wait_until_ready",
@@ -804,6 +831,12 @@ PYBIND11_MODULE(NAME, m) {
                       (dds_device &, dds_time const &, char, std::string const &, py::object && ),
                       (dds_time const & timestamp, char type, std::string const & text, nlohmann::json const & data),
                       callback( self, timestamp, type, text, json_to_py( data ) ); ) )
+        .def( FN_FWD_R( dds_device,
+                        on_notification,
+                        false,
+                        (dds_device &, std::string const &, py::object &&),
+                        ( std::string const & id, nlohmann::json const & data ),
+                        return callback( self, id, json_to_py( data ) ); ) )
         .def( "n_streams", &dds_device::number_of_streams )
         .def( "streams",
               []( dds_device const & self ) {
@@ -832,12 +865,11 @@ PYBIND11_MODULE(NAME, m) {
             py::call_guard< py::gil_scoped_release >() )
         .def( "__repr__", []( dds_device const & self ) {
             std::ostringstream os;
-            os << "<" SNAME ".device ";
-            os << self.participant()->print( self.guid() );
+            os << "<" SNAME ".device";
+            os << " " << self.participant()->print( self.guid() );
             if( ! self.device_info().name.empty() )
                 os << " \"" << self.device_info().name << "\"";
-            if( ! self.device_info().serial.empty() )
-                os << " s/n \"" << self.device_info().serial << "\"";
+            os << " @ " << self.device_info().debug_name();
             os << ">";
             return os.str();
         } );

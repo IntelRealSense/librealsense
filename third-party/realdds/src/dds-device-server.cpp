@@ -35,7 +35,6 @@ using namespace realdds;
 static std::string const id_key( "id", 2 );
 static std::string const id_set_option( "set-option", 10 );
 static std::string const id_query_option( "query-option", 12 );
-static std::string const id_open_streams( "open-streams", 12 );
 static std::string const value_key( "value", 5 );
 static std::string const sample_key( "sample", 6 );
 static std::string const status_key( "status", 6 );
@@ -56,6 +55,13 @@ dds_device_server::dds_device_server( std::shared_ptr< dds_participant > const &
     LOG_DEBUG( "device server created @ '" << _topic_root << "'" );
     _control_dispatcher.start();
 }
+
+
+dds_guid const & dds_device_server::guid() const
+{
+    return _notification_server ? _notification_server->guid() : unknown_guid;
+}
+
 
 
 dds_device_server::~dds_device_server()
@@ -308,12 +314,7 @@ void dds_device_server::handle_control_message( std::string const & id,
 {
     LOG_DEBUG( "<----- control " << j );
 
-    if( id.compare( id_open_streams ) == 0 )
-    {
-        if ( _open_streams_callback )
-            _open_streams_callback( j );
-    }
-    else if( id.compare( id_set_option ) == 0 )
+    if( id.compare( id_set_option ) == 0 )
     {
         handle_set_option( j, reply );
     }
@@ -321,7 +322,7 @@ void dds_device_server::handle_control_message( std::string const & id,
     {
         handle_query_option( j, reply );
     }
-    else
+    else if( ! _control_callback || ! _control_callback( id, j, reply ) )
     {
         DDS_THROW( runtime_error, "invalid control '" + id + "'" );
     }

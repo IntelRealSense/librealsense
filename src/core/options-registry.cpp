@@ -33,12 +33,16 @@ static std::mutex _mutex;
 
 inline size_t option_to_index( rs2_option by_name_option )
 {
+    // Registered rs2_option value will be negative, so we negate
+    // Indices are 0-based but negative rs2_options values are 1-based, so minus 1:
     return -by_name_option - 1;
 }
 
 
 inline rs2_option index_to_option( size_t index )
 {
+    // Index = index into the _name_by_index array -> 0-based
+    // Registered rs2_option value will be negative, and starting at -1:
     return rs2_option( -( int( index ) + 1 ) );
 }
 

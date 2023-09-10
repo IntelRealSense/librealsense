@@ -36,32 +36,40 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
                 if( ! msg.is_valid() )
                     continue;
 
-                eprosima::fastrtps::rtps::GUID_t guid;
+                // NOTE: the GUID we get here is the writer on the device-info, used nowhere again in the system, which
+                // can therefore be confusing. It is not the "server GUID", but can still be used to uniquely identify
+                // the device instance since there should be one writer per device.
+                dds_guid guid;
                 eprosima::fastrtps::rtps::iHandle2GUID( guid, info.publication_handle );
 
-                auto device = dds_device::find( guid );
-                if( device )
-                    continue;
+                std::shared_ptr< dds_device > device;
+                {
+                    std::lock_guard< std::mutex > lock( _devices_mutex );
+                    auto it = _dds_devices.find( guid );
+                    if( it != _dds_devices.end() )
+                        device = it->second;
+                }
 
                 auto j = msg.json_data();
                 if( j.find( "stopping" ) != j.end() )
                 {
                     // This device is stopping for whatever reason (e.g., HW reset); remove it
-                    LOG_DEBUG( "DDS device (" << _participant->print( guid ) << ") is stopping" );
+                    LOG_DEBUG( "DDS device (from " << _participant->print( guid ) << ") is stopping" );
+                    // TODO notify the device?
                     remove_device( guid );
                     continue;
                 }
+
+                if( device )
+                    // We already know about this device; likely this was a broadcast meant for someone else
+                    continue;
+
                 topics::device_info device_info = topics::device_info::from_json( j );
 
-                LOG_DEBUG( "DDS device (" << _participant->print( guid ) << ") detected:"
-                                          << "\n\tName: " << device_info.name
-                                          << ( device_info.serial.empty() ? "" : "\n\tSerial: " ) << device_info.serial
-                                          << ( device_info.product_line.empty() ? "" : "\n\tProduct line: " ) << device_info.product_line
-                                          << "\n\tTopic root: " << device_info.topic_root
-                                          << ( device_info.locked ? "\n\tLocked: yes" : "" ) );
+                LOG_DEBUG( "DDS device (from " << _participant->print( guid ) << ") detected: " << j.dump( 4 ) );
 
                 // Add a new device record into our dds devices map
-                device = dds_device::create( _participant, guid, device_info );
+                device = std::make_shared< dds_device >( _participant, device_info );
                 {
                     std::lock_guard< std::mutex > lock( _devices_mutex );
                     _dds_devices[guid] = device;
@@ -120,6 +128,7 @@ dds_device_watcher::~dds_device_watcher()
 {
     stop();
 }
+
 
 void dds_device_watcher::init()
 {

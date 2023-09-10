@@ -38,8 +38,11 @@ public:
 private:
     std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_streams();
 
-    void start_streaming( const nlohmann::json & msg );
     void publish_frame_metadata( const rs2::frame & f, realdds::dds_time const & );
+
+    bool on_control( std::string const & id, nlohmann::json const & control, nlohmann::json & reply );
+    bool on_hardware_reset( nlohmann::json const &, nlohmann::json & );
+    bool on_open_streams( nlohmann::json const &, nlohmann::json & );
 
     void override_default_profiles( const std::map< std::string, realdds::dds_stream_profiles > & stream_name_to_profiles,
                                     std::map< std::string, size_t > & stream_name_to_default_profile ) const;

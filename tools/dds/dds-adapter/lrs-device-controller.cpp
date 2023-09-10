@@ -119,7 +119,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
     {
         std::string const sensor_name = sensor.get_info( RS2_CAMERA_INFO_NAME );
         // We keep a copy of the sensors throughout the run time:
-        // Otherwise problems could arise like opening streams and they would close at start_streaming scope end.
+        // Otherwise problems could arise like opening streams and they would close at on_open_streams scope end.
         _rs_sensors[sensor_name] = sensor;
 
         auto stream_profiles = sensor.get_stream_profiles();
@@ -482,13 +482,15 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
     if( ! _dds_device_server )
         throw std::runtime_error( "Empty dds_device_server" );
 
-    _dds_device_server->on_open_streams( [&]( const json & msg ) { start_streaming( msg ); } );
     _dds_device_server->on_set_option( [&]( const std::shared_ptr< realdds::dds_option > & option, float value ) {
         set_option( option, value );
     } );
     _dds_device_server->on_query_option( [&]( const std::shared_ptr< realdds::dds_option > & option ) -> float {
         return query_option( option );
     } );
+    _dds_device_server->on_control(
+        [this]( std::string const & id, nlohmann::json const & control, nlohmann::json & reply )
+        { return on_control( id, control, reply ); } );
 
     _device_sn = _rs_dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
     LOG_DEBUG( "LRS device manager for device: " << _device_sn << " created" );
@@ -606,7 +608,7 @@ lrs_device_controller::~lrs_device_controller()
 }
 
 
-void lrs_device_controller::start_streaming( const json & msg )
+bool lrs_device_controller::on_open_streams( nlohmann::json const & control, nlohmann::json & reply )
 {
     // Note that this function is called "start-streaming" but it's really a response to "open-streams" so does not
     // actually start streaming. It simply sets and locks in which streams should be open when streaming starts.
@@ -614,10 +616,10 @@ void lrs_device_controller::start_streaming( const json & msg )
     // out, a sensor is reset back to its default state using implicit stream selection.
     // (For example, the 'Stereo Module' sensor controls Depth, IR1, IR2: but turning on all 3 has performance
     // implications and may not be desirable. So you can open only Depth and IR1/2 will stay inactive...)
-    if( rsutils::json::get< bool >( msg, "reset", true ) )
+    if( rsutils::json::get< bool >( control, "reset", true ) )
         _bridge.reset();
 
-    auto const & msg_profiles = msg["stream-profiles"];
+    auto const & msg_profiles = control["stream-profiles"];
     for( auto const & name2profile : msg_profiles.items() )
     {
         std::string const & stream_name = name2profile.key();
@@ -637,8 +639,11 @@ void lrs_device_controller::start_streaming( const json & msg )
     }
 
     // We're here so all the profiles were acceptable; lock them in -- with no implicit profiles!
-    if( rsutils::json::get< bool >( msg, "commit", true ) )
+    if( rsutils::json::get< bool >( control, "commit", true ) )
         _bridge.commit();
+
+    // We don't touch the reply - it's already filled in for us
+    return true;
 }
 
 
@@ -809,3 +814,27 @@ size_t lrs_device_controller::get_index_of_profile( const realdds::dds_stream_pr
 
     return 0;
 }
+
+
+bool lrs_device_controller::on_control( std::string const & id, nlohmann::json const & control, nlohmann::json & reply )
+{
+    static std::map< std::string, bool ( lrs_device_controller::* )( nlohmann::json const &, nlohmann::json & ) > const
+        control_handlers{
+            { "hw-reset", &lrs_device_controller::on_hardware_reset },
+            { "open-streams", &lrs_device_controller::on_open_streams },
+        };
+    auto it = control_handlers.find( id );
+    if( it == control_handlers.end() )
+        return false;
+
+    return (this->*(it->second))( control, reply );
+}
+
+
+bool lrs_device_controller::on_hardware_reset( nlohmann::json const & control, nlohmann::json & reply )
+{
+    _rs_dev.hardware_reset();
+    return true;
+}
+
+

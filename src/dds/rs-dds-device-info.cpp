@@ -24,7 +24,7 @@ std::string dds_device_info::get_address() const
     auto const domain_id = _dev->participant()->get()->get_domain_id();
 
     return rsutils::string::from() << "dds." << domain_id << "://"
-                                   << _dev->participant()->name_from_guid( _dev->guid() ) << "@"
+                                   << _dev->participant()->print( _dev->server_guid() ) << "@"
                                    << _dev->device_info().topic_root;
 }
 

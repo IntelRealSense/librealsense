@@ -10,18 +10,21 @@
 namespace realdds {
 
 
+static constexpr auto & unknown_guid = eprosima::fastrtps::rtps::c_Guid_Unknown;
+
+
 // Custom GUID printer: attempts a more succinct representation
 // If a base_prefix is provided, will try to minimize a common denominator (vendor, host, etc.) -- you can use your
 // participant's guid if you want to shorten
 //
 std::string print( dds_guid const & guid,
-                   dds_guid_prefix const & base_prefix = eprosima::fastrtps::rtps::c_Guid_Unknown.guidPrefix,
+                   dds_guid_prefix const & base_prefix = unknown_guid.guidPrefix,
                    bool readable_name = true );
 
 // Same as above, without a base prefix
 inline std::string print( dds_guid const & guid, bool readable_name )
 {
-    return print( guid, eprosima::fastrtps::rtps::c_Guid_Unknown.guidPrefix, readable_name );
+    return print( guid, unknown_guid.guidPrefix, readable_name );
 }
 
 // Same as above, with a guid base for flexibility

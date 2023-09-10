@@ -91,6 +91,12 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
 }
 
 
+dds_guid const & dds_notification_server::guid() const
+{
+    return _writer->guid();
+}
+
+
 void dds_notification_server::run()
 {
     if( ! _active )

@@ -30,6 +30,8 @@ public:
     dds_notification_server( std::shared_ptr< dds_publisher > const & publisher, const std::string & topic_name );
     ~dds_notification_server();
 
+    dds_guid const & guid() const;
+
     // By default we're not running, to avoid on-discovery before all discovery messages have been collected
     void run();
     bool is_running() const { return _active; }
