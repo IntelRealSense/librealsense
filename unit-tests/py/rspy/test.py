@@ -52,13 +52,6 @@ if '--context' in sys.argv:
         log.f( "Received --context flag but no context" )
     sys.argv.pop( context_index )
 
-# automatically detect github actions based on environment variable
-# see https://docs.github.com/en/actions/learn-github-actions/variables
-if 'gha' not in context:
-    if os.environ.get( 'GITHUB_ACTIONS' ):
-        context.append( 'gha' )
-        log.d( '    github actions detected' )
-
 # If --rslog flag was sent, enable LibRS logging (LOG_DEBUG, etc.)
 try:
     sys.argv.remove( '--rslog' )
