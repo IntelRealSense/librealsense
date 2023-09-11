@@ -146,12 +146,9 @@ namespace rs2
         device_debug.build_command(dfu_opcode, 1);
 
         _progress = 30;
-        // Grant permissions for writing
-        // skipped for now - must be done in sudo
-        //chmod("/dev/d4xx-dfu504", __S_IREAD|__S_IWRITE);
 
         // Write signed firmware to appropriate file descritptor
-        std::ofstream fw_path_in_device("/dev/d4xx-dfu504", std::ios::binary);
+        std::ofstream fw_path_in_device(_dev.get_info(RS2_CAMERA_INFO_DFU_DEVICE_PATH), std::ios::binary);
         if (fw_path_in_device)
         {
             fw_path_in_device.write(reinterpret_cast<const char*>(_fw.data()), _fw.size());

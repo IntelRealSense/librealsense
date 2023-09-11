@@ -24,6 +24,7 @@
 #include "metadata-parser.h"
 #include "option.h"
 #include "rosbag/structures.h"
+#include "core/serialization.h"
 #include <regex>
 #include "stream.h"
 #include "types.h"

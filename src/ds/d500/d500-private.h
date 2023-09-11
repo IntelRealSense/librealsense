@@ -7,6 +7,10 @@
 
 namespace librealsense
 {
+    namespace platform {
+        struct uvc_device_info;
+    }
+
     namespace ds
     {
         const uint16_t RS_D585_PID = 0x0B6A; // D585, D for depth

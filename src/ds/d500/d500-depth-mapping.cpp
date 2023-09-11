@@ -3,6 +3,7 @@
 
 #include "d500-depth-mapping.h"
 #include "d500-safety.h"
+#include "d500-info.h"
 
 #include <vector>
 #include <map>
@@ -10,6 +11,7 @@
 
 #include "ds/ds-timestamp.h"
 #include "ds/ds-options.h"
+#include <src/backend.h>
 #include "stream.h"
 #include <thread>
 
@@ -27,22 +29,20 @@ namespace librealsense
         {rs_fourcc('P','A','L','8'), RS2_STREAM_LABELED_POINT_CLOUD}
     };
 
-    d500_depth_mapping::d500_depth_mapping(std::shared_ptr<context> ctx,
-        const platform::backend_device_group& group)
-        : device(ctx, group), d500_device(ctx, group),
+    d500_depth_mapping::d500_depth_mapping( std::shared_ptr< const d500_info > const & dev_info)
+        : device( dev_info ), d500_device( dev_info ),
         _occupancy_stream(new stream(RS2_STREAM_OCCUPANCY)),
         _point_cloud_stream(new stream(RS2_STREAM_LABELED_POINT_CLOUD))
     {
         using namespace ds;
-
         const uint32_t mapping_stream_mi = 13;
-        auto mapping_devs_info = filter_by_mi(group.uvc_devices, mapping_stream_mi);
+        auto mapping_devs_info = filter_by_mi( dev_info->get_group().uvc_devices, mapping_stream_mi);
         
         if (mapping_devs_info.size() != 1)
             throw invalid_value_exception(rsutils::string::from() << "RS5XX models with Safety are expected to include a single depth mapping device! - "
                 << mapping_devs_info.size() << " found");
 
-        auto mapping_ep = create_depth_mapping_device(ctx, mapping_devs_info);
+        auto mapping_ep = create_depth_mapping_device( dev_info->get_context(), mapping_devs_info );
         _depth_mapping_device_idx = add_sensor(mapping_ep);
     }
 
@@ -90,7 +90,7 @@ namespace librealsense
     {
         // extrinsics to depth lazy, becasue safety sensor's api is used and it may be constructed later
         // than the depth mapping device (though it may not be the case in the device contructor's order, in ds500-factory)
-        _depth_to_depth_mapping_extrinsics = std::make_shared<lazy<rs2_extrinsics>>([this]()
+        _depth_to_depth_mapping_extrinsics = std::make_shared< rsutils::lazy< rs2_extrinsics > >( [this]()
             {
                 // getting access to safety sensor api
                 auto safety_device = dynamic_cast<d500_safety*>(this);

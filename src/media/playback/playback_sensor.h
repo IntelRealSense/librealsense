@@ -120,7 +120,7 @@ namespace librealsense
                     if (sleep_for.count() > 0)
                         t.try_sleep( sleep_for );
 
-                    LOG_DEBUG("callback--> "<< frame_holder_to_string(*pf));
+                    LOG_DEBUG("callback--> "<< *pf);
 
                     frame_interface* pframe = nullptr;
 

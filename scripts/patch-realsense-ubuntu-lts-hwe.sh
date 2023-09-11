@@ -19,6 +19,8 @@ retpoline_retrofit=0
 skip_hid_patch=0
 apply_hid_gyro_patch=0
 skip_plf_patch=0
+build_only=0
+
 #Parse input
 while test $# -gt 0; do
 	case "$1" in
@@ -47,6 +49,10 @@ while test $# -gt 0; do
 		rebuild_ko=1; shift ;;
 	uvc_dbg)
 		debug_uvc=1;  shift ;;
+	ubuntu)
+		shift;  ubuntu_codename=$1; build_only=1; shift;;
+	kernel)
+		shift;  LINUX_BRANCH=$1; build_only=1; shift;;
 	*)
 		echo -e "\e[36mUnrecognized flag:  $1\e[0m"; shift;;
 	esac
@@ -61,16 +67,16 @@ fi
 
 #Include usability functions
 source ./scripts/patch-utils-hwe.sh
+LINUX_BRANCH=${LINUX_BRANCH:-$(uname -r)}
 
 # Get the required tools and headers to build the kernel
-sudo apt-get install linux-headers-generic build-essential git bc -y
+sudo apt-get install linux-headers-generic linux-headers-$LINUX_BRANCH build-essential git bc -y
 #Packages to build the patched modules
 require_package libusb-1.0-0-dev
 require_package libssl-dev
 
 #sudo apt-get build-dep linux-image-unsigned-$(uname -r)
 
-LINUX_BRANCH=$(uname -r)
 #Get kernel major.minor
 IFS='.' read -a kernel_version <<< ${LINUX_BRANCH}
 k_maj_min=$((${kernel_version[0]}*100 + ${kernel_version[1]}))
@@ -89,7 +95,7 @@ k_tick=$(echo ${kernel_version[2]} | awk -F'-' '{print $2}')
 
 # Construct branch name from distribution codename {xenial,bionic,..} and kernel version
 # ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
-ubuntu_codename=$(lsb_release -c|cut -f2)
+ubuntu_codename=${ubuntu_codename:-$(lsb_release -c|cut -f2)}
 if [ -z "${ubuntu_codename}" ];
 then
 	# Trusty Tahr shall use xenial code base
@@ -216,8 +222,8 @@ then
 	fi
 
 	#Copy configuration
-	cp /usr/src/linux-headers-$(uname -r)/.config .
-	cp /usr/src/linux-headers-$(uname -r)/Module.symvers .
+	cp /usr/src/linux-headers-$LINUX_BRANCH/.config .
+	cp /usr/src/linux-headers-$LINUX_BRANCH/Module.symvers .
 
 	# Basic build for kernel modules
 	echo -e "\e[32mPrepare kernel modules configuration\e[0m"
@@ -245,8 +251,10 @@ then
 	if [[ ( $xhci_patch -eq 1 ) && ( $build_usbcore_modules -eq 0 ) ]]; then
 		make -j$(($(nproc)-1))
 		make modules -j$(($(nproc)-1))
-		sudo make modules_install -j$(($(nproc)-1))
-		sudo make install
+		if [ "$build_only" -eq 0 ]; then
+			sudo make modules_install -j$(($(nproc)-1))
+			sudo make install
+		fi
 		echo -e "\e[92m\n\e[1m`sudo make kernelrelease` Kernel has been successfully installed."
 		echo -e "\e[92m\n\e[1mScript has completed. Please reboot and load the newly installed Kernel from GRUB list.\n\e[0m"
 	exit 0
@@ -300,7 +308,9 @@ if [ $build_usbcore_modules -eq 1 ]; then
 fi
 
 echo -e "\e[32mPatched kernels modules were created successfully\n\e[0m"
-
+if [ "$build_only" -eq 1 ]; then
+	exit 0
+fi
 # Load the newly-built modules
 # As a precausion start with unloading the core uvcvideo:
 try_unload_module uvcvideo

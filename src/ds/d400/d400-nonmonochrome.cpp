@@ -15,19 +15,19 @@
 #include "d400-nonmonochrome.h"
 #include "d400-private.h"
 #include "d400-options.h"
+#include "d400-info.h"
 #include "ds/ds-timestamp.h"
 #include "proc/color-formats-converter.h"
 #include "proc/depth-formats-converter.h"
 
 namespace librealsense
 {
-    d400_nonmonochrome::d400_nonmonochrome(std::shared_ptr<context> ctx,
-                                         const platform::backend_device_group& group)
-        : device(ctx, group), d400_device(ctx, group)
+    d400_nonmonochrome::d400_nonmonochrome( std::shared_ptr< const d400_info > const & dev_info )
+        : device(dev_info), d400_device(dev_info)
     {
         using namespace ds;
 
-        auto pid = group.uvc_devices.front().pid;
+        auto pid = dev_info->get_group().uvc_devices.front().pid;
         auto& depth_ep = get_depth_sensor();
 
         // RGB for D455/D465 from Left Imager is available with FW 5.12.8.100

@@ -40,23 +40,24 @@ namespace librealsense
     }
 
 
-    std::shared_ptr<device_interface> fw_update_info::create(std::shared_ptr<context> ctx, bool register_device_notifications) const
+    std::shared_ptr<device_interface> fw_update_info::create_device()
     {
         auto devices = platform::usb_enumerator::query_devices_info();
+        auto const & dfu_id = get_group().usb_devices.front().id;
         for (auto&& info : devices)
         {
-            if (info.id == _dfu.id)
+            if( info.id == dfu_id )
             {
                 auto usb = platform::usb_enumerator::create_usb_device(info);
                 if (!usb)
                     continue;
                 if (ds::RS_RECOVERY_PID == info.pid)
-                    return std::make_shared<ds_update_device>(ctx, register_device_notifications, usb);                   
+                    return std::make_shared< ds_update_device >( shared_from_this(), usb );
                 if (ds::RS_USB2_RECOVERY_PID == info.pid)
-                    return std::make_shared<ds_update_device>(ctx, register_device_notifications, usb);
+                    return std::make_shared< ds_update_device >( shared_from_this(), usb );
             }
         }
         throw std::runtime_error( rsutils::string::from()
-                                  << "Failed to create FW update device, device id: " << _dfu.id );
+                                  << "Failed to create FW update device, device id: " << dfu_id );
     }
 }

@@ -2,6 +2,7 @@
 //// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include "d500-private.h"
+#include <src/platform/uvc-device-info.h>
 
 using namespace std;
 

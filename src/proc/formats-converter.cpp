@@ -173,7 +173,10 @@ formats_converter::clone_profile( const std::shared_ptr< stream_profile_interfac
 
         auto video_clone = std::dynamic_pointer_cast< video_stream_profile >( cloned );
         video_clone->set_dims( vsp->get_width(), vsp->get_height() );
-        video_clone->set_intrinsics( [vsp]() { return vsp->get_intrinsics(); } );
+        // Do not set intrinsics. Device is setting after all profiles are returned. On update_target_profiles_data
+        // raw profile calls the set cloned intrinsics and if device is not setting a call cycle will be created.
+        // There is a default implementation throwing if no other function is set.
+        // video_clone->set_intrinsics( [vsp]() { return vsp->get_intrinsics(); } );
     }
     else if( msp )
     {
@@ -182,7 +185,7 @@ formats_converter::clone_profile( const std::shared_ptr< stream_profile_interfac
             throw librealsense::invalid_value_exception( "failed to clone profile" );
 
         auto motion_clone = std::dynamic_pointer_cast< motion_stream_profile >( cloned );
-        motion_clone->set_intrinsics( [msp]() { return msp->get_intrinsics(); } );
+        // motion_clone->set_intrinsics( [msp]() { return msp->get_intrinsics(); } );
     }
     else
         throw librealsense::not_implemented_exception( "Unsupported profile type to clone" );

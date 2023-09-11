@@ -112,12 +112,8 @@ namespace rs2
         void turn_roi_on();
         void turn_roi_off();
 
-        void save_laser_emitter_state();
-        void save_thermal_loop_state();
-        void restore_laser_emitter_state();
-        void restore_thermal_loop_state();
-        void set_laser_emitter_state( float value );
-        void set_thermal_loop_state( float value );
+        void save_options_controlled_by_calib();
+        void restore_options_controlled_by_calib();
 
         void start_gt_viewer();
         void start_fl_viewer();
@@ -127,6 +123,13 @@ namespace rs2
         void reset_device() { _dev.hardware_reset(); }
 
     private:
+        void save_laser_emitter_state();
+        void save_thermal_loop_state();
+        void restore_laser_emitter_state();
+        void restore_thermal_loop_state();
+        void set_laser_emitter_state( float value );
+        void set_thermal_loop_state( float value );
+
         std::vector<uint8_t> safe_send_command(const std::vector<uint8_t>& cmd, const std::string& name);
         rs2::depth_frame fetch_depth_frame(invoker invoke, int timeout_ms = 5000); // Wait for next depth frame and return it
         std::pair<float, float> get_depth_metrics(invoker invoke);
@@ -141,9 +144,9 @@ namespace rs2
 
         device _dev;
 
-        
-        float laser_status_prev = 0.0f;
-        float thermal_loop_prev = 0.0f;
+        bool _options_saved = false;
+        float _laser_status_prev = 0.0f;
+        float _thermal_loop_prev = 0.0f;
 
         bool _was_streaming = false;
         bool _synchronized = false;

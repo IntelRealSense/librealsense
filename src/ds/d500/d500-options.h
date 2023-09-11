@@ -1,11 +1,14 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
+#pragma once
+
 #include "ds/ds-private.h"
 #include "core/options.h"
 #include "option.h"
 
-#pragma once
+#include <rsutils/lazy.h>
+
 
 namespace librealsense
 {
@@ -29,7 +32,7 @@ namespace librealsense
 
     private:
         std::function<void(const option&)> _record_action = [](const option&) {};
-        lazy<option_range> _range;
+        rsutils::lazy< option_range > _range;
         std::shared_ptr<hw_monitor> _hwm;
         sensor_base* _sensor;
     };
@@ -65,7 +68,7 @@ namespace librealsense
 
     private:
         std::function<void(const option&)> _record_action = [](const option&) {};
-        lazy<option_range> _range;
+        rsutils::lazy< option_range > _range;
         std::shared_ptr<hw_monitor> _hwm;
         sensor_base* _sensor;
         temperature_component _component;

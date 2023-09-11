@@ -3,6 +3,9 @@
 
 #test:device D585S
 
+# Disabled until RSDEV-537 is fixed
+#test:donotrun
+
 import pyrealsense2 as rs
 from rspy import test, log
 import time

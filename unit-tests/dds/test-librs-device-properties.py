@@ -2,6 +2,7 @@
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
+#test:retries 2
 
 from rspy import log, test
 log.nested = 'C  '
@@ -28,13 +29,9 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     #############################################################################################
     #
-    test.start( "Test D435i" )
-    try:
+    with test.closure( "Test D435i" ):
         remote.run( 'instance = broadcast_device( d435i, d435i.device_info )' )
-        n_devs = 0
-        for dev in dds.wait_for_devices( context, only_sw_devices ):
-            n_devs += 1
-        test.check_equal( n_devs, 1 )
+        dev = dds.wait_for_devices( context, only_sw_devices, n=1. )
         test.check_equal( dev.get_info( rs.camera_info.name ), d435i.device_info.name )
         test.check_equal( dev.get_info( rs.camera_info.serial_number ), d435i.device_info.serial )
         test.check_equal( dev.get_info( rs.camera_info.physical_port ), d435i.device_info.topic_root )
@@ -55,21 +52,14 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             test.check( sensors[sensor.name] )
             test.check_equal( sensor.name, 'Motion Module' )
             test.check_equal( len(sensor.get_stream_profiles()), 2 ) # Only the Gyro profiles
-        remote.run( 'close_server( instance )' )
-    except:
-        test.unexpected_exception()
+    remote.run( 'close_server( instance )' )
     dev = None
-    test.finish()
     #
     #############################################################################################
     #
-    test.start( "Test D405" )
-    try:
+    with test.closure( "Test D405" ):
         remote.run( 'instance = broadcast_device( d405, d405.device_info )' )
-        n_devs = 0
-        for dev in dds.wait_for_devices( context, only_sw_devices ):
-            n_devs += 1
-        test.check_equal( n_devs, 1 )
+        dev = dds.wait_for_devices( context, only_sw_devices, n=1. )
         test.check_equal( dev.get_info( rs.camera_info.name ), d405.device_info.name )
         test.check_equal( dev.get_info( rs.camera_info.serial_number ), d405.device_info.serial )
         test.check_equal( dev.get_info( rs.camera_info.physical_port ), d405.device_info.topic_root )
@@ -80,21 +70,14 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             test.check( sensors[sensor.name] )
             test.check_equal( sensor.name, 'Stereo Module' )
             test.check_equal( len(sensor.get_stream_profiles()), 230 ) # As measured running rs-sensor-control example
-        remote.run( 'close_server( instance )' )
-    except:
-        test.unexpected_exception()
+    remote.run( 'close_server( instance )' )
     dev = None
-    test.finish()
     #
     #############################################################################################
     #
-    test.start( "Test D455" )
-    try:
+    with test.closure( "Test D455" ):
         remote.run( 'instance = broadcast_device( d455, d455.device_info )' )
-        n_devs = 0
-        for dev in dds.wait_for_devices( context, only_sw_devices ):
-            n_devs += 1
-        test.check_equal( n_devs, 1 )
+        dev = dds.wait_for_devices( context, only_sw_devices, n=1. )
         test.check_equal( dev.get_info( rs.camera_info.name ), d455.device_info.name )
         test.check_equal( dev.get_info( rs.camera_info.serial_number ), d455.device_info.serial )
         test.check_equal( dev.get_info( rs.camera_info.physical_port ), d455.device_info.topic_root )
@@ -115,11 +98,8 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             test.check( sensors[sensor.name] )
             test.check_equal( sensor.name, 'Motion Module' )
             test.check_equal( len(sensor.get_stream_profiles()), 2 ) # Only the Gyro profiles
-        remote.run( 'close_server( instance )' )
-    except:
-        test.unexpected_exception()
+    remote.run( 'close_server( instance )' )
     dev = None
-    test.finish()
     #
     #############################################################################################
 

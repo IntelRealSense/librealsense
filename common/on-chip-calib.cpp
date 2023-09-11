@@ -74,12 +74,34 @@ namespace rs2
         }
     }
     
+    void on_chip_calib_manager::save_options_controlled_by_calib()
+    {
+        // Calibration might fail and be restarted, save only once, or we will keep chaged options.
+        if( ! _options_saved )
+        {
+            save_laser_emitter_state();
+            save_thermal_loop_state();
+            _options_saved = true;
+        }
+    }
+
+    void on_chip_calib_manager::restore_options_controlled_by_calib()
+    {
+        // Restore might be called several times, restore only if options where actually saved.
+        if( _options_saved )
+        {
+            restore_laser_emitter_state();
+            restore_thermal_loop_state();
+            _options_saved = false;
+        }
+    }
+
     void on_chip_calib_manager::save_laser_emitter_state()
     {
         auto it = _sub->options_metadata.find( RS2_OPTION_EMITTER_ENABLED );
         if ( it != _sub->options_metadata.end() ) //Option supported
         {
-            laser_status_prev = _sub->s->get_option( RS2_OPTION_EMITTER_ENABLED );
+            _laser_status_prev = _sub->s->get_option( RS2_OPTION_EMITTER_ENABLED );
         }
     }
 
@@ -88,18 +110,18 @@ namespace rs2
         auto it = _sub->options_metadata.find( RS2_OPTION_THERMAL_COMPENSATION );
         if( it != _sub->options_metadata.end() )  // Option supported
         {
-            thermal_loop_prev = _sub->s->get_option( RS2_OPTION_THERMAL_COMPENSATION );
+            _thermal_loop_prev = _sub->s->get_option( RS2_OPTION_THERMAL_COMPENSATION );
         }
     }
 
     void on_chip_calib_manager::restore_laser_emitter_state()
     {
-        set_laser_emitter_state( laser_status_prev );
+        set_laser_emitter_state( _laser_status_prev );
     }
 
     void on_chip_calib_manager::restore_thermal_loop_state()
     {
-        set_thermal_loop_state( thermal_loop_prev );
+        set_thermal_loop_state( _thermal_loop_prev );
     }
 
     void on_chip_calib_manager::set_laser_emitter_state( float value )
@@ -1417,6 +1439,19 @@ namespace rs2
 
         _restored = false;
 
+        save_options_controlled_by_calib(); // Restored by GUI thread on dismiss or apply.
+
+        // Emitter on by default, off for GT/FL calib and for D415 model
+        float emitter_value = on_value;
+        if( action == RS2_CALIB_ACTION_FL_CALIB          ||
+            action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH ||
+            device_name_string == std::string( "Intel RealSense D415" ) )
+            emitter_value = off_value;
+        set_laser_emitter_state( emitter_value );
+
+        // Thermal loop should be off during calibration as to not change calibration tables during calibration
+        set_thermal_loop_state( off_value );
+
         auto fps = 30;
         if (_sub->dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
         {
@@ -1465,40 +1500,18 @@ namespace rs2
 
         if ( action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH )
         {
-            // Laser should be turned off during ground truth calculation
-            save_laser_emitter_state();
-            set_laser_emitter_state( off_value );
-
             get_ground_truth();
-            
-            restore_laser_emitter_state();
         }
         else
         {
             try
             {
-                // Save options that are going to change during the calibration
-                save_laser_emitter_state();
-                save_thermal_loop_state();
-
-                // Emitter on by default, off for FL calib and for D415 model
-                float emitter_value = on_value;
-                if( action == RS2_CALIB_ACTION_FL_CALIB || device_name_string == std::string( "Intel RealSense D415" ) )
-                    emitter_value = off_value;
-                set_laser_emitter_state( emitter_value );
-
-                // Thermal loop should be off during calibration as to not change calibration tables during calibration
-                set_thermal_loop_state( off_value );
-
                 if (action == RS2_CALIB_ACTION_FL_CALIB)
                     calibrate_fl();
                 else if (action == RS2_CALIB_ACTION_UVMAPPING_CALIB)
                     calibrate_uv_mapping();
                 else
                     calibrate();
-
-                restore_laser_emitter_state();
-                restore_thermal_loop_state();
             }
             catch (...)
             {
@@ -1514,11 +1527,6 @@ namespace rs2
                     _sub_color->ui = *_ui_color;
                     _ui_color.reset();
                 }
-
-                //Restore options that were changed during the calibration.
-                //When calibration is successful options are restored in autocalib_notification_model::draw_content()
-                restore_laser_emitter_state();
-                restore_thermal_loop_state();
 
                 if (_was_streaming)
                     start_viewer(0, 0, 0, invoke);
@@ -2861,6 +2869,7 @@ namespace rs2
                             dismiss(false);
                         }
 
+                        get_manager().restore_options_controlled_by_calib();
                         get_manager().restore_workspace([](std::function<void()> a) { a(); });
                     }
 
@@ -2979,7 +2988,8 @@ namespace rs2
         if (!use_new_calib && get_manager().done())
             get_manager().apply_calib(false);
 
-        get_manager().restore_workspace([](std::function<void()> a){ a(); });
+        get_manager().restore_options_controlled_by_calib();
+        get_manager().restore_workspace( []( std::function< void() > a ) { a(); } );
 
         if (update_state != RS2_CALIB_STATE_TARE_INPUT)
             update_state = RS2_CALIB_STATE_INITIAL_PROMPT;

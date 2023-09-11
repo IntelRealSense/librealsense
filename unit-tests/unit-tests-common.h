@@ -18,6 +18,7 @@
 #include <vector>
 #include <fstream>
 #include <array>
+#include <set>
 #include <src/types.h>
 
 // noexcept is not accepted by Visual Studio 2013 yet, but noexcept(false) is require on throwing destructors on gcc and clang

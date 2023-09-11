@@ -1,6 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
+#include "core/frame-holder.h"
 #include "proc/synthetic-stream.h"
 #include "sync.h"
 #include "environment.h"
@@ -274,26 +275,26 @@ namespace librealsense
     std::string
     composite_matcher::frames_to_string( std::vector< frame_holder * > const & frames )
     {
-        std::string str;
+        std::ostringstream os;
         for( auto pfh : frames )
-            str += frame_to_string( *pfh->frame );
-        return str;
+            os << *pfh;
+        return os.str();
     }
 
     std::string
         composite_matcher::matchers_to_string( std::vector< librealsense::matcher* > const& matchers )
     {
-        std::string str;
-        str += '[';
+        std::ostringstream os;
+        os << '[';
         for( auto m : matchers )
         {
             auto const & q = _frames_queue[m];
-            q.peek( [&str]( frame_holder const & fh ) {
-                str += frame_to_string( *fh.frame );
+            q.peek( [&os]( frame_holder const & fh ) {
+                os << fh;
                 } );
         }
-        str += ']';
-        return str;
+        os << ']';
+        return os.str();
     }
 
     void composite_matcher::sync(frame_holder f, const syncronization_environment& env)
@@ -301,7 +302,7 @@ namespace librealsense
         auto matcher = find_matcher(f);
         if (!matcher)
         {
-            LOG_ERROR("didn't find any matcher for " << frame_holder_to_string(f) << " will not be synchronized");
+            LOG_ERROR("didn't find any matcher for " << f << " will not be synchronized");
             _callback(std::move(f), env);
             return;
         }
@@ -741,10 +742,9 @@ namespace librealsense
             }
             else
             {
-                LOG_ERROR(
-                    "composite_identity_matcher: "
-                    << _name << " " << frame_holder_to_string( f )
-                    << " faild to create composite_frame, user callback will not be called" );
+                LOG_ERROR( "composite_identity_matcher: "
+                           << _name << " " << f
+                           << " faild to create composite_frame, user callback will not be called" );
             }
         }
         else

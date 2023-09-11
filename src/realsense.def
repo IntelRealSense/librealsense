@@ -143,6 +143,7 @@ EXPORTS
     rs2_format_to_string
     rs2_distortion_to_string
     rs2_option_to_string
+    rs2_option_from_string
     rs2_camera_info_to_string
     rs2_frame_metadata_to_string
     rs2_frame_metadata_value_to_string

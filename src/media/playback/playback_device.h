@@ -10,6 +10,8 @@
 #include "../../archive.h"
 #include "../../sensor.h"
 #include "playback_sensor.h"
+#include <rsutils/lazy.h>
+
 
 namespace librealsense
 {
@@ -18,7 +20,8 @@ namespace librealsense
         public info_container
     {
     public:
-        playback_device(std::shared_ptr<context> context, std::shared_ptr<device_serializer::reader> serializer);
+        playback_device( std::shared_ptr< const device_info > const &,
+                         std::shared_ptr< device_serializer::reader > const & serializer );
         virtual ~playback_device();
 
         std::shared_ptr<context> get_context() const override;
@@ -42,7 +45,7 @@ namespace librealsense
         const std::string& get_file_name() const;
         uint64_t get_position() const;
         signal<playback_device, rs2_playback_status> playback_status_changed;
-        platform::backend_device_group get_device_data() const override;
+        std::shared_ptr< const device_info > get_device_info() const override;
         std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const override;
         static bool try_extend_snapshot(std::shared_ptr<extension_snapshot>& e, rs2_extension extension_type, void** ext);
         bool is_valid() const override;
@@ -74,8 +77,8 @@ namespace librealsense
         bool prefetch_done();
 
     private:
-        lazy<std::shared_ptr<dispatcher>> m_read_thread;
-        std::shared_ptr<context> m_context;
+        rsutils::lazy< std::shared_ptr< dispatcher > > m_read_thread;
+        std::shared_ptr< const device_info > m_device_info;
         std::shared_ptr<device_serializer::reader> m_reader;
         device_serializer::device_snapshot m_device_description;
         std::atomic_bool m_is_started;
@@ -87,7 +90,7 @@ namespace librealsense
         std::atomic<double> m_sample_rate;
         std::atomic_bool m_real_time;
         device_serializer::nanoseconds m_prev_timestamp;
-        std::vector<std::shared_ptr<lazy<rs2_extrinsics>>> m_extrinsics_fetchers;
+        std::vector< std::shared_ptr< rsutils::lazy< rs2_extrinsics > > > m_extrinsics_fetchers;
         std::map<int, std::pair<uint32_t, rs2_extrinsics>> m_extrinsics_map;
         device_serializer::nanoseconds m_last_published_timestamp;
         std::mutex m_last_published_timestamp_mutex;

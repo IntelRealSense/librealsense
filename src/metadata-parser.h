@@ -272,7 +272,7 @@ namespace librealsense
 
         bool supports(const librealsense::frame & frm) const override
         {
-            return (frm.additional_data.metadata_size >= platform::hid_header_size);
+            return (frm.additional_data.metadata_size >= hid_header_size);
         }
 
     private:

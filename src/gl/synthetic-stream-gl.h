@@ -3,9 +3,11 @@
 
 #pragma once
 
+#include "../core/depth-frame.h"
 #include "../core/processing.h"
 #include "../image.h"
 #include "../source.h"
+
 #include <librealsense2/hpp/rs_frame.hpp>
 #include <librealsense2/hpp/rs_processing.hpp>
 #include <librealsense2-gl/rs_processing_gl.hpp>

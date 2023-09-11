@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "backend.h"
 #include "types.h"
 #include "fw-update/fw-update-unsigned.h"
 #include <rsutils/string/from.h>

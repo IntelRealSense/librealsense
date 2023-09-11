@@ -9,6 +9,8 @@
 #include "../types.h"
 #include "extension.h"
 #include "streaming.h"
+#include "frame-holder.h"
+
 
 namespace librealsense
 {

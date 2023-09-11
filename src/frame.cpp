@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-#include "frame.h"
+#include "core/depth-frame.h"
 #include "archive.h"
 #include "metadata-parser.h"
 #include "environment.h"
@@ -11,6 +11,37 @@
 
 namespace librealsense {
 
+
+std::ostream & operator<<( std::ostream & s, const frame_interface & f )
+{
+    if( !&f )
+    {
+        s << "[null]";
+    }
+    else
+    {
+        auto composite = dynamic_cast<const composite_frame *>(&f);
+        if( composite )
+        {
+            s << "[";
+            for( int i = 0; i < composite->get_embedded_frames_count(); i++ )
+            {
+                s << *composite->get_frame( i );
+            }
+            s << "]";
+        }
+        else
+        {
+            s << "[" << f.get_stream()->get_stream_type();
+            s << "/" << f.get_stream()->get_unique_id();
+            s << " " << f.get_header();
+            s << "]";
+        }
+    }
+    return s;
+}
+
+
 std::ostream & operator<<( std::ostream & os, frame_header const & header )
 {
     os << "#" << header.frame_number;
@@ -18,6 +49,12 @@ std::ostream & operator<<( std::ostream & os, frame_header const & header )
     if( header.timestamp_domain != RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK )
         os << "/" << rs2_timestamp_domain_to_string( header.timestamp_domain );
     return os;
+}
+
+
+std::ostream & operator<<( std::ostream & os, frame_holder const & f )
+{
+    return os << *f.frame;
 }
 
 
@@ -220,5 +257,46 @@ float depth_frame::get_distance( int x, int y ) const
 
     return pixel * get_units();
 }
+
+/*static*/ float depth_frame::query_units( const std::shared_ptr< sensor_interface > & sensor )
+{
+    if( sensor != nullptr )
+    {
+        try
+        {
+            auto depth_sensor = As< librealsense::depth_sensor >( sensor );
+            if( depth_sensor != nullptr )
+            {
+                return depth_sensor->get_depth_scale();
+            }
+            else
+            {
+                // For playback sensors
+                auto extendable = As< librealsense::extendable_interface >( sensor );
+                if( extendable
+                    && extendable->extend_to( TypeToExtension< librealsense::depth_sensor >::value,
+                                              (void **)( &depth_sensor ) ) )
+                {
+                    return depth_sensor->get_depth_scale();
+                }
+            }
+        }
+        catch( const std::exception & e )
+        {
+            LOG_ERROR( "Failed to query depth units from sensor. " << e.what() );
+        }
+        catch( ... )
+        {
+            LOG_ERROR( "Failed to query depth units from sensor" );
+        }
+    }
+    else
+    {
+        LOG_WARNING( "sensor was nullptr" );
+    }
+
+    return 0;
+}
+
 
 }  // namespace librealsense

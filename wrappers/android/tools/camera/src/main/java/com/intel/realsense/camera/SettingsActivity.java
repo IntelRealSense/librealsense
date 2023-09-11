@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -122,7 +123,12 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void loadInfosList() {
-        String appVersion = "Camera App Version: " + BuildConfig.VERSION_NAME;
+        String versionName = "-";
+        try {
+            versionName = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+        }
+        String appVersion = "Camera App Version: " + versionName;
         String lrsVersion = "LibRealSense Version: " + RsContext.getVersion();
 
         HashMap<String, List<String>> expandableListDetail = new HashMap<String, List<String>>();

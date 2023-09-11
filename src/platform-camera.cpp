@@ -6,6 +6,7 @@
 #include "environment.h"
 #include "stream.h"
 #include "proc/color-formats-converter.h"
+#include "backend.h"
 
 
 namespace librealsense {
@@ -59,15 +60,14 @@ private:
 }  // namespace
 
 
-platform_camera::platform_camera( const std::shared_ptr< context > & ctx,
+platform_camera::platform_camera( std::shared_ptr< const device_info > const & dev_info,
                                   const std::vector< platform::uvc_device_info > & uvc_infos,
-                                  const platform::backend_device_group & group,
                                   bool register_device_notifications )
-    : device( ctx, group, register_device_notifications )
+    : device( dev_info, register_device_notifications )
 {
     std::vector< std::shared_ptr< platform::uvc_device > > devs;
     for( auto && info : uvc_infos )
-        devs.push_back( ctx->get_backend().create_uvc_device( info ) );
+        devs.push_back( dev_info->get_context()->get_backend().create_uvc_device( info ) );
 
     std::unique_ptr< frame_timestamp_reader > host_timestamp_reader_backup(
         new ds_timestamp_reader( environment::get_instance().get_time_service() ) );

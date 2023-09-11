@@ -2,7 +2,8 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "../backend.h"
+#include "../platform/hid-device.h"
+#include "../platform/hid-device-info.h"
 #include "win/win-helpers.h"
 
 #include <Sensorsapi.h>

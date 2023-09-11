@@ -5,6 +5,7 @@
 
 #include "d500-device.h"
 #include "core/video.h"
+#include <rsutils/lazy.h>
 
 namespace librealsense
 {
@@ -16,8 +17,7 @@ namespace librealsense
         std::shared_ptr<synthetic_sensor> create_depth_mapping_device(std::shared_ptr<context> ctx,
             const std::vector<platform::uvc_device_info>& mapping_devices_info);
 
-        d500_depth_mapping(std::shared_ptr<context> ctx,
-                   const platform::backend_device_group& group);
+        d500_depth_mapping( std::shared_ptr< const d500_info > const & );
 
     private:
 
@@ -36,7 +36,7 @@ namespace librealsense
         std::shared_ptr<stream_interface> _occupancy_stream;
         std::shared_ptr<stream_interface> _point_cloud_stream;
         uint8_t _depth_mapping_device_idx;
-        std::shared_ptr<lazy<rs2_extrinsics>> _depth_to_depth_mapping_extrinsics;
+        std::shared_ptr<rsutils::lazy<rs2_extrinsics>> _depth_to_depth_mapping_extrinsics;
     };
 
     class d500_depth_mapping_sensor : public synthetic_sensor,

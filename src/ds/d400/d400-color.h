@@ -6,17 +6,17 @@
 #include "d400-device.h"
 #include "ds/ds-color-common.h"
 
-#include <map>
-
 #include "stream.h"
+
+#include <rsutils/lazy.h>
+#include <map>
 
 namespace librealsense
 {
     class d400_color : public virtual d400_device
     {
     public:
-        d400_color(std::shared_ptr<context> ctx,
-                  const platform::backend_device_group& group);
+        d400_color( std::shared_ptr< const d400_info > const & );
 
         synthetic_sensor& get_color_sensor()
         {
@@ -53,8 +53,8 @@ namespace librealsense
 
         uint8_t _color_device_idx = -1;
         bool _separate_color;
-        lazy<std::vector<uint8_t>> _color_calib_table_raw;
-        std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
+        rsutils::lazy< std::vector< uint8_t > > _color_calib_table_raw;
+        std::shared_ptr< rsutils::lazy< rs2_extrinsics > > _color_extrinsic;
     };
 
     class d400_color_sensor : public synthetic_sensor,

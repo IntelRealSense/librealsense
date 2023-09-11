@@ -10,7 +10,8 @@ namespace librealsense
     class ds_update_device : public update_device
     {
     public:
-        ds_update_device(std::shared_ptr<context> ctx, bool register_device_notifications, std::shared_ptr<platform::usb_device> usb_device);
+        ds_update_device( std::shared_ptr< const device_info > const &,
+                          std::shared_ptr< platform::usb_device > const & usb_device );
         virtual ~ds_update_device() = default;
 
         void update(const void* fw_image, int fw_image_size, update_progress_callback_ptr = nullptr) const override;

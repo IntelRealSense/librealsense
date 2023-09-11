@@ -8,6 +8,9 @@
 #include <rsutils/string/from.h>
 #include "ds-calib-parsers.h"
 
+#include <rsutils/lazy.h>
+
+
 namespace librealsense
 {
     // Enforce complile-time verification of all the assigned FPS profiles
@@ -103,6 +106,11 @@ namespace librealsense
 
     class global_time_option;
     class time_diff_keeper;
+    namespace platform {
+        struct uvc_device_info;
+        struct hid_device_info;
+        struct backend_device_group;
+    }
 
     class ds_motion_common
     {
@@ -161,15 +169,15 @@ namespace librealsense
         std::shared_ptr<hw_monitor> _hw_monitor;
 
         std::shared_ptr<mm_calib_handler> _mm_calib;
-        lazy<std::vector<uint8_t>> _fisheye_calibration_table_raw;
+        rsutils::lazy< std::vector< uint8_t > > _fisheye_calibration_table_raw;
 
         std::shared_ptr<stream_interface> _fisheye_stream;
         std::shared_ptr<stream_interface> _accel_stream;
         std::shared_ptr<stream_interface> _gyro_stream;
 
-        std::shared_ptr<lazy<ds::imu_intrinsic>> _accel_intrinsic;
-        std::shared_ptr<lazy<ds::imu_intrinsic>> _gyro_intrinsic;
-        std::shared_ptr<lazy<rs2_extrinsics>> _depth_to_imu; // Mechanical installation pose
+        std::shared_ptr< rsutils::lazy< ds::imu_intrinsic > > _accel_intrinsic;
+        std::shared_ptr< rsutils::lazy< ds::imu_intrinsic > > _gyro_intrinsic;
+        std::shared_ptr< rsutils::lazy< rs2_extrinsics > > _depth_to_imu;  // Mechanical installation pose
 
         std::shared_ptr<uvc_sensor> _raw_fisheye_ep;
         std::shared_ptr<synthetic_sensor> _fisheye_ep;

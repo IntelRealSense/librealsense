@@ -19,6 +19,12 @@ function(get_nlohmann_json)
     configure_file( CMake/json-download.cmake.in
                     ${CMAKE_BINARY_DIR}/external-projects/json-download/CMakeLists.txt )
     execute_process( COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
+                     -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+                    -DCMAKE_CXX_STANDARD_LIBRARIES=${CMAKE_CXX_STANDARD_LIBRARIES}
+                    -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
+                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                    -DANDROID_ABI=${ANDROID_ABI}
+                    -DANDROID_STL=${ANDROID_STL}
                      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external-projects/json-download"
                      OUTPUT_QUIET
                      RESULT_VARIABLE configure_ret )

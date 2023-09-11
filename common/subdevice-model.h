@@ -16,6 +16,7 @@
 #include <set>
 #include <array>
 #include <unordered_map>
+#include <fstream>
 
 #include <nlohmann/json.hpp>
 #include "objects-in-frame.h"

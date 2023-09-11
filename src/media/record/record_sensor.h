@@ -9,6 +9,9 @@
 #include "archive.h"
 #include "sensor.h"
 
+#include <set>
+
+
 namespace librealsense
 {
     class record_sensor : public sensor_interface,

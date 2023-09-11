@@ -16,6 +16,9 @@
 #endif
 
 #include "backend.h"
+#include "platform/uvc-device.h"
+
+
 void librealsense::platform::control_range::populate_raw_data(std::vector<uint8_t>& vec, int32_t value)
 {
     vec.resize(sizeof(value));

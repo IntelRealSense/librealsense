@@ -11,6 +11,9 @@
 #include <imgui_internal.h>
 #include <librealsense2/hpp/rs_internal.hpp>
 
+#include <fstream>
+#include <iterator>
+
 using namespace rs2;
 using namespace rsutils::string;
 

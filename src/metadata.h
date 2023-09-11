@@ -5,6 +5,9 @@
 #pragma once
 
 #include "types.h"
+#include "platform/hid-device.h"
+#include "platform/uvc-device.h"
+
 
 #define REGISTER_MD_TYPE(A,B)\
     template<>\
@@ -1038,12 +1041,23 @@ namespace librealsense
         md_custom_tmp_report    temperature_report;
     };
 
+#pragma pack( push, 1 )
+    struct hid_header
+    {
+        uint8_t length;       // HID report total size. Limited to 255
+        uint8_t report_type;  // Curently supported: IMU/Custom Temperature
+        uint64_t timestamp;   // Driver-produced/FW-based timestamp. Note that currently only the lower 32bit are used
+    };
+#pragma pack( pop )
+
+    constexpr uint8_t hid_header_size = sizeof( hid_header );
+
     /**\brief metadata_hid_raw - HID metadata structure
  *  layout populated by backend */
     struct metadata_hid_raw
     {
-        platform::hid_header   header;
-        md_hid_report          report_type;
+        hid_header header;
+        md_hid_report report_type;
     };
 
     constexpr uint8_t metadata_hid_raw_size = sizeof(metadata_hid_raw);

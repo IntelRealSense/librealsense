@@ -564,6 +564,10 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_option_range;
     py::class_< dds_option_range >( m, "dds_option_range" )
         .def( py::init<>() )
+        .def( py::init<>(
+            []( float min, float max, float step, float def ) {
+                return dds_option_range{ min, max, step, def };
+            } ) )
         .def_readwrite( "min", &dds_option_range::min )
         .def_readwrite( "max", &dds_option_range::max )
         .def_readwrite( "step", &dds_option_range::step )
@@ -816,6 +820,16 @@ PYBIND11_MODULE(NAME, m) {
               } )
         .def( "set_option_value", &dds_device::set_option_value )
         .def( "query_option_value", &dds_device::query_option_value )
+        .def(
+            "send_control",
+            []( dds_device & self, nlohmann::json const & j, bool wait_for_reply )
+            {
+                nlohmann::json reply;
+                self.send_control( j, wait_for_reply ? &reply : nullptr );
+                return reply;
+            },
+            py::arg( "json" ), py::arg( "wait-for-reply" ) = false,
+            py::call_guard< py::gil_scoped_release >() )
         .def( "__repr__", []( dds_device const & self ) {
             std::ostringstream os;
             os << "<" SNAME ".device ";
