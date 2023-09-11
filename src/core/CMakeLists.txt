@@ -5,6 +5,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/streaming.h"
         "${CMAKE_CURRENT_LIST_DIR}/debug.h"
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode.h"
+        "${CMAKE_CURRENT_LIST_DIR}/enum-helpers.h"
         "${CMAKE_CURRENT_LIST_DIR}/depth-frame.h"
         "${CMAKE_CURRENT_LIST_DIR}/disparity-frame.h"
         "${CMAKE_CURRENT_LIST_DIR}/frame-continuation.h"

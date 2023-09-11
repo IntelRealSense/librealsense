@@ -60,14 +60,17 @@ namespace librealsense
     class const_value_option : public readonly_option, public extension_snapshot
     {
     public:
-        const_value_option(std::string desc, float val)
-            : _val( rsutils::lazy< float >( [val]() { return val; } ) )
-            , _desc( std::move( desc ) )
+        const_value_option( std::string const & desc, float val )
+            : _val( [val]() { return val; } )
+            , _desc( desc )
         {
         }
 
-        const_value_option( std::string desc, rsutils::lazy< float > val )
-            : _val(std::move(val)), _desc(std::move(desc)) {}
+        const_value_option( std::string const & desc, rsutils::lazy< float > && val )
+            : _val( std::move( val ) )
+            , _desc( desc )
+        {
+        }
 
         float query() const override { return *_val; }
         option_range get_range() const override { return { *_val, *_val, 0, *_val }; }

@@ -133,26 +133,6 @@ bool librealsense::record_sensor::is_streaming() const
     return m_sensor.is_streaming();
 }
 
-template <rs2_extension E, typename P>
-bool librealsense::record_sensor::extend_to_aux(P* p, void** ext)
-{
-    using EXT_TYPE = typename ExtensionToType<E>::type;
-    auto ptr = As<EXT_TYPE>(p);
-    if (!ptr)
-        return false;
-
-
-    if (auto recordable = As<librealsense::recordable<EXT_TYPE>>(p))
-    {
-        recordable->enable_recording([this](const EXT_TYPE& ext1) {
-            record_snapshot<EXT_TYPE>(E, ext1);
-        });
-    }
-
-    *ext = ptr;
-    return true;
-}
-
 bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void** ext)
 {
     /**************************************************************************************
@@ -168,12 +148,24 @@ bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void**
     case RS2_EXTENSION_INFO:    // [[fallthrough]]
         *ext = this;
         return true;
-    case RS2_EXTENSION_DEPTH_SENSOR    : return extend_to_aux<RS2_EXTENSION_DEPTH_SENSOR   >(&m_sensor, ext);
-    case RS2_EXTENSION_DEPTH_STEREO_SENSOR: return extend_to_aux<RS2_EXTENSION_DEPTH_STEREO_SENSOR   >(&m_sensor, ext);
-    case RS2_EXTENSION_COLOR_SENSOR:        return extend_to_aux<RS2_EXTENSION_COLOR_SENSOR   >(&m_sensor, ext);
-    case RS2_EXTENSION_MOTION_SENSOR:       return extend_to_aux<RS2_EXTENSION_MOTION_SENSOR   >(&m_sensor, ext);
-    case RS2_EXTENSION_FISHEYE_SENSOR:      return extend_to_aux<RS2_EXTENSION_FISHEYE_SENSOR   >(&m_sensor, ext);
-    case RS2_EXTENSION_POSE_SENSOR:         return extend_to_aux<RS2_EXTENSION_POSE_SENSOR   >(&m_sensor, ext);
+    case RS2_EXTENSION_DEPTH_SENSOR:
+        *ext = As< typename ExtensionToType< RS2_EXTENSION_DEPTH_SENSOR >::type >( &m_sensor );
+        return *ext;
+    case RS2_EXTENSION_DEPTH_STEREO_SENSOR:
+        *ext = As< typename ExtensionToType< RS2_EXTENSION_DEPTH_STEREO_SENSOR >::type >( &m_sensor );
+        return *ext;
+    case RS2_EXTENSION_COLOR_SENSOR:
+        *ext = As< typename ExtensionToType< RS2_EXTENSION_COLOR_SENSOR >::type >( &m_sensor );
+        return *ext;
+    case RS2_EXTENSION_MOTION_SENSOR:
+        *ext = As< typename ExtensionToType< RS2_EXTENSION_MOTION_SENSOR >::type >( &m_sensor );
+        return *ext;
+    case RS2_EXTENSION_FISHEYE_SENSOR:
+        *ext = As< typename ExtensionToType< RS2_EXTENSION_FISHEYE_SENSOR >::type >( &m_sensor );
+        return *ext;
+    case RS2_EXTENSION_POSE_SENSOR:
+        *ext = As< typename ExtensionToType< RS2_EXTENSION_POSE_SENSOR >::type >( &m_sensor );
+        return *ext;
 
     //Other extensions are not expected to be extensions of a sensor
     default:

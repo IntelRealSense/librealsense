@@ -2,10 +2,10 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #pragma once
 
+#include "extension.h"
+#include <src/librealsense-exception.h>
 #include <memory>
 
-#include "extension.h"
-#include "../types.h"           // exception
 
 namespace librealsense
 {
@@ -31,6 +31,8 @@ namespace librealsense
     public:
         virtual region_of_interest_method& get_roi_method() const = 0;
         virtual void set_roi_method(std::shared_ptr<region_of_interest_method> roi_method) = 0;
+
+        virtual ~roi_sensor_interface() = default;
     };
 
     class roi_sensor_base : public roi_sensor_interface
@@ -39,7 +41,7 @@ namespace librealsense
         region_of_interest_method& get_roi_method() const override
         {
             if (!_roi_method.get())
-                throw librealsense::not_implemented_exception("Region-of-interest is not implemented for this device!");
+                throw not_implemented_exception("Region-of-interest is not implemented for this device!");
             return *_roi_method;
         }
 

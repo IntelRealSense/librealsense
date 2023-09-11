@@ -784,6 +784,60 @@ namespace librealsense
         return true;
     }
 
+    namespace {
+
+    class depth_sensor_snapshot
+        : public virtual depth_sensor
+        , public extension_snapshot
+    {
+    public:
+        depth_sensor_snapshot( float depth_units )
+            : m_depth_units( depth_units )
+        {
+        }
+        float get_depth_scale() const override { return m_depth_units; }
+
+        void update( std::shared_ptr< extension_snapshot > ext ) override
+        {
+            if( auto api = As< depth_sensor >( ext ) )
+            {
+                m_depth_units = api->get_depth_scale();
+            }
+        }
+
+    protected:
+        float m_depth_units;
+    };
+
+    class depth_stereo_sensor_snapshot
+        : public depth_stereo_sensor
+        , public depth_sensor_snapshot
+    {
+    public:
+        depth_stereo_sensor_snapshot( float depth_units, float stereo_bl_mm )
+            : depth_sensor_snapshot( depth_units )
+            , m_stereo_baseline_mm( stereo_bl_mm )
+        {
+        }
+
+        float get_stereo_baseline_mm() const override { return m_stereo_baseline_mm; }
+
+        void update( std::shared_ptr< extension_snapshot > ext ) override
+        {
+            depth_sensor_snapshot::update( ext );
+
+            if( auto api = As< depth_stereo_sensor >( ext ) )
+            {
+                m_stereo_baseline_mm = api->get_stereo_baseline_mm();
+            }
+        }
+
+    private:
+        float m_stereo_baseline_mm;
+    };
+
+    }  // namespace
+
     void ros_reader::update_sensor_options(const rosbag::Bag& file, uint32_t sensor_index, const nanoseconds& time, uint32_t file_version, snapshot_collection& sensor_extensions, uint32_t version)
     {
         if (version == legacy_file_format::file_version())
@@ -833,6 +887,35 @@ namespace librealsense
         auto proccesing_blocks = read_proccesing_blocks(file, { get_device_index(), sensor_index }, time, options_api, file_version, pid, sensor_name);
         sensor_extensions[RS2_EXTENSION_RECOMMENDED_FILTERS] = proccesing_blocks;
     }
+
+    namespace {
+
+    class color_sensor_snapshot
+        : public virtual color_sensor
+        , public extension_snapshot
+    {
+    public:
+        void update( std::shared_ptr< extension_snapshot > ext ) override {}
+    };
+
+    class motion_sensor_snapshot
+        : public virtual motion_sensor
+        , public extension_snapshot
+    {
+    public:
+        void update( std::shared_ptr< extension_snapshot > ext ) override {}
+    };
+
+    class fisheye_sensor_snapshot
+        : public virtual fisheye_sensor
+        , public extension_snapshot
+    {
+    public:
+        void update( std::shared_ptr< extension_snapshot > ext ) override {}
+    };
+
+    }  // namespace
+
 
     void ros_reader::add_sensor_extension(snapshot_collection & sensor_extensions, std::string sensor_name)
     {

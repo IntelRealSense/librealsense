@@ -214,7 +214,7 @@ void librealsense::record_device::try_add_snapshot(T* extendable, device_seriali
             if (snapshot != nullptr)
             {
                 snapshots[TypeToExtension<Ext>::value] = snapshot;
-                LOG_INFO("Added snapshot of type: " << TypeToExtension<Ext>::to_string());
+                LOG_INFO("Added snapshot of type: " << TypeToExtension<Ext>::to_string() << "  to: " << extendable->get_info( RS2_CAMERA_INFO_NAME ) );
             }
             else
             {
@@ -242,31 +242,14 @@ device_serializer::snapshot_collection librealsense::record_device::get_extensio
     for (int i = 0; i < static_cast<int>(RS2_EXTENSION_COUNT ); ++i)
     {
         rs2_extension ext = static_cast<rs2_extension>(i);
+        // Most extensions are unsupported; those that derive from recordable<> need to be added here:
         switch (ext)
         {
-            case RS2_EXTENSION_DEBUG           : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_DEBUG          >::type>(extendable, snapshots); break;
-            case RS2_EXTENSION_INFO            : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_INFO           >::type>(extendable, snapshots); break;
-            case RS2_EXTENSION_OPTIONS         : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_OPTIONS        >::type>(extendable, snapshots); break;
-            //case RS2_EXTENSION_VIDEO           : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_VIDEO          >::type>(extendable, snapshots); break;
-            //case RS2_EXTENSION_ROI             : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_ROI            >::type>(extendable, snapshots); break;
-            case RS2_EXTENSION_DEPTH_SENSOR    : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_DEPTH_SENSOR   >::type>(extendable, snapshots); break;
-            case RS2_EXTENSION_L500_DEPTH_SENSOR: break;  // deprecated
-            case RS2_EXTENSION_DEPTH_STEREO_SENSOR: try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_DEPTH_STEREO_SENSOR   >::type>(extendable, snapshots); break;
-            case RS2_EXTENSION_COLOR_SENSOR:        try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_COLOR_SENSOR   >::type>(extendable, snapshots); break;
-            case RS2_EXTENSION_MOTION_SENSOR:        try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_MOTION_SENSOR   >::type>(extendable, snapshots); break;
-            case RS2_EXTENSION_FISHEYE_SENSOR:        try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_FISHEYE_SENSOR   >::type>(extendable, snapshots); break;
-                //case RS2_EXTENSION_ADVANCED_MODE   : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_ADVANCED_MODE  >::type>(extendable, snapshots); break;
-            case RS2_EXTENSION_RECOMMENDED_FILTERS: try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_RECOMMENDED_FILTERS   >::type>(extendable, snapshots); break;
-            case RS2_EXTENSION_VIDEO_FRAME     : break;
-            case RS2_EXTENSION_MOTION_FRAME    : break;
-            case RS2_EXTENSION_COMPOSITE_FRAME : break;
-            case RS2_EXTENSION_POINTS          : break;
-            case RS2_EXTENSION_RECORD          : break;
-            case RS2_EXTENSION_PLAYBACK        : break;
-            case RS2_EXTENSION_COUNT           : break;
-            case RS2_EXTENSION_UNKNOWN         : break;
-            default:
-                LOG_WARNING("Extensions type is unhandled: " << get_string(ext));
+        case RS2_EXTENSION_INFO:
+            try_add_snapshot< T, ExtensionToType< RS2_EXTENSION_INFO >::type >( extendable, snapshots );
+            break;
+        case RS2_EXTENSION_OPTIONS         : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_OPTIONS        >::type>(extendable, snapshots); break;
+        case RS2_EXTENSION_RECOMMENDED_FILTERS: try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_RECOMMENDED_FILTERS   >::type>(extendable, snapshots); break;
         }
     }
     return snapshots;
@@ -371,8 +354,11 @@ bool librealsense::record_device::extend_to(rs2_extension extension_type, void**
         *ext = this;
         return true;
     case RS2_EXTENSION_OPTIONS         : return extend_to_aux<RS2_EXTENSION_OPTIONS        >(m_device, ext);
-    case RS2_EXTENSION_ADVANCED_MODE   : return extend_to_aux<RS2_EXTENSION_ADVANCED_MODE  >(m_device, ext);
-    case RS2_EXTENSION_DEBUG           : return extend_to_aux<RS2_EXTENSION_DEBUG          >(m_device, ext);
+
+    case RS2_EXTENSION_ADVANCED_MODE   :
+        *ext = As< typename ExtensionToType< RS2_EXTENSION_ADVANCED_MODE >::type >( m_device ).get();
+        return *ext;
+
     //Other cases are not extensions that we expect a device to have.
     default:
         LOG_WARNING("Extensions type is unhandled: " << get_string(extension_type));
