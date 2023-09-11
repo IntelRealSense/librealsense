@@ -417,7 +417,7 @@ void dds_sensor_proxy::add_frame_metadata( frame * const f, nlohmann::json && dd
         {
             metadata[key] = { true, rsutils::json::get< rs2_metadata_type >( md, keystr ) };
         }
-        catch( std::runtime_error const & )
+        catch( nlohmann::json::exception const & )
         {
             // The metadata key doesn't exist or the value isn't the right type... we ignore it!
             // (all metadata is not there when we create the frame, so no need to erase)

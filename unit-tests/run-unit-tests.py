@@ -460,6 +460,14 @@ try:
         #
         log.progress()
     #
+    # Automatically detect github actions based on environment variable
+    #     see https://docs.github.com/en/actions/learn-github-actions/variables
+    # We must do this before calculating the tests otherwise the context cannot be used in
+    # directives...
+    if 'gha' not in context:
+        if os.environ.get( 'GITHUB_ACTIONS' ):
+            context.append( 'gha' )
+    #
     log.reset_errors()
     available_tags = set()
     tests = []

@@ -475,7 +475,7 @@ void dds_device::impl::create_metadata_reader()
                     {
                         _on_metadata_available( std::move( message.json_data() ) );
                     }
-                    catch( std::runtime_error const & e )
+                    catch( std::exception const & e )
                     {
                         LOG_DEBUG( "metadata exception: " << e.what() );
                     }

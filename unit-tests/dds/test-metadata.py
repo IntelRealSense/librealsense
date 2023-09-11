@@ -2,6 +2,7 @@
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
+#test:retries:gha 2
 
 # We disable under Linux for now, pending feedback from FastDDS team:
 # Having two participants in the same process ("client" and "librs" below) usually works, but in this case the former

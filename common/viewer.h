@@ -59,6 +59,8 @@ namespace rs2
 
     class viewer_model
     {
+        bool _disable_log_to_console = false;
+
     public:
         void reset_camera(float3 pos = { 0.0f, 0.0f, -1.0f });
 
@@ -190,7 +192,7 @@ namespace rs2
 
         press_button_model grid_object_button{ u8"\uf1cb", u8"\uf1cb",  "Configure Grid", "Configure Grid", false };
 
-        viewer_model(context &ctx_);
+        viewer_model(context &ctx_, bool disable_log_to_console = false );
 
         std::shared_ptr<updates_model> updates;
 

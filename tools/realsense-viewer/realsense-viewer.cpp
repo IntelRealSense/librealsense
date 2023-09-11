@@ -8,6 +8,9 @@
 #include "ux-window.h"
 #include "fw-update-helper.h"
 
+#include <rsutils/os/ensure-console.h>
+#include <tclap/CmdLine.h>
+
 #include <cstdarg>
 #include <thread>
 #include <iostream>
@@ -270,19 +273,58 @@ bool refresh_devices(std::mutex& m,
 
 int main(int argc, const char** argv) try
 {
+    TCLAP::CmdLine cmd( "realsense-viewer", ' ', RS2_API_FULL_VERSION_STR );
+#ifdef BUILD_EASYLOGGINGPP
+    TCLAP::SwitchArg debug_arg( "", "debug", "Turn on LibRS debug logs" );
+    cmd.add( debug_arg );
+#endif
+    TCLAP::SwitchArg only_sw_arg( "", "sw-only", "Show only software devices (playback, DDS, etc. -- but not USB/HID/etc.)" );
+    cmd.add( only_sw_arg );
+    // There isn't always a console... so if we need to show an error/usage, we need to enable it:
+    class cmdline_output : public TCLAP::StdOutput
+    {
+        typedef TCLAP::StdOutput super;
+
+    public:
+        void usage( TCLAP::CmdLineInterface & c ) override
+        {
+            rsutils::os::ensure_console();
+            super::usage( c );
+        }
+
+        void version( TCLAP::CmdLineInterface & c ) override
+        {
+            rsutils::os::ensure_console();
+            super::version( c );
+        }
+
+        void failure( TCLAP::CmdLineInterface & c, TCLAP::ArgException & e ) override
+        {
+            rsutils::os::ensure_console();
+            super::failure( c, e );
+        }
+    } our_cmdline_output;
+    cmd.setOutput( &our_cmdline_output );
+    cmd.parse( argc, argv );
 
 #ifdef BUILD_EASYLOGGINGPP
+    if( debug_arg.getValue() )
+        rsutils::os::ensure_console();
 #if defined( WIN32 )
     // In Windows, we have no console unless we start the viewer from one; without one, calling log_to_console will
     // ensure a console, so we want to avoid it by default!
     if( GetStdHandle( STD_OUTPUT_HANDLE ) )
 #endif
-        rs2::log_to_console( RS2_LOG_SEVERITY_INFO );
+        rs2::log_to_console( debug_arg.getValue() ? RS2_LOG_SEVERITY_DEBUG : RS2_LOG_SEVERITY_INFO );
 #endif
 
     std::shared_ptr<device_models_list> device_models = std::make_shared<device_models_list>();
 
-    context ctx;
+    nlohmann::json settings;
+    if( only_sw_arg.getValue() )
+        settings["device-mask"] = RS2_PRODUCT_LINE_SW_ONLY | RS2_PRODUCT_LINE_ANY;
+
+    context ctx( settings.dump() );
     ux_window window("Intel RealSense Viewer", ctx);
 
     // Create RealSense Context
@@ -296,7 +338,13 @@ int main(int argc, const char** argv) try
     bool is_ip_device_connected = false;
     std::string ip_address;
 
-    viewer_model viewer_model(ctx);
+#ifdef BUILD_EASYLOGGINGPP
+    bool const disable_log_to_console = debug_arg.getValue();
+#else
+    bool const disable_log_to_console = false;
+#endif
+
+    viewer_model viewer_model( ctx, disable_log_to_console );
 
     update_viewer_configuration(viewer_model);
 
