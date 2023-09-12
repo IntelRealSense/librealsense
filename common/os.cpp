@@ -7,6 +7,7 @@
 #endif
 
 #include "os.h"
+#include <rsutils/easylogging/easyloggingpp.h>
 
 #include <thread>
 #include <algorithm>
