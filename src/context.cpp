@@ -4,6 +4,7 @@
 #include "context.h"
 
 #include "ds/d400/d400-info.h"
+#include "ds/d500/d500-info.h"
 #include "device.h"
 #include "ds/ds-timestamp.h"
 #include <media/ros/ros_reader.h>
@@ -276,6 +277,12 @@ namespace librealsense
             std::copy(begin(d400_devices), end(d400_devices), std::back_inserter(list));
         }
 
+        if( mask & RS2_PRODUCT_LINE_D500 && ! ( mask & RS2_PRODUCT_LINE_SW_ONLY ) )
+        {
+            auto d500_devices = d500_info::pick_d500_devices( ctx, devices );
+            std::copy( begin( d500_devices ), end( d500_devices ), std::back_inserter( list ) );
+        }
+
 #ifdef BUILD_WITH_DDS
         if( _dds_watcher )
             _dds_watcher->foreach_device(
@@ -291,6 +298,11 @@ namespace librealsense
                         if( ! ( mask & RS2_PRODUCT_LINE_D400 ) )
                             return true;
                     }
+                    else if( dev->device_info().product_line == "D500" )
+                    {
+                        if( ! ( mask & RS2_PRODUCT_LINE_D500 ) )
+                            return true;
+                    }
                     else if( ! ( mask & RS2_PRODUCT_LINE_NON_INTEL ) )
                     {
                         return true;
@@ -303,7 +315,8 @@ namespace librealsense
 #endif //BUILD_WITH_DDS
 
         // Supported recovery devices
-        if( mask & RS2_PRODUCT_LINE_D400 && ! ( mask & RS2_PRODUCT_LINE_SW_ONLY ) )
+        if( ( ( mask & RS2_PRODUCT_LINE_D400 ) || ( mask & RS2_PRODUCT_LINE_D500 ) )
+            && ! ( mask & RS2_PRODUCT_LINE_SW_ONLY ) )
         {
             auto recovery_devices = fw_update_info::pick_recovery_devices(ctx, devices.usb_devices, mask);
             std::copy(begin(recovery_devices), end(recovery_devices), std::back_inserter(list));
