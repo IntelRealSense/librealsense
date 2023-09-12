@@ -1411,6 +1411,9 @@ namespace rs2
 
     void on_chip_calib_manager::process_flow(std::function<void()> cleanup, invoker invoke)
     {
+        if (action == RS2_CALIB_ACTION_FL_CALIB)
+            sub_color_restored_stream_enabled = _sub_color->stream_enabled;
+
         if (action == RS2_CALIB_ACTION_FL_CALIB || action == RS2_CALIB_ACTION_UVMAPPING_CALIB || action == RS2_CALIB_ACTION_FL_PLUS_CALIB)
             stop_viewer(invoke);
 
@@ -1507,7 +1510,11 @@ namespace rs2
             try
             {
                 if (action == RS2_CALIB_ACTION_FL_CALIB)
+                {
                     calibrate_fl();
+                    _sub_color->stream_enabled = sub_color_restored_stream_enabled;
+                    _sub_color->stream_enabled[_uid_color]=true;
+                }   
                 else if (action == RS2_CALIB_ACTION_UVMAPPING_CALIB)
                     calibrate_uv_mapping();
                 else
@@ -1526,6 +1533,11 @@ namespace rs2
                 {
                     _sub_color->ui = *_ui_color;
                     _ui_color.reset();
+                }
+                if (action == RS2_CALIB_ACTION_FL_CALIB)
+                {
+                    _sub_color->stream_enabled = sub_color_restored_stream_enabled;
+                    _sub_color->stream_enabled[_uid_color] = true;
                 }
 
                 if (_was_streaming)
@@ -2347,6 +2359,8 @@ namespace rs2
                         get_manager().start(invoke);
                         update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
                         enable_dismiss = false;
+                        if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB)
+                            get_manager()._sub_color->stream_enabled.clear();
                     }
 
                     ImGui::PopStyleColor(2);
@@ -2844,6 +2858,7 @@ namespace rs2
                             get_manager().start(invoke);
                             update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
                             enable_dismiss = false;
+                            get_manager()._sub_color->stream_enabled.clear();
                         }
 
                         ImGui::SetCursorScreenPos({ float(x + 5) + 4 * scale, float(y + height - 25) });
@@ -2983,6 +2998,12 @@ namespace rs2
 
     void autocalib_notification_model::dismiss(bool snooze)
     {
+        if (update_state == RS2_CALIB_STATE_FL_INPUT && snooze)
+        {
+            get_manager()._sub_color->stream_enabled = get_manager().sub_color_restored_stream_enabled;
+            get_manager()._sub_color->stream_enabled[0] = true;
+        }
+
         get_manager().update_last_used();
 
         if (!use_new_calib && get_manager().done())

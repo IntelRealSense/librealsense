@@ -96,6 +96,8 @@ namespace rs2
         std::shared_ptr<subdevice_model> _sub;
         std::shared_ptr<subdevice_model> _sub_color;
 
+        std::map<int, bool> sub_color_restored_stream_enabled;
+
         bool py_px_only = false;
 
         const std::string Y8_FORMAT = "Y8";
