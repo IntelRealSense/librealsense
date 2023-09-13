@@ -106,7 +106,7 @@ The method has not yet been verified on the **Jetson Nano** board.
 
 * **Build and Patch Kernel Modules for Jetson L4T**
 
-  * Navigate to the root of libreansense2 directory.  
+  * Navigate to the root of librealsense2 directory.  
   * Run the script (note the ending characters - `L4T`)
 
     ```sh
