@@ -15,6 +15,7 @@
 #include "core/roi.h"
 
 #include "d400/d400-motion.h"
+#include "d500/d500-motion.h"
 #include "proc/motion-transform.h"
 
 #include "ds-timestamp.h"
@@ -59,6 +60,8 @@ namespace librealsense
             return dev->_ds_motion_common->get_fisheye_calibration_table();
         if (auto dev = dynamic_cast<const d400_motion_uvc*>(_owner))
             return dev->_ds_motion_common->get_fisheye_calibration_table();
+        if( auto dev = dynamic_cast< const d500_motion * >( _owner ) )
+            return dev->_ds_motion_common->get_fisheye_calibration_table();
         throw std::runtime_error("device not referenced in the product line");
     }
 
@@ -67,6 +70,8 @@ namespace librealsense
         if (auto dev = dynamic_cast<const d400_motion*>(_owner))
             return dev->_ds_motion_common->get_fisheye_stream();
         if (auto dev = dynamic_cast<const d400_motion_uvc*>(_owner))
+            return dev->_ds_motion_common->get_fisheye_stream();
+        if( auto dev = dynamic_cast< const d500_motion * >( _owner ) )
             return dev->_ds_motion_common->get_fisheye_stream();
         throw std::runtime_error("device not referenced in the product line");
     }
@@ -142,6 +147,8 @@ namespace librealsense
             return dev->get_motion_intrinsics(stream);
         if (auto dev = dynamic_cast<const d400_motion_uvc*>(_owner))
             return dev->get_motion_intrinsics(stream);
+        if( auto dev = dynamic_cast< const d500_motion * >( _owner ) )
+            return dev->get_motion_intrinsics( stream );
         throw std::runtime_error("device not referenced in the product line");
     }
 
@@ -180,6 +187,8 @@ namespace librealsense
             return dev->_ds_motion_common->get_accel_stream();
         if (auto dev = dynamic_cast<const d400_motion_uvc*>(_owner))
             return dev->_ds_motion_common->get_accel_stream();
+        if( auto dev = dynamic_cast< const d500_motion * >( _owner ) )
+            return dev->_ds_motion_common->get_accel_stream();
         throw std::runtime_error("device not referenced in the product line");
     }
 
@@ -188,6 +197,8 @@ namespace librealsense
         if (auto dev = dynamic_cast<const d400_motion*>(_owner))
             return dev->_ds_motion_common->get_gyro_stream();
         if (auto dev = dynamic_cast<const d400_motion_uvc*>(_owner))
+            return dev->_ds_motion_common->get_gyro_stream();
+        if( auto dev = dynamic_cast< const d500_motion * >( _owner ) )
             return dev->_ds_motion_common->get_gyro_stream();
         throw std::runtime_error("device not referenced in the product line");
     }
@@ -291,6 +302,8 @@ namespace librealsense
             return filter_d400_device_by_capability(devices, ds::ds_caps::CAP_FISHEYE_SENSOR);
         if (auto dev = dynamic_cast<const d400_motion_uvc*>(_owner))
             return filter_d400_device_by_capability(devices, ds::ds_caps::CAP_FISHEYE_SENSOR);
+        if( auto dev = dynamic_cast< const d500_motion * >( _owner ) )
+            return std::vector< platform::uvc_device_info >();
         throw std::runtime_error("device not referenced in the product line");
     }
 
@@ -353,6 +366,11 @@ namespace librealsense
         {
             dev->register_stream_to_extrinsic_group(*_gyro_stream, 0);
             dev->register_stream_to_extrinsic_group(*_accel_stream, 0);
+        }
+        else if( auto dev = dynamic_cast< d500_motion * >( _owner ) )
+        {
+            dev->register_stream_to_extrinsic_group( *_gyro_stream, 0 );
+            dev->register_stream_to_extrinsic_group( *_accel_stream, 0 );
         }
         else
             throw std::runtime_error("device not referenced in the product line");

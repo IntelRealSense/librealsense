@@ -6,6 +6,7 @@
 #include "fw-update/fw-update-device-interface.h"
 
 #include "d400/d400-device.h"
+#include "d500/d500-device.h"
 
 #include "proc/hdr-merge.h"
 #include "proc/sequence-id-filter.h"
@@ -107,6 +108,8 @@ namespace librealsense
     uvc_sensor& ds_device_common::get_raw_depth_sensor()
     {
         if (auto dev = dynamic_cast<d400_device*>(_owner))
+            return dev->get_raw_depth_sensor();
+       if (auto dev = dynamic_cast<d500_device*>(_owner))
             return dev->get_raw_depth_sensor();
         throw std::runtime_error("device not referenced in the product line");
     }

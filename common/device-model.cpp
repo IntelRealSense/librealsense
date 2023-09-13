@@ -927,7 +927,7 @@ namespace rs2
         try
         {
             std::vector<uint8_t> data;
-            auto ret = file_dialog_open(open_file, "Unsigned Firmware Image\0*.bin\0", NULL, NULL);
+            auto ret = file_dialog_open(open_file, "Unsigned Firmware Image\0*.bin\0*.img\0", NULL, NULL);
             if (ret)
             {
                 std::ifstream file(ret, std::ios::binary | std::ios::in);
@@ -976,7 +976,7 @@ namespace rs2
         {
             if (data.size() == 0)
             {
-                auto ret = file_dialog_open(open_file, "Signed Firmware Image\0*.bin\0", NULL, NULL);
+                auto ret = file_dialog_open(open_file, "Signed Firmware Image\0*.bin\0*.img\0", NULL, NULL);
                 if (ret)
                 {
                     std::ifstream file(ret, std::ios::binary | std::ios::in);
@@ -1384,16 +1384,22 @@ namespace rs2
 
                 if (dev.is<rs2::updatable>() && !is_locked)
                 {
-                    if (ImGui::Selectable("Update Unsigned Firmware...", false, updateFwFlags))
-                    {
-                        begin_update_unsigned(viewer, error_message);
-                    }
-                    if (ImGui::IsItemHovered())
-                    {
-                        std::string tooltip = rsutils::string::from()
-                                           << "Install non official unsigned firmware from file to the device"
-                                           << ( is_streaming ? " (Disabled while streaming)" : "" );
-                        ImGui::SetTooltip("%s", tooltip.c_str());
+                    auto pl = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
+                    bool is_d400_device = (std::string(pl) == "D400");
+                        
+                    if( is_d400_device )
+                    {    
+                        if (ImGui::Selectable("Update Unsigned Firmware...", false, updateFwFlags))
+                        {
+                            begin_update_unsigned(viewer, error_message);
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            std::string tooltip = rsutils::string::from()
+                                               << "Install non official unsigned firmware from file to the device"
+                                               << ( is_streaming ? " (Disabled while streaming)" : "" );
+                            ImGui::SetTooltip("%s", tooltip.c_str());
+                        }
                     }
                 }
             }
