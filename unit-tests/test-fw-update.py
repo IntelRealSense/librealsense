@@ -3,7 +3,7 @@
 
 # we want this test to run first so that all tests run with updated FW versions, so we give it priority 0
 #test:priority 0
-#test:device each(D400*) !D457
+#test:device each(D400*)
 
 import sys
 import os
@@ -13,22 +13,25 @@ import platform
 import pyrealsense2 as rs
 import pyrsutils as rsutils
 from rspy import devices, log, test, file, repo
+import time
 
-
-if not devices.acroname:
-    log.i( "No Acroname library found; skipping device FW update" )
-    sys.exit(0)
-# Following will throw if no acroname module is found
-from rspy import acroname
-try:
-    devices.acroname.discover()
-except acroname.NoneFoundError as e:
-    log.f( e )
-# Remove acroname -- we're likely running inside run-unit-tests in which case the
-# acroname hub is likely already connected-to from there and we'll get an error
-# thrown ('failed to connect to acroname (result=11)'). We do not need it -- just
-# needed to verify it is available above...
-devices.acroname = None
+# This is the first test running, discover acroname modules.
+# Not relevant to MIPI devices running on jetson for LibCI
+if 'jetson' not in test.context:
+    if not devices.acroname:
+        log.i( "No Acroname library found; skipping device FW update" )
+        sys.exit(0)
+    # Following will throw if no acroname module is found
+    from rspy import acroname
+    try:
+        devices.acroname.discover()
+    except acroname.NoneFoundError as e:
+        log.f( e )
+    # Remove acroname -- we're likely running inside run-unit-tests in which case the
+    # acroname hub is likely already connected-to from there and we'll get an error
+    # thrown ('failed to connect to acroname (result=11)'). We do not need it -- just
+    # needed to verify it is available above...
+    devices.acroname = None
 
 
 def send_hardware_monitor_command(device, command):
@@ -182,6 +185,7 @@ sys.stdout.flush()
 subprocess.run( cmd )   # may throw
 
 # make sure update worked
+time.sleep(3) # MIPI devices do not re-enumerate so we need to give them some time to restart
 devices.query( monitor_changes = False )
 sn_list = devices.all()
 device = devices.get_first( sn_list ).handle
