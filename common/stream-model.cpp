@@ -804,7 +804,7 @@ namespace rs2
 
 
 
-        if (show_metadata)
+        if (show_metadata && timestamp > 0)  // ts > 0 checked so that the metadata panel will not be drawn before frames arrival
             stream_model::draw_stream_metadata(timestamp, timestamp_domain, frame_number, profile, original_size, stream_rect);
 
         ImGui::PopStyleColor(5);
