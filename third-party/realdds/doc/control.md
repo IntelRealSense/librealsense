@@ -61,9 +61,8 @@ Returns or sets the current `value` of an option within a device.
 
 - `id` is `query-option` or `set-option`
 - `option-name` is the unique option name within its owner
-- `owner-name` is the name of the owner
+- `stream-name` is the unique name of the stream it's in within the device
     - for a device option, this may be omitted
-    - for a stream option, this is the unique stream name within the device
 - for `set-option`, `value` is the new value (float)
 
 ```JSON

@@ -106,7 +106,7 @@ private:
 
     void handle_set_option( const nlohmann::json & msg, nlohmann::json & reply );
     void handle_query_option( const nlohmann::json & msg, nlohmann::json & reply );
-    std::shared_ptr< dds_option > find_option( const std::string & option_name, const std::string & owner_name );
+    std::shared_ptr< dds_option > find_option( const std::string & option_name, const std::string & stream_name ) const;
 
     std::shared_ptr< dds_publisher > _publisher;
     std::shared_ptr< dds_subscriber > _subscriber;

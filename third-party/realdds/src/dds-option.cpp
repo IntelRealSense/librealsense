@@ -11,14 +11,16 @@ using nlohmann::json;
 namespace realdds {
 
 
-dds_option::dds_option( const std::string & name, const std::string & owner_name )
+dds_option::dds_option( const std::string & name, dds_option_range const & range, std::string const & description )
     : _name( name )
-    , _owner_name( owner_name )
+    , _range( range )
+    , _value( range.default_value )
+    , _description( description )
 {
 }
 
 
-dds_option::dds_option( nlohmann::json const & j, const std::string & owner_name )
+dds_option::dds_option( nlohmann::json const & j )
 {
     int index = 0;
 
@@ -32,14 +34,22 @@ dds_option::dds_option( nlohmann::json const & j, const std::string & owner_name
 
     if( index != j.size() )
         DDS_THROW( runtime_error, "expected end of json at index " + std::to_string( index ) );
-
-    _owner_name = owner_name;
 }
 
 
-/* static  */ std::shared_ptr< dds_option > dds_option::from_json(nlohmann::json const & j, const std::string & owner_name )
+void dds_option::init_stream( std::shared_ptr< dds_stream_base > const & stream )
 {
-    return std::shared_ptr< dds_option >( new dds_option( j, owner_name ) );
+    if( _stream.lock() )
+        DDS_THROW( runtime_error, "option '" + get_name() + "' already has a stream" );
+    if( ! stream )
+        DDS_THROW( runtime_error, "null stream" );
+    _stream = stream;
+}
+
+
+/* static  */ std::shared_ptr< dds_option > dds_option::from_json( nlohmann::json const & j )
+{
+    return std::shared_ptr< dds_option >( new dds_option( j ) );
 }
 
 

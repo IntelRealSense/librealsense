@@ -40,7 +40,7 @@ static std::string const sample_key( "sample", 6 );
 static std::string const status_key( "status", 6 );
 static std::string const status_ok( "ok", 2 );
 static std::string const option_name_key( "option-name", 11 );
-static std::string const owner_name_key( "owner-name", 10 );
+static std::string const stream_name_key( "stream-name", 11 );
 static std::string const explanation_key( "explanation", 11 );
 static std::string const control_key( "control", 7 );
 
@@ -332,10 +332,10 @@ void dds_device_server::handle_control_message( std::string const & id,
 void dds_device_server::handle_set_option( const nlohmann::json & j, nlohmann::json & reply )
 {
     auto option_name = rsutils::json::get< std::string >( j, option_name_key );
-    std::string owner_name;  // default is empty, for a device option
-    rsutils::json::get_ex( j, owner_name_key, &owner_name );
+    std::string stream_name;  // default is empty, for a device option
+    rsutils::json::get_ex( j, stream_name_key, &stream_name );
 
-    std::shared_ptr< dds_option > opt = find_option( option_name, owner_name );
+    std::shared_ptr< dds_option > opt = find_option( option_name, stream_name );
     if( opt )
     {
         float value = rsutils::json::get< float >( j, value_key );
@@ -346,11 +346,11 @@ void dds_device_server::handle_set_option( const nlohmann::json & j, nlohmann::j
     }
     else
     {
-        if( owner_name.empty() )
-            owner_name = "device";
+        if( stream_name.empty() )
+            stream_name = "device";
         else
-            owner_name = "'" + owner_name + "'";
-        DDS_THROW( runtime_error, owner_name + " option '" + option_name + "' not found" );
+            stream_name = "'" + stream_name + "'";
+        DDS_THROW( runtime_error, stream_name + " option '" + option_name + "' not found" );
     }
 }
 
@@ -358,10 +358,10 @@ void dds_device_server::handle_set_option( const nlohmann::json & j, nlohmann::j
 void dds_device_server::handle_query_option( const nlohmann::json & j, nlohmann::json & reply )
 {
     auto option_name = rsutils::json::get< std::string >( j, option_name_key );
-    std::string owner_name;  // default is empty, for a device option
-    rsutils::json::get_ex( j, owner_name_key, &owner_name );
+    std::string stream_name;  // default is empty, for a device option
+    rsutils::json::get_ex( j, stream_name_key, &stream_name );
 
-    std::shared_ptr< dds_option > opt = find_option( option_name, owner_name );
+    std::shared_ptr< dds_option > opt = find_option( option_name, stream_name );
     if( opt )
     {
         float value;
@@ -379,45 +379,39 @@ void dds_device_server::handle_query_option( const nlohmann::json & j, nlohmann:
     }
     else
     {
-        if( owner_name.empty() )
-            owner_name = "device";
+        if( stream_name.empty() )
+            stream_name = "device";
         else
-            owner_name = "'" + owner_name + "'";
-        DDS_THROW( runtime_error, owner_name + " option '" + option_name + "' not found" );
+            stream_name = "'" + stream_name + "'";
+        DDS_THROW( runtime_error, stream_name + " option '" + option_name + "' not found" );
     }
 }
 
 
 std::shared_ptr< dds_option > realdds::dds_device_server::find_option( const std::string & option_name,
-                                                                       const std::string & owner_name )
+                                                                       const std::string & stream_name ) const
 {
-    if( owner_name.empty() )
+    if( stream_name.empty() )
     {
         for( auto & option : _options )
         {
             if( option->get_name() == option_name )
-            {
                 return option;
-            }
         }
     }
     else
     {
         // Find option in owner stream
-        for( auto & stream_it : _stream_name_to_server )
+        auto stream_it = _stream_name_to_server.find( stream_name );
+        if( stream_it != _stream_name_to_server.end() )
         {
-            if( stream_it.first == owner_name )
+            for( auto & option : stream_it->second->options() )
             {
-                for( auto & option : stream_it.second->options() )
-                {
-                    if( option->get_name() == option_name )
-                    {
-                        return option;
-                    }
-                }
+                if( option->get_name() == option_name )
+                    return option;
             }
         }
     }
 
-    return nullptr;
+    return {};
 }

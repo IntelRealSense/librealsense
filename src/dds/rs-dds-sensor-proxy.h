@@ -70,8 +70,6 @@ public:
     void stop();
 
     void add_option( std::shared_ptr< realdds::dds_option > option );
-    void set_option( const std::string & name, float value ) const;
-    float query_option( const std::string & name ) const;
 
     void add_processing_block( std::string filter_name );
     bool processing_block_exists( processing_blocks const & blocks, std::string const & block_name ) const;

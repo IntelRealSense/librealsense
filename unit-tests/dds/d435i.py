@@ -153,7 +153,7 @@ def ir_stream_profiles():
 def ir_stream( number ):
     stream = dds.ir_stream_server( "Infrared_" + str(number), "Stereo Module" )
     stream.init_profiles( ir_stream_profiles(), 9 )
-    stream.init_options( stereo_module_options() )
+    #stream.init_options( stereo_module_options() )
     stream.set_intrinsics( ir_stream_intrinsics() )
     return stream
 
@@ -206,214 +206,57 @@ def color_stream():
 
 def stereo_module_options():
     options = []
-    option_range = dds.dds_option_range()
 
-    option = dds.dds_option( "Exposure", "Stereo Module" )
-    option.set_value( 8500 )
-    option_range.min = 1
-    option_range.max = 200000
-    option_range.step = 1
-    option_range.default_value = 8500
-    option.set_range( option_range )
-    option.set_description( "Depth Exposure (usec)" )
+    option = dds.option( "Exposure", dds.option_range( 1, 200000, 1, 8500 ), "Depth Exposure (usec)" )
     options.append( option )
-    option = dds.dds_option( "Gain", "Stereo Module" )
-    option.set_value( 16 )
-    option_range.min = 16
-    option_range.max = 248
-    option_range.step = 1
-    option_range.default_value = 16
-    option.set_range( option_range )
-    option.set_description( "UVC image gain" )
+    option = dds.option( "Gain", dds.option_range( 16, 248, 1, 16 ), "UVC image gain" )
     options.append( option )
-    option = dds.dds_option( "Enable Auto Exposure", "Stereo Module" )
+    option = dds.option( "Enable Auto Exposure", dds.option_range( 0, 1, 1, 1 ), "Enable Auto Exposure" )
+    options.append( option )
+    option = dds.option( "Visual Preset", dds.option_range( 0, 5, 1, 0 ), "Advanced-Mode Preset" )
+    options.append( option )
+    option = dds.option( "Laser Power", dds.option_range( 0, 360, 30, 150 ), "Manual laser power in mw. applicable only when laser power mode is set to Manual" )
+    options.append( option )
+    option = dds.option( "Emitter Enabled", dds.option_range( 0, 2, 1, 1 ), "Emitter select, 0-disable all emitters, 1-enable laser, 2-enable laser auto (opt), 3-enable LED (opt)" )
+    options.append( option )
+    option = dds.option( "Error Polling Enabled", dds.option_range( 0, 1, 1, 0 ), "Enable / disable polling of camera internal errors" )
     option.set_value( 1 )
-    option_range.min = 0
-    option_range.max = 1
-    option_range.step = 1
-    option_range.default_value = 1
-    option.set_range( option_range )
-    option.set_description( "Enable Auto Exposure" )
     options.append( option )
-    option = dds.dds_option( "Visual Preset", "Stereo Module" )
+    option = dds.option( "Output Trigger Enabled", dds.option_range( 0, 1, 1, 0 ), "Generate trigger from the camera to external device once per frame" )
+    options.append( option )
+    option = dds.option( "Depth Units", dds.option_range( 1e-06, 0.01, 1e-06, 0.001 ), "Number of meters represented by a single depth unit" )
+    options.append( option )
+    option = dds.option( "Stereo Baseline", dds.option_range( 49.864, 49.864, 0, 49.864 ), "Distance in mm between the stereo imagers" )
+    options.append( option )
+    option = dds.option( "Inter Cam Sync Mode", dds.option_range( 0, 260, 1, 0 ),
+        "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave, 3:Full Salve, 4-258:Genlock with burst count of 1-255 frames for each trigger, 259 and 260 for two frames per trigger with laser ON-OFF and OFF-ON." )
+    options.append( option )
+    option = dds.option( "Emitter On Off", dds.option_range( 0, 1, 1, 0 ), "Alternating emitter pattern, toggled on/off on per-frame basis" )
+    options.append( option )
+    option = dds.option( "Global Time Enabled", dds.option_range( 0, 1, 1, 1 ), "Enable/Disable global timestamp" )
+    options.append( option )
+    option = dds.option( "Emitter Always On", dds.option_range( 0, 1, 1, 0 ), "Emitter always on mode: 0:disabled(default), 1:enabled" )
+    options.append( option )
+    option = dds.option( "Hdr Enabled", dds.option_range( 0, 1, 1, 0 ), "HDR Option" )
+    options.append( option )
+    option = dds.option( "Sequence Name", dds.option_range( 0, 3, 1, 1 ), "HDR Option" )
     option.set_value( 0 )
-    option_range.min = 0
-    option_range.max = 5
-    option_range.step = 1
-    option_range.default_value = 0
-    option.set_range( option_range )
-    option.set_description( "Advanced-Mode Preset" )
     options.append( option )
-    option = dds.dds_option( "Laser Power", "Stereo Module" )
-    option.set_value( 150 )
-    option_range.min = 0
-    option_range.max = 360
-    option_range.step = 30
-    option_range.default_value = 150
-    option.set_range( option_range )
-    option.set_description( "Manual laser power in mw. applicable only when laser power mode is set to Manual" )
+    option = dds.option( "Sequence Size", dds.option_range( 2, 2, 1, 2 ), "HDR Option" )
     options.append( option )
-    option = dds.dds_option( "Emitter Enabled", "Stereo Module" )
-    option.set_value( 1 )
-    option_range.min = 0
-    option_range.max = 2
-    option_range.step = 1
-    option_range.default_value = 1
-    option.set_range( option_range )
-    option.set_description( "Emitter select, 0-disable all emitters, 1-enable laser, 2-enable laser auto (opt), 3-enable LED (opt)" )
+    option = dds.option( "Sequence Id", dds.option_range( 0, 2, 1, 0 ), "HDR Option" )
     options.append( option )
-    option = dds.dds_option( "Frames Queue Size", "Stereo Module" )
-    option.set_value( 16 )
-    option_range.min = 0
-    option_range.max = 32
-    option_range.step = 1
-    option_range.default_value = 16
-    option.set_range( option_range )
-    option.set_description( "Max number of frames you can hold at a given time. Increasing this number will reduce frame drops but increase latency, and vice versa" )
-    options.append( option )
-    option = dds.dds_option( "Error Polling Enabled", "Stereo Module" )
-    option.set_value( 1 )
-    option_range.min = 0
-    option_range.max = 1
-    option_range.step = 1
-    option_range.default_value = 0
-    option.set_range( option_range )
-    option.set_description( "Enable / disable polling of camera internal errors" )
-    options.append( option )
-    option = dds.dds_option( "Output Trigger Enabled", "Stereo Module" )
-    option.set_value( 0 )
-    option_range.min = 0
-    option_range.max = 1
-    option_range.step = 1
-    option_range.default_value = 0
-    option.set_range( option_range )
-    option.set_description( "Generate trigger from the camera to external device once per frame" )
-    options.append( option )
-    option = dds.dds_option( "Depth Units", "Stereo Module" )
-    option.set_value( 0.001 )
-    option_range.min = 1e-06
-    option_range.max = 0.01
-    option_range.step = 1e-06
-    option_range.default_value = 0.001
-    option.set_range( option_range )
-    option.set_description( "Number of meters represented by a single depth unit" )
-    options.append( option )
-    option = dds.dds_option( "Stereo Baseline", "Stereo Module" )
-    option.set_value( 49.864 )
-    option_range.min = 49.864
-    option_range.max = 49.864
-    option_range.step = 0
-    option_range.default_value = 49.864
-    option.set_range( option_range )
-    option.set_description( "Distance in mm between the stereo imagers" )
-    options.append( option )
-    option = dds.dds_option( "Inter Cam Sync Mode", "Stereo Module" )
-    option.set_value( 0 )
-    option_range.min = 0
-    option_range.max = 260
-    option_range.step = 1
-    option_range.default_value = 0
-    option.set_range( option_range )
-    option.set_description( "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave, 3:Full Salve, 4-258:Genlock with burst count of 1-255 frames for each trigger, 259 and 260 for two frames per trigger with laser ON-OFF and OFF-ON." )
-    options.append( option )
-    option = dds.dds_option( "Emitter On Off", "Stereo Module" )
-    option.set_value( 0 )
-    option_range.min = 0
-    option_range.max = 1
-    option_range.step = 1
-    option_range.default_value = 0
-    option.set_range( option_range )
-    option.set_description( "Alternating emitter pattern, toggled on/off on per-frame basis" )
-    options.append( option )
-    option = dds.dds_option( "Global Time Enabled", "Stereo Module" )
-    option.set_value( 1 )
-    option_range.min = 0
-    option_range.max = 1
-    option_range.step = 1
-    option_range.default_value = 1
-    option.set_range( option_range )
-    option.set_description( "Enable/Disable global timestamp" )
-    options.append( option )
-    option = dds.dds_option( "Emitter Always On", "Stereo Module" )
-    option.set_value( 0 )
-    option_range.min = 0
-    option_range.max = 1
-    option_range.step = 1
-    option_range.default_value = 0
-    option.set_range( option_range )
-    option.set_description( "Emitter always on mode: 0:disabled(default), 1:enabled" )
-    options.append( option )
-    option = dds.dds_option( "Hdr Enabled", "Stereo Module" )
-    option.set_value( 0 )
-    option_range.min = 0
-    option_range.max = 1
-    option_range.step = 1
-    option_range.default_value = 0
-    option.set_range( option_range )
-    option.set_description( "HDR Option" )
-    options.append( option )
-    option = dds.dds_option( "Sequence Name", "Stereo Module" )
-    option.set_value( 0 )
-    option_range.min = 0
-    option_range.max = 3
-    option_range.step = 1
-    option_range.default_value = 1
-    option.set_range( option_range )
-    option.set_description( "HDR Option" )
-    options.append( option )
-    option = dds.dds_option( "Sequence Size", "Stereo Module" )
-    option.set_value( 2 )
-    option_range.min = 2
-    option_range.max = 2
-    option_range.step = 1
-    option_range.default_value = 2
-    option.set_range( option_range )
-    option.set_description( "HDR Option" )
-    options.append( option )
-    option = dds.dds_option( "Sequence Id", "Stereo Module" )
-    option.set_value( 0 )
-    option_range.min = 0
-    option_range.max = 2
-    option_range.step = 1
-    option_range.default_value = 0
-    option.set_range( option_range )
-    option.set_description( "HDR Option" )
-    options.append( option )
-    option = dds.dds_option( "Auto Exposure Limit", "Stereo Module" )
+    option = dds.option( "Auto Exposure Limit", dds.option_range( 1, 200000, 1, 8500 ),
+        "Exposure limit is in microseconds. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session." )
     option.set_value( 200000 )
-    option_range.min = 1
-    option_range.max = 200000
-    option_range.step = 1
-    option_range.default_value = 8500
-    option.set_range( option_range )
-    option.set_description( "Exposure limit is in microseconds. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session." )
     options.append( option )
-    option = dds.dds_option( "Auto Gain Limit", "Stereo Module" )
+    option = dds.option( "Auto Gain Limit", dds.option_range( 16, 248, 1, 16 ),
+        "Gain limits ranges from 16 to 248. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session." )
     option.set_value( 248 )
-    option_range.min = 16
-    option_range.max = 248
-    option_range.step = 1
-    option_range.default_value = 16
-    option.set_range( option_range )
-    option.set_description( "Gain limits ranges from 16 to 248. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session." )
     options.append( option )
-    option = dds.dds_option( "Auto Exposure Limit Toggle", "Stereo Module" )
-    option.set_value( 0 )
-    option_range.min = 0
-    option_range.max = 1
-    option_range.step = 1
-    option_range.default_value = 0
-    option.set_range( option_range )
-    option.set_description( "Toggle Auto-Exposure Limit" )
+    option = dds.option( "Auto Exposure Limit Toggle", dds.option_range( 0, 1, 1, 0 ), "Toggle Auto-Exposure Limit" )
     options.append( option )
-    option = dds.dds_option( "Auto Gain Limit Toggle", "Stereo Module" )
-    option.set_value( 0 )
-    option_range.min = 0
-    option_range.max = 1
-    option_range.step = 1
-    option_range.default_value = 0
-    option.set_range( option_range )
-    option.set_description( "Toggle Auto-Gain Limit" )
+    option = dds.option( "Auto Gain Limit Toggle", dds.option_range( 0, 1, 1, 0 ), "Toggle Auto-Gain Limit" )
     options.append( option )
 
     return options
@@ -421,151 +264,40 @@ def stereo_module_options():
 
 def rgb_camera_options():
     options = []
-    option_range = dds.dds_option_range()
 
-    option = dds.dds_option( "Backlight Compensation", "RGB Camera" )
-    option.set_value( 0 )
-    option_range.min = 0
-    option_range.max = 1
-    option_range.step = 1
-    option_range.default_value = 0
-    option.set_range( option_range )
-    option.set_description( "Enable / disable backlight compensation" )
+    option = dds.option( "Backlight Compensation", dds.option_range( 0, 1, 1, 0 ), "Enable / disable backlight compensation" )
     options.append( option )
-    option = dds.dds_option( "Brightness", "RGB Camera" )
-    option.set_value( 0 )
-    option_range.min = -64
-    option_range.max = 64
-    option_range.step = 1
-    option_range.default_value = 0
-    option.set_range( option_range )
-    option.set_description( "UVC image brightness" )
+    option = dds.option( "Brightness", dds.option_range( -64, 64, 1, 0 ), "UVC image brightness" )
     options.append( option )
-    option = dds.dds_option( "Contrast", "RGB Camera" )
-    option.set_value( 50 )
-    option_range.min = 0
-    option_range.max = 100
-    option_range.step = 1
-    option_range.default_value = 50
-    option.set_range( option_range )
-    option.set_description( "UVC image contrast" )
+    option = dds.option( "Contrast", dds.option_range( 0, 100, 1, 50 ), "UVC image contrast" )
     options.append( option )
-    option = dds.dds_option( "Exposure", "RGB Camera" )
-    option.set_value( 156 )
-    option_range.min = 1
-    option_range.max = 10000
-    option_range.step = 1
-    option_range.default_value = 156
-    option.set_range( option_range )
-    option.set_description( "Controls exposure time of color camera. Setting any value will disable auto exposure" )
+    option = dds.option( "Exposure", dds.option_range( 1, 10000, 1, 156 ), "Controls exposure time of color camera. Setting any value will disable auto exposure" )
     options.append( option )
-    option = dds.dds_option( "Gain", "RGB Camera" )
+    option = dds.option( "Gain", dds.option_range( 0, 128, 1, 64 ), "UVC image gain" )
     option.set_value( 6 )
-    option_range.min = 0
-    option_range.max = 128
-    option_range.step = 1
-    option_range.default_value = 64
-    option.set_range( option_range )
-    option.set_description( "UVC image gain" )
     options.append( option )
-    option = dds.dds_option( "Gamma", "RGB Camera" )
-    option.set_value( 300 )
-    option_range.min = 100
-    option_range.max = 500
-    option_range.step = 1
-    option_range.default_value = 300
-    option.set_range( option_range )
-    option.set_description( "UVC image gamma setting" )
+    option = dds.option( "Gamma", dds.option_range( 100, 500, 1, 300 ), "UVC image gamma setting" )
     options.append( option )
-    option = dds.dds_option( "Hue", "RGB Camera" )
+    option = dds.option( "Hue", dds.option_range( -180, 180, 1, 0 ), "UVC image hue" )
+    options.append( option )
+    option = dds.option( "Saturation", dds.option_range( 0, 100, 1, 64 ), "UVC image saturation setting" )
+    options.append( option )
+    option = dds.option( "Sharpness", dds.option_range( 0, 100, 1, 50 ), "UVC image sharpness setting" )
+    options.append( option )
+    option = dds.option( "White Balance", dds.option_range( 2800, 6500, 10, 4600 ),
+        "Controls white balance of color image. Setting any value will disable auto white balance" )
+    options.append( option )
+    option = dds.option( "Enable Auto Exposure", dds.option_range( 0, 1, 1, 1 ), "Enable / disable auto-exposure" )
     option.set_value( 0 )
-    option_range.min = -180
-    option_range.max = 180
-    option_range.step = 1
-    option_range.default_value = 0
-    option.set_range( option_range )
-    option.set_description( "UVC image hue" )
     options.append( option )
-    option = dds.dds_option( "Saturation", "RGB Camera" )
-    option.set_value( 64 )
-    option_range.min = 0
-    option_range.max = 100
-    option_range.step = 1
-    option_range.default_value = 64
-    option.set_range( option_range )
-    option.set_description( "UVC image saturation setting" )
+    option = dds.option( "Enable Auto White Balance", dds.option_range( 0, 1, 1, 1 ), "Enable / disable auto-white-balance" )
     options.append( option )
-    option = dds.dds_option( "Sharpness", "RGB Camera" )
-    option.set_value( 50 )
-    option_range.min = 0
-    option_range.max = 100
-    option_range.step = 1
-    option_range.default_value = 50
-    option.set_range( option_range )
-    option.set_description( "UVC image sharpness setting" )
+    option = dds.option( "Power Line Frequency", dds.option_range( 0, 3, 1, 3 ), "Power Line Frequency" )
     options.append( option )
-    option = dds.dds_option( "White Balance", "RGB Camera" )
-    option.set_value( 4600 )
-    option_range.min = 2800
-    option_range.max = 6500
-    option_range.step = 10
-    option_range.default_value = 4600
-    option.set_range( option_range )
-    option.set_description( "Controls white balance of color image. Setting any value will disable auto white balance" )
+    option = dds.option( "Auto Exposure Priority", dds.option_range( 0, 1, 1, 0 ),
+        "Restrict Auto-Exposure to enforce constant FPS rate. Turn ON to remove the restrictions (may result in FPS drop)" )
     options.append( option )
-    option = dds.dds_option( "Enable Auto Exposure", "RGB Camera" )
-    option.set_value( 0 )
-    option_range.min = 0
-    option_range.max = 1
-    option_range.step = 1
-    option_range.default_value = 1
-    option.set_range( option_range )
-    option.set_description( "Enable / disable auto-exposure" )
-    options.append( option )
-    option = dds.dds_option( "Enable Auto White Balance", "RGB Camera" )
-    option.set_value( 1 )
-    option_range.min = 0
-    option_range.max = 1
-    option_range.step = 1
-    option_range.default_value = 1
-    option.set_range( option_range )
-    option.set_description( "Enable / disable auto-white-balance" )
-    options.append( option )
-    option = dds.dds_option( "Frames Queue Size", "RGB Camera" )
-    option.set_value( 16 )
-    option_range.min = 0
-    option_range.max = 32
-    option_range.step = 1
-    option_range.default_value = 16
-    option.set_range( option_range )
-    option.set_description( "Max number of frames you can hold at a given time. Increasing this number will reduce frame drops but increase latency, and vice versa" )
-    options.append( option )
-    option = dds.dds_option( "Power Line Frequency", "RGB Camera" )
-    option.set_value( 3 )
-    option_range.min = 0
-    option_range.max = 3
-    option_range.step = 1
-    option_range.default_value = 3
-    option.set_range( option_range )
-    option.set_description( "Power Line Frequency" )
-    options.append( option )
-    option = dds.dds_option( "Auto Exposure Priority", "RGB Camera" )
-    option.set_value( 0 )
-    option_range.min = 0
-    option_range.max = 1
-    option_range.step = 1
-    option_range.default_value = 0
-    option.set_range( option_range )
-    option.set_description( "Restrict Auto-Exposure to enforce constant FPS rate. Turn ON to remove the restrictions (may result in FPS drop)" )
-    options.append( option )
-    option = dds.dds_option( "Global Time Enabled", "RGB Camera" )
-    option.set_value( 1 )
-    option_range.min = 0
-    option_range.max = 1
-    option_range.step = 1
-    option_range.default_value = 1
-    option.set_range( option_range )
-    option.set_description( "Enable/Disable global timestamp" )
+    option = dds.option( "Global Time Enabled", dds.option_range( 0, 1, 1, 1 ), "Enable/Disable global timestamp" )
     options.append( option )
 
     return options
@@ -573,34 +305,10 @@ def rgb_camera_options():
 
 def motion_module_options():
     options = []
-    option_range = dds.dds_option_range()
 
-    option = dds.dds_option( "Frames Queue Size", "Motion Module" )
-    option.set_value( 16 )
-    option_range.min = 0
-    option_range.max = 32
-    option_range.step = 1
-    option_range.default_value = 16
-    option.set_range( option_range )
-    option.set_description( "Max number of frames you can hold at a given time. Increasing this number will reduce frame drops but increase latency, and vice versa" )
+    option = dds.option( "Enable Motion Correction", dds.option_range( 0, 1, 1, 1 ), "Enable/Disable Automatic Motion Data Correction" )
     options.append( option )
-    option = dds.dds_option( "Enable Motion Correction", "Motion Module" )
-    option.set_value( 1 )
-    option_range.min = 0
-    option_range.max = 1
-    option_range.step = 1
-    option_range.default_value = 1
-    option.set_range( option_range )
-    option.set_description( "Enable/Disable Automatic Motion Data Correction" )
-    options.append( option )
-    option = dds.dds_option( "Global Time Enabled", "Motion Module" )
-    option.set_value( 1 )
-    option_range.min = 0
-    option_range.max = 1
-    option_range.step = 1
-    option_range.default_value = 1
-    option.set_range( option_range )
-    option.set_description( "Enable/Disable global timestamp" )
+    option = dds.option( "Global Time Enabled", dds.option_range( 0, 1, 1, 1 ), "Enable/Disable global timestamp" )
     options.append( option )
 
     return options

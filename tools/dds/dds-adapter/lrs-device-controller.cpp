@@ -194,6 +194,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
 
     // Iterate over the mapped streams and initialize
     std::vector< std::shared_ptr< realdds::dds_stream_server > > servers;
+    std::set< std::string > sensors_handled;
     for( auto & it : stream_name_to_profiles )
     {
         auto const & stream_name = it.first;
@@ -230,33 +231,43 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
         server->init_profiles( profiles, default_profile_index );
 
         // Get supported options and recommended filters for this stream
-        realdds::dds_options options;
+        realdds::dds_options stream_options;
         std::vector< std::string > filter_names;
         for( auto sensor : _rs_dev.query_sensors() )
         {
             std::string const sensor_name = sensor.get_info( RS2_CAMERA_INFO_NAME );
-            if( server->sensor_name().compare( sensor_name ) == 0 )
+            if( server->sensor_name().compare( sensor_name ) != 0 )
+                continue;
+
+            // Multiple streams map to the same sensor so we may go over the same sensor multiple times - we
+            // only need to do this once per sensor!
+            if( sensors_handled.emplace( sensor_name ).second )
             {
                 auto supported_options = sensor.get_supported_options();
                 // Hack - some options can be queried only if streaming so start sensor and close after query
                 // sensor.open( sensor.get_stream_profiles()[0] );
                 // sensor.start( []( rs2::frame f ) {} );
-                for( auto option : supported_options )
+                for( auto option_id : supported_options )
                 {
-                    auto dds_opt = std::make_shared< realdds::dds_option >( std::string( sensor.get_option_name( option ) ),
-                                                                            server->name() );
+                    // Certain options are automatically added by librealsense and shouldn't actually be shared
+                    if( option_id == RS2_OPTION_FRAMES_QUEUE_SIZE )
+                        continue;  // Added automatically for every sensor_base
+
+                    std::string option_name = sensor.get_option_name( option_id );
                     try
                     {
-                        dds_opt->set_value( sensor.get_option( option ) );
-                        dds_opt->set_range( to_realdds( sensor.get_option_range( option ) ) );
-                        dds_opt->set_description( sensor.get_option_description( option ) );
+                        auto dds_opt = std::make_shared< realdds::dds_option >(
+                            option_name,
+                            to_realdds( sensor.get_option_range( option_id ) ),
+                            sensor.get_option_description( option_id ) );
+                        dds_opt->set_value( sensor.get_option( option_id ) );
+                        stream_options.push_back( dds_opt );  // TODO - filter options relevant for stream type
                     }
                     catch( ... )
                     {
-                        LOG_ERROR( "Cannot query details of option " << option );
-                        continue;  // Some options can be queried only if certain conditions exist skip them for now
+                        LOG_ERROR( "Cannot query details of option " << option_id );
+                        // Some options can be queried only if certain conditions exist skip them for now
                     }
-                    options.push_back( dds_opt );  // TODO - filter options relevant for stream type
                 }
                 // sensor.stop();
                 // sensor.close();
@@ -264,10 +275,11 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
                 auto recommended_filters = sensor.get_recommended_filters();
                 for( auto const & filter : recommended_filters )
                     filter_names.push_back( filter.get_info( RS2_CAMERA_INFO_NAME ) );
+
+                server->init_options( stream_options );
+                server->set_recommended_filters( std::move( filter_names ) );
             }
         }
-        server->init_options( options );
-        server->set_recommended_filters( std::move( filter_names ) );
 
         servers.push_back( server );
     }
@@ -724,9 +736,13 @@ lrs_device_controller::get_rs2_profiles( realdds::dds_stream_profiles const & dd
 
 void lrs_device_controller::set_option( const std::shared_ptr< realdds::dds_option > & option, float new_value )
 {
-    auto it = _stream_name_to_server.find( option->owner_name() );
+    auto stream = option->stream();
+    if( ! stream )
+        // TODO device option? not implemented yet
+        throw std::runtime_error( "device option not implemented" );
+    auto it = _stream_name_to_server.find( stream->name() );
     if( it == _stream_name_to_server.end() )
-        throw std::runtime_error( "no stream '" + option->owner_name() + "' in device" );
+        throw std::runtime_error( "no stream '" + stream->name() + "' in device" );
     auto server = it->second;
     auto & sensor = _rs_sensors[server->sensor_name()];
     sensor.set_option( option_name_to_id( option->get_name() ), new_value );
@@ -735,9 +751,13 @@ void lrs_device_controller::set_option( const std::shared_ptr< realdds::dds_opti
 
 float lrs_device_controller::query_option( const std::shared_ptr< realdds::dds_option > & option )
 {
-    auto it = _stream_name_to_server.find( option->owner_name() );
+    auto stream = option->stream();
+    if( ! stream )
+        // TODO device option? not implemented yet
+        throw std::runtime_error( "device option not implemented" );
+    auto it = _stream_name_to_server.find( stream->name() );
     if( it == _stream_name_to_server.end() )
-        throw std::runtime_error( "no stream '" + option->owner_name() + "' in device" );
+        throw std::runtime_error( "no stream '" + stream->name() + "' in device" );
     auto server = it->second;
     auto & sensor = _rs_sensors[server->sensor_name()];
     return sensor.get_option( option_name_to_id( option->get_name() ) );

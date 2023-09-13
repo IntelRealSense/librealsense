@@ -36,7 +36,7 @@ static std::string const sample_key( "sample", 6 );
 static std::string const status_key( "status", 6 );
 static std::string const status_ok( "ok", 2 );
 static std::string const option_name_key( "option-name", 11 );
-static std::string const owner_name_key( "owner-name", 10 );
+static std::string const stream_name_key( "stream-name", 11 );
 static std::string const explanation_key( "explanation", 11 );
 static std::string const control_key( "control", 7 );
 
@@ -238,10 +238,10 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
     
     // Find the option and set its value
     dds_options const * options = &_options;
-    std::string owner_name;  // default = empty = device option
-    if( rsutils::json::get_ex( control, owner_name_key, &owner_name ) && ! owner_name.empty() )
+    std::string stream_name;  // default = empty = device option
+    if( rsutils::json::get_ex( control, stream_name_key, &stream_name ) && !stream_name.empty() )
     {
-        auto stream_it = _streams.find( owner_name );
+        auto stream_it = _streams.find( stream_name );
         if( stream_it == _streams.end() )
         {
             throw std::runtime_error( "owner not found" );
@@ -354,8 +354,8 @@ void dds_device::impl::set_option_value( const std::shared_ptr< dds_option > & o
         { option_name_key, option->get_name() },
         { value_key, new_value }
     });
-    if( ! option->owner_name().empty() )
-        j[owner_name_key] = option->owner_name();
+    if( auto stream = option->stream() )
+        j[stream_name_key] = stream->name();
 
     nlohmann::json reply;
     write_control_message( j, &reply );
@@ -376,8 +376,8 @@ float dds_device::impl::query_option_value( const std::shared_ptr< dds_option > 
         { id_key, id_query_option },
         { option_name_key, option->get_name() }
     });
-    if( ! option->owner_name().empty() )
-        j[owner_name_key] = option->owner_name();
+    if( auto stream = option->stream() )
+        j[stream_name_key] = stream->name();
 
     nlohmann::json reply;
     write_control_message( j, &reply );
@@ -536,10 +536,9 @@ void dds_device::impl::on_device_options( nlohmann::json const & j, eprosima::fa
     {
         LOG_DEBUG( "... " << id_device_options << ": " << j["options"].size() << " options received" );
 
-        std::string owner_name;  // for device options, this is empty!
         for( auto & option_json : j["options"] )
         {
-            auto option = dds_option::from_json( option_json, owner_name );
+            auto option = dds_option::from_json( option_json );
             _options.push_back( option );
         }
     }
@@ -629,7 +628,7 @@ void dds_device::impl::on_stream_options( nlohmann::json const & j, eprosima::fa
         dds_options options;
         for( auto & option : j["options"] )
         {
-            options.push_back( dds_option::from_json( option, stream_it->second->name() ) );
+            options.push_back( dds_option::from_json( option ) );
         }
 
         stream_it->second->init_options( options );

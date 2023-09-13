@@ -571,7 +571,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( py::init< std::shared_ptr< dds_publisher > const &, device_info const & >() );
 
     using realdds::dds_option_range;
-    py::class_< dds_option_range >( m, "dds_option_range" )
+    py::class_< dds_option_range >( m, "option_range" )
         .def( py::init<>() )
         .def( py::init<>(
             []( float min, float max, float step, float def ) {
@@ -583,17 +583,15 @@ PYBIND11_MODULE(NAME, m) {
         .def_readwrite( "default_value", &dds_option_range::default_value );
 
     using realdds::dds_option;
-    py::class_< dds_option, std::shared_ptr< dds_option > >( m, "dds_option" )
-        .def( py::init< std::string const &, std::string const & >() )
+    py::class_< dds_option, std::shared_ptr< dds_option > >( m, "option" )
+        .def( py::init< std::string const &, dds_option_range const &, std::string const & >(), "name"_a, "range"_a, "description"_a )
         .def( "get_name", &dds_option::get_name )
-        .def( "owner_name", &dds_option::owner_name )
+        .def( "stream", &dds_option::stream )
         .def( "get_value", &dds_option::get_value )
         .def( "set_value", &dds_option::set_value )
         .def( "get_range", &dds_option::get_range )
-        .def( "set_range", &dds_option::set_range )
         .def( "get_description", &dds_option::get_description )
-        .def( "set_description", &dds_option::set_description )
-        .def( "to_json", []( dds_option const & self ) { return self.to_json().dump(); } );
+        .def( "to_json", []( dds_option const & self ) { return self.to_json(); } );
 
     using realdds::dds_video_encoding;
     py::class_< dds_video_encoding > video_encoding( m, "video_encoding" );

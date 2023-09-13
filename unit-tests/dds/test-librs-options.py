@@ -2,7 +2,7 @@
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
-#test:retries 2
+#test:retries:gha 2
 
 from rspy import log, test
 with test.remote.fork( nested_indent=None ) as remote:
@@ -22,16 +22,10 @@ with test.remote.fork( nested_indent=None ) as remote:
             s1profiles = [s1p1]
             s1 = dds.color_stream_server( 's1', 'sensor' )
             s1.init_profiles( s1profiles, 0 )
-            options = []
-            option = dds.dds_option( 'Backlight Compensation', 'RGB Camera' )
-            option.set_range( dds.dds_option_range( 0, 1, 1, 0 ) )
-            option.set_description( 'Backlight custom description' )
-            options.append( option )
-            option = dds.dds_option( 'Custom Option', 'RGB Camera' )
-            option.set_range( dds.dds_option_range( 0, 1, 1, 0 ) )
-            option.set_description( 'Something' )
-            options.append( option )
-            s1.init_options( options )
+            s1.init_options( [
+                dds.option( 'Backlight Compensation', dds.option_range( 0, 1, 1, 0 ), 'Backlight custom description' ),
+                dds.option( 'Custom Option', dds.option_range( 0, 1, 1, 0 ), 'Something' )
+                ] )
             server = dds.device_server( participant, device_info.topic_root )
             server.init( [s1], [], {} )
 
