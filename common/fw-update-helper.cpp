@@ -219,46 +219,51 @@ namespace rs2
                     return;
                 }
             }
-            log("Backing-up camera flash memory");
-
-            std::string log_backup_status;
-            try
+            if ( ! _is_d500_device )
             {
-                auto flash = upd.create_flash_backup([&](const float progress)
-                {
-                    _progress = ((ceil(progress * 5) / 5) * (30 - next_progress)) + next_progress;
-                });
+                log( "Backing-up camera flash memory" );
 
-                auto temp = get_folder_path(special_folder::app_data);
-                temp += serial + "." + get_timestamped_file_name() + ".bin";
+                std::string log_backup_status;
+                try
+                {
+                    auto flash = upd.create_flash_backup( [&]( const float progress )
+                        {
+                            _progress = ( ( ceil( progress * 5 ) / 5 ) * ( 30 - next_progress ) ) + next_progress;
+                        } );
 
-                {
-                    std::ofstream file(temp.c_str(), std::ios::binary);
-                    file.write((const char*)flash.data(), flash.size());
-                    log_backup_status = "Backup completed and saved as '"  + temp + "'";
+                    auto temp = get_folder_path( special_folder::app_data );
+                    temp += serial + "." + get_timestamped_file_name() + ".bin";
+
+                    {
+                        std::ofstream file( temp.c_str(), std::ios::binary );
+                        file.write( (const char*)flash.data(), flash.size() );
+                        log_backup_status = "Backup completed and saved as '" + temp + "'";
+                    }
                 }
-            }
-            catch (const std::exception& e)
-            {
-                if (auto not_model_protected = get_protected_notification_model())
+                catch( const std::exception& e )
                 {
-                    log_backup_status = "WARNING: backup failed; continuing without it...";
-                    not_model_protected->output.add_log(RS2_LOG_SEVERITY_WARN,
-                        __FILE__,
-                        __LINE__,
-                        log_backup_status + ", Error: " + e.what());
+                    if( auto not_model_protected = get_protected_notification_model() )
+                    {
+                        log_backup_status = "WARNING: backup failed; continuing without it...";
+                        not_model_protected->output.add_log( RS2_LOG_SEVERITY_WARN,
+                            __FILE__,
+                            __LINE__,
+                            log_backup_status + ", Error: " + e.what() );
+                    }
                 }
-            }
-            catch ( ... )
-            {
-                if (auto not_model_protected = get_protected_notification_model())
+                catch( ... )
                 {
-                    log_backup_status = "WARNING: backup failed; continuing without it...";
-                    not_model_protected->add_log(log_backup_status + ", Unknown error occurred");
+                    if( auto not_model_protected = get_protected_notification_model() )
+                    {
+                        log_backup_status = "WARNING: backup failed; continuing without it...";
+                        not_model_protected->add_log( log_backup_status + ", Unknown error occurred" );
+                    }
                 }
+
+                log(log_backup_status);
             }
 
-            log(log_backup_status);
+            
 
             next_progress = 40;
 
@@ -327,8 +332,21 @@ namespace rs2
                 _progress = ((ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress);
             });
 
-            log("Firmware Download completed, await DFU transition event");
-            std::this_thread::sleep_for(std::chrono::seconds(3));
+            // D400 devices takes 3 seconds after image transition until DFU process finish.
+            // D500 only starts the process after the image is transferred and it takes much time..
+            if( !_is_d500_device )
+            {
+                log( "Firmware Download completed, await DFU transition event" );
+                std::this_thread::sleep_for( std::chrono::seconds( 3 ) );
+            }
+            else
+            {
+                log( "Firmware Download completed, await DFU transition event\n"
+                    "Internal write is in progress\n"
+                    "Please DO NOT DISCONNECT the camera (might take a few minutes)");
+                std::this_thread::sleep_for( std::chrono::seconds( 60 ) );
+            }
+
             log("Firmware Update completed, waiting for device to reconnect");
         }
         else
@@ -364,7 +382,7 @@ namespace rs2
             }
 
             return false;
-        }, cleanup, std::chrono::seconds(60)))
+        }, cleanup, std::chrono::seconds(_is_d500_device ? 120 : 60))) // TODO: HKR DFU issue - increased timeout from 60 to 120 seconds for HKR to complete FW write to flash
         {
             fail("Original device did not reconnect in time!");
             return;

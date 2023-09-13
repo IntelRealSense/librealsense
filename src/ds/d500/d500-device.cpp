@@ -528,7 +528,7 @@ namespace librealsense
             //auto global_shutter_mask = ds_caps::CAP_GLOBAL_SHUTTER;
             auto d500_depth = As<d500_depth_sensor, synthetic_sensor>(&get_depth_sensor());
             d500_depth->init_hdr_config(exposure_range, gain_range);
-            auto&& hdr_cfg = d500_depth->get_hdr_config();
+            auto hdr_cfg = d500_depth->get_hdr_config();
 
             // values from 4 to 14 - for internal use
             // value 15 - saved for emiter on off subpreset
