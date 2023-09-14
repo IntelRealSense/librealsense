@@ -19,7 +19,7 @@ namespace Intel.RealSense
             NativeMethods.rs2_software_sensor_on_video_frame(Handle, f, out error);
         }
 
-        public void AddVideoFrame<T>(T[] pixels, int stride, int bpp, double timestamp, TimestampDomain domain, int frameNumber, VideoStreamProfile profile, float depthUnits = 0.001f)
+        public void AddVideoFrame<T>(T[] pixels, int stride, int bpp, double timestamp, TimestampDomain domain, int frameNumber, VideoStreamProfile profile, float depthUnits = 0f)
         {
             // TODO: avoid copy by adding void* user_data to native methods, so we can pass GCHandle.ToIntPtr() and free in deleter
             IntPtr hglobal = Marshal.AllocHGlobal(profile.Height * stride);
