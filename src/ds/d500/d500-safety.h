@@ -61,4 +61,10 @@ namespace librealsense
     // subdevice[h] unit[fw], node[h] guid[fw]
     const platform::extension_unit safety_xu = { 4, 0xC, 2,
     { 0xf6c3c3d1, 0x5cde, 0x4477,{ 0xad, 0xf0, 0x41, 0x33, 0xf5, 0x8d, 0xa6, 0xf4 } } };
+
+    namespace xu_id
+    {
+        const uint8_t SAFETY_CAMERA_OPER_MODE = 0x1;
+        const uint8_t SAFETY_PRESET_ACTIVE_INDEX = 0x2;
+    }
 }

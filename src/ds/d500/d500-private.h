@@ -18,33 +18,27 @@ namespace librealsense
 
         const uint16_t D555E_PID = 0x0B56;
 
-        namespace xu_id
-        {
-            const uint8_t SAFETY_CAMERA_OPER_MODE    = 0x1;
-            const uint8_t SAFETY_PRESET_ACTIVE_INDEX = 0x2;
-        }
-
         // d500 Devices supported by the current version
         static const std::set<std::uint16_t> rs500_sku_pid = {
-            ds::RS_D585S_PID,
+            ds::D555E_PID,
 			ds::RS_D585_PID,
             ds::RS_D585S_PID
         };
 
         static const std::set<std::uint16_t> d500_multi_sensors_pid = {
-            ds::RS_D585S_PID,
+            ds::D555E_PID,
 			ds::RS_D585_PID,
             ds::RS_D585S_PID
         };
 
         static const std::set<std::uint16_t> d500_hid_sensors_pid = {
-            ds::RS_D585S_PID,
+            ds::D555E_PID,
 			ds::RS_D585_PID,
             ds::RS_D585S_PID
         };
 
         static const std::set<std::uint16_t> d500_hid_bmi_085_pid = {
-            ds::RS_D585S_PID,
+            ds::D555E_PID,
 			ds::RS_D585_PID,
             ds::RS_D585S_PID
         };
