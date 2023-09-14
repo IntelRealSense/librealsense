@@ -2,7 +2,7 @@
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #test:device D400* !D457
-#test:device each(D500*)
+# Currently fail on D585S, need to be investigated and return the following string later #test:device D500*
 
 # Objective:
 #

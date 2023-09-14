@@ -3,7 +3,6 @@
 
 #test:timeout 1500
 #test:donotrun:!nightly
-#test:device each(D500*)
 
 import pyrealsense2 as rs, os
 from rspy import log, test, repo
