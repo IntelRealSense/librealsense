@@ -36,6 +36,14 @@ void init_types(py::module &m) {
 
     py::class_<rs2::option_range> option_range(m, "option_range"); // No docstring in C++
     option_range.def(py::init<>())
+        .def( py::init(
+                  []( float min, float max, float step, float default_value ) {
+                      return rs2::option_range{ min, max, step, default_value };
+                  } ),
+              "min"_a,
+              "max"_a,
+              "step"_a,
+              "default"_a )
         .def_readwrite("min", &rs2::option_range::min)
         .def_readwrite("max", &rs2::option_range::max)
         .def_readwrite("default", &rs2::option_range::def)
