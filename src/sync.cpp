@@ -302,7 +302,7 @@ namespace librealsense
         auto matcher = find_matcher(f);
         if (!matcher)
         {
-            LOG_ERROR("didn't find any matcher for " << f << " will not be synchronized");
+            LOG_ERROR("didn't find any matcher for " << frame_holder_to_string(f) << " will not be synchronized");
             _callback(std::move(f), env);
             return;
         }
@@ -732,6 +732,7 @@ namespace librealsense
         if (!composite)
         {
             std::vector<frame_holder> match;
+			std::string frame_holder_string = frame_holder_to_string(f); // Saving frame holder string before moving frame
             match.push_back(std::move(f));
             frame_holder composite = env.source->allocate_composite_frame(std::move(match));
             if (composite.frame)
@@ -743,7 +744,7 @@ namespace librealsense
             else
             {
                 LOG_ERROR( "composite_identity_matcher: "
-                           << _name << " " << f
+                           << _name << " " << frame_holder_string
                            << " faild to create composite_frame, user callback will not be called" );
             }
         }
