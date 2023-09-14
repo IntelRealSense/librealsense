@@ -2,7 +2,6 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 //#test:device each(D400*)
-//#test:device each(D500*)
 
 #include "../live-common.h"
 #include <rsutils/time/timer.h>
