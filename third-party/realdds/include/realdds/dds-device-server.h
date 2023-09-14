@@ -70,6 +70,8 @@ public:
     dds_device_server( std::shared_ptr< dds_participant > const & participant, const std::string & topic_root );
     ~dds_device_server();
 
+    dds_guid const & guid() const;
+
     // A server is not valid until init() is called with a list of streams that we want to publish.
     // On successful return from init(), each of the streams will be alive so clients will be able
     // to subscribe.
@@ -88,13 +90,13 @@ public:
 
     bool has_metadata_readers() const;
 
-    typedef std::function< void( const nlohmann::json & msg ) > control_callback;
-    void on_open_streams( control_callback callback ) { _open_streams_callback = std::move( callback ); }
-
     typedef std::function< void( const std::shared_ptr< realdds::dds_option > & option, float value ) > set_option_callback;
     typedef std::function< float( const std::shared_ptr< realdds::dds_option > & option ) > query_option_callback;
     void on_set_option( set_option_callback callback ) { _set_option_callback = std::move( callback ); }
     void on_query_option( query_option_callback callback ) { _query_option_callback = std::move( callback ); }
+
+    typedef std::function< bool( std::string const &, nlohmann::json const &, nlohmann::json & ) > control_callback;
+    void on_control( control_callback callback ) { _control_callback = std::move( callback ); }
 
 private:
     void on_control_message_received();
@@ -104,7 +106,7 @@ private:
 
     void handle_set_option( const nlohmann::json & msg, nlohmann::json & reply );
     void handle_query_option( const nlohmann::json & msg, nlohmann::json & reply );
-    std::shared_ptr< dds_option > find_option( const std::string & option_name, const std::string & owner_name );
+    std::shared_ptr< dds_option > find_option( const std::string & option_name, const std::string & stream_name ) const;
 
     std::shared_ptr< dds_publisher > _publisher;
     std::shared_ptr< dds_subscriber > _subscriber;
@@ -117,9 +119,9 @@ private:
     std::shared_ptr< dds_device_broadcaster > _broadcaster;
     dispatcher _control_dispatcher;
 
-    control_callback _open_streams_callback = nullptr;
-    set_option_callback _set_option_callback = nullptr;
-    query_option_callback _query_option_callback = nullptr;
+    set_option_callback _set_option_callback;
+    query_option_callback _query_option_callback;
+    control_callback _control_callback;
 
     extrinsics_map _extrinsics_map; // <from stream, to stream> to extrinsics
 };  // class dds_device_server

@@ -2,7 +2,7 @@
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
-#test:retries 2
+#test:retries:gha 2
 
 from rspy import log, test
 log.nested = 'C  '
@@ -39,16 +39,19 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         test.check_equal( len(sensors), 3 )
         sensor = dev.first_depth_sensor()
         if test.check( sensor ):
+            test.check( rs.depth_sensor( sensor ))
             test.check( sensors[sensor.name] )
             test.check_equal( sensor.name, 'Stereo Module' )
             test.check_equal( len(sensor.get_stream_profiles()), 104 ) # As measured running rs-sensor-control example
         sensor = dev.first_color_sensor()
         if test.check( sensor ):
+            test.check( rs.color_sensor( sensor ))
             test.check( sensors[sensor.name] )
             test.check_equal( sensor.name, 'RGB Camera' )
             test.check_equal( len(sensor.get_stream_profiles()), 160 ) # As measured running rs-sensor-control example
         sensor = dev.first_motion_sensor()
         if test.check( sensor ):
+            test.check( rs.motion_sensor( sensor ))
             test.check( sensors[sensor.name] )
             test.check_equal( sensor.name, 'Motion Module' )
             test.check_equal( len(sensor.get_stream_profiles()), 2 ) # Only the Gyro profiles

@@ -36,7 +36,7 @@ static std::string const sample_key( "sample", 6 );
 static std::string const status_key( "status", 6 );
 static std::string const status_ok( "ok", 2 );
 static std::string const option_name_key( "option-name", 11 );
-static std::string const owner_name_key( "owner-name", 10 );
+static std::string const stream_name_key( "stream-name", 11 );
 static std::string const explanation_key( "explanation", 11 );
 static std::string const control_key( "control", 7 );
 
@@ -89,7 +89,7 @@ void dds_device::impl::set_state( state_t new_state )
                 _metadata_reader->run( rqos );
             }
         }
-        LOG_DEBUG( "device '" << _info.debug_name() << "' (" << _participant->print( _guid ) << ") is ready" );
+        LOG_DEBUG( "device '" << _info.debug_name() << "' (" << _participant->print( guid() ) << ") is ready" );
     }
 
     _state = new_state;
@@ -109,16 +109,20 @@ void dds_device::impl::set_state( state_t new_state )
 
 
 dds_device::impl::impl( std::shared_ptr< dds_participant > const & participant,
-                        dds_guid const & guid,
                         topics::device_info const & info )
     : _info( info )
-    , _guid( guid )
     , _participant( participant )
     , _subscriber( std::make_shared< dds_subscriber >( participant ) )
     , _reply_timeout_ms( rsutils::json::get< size_t >( participant->settings(), "device-reply-timeout-ms", 1000 ) )
 {
     create_notifications_reader();
     create_control_writer();
+}
+
+
+dds_guid const & dds_device::impl::guid() const
+{
+    return _control_writer->guid();
 }
 
 
@@ -139,7 +143,8 @@ void dds_device::impl::wait_until_ready( size_t timeout_ms )
 }
 
 
-void dds_device::impl::handle_notification( nlohmann::json const & j )
+void dds_device::impl::handle_notification( nlohmann::json const & j,
+                                            eprosima::fastdds::dds::SampleInfo const & sample )
 {
     try
     {
@@ -147,9 +152,9 @@ void dds_device::impl::handle_notification( nlohmann::json const & j )
         auto id = rsutils::json::get< std::string >( j, id_key );
         auto it = _notification_handlers.find( id );
         if( it != _notification_handlers.end() )
-            ( this->*( it->second ) )( j );
-        else
-            throw std::runtime_error( "unknown id" );
+            ( this->*( it->second ) )( j, sample );
+        else if( ! _on_notification || ! _on_notification( id, j ) )
+            throw std::runtime_error( "unhandled" );
     }
     catch( std::exception const & e )
     {
@@ -197,7 +202,7 @@ void dds_device::impl::handle_notification( nlohmann::json const & j )
 }
 
 
-void dds_device::impl::on_option_value( nlohmann::json const & j )
+void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fastdds::dds::SampleInfo const & )
 {
     if( ! is_ready() )
         return;
@@ -233,10 +238,10 @@ void dds_device::impl::on_option_value( nlohmann::json const & j )
     
     // Find the option and set its value
     dds_options const * options = &_options;
-    std::string owner_name;  // default = empty = device option
-    if( rsutils::json::get_ex( control, owner_name_key, &owner_name ) && !owner_name.empty() )
+    std::string stream_name;  // default = empty = device option
+    if( rsutils::json::get_ex( control, stream_name_key, &stream_name ) && !stream_name.empty() )
     {
-        auto stream_it = _streams.find( owner_name );
+        auto stream_it = _streams.find( stream_name );
         if( stream_it == _streams.end() )
         {
             throw std::runtime_error( "owner not found" );
@@ -255,13 +260,13 @@ void dds_device::impl::on_option_value( nlohmann::json const & j )
 }
 
 
-void dds_device::impl::on_known_notification( nlohmann::json const & j )
+void dds_device::impl::on_known_notification( nlohmann::json const & j, eprosima::fastdds::dds::SampleInfo const & )
 {
     // This is a known notification, but we don't want to do anything for it
 }
 
 
-void dds_device::impl::on_log( nlohmann::json const & j )
+void dds_device::impl::on_log( nlohmann::json const & j, eprosima::fastdds::dds::SampleInfo const & )
 {
     // This is the notification for "log"  (see docs/notifications.md#Logging)
     //     - `entries` is an array containing 1 or more log entries
@@ -349,8 +354,8 @@ void dds_device::impl::set_option_value( const std::shared_ptr< dds_option > & o
         { option_name_key, option->get_name() },
         { value_key, new_value }
     });
-    if( ! option->owner_name().empty() )
-        j[owner_name_key] = option->owner_name();
+    if( auto stream = option->stream() )
+        j[stream_name_key] = stream->name();
 
     nlohmann::json reply;
     write_control_message( j, &reply );
@@ -371,8 +376,8 @@ float dds_device::impl::query_option_value( const std::shared_ptr< dds_option > 
         { id_key, id_query_option },
         { option_name_key, option->get_name() }
     });
-    if( ! option->owner_name().empty() )
-        j[owner_name_key] = option->owner_name();
+    if( auto stream = option->stream() )
+        j[stream_name_key] = stream->name();
 
     nlohmann::json reply;
     write_control_message( j, &reply );
@@ -403,7 +408,7 @@ void dds_device::impl::write_control_message( topics::flexible_msg && msg, nlohm
         {
             throw std::runtime_error( "timeout waiting for reply #" + std::to_string( this_sequence_number ) );
         }
-        LOG_DEBUG( "got reply: " << actual_reply );
+        //LOG_DEBUG( "got reply: " << actual_reply );
         *reply = std::move( actual_reply );
         _replies.erase( this_sequence_number );
     }
@@ -430,8 +435,8 @@ void dds_device::impl::create_notifications_reader()
         [&]()
         {
             topics::flexible_msg notification;
-            eprosima::fastdds::dds::SampleInfo info;
-            while( topics::flexible_msg::take_next( *_notifications_reader, &notification, &info ) )
+            eprosima::fastdds::dds::SampleInfo sample;
+            while( topics::flexible_msg::take_next( *_notifications_reader, &notification, &sample ) )
             {
                 if( ! notification.is_valid() )
                     continue;
@@ -439,11 +444,11 @@ void dds_device::impl::create_notifications_reader()
                 if( j.is_array() )
                 {
                     for( unsigned x = 0; x < j.size(); ++x )
-                        handle_notification( j[x] );
+                        handle_notification( j[x], sample );
                 }
                 else
                 {
-                    handle_notification( j );
+                    handle_notification( j, sample );
                 }
             }
         } );
@@ -470,7 +475,7 @@ void dds_device::impl::create_metadata_reader()
                     {
                         _on_metadata_available( std::move( message.json_data() ) );
                     }
-                    catch( std::runtime_error const & e )
+                    catch( std::exception const & e )
                     {
                         LOG_DEBUG( "metadata exception: " << e.what() );
                     }
@@ -494,10 +499,14 @@ void dds_device::impl::create_control_writer()
 }
 
 
-void dds_device::impl::on_device_header( nlohmann::json const & j )
+void dds_device::impl::on_device_header( nlohmann::json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
 {
     if( _state != state_t::WAIT_FOR_DEVICE_HEADER )
         return;
+
+    // The server GUID is the server's notification writer's GUID -- that way, we can easily associate all notifications
+    // with a server.
+    eprosima::fastrtps::rtps::iHandle2GUID( _server_guid, sample.publication_handle );
 
     _n_streams_expected = rsutils::json::get< size_t >( j, "n-streams" );
     LOG_DEBUG( "... " << id_device_header << ": " << _n_streams_expected << " streams expected" );
@@ -518,7 +527,7 @@ void dds_device::impl::on_device_header( nlohmann::json const & j )
 }
 
 
-void dds_device::impl::on_device_options( nlohmann::json const & j )
+void dds_device::impl::on_device_options( nlohmann::json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
 {
     if( _state != state_t::WAIT_FOR_DEVICE_OPTIONS )
         return;
@@ -527,10 +536,9 @@ void dds_device::impl::on_device_options( nlohmann::json const & j )
     {
         LOG_DEBUG( "... " << id_device_options << ": " << j["options"].size() << " options received" );
 
-        std::string owner_name;  // for device options, this is empty!
         for( auto & option_json : j["options"] )
         {
-            auto option = dds_option::from_json( option_json, owner_name );
+            auto option = dds_option::from_json( option_json );
             _options.push_back( option );
         }
     }
@@ -542,7 +550,7 @@ void dds_device::impl::on_device_options( nlohmann::json const & j )
 }
 
 
-void dds_device::impl::on_stream_header( nlohmann::json const & j )
+void dds_device::impl::on_stream_header( nlohmann::json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
 {
     if( _state != state_t::WAIT_FOR_STREAM_HEADER )
         return;
@@ -603,7 +611,7 @@ void dds_device::impl::on_stream_header( nlohmann::json const & j )
 }
 
 
-void dds_device::impl::on_stream_options( nlohmann::json const & j )
+void dds_device::impl::on_stream_options( nlohmann::json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
 {
     if( _state != state_t::WAIT_FOR_STREAM_OPTIONS )
         return;
@@ -620,7 +628,7 @@ void dds_device::impl::on_stream_options( nlohmann::json const & j )
         dds_options options;
         for( auto & option : j["options"] )
         {
-            options.push_back( dds_option::from_json( option, stream_it->second->name() ) );
+            options.push_back( dds_option::from_json( option ) );
         }
 
         stream_it->second->init_options( options );

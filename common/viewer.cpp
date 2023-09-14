@@ -886,14 +886,17 @@ namespace rs2
         auto min_severity = (rs2_log_severity)config_file::instance().get_or_default(
             configurations::viewer::log_severity, 2);
 
-        if (config_file::instance().get_or_default(
-            configurations::viewer::log_to_console, false))
+        if( ! _disable_log_to_console )
         {
-            rs2::log_to_console(min_severity);
-        }
-        else
-        {
-            rs2::log_to_console( RS2_LOG_SEVERITY_NONE );
+            if( config_file::instance().get_or_default(
+                configurations::viewer::log_to_console, false ) )
+            {
+                rs2::log_to_console( min_severity );
+            }
+            else
+            {
+                rs2::log_to_console( RS2_LOG_SEVERITY_NONE );
+            }
         }
         if (config_file::instance().get_or_default(
             configurations::viewer::log_to_file, false))
@@ -909,13 +912,16 @@ namespace rs2
             configurations::performance::show_skybox, true);
     }
 
-    viewer_model::viewer_model( context & ctx_ )
+
+
+    viewer_model::viewer_model( context & ctx_, bool disable_log_to_console )
         : ppf( *this )
         , ctx( ctx_ )
         , frameset_alloc( this )
         , synchronization_enable( true )
         , synchronization_enable_prev_state(true)
         , _support_ir_reflectivity( false )
+        , _disable_log_to_console( disable_log_to_console )
     {
 
         syncer = std::make_shared<syncer_model>();
@@ -2665,32 +2671,40 @@ namespace rs2
                         ImGui::SetTooltip("Occlusions are a natural side-effect of having multiple sensors\nWhen this option is enabled, the SDK will filter out occluded pixels");
                 }
 
-                if (tab == 2)
+                if( tab == 2 )
                 {
-                    ImGui::Text("Units of Measurement: ");
+                    ImGui::Text( "Units of Measurement: " );
                     ImGui::SameLine();
 
-                    int metric_system = temp_cfg.get(configurations::viewer::metric_system);
+                    int metric_system = temp_cfg.get( configurations::viewer::metric_system );
                     std::vector<std::string> unit_systems;
-                    unit_systems.push_back("Imperial System");
-                    unit_systems.push_back("Metric System");
+                    unit_systems.push_back( "Imperial System" );
+                    unit_systems.push_back( "Metric System" );
 
-                    ImGui::PushItemWidth(150);
-                    if (draw_combo_box("##units_system", unit_systems, metric_system))
+                    ImGui::PushItemWidth( 150 );
+                    if( draw_combo_box( "##units_system", unit_systems, metric_system ) )
                     {
-                        temp_cfg.set(configurations::viewer::metric_system, metric_system);
+                        temp_cfg.set( configurations::viewer::metric_system, metric_system );
                     }
                     ImGui::PopItemWidth();
 
                     ImGui::Separator();
 
-                    ImGui::Text("librealsense has built-in logging capabilities.");
-                    ImGui::Text("Logs may contain API calls, timing of frames, OS error messages and file-system links, but no actual frame content.");
+                    ImGui::Text( "librealsense has built-in logging capabilities." );
+                    ImGui::Text( "Logs may contain API calls, timing of frames, OS error messages and file-system links, but no actual frame content." );
 
-                    bool log_to_console = temp_cfg.get(configurations::viewer::log_to_console);
-                    if (ImGui::Checkbox("Output librealsense log to console", &log_to_console))
+                    bool log_to_console = temp_cfg.get( configurations::viewer::log_to_console );
+                    if( _disable_log_to_console )
+                        ImGui::PushStyleVar( ImGuiStyleVar_Alpha, 0.6f );
+                    if( ImGui::Checkbox( "Output librealsense log to console", &log_to_console ) )
+                        temp_cfg.set( configurations::viewer::log_to_console, log_to_console );
+                    if( _disable_log_to_console )
                     {
-                        temp_cfg.set(configurations::viewer::log_to_console, log_to_console);
+                        ImGui::PopStyleVar();
+                        if( ImGui::IsItemHovered() )
+                        {
+                            ImGui::SetTooltip( "%s", "--debug was specified; this cannot be applied without a restart" );
+                        }
                     }
                     bool log_to_file = temp_cfg.get(configurations::viewer::log_to_file);
                     if (ImGui::Checkbox("Output librealsense log to file", &log_to_file))

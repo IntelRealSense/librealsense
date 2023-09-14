@@ -71,16 +71,9 @@ T get( nlohmann::json const & j, std::string const & key, T const & default_valu
 template < class T >
 T get( nlohmann::json const & j, std::string const & key )
 {
-    try
-    {
-        // This will throw for type mismatches, etc.
-        // Does not check for existence: will throw, too!
-        return j.at(key).get< T >();
-    }
-    catch( nlohmann::json::exception & e )
-    {
-        throw std::runtime_error( "[getting '" + key + "']" + e.what() );
-    }
+    // This will throw for type mismatches, etc.
+    // Does not check for existence: will throw, too!
+    return j.at(key).get< T >();
 }
 
 
@@ -89,16 +82,9 @@ T get( nlohmann::json const & j, std::string const & key )
 template < class T >
 T get( nlohmann::json const & j, int index )
 {
-    try
-    {
-        // This will throw for type mismatches, etc.
-        // Does not check for existence: will throw, too!
-        return j.at( index ).get< T >();
-    }
-    catch( nlohmann::json::exception & e )
-    {
-        throw std::runtime_error( "[getting index " + std::to_string( index ) + "]" + e.what() );
-    }
+    // This will throw for type mismatches, etc.
+    // Does not check for existence: will throw, too!
+    return j.at( index ).get< T >();
 }
 
 
@@ -109,16 +95,9 @@ T get( nlohmann::json const & j, nlohmann::json::const_iterator const & it )
 {
     if( it == j.end() )
         throw std::runtime_error( "unexpected end of json" );
-    try
-    {
-        // This will throw for type mismatches, etc.
-        // Does not check for existence: will throw, too!
-        return it->get< T >();
-    }
-    catch( nlohmann::json::exception & e )
-    {
-        throw std::runtime_error( std::string( "[getting iterator]" ) + e.what() );
-    }
+    // This will throw for type mismatches, etc.
+    // Does not check for existence: will throw, too!
+    return it->get< T >();
 }
 
 

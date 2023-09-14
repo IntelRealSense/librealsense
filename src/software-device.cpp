@@ -83,7 +83,6 @@ namespace librealsense
     software_sensor::software_sensor( std::string const & name, software_device * owner )
         : sensor_base( name, owner, &_pbs )
         , _stereo_extension( [this]() { return stereo_extension( this ); } )
-        , _depth_extension( [this]() { return depth_extension( this ); } )
         , _metadata_map{}  // to all 0's
     {
         // At this time (and therefore for backwards compatibility) no register_metadata is required for SW sensors,
@@ -163,7 +162,8 @@ namespace librealsense
         {
             if (supports_option(RS2_OPTION_DEPTH_UNITS))
             {
-                *ptr = &(*_depth_extension);
+                auto & ext = *_stereo_extension;
+                *ptr = static_cast< depth_sensor * >( &ext );
                 return true;
             }
         }
@@ -357,9 +357,7 @@ namespace librealsense
 
     void software_sensor::add_read_only_option(rs2_option option, float val)
     {
-        register_option( option,
-                         std::make_shared< const_value_option >( "bypass sensor read only option",
-                                                                 rsutils::lazy< float >( [=]() { return val; } ) ) );
+        register_option( option, std::make_shared< const_value_option >( "bypass sensor read only option", val ) );
     }
 
     void software_sensor::update_read_only_option(rs2_option option, float val)

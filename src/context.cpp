@@ -5,6 +5,7 @@
 
 #include "ds/d400/d400-info.h"
 #include "ds/d500/d500-info.h"
+#include "device.h"
 #include "ds/ds-timestamp.h"
 #include <media/ros/ros_reader.h>
 #include "media/playback/playback-device-info.h"
@@ -221,8 +222,28 @@ namespace librealsense
 #endif //BUILD_WITH_DDS
     }
 
-    std::vector<std::shared_ptr<device_info>> context::query_devices(int mask) const
+    static unsigned calc_mask( nlohmann::json const & settings, unsigned requested_mask, unsigned * p_device_mask = nullptr )
     {
+        // The 'device-mask' in our settings can be used to disable certain device types from showing up in the context:
+        unsigned device_mask = RS2_PRODUCT_LINE_ANY;
+        unsigned mask = requested_mask;
+        if( rsutils::json::get_ex( settings, "device-mask", &device_mask ) )
+        {
+            // The normal bits enable, so enable only those that are on
+            mask &= device_mask & ~RS2_PRODUCT_LINE_SW_ONLY;
+            // But the above turned off the SW-only bits, so turn them back on again
+            if( (device_mask & RS2_PRODUCT_LINE_SW_ONLY) || (requested_mask & RS2_PRODUCT_LINE_SW_ONLY) )
+                mask |= RS2_PRODUCT_LINE_SW_ONLY;
+        }
+        if( p_device_mask )
+            *p_device_mask = device_mask;
+        return mask;
+    }
+
+    std::vector<std::shared_ptr<device_info>> context::query_devices( int requested_mask ) const
+    {
+        unsigned device_mask;
+        auto const mask = calc_mask( _settings, unsigned( requested_mask ), &device_mask );
         platform::backend_device_group devices;
         if( ! ( mask & RS2_PRODUCT_LINE_SW_ONLY ) )
         {
@@ -231,7 +252,8 @@ namespace librealsense
             devices.hid_devices = _backend->query_hid_devices();
         }
         auto const list = create_devices( devices, _playback_devices, mask );
-        LOG_INFO( "Found " << list.size() << " RealSense devices (mask 0x" << std::hex << mask << std::dec << ")" );
+        LOG_INFO( "Found " << list.size() << " RealSense devices (mask 0x" << std::hex << mask << "= " << requested_mask
+                           << " requested & " << device_mask << " from device-mask in settings)" << std::dec );
         for( auto & item : list )
             LOG_INFO( "... " << item->get_address() );
         return list;
@@ -240,18 +262,25 @@ namespace librealsense
     std::vector< std::shared_ptr< device_info > >
     context::create_devices( platform::backend_device_group devices,
                              const std::map< std::string, std::weak_ptr< device_info > > & playback_devices,
-                             int mask ) const
+                             int requested_mask ) const
     {
         std::vector<std::shared_ptr<device_info>> list;
+        unsigned mask = calc_mask( _settings, requested_mask );
 
         auto t = const_cast<context*>(this); // While generally a bad idea, we need to provide mutable reference to the devices
         // to allow them to modify context later on
         auto ctx = t->shared_from_this();
 
-        if( mask & RS2_PRODUCT_LINE_D400 )
+        if( mask & RS2_PRODUCT_LINE_D400 && ! ( mask & RS2_PRODUCT_LINE_SW_ONLY ) )
         {
             auto d400_devices = d400_info::pick_d400_devices(ctx, devices);
             std::copy(begin(d400_devices), end(d400_devices), std::back_inserter(list));
+        }
+
+        if( mask & RS2_PRODUCT_LINE_D500 && ! ( mask & RS2_PRODUCT_LINE_SW_ONLY ) )
+        {
+            auto d500_devices = d500_info::pick_d500_devices( ctx, devices );
+            std::copy( begin( d500_devices ), end( d500_devices ), std::back_inserter( list ) );
         }
 
 #ifdef BUILD_WITH_DDS
@@ -269,6 +298,11 @@ namespace librealsense
                         if( ! ( mask & RS2_PRODUCT_LINE_D400 ) )
                             return true;
                     }
+                    else if( dev->device_info().product_line == "D500" )
+                    {
+                        if( ! ( mask & RS2_PRODUCT_LINE_D500 ) )
+                            return true;
+                    }
                     else if( ! ( mask & RS2_PRODUCT_LINE_NON_INTEL ) )
                     {
                         return true;
@@ -280,20 +314,15 @@ namespace librealsense
                 } );
 #endif //BUILD_WITH_DDS
 
-        if (mask & RS2_PRODUCT_LINE_D500)
-        {
-            auto d500_devices = d500_info::pick_d500_devices(ctx, devices);
-            std::copy(begin(d500_devices), end(d500_devices), std::back_inserter(list));
-        }
-
         // Supported recovery devices
-        if (mask & RS2_PRODUCT_LINE_D400 || mask & RS2_PRODUCT_LINE_D500) 
+        if( ( ( mask & RS2_PRODUCT_LINE_D400 ) || ( mask & RS2_PRODUCT_LINE_D500 ) )
+            && ! ( mask & RS2_PRODUCT_LINE_SW_ONLY ) )
         {
             auto recovery_devices = fw_update_info::pick_recovery_devices(ctx, devices.usb_devices, mask);
             std::copy(begin(recovery_devices), end(recovery_devices), std::back_inserter(list));
         }
 
-        if( mask & RS2_PRODUCT_LINE_NON_INTEL )
+        if( mask & RS2_PRODUCT_LINE_NON_INTEL && ! ( mask & RS2_PRODUCT_LINE_SW_ONLY ) )
         {
             auto uvc_devices = platform_camera_info::pick_uvc_devices(ctx, devices.uvc_devices);
             std::copy(begin(uvc_devices), end(uvc_devices), std::back_inserter(list));

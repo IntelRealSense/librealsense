@@ -119,7 +119,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
     {
         std::string const sensor_name = sensor.get_info( RS2_CAMERA_INFO_NAME );
         // We keep a copy of the sensors throughout the run time:
-        // Otherwise problems could arise like opening streams and they would close at start_streaming scope end.
+        // Otherwise problems could arise like opening streams and they would close at on_open_streams scope end.
         _rs_sensors[sensor_name] = sensor;
 
         auto stream_profiles = sensor.get_stream_profiles();
@@ -194,6 +194,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
 
     // Iterate over the mapped streams and initialize
     std::vector< std::shared_ptr< realdds::dds_stream_server > > servers;
+    std::set< std::string > sensors_handled;
     for( auto & it : stream_name_to_profiles )
     {
         auto const & stream_name = it.first;
@@ -230,33 +231,43 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
         server->init_profiles( profiles, default_profile_index );
 
         // Get supported options and recommended filters for this stream
-        realdds::dds_options options;
+        realdds::dds_options stream_options;
         std::vector< std::string > filter_names;
         for( auto sensor : _rs_dev.query_sensors() )
         {
             std::string const sensor_name = sensor.get_info( RS2_CAMERA_INFO_NAME );
-            if( server->sensor_name().compare( sensor_name ) == 0 )
+            if( server->sensor_name().compare( sensor_name ) != 0 )
+                continue;
+
+            // Multiple streams map to the same sensor so we may go over the same sensor multiple times - we
+            // only need to do this once per sensor!
+            if( sensors_handled.emplace( sensor_name ).second )
             {
                 auto supported_options = sensor.get_supported_options();
                 // Hack - some options can be queried only if streaming so start sensor and close after query
                 // sensor.open( sensor.get_stream_profiles()[0] );
                 // sensor.start( []( rs2::frame f ) {} );
-                for( auto option : supported_options )
+                for( auto option_id : supported_options )
                 {
-                    auto dds_opt = std::make_shared< realdds::dds_option >( std::string( sensor.get_option_name( option ) ),
-                                                                            server->name() );
+                    // Certain options are automatically added by librealsense and shouldn't actually be shared
+                    if( option_id == RS2_OPTION_FRAMES_QUEUE_SIZE )
+                        continue;  // Added automatically for every sensor_base
+
+                    std::string option_name = sensor.get_option_name( option_id );
                     try
                     {
-                        dds_opt->set_value( sensor.get_option( option ) );
-                        dds_opt->set_range( to_realdds( sensor.get_option_range( option ) ) );
-                        dds_opt->set_description( sensor.get_option_description( option ) );
+                        auto dds_opt = std::make_shared< realdds::dds_option >(
+                            option_name,
+                            to_realdds( sensor.get_option_range( option_id ) ),
+                            sensor.get_option_description( option_id ) );
+                        dds_opt->set_value( sensor.get_option( option_id ) );
+                        stream_options.push_back( dds_opt );  // TODO - filter options relevant for stream type
                     }
                     catch( ... )
                     {
-                        LOG_ERROR( "Cannot query details of option " << option );
-                        continue;  // Some options can be queried only if certain conditions exist skip them for now
+                        LOG_ERROR( "Cannot query details of option " << option_id );
+                        // Some options can be queried only if certain conditions exist skip them for now
                     }
-                    options.push_back( dds_opt );  // TODO - filter options relevant for stream type
                 }
                 // sensor.stop();
                 // sensor.close();
@@ -264,10 +275,11 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
                 auto recommended_filters = sensor.get_recommended_filters();
                 for( auto const & filter : recommended_filters )
                     filter_names.push_back( filter.get_info( RS2_CAMERA_INFO_NAME ) );
+
+                server->init_options( stream_options );
+                server->set_recommended_filters( std::move( filter_names ) );
             }
         }
-        server->init_options( options );
-        server->set_recommended_filters( std::move( filter_names ) );
 
         servers.push_back( server );
     }
@@ -482,13 +494,15 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
     if( ! _dds_device_server )
         throw std::runtime_error( "Empty dds_device_server" );
 
-    _dds_device_server->on_open_streams( [&]( const json & msg ) { start_streaming( msg ); } );
     _dds_device_server->on_set_option( [&]( const std::shared_ptr< realdds::dds_option > & option, float value ) {
         set_option( option, value );
     } );
     _dds_device_server->on_query_option( [&]( const std::shared_ptr< realdds::dds_option > & option ) -> float {
         return query_option( option );
     } );
+    _dds_device_server->on_control(
+        [this]( std::string const & id, nlohmann::json const & control, nlohmann::json & reply )
+        { return on_control( id, control, reply ); } );
 
     _device_sn = _rs_dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
     LOG_DEBUG( "LRS device manager for device: " << _device_sn << " created" );
@@ -606,7 +620,7 @@ lrs_device_controller::~lrs_device_controller()
 }
 
 
-void lrs_device_controller::start_streaming( const json & msg )
+bool lrs_device_controller::on_open_streams( nlohmann::json const & control, nlohmann::json & reply )
 {
     // Note that this function is called "start-streaming" but it's really a response to "open-streams" so does not
     // actually start streaming. It simply sets and locks in which streams should be open when streaming starts.
@@ -614,10 +628,10 @@ void lrs_device_controller::start_streaming( const json & msg )
     // out, a sensor is reset back to its default state using implicit stream selection.
     // (For example, the 'Stereo Module' sensor controls Depth, IR1, IR2: but turning on all 3 has performance
     // implications and may not be desirable. So you can open only Depth and IR1/2 will stay inactive...)
-    if( rsutils::json::get< bool >( msg, "reset", true ) )
+    if( rsutils::json::get< bool >( control, "reset", true ) )
         _bridge.reset();
 
-    auto const & msg_profiles = msg["stream-profiles"];
+    auto const & msg_profiles = control["stream-profiles"];
     for( auto const & name2profile : msg_profiles.items() )
     {
         std::string const & stream_name = name2profile.key();
@@ -637,8 +651,11 @@ void lrs_device_controller::start_streaming( const json & msg )
     }
 
     // We're here so all the profiles were acceptable; lock them in -- with no implicit profiles!
-    if( rsutils::json::get< bool >( msg, "commit", true ) )
+    if( rsutils::json::get< bool >( control, "commit", true ) )
         _bridge.commit();
+
+    // We don't touch the reply - it's already filled in for us
+    return true;
 }
 
 
@@ -719,9 +736,13 @@ lrs_device_controller::get_rs2_profiles( realdds::dds_stream_profiles const & dd
 
 void lrs_device_controller::set_option( const std::shared_ptr< realdds::dds_option > & option, float new_value )
 {
-    auto it = _stream_name_to_server.find( option->owner_name() );
+    auto stream = option->stream();
+    if( ! stream )
+        // TODO device option? not implemented yet
+        throw std::runtime_error( "device option not implemented" );
+    auto it = _stream_name_to_server.find( stream->name() );
     if( it == _stream_name_to_server.end() )
-        throw std::runtime_error( "no stream '" + option->owner_name() + "' in device" );
+        throw std::runtime_error( "no stream '" + stream->name() + "' in device" );
     auto server = it->second;
     auto & sensor = _rs_sensors[server->sensor_name()];
     sensor.set_option( option_name_to_id( option->get_name() ), new_value );
@@ -730,9 +751,13 @@ void lrs_device_controller::set_option( const std::shared_ptr< realdds::dds_opti
 
 float lrs_device_controller::query_option( const std::shared_ptr< realdds::dds_option > & option )
 {
-    auto it = _stream_name_to_server.find( option->owner_name() );
+    auto stream = option->stream();
+    if( ! stream )
+        // TODO device option? not implemented yet
+        throw std::runtime_error( "device option not implemented" );
+    auto it = _stream_name_to_server.find( stream->name() );
     if( it == _stream_name_to_server.end() )
-        throw std::runtime_error( "no stream '" + option->owner_name() + "' in device" );
+        throw std::runtime_error( "no stream '" + stream->name() + "' in device" );
     auto server = it->second;
     auto & sensor = _rs_sensors[server->sensor_name()];
     return sensor.get_option( option_name_to_id( option->get_name() ) );
@@ -809,3 +834,27 @@ size_t lrs_device_controller::get_index_of_profile( const realdds::dds_stream_pr
 
     return 0;
 }
+
+
+bool lrs_device_controller::on_control( std::string const & id, nlohmann::json const & control, nlohmann::json & reply )
+{
+    static std::map< std::string, bool ( lrs_device_controller::* )( nlohmann::json const &, nlohmann::json & ) > const
+        control_handlers{
+            { "hw-reset", &lrs_device_controller::on_hardware_reset },
+            { "open-streams", &lrs_device_controller::on_open_streams },
+        };
+    auto it = control_handlers.find( id );
+    if( it == control_handlers.end() )
+        return false;
+
+    return (this->*(it->second))( control, reply );
+}
+
+
+bool lrs_device_controller::on_hardware_reset( nlohmann::json const & control, nlohmann::json & reply )
+{
+    _rs_dev.hardware_reset();
+    return true;
+}
+
+

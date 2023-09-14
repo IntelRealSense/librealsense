@@ -768,9 +768,11 @@ bool playback_device::try_extend_snapshot(std::shared_ptr<extension_snapshot>& e
         return false;
     }
 
+    // NOTE: the extensions listed here may not all have a base of recordable<>, but a snapshot of which is nonetheless
+    // created by ros_reader. I.e., any snapshot created by ros_reader needs to be listed here, even if the extension is
+    // not recordable!
     switch (extension_type)
     {
-    case RS2_EXTENSION_DEBUG:   return try_extend<debug_interface>(e, ext);
     case RS2_EXTENSION_INFO:    return try_extend<info_interface>(e, ext);
     case RS2_EXTENSION_OPTIONS: return try_extend<options_interface>(e, ext);
     case RS2_EXTENSION_VIDEO:   return try_extend<video_sensor_interface>(e, ext);

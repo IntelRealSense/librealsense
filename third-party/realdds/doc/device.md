@@ -27,13 +27,25 @@ Currently, the topic root as used by `rs-dds-adapter` is built as:
 
 ## Settings
 
-Device behavior can be fine-tuned with certain JSON settings passed through the participant (and therefore from the librealsense context's `dds` settings):
+On the client, device behavior with librealsense can be fine-tuned with certain JSON settings passed through the participant (and therefore from the librealsense context's `dds` settings):
 
 | Field                    | Default | Type    | Description        |
 |--------------------------|---------|---------|--------------------|
 | device-reply-timeout-ms  |    1000 | size_t  | How long to wait for a control reply to arrive, in millisec
 | disable-metadata         |   false | bool    | When true, the metadata topic will be disabled, even with metadata-enabled streams
 
+To control device-level options of the server's, controls need to be sent.
+The server should publish its device options as part of the initialization sequence, in the `device-options` message.
+If available, the [`query-option` and `set-option` controls](control.md#query-option--set-option) can be used (no `owner-name`) to retrieve or update the values. **Setting these options will not take effect until the device is reset.**
+
+The following settings may have options available for controlling:
+
+| Setting        | Default | Type             | `option-name`   | Description
+|----------------|---------|------------------|-----------------|---------------
+| Domain ID      |       0 | int 0-232        | `domain-id`     | The DDS domain number to use to segment communications on the network
+| IP address     |       ? | string "#.#.#.#" | `ip-address`    | The static IP that the server uses for itself (if DHCP is off)
+| DHCP enable    |       ? | bool             | `dhcp`          | If on, the `ip-address` is ignored and retrieved on startup from a DHCP server
+| Multicast IP   |       - | string "#.#.#.#" | `multicast-ip` | The IP address to use for multicasting (empty to disable)
 
 
 ## Continue with:

@@ -23,16 +23,6 @@ public:
 
     // Needed by abstract interfaces
     float get_depth_scale() const override { return get_option( RS2_OPTION_DEPTH_UNITS ).query(); }
-
-    void create_snapshot( std::shared_ptr< depth_sensor > & snapshot ) const override
-    {
-        snapshot = std::make_shared< depth_sensor_snapshot >( get_depth_scale() );
-    }
-
-    void enable_recording( std::function< void( const depth_sensor & ) > recording_function ) override
-    {
-        // does not change over time
-    }
 };
 
 

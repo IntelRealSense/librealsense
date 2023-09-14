@@ -275,7 +275,6 @@ namespace rs2
 
                 log(log_backup_status);
             }
-
             
 
             next_progress = 40;
@@ -398,7 +397,7 @@ namespace rs2
             }
 
             return false;
-        }, cleanup, std::chrono::seconds(120))) // TODO: HKR DFU issue - increased timeout from 60 to 120 seconds for HKR to complete FW write to flash
+        }, cleanup, std::chrono::seconds(_is_d500_device ? 120 : 60))) // TODO: HKR DFU issue - increased timeout from 60 to 120 seconds for HKR to complete FW write to flash
         {
             fail("Original device did not reconnect in time!");
             return;

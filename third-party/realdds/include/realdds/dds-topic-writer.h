@@ -5,6 +5,7 @@
 
 #include <fastdds/dds/publisher/DataWriterListener.hpp>
 #include <fastdds/dds/publisher/qos/DataWriterQos.hpp>
+#include "dds-defines.h"
 
 #include <memory>
 
@@ -52,6 +53,7 @@ public:
 
     std::shared_ptr< dds_topic > const & topic() const { return _topic; }
     std::shared_ptr< dds_publisher > const & publisher() const { return _publisher; }
+    dds_guid const & guid() const;
 
     typedef std::function< void( eprosima::fastdds::dds::PublicationMatchedStatus const & ) >
         on_publication_matched_callback;
