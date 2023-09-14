@@ -21,31 +21,31 @@ namespace librealsense
         // d500 Devices supported by the current version
         static const std::set<std::uint16_t> rs500_sku_pid = {
             ds::D555E_PID,
-			ds::RS_D585_PID,
+            ds::RS_D585_PID,
             ds::RS_D585S_PID
         };
 
         static const std::set<std::uint16_t> d500_multi_sensors_pid = {
             ds::D555E_PID,
-			ds::RS_D585_PID,
+            ds::RS_D585_PID,
             ds::RS_D585S_PID
         };
 
         static const std::set<std::uint16_t> d500_hid_sensors_pid = {
             ds::D555E_PID,
-			ds::RS_D585_PID,
+            ds::RS_D585_PID,
             ds::RS_D585S_PID
         };
 
         static const std::set<std::uint16_t> d500_hid_bmi_085_pid = {
             ds::D555E_PID,
-			ds::RS_D585_PID,
+            ds::RS_D585_PID,
             ds::RS_D585S_PID
         };
 
         static const std::map<std::uint16_t, std::string> rs500_sku_names = {
             { ds::D555E_PID,            "Intel RealSense D555e" },
-			{ ds::RS_D585_PID,          "Intel RealSense D585" },
+            { ds::RS_D585_PID,          "Intel RealSense D585" },
             { ds::RS_D585S_PID,         "Intel RealSense D585S" }
         };
 
