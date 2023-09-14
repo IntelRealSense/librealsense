@@ -935,6 +935,24 @@ namespace librealsense
         void update( std::shared_ptr< extension_snapshot > ext ) override {}
     };
 
+    class safety_sensor_snapshot
+        : public virtual safety_sensor
+        , public extension_snapshot
+    {
+    public:
+        void update(std::shared_ptr< extension_snapshot > ext) override {}
+        void set_safety_preset(int index, const rs2_safety_preset& sp) const override {};
+        rs2_safety_preset get_safety_preset(int index) const override { return rs2_safety_preset(); }
+    };
+
+    class depth_mapping_sensor_snapshot
+        : public virtual depth_mapping_sensor
+        , public extension_snapshot
+    {
+    public:
+        void update(std::shared_ptr< extension_snapshot > ext) override {}
+    };
+
     }  // namespace
 
 
