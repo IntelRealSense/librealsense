@@ -4,6 +4,7 @@
 #include "software-device.h"
 #include "stream.h"
 #include "core/video-frame.h"
+#include "core/matcher-factory.h"
 
 #include <rsutils/string/from.h>
 #include <rsutils/deferred.h>

@@ -12,6 +12,8 @@
 #include "image.h"
 #include "metadata-parser.h"
 
+#include <src/core/matcher-factory.h>
+
 #include "d500-info.h"
 #include "d500-private.h"
 #include "ds/ds-options.h"

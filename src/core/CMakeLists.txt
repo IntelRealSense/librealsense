@@ -14,6 +14,8 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/frame-holder.h"
         "${CMAKE_CURRENT_LIST_DIR}/frame-interface.h"
         "${CMAKE_CURRENT_LIST_DIR}/roi.h"
+        "${CMAKE_CURRENT_LIST_DIR}/matcher-factory.h"
+        "${CMAKE_CURRENT_LIST_DIR}/matcher-factory.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/motion.h"
         "${CMAKE_CURRENT_LIST_DIR}/motion-frame.h"
         "${CMAKE_CURRENT_LIST_DIR}/video.h"

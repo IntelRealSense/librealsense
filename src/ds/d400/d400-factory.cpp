@@ -12,6 +12,8 @@
 #include "image.h"
 #include "metadata-parser.h"
 
+#include <src/core/matcher-factory.h>
+
 #include "d400-info.h"
 #include "d400-private.h"
 #include "d400-options.h"
