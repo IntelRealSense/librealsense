@@ -54,8 +54,6 @@ template<typename T> T rad2deg(T val) { return T(val * r2d); }
 // C++ version in std!
 using std::abs;
 
-#pragma warning(disable: 4250)
-
 #ifdef ANDROID
 #include "../common/android_helpers.h"
 #endif
