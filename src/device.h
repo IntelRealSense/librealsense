@@ -26,7 +26,12 @@ enum class format_conversion
 };
 
 
-class device : public virtual device_interface, public info_container
+// Base implementation for most devices in librealsense. While it's not necessary to derive from this class, it greatly
+// simplifies implementations.
+//
+class device
+    : public virtual device_interface
+    , public info_container
 {
 public:
     virtual ~device();
@@ -61,11 +66,10 @@ public:
 
     virtual void stop_activity() const;
 
-    bool device_changed_notifications_on() const { return _device_changed_notifications; }
+    bool device_changed_notifications_on() const { return _device_changed_callback_id; }
 
     format_conversion get_format_conversion() const;
 
-    uint16_t _pid;
 protected:
     int add_sensor(const std::shared_ptr<sensor_interface>& sensor_base);
     int assign_sensor(const std::shared_ptr<sensor_interface>& sensor_base, uint8_t idx);
@@ -79,9 +83,9 @@ protected:
 private:
     std::vector<std::shared_ptr<sensor_interface>> _sensors;
     std::shared_ptr< const device_info > _dev_info;
-    bool _is_valid, _device_changed_notifications;
+    bool _is_valid;
     mutable std::mutex _device_changed_mtx;
-    uint64_t _callback_id;
+    uint64_t _device_changed_callback_id = 0;
     rsutils::lazy< std::vector< tagged_profile > > _profiles_tags;
 
     std::shared_ptr< bool > _is_alive; // Ensures object can be accessed

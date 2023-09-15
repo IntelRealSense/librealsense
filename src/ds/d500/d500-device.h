@@ -17,6 +17,7 @@
 #include "ds/ds-options.h"
 
 #include "ds/ds-device-common.h"
+#include "ds/ds-device.h"
 
 #include <rsutils/lazy.h>
 
@@ -32,7 +33,11 @@ namespace librealsense
         struct backend_device_group;
     }
 
-    class d500_device : public virtual device, public debug_interface, public global_time_interface, public updatable
+    class d500_device
+        : public virtual ds_device
+        , public debug_interface
+        , public global_time_interface
+        , public updatable
     {
     public:
         std::shared_ptr<synthetic_sensor> create_depth_device(std::shared_ptr<context> ctx,

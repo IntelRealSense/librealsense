@@ -35,11 +35,10 @@ device::device( std::shared_ptr< const device_info > const & dev_info,
                 bool device_changed_notifications )
     : _dev_info( dev_info )
     , _is_valid( true )
-    , _device_changed_notifications( device_changed_notifications )
     , _is_alive( std::make_shared< bool >( true ) )
     , _profiles_tags( [this]() { return get_profiles_tags(); } )
 {
-    if (_device_changed_notifications)
+    if( device_changed_notifications )
     {
         std::weak_ptr< bool > weak = _is_alive;
         auto cb = new devices_changed_callback_internal([this, weak](rs2_device_list* removed, rs2_device_list* added)
@@ -62,11 +61,12 @@ device::device( std::shared_ptr< const device_info > const & dev_info,
             }
         });
 
-        _callback_id = get_context()->register_internal_device_callback( { cb,
-                                                                           []( rs2_devices_changed_callback * p )
-                                                                           {
-                                                                               p->release();
-                                                                           } } );
+        _device_changed_callback_id
+            = get_context()->register_internal_device_callback( { cb,
+                                                                  []( rs2_devices_changed_callback * p )
+                                                                  {
+                                                                      p->release();
+                                                                  } } );
     }
 }
 
@@ -74,10 +74,9 @@ device::~device()
 {
     *_is_alive = false;
 
-    if (_device_changed_notifications)
-    {
-        get_context()->unregister_internal_device_callback(_callback_id);
-    }
+    if( _device_changed_callback_id )
+        get_context()->unregister_internal_device_callback( _device_changed_callback_id );
+
     _sensors.clear();
 }
 
