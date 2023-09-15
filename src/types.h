@@ -433,20 +433,6 @@ namespace librealsense
         int index;
     };
 
-    struct stream_output {
-        stream_output(stream_descriptor stream_desc_in,
-                      rs2_format format_in,
-                      resolution_func res_func = [](resolution res) {return res; })
-            : stream_desc(stream_desc_in),
-              format(format_in),
-              stream_resolution(res_func)
-        {}
-
-        stream_descriptor stream_desc;
-        rs2_format format;
-        resolution_func stream_resolution;
-    };
-
     class stream_profile_interface;
 
     class frame_interface;
