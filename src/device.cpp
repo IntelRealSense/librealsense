@@ -4,6 +4,7 @@
 #include "environment.h"
 #include "core/video.h"
 #include "core/motion.h"
+#include "sync.h"
 #include "device.h"
 
 #include <rsutils/string/from.h>

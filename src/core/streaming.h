@@ -9,6 +9,8 @@
 #include "../points.h"
 #include "info.h"
 #include <functional>
+#include <vector>
+
 
 namespace librealsense
 {
@@ -58,6 +60,10 @@ namespace librealsense
         virtual rs2_stream get_stream_type() const = 0;
         virtual void set_stream_type(rs2_stream stream) = 0;
     };
+
+
+    stream_interface * find_profile( rs2_stream stream, int index, std::vector< stream_interface * > const & profiles );
+
 
     class stream_profile_interface : public stream_interface, public recordable<stream_profile_interface>
     {

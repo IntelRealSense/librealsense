@@ -7,7 +7,6 @@
 #include "hw-monitor.h"
 #include "option.h"
 #include "sensor.h"
-#include "sync.h"
 #include "core/streaming.h"
 
 #include "context.h"
@@ -21,9 +20,6 @@
 
 namespace librealsense
 {
-
-    
-stream_interface * find_profile( rs2_stream stream, int index, std::vector< stream_interface * > const & profiles );
 
 
 class device : public virtual device_interface, public info_container

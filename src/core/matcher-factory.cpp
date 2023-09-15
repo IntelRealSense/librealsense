@@ -2,7 +2,9 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #include "matcher-factory.h"
-#include <src/device.h>
+#include "frame-holder.h"
+
+#include <src/sync.h>
 
 
 namespace librealsense {
