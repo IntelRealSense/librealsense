@@ -28,6 +28,10 @@ namespace librealsense
     class ds_devices_common;
     class d500_info;
 
+    namespace platform {
+        struct backend_device_group;
+    }
+
     class d500_device : public virtual device, public debug_interface, public global_time_interface, public updatable
     {
     public:

@@ -1,11 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
+#include "device.h"
 #include "environment.h"
 #include "core/video.h"
 #include "core/motion.h"
+#include "core/frame-holder.h"
 #include "sync.h"
-#include "device.h"
+#include "context.h"
 
 #include <rsutils/string/from.h>
 #include <rsutils/json.h>

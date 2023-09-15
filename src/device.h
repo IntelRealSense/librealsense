@@ -3,14 +3,11 @@
 
 #pragma once
 
-#include "archive.h"
-#include "hw-monitor.h"
-#include "option.h"
-#include "sensor.h"
 #include "core/streaming.h"
 #include "core/device-interface.h"
+#include "core/info.h"
 
-#include "context.h"
+#include "device-info.h"
 
 #include <rsutils/lazy.h>
 
@@ -19,8 +16,7 @@
 #include <vector>
 
 
-namespace librealsense
-{
+namespace librealsense {
 
 
 class device : public virtual device_interface, public info_container
@@ -84,15 +80,5 @@ private:
     std::shared_ptr< bool > _is_alive; // Ensures object can be accessed
 };
 
-// Helper function that should be used when multiple FW calls needs to be made.
-// This function change the USB power to D0 (Operational) using the invoke_power function
-// activate the received function and power down the state to D3 (Idle)
-template<class T>
-auto group_multiple_fw_calls(synthetic_sensor& s, T action)
--> decltype(action())
-{
-    auto& us = dynamic_cast<uvc_sensor&>(*s.get_raw_sensor());
 
-    return us.invoke_powered([&](platform::uvc_device& dev) { return action(); });
-}
 }

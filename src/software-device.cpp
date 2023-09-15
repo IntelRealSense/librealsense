@@ -3,6 +3,7 @@
 
 #include "software-device.h"
 #include "stream.h"
+#include "option.h"
 #include "core/video-frame.h"
 #include "core/matcher-factory.h"
 

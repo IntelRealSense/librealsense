@@ -4,7 +4,7 @@
 
 #include "core/streaming.h"
 #include "device.h"
-#include "context.h"
+#include "sensor.h"
 #include <librealsense2/h/rs_internal.h>
 #include <rsutils/lazy.h>
 
