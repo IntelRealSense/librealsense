@@ -7,6 +7,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode.h"
         "${CMAKE_CURRENT_LIST_DIR}/enum-helpers.h"
         "${CMAKE_CURRENT_LIST_DIR}/depth-frame.h"
+        "${CMAKE_CURRENT_LIST_DIR}/device-interface.h"
         "${CMAKE_CURRENT_LIST_DIR}/disparity-frame.h"
         "${CMAKE_CURRENT_LIST_DIR}/frame-continuation.h"
         "${CMAKE_CURRENT_LIST_DIR}/frame-additional-data.h"
@@ -29,4 +30,5 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/pose-frame.h"
         "${CMAKE_CURRENT_LIST_DIR}/processing.h"
         "${CMAKE_CURRENT_LIST_DIR}/serialization.h"
+        "${CMAKE_CURRENT_LIST_DIR}/tagged-profile.h"
 )

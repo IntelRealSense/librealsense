@@ -8,6 +8,7 @@
 #include "option.h"
 #include "sensor.h"
 #include "core/streaming.h"
+#include "core/device-interface.h"
 
 #include "context.h"
 
