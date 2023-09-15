@@ -25,8 +25,6 @@ namespace librealsense
             }
         }
     }
-
-    resolution rotate_resolution(resolution res);
 }
 
 #endif
