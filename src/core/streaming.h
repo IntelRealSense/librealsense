@@ -7,7 +7,7 @@
 #include "../color-sensor.h"
 #include "../composite-frame.h"
 #include "../points.h"
-#include "info.h"
+#include "info-interface.h"
 #include <functional>
 #include <vector>
 
