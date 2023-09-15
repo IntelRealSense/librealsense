@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <src/core/stream-profile.h>
+
 #include <vector>
 
 #include "align.h"

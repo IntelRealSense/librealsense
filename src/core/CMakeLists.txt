@@ -30,5 +30,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/pose-frame.h"
         "${CMAKE_CURRENT_LIST_DIR}/processing.h"
         "${CMAKE_CURRENT_LIST_DIR}/serialization.h"
+        "${CMAKE_CURRENT_LIST_DIR}/stream-profile.h"
         "${CMAKE_CURRENT_LIST_DIR}/tagged-profile.h"
 )

@@ -5,6 +5,7 @@
 
 #include "info-interface.h"
 #include "tagged-profile.h"
+#include "stream-profile.h"
 
 #include <librealsense2/h/rs_sensor.h>
 #include <functional>

@@ -16,18 +16,10 @@
 namespace librealsense
 {
     class sensor_interface;
-    class archive_interface;
     class device_interface;
     class processing_block_interface;
 
     class context;
-
-    enum class format_conversion
-    {
-        raw,
-        basic,
-        full
-    };
 
     class stream_interface : public std::enable_shared_from_this<stream_interface>
     {

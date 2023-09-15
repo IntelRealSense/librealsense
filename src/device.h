@@ -3,20 +3,27 @@
 
 #pragma once
 
-#include "core/streaming.h"
+#include "basics.h"  // C4250
 #include "core/device-interface.h"
 #include "core/info.h"
 
 #include "device-info.h"
 
 #include <rsutils/lazy.h>
-
 #include <chrono>
 #include <memory>
 #include <vector>
 
 
 namespace librealsense {
+
+
+enum class format_conversion
+{
+    raw,
+    basic,
+    full
+};
 
 
 class device : public virtual device_interface, public info_container
