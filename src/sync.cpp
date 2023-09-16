@@ -6,6 +6,7 @@
 #include "sync.h"
 #include "environment.h"
 #include "core/device-interface.h"
+#include "core/sensor-interface.h"
 
 namespace librealsense
 {

@@ -3,14 +3,8 @@
 
 #pragma once
 
-#include <chrono>
-#include <memory>
-#include <vector>
-#include <unordered_set>
-#include <unordered_map>
-#include <limits.h>
-#include <atomic>
-#include <functional>
+#include "core/sensor-interface.h"
+
 #include "core/debug.h"
 
 #include "archive.h"
@@ -25,6 +19,15 @@
 
 #include <rsutils/lazy.h>
 #include <rsutils/signal.h>
+
+#include <chrono>
+#include <memory>
+#include <vector>
+#include <unordered_set>
+#include <unordered_map>
+#include <limits.h>
+#include <atomic>
+#include <functional>
 
 
 namespace librealsense

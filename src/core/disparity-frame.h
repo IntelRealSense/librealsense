@@ -3,6 +3,7 @@
 #pragma once
 
 #include "depth-frame.h"
+#include "sensor-interface.h"
 #include "extension.h"
 
 
