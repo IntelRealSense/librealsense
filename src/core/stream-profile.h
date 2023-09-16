@@ -4,25 +4,38 @@
 #pragma once
 
 #include <librealsense2/h/rs_sensor.h>
-#include <functional>
-#include <utility>  // std::pair
+#include <functional>  // std::hash
+#include <utility>     // std::swap
 #include <cstdint>
 
 
 namespace librealsense {
 
 
-struct resolution
-{
-    uint32_t width, height;
-};
-
-
-using resolution_func = std::function< resolution( resolution res ) >;
-
-
 struct stream_profile
 {
+    rs2_format format;
+    rs2_stream stream;
+    int index;
+    uint32_t width;
+    uint32_t height;
+    uint32_t fps;
+
+    // Certain cameras may introduce transformed resolutions in their target profiles. E.g., this was the case with the
+    // L500 (both rotation, plus expansion for confidence). This is not in use with the D series.
+    //
+    // See provided implementations below...
+    //
+    typedef void ( *resolution_transform_fn )( uint32_t & width, uint32_t & height );
+
+    static void same_resolution( uint32_t & w, uint32_t & h ) {}
+    static void rotate_resolution( uint32_t & w, uint32_t & h ) { std::swap( w, h ); }
+
+    // Transformation function, to adjust width/height when a profile is cloned as part of a sensor's defined
+    // processing block. The formats_converter uses this when doing its thing.
+    // 
+    resolution_transform_fn resolution_transform;
+
     stream_profile(
         rs2_format fmt = RS2_FORMAT_ANY,
         rs2_stream strm = RS2_STREAM_ANY,
@@ -30,24 +43,16 @@ struct stream_profile
         uint32_t w = 0,
         uint32_t h = 0,
         uint32_t framerate = 0,
-        resolution_func res_func = []( resolution res ) { return res; } )
+        resolution_transform_fn res_transform = &same_resolution )
         : format( fmt )
         , stream( strm )
         , index( idx )
         , width( w )
         , height( h )
         , fps( framerate )
-        , stream_resolution( res_func )
+        , resolution_transform( res_transform )
     {
     }
-
-    rs2_format format;
-    rs2_stream stream;
-    int index;
-    uint32_t width, height, fps;
-    resolution_func stream_resolution;  // Calculates the relevant resolution from the given backend resolution.
-
-    std::pair< uint32_t, uint32_t > width_height() const { return std::make_pair( width, height ); }
 };
 
 
@@ -89,12 +94,7 @@ struct hash< librealsense::stream_profile >
 template<>
 struct hash< rs2_format >
 {
-    size_t operator()( const rs2_format & f ) const
-    {
-        using std::hash;
-
-        return hash< uint32_t >()( f );
-    }
+    size_t operator()( const rs2_format & f ) const { return std::hash< uint32_t >()( f ); }
 };
 
 

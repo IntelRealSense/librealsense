@@ -121,9 +121,11 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
                         auto cloned_vsp = As< video_stream_profile, stream_profile_interface >( cloned_profile );
                         if( cloned_vsp )
                         {
-                            // Converter may rotate the image, invoke stream_resolution function to get actual result
-                            const auto res = target.stream_resolution( { cloned_vsp->get_width(), cloned_vsp->get_height() } );
-                            cloned_vsp->set_dims( res.width, res.height );
+                            // Conversion may involve changing the resolution (rotation, expansion, etc.)
+                            auto width = cloned_vsp->get_width();
+                            auto height = cloned_vsp->get_height();
+                            target.resolution_transform( width, height );
+                            cloned_vsp->set_dims( width, height );
                         }
                         LOG_DEBUG( "         -> " << cloned_profile );
 
