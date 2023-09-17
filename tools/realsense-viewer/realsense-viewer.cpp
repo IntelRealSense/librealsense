@@ -48,8 +48,11 @@ bool add_remote_device(context& ctx, std::string address)
     return false;
 }
 
-void add_playback_device(context& ctx, device_models_list& device_models,
-    std::string& error_message, viewer_model& viewer_model, const std::string& file)
+void add_playback_device( context & ctx,
+                          std::shared_ptr< device_models_list > device_models,
+                          std::string & error_message,
+                          viewer_model & viewer_model,
+                          const std::string & file )
 {
     bool was_loaded = false;
     bool failed = false;
@@ -57,55 +60,64 @@ void add_playback_device(context& ctx, device_models_list& device_models,
     {
         auto dev = ctx.load_device(file);
         was_loaded = true;
-        device_models.emplace_back(new device_model(dev, error_message, viewer_model)); //Will cause the new device to appear in the left panel
+        device_models->emplace_back(  // Will cause the new device to appear in the left panel
+            new device_model( dev, error_message, viewer_model ) );
         if (auto p = dev.as<playback>())
         {
             auto filename = p.file_name();
-            p.set_status_changed_callback([&viewer_model, &device_models, filename](rs2_playback_status status)
-            {
-                if (status == RS2_PLAYBACK_STATUS_STOPPED)
+            p.set_status_changed_callback(
+                [&viewer_model, weak_device_models = std::weak_ptr< device_models_list >( device_models ), filename](
+                    rs2_playback_status status )
                 {
-                    auto it = std::find_if(device_models.begin(), device_models.end(),
-                        [&](const std::unique_ptr<device_model>& dm) {
-                        if (auto p = dm->dev.as<playback>())
-                            return p.file_name() == filename;
-                        return false;
-                    });
-                    if (it != device_models.end())
+                    auto device_models = weak_device_models.lock();
+                    if( ! device_models )
+                        return;
+                    if( status == RS2_PLAYBACK_STATUS_STOPPED )
                     {
-                        auto subs = (*it)->subdevices;
-                        if ((*it)->_playback_repeat)
+                        auto it = std::find_if( device_models->begin(),
+                                                device_models->end(),
+                                                [&]( const std::unique_ptr< device_model > & dm )
+                                                {
+                                                    if( auto p = dm->dev.as< playback >() )
+                                                        return p.file_name() == filename;
+                                                    return false;
+                                                } );
+                        if( it != device_models->end() )
                         {
-                            //Calling from different since playback callback is from reading thread
-                            std::thread{ [subs, &viewer_model, it]()
+                            auto subs = ( *it )->subdevices;
+                            if( ( *it )->_playback_repeat )
                             {
-                                if (!(*it)->dev_syncer)
-                                    (*it)->dev_syncer = viewer_model.syncer->create_syncer();
+                                // Calling from different since playback callback is from reading thread
+                                std::thread{ [subs, &viewer_model, it]()
+                                             {
+                                                 if( ! ( *it )->dev_syncer )
+                                                     ( *it )->dev_syncer = viewer_model.syncer->create_syncer();
 
-                                for (auto&& sub : subs)
+                                                 for( auto && sub : subs )
+                                                 {
+                                                     if( sub->streaming )
+                                                     {
+                                                         auto profiles = sub->get_selected_profiles();
+
+                                                         sub->play( profiles, viewer_model, ( *it )->dev_syncer );
+                                                     }
+                                                 }
+                                             } }
+                                    .detach();
+                            }
+                            else
+                            {
+                                for( auto && sub : subs )
                                 {
-                                    if (sub->streaming)
+                                    if( sub->streaming )
                                     {
-                                        auto profiles = sub->get_selected_profiles();
-
-                                        sub->play(profiles, viewer_model, (*it)->dev_syncer);
+                                        sub->stop( viewer_model.not_model );
                                     }
-                                }
-                            } }.detach();
-                        }
-                        else
-                        {
-                            for (auto&& sub : subs)
-                            {
-                                if (sub->streaming)
-                                {
-                                    sub->stop(viewer_model.not_model);
                                 }
                             }
                         }
                     }
-                }
-            });
+                } );
         }
     }
     catch (const error& e)
@@ -365,7 +377,7 @@ int main(int argc, const char** argv) try
 
     window.on_file_drop = [&](std::string filename)
     {
-        add_playback_device(ctx, *device_models, error_message, viewer_model, filename);
+        add_playback_device(ctx, device_models, error_message, viewer_model, filename);
         if (!error_message.empty())
         {
             viewer_model.not_model->add_notification({ error_message,
@@ -382,7 +394,7 @@ int main(int argc, const char** argv) try
             if (!file.good())
                 continue;
 
-            add_playback_device(ctx, *device_models, error_message, viewer_model, arg);
+            add_playback_device(ctx, device_models, error_message, viewer_model, arg);
         }
         catch (const rs2::error& e)
         {
@@ -538,7 +550,7 @@ int main(int argc, const char** argv) try
             {
                 if (auto ret = file_dialog_open(open_file, "ROS-bag\0*.bag\0", NULL, NULL))
                 {
-                    add_playback_device(ctx, *device_models, error_message, viewer_model, ret);
+                    add_playback_device(ctx, device_models, error_message, viewer_model, ret);
                 }
             }
             ImGui::NextColumn();
