@@ -334,41 +334,6 @@ namespace librealsense
     }
 
 
-    void context::on_device_changed(platform::backend_device_group old,
-                                    platform::backend_device_group curr,
-                                    const std::map<std::string, std::weak_ptr<device_info>>& old_playback_devices,
-                                    const std::map<std::string, std::weak_ptr<device_info>>& new_playback_devices)
-    {
-        auto old_list = create_devices(old, old_playback_devices, RS2_PRODUCT_LINE_ANY);
-        auto new_list = create_devices(curr, new_playback_devices, RS2_PRODUCT_LINE_ANY);
-
-        if( librealsense::list_changed< std::shared_ptr< device_info > >(
-                old_list,
-                new_list,
-                []( std::shared_ptr< device_info > first, std::shared_ptr< device_info > second )
-                { return first->is_same_as( second ); } ) )
-        {
-            std::vector<rs2_device_info> rs2_devices_info_removed;
-
-            auto devices_info_removed = subtract_sets(old_list, new_list);
-            for (size_t i = 0; i < devices_info_removed.size(); i++)
-            {
-                rs2_devices_info_removed.push_back({ shared_from_this(), devices_info_removed[i] });
-                LOG_DEBUG( "Device disconnected: " << devices_info_removed[i]->get_address() );
-            }
-
-            std::vector<rs2_device_info> rs2_devices_info_added;
-            auto devices_info_added = subtract_sets(new_list, old_list);
-            for (size_t i = 0; i < devices_info_added.size(); i++)
-            {
-                rs2_devices_info_added.push_back({ shared_from_this(), devices_info_added[i] });
-                LOG_DEBUG( "Device connected: " << devices_info_added[i]->get_address() );
-            }
-
-            invoke_devices_changed_callbacks( rs2_devices_info_removed, rs2_devices_info_added );
-        }
-    }
-
     void context::invoke_devices_changed_callbacks( std::vector<rs2_device_info> & rs2_devices_info_removed,
                                                     std::vector<rs2_device_info> & rs2_devices_info_added )
     {
@@ -416,10 +381,38 @@ namespace librealsense
 
     void context::start_device_watcher()
     {
-        _device_watcher->start([this](platform::backend_device_group old, platform::backend_device_group curr)
-        {
-            on_device_changed(old, curr, _playback_devices, _playback_devices);
-        });
+        _device_watcher->start(
+            [this]( platform::backend_device_group old, platform::backend_device_group curr )
+            {
+                auto old_list = create_devices( old, {}, RS2_PRODUCT_LINE_ANY );
+                auto new_list = create_devices( curr, {}, RS2_PRODUCT_LINE_ANY );
+
+                if( librealsense::list_changed< std::shared_ptr< device_info > >(
+                        old_list,
+                        new_list,
+                        []( std::shared_ptr< device_info > first, std::shared_ptr< device_info > second )
+                        { return first->is_same_as( second ); } ) )
+                {
+                    std::vector< rs2_device_info > rs2_devices_info_removed;
+
+                    auto devices_info_removed = subtract_sets( old_list, new_list );
+                    for( size_t i = 0; i < devices_info_removed.size(); i++ )
+                    {
+                        rs2_devices_info_removed.push_back( { shared_from_this(), devices_info_removed[i] } );
+                        LOG_DEBUG( "Device disconnected: " << devices_info_removed[i]->get_address() );
+                    }
+
+                    std::vector< rs2_device_info > rs2_devices_info_added;
+                    auto devices_info_added = subtract_sets( new_list, old_list );
+                    for( size_t i = 0; i < devices_info_added.size(); i++ )
+                    {
+                        rs2_devices_info_added.push_back( { shared_from_this(), devices_info_added[i] } );
+                        LOG_DEBUG( "Device connected: " << devices_info_added[i]->get_address() );
+                    }
+
+                    invoke_devices_changed_callbacks( rs2_devices_info_removed, rs2_devices_info_added );
+                }
+            } );
     }
 
 #ifdef BUILD_WITH_DDS
@@ -545,9 +538,12 @@ namespace librealsense
                                                          << "File \"" << file << "\" already loaded to context" );
         }
         auto dinfo = std::make_shared< playback_device_info >( shared_from_this(), file );
-        auto prev_playback_devices = _playback_devices;
         _playback_devices[file] = dinfo;
-        on_device_changed({}, {}, prev_playback_devices, _playback_devices);
+
+        std::vector< rs2_device_info > rs2_device_info_added{ { shared_from_this(), dinfo } };
+        std::vector< rs2_device_info > rs2_device_info_removed;
+        invoke_devices_changed_callbacks( rs2_device_info_removed, rs2_device_info_added );
+
         return dinfo;
     }
 
@@ -558,22 +554,27 @@ namespace librealsense
         auto it = _playback_devices.find(address);
         if (it != _playback_devices.end() && it->second.lock())
             throw librealsense::invalid_value_exception( "File \"" + address + "\" already loaded to context" );
-        auto prev_playback_devices = _playback_devices;
         _playback_devices[address] = dev;
-        on_device_changed({}, {}, prev_playback_devices, _playback_devices);
+
+        std::vector< rs2_device_info > rs2_device_info_added{ { shared_from_this(), dev } };
+        std::vector< rs2_device_info > rs2_device_info_removed;
+        invoke_devices_changed_callbacks( rs2_device_info_removed, rs2_device_info_added );
     }
 
     void context::remove_device(const std::string& file)
     {
         auto it = _playback_devices.find(file);
-        if(it == _playback_devices.end() || !it->second.lock())
-        {
-            //Not found
+        if(it == _playback_devices.end() )
             return;
-        }
-        auto prev_playback_devices =_playback_devices;
+        auto dev_info = it->second.lock();
         _playback_devices.erase(it);
-        on_device_changed({},{}, prev_playback_devices, _playback_devices);
+
+        if( dev_info )
+        {
+            std::vector< rs2_device_info > rs2_device_info_added;
+            std::vector< rs2_device_info > rs2_device_info_removed{ { shared_from_this(), dev_info } };
+            invoke_devices_changed_callbacks( rs2_device_info_removed, rs2_device_info_added );
+        }
     }
 
     std::vector<std::vector<platform::uvc_device_info>> group_devices_by_unique_id(const std::vector<platform::uvc_device_info>& devices)
