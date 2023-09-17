@@ -9,6 +9,7 @@
 #include "environment.h"
 #include "metadata.h"
 #include "backend.h"
+#include "platform/platform-utils.h"
 
 #include "global_timestamp_reader.h"
 #include "proc/auto-exposure-processor.h"

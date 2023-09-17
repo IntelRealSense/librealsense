@@ -4,23 +4,20 @@
 #pragma once
 
 #include "backend-device-factory.h"
-#include "core/streaming.h"
-
 #include "device-info.h"
-#include "platform/device-watcher.h"
-
-#include <nlohmann/json.hpp>
-#include <vector>
-#include <set>
-
+#include "types.h"
 
 #include <rsutils/lazy.h>
+#include <nlohmann/json.hpp>
+#include <vector>
+#include <map>
 
 
 namespace librealsense
 {
     class context;
     class device_info;
+    class stream_profile_interface;
 }
 
 struct rs2_device_info
@@ -55,6 +52,7 @@ namespace librealsense
     class device;
     class context;
     class playback_device_info;
+    class stream_interface;
 
     namespace platform {
         class backend;
@@ -111,17 +109,4 @@ namespace librealsense
         std::mutex _streams_mutex, _devices_changed_callbacks_mtx;
     };
 
-    // Helper functions for device list manipulation:
-    std::vector<platform::uvc_device_info> filter_by_product(const std::vector<platform::uvc_device_info>& devices, const std::set<uint16_t>& pid_list);
-    std::vector<std::pair<std::vector<platform::uvc_device_info>, std::vector<platform::hid_device_info>>> group_devices_and_hids_by_unique_id(
-        const std::vector<std::vector<platform::uvc_device_info>>& devices,
-        const std::vector<platform::hid_device_info>& hids);
-    std::vector<std::vector<platform::uvc_device_info>> group_devices_by_unique_id(const std::vector<platform::uvc_device_info>& devices);
-    void trim_device_list(std::vector<platform::uvc_device_info>& devices, const std::vector<platform::uvc_device_info>& chosen);
-    bool mi_present(const std::vector<platform::uvc_device_info>& devices, uint32_t mi);
-    platform::uvc_device_info get_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi);
-    std::vector<platform::uvc_device_info> filter_by_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi);
-
-    std::vector<platform::usb_device_info> filter_by_product(const std::vector<platform::usb_device_info>& devices, const std::set<uint16_t>& pid_list);
-    void trim_device_list(std::vector<platform::usb_device_info>& devices, const std::vector<platform::usb_device_info>& chosen);
 }

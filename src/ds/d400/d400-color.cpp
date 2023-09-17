@@ -10,6 +10,7 @@
 #include "d400-color.h"
 #include "d400-info.h"
 #include <src/backend.h>
+#include <src/platform/platform-utils.h>
 
 #include <rsutils/string/from.h>
 

@@ -3,15 +3,9 @@
 
 #include "context.h"
 
-#include "device.h"
-#include <media/ros/ros_reader.h>
 #include "media/playback/playback-device-info.h"
-#include "types.h"
-#include "stream.h"
 #include "environment.h"
-#include "proc/color-formats-converter.h"
 #include <src/backend.h>
-#include "software-device.h"
 
 
 #ifdef BUILD_WITH_DDS
@@ -280,61 +274,6 @@ namespace librealsense
         _devices_changed_callback = std::move(callback);
     }
 
-    std::vector<platform::uvc_device_info> filter_by_product(const std::vector<platform::uvc_device_info>& devices, const std::set<uint16_t>& pid_list)
-    {
-        std::vector<platform::uvc_device_info> result;
-        for (auto&& info : devices)
-        {
-            if (pid_list.count(info.pid))
-                result.push_back(info);
-        }
-        return result;
-    }
-
-    // TODO: Make template
-    std::vector<platform::usb_device_info> filter_by_product(const std::vector<platform::usb_device_info>& devices, const std::set<uint16_t>& pid_list)
-    {
-        std::vector<platform::usb_device_info> result;
-        for (auto&& info : devices)
-        {
-            if (pid_list.count(info.pid))
-                result.push_back(info);
-        }
-        return result;
-    }
-
-    std::vector<std::pair<std::vector<platform::uvc_device_info>, std::vector<platform::hid_device_info>>> group_devices_and_hids_by_unique_id(
-        const std::vector<std::vector<platform::uvc_device_info>>& devices,
-        const std::vector<platform::hid_device_info>& hids)
-    {
-        std::vector<std::pair<std::vector<platform::uvc_device_info>, std::vector<platform::hid_device_info>>> results;
-        uint16_t vid;
-        uint16_t pid;
-
-        for (auto&& dev : devices)
-        {
-            std::vector<platform::hid_device_info> hid_group;
-            auto unique_id = dev.front().unique_id;
-            auto device_serial = dev.front().serial;
-
-            for (auto&& hid : hids)
-            {
-                if( ! hid.unique_id.empty() )
-                {
-                    std::stringstream(hid.vid) >> std::hex >> vid;
-                    std::stringstream(hid.pid) >> std::hex >> pid;
-
-                    if (hid.unique_id == unique_id)
-                    {
-                        hid_group.push_back(hid);
-                    }
-                }
-            }
-            results.push_back(std::make_pair(dev, hid_group));
-        }
-        return results;
-    }
-
     std::shared_ptr<playback_device_info> context::add_device(const std::string& file)
     {
         auto it = _playback_devices.find(file);
@@ -384,77 +323,4 @@ namespace librealsense
         }
     }
 
-    std::vector<std::vector<platform::uvc_device_info>> group_devices_by_unique_id(const std::vector<platform::uvc_device_info>& devices)
-    {
-        std::map<std::string, std::vector<platform::uvc_device_info>> map;
-        for (auto&& info : devices)
-        {
-            map[info.unique_id].push_back(info);
-        }
-        std::vector<std::vector<platform::uvc_device_info>> result;
-        for (auto&& kvp : map)
-        {
-            result.push_back(kvp.second);
-        }
-        return result;
-    }
-
-    // TODO: Sergey
-    // Make template
-    void trim_device_list(std::vector<platform::usb_device_info>& devices, const std::vector<platform::usb_device_info>& chosen)
-    {
-        if (chosen.empty())
-            return;
-
-        auto was_chosen = [&chosen](const platform::usb_device_info& info)
-        {
-            return find(chosen.begin(), chosen.end(), info) != chosen.end();
-        };
-        devices.erase(std::remove_if(devices.begin(), devices.end(), was_chosen), devices.end());
-    }
-
-    void trim_device_list(std::vector<platform::uvc_device_info>& devices, const std::vector<platform::uvc_device_info>& chosen)
-    {
-        if (chosen.empty())
-            return;
-
-        auto was_chosen = [&chosen](const platform::uvc_device_info& info)
-        {
-            return find(chosen.begin(), chosen.end(), info) != chosen.end();
-        };
-        devices.erase(std::remove_if(devices.begin(), devices.end(), was_chosen), devices.end());
-    }
-
-    bool mi_present(const std::vector<platform::uvc_device_info>& devices, uint32_t mi)
-    {
-        for (auto&& info : devices)
-        {
-            if (info.mi == mi)
-                return true;
-        }
-        return false;
-    }
-
-    platform::uvc_device_info get_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi)
-    {
-        for (auto&& info : devices)
-        {
-            if (info.mi == mi)
-                return info;
-        }
-        throw invalid_value_exception("Interface not found!");
-    }
-
-    std::vector<platform::uvc_device_info> filter_by_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi)
-    {
-        std::vector<platform::uvc_device_info> results;
-        for (auto&& info : devices)
-        {
-            if (info.mi == mi)
-                results.push_back(info);
-        }
-        return results;
-    }
 }
-
-using namespace librealsense;

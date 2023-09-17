@@ -5,6 +5,7 @@
 #include "context.h"
 #include "backend.h"
 #include "platform/platform-device-info.h"
+#include "platform/device-watcher.h"
 
 #include "ds/d400/d400-info.h"
 #include "ds/d500/d500-info.h"
