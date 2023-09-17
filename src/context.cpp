@@ -134,26 +134,6 @@ namespace librealsense
     }
 
 
-    context::context( backend_type type )
-        : context()
-    {
-        _backend = platform::create_backend();
-#ifdef BUILD_WITH_DDS
-        {
-            realdds::dds_domain_id domain_id = 0;
-            auto & domain = dds_domain_context_by_id[domain_id];
-            _dds_participant = domain.participant.instance();
-            if( ! _dds_participant->is_valid() )
-                _dds_participant->init( domain_id, rsutils::os::executable_name(), {} );
-            _dds_watcher = domain.device_watcher.instance( _dds_participant );
-        }
-#endif //BUILD_WITH_DDS
-
-        _device_watcher = _backend->create_device_watcher();
-        assert(_device_watcher->is_stopped());
-    }
-
-
     context::context( json const & settings )
         : context()
     {

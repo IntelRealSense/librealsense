@@ -55,11 +55,6 @@ namespace librealsense
     class context;
     class playback_device_info;
 
-    enum class backend_type
-    {
-        standard
-    };
-
     namespace platform {
         class backend;
         class device_watcher;
@@ -69,8 +64,6 @@ namespace librealsense
     {
         context();
     public:
-        explicit context( backend_type type );
-
         explicit context( nlohmann::json const & );
         explicit context( char const * json_settings );
 
