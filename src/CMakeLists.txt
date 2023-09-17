@@ -66,6 +66,8 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/algo.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/archive.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/backend.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/backend-device-factory.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/backend-device-factory.h"
         "${CMAKE_CURRENT_LIST_DIR}/context.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/device.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/device-info.cpp"

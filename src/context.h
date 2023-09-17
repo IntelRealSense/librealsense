@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "backend-device-factory.h"
 #include "core/streaming.h"
 
 #include "device-info.h"
@@ -67,8 +68,8 @@ namespace librealsense
         explicit context( nlohmann::json const & );
         explicit context( char const * json_settings );
 
-        void stop() { _device_watcher->stop(); }
         ~context();
+
         std::vector<std::shared_ptr<device_info>> query_devices(int mask) const;
         const platform::backend& get_backend() const { return *_backend; }
 
@@ -76,8 +77,7 @@ namespace librealsense
         void unregister_internal_device_callback(uint64_t cb_id);
         void set_devices_changed_callback(devices_changed_callback_ptr callback);
 
-        std::vector<std::shared_ptr<device_info>> create_devices(platform::backend_device_group devices,
-            const std::map<std::string, std::weak_ptr<device_info>>& playback_devices, int mask) const;
+        void query_software_devices( std::vector< std::shared_ptr< device_info > > & list, unsigned requested_mask ) const;
 
         std::shared_ptr<playback_device_info> add_device(const std::string& file);
         void remove_device(const std::string& file);
@@ -90,9 +90,8 @@ namespace librealsense
         void invoke_devices_changed_callbacks( std::vector<rs2_device_info> & rs2_devices_info_removed,
                                                std::vector<rs2_device_info> & rs2_devices_info_added );
         void raise_devices_changed(const std::vector<rs2_device_info>& removed, const std::vector<rs2_device_info>& added);
-        void start_device_watcher();
+
         std::shared_ptr<platform::backend> _backend;
-        std::shared_ptr<platform::device_watcher> _device_watcher;
 
         std::map<std::string, std::weak_ptr<device_info>> _playback_devices;
         std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
@@ -104,6 +103,7 @@ namespace librealsense
 #endif
 
         nlohmann::json _settings; // Save operation settings
+        backend_device_factory _backend_device_factory;
 
         devices_changed_callback_ptr _devices_changed_callback;
         std::map<int, std::weak_ptr<const stream_interface>> _streams;
