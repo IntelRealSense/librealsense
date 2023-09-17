@@ -81,12 +81,6 @@ bool contains( librealsense::platform::backend_device_group const & first_data,
             == second_data.hid_devices.end() )
             return false;
     }
-    for( auto && pd : first_data.playback_devices )
-    {
-        if( std::find( second_data.playback_devices.begin(), second_data.playback_devices.end(), pd )
-            == second_data.playback_devices.end() )
-            return false;
-    }
     return true;
 }
 
@@ -138,8 +132,7 @@ namespace librealsense
         : context()
     {
         _settings = settings;
-
-        _backend = platform::create_backend();  // standard type
+        _backend = platform::create_backend();
 
         _device_watcher = _backend->create_device_watcher();
         assert( _device_watcher->is_stopped() );

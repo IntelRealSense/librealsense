@@ -8,7 +8,6 @@
 
 #include "hid-device-info.h"
 #include "uvc-device-info.h"
-#include "playback-device-info.h"
 
 #include <memory>
 #include <functional>
@@ -79,20 +78,13 @@ struct backend_device_group
     {
     }
 
-    backend_device_group( const std::vector< playback_device_info > & playback_devices )
-        : playback_devices( playback_devices )
-    {
-    }
-
     std::vector< uvc_device_info > uvc_devices;
     std::vector< usb_device_info > usb_devices;
     std::vector< hid_device_info > hid_devices;
-    std::vector< playback_device_info > playback_devices;
 
     bool operator==( const backend_device_group & other ) const
     {
-        return ! list_changed( uvc_devices, other.uvc_devices ) && ! list_changed( hid_devices, other.hid_devices )
-            && ! list_changed( playback_devices, other.playback_devices );
+        return ! list_changed( uvc_devices, other.uvc_devices ) && ! list_changed( hid_devices, other.hid_devices );
     }
 
     operator std::string() const
@@ -116,13 +108,6 @@ struct backend_device_group
         for( auto hid : hid_devices )
         {
             s += hid;
-            s += "\n\n";
-        }
-
-        s += playback_devices.size() > 0 ? "playback devices: \n" : "";
-        for( auto playback_device : playback_devices )
-        {
-            s += playback_device;
             s += "\n\n";
         }
 
