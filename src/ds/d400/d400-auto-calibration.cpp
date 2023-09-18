@@ -1552,8 +1552,8 @@ namespace librealsense
 
     std::shared_ptr<ds_advanced_mode_base> auto_calibrated::change_preset()
     {
-        preset old_preset_values;
-        rs2_rs400_visual_preset old_preset;
+        preset old_preset_values{};
+        rs2_rs400_visual_preset old_preset = { RS2_RS400_VISUAL_PRESET_DEFAULT };
 
         auto advanced_mode = dynamic_cast<ds_advanced_mode_base*>(this);
         if (advanced_mode)
@@ -1882,7 +1882,7 @@ namespace librealsense
                     fy = intrin.fy;
                 }
 
-                std::array<float, 4> rec_sides_cur;
+                std::array< float, 4 > rec_sides_cur{};
                 rs2_extract_target_dimensions(f, RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES, rec_sides_cur.data(), 4, &e);
                 if (e)
                     throw std::runtime_error("Failed to extract target information\nfrom the captured frames!");

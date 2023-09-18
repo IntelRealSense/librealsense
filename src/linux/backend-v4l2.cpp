@@ -862,7 +862,7 @@ namespace librealsense
                     // Get DFU node for MIPI camera
                     vfd = open(dfu_device_path.c_str(), O_RDONLY | O_NONBLOCK);
 
-                    if (vfd > 0) {
+                    if (vfd >= 0) {
                         ::close(vfd); // file exists, close file and continue to assign it
                         info.dfu_device_path = dfu_device_path;
                     }
