@@ -18,6 +18,7 @@
 #include <Windows.h>
 #include <dbt.h>
 #include <cctype> // std::tolower
+#include <rsutils/time/timer.h>
 
 namespace {
 
@@ -184,10 +185,9 @@ namespace librealsense
         {
         public:
             win_event_device_watcher(const backend * backend)
+                : _last( backend->query_uvc_devices(), backend->query_usb_devices(), backend->query_hid_devices() )
+                , _backend( backend )
             {
-                _data._backend = backend;
-                _data._stopped = true;
-                _data._last = backend_device_group(backend->query_uvc_devices(), backend->query_usb_devices(), backend->query_hid_devices());
             }
             ~win_event_device_watcher() { stop(); }
 
@@ -199,7 +199,7 @@ namespace librealsense
                         "Cannot start a running device_watcher" );
                 LOG_DEBUG( "starting win_event_device_watcher" );
                 _data._stopped = false;
-                _data._callback = std::move(callback);
+                _callback = std::move(callback);
                 _thread = std::thread([this]() { run(); });
             }
 
@@ -222,13 +222,15 @@ namespace librealsense
         private:
             std::thread _thread;
             std::mutex _m;
+            backend_device_group _last;
+            device_changed_callback _callback;
+            const backend * const _backend;
 
             struct extra_data {
-                const backend * _backend;
-                backend_device_group _last;
-                device_changed_callback _callback;
+                rsutils::time::timer _timer{ std::chrono::milliseconds( 100 ) };
 
-                bool _stopped;
+                bool _stopped = true;
+                bool _changed = false;
                 HWND hWnd;
                 HDEVNOTIFY hdevnotifyHW, hdevnotifyUVC, hdevnotify_sensor, hdevnotifyUSB;
             } _data;
@@ -254,11 +256,28 @@ namespace librealsense
                 {
                     if (PeekMessage(&msg, _data.hWnd, 0, 0, PM_REMOVE))
                     {
-                            TranslateMessage(&msg);
-                            DispatchMessage(&msg);
+                        TranslateMessage( &msg );
+                        DispatchMessage( &msg );
                     }
-                    else  // Yield CPU resources, as this is required for connect/disconnect events only
-                        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                    else
+                    {
+                        if( _data._changed && _data._timer.has_expired() )
+                        {
+                            platform::backend_device_group curr( _backend->query_uvc_devices(),
+                                                                 _backend->query_usb_devices(),
+                                                                 _backend->query_hid_devices() );
+                            if( list_changed( _last.uvc_devices, curr.uvc_devices )
+                                || list_changed( _last.usb_devices, curr.usb_devices )
+                                || list_changed( _last.hid_devices, curr.hid_devices ) )
+                            {
+                                _callback( _last, curr );
+                                _last = curr;
+                            }
+                            _data._changed = false;
+                        }
+                        // Yield CPU resources, as this is required for connect/disconnect events only
+                        std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+                    }
                 }
 
                 UnregisterDeviceNotification(_data.hdevnotifyHW);
@@ -297,11 +316,8 @@ namespace librealsense
                             break;
                         auto data = reinterpret_cast< extra_data * >(
                             GetWindowLongPtr( hWnd, GWLP_USERDATA ) );
-                        backend_device_group next( data->_backend->query_uvc_devices(),
-                                                   data->_backend->query_usb_devices(),
-                                                   data->_backend->query_hid_devices() );
-                        /*if (data->_last != next)*/ data->_callback( data->_last, next );
-                        data->_last = next;
+                        data->_changed = true;
+                        data->_timer.start();
                         break;
                     }
                     case DBT_DEVICEREMOVECOMPLETE: {
@@ -311,30 +327,8 @@ namespace librealsense
                         if( p_hdr->dbch_devicetype != DBT_DEVTYP_DEVICEINTERFACE )
                             break;
                         auto data = reinterpret_cast<extra_data*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
-                        auto next = data->_last;
-                        std::wstring temp = reinterpret_cast<DEV_BROADCAST_DEVICEINTERFACE*>(lParam)->dbcc_name;
-                        std::string path;
-                        path.reserve(temp.length());
-                        for (wchar_t ch : temp) {
-                            if (ch != L'{') path.push_back(std::tolower(((char*)&ch)[0]));
-                            else break;
-                        }
-
-                        next.uvc_devices.erase(std::remove_if(next.uvc_devices.begin(), next.uvc_devices.end(), [&path](const uvc_device_info& info)
-                        { return info.device_path.substr(0, info.device_path.find_first_of("{")) == path; }), next.uvc_devices.end());
-                        //                            next.usb_devices.erase(std::remove_if(next.usb_devices.begin(), next.usb_devices.end(), [&path](const usb_device_info& info)
-                        //                            { return info.device_path.substr(0, info.device_path.find_first_of("{")) == path; }), next.usb_devices.end());
-                        next.usb_devices = data->_backend->query_usb_devices();
-                        next.hid_devices.erase(std::remove_if(next.hid_devices.begin(), next.hid_devices.end(), [&path](const hid_device_info& info)
-                        {
-                            auto sub = info.device_path.substr(0, info.device_path.find_first_of("{"));
-                            std::transform(sub.begin(), sub.end(), sub.begin(), ::tolower);
-                            return sub == path;
-
-                        }), next.hid_devices.end());
-
-                        /*if (data->_last != next)*/ data->_callback(data->_last, next);
-                        data->_last = next;
+                        data->_changed = true;
+                        data->_timer.start();
                     }
                         break;
                     }
