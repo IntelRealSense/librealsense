@@ -86,7 +86,7 @@ public:
     {
         if( auto vid_a = dynamic_cast< const video_stream_profile_interface * >( a ) )
         {
-            for( auto request : others )
+            for( auto & request : others )
             {
                 if( a->get_framerate() != 0 && request.fps != 0 && ( a->get_framerate() != request.fps ) )
                     return true;
