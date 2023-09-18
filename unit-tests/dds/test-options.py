@@ -29,7 +29,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     with test.closure( "Test no options" ):
         remote.run( 'test_no_options()' )
-        device = dds.device( participant, participant.create_guid(), info )
+        device = dds.device( participant, info )
         device.wait_until_ready()
 
         options = device.options();
@@ -50,7 +50,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     with test.closure( "Test device options discovery" ):
         test_values = list(range(17))
         remote.run( 'test_device_options_discovery(' + str( test_values ) + ')' )
-        device = dds.device( participant, participant.create_guid(), info )
+        device = dds.device( participant, info )
         device.wait_until_ready()
 
         options = device.options();
@@ -73,7 +73,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     with test.closure( "Test stream options discovery" ):
         #send values to be checked later as string parameter to the function
         remote.run( 'test_stream_options_discovery(1, 0, 123456, 123, 12, "opt3 of s1")' )
-        device = dds.device( participant, participant.create_guid(), info )
+        device = dds.device( participant, info )
         device.wait_until_ready()
         test.check_equal( device.n_streams(), 1 )
         for stream in device.streams():
@@ -87,12 +87,13 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             test.check_equal( options[2].get_description(), "opt3 of s1" )
 
         option = options[1]
-        test.check_equal( option.get_value(), 0. )  # not default!?
+        test.check_equal( option.get_value(), option.get_range().default_value )
         option.set_value( 1. )  # only on client!
-        test.check_equal( device.query_option_value( option ), 0. )
-        test.check_equal( option.get_value(), 0. )  # from server
+        test.check_equal( option.get_value(), 1. )
+        test.check_equal( device.query_option_value( option ), option.get_range().default_value )  # from server
+        test.check_equal( option.get_value(), option.get_range().default_value )  # client got updated!
 
-        device.set_option_value( option, 12. )
+        device.set_option_value( option, 12. )  # updates server & client
         test.check_equal( option.get_value(), 12. )
 
         remote.run( 'close_server()' )
@@ -103,7 +104,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     with test.closure( "Test device and multiple stream options discovery" ):
         test_values = list(range(5))
         remote.run( 'test_device_and_multiple_stream_options_discovery(' + str( test_values ) + ', ' + str( test_values ) + ')' )
-        device = dds.device( participant, participant.create_guid(), info )
+        device = dds.device( participant, info )
         device.wait_until_ready()
 
         options = device.options();

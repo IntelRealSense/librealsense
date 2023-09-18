@@ -107,7 +107,7 @@ namespace librealsense
         bool _ts_is_ready;
     };
 
-    class global_time_interface : public recordable<global_time_interface>
+    class global_time_interface
     {
     protected:
         std::shared_ptr<time_diff_keeper> _tf_keeper;
@@ -117,9 +117,8 @@ namespace librealsense
         ~global_time_interface() { _tf_keeper.reset(); }
         void enable_time_diff_keeper(bool is_enable);
         virtual double get_device_time_ms() = 0; // Returns time in miliseconds.
-        virtual void create_snapshot(std::shared_ptr<global_time_interface>& snapshot) const override {}
-        virtual void enable_recording(std::function<void(const global_time_interface&)> record_action) override {}
     };
+
     MAP_EXTENSION(RS2_EXTENSION_GLOBAL_TIMER, librealsense::global_time_interface);
 
 }

@@ -88,7 +88,7 @@ namespace librealsense
         auto active_safety_preset = std::make_shared<uvc_xu_option<uint16_t>>(
             *raw_safety_sensor,
             safety_xu,
-            ds::xu_id::SAFETY_PRESET_ACTIVE_INDEX,
+            xu_id::SAFETY_PRESET_ACTIVE_INDEX,
             "Safety Preset Active Index");
 
         safety_ep->register_option(RS2_OPTION_SAFETY_PRESET_ACTIVE_INDEX, active_safety_preset);
@@ -97,7 +97,7 @@ namespace librealsense
         auto safety_camera_oper_mode = std::make_shared< uvc_xu_option< uint16_t > >(
         *raw_safety_sensor,
         safety_xu,
-        ds::xu_id::SAFETY_CAMERA_OPER_MODE,
+        xu_id::SAFETY_CAMERA_OPER_MODE,
         "Safety camera operational mode",
         std::map< float, std::string >{ { float( RS2_SAFETY_MODE_RUN ),     "Run" },
                                         { float( RS2_SAFETY_MODE_STANDBY ), "Standby" },

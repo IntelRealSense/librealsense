@@ -50,7 +50,7 @@ class dds_device::impl
 
 public:
     topics::device_info const _info;
-    dds_guid const _guid;
+    dds_guid _server_guid;
     std::shared_ptr< dds_participant > const _participant;
     std::shared_ptr< dds_subscriber > _subscriber;
 
@@ -70,8 +70,9 @@ public:
     extrinsics_map _extrinsics_map; // <from stream, to stream> to extrinsics
 
     impl( std::shared_ptr< dds_participant > const & participant,
-          dds_guid const & guid,
           topics::device_info const & info );
+
+    dds_guid const & guid() const;
 
     void wait_until_ready( size_t timeout_ms );
     bool is_ready() const { return state_t::READY == _state; }
@@ -91,26 +92,33 @@ public:
         on_device_log_callback;
     void on_device_log( on_device_log_callback cb ) { _on_device_log = cb; }
 
+    typedef std::function< bool( std::string const &, nlohmann::json const & ) > on_notification_callback;
+    void on_notification( on_notification_callback cb ) { _on_notification = cb; }
+
 private:
     void create_notifications_reader();
     void create_metadata_reader();
     void create_control_writer();
 
     // notification handlers
-    void on_option_value( nlohmann::json const & );
-    void on_known_notification( nlohmann::json const & );
-    void on_log( nlohmann::json const & );
-    void on_device_header( nlohmann::json const & );
-    void on_device_options( nlohmann::json const & );
-    void on_stream_header( nlohmann::json const & );
-    void on_stream_options( nlohmann::json const & );
+    void on_option_value( nlohmann::json const &, eprosima::fastdds::dds::SampleInfo const & );
+    void on_known_notification( nlohmann::json const &, eprosima::fastdds::dds::SampleInfo const & );
+    void on_log( nlohmann::json const &, eprosima::fastdds::dds::SampleInfo const & );
+    void on_device_header( nlohmann::json const &, eprosima::fastdds::dds::SampleInfo const & );
+    void on_device_options( nlohmann::json const &, eprosima::fastdds::dds::SampleInfo const & );
+    void on_stream_header( nlohmann::json const &, eprosima::fastdds::dds::SampleInfo const & );
+    void on_stream_options( nlohmann::json const &, eprosima::fastdds::dds::SampleInfo const & );
 
-    typedef std::map< std::string, void ( dds_device::impl::* )( nlohmann::json const & ) > notification_handlers;
+    typedef std::map< std::string,
+                      void ( dds_device::impl::* )( nlohmann::json const &,
+                                                    eprosima::fastdds::dds::SampleInfo const & ) >
+        notification_handlers;
     static notification_handlers const _notification_handlers;
-    void handle_notification( nlohmann::json const & );
+    void handle_notification( nlohmann::json const &, eprosima::fastdds::dds::SampleInfo const & );
 
-    on_metadata_available_callback _on_metadata_available = nullptr;
-    on_device_log_callback _on_device_log = nullptr;
+    on_metadata_available_callback _on_metadata_available;
+    on_device_log_callback _on_device_log;
+    on_notification_callback _on_notification;
 };
 
 

@@ -40,6 +40,8 @@ struct guid
     uint8_t data4[8];
 };
 
+std::ostream & operator<<( std::ostream &, guid const & );
+
 // subdevice and node fields are assigned by Host driver; unit and GUID are hard-coded in camera firmware
 struct extension_unit
 {

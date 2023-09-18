@@ -17,7 +17,7 @@ public:
     std::string serial;
     std::string product_line;
     std::string topic_root;
-    bool locked = false;
+    bool locked = true;
 
     nlohmann::json to_json() const;
     static device_info from_json( nlohmann::json const & j );

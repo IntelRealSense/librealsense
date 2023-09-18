@@ -92,6 +92,22 @@ The `stopping` field has no set type at this time so any value will do. When it'
 No other fields are necessary with `stopping` -- the server is recognized by its GUID.
 
 
+# Recovery
+
+If the device is in "recovery mode" with limited functionality, this needs to be communicated to the client. The only functionality enabled in this mode is device updates.
+
+```JSON
+{
+  "name": "Intel RealSense D405",
+  "serial": "123622270732",
+  "topic-root": "realsense/D405_123622270732",
+  "recovery": true
+}
+```
+
+The `control` and `notification` topics will exist under the topic-root, but will only accept update controls and replies, as discussed elsewhere.
+
+
 # Topic Root
 
 This points to the topic used as the device root. This is how to access the device; without it, we're just guessing.

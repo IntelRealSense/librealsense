@@ -2,6 +2,7 @@
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
+#test:retries:gha 2
 
 # We disable under Linux for now, pending feedback from FastDDS team:
 # Having two participants in the same process ("client" and "librs" below) usually works, but in this case the former
@@ -34,7 +35,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
 
 
     # set up the client device and keep all its streams - this is connected directly and we can get notifications on it!
-    device_direct = dds.device( participant, participant.create_guid(), d435i.device_info )
+    device_direct = dds.device( participant, d435i.device_info )
     device_direct.wait_until_ready()
     test.check( device_direct.is_ready(), on_fail=test.ABORT )
     for stream_direct in device_direct.streams():

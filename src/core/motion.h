@@ -23,7 +23,7 @@ namespace librealsense
 
     MAP_EXTENSION(RS2_EXTENSION_POSE_PROFILE, librealsense::pose_stream_profile_interface);
 
-    class pose_sensor_interface : public recordable<pose_sensor_interface>
+    class pose_sensor_interface
     {
     public:
         virtual bool export_relocalization_map(std::vector<uint8_t>& lmap_buf) const  = 0;
@@ -35,7 +35,7 @@ namespace librealsense
     };
     MAP_EXTENSION(RS2_EXTENSION_POSE_SENSOR, librealsense::pose_sensor_interface);
 
-    class wheel_odometry_interface : public recordable<wheel_odometry_interface>
+    class wheel_odometry_interface
     {
     public:
         virtual bool load_wheel_odometery_config(const std::vector<uint8_t>& odometry_config_buf) const = 0;

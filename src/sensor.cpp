@@ -718,26 +718,6 @@ void log_callback_end( uint32_t fps,
         return _raw_sensor->is_opened();
     }
 
-    void motion_sensor::create_snapshot(std::shared_ptr<motion_sensor>& snapshot) const
-    {
-        snapshot = std::make_shared<motion_sensor_snapshot>();
-    }
-
-    void fisheye_sensor::create_snapshot(std::shared_ptr<fisheye_sensor>& snapshot) const
-    {
-        snapshot = std::make_shared<fisheye_sensor_snapshot>();
-    }
-
-    void safety_sensor::create_snapshot(std::shared_ptr<safety_sensor>& snapshot) const
-    {
-        snapshot = std::make_shared<safety_sensor_snapshot>();
-    }
-
-    void depth_mapping_sensor::create_snapshot(std::shared_ptr<depth_mapping_sensor>& snapshot) const
-    {
-        snapshot = std::make_shared<depth_mapping_sensor_snapshot>();
-    }
-
     format_conversion sensor_base::get_format_conversion() const
     {
         return _owner->get_format_conversion();

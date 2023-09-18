@@ -31,14 +31,21 @@ Device info:
 
 |Flag   |Description   |
 |---|---|
-|`-s`|Generate a one-line info for each connected device|
-|`-S`|Extends `-s` by providing a short summary per device|
-|`-o`|List supported device controls, options and streaming modes|
-|`-c`|Provide calibration (Intrinsic/Extrinsic) and streaming modes information|
-|`-p`|Enumerate streams contained in ROSBag record file. Usage `-p <rosbag_full_path_name>`.|
+|`-s`,`--short`|Generate a one-line info for each connected device|
+|`-S`,`--compact`|Extends `-s` by providing a short summary per device|
+|`-o`,`--option`|List supported device controls, options and streaming modes|
+|`-c`,`--calib_data`|Provide calibration (Intrinsic/Extrinsic) and streaming modes information|
+|`-p <path>`,`--playback_device <path>`|Enumerate streams contained in ROSBag record file|
+|`-d`,`--defaults`|Show the default streams configuration|
+|`--dds-domain <0-232>`|Set the DDS domain ID (default to 0)|
+|`-v`,`--verbose`|Show extra information|
+|`--debug`|Turn on LibRS debug logs|
+|`--`,`--ignore_rest`|Ignores the rest of the labeled arguments following this flag|
+|`--format <raw/basic/FULL>`|Choose which 'format-conversion' to use|
+|`--sw-only`|Show only software devices: playback, DDS, etc. -- but not USB/HID/etc.|
 | None| The default mode. Equivalent to `-S` plus the list of all the supported streaming profiles|
 
-The options `-o`, `-c` and `-p` are additive and can be combined, e.g. call 
+The options `-o`, `-c` and `-p` are additive and can be combined, e.g. call
 `rs-enumerate-devices -o -c -p rosbag.rec` to print the camera info, streaming modes,  supported options and the calibration data both for the live cameras and the prerecorded `rosbag.rec` file.
 
 The options `-S`, `-s` are restrictive and therefore incompatible with `-o` and `-c`,

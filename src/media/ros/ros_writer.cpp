@@ -425,14 +425,6 @@ namespace librealsense
             }
             break;
         }
-        case RS2_EXTENSION_DEBUG:
-            break;
-            //case RS2_EXTENSION_OPTION:
-            //{
-            //    auto option = SnapshotAs<RS2_EXTENSION_OPTION>(snapshot);
-            //    write_sensor_option({ device_id, sensor_id }, timestamp, *option);
-            //    break;
-            //}
         case RS2_EXTENSION_OPTIONS:
         {
             auto options = SnapshotAs<RS2_EXTENSION_OPTIONS>(snapshot);
@@ -440,16 +432,6 @@ namespace librealsense
             break;
         }
 
-        case RS2_EXTENSION_VIDEO:
-        case RS2_EXTENSION_ROI:
-        case RS2_EXTENSION_DEPTH_SENSOR:
-        case RS2_EXTENSION_COLOR_SENSOR:
-        case RS2_EXTENSION_MOTION_SENSOR:
-        case RS2_EXTENSION_FISHEYE_SENSOR:
-        case RS2_EXTENSION_SAFETY_SENSOR:
-        case RS2_EXTENSION_DEPTH_MAPPING_SENSOR:
-        case RS2_EXTENSION_DEPTH_STEREO_SENSOR:
-            break;
         case RS2_EXTENSION_VIDEO_PROFILE:
         {
             auto profile = SnapshotAs<RS2_EXTENSION_VIDEO_PROFILE>(snapshot);

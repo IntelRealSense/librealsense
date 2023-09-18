@@ -11,6 +11,7 @@
 #include <realdds/dds-trinsics.h>
 
 #include <realdds/topics/device-info-msg.h>
+#include <realdds/topics/flexible-msg.h>
 
 #include <src/stream.h>
 #include <src/environment.h>
@@ -474,6 +475,18 @@ void dds_device_proxy::tag_default_profile_of_stream(
 void dds_device_proxy::tag_profiles( stream_profiles profiles ) const
 {
     //Do nothing. PROFILE_TAG_DEFAULT is already added in tag_default_profile_of_stream.
+}
+
+
+void dds_device_proxy::hardware_reset()
+{
+    nlohmann::json control = nlohmann::json::object( { { "id", "hw-reset" } } );
+    nlohmann::json reply;
+    _dds_dev->send_control( control, &reply );
+    std::string default_status( "OK", 2 );
+    if( rsutils::json::get( reply, "status", default_status ) != default_status )
+        throw std::runtime_error( "Failed to reset: "
+                                  + rsutils::json::get( reply, "status", std::string( "unknown reason" ) ) );
 }
 
 

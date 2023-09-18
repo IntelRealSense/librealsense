@@ -22,7 +22,7 @@ color_stream.set_intrinsics( d435i.color_stream_intrinsics() )
 device_server.init( [color_stream], [], {} )
 
 # set up the client device and keep all its streams
-device = dds.device( participant, participant.create_guid(), d435i.device_info )
+device = dds.device( participant, d435i.device_info )
 device.wait_until_ready()  # this will throw if something's wrong
 test.check( device.is_ready() )
 

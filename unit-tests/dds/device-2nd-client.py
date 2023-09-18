@@ -18,7 +18,7 @@ info.topic_root = "realdds/device/topic-root"
 
 def test_second_device():
     global device
-    device = dds.device( participant, participant.create_guid(), info )
+    device = dds.device( participant, info )
     device.wait_until_ready()  # If no device is available before timeout, this will throw
 
 def close_device():

@@ -2,11 +2,18 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include <map>
 #include <librealsense2/h/rs_option.h>
 #include "extension.h"
-#include "../types.h"
+#include <src/basics.h>
+#include "enum-helpers.h"
+#include <src/librealsense-exception.h>
+
 #include <rsutils/string/from.h>
+#include <map>
+#include <vector>
+#include <functional>
+#include <memory>
+
 
 namespace librealsense
 {

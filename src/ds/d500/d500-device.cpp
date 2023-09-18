@@ -312,26 +312,6 @@ namespace librealsense
 
         float get_stereo_baseline_mm() const override { return _owner->get_stereo_baseline_mm(); }
 
-        void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const override
-        {
-            snapshot = std::make_shared<depth_sensor_snapshot>(get_depth_scale());
-        }
-
-        void create_snapshot(std::shared_ptr<depth_stereo_sensor>& snapshot) const override
-        {
-            snapshot = std::make_shared<depth_stereo_sensor_snapshot>(get_depth_scale(), get_stereo_baseline_mm());
-        }
-
-        void enable_recording(std::function<void(const depth_sensor&)> recording_function) override
-        {
-            //does not change over time
-        }
-
-        void enable_recording(std::function<void(const depth_stereo_sensor&)> recording_function) override
-        {
-            //does not change over time
-        }
-
         float get_preset_max_value() const override
         {
             return static_cast<float>(RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY);
@@ -595,7 +575,7 @@ namespace librealsense
             //auto global_shutter_mask = ds_caps::CAP_GLOBAL_SHUTTER;
             auto d500_depth = As<d500_depth_sensor, synthetic_sensor>(&get_depth_sensor());
             d500_depth->init_hdr_config(exposure_range, gain_range);
-            auto&& hdr_cfg = d500_depth->get_hdr_config();
+            auto hdr_cfg = d500_depth->get_hdr_config();
 
             // values from 4 to 14 - for internal use
             // value 15 - saved for emiter on off subpreset
@@ -807,15 +787,6 @@ namespace librealsense
 
         if (usb_modality)
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
-    }
-
-    void d500_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const
-    {
-        //TODO: Implement
-    }
-    void d500_device::enable_recording(std::function<void(const debug_interface&)> record_action)
-    {
-        //TODO: Implement
     }
 
     platform::usb_spec d500_device::get_usb_spec() const

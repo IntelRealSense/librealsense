@@ -1,18 +1,13 @@
-# Windows 8.1 & Windows 10 Installation
+# Windows 10 & Windows 11 Installation
 
 **Note:** Due to the USB 3.0 translation layer between native hardware and virtual machine, the librealsense team does not recommend or support installation in a VM.
 
-librealsense shall be built on Windows using [CMake v3.8+](https://cmake.org/download/) and Visual Studio 2015 / 2017: 
-(MSVC2013 and older are not fully compatible with the C++11 feature-set).
-<a name="cmake_snapshot_win">
-   ![Windows CMake](./img/windows_cmake.png)
-</a>
-![link text][Win_cmake_image]
+librealsense shall be built on Windows using [CMake v3.8+](https://cmake.org/download/) and Visual Studio 2017 / 2019 / 2022: 
+(MSVC2015 and older are not fully compatible with the C++14 feature-set).
+
+![Windows CMake](./img/windows_cmake.png)
 
 Don't forget to check `BUILD_EXAMPLES` if you wish to use librealsense samples.
-
-## Windows 8.1:
-When working on Windows 8.1, make sure you have [KB3075872](https://support.microsoft.com/en-us/kb/3075872) and [KB2919355](https://support.microsoft.com/en-us/kb/2919355) installed. These patches are addressing issues specific to 8.1 video drivers, that were later resolved in Windows 10.
 
 ## Enabling metadata on Windows
 Metadata attributes is an advanced capability provided by librealsense.
@@ -25,14 +20,16 @@ Prerequisites:
 
 #### Installation:
 - Verify OS version:
- - Run `winver` command from desktop/terminal - "Version 1607" or later is expected. 
+ - Run `winver` command from desktop/terminal - "Windows 10 (Build 15063 or later, 17763+ recommended) or Windows 11" is expected.
+
  ![winver](./img/winver_Win10.png)
 
 - Install WinSDK ver10:
  - Navigate to "Control Panel" -> "Programs and Features"
  - Double-click on "Microsoft Visual Studio" and select "Modify"
  - Check that SDK version 10.0.10586 or later is present, install if needed:
- ![winsdk](./img/WinSDK_10.0.10586.png)
+
+ - ![winsdk](./img/WinSDK_10.0.10586.png)
 
  ##### Update Registry:
   - Windows OS requires a dedicated registry entry to be present for each unique video device in order to provide metadata. 
@@ -92,3 +89,9 @@ When set, the compiler will check the target WinSDK version, and abort the build
 
 **Note** In case of multiple WinSDK version installed, CMake automatically selects the latest version of SDK. In some cases, however, the automatic selection may fail. Then you need to manually retarget the solution for the proper WinSDK version: 
 ![win_retarget_platform](./img/win_retarget_platform.png)
+
+## Troubleshooting Issues
+
+| Error                                   | Cause                                      | Correction Steps                                                                                                            |
+|-----------------------------------------|--------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| The camera is not recognized by the SDK | The SDK does not have access to the camera | Make sure that "Allow desktop apps to access your camera" setting is set to on in Windows OS (Setting -> Privacy -> Camera) |
