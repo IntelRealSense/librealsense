@@ -2,6 +2,7 @@
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 # test:device each(D400*)
+# test:device each(D500*) 
 
 
 import pyrealsense2 as rs
@@ -26,8 +27,11 @@ product_line = dev.get_info(rs.camera_info.product_line)
 if product_line == "D400":
     max_delay_for_depth_frame = 2
     max_delay_for_color_frame = 2
+elif product_line == "D500":
+    max_delay_for_depth_frame = 2
+    max_delay_for_color_frame = 2
 else:
-    log.f("This test support only D400 devices")
+    log.f("Not supported product line " + product_line)
 
 
 def time_to_first_frame(config):

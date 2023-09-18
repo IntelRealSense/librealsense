@@ -3,6 +3,8 @@
 import time
 
 # test:device each(D400*)
+# test:device each(D500*)
+
 
 import pyrealsense2 as rs
 from rspy import test, log
