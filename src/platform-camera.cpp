@@ -139,11 +139,11 @@ std::vector< tagged_profile > platform_camera::get_profiles_tags() const
 }
 
 
-/*static*/ std::vector< std::shared_ptr< device_info > >
+/*static*/ std::vector< std::shared_ptr< platform_camera_info > >
 platform_camera_info::pick_uvc_devices( const std::shared_ptr< context > & ctx,
                                         const std::vector< platform::uvc_device_info > & uvc_devices )
 {
-    std::vector< std::shared_ptr< device_info > > list;
+    std::vector< std::shared_ptr< platform_camera_info > > list;
     auto groups = group_devices_by_unique_id( uvc_devices );
 
     for( auto && g : groups )
