@@ -732,6 +732,9 @@ namespace librealsense
         if (!composite)
         {
             std::vector<frame_holder> match;
+            std::stringstream frame_string_for_logging;
+            frame_string_for_logging << f; // Saving frame holder string before moving frame
+
             match.push_back(std::move(f));
             frame_holder composite = env.source->allocate_composite_frame(std::move(match));
             if (composite.frame)
@@ -743,7 +746,7 @@ namespace librealsense
             else
             {
                 LOG_ERROR( "composite_identity_matcher: "
-                           << _name << " " << f
+                           << _name << " " << frame_string_for_logging.str()
                            << " faild to create composite_frame, user callback will not be called" );
             }
         }
