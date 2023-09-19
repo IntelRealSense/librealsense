@@ -22,7 +22,7 @@ template< class T >
 bool list_changed(
     const std::vector< T > & list1,
     const std::vector< T > & list2,
-    std::function< bool( T, T ) > equal = []( T first, T second ) { return first == second; } )
+    std::function< bool( T const &, T const & ) > equal = []( T const & first, T const & second ) { return first == second; } )
 {
     if( list1.size() != list2.size() )
         return true;
