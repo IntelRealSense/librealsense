@@ -265,7 +265,7 @@ namespace librealsense
         rs2_safety_preset_with_header data;
         uint16_t version = ((uint16_t)0x02 << 8) | 0x01;  // major=0x02, minor=0x01 --> ver = major.minor
         data.header = { version, static_cast<uint16_t>(ds::d500_calibration_table_id::safety_preset_id), 
-            sizeof(rs2_safety_preset_with_header), computed_crc32 };
+            sizeof(rs2_safety_preset), computed_crc32 };
         data.safety_preset = sp;
         auto data_as_ptr = reinterpret_cast<const uint8_t*>(&data);
 
@@ -321,7 +321,7 @@ namespace librealsense
         uint16_t version = ((uint16_t)0x01 << 8) | 0x00;  // major=0x01, minor=0x00 --> ver = major.minor
         uint32_t calib_version = 0;  // ignoring this field, as requested by sw architect
         sic_with_header.header = { version, static_cast<uint16_t>(ds::d500_calibration_table_id::safety_interface_cfg_id),
-            sizeof(safety_interface_config_with_header), calib_version, computed_crc32 };
+            sizeof(safety_interface_config), calib_version, computed_crc32 };
         auto data_as_ptr = reinterpret_cast<const uint8_t*>(&sic_with_header);
 
         // prepare command
