@@ -169,7 +169,7 @@ Some auxillary functionalities might be affected. Please report this message if 
             return false;
     }
 
-    const char* file_dialog_open(file_dialog_mode flags, const char* filters, 
+    const char* file_dialog_open(file_dialog_mode flags, const char* filters,
         const char* default_path, const char* default_name)
     {
         std::string def = "";
@@ -179,14 +179,13 @@ Some auxillary functionalities might be affected. Please report this message if 
         const char* def_ptr = nullptr;
         if (default_name || default_path)
             def_ptr = def.c_str();
-        int num_filters = filters == nullptr ? 0 : 1;
 
-        char const * const * aFilterPatterns = nullptr;
-        char const * aSingleFilterDescription = nullptr;
+        char const* const* aFilterPatterns = nullptr;
+        char const* aSingleFilterDescription = nullptr;
 
         std::vector<std::string> filters_split;
 
-        if (num_filters)
+        if (filters)
         {
             auto curr = filters;
             while (*curr != '\0')
@@ -197,22 +196,31 @@ Some auxillary functionalities might be affected. Please report this message if 
             }
         }
 
+        int filters_count = 0;
         std::vector<const char*> filter;
 
-        if (filters_split.size() == 2)
+        if (filters_split.size() >= 1)
         {
-            filter.push_back(filters_split[1].c_str());
-            aFilterPatterns = filter.data();
+            filters_count = filters_split.size() - 1;
+
+            // set description
             aSingleFilterDescription = filters_split[0].c_str();
+
+            // fill filter pattern with extensions
+            for (int i = 1; i < filters_split.size(); ++i)
+            {
+                filter.push_back(filters_split[i].c_str());
+            }
+            aFilterPatterns = filter.data();
         }
 
         if (flags == save_file)
         {
-            return tinyfd_saveFileDialog("Save File", def_ptr, num_filters, aFilterPatterns, aSingleFilterDescription);
+            return tinyfd_saveFileDialog("Save File", def_ptr, filters_count, aFilterPatterns, aSingleFilterDescription);
         }
         if (flags == open_file)
         {
-            return tinyfd_openFileDialog("Open File", def_ptr, num_filters, aFilterPatterns, aSingleFilterDescription, 0);
+            return tinyfd_openFileDialog("Open File", def_ptr, filters_count, aFilterPatterns, aSingleFilterDescription, 0);
         }
         return nullptr;
     }
