@@ -21,6 +21,7 @@ class context;
 namespace platform {
 class device_watcher;
 struct backend_device_group;
+class platform_device_info;
 }  // namespace platform
 
 
@@ -42,10 +43,8 @@ class backend_device_factory
     using callback = std::function< void( std::vector< rs2_device_info > & rs2_devices_info_removed,
                                           std::vector< rs2_device_info > & rs2_devices_info_added ) >;
 
-    callback const _callback;
-
 public:
-    backend_device_factory( context &, callback );
+    backend_device_factory( context &, callback && );
     ~backend_device_factory();
 
     // Query any subset of available devices and return them as device-info objects
@@ -54,8 +53,8 @@ public:
     std::vector< std::shared_ptr< device_info > > query_devices( unsigned mask ) const;
 
 private:
-    std::vector< std::shared_ptr< device_info > > create_devices_from_group( platform::backend_device_group,
-                                                                             int mask ) const;
+    std::vector< std::shared_ptr< platform::platform_device_info > >
+        create_devices_from_group( platform::backend_device_group, int mask ) const;
 };
 
 
