@@ -38,7 +38,6 @@ class backend_device_factory
 {
     context & _context;
     std::shared_ptr< platform::device_watcher > const _device_watcher;
-    unsigned const _device_mask;
 
     using callback = std::function< void( std::vector< rs2_device_info > & rs2_devices_info_removed,
                                           std::vector< rs2_device_info > & rs2_devices_info_added ) >;
@@ -48,14 +47,6 @@ class backend_device_factory
 public:
     backend_device_factory( context &, callback );
     ~backend_device_factory();
-
-    // The device-mask is specified in the context settings, and governs which devices will be matched by us
-    //
-    unsigned device_mask() const { return _device_mask; }
-
-    // Given the requested mask, returns the final mask when combined with the device-mask
-    //
-    unsigned calc_mask( unsigned requested_mask ) const;
 
     // Query any subset of available devices and return them as device-info objects
     // Devices will match both the requested mask and the device-mask from the context settings

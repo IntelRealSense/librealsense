@@ -42,9 +42,10 @@ using json = nlohmann::json;
 namespace librealsense
 {
     context::context( json const & settings )
-        : _devices_changed_callback( nullptr, []( rs2_devices_changed_callback * ) {} )
-        , _backend( platform::create_backend() )
+        : _backend( platform::create_backend() )
         , _settings( settings )
+        , _device_mask( rsutils::json::get< unsigned >( settings, "device-mask", RS2_PRODUCT_LINE_ANY ) )
+        , _devices_changed_callback( nullptr, []( rs2_devices_changed_callback * ) {} )
         , _backend_device_factory(
             *this,
             [this]( std::vector< rs2_device_info > & removed, std::vector< rs2_device_info > & added )
@@ -108,30 +109,25 @@ namespace librealsense
 #endif //BUILD_WITH_DDS
     }
 
-    static unsigned calc_mask( nlohmann::json const & settings, unsigned requested_mask, unsigned * p_device_mask = nullptr )
+
+    /*static*/ unsigned context::combine_device_masks( unsigned const requested_mask, unsigned const mask_in_settings )
     {
-        // The 'device-mask' in our settings can be used to disable certain device types from showing up in the context:
-        unsigned device_mask = RS2_PRODUCT_LINE_ANY;
         unsigned mask = requested_mask;
-        if( rsutils::json::get_ex( settings, "device-mask", &device_mask ) )
-        {
-            // The normal bits enable, so enable only those that are on
-            mask &= device_mask & ~RS2_PRODUCT_LINE_SW_ONLY;
-            // But the above turned off the SW-only bits, so turn them back on again
-            if( (device_mask & RS2_PRODUCT_LINE_SW_ONLY) || (requested_mask & RS2_PRODUCT_LINE_SW_ONLY) )
-                mask |= RS2_PRODUCT_LINE_SW_ONLY;
-        }
-        if( p_device_mask )
-            *p_device_mask = device_mask;
+        // The normal bits enable, so enable only those that are on
+        mask &= mask_in_settings & ~RS2_PRODUCT_LINE_SW_ONLY;
+        // But the above turned off the SW-only bits, so turn them back on again
+        if( (mask_in_settings & RS2_PRODUCT_LINE_SW_ONLY) || (requested_mask & RS2_PRODUCT_LINE_SW_ONLY) )
+            mask |= RS2_PRODUCT_LINE_SW_ONLY;
         return mask;
     }
+
 
     std::vector<std::shared_ptr<device_info>> context::query_devices( int requested_mask ) const
     {
         auto list = _backend_device_factory.query_devices( requested_mask );
         query_software_devices( list, requested_mask );
         LOG_INFO( "Found " << list.size() << " RealSense devices (0x" << std::hex << requested_mask << " requested & 0x"
-                           << _backend_device_factory.device_mask() << " from device-mask in settings)" << std::dec );
+                           << get_device_mask() << " from device-mask in settings)" << std::dec );
         for( auto & item : list )
             LOG_INFO( "... " << item->get_address() );
         return list;
@@ -140,7 +136,7 @@ namespace librealsense
 
     void context::query_software_devices( std::vector< std::shared_ptr< device_info > > & list, unsigned requested_mask ) const
     {
-        unsigned mask = _backend_device_factory.calc_mask( requested_mask );
+        unsigned mask = combine_device_masks( requested_mask, get_device_mask() );
 
         auto t = const_cast<context *>(this); // While generally a bad idea, we need to provide mutable reference to the devices
         // to allow them to modify context later on

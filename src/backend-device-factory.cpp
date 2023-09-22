@@ -90,7 +90,6 @@ namespace librealsense {
 
 backend_device_factory::backend_device_factory( context & ctx, callback cb )
     : _device_watcher( ctx.get_backend().create_device_watcher() )
-    , _device_mask( rsutils::json::get< unsigned >( ctx.get_settings(), "device-mask", RS2_PRODUCT_LINE_ANY ) )
     , _context( ctx )
     , _callback( cb )
 {
@@ -137,29 +136,17 @@ backend_device_factory::~backend_device_factory()
 }
 
 
-unsigned backend_device_factory::calc_mask( unsigned requested_mask ) const
-{
-    unsigned mask = requested_mask;
-    // The normal bits enable, so enable only those that are on
-    mask &= _device_mask & ~RS2_PRODUCT_LINE_SW_ONLY;
-    // But the above turned off the SW-only bits, so turn them back on again
-    if( ( _device_mask & RS2_PRODUCT_LINE_SW_ONLY ) || ( requested_mask & RS2_PRODUCT_LINE_SW_ONLY ) )
-        mask |= RS2_PRODUCT_LINE_SW_ONLY;
-    return mask;
-}
-
-
 std::vector< std::shared_ptr< device_info > > backend_device_factory::query_devices( unsigned requested_mask ) const
 {
-    platform::backend_device_group devices;
-    if( ! ( requested_mask & RS2_PRODUCT_LINE_SW_ONLY ) && ! ( _device_mask & RS2_PRODUCT_LINE_SW_ONLY ) )
-    {
-        auto & backend = _context.get_backend();
-        devices.uvc_devices = backend.query_uvc_devices();
-        devices.usb_devices = backend.query_usb_devices();
-        devices.hid_devices = backend.query_hid_devices();
-    }
-    return create_devices_from_group( devices, requested_mask );
+    if( (requested_mask & RS2_PRODUCT_LINE_SW_ONLY) || (_context.get_device_mask() & RS2_PRODUCT_LINE_SW_ONLY) )
+        return {};  // We don't carry any software devices
+
+    auto & backend = _context.get_backend();
+    platform::backend_device_group group( backend.query_uvc_devices(),
+                                          backend.query_usb_devices(),
+                                          backend.query_hid_devices() );
+    auto devices = create_devices_from_group( group, requested_mask );
+    return { devices.begin(), devices.end() };
 }
 
 
@@ -167,7 +154,7 @@ std::vector< std::shared_ptr< device_info > >
 backend_device_factory::create_devices_from_group( platform::backend_device_group devices, int requested_mask ) const
 {
     std::vector< std::shared_ptr< device_info > > list;
-    unsigned const mask = calc_mask( requested_mask );
+    unsigned const mask = context::combine_device_masks( requested_mask, _context.get_device_mask() );
 
     if( mask & RS2_PRODUCT_LINE_D400 && ! ( mask & RS2_PRODUCT_LINE_SW_ONLY ) )
     {

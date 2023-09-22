@@ -68,6 +68,18 @@ namespace librealsense
 
         ~context();
 
+        // The 'device-mask' is specified in the context settings, and governs which devices will be matched by us
+        //
+        unsigned get_device_mask() const { return _device_mask; }
+
+        // Given the requested RS2_PRODUCT_LINE mask, returns the final mask when combined with the device-mask field in
+        // settings.
+        // 
+        // E.g., if the device-mask specifies only D400 devices, and the user requests only SW devices, the result
+        // should be only SW D400 devices.
+        //
+        static unsigned combine_device_masks( unsigned requested_mask, unsigned mask_in_settings );
+
         std::vector<std::shared_ptr<device_info>> query_devices(int mask) const;
         const platform::backend& get_backend() const { return *_backend; }
 
@@ -101,6 +113,7 @@ namespace librealsense
 #endif
 
         nlohmann::json _settings; // Save operation settings
+        unsigned const _device_mask;
         backend_device_factory _backend_device_factory;
 
         devices_changed_callback_ptr _devices_changed_callback;
