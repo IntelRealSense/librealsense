@@ -149,8 +149,6 @@ namespace librealsense
         }
 #endif //BUILD_WITH_DDS
 
-        environment::get_instance().set_time_service(_backend->create_time_service());
-
         _device_watcher = _backend->create_device_watcher();
         assert(_device_watcher->is_stopped());
     }
@@ -162,8 +160,6 @@ namespace librealsense
         _settings = settings;
 
         _backend = platform::create_backend();  // standard type
-
-        environment::get_instance().set_time_service( _backend->create_time_service() );
 
         _device_watcher = _backend->create_device_watcher();
         assert( _device_watcher->is_stopped() );

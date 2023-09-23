@@ -2,6 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "environment.h"
+#include "core/time-service.h"
 
 namespace librealsense
 {
@@ -231,6 +232,13 @@ namespace librealsense
         }
 
         return nullptr;
+    }
+
+
+    environment::environment()
+        : _ts( std::make_shared< os_time_service >() )
+        , _stream_id( 0 )
+    {
     }
 
 
