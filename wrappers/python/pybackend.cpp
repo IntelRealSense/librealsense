@@ -388,8 +388,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("create_usb_device", &platform::backend::create_usb_device, "info"_a)
         .def("query_usb_devices", &platform::backend::query_usb_devices)
         .def("create_hid_device", &platform::backend::create_hid_device, "info"_a)
-        .def("query_hid_devices", &platform::backend::query_hid_devices)
-        .def("create_time_service", &platform::backend::create_time_service);
+        .def("query_hid_devices", &platform::backend::query_hid_devices);
 
     py::class_<platform::multi_pins_uvc_device, std::shared_ptr<platform::multi_pins_uvc_device>, platform::uvc_device> multi_pins_uvc_device(m, "multi_pins_uvc_device");
     multi_pins_uvc_device.def(py::init<std::vector<std::shared_ptr<platform::uvc_device>>&>())

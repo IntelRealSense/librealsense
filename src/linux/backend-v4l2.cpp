@@ -2712,10 +2712,6 @@ namespace librealsense
             });
             return results;
         }
-        std::shared_ptr<time_service> v4l_backend::create_time_service() const
-        {
-            return std::make_shared<os_time_service>();
-        }
 
         std::shared_ptr<device_watcher> v4l_backend::create_device_watcher() const
         {

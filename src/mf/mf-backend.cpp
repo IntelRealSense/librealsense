@@ -176,11 +176,6 @@ namespace librealsense
             return devices;
         }
 
-        std::shared_ptr<time_service> wmf_backend::create_time_service() const
-        {
-            return std::make_shared<os_time_service>();
-        }
-
         class win_event_device_watcher : public device_watcher
         {
         public:

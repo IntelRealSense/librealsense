@@ -22,8 +22,6 @@ const uint8_t MAX_META_DATA_SIZE          = 0xff; // UVC Metadata total length
 
 namespace librealsense
 {
-    class time_service;
-
     namespace platform
     {
         class device_watcher;
@@ -43,8 +41,6 @@ namespace librealsense
 
             virtual std::shared_ptr<hid_device> create_hid_device(hid_device_info info) const = 0;
             virtual std::vector<hid_device_info> query_hid_devices() const = 0;
-
-            virtual std::shared_ptr<time_service> create_time_service() const = 0;
 
             virtual std::shared_ptr<device_watcher> create_device_watcher() const = 0;
 

@@ -64,10 +64,5 @@ namespace librealsense
         {
             return query_hid_devices_info();
         }
-
-        std::shared_ptr<time_service> rs_backend::create_time_service() const
-        {
-            return std::make_shared<os_time_service>();
-        }
     }
 }
