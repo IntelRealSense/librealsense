@@ -61,10 +61,7 @@ PYBIND11_MODULE(NAME, m) {
                  .def_readwrite("def", &platform::control_range::def)
                  .def_readwrite("step", &platform::control_range::step);
 
-    py::class_<librealsense::time_service> time_service(m, "time_service");
-    time_service.def("get_time", &librealsense::time_service::get_time);
-
-    py::class_<librealsense::os_time_service, librealsense::time_service> os_time_service(m, "os_time_service");
+    m.def("get_time", &librealsense::time_service::get_time);
 
 #define BIND_RAW_RO_ARRAY(class, name, type, size) #name, [](const class &c) -> const std::array<type, size>& { return reinterpret_cast<const std::array<type, size>&>(c.name); }
 #define BIND_RAW_RW_ARRAY(class, name, type, size) BIND_RAW_RO_ARRAY(class, name, type, size), [](class &c, const std::array<type, size> &arr) { for (int i=0; i<size; ++i) c.name[i] = arr[i]; }
