@@ -66,7 +66,7 @@ namespace librealsense
                 color_devs_info = group.uvc_devices;
             else
                 color_devs_info = color_devs_info_mi3;
-            std::unique_ptr<frame_timestamp_reader> d400_timestamp_reader_backup(new ds_timestamp_reader(backend.create_time_service()));
+            std::unique_ptr< frame_timestamp_reader > d400_timestamp_reader_backup( new ds_timestamp_reader() );
             frame_timestamp_reader* timestamp_reader_from_metadata;
             if (ds::RS457_PID != _pid)
                 timestamp_reader_from_metadata = new ds_timestamp_reader_from_metadata(std::move(d400_timestamp_reader_backup));
