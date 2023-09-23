@@ -305,7 +305,7 @@ namespace librealsense
 
     rs2_time_t ds_timestamp_reader::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
     {
-        return environment::get_instance().get_time_service()->get_time();
+        return time_service::get_time();
     }
 
     unsigned long long ds_timestamp_reader::get_frame_counter(const std::shared_ptr<frame_interface>& frame) const

@@ -13,16 +13,10 @@ namespace librealsense {
 
 class time_service
 {
-public:
-    virtual double get_time() const = 0;
-    virtual ~time_service() = default;
-};
+    time_service() = delete;  // not for instantiation
 
-
-class os_time_service : public time_service
-{
 public:
-    rs2_time_t get_time() const override
+    static rs2_time_t get_time()
     {
         return std::chrono::duration< double, std::milli >( std::chrono::system_clock::now().time_since_epoch() )
             .count();

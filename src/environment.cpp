@@ -2,7 +2,6 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "environment.h"
-#include "core/time-service.h"
 
 namespace librealsense
 {
@@ -236,8 +235,7 @@ namespace librealsense
 
 
     environment::environment()
-        : _ts( std::make_shared< os_time_service >() )
-        , _stream_id( 0 )
+        : _stream_id( 0 )
     {
     }
 
@@ -251,15 +249,5 @@ namespace librealsense
     extrinsics_graph& environment::get_extrinsics_graph()
     {
         return _extrinsics;
-    }
-
-    void environment::set_time_service(std::shared_ptr<time_service> ts)
-    {
-        _ts = ts;
-    }
-
-    std::shared_ptr<time_service> environment::get_time_service()
-    {
-        return _ts;
     }
 }

@@ -104,11 +104,12 @@ namespace librealsense
 
         void sort_profiles( stream_profiles & );
 
-        std::shared_ptr<frame> generate_frame_from_data(const platform::frame_object& fo,
-            frame_timestamp_reader* timestamp_reader,
-            const rs2_time_t& last_timestamp,
-            const unsigned long long& last_frame_number,
-            std::shared_ptr<stream_profile_interface> profile);
+        std::shared_ptr< frame > generate_frame_from_data( const platform::frame_object & fo,
+                                                           rs2_time_t system_time,
+                                                           frame_timestamp_reader * timestamp_reader,
+                                                           const rs2_time_t & last_timestamp,
+                                                           const unsigned long long & last_frame_number,
+                                                           std::shared_ptr< stream_profile_interface > profile );
 
         inline int compute_frame_expected_size(int width, int height, int bpp) const
         {

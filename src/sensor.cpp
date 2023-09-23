@@ -25,10 +25,10 @@ namespace librealsense {
 
 void log_callback_end( uint32_t fps,
                        rs2_time_t callback_start_time,
+                       rs2_time_t const current_time,
                        rs2_stream stream_type,
                        unsigned long long frame_number )
 {
-    auto current_time = environment::get_instance().get_time_service()->get_time();
     auto callback_warning_duration = 1000.f / ( fps + 1 );
     auto callback_duration = current_time - callback_start_time;
 
@@ -281,13 +281,14 @@ void log_callback_end( uint32_t fps,
         return pixels;
     }
 
-    std::shared_ptr<frame> sensor_base::generate_frame_from_data(const platform::frame_object& fo,
-        frame_timestamp_reader* timestamp_reader,
-        const rs2_time_t& last_timestamp,
-        const unsigned long long& last_frame_number,
-        std::shared_ptr<stream_profile_interface> profile)
+    std::shared_ptr< frame >
+    sensor_base::generate_frame_from_data( const platform::frame_object & fo,
+                                           rs2_time_t const system_time,
+                                           frame_timestamp_reader * timestamp_reader,
+                                           const rs2_time_t & last_timestamp,
+                                           const unsigned long long & last_frame_number,
+                                           std::shared_ptr< stream_profile_interface > profile )
     {
-        auto system_time = environment::get_instance().get_time_service()->get_time();
         auto fr = std::make_shared<frame>();
         
         fr->set_stream(profile);

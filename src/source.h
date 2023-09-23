@@ -41,7 +41,7 @@ namespace librealsense
 
         virtual ~frame_source() { flush(); }
 
-        double get_time() const { return _ts ? _ts->get_time() : 0; }
+        double get_time() const { return time_service::get_time(); }
 
         void set_sensor(const std::shared_ptr<sensor_interface>& s);
 
@@ -64,7 +64,6 @@ namespace librealsense
 
         std::atomic<uint32_t> _max_publish_list_size;
         frame_callback_ptr _callback;
-        std::shared_ptr<time_service> _ts;
         std::shared_ptr<metadata_parser_map> _metadata_parsers;
     };
 }
