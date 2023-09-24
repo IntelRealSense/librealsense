@@ -81,7 +81,7 @@ namespace librealsense
         static unsigned combine_device_masks( unsigned requested_mask, unsigned mask_in_settings );
 
         std::vector<std::shared_ptr<device_info>> query_devices(int mask) const;
-        const platform::backend& get_backend() const { return *_backend; }
+        const platform::backend& get_backend() const { return *_backend_device_factory.get_backend(); }
 
         uint64_t register_internal_device_callback(devices_changed_callback_ptr callback);
         void unregister_internal_device_callback(uint64_t cb_id);
@@ -100,8 +100,6 @@ namespace librealsense
         void invoke_devices_changed_callbacks( std::vector<rs2_device_info> & rs2_devices_info_removed,
                                                std::vector<rs2_device_info> & rs2_devices_info_added );
         void raise_devices_changed(const std::vector<rs2_device_info>& removed, const std::vector<rs2_device_info>& added);
-
-        std::shared_ptr<platform::backend> _backend;
 
         std::map<std::string, std::weak_ptr<device_info>> _playback_devices;
         std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
