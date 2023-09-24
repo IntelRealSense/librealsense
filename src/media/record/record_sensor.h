@@ -9,7 +9,6 @@
 #include "archive.h"
 #include "sensor.h"
 
-#include <rsutils/signal.h>
 #include <set>
 
 
@@ -24,6 +23,14 @@ namespace librealsense
         record_sensor(device_interface& device,
                       sensor_interface& sensor);
         virtual ~record_sensor();
+
+        void on_notification( std::function< void( const notification & ) > && callback )
+            { _on_notification = std::move( callback ); }
+        void on_frame( std::function< void( frame_holder ) > && callback )
+            { _on_frame = std::move( callback ); }
+        void on_extension_change( std::function< void( rs2_extension, std::shared_ptr< extension_snapshot > ) > && callback )
+            { _on_extension_change = std::move( callback ); }
+
         void init();
         stream_profiles get_stream_profiles(int tag = profile_tag::PROFILE_TAG_ANY) const override;
         void open(const stream_profiles& requests) override;
@@ -46,14 +53,15 @@ namespace librealsense
         stream_profiles const & get_raw_stream_profiles() const override;
         int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
         void unregister_before_start_callback(int token) override;
-        rsutils::signal< record_sensor, const notification & > on_notification;
-        rsutils::signal< record_sensor, frame_holder > on_frame;
-        rsutils::signal< record_sensor, rs2_extension, std::shared_ptr< extension_snapshot > > on_extension_change;
         void stop_with_error(const std::string& message);
         void disable_recording();
         virtual processing_blocks get_recommended_processing_blocks() const override;
 
     private /*methods*/:
+        std::function< void( const notification & ) > _on_notification;
+        std::function< void( frame_holder ) > _on_frame;
+        std::function< void( rs2_extension, std::shared_ptr< extension_snapshot > ) > _on_extension_change;
+
         template <typename T> void record_snapshot(rs2_extension extension_type, const librealsense::recordable<T>& snapshot);
         void record_frame(frame_holder holder);
         void enable_sensor_hooks();
@@ -66,6 +74,7 @@ namespace librealsense
         void wrap_streams();
 
     private /*members*/:
+
         sensor_interface& m_sensor;
         std::set<int> m_recorded_streams_ids;
         std::set<rs2_option> m_recording_options;

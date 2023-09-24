@@ -105,7 +105,7 @@ void librealsense::record_sensor::register_notifications_callback(notifications_
     {
         if (m_is_recording)
         {
-            on_notification(*(n->_notification));
+            _on_notification( *( n->_notification ) );
         }
         if (m_user_notification_callback)
         {
@@ -219,7 +219,7 @@ void librealsense::record_sensor::record_snapshot(rs2_extension extension_type, 
     if(m_is_recording)
     {
         //Send to recording thread
-        on_extension_change(extension_type, ext_snapshot);
+        _on_extension_change( extension_type, ext_snapshot );
     }
 }
 
@@ -250,7 +250,7 @@ void record_sensor::record_frame(frame_holder frame)
     if(m_is_recording)
     {
         //Send to recording thread
-        on_frame(std::move(frame));
+        _on_frame( std::move( frame ) );
     }
 }
 
@@ -373,9 +373,10 @@ void record_sensor::wrap_streams()
             else
                 throw std::runtime_error("Unsupported stream");
 
-            on_extension_change(extension_type, std::dynamic_pointer_cast<extension_snapshot>(snapshot));
+            if( m_is_recording )
+                _on_extension_change( extension_type, std::dynamic_pointer_cast< extension_snapshot >( snapshot ) );
 
-           m_recorded_streams_ids.insert(id);
+            m_recorded_streams_ids.insert(id);
         }
     }
 }
