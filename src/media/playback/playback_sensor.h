@@ -10,6 +10,9 @@
 #include "../../sensor.h"
 #include "../../types.h"
 
+#include <rsutils/signal.h>
+
+
 namespace librealsense
 {
     class playback_sensor : public sensor_interface,
@@ -20,10 +23,10 @@ namespace librealsense
     {
     public:
         using frame_interface_callback_t = std::function<void(frame_holder)>;
-        signal<playback_sensor, uint32_t, frame_callback_ptr> started;
-        signal<playback_sensor, uint32_t, bool> stopped;
-        signal<playback_sensor, const std::vector<device_serializer::stream_identifier>& > opened;
-        signal<playback_sensor, const std::vector<device_serializer::stream_identifier>& > closed;
+        rsutils::signal< playback_sensor, uint32_t, frame_callback_ptr > started;
+        rsutils::signal< playback_sensor, uint32_t, bool > stopped;
+        rsutils::signal< playback_sensor, const std::vector< device_serializer::stream_identifier > & > opened;
+        rsutils::signal< playback_sensor, const std::vector< device_serializer::stream_identifier > & > closed;
 
         playback_sensor(device_interface& parent_device, const device_serializer::sensor_snapshot& sensor_description);
         virtual ~playback_sensor();

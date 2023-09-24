@@ -9,6 +9,7 @@
 #include "archive.h"
 #include "sensor.h"
 
+#include <rsutils/signal.h>
 #include <set>
 
 
@@ -45,9 +46,9 @@ namespace librealsense
         stream_profiles const & get_raw_stream_profiles() const override;
         int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
         void unregister_before_start_callback(int token) override;
-        signal<record_sensor, const notification&> on_notification;
-        signal<record_sensor, frame_holder> on_frame;
-        signal<record_sensor, rs2_extension, std::shared_ptr<extension_snapshot>> on_extension_change;
+        rsutils::signal< record_sensor, const notification & > on_notification;
+        rsutils::signal< record_sensor, frame_holder > on_frame;
+        rsutils::signal< record_sensor, rs2_extension, std::shared_ptr< extension_snapshot > > on_extension_change;
         void stop_with_error(const std::string& message);
         void disable_recording();
         virtual processing_blocks get_recommended_processing_blocks() const override;
