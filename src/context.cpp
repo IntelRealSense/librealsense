@@ -19,7 +19,6 @@ namespace librealsense
     context::context( json const & settings )
         : _settings( settings )
         , _device_mask( rsutils::json::get< unsigned >( settings, "device-mask", RS2_PRODUCT_LINE_ANY ) )
-        , _devices_changed_callback( nullptr, []( rs2_devices_changed_callback * ) {} )
     {
         static bool version_logged = false;
         if( ! version_logged )
@@ -106,31 +105,13 @@ namespace librealsense
                 kvp.second->on_devices_changed( new rs2_device_list( { shared_from_this(), rs2_devices_info_removed } ),
                                                 new rs2_device_list( { shared_from_this(), rs2_devices_info_added } ) );
             }
-            catch( ... )
-            {
-                LOG_ERROR( "Exception thrown from user callback handler" );
-            }
-        }
-
-        raise_devices_changed( rs2_devices_info_removed, rs2_devices_info_added );
-    }
-
-    void context::raise_devices_changed(const std::vector<rs2_device_info>& removed, const std::vector<rs2_device_info>& added)
-    {
-        if (_devices_changed_callback)
-        {
-            try
-            {
-                _devices_changed_callback->on_devices_changed(new rs2_device_list({ shared_from_this(), removed }),
-                    new rs2_device_list({ shared_from_this(), added }));
-            }
             catch( std::exception const & e )
             {
                 LOG_ERROR( "Exception thrown from user callback handler: " << e.what() );
             }
-            catch (...)
+            catch( ... )
             {
-                LOG_ERROR("Exception thrown from user callback handler");
+                LOG_ERROR( "Exception thrown from user callback handler" );
             }
         }
     }
@@ -153,7 +134,9 @@ namespace librealsense
     void context::set_devices_changed_callback(devices_changed_callback_ptr callback)
     {
         std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
-        _devices_changed_callback = std::move(callback);
+        // unique_id::generate_id() will never be 0; so we use 0 for the "public" callback so it'll get overriden on
+        // subsequent calls
+        _devices_changed_callbacks[0] = std::move( callback );
     }
 
 

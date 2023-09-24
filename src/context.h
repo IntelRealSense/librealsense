@@ -76,7 +76,6 @@ namespace librealsense
     private:
         void invoke_devices_changed_callbacks( std::vector<rs2_device_info> & rs2_devices_info_removed,
                                                std::vector<rs2_device_info> & rs2_devices_info_added );
-        void raise_devices_changed(const std::vector<rs2_device_info>& removed, const std::vector<rs2_device_info>& added);
 
         std::map< std::string, std::weak_ptr< device_info > > _user_devices;
         std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
@@ -86,7 +85,6 @@ namespace librealsense
 
         std::vector< std::shared_ptr< device_factory > > _factories;
 
-        devices_changed_callback_ptr _devices_changed_callback;
         std::mutex _devices_changed_callbacks_mtx;
     };
 
