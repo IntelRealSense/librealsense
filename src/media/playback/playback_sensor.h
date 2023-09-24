@@ -21,15 +21,25 @@ namespace librealsense
         public options_container,
         public std::enable_shared_from_this<playback_sensor>
     {
+        std::function< void( uint32_t, frame_callback_ptr ) > _on_started;
+        std::function< void( uint32_t, bool ) > _on_stopped;
+        std::function< void( const std::vector< device_serializer::stream_identifier > & ) > _on_opened;
+        std::function< void( const std::vector< device_serializer::stream_identifier > & ) > _on_closed;
+
     public:
         using frame_interface_callback_t = std::function<void(frame_holder)>;
-        rsutils::signal< playback_sensor, uint32_t, frame_callback_ptr > started;
-        rsutils::signal< playback_sensor, uint32_t, bool > stopped;
-        rsutils::signal< playback_sensor, const std::vector< device_serializer::stream_identifier > & > opened;
-        rsutils::signal< playback_sensor, const std::vector< device_serializer::stream_identifier > & > closed;
 
         playback_sensor(device_interface& parent_device, const device_serializer::sensor_snapshot& sensor_description);
         virtual ~playback_sensor();
+
+        void on_started( std::function< void( uint32_t id, frame_callback_ptr user_callback ) > && callback )
+            { _on_started = std::move( callback ); }
+        void on_stopped( std::function< void( uint32_t id, bool invoke_required ) > && callback )
+            { _on_stopped = std::move( callback ); }
+        void on_opened( std::function< void( const std::vector< device_serializer::stream_identifier > & ) > && callback )
+            { _on_opened = std::move( callback ); }
+        void on_closed( std::function< void( const std::vector< device_serializer::stream_identifier > & ) > && callback )
+            { _on_closed = std::move( callback ); }
 
         stream_profiles get_stream_profiles(int tag = profile_tag::PROFILE_TAG_ANY) const override;
         void open(const stream_profiles& requests) override;
