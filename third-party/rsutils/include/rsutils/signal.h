@@ -11,13 +11,17 @@
 namespace rsutils {
 
 
-template< typename HostingClass, typename... Args >
+template< typename... Args >
 class signal
 {
-    friend HostingClass;
+    std::mutex m_mutex;
+    std::map< int, std::function< void( Args... ) > > m_subscribers;
+
+    signal( const signal & other );        // non construction-copyable
+    signal & operator=( const signal & );  // non copyable
 
 public:
-    signal() {}
+    signal() = default;
 
     signal( signal && other )
     {
@@ -73,14 +77,6 @@ public:
         return retVal;
     }
 
-    int operator+=( const std::function< void( Args... ) > & func ) { return subscribe( func ); }
-
-    bool operator-=( int token ) { return unsubscribe( token ); }
-
-private:
-    signal( const signal & other );        // non construction-copyable
-    signal & operator=( const signal & );  // non copyable
-
     bool raise( Args... args )
     {
         std::vector< std::function< void( Args... ) > > functions;
@@ -110,11 +106,44 @@ private:
 
         return retVal;
     }
+};
 
-    bool operator()( Args... args ) { return raise( std::forward< Args >( args )... ); }
 
-    std::mutex m_mutex;
-    std::map< int, std::function< void( Args... ) > > m_subscribers;
+// This is what was called 'signal' before: it is a way to expose the signal as an actual public interface from your
+// class. Rather than:
+//      class X
+//      {
+//          signal< ... > _signal;
+// 
+//      public:
+//          int set_callback( std::function< ... > && callback ) { return _signal.subscribe( std::move( callback ); }
+//      };
+// You can write:
+//      class X
+//      {
+//      public:
+//          public_signal< X, ... > callbacks;
+//      };
+// And:
+//      X x;
+//      x.callbacks.subscribe( []() { ... } );
+// 
+// The client (the one using X) should be able to subscribe/ubsubscribe, but not to raise callbacks. This is done by
+// adding access specifiers such that raising is private and only a friend 'HostingClass' can raise:
+//
+template< typename HostingClass, typename... Args >
+class public_signal : public signal< Args... >
+{
+    typedef signal< Args... > super;
+
+public:
+    using super::subscribe;
+    using super::unsubscribe;
+
+private:
+    friend HostingClass;
+
+    using super::raise;
 };
 
 
