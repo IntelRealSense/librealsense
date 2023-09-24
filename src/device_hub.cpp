@@ -12,8 +12,9 @@ namespace librealsense
     typedef rs2::devices_changed_callback<std::function<void(rs2::event_information& info)>> hub_devices_changed_callback;
 
     device_hub::device_hub(std::shared_ptr<librealsense::context> ctx, int mask)
-        : _ctx(ctx),
-          _device_changes_callback_id(0)
+        : _ctx( ctx )
+        , _mask( mask )
+        , _device_changes_callback_id( 0 )
     {
         _device_list = _ctx->query_devices(mask);
 
@@ -91,7 +92,7 @@ namespace librealsense
         std::shared_ptr<device_interface> res = nullptr;
 
         // check if there is at least one device connected
-        _device_list = _ctx->query_devices(RS2_PRODUCT_LINE_ANY);
+        _device_list = _ctx->query_devices(_mask);
         if (_device_list.size() > 0)
         {
             res = create_device(serial, loop_through_devices);

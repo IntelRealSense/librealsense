@@ -53,5 +53,6 @@ namespace librealsense
         std::vector<std::shared_ptr<device_info>> _device_list;
         int _camera_index = 0;
         uint64_t _device_changes_callback_id;
+        int _mask;
     };
 }
