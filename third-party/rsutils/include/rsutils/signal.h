@@ -79,8 +79,11 @@ public:
                 functions.push_back( s.second );
         }
 
+        // NOTE: when calling our subscribers, we do not perfectly forward on purpose to avoid the situation where the
+        // first subscriber will move an argument and the second will then get nothing!
+        //
         for( auto const & func : functions )
-            func( std::forward< Args >( args )... );
+            func( /*std::forward< Args >(*/ args /*)*/... );
     }
 
     // How many subscriptions are active
