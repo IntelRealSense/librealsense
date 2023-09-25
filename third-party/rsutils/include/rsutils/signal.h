@@ -11,101 +11,80 @@
 namespace rsutils {
 
 
+// Outside signal<> so can be easy to reference - they should be the same regardless of the type of signal
+using signal_slot = int;
+
+
+// Signals are callbacks with multiple targets.
+// 
+// Each "slot" is a subscriber that's called when the signal is "raised."
+// 
+// There are intentionally no operators here (especially operator()!) as, despite the nice-to-look-at style, are not
+// verbose enough to be really useful.
+// 
+// The template Args are the callback arguments, and therefore what's expected to be passed to raise(). The callbacks
+// return void on purpose, for simplicity.
+//
 template< typename... Args >
 class signal
 {
-    std::mutex m_mutex;
-    std::map< int, std::function< void( Args... ) > > m_subscribers;
+    using callback = std::function< void( Args... ) >;
 
-    signal( const signal & other );        // non construction-copyable
-    signal & operator=( const signal & );  // non copyable
+    std::mutex _mutex;
+    std::map< signal_slot, callback > _subscribers;
+
+    signal( const signal & other ) = delete;
+    signal & operator=( const signal & ) = delete;
 
 public:
     signal() = default;
 
     signal( signal && other )
     {
-        std::lock_guard< std::mutex > locker( other.m_mutex );
-        m_subscribers = std::move( other.m_subscribers );
-
-        other.m_subscribers.clear();
+        std::lock_guard< std::mutex > locker( other._mutex );
+        _subscribers = std::move( other._subscribers );
     }
 
     signal & operator=( signal && other )
     {
-        std::lock_guard< std::mutex > locker( other.m_mutex );
-        m_subscribers = std::move( other.m_subscribers );
-
-        other.m_subscribers.clear();
+        std::lock_guard< std::mutex > locker( other._mutex );
+        _subscribers = std::move( other._subscribers );
         return *this;
     }
 
-    int subscribe( const std::function< void( Args... ) > & func )
+    signal_slot subscribe( const callback && func )
     {
-        std::lock_guard< std::mutex > locker( m_mutex );
-
-        int token = -1;
-        for( int i = 0; i < ( std::numeric_limits< int >::max )(); i++ )
-        {
-            if( m_subscribers.find( i ) == m_subscribers.end() )
-            {
-                token = i;
-                break;
-            }
-        }
-
-        if( token != -1 )
-        {
-            m_subscribers.emplace( token, func );
-        }
-
-        return token;
+        std::lock_guard< std::mutex > locker( _mutex );
+        // NOTE: we should maintain ordering of subscribers: later subscriptions should be called after earlier ones, so
+        // the key should keep increasing in value
+        auto key = _subscribers.empty() ? 0 : ( _subscribers.rbegin()->first + 1 );
+        _subscribers.emplace( key, std::move( func ) );
+        return key;
     }
 
-    bool unsubscribe( int token )
+    bool unsubscribe( signal_slot token )
     {
-        std::lock_guard< std::mutex > locker( m_mutex );
-
-        bool retVal = false;
-        typename std::map< int, std::function< void( Args... ) > >::iterator it = m_subscribers.find( token );
-        if( it != m_subscribers.end() )
-        {
-            m_subscribers.erase( token );
-            retVal = true;
-        }
-
-        return retVal;
+        std::lock_guard< std::mutex > locker( _mutex );
+        return _subscribers.erase( token );
     }
 
-    bool raise( Args... args )
+    void raise( Args... args )
     {
-        std::vector< std::function< void( Args... ) > > functions;
-        bool retVal = false;
+        std::vector< callback > functions;
 
-        std::unique_lock< std::mutex > locker( m_mutex );
-        if( m_subscribers.size() > 0 )
         {
-            typename std::map< int, std::function< void( Args... ) > >::iterator it = m_subscribers.begin();
-            while( it != m_subscribers.end() )
-            {
-                functions.emplace_back( it->second );
-                ++it;
-            }
-        }
-        locker.unlock();
-
-        if( functions.size() > 0 )
-        {
-            for( auto func : functions )
-            {
-                func( std::forward< Args >( args )... );
-            }
-
-            retVal = true;
+            std::lock_guard< std::mutex > locker( _mutex );
+            functions.reserve( _subscribers.size() );
+            for( auto const & s : _subscribers )
+                functions.push_back( s.second );
         }
 
-        return retVal;
+        for( auto const & func : functions )
+            func( std::forward< Args >( args )... );
     }
+
+    // How many subscriptions are active
+    size_t size() const { return _subscribers.size(); }
 };
 
 
