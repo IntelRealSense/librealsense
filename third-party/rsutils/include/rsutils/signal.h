@@ -3,16 +3,19 @@
 
 #pragma once
 
+#include "subscription.h"
+
 #include <map>
 #include <mutex>
 #include <functional>
+#include <memory>
 
 
 namespace rsutils {
 
 
 // Outside signal<> so can be easy to reference - they should be the same regardless of the type of signal
-using signal_slot = int;
+using subscription_slot = int;
 
 
 // Signals are callbacks with multiple targets.
@@ -24,48 +27,62 @@ using signal_slot = int;
 // 
 // The template Args are the callback arguments, and therefore what's expected to be passed to raise(). The callbacks
 // return void on purpose, for simplicity.
+// 
+// NOTE: there are more efficient implementations (e.g., with a vector). We kept it map-based for simplicity.
 //
 template< typename... Args >
 class signal
 {
     using callback = std::function< void( Args... ) >;
+    using map = std::map< subscription_slot, callback >;
 
-    std::mutex _mutex;
-    std::map< signal_slot, callback > _subscribers;
+    // We use a shared_ptr to control lifetime: only while it's alive can we remove subscriptions
+    struct impl
+    {
+        std::mutex mutex;
+        map subscribers;
+
+        bool remove( subscription_slot slot )
+        {
+            std::lock_guard< std::mutex > locker( mutex );
+            return subscribers.erase( slot );
+        }
+    };
+    std::shared_ptr< impl > const _impl;
 
     signal( const signal & other ) = delete;
     signal & operator=( const signal & ) = delete;
 
 public:
-    signal() = default;
+    signal() : _impl( std::make_shared< impl >() ) {}
+    signal( signal && ) = default;
+    signal & operator=( signal && ) = default;
 
-    signal( signal && other )
+    // Get the slot without any fancy subscription
+    subscription_slot add( callback && func )
     {
-        std::lock_guard< std::mutex > locker( other._mutex );
-        _subscribers = std::move( other._subscribers );
-    }
-
-    signal & operator=( signal && other )
-    {
-        std::lock_guard< std::mutex > locker( other._mutex );
-        _subscribers = std::move( other._subscribers );
-        return *this;
-    }
-
-    signal_slot subscribe( const callback && func )
-    {
-        std::lock_guard< std::mutex > locker( _mutex );
+        std::lock_guard< std::mutex > locker( _impl->mutex );
         // NOTE: we should maintain ordering of subscribers: later subscriptions should be called after earlier ones, so
         // the key should keep increasing in value
-        auto key = _subscribers.empty() ? 0 : ( _subscribers.rbegin()->first + 1 );
-        _subscribers.emplace( key, std::move( func ) );
-        return key;
+        auto slot = _impl->subscribers.empty() ? 0 : (_impl->subscribers.rbegin()->first + 1);
+        _impl->subscribers.emplace( slot, std::move( func ) );
+        return slot;
     }
 
-    bool unsubscribe( signal_slot token )
+    // Opposite of add()
+    bool remove( subscription_slot slot ) { return _impl->remove( slot ); }
+
+    // Unlike add(), subscribing implies a subscription, meaning the caller needs to store the return value or else it
+    // will get unsubscribed immediately!!
+    subscription subscribe( callback && func )
     {
-        std::lock_guard< std::mutex > locker( _mutex );
-        return _subscribers.erase( token );
+        auto slot = add( std::move( func ) );
+        return subscription(
+            [slot, weak = std::weak_ptr< impl >( _impl )]
+            {
+                if( auto impl = weak.lock() )
+                    impl->remove( slot );
+            } );
     }
 
     void raise( Args... args )
@@ -73,9 +90,9 @@ public:
         std::vector< callback > functions;
 
         {
-            std::lock_guard< std::mutex > locker( _mutex );
-            functions.reserve( _subscribers.size() );
-            for( auto const & s : _subscribers )
+            std::lock_guard< std::mutex > locker( _impl->mutex );
+            functions.reserve( _impl->subscribers.size() );
+            for( auto const & s : _impl->subscribers )
                 functions.push_back( s.second );
         }
 
@@ -87,7 +104,7 @@ public:
     }
 
     // How many subscriptions are active
-    size_t size() const { return _subscribers.size(); }
+    size_t size() const { return _impl->subscribers.size(); }
 };
 
 
@@ -120,7 +137,8 @@ class public_signal : public signal< Args... >
 
 public:
     using super::subscribe;
-    using super::unsubscribe;
+    using super::add;
+    using super::remove;
 
 private:
     friend HostingClass;

@@ -142,7 +142,7 @@ namespace librealsense
                     auto dev = _active_profile->get_device();
                     if (auto playback = As<librealsense::playback_device>(dev))
                     {
-                        playback->playback_status_changed.unsubscribe( _playback_stopped_token );
+                        _playback_stopped_token.cancel();
                     }
                     _active_profile->_multistream.stop();
                     _active_profile->_multistream.close();

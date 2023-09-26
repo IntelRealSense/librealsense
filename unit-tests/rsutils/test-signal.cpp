@@ -11,9 +11,6 @@
 // https://github.com/tarqd/slimsig/blob/master/test/test.cpp
 
 
-// using subscription = typename rsutils::subscription;
-
-
 TEST_CASE( "signal", "[signal]" )
 {
     SECTION( "should trigger bound member function slots" )
@@ -24,27 +21,27 @@ TEST_CASE( "signal", "[signal]" )
             void bound_slot() { bound_slot_triggered = true; }
         } obj;
         rsutils::signal<> signal;
-        signal.subscribe( std::bind( &C::bound_slot, &obj ) );
+        signal.add( std::bind( &C::bound_slot, &obj ) );
         signal.raise();
         CHECK( obj.bound_slot_triggered );
     }
     SECTION( "should trigger functor slots" )
     {
+        static bool functor_slot_triggered = false;
         struct C
         {
-            bool functor_slot_triggered = false;
             void operator()() { functor_slot_triggered = true; }
         } obj;
         rsutils::signal<> signal;
-        signal.subscribe( obj );
+        signal.add( obj );  // makes a copy of obj!
         signal.raise();
-        CHECK( obj.functor_slot_triggered );
+        CHECK( functor_slot_triggered );
     }
     SECTION( "should trigger lambda slots" )
     {
         bool fired = false;
         rsutils::signal<> signal;
-        signal.subscribe( [&] { fired = true; } );
+        signal.add( [&] { fired = true; } );
         signal.raise();
         CHECK( fired );
     }
@@ -59,34 +56,34 @@ TEST_CASE( "raise()", "[signal]" )
         // with SECTION -- essentially moving SECTION -- and the second slot to get nothing!
         rsutils::signal< std::string > signal;
         std::string str( "hello world" );
-        signal.subscribe( []( std::string str ) { CHECK( str == "hello world" ); } );
-        signal.subscribe( []( std::string str ) { CHECK( str == "hello world" ); } );
+        signal.add( []( std::string str ) { CHECK( str == "hello world" ); } );
+        signal.add( []( std::string str ) { CHECK( str == "hello world" ); } );
         signal.raise( std::move( str ) );
     }
     SECTION( "should not copy references" )
     {
         rsutils::signal< std::string & > signal;
         std::string str( "hello world" );
-        signal.subscribe(
+        signal.add(
             []( std::string & str )
             {
                 CHECK( str == "hello world" );
                 str = "hola mundo";
             } );
-        signal.subscribe( []( std::string & str ) { CHECK( str == "hola mundo" ); } );
+        signal.add( []( std::string & str ) { CHECK( str == "hola mundo" ); } );
         signal.raise( str );
     }
     SECTION( "should be re-entrant" )
     {
         unsigned count = 0;
         rsutils::signal<> signal;
-        signal.subscribe(
+        signal.add(
             [&]
             {
                 ++count;
                 if( count == 1 )
                 {
-                    signal.subscribe( [&] { ++count; } );
+                    signal.add( [&] { ++count; } );
                     signal.raise();
                 };
             } );
@@ -101,16 +98,16 @@ TEST_CASE( "size()", "[signal]" )
     SECTION( "should return the subscription count" )
     {
         rsutils::signal<> signal;
-        signal.subscribe( [] {} );
+        signal.add( [] {} );
         CHECK( signal.size() == 1 );
     }
     SECTION( "should return the correct count when adding slots during iteration" )
     {
         rsutils::signal<> signal;
-        signal.subscribe(
+        signal.add(
             [&]
             {
-                signal.subscribe( [] {} );
+                signal.add( [] {} );
                 CHECK( signal.size() == 2 );
             } );
         signal.raise();
@@ -119,129 +116,71 @@ TEST_CASE( "size()", "[signal]" )
 }
 
 
-    /*
-    describe("tracking", [] {
-      rsutils::signal<void()> signal;
-      before_each([&] { signal = rsutils::signal<void()>{}; });
-      SECTION("should disconnect slots when tracked objects are destroyed", [&] {
-        struct foo{};
-        bool called = false;
-        auto tracked = std::make_shared<foo>();
-        signal.subscribe([&] {
-          called = true;
-        }, {tracked});
-        tracked.reset();
+TEST_CASE( "subscription", "[signal]" )
+{
+    rsutils::signal<> signal;
+
+    SECTION( "cancel() should disconnect the slot" )
+    {
+        bool fired = false;
+        auto subscription = signal.subscribe( [&] { fired = true; } );
+        subscription.cancel();
+        CHECK( signal.size() == 0 );
         signal.raise();
-        CHECK(called, ==(false));
-        signal.compact();
-        CHECK(signal.size(), ==(0));
-      });
-    });*/
-#if 0
-    describe( "connection",
-              []
-              {
-                  rsutils::signal< void() > signal;
-                  before_each( [&] { signal = rsutils::signal< void() >{}; } );
-                  describe( "#connected()",
-                            [&]
-                            {
-                                SECTION( "should return whether or not the slot is connected",
-                                    [&]
-                                    {
-                                        auto connection = signal.subscribe( [] {} );
-                                        CHECK( connection.connected(), == (true) );
-                                        signal.disconnect_all();
-                                        CHECK( connection.connected(), == (false) );
-                                    } );
-                            } );
-                  describe( "#disconnect",
-                            [&]
-                            {
-                                SECTION( "should disconnect the slot",
-                                    [&]
-                                    {
-                                        bool fired = false;
-                                        auto connection = signal.subscribe( [&] { fired = true; } );
-                                        connection.disconnect();
-                                        signal.raise();
-                                        CHECK( fired, == (false) );
-                                        CHECK( connection.connected(), == (false) );
-                                        CHECK( signal.size(), == (0u) );
-                                    } );
-                                SECTION( "should not throw if already disconnected",
-                                    [&]
-                                    {
-                                        auto connection = signal.subscribe( [] {} );
-                                        connection.disconnect();
-                                        connection.disconnect();
-                                        CHECK( connection.connected(), == (false) );
-                                        CHECK( signal.size(), == (0u) );
-                                    } );
-                            } );
-                  SECTION( "should be consistent across copies",
-                      [&]
-                      {
-                          auto conn1 = signal.subscribe( [] {} );
-                          auto conn2 = conn1;
-                          conn1.disconnect();
-                          CHECK( conn1.connected(), == (conn2.connected()) );
-                          CHECK( signal.size(), == (0u) );
-                      } );
-                  SECTION( "should not affect slot lifetime",
-                      [&]
-                      {
-                          bool fired = false;
-                          auto fn = [&]
-                          {
-                              fired = true;
-                          };
-                          {
-                              auto connection = signal.subscribe( fn );
-                          }
-                          signal.raise();
-                          CHECK( fired, == (true) );
-                      } );
-                  SECTION( "should still be valid if the signal is destroyed",
-                      [&]
-                      {
-                          using connection_type = rsutils::signal< void() >::connection;
-                          connection_type connection;
-                          {
-                              rsutils::signal< void() > scoped_signal{};
-                              connection = scoped_signal.subscribe( [] {} );
-                          }
-                          CHECK( connection.connected(), == (false) );
-                      } );
-              } );
-    describe( "scoped_connection",
-              []
-              {
-                  rsutils::signal< void() > signal;
-                  before_each( [&] { signal = rsutils::signal< void() >(); } );
-                  SECTION( "should disconnect the connection after leaving the scope",
-                      [&]
-                      {
-                          bool fired = false;
-                          {
-                              auto scoped = make_scoped_connection( signal.subscribe( [&] { fired = true; } ) );
-                          }
-                          signal.raise();
-                          CHECK( fired, == (false) );
-                          CHECK( signal.empty(), == (true) );
-                      } );
-                  SECTION( "should update state of underlying connection",
-                      [&]
-                      {
-                          auto connection = signal.subscribe( [] {} );
-                          {
-                              auto scoped = make_scoped_connection( connection );
-                          }
-                          signal.raise();
-                          CHECK( connection.connected(), == (false) );
-                      } );
-              } );
-#endif
+        CHECK_FALSE( fired );
+    }
+    SECTION( "cancel() should not throw if already disconnected" )
+    {
+        auto subscription = signal.subscribe( [] {} );
+        subscription.cancel();
+        subscription.cancel();
+        CHECK( signal.size() == 0 );
+    }
+    SECTION( "should automatically remove the slot" )
+    {
+        bool fired = false;
+        auto fn = [&] { fired = true; };
+        {
+            auto subscription = signal.subscribe( fn );
+        }
+        CHECK( signal.size() == 0 );
+        signal.raise();
+        CHECK_FALSE( fired );
+    }
+    SECTION( "unless detached" )
+    {
+        bool fired = false;
+        auto fn = [&] { fired = true; };
+        {
+            signal.subscribe( fn ).detach();
+        }
+        CHECK( signal.size() == 1 );
+        signal.raise();
+        CHECK( fired );
+    }
+    SECTION( "should still be valid if the signal is destroyed" )
+    {
+        rsutils::subscription subscription;
+        {
+            rsutils::signal<> scoped_signal;
+            subscription = scoped_signal.subscribe( [] {} );
+        }
+    }
+    SECTION( "replacing subscription with another should cancel the previous" )
+    {
+        std::string val;
+        auto subscription = signal.subscribe( [&val] { val += '1'; } );
+        CHECK( signal.size() == 1 );
+        signal.raise();
+        CHECK( val == "1" );
+        subscription = signal.subscribe( [&val] { val += '2'; } );
+        CHECK( signal.size() == 1 );
+        signal.raise();
+        CHECK( val == "12" );
+        subscription = {};
+        CHECK( signal.size() == 0 );
+    }
+}
 
 
 TEST_CASE( "stress test", "[signal]" )
@@ -253,7 +192,7 @@ TEST_CASE( "stress test", "[signal]" )
     {
         for( int expected = 0; expected < N; ++expected )
         {
-            signal.subscribe(
+            signal.add(
                 [expected]( int & i )
                 {
                     CHECK( i == expected );
@@ -273,7 +212,7 @@ TEST_CASE( "stress test", "[signal]" )
         for( int pos = 0; pos < N - 1; ++pos )
         {
             CAPTURE( pos );
-            CHECK( signal.unsubscribe( pos ) == true );
+            CHECK( signal.remove( pos ) == true );
         }
         CHECK( signal.size() == 1 );
         int i = int( N ) - 1;  // the only one left
@@ -281,7 +220,7 @@ TEST_CASE( "stress test", "[signal]" )
     }
     // add one -> should iterate AFTER the last
     {
-        auto slot_id = signal.subscribe( []( int & i ) { i = -25; } );
+        auto slot_id = signal.add( []( int & i ) { i = -25; } );
         int i = int( N ) - 1;  // the only one left
         signal.raise( i );
         CHECK( i == -25 );

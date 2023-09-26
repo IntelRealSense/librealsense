@@ -11,7 +11,7 @@ namespace rsutils {
 
 // RAII for a function: calls it on destruction, allowing automatic calls when going out of scope very similar to a
 // smart pointer that automatically deletes when going out of scope.
-//
+// 
 class deferred
 {
 public:
@@ -24,12 +24,16 @@ private:
     deferred & operator=( const deferred & ) = delete;
 
 public:
+    deferred() = default;
+
     deferred( fn && f )
         : _deferred( f )
     {
     }
 
     deferred( deferred && that ) = default;
+
+    deferred & operator=( deferred && ) = default;
 
     bool is_valid() const { return ! ! _deferred; }
     operator bool() const { return is_valid(); }
@@ -42,10 +46,10 @@ public:
     }
 
     // Prevent the deferred call from ever being invoked
-    void cancel() { _deferred = nullptr; }
+    void reset() { _deferred = {}; }
 
     // Returns the deferred function so you can move it somewhere else
-    fn && detach() { return std::move( _deferred ); }
+    fn detach() { return std::move( _deferred ); }
 
     // Cause the deferred call to be invoked NOW (throws if nothing there!)
     void execute() { _deferred(); }

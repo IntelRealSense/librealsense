@@ -1652,8 +1652,8 @@ void rs2_playback_device_set_status_changed_callback(const rs2_device* device, r
 
     VALIDATE_NOT_NULL(device);
     auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
-    playback->playback_status_changed.subscribe( [cb]( rs2_playback_status status )
-                                                 { cb->on_playback_status_changed( status ); } );
+    playback->playback_status_changed.add( [cb]( rs2_playback_status status )
+                                           { cb->on_playback_status_changed( status ); } );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, callback)
 
