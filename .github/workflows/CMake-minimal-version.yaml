@@ -25,7 +25,7 @@ jobs:
           # Go back from RealSense directory to parent directory  
           cd ..
           
-          git clone https://github.com/nlohmann/cmake_min_version.git --depth 1
+          git clone https://github.com/nlohmann/cmake_min_version.git
           cd cmake_min_version
           # Go to specific last commit to porpose avoid using breacking changes in the repo.
           git checkout 687dc56e1cf52c865cebf6ac94ad67906d6e1369
@@ -34,7 +34,7 @@ jobs:
           venv/bin/pip3 install -r requirements.txt
           venv/bin/python3 cmake_downloader.py --first_minor
           output=$(venv/bin/python3 cmake_min_version.py /home/runner/work/librealsense/librealsense/)
-          echo "$(output)"
+          echo $(output)
           
           # Retrieve CMake minimal version from the last line of the tool output.
           current_cmake_version=$(echo ${output: -30} | cut -d'(' -f 2 | head -c -2)
