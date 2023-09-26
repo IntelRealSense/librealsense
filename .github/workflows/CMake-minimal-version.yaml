@@ -26,9 +26,9 @@ jobs:
           cd ..
           
           git clone https://github.com/nlohmann/cmake_min_version.git --depth 1
+          cd cmake_min_version
           # Go to specific last commit to porpose avoid using breacking changes in the repo.
           git checkout 687dc56e1cf52c865cebf6ac94ad67906d6e1369
-          cd cmake_min_version
           
           python3 -mvenv venv
           venv/bin/pip3 install -r requirements.txt
