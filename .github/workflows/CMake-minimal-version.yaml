@@ -32,7 +32,7 @@ jobs:
           
           python3 -mvenv venv
           venv/bin/pip3 install -r requirements.txt
-          venv/bin/python3 cmake_downloader.py --latest_release
+          venv/bin/python3 cmake_downloader.py --first_minor
           output=$(venv/bin/python3 cmake_min_version.py /home/runner/work/librealsense/librealsense/)
           echo $output
           
