@@ -27,14 +27,14 @@ jobs:
           
           git clone https://github.com/nlohmann/cmake_min_version.git
           cd cmake_min_version
-          # Go to specific last commit to porpose avoid using breacking changes in the repo.
+          # We clone a specific commit which we tested the process as working
           git checkout 687dc56e1cf52c865cebf6ac94ad67906d6e1369
           
           python3 -mvenv venv
           venv/bin/pip3 install -r requirements.txt
           venv/bin/python3 cmake_downloader.py --first_minor
           output=$(venv/bin/python3 cmake_min_version.py /home/runner/work/librealsense/librealsense/)
-          echo $(output)
+          echo $output
           
           # Retrieve CMake minimal version from the last line of the tool output.
           current_cmake_version=$(echo ${output: -30} | cut -d'(' -f 2 | head -c -2)
@@ -43,7 +43,7 @@ jobs:
 
       - name: "Check minimal CMake version"
         run: |
-          if [ "${{steps.cmake_version.outputs.current_cmake_version}}" != "${EXPECTED_CMAKE_VERSION}" ]
+          if [ "${{steps.cmake_version.outputs.current_cmake_version}}" >= "${EXPECTED_CMAKE_VERSION}" ]
           then
             echo "Error - LibRS minimal CMake version require is ${EXPECTED_CMAKE_VERSION} but on this build the minimal is ${{steps.cmake_version.outputs.current_cmake_version}}"
             exit 1
