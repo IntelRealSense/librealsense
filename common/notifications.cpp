@@ -709,7 +709,7 @@ namespace rs2
 
         std::string link = rsutils::string::from() << "https://github.com/IntelRealSense/librealsense/wiki/Release-Notes#release-" << _version;
 
-        ImGui::PushStyleColor(ImGuiCol_Text, alpha(white, 1.f - t));
+        ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_blue, 1.f - t));
         if (ImGui::Button("What's new"))
         {
             open_url(link.c_str());
