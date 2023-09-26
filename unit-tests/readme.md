@@ -27,7 +27,7 @@ Please see [.travis.yml](https://github.com/IntelRealSense/librealsense/blob/mas
 
 > These recordings do not contain any imaging data and therefore can only be useful for unit-tests. If you would like to run your algorithms on top of captured data, please review our [playback and record](https://github.com/IntelRealSense/librealsense/tree/master/src/media) capabilities. 
 
-In addition to running the tests locally, it is very easy to replicate our continuous integration process for your fork of the project - just sign-in to [travis-ci](https://travis-ci.org/) and [AppVeyor](https://ci.appveyor.com/) and enable builds on your fork of `librealsense`. 
+In addition to running the tests locally, it is very easy to replicate our continuous integration process for your fork of the project - just sign-in to [Github Actions](../../../actions) and [AppVeyor](https://ci.appveyor.com/) and enable builds on your fork of `librealsense`. 
 
 ## Controlling Test Execution
 
