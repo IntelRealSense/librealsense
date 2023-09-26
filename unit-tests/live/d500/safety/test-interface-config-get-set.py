@@ -38,6 +38,11 @@ ctx = rs.context()
 dev = test.find_first_device_or_exit()
 safety_sensor = dev.first_safety_sensor()
 
+print("getting original safety mode")
+original_mode = safety_sensor.get_option(rs.option.safety_mode)
+print("switching to service mode")
+safety_sensor.set_option(rs.option.safety_mode, 2) # service mode
+
 #############################################################################################
 test.start("Valid get/set scenario")
 
@@ -62,5 +67,8 @@ safety_sensor.set_safety_interface_config(safety_config_to_restore)
 test.finish()
 
 #############################################################################################
+
+print("restoring original safety mode")
+safety_sensor.set_option(rs.option.safety_mode, original_mode) # service mode
 
 test.print_results_and_exit()
