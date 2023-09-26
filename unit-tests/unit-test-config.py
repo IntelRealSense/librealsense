@@ -78,7 +78,7 @@ src = root + '/src'
 
 def add_slash_before_spaces(links):
     """
-    This function add '\' char before spaces in string or list of strings.
+    This function adds '\' char before spaces in string or list of strings.
     Because spaces in links can't been read properly from cmake files.
     """
     if links and type(links) is str:
@@ -91,12 +91,12 @@ def add_slash_before_spaces(links):
         raise TypeError
 
 
-def generate_cmake( builddir, testdir, testname, filelist, custom_main ):
+def generate_cmake( builddir, testdir, testname, filelist, custom_main, dependencies ):
     makefile = builddir + '/' + testdir + '/CMakeLists.txt'
     log.d( '   creating:', makefile )
     handle = open( makefile, 'w' )
 
-    filelist = add_slash_before_spaces(filelist)
+    #filelist = add_slash_before_spaces(filelist)
     directory = add_slash_before_spaces(dir)
     root_directory = add_slash_before_spaces(root)
 
@@ -115,7 +115,7 @@ source_group( "Common Files" FILES ${CATCH_FILES} ''' + directory + '''/test.cpp
     if not custom_main:
         handle.write(' ' + directory + '/unit-test-default-main.cpp')
     handle.write( ''' )
-target_link_libraries( ${PROJECT_NAME} ${DEPENDENCIES} )
+target_link_libraries( ${PROJECT_NAME} ''' + dependencies + ''' )
 
 set_target_properties( ${PROJECT_NAME} PROPERTIES FOLDER "Unit-Tests/''' + os.path.dirname( testdir ) + '''" )
 
@@ -161,11 +161,11 @@ def find_include_in_dirs( include ):
             return path
 
 
-def find_includes( filepath, filelist = set() ):
+def find_includes( filepath, filelist ):
     """
-    Recursively searches a .cpp file for #include directives and returns
-    a set of all of them.
-    :return: a list of all includes found
+    Recursively searches a .cpp file for #include directives
+    :param filelist: any previous includes already processed (pass an empty dict() if none)
+    :return: a dictionary (include->source) of includes found
     """
     filedir = os.path.dirname(filepath)
     try:
@@ -179,7 +179,7 @@ def find_includes( filepath, filelist = set() ):
                     log.d( m.group(0), '->', include, '(already processed)' )
                 else:
                     log.d( m.group(0), '->', include )
-                    filelist.add( include )
+                    filelist[include] = filepath
                     filelist = find_includes( include, filelist )
             else:
                 log.d( 'not found:', m.group(0) )
@@ -225,14 +225,15 @@ def process_cpp( dir, builddir ):
             # Build the list of files we want in the project:
             # At a minimum, we have the original file, plus any common files
             filelist = [ dir + '/' + f, '${CATCH_FILES}' ]
-            # Add any "" includes specified in the .cpp that we can find
-            includes = find_includes( dir + '/' + f )
+            # Add any includes specified in the .cpp that we can find
+            includes = find_includes( dir + '/' + f, dict() )
             # Add any files explicitly listed in the .cpp itself, like this:
             #         //#cmake:add-file <filename>
             # Any files listed are relative to $dir
             shared = False
             static = False
             custom_main = False
+            dependencies = '${DEPENDENCIES}'  # most will depend on realsense2 (the default in unit-tests/CMakeLists.txt)
             for cmake_directive in file.grep( '^//#cmake:\s*', dir + '/' + f ):
                 m = cmake_directive['match']
                 index = cmake_directive['index']
@@ -254,7 +255,7 @@ def process_cpp( dir, builddir ):
                             filelist.append( abs_file )
                             if( os.path.splitext( abs_file )[0] == 'cpp' ):
                                 # Add any "" includes specified in the .cpp that we can find
-                                includes |= find_includes( abs_file )
+                                includes = find_includes( abs_file, includes )
                 elif cmd == 'static!':
                     if len(rest):
                         log.e( f + '+' + str(index) + ': unexpected arguments past \'' + cmd + '\'' )
@@ -273,10 +274,12 @@ def process_cpp( dir, builddir ):
                         shared = True
                 elif cmd == 'custom-main':
                     custom_main = True
+                elif cmd == 'dependencies':
+                    dependencies = ' '.join( rest )
                 else:
                     log.e( f + '+' + str(index) + ': unknown cmd \'' + cmd + '\' (should be \'add-file\', \'static!\', or \'shared!\')' )
-            for include in includes:
-                filelist.append( include )
+            for include,source in includes.items():
+                filelist.append( f'"{include}"  # {source}' )
 
             # all tests use the common test.cpp file
             filelist.append( root + "/unit-tests/test.cpp" )
@@ -291,7 +294,7 @@ def process_cpp( dir, builddir ):
 
             # Each CMakeLists.txt sits in its own directory
             os.makedirs( builddir + '/' + testdir, exist_ok=True )  # "build/log/internal/test-all"
-            generate_cmake( builddir, testdir, testname, filelist, custom_main )
+            generate_cmake( builddir, testdir, testname, filelist, custom_main, dependencies )
             if static:
                 statics.append( testdir )
             elif shared:
