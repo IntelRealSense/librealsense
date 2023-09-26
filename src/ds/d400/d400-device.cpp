@@ -498,7 +498,7 @@ namespace librealsense
     }
 
     d400_device::d400_device( std::shared_ptr< const d400_info > const & dev_info )
-        : device(dev_info), global_time_interface(),
+        : ds_device(dev_info), global_time_interface(),
           auto_calibrated(),
           _device_capabilities(ds::ds_caps::CAP_UNDEFINED),
           _depth_stream(new stream(RS2_STREAM_DEPTH)),

@@ -5,6 +5,7 @@
 #include "proc/synthetic-stream.h"
 #include "sync.h"
 #include "environment.h"
+#include "core/device-interface.h"
 
 namespace librealsense
 {

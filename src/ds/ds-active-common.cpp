@@ -10,7 +10,7 @@ namespace librealsense
 
     ds_active_common::ds_active_common(uvc_sensor& raw_depth_ep,
         synthetic_sensor& depth_ep,
-        device* owner,
+        ds_device* owner,
         ds_caps device_capabilities,
         std::shared_ptr<hw_monitor> hw_monitor,
         firmware_version fw_version) :
@@ -24,7 +24,7 @@ namespace librealsense
     void ds_active_common::register_options()
     {
         //Projector's capacity is established based on actual HW capabilities
-        auto pid = _owner->_pid;
+        auto pid = _owner->get_pid();
         if ((pid != RS_USB2_PID) && ((_device_capabilities & ds_caps::CAP_ACTIVE_PROJECTOR) == ds_caps::CAP_ACTIVE_PROJECTOR))
         {
             //EMITTER ENABLED OPTION

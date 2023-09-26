@@ -18,6 +18,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/advanced_mode.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/ds-calib-parsers.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/ds-device-common.h"
+        "${CMAKE_CURRENT_LIST_DIR}/ds-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds-motion-common.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds-color-common.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds-active-common.h"

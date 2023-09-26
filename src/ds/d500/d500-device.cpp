@@ -375,7 +375,7 @@ namespace librealsense
     }
 
     d500_device::d500_device( std::shared_ptr< const d500_info > const & dev_info )
-        : device(dev_info), global_time_interface(),
+        : ds_device(dev_info), global_time_interface(),
           _device_capabilities(ds::ds_caps::CAP_UNDEFINED),
           _depth_stream(new stream(RS2_STREAM_DEPTH)),
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),

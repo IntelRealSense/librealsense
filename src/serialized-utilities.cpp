@@ -2,6 +2,7 @@
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #include "serialized-utilities.h"
+#include <rsutils/string/from.h>
 #include <device.h>
 
 namespace librealsense {

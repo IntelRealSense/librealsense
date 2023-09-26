@@ -260,7 +260,7 @@ namespace librealsense
         return auto_exposure;
     }
 
-    ds_motion_common::ds_motion_common(device* owner,
+    ds_motion_common::ds_motion_common(ds_device* owner,
         firmware_version fw_version,
         const ds::ds_caps& device_capabilities,
         std::shared_ptr<hw_monitor> hwm) :
@@ -281,7 +281,7 @@ namespace librealsense
                                  { unsigned(odr::IMU_FPS_400),  hid_fps_translation.at(odr::IMU_FPS_400)}}} };
 
         // motion correction
-        _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _owner->_pid);
+        _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _owner->get_pid());
     }
 
     rs2_motion_device_intrinsic ds_motion_common::get_motion_intrinsics(rs2_stream stream) const
@@ -517,7 +517,7 @@ namespace librealsense
         if (!is_infos_empty)
         {
             // motion correction
-            _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _owner->_pid);
+            _mm_calib = std::make_shared< mm_calib_handler >( _hw_monitor, _owner->get_pid() );
 
             _accel_intrinsic = std::make_shared< rsutils::lazy< ds::imu_intrinsic > >(
                 [this]() { return _mm_calib->get_intrinsic( RS2_STREAM_ACCEL ); } );

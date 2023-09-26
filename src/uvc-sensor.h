@@ -90,4 +90,17 @@ private:
 };
 
 
+// Helper function that should be used when multiple FW calls needs to be made.
+// This function change the USB power to D0 (Operational) using the invoke_power function
+// activate the received function and power down the state to D3 (Idle)
+//
+template< class T >
+auto group_multiple_fw_calls( synthetic_sensor & s, T action ) -> decltype( action() )
+{
+    auto & us = dynamic_cast< uvc_sensor & >( *s.get_raw_sensor() );
+
+    return us.invoke_powered( [&]( platform::uvc_device & dev ) { return action(); } );
+}
+
+
 }  // namespace librealsense

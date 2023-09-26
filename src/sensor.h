@@ -30,6 +30,7 @@ namespace librealsense
 {
     class device;
     class option;
+    enum class format_conversion;
 
 
     typedef std::function<void(std::vector<platform::stream_profile>)> on_open;

@@ -3,51 +3,35 @@
 
 #pragma once
 
-#include "archive.h"
-#include "hw-monitor.h"
-#include "option.h"
-#include "sensor.h"
-#include "sync.h"
-#include "core/streaming.h"
+#include "basics.h"  // C4250
+#include "core/device-interface.h"
+#include "core/info.h"
 
-#include "context.h"
+#include "device-info.h"
 
 #include <rsutils/lazy.h>
-
 #include <chrono>
 #include <memory>
 #include <vector>
 
 
-namespace librealsense
+namespace librealsense {
+
+
+enum class format_conversion
 {
-
-    
-stream_interface * find_profile( rs2_stream stream, int index, std::vector< stream_interface * > const & profiles );
-
-class matcher_factory
-{
-public:
-    static std::shared_ptr< matcher > create( rs2_matchers matcher,
-                                                std::vector< stream_interface * > const & profiles );
-
-private:
-    static std::shared_ptr< matcher > create_DLR_C_matcher( std::vector< stream_interface * > const & profiles );
-    static std::shared_ptr< matcher > create_DLR_matcher( std::vector< stream_interface * > const & profiles );
-    static std::shared_ptr< matcher > create_DI_C_matcher( std::vector< stream_interface * > const & profiles );
-    static std::shared_ptr< matcher > create_DI_matcher( std::vector< stream_interface * > const & profiles );
-    static std::shared_ptr< matcher > create_DIC_matcher( std::vector< stream_interface* > const& profiles );
-    static std::shared_ptr< matcher > create_DIC_C_matcher( std::vector< stream_interface * > const & profiles );
-
-    static std::shared_ptr< matcher > create_identity_matcher( stream_interface * profiles );
-    static std::shared_ptr< matcher > create_frame_number_matcher( std::vector< stream_interface * > const & profiles );
-    static std::shared_ptr< matcher > create_timestamp_matcher( std::vector< stream_interface * > const & profiles );
-
-    static std::shared_ptr< matcher > create_timestamp_composite_matcher( std::vector< std::shared_ptr< matcher > > const & matchers );
-    static std::shared_ptr< matcher > create_frame_number_composite_matcher( std::vector< std::shared_ptr< matcher > > const & matchers );
+    raw,
+    basic,
+    full
 };
 
-class device : public virtual device_interface, public info_container
+
+// Base implementation for most devices in librealsense. While it's not necessary to derive from this class, it greatly
+// simplifies implementations.
+//
+class device
+    : public virtual device_interface
+    , public info_container
 {
 public:
     virtual ~device();
@@ -82,11 +66,10 @@ public:
 
     virtual void stop_activity() const;
 
-    bool device_changed_notifications_on() const { return _device_changed_notifications; }
+    bool device_changed_notifications_on() const { return _device_changed_callback_id; }
 
     format_conversion get_format_conversion() const;
 
-    uint16_t _pid;
 protected:
     int add_sensor(const std::shared_ptr<sensor_interface>& sensor_base);
     int assign_sensor(const std::shared_ptr<sensor_interface>& sensor_base, uint8_t idx);
@@ -100,23 +83,13 @@ protected:
 private:
     std::vector<std::shared_ptr<sensor_interface>> _sensors;
     std::shared_ptr< const device_info > _dev_info;
-    bool _is_valid, _device_changed_notifications;
+    bool _is_valid;
     mutable std::mutex _device_changed_mtx;
-    uint64_t _callback_id;
+    uint64_t _device_changed_callback_id = 0;
     rsutils::lazy< std::vector< tagged_profile > > _profiles_tags;
 
     std::shared_ptr< bool > _is_alive; // Ensures object can be accessed
 };
 
-// Helper function that should be used when multiple FW calls needs to be made.
-// This function change the USB power to D0 (Operational) using the invoke_power function
-// activate the received function and power down the state to D3 (Idle)
-template<class T>
-auto group_multiple_fw_calls(synthetic_sensor& s, T action)
--> decltype(action())
-{
-    auto& us = dynamic_cast<uvc_sensor&>(*s.get_raw_sensor());
 
-    return us.invoke_powered([&](platform::uvc_device& dev) { return action(); });
-}
 }

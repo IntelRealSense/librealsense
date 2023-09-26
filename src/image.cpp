@@ -57,14 +57,6 @@ namespace librealsense
         }
     }
 
-    //////////////////////////////////////
-    // Frame rotation routines //
-    //////////////////////////////////////
-    resolution rotate_resolution(resolution res)
-    {
-        return resolution{ res.height , res.width};
-    }
-
 }
 
 #pragma pack(pop)
