@@ -1,0 +1,48 @@
+name: CMake minimal version
+# The aim of this test derminate minimal supported CMake version for LibRS project
+# and check if it equlas to expected minimal CMAke version
+
+on:
+  push:
+  pull_request:
+  
+env:
+  EXPECTED_CMAKE_VERSION: "VERSION 3.8.0"
+
+jobs:
+  test_downloader:
+    name: "Test cmake_downloader.py"
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: "Get current CMake version"
+        id: cmake_version
+        run: |
+          sudo apt-get install  xorg-dev libglu1-mesa-dev
+          
+          cd ..
+          git clone https://github.com/nlohmann/cmake_min_version.git --depth 1
+          cd cmake_min_version
+          
+          python3 -mvenv venv
+          venv/bin/pip3 install -r requirements.txt
+          venv/bin/python3 cmake_downloader.py --first_minor
+          output=$(venv/bin/python3 cmake_min_version.py /home/runner/work/librealsense/librealsense/)
+          
+          # A next line cut last line from an output and cut CMAke version from parentheses.
+          current_cmake_version=$(echo ${output: -30} | cut -d'(' -f 2 | head -c -2)
+          # Saving cmake minimal version string in GitHub output
+          echo "current_cmake_version=$current_cmake_version" >> $GITHUB_OUTPUT
+
+      - name: "Check minimal CMake version"
+        run: |
+          if [ "${{steps.cmake_version.outputs.current_cmake_version}}" != "${EXPECTED_CMAKE_VERSION}" ]
+          then
+            echo "Error - LibRS minimal CMake version require is ${EXPECTED_CMAKE_VERSION} but on this build the minimal is ${{steps.cmake_version.outputs.current_cmake_version}}"
+            exit 1
+          else
+            echo "The test PASSED, CMake ${{steps.cmake_version.outputs.current_cmake_version}} found same as expecting ${EXPECTED_CMAKE_VERSION}"
+            exit 0
+          fi    
