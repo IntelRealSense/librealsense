@@ -43,7 +43,7 @@ jobs:
 
       - name: "Check minimal CMake version"
         run: |
-          if [ "${{steps.cmake_version.outputs.current_cmake_version}}" <= "${EXPECTED_CMAKE_VERSION}" ]
+          if [ "${{steps.cmake_version.outputs.current_cmake_version}}" == "${EXPECTED_CMAKE_VERSION}" || "${{steps.cmake_version.outputs.current_cmake_version}}" \< "${EXPECTED_CMAKE_VERSION}" ]
           then
             echo "The test PASSED, CMake ${{steps.cmake_version.outputs.current_cmake_version}} found same as expecting ${EXPECTED_CMAKE_VERSION}"
             exit 0
