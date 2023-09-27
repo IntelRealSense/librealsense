@@ -943,6 +943,8 @@ namespace librealsense
         void update(std::shared_ptr< extension_snapshot > ext) override {}
         void set_safety_preset(int index, const rs2_safety_preset& sp) const override {};
         rs2_safety_preset get_safety_preset(int index) const override { return rs2_safety_preset(); }
+        void set_safety_interface_config(const rs2_safety_interface_config& sic) const override {};
+        rs2_safety_interface_config get_safety_interface_config() const override { return rs2_safety_interface_config(); }
     };
 
     class depth_mapping_sensor_snapshot
