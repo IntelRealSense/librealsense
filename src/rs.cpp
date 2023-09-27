@@ -75,13 +75,13 @@ struct rs2_processing_block_list
 
 struct rs2_sensor : public rs2_options
 {
-    rs2_sensor(rs2_device parent,
+    rs2_sensor( std::shared_ptr<librealsense::device_interface> parent,
         librealsense::sensor_interface* sensor) :
         rs2_options((librealsense::options_interface*)sensor),
         parent(parent), sensor(sensor)
     {}
 
-    rs2_device parent;
+    std::shared_ptr<librealsense::device_interface> parent;
     librealsense::sensor_interface* sensor;
 
     rs2_sensor& operator=(const rs2_sensor&) = delete;
@@ -129,7 +129,7 @@ struct rs2_frame_queue
 
 struct rs2_sensor_list
 {
-    rs2_device dev;
+    std::shared_ptr<librealsense::device_interface> device;
 };
 
 struct rs2_terminal_parser
@@ -258,7 +258,7 @@ rs2_sensor_list* rs2_query_sensors(const rs2_device* device, rs2_error** error) 
 {
     VALIDATE_NOT_NULL(device);
 
-    return new rs2_sensor_list{ *device };
+    return new rs2_sensor_list{ device->device };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
@@ -274,7 +274,7 @@ int rs2_get_sensors_count(const rs2_sensor_list* list, rs2_error** error) BEGIN_
 {
     if (list == nullptr)
         return 0;
-    return static_cast<int>(list->dev.device->get_sensors_count());
+    return static_cast<int>(list->device->get_sensors_count());
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, list)
 
@@ -311,21 +311,21 @@ NOEXCEPT_RETURN(, device)
 rs2_sensor* rs2_create_sensor(const rs2_sensor_list* list, int index, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(list);
-    VALIDATE_RANGE(index, 0, (int)list->dev.device->get_sensors_count() - 1);
+    VALIDATE_RANGE(index, 0, (int)list->device->get_sensors_count() - 1);
 
     return new rs2_sensor{
-            list->dev,
-            &list->dev.device->get_sensor(index)
+            list->device,
+            &list->device->get_sensor(index)
     };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, list, index)
 
-void rs2_delete_sensor(rs2_sensor* device) BEGIN_API_CALL
+void rs2_delete_sensor(rs2_sensor* sensor) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(device);
-    delete device;
+    VALIDATE_NOT_NULL(sensor);
+    delete sensor;
 }
-NOEXCEPT_RETURN(, device)
+NOEXCEPT_RETURN(, sensor)
 
 rs2_stream_profile_list* rs2_get_stream_profiles(rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
 {
@@ -974,8 +974,7 @@ rs2_sensor* rs2_get_frame_sensor(const rs2_frame* frame, rs2_error** error) BEGI
     VALIDATE_NOT_NULL(frame);
     std::shared_ptr<librealsense::sensor_interface> sensor( ((frame_interface*)frame)->get_sensor() );
     device_interface& dev = sensor->get_device();
-    rs2_device dev2{ dev.shared_from_this() };
-    return new rs2_sensor(dev2, sensor.get());
+    return new rs2_sensor( dev.shared_from_this(), sensor.get());
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
 
@@ -1652,8 +1651,10 @@ void rs2_playback_device_set_status_changed_callback(const rs2_device* device, r
 
     VALIDATE_NOT_NULL(device);
     auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
-    playback->playback_status_changed.add( [cb]( rs2_playback_status status )
-                                           { cb->on_playback_status_changed( status ); } );
+    // Maintain a single status-changed callback that'll get replaced with each subsequent call, and removed when this
+    // rs2_device is destroyed:
+    device->playback_status_changed = playback->playback_status_changed.subscribe(
+        [cb]( rs2_playback_status status ) { cb->on_playback_status_changed( status ); } );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, callback)
 
@@ -2387,8 +2388,8 @@ HANDLE_EXCEPTIONS_AND_RETURN(0.f, sensor)
 rs2_device* rs2_create_device_from_sensor(const rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);
-    VALIDATE_NOT_NULL(sensor->parent.device);
-    return new rs2_device(sensor->parent);
+    VALIDATE_NOT_NULL(sensor->parent);
+    return new rs2_device{ sensor->parent };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor)
 
@@ -2550,7 +2551,7 @@ rs2_sensor* rs2_software_device_add_sensor(rs2_device* dev, const char* sensor_n
     auto df = VALIDATE_INTERFACE(dev->device, librealsense::software_device);
 
     return new rs2_sensor(
-        *dev,
+        dev->device,
         &df->add_software_sensor(sensor_name));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev, sensor_name)
@@ -2674,7 +2675,7 @@ void rs2_software_sensor_detach(rs2_sensor* sensor, rs2_error** error) BEGIN_API
 {
     VALIDATE_NOT_NULL(sensor);
     auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
-    sensor->parent.device.reset();
+    sensor->parent.reset();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor)
 

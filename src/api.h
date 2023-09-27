@@ -7,6 +7,7 @@
 #include "core/extension.h"
 #include "device.h"
 #include <rsutils/string/from.h>
+#include <rsutils/subscription.h>
 
 #include <type_traits>
 #include <iostream>
@@ -29,6 +30,7 @@ struct rs2_notification
 struct rs2_device
 {
     std::shared_ptr<librealsense::device_interface> device;
+    mutable rsutils::subscription playback_status_changed;
 };
 
 rs2_error * rs2_create_error(const char* what, const char* name, const char* args, rs2_exception_type type);
