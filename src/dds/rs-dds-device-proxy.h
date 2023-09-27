@@ -4,6 +4,7 @@
 #pragma once
 
 #include <src/software-device.h>
+#include <src/core/debug.h>
 #include "sid_index.h"
 
 #include <memory>
@@ -34,7 +35,9 @@ class stream_profile_interface;
 //     auto dev2 = dev_list[0];
 // dev1 and dev2 are two different rs2 devices, but they both go to the same DDS source!
 //
-class dds_device_proxy : public software_device
+class dds_device_proxy
+    : public software_device
+    , public debug_interface
 {
     std::shared_ptr< realdds::dds_device > _dds_dev;
     std::map< std::string, std::vector< std::shared_ptr< stream_profile_interface > > > _stream_name_to_profiles;
@@ -60,6 +63,17 @@ public:
     void tag_profiles( stream_profiles profiles ) const override;
 
     void hardware_reset() override;
+
+    // debug_interface
+private:
+    std::vector< uint8_t > send_receive_raw_data( const std::vector< uint8_t > & ) override;
+    std::vector< uint8_t > build_command( uint32_t opcode,
+                                          uint32_t param1 = 0,
+                                          uint32_t param2 = 0,
+                                          uint32_t param3 = 0,
+                                          uint32_t param4 = 0,
+                                          uint8_t const * data = nullptr,
+                                          size_t dataLength = 0 ) const override;
 };
 
 
