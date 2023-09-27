@@ -339,13 +339,13 @@ namespace librealsense
 
         virtual std::vector<uint8_t> send( std::vector<uint8_t> const & data ) const;
         virtual std::vector<uint8_t> send( command cmd, hwmon_response * = nullptr, bool locked_transfer = false ) const;
-        std::vector<uint8_t> build_command(uint32_t opcode,
+        static std::vector<uint8_t> build_command(uint32_t opcode,
             uint32_t param1 = 0,
             uint32_t param2 = 0,
             uint32_t param3 = 0,
             uint32_t param4 = 0,
             uint8_t const * data = nullptr,
-            size_t dataLength = 0) const;
+            size_t dataLength = 0);
 
         void get_gvd(size_t sz, unsigned char* gvd, uint8_t gvd_cmd) const;
         static std::string get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 4);

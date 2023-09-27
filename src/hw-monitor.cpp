@@ -206,13 +206,13 @@ namespace librealsense
             newCommand.receivedCommandData + newCommand.receivedCommandDataLength);
     }
 
-    std::vector<uint8_t> hw_monitor::build_command(uint32_t opcode,
+    /*static*/ std::vector<uint8_t> hw_monitor::build_command(uint32_t opcode,
         uint32_t param1,
         uint32_t param2,
         uint32_t param3,
         uint32_t param4,
         uint8_t const * data,
-        size_t dataLength) const
+        size_t dataLength)
     {
         int length;
         std::vector<uint8_t> result;
