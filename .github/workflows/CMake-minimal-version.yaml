@@ -34,7 +34,7 @@ jobs:
           venv/bin/pip3 install -r requirements.txt
           venv/bin/python3 cmake_downloader.py --first_minor
           output=$(venv/bin/python3 cmake_min_version.py /home/runner/work/librealsense/librealsense/)
-          echo $output
+          echo "Current CMake $output"
           
           # Retrieve CMake minimal version from the last line of the tool output.
           current_cmake_version=$(echo ${output: -30} | cut -d'(' -f 2 | head -c -2)
@@ -43,11 +43,11 @@ jobs:
 
       - name: "Check minimal CMake version"
         run: |
-          if [ "${{steps.cmake_version.outputs.current_cmake_version}}" > "${EXPECTED_CMAKE_VERSION}" ]
+          if [ "${{steps.cmake_version.outputs.current_cmake_version}}" <= "${EXPECTED_CMAKE_VERSION}" ]
           then
-            echo "Error - LibRS minimal CMake version require is ${EXPECTED_CMAKE_VERSION} but on this build the minimal is ${{steps.cmake_version.outputs.current_cmake_version}}"
-            exit 1
-          else
             echo "The test PASSED, CMake ${{steps.cmake_version.outputs.current_cmake_version}} found same as expecting ${EXPECTED_CMAKE_VERSION}"
             exit 0
+          else
+            echo "Error - LibRS minimal CMake version require is ${EXPECTED_CMAKE_VERSION} but on this build the minimal is ${{steps.cmake_version.outputs.current_cmake_version}}"
+            exit 1
           fi    
