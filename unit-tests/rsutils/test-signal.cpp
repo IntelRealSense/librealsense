@@ -190,6 +190,7 @@ TEST_CASE( "stress test", "[signal]" )
 
     // add subscriptions
     {
+        auto before = std::chrono::high_resolution_clock::now();
         for( int expected = 0; expected < N; ++expected )
         {
             signal.add(
@@ -199,13 +200,14 @@ TEST_CASE( "stress test", "[signal]" )
                     ++i;
                 } );
         }
+        auto after = std::chrono::high_resolution_clock::now();
+        std::cout << "      took " << ((after - before).count() / 1e9) << " seconds to add" << std::endl;
         CHECK( signal.size() == N );
         int i = 0;
-        auto before = std::chrono::high_resolution_clock::now();
+        before = std::chrono::high_resolution_clock::now();
         signal.raise( i );
-        auto after = std::chrono::high_resolution_clock::now();
-        auto delta = after - before;
-        std::cout << "      took " << delta.count() / 1000. << " milliseconds total" << std::endl;
+        after = std::chrono::high_resolution_clock::now();
+        std::cout << "      took " << ((after - before).count() / 1e9) << " seconds to raise" << std::endl;
     }
     // remove all but last
     {
