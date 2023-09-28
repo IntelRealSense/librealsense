@@ -180,6 +180,16 @@ TEST_CASE( "subscription", "[signal]" )
         subscription = {};
         CHECK( signal.size() == 0 );
     }
+    SECTION( "detach() followed by cancel()" )
+    {
+        std::string val;
+        auto subscription = signal.subscribe( [&val] { val += '1'; } );
+        CHECK( signal.size() == 1 );
+        subscription.detach();  // should no longer be valid
+        CHECK( signal.size() == 1 );
+        subscription.cancel();        // make sure!
+        CHECK( signal.size() == 1 );  // nothing should have happened!
+    }
 }
 
 
