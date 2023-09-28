@@ -258,6 +258,13 @@ namespace librealsense
         // checking frame counter of first depth and ir are the same
         if (use_ir)
         {
+            // on devices that do not support meta data on IR frames (like D457), do not use IR for hdr merging
+            if (!first_ir.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER)  ||
+                !second_ir.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER) ||
+                !first_ir.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID)    ||
+                !second_ir.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID))
+            return false;
+
             int depth_frame_counter = static_cast<int>(first_depth.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER));
             int ir_frame_counter = static_cast<int>(first_ir.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER));
             use_ir = (depth_frame_counter == ir_frame_counter);

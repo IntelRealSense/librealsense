@@ -748,7 +748,7 @@ namespace librealsense
             depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
 
             // register HDR options
-            if (!mipi_sensor && (_fw_version >= hdr_firmware_version))
+            if (_fw_version >= hdr_firmware_version)
             {
                 auto d400_depth = As<d400_depth_sensor, synthetic_sensor>(&get_depth_sensor());
                 d400_depth->init_hdr_config(exposure_range, gain_range);
@@ -934,7 +934,7 @@ namespace librealsense
         else
         {
             // used for mipi device
-            register_metadata_mipi(depth_sensor);
+            register_metadata_mipi(depth_sensor, hdr_firmware_version);
         }
         //mipi
 
@@ -1047,7 +1047,7 @@ namespace librealsense
         }
     }
 
-    void d400_device::register_metadata_mipi(const synthetic_sensor &depth_sensor) const
+    void d400_device::register_metadata_mipi(const synthetic_sensor &depth_sensor, const firmware_version& hdr_firmware_version) const
     {
         depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
 
@@ -1120,6 +1120,36 @@ namespace librealsense
                                        make_attribute_parser(&md_mipi_depth_mode::crc,
                                                              md_mipi_depth_control_attributes::crc_attribute,
                                                              md_prop_offset));
+
+        if (_fw_version >= hdr_firmware_version)
+        {
+            depth_sensor.register_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE,
+                make_attribute_parser(&md_mipi_depth_mode::sub_preset_info,
+                    md_configuration_attributes::sub_preset_info_attribute, md_prop_offset,
+                    [](const rs2_metadata_type& param) {
+                        // bit mask and offset used to get data from bitfield
+                        return (param & md_configuration::SUB_PRESET_BIT_MASK_SEQUENCE_SIZE)
+                            >> md_configuration::SUB_PRESET_BIT_OFFSET_SEQUENCE_SIZE;
+                    }));
+
+            depth_sensor.register_metadata(RS2_FRAME_METADATA_SEQUENCE_ID,
+                make_attribute_parser(&md_mipi_depth_mode::sub_preset_info,
+                    md_configuration_attributes::sub_preset_info_attribute, md_prop_offset,
+                    [](const rs2_metadata_type& param) {
+                        // bit mask and offset used to get data from bitfield
+                        return (param & md_configuration::SUB_PRESET_BIT_MASK_SEQUENCE_ID)
+                            >> md_configuration::SUB_PRESET_BIT_OFFSET_SEQUENCE_ID;
+                    }));
+
+            depth_sensor.register_metadata(RS2_FRAME_METADATA_SEQUENCE_NAME,
+                make_attribute_parser(&md_mipi_depth_mode::sub_preset_info,
+                    md_configuration_attributes::sub_preset_info_attribute, md_prop_offset,
+                    [](const rs2_metadata_type& param) {
+                        // bit mask and offset used to get data from bitfield
+                        return (param & md_configuration::SUB_PRESET_BIT_MASK_ID)
+                            >> md_configuration::SUB_PRESET_BIT_OFFSET_ID;
+                    }));
+        }
     }
 
     void d400_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const

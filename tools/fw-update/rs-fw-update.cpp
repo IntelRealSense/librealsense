@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <cstring>
 #include <iostream>
 #include <fstream>
 #include <thread>
@@ -35,13 +36,31 @@ std::vector<uint8_t> read_fw_file(std::string file_path)
     std::vector<uint8_t> rv;
 
     std::ifstream file(file_path, std::ios::in | std::ios::binary | std::ios::ate);
+    auto file_deleter = std::unique_ptr< std::ifstream, void ( * )( std::ifstream * ) >( &file,
+                                                                                         []( std::ifstream * file )
+                                                                                         {
+                                                                                             if( file )
+                                                                                                 file->close();
+                                                                                         } );
     if (file.is_open())
     {
         rv.resize(file.tellg());
 
-        file.seekg(0, std::ios::beg);
-        file.read((char*)rv.data(), rv.size());
-        file.close();
+        try
+        {
+            file.seekg( 0, std::ios::beg );
+            file.read( (char *)rv.data(), rv.size() );
+        }
+        catch( ... )
+        {
+            // Nothing to do, file goodbit is false
+        }
+        if( ! file.good() )
+        {
+            std::cout << std::endl << "Error reading firmware file";
+            rv.resize( 0 ); // Signal error, don't use partial read data
+        }
+        
     }
 
     return rv;
@@ -119,7 +138,72 @@ void list_devices(rs2::context ctx)
     }
 }
 
-int main(int argc, char** argv) try
+int write_fw_to_mipi_device( const std::vector< uint8_t > & fw_image)
+{
+    // Write firmware to appropriate file descritptor
+    std::cout << std::endl << "Update can take up to 2 minutes" << std::endl;
+    std::ofstream fw_path_in_device( "/dev/d4xx-dfu504", std::ios::binary );
+    auto file_deleter = std::unique_ptr< std::ofstream, void ( * )( std::ofstream * ) >( &fw_path_in_device,
+                                                                                         []( std::ofstream * file )
+                                                                                         {
+                                                                                             if( file )
+                                                                                                 file->close();
+                                                                                         } );
+    if( fw_path_in_device )
+    {
+        bool done = false;
+        std::thread show_progress_thread(
+            [&done]()
+            {
+                for( int i = 0; i < 101 && ! done; ++i ) // Show percentage [0-100]
+                {
+                    printf( "%d%%\r", i );
+                    std::cout.flush();
+                    std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+                }
+            } );
+        try
+        {
+            fw_path_in_device.write( reinterpret_cast< const char * >( fw_image.data() ), fw_image.size() );
+        }
+        catch( ... )
+        {
+            // Nothing to do, file goodbit is false
+        }
+        done = true;
+        show_progress_thread.join();
+        printf( "    \r" ); // Delete progress, as it is not accurate, don't leave 85% when writing done
+        if( ! fw_path_in_device.good() )
+        {
+            std::cout << std::endl << "Firmware Update failed - write to device error";
+            return EXIT_FAILURE;
+        }
+    }
+    else
+    {
+        std::cout << std::endl << "Firmware Update failed - wrong path or permissions missing";
+        return EXIT_FAILURE;
+    }
+    std::cout << std::endl << "Firmware update done" << std::endl;
+
+    return EXIT_SUCCESS;
+}
+
+bool is_mipi_device( const rs2::device & dev )
+{
+    std::string usb_type = "unknown";
+
+    if( dev.supports( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
+        usb_type = dev.get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR );
+
+    bool d457_device = strcmp( dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID ), "ABCD" ) == 0;
+
+    // Currently only D457 model has MIPI connection
+    return d457_device && usb_type.compare( "unknown" ) == 0;
+}
+
+int main( int argc, char ** argv )
+try
 {
 #ifdef BUILD_EASYLOGGINGPP
     rs2::log_to_console(RS2_LOG_SEVERITY_WARN);
@@ -301,7 +385,7 @@ int main(int argc, char** argv) try
 
         if (d.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
         {
-            std::string usb_type = d.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+            std::string usb_type = d.get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR );
             if (usb_type.find("2.") != std::string::npos) {
                 std::cout << std::endl << "Warning! the camera is connected via USB 2 port, in case the process fails, connect the camera to a USB 3 port and try again" << std::endl;
             }
@@ -331,7 +415,24 @@ int main(int argc, char** argv) try
 
             auto temp = backup_arg.getValue();
             std::ofstream file(temp.c_str(), std::ios::binary);
-            file.write((const char*)flash.data(), flash.size());
+            auto file_deleter = std::unique_ptr< std::ofstream, void ( * )( std::ofstream * ) >( &file,
+                                                                                                 []( std::ofstream * file )
+                                                                                                 {
+                                                                                                     if( file )
+                                                                                                         file->close();
+                                                                                                 } );
+            try
+            {
+                file.write( (const char *)flash.data(), flash.size() );
+            }
+            catch( ... )
+            {
+                // Nothing to do, file goodbit is false
+            }
+            if( ! file.good() )
+            {
+                std::cout << std::endl << "Creating backup file failed";
+            }
         }
 
         if (!file_arg.isSet())
@@ -341,6 +442,18 @@ int main(int argc, char** argv) try
 
         std::cout << std::endl << "Updating device: " << std::endl;
         print_device_info(d);
+
+        // If device is D457 connected by MIPI connector
+        if( is_mipi_device( d ) )
+        {
+            if( unsigned_arg.isSet() )
+            {
+                std::cout << std::endl << "Only signed FW is currently supported for MIPI devices" << std::endl;
+                return EXIT_FAILURE;
+            }
+
+            return write_fw_to_mipi_device( fw_image );
+        }
 
         if (unsigned_arg.isSet())
         {
