@@ -842,6 +842,7 @@ bool lrs_device_controller::on_control( std::string const & id, nlohmann::json c
         control_handlers{
             { "hw-reset", &lrs_device_controller::on_hardware_reset },
             { "open-streams", &lrs_device_controller::on_open_streams },
+            { "hwm", &lrs_device_controller::on_hwm },
         };
     auto it = control_handlers.find( id );
     if( it == control_handlers.end() )
@@ -854,6 +855,33 @@ bool lrs_device_controller::on_control( std::string const & id, nlohmann::json c
 bool lrs_device_controller::on_hardware_reset( nlohmann::json const & control, nlohmann::json & reply )
 {
     _rs_dev.hardware_reset();
+    return true;
+}
+
+
+bool lrs_device_controller::on_hwm( nlohmann::json const & control, nlohmann::json & reply )
+{
+    rs2::debug_protocol dp( _rs_dev );
+    if( ! dp )
+        throw std::runtime_error( "device does not have a debug protocol implemented" );
+
+    std::vector< uint8_t > bytes;
+    if( !rsutils::json::get_ex( control, "data", &bytes ) )
+        throw std::runtime_error( "no 'data' or 'opcode' in HWM control" );
+
+    uint32_t opcode, param1 = 0, param2 = 0, param3 = 0, param4 = 0;
+    if( rsutils::json::get_ex( control, "opcode", &opcode ) )
+    {
+        rsutils::json::get_ex( control, "param1", &param1 );
+        rsutils::json::get_ex( control, "param2", &param2 );
+        rsutils::json::get_ex( control, "param3", &param3 );
+        rsutils::json::get_ex( control, "param4", &param4 );
+
+        bytes = dp.build_command( opcode, param1, param2, param3, param4, bytes );
+    }
+
+    bytes = dp.send_and_receive_raw_data( bytes );
+    reply["data"] = bytes;
     return true;
 }
 
