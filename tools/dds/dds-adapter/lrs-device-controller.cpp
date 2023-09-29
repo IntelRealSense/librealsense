@@ -7,6 +7,8 @@
 
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/json.h>
+#include <rsutils/string/hexarray.h>
+using rsutils::string::hexarray;
 
 #include <realdds/topics/image-msg.h>
 #include <realdds/topics/imu-msg.h>
@@ -865,8 +867,8 @@ bool lrs_device_controller::on_hwm( nlohmann::json const & control, nlohmann::js
     if( ! dp )
         throw std::runtime_error( "device does not have a debug protocol implemented" );
 
-    std::vector< uint8_t > bytes;
-    if( !rsutils::json::get_ex( control, "data", &bytes ) )
+    rsutils::string::hexarray bytes;
+    if( ! rsutils::json::get_ex( control, "data", &bytes ) )
         throw std::runtime_error( "no 'data' or 'opcode' in HWM control" );
 
     uint32_t opcode, param1 = 0, param2 = 0, param3 = 0, param4 = 0;
@@ -877,10 +879,10 @@ bool lrs_device_controller::on_hwm( nlohmann::json const & control, nlohmann::js
         rsutils::json::get_ex( control, "param3", &param3 );
         rsutils::json::get_ex( control, "param4", &param4 );
 
-        bytes = dp.build_command( opcode, param1, param2, param3, param4, bytes );
+        bytes = dp.build_command( opcode, param1, param2, param3, param4, bytes.get_bytes() );
     }
 
-    bytes = dp.send_and_receive_raw_data( bytes );
+    bytes = dp.send_and_receive_raw_data( bytes.get_bytes() );
     reply["data"] = bytes;
     return true;
 }
