@@ -1,6 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
+//#cmake:dependencies rsutils
 //#cmake:add-file ../../../common/utilities/imgui/wrap.cpp
 
 #include "common.h"
