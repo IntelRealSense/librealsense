@@ -35,7 +35,8 @@ def usage():
     print( '        --list-tests   print out all available tests. This option will not run any tests' )
     print( '                       if both list-tags and list-tests are specified each test will be printed along' )
     print( '                       with what tags it has' )
-    print( '        --context        The context to use for test configuration' )
+    print( '        --context      The context to use for test configuration' )
+    print( '        --live         Only configure tests that are live (have test:device)' )
     sys.exit(2)
 
 regex = None
@@ -43,10 +44,11 @@ required_tags = []
 list_tags = False
 list_tests = False
 context = None
+live_only = False
 # parse command-line:
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'hr:t:',
-                                longopts=['help', 'regex=', 'tag=', 'list-tags', 'list-tests', 'context='] )
+                                longopts=['help', 'regex=', 'tag=', 'list-tags', 'list-tests', 'context=', 'live'] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
@@ -63,6 +65,8 @@ for opt, arg in opts:
         list_tests = True
     elif opt == '--context':
         context = arg
+    elif opt == '--live':
+        live_only = True
 
 if len( args ) != 2:
     usage()
@@ -190,7 +194,7 @@ def find_includes( filepath, filelist, dependencies ):
     return filelist
 
 def process_cpp( dir, builddir ):
-    global regex, required_tags, list_only, available_tags, tests_and_tags
+    global regex, required_tags, list_only, available_tags, tests_and_tags, live_only
     found = []
     shareds = []
     statics = []
@@ -213,8 +217,8 @@ def process_cpp( dir, builddir ):
         log.d( '... found:', f )
         log.debug_indent()
         try:
+            config = libci.TestConfigFromCpp( dir + os.sep + f, context )
             if required_tags or list_tags:
-                config = libci.TestConfigFromCpp( dir + os.sep + f, context )
                 if not all( tag in config.tags for tag in required_tags ):
                     continue
                 available_tags.update( config.tags )
@@ -223,6 +227,10 @@ def process_cpp( dir, builddir ):
 
             if testname not in tests_and_tags:
                 tests_and_tags[testname] = None
+
+            if live_only:
+                if not config.configurations:
+                    continue
 
             # Build the list of files we want in the project:
             # At a minimum, we have the original file, plus any common files
