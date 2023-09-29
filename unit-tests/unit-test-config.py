@@ -111,6 +111,7 @@ project( ''' + testname + ''' )
 set( SRC_FILES ''' + filelist + '''
 )
 add_executable( ${PROJECT_NAME} ${SRC_FILES} )
+add_definitions( ''' + ' '.join( f'-DLIBCI_DEPENDENCY_{d}' for d in dependencies.split() ) + ''' )
 source_group( "Common Files" FILES ${CATCH_FILES} ''' + directory + '''/test.cpp''')
     if not custom_main:
         handle.write(' ' + directory + '/unit-test-default-main.cpp')
@@ -145,42 +146,43 @@ def find_include( include, relative_to ):
             return include
 
 
-standard_include_dirs = [
-    os.path.join( root, 'include' ),
-    os.path.join( root, 'third-party', 'rsutils', 'include' ),
-    root
-    ]
-def find_include_in_dirs( include ):
+def find_include_in_dirs( include, dirs ):
     """
-    Search for the given include in all the standard include directories
+    Search for the given include in all the specified directories
     """
-    global include_dirs
-    for include_dir in standard_include_dirs:
+    for include_dir in dirs:
         path = find_include( include, include_dir )
         if path:
             return path
 
 
-def find_includes( filepath, filelist ):
+def find_includes( filepath, filelist, dependencies ):
     """
     Recursively searches a .cpp file for #include directives
     :param filelist: any previous includes already processed (pass an empty dict() if none)
+    :param dependencies: set of dependencies
     :return: a dictionary (include->source) of includes found
     """
+    include_dirs = list()
+    if 'realsense2' in dependencies:
+        include_dirs.append( os.path.join( root, 'include' ))
+    include_dirs.append( os.path.join( root, 'third-party', 'rsutils', 'include' ))
+    include_dirs.append( root )
+    
     filedir = os.path.dirname(filepath)
     try:
         log.debug_indent()
         for include_line in file.grep( r'^\s*#\s*include\s+("(.*)"|<(.*)>)\s*$', filepath ):
             m = include_line['match']
             index = include_line['index']
-            include = find_include( m.group(2), filedir ) or find_include_in_dirs( m.group(2) ) or find_include_in_dirs( m.group(3) )
+            include = find_include( m.group(2), filedir ) or find_include_in_dirs( m.group(2), include_dirs ) or find_include_in_dirs( m.group(3), include_dirs )
             if include:
                 if include in filelist:
                     log.d( m.group(0), '->', include, '(already processed)' )
                 else:
                     log.d( m.group(0), '->', include )
                     filelist[include] = filepath
-                    filelist = find_includes( include, filelist )
+                    filelist = find_includes( include, filelist, dependencies )
             else:
                 log.d( 'not found:', m.group(0) )
     finally:
@@ -225,15 +227,14 @@ def process_cpp( dir, builddir ):
             # Build the list of files we want in the project:
             # At a minimum, we have the original file, plus any common files
             filelist = [ dir + '/' + f, '${CATCH_FILES}' ]
-            # Add any includes specified in the .cpp that we can find
-            includes = find_includes( dir + '/' + f, dict() )
+            includes = dict()
             # Add any files explicitly listed in the .cpp itself, like this:
             #         //#cmake:add-file <filename>
             # Any files listed are relative to $dir
             shared = False
             static = False
             custom_main = False
-            dependencies = '${DEPENDENCIES}'  # most will depend on realsense2 (the default in unit-tests/CMakeLists.txt)
+            dependencies = 'realsense2'
             for cmake_directive in file.grep( '^//#cmake:\s*', dir + '/' + f ):
                 m = cmake_directive['match']
                 index = cmake_directive['index']
@@ -255,7 +256,7 @@ def process_cpp( dir, builddir ):
                             filelist.append( abs_file )
                             if( os.path.splitext( abs_file )[0] == 'cpp' ):
                                 # Add any "" includes specified in the .cpp that we can find
-                                includes = find_includes( abs_file, includes )
+                                includes = find_includes( abs_file, includes, dependencies )
                 elif cmd == 'static!':
                     if len(rest):
                         log.e( f + '+' + str(index) + ': unexpected arguments past \'' + cmd + '\'' )
@@ -278,6 +279,9 @@ def process_cpp( dir, builddir ):
                     dependencies = ' '.join( rest )
                 else:
                     log.e( f + '+' + str(index) + ': unknown cmd \'' + cmd + '\' (should be \'add-file\', \'static!\', or \'shared!\')' )
+
+            # Add any includes specified in the .cpp that we can find
+            includes = find_includes( dir + '/' + f, includes, dependencies )
             for include,source in includes.items():
                 filelist.append( f'"{include}"  # {source}' )
 

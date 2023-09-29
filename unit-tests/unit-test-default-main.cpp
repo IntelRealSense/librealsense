@@ -59,8 +59,11 @@ int main( int argc, char * argv[] )
     if( ret )
         return ret;  // >0 == Error code
 
+#ifdef LIBCI_DEPENDENCY_realsense2
+    // rs2::log_to_console() is only available if realsense2 is a dependency of ours
     if( rslog )
         rs2::log_to_console( RS2_LOG_SEVERITY_DEBUG );
+#endif
 
     return session.run();
 }
