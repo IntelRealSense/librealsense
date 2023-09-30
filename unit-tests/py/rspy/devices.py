@@ -2,24 +2,25 @@
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 import sys, os, re, platform
+
+def usage():
+    ourname = os.path.basename( sys.argv[0] )
+    print( 'Syntax: devices [actions|flags]' )
+    print( '        Control the LibRS devices connected' )
+    print( 'Actions (only one)' )
+    print( '        --list         Enumerate devices (default action)' )
+    print( '        --recycle      Recycle all' )
+    print( 'Flags:' )
+    print( '        --all          Enable all port [requires acroname]' )
+    print( '        --port <#>     Enable only this port [requires acroname]' )
+    print( '        --ports        Show physical port for each device (rather than the RS string)' )
+    sys.exit(2)
+
 try:
     from rspy import log
 except ModuleNotFoundError:
     if __name__ != '__main__':
         raise
-    #
-    def usage():
-        ourname = os.path.basename( sys.argv[0] )
-        print( 'Syntax: devices [actions|flags]' )
-        print( '        Control the LibRS devices connected' )
-        print( 'Actions (only one)' )
-        print( '        --list         Enumerate devices (default action)' )
-        print( '        --recycle      Recycle all' )
-        print( 'Flags:' )
-        print( '        --all          Enable all port [requires acroname]' )
-        print( '        --port <#>     Enable only this port [requires acroname]' )
-        print( '        --ports        Show physical port for each device (rather than the RS string)' )
-        sys.exit(2)
     #
     # We need to tell Python where to look for rspy
     rspy_dir = os.path.dirname( os.path.abspath( __file__ ))
@@ -787,7 +788,7 @@ if __name__ == '__main__':
                     handle = printer(device)
                     ))
         elif action == 'recycle':
-            log.f( 'Not implemented yet' )
+            acroname.recycle_ports()
     finally:
         #
         # Disconnect from the Acroname -- if we don't it'll crash on Linux...
