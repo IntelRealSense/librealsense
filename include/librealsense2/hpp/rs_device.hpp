@@ -91,7 +91,6 @@ namespace rs2
         void hardware_reset()
         {
             rs2_error* e = nullptr;
-
             rs2_hardware_reset(_dev.get(), &e);
             error::handle(e);
         }
@@ -110,6 +109,8 @@ namespace rs2
         }
         device() : _dev(nullptr) {}
 
+        // Note: this checks the validity of rs2::device (i.e., if it's connected to a realsense device), and does
+        // NOT reflect the current condition (connected/disconnected). Use is_connected() for that.
         operator bool() const
         {
             return _dev != nullptr;
@@ -123,6 +124,14 @@ namespace rs2
             return (
                 std::strcmp( get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ), other.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) )
                 < 0 );
+        }
+
+        bool is_connected() const
+        {
+            rs2_error * e = nullptr;
+            bool connected = rs2_device_is_connected( _dev.get(), &e );
+            error::handle( e );
+            return connected;
         }
 
         template<class T>

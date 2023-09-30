@@ -308,6 +308,13 @@ void rs2_delete_device(rs2_device* device) BEGIN_API_CALL
 }
 NOEXCEPT_RETURN(, device)
 
+int rs2_device_is_connected( const rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( device );
+    return device->device->is_valid();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( 0, device )
+
 rs2_sensor* rs2_create_sensor(const rs2_sensor_list* list, int index, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(list);
