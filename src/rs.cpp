@@ -311,6 +311,7 @@ NOEXCEPT_RETURN(, device)
 int rs2_device_is_connected( const rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL( device );
+    VALIDATE_NOT_NULL( device->device );
     return device->device->is_valid();
 }
 HANDLE_EXCEPTIONS_AND_RETURN( 0, device )
