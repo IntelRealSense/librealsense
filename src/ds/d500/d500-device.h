@@ -17,7 +17,7 @@
 #include "ds/ds-options.h"
 
 #include "ds/ds-device-common.h"
-#include "ds/ds-device.h"
+#include "backend-device.h"
 
 #include <rsutils/lazy.h>
 
@@ -34,7 +34,7 @@ namespace librealsense
     }
 
     class d500_device
-        : public virtual ds_device
+        : public virtual backend_device
         , public debug_interface
         , public global_time_interface
         , public updatable

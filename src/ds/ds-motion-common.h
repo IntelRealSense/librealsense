@@ -111,12 +111,12 @@ namespace librealsense
         struct backend_device_group;
     }
 
-    class ds_device;
+    class backend_device;
 
     class ds_motion_common
     {
     public:
-        ds_motion_common(ds_device* owner,
+        ds_motion_common( backend_device * owner,
             firmware_version fw_version,
             const ds::ds_caps& device_capabilities,
             std::shared_ptr<hw_monitor> hwm);
@@ -164,7 +164,7 @@ namespace librealsense
         friend class ds_motion_sensor;
         friend class ds_fisheye_sensor;
 
-        ds_device * _owner;
+        backend_device * _owner;
         firmware_version _fw_version;
         ds::ds_caps _device_capabilities;
         std::shared_ptr<hw_monitor> _hw_monitor;

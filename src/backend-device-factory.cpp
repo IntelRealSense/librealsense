@@ -7,6 +7,7 @@
 #include "platform/platform-device-info.h"
 #include "platform/device-watcher.h"
 
+#include "backend-device.h"
 #include "ds/d400/d400-info.h"
 #include "ds/d500/d500-info.h"
 #include "fw-update/fw-update-factory.h"
@@ -15,6 +16,13 @@
 #include <rsutils/shared-ptr-singleton.h>
 #include <rsutils/signal.h>
 #include <rsutils/json.h>
+
+
+namespace librealsense {
+namespace platform {
+std::shared_ptr< backend > create_backend();
+}  // namespace platform
+}  // namespace librealsense
 
 
 namespace {
@@ -135,6 +143,17 @@ public:
 
 
 static rsutils::shared_ptr_singleton< device_watcher_singleton > backend_device_watcher;
+
+
+std::shared_ptr< platform::backend > backend_device::get_backend()
+{
+    auto singleton = the_backend.get();
+    if( ! singleton )
+        // Whoever is calling us, they are expecting a backend to exist, but it does not!
+        throw std::runtime_error( "backend not created yet!" );
+
+    return singleton->get();
+}
 
 
 backend_device_factory::backend_device_factory( context & ctx, callback && cb )

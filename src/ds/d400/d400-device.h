@@ -16,7 +16,7 @@
 #include "d400-options.h"
 
 #include "ds/ds-device-common.h"
-#include "ds/ds-device.h"
+#include "backend-device.h"
 
 namespace librealsense
 {
@@ -24,7 +24,7 @@ namespace librealsense
     class d400_thermal_monitor;
 
     class d400_device
-        : public virtual ds_device
+        : public virtual backend_device
         , public debug_interface
         , public global_time_interface
         , public updatable

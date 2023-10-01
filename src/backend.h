@@ -53,8 +53,6 @@ namespace librealsense
             virtual ~backend() = default;
         };
 
-        std::shared_ptr<backend> create_backend();
-
     }
 
     double monotonic_to_realtime(double monotonic);

@@ -43,7 +43,7 @@ namespace librealsense
     public:
         rs400_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
             : device( dev_info, register_device_notifications )
-            , ds_device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
             , d400_device( dev_info )
             , d400_nonmonochrome( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
@@ -82,7 +82,7 @@ namespace librealsense
     public:
         rs405u_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
             : device(dev_info, register_device_notifications),
-            ds_device( dev_info, register_device_notifications ),
+            backend_device( dev_info, register_device_notifications ),
             ds5u_device(dev_info),
             ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
             firmware_logger_device(dev_info, d400_device::_hw_monitor,
@@ -133,7 +133,7 @@ namespace librealsense
     public:
         rs410_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
             : device( dev_info, register_device_notifications )
-            , ds_device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
             , d400_device( dev_info )
             , d400_nonmonochrome( dev_info )
             , d400_active( dev_info )
@@ -172,7 +172,7 @@ namespace librealsense
     public:
         rs415_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
             : device( dev_info, register_device_notifications )
-            , ds_device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
             , d400_device( dev_info )
             , d400_nonmonochrome( dev_info )
             , d400_active( dev_info )
@@ -213,7 +213,7 @@ namespace librealsense
     public:
         rs416_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
             : device( dev_info, register_device_notifications )
-            , ds_device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
             , d400_device( dev_info )
             , d400_nonmonochrome( dev_info )
             , d400_active( dev_info )
@@ -267,7 +267,7 @@ namespace librealsense
     public:
         rs416_rgb_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
             : device( dev_info, register_device_notifications )
-            , ds_device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
             , d400_device( dev_info )
             , d400_nonmonochrome( dev_info )
             , d400_active( dev_info )
@@ -321,7 +321,7 @@ namespace librealsense
     public:
         rs420_mm_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
             : device( dev_info, register_device_notifications )
-            , ds_device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
             , d400_device( dev_info )
             , d400_motion( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
@@ -369,7 +369,7 @@ namespace librealsense
     public:
         rs420_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
             : device( dev_info, register_device_notifications )
-            , ds_device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
             , d400_device( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device(
@@ -407,7 +407,7 @@ namespace librealsense
     public:
         rs430_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
             : device( dev_info, register_device_notifications )
-            , ds_device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
             , d400_device( dev_info )
             , d400_active( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
@@ -446,7 +446,7 @@ namespace librealsense
     public:
         rs430i_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
             : device( dev_info, register_device_notifications )
-            , ds_device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
             , d400_device( dev_info )
             , d400_active( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
@@ -490,7 +490,7 @@ namespace librealsense
     public:
         rs430_mm_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
             : device( dev_info, register_device_notifications )
-            , ds_device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
             , d400_device( dev_info )
             , d400_active( dev_info )
             , d400_motion( dev_info )
@@ -541,7 +541,7 @@ namespace librealsense
     public:
         rs435_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
             : device( dev_info, register_device_notifications )
-            , ds_device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
             , d400_device( dev_info )
             , d400_active( dev_info )
             , d400_color( dev_info )
@@ -583,7 +583,7 @@ namespace librealsense
     public:
         rs457_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
             : device( dev_info, register_device_notifications )
-            , ds_device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
             , d400_device( dev_info )
             , d400_active( dev_info )
             , d400_color( dev_info )
@@ -617,7 +617,7 @@ namespace librealsense
     public:
         rs430_rgb_mm_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
             : device( dev_info, register_device_notifications )
-            , ds_device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
             , d400_device( dev_info )
             , d400_active( dev_info )
             , d400_color( dev_info )
@@ -660,7 +660,7 @@ namespace librealsense
     public:
         rs435i_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
             : device( dev_info, register_device_notifications )
-            , ds_device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
             , d400_device( dev_info )
             , d400_active( dev_info )
             , d400_color( dev_info )
@@ -878,7 +878,7 @@ namespace librealsense
     public:
         rs465_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
             : device( dev_info, register_device_notifications )
-            , ds_device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
             , d400_device( dev_info )
             , d400_active( dev_info )
             , d400_color( dev_info )
@@ -919,7 +919,7 @@ namespace librealsense
     public:
         rs400_imu_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
             : device( dev_info, register_device_notifications )
-            , ds_device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
             , d400_device( dev_info )
             , d400_motion( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
@@ -949,7 +949,7 @@ namespace librealsense
     public:
         rs405_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
             : device( dev_info, register_device_notifications )
-            , ds_device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
             , d400_device( dev_info )
             , d400_color( dev_info )
             , d400_nonmonochrome( dev_info )
@@ -1036,7 +1036,7 @@ namespace librealsense
     public:
         rs455_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
             : device( dev_info, register_device_notifications )
-            , ds_device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
             , d400_device( dev_info )
             , d400_nonmonochrome( dev_info )
             , d400_active( dev_info )
