@@ -10,6 +10,7 @@
 #include "d500-color.h"
 #include "d500-info.h"
 #include "backend.h"
+#include "platform/platform-utils.h"
 
 namespace librealsense
 {

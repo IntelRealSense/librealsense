@@ -169,6 +169,12 @@ namespace librealsense
             }
         };
 
+        inline bool operator==( const usb_device_info & a, const usb_device_info & b )
+        {
+            return ( a.id == b.id ) && ( a.vid == b.vid ) && ( a.pid == b.pid ) && ( a.mi == b.mi )
+                && ( a.unique_id == b.unique_id ) && ( a.conn_spec == b.conn_spec );
+        }
+
         static std::map<usb_status,std::string> usb_status_to_string = 
         {
             {RS2_USB_STATUS_SUCCESS, "RS2_USB_STATUS_SUCCESS"},

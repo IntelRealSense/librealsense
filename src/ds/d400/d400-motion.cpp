@@ -11,6 +11,7 @@
 #include <cstddef>
 
 #include <src/backend.h>
+#include <src/platform/platform-utils.h>
 #include <src/metadata.h>
 #include "ds/ds-timestamp.h"
 #include "d400-options.h"

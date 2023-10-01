@@ -91,7 +91,6 @@ struct rs2_sensor : public rs2_options
 
 struct rs2_context
 {
-    ~rs2_context() { ctx->stop(); }
     std::shared_ptr<librealsense::context> ctx;
 };
 
@@ -176,7 +175,8 @@ rs2_context* rs2_create_context(int api_version, rs2_error** error) BEGIN_API_CA
 {
     verify_version_compatibility(api_version);
 
-    return new rs2_context{ std::make_shared< librealsense::context >( librealsense::backend_type::standard ) };
+    nlohmann::json settings;
+    return new rs2_context{ std::make_shared< librealsense::context >( settings ) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
 

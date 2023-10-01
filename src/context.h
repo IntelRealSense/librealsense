@@ -3,23 +3,21 @@
 
 #pragma once
 
-#include "core/streaming.h"
-
+#include "backend-device-factory.h"
 #include "device-info.h"
-#include "platform/device-watcher.h"
-
-#include <nlohmann/json.hpp>
-#include <vector>
-#include <set>
-
+#include "types.h"
 
 #include <rsutils/lazy.h>
+#include <nlohmann/json.hpp>
+#include <vector>
+#include <map>
 
 
 namespace librealsense
 {
     class context;
     class device_info;
+    class stream_profile_interface;
 }
 
 struct rs2_device_info
@@ -54,11 +52,7 @@ namespace librealsense
     class device;
     class context;
     class playback_device_info;
-
-    enum class backend_type
-    {
-        standard
-    };
+    class stream_interface;
 
     namespace platform {
         class backend;
@@ -69,13 +63,23 @@ namespace librealsense
     {
         context();
     public:
-        explicit context( backend_type type );
-
         explicit context( nlohmann::json const & );
         explicit context( char const * json_settings );
 
-        void stop() { _device_watcher->stop(); }
         ~context();
+
+        // The 'device-mask' is specified in the context settings, and governs which devices will be matched by us
+        //
+        unsigned get_device_mask() const { return _device_mask; }
+
+        // Given the requested RS2_PRODUCT_LINE mask, returns the final mask when combined with the device-mask field in
+        // settings.
+        // 
+        // E.g., if the device-mask specifies only D400 devices, and the user requests only SW devices, the result
+        // should be only SW D400 devices.
+        //
+        static unsigned combine_device_masks( unsigned requested_mask, unsigned mask_in_settings );
+
         std::vector<std::shared_ptr<device_info>> query_devices(int mask) const;
         const platform::backend& get_backend() const { return *_backend; }
 
@@ -83,8 +87,7 @@ namespace librealsense
         void unregister_internal_device_callback(uint64_t cb_id);
         void set_devices_changed_callback(devices_changed_callback_ptr callback);
 
-        std::vector<std::shared_ptr<device_info>> create_devices(platform::backend_device_group devices,
-            const std::map<std::string, std::weak_ptr<device_info>>& playback_devices, int mask) const;
+        void query_software_devices( std::vector< std::shared_ptr< device_info > > & list, unsigned requested_mask ) const;
 
         std::shared_ptr<playback_device_info> add_device(const std::string& file);
         void remove_device(const std::string& file);
@@ -94,16 +97,11 @@ namespace librealsense
         const nlohmann::json & get_settings() const { return _settings; }
 
     private:
-        void on_device_changed(platform::backend_device_group old,
-                               platform::backend_device_group curr,
-                               const std::map<std::string, std::weak_ptr<device_info>>& old_playback_devices,
-                               const std::map<std::string, std::weak_ptr<device_info>>& new_playback_devices);
         void invoke_devices_changed_callbacks( std::vector<rs2_device_info> & rs2_devices_info_removed,
                                                std::vector<rs2_device_info> & rs2_devices_info_added );
         void raise_devices_changed(const std::vector<rs2_device_info>& removed, const std::vector<rs2_device_info>& added);
-        void start_device_watcher();
+
         std::shared_ptr<platform::backend> _backend;
-        std::shared_ptr<platform::device_watcher> _device_watcher;
 
         std::map<std::string, std::weak_ptr<device_info>> _playback_devices;
         std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
@@ -115,6 +113,8 @@ namespace librealsense
 #endif
 
         nlohmann::json _settings; // Save operation settings
+        unsigned const _device_mask;
+        backend_device_factory _backend_device_factory;
 
         devices_changed_callback_ptr _devices_changed_callback;
         std::map<int, std::weak_ptr<const stream_interface>> _streams;
@@ -122,17 +122,4 @@ namespace librealsense
         std::mutex _streams_mutex, _devices_changed_callbacks_mtx;
     };
 
-    // Helper functions for device list manipulation:
-    std::vector<platform::uvc_device_info> filter_by_product(const std::vector<platform::uvc_device_info>& devices, const std::set<uint16_t>& pid_list);
-    std::vector<std::pair<std::vector<platform::uvc_device_info>, std::vector<platform::hid_device_info>>> group_devices_and_hids_by_unique_id(
-        const std::vector<std::vector<platform::uvc_device_info>>& devices,
-        const std::vector<platform::hid_device_info>& hids);
-    std::vector<std::vector<platform::uvc_device_info>> group_devices_by_unique_id(const std::vector<platform::uvc_device_info>& devices);
-    void trim_device_list(std::vector<platform::uvc_device_info>& devices, const std::vector<platform::uvc_device_info>& chosen);
-    bool mi_present(const std::vector<platform::uvc_device_info>& devices, uint32_t mi);
-    platform::uvc_device_info get_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi);
-    std::vector<platform::uvc_device_info> filter_by_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi);
-
-    std::vector<platform::usb_device_info> filter_by_product(const std::vector<platform::usb_device_info>& devices, const std::set<uint16_t>& pid_list);
-    void trim_device_list(std::vector<platform::usb_device_info>& devices, const std::vector<platform::usb_device_info>& chosen);
 }

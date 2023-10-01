@@ -73,8 +73,6 @@ namespace librealsense
     {
         if (_device_changes_callback_id)
             _ctx->unregister_internal_device_callback(_device_changes_callback_id);
-
-        _ctx->stop();
     }
 
     std::shared_ptr<device_interface> device_hub::create_device(const std::string& serial, bool cycle_devices)

@@ -25,6 +25,8 @@
 #include "d400-thermal-monitor.h"
 #include "sync.h"
 
+#include <src/platform/platform-utils.h>
+
 #include "firmware_logger_device.h"
 #include "device-calibration.h"
 

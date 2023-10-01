@@ -180,8 +180,7 @@ namespace librealsense
         {
         public:
             win_event_device_watcher(const backend * backend)
-                : _last( backend->query_uvc_devices(), backend->query_usb_devices(), backend->query_hid_devices() )
-                , _backend( backend )
+                : _backend( backend )
             {
             }
             ~win_event_device_watcher() { stop(); }
@@ -195,6 +194,9 @@ namespace librealsense
                 LOG_DEBUG( "starting win_event_device_watcher" );
                 _data._stopped = false;
                 _callback = std::move(callback);
+                _last = backend_device_group( _backend->query_uvc_devices(),
+                                              _backend->query_usb_devices(),
+                                              _backend->query_hid_devices() );
                 _thread = std::thread([this]() { run(); });
             }
 
