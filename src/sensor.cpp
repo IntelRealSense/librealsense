@@ -106,18 +106,14 @@ void log_callback_end( uint32_t fps,
 
     int sensor_base::register_before_streaming_changes_callback(std::function<void(bool)> callback)
     {
-        int token = (on_before_streaming_changes += callback);
-        LOG_DEBUG("Registered token #" << token << " to \"on_before_streaming_changes\"");
-        return token;
+        int slot = _on_before_streaming_changes.add( std::move( callback ) );
+        LOG_DEBUG("Registered token #" << slot << " to \"on_before_streaming_changes\"");
+        return slot;
     }
 
-    void sensor_base::unregister_before_start_callback(int token)
+    void sensor_base::unregister_before_start_callback( int slot )
     {
-        bool successful_unregister = on_before_streaming_changes -= token;
-        if (!successful_unregister)
-        {
-            LOG_WARNING("Failed to unregister token #" << token << " from \"on_before_streaming_changes\"");
-        }
+        _on_before_streaming_changes.remove( slot );
     }
 
     frame_callback_ptr sensor_base::get_frames_callback() const
@@ -185,7 +181,7 @@ void log_callback_end( uint32_t fps,
 
     void sensor_base::raise_on_before_streaming_changes(bool streaming)
     {
-        on_before_streaming_changes(streaming);
+        _on_before_streaming_changes.raise( streaming );
     }
     void sensor_base::set_active_streams(const stream_profiles& requests)
     {

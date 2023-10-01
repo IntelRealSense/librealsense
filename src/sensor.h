@@ -24,6 +24,7 @@
 #include "platform/frame-object.h"
 
 #include <rsutils/lazy.h>
+#include <rsutils/signal.h>
 
 
 namespace librealsense
@@ -133,7 +134,7 @@ namespace librealsense
         rsutils::lazy< stream_profiles > _profiles;
         stream_profiles _active_profiles;
         mutable std::mutex _active_profile_mutex;
-        signal<sensor_base, bool> on_before_streaming_changes;
+        rsutils::signal< bool > _on_before_streaming_changes;
     };
 
     class processing_block;
