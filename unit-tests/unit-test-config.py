@@ -35,7 +35,8 @@ def usage():
     print( '        --list-tests   print out all available tests. This option will not run any tests' )
     print( '                       if both list-tags and list-tests are specified each test will be printed along' )
     print( '                       with what tags it has' )
-    print( '        --context        The context to use for test configuration' )
+    print( '        --context      The context to use for test configuration' )
+    print( '        --live         Only configure tests that are live (have test:device)' )
     sys.exit(2)
 
 regex = None
@@ -43,10 +44,11 @@ required_tags = []
 list_tags = False
 list_tests = False
 context = None
+live_only = False
 # parse command-line:
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'hr:t:',
-                                longopts=['help', 'regex=', 'tag=', 'list-tags', 'list-tests', 'context='] )
+                                longopts=['help', 'regex=', 'tag=', 'list-tags', 'list-tests', 'context=', 'live'] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
@@ -63,6 +65,8 @@ for opt, arg in opts:
         list_tests = True
     elif opt == '--context':
         context = arg
+    elif opt == '--live':
+        live_only = True
 
 if len( args ) != 2:
     usage()
@@ -111,6 +115,7 @@ project( ''' + testname + ''' )
 set( SRC_FILES ''' + filelist + '''
 )
 add_executable( ${PROJECT_NAME} ${SRC_FILES} )
+add_definitions( ''' + ' '.join( f'-DLIBCI_DEPENDENCY_{d}' for d in dependencies.split() ) + ''' )
 source_group( "Common Files" FILES ${CATCH_FILES} ''' + directory + '''/test.cpp''')
     if not custom_main:
         handle.write(' ' + directory + '/unit-test-default-main.cpp')
@@ -145,42 +150,43 @@ def find_include( include, relative_to ):
             return include
 
 
-standard_include_dirs = [
-    os.path.join( root, 'include' ),
-    os.path.join( root, 'third-party', 'rsutils', 'include' ),
-    root
-    ]
-def find_include_in_dirs( include ):
+def find_include_in_dirs( include, dirs ):
     """
-    Search for the given include in all the standard include directories
+    Search for the given include in all the specified directories
     """
-    global include_dirs
-    for include_dir in standard_include_dirs:
+    for include_dir in dirs:
         path = find_include( include, include_dir )
         if path:
             return path
 
 
-def find_includes( filepath, filelist ):
+def find_includes( filepath, filelist, dependencies ):
     """
     Recursively searches a .cpp file for #include directives
     :param filelist: any previous includes already processed (pass an empty dict() if none)
+    :param dependencies: set of dependencies
     :return: a dictionary (include->source) of includes found
     """
+    include_dirs = list()
+    if 'realsense2' in dependencies:
+        include_dirs.append( os.path.join( root, 'include' ))
+    include_dirs.append( os.path.join( root, 'third-party', 'rsutils', 'include' ))
+    include_dirs.append( root )
+    
     filedir = os.path.dirname(filepath)
     try:
         log.debug_indent()
         for include_line in file.grep( r'^\s*#\s*include\s+("(.*)"|<(.*)>)\s*$', filepath ):
             m = include_line['match']
             index = include_line['index']
-            include = find_include( m.group(2), filedir ) or find_include_in_dirs( m.group(2) ) or find_include_in_dirs( m.group(3) )
+            include = find_include( m.group(2), filedir ) or find_include_in_dirs( m.group(2), include_dirs ) or find_include_in_dirs( m.group(3), include_dirs )
             if include:
                 if include in filelist:
                     log.d( m.group(0), '->', include, '(already processed)' )
                 else:
                     log.d( m.group(0), '->', include )
                     filelist[include] = filepath
-                    filelist = find_includes( include, filelist )
+                    filelist = find_includes( include, filelist, dependencies )
             else:
                 log.d( 'not found:', m.group(0) )
     finally:
@@ -188,7 +194,7 @@ def find_includes( filepath, filelist ):
     return filelist
 
 def process_cpp( dir, builddir ):
-    global regex, required_tags, list_only, available_tags, tests_and_tags
+    global regex, required_tags, list_only, available_tags, tests_and_tags, live_only
     found = []
     shareds = []
     statics = []
@@ -211,8 +217,8 @@ def process_cpp( dir, builddir ):
         log.d( '... found:', f )
         log.debug_indent()
         try:
+            config = libci.TestConfigFromCpp( dir + os.sep + f, context )
             if required_tags or list_tags:
-                config = libci.TestConfigFromCpp( dir + os.sep + f, context )
                 if not all( tag in config.tags for tag in required_tags ):
                     continue
                 available_tags.update( config.tags )
@@ -222,18 +228,21 @@ def process_cpp( dir, builddir ):
             if testname not in tests_and_tags:
                 tests_and_tags[testname] = None
 
+            if live_only:
+                if not config.configurations:
+                    continue
+
             # Build the list of files we want in the project:
             # At a minimum, we have the original file, plus any common files
             filelist = [ dir + '/' + f, '${CATCH_FILES}' ]
-            # Add any includes specified in the .cpp that we can find
-            includes = find_includes( dir + '/' + f, dict() )
+            includes = dict()
             # Add any files explicitly listed in the .cpp itself, like this:
             #         //#cmake:add-file <filename>
             # Any files listed are relative to $dir
             shared = False
             static = False
             custom_main = False
-            dependencies = '${DEPENDENCIES}'  # most will depend on realsense2 (the default in unit-tests/CMakeLists.txt)
+            dependencies = 'realsense2'
             for cmake_directive in file.grep( '^//#cmake:\s*', dir + '/' + f ):
                 m = cmake_directive['match']
                 index = cmake_directive['index']
@@ -255,7 +264,7 @@ def process_cpp( dir, builddir ):
                             filelist.append( abs_file )
                             if( os.path.splitext( abs_file )[0] == 'cpp' ):
                                 # Add any "" includes specified in the .cpp that we can find
-                                includes = find_includes( abs_file, includes )
+                                includes = find_includes( abs_file, includes, dependencies )
                 elif cmd == 'static!':
                     if len(rest):
                         log.e( f + '+' + str(index) + ': unexpected arguments past \'' + cmd + '\'' )
@@ -278,6 +287,9 @@ def process_cpp( dir, builddir ):
                     dependencies = ' '.join( rest )
                 else:
                     log.e( f + '+' + str(index) + ': unknown cmd \'' + cmd + '\' (should be \'add-file\', \'static!\', or \'shared!\')' )
+
+            # Add any includes specified in the .cpp that we can find
+            includes = find_includes( dir + '/' + f, includes, dependencies )
             for include,source in includes.items():
                 filelist.append( f'"{include}"  # {source}' )
 
