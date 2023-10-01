@@ -14,6 +14,7 @@ namespace librealsense {
 // in sensor.cpp
 void log_callback_end( uint32_t fps,
                        rs2_time_t callback_start_time,
+                       rs2_time_t callback_end_time,
                        rs2_stream stream_type,
                        unsigned long long frame_number );
 
@@ -116,7 +117,7 @@ void uvc_sensor::open( const stream_profiles & requests )
                     platform::frame_object f,
                     std::function< void() > continuation ) mutable
                 {
-                    const auto && system_time = environment::get_instance().get_time_service()->get_time();
+                    const auto system_time = time_service::get_time();  // time frame was received from the backend
 
                     if( ! this->is_streaming() )
                     {
@@ -128,6 +129,7 @@ void uvc_sensor::open( const stream_profiles & requests )
                     }
 
                     const auto && fr = generate_frame_from_data( f,
+                                                                 system_time,
                                                                  _timestamp_reader.get(),
                                                                  last_timestamp,
                                                                  last_frame_number,
@@ -177,7 +179,7 @@ void uvc_sensor::open( const stream_profiles & requests )
                         expected_size,
                         std::move( fr->additional_data ),
                         true );
-                    auto diff = environment::get_instance().get_time_service()->get_time() - system_time;
+                    auto diff = time_service::get_time() - system_time;
                     if( diff > 10 )
                         LOG_DEBUG( "!! Frame allocation took " << diff << " msec" );
 
@@ -215,7 +217,7 @@ void uvc_sensor::open( const stream_profiles & requests )
                         fh->set_timestamp_domain( timestamp_domain );
                         fh->set_stream( req_profile_base );
 
-                        diff = environment::get_instance().get_time_service()->get_time() - system_time;
+                        diff = time_service::get_time() - system_time;
                         if (diff > 10)
                             LOG_DEBUG("!! Frame memcpy took " << diff << " msec");
                     }
@@ -238,12 +240,12 @@ void uvc_sensor::open( const stream_profiles & requests )
                         auto frame_number = fh->get_frame_number();
 
                         // Invoke first callback
-                        auto callback_start_time = environment::get_instance().get_time_service()->get_time();
+                        auto callback_start_time = time_service::get_time();
                         auto callback = fh->get_owner()->begin_callback();
                         _source.invoke_callback( std::move( fh ) );
 
                         // Log callback ended
-                        log_callback_end( fps, callback_start_time, stream_type, frame_number );
+                        log_callback_end( fps, callback_start_time, time_service::get_time(), stream_type, frame_number );
                     }
                 } );
         }

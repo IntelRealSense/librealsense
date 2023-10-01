@@ -3,7 +3,7 @@
 
 #include "backend-v4l2.h"
 #include <src/platform/command-transfer.h>
-#include <src/platform/time-service.h>
+#include <src/core/time-service.h>
 #include "backend-hid.h"
 #include "backend.h"
 #include "types.h"
@@ -2711,10 +2711,6 @@ namespace librealsense
                 results.push_back(hid_dev_info);
             });
             return results;
-        }
-        std::shared_ptr<time_service> v4l_backend::create_time_service() const
-        {
-            return std::make_shared<os_time_service>();
         }
 
         std::shared_ptr<device_watcher> v4l_backend::create_device_watcher() const

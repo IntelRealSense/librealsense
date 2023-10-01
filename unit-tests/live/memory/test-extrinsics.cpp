@@ -18,7 +18,6 @@
 
 
 using namespace librealsense;
-using namespace librealsense::platform;
 
 constexpr int DELAY_INCREMENT_THRESHOLD = 4; //[%]
 constexpr int DELAY_INCREMENT_THRESHOLD_IMU = 8; //[%]

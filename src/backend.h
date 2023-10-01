@@ -26,7 +26,6 @@ namespace librealsense
     {
         class device_watcher;
         class hid_device;
-        class time_service;
         class uvc_device;
         class command_transfer;
 
@@ -42,8 +41,6 @@ namespace librealsense
 
             virtual std::shared_ptr<hid_device> create_hid_device(hid_device_info info) const = 0;
             virtual std::vector<hid_device_info> query_hid_devices() const = 0;
-
-            virtual std::shared_ptr<time_service> create_time_service() const = 0;
 
             virtual std::shared_ptr<device_watcher> create_device_watcher() const = 0;
 

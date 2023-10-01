@@ -7,7 +7,7 @@
 #include "mf-backend.h"
 #include "mf-uvc.h"
 #include "mf-hid.h"
-#include <src/platform/time-service.h>
+#include <src/core/time-service.h>
 #include <src/platform/device-watcher.h>
 #include <src/platform/command-transfer.h>
 #include "usb/usb-device.h"
@@ -174,11 +174,6 @@ namespace librealsense
             wmf_hid_device::foreach_hid_device(action);
 
             return devices;
-        }
-
-        std::shared_ptr<time_service> wmf_backend::create_time_service() const
-        {
-            return std::make_shared<os_time_service>();
         }
 
         class win_event_device_watcher : public device_watcher

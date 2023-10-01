@@ -568,7 +568,7 @@ namespace librealsense
         else
             _fps[m] = f->get_stream()->get_framerate();
 
-        auto const now = environment::get_instance().get_time_service()->get_time();
+        auto const now = time_service::get_time();
         //LOG_DEBUG( _name << ": _last_arrived[" << m->get_name() << "] = " << now );
         _last_arrived[m] = now;
     }
