@@ -83,11 +83,11 @@ struct hexdump
     // 
     // Syntax:
     //      {#}            Output # bytes consecutively
-    //      {0#}           Output # bytes, but with leading 0's removed
-    //      {-[0]#}        Output # bytes, but in reverse order
-    //      {#i}           Output # bytes as a signed integral value
-    //      {#u}           Output # bytes as an unsigned integral value
-    //      {#f}           Output # bytes as a floating point value (4f=float; 8f=double)
+    //      {0#}           Output # bytes, but with leading 0's removed (implies big-endian)
+    //      {-[0]#}        Output # bytes, but in reverse (big-endian) order
+    //      {#i}           Interpret # bytes as a signed integral value, and output decimal value
+    //      {#u}           Interpret # bytes as an unsigned integral value, and output decimal value
+    //      {#f}           Interpret # bytes as a floating point value (4f=float; 8f=double)
     //      {+#}           Skip # bytes
     //      \{             Output '{' (or any character following the '\')
     //      {repeat:#}     Start a repeat sequence that repeats # times (default is 0: as many times as buffer allows)

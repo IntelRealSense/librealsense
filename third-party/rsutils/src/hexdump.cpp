@@ -32,20 +32,11 @@ struct _stream_saver
 };
 
 
-size_t _write( std::ostream & os, uint8_t const * const data, size_t cb, bool skip_leading_0s = false )
+size_t _write( std::ostream & os, uint8_t const * const data, size_t cb )
 {
     uint8_t const * pb = data;
-    if( skip_leading_0s )
-        while( cb > 1 && ! *pb )
-            ++pb, --cb;
-    else
-        os << std::setw( 2 );
     while( cb-- > 0 )
-    {
-        os << int( *pb++ );
-        if( cb )
-            os << std::setw( 2 );
-    }
+        os << std::setw( 2 ) << int( *pb++ );
     return pb - data;
 }
 
@@ -302,14 +293,14 @@ std::ostream & operator<<( std::ostream & os, hexdump::_format const & f )
                 else
                 {
                     n_bytes = std::min( std::min( n_bytes, size_t( pend - pb ) ), n_left );
-                    if( *prefix == '-' )
+                    if( *prefix == '-' || *prefix == '0' )
                     {
-                        _write_reverse( os, pb, n_bytes, '0' == prefix[1] );
+                        _write_reverse( os, pb, n_bytes, *prefix == '0' || '0' == prefix[1] );
                         n_left -= n_bytes;  // skipped bytes are not output, therefore do not affect n_left
                     }
                     else if( *prefix != '+' )
                     {
-                        _write( os, pb, n_bytes, '0' == *prefix );
+                        _write( os, pb, n_bytes );
                         n_left -= n_bytes;  // skipped bytes are not output, therefore do not affect n_left
                     }
                     pb += n_bytes;

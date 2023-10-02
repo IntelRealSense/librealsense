@@ -222,15 +222,23 @@ TEST_CASE( "hexdump format {i}", "[hexarray]" )
     SECTION( "our platforms should be little endian" )
     {
         CHECK( to_string( hexdump( i4 ) ) == "04030201" );
+        CHECK( to_string( hexdump( i4 ).format( "{4}" ) ) == "04030201" );
     }
-    SECTION( "{-#} to reverse order" )
+    SECTION( "{-#} to reverse order (big-endian)" )
     {
         CHECK( to_string( hexdump( i4 ).format( "{-4}" ) ) == "01020304" );
     }
-    SECTION( "regular {4} notation" )
+    SECTION( "{0#} implies big-endian" )
     {
-        CHECK( to_string( hexdump( i4 ).format( "{4}" ) ) == "04030201" );
-        CHECK( to_string( hexdump( i4 ).format( "{04}" ) ) == "4030201" );
+        // 0x100 = 00 01 00 00; removing leading 0s doesn't make sense (we get '1') so removing leading 0s should also
+        // imply big-endian!
+        CHECK( to_string( hexdump( 0x100 ) ) == "00010000" );
+        CHECK( to_string( hexdump( 0x100 ).format( "{2}" ) ) == "0001" );
+        CHECK( to_string( hexdump( 0x100 ).format( "{02}" ) ) == "100" );
+        CHECK( to_string( hexdump( 0x1 ).format( "{01}" ) ) == "1" );
+
+        CHECK( to_string( hexdump( i4 ).format( "{04}" ) ) == "1020304" );
+        CHECK( to_string( hexdump( i4 ).format( "{-04}" ) ) == to_string( hexdump( i4 ).format( "{04}" ) ) );
     }
     SECTION( "signed integral value" )
     {
