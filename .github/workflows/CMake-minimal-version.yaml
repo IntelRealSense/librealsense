@@ -45,7 +45,7 @@ jobs:
         run: |
           if [ "${{steps.cmake_version.outputs.current_cmake_version}}" == "${EXPECTED_CMAKE_VERSION}" ] || [ "${{steps.cmake_version.outputs.current_cmake_version}}" \< "${EXPECTED_CMAKE_VERSION}" ]
           then
-            echo "The test PASSED, CMake ${{steps.cmake_version.outputs.current_cmake_version}} found same as expecting ${EXPECTED_CMAKE_VERSION}"
+            echo "The test PASSED, current CMake version is ${{steps.cmake_version.outputs.current_cmake_version}} and it is not higher than ${EXPECTED_CMAKE_VERSION}"
             exit 0
           else
             echo "Error - LibRS minimal CMake version require is ${EXPECTED_CMAKE_VERSION} but on this build the minimal is ${{steps.cmake_version.outputs.current_cmake_version}}"
