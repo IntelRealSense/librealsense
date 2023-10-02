@@ -22,7 +22,7 @@ This mode of operation lets you test your code on a variety of simulated devices
 
 ## Test Data
 
-If you would like to run and debug unit-tests locally on your machine but you don't have a RealSense device, we publish a set of *unit-test* recordings. These files capture expected execution of the test-suite over several types of hardware (D415, D435, SR300, etc..) 
+If you would like to run and debug unit-tests locally on your machine but you don't have a RealSense device, we publish a set of *unit-test* recordings. These files capture expected execution of the test-suite over several types of hardware (D415, D435, etc..) 
 Please see [Github Actions](https://docs.github.com/en/actions) for the exact URLs. 
 
 > These recordings do not contain any imaging data and therefore can only be useful for unit-tests. If you would like to run your algorithms on top of captured data, please review our [playback and record](https://github.com/IntelRealSense/librealsense/tree/master/src/media) capabilities. 
