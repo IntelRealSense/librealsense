@@ -9,7 +9,7 @@ You are welcome to propose and discuss enhancements using project [issues](https
 > The `development` branch is the one where all contributions must be merged before being promoted to master.
 > If you plan to propose a patch, please commit into the `development` branch, or its own feature branch. 
 
-We recommend enabling [Github Actions](../../actions) on your fork of `librealsense` to make sure the changes compile on all platforms and pass unit-tests.
+We recommend enabling [Github Actions](https://docs.github.com/en/actions) on your fork of `librealsense` to make sure the changes compile on all platforms and pass unit-tests.
 
 In addition, please run `pr_check.sh` and `api_check.sh` under `scripts` directory. These scripts verify compliance with project's standards:
 
@@ -69,4 +69,4 @@ For example, when adding new value to [`rs2_option`](https://github.com/IntelRea
 4. The list of Java options used for Android integration - [`wrappers/android/librealsense/src/main/java/com/intel/realsense/librealsense/Option.java`](https://github.com/IntelRealSense/librealsense/blob/v2.32.1/wrappers/android/librealsense/src/main/java/com/intel/realsense/librealsense/Option.java#L4-L64)
 5. The list of options in the [python](https://github.com/IntelRealSense/librealsense/blob/v2.32.1/wrappers/python/pybackend.cpp#L102-L165) wrapper
 
-Once all are updated [Github Actions](../../actions) will give clear indication that each of the wrappers is still passing compilation. 
+Once all are updated [Github Actions](https://docs.github.com/en/actions) will give clear indication that each of the wrappers is still passing compilation. 
