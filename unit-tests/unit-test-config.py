@@ -37,6 +37,7 @@ def usage():
     print( '                       with what tags it has' )
     print( '        --context      The context to use for test configuration' )
     print( '        --live         Only configure tests that are live (have test:device)' )
+    print( '        --not-live     Only configure tests that are NOT live (do not have test:device)' )
     sys.exit(2)
 
 regex = None
@@ -45,10 +46,11 @@ list_tags = False
 list_tests = False
 context = None
 live_only = False
+not_live_only = False
 # parse command-line:
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'hr:t:',
-                                longopts=['help', 'regex=', 'tag=', 'list-tags', 'list-tests', 'context=', 'live'] )
+                                longopts=['help', 'regex=', 'tag=', 'list-tags', 'list-tests', 'context=', 'live', 'not-live'] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
@@ -66,7 +68,13 @@ for opt, arg in opts:
     elif opt == '--context':
         context = arg
     elif opt == '--live':
+        if not_live_only:
+            raise RuntimeError( '--live and --not-live are mutually exclusive' )
         live_only = True
+    elif opt == '--not-live':
+        if live_only:
+            raise RuntimeError( '--live and --not-live are mutually exclusive' )
+        not_live_only = True
 
 if len( args ) != 2:
     usage()
@@ -194,7 +202,7 @@ def find_includes( filepath, filelist, dependencies ):
     return filelist
 
 def process_cpp( dir, builddir ):
-    global regex, required_tags, list_only, available_tags, tests_and_tags, live_only
+    global regex, required_tags, list_only, available_tags, tests_and_tags, live_only, not_live_only
     found = []
     shareds = []
     statics = []
@@ -230,6 +238,9 @@ def process_cpp( dir, builddir ):
 
             if live_only:
                 if not config.configurations:
+                    continue
+            elif not_live_only:
+                if config.configurations:
                     continue
 
             # Build the list of files we want in the project:
