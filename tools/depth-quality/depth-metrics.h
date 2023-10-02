@@ -5,9 +5,6 @@
 
 #pragma once
 
-#ifndef _USE_MATH_DEFINES
-#define _USE_MATH_DEFINES
-#endif
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -18,7 +15,7 @@
 
 #include "float3.h"
 #include "plane.h"
-
+#include <corecrt_math_defines.h>
 
 namespace rs2
 {
