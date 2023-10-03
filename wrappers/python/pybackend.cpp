@@ -35,6 +35,12 @@ using namespace pybind11::literals;
 using namespace librealsense;
 using namespace pybackend2;
 
+namespace librealsense {
+namespace platform {
+std::shared_ptr< backend > create_backend();
+}  // namespace platform
+}  // namespace librealsense
+
 
 // Prevents expensive copies of pixel buffers into python
 PYBIND11_MAKE_OPAQUE(std::vector<uint8_t>)

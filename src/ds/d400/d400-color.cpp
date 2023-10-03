@@ -43,7 +43,6 @@ namespace librealsense
     void d400_color::create_color_device(std::shared_ptr<context> ctx, const platform::backend_device_group& group)
     {
         using namespace ds;
-        auto&& backend = ctx->get_backend();
 
         _color_calib_table_raw = [this]()
         {
@@ -82,7 +81,7 @@ namespace librealsense
                 info = color_devs_info[1];
             else
                 info = color_devs_info.front();
-            auto uvcd = backend.create_uvc_device(info);
+            auto uvcd = get_backend()->create_uvc_device( info );
             //auto ftr = std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(d400_timestamp_reader_metadata), _tf_keeper, enable_global_time_option));
             auto raw_color_ep = std::make_shared<uvc_sensor>("Raw RGB Camera",
                 uvcd,

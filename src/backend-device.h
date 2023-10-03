@@ -4,25 +4,32 @@
 #pragma once
 
 #include <src/device.h>
+#include <memory>
 
 
 namespace librealsense {
 
 
-// Common base class for all Stereo devices
+namespace platform {
+class backend;
+}
+
+
+// Common base class for all backend devices (i.e., those that require a platform backend)
 //
-class ds_device : public virtual device
+class backend_device : public virtual device
 {
     typedef device super;
 
 protected:
-    ds_device( std::shared_ptr< const device_info > const & dev_info, bool device_changed_notifications = true )
+    backend_device( std::shared_ptr< const device_info > const & dev_info, bool device_changed_notifications = true )
         : super( dev_info, device_changed_notifications )
     {
     }
 
 public:
     uint16_t get_pid() const { return _pid; }
+    std::shared_ptr< platform::backend > get_backend();
 
 protected:
     uint16_t _pid = 0;

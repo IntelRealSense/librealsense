@@ -7,12 +7,22 @@
 #include "platform/platform-device-info.h"
 #include "platform/device-watcher.h"
 
+#include "backend-device.h"
 #include "ds/d400/d400-info.h"
 #include "ds/d500/d500-info.h"
 #include "fw-update/fw-update-factory.h"
 #include "platform-camera.h"
 
+#include <rsutils/shared-ptr-singleton.h>
+#include <rsutils/signal.h>
 #include <rsutils/json.h>
+
+
+namespace librealsense {
+namespace platform {
+std::shared_ptr< backend > create_backend();
+}  // namespace platform
+}  // namespace librealsense
 
 
 namespace {
@@ -77,56 +87,122 @@ subtract_sets( const std::vector< std::shared_ptr< librealsense::platform::platf
 namespace librealsense {
 
 
-backend_device_factory::backend_device_factory( context & ctx, callback && cb )
-    : _device_watcher( ctx.get_backend().create_device_watcher() )
-    , _context( ctx )
+// This singleton creates the actual backend; as long as someone holds it, the backend will stay alive.
+// The instance is held below by the device-watcher. I.e., the device-watcher triggers creation of the
+// backend!
+//
+class backend_singleton
 {
-    assert( _device_watcher->is_stopped() );
-    _device_watcher->start(
-        [this, cb = std::move( cb )]( platform::backend_device_group const & old,
-                                      platform::backend_device_group const & curr )
-        {
-            auto old_list = create_devices_from_group( old, RS2_PRODUCT_LINE_ANY );
-            auto new_list = create_devices_from_group( curr, RS2_PRODUCT_LINE_ANY );
+    std::shared_ptr< platform::backend > const _backend;
 
-            std::vector< rs2_device_info > devices_removed;
-            for( auto & device_removed : subtract_sets( old_list, new_list ) )
-            {
-                devices_removed.push_back( { _context.shared_from_this(), device_removed } );
-                LOG_DEBUG( "Device disconnected: " << device_removed->get_address() );
-            }
+public:
+    backend_singleton()
+        : _backend( platform::create_backend() )
+    {
+    }
 
-            std::vector< rs2_device_info > devices_added;
-            for( auto & device_added : subtract_sets( new_list, old_list ) )
-            {
-                devices_added.push_back( { _context.shared_from_this(), device_added } );
-                LOG_DEBUG( "Device connected: " << device_added->get_address() );
-            }
+    std::shared_ptr< platform::backend > get() const { return _backend; }
+};
 
-            if( devices_removed.size() + devices_added.size() )
-            {
-                cb( devices_removed, devices_added );
-            }
-        } );
+
+static rsutils::shared_ptr_singleton< backend_singleton > the_backend;
+
+
+// The device-watcher is also a singleton: we don't need multiple agents of notifications. It is held alive by the
+// device-factory below, which is held per context. I.e., as long as the context is alive, we'll stay alive and the
+// backend-singleton will stay alive.
+// 
+// We are responsible for exposing the single notification from the platform-device-watcher to several subscribers:
+// one device-watcher, but many contexts, each with further subscriptions.
+//
+class device_watcher_singleton
+{
+    // The device-watcher keeps a direct pointer to the backend instance, so we have to make sure it stays alive!
+    std::shared_ptr< backend_singleton > const _backend;
+    std::shared_ptr< platform::device_watcher > const _device_watcher;
+    rsutils::signal< platform::backend_device_group const &, platform::backend_device_group const & > _callbacks;
+
+public:
+    device_watcher_singleton()
+        : _backend( the_backend.instance() )
+        , _device_watcher( _backend->get()->create_device_watcher() )
+    {
+        assert( _device_watcher->is_stopped() );
+        _device_watcher->start(
+            [this]( platform::backend_device_group const & old, platform::backend_device_group const & curr )
+            { _callbacks.raise( old, curr ); } );
+    }
+
+    rsutils::subscription subscribe( platform::device_changed_callback && cb )
+    {
+        return _callbacks.subscribe( std::move( cb ) );
+    }
+
+    std::shared_ptr< platform::backend > const get_backend() const { return _backend->get(); }
+};
+
+
+static rsutils::shared_ptr_singleton< device_watcher_singleton > backend_device_watcher;
+
+
+std::shared_ptr< platform::backend > backend_device::get_backend()
+{
+    auto singleton = the_backend.get();
+    if( ! singleton )
+        // Whoever is calling us, they are expecting a backend to exist, but it does not!
+        throw std::runtime_error( "backend not created yet!" );
+
+    return singleton->get();
+}
+
+
+backend_device_factory::backend_device_factory( context & ctx, callback && cb )
+    : _context( ctx )
+    , _device_watcher( backend_device_watcher.instance() )
+    , _dtor( _device_watcher->subscribe(
+          [this, cb = std::move( cb )]( platform::backend_device_group const & old,
+                                        platform::backend_device_group const & curr )
+          {
+              auto old_list = create_devices_from_group( old, RS2_PRODUCT_LINE_ANY );
+              auto new_list = create_devices_from_group( curr, RS2_PRODUCT_LINE_ANY );
+
+              std::vector< rs2_device_info > devices_removed;
+              for( auto & device_removed : subtract_sets( old_list, new_list ) )
+              {
+                  devices_removed.push_back( { _context.shared_from_this(), device_removed } );
+                  LOG_DEBUG( "Device disconnected: " << device_removed->get_address() );
+              }
+
+              std::vector< rs2_device_info > devices_added;
+              for( auto & device_added : subtract_sets( new_list, old_list ) )
+              {
+                  devices_added.push_back( { _context.shared_from_this(), device_added } );
+                  LOG_DEBUG( "Device connected: " << device_added->get_address() );
+              }
+
+              if( devices_removed.size() + devices_added.size() )
+              {
+                  cb( devices_removed, devices_added );
+              }
+          } ) )
+{
 }
 
 
 backend_device_factory::~backend_device_factory()
 {
-    if( _device_watcher )
-        _device_watcher->stop();
 }
 
 
 std::vector< std::shared_ptr< device_info > > backend_device_factory::query_devices( unsigned requested_mask ) const
 {
-    if( (requested_mask & RS2_PRODUCT_LINE_SW_ONLY) || (_context.get_device_mask() & RS2_PRODUCT_LINE_SW_ONLY) )
+    if( ( requested_mask & RS2_PRODUCT_LINE_SW_ONLY ) || ( _context.get_device_mask() & RS2_PRODUCT_LINE_SW_ONLY ) )
         return {};  // We don't carry any software devices
 
-    auto & backend = _context.get_backend();
-    platform::backend_device_group group( backend.query_uvc_devices(),
-                                          backend.query_usb_devices(),
-                                          backend.query_hid_devices() );
+    auto backend = _device_watcher->get_backend();
+    platform::backend_device_group group( backend->query_uvc_devices(),
+                                          backend->query_usb_devices(),
+                                          backend->query_hid_devices() );
     auto devices = create_devices_from_group( group, requested_mask );
     return { devices.begin(), devices.end() };
 }

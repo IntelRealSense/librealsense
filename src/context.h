@@ -4,8 +4,7 @@
 #pragma once
 
 #include "backend-device-factory.h"
-#include "device-info.h"
-#include "types.h"
+#include "types.h"  // devices_changed_callback_ptr
 
 #include <rsutils/lazy.h>
 #include <nlohmann/json.hpp>
@@ -49,19 +48,11 @@ namespace realdds {
 
 namespace librealsense
 {
-    class device;
-    class context;
     class playback_device_info;
     class stream_interface;
 
-    namespace platform {
-        class backend;
-        class device_watcher;
-    }
-
     class context : public std::enable_shared_from_this<context>
     {
-        context();
     public:
         explicit context( nlohmann::json const & );
         explicit context( char const * json_settings );
@@ -81,7 +72,6 @@ namespace librealsense
         static unsigned combine_device_masks( unsigned requested_mask, unsigned mask_in_settings );
 
         std::vector<std::shared_ptr<device_info>> query_devices(int mask) const;
-        const platform::backend& get_backend() const { return *_backend; }
 
         uint64_t register_internal_device_callback(devices_changed_callback_ptr callback);
         void unregister_internal_device_callback(uint64_t cb_id);
@@ -100,8 +90,6 @@ namespace librealsense
         void invoke_devices_changed_callbacks( std::vector<rs2_device_info> & rs2_devices_info_removed,
                                                std::vector<rs2_device_info> & rs2_devices_info_added );
         void raise_devices_changed(const std::vector<rs2_device_info>& removed, const std::vector<rs2_device_info>& added);
-
-        std::shared_ptr<platform::backend> _backend;
 
         std::map<std::string, std::weak_ptr<device_info>> _playback_devices;
         std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;

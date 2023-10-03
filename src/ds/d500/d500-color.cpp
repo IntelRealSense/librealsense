@@ -43,7 +43,6 @@ namespace librealsense
     void d500_color::create_color_device(std::shared_ptr<context> ctx, const platform::backend_device_group& group)
     {
         using namespace ds;
-        auto&& backend = ctx->get_backend();
 
         _color_calib_table_raw = [this]()
         {
@@ -61,10 +60,14 @@ namespace librealsense
         std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(ds_timestamp_reader_backup)));
 
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
-        auto raw_color_ep = std::make_shared<uvc_sensor>("Raw RGB Camera",
-            backend.create_uvc_device(color_devs_info.front()),
-            std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)),
-            this);
+        auto raw_color_ep = std::make_shared< uvc_sensor >(
+            "Raw RGB Camera",
+            get_backend()->create_uvc_device( color_devs_info.front() ),
+            std::unique_ptr< frame_timestamp_reader >(
+                new global_timestamp_reader( std::move( ds_timestamp_reader_metadata ),
+                                             _tf_keeper,
+                                             enable_global_time_option ) ),
+            this );
 
         auto color_ep = std::make_shared<d500_color_sensor>(this,
             raw_color_ep,

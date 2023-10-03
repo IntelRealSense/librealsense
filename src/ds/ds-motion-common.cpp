@@ -261,7 +261,7 @@ namespace librealsense
         return auto_exposure;
     }
 
-    ds_motion_common::ds_motion_common(ds_device* owner,
+    ds_motion_common::ds_motion_common( backend_device * owner,
         firmware_version fw_version,
         const ds::ds_caps& device_capabilities,
         std::shared_ptr<hw_monitor> hwm) :
@@ -472,12 +472,16 @@ namespace librealsense
         }
         _fps_and_sampling_frequency_per_rs2_stream[RS2_STREAM_ACCEL] = fps_and_frequency_map;
 
-        auto raw_hid_ep = std::make_shared<hid_sensor>(ctx->get_backend().create_hid_device(all_hid_infos.front()),
-            std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(iio_hid_ts_reader), tf_keeper, enable_global_time_option)),
-            std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(custom_hid_ts_reader), tf_keeper, enable_global_time_option)),
+        auto raw_hid_ep = std::make_shared< hid_sensor >(
+            _owner->get_backend()->create_hid_device( all_hid_infos.front() ),
+            std::unique_ptr< frame_timestamp_reader >(
+                new global_timestamp_reader( std::move( iio_hid_ts_reader ), tf_keeper, enable_global_time_option ) ),
+            std::unique_ptr< frame_timestamp_reader >( new global_timestamp_reader( std::move( custom_hid_ts_reader ),
+                                                                                    tf_keeper,
+                                                                                    enable_global_time_option ) ),
             _fps_and_sampling_frequency_per_rs2_stream,
             _sensor_name_and_hid_profiles,
-            _owner);
+            _owner );
 
         auto hid_ep = std::make_shared<ds_motion_sensor>("Motion Module", raw_hid_ep, _owner);
 

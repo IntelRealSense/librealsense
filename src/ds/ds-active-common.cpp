@@ -10,7 +10,7 @@ namespace librealsense
 
     ds_active_common::ds_active_common(uvc_sensor& raw_depth_ep,
         synthetic_sensor& depth_ep,
-        ds_device* owner,
+        backend_device* owner,
         ds_caps device_capabilities,
         std::shared_ptr<hw_monitor> hw_monitor,
         firmware_version fw_version) :
