@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5) 
+cmake_minimum_required(VERSION 3.16.3)  # same as in FastDDS (U20)
 include(FetchContent)
 
 # We use a function to enforce a scoped variables creation only for FastDDS build (i.e turn off BUILD_SHARED_LIBS which is used on LRS build as well)
@@ -16,7 +16,7 @@ function(get_fastdds)
     FetchContent_Declare(
       fastdds
       GIT_REPOSITORY https://github.com/eProsima/Fast-DDS.git
-      GIT_TAG        v2.9.1
+      GIT_TAG        v2.11.2
       GIT_SUBMODULES ""     # Submodules will be cloned as part of the FastDDS cmake configure stage
       GIT_SHALLOW ON        # No history needed
       SOURCE_DIR ${CMAKE_BINARY_DIR}/third-party/fastdds
@@ -31,6 +31,8 @@ function(get_fastdds)
     set(COMPILE_TOOLS OFF CACHE INTERNAL "" FORCE)
     set(BUILD_TESTING OFF CACHE INTERNAL "" FORCE)
     set(SQLITE3_SUPPORT OFF CACHE INTERNAL "" FORCE)
+    #set(ENABLE_OLD_LOG_MACROS OFF CACHE INTERNAL "" FORCE)  doesn't work
+    set(FASTDDS_STATISTICS OFF CACHE INTERNAL "" FORCE)
 
     # Set special values for FastDDS sub directory
     set(BUILD_SHARED_LIBS OFF)
