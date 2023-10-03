@@ -51,12 +51,28 @@ std::string to_string( hexdump::_format const & hexf )
 
 TEST_CASE( "hexdump", "[hexarray]" )
 {
-    SECTION( "single-values" )
+    SECTION( "buffers get native (little-endian) byte ordering" )
+    {
+        int i = 0x04030201;
+        CHECK( to_string( hexdump( reinterpret_cast< byte const * >( &i ), sizeof( i ) ) ) == "01020304" );  // little-endian
+    }
+    SECTION( "single values show the way you'd expect to read them, in big-endian" )
     {
         CHECK( to_string( hexdump( 'a' ) ) == "61" );
         CHECK( to_string( hexdump( byte( 0 ) ) ) == "00" );
         CHECK( to_string( hexdump( 0 ) ) == "00000000" );
-        CHECK( to_string( hexdump( 0x04030201 ) ) == "01020304" );  // depends on byte-ordering
+        CHECK( to_string( hexdump( 0x04030201 ) ) == "04030201" );
+        CHECK( to_string( hexdump( (void *) (0x123) ) ) == "0000000000000123" );  // pointers, too
+    }
+    SECTION( "floating point values aren't readable -- they stay at native endian-ness" )
+    {
+        union { uint32_t i; float f; byte b[4]; } u = { 0x40b570a4 };  // 5.67
+        CHECK( to_string( hexdump( u ) ) == "a470b540" );
+        CHECK( ! hexdump( u )._big_endian );
+        CHECK( to_string( hexdump( u.b ) ) == "a470b540" );  // array
+        CHECK( to_string( hexdump( u.f ) ) == "a470b540" );  // float
+        CHECK( to_string( hexdump( u.i ) ) == "40b570a4" );
+        CHECK( int( reinterpret_cast< byte const * >( &u )[0] ) == 0xa4 );
     }
     SECTION( "struct" )
     {
@@ -221,7 +237,7 @@ TEST_CASE( "hexdump format {i}", "[hexarray]" )
 
     SECTION( "our platforms should be little endian" )
     {
-        CHECK( to_string( hexdump( i4 ) ) == "04030201" );
+        CHECK( to_string( hexdump( i4 ) ) == "01020304" );
         CHECK( to_string( hexdump( i4 ).format( "{4}" ) ) == "04030201" );
     }
     SECTION( "{-#} to reverse order (big-endian)" )
@@ -232,7 +248,7 @@ TEST_CASE( "hexdump format {i}", "[hexarray]" )
     {
         // 0x100 = 00 01 00 00; removing leading 0s doesn't make sense (we get '1') so removing leading 0s should also
         // imply big-endian!
-        CHECK( to_string( hexdump( 0x100 ) ) == "00010000" );
+        CHECK( to_string( hexdump( 0x100 ).format( "{4}" ) ) == "00010000" );
         CHECK( to_string( hexdump( 0x100 ).format( "{2}" ) ) == "0001" );
         CHECK( to_string( hexdump( 0x100 ).format( "{02}" ) ) == "100" );
         CHECK( to_string( hexdump( 0x1 ).format( "{01}" ) ) == "1" );

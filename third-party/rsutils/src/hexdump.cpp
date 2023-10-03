@@ -88,7 +88,10 @@ std::ostream & operator<<( std::ostream & os, hexdump const & h )
         n_left = std::min( h._max_bytes, n_left );
     if( ! h._gap )
     {
-        _write( os, pb, n_left );
+        if( h._big_endian )
+            _write_reverse( os, pb, n_left );
+        else
+            _write( os, pb, n_left );
     }
     else
     {

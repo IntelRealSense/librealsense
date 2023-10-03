@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <iosfwd>
+#include <type_traits>
 
 
 namespace rsutils {
@@ -25,6 +26,7 @@ struct hexdump
     size_t _max_bytes = 0;  // no more than this number of bytes (extra will print "..."; 0=no max)
     size_t _gap = 0;        // pad with spaces every <gap> bytes (0=no gap)
     char _gap_character = ' ';
+    bool _big_endian = false;
 
     // Manual ctor for custom memory layout
     hexdump( uint8_t const * data, size_t len )
@@ -33,12 +35,41 @@ struct hexdump
     {
     }
 
-    // Auto ptr for easy object dumping
+    // Simplify usage with any type buffer, to avoid having to cast on the outside
     template< class T >
-    hexdump( T const & t )
-        : hexdump( reinterpret_cast< uint8_t const * >( &t ), sizeof( T ) )
+    hexdump( T const * pt, size_t len )
+        : hexdump( reinterpret_cast< uint8_t const * >( pt ), sizeof( T ) )
     {
     }
+
+
+    // Non-buffer usage would take the form of:
+    //      hexdump( t )  // no length
+    // These are easy to translate into a buffer.
+    // However, if 't' is some human-legible type (integral, pointer), we make it so the values show big-endian:
+    //      if i=0x01020304
+    //      hexdump( &i, sizeof( i )) would give little-endian 04030201 <- not readable
+    //      so hexdump( i ) should give 01020304
+
+    template< typename T, typename = void >
+    struct show_in_big_endian
+    {
+        static const bool value = false;
+    };
+    template< typename T >
+    struct show_in_big_endian< T, std::enable_if_t< std::is_integral< T >::value || std::is_pointer< T >::value > >
+    {
+        static const bool value = true;
+    };
+
+    // Single-value dump: BIG-endian if integral or pointer; otherwise little-endian
+    template< class T >
+    hexdump( T const & t )
+        : hexdump( &t, sizeof( T ) )
+    {
+        _big_endian = show_in_big_endian< T >::value;
+    }
+
 
     // Allow no more than this number of bytes out. If 0 (default), there is no maximum.
     // Anything past the max bytes will cause a '...' to be appended.
