@@ -1911,9 +1911,9 @@ namespace librealsense
                 return range;
             }
 
-            struct v4l2_queryctrl query = {};
+            struct v4l2_query_ext_ctrl query = {};
             query.id = get_cid(option);
-            if (xioctl(_fd, VIDIOC_QUERYCTRL, &query) < 0)
+            if (xioctl(_fd, VIDIOC_QUERY_EXT_CTRL, &query) < 0)
             {
                 // Some controls (exposure, auto exposure, auto hue) do not seem to work on V4L2
                 // Instead of throwing an error, return an empty range. This will cause this control to be omitted on our UI sample.
