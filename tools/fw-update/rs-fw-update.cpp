@@ -138,11 +138,11 @@ void list_devices(rs2::context ctx)
     }
 }
 
-int write_fw_to_mipi_device( const std::vector< uint8_t > & fw_image)
+int write_fw_to_mipi_device( const rs2::device & dev, const std::vector< uint8_t > & fw_image )
 {
     // Write firmware to appropriate file descritptor
     std::cout << std::endl << "Update can take up to 2 minutes" << std::endl;
-    std::ofstream fw_path_in_device( "/dev/d4xx-dfu504", std::ios::binary );
+    std::ofstream fw_path_in_device( dev.get_info( RS2_CAMERA_INFO_DFU_DEVICE_PATH ), std::ios::binary );
     auto file_deleter = std::unique_ptr< std::ofstream, void ( * )( std::ofstream * ) >( &fw_path_in_device,
                                                                                          []( std::ofstream * file )
                                                                                          {
@@ -452,7 +452,7 @@ try
                 return EXIT_FAILURE;
             }
 
-            return write_fw_to_mipi_device( fw_image );
+            return write_fw_to_mipi_device( d, fw_image );
         }
 
         if (unsigned_arg.isSet())
