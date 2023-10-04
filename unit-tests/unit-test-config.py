@@ -124,11 +124,11 @@ set( SRC_FILES ''' + filelist + '''
 )
 add_executable( ${PROJECT_NAME} ${SRC_FILES} )
 add_definitions( ''' + ' '.join( f'-DLIBCI_DEPENDENCY_{d}' for d in dependencies.split() ) + ''' )
-source_group( "Common Files" FILES ${CATCH_FILES} ''' + directory + '''/test.cpp''')
+source_group( "Common Files" FILES ''' + directory + '''/test.cpp''')
     if not custom_main:
         handle.write(' ' + directory + '/unit-test-default-main.cpp')
     handle.write( ''' )
-target_link_libraries( ${PROJECT_NAME} ''' + dependencies + ''' )
+target_link_libraries( ${PROJECT_NAME} ''' + dependencies + ''' Catch2 )
 
 set_target_properties( ${PROJECT_NAME} PROPERTIES FOLDER "Unit-Tests/''' + os.path.dirname( testdir ) + '''" )
 
@@ -245,7 +245,7 @@ def process_cpp( dir, builddir ):
 
             # Build the list of files we want in the project:
             # At a minimum, we have the original file, plus any common files
-            filelist = [ dir + '/' + f, '${CATCH_FILES}' ]
+            filelist = [ dir + '/' + f ]
             includes = dict()
             # Add any files explicitly listed in the .cpp itself, like this:
             #         //#cmake:add-file <filename>
@@ -367,10 +367,6 @@ log.d( 'Creating "' + name + '" project in', cmakefile )
 
 handle = open( cmakefile, 'w' )
 handle.write( '''
-
-set( CATCH_FILES
-    ''' + add_slash_before_spaces(dir) + '''/catch/catch.hpp
-)
 
 ''' )
 
