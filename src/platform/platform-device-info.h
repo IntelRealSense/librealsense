@@ -7,6 +7,7 @@
 #include <src/device-info.h>
 
 #include <memory>
+#include <vector>
 
 
 namespace librealsense {
@@ -59,4 +60,13 @@ public:
 
 
 }  // namespace platform
+
+
+// subtract_sets( left, right ) = what is in left that's not in right
+//
+std::vector< std::shared_ptr< platform::platform_device_info > >
+subtract_sets( const std::vector< std::shared_ptr< platform::platform_device_info > > & left,
+               const std::vector< std::shared_ptr< platform::platform_device_info > > & right );
+
+
 }  // namespace librealsense

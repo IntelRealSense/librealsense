@@ -25,52 +25,25 @@ std::shared_ptr< backend > create_backend();
 }  // namespace librealsense
 
 
-namespace {
+namespace librealsense {
 
 
-// Returns true if the left group is completely accounted for in the right group
-//
-bool group_contained_in( librealsense::platform::backend_device_group const & first_data,
-                         librealsense::platform::backend_device_group const & second_data )
+std::vector< std::shared_ptr< platform::platform_device_info > >
+subtract_sets( const std::vector< std::shared_ptr< platform::platform_device_info > > & first,
+               const std::vector< std::shared_ptr< platform::platform_device_info > > & second )
 {
-    for( auto && uvc : first_data.uvc_devices )
-    {
-        if( std::find( second_data.uvc_devices.begin(), second_data.uvc_devices.end(), uvc )
-            == second_data.uvc_devices.end() )
-            return false;
-    }
-    for( auto && usb : first_data.usb_devices )
-    {
-        if( std::find( second_data.usb_devices.begin(), second_data.usb_devices.end(), usb )
-            == second_data.usb_devices.end() )
-            return false;
-    }
-    for( auto && hid : first_data.hid_devices )
-    {
-        if( std::find( second_data.hid_devices.begin(), second_data.hid_devices.end(), hid )
-            == second_data.hid_devices.end() )
-            return false;
-    }
-    return true;
-}
-
-
-std::vector< std::shared_ptr< librealsense::platform::platform_device_info > >
-subtract_sets( const std::vector< std::shared_ptr< librealsense::platform::platform_device_info > > & first,
-               const std::vector< std::shared_ptr< librealsense::platform::platform_device_info > > & second )
-{
-    std::vector< std::shared_ptr< librealsense::platform::platform_device_info > > results;
+    std::vector< std::shared_ptr< platform::platform_device_info > > results;
     std::for_each(
         first.begin(),
         first.end(),
-        [&]( std::shared_ptr< librealsense::platform::platform_device_info > const & data )
+        [&]( std::shared_ptr< platform::platform_device_info > const & data )
         {
             if( std::find_if(
                     second.begin(),
                     second.end(),
-                    [&]( std::shared_ptr< librealsense::platform::platform_device_info > const & new_dev )
+                    [&]( std::shared_ptr< platform::platform_device_info > const & new_dev )
                     {
-                        return group_contained_in( data->get_group(), new_dev->get_group() );
+                        return data->get_group().is_contained_in( new_dev->get_group() );
                     } )
                 == second.end() )
             {
@@ -79,12 +52,6 @@ subtract_sets( const std::vector< std::shared_ptr< librealsense::platform::platf
         } );
     return results;
 }
-
-
-}  // namespace
-
-
-namespace librealsense {
 
 
 // This singleton creates the actual backend; as long as someone holds it, the backend will stay alive.
