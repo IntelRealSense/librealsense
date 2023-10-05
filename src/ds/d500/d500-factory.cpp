@@ -39,9 +39,9 @@ namespace librealsense
         public firmware_logger_device
     {
     public:
-        rs_d585_device( std::shared_ptr< const d500_info > const & dev_info,
-                        bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
+        rs_d585_device( std::shared_ptr< const d500_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d500_device( dev_info )
             , d500_active( dev_info )
             , d500_color( dev_info )
@@ -92,9 +92,9 @@ namespace librealsense
         public firmware_logger_device
     {
     public:
-        rs_d585s_device( std::shared_ptr< const d500_info > const & dev_info,
-                         bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
+        rs_d585s_device( std::shared_ptr< const d500_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d500_device( dev_info )
             , d500_active( dev_info )
             , d500_color( dev_info )
@@ -223,9 +223,9 @@ namespace librealsense
         case ds::D555E_PID:
             return std::make_shared< d555e_device >( dev_info );
         case ds::RS_D585_PID:
-            return std::make_shared<rs_d585_device>( dev_info, register_device_notifications );
+            return std::make_shared<rs_d585_device>( dev_info );
         case ds::RS_D585S_PID:
-            return std::make_shared<rs_d585s_device>( dev_info, register_device_notifications );
+            return std::make_shared<rs_d585s_device>( dev_info );
         default:
             throw std::runtime_error( rsutils::string::from() << "Unsupported D500 model! 0x" << std::hex
                                                               << std::setw( 4 ) << std::setfill( '0' ) << (int)pid );
