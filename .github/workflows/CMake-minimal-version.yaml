@@ -20,7 +20,8 @@ jobs:
       - name: "Get current CMake version"
         id: cmake_version
         run: |
-          sudo apt-get install  xorg-dev libglu1-mesa-dev
+          sudo apt-get update
+          sudo apt-get install xorg-dev libglu1-mesa-dev
           
           # Go back from RealSense directory to parent directory  
           cd ..
