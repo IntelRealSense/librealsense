@@ -7,10 +7,13 @@
 #include "../../core/extension.h"
 #include "../../core/serialization.h"
 #include "../../core/streaming.h"
+#include <src/core/device-interface.h>
 #include "../../archive.h"
 #include "../../sensor.h"
 #include "playback_sensor.h"
+
 #include <rsutils/lazy.h>
+#include <rsutils/signal.h>
 
 
 namespace librealsense
@@ -44,7 +47,7 @@ namespace librealsense
         bool is_real_time() const;
         const std::string& get_file_name() const;
         uint64_t get_position() const;
-        signal<playback_device, rs2_playback_status> playback_status_changed;
+        rsutils::public_signal< playback_device, rs2_playback_status > playback_status_changed;
         std::shared_ptr< const device_info > get_device_info() const override;
         std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const override;
         static bool try_extend_snapshot(std::shared_ptr<extension_snapshot>& e, rs2_extension extension_type, void** ext);

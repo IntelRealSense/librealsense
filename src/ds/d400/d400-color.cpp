@@ -10,6 +10,7 @@
 #include "d400-color.h"
 #include "d400-info.h"
 #include <src/backend.h>
+#include <src/platform/platform-utils.h>
 
 #include <rsutils/string/from.h>
 
@@ -42,7 +43,6 @@ namespace librealsense
     void d400_color::create_color_device(std::shared_ptr<context> ctx, const platform::backend_device_group& group)
     {
         using namespace ds;
-        auto&& backend = ctx->get_backend();
 
         _color_calib_table_raw = [this]()
         {
@@ -66,7 +66,7 @@ namespace librealsense
                 color_devs_info = group.uvc_devices;
             else
                 color_devs_info = color_devs_info_mi3;
-            std::unique_ptr<frame_timestamp_reader> d400_timestamp_reader_backup(new ds_timestamp_reader(backend.create_time_service()));
+            std::unique_ptr< frame_timestamp_reader > d400_timestamp_reader_backup( new ds_timestamp_reader() );
             frame_timestamp_reader* timestamp_reader_from_metadata;
             if (ds::RS457_PID != _pid)
                 timestamp_reader_from_metadata = new ds_timestamp_reader_from_metadata(std::move(d400_timestamp_reader_backup));
@@ -81,7 +81,7 @@ namespace librealsense
                 info = color_devs_info[1];
             else
                 info = color_devs_info.front();
-            auto uvcd = backend.create_uvc_device(info);
+            auto uvcd = get_backend()->create_uvc_device( info );
             //auto ftr = std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(d400_timestamp_reader_metadata), _tf_keeper, enable_global_time_option));
             auto raw_color_ep = std::make_shared<uvc_sensor>("Raw RGB Camera",
                 uvcd,

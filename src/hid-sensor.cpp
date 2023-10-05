@@ -14,6 +14,7 @@ namespace librealsense {
 // in sensor.cpp
 void log_callback_end( uint32_t fps,
                        rs2_time_t callback_start_time,
+                       rs2_time_t callback_end_time,
                        rs2_stream stream_type,
                        unsigned long long frame_number );
 
@@ -166,7 +167,7 @@ void hid_sensor::start( frame_callback_ptr callback )
     _hid_device->start_capture(
         [this, last_frame_number, last_timestamp]( const platform::sensor_data & sensor_data ) mutable
         {
-            const auto && system_time = environment::get_instance().get_time_service()->get_time();
+            const auto system_time = time_service::get_time();  // time frame was received from the backend
             auto timestamp_reader = _hid_iio_timestamp_reader.get();
             static const std::string custom_sensor_name = "custom";
             auto && sensor_name = sensor_data.sensor.name;
@@ -200,6 +201,7 @@ void hid_sensor::start( frame_callback_ptr callback )
             }
 
             const auto && fr = generate_frame_from_data( sensor_data.fo,
+                                                         system_time,
                                                          timestamp_reader,
                                                          last_timestamp,
                                                          last_frame_number,
@@ -240,12 +242,12 @@ void hid_sensor::start( frame_callback_ptr callback )
             auto frame_number = frame->get_frame_number();
 
             // Invoke first callback
-            auto callback_start_time = environment::get_instance().get_time_service()->get_time();
+            auto callback_start_time = time_service::get_time();
             auto callback = frame->get_owner()->begin_callback();
             _source.invoke_callback( std::move( frame ) );
 
             // Log callback ended
-            log_callback_end( fps, callback_start_time, stream_type, frame_number );
+            log_callback_end( fps, callback_start_time, time_service::get_time(), stream_type, frame_number );
         } );
     _is_streaming = true;
 }

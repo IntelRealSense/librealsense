@@ -48,8 +48,6 @@ public:
     }
 
 protected:
-    static float query_units( const std::shared_ptr< sensor_interface > & );
-
     frame_holder _original;
 };
 

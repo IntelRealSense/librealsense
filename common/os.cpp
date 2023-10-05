@@ -169,7 +169,7 @@ Some auxillary functionalities might be affected. Please report this message if 
             return false;
     }
 
-    const char* file_dialog_open(file_dialog_mode flags, const char* filters, 
+    const char* file_dialog_open(file_dialog_mode flags, const char* filters,
         const char* default_path, const char* default_name)
     {
         std::string def = "";
@@ -180,8 +180,8 @@ Some auxillary functionalities might be affected. Please report this message if 
         if (default_name || default_path)
             def_ptr = def.c_str();
 
-        char const * const * aFilterPatterns = nullptr;
-        char const * aSingleFilterDescription = nullptr;
+        char const* const* aFilterPatterns = nullptr;
+        char const* aSingleFilterDescription = nullptr;
 
         std::vector<std::string> filters_split;
 

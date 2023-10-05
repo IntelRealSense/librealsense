@@ -6,7 +6,7 @@
 #include <sstream>
 #include "wrap.h"
 #include <rsutils/string/split.h>
-#include "../third-party/imgui/imgui.h"
+#include <third-party/imgui/imgui.h>
 
 namespace utilities {
 namespace imgui {

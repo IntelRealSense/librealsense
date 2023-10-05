@@ -19,5 +19,6 @@ namespace Intel.RealSense
         public TimestampDomain domain;
         public int frame_number;
         public IntPtr profile;
+        public float depth_units;
     }
 }

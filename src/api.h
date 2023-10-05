@@ -7,6 +7,7 @@
 #include "core/extension.h"
 #include "device.h"
 #include <rsutils/string/from.h>
+#include <rsutils/subscription.h>
 
 #include <type_traits>
 #include <iostream>
@@ -29,6 +30,7 @@ struct rs2_notification
 struct rs2_device
 {
     std::shared_ptr<librealsense::device_interface> device;
+    mutable rsutils::subscription playback_status_changed;
 };
 
 rs2_error * rs2_create_error(const char* what, const char* name, const char* args, rs2_exception_type type);
@@ -404,7 +406,13 @@ return __p.invoke(func);\
     #define VALIDATE_FIXED_SIZE(ARG, SIZE) if((ARG) != (SIZE)) { std::ostringstream ss; ss << "Unsupported size provided { " << ARG << " }," " expecting { " << SIZE << " }"; throw librealsense::invalid_value_exception(ss.str()); }
     #define VALIDATE_NOT_NULL(ARG) if(!(ARG)) throw std::runtime_error("null pointer passed for argument \"" #ARG "\"");
     #define VALIDATE_ENUM(ARG) if(!librealsense::is_valid(ARG)) { std::ostringstream ss; ss << "invalid enum value for argument \"" #ARG "\""; throw librealsense::invalid_value_exception(ss.str()); }
-    #define VALIDATE_OPTION(OBJ, OPT_ID) if(!OBJ->options->supports_option(OPT_ID)) { std::ostringstream ss; ss << "object doesn't support option #" << std::to_string(OPT_ID); throw librealsense::invalid_value_exception(ss.str()); }
+#define VALIDATE_OPTION( OBJ, OPT_ID )                                                                                 \
+    if( ! OBJ->options->supports_option( OPT_ID ) )                                                                    \
+    {                                                                                                                  \
+        std::ostringstream ss;                                                                                         \
+        ss << "object doesn't support option " << librealsense::get_string( OPT_ID );                                  \
+        throw librealsense::invalid_value_exception( ss.str() );                                                       \
+    }
     #define VALIDATE_RANGE(ARG, MIN, MAX) if((ARG) < (MIN) || (ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw librealsense::invalid_value_exception(ss.str()); }
     #define VALIDATE_LE(ARG, MAX) if((ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
     #define VALIDATE_GT(ARG, MIN) if((ARG) <= (MIN)) { std::ostringstream ss; ss << "value is below allowed min for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }

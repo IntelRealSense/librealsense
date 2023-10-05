@@ -25,10 +25,10 @@ namespace librealsense {
 
 void log_callback_end( uint32_t fps,
                        rs2_time_t callback_start_time,
+                       rs2_time_t const current_time,
                        rs2_stream stream_type,
                        unsigned long long frame_number )
 {
-    auto current_time = environment::get_instance().get_time_service()->get_time();
     auto callback_warning_duration = 1000.f / ( fps + 1 );
     auto callback_duration = current_time - callback_start_time;
 
@@ -106,18 +106,14 @@ void log_callback_end( uint32_t fps,
 
     int sensor_base::register_before_streaming_changes_callback(std::function<void(bool)> callback)
     {
-        int token = (on_before_streaming_changes += callback);
-        LOG_DEBUG("Registered token #" << token << " to \"on_before_streaming_changes\"");
-        return token;
+        int slot = _on_before_streaming_changes.add( std::move( callback ) );
+        LOG_DEBUG("Registered token #" << slot << " to \"on_before_streaming_changes\"");
+        return slot;
     }
 
-    void sensor_base::unregister_before_start_callback(int token)
+    void sensor_base::unregister_before_start_callback( int slot )
     {
-        bool successful_unregister = on_before_streaming_changes -= token;
-        if (!successful_unregister)
-        {
-            LOG_WARNING("Failed to unregister token #" << token << " from \"on_before_streaming_changes\"");
-        }
+        _on_before_streaming_changes.remove( slot );
     }
 
     frame_callback_ptr sensor_base::get_frames_callback() const
@@ -185,7 +181,7 @@ void log_callback_end( uint32_t fps,
 
     void sensor_base::raise_on_before_streaming_changes(bool streaming)
     {
-        on_before_streaming_changes(streaming);
+        _on_before_streaming_changes.raise( streaming );
     }
     void sensor_base::set_active_streams(const stream_profiles& requests)
     {
@@ -281,13 +277,14 @@ void log_callback_end( uint32_t fps,
         return pixels;
     }
 
-    std::shared_ptr<frame> sensor_base::generate_frame_from_data(const platform::frame_object& fo,
-        frame_timestamp_reader* timestamp_reader,
-        const rs2_time_t& last_timestamp,
-        const unsigned long long& last_frame_number,
-        std::shared_ptr<stream_profile_interface> profile)
+    std::shared_ptr< frame >
+    sensor_base::generate_frame_from_data( const platform::frame_object & fo,
+                                           rs2_time_t const system_time,
+                                           frame_timestamp_reader * timestamp_reader,
+                                           const rs2_time_t & last_timestamp,
+                                           const unsigned long long & last_frame_number,
+                                           std::shared_ptr< stream_profile_interface > profile )
     {
-        auto system_time = environment::get_instance().get_time_service()->get_time();
         auto fr = std::make_shared<frame>();
         
         fr->set_stream(profile);

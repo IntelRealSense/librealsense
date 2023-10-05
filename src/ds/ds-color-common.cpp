@@ -3,6 +3,7 @@
 
 #include "ds-color-common.h"
 #include "metadata.h"
+#include <src/option.h>
 
 #include <cstddef>
 

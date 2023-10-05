@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <cstring>
 #include <iostream>
 #include <fstream>
 #include <thread>
@@ -174,42 +175,42 @@ void list_devices(rs2::context ctx)
     }
 }
 
-int write_fw_to_mipi_device(const std::vector< uint8_t >& fw_image)
+int write_fw_to_mipi_device( const rs2::device & dev, const std::vector< uint8_t > & fw_image )
 {
     // Write firmware to appropriate file descritptor
     std::cout << std::endl << "Update can take up to 2 minutes" << std::endl;
-    std::ofstream fw_path_in_device("/dev/d4xx-dfu504", std::ios::binary);
-    auto file_deleter = std::unique_ptr< std::ofstream, void (*)(std::ofstream*) >(&fw_path_in_device,
-        [](std::ofstream* file)
-        {
-            if (file)
-                file->close();
-        });
-    if (fw_path_in_device)
+    std::ofstream fw_path_in_device( dev.get_info( RS2_CAMERA_INFO_DFU_DEVICE_PATH ), std::ios::binary );
+    auto file_deleter = std::unique_ptr< std::ofstream, void ( * )( std::ofstream * ) >( &fw_path_in_device,
+                                                                                         []( std::ofstream * file )
+                                                                                         {
+                                                                                             if( file )
+                                                                                                 file->close();
+                                                                                         } );
+    if( fw_path_in_device )
     {
         bool done = false;
         std::thread show_progress_thread(
             [&done]()
             {
-                for (int i = 0; i < 101 && !done; ++i) // Show percentage [0-100]
+                for( int i = 0; i < 101 && ! done; ++i ) // Show percentage [0-100]
                 {
-                    printf("%d%%\r", i);
+                    printf( "%d%%\r", i );
                     std::cout.flush();
                     std::this_thread::sleep_for(std::chrono::seconds(1));
                 }
-            });
+            } );
         try
         {
-            fw_path_in_device.write(reinterpret_cast<const char*>(fw_image.data()), fw_image.size());
+            fw_path_in_device.write( reinterpret_cast< const char * >( fw_image.data() ), fw_image.size() );
         }
-        catch (...)
+        catch( ... )
         {
             // Nothing to do, file goodbit is false
         }
         done = true;
         show_progress_thread.join();
-        printf("    \r"); // Delete progress, as it is not accurate, don't leave 85% when writing done
-        if (!fw_path_in_device.good())
+        printf( "    \r" ); // Delete progress, as it is not accurate, don't leave 85% when writing done
+        if( ! fw_path_in_device.good() )
         {
             std::cout << std::endl << "Firmware Update failed - write to device error";
             return EXIT_FAILURE;
@@ -221,25 +222,25 @@ int write_fw_to_mipi_device(const std::vector< uint8_t >& fw_image)
         return EXIT_FAILURE;
     }
     std::cout << std::endl << "Firmware update done" << std::endl;
+
     return EXIT_SUCCESS;
 }
 
-
-bool is_mipi_device(const rs2::device & dev)
+bool is_mipi_device( const rs2::device & dev )
 {
     std::string usb_type = "unknown";
 
-    if (dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
-        usb_type = dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+    if( dev.supports( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
+        usb_type = dev.get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR );
 
-    bool d457_device = strcmp(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "ABCD") == 0;
+    bool d457_device = strcmp( dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID ), "ABCD" ) == 0;
 
     // Currently only D457 model has MIPI connection
-    return d457_device && usb_type.compare("unknown") == 0;
+    return d457_device && usb_type.compare( "unknown" ) == 0;
 }
 
-
-int main( int argc, char ** argv ) try
+int main( int argc, char ** argv )
+try
 {
 #ifdef BUILD_EASYLOGGINGPP
     rs2::log_to_console(RS2_LOG_SEVERITY_WARN);
@@ -288,6 +289,8 @@ int main( int argc, char ** argv ) try
         list_devices(ctx);
         return EXIT_SUCCESS;
     }
+
+    bool recovery_request = recover_arg.getValue();
 
     if (list_devices_arg.isSet())
     {
@@ -356,6 +359,8 @@ int main( int argc, char ** argv ) try
                     auto recovery_sn = d.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
                     if( recovery_sn == update_serial_number )
                     {
+                        std::cout << "... found it" << std::endl;
+                        std::lock_guard< std::mutex > lk( mutex );
                         cv.notify_one();
                         break;
                     }
@@ -364,7 +369,7 @@ int main( int argc, char ** argv ) try
             std::cout << std::endl << "Recovering device: " << std::endl;
             print_device_info( recovery_device );
             update( recovery_device, fw_image );
-            std::cout << std::endl << "Waiting for device to reconnect..." << std::endl;
+            std::cout << "Waiting for new device..." << std::endl;
             {
                 std::unique_lock< std::mutex > lk( mutex );
                 if( cv.wait_for( lk, std::chrono::seconds( 5 ) ) == std::cv_status::timeout )
@@ -395,11 +400,8 @@ int main( int argc, char ** argv ) try
             else
                 new_device = d;
         }
-
         if(new_fw_update_device || new_device)
-        {
             cv.notify_one();
-        }
     });
 
     auto devs = ctx.query_devices(RS2_PRODUCT_LINE_DEPTH);
@@ -507,7 +509,7 @@ int main( int argc, char ** argv ) try
                     return EXIT_FAILURE;
                 }
 
-                return write_fw_to_mipi_device( fw_image );
+            return write_fw_to_mipi_device( d, fw_image );
             }
             
             // TODO: HKR DFU issue - Here we go to signed flow always (even if -u was provided by the user)

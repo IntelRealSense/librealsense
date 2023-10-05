@@ -16,13 +16,19 @@
 #include "d400-options.h"
 
 #include "ds/ds-device-common.h"
+#include "backend-device.h"
 
 namespace librealsense
 {
     class hdr_config;
     class d400_thermal_monitor;
 
-    class d400_device : public virtual device, public debug_interface, public global_time_interface, public updatable, public auto_calibrated
+    class d400_device
+        : public virtual backend_device
+        , public debug_interface
+        , public global_time_interface
+        , public updatable
+        , public auto_calibrated
     {
     public:
         std::shared_ptr<synthetic_sensor> create_depth_device(std::shared_ptr<context> ctx,

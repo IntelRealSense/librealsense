@@ -13,6 +13,7 @@
 #include "d500-info.h"
 #include "stream.h"
 #include "backend.h"
+#include "platform/platform-utils.h"
 
 namespace librealsense
 {
@@ -44,18 +45,17 @@ namespace librealsense
         const std::vector<platform::uvc_device_info>& safety_devices_info)
     {
         using namespace ds;
-        auto&& backend = ctx->get_backend();
 
         register_stream_to_extrinsic_group(*_safety_stream, 0);
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_safety_stream);
 
-        std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_backup(new ds_timestamp_reader(backend.create_time_service()));
-        std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata_safety(std::move(ds_timestamp_reader_backup)));
+        std::unique_ptr< frame_timestamp_reader > ds_timestamp_reader_backup( new ds_timestamp_reader() );
+        std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_metadata( new ds_timestamp_reader_from_metadata_safety(std::move(ds_timestamp_reader_backup)));
 
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
 
         auto raw_safety_ep = std::make_shared<uvc_sensor>("Raw Safety Device",
-            backend.create_uvc_device(safety_devices_info.front()),
+            get_backend()->create_uvc_device(safety_devices_info.front()),
             std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)),
             this);
 

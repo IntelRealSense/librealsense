@@ -7,6 +7,7 @@
 #include "stream.h"
 #include "proc/color-formats-converter.h"
 #include "backend.h"
+#include "platform/platform-utils.h"
 
 
 namespace librealsense {
@@ -64,13 +65,14 @@ platform_camera::platform_camera( std::shared_ptr< const device_info > const & d
                                   const std::vector< platform::uvc_device_info > & uvc_infos,
                                   bool register_device_notifications )
     : device( dev_info, register_device_notifications )
+    , backend_device( dev_info, register_device_notifications )
 {
     std::vector< std::shared_ptr< platform::uvc_device > > devs;
-    for( auto && info : uvc_infos )
-        devs.push_back( dev_info->get_context()->get_backend().create_uvc_device( info ) );
+    auto backend = get_backend();
+    for( auto & info : uvc_infos )
+        devs.push_back( backend->create_uvc_device( info ) );
 
-    std::unique_ptr< frame_timestamp_reader > host_timestamp_reader_backup(
-        new ds_timestamp_reader( environment::get_instance().get_time_service() ) );
+    std::unique_ptr< frame_timestamp_reader > host_timestamp_reader_backup( new ds_timestamp_reader() );
     auto raw_color_ep = std::make_shared< uvc_sensor >(
         "Raw RGB Camera",
         std::make_shared< platform::multi_pins_uvc_device >( devs ),
@@ -139,11 +141,11 @@ std::vector< tagged_profile > platform_camera::get_profiles_tags() const
 }
 
 
-/*static*/ std::vector< std::shared_ptr< device_info > >
+/*static*/ std::vector< std::shared_ptr< platform_camera_info > >
 platform_camera_info::pick_uvc_devices( const std::shared_ptr< context > & ctx,
                                         const std::vector< platform::uvc_device_info > & uvc_devices )
 {
-    std::vector< std::shared_ptr< device_info > > list;
+    std::vector< std::shared_ptr< platform_camera_info > > list;
     auto groups = group_devices_by_unique_id( uvc_devices );
 
     for( auto && g : groups )

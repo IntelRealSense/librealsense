@@ -14,44 +14,6 @@
 namespace librealsense
 {
 
-    typedef int stream_id;
-
-    class sync_lock
-    {
-    public:
-        sync_lock(std::mutex& mutex) : _mutex(mutex)
-        {
-            mutex.lock();
-        }
-
-        void unlock_preemptively()
-        {
-            // NOTE: The Sync_Lock is itself a single-threaded object
-            // It maintains a state, and does not protect its state.
-            // That is acceptable for our use case,
-            // because we use it to communicate within a single thread
-            if (!_is_locked) return;
-            _mutex.unlock();
-            _is_locked = false;
-
-        }
-
-        ~sync_lock()
-        {
-            if (_is_locked)
-            {
-                _mutex.unlock();
-
-            }
-        }
-
-    private:
-        bool _is_locked = true;
-
-        std::mutex& _mutex;
-    };
-    //sync_lock::ref = 0;
-
     class synthetic_source_interface;
 
     struct syncronization_environment
@@ -65,7 +27,6 @@ namespace librealsense
         {
         }
         synthetic_source_interface * source;
-        // sync_lock& lock_ref;
         single_consumer_frame_queue< frame_holder > & matches;
         bool log = true;
     };

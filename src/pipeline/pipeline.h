@@ -51,7 +51,7 @@ namespace librealsense
             std::shared_ptr<profile> unsafe_get_active_profile() const;
 
             std::shared_ptr<librealsense::context> _ctx;
-            int _playback_stopped_token = -1;
+            rsutils::subscription _playback_stopped_token;
             dispatcher _dispatcher;
 
             std::unique_ptr<syncer_process_unit> _syncer;

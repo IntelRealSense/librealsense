@@ -5,6 +5,7 @@
 
 #include "../types.h"
 #include "../core/streaming.h"
+#include <src/core/device-interface.h>
 #include "../usb/usb-types.h"
 #include <cstddef>
 

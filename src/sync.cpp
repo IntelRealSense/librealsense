@@ -5,6 +5,7 @@
 #include "proc/synthetic-stream.h"
 #include "sync.h"
 #include "environment.h"
+#include "core/device-interface.h"
 
 namespace librealsense
 {
@@ -567,7 +568,7 @@ namespace librealsense
         else
             _fps[m] = f->get_stream()->get_framerate();
 
-        auto const now = environment::get_instance().get_time_service()->get_time();
+        auto const now = time_service::get_time();
         //LOG_DEBUG( _name << ": _last_arrived[" << m->get_name() << "] = " << now );
         _last_arrived[m] = now;
     }
@@ -732,6 +733,9 @@ namespace librealsense
         if (!composite)
         {
             std::vector<frame_holder> match;
+            std::stringstream frame_string_for_logging;
+            frame_string_for_logging << f; // Saving frame holder string before moving frame
+
             match.push_back(std::move(f));
             frame_holder composite = env.source->allocate_composite_frame(std::move(match));
             if (composite.frame)
@@ -743,7 +747,7 @@ namespace librealsense
             else
             {
                 LOG_ERROR( "composite_identity_matcher: "
-                           << _name << " " << f
+                           << _name << " " << frame_string_for_logging.str()
                            << " faild to create composite_frame, user callback will not be called" );
             }
         }

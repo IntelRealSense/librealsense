@@ -11,6 +11,7 @@
 #include <cstddef>
 
 #include <src/backend.h>
+#include <src/platform/platform-utils.h>
 #include <src/metadata.h>
 #include "ds/ds-timestamp.h"
 #include "d400-options.h"
@@ -45,13 +46,11 @@ namespace librealsense
             return nullptr;
         }
 
-        auto&& backend = ctx->get_backend();
-
         std::vector<std::shared_ptr<platform::uvc_device>> imu_devices;
         for (auto&& info : filter_by_mi(all_uvc_infos, 4)) // Filter just mi=4, IMU
-            imu_devices.push_back(backend.create_uvc_device(info));
+            imu_devices.push_back( get_backend()->create_uvc_device( info ) );
 
-        std::unique_ptr<frame_timestamp_reader> timestamp_reader_backup(new ds_timestamp_reader(backend.create_time_service()));
+        std::unique_ptr< frame_timestamp_reader > timestamp_reader_backup( new ds_timestamp_reader() );
         std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new ds_timestamp_reader_from_metadata_mipi_motion(std::move(timestamp_reader_backup)));
 
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
@@ -169,12 +168,17 @@ namespace librealsense
         if (!is_fisheye_avaialable)
             return;
 
-        std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_backup(new ds_timestamp_reader(environment::get_instance().get_time_service()));
-        auto&& backend = ctx->get_backend();
+        std::unique_ptr< frame_timestamp_reader > ds_timestamp_reader_backup( new ds_timestamp_reader() );
         std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(ds_timestamp_reader_backup)));
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
-        auto raw_fisheye_ep = std::make_shared<uvc_sensor>("FishEye Sensor", backend.create_uvc_device(fisheye_infos.front()),
-                                std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)), this);
+        auto raw_fisheye_ep
+            = std::make_shared< uvc_sensor >( "FishEye Sensor",
+                                              get_backend()->create_uvc_device( fisheye_infos.front() ),
+                                              std::unique_ptr< frame_timestamp_reader >( new global_timestamp_reader(
+                                                  std::move( ds_timestamp_reader_metadata ),
+                                                  _tf_keeper,
+                                                  enable_global_time_option ) ),
+                                              this );
         auto fisheye_ep = std::make_shared<ds_fisheye_sensor>(raw_fisheye_ep, this);
         
         _ds_motion_common->assign_fisheye_ep(raw_fisheye_ep, fisheye_ep, enable_global_time_option);

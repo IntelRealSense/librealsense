@@ -2,6 +2,7 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #include "d500-depth-mapping.h"
+
 #include "d500-safety.h"
 #include "d500-info.h"
 
@@ -13,6 +14,9 @@
 #include "ds/ds-options.h"
 #include <src/backend.h>
 #include "stream.h"
+
+#include "platform/platform-utils.h"
+
 #include <thread>
 
 namespace librealsense
@@ -50,15 +54,14 @@ namespace librealsense
         const std::vector<platform::uvc_device_info>& occupancy_devices_info)
     {
         using namespace ds;
-        auto&& backend = ctx->get_backend();
 
-        std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_backup(new ds_timestamp_reader(backend.create_time_service()));
+        std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_backup(new ds_timestamp_reader());
         std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata_depth_mapping(std::move(ds_timestamp_reader_backup)));
 
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
 
         auto raw_mapping_ep = std::make_shared<uvc_sensor>("Raw Depth Mapping Device",
-            backend.create_uvc_device(occupancy_devices_info.front()),
+            get_backend()->create_uvc_device(occupancy_devices_info.front()),
             std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)),
             this);
 

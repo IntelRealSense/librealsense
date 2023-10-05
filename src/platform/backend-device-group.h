@@ -8,12 +8,12 @@
 
 #include "hid-device-info.h"
 #include "uvc-device-info.h"
-#include "playback-device-info.h"
 
 #include <memory>
 #include <functional>
 #include <vector>
 #include <string>
+#include <algorithm>
 
 
 namespace librealsense {
@@ -23,7 +23,7 @@ template< class T >
 bool list_changed(
     const std::vector< T > & list1,
     const std::vector< T > & list2,
-    std::function< bool( T, T ) > equal = []( T first, T second ) { return first == second; } )
+    std::function< bool( T const &, T const & ) > equal = []( T const & first, T const & second ) { return first == second; } )
 {
     if( list1.size() != list2.size() )
         return true;
@@ -45,13 +45,6 @@ bool list_changed(
 
 
 namespace platform {
-
-
-inline bool operator==( const usb_device_info & a, const usb_device_info & b )
-{
-    return ( a.id == b.id ) && ( a.vid == b.vid ) && ( a.pid == b.pid ) && ( a.mi == b.mi )
-        && ( a.unique_id == b.unique_id ) && ( a.conn_spec == b.conn_spec );
-}
 
 
 struct backend_device_group
@@ -79,20 +72,13 @@ struct backend_device_group
     {
     }
 
-    backend_device_group( const std::vector< playback_device_info > & playback_devices )
-        : playback_devices( playback_devices )
-    {
-    }
-
     std::vector< uvc_device_info > uvc_devices;
     std::vector< usb_device_info > usb_devices;
     std::vector< hid_device_info > hid_devices;
-    std::vector< playback_device_info > playback_devices;
 
     bool operator==( const backend_device_group & other ) const
     {
-        return ! list_changed( uvc_devices, other.uvc_devices ) && ! list_changed( hid_devices, other.hid_devices )
-            && ! list_changed( playback_devices, other.playback_devices );
+        return ! list_changed( uvc_devices, other.uvc_devices ) && ! list_changed( hid_devices, other.hid_devices );
     }
 
     operator std::string() const
@@ -119,14 +105,33 @@ struct backend_device_group
             s += "\n\n";
         }
 
-        s += playback_devices.size() > 0 ? "playback devices: \n" : "";
-        for( auto playback_device : playback_devices )
-        {
-            s += playback_device;
-            s += "\n\n";
-        }
-
         return s;
+    }
+
+
+    // Returns true if this group is completely accounted for in the right group
+    //
+    bool is_contained_in( backend_device_group const & second_data ) const
+    {
+        for( auto & uvc : uvc_devices )
+        {
+            if( std::find( second_data.uvc_devices.begin(), second_data.uvc_devices.end(), uvc )
+                == second_data.uvc_devices.end() )
+                return false;
+        }
+        for( auto & usb : usb_devices )
+        {
+            if( std::find( second_data.usb_devices.begin(), second_data.usb_devices.end(), usb )
+                == second_data.usb_devices.end() )
+                return false;
+        }
+        for( auto & hid : hid_devices )
+        {
+            if( std::find( second_data.hid_devices.begin(), second_data.hid_devices.end(), hid )
+                == second_data.hid_devices.end() )
+                return false;
+        }
+        return true;
     }
 };
 

@@ -12,6 +12,8 @@
 #include "image.h"
 #include "metadata-parser.h"
 
+#include <src/core/matcher-factory.h>
+
 #include "d500-info.h"
 #include "d500-private.h"
 #include "ds/ds-options.h"
@@ -22,6 +24,8 @@
 #include "d500-safety.h"
 #include "d500-depth-mapping.h"
 #include "sync.h"
+
+#include <src/platform/platform-utils.h>
 
 #include "firmware_logger_device.h"
 #include "device-calibration.h"
@@ -35,9 +39,9 @@ namespace librealsense
         public firmware_logger_device
     {
     public:
-        rs_d585_device( std::shared_ptr< const d500_info > const & dev_info,
-                        bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
+        rs_d585_device( std::shared_ptr< const d500_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d500_device( dev_info )
             , d500_active( dev_info )
             , d500_color( dev_info )
@@ -88,9 +92,9 @@ namespace librealsense
         public firmware_logger_device
     {
     public:
-        rs_d585s_device( std::shared_ptr< const d500_info > const & dev_info,
-                         bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
+        rs_d585s_device( std::shared_ptr< const d500_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d500_device( dev_info )
             , d500_active( dev_info )
             , d500_color( dev_info )
@@ -143,7 +147,8 @@ namespace librealsense
     {
     public:
         d555e_device( std::shared_ptr< const d500_info > dev_info )
-            : device( dev_info, true )
+        : device( dev_info )
+        , backend_device( dev_info )
             , d500_device( dev_info )
             , d500_active( dev_info )
             , d500_color( dev_info )
@@ -192,7 +197,7 @@ namespace librealsense
         {
             if( auto vid_a = dynamic_cast< const video_stream_profile_interface * >( a ) )
             {
-                for( auto request : others )
+            for( auto & request : others )
                 {
                     if( a->get_framerate() != 0 && request.fps != 0 && ( a->get_framerate() != request.fps ) )
                         return true;
@@ -209,8 +214,7 @@ namespace librealsense
         if( _group.uvc_devices.empty() )
             throw std::runtime_error("Depth Camera not found!");
 
-        auto const dev_info = std::dynamic_pointer_cast< const d500_info >( shared_from_this() );
-        bool const register_device_notifications = true;
+        auto dev_info = std::dynamic_pointer_cast< const d500_info >( shared_from_this() );
 
         auto pid = _group.uvc_devices.front().pid;
 
@@ -219,9 +223,9 @@ namespace librealsense
         case ds::D555E_PID:
             return std::make_shared< d555e_device >( dev_info );
         case ds::RS_D585_PID:
-            return std::make_shared<rs_d585_device>( dev_info, register_device_notifications );
+            return std::make_shared<rs_d585_device>( dev_info );
         case ds::RS_D585S_PID:
-            return std::make_shared<rs_d585s_device>( dev_info, register_device_notifications );
+            return std::make_shared<rs_d585s_device>( dev_info );
         default:
             throw std::runtime_error( rsutils::string::from() << "Unsupported D500 model! 0x" << std::hex
                                                               << std::setw( 4 ) << std::setfill( '0' ) << (int)pid );
