@@ -6,57 +6,23 @@
 #include "core/processing.h"
 #include "proc/synthetic-stream.h"
 #include "device_hub.h"
-#include "platform/platform-device-info.h"
 
 namespace librealsense
 {
     typedef rs2::devices_changed_callback<std::function<void(rs2::event_information& info)>> hub_devices_changed_callback;
 
-    std::vector< std::shared_ptr< device_info > >
-    filter_by_vid( std::vector< std::shared_ptr< device_info > > const & devices, int vid )
+    device_hub::device_hub(std::shared_ptr<librealsense::context> ctx, int mask)
+        : _ctx( ctx )
+        , _mask( mask )
+        , _device_changes_callback_id( 0 )
     {
-        std::vector<std::shared_ptr<device_info>> result;
-        for (auto & dev : devices)
-        {
-            auto pdev = std::dynamic_pointer_cast< platform::platform_device_info >( dev );
-            if( ! pdev )
-            {
-                if( vid == 0 )
-                    result.push_back( dev );
-                continue;
-            }
-            auto & data = pdev->get_group();
-            for (const auto& usb : data.usb_devices)
-            {
-                if (usb.vid == vid || vid == 0)
-                {
-                    result.push_back(dev);
-                    break;
-                }
-            }
-            for (const auto& uvc : data.uvc_devices)
-            {
-                if (uvc.vid == vid || vid == 0)
-                {
-                    result.push_back(dev);
-                    break;
-                }
-            }
-        }
-        return result;
-    }
-
-    device_hub::device_hub(std::shared_ptr<librealsense::context> ctx, int mask, int vid)
-        : _ctx(ctx), _vid(vid),
-          _device_changes_callback_id(0)
-    {
-        _device_list = filter_by_vid(_ctx->query_devices(mask), _vid);
+        _device_list = _ctx->query_devices(mask);
 
         auto cb = new hub_devices_changed_callback([&,mask](rs2::event_information&)
                    {
                         std::unique_lock<std::mutex> lock(_mutex);
 
-                        _device_list = filter_by_vid(_ctx->query_devices(mask), _vid);
+                        _device_list = _ctx->query_devices(mask);
 
                         // Current device will point to the first available device
                         _camera_index = 0;
@@ -73,8 +39,6 @@ namespace librealsense
     {
         if (_device_changes_callback_id)
             _ctx->unregister_internal_device_callback(_device_changes_callback_id);
-
-        _ctx->stop();
     }
 
     std::shared_ptr<device_interface> device_hub::create_device(const std::string& serial, bool cycle_devices)
@@ -128,7 +92,7 @@ namespace librealsense
         std::shared_ptr<device_interface> res = nullptr;
 
         // check if there is at least one device connected
-        _device_list = filter_by_vid(_ctx->query_devices(RS2_PRODUCT_LINE_ANY), _vid);
+        _device_list = _ctx->query_devices(_mask);
         if (_device_list.size() > 0)
         {
             res = create_device(serial, loop_through_devices);

@@ -46,10 +46,9 @@ namespace librealsense
         return std::make_shared<frame_queue_size>(&_max_publish_list_size, option_range{ 0, 32, 1, 16 });
     }
 
-    frame_source::frame_source(uint32_t max_publish_list_size)
-            : _callback(nullptr, [](rs2_frame_callback*) {}),
-              _max_publish_list_size(max_publish_list_size),
-              _ts(environment::get_instance().get_time_service())
+    frame_source::frame_source( uint32_t max_publish_list_size )
+        : _callback( nullptr, []( rs2_frame_callback * ) {} )
+        , _max_publish_list_size( max_publish_list_size )
     {}
 
     void frame_source::init(std::shared_ptr<metadata_parser_map> metadata_parsers)
@@ -67,7 +66,7 @@ namespace librealsense
 
         for (auto type : supported)
         {
-            _archive[type] = make_archive(type, &_max_publish_list_size, _ts, metadata_parsers);
+            _archive[type] = make_archive(type, &_max_publish_list_size, metadata_parsers);
         }
 
         _metadata_parsers = metadata_parsers;

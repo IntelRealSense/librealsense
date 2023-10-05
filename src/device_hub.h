@@ -15,7 +15,7 @@ namespace librealsense
     class device_hub
     {
     public:
-        explicit device_hub(std::shared_ptr<librealsense::context> ctx, int mask = RS2_PRODUCT_LINE_ANY, int vid = 0);
+        explicit device_hub(std::shared_ptr<librealsense::context> ctx, int mask = RS2_PRODUCT_LINE_ANY);
 
         ~device_hub();
 
@@ -52,7 +52,7 @@ namespace librealsense
         std::condition_variable _cv;
         std::vector<std::shared_ptr<device_info>> _device_list;
         int _camera_index = 0;
-        int _vid = 0;
         uint64_t _device_changes_callback_id;
+        int _mask;
     };
 }

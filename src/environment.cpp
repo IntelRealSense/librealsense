@@ -234,6 +234,12 @@ namespace librealsense
     }
 
 
+    environment::environment()
+        : _stream_id( 0 )
+    {
+    }
+
+
     environment& environment::get_instance()
     {
         static environment env;
@@ -243,15 +249,5 @@ namespace librealsense
     extrinsics_graph& environment::get_extrinsics_graph()
     {
         return _extrinsics;
-    }
-
-    void environment::set_time_service(std::shared_ptr<platform::time_service> ts)
-    {
-        _ts = ts;
-    }
-
-    std::shared_ptr<platform::time_service> environment::get_time_service()
-    {
-        return _ts;
     }
 }

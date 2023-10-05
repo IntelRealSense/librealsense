@@ -109,6 +109,7 @@ elseif(BUILD_TOOLS)
 endif()
 
 if(BUILD_UNIT_TESTS OR BUILD_LEGACY_LIVE_TEST)
+    include( CMake/external_catch2.cmake )
     add_subdirectory(unit-tests)
 endif()
 

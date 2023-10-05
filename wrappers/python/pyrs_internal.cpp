@@ -42,13 +42,7 @@ void init_internal(py::module &m) {
     py::class_< rs2_software_video_frame >( m,
                                             "software_video_frame",
                                             "All the parameters required to define a video frame" )
-        .def( py::init( []() {
-            rs2_software_video_frame f;
-            f.deleter = nullptr;
-            f.pixels = nullptr;
-            f.profile = nullptr;
-            return f;
-        } ) )  // guarantee deleter is set to nullptr
+        .def( py::init( []() { return rs2_software_video_frame{ 0 }; } ) )
         .def_property(
             "pixels",
             []( const rs2_software_video_frame & self ) {
@@ -100,6 +94,7 @@ void init_internal(py::module &m) {
         .def_readwrite("timestamp", &rs2_software_video_frame::timestamp)
         .def_readwrite("domain", &rs2_software_video_frame::domain)
         .def_readwrite("frame_number", &rs2_software_video_frame::frame_number)
+        .def_readwrite("depth_units", &rs2_software_video_frame::depth_units)
         .def_property(
             "profile",
             []( const rs2_software_video_frame & self ) {
@@ -127,7 +122,8 @@ void init_internal(py::module &m) {
 
     py::class_<rs2_software_motion_frame> software_motion_frame(m, "software_motion_frame", "All the parameters "
                                                                 "required to define a motion frame.");
-    software_motion_frame.def(py::init([]() { rs2_software_motion_frame f{}; f.deleter = nullptr; return f; })) // guarantee deleter is set to nullptr
+    software_motion_frame  //
+        .def( py::init( []() { return rs2_software_motion_frame{ 0 }; } ) )
         .def_property("data", [](const rs2_software_motion_frame& self) -> rs2_vector {
             auto data = reinterpret_cast<const float*>(self.data);
             return rs2_vector{ data[0], data[1], data[2] };
@@ -148,7 +144,8 @@ void init_internal(py::module &m) {
 
     py::class_<rs2_software_pose_frame> software_pose_frame(m, "software_pose_frame", "All the parameters "
                                                             "required to define a pose frame.");
-    software_pose_frame.def(py::init([]() { rs2_software_pose_frame f{}; f.deleter = nullptr; return f; })) // guarantee deleter is set to nullptr
+    software_pose_frame  //
+        .def( py::init( []() { return rs2_software_pose_frame{ 0 }; } ) )
         .def_property(
             "data",
             []( const rs2_software_pose_frame & self ) -> rs2_pose {

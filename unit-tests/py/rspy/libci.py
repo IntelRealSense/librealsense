@@ -193,7 +193,7 @@ class TestConfigFromText( TestConfig ):
                 #      0      |            1             | USE
                 #      1      |            0             | USE
                 #      1      |            1             | IGNORE
-                if not_context == (directive_context in self._context):
+                if not_context == (self._context and directive_context in self._context):
                     # log.d( "directive", line['line'], "ignored because of context mismatch with running context",
                     #       self._context)
                     continue

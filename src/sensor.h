@@ -24,12 +24,14 @@
 #include "platform/frame-object.h"
 
 #include <rsutils/lazy.h>
+#include <rsutils/signal.h>
 
 
 namespace librealsense
 {
     class device;
     class option;
+    enum class format_conversion;
 
 
     typedef std::function<void(std::vector<platform::stream_profile>)> on_open;
@@ -104,11 +106,12 @@ namespace librealsense
 
         void sort_profiles( stream_profiles & );
 
-        std::shared_ptr<frame> generate_frame_from_data(const platform::frame_object& fo,
-            frame_timestamp_reader* timestamp_reader,
-            const rs2_time_t& last_timestamp,
-            const unsigned long long& last_frame_number,
-            std::shared_ptr<stream_profile_interface> profile);
+        std::shared_ptr< frame > generate_frame_from_data( const platform::frame_object & fo,
+                                                           rs2_time_t system_time,
+                                                           frame_timestamp_reader * timestamp_reader,
+                                                           const rs2_time_t & last_timestamp,
+                                                           const unsigned long long & last_frame_number,
+                                                           std::shared_ptr< stream_profile_interface > profile );
 
         inline int compute_frame_expected_size(int width, int height, int bpp) const
         {
@@ -132,7 +135,7 @@ namespace librealsense
         rsutils::lazy< stream_profiles > _profiles;
         stream_profiles _active_profiles;
         mutable std::mutex _active_profile_mutex;
-        signal<sensor_base, bool> on_before_streaming_changes;
+        rsutils::signal< bool > _on_before_streaming_changes;
     };
 
     class processing_block;

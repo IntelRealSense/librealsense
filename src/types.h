@@ -54,8 +54,6 @@ template<typename T> T rad2deg(T val) { return T(val * r2d); }
 // C++ version in std!
 using std::abs;
 
-#pragma warning(disable: 4250)
-
 #ifdef ANDROID
 #include "../common/android_helpers.h"
 #endif
@@ -377,51 +375,6 @@ namespace librealsense
     // Pixel formats //
     ///////////////////
 
-    struct resolution
-    {
-        uint32_t width, height;
-    };
-    using resolution_func = std::function<resolution(resolution res)>;
-
-    struct stream_profile
-    {
-        stream_profile(rs2_format fmt = RS2_FORMAT_ANY,
-            rs2_stream strm = RS2_STREAM_ANY,
-            int idx = 0,
-            uint32_t w = 0, uint32_t h = 0,
-            uint32_t framerate = 0,
-            resolution_func res_func = [](resolution res) { return res; }) :
-            format(fmt), stream(strm), index(idx), width(w), height(h), fps(framerate), stream_resolution(res_func)
-        {}
-
-        rs2_format format;
-        rs2_stream stream;
-        int index;
-        uint32_t width, height, fps;
-        resolution_func stream_resolution; // Calculates the relevant resolution from the given backend resolution.
-
-        std::pair< uint32_t, uint32_t > width_height() const { return std::make_pair( width, height ); }
-    };
-
-
-    inline bool operator==(const stream_profile& a,
-        const stream_profile& b)
-    {
-        return (a.width == b.width) &&
-            (a.height == b.height) &&
-            (a.fps == b.fps) &&
-            (a.format == b.format) &&
-            (a.index == b.index) &&
-            (a.stream == b.stream);
-    }
-
-    inline bool operator<(const stream_profile & lhs,
-        const stream_profile & rhs)
-    {
-        if (lhs.format != rhs.format) return lhs.format < rhs.format;
-        if (lhs.index != rhs.index)   return lhs.index  < rhs.index;
-        return lhs.stream < rhs.stream;
-    }
 
     struct stream_descriptor
     {
@@ -430,20 +383,6 @@ namespace librealsense
 
         rs2_stream type;
         int index;
-    };
-
-    struct stream_output {
-        stream_output(stream_descriptor stream_desc_in,
-                      rs2_format format_in,
-                      resolution_func res_func = [](resolution res) {return res; })
-            : stream_desc(stream_desc_in),
-              format(format_in),
-              stream_resolution(res_func)
-        {}
-
-        stream_descriptor stream_desc;
-        rs2_format format;
-        resolution_func stream_resolution;
     };
 
     class stream_profile_interface;
@@ -853,121 +792,6 @@ namespace librealsense
 
     
 
-    template<typename HostingClass, typename... Args>
-    class signal
-    {
-        friend HostingClass;
-    public:
-        signal()
-        {
-        }
-
-        signal(signal&& other)
-        {
-            std::lock_guard<std::mutex> locker(other.m_mutex);
-            m_subscribers = std::move(other.m_subscribers);
-
-            other.m_subscribers.clear();
-        }
-
-        signal& operator=(signal&& other)
-        {
-            std::lock_guard<std::mutex> locker(other.m_mutex);
-            m_subscribers = std::move(other.m_subscribers);
-
-            other.m_subscribers.clear();
-            return *this;
-        }
-
-        int subscribe(const std::function<void(Args...)>& func)
-        {
-            std::lock_guard<std::mutex> locker(m_mutex);
-
-            int token = -1;
-            for (int i = 0; i < (std::numeric_limits<int>::max)(); i++)
-            {
-                if (m_subscribers.find(i) == m_subscribers.end())
-                {
-                    token = i;
-                    break;
-                }
-            }
-
-            if (token != -1)
-            {
-                m_subscribers.emplace(token, func);
-            }
-
-            return token;
-        }
-
-        bool unsubscribe(int token)
-        {
-            std::lock_guard<std::mutex> locker(m_mutex);
-
-            bool retVal = false;
-            typename std::map<int, std::function<void(Args...)>>::iterator it = m_subscribers.find(token);
-            if (it != m_subscribers.end())
-            {
-                m_subscribers.erase(token);
-                retVal = true;
-            }
-
-            return retVal;
-        }
-
-        int operator+=(const std::function<void(Args...)>& func)
-        {
-            return subscribe(func);
-        }
-
-        bool operator-=(int token)
-        {
-            return unsubscribe(token);
-        }
-
-    private:
-        signal(const signal& other);            // non construction-copyable
-        signal& operator=(const signal&);       // non copyable
-
-        bool raise(Args... args)
-        {
-            std::vector<std::function<void(Args...)>> functions;
-            bool retVal = false;
-
-            std::unique_lock<std::mutex> locker(m_mutex);
-            if (m_subscribers.size() > 0)
-            {
-                typename std::map<int, std::function<void(Args...)>>::iterator it = m_subscribers.begin();
-                while (it != m_subscribers.end())
-                {
-                    functions.emplace_back(it->second);
-                    ++it;
-                }
-            }
-            locker.unlock();
-
-            if (functions.size() > 0)
-            {
-                for (auto func : functions)
-                {
-                    func(std::forward<Args>(args)...);
-                }
-
-                retVal = true;
-            }
-
-            return retVal;
-        }
-
-        bool operator()(Args... args)
-        {
-            return raise(std::forward<Args>(args)...);
-        }
-
-        std::mutex m_mutex;
-        std::map<int, std::function<void(Args...)>> m_subscribers;
-    };
 
     template <typename T>
     class optional_value
@@ -1108,34 +932,6 @@ uint32_t rs_fourcc(const T a, const T b, const  T c, const T d)
             (static_cast<uint32_t>(d) << 0));
 }
 
-namespace std {
-
-    template <>
-    struct hash<librealsense::stream_profile>
-    {
-        size_t operator()(const librealsense::stream_profile& k) const
-        {
-            using std::hash;
-
-            return (hash<uint32_t>()(k.height))
-                ^ (hash<uint32_t>()(k.width))
-                ^ (hash<uint32_t>()(k.fps))
-                ^ (hash<uint32_t>()(k.format))
-                ^ (hash<uint32_t>()(k.stream));
-        }
-    };
-
-    template <>
-    struct hash<rs2_format>
-    {
-        size_t operator()(const rs2_format& f) const
-        {
-            using std::hash;
-
-            return hash<uint32_t>()(f);
-        }
-    };
-}
 
 enum res_type {
     low_resolution,

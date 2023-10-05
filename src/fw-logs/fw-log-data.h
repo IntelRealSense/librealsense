@@ -74,8 +74,8 @@ namespace librealsense
         class fw_log_data
         {
         public:
-            fw_log_data(void);
-            ~fw_log_data(void);
+            fw_log_data();
+            ~fw_log_data();
 
             uint32_t _magic_number;
             uint32_t _severity;

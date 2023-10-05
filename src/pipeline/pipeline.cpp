@@ -96,7 +96,7 @@ namespace librealsense
             auto dev = profile->get_device();
             if (auto playback = As<librealsense::playback_device>(dev))
             {
-                _playback_stopped_token = playback->playback_status_changed += [this, callbacks](rs2_playback_status status)
+                _playback_stopped_token = playback->playback_status_changed.subscribe( [this, callbacks](rs2_playback_status status)
                 {
                     if (status == RS2_PLAYBACK_STATUS_STOPPED)
                     {
@@ -111,7 +111,7 @@ namespace librealsense
                             }
                         });
                     }
-                };
+                } );
             }
 
             _dispatcher.start();
@@ -142,7 +142,7 @@ namespace librealsense
                     auto dev = _active_profile->get_device();
                     if (auto playback = As<librealsense::playback_device>(dev))
                     {
-                        playback->playback_status_changed -= _playback_stopped_token;
+                        _playback_stopped_token.cancel();
                     }
                     _active_profile->_multistream.stop();
                     _active_profile->_multistream.close();

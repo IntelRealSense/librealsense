@@ -5675,7 +5675,7 @@ TEST_CASE("Wheel_Odometry_API", "[live]")
                         REQUIRE_NOTHROW(b = wo_snr.send_wheel_odometry(0, 0, { 1,0,0 }));
                         REQUIRE(b);
                     }
-                    Approx approx_norm(0);
+                    Catch::Approx approx_norm(0);
                     approx_norm.epsilon(0.005); // 0.5cm threshold
                     REQUIRE_FALSE(norm_max == approx_norm);
                     REQUIRE_NOTHROW(pipe.stop());

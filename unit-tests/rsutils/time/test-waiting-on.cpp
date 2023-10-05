@@ -1,6 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
+//#cmake:dependencies rsutils
+
 #include <rsutils/string/chrono.h>  // must be before catch.h!
 #include <unit-tests/catch.h>
 #include <rsutils/time/waiting-on.h>

@@ -7,6 +7,7 @@
 #include "metadata-parser.h"
 #include "metadata.h"
 #include <src/backend.h>
+#include <src/platform/platform-utils.h>
 
 #include "d500-device.h"
 #include "d500-private.h"
@@ -392,13 +393,11 @@ namespace librealsense
     {
         using namespace ds;
 
-        auto&& backend = ctx->get_backend();
-
         std::vector<std::shared_ptr<platform::uvc_device>> depth_devices;
-        for (auto&& info : filter_by_mi(all_device_infos, 0)) // Filter just mi=0, DEPTH
-            depth_devices.push_back(backend.create_uvc_device(info));
+        for( auto & info : filter_by_mi( all_device_infos, 0 ) )  // Filter just mi=0, DEPTH
+            depth_devices.push_back( get_backend()->create_uvc_device( info ) );
 
-        std::unique_ptr<frame_timestamp_reader> timestamp_reader_backup(new ds_timestamp_reader(backend.create_time_service()));
+        std::unique_ptr< frame_timestamp_reader > timestamp_reader_backup( new ds_timestamp_reader() );
         std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(timestamp_reader_backup)));
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
         auto raw_depth_ep = std::make_shared<uvc_sensor>("Raw Depth Sensor", std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
@@ -422,7 +421,7 @@ namespace librealsense
     }
 
     d500_device::d500_device( std::shared_ptr< const d500_info > const & dev_info )
-        : device(dev_info), global_time_interface(),
+        : backend_device(dev_info), global_time_interface(),
           _device_capabilities(ds::ds_caps::CAP_UNDEFINED),
           _depth_stream(new stream(RS2_STREAM_DEPTH)),
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
@@ -439,7 +438,6 @@ namespace librealsense
     {
         using namespace ds;
 
-        auto&& backend = ctx->get_backend();
         auto& raw_sensor = get_raw_depth_sensor();
         _pid = group.uvc_devices.front().pid;
 
@@ -458,9 +456,9 @@ namespace librealsense
         }
         else
         {
-            _hw_monitor = std::make_shared<hw_monitor_extended_buffers>(
-                std::make_shared<locked_transfer>(
-                    backend.create_usb_device(group.usb_devices.front()), raw_sensor));
+            _hw_monitor = std::make_shared< hw_monitor_extended_buffers >(
+                std::make_shared< locked_transfer >( get_backend()->create_usb_device( group.usb_devices.front() ),
+                                                     raw_sensor ) );
         }
 
         _ds_device_common = std::make_shared<ds_device_common>(this, _hw_monitor);

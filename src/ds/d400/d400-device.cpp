@@ -17,6 +17,7 @@
 #include <src/environment.h>
 #include "d400-color.h"
 #include "d400-nonmonochrome.h"
+#include <src/platform/platform-utils.h>
 
 #include <src/proc/depth-formats-converter.h>
 #include <src/proc/y8i-to-y8y8.h>
@@ -461,13 +462,11 @@ namespace librealsense
     {
         using namespace ds;
 
-        auto&& backend = ctx->get_backend();
-
         std::vector<std::shared_ptr<platform::uvc_device>> depth_devices;
         for (auto&& info : filter_by_mi(all_device_infos, 0)) // Filter just mi=0, DEPTH
-            depth_devices.push_back(backend.create_uvc_device(info));
+            depth_devices.push_back( get_backend()->create_uvc_device( info ) );
 
-        std::unique_ptr<frame_timestamp_reader> timestamp_reader_backup(new ds_timestamp_reader(backend.create_time_service()));
+        std::unique_ptr< frame_timestamp_reader > timestamp_reader_backup( new ds_timestamp_reader() );
         frame_timestamp_reader* timestamp_reader_from_metadata;
         if (all_device_infos.front().pid != RS457_PID)
             timestamp_reader_from_metadata = new ds_timestamp_reader_from_metadata(std::move(timestamp_reader_backup));
@@ -498,7 +497,7 @@ namespace librealsense
     }
 
     d400_device::d400_device( std::shared_ptr< const d400_info > const & dev_info )
-        : device(dev_info), global_time_interface(),
+        : backend_device(dev_info), global_time_interface(),
           auto_calibrated(),
           _device_capabilities(ds::ds_caps::CAP_UNDEFINED),
           _depth_stream(new stream(RS2_STREAM_DEPTH)),
@@ -515,7 +514,6 @@ namespace librealsense
     {
         using namespace ds;
 
-        auto&& backend = ctx->get_backend();
         auto& raw_sensor = get_raw_depth_sensor();
         _pid = group.uvc_devices.front().pid;
         // to be changed for D457
@@ -536,10 +534,10 @@ namespace librealsense
         }
         else
         {
-            if (!mipi_sensor)
-                _hw_monitor = std::make_shared<hw_monitor>(
-                std::make_shared<locked_transfer>(
-                    backend.create_usb_device(group.usb_devices.front()), raw_sensor));
+            if( ! mipi_sensor )
+                _hw_monitor = std::make_shared< hw_monitor >( std::make_shared< locked_transfer >(
+                    get_backend()->create_usb_device( group.usb_devices.front() ),
+                    raw_sensor ) );
         }
         set_hw_monitor_for_auto_calib(_hw_monitor);
 
@@ -1211,13 +1209,11 @@ namespace librealsense
     {
         using namespace ds;
 
-        auto&& backend = ctx->get_backend();
-
         std::vector<std::shared_ptr<platform::uvc_device>> depth_devices;
-        for (auto&& info : filter_by_mi(all_device_infos, 0)) // Filter just mi=0, DEPTH
-            depth_devices.push_back(backend.create_uvc_device(info));
+        for( auto & info : filter_by_mi( all_device_infos, 0 ) )  // Filter just mi=0, DEPTH
+            depth_devices.push_back( get_backend()->create_uvc_device( info ) );
 
-        std::unique_ptr<frame_timestamp_reader> d400_timestamp_reader_backup(new ds_timestamp_reader(backend.create_time_service()));
+        std::unique_ptr< frame_timestamp_reader > d400_timestamp_reader_backup( new ds_timestamp_reader() );
         std::unique_ptr<frame_timestamp_reader> d400_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(d400_timestamp_reader_backup)));
 
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());

@@ -6,6 +6,7 @@
 #include <core/extension.h>
 #include <core/serialization.h>
 #include "core/streaming.h"
+#include <src/core/device-interface.h>
 #include "archive.h"
 #include "sensor.h"
 #include "record_sensor.h"
@@ -75,9 +76,6 @@ namespace librealsense
         std::mutex m_mutex;
         bool m_is_recording;
         std::once_flag m_first_frame_flag;
-        int m_on_notification_token;
-        int m_on_frame_token;
-        int m_on_extension_change_token;
         uint64_t m_cached_data_size;
         std::once_flag m_first_call_flag;
         void initialize_recording();

@@ -71,7 +71,7 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
         //Each sensor will know its capabilities from the sensor_snapshot
         auto sensor = std::make_shared<playback_sensor>(*this, sensor_snapshot);
 
-        sensor->started += [this](uint32_t id, frame_callback_ptr user_callback) -> void
+        sensor->on_started( [this](uint32_t id, frame_callback_ptr user_callback) -> void
         {
             (*m_read_thread)->invoke([this, id, user_callback](dispatcher::cancellable_timer c)
             {
@@ -87,9 +87,9 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
                     }
                 }
             });
-        };
+        } );
 
-        sensor->stopped += [this](uint32_t id, bool invoke_required) -> void
+        sensor->on_stopped( [this](uint32_t id, bool invoke_required) -> void
         {
             //stopped could be called by the user (when calling sensor.stop(), main thread==invoke required) or from the reader_thread when
             // reaching eof, or some read error (which means invoke is not required)
@@ -127,23 +127,23 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
             {
                 action();
             }
-        };
+        } );
 
-        sensor->opened += [this](const std::vector<device_serializer::stream_identifier>& filters) -> void
+        sensor->on_opened( [this](const std::vector<device_serializer::stream_identifier>& filters) -> void
         {
             (*m_read_thread)->invoke([this, filters](dispatcher::cancellable_timer c)
             {
                 m_reader->enable_stream(filters);
             });
-        };
+        } );
 
-        sensor->closed += [this](const std::vector<device_serializer::stream_identifier>& filters) -> void
+        sensor->on_closed( [this](const std::vector<device_serializer::stream_identifier>& filters) -> void
         {
             (*m_read_thread)->invoke([this, filters](dispatcher::cancellable_timer c)
             {
                 m_reader->disable_stream(filters);
             });
-        };
+        } );
 
         sensors[sensor_snapshot.get_sensor_index()] = sensor;
     }
@@ -357,7 +357,7 @@ void playback_device::pause()
             }
         }
         LOG_DEBUG("Notifying RS2_PLAYBACK_STATUS_PAUSED");
-        playback_status_changed(RS2_PLAYBACK_STATUS_PAUSED);
+        playback_status_changed.raise( RS2_PLAYBACK_STATUS_PAUSED );
     });
     if ((*m_read_thread)->flush() == false)
     {
@@ -513,7 +513,7 @@ void playback_device::stop_internal()
     m_reader->reset();
     m_prev_timestamp = std::chrono::nanoseconds(0);
     catch_up();
-    playback_status_changed(RS2_PLAYBACK_STATUS_STOPPED);
+    playback_status_changed.raise( RS2_PLAYBACK_STATUS_STOPPED );
     LOG_DEBUG("stop_internal() end");
 }
 
@@ -589,11 +589,11 @@ void playback_device::try_looping()
         //Notify subscribers that playback status changed
         if (m_is_paused)
         {
-            playback_status_changed(RS2_PLAYBACK_STATUS_PAUSED);
+            playback_status_changed.raise( RS2_PLAYBACK_STATUS_PAUSED );
         }
         else
         {
-            playback_status_changed(RS2_PLAYBACK_STATUS_PLAYING);
+            playback_status_changed.raise( RS2_PLAYBACK_STATUS_PLAYING );
         }
     }
 

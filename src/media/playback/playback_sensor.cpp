@@ -104,7 +104,8 @@ void playback_sensor::open(const stream_profiles& requests)
         opened_streams.push_back(f);
     }
     set_active_streams(requests);
-    opened(opened_streams);
+    if( _on_opened )
+        _on_opened( opened_streams );
 }
 
 void playback_sensor::close()
@@ -125,7 +126,8 @@ void playback_sensor::close()
     }
     m_dispatchers.clear();
     set_active_streams({});
-    closed(closed_streams);
+    if( _on_closed )
+        _on_closed( closed_streams );
 }
 
 void playback_sensor::register_notifications_callback(notifications_callback_ptr callback)
@@ -153,8 +155,8 @@ void playback_sensor::start(frame_callback_ptr callback)
             m_user_callback = callback;
         }
     }
-    if(was_started)
-        started(m_sensor_id, callback);
+    if( was_started && _on_started )
+        _on_started( m_sensor_id, callback );
 }
 
 void playback_sensor::stop(bool invoke_required)
@@ -176,8 +178,8 @@ void playback_sensor::stop(bool invoke_required)
         }
     }
 
-    if(was_stopped)
-        stopped(m_sensor_id, invoke_required);
+    if( was_stopped && _on_stopped )
+        _on_stopped( m_sensor_id, invoke_required );
 
 }
 void playback_sensor::stop()

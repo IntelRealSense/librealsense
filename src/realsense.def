@@ -18,6 +18,7 @@ EXPORTS
     rs2_delete_device_list
     rs2_create_device
     rs2_delete_device
+    rs2_device_is_connected
 
     rs2_query_sensors
     rs2_get_sensors_count

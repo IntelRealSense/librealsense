@@ -4,6 +4,7 @@
 #include "camera-shader.h"
 #include "rendering.h"
 #include "option.h"
+#include <src/core/device-interface.h>
 
 using namespace rs2;
 

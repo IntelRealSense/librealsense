@@ -8,7 +8,7 @@
 #include "../hid/hid-types.h"
 #include "../hid/hid-device.h"
 #include "../usb/usb-enumerator.h"
-#include "../platform/time-service.h"
+#include "../core/time-service.h"
 
 #include <chrono>
 #include <cctype> // std::tolower
@@ -63,11 +63,6 @@ namespace librealsense
         std::vector<hid_device_info> rs_backend::query_hid_devices() const
         {
             return query_hid_devices_info();
-        }
-
-        std::shared_ptr<time_service> rs_backend::create_time_service() const
-        {
-            return std::make_shared<os_time_service>();
         }
     }
 }

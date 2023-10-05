@@ -3,14 +3,14 @@
 
 #pragma once
 
-#include "device.h"
+#include "backend-device.h"
 #include "platform/platform-device-info.h"
 
 
 namespace librealsense {
 
 
-class platform_camera : public device
+class platform_camera : public backend_device
 {
 public:
     platform_camera( std::shared_ptr< const device_info > const & dev_info,
@@ -40,7 +40,7 @@ public:
                                                     register_device_notifications );
     }
 
-    static std::vector< std::shared_ptr< device_info > >
+    static std::vector< std::shared_ptr< platform_camera_info > >
     pick_uvc_devices( const std::shared_ptr< context > & ctx,
                       const std::vector< platform::uvc_device_info > & uvc_devices );
 };

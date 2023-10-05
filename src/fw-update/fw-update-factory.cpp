@@ -25,11 +25,10 @@ namespace librealsense
     }
 
 
-    std::vector<std::shared_ptr<device_info>> fw_update_info::pick_recovery_devices(
-        std::shared_ptr<context> ctx,
-        const std::vector<platform::usb_device_info>& usb_devices, int mask)
+    std::vector< std::shared_ptr< fw_update_info > > fw_update_info::pick_recovery_devices(
+        std::shared_ptr< context > ctx, const std::vector< platform::usb_device_info > & usb_devices, int mask )
     {
-        std::vector<std::shared_ptr<device_info>> list;
+        std::vector< std::shared_ptr< fw_update_info > > list;
         for (auto&& usb : usb_devices)
         {
             auto pl = get_product_line(usb);

@@ -17,7 +17,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include "core/options.h"   // Workaround for the missing DLL_EXPORT template
 #include "core/info.h"   // Workaround for the missing DLL_EXPORT template
 #include "../src/backend.h"
-#include <src/platform/time-service.h>
+#include <src/core/time-service.h>
 #include <src/platform/command-transfer.h>
 #include <src/platform/hid-device.h>
 #include "pybackend_extras.h"
@@ -34,6 +34,12 @@ using namespace pybind11::literals;
 
 using namespace librealsense;
 using namespace pybackend2;
+
+namespace librealsense {
+namespace platform {
+std::shared_ptr< backend > create_backend();
+}  // namespace platform
+}  // namespace librealsense
 
 
 // Prevents expensive copies of pixel buffers into python
@@ -61,10 +67,7 @@ PYBIND11_MODULE(NAME, m) {
                  .def_readwrite("def", &platform::control_range::def)
                  .def_readwrite("step", &platform::control_range::step);
 
-    py::class_<platform::time_service> time_service(m, "time_service");
-    time_service.def("get_time", &platform::time_service::get_time);
-
-    py::class_<platform::os_time_service, platform::time_service> os_time_service(m, "os_time_service");
+    m.def("get_time", &librealsense::time_service::get_time);
 
 #define BIND_RAW_RO_ARRAY(class, name, type, size) #name, [](const class &c) -> const std::array<type, size>& { return reinterpret_cast<const std::array<type, size>&>(c.name); }
 #define BIND_RAW_RW_ARRAY(class, name, type, size) BIND_RAW_RO_ARRAY(class, name, type, size), [](class &c, const std::array<type, size> &arr) { for (int i=0; i<size; ++i) c.name[i] = arr[i]; }
@@ -391,8 +394,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("create_usb_device", &platform::backend::create_usb_device, "info"_a)
         .def("query_usb_devices", &platform::backend::query_usb_devices)
         .def("create_hid_device", &platform::backend::create_hid_device, "info"_a)
-        .def("query_hid_devices", &platform::backend::query_hid_devices)
-        .def("create_time_service", &platform::backend::create_time_service);
+        .def("query_hid_devices", &platform::backend::query_hid_devices);
 
     py::class_<platform::multi_pins_uvc_device, std::shared_ptr<platform::multi_pins_uvc_device>, platform::uvc_device> multi_pins_uvc_device(m, "multi_pins_uvc_device");
     multi_pins_uvc_device.def(py::init<std::vector<std::shared_ptr<platform::uvc_device>>&>())

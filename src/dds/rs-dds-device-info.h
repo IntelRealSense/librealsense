@@ -3,7 +3,8 @@
 
 #pragma once
 
-#include <src/context.h>  // device_info, context
+#include <src/context.h>
+#include <src/device-info.h>
 
 #include <memory>
 

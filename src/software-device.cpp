@@ -3,7 +3,9 @@
 
 #include "software-device.h"
 #include "stream.h"
+#include "option.h"
 #include "core/video-frame.h"
+#include "core/matcher-factory.h"
 
 #include <rsutils/string/from.h>
 #include <rsutils/deferred.h>
@@ -307,7 +309,16 @@ namespace librealsense
         data.timestamp = software_frame.timestamp;
         data.timestamp_domain = software_frame.domain;
         data.frame_number = software_frame.frame_number;
-        data.depth_units = software_frame.depth_units;
+
+        // Depth units, if not provided by the user, should default to the current sensor value of DEPTH_UNITS:
+        if( vid_profile->get_stream_type() != RS2_STREAM_DEPTH )
+            data.depth_units = 0;
+        else if( software_frame.depth_units )
+            data.depth_units = software_frame.depth_units;
+        else if( auto opt = get_option_handler( RS2_OPTION_DEPTH_UNITS ) )
+            data.depth_units = opt->query();
+        else
+            data.depth_units = 0.f;
 
         auto frame
             = allocate_new_video_frame( vid_profile, software_frame.stride, software_frame.bpp, std::move( data ) );

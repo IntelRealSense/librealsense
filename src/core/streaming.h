@@ -9,42 +9,19 @@
 #include "../depth-mapping-sensor.h"
 #include "../composite-frame.h"
 #include "../points.h"
-#include "info.h"
+#include "info-interface.h"
+#include "tagged-profile.h"
 #include <functional>
+#include <vector>
+
 
 namespace librealsense
 {
     class sensor_interface;
-    class archive_interface;
     class device_interface;
     class processing_block_interface;
 
     class context;
-
-    enum class format_conversion
-    {
-        raw,
-        basic,
-        full
-    };
-
-    typedef enum profile_tag
-    {
-        PROFILE_TAG_SUPERSET = 1, // to be included in enable_all
-        PROFILE_TAG_DEFAULT = 2,  // to be included in default pipeline start
-        PROFILE_TAG_ANY = 4,      // does not include PROFILE_TAG_DEBUG
-        PROFILE_TAG_DEBUG = 8,    // tag for debug formats
-    } profile_tag;
-
-    struct tagged_profile
-    {
-        rs2_stream stream;
-        int stream_index;
-        int width, height;
-        rs2_format format;
-        int fps;
-        int tag;
-    };
 
     class stream_interface : public std::enable_shared_from_this<stream_interface>
     {
@@ -60,6 +37,10 @@ namespace librealsense
         virtual rs2_stream get_stream_type() const = 0;
         virtual void set_stream_type(rs2_stream stream) = 0;
     };
+
+
+    stream_interface * find_profile( rs2_stream stream, int index, std::vector< stream_interface * > const & profiles );
+
 
     class stream_profile_interface : public stream_interface, public recordable<stream_profile_interface>
     {
@@ -162,39 +143,4 @@ namespace librealsense
     };
 
 
-    class matcher;
-    class device_info;
-
-
-    class device_interface : public virtual info_interface, public std::enable_shared_from_this<device_interface>
-    {
-    public:
-        virtual sensor_interface& get_sensor(size_t i) = 0;
-
-        virtual const sensor_interface& get_sensor(size_t i) const = 0;
-
-        virtual size_t get_sensors_count() const = 0;
-
-        virtual void hardware_reset() = 0;
-
-        virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const = 0;
-
-        virtual std::shared_ptr<context> get_context() const = 0;
-
-        virtual std::shared_ptr< const device_info > get_device_info() const = 0;
-
-        virtual std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const = 0;
-
-        virtual bool is_valid() const = 0;
-
-        virtual ~device_interface() = default;
-
-        virtual std::vector<tagged_profile> get_profiles_tags() const = 0;
-
-        virtual void tag_profiles(stream_profiles profiles) const = 0;
-
-        virtual bool compress_while_record() const = 0;
-
-        virtual bool contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const = 0;
-    };
 }

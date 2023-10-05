@@ -9,6 +9,7 @@
 #include "environment.h"
 #include "metadata.h"
 #include "backend.h"
+#include "platform/platform-utils.h"
 
 #include "global_timestamp_reader.h"
 #include "proc/auto-exposure-processor.h"
@@ -260,7 +261,7 @@ namespace librealsense
         return auto_exposure;
     }
 
-    ds_motion_common::ds_motion_common(device* owner,
+    ds_motion_common::ds_motion_common( backend_device * owner,
         firmware_version fw_version,
         const ds::ds_caps& device_capabilities,
         std::shared_ptr<hw_monitor> hwm) :
@@ -281,7 +282,7 @@ namespace librealsense
                                  { unsigned(odr::IMU_FPS_400),  hid_fps_translation.at(odr::IMU_FPS_400)}}} };
 
         // motion correction
-        _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _owner->_pid);
+        _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _owner->get_pid());
     }
 
     rs2_motion_device_intrinsic ds_motion_common::get_motion_intrinsics(rs2_stream stream) const
@@ -471,12 +472,16 @@ namespace librealsense
         }
         _fps_and_sampling_frequency_per_rs2_stream[RS2_STREAM_ACCEL] = fps_and_frequency_map;
 
-        auto raw_hid_ep = std::make_shared<hid_sensor>(ctx->get_backend().create_hid_device(all_hid_infos.front()),
-            std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(iio_hid_ts_reader), tf_keeper, enable_global_time_option)),
-            std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(custom_hid_ts_reader), tf_keeper, enable_global_time_option)),
+        auto raw_hid_ep = std::make_shared< hid_sensor >(
+            _owner->get_backend()->create_hid_device( all_hid_infos.front() ),
+            std::unique_ptr< frame_timestamp_reader >(
+                new global_timestamp_reader( std::move( iio_hid_ts_reader ), tf_keeper, enable_global_time_option ) ),
+            std::unique_ptr< frame_timestamp_reader >( new global_timestamp_reader( std::move( custom_hid_ts_reader ),
+                                                                                    tf_keeper,
+                                                                                    enable_global_time_option ) ),
             _fps_and_sampling_frequency_per_rs2_stream,
             _sensor_name_and_hid_profiles,
-            _owner);
+            _owner );
 
         auto hid_ep = std::make_shared<ds_motion_sensor>("Motion Module", raw_hid_ep, _owner);
 
@@ -517,7 +522,7 @@ namespace librealsense
         if (!is_infos_empty)
         {
             // motion correction
-            _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _owner->_pid);
+            _mm_calib = std::make_shared< mm_calib_handler >( _hw_monitor, _owner->get_pid() );
 
             _accel_intrinsic = std::make_shared< rsutils::lazy< ds::imu_intrinsic > >(
                 [this]() { return _mm_calib->get_intrinsic( RS2_STREAM_ACCEL ); } );
