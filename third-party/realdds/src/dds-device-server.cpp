@@ -53,7 +53,7 @@ dds_device_server::dds_device_server( std::shared_ptr< dds_participant > const &
     , _topic_root( topic_root )
     , _control_dispatcher( QUEUE_MAX_SIZE )
 {
-    LOG_DEBUG( "device server created @ '" << _topic_root << "'" );
+    LOG_DEBUG( "[" << _topic_root << "] device server created" );
     _control_dispatcher.start();
 }
 
@@ -68,7 +68,7 @@ dds_guid const & dds_device_server::guid() const
 dds_device_server::~dds_device_server()
 {
     _stream_name_to_server.clear();
-    LOG_DEBUG( "device server deleted @ '" << _topic_root << "'" );
+    LOG_DEBUG( "[" << _topic_root << "] device server deleted" );
 }
 
 

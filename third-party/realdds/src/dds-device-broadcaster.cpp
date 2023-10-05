@@ -114,6 +114,11 @@ public:
         std::lock_guard< std::mutex > lock( _broadcasters_mutex );
         _broadcasters.erase( broadcaster );
     }
+
+    void broadcast()
+    {
+        _ready_for_broadcast.set_trigger_value( true );
+    }
 };
 
 
@@ -136,7 +141,7 @@ dds_device_broadcaster::dds_device_broadcaster( std::shared_ptr< dds_publisher >
     _manager = participant_broadcast_manager[participant_guid].instance( publisher );
     _writer = _manager->register_broadcaster( this );
 
-    broadcast();  // possible we have no subscribers, but can't hurt
+    _manager->broadcast();  // possible we have no subscribers, but can't hurt
 }
 
 

@@ -66,26 +66,6 @@ rsutils::json device_settings( std::shared_ptr< realdds::dds_participant > const
 namespace realdds {
 
 
-/*static*/ char const * dds_device::impl::to_string( state_t st )
-{
-    switch( st )
-    {
-    case state_t::WAIT_FOR_DEVICE_HEADER:
-        return "WAIT_FOR_DEVICE_HEADER";
-    case state_t::WAIT_FOR_DEVICE_OPTIONS:
-        return "WAIT_FOR_DEVICE_OPTIONS";
-    case state_t::WAIT_FOR_STREAM_HEADER:
-        return "WAIT_FOR_STREAM_HEADER";
-    case state_t::WAIT_FOR_STREAM_OPTIONS:
-        return "WAIT_FOR_STREAM_OPTIONS";
-    case state_t::READY:
-        return "READY";
-    default:
-        return "UNKNOWN";
-    }
-}
-
-
 void dds_device::impl::set_state( state_t new_state )
 {
     if( new_state == _state )
@@ -139,8 +119,27 @@ dds_device::impl::impl( std::shared_ptr< dds_participant > const & participant,
     , _reply_timeout_ms(
           _device_settings.nested( "control", "reply-timeout-ms" ).default_value< size_t >( 2000 ) )
 {
-    create_notifications_reader();
     create_control_writer();
+    create_notifications_reader();
+}
+
+
+void dds_device::impl::reset()
+{
+    // _info should already be up-to-date
+    // _participant doesn't change
+    // _subscriber can stay the same
+    // _reply_timeout_ms is using same settings
+
+    // notifications/control/metadata topic, since the topic root hasn't changed, are still valid
+
+    // Streams need to be reset
+    _server_guid = {};
+    _n_streams_expected = 0;
+    _streams.clear();
+    _options.clear();
+    _extrinsics_map.clear();
+    _metadata_reader.reset();
 }
 
 
@@ -153,22 +152,6 @@ dds_guid const & dds_device::impl::guid() const
 std::string dds_device::impl::debug_name() const
 {
     return rsutils::string::from() << _info.debug_name() << _participant->print( guid() );
-}
-
-
-void dds_device::impl::wait_until_ready( size_t timeout_ms )
-{
-    if( is_ready() )
-        return;
-
-    rsutils::time::timer timer{ std::chrono::milliseconds( timeout_ms ) };
-    do
-    {
-        if( timer.has_expired() )
-            DDS_THROW( runtime_error, "timeout waiting for '" << debug_name() << "'" );
-        std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
-    }
-    while( ! is_ready() );
 }
 
 
@@ -203,7 +186,7 @@ void dds_device::impl::handle_notification( rsutils::json const & j,
             {
                 // We have to be the ones who sent the control!
                 auto const reply_guid = guid_from_string( sample[0].get< std::string >() );
-                auto const control_guid = _control_writer->get()->guid();
+                auto const control_guid = _control_writer->guid();
                 if( reply_guid == control_guid )
                 {
                     auto const sequence_number = sample[1].get< uint64_t >();
@@ -386,7 +369,7 @@ void dds_device::impl::open( const dds_stream_profiles & profiles )
     {
         auto stream = profile->stream();
         if( ! stream )
-            DDS_THROW( runtime_error, "profile " << profile->to_string() << " is not part of any stream" );
+            DDS_THROW( runtime_error, "profile '" << profile->to_string() << "' is not part of any stream" );
         if( stream_profiles.nested( stream->name() ) )
             DDS_THROW( runtime_error, "more than one profile found for stream '" << stream->name() << "'" );
 
@@ -418,13 +401,13 @@ void dds_device::impl::set_option_value( const std::shared_ptr< dds_option > & o
 
     rsutils::json reply;
     write_control_message( j, &reply );
-    //option->set_value( new_value );
+    // the reply will contain the new value (which may be different) and will update the cached one
 }
 
 
 float dds_device::impl::query_option_value( const std::shared_ptr< dds_option > & option )
 {
-    if( !option )
+    if( ! option )
         DDS_THROW( runtime_error, "must provide an option to query" );
 
     rsutils::json j = rsutils::json::object({
@@ -482,8 +465,8 @@ void dds_device::impl::create_notifications_reader()
     _notifications_reader = std::make_shared< dds_topic_reader_thread >( topic, _subscriber );
 
     dds_topic_reader::qos rqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
-    //On discovery writer sends a burst of messages, if history is too small we might loose some of them
-    //(even if reliable). Setting depth to cover known use-cases plus some spare
+    // On discovery writer sends a burst of messages, if history is too small we might lose some of them
+    // (even if reliable). Setting depth to cover known use-cases plus some spare
     rqos.history().depth = 24;
     rqos.override_from_json( _device_settings.nested( "notification" ) );
 
@@ -559,8 +542,11 @@ void dds_device::impl::create_control_writer()
 
 void dds_device::impl::on_device_header( rsutils::json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
 {
-    if( _state != state_t::WAIT_FOR_DEVICE_HEADER )
+    if( _state != state_t::ONLINE )
         return;
+
+    // We can get here when we regain connectivity - reset everything, just as if we're freshly constructed
+    reset();
 
     // The server GUID is the server's notification writer's GUID -- that way, we can easily associate all notifications
     // with a server.
