@@ -180,7 +180,7 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
                                     eprosima::fastrtps::types::DynamicType_ptr dyn_type ) override
     {
         TypeSupport type_support( new eprosima::fastrtps::types::DynamicPubSubType( dyn_type ) );
-        LOG_DEBUG( _owner.name() << ": discovered topic " << topic_name << " of type: " << type_support->getName() );
+        LOG_DEBUG( _owner.name() << ": +topic " << topic_name << " [" << type_support->getName() << "]" );
         _owner.on_type_discovery( topic_name.c_str(), dyn_type );
     }
 };
@@ -248,7 +248,7 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
     else
         DDS_THROW( runtime_error, "provided settings are invalid: " << settings );
 
-    LOG_DEBUG( "participant '" << participant_name << "' (" << realdds::print_guid( guid() ) << ") is up on domain "
+    LOG_DEBUG( "participant '" << participant_name << "' (" << realdds::print_raw_guid( guid() ) << ") is up on domain "
                                << domain_id << " with settings: " << _settings.dump( 4 ) );
 #ifdef BUILD_EASYLOGGINGPP
     // DDS participant destruction happens when all contexts are done with it but, in some situations (e.g., Python), it

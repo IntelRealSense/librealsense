@@ -6,33 +6,48 @@
 
 from rspy import log, test
 import pyrealdds as dds
+from time import sleep
+import re
 
 with test.remote.fork( nested_indent='  S' ) as remote:
     if remote is None:  # we're the server fork
         dds.debug( log.is_debug_on(), log.nested )
 
         participant = dds.participant()
-        participant.init( 123, "server" )
-        test.check( participant.is_valid() )
+        participant.init( 123, 'server' )
 
-        publisher = dds.publisher( participant )
-
-        broadcasters = []
-
-
-        def broadcast( props ):
+        def create_device_info( props ):
             global broadcasters, publisher
-            serial = props.setdefault( 'serial', str(len(broadcasters)) )
+            serial = props.setdefault( 'serial', str( participant.create_guid() ) )
             props.setdefault( 'name', f'device{serial}' )
             props.setdefault( 'topic-root', f'device{serial}' )
             di = dds.message.device_info.from_json( props )
-            broadcasters.append( dds.device_broadcaster( publisher, di ) )
+            return di
 
+        def create_server( root ):
+            s1p1 = dds.video_stream_profile( 9, dds.video_encoding.rgb, 10, 10 )
+            s1profiles = [s1p1]
+            s1 = dds.color_stream_server( 's1', 'sensor' )
+            s1.init_profiles( s1profiles, 0 )
+            s1.init_options( [
+                dds.option( 'Backlight Compensation', dds.option_range( 0, 1, 1, 0 ), 'Backlight custom description' ),
+                dds.option( 'Custom Option', dds.option_range( 0, 10, 1, 5 ), 'Description' )
+                ] )
+            server = dds.device_server( participant, root )
+            server.init( [s1], [], {} )
+            return server
 
-        def unbroadcast_all():
-            global broadcasters
-            broadcasters = []
-
+        def create_server_2( root ):
+            s1p1 = dds.video_stream_profile( 3, dds.video_encoding.z16, 100, 100 )
+            s1profiles = [s1p1]
+            s1 = dds.color_stream_server( 's2', 'sensor2' )
+            s1.init_profiles( s1profiles, 0 )
+            s1.init_options( [
+                dds.option( 'Another Option', dds.option_range( 5, 15, 2, 7 ), 'Another Option' )
+                ] )
+            server = dds.device_server( participant, root )
+            server.init( [s1], [], {} )
+            return server
 
         # From here down, we're in "interactive" mode (see test-watcher.py)
         # ...
@@ -44,6 +59,7 @@ with test.remote.fork( nested_indent='  S' ) as remote:
     log.nested = 'C  '
 
     import threading
+    from rspy.stopwatch import Stopwatch
 
 
     participant = dds.participant()
@@ -62,9 +78,8 @@ with test.remote.fork( nested_indent='  S' ) as remote:
                 break
             j = msg.json_data()
             log.d( f'on_device_info_available {j}' )
-            di = dds.message.device_info.from_json( j )
             global broadcast_devices
-            broadcast_devices.append( di )
+            broadcast_devices.append( j )
         broadcast_received.set()
     device_info.on_data_available( on_device_info_available )
     device_info.run( dds.topic_reader.qos() )
@@ -74,7 +89,6 @@ with test.remote.fork( nested_indent='  S' ) as remote:
         broadcast_received.clear()
         broadcast_devices = []
 
-    from rspy.stopwatch import Stopwatch
     def wait_for_broadcast( count=1, timeout=1 ):
         while timeout > 0:
             sw = Stopwatch()
@@ -100,18 +114,58 @@ with test.remote.fork( nested_indent='  S' ) as remote:
 
 
     # Start a watcher, too...
+    change_received = threading.Event()
     devices_added = 0
-    def on_device_added( watcher, dev ):
-        global devices_added
-        devices_added += 1
-        log.d( 'watcher detected device added', dev )
-        watcher.foreach_device( lambda dev: log.d( dev ) )
-
     devices_removed = 0
+    devices = dict()
+
+    def on_device_added( watcher, dev ):
+        global devices_added, devices
+        devices_added += 1
+        log.d( '+++-> device added', dev )
+        devices[dev.device_info().topic_root] = dev
+        change_received.set()
+        test.check( dev.is_online() )
+
     def on_device_removed( watcher, dev ):
-        global devices_removed
+        global devices_removed, devices
         devices_removed += 1
-        log.d( 'watcher detected device removed', dev )
+        log.d( '<---- device removed', dev )
+        del devices[dev.device_info().topic_root]
+        change_received.set()
+
+    def detect_change():
+        global devices_added, devices_removed
+        change_received.clear()
+        devices_added = 0
+        devices_removed = 0
+
+    def wait_for_change( n_added=0, n_removed=0, timeout=3 ):
+        global devices_added, devices_removed
+        while timeout > 0:
+            sw = Stopwatch()
+            if not change_received.wait( timeout ):
+                raise TimeoutError( 'timeout waiting for add/remove' )
+            change_received.clear()
+            if n_added <= devices_added and n_removed <= devices_removed:
+                return
+            timeout -= sw.get_elapsed()
+        raise TimeoutError( f'timeout waiting for {count} add/removes; {n_changes} received' )
+
+    class change_expected:
+        def __init__( self, n_added=0, n_removed=0, timeout=3 ):
+            self._timeout = timeout
+            self._n_added = n_added
+            self._n_removed = n_removed
+        def __enter__( self ):
+            detect_change()
+        def __exit__( self, type, value, traceback ):
+            if type is None:  # If an exception is thrown, don't do anything
+                wait_for_change( n_added=self._n_added, n_removed=self._n_removed, timeout=self._timeout )
+                global devices_added, devices_removed
+                test.check_equal( devices_added, self._n_added )
+                test.check_equal( devices_removed, self._n_removed )
+
 
     watcher = dds.device_watcher( participant )
     watcher.on_device_added( on_device_added )
@@ -120,19 +174,31 @@ with test.remote.fork( nested_indent='  S' ) as remote:
 
 
     #############################################################################################
-    with test.closure( "Broadcast first; expect 1" ):
-        with broadcast_expected():
-            remote.run( 'broadcast({ "serial" : "123" })', timeout=5 )
+    with test.closure( "Broadcast one device" ):
+        with change_expected( n_added=1 ):
+            remote.run( 'di1 = create_device_info({ "serial" : "123" })' )
+            remote.run( 'd1 = create_server( di1.topic_root )' )
+            remote.run( 'd1.broadcast( di1 )' )
         test.check_equal( len(broadcast_devices), 1 )
+        test.check_equal( len(devices), 1 )
+        d1 = devices[f'device123']  # remember it -- we'll re-add it later and want to test it's the same!
+        d1guid = d1.guid()
 
     #############################################################################################
-    with test.closure( "Broadcast second; expect 1" ):
-        with broadcast_expected():
-            remote.run( 'broadcast({ "serial" : "456" })', timeout=5 )
-        test.check_equal( len(broadcast_devices), 1 )
+    with test.closure( "Broadcast second device" ):
+        with change_expected( n_added=1 ):
+            remote.run( 'di2 = create_device_info({ "serial" : "456" })' )
+            remote.run( 'd2 = create_server( di2.topic_root )' )
+            remote.run( 'd2.broadcast( di2 )' )
+        test.check_equal( len(broadcast_devices), 3 )  # each broadcast is of ALL the devices
+        test.check_equal( len(devices), 2 )
+        d2 = devices[f'device456']  # remember it -- we'll re-add it later and want to test it's the same!
+        d2.wait_until_ready()
+        d2option = d2.streams()[0].options()[0]
+        d2.query_option_value( d2option )
 
     #############################################################################################
-    with test.closure( "Add another client; expect 2!" ):
+    with test.closure( "Add another client; expect rebroadcast of all" ):
         with broadcast_expected( 2 ):
             reader_2 = dds.topic_reader( device_info_topic )
             reader_2.run( dds.topic_reader.qos() )
@@ -141,14 +207,96 @@ with test.remote.fork( nested_indent='  S' ) as remote:
 
     #############################################################################################
     with test.closure( "We should see both in the watcher" ):
-        test.check_equal( devices_added, 2 )
+        test.check_equal( len(devices), 2 )
+        for dev in devices.values():
+            test.info( 'device', dev )
+            test.check( watcher.is_device_broadcast( dev ) )
 
     #############################################################################################
-    with test.closure( "Get both removals" ):
-        remote.run( 'unbroadcast_all()', timeout=5 )
-        from time import sleep
-        sleep(1)
-        test.check_equal( devices_removed, 2 )
+    with test.closure( "Disconnect one & remove the other" ):
+        with change_expected( n_removed=2 ):
+            remote.run( 'd1.broadcast_disconnect( dds.time( 2. ) )' )
+            remote.run( 'del d2' )
+        test.check_equal( len(watcher.devices()), 0 )
+
+    #############################################################################################
+    with test.closure( "Both should go offline & not ready" ):
+        test.check_false( watcher.is_device_broadcast( d1 ) )
+        test.check_false( d1.is_online() )
+        test.check_false( d1.is_ready() )
+        test.check_false( watcher.is_device_broadcast( d2 ) )
+        test.check_false( d2.is_online() )
+        test.check_false( d2.is_ready() )
+
+    #############################################################################################
+    with test.closure( "Offline device shouldn't accept controls" ):
+        test.check_throws( lambda:
+            d1.query_option_value( d1.streams()[0].options()[0] ),
+            RuntimeError, 'device is offline' )
+
+    #############################################################################################
+    with test.closure( "Unbroadcast server still sends out init messages" ):
+        info = dds.message.device_info()
+        info.name = 'Test Device'
+        info.topic_root = 'device123'
+        dds.device( participant, info ).wait_until_ready()  # New subscriber to notifications will trigger new handshake
+
+    #############################################################################################
+    with test.closure( "Offline device should not get ready (ready means online)" ):
+        test.check_false( d1.is_ready() )
+        test.check_false( d1.is_online() )
+
+    #############################################################################################
+    with test.closure( "Rebroadcast the disconnected device" ):
+        with change_expected( n_added=1 ):
+            remote.run( 'd1.broadcast( di1 )' )
+        test.check( watcher.is_device_broadcast( d1 ) )
+        test.check( d1.is_online() )
+
+    #############################################################################################
+    with test.closure( "It needs to reinitialize to get ready again" ):
+        d1.wait_until_ready()  # NOTE: requires server to resend init messages on broadcast
+        test.check( d1.is_ready() )
+        test.check_equal( len(devices), 1 )
+        test.check_equal( devices['device123'].guid(), d1guid )  # Same device
+        d1.query_option_value( d1.streams()[0].options()[0] )
+
+    #############################################################################################
+    with test.closure( "Recreate device456, new content, without a broadcast" ):
+        detect_broadcast()
+        detect_change()
+        remote.run( 'd2 = create_server_2( di2.topic_root )' )
+        sleep( 2 );
+
+    #############################################################################################
+    with test.closure( "It should not get ready (because it's not online)" ):
+        test.check_equal( len(broadcast_devices), 0 )
+        test.check_equal( devices_added, 0 )
+        test.check_false( d2.is_online() )
+
+    #############################################################################################
+    with test.closure( "Broadcast it again; it should come online" ):
+        with change_expected( n_added=1 ):
+            remote.run( 'd2.broadcast( di2 )' )
+        test.check( d2.is_online() )
+        test.check( watcher.is_device_broadcast( d2 ) )
+
+    #############################################################################################
+    with test.closure( "It should get ready, too" ):
+        d2.wait_until_ready()
+        test.check( d2.is_ready() )
+
+    #############################################################################################
+    with test.closure( "Check new content" ):
+        test.check_throws( lambda:
+            d2.query_option_value( d2option ),
+            RuntimeError, r'''["query-option" error] device option 'Backlight Compensation' not found''' )
+        if test.check_equal( len(d2.streams()), 1 ):
+            stream = d2.streams()[0]
+            test.check_equal( stream.name(), 's2' )
+            options = stream.options()
+            if test.check_equal( len(options), 1 ):
+                d2.query_option_value( options[0] )
 
 
     del watcher

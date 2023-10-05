@@ -46,10 +46,8 @@ watcher.start()
 i( 'Waiting for devices...' )
 time.sleep( args.time )
 
-def device_found( device ):
+for device in watcher.devices():
     di = device.device_info()
     print( di.topic_root )
-    return True  # keep going
-watcher.foreach_device( device_found )
 
 
