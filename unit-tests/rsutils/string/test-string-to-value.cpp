@@ -44,7 +44,7 @@ void check_tests(std::vector<string_checker<T>>& tests)
                 CHECK(value == test.value);
             else // floating-point
             {
-                CHECK(value == Approx(test.value));
+                CHECK(value == Catch::Approx(test.value));
             }
         }
     }

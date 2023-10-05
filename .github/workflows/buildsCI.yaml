@@ -249,8 +249,8 @@ jobs:
 
 
   #--------------------------------------------------------------------------------
-  U20_ST_Py_EX_CfU_LiveTest:  # Ubuntu 2020, Static, Python, Examples & Tools, Check for Updates, Legacy Live-Tests
-    runs-on: ubuntu-20.04    
+  U22_ST_Py_EX_CfU_LiveTest:  # Ubuntu 2022, Static, Python, Examples & Tools, Check for Updates, Legacy Live-Tests
+    runs-on: ubuntu-22.04    
     timeout-minutes: 60
     steps:
     - uses: actions/checkout@v3
@@ -267,9 +267,6 @@ jobs:
         sudo apt-get install -qq libusb-1.0-0-dev;
         sudo apt-get install -qq libgtk-3-dev;
         sudo apt-get install libglfw3-dev libglfw3;
-        # We force compiling with GCC 7 because the default installed GCC 9 compiled with LTO and gives an internal compiler error
-        sudo apt-get install gcc-7 g++-7;
-        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7;
     
     - name: Build
       shell: bash
@@ -399,8 +396,8 @@ jobs:
   
 
   #--------------------------------------------------------------------------------
-  U20_SH_RSUSB_LiveTest:  # Ubuntu 2020, Shared, Legacy live-tests
-    runs-on: ubuntu-20.04     
+  U22_SH_RSUSB_LiveTest:  # Ubuntu 2022, Shared, Legacy live-tests
+    runs-on: ubuntu-22.04     
     timeout-minutes: 60
     env: 
       LRS_BUILD_NODEJS: true
@@ -426,9 +423,6 @@ jobs:
         sudo apt-get install -qq libusb-1.0-0-dev;
         sudo apt-get install -qq libgtk-3-dev;
         sudo apt-get install libglfw3-dev libglfw3;
-        # We force compiling with GCC 7 because the default installed GCC 9 compiled with LTO and gives an internal compiler error
-        sudo apt-get install gcc-7 g++-7;
-        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7;
 
     - name: Build
       shell: bash
