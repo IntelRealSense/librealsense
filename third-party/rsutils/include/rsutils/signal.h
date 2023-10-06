@@ -33,7 +33,9 @@ using subscription_slot = int;
 template< typename... Args >
 class signal
 {
+public:
     using callback = std::function< void( Args... ) >;
+private:
     using map = std::map< subscription_slot, callback >;
 
     // We use a shared_ptr to control lifetime: only while it's alive can we remove subscriptions
