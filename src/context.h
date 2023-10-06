@@ -4,6 +4,9 @@
 #pragma once
 
 #include "backend-device-factory.h"
+#ifdef BUILD_WITH_DDS
+#include "dds/rsdds-device-factory.h"
+#endif
 #include "types.h"  // devices_changed_callback_ptr
 
 #include <rsutils/lazy.h>
@@ -36,14 +39,6 @@ struct rs2_stream_profile
     librealsense::stream_profile_interface* profile;
     std::shared_ptr<librealsense::stream_profile_interface> clone;
 };
-
-
-#ifdef BUILD_WITH_DDS
-namespace realdds {
-    class dds_device_watcher;
-    class dds_participant;
-}  // namespace realdds
-#endif
 
 
 namespace librealsense
@@ -93,16 +88,13 @@ namespace librealsense
 
         std::map<std::string, std::weak_ptr<device_info>> _playback_devices;
         std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
-#ifdef BUILD_WITH_DDS
-        std::shared_ptr< realdds::dds_participant > _dds_participant;
-        std::shared_ptr< realdds::dds_device_watcher > _dds_watcher;
-
-        void start_dds_device_watcher();
-#endif
 
         nlohmann::json _settings; // Save operation settings
         unsigned const _device_mask;
         backend_device_factory _backend_device_factory;
+#ifdef BUILD_WITH_DDS
+        rsdds_device_factory _dds_device_factory;
+#endif
 
         devices_changed_callback_ptr _devices_changed_callback;
         std::map<int, std::weak_ptr<const stream_interface>> _streams;
