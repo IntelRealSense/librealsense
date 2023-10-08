@@ -328,7 +328,7 @@ namespace librealsense
         command cmd(ds::SET_HKR_CONFIG_TABLE,
             static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
             static_cast<int>(ds::d500_calibration_table_id::safety_interface_cfg_id),
-            static_cast<int>(ds::d500_calib_type::d500_calib_dynamic));
+            static_cast<int>(ds::d500_calib_type::d500_calib_gold));
         cmd.data.insert(cmd.data.end(), data_as_ptr, data_as_ptr + sizeof(safety_interface_config_with_header));
         cmd.require_response = false;
 
@@ -378,7 +378,7 @@ namespace librealsense
         command cmd(ds::GET_HKR_CONFIG_TABLE,
             static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
             static_cast<int>(ds::d500_calibration_table_id::safety_interface_cfg_id),
-            static_cast<int>(ds::d500_calib_type::d500_calib_dynamic));
+            static_cast<int>(ds::d500_calib_type::d500_calib_gold));
         cmd.require_response = true;
 
         // send command to device and get response (safety_interface_config entry + header)

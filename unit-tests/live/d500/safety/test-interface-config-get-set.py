@@ -1,5 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+import time
 
 #test:device D585S
 
@@ -42,6 +43,7 @@ print("getting original safety mode")
 original_mode = safety_sensor.get_option(rs.option.safety_mode)
 print("switching to service mode")
 safety_sensor.set_option(rs.option.safety_mode, 2) # service mode
+time.sleep(2)
 
 #############################################################################################
 test.start("Valid get/set scenario")
