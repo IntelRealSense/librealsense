@@ -4,6 +4,11 @@
 #include "context.h"
 #include "media/playback/playback-device-info.h"
 
+#include "backend-device-factory.h"
+#ifdef BUILD_WITH_DDS
+#include "dds/rsdds-device-factory.h"
+#endif
+
 #include <rsutils/string/from.h>
 #include <rsutils/json.h>
 using json = nlohmann::json;
@@ -15,15 +20,6 @@ namespace librealsense
         : _settings( settings )
         , _device_mask( rsutils::json::get< unsigned >( settings, "device-mask", RS2_PRODUCT_LINE_ANY ) )
         , _devices_changed_callback( nullptr, []( rs2_devices_changed_callback * ) {} )
-        , _backend_device_factory(
-              *this,
-              [this]( std::vector< rs2_device_info > & removed, std::vector< rs2_device_info > & added )
-              { invoke_devices_changed_callbacks( removed, added ); } )
-#ifdef BUILD_WITH_DDS
-        , _dds_device_factory( *this,
-                               [this]( std::vector< rs2_device_info > & removed, std::vector< rs2_device_info > & added )
-                               { invoke_devices_changed_callbacks( removed, added ); } )
-#endif
     {
         static bool version_logged = false;
         if( ! version_logged )
@@ -31,6 +27,18 @@ namespace librealsense
             version_logged = true;
             LOG_DEBUG( "Librealsense VERSION: " << RS2_API_VERSION_STR );
         }
+
+        _factories.push_back( std::make_shared< backend_device_factory >(
+            *this,
+            [this]( std::vector< rs2_device_info > & removed, std::vector< rs2_device_info > & added )
+            { invoke_devices_changed_callbacks( removed, added ); } ) );
+
+#ifdef BUILD_WITH_DDS
+        _factories.push_back( std::make_shared< rsdds_device_factory >(
+            *this,
+            [this]( std::vector< rs2_device_info > & removed, std::vector< rs2_device_info > & added )
+            { invoke_devices_changed_callbacks( removed, added ); } ) );
+#endif
     }
 
 
@@ -57,36 +65,28 @@ namespace librealsense
     }
 
 
-    std::vector<std::shared_ptr<device_info>> context::query_devices( int requested_mask ) const
+    std::vector< std::shared_ptr< device_info > > context::query_devices( int requested_mask ) const
     {
-        auto list = _backend_device_factory.query_devices( requested_mask );
-        query_software_devices( list, requested_mask );
+        std::vector< std::shared_ptr< device_info > > list;
+        for( auto & factory : _factories )
+        {
+            for( auto & dev_info : factory->query_devices( requested_mask ) )
+            {
+                LOG_INFO( "... " << dev_info->get_address() );
+                list.push_back( dev_info );
+            }
+        }
+        for( auto & item : _playback_devices )
+        {
+            if( auto dev_info = item.second.lock() )
+            {
+                LOG_INFO( "... " << dev_info->get_address() );
+                list.push_back( dev_info );
+            }
+        }
         LOG_INFO( "Found " << list.size() << " RealSense devices (0x" << std::hex << requested_mask << " requested & 0x"
                            << get_device_mask() << " from device-mask in settings)" << std::dec );
-        for( auto & item : list )
-            LOG_INFO( "... " << item->get_address() );
         return list;
-    }
-
-
-    void context::query_software_devices( std::vector< std::shared_ptr< device_info > > & list, unsigned requested_mask ) const
-    {
-        unsigned mask = combine_device_masks( requested_mask, get_device_mask() );
-
-        auto t = const_cast<context *>(this); // While generally a bad idea, we need to provide mutable reference to the devices
-        // to allow them to modify context later on
-        auto ctx = t->shared_from_this();
-
-#ifdef BUILD_WITH_DDS
-        for( auto & info : _dds_device_factory.query_devices( requested_mask ) )
-            list.push_back( info );
-#endif //BUILD_WITH_DDS
-
-        for( auto && item : _playback_devices )
-        {
-            if( auto dev = item.second.lock() )
-                list.push_back( dev );
-        }
     }
 
 

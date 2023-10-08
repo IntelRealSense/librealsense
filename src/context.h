@@ -3,10 +3,6 @@
 
 #pragma once
 
-#include "backend-device-factory.h"
-#ifdef BUILD_WITH_DDS
-#include "dds/rsdds-device-factory.h"
-#endif
 #include "types.h"  // devices_changed_callback_ptr
 
 #include <rsutils/lazy.h>
@@ -45,6 +41,7 @@ namespace librealsense
 {
     class playback_device_info;
     class stream_interface;
+    class device_factory;
 
     class context : public std::enable_shared_from_this<context>
     {
@@ -72,8 +69,6 @@ namespace librealsense
         void unregister_internal_device_callback(uint64_t cb_id);
         void set_devices_changed_callback(devices_changed_callback_ptr callback);
 
-        void query_software_devices( std::vector< std::shared_ptr< device_info > > & list, unsigned requested_mask ) const;
-
         std::shared_ptr<playback_device_info> add_device(const std::string& file);
         void remove_device(const std::string& file);
 
@@ -91,10 +86,8 @@ namespace librealsense
 
         nlohmann::json _settings; // Save operation settings
         unsigned const _device_mask;
-        backend_device_factory _backend_device_factory;
-#ifdef BUILD_WITH_DDS
-        rsdds_device_factory _dds_device_factory;
-#endif
+
+        std::vector< std::shared_ptr< device_factory > > _factories;
 
         devices_changed_callback_ptr _devices_changed_callback;
         std::map<int, std::weak_ptr<const stream_interface>> _streams;

@@ -79,7 +79,7 @@ static std::mutex domain_context_by_id_mutex;
 
 
 rsdds_device_factory::rsdds_device_factory( context & ctx, callback && cb )
-    : _context( ctx )
+    : super( ctx )
 {
     nlohmann::json dds_settings = rsutils::json::get< nlohmann::json >( _context.get_settings(),
                                                                         std::string( "dds", 3 ),

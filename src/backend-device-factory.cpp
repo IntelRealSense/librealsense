@@ -124,7 +124,7 @@ std::shared_ptr< platform::backend > backend_device::get_backend()
 
 
 backend_device_factory::backend_device_factory( context & ctx, callback && cb )
-    : _context( ctx )
+    : super( ctx )
     , _device_watcher( backend_device_watcher.instance() )
     , _dtor( _device_watcher->subscribe(
           [this, cb = std::move( cb )]( platform::backend_device_group const & old,
