@@ -28,6 +28,10 @@
 #include "firmware_logger_device.h"
 #include "device-calibration.h"
 
+#include <rsutils/string/hexdump.h>
+using rsutils::string::hexdump;
+
+
 namespace librealsense
 {
 
@@ -117,8 +121,7 @@ public:
             return std::make_shared< d555e_device >( dev_info );
 
         default:
-            throw std::runtime_error( rsutils::string::from() << "Unsupported D500 model! 0x" << std::hex
-                                                              << std::setw( 4 ) << std::setfill( '0' ) << (int)pid );
+            throw std::runtime_error( rsutils::string::from() << "unsupported D500 PID 0x" << hexdump( pid ) );
         }
     }
 
