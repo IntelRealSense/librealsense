@@ -268,6 +268,12 @@ dds_guid const & dds_participant::guid() const
 }
 
 
+dds_domain_id dds_participant::domain_id() const
+{
+    return get()->get_domain_id();
+}
+
+
 rsutils::string::slice dds_participant::name() const
 {
     auto & string_255 = get()->get_qos().name();

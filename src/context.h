@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "backend-device-factory.h"
 #include "types.h"  // devices_changed_callback_ptr
 
 #include <rsutils/lazy.h>
@@ -38,18 +37,11 @@ struct rs2_stream_profile
 };
 
 
-#ifdef BUILD_WITH_DDS
-namespace realdds {
-    class dds_device_watcher;
-    class dds_participant;
-}  // namespace realdds
-#endif
-
-
 namespace librealsense
 {
     class playback_device_info;
     class stream_interface;
+    class device_factory;
 
     class context : public std::enable_shared_from_this<context>
     {
@@ -77,8 +69,6 @@ namespace librealsense
         void unregister_internal_device_callback(uint64_t cb_id);
         void set_devices_changed_callback(devices_changed_callback_ptr callback);
 
-        void query_software_devices( std::vector< std::shared_ptr< device_info > > & list, unsigned requested_mask ) const;
-
         std::shared_ptr<playback_device_info> add_device(const std::string& file);
         void remove_device(const std::string& file);
 
@@ -93,16 +83,11 @@ namespace librealsense
 
         std::map<std::string, std::weak_ptr<device_info>> _playback_devices;
         std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
-#ifdef BUILD_WITH_DDS
-        std::shared_ptr< realdds::dds_participant > _dds_participant;
-        std::shared_ptr< realdds::dds_device_watcher > _dds_watcher;
-
-        void start_dds_device_watcher();
-#endif
 
         nlohmann::json _settings; // Save operation settings
         unsigned const _device_mask;
-        backend_device_factory _backend_device_factory;
+
+        std::vector< std::shared_ptr< device_factory > > _factories;
 
         devices_changed_callback_ptr _devices_changed_callback;
         std::map<int, std::weak_ptr<const stream_interface>> _streams;

@@ -63,7 +63,7 @@ namespace librealsense
         virtual float query() const override;
         virtual option_range get_range() const override;
         virtual bool is_enabled() const override { return true; }
-        virtual bool is_read_only() const { return _sensor && _sensor->is_opened(); }
+        virtual bool is_read_only() const override { return _sensor && _sensor->is_opened(); }
         virtual const char* get_description() const override
         {
             return "Exposure limit is in microseconds. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session.";
@@ -87,7 +87,7 @@ namespace librealsense
         virtual float query() const override;
         virtual option_range get_range() const override;
         virtual bool is_enabled() const override { return true; }
-        virtual bool is_read_only() const { return _sensor && _sensor->is_opened(); }
+        virtual bool is_read_only() const override { return _sensor && _sensor->is_opened(); }
         virtual const char* get_description() const override
         {
             return "Gain limits ranges from 16 to 248. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session.";
