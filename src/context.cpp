@@ -2,7 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "context.h"
-#include "media/playback/playback-device-info.h"
+#include "device-info.h"
 
 #include "backend-device-factory.h"
 #ifdef BUILD_WITH_DDS
@@ -76,7 +76,7 @@ namespace librealsense
                 list.push_back( dev_info );
             }
         }
-        for( auto & item : _playback_devices )
+        for( auto & item : _user_devices )
         {
             if( auto dev_info = item.second.lock() )
             {
@@ -156,46 +156,31 @@ namespace librealsense
         _devices_changed_callback = std::move(callback);
     }
 
-    std::shared_ptr<playback_device_info> context::add_device(const std::string& file)
-    {
-        auto it = _playback_devices.find(file);
-        if (it != _playback_devices.end() && it->second.lock())
-        {
-            //Already exists
-            throw librealsense::invalid_value_exception( rsutils::string::from()
-                                                         << "File \"" << file << "\" already loaded to context" );
-        }
-        auto dinfo = std::make_shared< playback_device_info >( shared_from_this(), file );
-        _playback_devices[file] = dinfo;
 
-        std::vector< rs2_device_info > rs2_device_info_added{ { shared_from_this(), dinfo } };
-        std::vector< rs2_device_info > rs2_device_info_removed;
-        invoke_devices_changed_callbacks( rs2_device_info_removed, rs2_device_info_added );
-
-        return dinfo;
-    }
-
-    void context::add_software_device(std::shared_ptr<device_info> dev)
+    void context::add_device( std::shared_ptr< device_info > const & dev )
     {
         auto address = dev->get_address();
 
-        auto it = _playback_devices.find(address);
-        if (it != _playback_devices.end() && it->second.lock())
-            throw librealsense::invalid_value_exception( "File \"" + address + "\" already loaded to context" );
-        _playback_devices[address] = dev;
+        auto it = _user_devices.find( address );
+        if( it != _user_devices.end() && it->second.lock() )
+            throw librealsense::invalid_value_exception( "device already in context: " + address );
+        _user_devices[address] = dev;
 
         std::vector< rs2_device_info > rs2_device_info_added{ { shared_from_this(), dev } };
         std::vector< rs2_device_info > rs2_device_info_removed;
         invoke_devices_changed_callbacks( rs2_device_info_removed, rs2_device_info_added );
     }
 
-    void context::remove_device(const std::string& file)
+
+    void context::remove_device( std::shared_ptr< device_info > const & dev )
     {
-        auto it = _playback_devices.find(file);
-        if(it == _playback_devices.end() )
-            return;
+        auto address = dev->get_address();
+
+        auto it = _user_devices.find( address );
+        if(it == _user_devices.end() )
+            return;  // Why not throw?!
         auto dev_info = it->second.lock();
-        _playback_devices.erase(it);
+        _user_devices.erase(it);
 
         if( dev_info )
         {

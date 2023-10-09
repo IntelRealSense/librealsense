@@ -5,7 +5,6 @@
 
 #include "types.h"  // devices_changed_callback_ptr
 
-#include <rsutils/lazy.h>
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <map>
@@ -39,8 +38,6 @@ struct rs2_stream_profile
 
 namespace librealsense
 {
-    class playback_device_info;
-    class stream_interface;
     class device_factory;
 
     class context : public std::enable_shared_from_this<context>
@@ -69,11 +66,11 @@ namespace librealsense
         void unregister_internal_device_callback(uint64_t cb_id);
         void set_devices_changed_callback(devices_changed_callback_ptr callback);
 
-        std::shared_ptr<playback_device_info> add_device(const std::string& file);
-        void remove_device(const std::string& file);
+        // Let the context maintain a list of custom devices. These can be anything, like playback devices or devices
+        // maintained by the user.
+        void add_device( std::shared_ptr< device_info > const & );
+        void remove_device( std::shared_ptr< device_info > const & );
 
-        void add_software_device(std::shared_ptr<device_info> software_device);
-        
         const nlohmann::json & get_settings() const { return _settings; }
 
     private:
@@ -81,7 +78,7 @@ namespace librealsense
                                                std::vector<rs2_device_info> & rs2_devices_info_added );
         void raise_devices_changed(const std::vector<rs2_device_info>& removed, const std::vector<rs2_device_info>& added);
 
-        std::map<std::string, std::weak_ptr<device_info>> _playback_devices;
+        std::map< std::string, std::weak_ptr< device_info > > _user_devices;
         std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
 
         nlohmann::json _settings; // Save operation settings
@@ -90,9 +87,7 @@ namespace librealsense
         std::vector< std::shared_ptr< device_factory > > _factories;
 
         devices_changed_callback_ptr _devices_changed_callback;
-        std::map<int, std::weak_ptr<const stream_interface>> _streams;
-        std::map< int, std::map< int, std::weak_ptr< rsutils::lazy< rs2_extrinsics > > > > _extrinsics;
-        std::mutex _streams_mutex, _devices_changed_callbacks_mtx;
+        std::mutex _devices_changed_callbacks_mtx;
     };
 
 }
