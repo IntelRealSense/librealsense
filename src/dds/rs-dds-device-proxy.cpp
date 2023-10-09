@@ -15,7 +15,6 @@
 
 #include <src/stream.h>
 #include <src/environment.h>
-#include <src/hw-monitor.h>
 
 #include <rsutils/json.h>
 #include <rsutils/string/hexarray.h>
@@ -519,7 +518,24 @@ std::vector< uint8_t > dds_device_proxy::build_command( uint32_t opcode,
                                                         size_t dataLength ) const
 {
     // debug_interface function
-    return hw_monitor::build_command( opcode, param1, param2, param3, param4, data, dataLength );
+    rsutils::string::hexarray hexdata( std::vector< uint8_t >( data, data + dataLength ) );
+    nlohmann::json control = nlohmann::json::object( { { "id", "hwm" },
+                                                       { "data", hexdata },
+                                                       { "opcode", opcode },
+                                                       { "param1", param1 },
+                                                       { "param2", param2 },
+                                                       { "param3", param3 },
+                                                       { "param4", param4 },
+                                                       { "build-command", true } } );
+    nlohmann::json reply;
+    _dds_dev->send_control( control, &reply );
+    std::string default_status( "OK", 2 );
+    if( rsutils::json::get( reply, "status", default_status ) != default_status )
+        throw std::runtime_error( "Failed build-command: "
+                                  + rsutils::json::get( reply, "status", std::string( "unknown reason" ) ) );
+    if( ! rsutils::json::get_ex( reply, "data", &hexdata ) )
+        throw std::runtime_error( "Failed HWM: missing 'data' in reply" );
+    return hexdata.detach();
 }
 
 
