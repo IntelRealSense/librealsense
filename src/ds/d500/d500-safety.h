@@ -63,8 +63,8 @@ namespace librealsense
             _preset2_a(sic.preset2_a.direction, sic.preset2_a.functionality),
             _preset4_b(sic.preset4_b.direction, sic.preset4_b.functionality),
             _ground(sic.ground.direction, sic.ground.functionality),
-            _gpio_stabilization_interval(10), // TO BE IMPROVED
-            _safety_zone_selection_overlap_time_period(10) // TO BE IMPROVED
+            _gpio_stabilization_interval(sic.gpio_stabilization_interval),
+            _safety_zone_selection_overlap_time_period(sic.safety_zone_selection_overlap_time_period)
         {
             std::memset(_reserved, 0, 20);
         }

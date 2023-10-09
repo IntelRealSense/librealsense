@@ -143,6 +143,7 @@ void init_safety(py::module &m) {
             return ss.str();
         });
 
+        BIND_ENUM(m, rs2_safety_mode, RS2_SAFETY_MODE_COUNT, "Safety Mode")
         BIND_ENUM(m, rs2_safety_pin_direction, RS2_SAFETY_PIN_DIRECTION_COUNT, "Safety Config Interface Pin Direction")
         BIND_ENUM(m, rs2_safety_pin_functionality, RS2_SAFETY_PIN_FUNCTIONALITY_COUNT, "Safety Config Interface Pin Functionality")
 
