@@ -7,8 +7,8 @@ on:
     branches: ['**']
 
 jobs:
-  cppcheck:
-    name: cppcheck
+  CppCheck:
+    name: CppCheck
     timeout-minutes: 30
     runs-on: ubuntu-22.04
     steps:
@@ -95,3 +95,52 @@ jobs:
           echo "see the diff step above, or the 'cppcheck_log' artifact (under Summary) for details"
           echo "commit all files in the artifact to .github/workflows/ if these are valid results"
           exit 1
+#---------------------------------------------------------------------------------------------------#
+  # We verify the minimal CMake version we support is preserved when building with default CMake flags
+  minimal_cmake_version:
+    name: "Minimal CMake version"
+    timeout-minutes: 30
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: "Get current CMake version"
+        id: cmake_version
+        run: |
+        
+          # Go back from RealSense directory to parent directory  
+          cd ..
+          
+          git clone https://github.com/nlohmann/cmake_min_version.git
+          cd cmake_min_version
+          # We clone a specific commit which we tested the process as working
+          git checkout 687dc56e1cf52c865cebf6ac94ad67906d6e1369
+          
+          echo "Install LibRealSense pre-installed packages requirements"
+          sudo apt-get install libglfw3-dev libgl1-mesa-dev libglu1-mesa-dev at
+          
+          python3 -mvenv venv
+          venv/bin/pip3 install -r requirements.txt
+          venv/bin/python3 cmake_downloader.py --first_minor
+          output=$(venv/bin/python3 cmake_min_version.py /home/runner/work/librealsense/librealsense/)
+          echo "$output"
+          
+          # Retrieve CMake minimal version from the last line of the tool output.
+          current_cmake_version=$(echo ${output: -30} | cut -d'(' -f 2 | head -c -2)
+          # Saving cmake minimal version string in GitHub output
+          echo "current_cmake_version=$current_cmake_version" >> $GITHUB_OUTPUT
+
+      - name: "Check minimal CMake version"
+        env:
+          EXPECTED_CMAKE_VERSION: "VERSION 3.8.0"
+          CURRENT_CMAKE_VERSION: ${{ steps.cmake_version.outputs.current_cmake_version }}
+
+        run: |
+          if [ "$CURRENT_CMAKE_VERSION" == "${EXPECTED_CMAKE_VERSION}" ] || [ "$CURRENT_CMAKE_VERSION" \< "${EXPECTED_CMAKE_VERSION}" ]
+          then
+            echo "The test PASSED, current CMake version is $CURRENT_CMAKE_VERSION and it is not higher than ${EXPECTED_CMAKE_VERSION}"
+          else
+            echo "Error - LibRS minimal CMake version require is ${EXPECTED_CMAKE_VERSION} but on this build the minimal is $CURRENT_CMAKE_VERSION"
+            exit 1
+          fi              
