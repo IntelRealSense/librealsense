@@ -10,7 +10,7 @@
 #endif
 #include <algorithm>
 #include <array>
-#include <cmath>
+#include <math.h>
 #include <mutex>
 #include <vector>
 
