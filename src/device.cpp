@@ -34,31 +34,35 @@ librealsense::find_profile( rs2_stream stream, int index, std::vector< stream_in
 device::device( std::shared_ptr< const device_info > const & dev_info,
                 bool device_changed_notifications )
     : _dev_info( dev_info )
-    , _is_valid( true )
-    , _is_alive( std::make_shared< bool >( true ) )
+    , _is_alive( std::make_shared< std::atomic< bool > >( true ) )
     , _profiles_tags( [this]() { return get_profiles_tags(); } )
 {
     if( device_changed_notifications )
     {
-        std::weak_ptr< bool > weak = _is_alive;
-        auto cb = new devices_changed_callback_internal([this, weak](rs2_device_list* removed, rs2_device_list* added)
-        {
-            // The callback can be called from one thread while the object is being destroyed by another.
-            // Check if members can still be accessed.
-            auto alive = weak.lock();
-            if( ! alive || ! *alive )
-                return;
-
-            // Update is_valid variable when device is invalid
-            for (auto& dev_info : removed->list)
+        std::weak_ptr< std::atomic< bool > > weak_alive = _is_alive;
+        std::weak_ptr< const device_info > weak_dev_info = _dev_info;
+        auto cb = new devices_changed_callback_internal(
+            [weak_alive, weak_dev_info]( rs2_device_list * removed, rs2_device_list * added )
             {
-                if( dev_info.info->is_same_as( _dev_info ) )
-                {
-                    _is_valid = false;
+                // The callback can be called from one thread while the object is being destroyed by another.
+                // Check if members can still be accessed.
+                auto alive = weak_alive.lock();
+                if( ! alive || ! *alive )
                     return;
+                auto this_dev_info = weak_dev_info.lock();
+                if( ! this_dev_info )
+                    return;
+
+                // Update is_valid variable when device is invalid
+                for( auto & dev_info : removed->list )
+                {
+                    if( dev_info.info->is_same_as( this_dev_info ) )
+                    {
+                        *alive = false;
+                        return;
+                    }
                 }
-            }
-        });
+            } );
 
         _device_change_subscription = get_context()->on_device_changes( { cb,
                                                                           []( rs2_devices_changed_callback * p )
@@ -70,7 +74,6 @@ device::device( std::shared_ptr< const device_info > const & dev_info,
 
 device::~device()
 {
-    *_is_alive = false;
     _sensors.clear();
 }
 

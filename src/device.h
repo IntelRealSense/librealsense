@@ -54,7 +54,7 @@ public:
 
     std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const override;
 
-    bool is_valid() const override { return _is_valid; }
+    bool is_valid() const override { return *_is_alive; }
 
     void tag_profiles(stream_profiles profiles) const override;
 
@@ -81,11 +81,9 @@ protected:
 private:
     std::vector<std::shared_ptr<sensor_interface>> _sensors;
     std::shared_ptr< const device_info > _dev_info;
-    std::atomic< bool > _is_valid;
+    std::shared_ptr< std::atomic< bool > > _is_alive;
     rsutils::subscription _device_change_subscription;
     rsutils::lazy< std::vector< tagged_profile > > _profiles_tags;
-
-    std::shared_ptr< bool > _is_alive; // Ensures object can be accessed
 };
 
 
