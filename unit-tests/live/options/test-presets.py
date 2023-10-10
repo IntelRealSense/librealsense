@@ -34,16 +34,16 @@ with test.closure( 'save/load preset' ):
     test.check( am_dev.get_depth_control().textureCountThreshold != 250 )
 
 with test.closure( 'setting color options' ):
-    color_sensor.set_option( rs.option.hue, 123 )
-    test.check( color_sensor.get_option( rs.option.hue ) == 123 )
+    color_sensor.set_option( rs.option.gain, 123 )
+    test.check( color_sensor.get_option( rs.option.gain ) == 123 )
     
     depth_sensor.set_option( rs.option.visual_preset, int(rs.rs400_visual_preset.default ) )
     if product_line == "D400":
         # D400 devices set color options as part of preset setting
-        test.check( color_sensor.get_option( rs.option.hue ) != 123 )
+        test.check( color_sensor.get_option( rs.option.gain ) != 123 )
     elif product_line == "D500":
         # D500 devices do not set color options as part of preset setting
-        test.check( color_sensor.get_option( rs.option.hue ) == 123 )
+        test.check( color_sensor.get_option( rs.option.gain ) == 123 )
     else:
         raise RuntimeError( 'unsupported product line' )
     
