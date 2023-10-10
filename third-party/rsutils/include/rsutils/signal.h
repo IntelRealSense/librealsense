@@ -9,6 +9,7 @@
 #include <mutex>
 #include <functional>
 #include <memory>
+#include <vector>
 
 
 namespace rsutils {
