@@ -14,7 +14,7 @@ product_line = dev.get_info(rs.camera_info.product_line)
 
 
 with test.closure( 'visual preset support', on_fail=test.ABORT ): # No use continuing the test if there is no preset support
-    test.check( depth_sensor.supports(rs.option.visual_preset) )
+    test.check( depth_sensor.supports( rs.option.visual_preset ) )
 
 with test.closure( 'set presets' ):
     depth_sensor.set_option( rs.option.visual_preset, int(rs.rs400_visual_preset.high_accuracy ) )
@@ -34,18 +34,23 @@ with test.closure( 'save/load preset' ):
     test.check( am_dev.get_depth_control().textureCountThreshold != 250 )
 
 with test.closure( 'setting color options' ):
-    color_sensor.set_option( rs.option.gain, 123 )
-    test.check( color_sensor.get_option( rs.option.gain ) == 123 )
+    # Using Hue to test if setting visual preset changes color sensor settings.
+    # Not all cameras support Hue (e.g. D457) but using common setting like Gain or Exposure is dependant on auto-exposure logic
+    # This test is intended to check new D500 modules logic of not updating color sensor setting, while keeping legacy
+    # D400 devices behavior of updating it. For this purpose it is OK if not all module types will be tested.
+    if color_sensor.supports( rs.option.hue ):
+        color_sensor.set_option( rs.option.hue, 123 )
+        test.check( color_sensor.get_option( rs.option.hue ) == 123 )
     
-    depth_sensor.set_option( rs.option.visual_preset, int(rs.rs400_visual_preset.default ) )
-    if product_line == "D400":
-        # D400 devices set color options as part of preset setting
-        test.check( color_sensor.get_option( rs.option.gain ) != 123 )
-    elif product_line == "D500":
-        # D500 devices do not set color options as part of preset setting
-        test.check( color_sensor.get_option( rs.option.gain ) == 123 )
-    else:
-        raise RuntimeError( 'unsupported product line' )
+        depth_sensor.set_option( rs.option.visual_preset, int(rs.rs400_visual_preset.default ) )
+        if product_line == "D400":
+            # D400 devices set color options as part of preset setting
+            test.check( color_sensor.get_option( rs.option.hue ) != 123 )
+        elif product_line == "D500":
+            # D500 devices do not set color options as part of preset setting
+            test.check( color_sensor.get_option( rs.option.hue ) == 123 )
+        else:
+            raise RuntimeError( 'unsupported product line' )
     
     
 test.print_results_and_exit()
