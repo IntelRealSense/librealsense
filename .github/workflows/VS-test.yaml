@@ -1,0 +1,34 @@
+name: Test VS 2017
+
+
+on:
+  push:
+  pull_request:
+
+env:
+  WIN_BUILD_DIR: C:/lrs_build
+
+jobs:
+  simple-test:
+    name: "simple-test" 
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Add msbuild to PATH_
+        uses: microsoft/setup-msbuild@v1.1
+        with:
+          vs-version: '15.9'
+          msbuild-architecture: x64
+
+      - name: Build
+        shell: bash
+        run: |
+          mkdir ${{env.WIN_BUILD_DIR}}
+          LRS_SRC_DIR=$(pwd)
+          cd ${{env.WIN_BUILD_DIR}}
+          pwd
+          ls        
+          cmake ${LRS_SRC_DIR} -G "Visual Studio 15 2017" -A x64 -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DCHECK_FOR_UPDATES=false
+       
