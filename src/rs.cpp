@@ -4008,3 +4008,25 @@ void rs2_set_safety_preset(const rs2_sensor* sensor,
     safety_sensor->set_safety_preset(index, *sp);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, index, sp)
+
+void rs2_get_safety_interface_config(const rs2_sensor* sensor,
+    rs2_safety_interface_config* sic,
+    rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(sic);
+    auto safety_sensor = VALIDATE_INTERFACE(sensor->sensor, librealsense::safety_sensor);
+    auto ret_data = safety_sensor->get_safety_interface_config();
+    *sic = ret_data;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, sic)
+
+void rs2_set_safety_interface_config(const rs2_sensor* sensor,
+    rs2_safety_interface_config const* sic,
+    rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    auto safety_sensor = VALIDATE_INTERFACE(sensor->sensor, librealsense::safety_sensor);
+    safety_sensor->set_safety_interface_config(*sic);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, sic)

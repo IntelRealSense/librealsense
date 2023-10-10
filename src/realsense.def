@@ -435,4 +435,8 @@ EXPORTS
     rs2_safety_mode_to_string
     rs2_get_safety_preset
     rs2_set_safety_preset
+    rs2_get_safety_interface_config
+    rs2_set_safety_interface_config
+    rs2_safety_pin_direction_to_string
+    rs2_safety_pin_functionality_to_string
     

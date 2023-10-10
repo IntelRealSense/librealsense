@@ -116,6 +116,90 @@ typedef struct rs2_safety_preset_with_header
     rs2_safety_preset safety_preset;
 } rs2_safety_preset_with_header;
 
+typedef struct rs2_safety_interface_config_header
+{
+    uint16_t version;       // major.minor. Big-endian
+    uint16_t table_type;    // type
+    uint32_t table_size;    // full size including: header footer
+    uint32_t calib_version; // major.minor.index
+    uint32_t crc32;         // crc of all the data in table excluding this header/CRC
+} rs2_safety_interface_config_header;
+
+typedef enum rs2_safety_pin_direction
+{
+    RS2_SAFETY_PIN_DIRECTION_INPUT,
+    RS2_SAFETY_PIN_DIRECTION_OUTPUT,
+    RS2_SAFETY_PIN_DIRECTION_COUNT
+} rs2_safety_pin_direction;
+const char* rs2_safety_pin_direction_to_string(rs2_safety_pin_direction direction);
+
+typedef enum rs2_safety_pin_functionality
+{
+    RS2_SAFETY_PIN_FUNCTIONALITY_GND = 0,
+    RS2_SAFETY_PIN_FUNCTIONALITY_P24VDC,
+    RS2_SAFETY_PIN_FUNCTIONALITY_OSSD1_A,
+    RS2_SAFETY_PIN_FUNCTIONALITY_OSSD1_B,
+    RS2_SAFETY_PIN_FUNCTIONALITY_OSSD2_A,
+    RS2_SAFETY_PIN_FUNCTIONALITY_OSSD2_B,
+    RS2_SAFETY_PIN_FUNCTIONALITY_OSSD2_A_FEEDBACK,
+    RS2_SAFETY_PIN_FUNCTIONALITY_OSSD2_B_FEEDBACK,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT1_A,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT1_B,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT2_A,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT2_B,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT3_A,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT3_B,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT4_A,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT4_B,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT5_A,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT5_B,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT6_A,
+    RS2_SAFETY_PIN_FUNCTIONALITY_PRESET_SELECT6_B,
+    RS2_SAFETY_PIN_FUNCTIONALITY_DEVICE_READY,
+    RS2_SAFETY_PIN_FUNCTIONALITY_MAINTENANCE,
+    RS2_SAFETY_PIN_FUNCTIONALITY_RESET,
+    RS2_SAFETY_PIN_FUNCTIONALITY_RESTART_INTERLOCK,
+    RS2_SAFETY_PIN_FUNCTIONALITY_COUNT
+} rs2_safety_pin_functionality;
+const char* rs2_safety_pin_functionality_to_string(rs2_safety_pin_functionality functionality);
+
+typedef struct rs2_safety_interface_config_pin
+{
+    rs2_safety_pin_direction direction;
+    rs2_safety_pin_functionality functionality;
+} rs2_safety_interface_config_pin;
+
+typedef struct rs2_safety_interface_config
+{
+    rs2_safety_interface_config_pin power;
+    rs2_safety_interface_config_pin ossd1_b;
+    rs2_safety_interface_config_pin ossd1_a;
+    rs2_safety_interface_config_pin preset3_a;
+    rs2_safety_interface_config_pin preset3_b;
+    rs2_safety_interface_config_pin preset4_a;
+    rs2_safety_interface_config_pin preset1_b;
+    rs2_safety_interface_config_pin preset1_a;
+    rs2_safety_interface_config_pin gpio_0;
+    rs2_safety_interface_config_pin gpio_1;
+    rs2_safety_interface_config_pin gpio_3;
+    rs2_safety_interface_config_pin gpio_2;
+    rs2_safety_interface_config_pin preset2_b;
+    rs2_safety_interface_config_pin gpio_4;
+    rs2_safety_interface_config_pin preset2_a;
+    rs2_safety_interface_config_pin preset4_b;
+    rs2_safety_interface_config_pin ground;
+    uint8_t gpio_stabilization_interval;
+    uint8_t safety_zone_selection_overlap_time_period;
+    uint8_t reserved[20];
+} rs2_safety_interface_config;
+
+typedef struct rs2_safety_interface_config_with_header
+{
+    rs2_safety_interface_config_header header;
+    rs2_safety_interface_config payload;
+    
+} rs2_safety_interface_config_with_header;
+
 #pragma pack(pop)
 
 #ifdef __cplusplus

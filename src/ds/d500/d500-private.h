@@ -89,9 +89,10 @@ namespace librealsense
         enum class d500_calibration_table_id
         {
             depth_eeprom_toc_id = 0xb0,
-            module_info_id = 0xb1,
+            module_info_id = 0x1b1,
             rgb_lens_shading_id = 0xb2,
-            str_lens_shading_id = 0xb3,
+            left_lens_shading_id = 0x1b3,
+            right_lens_shading_id = 0x2b3,
             depth_calibration_id = 0xb4,
             left_x_lut_id = 0xb5,
             left_y_lut_id = 0xb6,
@@ -100,15 +101,19 @@ namespace librealsense
             rgb_calibration_id = 0xb9,
             rgb_lut_id = 0xba,
             imu_calibration_id = 0xbb,
+            safety_presets_table_id = 0xc0da,
+            safety_preset_id = 0xc0db,
+            safety_interface_cfg_id = 0xc0dc,
             max_id = -1
         };
 
         const std::map<ds::d500_calibration_table_id, uint32_t> d500_calibration_tables_size =
         {
             {d500_calibration_table_id::depth_eeprom_toc_id, 640},
-            {d500_calibration_table_id::module_info_id, 320},
+            {d500_calibration_table_id::module_info_id, 512},
             {d500_calibration_table_id::rgb_lens_shading_id, 1088},
-            {d500_calibration_table_id::str_lens_shading_id, 1088},
+            {d500_calibration_table_id::left_lens_shading_id, 576},
+            {d500_calibration_table_id::right_lens_shading_id, 512},
             {d500_calibration_table_id::depth_calibration_id, 512},
             {d500_calibration_table_id::left_x_lut_id, 4160},
             {d500_calibration_table_id::left_y_lut_id, 4160},
@@ -116,7 +121,9 @@ namespace librealsense
             {d500_calibration_table_id::right_y_lut_id, 4160},
             {d500_calibration_table_id::rgb_calibration_id, 256},
             {d500_calibration_table_id::rgb_lut_id, 8256},
-            {d500_calibration_table_id::imu_calibration_id, 192}
+            {d500_calibration_table_id::imu_calibration_id, 192},
+            //{d500_calibration_table_id::safety_preset_id, TBD},
+            {d500_calibration_table_id::safety_interface_cfg_id, 56}
         };
 
         struct d500_undist_configuration
@@ -161,7 +168,9 @@ namespace librealsense
             single_sensor_coef_table  left_coefficients_table;
             single_sensor_coef_table  right_coefficients_table;
             float                     baseline;                   //  the baseline between the cameras in mm units
-            uint16_t                  translation_dir;
+            uint8_t                   translation_dir;
+            uint8_t                   realignement_essential;     // 1/0 - indicates whether the vertical alignement
+                                                                  // is required to avoiid overflow in the REC buffer
             int16_t                   vertical_shift;             // in pixels
             mini_intrinsics           rectified_intrinsics;
             uint8_t                   reserved[148];
