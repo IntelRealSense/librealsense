@@ -50,7 +50,6 @@ device::device( std::shared_ptr< const device_info > const & dev_info,
                 return;
 
             // Update is_valid variable when device is invalid
-            std::lock_guard<std::mutex> lock(_device_changed_mtx);
             for (auto& dev_info : removed->list)
             {
                 if( dev_info.info->is_same_as( _dev_info ) )
@@ -61,22 +60,17 @@ device::device( std::shared_ptr< const device_info > const & dev_info,
             }
         });
 
-        _device_changed_callback_id
-            = get_context()->register_internal_device_callback( { cb,
-                                                                  []( rs2_devices_changed_callback * p )
-                                                                  {
-                                                                      p->release();
-                                                                  } } );
+        _device_change_subscription = get_context()->on_device_changes( { cb,
+                                                                          []( rs2_devices_changed_callback * p )
+                                                                          {
+                                                                              p->release();
+                                                                          } } );
     }
 }
 
 device::~device()
 {
     *_is_alive = false;
-
-    if( _device_changed_callback_id )
-        get_context()->unregister_internal_device_callback( _device_changed_callback_id );
-
     _sensors.clear();
 }
 

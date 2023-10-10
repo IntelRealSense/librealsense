@@ -10,9 +10,11 @@
 #include "device-info.h"
 
 #include <rsutils/lazy.h>
+#include <rsutils/subscription.h>
 #include <chrono>
 #include <memory>
 #include <vector>
+#include <atomic>
 
 
 namespace librealsense {
@@ -52,11 +54,7 @@ public:
 
     std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const override;
 
-    bool is_valid() const override
-    {
-        std::lock_guard<std::mutex> lock(_device_changed_mtx);
-        return _is_valid;
-    }
+    bool is_valid() const override { return _is_valid; }
 
     void tag_profiles(stream_profiles profiles) const override;
 
@@ -66,7 +64,7 @@ public:
 
     virtual void stop_activity() const;
 
-    bool device_changed_notifications_on() const { return _device_changed_callback_id; }
+    bool device_changed_notifications_on() const { return _device_change_subscription.is_active(); }
 
     format_conversion get_format_conversion() const;
 
@@ -83,9 +81,8 @@ protected:
 private:
     std::vector<std::shared_ptr<sensor_interface>> _sensors;
     std::shared_ptr< const device_info > _dev_info;
-    bool _is_valid;
-    mutable std::mutex _device_changed_mtx;
-    uint64_t _device_changed_callback_id = 0;
+    std::atomic< bool > _is_valid;
+    rsutils::subscription _device_change_subscription;
     rsutils::lazy< std::vector< tagged_profile > > _profiles_tags;
 
     std::shared_ptr< bool > _is_alive; // Ensures object can be accessed

@@ -9,6 +9,11 @@
 #include "dds/rsdds-device-factory.h"
 #endif
 
+#include <librealsense2/hpp/rs_types.hpp>  // rs2_devices_changed_callback
+#include <librealsense2/rs.h>              // RS2_API_VERSION_STR
+#include <src/librealsense-exception.h>
+
+#include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/string/from.h>
 #include <rsutils/json.h>
 using json = nlohmann::json;
@@ -29,13 +34,13 @@ namespace librealsense
 
         _factories.push_back( std::make_shared< backend_device_factory >(
             *this,
-            [this]( std::vector< rs2_device_info > & removed, std::vector< rs2_device_info > & added )
+            [this]( std::vector< rs2_device_info > const & removed, std::vector< rs2_device_info > const & added )
             { invoke_devices_changed_callbacks( removed, added ); } ) );
 
 #ifdef BUILD_WITH_DDS
         _factories.push_back( std::make_shared< rsdds_device_factory >(
             *this,
-            [this]( std::vector< rs2_device_info > & removed, std::vector< rs2_device_info > & added )
+            [this]( std::vector< rs2_device_info > const & removed, std::vector< rs2_device_info > const & added )
             { invoke_devices_changed_callbacks( removed, added ); } ) );
 #endif
     }
@@ -89,54 +94,29 @@ namespace librealsense
     }
 
 
-    void context::invoke_devices_changed_callbacks( std::vector<rs2_device_info> & rs2_devices_info_removed,
-                                                    std::vector<rs2_device_info> & rs2_devices_info_added )
+    void context::invoke_devices_changed_callbacks( std::vector< rs2_device_info > const & rs2_devices_info_removed,
+                                                    std::vector< rs2_device_info > const & rs2_devices_info_added )
     {
-        std::map<uint64_t, devices_changed_callback_ptr> devices_changed_callbacks;
-        {
-            std::lock_guard<std::mutex> lock( _devices_changed_callbacks_mtx );
-            devices_changed_callbacks = _devices_changed_callbacks;
-        }
-
-        for( auto & kvp : devices_changed_callbacks )
-        {
-            try
-            {
-                kvp.second->on_devices_changed( new rs2_device_list( { shared_from_this(), rs2_devices_info_removed } ),
-                                                new rs2_device_list( { shared_from_this(), rs2_devices_info_added } ) );
-            }
-            catch( std::exception const & e )
-            {
-                LOG_ERROR( "Exception thrown from user callback handler: " << e.what() );
-            }
-            catch( ... )
-            {
-                LOG_ERROR( "Exception thrown from user callback handler" );
-            }
-        }
+        _devices_changed.raise( rs2_devices_info_removed, rs2_devices_info_added );
     }
 
 
-    uint64_t context::register_internal_device_callback(devices_changed_callback_ptr callback)
+    rsutils::subscription context::on_device_changes( devices_changed_callback_ptr callback )
     {
-        std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
-        auto callback_id = unique_id::generate_id();
-        _devices_changed_callbacks.insert(std::make_pair(callback_id, std::move(callback)));
-        return callback_id;
-    }
-
-    void context::unregister_internal_device_callback(uint64_t cb_id)
-    {
-        std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
-        _devices_changed_callbacks.erase(cb_id);
-    }
-
-    void context::set_devices_changed_callback(devices_changed_callback_ptr callback)
-    {
-        std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
-        // unique_id::generate_id() will never be 0; so we use 0 for the "public" callback so it'll get overriden on
-        // subsequent calls
-        _devices_changed_callbacks[0] = std::move( callback );
+        return _devices_changed.subscribe(
+            [ctx = shared_from_this(), callback]( std::vector< rs2_device_info > const & removed,
+                                                  std::vector< rs2_device_info > const & added )
+            {
+                try
+                {
+                    callback->on_devices_changed( new rs2_device_list( { ctx, removed } ),
+                                                  new rs2_device_list( { ctx, added } ) );
+                }
+                catch( std::exception const & e )
+                {
+                    LOG_ERROR( "Exception thrown from user callback handler: " << e.what() );
+                }
+            } );
     }
 
 

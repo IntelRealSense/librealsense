@@ -5,7 +5,14 @@
 
 #include "context.h"
 #include "device.h"
+#include <librealsense2/h/rs_context.h>  // RS2_PRODUCT_LINE_...
+
 #include <limits>
+#include <mutex>
+#include <condition_variable>
+#include <vector>
+#include <memory>
+
 
 namespace librealsense
 {
@@ -52,7 +59,7 @@ namespace librealsense
         std::condition_variable _cv;
         std::vector<std::shared_ptr<device_info>> _device_list;
         int _camera_index = 0;
-        uint64_t _device_changes_callback_id;
+        rsutils::subscription _device_change_subscription;
         int _mask;
     };
 }

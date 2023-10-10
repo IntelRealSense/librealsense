@@ -92,6 +92,7 @@ struct rs2_sensor : public rs2_options
 struct rs2_context
 {
     std::shared_ptr<librealsense::context> ctx;
+    mutable rsutils::subscription devices_changed_subscription;
 };
 
 struct rs2_device_hub
@@ -824,7 +825,7 @@ void rs2_set_devices_changed_callback(const rs2_context* context, rs2_devices_ch
     librealsense::devices_changed_callback_ptr cb(
         new librealsense::devices_changed_callback(callback, user),
         [](rs2_devices_changed_callback* p) { delete p; });
-    context->ctx->set_devices_changed_callback(std::move(cb));
+    context->devices_changed_subscription = context->ctx->on_device_changes( cb );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, context, callback, user)
 
@@ -882,7 +883,7 @@ void rs2_set_devices_changed_callback_cpp(rs2_context* context, rs2_devices_chan
                                               } };
 
     VALIDATE_NOT_NULL(context);
-    context->ctx->set_devices_changed_callback( callback_ptr );
+    context->devices_changed_subscription = context->ctx->on_device_changes( callback_ptr );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, context, callback)
 

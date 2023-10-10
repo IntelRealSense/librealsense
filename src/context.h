@@ -3,11 +3,13 @@
 
 #pragma once
 
-#include "types.h"  // devices_changed_callback_ptr
-
+#include <rsutils/signal.h>
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <map>
+
+
+struct rs2_devices_changed_callback;
 
 
 namespace librealsense
@@ -60,11 +62,19 @@ namespace librealsense
         //
         static unsigned combine_device_masks( unsigned requested_mask, unsigned mask_in_settings );
 
-        std::vector<std::shared_ptr<device_info>> query_devices(int mask) const;
+        // Query any subset of available devices and return them as device-info objects from which actual devices can be
+        // created as needed.
+        //
+        // Devices will match both the requested mask and the device-mask from the context settings. See
+        // RS2_PRODUCT_LINE_... defines for possible values.
+        //
+        std::vector< std::shared_ptr< device_info > > query_devices( int mask ) const;
 
-        uint64_t register_internal_device_callback(devices_changed_callback_ptr callback);
-        void unregister_internal_device_callback(uint64_t cb_id);
-        void set_devices_changed_callback(devices_changed_callback_ptr callback);
+        using devices_changed_callback_ptr = std::shared_ptr< rs2_devices_changed_callback >;
+
+        // Subscribe to a notification to receive when the device-list changes.
+        //
+        rsutils::subscription on_device_changes( devices_changed_callback_ptr callback );
 
         // Let the context maintain a list of custom devices. These can be anything, like playback devices or devices
         // maintained by the user.
@@ -74,18 +84,19 @@ namespace librealsense
         const nlohmann::json & get_settings() const { return _settings; }
 
     private:
-        void invoke_devices_changed_callbacks( std::vector<rs2_device_info> & rs2_devices_info_removed,
-                                               std::vector<rs2_device_info> & rs2_devices_info_added );
+        void invoke_devices_changed_callbacks( std::vector< rs2_device_info > const & devices_removed,
+                                               std::vector< rs2_device_info > const & devices_added );
 
-        std::map< std::string, std::weak_ptr< device_info > > _user_devices;
-        std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
+        std::map< std::string /*address*/, std::weak_ptr< device_info > > _user_devices;
+
+        rsutils::signal< std::vector< rs2_device_info > const & /*removed*/,
+                         std::vector< rs2_device_info > const & /*added*/ >
+            _devices_changed;
 
         nlohmann::json _settings; // Save operation settings
         unsigned const _device_mask;
 
         std::vector< std::shared_ptr< device_factory > > _factories;
-
-        std::mutex _devices_changed_callbacks_mtx;
     };
 
 }
