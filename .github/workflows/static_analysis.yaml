@@ -108,7 +108,8 @@ jobs:
       - name: "Get current CMake version"
         id: cmake_version
         run: |
-        
+          
+          work_dir=$(pwd)       
           # Go back from RealSense directory to parent directory  
           cd ..
           
@@ -123,7 +124,7 @@ jobs:
           python3 -mvenv venv
           venv/bin/pip3 install -r requirements.txt
           venv/bin/python3 cmake_downloader.py --first_minor
-          output=$(venv/bin/python3 cmake_min_version.py /home/runner/work/librealsense/librealsense/)
+          output=$(venv/bin/python3 cmake_min_version.py $work_dir)
           echo "$output"
           
           # Retrieve CMake minimal version from the last line of the tool output.
