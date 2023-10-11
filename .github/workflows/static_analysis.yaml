@@ -129,6 +129,14 @@ jobs:
           
           # Retrieve CMake minimal version from the last line of the tool output.
           current_cmake_version=$(echo ${output: -30} | cut -d'(' -f 2 | head -c -2)
+          
+          regex_pattern="VERSION [0-9]+\.[0-9]+\.[0-9]+"
+          if ! [[ "$current_cmake_version" =~ $regex_pattern ]];
+          then
+            echo "Error - CMake version $current_cmake_version does not match the pattern VERSION dd.dd.dd"
+            exit 1
+          fi  
+
           # Saving cmake minimal version string in GitHub output
           echo "current_cmake_version=$current_cmake_version" >> $GITHUB_OUTPUT
 
