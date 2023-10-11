@@ -243,6 +243,9 @@ def process_cpp( dir, builddir ):
                 if config.configurations:
                     continue
 
+            if config.donotrun:
+                continue
+
             # Build the list of files we want in the project:
             # At a minimum, we have the original file, plus any common files
             filelist = [ dir + '/' + f ]
