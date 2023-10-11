@@ -208,7 +208,10 @@ namespace librealsense
         rsutils::lazy< bool > _amplitude_factor_support;
 
         preset get_all() const;
-        void set_all(const preset& p);
+        void set_all( const preset & p );
+        void set_all_depth( const preset & p );
+        void set_all_color( const preset & p );
+        bool should_set_color_preset() const;
 
         std::vector<uint8_t> send_receive(const std::vector<uint8_t>& input) const;
 
