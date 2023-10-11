@@ -108,7 +108,8 @@ jobs:
       - name: "Get current CMake version"
         id: cmake_version
         run: |
-        
+          
+          work_dir=$(pwd)       
           # Go back from RealSense directory to parent directory  
           cd ..
           
@@ -123,11 +124,12 @@ jobs:
           python3 -mvenv venv
           venv/bin/pip3 install -r requirements.txt
           venv/bin/python3 cmake_downloader.py --first_minor
-          output=$(venv/bin/python3 cmake_min_version.py /home/runner/work/librealsense/librealsense/)
+          output=$(venv/bin/python3 cmake_min_version.py $work_dir)
           echo "$output"
           
           # Retrieve CMake minimal version from the last line of the tool output.
           current_cmake_version=$(echo ${output: -30} | cut -d'(' -f 2 | head -c -2)
+
           # Saving cmake minimal version string in GitHub output
           echo "current_cmake_version=$current_cmake_version" >> $GITHUB_OUTPUT
 
@@ -137,10 +139,17 @@ jobs:
           CURRENT_CMAKE_VERSION: ${{ steps.cmake_version.outputs.current_cmake_version }}
 
         run: |
+          regex_pattern="VERSION [0-9]+\.[0-9]+\.[0-9]+"
+          if ! [[ "$CURRENT_CMAKE_VERSION" =~ $regex_pattern ]];
+          then
+            echo "Error - CMake version $CURRENT_CMAKE_VERSION does not match the pattern VERSION dd.dd.dd"
+            exit 1
+          fi
+
           if [ "$CURRENT_CMAKE_VERSION" == "${EXPECTED_CMAKE_VERSION}" ] || [ "$CURRENT_CMAKE_VERSION" \< "${EXPECTED_CMAKE_VERSION}" ]
           then
             echo "The test PASSED, current CMake version is $CURRENT_CMAKE_VERSION and it is not higher than ${EXPECTED_CMAKE_VERSION}"
           else
-            echo "Error - LibRS minimal CMake version require is ${EXPECTED_CMAKE_VERSION} but on this build the minimal is $CURRENT_CMAKE_VERSION"
+            echo "Error - The minimal CMake version required for LibRS is ${EXPECTED_CMAKE_VERSION} but on this build the minimal CMake version that works is $CURRENT_CMAKE_VERSION"
             exit 1
           fi              
