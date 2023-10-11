@@ -85,6 +85,10 @@ public:
     //
     dds_guid const & guid() const;
 
+    // Returns the domain-ID for this participant
+    //
+    dds_domain_id domain_id() const;
+
     // Returns this participant's name from the QoS
     //
     rsutils::string::slice name() const;

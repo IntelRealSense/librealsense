@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 from argparse import ArgumentTypeError as ArgumentError  # NOTE: only ArgumentTypeError passes along the original error string
 args = ArgumentParser()
 args.add_argument( '--debug', action='store_true', help='enable debug mode' )
-args.add_argument( '--quiet', action='store_true', help='No output; just the minimum FPS as a number' )
+args.add_argument( '--quiet', action='store_true', help='no output' )
 args.add_argument( '--device', metavar='<path>', help='the topic root for the device' )
 args.add_argument( '--topic', metavar='<path>', help='the topic on which to send flexible message, if --device is not supplied' )
 import json
@@ -51,7 +51,7 @@ if args.device:
     info = dds.message.device_info()
     info.name = 'Dummy Device'
     info.topic_root = args.device
-    device = dds.device( participant, participant.create_guid(), info )
+    device = dds.device( participant, info )
     try:
         i( 'Looking for device at', info.topic_root, '...' )
         device.wait_until_ready()  # If unavailable before timeout, this throws

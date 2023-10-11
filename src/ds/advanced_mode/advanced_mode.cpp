@@ -41,16 +41,21 @@ namespace librealsense
         if (is_enabled())
             register_to_visual_preset_option();
 
-        _color_sensor = [this]() {
-            auto& dev = _depth_sensor.get_device();
-            for (size_t i = 0; i < dev.get_sensors_count(); ++i)
+        _color_sensor = [this]() -> synthetic_sensor *
+        {
+            auto & dev = _depth_sensor.get_device();
+            for( size_t i = 0; i < dev.get_sensors_count(); ++i )
             {
-                if (auto s = dynamic_cast<const d400_color_sensor*>(&(dev.get_sensor(i))))
+                if( auto s = dynamic_cast< const d400_color_sensor * >( &( dev.get_sensor( i ) ) ) )
                 {
-                    return const_cast<d400_color_sensor*>(s);
+                    return const_cast< d400_color_sensor * >( s );
+                }
+                if( auto s = dynamic_cast< const d500_color_sensor * >( &( dev.get_sensor( i ) ) ) )
+                {
+                    return const_cast< d500_color_sensor * >( s );
                 }
             }
-            return (d400_color_sensor*)nullptr;
+            return nullptr;
         };
         if (!*_color_sensor)
         {
@@ -767,15 +772,18 @@ namespace librealsense
         return p;
     }
 
-    void ds_advanced_mode_base::set_all(const preset& p)
+    void ds_advanced_mode_base::set_all( const preset & p )
+    {
+        set_all_depth( p );
+        if( should_set_color_preset() )
+            set_all_color( p );
+    }
+
+    void ds_advanced_mode_base::set_all_depth(const preset& p)
     {
         set(p.depth_controls, advanced_mode_traits<STDepthControlGroup>::group);
         set(p.rsm           , advanced_mode_traits<STRsm>::group);
         set(p.rsvc          , advanced_mode_traits<STRauSupportVectorControl>::group);
-        set(p.color_control , advanced_mode_traits<STColorControl>::group);
-        set(p.rctc          , advanced_mode_traits<STRauColorThresholdsControl>::group);
-        set(p.sctc          , advanced_mode_traits<STSloColorThresholdsControl>::group);
-        set(p.spc           , advanced_mode_traits<STSloPenaltyControl>::group);
         set(p.hdad          , advanced_mode_traits<STHdad>::group);
 
         // Setting auto-white-balance control before colorCorrection parameters
@@ -798,6 +806,14 @@ namespace librealsense
             set_depth_gain(p.depth_gain);
             set_depth_exposure(p.depth_exposure);
         }
+    }
+
+    void ds_advanced_mode_base::set_all_color( const preset & p )
+    {
+        set( p.color_control, advanced_mode_traits< STColorControl >::group );
+        set( p.rctc         , advanced_mode_traits< STRauColorThresholdsControl >::group );
+        set( p.sctc         , advanced_mode_traits< STSloColorThresholdsControl >::group );
+        set( p.spc          , advanced_mode_traits< STSloPenaltyControl >::group );
 
         set_color_auto_exposure(p.color_auto_exposure);
         if (p.color_auto_exposure.was_set && p.color_auto_exposure.auto_exposure == 0)
@@ -820,6 +836,13 @@ namespace librealsense
 
         // TODO: W/O due to a FW bug of power_line_frequency control on Windows OS
         //set_color_power_line_frequency(p.color_power_line_frequency);
+    }
+
+    bool ds_advanced_mode_base::should_set_color_preset() const
+    {
+        auto product_line = _depth_sensor.get_device().get_info( rs2_camera_info::RS2_CAMERA_INFO_PRODUCT_LINE );
+
+        return product_line != "D500";
     }
 
     std::vector<uint8_t> ds_advanced_mode_base::send_receive(const std::vector<uint8_t>& input) const

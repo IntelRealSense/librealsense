@@ -43,6 +43,8 @@ static std::string const control_key( "control", 7 );
 static std::string const id_log( "log", 3 );
 static std::string const entries_key( "entries", 7 );
 
+static std::string const id_hwm( "hwm", 3 );
+
 
 namespace realdds {
 
@@ -105,6 +107,7 @@ void dds_device::impl::set_state( state_t new_state )
     { id_stream_options, &dds_device::impl::on_stream_options },
     { id_open_streams, &dds_device::impl::on_known_notification },
     { id_log, &dds_device::impl::on_log },
+    { id_hwm, &dds_device::impl::on_known_notification },
 };
 
 
