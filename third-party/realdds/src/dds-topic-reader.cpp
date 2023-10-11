@@ -112,6 +112,7 @@ void dds_topic_reader::on_subscription_matched(
     eprosima::fastdds::dds::DataReader *, eprosima::fastdds::dds::SubscriptionMatchedStatus const & info )
 {
     // Called when the subscriber is matched (un)with a Writer
+    _n_writers = info.current_count;
     if( _on_subscription_matched )
         _on_subscription_matched( info );
 }

@@ -17,6 +17,7 @@
 #include <src/environment.h>
 
 #include <rsutils/json.h>
+#include <rsutils/string/hexarray.h>
 
 
 namespace librealsense {
@@ -486,7 +487,55 @@ void dds_device_proxy::hardware_reset()
     std::string default_status( "OK", 2 );
     if( rsutils::json::get( reply, "status", default_status ) != default_status )
         throw std::runtime_error( "Failed to reset: "
-                                  + rsutils::json::get( reply, "status", std::string( "unknown reason" ) ) );
+                                  + rsutils::json::get( reply, "explanation", std::string( "unknown reason" ) ) );
+}
+
+
+std::vector< uint8_t > dds_device_proxy::send_receive_raw_data( const std::vector< uint8_t > & input )
+{
+    // debug_interface function
+    auto hexdata = rsutils::string::hexarray::to_string( input );
+    nlohmann::json control = nlohmann::json::object( { { "id", "hwm" }, { "data", hexdata } } );
+    nlohmann::json reply;
+    _dds_dev->send_control( control, &reply );
+    std::string default_status( "OK", 2 );
+    if( rsutils::json::get( reply, "status", default_status ) != default_status )
+        throw std::runtime_error( "Failed HWM: "
+                                  + rsutils::json::get( reply, "explanation", std::string( "unknown reason" ) ) );
+    rsutils::string::hexarray data;
+    if( ! rsutils::json::get_ex( reply, "data", &data ) )
+        throw std::runtime_error( "Failed HWM: missing 'data' in reply" );
+    return data.detach();
+}
+
+
+std::vector< uint8_t > dds_device_proxy::build_command( uint32_t opcode,
+                                                        uint32_t param1,
+                                                        uint32_t param2,
+                                                        uint32_t param3,
+                                                        uint32_t param4,
+                                                        uint8_t const * data,
+                                                        size_t dataLength ) const
+{
+    // debug_interface function
+    rsutils::string::hexarray hexdata( std::vector< uint8_t >( data, data + dataLength ) );
+    nlohmann::json control = nlohmann::json::object( { { "id", "hwm" },
+                                                       { "data", hexdata },
+                                                       { "opcode", opcode },
+                                                       { "param1", param1 },
+                                                       { "param2", param2 },
+                                                       { "param3", param3 },
+                                                       { "param4", param4 },
+                                                       { "build-command", true } } );
+    nlohmann::json reply;
+    _dds_dev->send_control( control, &reply );
+    std::string default_status( "OK", 2 );
+    if( rsutils::json::get( reply, "status", default_status ) != default_status )
+        throw std::runtime_error( "Failed build-command: "
+                                  + rsutils::json::get( reply, "explanation", std::string( "unknown reason" ) ) );
+    if( ! rsutils::json::get_ex( reply, "data", &hexdata ) )
+        throw std::runtime_error( "Failed HWM: missing 'data' in reply" );
+    return hexdata.detach();
 }
 
 

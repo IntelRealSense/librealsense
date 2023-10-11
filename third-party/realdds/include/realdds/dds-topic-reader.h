@@ -39,6 +39,8 @@ protected:
 
     eprosima::fastdds::dds::DataReader * _reader = nullptr;
 
+    int _n_writers = 0;
+
 public:
     dds_topic_reader( std::shared_ptr< dds_topic > const & topic );
     dds_topic_reader( std::shared_ptr< dds_topic > const & topic, std::shared_ptr< dds_subscriber > const & subscriber );
@@ -48,6 +50,7 @@ public:
     eprosima::fastdds::dds::DataReader * operator->() const { return get(); }
 
     bool is_running() const { return ( get() != nullptr ); }
+    bool has_writers() const { return _n_writers > 0; }
 
     std::shared_ptr< dds_topic > const & topic() const { return _topic; }
 

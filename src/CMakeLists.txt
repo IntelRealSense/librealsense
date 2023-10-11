@@ -72,6 +72,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/device.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/device-info.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/device_hub.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/rscore/device-factory.h"
         "${CMAKE_CURRENT_LIST_DIR}/environment.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/error-handling.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/firmware_logger_device.cpp"

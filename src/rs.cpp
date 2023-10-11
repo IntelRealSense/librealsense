@@ -1556,7 +1556,8 @@ rs2_device* rs2_context_add_device(rs2_context* ctx, const char* file, rs2_error
     VALIDATE_NOT_NULL(ctx);
     VALIDATE_NOT_NULL(file);
 
-    auto dev_info = ctx->ctx->add_device(file);
+    auto dev_info = std::make_shared< playback_device_info >( ctx->ctx, file );
+    ctx->ctx->add_device( dev_info );
     return new rs2_device{ dev_info->create_device() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, file)
@@ -1569,7 +1570,7 @@ void rs2_context_add_software_device(rs2_context* ctx, rs2_device* dev, rs2_erro
     
     auto dev_info = std::make_shared< software_device_info >( ctx->ctx );
     dev_info->set_device( std::dynamic_pointer_cast< software_device >( dev->device ) );
-    ctx->ctx->add_software_device( dev_info );
+    ctx->ctx->add_device( dev_info );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, ctx, dev)
 
@@ -1577,7 +1578,10 @@ void rs2_context_remove_device(rs2_context* ctx, const char* file, rs2_error** e
 {
     VALIDATE_NOT_NULL(ctx);
     VALIDATE_NOT_NULL(file);
-    ctx->ctx->remove_device(file);
+    // The context uses the address from the device-info to maintain the list of devices. I.e., we need a device-info
+    // that uses a device-info that is_same_as() the one created above, in rs2_context_add_device:
+    auto dev_info = std::make_shared< playback_device_info >( ctx->ctx, file );
+    ctx->ctx->remove_device( dev_info );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, ctx, file)
 
