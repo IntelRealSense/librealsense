@@ -142,6 +142,6 @@ jobs:
           then
             echo "The test PASSED, current CMake version is $CURRENT_CMAKE_VERSION and it is not higher than ${EXPECTED_CMAKE_VERSION}"
           else
-            echo "Error - LibRS minimal CMake version require is ${EXPECTED_CMAKE_VERSION} but on this build the minimal is $CURRENT_CMAKE_VERSION"
+            echo "Error - LibRS minimally CMake version required is ${EXPECTED_CMAKE_VERSION} but on this build a minimally CMake version is $CURRENT_CMAKE_VERSION"
             exit 1
           fi              
