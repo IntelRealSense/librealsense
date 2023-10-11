@@ -7,6 +7,8 @@
 
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/json.h>
+#include <rsutils/string/hexarray.h>
+using rsutils::string::hexarray;
 
 #include <realdds/topics/image-msg.h>
 #include <realdds/topics/imu-msg.h>
@@ -842,6 +844,7 @@ bool lrs_device_controller::on_control( std::string const & id, nlohmann::json c
         control_handlers{
             { "hw-reset", &lrs_device_controller::on_hardware_reset },
             { "open-streams", &lrs_device_controller::on_open_streams },
+            { "hwm", &lrs_device_controller::on_hwm },
         };
     auto it = control_handlers.find( id );
     if( it == control_handlers.end() )
@@ -854,6 +857,48 @@ bool lrs_device_controller::on_control( std::string const & id, nlohmann::json c
 bool lrs_device_controller::on_hardware_reset( nlohmann::json const & control, nlohmann::json & reply )
 {
     _rs_dev.hardware_reset();
+    return true;
+}
+
+
+bool lrs_device_controller::on_hwm( nlohmann::json const & control, nlohmann::json & reply )
+{
+    rs2::debug_protocol dp( _rs_dev );
+    if( ! dp )
+        throw std::runtime_error( "device does not have a debug protocol implemented" );
+
+    rsutils::string::hexarray data;
+
+    uint32_t opcode;
+    if( rsutils::json::get_ex( control, "opcode", &opcode ) )
+    {
+        // In the presence of 'opcode', we're asked to build the command using optional parameters
+        uint32_t param1 = 0, param2 = 0, param3 = 0, param4 = 0;
+        rsutils::json::get_ex( control, "param1", &param1 );
+        rsutils::json::get_ex( control, "param2", &param2 );
+        rsutils::json::get_ex( control, "param3", &param3 );
+        rsutils::json::get_ex( control, "param4", &param4 );
+
+        rsutils::json::get_ex( control, "data", &data );  // optional
+
+        // Build the HWM command
+        data = dp.build_command( opcode, param1, param2, param3, param4, data.get_bytes() );
+
+        // And, if told to not actually run it, we return the HWM command
+        if( rsutils::json::get< bool >( control, "build-command", false ) )
+        {
+            reply["data"] = data;
+            return true;
+        }
+    }
+    else
+    {
+        if( ! rsutils::json::get_ex( control, "data", &data ) )
+            throw std::runtime_error( "no 'data' in HWM control" );
+    }
+
+    data = dp.send_and_receive_raw_data( data.get_bytes() );
+    reply["data"] = data;
     return true;
 }
 

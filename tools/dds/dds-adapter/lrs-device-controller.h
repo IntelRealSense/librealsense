@@ -42,6 +42,7 @@ private:
 
     bool on_control( std::string const & id, nlohmann::json const & control, nlohmann::json & reply );
     bool on_hardware_reset( nlohmann::json const &, nlohmann::json & );
+    bool on_hwm( nlohmann::json const &, nlohmann::json & );
     bool on_open_streams( nlohmann::json const &, nlohmann::json & );
 
     void override_default_profiles( const std::map< std::string, realdds::dds_stream_profiles > & stream_name_to_profiles,

@@ -114,7 +114,6 @@ A [disconnection event](discovery.md#disconnection) can be expected if the reply
 
 Can be used to send internal commands to the hardware and may brick the device if used. May or may not be implemented, and is not documented.
 
-* `opcode` (string) is suggested, but optional
 * `data` is required
 
 It is up to the server to validate and make sure everything is as expected.
@@ -142,6 +141,17 @@ A reply can be expected. Attaching the control is recommended so it's clear what
     "data": "10000000011004000e01ffffff01010102000f05000000000000000064006b0000001530ffffffffffffffffffffffffffffffff0365220706600000ffff3935343031300094230500730000ffffffffffffffff0aff3939394146509281a1ffffffffffffffffff9281a1ffffffffffffffffffffffffffffffffffffffffff1f0fffffffffffffffff000027405845ffffffffffffffff908907ffffff01ffffff050aff00260000000200000001000000010000000100000001000000000600010001000100030303020200000000000100070001ffffffffffffffffffffffffffffffffffff014a34323038362d31303001550400ae810100c50004006441050011d00000388401002e0000002dc00000ff"
 }
 ```
+
+#### A more verbose method
+
+You may also instruct the server to **build the HWM** command if you have knowledge of the available opcodes and data needed:
+
+* `opcode` (string) is required
+* `param1`, `param2`, `param3`, `param4` are all 32-bit integers whose meaning depends on the `opcode`, and with a default of `0`
+* The `data` field, in this case, points to the command data, if needed, and becomes part of the generated HWM
+
+If an optional `build-command` field is present and `true`, then the reply `data` will contain the generated HWM command **without running it**.
+
 
 #### `hexarray` type
 
