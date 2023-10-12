@@ -14,7 +14,6 @@ namespace librealsense
     device_hub::device_hub(std::shared_ptr<librealsense::context> ctx, int mask)
         : _ctx( ctx )
         , _mask( mask )
-        , _device_changes_callback_id( 0 )
     {
         _device_list = _ctx->query_devices(mask);
 
@@ -32,13 +31,15 @@ namespace librealsense
                         }
                     });
 
-        _device_changes_callback_id = _ctx->register_internal_device_callback({ cb, [](rs2_devices_changed_callback* p) { p->release(); } });
+        _device_change_subscription = _ctx->on_device_changes( { cb,
+                                                                 []( rs2_devices_changed_callback * p )
+                                                                 {
+                                                                     p->release();
+                                                                 } } );
     }
 
     device_hub::~device_hub()
     {
-        if (_device_changes_callback_id)
-            _ctx->unregister_internal_device_callback(_device_changes_callback_id);
     }
 
     std::shared_ptr<device_interface> device_hub::create_device(const std::string& serial, bool cycle_devices)

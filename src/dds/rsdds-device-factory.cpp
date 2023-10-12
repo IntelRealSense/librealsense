@@ -3,14 +3,16 @@
 
 #include "rsdds-device-factory.h"
 #include "context.h"
-
 #include "rs-dds-device-info.h"
+
+#include <librealsense2/h/rs_context.h>  // RS2_PRODUCT_LINE_...
 
 #include <realdds/dds-device-watcher.h>
 #include <realdds/dds-participant.h>
 #include <realdds/dds-device.h>
 #include <realdds/topics/device-info-msg.h>
 
+#include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/shared-ptr-singleton.h>
 #include <rsutils/os/executable-name.h>
 #include <rsutils/string/slice.h>
