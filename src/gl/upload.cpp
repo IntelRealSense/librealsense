@@ -10,7 +10,6 @@
 #include "colorizer-gl.h"
 #include "upload.h"
 #include "option.h"
-#include "context.h"
 
 #ifndef NOMINMAX
 #define NOMINMAX

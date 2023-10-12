@@ -7,7 +7,6 @@
 #include "core/motion-frame.h"
 #include "core/depth-frame.h"
 #include "option.h"
-#include "context.h"
 #include "stream.h"
 #include "types.h"
 

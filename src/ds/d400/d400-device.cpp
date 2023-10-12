@@ -2,7 +2,6 @@
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
 #include <src/device.h>
-#include <src/context.h>
 #include <src/image.h>
 #include <src/metadata-parser.h>
 #include <src/metadata.h>
