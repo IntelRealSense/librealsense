@@ -9,8 +9,7 @@ from rspy import test, log
 import time
 import sys
 import numpy as np
-# import cv2
-from scipy.ndimage import zoom
+# from scipy.ndimage import zoom
 from PIL import Image
 
 
@@ -25,43 +24,48 @@ cfg.enable_stream(rs.stream.depth, rs.format.z16, 30)
 cfg.enable_stream(rs.stream.color, rs.format.rgb8, 30)
 
 
-def save_image(depth, color, filename, showImage):
+def save_and_display_image(depth, color, filename, show_image):
     colorizer = rs.colorizer()
-    depth_image = np.asanyarray(colorizer.colorize(depth).get_data())
-    color_image = np.asanyarray(color.get_data())
+    depth_numpy = np.asanyarray(colorizer.colorize(depth).get_data())
+    color_numpy = np.asanyarray(color.get_data())
 
-    depth_rows, _, _ = depth_image.shape
-    color_rows, _, _ = color_image.shape
+    print(color.get_data())
+
+    depth_img = Image.fromarray(depth_numpy)
+
+    depth_rows, _, _ = depth_numpy.shape
+    color_rows, _, _ = color_numpy.shape
 
     # resize the image with the higher resolution to look like the smaller one
-    if depth_rows < color_rows:
-        color_image = zoom(color_image, (depth_rows/color_rows, depth_rows/color_rows, 1))
-    elif color_rows < depth_rows:
-        depth_image = zoom(depth_image, (color_rows/depth_rows, color_rows/depth_rows, 1))
+    # if depth_rows < color_rows:
+    #     color_numpy = zoom(color_numpy, (depth_rows / color_rows, depth_rows / color_rows, 1))
+    # elif color_rows < depth_rows:
+    #     depth_numpy = zoom(depth_numpy, (color_rows/depth_rows, color_rows/depth_rows, 1))
 
-    img_numpy = np.concatenate((depth_image, color_image), axis=1)
+    img_numpy = np.concatenate((depth_numpy, color_numpy), axis=1)
     img = Image.fromarray(img_numpy, "RGB")
     if filename != "":
         img.save("output.png")
 
-    if showImage:
+    if show_image:
         img.show()
 
 
-def setup(config, laser_on):
+def get_frames(config, laser_enabled):
     pipeline = rs.pipeline()
     pipeline_profile = pipeline.start(config)
 
-    if laser_on is False:
-        sensor = pipeline_profile.get_device().first_depth_sensor()
-        sensor.set_option(rs.option.emitter_enabled, 0) #turn the laser off
+    sensor = pipeline_profile.get_device().first_depth_sensor()
+    sensor.set_option(rs.option.emitter_enabled, 1 if laser_enabled else 0)  # turn the laser off
 
+    # in order to get a proper image, sometimes we'd need to wait a few frames ex when the camera is facing light
     frames = pipeline.wait_for_frames()
     for i in range(30):
         frames = pipeline.wait_for_frames()
     depth = frames.get_depth_frame()
     color = frames.get_color_frame()
-    return pipeline, depth, color
+    pipeline.stop()
+    return depth, color
 
 
 def get_distances(depth):
@@ -85,7 +89,7 @@ def get_distances(depth):
     return dists, total
 
 
-def check_depth(config, laser_on: bool=True, filename="", showImage: bool = False):
+def check_depth(config, laser_enabled=True, filename="", display_image=False):
     """
     Checks if the camera is showing a frame with a meaningful depth
     the higher the detail level is, the more it is sensitive to distance
@@ -94,7 +98,7 @@ def check_depth(config, laser_on: bool=True, filename="", showImage: bool = Fals
     returns true iff is it does
     """
 
-    pipeline, depth, color = setup(config, laser_on)
+    depth, color = get_frames(config, laser_enabled)
 
     if not depth or not color:
         print("Error getting depth / color frames")
@@ -103,15 +107,15 @@ def check_depth(config, laser_on: bool=True, filename="", showImage: bool = Fals
         pass
 
     dists, total = get_distances(depth)
-    save_image(depth, color, filename, showImage)
+    if filename != "" or display_image:
+        save_and_display_image(depth, color, filename, display_image)
 
-    is_depth = True
+    meaningful_depth = True
     for key in dists:
         if dists[key] > total*0.9:
-            is_depth = False
+            meaningful_depth = False
             break
-    pipeline.stop()
-    return is_depth
+    return meaningful_depth
 
 
 ################################################################################################
