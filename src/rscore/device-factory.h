@@ -39,8 +39,8 @@ protected:
 public:
     // Callbacks take this form.
     //
-    using callback = std::function< void( std::vector< rs2_device_info > & devices_removed,
-                                          std::vector< rs2_device_info > & devices_added ) >;
+    using callback = std::function< void( std::vector< rs2_device_info > const & devices_removed,
+                                          std::vector< rs2_device_info > const & devices_added ) >;
 
     virtual ~device_factory() = default;
 
