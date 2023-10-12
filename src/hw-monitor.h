@@ -339,6 +339,7 @@ namespace librealsense
 
         virtual std::vector<uint8_t> send( std::vector<uint8_t> const & data ) const;
         virtual std::vector<uint8_t> send( command cmd, hwmon_response * = nullptr, bool locked_transfer = false ) const;
+        virtual std::string get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 4) const;
         static std::vector<uint8_t> build_command(uint32_t opcode,
             uint32_t param1 = 0,
             uint32_t param2 = 0,
@@ -350,21 +351,6 @@ namespace librealsense
         void get_gvd(size_t sz, unsigned char* gvd, uint8_t gvd_cmd) const;
         static std::string get_module_serial_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 6);
         bool is_camera_locked(uint8_t gvd_cmd, uint32_t offset) const;
-
-        template <typename T>
-        static std::string get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 4)
-        {
-            std::stringstream formattedBuffer;
-            std::string s = "";
-            std::vector<T> buff_converted(buff.data() + index, buff.data() + index + length * sizeof(T));
-            for (auto rit = buff_converted.rbegin(); rit != buff_converted.rend(); ++rit)
-            {
-                formattedBuffer << s << static_cast<int>(*rit);
-                s = ".";
-            }
-
-            return formattedBuffer.str();
-        }
 
         template <typename T>
         T get_gvd_field(const std::vector<uint8_t>& data, size_t index)

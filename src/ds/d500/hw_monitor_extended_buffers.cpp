@@ -7,6 +7,20 @@
 
 namespace librealsense
 {
+    std::string hw_monitor_extended_buffers::get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length) const
+    {
+        std::stringstream formattedBuffer;
+        std::string s = "";
+        std::vector<uint16_t> buff_converted(buff.data() + index, buff.data() + index + length * sizeof(uint16_t));
+        for (auto rit = buff_converted.rbegin(); rit != buff_converted.rend(); ++rit)
+        {
+            formattedBuffer << s << static_cast<int>(*rit);
+            s = ".";
+        }
+
+        return formattedBuffer.str();
+    }
+
     int hw_monitor_extended_buffers::get_msg_length(command cmd) const
     {
         int msg_length = HW_MONITOR_BUFFER_SIZE;

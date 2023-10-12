@@ -1143,7 +1143,7 @@ namespace librealsense
     {
         optic_serial = _hw_monitor->get_module_serial_string(gvd_buff, ds::gvd_fields::module_serial_offset);
         asic_serial = _hw_monitor->get_module_serial_string(gvd_buff, ds::gvd_fields::module_asic_serial_offset);
-        fwv = _hw_monitor->get_firmware_version_string<uint8_t>(gvd_buff, ds::gvd_fields::camera_fw_version_offset);
+        fwv = _hw_monitor->get_firmware_version_string(gvd_buff, ds::gvd_fields::camera_fw_version_offset);
     }
 
     // Check if need change camera name due to number modifications on one device PID.

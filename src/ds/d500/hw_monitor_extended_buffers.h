@@ -27,6 +27,7 @@ namespace librealsense
 
         virtual std::vector<uint8_t> send(std::vector<uint8_t> const& data) const override;
         virtual std::vector<uint8_t> send(command cmd, hwmon_response* = nullptr, bool locked_transfer = false) const override;
+        virtual std::string get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 4) const override;
 
     private:
         int get_msg_length(command cmd) const;
