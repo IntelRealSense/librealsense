@@ -8,10 +8,7 @@ from rspy.stopwatch import Stopwatch
 from rspy import test, log
 import time
 import sys
-import numpy as np
-# from scipy.ndimage import zoom
-from PIL import Image
-
+import os
 
 # Start depth + color streams and go through the frame to make sure it is showing a depth image
 # Color stream is only used to display the way the camera is facing
@@ -24,31 +21,49 @@ cfg.enable_stream(rs.stream.depth, rs.format.z16, 30)
 cfg.enable_stream(rs.stream.color, rs.format.rgb8, 30)
 
 
-def save_and_display_image(depth, color, filename, show_image):
+def display_image(img):
+    """
+    Display a given image and exits when the x button or esc key are pressed
+    """
+    import cv2
+
+    window_title = "Output Stream"
+    cv2.imshow(window_title, img)
+    while cv2.getWindowProperty(window_title, cv2.WND_PROP_VISIBLE) > 0:
+        k = cv2.waitKey(33)
+        if k == 27:  # Esc key to stop
+            cv2.destroyAllWindows()
+            break
+        elif k == -1:  # normally -1 returned,so don't print it
+            pass
+
+
+def frames_to_image(depth, color, save, display):
+    import numpy as np
+    import cv2
+
     colorizer = rs.colorizer()
-    depth_numpy = np.asanyarray(colorizer.colorize(depth).get_data())
-    color_numpy = np.asanyarray(color.get_data())
+    depth_image = np.asanyarray(colorizer.colorize(depth).get_data())
+    img = depth_image
 
-    print(color.get_data())
+    if color:  # if color frame was successfully captured, merge it and the depth frame
+        from scipy.ndimage import zoom
+        color_image = np.asanyarray(color.get_data())
+        depth_rows, _, _ = depth_image.shape
+        color_rows, _, _ = color_image.shape
+        # resize the image with the higher resolution to look like the smaller one
+        if depth_rows < color_rows:
+            color_image = zoom(color_image, (depth_rows / color_rows, depth_rows / color_rows, 1))
+        elif color_rows < depth_rows:
+            depth_image = zoom(depth_image, (color_rows / depth_rows, color_rows / depth_rows, 1))
+        img = np.concatenate((depth_image, color_image), axis=1)
 
-    depth_img = Image.fromarray(depth_numpy)
-
-    depth_rows, _, _ = depth_numpy.shape
-    color_rows, _, _ = color_numpy.shape
-
-    # resize the image with the higher resolution to look like the smaller one
-    # if depth_rows < color_rows:
-    #     color_numpy = zoom(color_numpy, (depth_rows / color_rows, depth_rows / color_rows, 1))
-    # elif color_rows < depth_rows:
-    #     depth_numpy = zoom(depth_numpy, (color_rows/depth_rows, color_rows/depth_rows, 1))
-
-    img_numpy = np.concatenate((depth_numpy, color_numpy), axis=1)
-    img = Image.fromarray(img_numpy, "RGB")
-    if filename != "":
-        img.save("output.png")
-
-    if show_image:
-        img.show()
+    if save:
+        file_name = "output_stream.png"
+        print("Saved image in", os.getcwd() + "\\" + file_name)
+        cv2.imwrite(file_name, img)
+    if display:
+        display_image(img)
 
 
 def get_frames(config, laser_enabled):
@@ -56,9 +71,9 @@ def get_frames(config, laser_enabled):
     pipeline_profile = pipeline.start(config)
 
     sensor = pipeline_profile.get_device().first_depth_sensor()
-    sensor.set_option(rs.option.emitter_enabled, 1 if laser_enabled else 0)  # turn the laser off
+    sensor.set_option(rs.option.emitter_enabled, 1 if laser_enabled else 0)
 
-    # in order to get a proper image, sometimes we'd need to wait a few frames ex when the camera is facing light
+    # to get a proper image, we sometimes need to wait a few frames, like when the camera is facing a light source
     frames = pipeline.wait_for_frames()
     for i in range(30):
         frames = pipeline.wait_for_frames()
@@ -89,26 +104,28 @@ def get_distances(depth):
     return dists, total
 
 
-def check_depth(config, laser_enabled=True, filename="", display_image=False):
+def is_depth_meaningful(config, laser_enabled=True, save_image=False, show_image=False):
     """
     Checks if the camera is showing a frame with a meaningful depth
     the higher the detail level is, the more it is sensitive to distance
-    eg: 1 for a difference of 1 meter, 100 for a diff of 1cm
+    ex: 1 for a difference of 1 meter, 100 for a diff of 1cm
 
-    returns true iff is it does
+    returns true if frame shows meaningful depth
     """
 
     depth, color = get_frames(config, laser_enabled)
 
-    if not depth or not color:
-        print("Error getting depth / color frames")
+    if not depth:
+        print("Error getting depth frame")
         return False
-    else:
-        pass
+    if not color:
+        print("Error getting color frame")
 
     dists, total = get_distances(depth)
-    if filename != "" or display_image:
-        save_and_display_image(depth, color, filename, display_image)
+
+    # save or display image (only possible through manual debugging)
+    if save_image or show_image:
+        frames_to_image(depth, color,save_image,show_image)
 
     meaningful_depth = True
     for key in dists:
@@ -120,14 +137,16 @@ def check_depth(config, laser_enabled=True, filename="", display_image=False):
 
 ################################################################################################
 test.start("Testing depth frame - laser ON -", dev.get_info(rs.camera_info.name))
-res = check_depth(cfg, True, "1.png", True) #TODO switch to False on showimage
+# change file_name or show_image to save or display the image, accordingly
+# make sure to have the packages listed if changed
+res = is_depth_meaningful(cfg, True, False, False)
 test.check(res is True)
 test.finish()
 
 ################################################################################################
 
 test.start("Testing depth frame - laser OFF -", dev.get_info(rs.camera_info.name))
-res = check_depth(cfg, False, "2.png", True)
+res = is_depth_meaningful(cfg, False, False, False)
 test.check(res is True)
 test.finish()
 
