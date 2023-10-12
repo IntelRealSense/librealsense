@@ -9,19 +9,6 @@
 
 namespace librealsense
 {
-    std::string hw_monitor::get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length)
-    {
-        std::stringstream formattedBuffer;
-        std::string s = "";
-        for (auto i = 1; i <= length; i++)
-        {
-            formattedBuffer << s << static_cast<int>(buff[index + (length - i)]);
-            s = ".";
-        }
-
-        return formattedBuffer.str();
-    }
-
     std::string hw_monitor::get_module_serial_string(const std::vector<uint8_t>& buff, size_t index, size_t length)
     {
         std::stringstream formattedBuffer;

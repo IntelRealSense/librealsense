@@ -78,6 +78,8 @@ namespace librealsense
 
         ds::ds_caps parse_device_capabilities( const std::vector<uint8_t> &gvd_buf ) const;
 
+        void get_fw_details(const std::vector<uint8_t>& gvd_buff, std::string& optic_serial, std::string& asic_serial, std::string& fwv) const;
+
         //TODO - add these to device class as pure virtual methods
         command get_firmware_logs_command() const;
         command get_flash_logs_command() const;

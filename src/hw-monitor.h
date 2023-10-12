@@ -348,9 +348,23 @@ namespace librealsense
             size_t dataLength = 0);
 
         void get_gvd(size_t sz, unsigned char* gvd, uint8_t gvd_cmd) const;
-        static std::string get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 4);
         static std::string get_module_serial_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 6);
         bool is_camera_locked(uint8_t gvd_cmd, uint32_t offset) const;
+
+        template <typename T>
+        static std::string get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 4)
+        {
+            std::stringstream formattedBuffer;
+            std::string s = "";
+            std::vector<T> buff_converted(buff.data() + index, buff.data() + index + length * sizeof(T));
+            for (auto rit = buff_converted.rbegin(); rit != buff_converted.rend(); ++rit)
+            {
+                formattedBuffer << s << static_cast<int>(*rit);
+                s = ".";
+            }
+
+            return formattedBuffer.str();
+        }
 
         template <typename T>
         T get_gvd_field(const std::vector<uint8_t>& data, size_t index)
