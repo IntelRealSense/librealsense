@@ -8,9 +8,6 @@
 #include <functional>
 
 
-struct rs2_device_info;
-
-
 namespace librealsense {
 
 
@@ -39,8 +36,8 @@ protected:
 public:
     // Callbacks take this form.
     //
-    using callback = std::function< void( std::vector< rs2_device_info > const & devices_removed,
-                                          std::vector< rs2_device_info > const & devices_added ) >;
+    using callback = std::function< void( std::vector< std::shared_ptr< device_info > > const & devices_removed,
+                                          std::vector< std::shared_ptr< device_info > > const & devices_added ) >;
 
     virtual ~device_factory() = default;
 

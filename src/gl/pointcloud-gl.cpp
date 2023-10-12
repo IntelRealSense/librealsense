@@ -9,7 +9,7 @@
 #include "pointcloud-gl.h"
 #include "option.h"
 #include "environment.h"
-#include "context.h"
+#include "stream.h"
 
 #include <iostream>
 #include <chrono>

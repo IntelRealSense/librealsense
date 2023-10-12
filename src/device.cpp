@@ -41,8 +41,9 @@ device::device( std::shared_ptr< const device_info > const & dev_info,
     {
         std::weak_ptr< std::atomic< bool > > weak_alive = _is_alive;
         std::weak_ptr< const device_info > weak_dev_info = _dev_info;
-        auto cb = new devices_changed_callback_internal(
-            [weak_alive, weak_dev_info]( rs2_device_list * removed, rs2_device_list * added )
+        _device_change_subscription = get_context()->on_device_changes(
+            [weak_alive, weak_dev_info]( std::vector< std::shared_ptr< device_info > > const & removed,
+                                         std::vector< std::shared_ptr< device_info > > const & added )
             {
                 // The callback can be called from one thread while the object is being destroyed by another.
                 // Check if members can still be accessed.
@@ -54,21 +55,15 @@ device::device( std::shared_ptr< const device_info > const & dev_info,
                     return;
 
                 // Update is_valid variable when device is invalid
-                for( auto & dev_info : removed->list )
+                for( auto & dev_info : removed )
                 {
-                    if( dev_info.info->is_same_as( this_dev_info ) )
+                    if( dev_info->is_same_as( this_dev_info ) )
                     {
                         *alive = false;
                         return;
                     }
                 }
             } );
-
-        _device_change_subscription = get_context()->on_device_changes( { cb,
-                                                                          []( rs2_devices_changed_callback * p )
-                                                                          {
-                                                                              p->release();
-                                                                          } } );
     }
 }
 
