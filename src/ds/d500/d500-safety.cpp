@@ -376,7 +376,7 @@ namespace librealsense
 
         // prepare command
         command cmd(ds::GET_HKR_CONFIG_TABLE,
-            static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
+            static_cast<int>(ds::d500_calib_location::d500_calib_ram_memory),
             static_cast<int>(ds::d500_calibration_table_id::safety_interface_cfg_id),
             static_cast<int>(ds::d500_calib_type::d500_calib_gold));
         cmd.require_response = true;
