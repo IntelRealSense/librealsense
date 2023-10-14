@@ -4,7 +4,6 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include "pyrealsense2.h"
 #include <librealsense2/rs.h>
 #include <iomanip>
-#include <src/types.h>
 
 std::string make_pythonic_str(std::string str)
 {
@@ -76,11 +75,17 @@ void init_c_files(py::module &m) {
         .def_readwrite("fy", &rs2_intrinsics::fy, "Focal length of the image plane, as a multiple of pixel height")
         .def_readwrite("model", &rs2_intrinsics::model, "Distortion model of the image")
         .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_intrinsics, coeffs, float, 5), "Distortion coefficients")
-        .def("__repr__", [](const rs2_intrinsics& self) {
-            std::ostringstream ss;
-            ss << self;
-            return ss.str();
-        });
+        .def( "__repr__",
+              []( const rs2_intrinsics & i )
+              {
+                  std::ostringstream ss;
+                  ss << "[ " << i.width << "x" << i.height
+                     << "  p[" << i.ppx << " " << i.ppy << "]"
+                     << "  f[" << i.fx << " " << i.fy << "]"
+                     << "  " << rs2_distortion_to_string( i.model ) << " [" << i.coeffs[0] << " " << i.coeffs[1] << " "
+                     << i.coeffs[2] << " " << i.coeffs[3] << " " << i.coeffs[4] << "] ]";
+                  return ss.str();
+              } );
 
     py::class_<rs2_motion_device_intrinsic> motion_device_intrinsic(m, "motion_device_intrinsic", "Motion device intrinsics: scale, bias, and variances.");
     motion_device_intrinsic.def(py::init<>())
