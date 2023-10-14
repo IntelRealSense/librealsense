@@ -758,12 +758,6 @@ if __name__ == '__main__':
         for opt,arg in opts:
             if opt in ('--list'):
                 action = 'list'
-            elif opt in ('--ports'):
-                printer = get_phys_port
-            elif opt in ('--all'):
-                if not acroname:
-                    log.f( 'No acroname available' )
-                acroname.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
             elif opt in ('--port'):
                 if not acroname:
                     log.f( 'No acroname available' )
@@ -773,6 +767,12 @@ if __name__ == '__main__':
                 if len(ports) != len(str_ports):
                     log.f( 'Invalid ports', str_ports )
                 acroname.enable_ports( ports, disable_other_ports = True, sleep_on_change = MAX_ENUMERATION_TIME )
+            elif opt in ('--ports'):
+                printer = get_phys_port
+            elif opt in ('--all'):
+                if not acroname:
+                    log.f( 'No acroname available' )
+                acroname.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
             elif opt in ('--recycle'):
                 action = 'recycle'
             else:
