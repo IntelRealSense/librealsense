@@ -58,7 +58,6 @@ using std::abs;
 #include "../common/android_helpers.h"
 #endif
 
-#define UNKNOWN_VALUE "UNKNOWN"
 
 namespace librealsense
 {
@@ -176,8 +175,6 @@ namespace librealsense
     }
 
     void copy(void* dst, void const* src, size_t size);
-
-    std::string make_less_screamy(const char* str);
 
     ///////////////////////
     // Logging mechanism //

@@ -9,9 +9,15 @@
 #include "core/advanced_mode.h"
 #include "api.h"
 
-#define STRCASE(T, X) case RS2_##T##_##X: {\
-        static std::string s##T##_##X##_str = make_less_screamy(#X);\
-        return s##T##_##X##_str.c_str(); }
+#include <rsutils/string/make-less-screamy.h>
+
+
+
+#define STRCASE( T, X )                                                                                                \
+    case RS2_##T##_##X: {                                                                                              \
+        static std::string s##T##_##X##_str = rsutils::string::make_less_screamy( #X );                                \
+        return s##T##_##X##_str.c_str();                                                                               \
+    }
 
 namespace librealsense
 {

@@ -3,7 +3,11 @@
 
 #pragma once
 
+#include <src/basics.h>
 #include <librealsense2/hpp/rs_types.hpp>
+
+
+#define UNKNOWN_VALUE "UNKNOWN"
 
 
 namespace librealsense {
