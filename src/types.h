@@ -175,16 +175,6 @@ namespace librealsense
         return false;
     }
 
-    template<class T>
-    std::string hexify(const T& val)
-    {
-        static_assert((std::is_integral<T>::value), "hexify supports integral built-in types only");
-
-        std::ostringstream oss;
-        oss << std::setw(sizeof(T)*2) << std::setfill('0') << std::uppercase << std::hex << val;
-        return oss.str().c_str();
-    }
-
     void copy(void* dst, void const* src, size_t size);
 
     std::string make_less_screamy(const char* str);

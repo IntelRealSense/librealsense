@@ -29,6 +29,8 @@
 #include "hdr-config.h"
 #include "../common/fw/firmware-version.h"
 #include "fw-update/fw-update-unsigned.h"
+
+#include <rsutils/string/hexdump.h>
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <string>
@@ -494,7 +496,7 @@ namespace librealsense
                 []() {return std::make_shared<y16i_to_y10msby10msb>(); }
             );
                 
-            pid_hex_str = hexify(_pid);
+            pid_hex_str = rsutils::string::from() << std::uppercase << rsutils::string::hexdump( _pid );
 
             _is_locked = _ds_device_common->is_locked(GVD, is_camera_locked_offset);
 
