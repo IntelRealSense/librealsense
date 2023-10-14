@@ -82,31 +82,6 @@ void init_c_files(py::module &m) {
             return ss.str();
         });
 
-    py::class_<rs2_dsm_params> dsm_params( m, "dsm_params", "Video stream DSM parameters" );
-    dsm_params.def( py::init<>() )
-        .def_readonly( "timestamp", &rs2_dsm_params::timestamp, "seconds since epoch" )
-        .def_readonly( "version", &rs2_dsm_params::version, "major<<12 | minor<<4 | patch" )
-        .def_readwrite( "model", &rs2_dsm_params::model, "correction model (0/1/2 none/AOT/TOA)" )
-        .def_property( BIND_RAW_ARRAY_PROPERTY( rs2_dsm_params, flags, uint8_t, sizeof( rs2_dsm_params::flags )), "flags" )
-        .def_readwrite( "h_scale", &rs2_dsm_params::h_scale, "horizontal DSM scale" )
-        .def_readwrite( "v_scale", &rs2_dsm_params::v_scale, "vertical DSM scale" )
-        .def_readwrite( "h_offset", &rs2_dsm_params::h_offset, "horizontal DSM offset" )
-        .def_readwrite( "v_offset", &rs2_dsm_params::v_offset, "vertical DSM offset" )
-        .def_readwrite( "rtd_offset", &rs2_dsm_params::rtd_offset, "the Round-Trip-Distance delay" )
-        .def_property_readonly( "temp", 
-            []( rs2_dsm_params const & self ) -> float {
-                           return float( self.temp_x2 ) / 2;
-                       },
-            "temperature (LDD for depth; HUM for color)" )
-        .def_property( BIND_RAW_ARRAY_PROPERTY( rs2_dsm_params, reserved, uint8_t, sizeof( rs2_dsm_params::reserved )), "reserved" )
-        .def( "__repr__",
-            []( const rs2_dsm_params & self )
-            {
-                std::ostringstream ss;
-                ss << self;
-                return ss.str();
-            } );
-
     py::class_<rs2_motion_device_intrinsic> motion_device_intrinsic(m, "motion_device_intrinsic", "Motion device intrinsics: scale, bias, and variances.");
     motion_device_intrinsic.def(py::init<>())
         .def_property(BIND_RAW_2D_ARRAY_PROPERTY(rs2_motion_device_intrinsic, data, float, 3, 4), "3x4 matrix with 3x3 scale and cross axis and 3x1 biases")
