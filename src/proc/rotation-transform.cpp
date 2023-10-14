@@ -55,7 +55,7 @@ namespace librealsense
             for (int j = 0; j < width; ++j)
             {
                 auto out_index = (((height_out - j) * width_out) - i - 1) * SIZE;
-                librealsense::copy((void*)(&out[out_index]), &(source[(row_offset + j) * SIZE]), SIZE);
+                std::memcpy( &out[out_index], &( source[( row_offset + j ) * SIZE] ), SIZE );
             }
         }
     }

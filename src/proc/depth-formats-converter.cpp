@@ -22,7 +22,7 @@ namespace librealsense
 #else
         for (int i = 0; i < count; ++i) *out_ir++ = *in++ >> 2;
 #endif
-        librealsense::copy(dest[0], in, count * 2);
+        std::memcpy( dest[0], in, count * 2 );
     }
 
     void unpack_z16_y16_from_sr300_inzi(byte * const dest[], const byte * source, int width, int height, int actual_size)
@@ -36,7 +36,7 @@ namespace librealsense
 #else
         for (int i = 0; i < count; ++i) *out_ir++ = *in++ << 6;
 #endif
-        librealsense::copy(dest[0], in, count * 2);
+        std::memcpy( dest[0], in, count * 2 );
     }
 
     void unpack_inzi(rs2_format dst_ir_format, byte * const d[], const byte * s, int width, int height, int actual_size)
@@ -83,7 +83,7 @@ namespace librealsense
     void copy_raw10(byte * const dest[], const byte * source, int width, int height, int actual_size)
     {
         auto count = width * height; // num of pixels
-        librealsense::copy(dest[0], source, size_t(5.0 * (count / 4.0)));
+        std::memcpy( dest[0], source, size_t( 5.0 * ( count / 4.0 ) ) );
     }
 
     void unpack_y10bpack(byte * const dest[], const byte * source, int width, int height, int actual_size)

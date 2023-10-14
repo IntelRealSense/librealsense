@@ -362,13 +362,13 @@ namespace librealsense
 
                 auto pStruct = next_struct;
                 cfg.step.resize(option_range_size);
-                librealsense::copy(cfg.step.data(), pStruct, field_width);
+                std::memcpy( cfg.step.data(), pStruct, field_width );
                 pStruct += length;
                 cfg.min.resize(option_range_size);
-                librealsense::copy(cfg.min.data(), pStruct, field_width);
+                std::memcpy( cfg.min.data(), pStruct, field_width );
                 pStruct += length;
                 cfg.max.resize(option_range_size);
-                librealsense::copy(cfg.max.data(), pStruct, field_width);
+                std::memcpy( cfg.max.data(), pStruct, field_width );
                 return;
             }
             case KSPROPERTY_MEMBER_VALUES:
@@ -386,7 +386,7 @@ namespace librealsense
                     }
 
                     cfg.def.resize(option_range_size);
-                    librealsense::copy(cfg.def.data(), next_struct, field_width);
+                    std::memcpy( cfg.def.data(), next_struct, field_width );
                 }
                 return;
             }

@@ -174,8 +174,6 @@ namespace librealsense
         return false;
     }
 
-    void copy(void* dst, void const* src, size_t size);
-
     ///////////////////////
     // Logging mechanism //
     ///////////////////////

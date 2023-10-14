@@ -9,8 +9,7 @@
 #include <fstream>
 #include <cmath>
 
-#include "core/streaming.h"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
+#include <librealsense2/hpp/rs_processing.hpp>
 
 const double SQRT_DBL_EPSILON = sqrt(std::numeric_limits<double>::epsilon());
 
@@ -219,11 +218,5 @@ namespace librealsense
     notifications_callback_ptr notifications_processor::get_callback() const
     {
         return _callback;
-    }
-
-    void copy(void* dst, void const* src, size_t size)
-    {
-        auto from = reinterpret_cast<uint8_t const*>(src);
-        std::copy(from, from + size, reinterpret_cast<uint8_t*>(dst));
     }
 }
