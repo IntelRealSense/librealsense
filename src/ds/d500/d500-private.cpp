@@ -228,7 +228,9 @@ namespace librealsense
             intrinsics.ppx = rect_params[2];
             intrinsics.ppy = rect_params[3];
             intrinsics.model = table->rgb_coefficients_table.distortion_model;
-            librealsense::copy(intrinsics.coeffs, table->rgb_coefficients_table.distortion_coeffs, sizeof(intrinsics.coeffs));
+            std::memcpy( intrinsics.coeffs,
+                         table->rgb_coefficients_table.distortion_coeffs,
+                         sizeof( intrinsics.coeffs ) );
 
             update_table_to_correct_fisheye_distortion(const_cast<ds::d500_rgb_calibration_table&>(*table), intrinsics);
 

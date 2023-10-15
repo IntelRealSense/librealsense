@@ -1,11 +1,14 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-#include "types.h"
 #include "core/options-registry.h"
+#include "core/enum-helpers.h"
+
+#include <rsutils/string/make-less-screamy.h>
+#include <cassert>
 
 
-#define STRX( X ) make_less_screamy( #X )
+#define STRX( X ) rsutils::string::make_less_screamy( #X )
 #define STRCASE( T, X )                                                                                                \
     case RS2_##T##_##X: {                                                                                              \
         static const std::string s##T##_##X##_str = STRX( X );                                                         \
@@ -14,7 +17,7 @@
 #define STRARR( ARRAY, T, X ) ARRAY[RS2_##T##_##X] = STRX( X )
 
 
-static std::string const unknown_value_str( UNKNOWN_VALUE );
+static std::string const unknown_value_str( librealsense::UNKNOWN_VALUE );
 
 
 namespace librealsense {

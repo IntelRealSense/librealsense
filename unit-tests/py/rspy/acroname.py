@@ -19,11 +19,12 @@ if __name__ == '__main__':
         print( '        Control the acroname USB hub' )
         print( 'Options:' )
         print( '        --enable       Enable all ports' )
+        print( '        --disable      Disable all ports' )
         print( '        --recycle      Recycle all ports' )
         sys.exit(2)
     try:
         opts,args = getopt.getopt( sys.argv[1:], '',
-            longopts = [ 'help', 'recycle', 'enable' ])
+            longopts = [ 'help', 'recycle', 'enable', 'disable' ])
     except getopt.GetoptError as err:
         print( '-F-', err )   # something like "option -a not recognized"
         usage()
@@ -96,7 +97,7 @@ def find_all_hubs():
     """
     from rspy import lsusb
     #
-    # 24ff:8013 = 
+    # 24ff:8013 =
     #   iManufacturer           Acroname Inc.
     #   iProduct                USBHub3p-3[A]
     hubs = set( lsusb.devices_by_vendor( '24ff' ))
@@ -314,6 +315,9 @@ if __name__ == '__main__':
         if opt in ('--enable'):
             connect()
             enable_ports()   # so ports() will return all
+        elif opt in ('--disable'):
+            connect()
+            disable_ports()
         elif opt in ('--recycle'):
             connect()
             enable_ports()   # so ports() will return all

@@ -189,7 +189,7 @@ namespace librealsense
         if (_valid_extrinsic)
         {
             // extrinsic from calibration table, by user custom calibration, The extrinsic is stored as array of floats / little-endian
-            librealsense::copy(&_extr, &_calib_table.module_info.dm_v2_calib_table.depth_to_imu, sizeof(rs2_extrinsics));
+            std::memcpy( &_extr, &_calib_table.module_info.dm_v2_calib_table.depth_to_imu, sizeof( rs2_extrinsics ) );
         }
         else
         {
@@ -300,7 +300,7 @@ namespace librealsense
         if (_valid_extrinsic)
         {
             // only in case valid extrinsic is available in calibration data by calibration script in future or user custom calibration
-            librealsense::copy(&_extr, &imu_calib_table.depth_to_imu, sizeof(rs2_extrinsics));
+            std::memcpy( &_extr, &imu_calib_table.depth_to_imu, sizeof( rs2_extrinsics ) );
         }
         else
         {

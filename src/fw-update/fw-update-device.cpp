@@ -7,6 +7,8 @@
 #include "../device-info.h"
 #include "ds/d400/d400-private.h"
 
+#include <rsutils/string/hexdump.h>
+
 #include <chrono>
 #include <stdexcept>
 #include <algorithm>
@@ -112,7 +114,10 @@ namespace librealsense
 
     update_device::update_device( std::shared_ptr< const device_info > const & dev_info,
                                   std::shared_ptr< platform::usb_device > const & usb_device )
-        : _dev_info(dev_info), _usb_device(usb_device), _physical_port( usb_device->get_info().id), _pid(hexify(usb_device->get_info().pid))
+        : _dev_info( dev_info )
+        , _usb_device( usb_device )
+        , _physical_port( usb_device->get_info().id )
+        , _pid( rsutils::string::from() << std::uppercase << rsutils::string::hexdump( usb_device->get_info().pid ) )
     {
         if (auto messenger = _usb_device->open(FW_UPDATE_INTERFACE_NUMBER))
         {

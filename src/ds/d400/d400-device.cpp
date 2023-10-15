@@ -31,6 +31,7 @@
 #include <src/fw-update/fw-update-unsigned.h>
 #include <nlohmann/json.hpp>
 
+#include <rsutils/string/hexdump.h>
 #include <regex>
 #include <iterator>
 
@@ -634,7 +635,7 @@ namespace librealsense
             }
             
 
-            pid_hex_str = hexify(_pid);
+            pid_hex_str = rsutils::string::from() << std::uppercase << rsutils::string::hexdump( _pid );
 
             if ((_pid == RS416_PID || _pid == RS416_RGB_PID) && _fw_version >= firmware_version("5.12.0.1"))
             {

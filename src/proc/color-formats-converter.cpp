@@ -232,7 +232,7 @@ namespace librealsense
                     src[16], src[18], src[20], src[22],
                     src[24], src[26], src[28], src[30],
                 };
-                librealsense::copy(dst, out, sizeof out);
+                std::memcpy( dst, out, sizeof out );
                 dst += sizeof out;
                 continue;
             }
@@ -246,7 +246,7 @@ namespace librealsense
                     0, src[16], 0, src[18], 0, src[20], 0, src[22],
                     0, src[24], 0, src[26], 0, src[28], 0, src[30],
                 };
-                librealsense::copy(dst, out, sizeof out);
+                std::memcpy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -295,7 +295,7 @@ namespace librealsense
                     r[12], g[12], b[12], r[13], g[13], b[13],
                     r[14], g[14], b[14], r[15], g[15], b[15],
                 };
-                librealsense::copy(dst, out, sizeof out);
+                std::memcpy( dst, out, sizeof out );
                 dst += sizeof out;
                 continue;
             }
@@ -312,7 +312,7 @@ namespace librealsense
                     b[12], g[12], r[12], b[13], g[13], r[13],
                     b[14], g[14], r[14], b[15], g[15], r[15],
                 };
-                librealsense::copy(dst, out, sizeof out);
+                std::memcpy( dst, out, sizeof out );
                 dst += sizeof out;
                 continue;
             }
@@ -329,7 +329,7 @@ namespace librealsense
                     r[12], g[12], b[12], 255, r[13], g[13], b[13], 255,
                     r[14], g[14], b[14], 255, r[15], g[15], b[15], 255,
                 };
-                librealsense::copy(dst, out, sizeof out);
+                std::memcpy( dst, out, sizeof out );
                 dst += sizeof out;
                 continue;
             }
@@ -346,7 +346,7 @@ namespace librealsense
                     b[12], g[12], r[12], 255, b[13], g[13], r[13], 255,
                     b[14], g[14], r[14], 255, b[15], g[15], r[15], 255,
                 };
-                librealsense::copy(dst, out, sizeof out);
+                std::memcpy( dst, out, sizeof out );
                 dst += sizeof out;
                 continue;
             }
@@ -362,7 +362,7 @@ namespace librealsense
         {
             // grabbing matching y,u,v values
             uint8_t y[16] = { 0 };
-            librealsense::copy(y, &y_one_line[y_pix], 16);
+            std::memcpy( y, &y_one_line[y_pix], 16 );
 
             uint8_t u[16] = {
                 uv_one_line[uv_pix + 0], uv_one_line[uv_pix + 0], uv_one_line[uv_pix + 2], uv_one_line[uv_pix + 2],
@@ -407,7 +407,7 @@ namespace librealsense
                     r[12], g[12], b[12], r[13], g[13], b[13],
                     r[14], g[14], b[14], r[15], g[15], b[15]
                 };
-                librealsense::copy(*dst, out, sizeof(out));
+                std::memcpy( *dst, out, sizeof( out ) );
                 *dst += sizeof out;
                 continue;
             }
@@ -424,7 +424,7 @@ namespace librealsense
                     b[12], g[12], r[12], b[13], g[13], r[13],
                     b[14], g[14], r[14], b[15], g[15], r[15],
                 };
-                librealsense::copy(*dst, out, sizeof out);
+                std::memcpy( *dst, out, sizeof out );
                 *dst += sizeof out;
                 continue;
             }
@@ -441,7 +441,7 @@ namespace librealsense
                     r[12], g[12], b[12], 255, r[13], g[13], b[13], 255,
                     r[14], g[14], b[14], 255, r[15], g[15], b[15], 255,
                 };
-                librealsense::copy(*dst, out, sizeof out);
+                std::memcpy( *dst, out, sizeof out );
                 *dst += sizeof out;
                 continue;
             }
@@ -458,7 +458,7 @@ namespace librealsense
                     b[12], g[12], r[12], 255, b[13], g[13], r[13], 255,
                     b[14], g[14], r[14], 255, b[15], g[15], r[15], 255,
                 };
-                librealsense::copy(*dst, out, sizeof out);
+                std::memcpy( *dst, out, sizeof out );
                 *dst += sizeof out;
                 continue;
             }
@@ -700,7 +700,7 @@ namespace librealsense
                 // fill the destination with y values
                 // while y is on 2 lines, and uv on the third line
                 auto start_of_y = src + k * width;
-                librealsense::copy(dst, start_of_y, 2 * width);
+                std::memcpy( dst, start_of_y, 2 * width );
                 dst += 2 * width;
             }
             return;
@@ -720,7 +720,7 @@ namespace librealsense
                     {
                         y[dst_idx] = start_of_y[src_idx + pix] << 8;
                     }
-                    librealsense::copy(dst, y, sizeof y);
+                    std::memcpy( dst, y, sizeof y );
                     dst += sizeof y;
                 }
             }
@@ -986,7 +986,7 @@ namespace librealsense
                     r[12], g[12], b[12], r[13], g[13], b[13],
                     r[14], g[14], b[14], r[15], g[15], b[15],
                 };
-                librealsense::copy(dst, out, sizeof out);
+                std::memcpy( dst, out, sizeof out );
                 dst += sizeof out;
                 continue;
             }
@@ -1003,7 +1003,7 @@ namespace librealsense
                     b[12], g[12], r[12], b[13], g[13], r[13],
                     b[14], g[14], r[14], b[15], g[15], r[15],
                 };
-                librealsense::copy(dst, out, sizeof out);
+                std::memcpy( dst, out, sizeof out );
                 dst += sizeof out;
                 continue;
             }
@@ -1020,7 +1020,7 @@ namespace librealsense
                     r[12], g[12], b[12], 255, r[13], g[13], b[13], 255,
                     r[14], g[14], b[14], 255, r[15], g[15], b[15], 255,
                 };
-                librealsense::copy(dst, out, sizeof out);
+                std::memcpy( dst, out, sizeof out );
                 dst += sizeof out;
                 continue;
             }
@@ -1037,7 +1037,7 @@ namespace librealsense
                     b[12], g[12], r[12], 255, b[13], g[13], r[13], 255,
                     b[14], g[14], r[14], 255, b[15], g[15], r[15], 255,
                 };
-                librealsense::copy(dst, out, sizeof out);
+                std::memcpy( dst, out, sizeof out );
                 dst += sizeof out;
                 continue;
             }
@@ -1077,7 +1077,7 @@ namespace librealsense
         if (uncompressed_rgb)
         {
             auto uncompressed_size = w * h * bpp;
-            librealsense::copy(dest[0], uncompressed_rgb, uncompressed_size);
+            std::memcpy( dest[0], uncompressed_rgb, uncompressed_size );
             stbi_image_free(uncompressed_rgb);
         }
         else
@@ -1093,7 +1093,7 @@ namespace librealsense
         auto in = reinterpret_cast<const uint8_t *>(source);
         auto out = reinterpret_cast<uint8_t *>(dest[0]);
 
-        librealsense::copy(out, in, count * 3);
+        std::memcpy( out, in, count * 3 );
         for (auto i = 0; i < count; i++)
         {
             std::swap(out[i * 3], out[i * 3 + 2]);
