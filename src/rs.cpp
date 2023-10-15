@@ -1229,18 +1229,6 @@ void rs2_override_extrinsics( const rs2_sensor* sensor, const rs2_extrinsics* ex
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , sensor, extrinsics )
 
-void rs2_get_dsm_params( const rs2_sensor * sensor, rs2_dsm_params * p_params_out, rs2_error** error ) BEGIN_API_CALL
-{
-    throw not_implemented_exception( "deprecated" );
-}
-HANDLE_EXCEPTIONS_AND_RETURN( , sensor, p_params_out )
-
-void rs2_override_dsm_params( const rs2_sensor * sensor, rs2_dsm_params const * p_params, rs2_error** error ) BEGIN_API_CALL
-{
-    throw not_implemented_exception( "deprecated" );
-}
-HANDLE_EXCEPTIONS_AND_RETURN( , sensor, p_params )
-
 void rs2_reset_sensor_calibration( rs2_sensor const * sensor, rs2_error** error ) BEGIN_API_CALL
 {
     throw not_implemented_exception( "deprecated" );

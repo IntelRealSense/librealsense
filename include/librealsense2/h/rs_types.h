@@ -67,38 +67,6 @@ typedef struct rs2_intrinsics
     float         coeffs[5]; /**< Distortion coefficients. Order for Brown-Conrady: [k1, k2, p1, p2, k3]. Order for F-Theta Fish-eye: [k1, k2, k3, k4, 0]. Other models are subject to their own interpretations */
 } rs2_intrinsics;
 
-/** \brief Video DSM (Digital Sync Module) parameters for calibration (same layout as in FW ac_depth_params)
-    This is the block in MC that converts angles to dimensionless integers reported to MA (using "DSM coefficients").
-*/
-#pragma pack( push, 1 )
-    typedef struct rs2_dsm_params
-    {
-        unsigned long long timestamp;               /**< system_clock::time_point::time_since_epoch().count() */
-        unsigned short version;                     /**< MAJOR<<12 | MINOR<<4 | PATCH */
-        unsigned char model;                        /**< rs2_dsm_correction_model */
-        unsigned char flags[5];                     /**< TBD, now 0s */
-        float h_scale;                              /**< the scale factor to horizontal DSM scale thermal results */
-        float v_scale;                              /**< the scale factor to vertical DSM scale thermal results */
-        float h_offset;                             /**< the offset to horizontal DSM offset thermal results */
-        float v_offset;                             /**< the offset to vertical DSM offset thermal results */
-        float rtd_offset;                           /**< the offset to the Round-Trip-Distance delay thermal results */
-        unsigned char temp_x2;                      /**< the temperature recorded times 2 (ldd for depth; hum for rgb) */
-        float mc_h_scale;                           /**< the scale factor to horizontal LOS coefficients in MC */
-        float mc_v_scale;                           /**< the scale factor to vertical LOS coefficients in MC */
-        unsigned char weeks_since_calibration;      /**< time (in weeks) since factory calibration */
-        unsigned char ac_weeks_since_calibaration;  /**< time (in weeks) between factory calibration and last AC event */
-        unsigned char reserved[1];
-    } rs2_dsm_params;
-#pragma pack( pop )
-
-typedef enum rs2_dsm_correction_model
-{
-    RS2_DSM_CORRECTION_NONE,        /**< hFactor and hOffset are not used, and no artificial error is induced */
-    RS2_DSM_CORRECTION_AOT,         /**< Aging-over-thermal (default); aging-induced error is uniform across temperature */
-    RS2_DSM_CORRECTION_TOA,         /**< Thermal-over-aging; aging-induced error changes alongside temperature */
-    RS2_DSM_CORRECTION_COUNT
-} rs2_dsm_correction_model;
-
 /** \brief Motion device intrinsics: scale, bias, and variances. */
 typedef struct rs2_motion_device_intrinsic
 {
