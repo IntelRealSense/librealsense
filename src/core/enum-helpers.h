@@ -74,6 +74,7 @@ RS2_ENUM_HELPERS( rs2_emitter_frequency_mode, EMITTER_FREQUENCY )
 RS2_ENUM_HELPERS( rs2_depth_auto_exposure_mode, DEPTH_AUTO_EXPOSURE)
 RS2_ENUM_HELPERS( rs2_safety_mode, SAFETY_MODE)
 RS2_ENUM_HELPERS(rs2_point_cloud_label, POINT_CLOUD_LABEL)
+RS2_ENUM_HELPERS(rs2_calib_location, CALIB_LOCATION)
 RS2_ENUM_HELPERS(rs2_safety_pin_direction, SAFETY_PIN_DIRECTION)
 RS2_ENUM_HELPERS(rs2_safety_pin_functionality, SAFETY_PIN_FUNCTIONALITY)
 

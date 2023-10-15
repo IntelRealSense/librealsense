@@ -274,6 +274,15 @@ typedef enum rs2_point_cloud_label
 } rs2_point_cloud_label;
 const char* rs2_point_cloud_label_to_string(rs2_point_cloud_label label);
 
+typedef enum rs2_calib_location
+{
+    RS2_CALIB_LOCATION_EEPROM,
+    RS2_CALIB_LOCATION_FLASH,
+    RS2_CALIB_LOCATION_RAM,
+    RS2_CALIB_LOCATION_COUNT
+} rs2_calib_location;
+const char* rs2_calib_location_to_string(rs2_calib_location calib_location);
+
 typedef struct rs2_device_info rs2_device_info;
 typedef struct rs2_device rs2_device;
 typedef struct rs2_error rs2_error;

@@ -439,4 +439,5 @@ EXPORTS
     rs2_set_safety_interface_config
     rs2_safety_pin_direction_to_string
     rs2_safety_pin_functionality_to_string
+    rs2_calib_location_to_string
     

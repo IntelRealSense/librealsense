@@ -121,8 +121,11 @@ void init_sensor(py::module &m) {
     safety_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
         .def("get_safety_preset", &rs2::safety_sensor::get_safety_preset, "get safety preset at index", "index"_a, py::call_guard<py::gil_scoped_release>())
         .def("set_safety_preset", &rs2::safety_sensor::set_safety_preset, "set safety preset at index", "index"_a, "safety_preset"_a, py::call_guard<py::gil_scoped_release>())
-        .def("get_safety_interface_config", &rs2::safety_sensor::get_safety_interface_config, "get safety interface config", py::call_guard<py::gil_scoped_release>())
-        .def("set_safety_interface_config", &rs2::safety_sensor::set_safety_interface_config, "set safety interface config", "safety_preset"_a, py::call_guard<py::gil_scoped_release>());
+        .def("get_safety_interface_config", 
+            (rs2_safety_interface_config(rs2::safety_sensor::*)(const rs2_calib_location&))&rs2::safety_sensor::get_safety_interface_config, 
+            "get safety interface config", "calib_location"_a = RS2_CALIB_LOCATION_RAM, py::call_guard<py::gil_scoped_release>())
+        .def("set_safety_interface_config", &rs2::safety_sensor::set_safety_interface_config,
+            "set safety interface config", "safety_interface_config"_a, py::call_guard<py::gil_scoped_release>());
 
     py::class_<rs2::calibrated_sensor, rs2::sensor> cal_sensor( m, "calibrated_sensor" );
     cal_sensor.def(py::init<rs2::sensor>(), "sensor"_a)

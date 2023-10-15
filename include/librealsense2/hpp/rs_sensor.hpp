@@ -828,11 +828,11 @@ namespace rs2
             error::handle(e);
         }
 
-        rs2_safety_interface_config get_safety_interface_config() const
+        rs2_safety_interface_config get_safety_interface_config(rs2_calib_location loc) const
         {
             rs2_error* e = nullptr;
             rs2_safety_interface_config sic;
-            rs2_get_safety_interface_config(_sensor.get(), &sic, &e);
+            rs2_get_safety_interface_config(_sensor.get(), &sic, loc, &e);
             error::handle(e);
             return sic;
         }

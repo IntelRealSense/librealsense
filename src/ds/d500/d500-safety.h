@@ -139,7 +139,7 @@ namespace librealsense
         rs2_safety_preset get_safety_preset(int index) const override;
 
         void set_safety_interface_config(const rs2_safety_interface_config& sic) const override;
-        rs2_safety_interface_config get_safety_interface_config() const override;
+        rs2_safety_interface_config get_safety_interface_config(rs2_calib_location loc = RS2_CALIB_LOCATION_RAM) const override;
     protected:
         rs2_safety_interface_config generate_from_squeezed_structure(const safety_interface_config& cfg) const;
         rs2_safety_interface_config_pin generate_from_safety_interface_config_pin(const safety_interface_config_pin& pin) const;

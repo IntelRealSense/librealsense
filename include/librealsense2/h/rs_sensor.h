@@ -703,9 +703,10 @@ void rs2_set_safety_preset(rs2_sensor const* sensor, int index, rs2_safety_prese
 * rs2_get_safety_interface_config
 * \param[in]   sensor        Safety sensor
 * \param[out]  sic           Safety Interface Config struct result
+* \param[out]  loc           Calibration location that needs to be read from
 * \param[out]  error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_get_safety_interface_config(rs2_sensor const* sensor, rs2_safety_interface_config* sic, rs2_error** error);
+void rs2_get_safety_interface_config(rs2_sensor const* sensor, rs2_safety_interface_config* sic, rs2_calib_location loc, rs2_error** error);
 
 /**
 * rs2_set_safety_interface_config

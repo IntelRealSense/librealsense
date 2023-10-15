@@ -4015,13 +4015,13 @@ void rs2_set_safety_preset(const rs2_sensor* sensor,
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, index, sp)
 
 void rs2_get_safety_interface_config(const rs2_sensor* sensor,
-    rs2_safety_interface_config* sic,
+    rs2_safety_interface_config* sic, rs2_calib_location loc,
     rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);
     VALIDATE_NOT_NULL(sic);
     auto safety_sensor = VALIDATE_INTERFACE(sensor->sensor, librealsense::safety_sensor);
-    auto ret_data = safety_sensor->get_safety_interface_config();
+    auto ret_data = safety_sensor->get_safety_interface_config(loc);
     *sic = ret_data;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, sic)
