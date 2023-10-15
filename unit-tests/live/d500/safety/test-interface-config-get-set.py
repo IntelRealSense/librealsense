@@ -1,6 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 import random
+import time
 
 #test:device D585S
 
@@ -238,9 +239,7 @@ test.finish()
 #############################################################################################
 test.start("Setting bad config - checking error is received, and that config_1 is returned after get action")
 # setting bad config
-# Commented until HKR send us error on this call
-#test.check_throws(safety_sensor.set_safety_interface_config(generate_bad_config()), TypeError)
-safety_sensor.set_safety_interface_config(generate_bad_config())
+test.check_throws(lambda: safety_sensor.set_safety_interface_config(generate_bad_config()), RuntimeError)
 
 # getting active config
 current_config = safety_sensor.get_safety_interface_config()
