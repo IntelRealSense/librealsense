@@ -7,10 +7,10 @@
 #include <librealsense2/hpp/rs_types.hpp>
 
 
-#define UNKNOWN_VALUE "UNKNOWN"
-
-
 namespace librealsense {
+
+
+constexpr static char const * UNKNOWN_VALUE = "UNKNOWN";
 
 
 // Require the last enumerator value to be in format of RS2_#####_COUNT

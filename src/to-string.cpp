@@ -17,7 +17,7 @@
 #define STRARR( ARRAY, T, X ) ARRAY[RS2_##T##_##X] = STRX( X )
 
 
-static std::string const unknown_value_str( UNKNOWN_VALUE );
+static std::string const unknown_value_str( librealsense::UNKNOWN_VALUE );
 
 
 namespace librealsense {
