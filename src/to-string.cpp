@@ -257,8 +257,8 @@ const char* get_string(rs2_calib_location calib_location)
     switch (calib_location)
     {
         CASE(EEPROM)
-            CASE(FLASH)
-            CASE(RAM)
+        CASE(FLASH)
+        CASE(RAM)
     default:
         assert(!is_valid(calib_location));
         return UNKNOWN_VALUE;

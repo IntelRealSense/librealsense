@@ -372,7 +372,7 @@ namespace librealsense
 
     rs2_safety_interface_config d500_safety_sensor::get_safety_interface_config(rs2_calib_location loc) const
     {
-        if (loc == RS2_CALIB_LOCATION_EEPROM)
+        if (loc != RS2_CALIB_LOCATION_FLASH && loc != RS2_CALIB_LOCATION_RAM)
             throw io_exception(rsutils::string::from() << "Safety Interface Config can be read only from Flash or RAM");
         ds::d500_calib_location d500_loc = (loc == RS2_CALIB_LOCATION_RAM) ? ds::d500_calib_location::d500_calib_ram_memory :
             ds::d500_calib_location::d500_calib_flash_memory;
