@@ -370,13 +370,17 @@ namespace librealsense
         return result;
     }
 
-    rs2_safety_interface_config d500_safety_sensor::get_safety_interface_config() const
+    rs2_safety_interface_config d500_safety_sensor::get_safety_interface_config(rs2_calib_location loc) const
     {
+        if (loc != RS2_CALIB_LOCATION_FLASH && loc != RS2_CALIB_LOCATION_RAM)
+            throw io_exception(rsutils::string::from() << "Safety Interface Config can be read only from Flash or RAM");
+        ds::d500_calib_location d500_loc = (loc == RS2_CALIB_LOCATION_RAM) ? ds::d500_calib_location::d500_calib_ram_memory :
+            ds::d500_calib_location::d500_calib_flash_memory;
         safety_interface_config_with_header* result;
 
         // prepare command
         command cmd(ds::GET_HKR_CONFIG_TABLE,
-            static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
+            static_cast<int>(d500_loc),
             static_cast<int>(ds::d500_calibration_table_id::safety_interface_cfg_id),
             static_cast<int>(ds::d500_calib_type::d500_calib_gold));
         cmd.require_response = true;

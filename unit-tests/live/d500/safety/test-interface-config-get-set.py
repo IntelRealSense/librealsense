@@ -1,6 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 import random
+import time
 
 #test:device D585S
 
@@ -209,7 +210,7 @@ config_to_be_restored = False
 #    it saves the current SIC, and restores it at the end of the test.
 try:
     # getting safety config
-    safety_config_to_restore = safety_sensor.get_safety_interface_config()
+    safety_config_to_restore = safety_sensor.get_safety_interface_config(rs.calib_location.ram)
 except:
     print("Safety Interface Configuration was not available in this device")
 else:
@@ -238,9 +239,7 @@ test.finish()
 #############################################################################################
 test.start("Setting bad config - checking error is received, and that config_1 is returned after get action")
 # setting bad config
-# Commented until HKR send us error on this call
-#test.check_throws(safety_sensor.set_safety_interface_config(generate_bad_config()), TypeError)
-safety_sensor.set_safety_interface_config(generate_bad_config())
+test.check_throws(lambda: safety_sensor.set_safety_interface_config(generate_bad_config()), RuntimeError)
 
 # getting active config
 current_config = safety_sensor.get_safety_interface_config()
@@ -251,6 +250,17 @@ check_configurations_equal(generate_default_config_1(), current_config)
 test.finish()
 
 #############################################################################################
+test.start("Checking config is the same in flash and in ram")
+# getting config from ram
+config_from_ram = safety_sensor.get_safety_interface_config()
+
+# getting config from flash
+config_from_flash = safety_sensor.get_safety_interface_config(rs.calib_location.flash)
+
+# checking config is the same in flash and in ram
+check_configurations_equal(config_from_ram, config_from_flash)
+
+test.finish()
 
 #############################################################################################
 test.start("Restoring original safety mode")

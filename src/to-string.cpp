@@ -254,6 +254,21 @@ const char* get_string(rs2_point_cloud_label label)
 }
 
 
+const char* get_string(rs2_calib_location calib_location)
+{
+#define CASE( X ) STRCASE( CALIB_LOCATION, X )
+    switch (calib_location)
+    {
+        CASE(EEPROM)
+        CASE(FLASH)
+        CASE(RAM)
+    default:
+        assert(!is_valid(calib_location));
+        return UNKNOWN_VALUE;
+    }
+#undef CASE
+}
+
 const char* get_string(rs2_safety_pin_direction direction)
 {
 #define CASE( X ) STRCASE( SAFETY_PIN_DIRECTION, X )
@@ -831,7 +846,6 @@ const char * get_string( rs2_l500_visual_preset value )
 #undef CASE
 }
 
-
 }  // namespace librealsense
 
 const char * rs2_stream_to_string( rs2_stream stream ) { return librealsense::get_string( stream ); }
@@ -875,6 +889,7 @@ const char * rs2_emitter_frequency_mode_to_string( rs2_emitter_frequency_mode mo
 const char * rs2_depth_auto_exposure_mode_to_string( rs2_depth_auto_exposure_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_safety_mode_to_string( rs2_safety_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_point_cloud_label_to_string(rs2_point_cloud_label label) { return librealsense::get_string(label); }
+const char * rs2_calib_location_to_string(rs2_calib_location calib_location) { return librealsense::get_string(calib_location); }
 const char * rs2_safety_pin_direction_to_string(rs2_safety_pin_direction direction) { return librealsense::get_string(direction); }
 const char * rs2_safety_pin_functionality_to_string(rs2_safety_pin_functionality functionality) { return librealsense::get_string(functionality); }
 
