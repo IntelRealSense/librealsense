@@ -121,8 +121,8 @@ namespace librealsense
                                              rot.x.y, rot.y.y, rot.z.y,
                                              rot.x.z, rot.y.z, rot.z.z };
 
-                copy(res.rotation, &rotation_matrix, sizeof rotation_matrix);
-                copy(res.translation, &extrinsics_from_preset.translation, sizeof extrinsics_from_preset.translation);
+                std::memcpy(res.rotation, &rotation_matrix, sizeof rotation_matrix);
+                std::memcpy(res.translation, &extrinsics_from_preset.translation, sizeof extrinsics_from_preset.translation);
                 return res;
             });
 
