@@ -29,6 +29,8 @@
 #include "hdr-config.h"
 #include "../common/fw/firmware-version.h"
 #include "fw-update/fw-update-unsigned.h"
+
+#include <rsutils/string/hexdump.h>
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <string>
@@ -152,7 +154,8 @@ namespace librealsense
 
     std::vector<uint8_t> d500_device::backup_flash(update_progress_callback_ptr callback)
     {
-        return _ds_device_common->backup_flash(callback);
+        // No flash backup process for D500 device
+        return std::vector< uint8_t >{};
     }
 
     void d500_device::update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode)
@@ -493,7 +496,7 @@ namespace librealsense
 
         using namespace platform;
 
-        std::string asic_serial, pid_hex_str, usb_type_str;
+        std::string pid_hex_str, usb_type_str;
         d500_gvd_parsed_fields gvd_parsed_fields;
         bool advanced_mode = false;
         bool usb_modality = true;
@@ -541,7 +544,7 @@ namespace librealsense
                 []() {return std::make_shared<y16i_to_y10msby10msb>(); }
             );
                 
-            pid_hex_str = hexify(_pid);
+            pid_hex_str = rsutils::string::from() << std::uppercase << rsutils::string::hexdump( _pid );
 
             _is_locked = _ds_device_common->is_locked(GVD, is_camera_locked_offset);
 
@@ -771,8 +774,7 @@ namespace librealsense
 
         register_info(RS2_CAMERA_INFO_NAME, device_name);
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, gvd_parsed_fields.optical_module_sn);
-        register_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER, asic_serial);
-        register_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, asic_serial);
+        register_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, gvd_parsed_fields.optical_module_sn);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, gvd_parsed_fields.fw_version);
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, group.uvc_devices.front().device_path);
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));

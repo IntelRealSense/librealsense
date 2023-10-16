@@ -35,7 +35,7 @@ namespace librealsense
             intrinsics.height = height;
             intrinsics.width = width;
 
-            librealsense::copy(intrinsics.coeffs, table->distortion, sizeof(table->distortion));
+            std::memcpy( intrinsics.coeffs, table->distortion, sizeof( table->distortion ) );
 
             LOG_DEBUG(endl << array2str((float_4&)(intrinsics.fx, intrinsics.fy, intrinsics.ppx, intrinsics.ppy)) << endl);
 

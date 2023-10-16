@@ -26,7 +26,7 @@ namespace librealsense
             res = float3{ float(hid->x), float(hid->y), float(hid->z) } *float(factor);
         }
 
-        librealsense::copy(dest[0], &res, sizeof(float3));
+        std::memcpy( dest[0], &res, sizeof( float3 ) );
     }
 
     // The Accelerometer input format: signed int 16bit. data units 1LSB=0.001g;

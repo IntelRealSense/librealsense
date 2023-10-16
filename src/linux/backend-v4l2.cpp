@@ -1296,7 +1296,7 @@ namespace librealsense
         {
             uint32_t device_fourcc = id;
             char fourcc_buff[sizeof(device_fourcc)+1];
-            librealsense::copy(fourcc_buff, &device_fourcc, sizeof(device_fourcc));
+            std::memcpy( fourcc_buff, &device_fourcc, sizeof( device_fourcc ) );
             fourcc_buff[sizeof(device_fourcc)] = 0;
             return fourcc_buff;
         }

@@ -6,6 +6,8 @@
 #include "uvc-sensor.h"
 #include <mutex>
 #include "platform/command-transfer.h"
+#include <string>
+
 
 namespace librealsense
 {
@@ -296,7 +298,7 @@ namespace librealsense
                   require_response(cmd.require_response),
                   receivedCommandDataLength(0)
             {
-                librealsense::copy(data, cmd.data.data(), sizeOfSendCommandData);
+                std::memcpy( data, cmd.data.data(), sizeOfSendCommandData );
             }
         };
 
