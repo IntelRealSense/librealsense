@@ -184,15 +184,13 @@ namespace rs2
             serial = _dev.query_sensors().front().get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
 
 
-        // TODO: HKR DFU issue - remove d500_device usage when HKR will support FIRMWARE_UPDATE_ID
-        // HKR uses DFU protocl (signed fw update flow) for updating FW, so we set _is_signed=true to force DFU flow
+        // TODO: DFU flow on HKR is different, we need to refactor this flow to look better and more generic
         if (_dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
         {
             std::string product_line = _dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
             if (product_line == "D500")
             {
                 _is_d500_device = true;
-                _is_signed = true;
             }
         }
 
@@ -295,7 +293,6 @@ namespace rs2
                 // to prevent that, a blocking is added to make sure device is updated before continue to next step of querying device
                 upd.enter_update_state();
 
-                // TODO: HKR DFU issue - remove d500_device usage when HKR will support FIRMWARE_UPDATE_ID
                 if (!check_for([this, serial, &dfu]() {
                     auto devs = _ctx.query_devices();
 
@@ -308,8 +305,7 @@ namespace rs2
                             {
                                 if (d.supports(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))
                                 {
-                                    // TODO: HKR DFU issue - remove d500_device usage when HKR will support FIRMWARE_UPDATE_ID
-                                    if (_is_d500_device || serial == d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))
+                                    if (serial == d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))
                                     {
                                         dfu = d;
                                         return true;
@@ -410,7 +406,7 @@ namespace rs2
             return;
         }
 
-        log("Device reconnected succesfully!");
+        log("Device reconnected successfully!");
 
         _progress = 100;
 
