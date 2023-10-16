@@ -73,6 +73,12 @@ struct rs2_processing_block_list
     processing_blocks list;
 };
 
+struct rs2_device_list
+{
+    std::shared_ptr< librealsense::context > ctx;
+    std::vector< std::shared_ptr< librealsense::device_info > > list;
+};
+
 struct rs2_sensor : public rs2_options
 {
     rs2_sensor( std::shared_ptr<librealsense::device_interface> parent,
@@ -237,20 +243,7 @@ rs2_device_list* rs2_query_devices_ex(const rs2_context* context, int product_ma
 {
     VALIDATE_NOT_NULL(context);
 
-    std::vector<rs2_device_info> results;
-    for (auto&& dev_info : context->ctx->query_devices(product_mask))
-    {
-        try
-        {
-            rs2_device_info d{ context->ctx, dev_info };
-            results.push_back(d);
-        }
-        catch (...)
-        {
-            LOG_WARNING("Could not open device!");
-        }
-    }
-
+    auto results = context->ctx->query_devices( product_mask );
     return new rs2_device_list{ context->ctx, results };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, context, product_mask)
@@ -298,7 +291,7 @@ rs2_device* rs2_create_device(const rs2_device_list* info_list, int index, rs2_e
     VALIDATE_NOT_NULL(info_list);
     VALIDATE_RANGE(index, 0, (int)info_list->list.size() - 1);
 
-    return new rs2_device{ info_list->list[index].info->create_device() };
+    return new rs2_device{ info_list->list[index]->create_device() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, info_list, index)
 
@@ -825,7 +818,20 @@ void rs2_set_devices_changed_callback(const rs2_context* context, rs2_devices_ch
     librealsense::devices_changed_callback_ptr cb(
         new librealsense::devices_changed_callback(callback, user),
         [](rs2_devices_changed_callback* p) { delete p; });
-    context->devices_changed_subscription = context->ctx->on_device_changes( cb );
+    context->devices_changed_subscription = context->ctx->on_device_changes(
+        [ctx = context->ctx, cb]( std::vector< std::shared_ptr< device_info > > const & removed,
+                                  std::vector< std::shared_ptr< device_info > > const & added )
+        {
+            try
+            {
+                cb->on_devices_changed( new rs2_device_list{ ctx, removed },
+                                        new rs2_device_list{ ctx, added } );
+            }
+            catch( std::exception const & e )
+            {
+                LOG_ERROR( "Exception thrown from user callback handler: " << e.what() );
+            }
+        } );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, context, callback, user)
 
@@ -878,12 +884,27 @@ void rs2_set_devices_changed_callback_cpp(rs2_context* context, rs2_devices_chan
     // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
     // 'new' when calling us)
     VALIDATE_NOT_NULL( callback );
-    devices_changed_callback_ptr callback_ptr{ callback, []( rs2_devices_changed_callback * p ) {
-                                                  p->release();
-                                              } };
+    devices_changed_callback_ptr cb{ callback,
+                                     []( rs2_devices_changed_callback * p )
+                                     {
+                                         p->release();
+                                     } };
 
     VALIDATE_NOT_NULL(context);
-    context->devices_changed_subscription = context->ctx->on_device_changes( callback_ptr );
+    context->devices_changed_subscription = context->ctx->on_device_changes(
+        [ctx = context->ctx, cb]( std::vector< std::shared_ptr< device_info > > const & removed,
+                                  std::vector< std::shared_ptr< device_info > > const & added )
+    {
+        try
+        {
+            cb->on_devices_changed( new rs2_device_list{ ctx, removed },
+                                    new rs2_device_list{ ctx, added } );
+        }
+        catch( std::exception const & e )
+        {
+            LOG_ERROR( "Exception thrown from user callback handler: " << e.what() );
+        }
+    } );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, context, callback)
 
@@ -957,7 +978,7 @@ int rs2_device_list_contains(const rs2_device_list* info_list, const rs2_device*
 
     for (auto info : info_list->list)
     {
-        if( dev_info->is_same_as( info.info ) )
+        if( dev_info->is_same_as( info ) )
             return 1;
     }
     return 0;

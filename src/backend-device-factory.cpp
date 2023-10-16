@@ -133,17 +133,17 @@ backend_device_factory::backend_device_factory( context & ctx, callback && cb )
               auto old_list = create_devices_from_group( old, RS2_PRODUCT_LINE_ANY );
               auto new_list = create_devices_from_group( curr, RS2_PRODUCT_LINE_ANY );
 
-              std::vector< rs2_device_info > devices_removed;
+              std::vector< std::shared_ptr< device_info > > devices_removed;
               for( auto & device_removed : subtract_sets( old_list, new_list ) )
               {
-                  devices_removed.push_back( { _context.shared_from_this(), device_removed } );
+                  devices_removed.push_back( device_removed );
                   LOG_DEBUG( "Device disconnected: " << device_removed->get_address() );
               }
 
-              std::vector< rs2_device_info > devices_added;
+              std::vector< std::shared_ptr< device_info > > devices_added;
               for( auto & device_added : subtract_sets( new_list, old_list ) )
               {
-                  devices_added.push_back( { _context.shared_from_this(), device_added } );
+                  devices_added.push_back( device_added );
                   LOG_DEBUG( "Device connected: " << device_added->get_address() );
               }
 

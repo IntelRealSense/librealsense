@@ -2,7 +2,6 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include "device.h"
-#include "context.h"
 #include "image.h"
 #include "metadata-parser.h"
 #include "metadata.h"

@@ -10,7 +10,6 @@
 #include <iterator>
 
 #include "device.h"
-#include "context.h"
 #include "image.h"
 #include "metadata.h"
 

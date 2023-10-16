@@ -34,13 +34,15 @@ namespace librealsense
 
         _factories.push_back( std::make_shared< backend_device_factory >(
             *this,
-            [this]( std::vector< rs2_device_info > const & removed, std::vector< rs2_device_info > const & added )
+            [this]( std::vector< std::shared_ptr< device_info > > const & removed,
+                    std::vector< std::shared_ptr< device_info > > const & added )
             { invoke_devices_changed_callbacks( removed, added ); } ) );
 
 #ifdef BUILD_WITH_DDS
         _factories.push_back( std::make_shared< rsdds_device_factory >(
             *this,
-            [this]( std::vector< rs2_device_info > const & removed, std::vector< rs2_device_info > const & added )
+            [this]( std::vector< std::shared_ptr< device_info > > const & removed,
+                    std::vector< std::shared_ptr< device_info > > const & added )
             { invoke_devices_changed_callbacks( removed, added ); } ) );
 #endif
     }
@@ -94,29 +96,17 @@ namespace librealsense
     }
 
 
-    void context::invoke_devices_changed_callbacks( std::vector< rs2_device_info > const & rs2_devices_info_removed,
-                                                    std::vector< rs2_device_info > const & rs2_devices_info_added )
+    void context::invoke_devices_changed_callbacks(
+        std::vector< std::shared_ptr< device_info > > const & rs2_devices_info_removed,
+        std::vector< std::shared_ptr< device_info > > const & rs2_devices_info_added )
     {
         _devices_changed.raise( rs2_devices_info_removed, rs2_devices_info_added );
     }
 
 
-    rsutils::subscription context::on_device_changes( devices_changed_callback_ptr callback )
+    rsutils::subscription context::on_device_changes( devices_changed_callback && callback )
     {
-        return _devices_changed.subscribe(
-            [ctx = shared_from_this(), callback]( std::vector< rs2_device_info > const & removed,
-                                                  std::vector< rs2_device_info > const & added )
-            {
-                try
-                {
-                    callback->on_devices_changed( new rs2_device_list( { ctx, removed } ),
-                                                  new rs2_device_list( { ctx, added } ) );
-                }
-                catch( std::exception const & e )
-                {
-                    LOG_ERROR( "Exception thrown from user callback handler: " << e.what() );
-                }
-            } );
+        return _devices_changed.subscribe( std::move( callback ) );
     }
 
 
@@ -129,9 +119,8 @@ namespace librealsense
             throw librealsense::invalid_value_exception( "device already in context: " + address );
         _user_devices[address] = dev;
 
-        std::vector< rs2_device_info > rs2_device_info_added{ { shared_from_this(), dev } };
-        std::vector< rs2_device_info > rs2_device_info_removed;
-        invoke_devices_changed_callbacks( rs2_device_info_removed, rs2_device_info_added );
+        std::vector< std::shared_ptr< device_info > > rs2_device_info_added{ dev };
+        invoke_devices_changed_callbacks( {}, rs2_device_info_added );
     }
 
 
@@ -147,9 +136,8 @@ namespace librealsense
 
         if( dev_info )
         {
-            std::vector< rs2_device_info > rs2_device_info_added;
-            std::vector< rs2_device_info > rs2_device_info_removed{ { shared_from_this(), dev_info } };
-            invoke_devices_changed_callbacks( rs2_device_info_removed, rs2_device_info_added );
+            std::vector< std::shared_ptr< device_info > > rs2_device_info_removed{ dev_info };
+            invoke_devices_changed_callbacks( rs2_device_info_removed, {} );
         }
     }
 

@@ -111,14 +111,14 @@ rsdds_device_factory::rsdds_device_factory( context & ctx, callback && cb )
         _subscription = _watcher_singleton->subscribe(
             [this, cb = std::move( cb )]( std::shared_ptr< realdds::dds_device > const & dev, bool added )
             {
-                std::vector< rs2_device_info > infos_added;
-                std::vector< rs2_device_info > infos_removed;
+                std::vector< std::shared_ptr< device_info > > infos_added;
+                std::vector< std::shared_ptr< device_info > > infos_removed;
                 auto ctx = _context.shared_from_this();
                 auto dev_info = std::make_shared< dds_device_info >( ctx, dev );
                 if( added )
-                    infos_added.push_back( { ctx, dev_info } );
+                    infos_added.push_back( dev_info );
                 else
-                    infos_removed.push_back( { ctx, dev_info } );
+                    infos_removed.push_back( dev_info );
                 cb( infos_removed, infos_added );
             } );
     }

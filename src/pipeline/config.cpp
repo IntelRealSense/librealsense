@@ -5,6 +5,8 @@
 #include "pipeline.h"
 #include "platform/platform-device-info.h"
 #include "media/playback/playback-device-info.h"
+#include "context.h"
+
 
 namespace librealsense
 {
