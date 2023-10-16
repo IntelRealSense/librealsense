@@ -11,32 +11,18 @@
 namespace {
 
 
-struct _stream_saver
-{
-    std::ostream & _os;
-    std::ios_base::fmtflags _flags;
-    char _fill;
-
-    _stream_saver( std::ostream & os )
-        : _os( os )
-        , _flags( os.flags() )
-        , _fill( os.fill() )
-    {
-    }
-
-    ~_stream_saver()
-    {
-        _os.fill( _fill );
-        _os.setf( _flags );
-    }
-};
-
-
 size_t _write( std::ostream & os, uint8_t const * const data, size_t cb )
 {
+    char const first_letter = ( os.flags() & std::ios::uppercase ) ? 'A' : 'a';
     uint8_t const * pb = data;
     while( cb-- > 0 )
-        os << std::setw( 2 ) << int( *pb++ );
+    {
+        uint8_t const hb = ( *pb >> 4 );
+        os.put( char( hb > 9 ? ( hb - 10 + first_letter) : ( hb + '0' ) ) );
+        uint8_t const lb = ( *pb & 0x0f );
+        os.put( char( lb > 9 ? ( lb - 10 + first_letter ) : ( lb + '0' ) ) );
+        ++pb;
+    }
     return pb - data;
 }
 
@@ -46,13 +32,15 @@ void _write_reverse( std::ostream & os, uint8_t const * const data, size_t cb, b
     if( skip_leading_0s )
         while( cb > 1 && ! data[cb - 1] )
             --cb;
-    else
-        os << std::setw( 2 );
+    char const first_letter = ( os.flags() & std::ios::uppercase ) ? 'A' : 'a';
     while( cb-- > 0 )
     {
-        os << int( data[cb] );
-        if( cb )
-            os << std::setw( 2 );
+        uint8_t const hb = ( data[cb] >> 4 );
+        if( ! skip_leading_0s || hb != 0 )
+            os.put( char( hb > 9 ? ( hb - 10 + first_letter ) : ( hb + '0' ) ) );
+        uint8_t const lb = ( data[cb] & 0x0f );
+        os.put( char( lb > 9 ? ( lb - 10 + first_letter ) : ( lb + '0' ) ) );
+        skip_leading_0s = false;
     }
 }
 
@@ -77,10 +65,6 @@ std::ostream & operator<<( std::ostream & os, hexdump const & h )
 {
     if( ! h._cb )
         return os;
-
-    _stream_saver state( os );
-    os << std::hex;
-    os.fill( '0' );
 
     auto pb = h._data;
     size_t n_left = h._cb;
@@ -112,10 +96,6 @@ std::ostream & operator<<( std::ostream & os, hexdump const & h )
 
 std::ostream & operator<<( std::ostream & os, hexdump::_format const & f )
 {
-    _stream_saver state( os );
-    os << std::hex;
-    os.fill( '0' );
-
     auto pb = f._h._data;
     size_t n_left = f._h._max_bytes ? f._h._max_bytes : f._h._cb;
     auto pend = pb + f._h._cb;

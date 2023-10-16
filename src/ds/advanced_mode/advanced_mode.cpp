@@ -5,7 +5,9 @@
 #include "json_loader.hpp"
 #include "ds/d400/d400-color.h"
 #include "ds/d500/d500-color.h"
+
 #include <rsutils/string/from.h>
+#include <rsutils/string/hexdump.h>
 
 namespace librealsense
 {
@@ -143,8 +145,10 @@ namespace librealsense
                     default_450_high_res(p);
                     break;
                 default:
-                    throw invalid_value_exception( rsutils::string::from() << "apply_preset(...) failed! Given device doesn't support Default Preset (pid=0x" <<
-                        std::hex << device_pid << ")");
+                    throw invalid_value_exception(
+                        rsutils::string::from()
+                        << "apply_preset(...) failed! Given device doesn't support Default Preset (pid=0x"
+                        << rsutils::string::hexdump( device_pid ) << ")" );
                     break;
                 }
             case ds::RS405U_PID:
@@ -162,8 +166,8 @@ namespace librealsense
             default:
                 throw invalid_value_exception(
                     rsutils::string::from()
-                    << "apply_preset(...) failed! Given device doesn't support Default Preset (pid=0x" << std::hex
-                    << device_pid << ")" );
+                    << "apply_preset(...) failed! Given device doesn't support Default Preset (pid=0x"
+                    << rsutils::string::hexdump( device_pid ) << ")" );
                 break;
             }
             break;

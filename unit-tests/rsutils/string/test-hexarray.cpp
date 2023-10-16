@@ -89,6 +89,12 @@ TEST_CASE( "hexdump", "[hexarray]" )
 #pragma pack( pop )
         CHECK( to_string( hexdump( s ) ) == "04030201060578" );
     }
+    SECTION( "case" )
+    {
+        int i = 0x0a0b0c0d;
+        CHECK( to_string( hexdump( i ) ) == "0a0b0c0d" );
+        CHECK( ( from() << std::uppercase << hexdump( i ) ).str() == "0A0B0C0D" );
+    }
 }
 
 TEST_CASE( "hexdump of bytearray", "[hexarray]" )

@@ -55,7 +55,7 @@ namespace librealsense
 
         if (dataLength)
         {
-            librealsense::copy(writePtr + cur_index, data, dataLength);
+            std::memcpy( writePtr + cur_index, data, dataLength );
             cur_index += dataLength;
         }
 
@@ -112,7 +112,7 @@ namespace librealsense
             //    throw invalid_value_exception("bulk transfer failed - user buffer too small");
 
             inSize = std::min(res.size(),inSize); // For D457 only
-            librealsense::copy(in, res.data(), inSize);
+            std::memcpy( in, res.data(), inSize );
         }
     }
 
@@ -126,10 +126,10 @@ namespace librealsense
             throw invalid_value_exception("received incomplete response to usb command");
 
         details.receivedCommandDataLength -= 4;
-        librealsense::copy(details.receivedOpcode.data(), outputBuffer, 4);
+        std::memcpy( details.receivedOpcode.data(), outputBuffer, 4 );
 
         if (details.receivedCommandDataLength > 0)
-            librealsense::copy(details.receivedCommandData.data(), outputBuffer + 4, details.receivedCommandDataLength);
+            std::memcpy( details.receivedCommandData.data(), outputBuffer + 4, details.receivedCommandDataLength );
     }
 
     void hw_monitor::send_hw_monitor_command(hwmon_cmd_details& details) const
@@ -182,8 +182,10 @@ namespace librealsense
         if( !newCommand.require_response )
             return std::vector<uint8_t>();
 
-        librealsense::copy(newCommand.receivedOpcode, details.receivedOpcode.data(), 4);
-        librealsense::copy(newCommand.receivedCommandData, details.receivedCommandData.data(), details.receivedCommandDataLength);
+        std::memcpy( newCommand.receivedOpcode, details.receivedOpcode.data(), 4 );
+        std::memcpy( newCommand.receivedCommandData,
+                     details.receivedCommandData.data(),
+                     details.receivedCommandDataLength );
         newCommand.receivedCommandDataLength = details.receivedCommandDataLength;
 
         // endian?
@@ -243,7 +245,7 @@ namespace librealsense
         command command(gvd_cmd);
         auto data = send(command);
         auto minSize = std::min(sz, data.size());
-        librealsense::copy(gvd, data.data(), minSize);
+        std::memcpy( gvd, data.data(), minSize );
     }
 
     bool hw_monitor::is_camera_locked(uint8_t gvd_cmd, uint32_t offset) const
@@ -251,7 +253,7 @@ namespace librealsense
         std::vector<unsigned char> gvd(HW_MONITOR_BUFFER_SIZE);
         get_gvd(gvd.size(), gvd.data(), gvd_cmd);
         bool value;
-        librealsense::copy(&value, gvd.data() + offset, 1);
+        std::memcpy( &value, gvd.data() + offset, 1 );
         return value;
     }
 }
