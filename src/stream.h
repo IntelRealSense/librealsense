@@ -11,6 +11,19 @@
 #include "environment.h"
 #include "platform/stream-profile.h"
 
+
+namespace librealsense
+{
+    class stream_profile_interface;
+}
+
+struct rs2_stream_profile
+{
+    librealsense::stream_profile_interface * profile;
+    std::shared_ptr< librealsense::stream_profile_interface > clone;
+};
+
+
 namespace librealsense
 {
     class stream : public stream_interface

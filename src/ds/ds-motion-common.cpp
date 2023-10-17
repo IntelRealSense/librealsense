@@ -4,7 +4,6 @@
 #include "ds-motion-common.h"
 
 #include "algo.h"
-#include "context.h"
 #include "hid-sensor.h"
 #include "environment.h"
 #include "metadata.h"

@@ -5,10 +5,11 @@
 
 #include "platform/platform-device-info.h"
 #include "core/streaming.h"
-#include "context.h"
 
 namespace librealsense
 {
+    class context;
+
     class fw_update_info : public platform::platform_device_info
     {
         typedef platform::platform_device_info super;

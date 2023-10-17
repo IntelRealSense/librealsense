@@ -9,38 +9,11 @@
 #include <map>
 
 
-struct rs2_devices_changed_callback;
-
-
-namespace librealsense
-{
-    class context;
-    class device_info;
-    class stream_profile_interface;
-}
-
-struct rs2_device_info
-{
-    std::shared_ptr<librealsense::context> ctx;
-    std::shared_ptr<librealsense::device_info> info;
-};
-
-struct rs2_device_list
-{
-    std::shared_ptr<librealsense::context> ctx;
-    std::vector<rs2_device_info> list;
-};
-
-struct rs2_stream_profile
-{
-    librealsense::stream_profile_interface* profile;
-    std::shared_ptr<librealsense::stream_profile_interface> clone;
-};
-
-
 namespace librealsense
 {
     class device_factory;
+    class device_info;
+
 
     class context : public std::enable_shared_from_this<context>
     {
@@ -70,11 +43,13 @@ namespace librealsense
         //
         std::vector< std::shared_ptr< device_info > > query_devices( int mask ) const;
 
-        using devices_changed_callback_ptr = std::shared_ptr< rs2_devices_changed_callback >;
+        using devices_changed_callback
+            = std::function< void( std::vector< std::shared_ptr< device_info > > const & devices_removed,
+                                   std::vector< std::shared_ptr< device_info > > const & devices_added ) >;
 
         // Subscribe to a notification to receive when the device-list changes.
         //
-        rsutils::subscription on_device_changes( devices_changed_callback_ptr callback );
+        rsutils::subscription on_device_changes( devices_changed_callback && );
 
         // Let the context maintain a list of custom devices. These can be anything, like playback devices or devices
         // maintained by the user.
@@ -84,13 +59,13 @@ namespace librealsense
         const nlohmann::json & get_settings() const { return _settings; }
 
     private:
-        void invoke_devices_changed_callbacks( std::vector< rs2_device_info > const & devices_removed,
-                                               std::vector< rs2_device_info > const & devices_added );
+        void invoke_devices_changed_callbacks( std::vector< std::shared_ptr< device_info > > const & devices_removed,
+                                               std::vector< std::shared_ptr< device_info > > const & devices_added );
 
         std::map< std::string /*address*/, std::weak_ptr< device_info > > _user_devices;
 
-        rsutils::signal< std::vector< rs2_device_info > const & /*removed*/,
-                         std::vector< rs2_device_info > const & /*added*/ >
+        rsutils::signal< std::vector< std::shared_ptr< device_info > > const & /*removed*/,
+                         std::vector< std::shared_ptr< device_info > > const & /*added*/ >
             _devices_changed;
 
         nlohmann::json _settings; // Save operation settings

@@ -8,7 +8,7 @@
 #include <cmath>
 #include "environment.h"
 #include "option.h"
-#include "context.h"
+#include "stream.h"
 #include "core/video.h"
 #include "proc/synthetic-stream.h"
 #include "proc/decimation-filter.h"

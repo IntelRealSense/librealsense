@@ -232,18 +232,20 @@ namespace rs2
                     return;
                 }
             }
-            if ( ! _is_d500_device )
+
+            log( "Trying to back-up camera flash memory" );
+
+            std::string log_backup_status;
+            try
             {
-                log( "Backing-up camera flash memory" );
+                auto flash = upd.create_flash_backup( [&]( const float progress )
+                    {
+                        _progress = ( ( ceil( progress * 5 ) / 5 ) * ( 30 - next_progress ) ) + next_progress;
+                    } );
 
-                std::string log_backup_status;
-                try
+                // Not all cameras supports this feature
+                if( !flash.empty() )
                 {
-                    auto flash = upd.create_flash_backup( [&]( const float progress )
-                        {
-                            _progress = ( ( ceil( progress * 5 ) / 5 ) * ( 30 - next_progress ) ) + next_progress;
-                        } );
-
                     auto temp = get_folder_path( special_folder::app_data );
                     temp += serial + "." + get_timestamped_file_name() + ".bin";
 
@@ -253,28 +255,33 @@ namespace rs2
                         log_backup_status = "Backup completed and saved as '" + temp + "'";
                     }
                 }
-                catch( const std::exception& e )
+                else
                 {
-                    if( auto not_model_protected = get_protected_notification_model() )
-                    {
-                        log_backup_status = "WARNING: backup failed; continuing without it...";
-                        not_model_protected->output.add_log( RS2_LOG_SEVERITY_WARN,
-                            __FILE__,
-                            __LINE__,
-                            log_backup_status + ", Error: " + e.what() );
-                    }
+                    log_backup_status = "Back-up camera flash cannot be saved";
                 }
-                catch( ... )
-                {
-                    if( auto not_model_protected = get_protected_notification_model() )
-                    {
-                        log_backup_status = "WARNING: backup failed; continuing without it...";
-                        not_model_protected->add_log( log_backup_status + ", Unknown error occurred" );
-                    }
-                }
-
-                log(log_backup_status);
             }
+            catch( const std::exception& e )
+            {
+                if( auto not_model_protected = get_protected_notification_model() )
+                {
+                    log_backup_status = "WARNING: backup failed; continuing without it...";
+                    not_model_protected->output.add_log( RS2_LOG_SEVERITY_WARN,
+                        __FILE__,
+                        __LINE__,
+                        log_backup_status + ", Error: " + e.what() );
+                }
+            }
+            catch( ... )
+            {
+                if( auto not_model_protected = get_protected_notification_model() )
+                {
+                    log_backup_status = "WARNING: backup failed; continuing without it...";
+                    not_model_protected->add_log( log_backup_status + ", Unknown error occurred" );
+                }
+            }
+
+            log(log_backup_status);
+
             
 
             next_progress = 40;
