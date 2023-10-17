@@ -261,7 +261,6 @@ jobs:
         cd scripts && ./api_check.sh && cd ..
         mkdir build && cd build
         export LRS_LOG_LEVEL="DEBUG";
-        sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
         sudo apt-get update;
         sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
         sudo apt-get install -qq libusb-1.0-0-dev;
@@ -289,7 +288,7 @@ jobs:
     - name: Upload RS log artifact
       uses: actions/upload-artifact@v3
       with: 
-        name: Log file - U20_ST_Py_EX_CfU_LiveTest
+        name: Log file - U22_ST_Py_EX_CfU_LiveTest
         path: build/*.log
 
     - name: Provide correct exit status for job 
@@ -313,7 +312,6 @@ jobs:
     - name: Prebuild
       shell: bash
       run: |
-        sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
         sudo apt-get update;
         sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
         sudo apt-get install -qq libusb-1.0-0-dev;
@@ -357,7 +355,6 @@ jobs:
     - name: Prebuild
       shell: bash
       run: |
-        sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
         sudo apt-get update;
         sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
         sudo apt-get install -qq libusb-1.0-0-dev;
@@ -417,7 +414,6 @@ jobs:
         set -x
         
         mkdir build
-        sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
         sudo apt-get update;
         sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
         sudo apt-get install -qq libusb-1.0-0-dev;
@@ -445,7 +441,7 @@ jobs:
     - name: Upload RS log artifact
       uses: actions/upload-artifact@v3
       with:
-        name: Log file - U20_SH_RSUSB_LiveTest
+        name: Log file - U22_SH_RSUSB_LiveTest
         path: build/*.log
 
     - name: Provide correct exit status for job 
@@ -513,7 +509,6 @@ jobs:
         mkdir build
         wget https://dl.google.com/android/repository/android-ndk-r20b-linux-x86_64.zip;
         unzip -q android-ndk-r20b-linux-x86_64.zip -d ./;
-        sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
         sudo apt-get update;
         sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
         sudo apt-get install -qq libusb-1.0-0-dev;
