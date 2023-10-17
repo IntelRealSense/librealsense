@@ -17,25 +17,19 @@ namespace librealsense
     {
         _device_list = _ctx->query_devices(mask);
 
-        auto cb = new hub_devices_changed_callback([&,mask](rs2::event_information&)
-                   {
-                        std::unique_lock<std::mutex> lock(_mutex);
+        _device_change_subscription = _ctx->on_device_changes(
+            [&, mask]( std::vector< std::shared_ptr< device_info > > const & /*removed*/,
+                       std::vector< std::shared_ptr< device_info > > const & /*added*/ )
+            {
+                std::unique_lock< std::mutex > lock( _mutex );
 
-                        _device_list = _ctx->query_devices(mask);
+                _device_list = _ctx->query_devices( mask );
 
-                        // Current device will point to the first available device
-                        _camera_index = 0;
-                        if (_device_list.size() > 0)
-                        {
-                           _cv.notify_all();
-                        }
-                    });
-
-        _device_change_subscription = _ctx->on_device_changes( { cb,
-                                                                 []( rs2_devices_changed_callback * p )
-                                                                 {
-                                                                     p->release();
-                                                                 } } );
+                // Current device will point to the first available device
+                _camera_index = 0;
+                if( _device_list.size() > 0 )
+                    _cv.notify_all();
+            } );
     }
 
     device_hub::~device_hub()

@@ -8,7 +8,6 @@
 #include <cstddef>
 
 #include "device.h"
-#include "context.h"
 #include "image.h"
 #include "metadata-parser.h"
 

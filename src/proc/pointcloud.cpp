@@ -8,7 +8,6 @@
 #include <src/core/depth-frame.h>
 #include "option.h"
 #include "environment.h"
-#include "context.h"
 #include "../device.h"
 #include "../stream.h"
 #include <rsutils/string/from.h>

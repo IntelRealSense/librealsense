@@ -6,7 +6,6 @@
 #include "source.h"
 #include "option.h"
 #include "environment.h"
-#include "context.h"
 #include "proc/synthetic-stream.h"
 #include "proc/temporal-filter.h"
 
