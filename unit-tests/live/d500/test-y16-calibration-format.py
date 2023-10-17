@@ -36,7 +36,7 @@ depth_sensor = device.first_depth_sensor()
 
 
 test.start("Switch to Service Mode")
-original_mode = safety_sensor.get_option(rs.option.safety_mode)
+original_mode = int(safety_sensor.get_option(rs.option.safety_mode))
 test.check(set_operational_mode(safety_sensor, rs.safety_mode.service))
 test.finish()
 
@@ -57,11 +57,13 @@ if profile_y16:
         time.sleep(0.1)
 
     test.check(not timer.has_expired())
+    log.d("Stopping active streams")
     close_resources(depth_sensor)
 
 test.finish()
 
 test.start("Restoring original safety mode")
+log.d("Original mode is:", original_mode, type(original_mode))
 test.check(set_operational_mode(safety_sensor, original_mode))
 test.finish()
 
