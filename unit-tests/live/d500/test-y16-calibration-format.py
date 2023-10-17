@@ -19,8 +19,10 @@ def close_resources(sensor):
     :sensor: sensor of device
     """
     if len(sensor.get_active_streams()) > 0:
+        log.d("Close_resources: Stopping active streams")
         sensor.stop()
         sensor.close()
+    log.d("Active streams amount is: ", sensor.get_active_streams())
 
 
 def frame_callback(frame):
