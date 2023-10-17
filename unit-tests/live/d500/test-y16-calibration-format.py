@@ -57,11 +57,12 @@ if profile_y16:
         time.sleep(0.1)
 
     test.check(not timer.has_expired())
+
+close_resources(depth_sensor)
 test.finish()
 
 test.start("Restoring original safety mode")
 test.check(set_operational_mode(safety_sensor, original_mode))
 test.finish()
 
-close_resources(depth_sensor)
 test.print_results_and_exit()
