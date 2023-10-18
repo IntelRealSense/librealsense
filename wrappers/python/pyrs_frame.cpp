@@ -6,6 +6,22 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include <src/image.cpp>  // bad idea? for get_image_bpp
 
+
+namespace {
+
+
+    std::ostream & operator<<( std::ostream & ss, const rs2::frame & self )
+    {
+        ss << rs2_format_to_string( self.get_profile().format() );
+        ss << "/" << self.get_frame_number();
+        ss << " @" << /*std::fixed <<*/ self.get_timestamp();
+        return ss;
+    }
+
+
+}
+
+
 void init_frame(py::module &m) {
     py::class_<BufData> BufData_py(m, "BufData", py::buffer_protocol());
     BufData_py.def_buffer([](BufData& self)
@@ -153,14 +169,12 @@ void init_frame(py::module &m) {
                 {
                     ss << "set";
                     for( auto sf : fs )
-                        ss << " " << rs2_format_to_string( sf.get_profile().format() );
+                        ss << "  " << sf;
                 }
                 else
                 {
-                    ss << " " << rs2_format_to_string( self.get_profile().format() );
+                    ss << " " << self;
                 }
-                ss << " #" << self.get_frame_number();
-                ss << " @" << std::fixed << self.get_timestamp();
             }
             ss << ">";
             return ss.str();
