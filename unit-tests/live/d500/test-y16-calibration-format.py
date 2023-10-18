@@ -22,7 +22,7 @@ def close_resources(sensor):
         log.d("Close_resources: Stopping active streams")
         sensor.stop()
         sensor.close()
-    log.d("Active streams amount is: ", sensor.get_active_streams())
+    log.d("Active streams amount is: ", len(sensor.get_active_streams()))
 
 
 def frame_callback(frame):
