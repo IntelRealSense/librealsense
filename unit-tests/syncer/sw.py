@@ -181,7 +181,7 @@ def reset():
     syncer = None
 
 
-def generate_depth_frame( frame_number, timestamp ):
+def generate_depth_frame( frame_number, timestamp, next_expected=None ):
     """
     """
     global playback_status
@@ -199,9 +199,11 @@ def generate_depth_frame( frame_number, timestamp ):
     depth_frame.profile = depth_profile
     #
     log.d( "-->", depth_frame )
+    if next_expected is not None:
+        depth_sensor.set_metadata( rs.frame_metadata_value.actual_fps, round( 1000 / ( next_expected - timestamp ) ) )
     depth_sensor.on_video_frame( depth_frame )
 
-def generate_color_frame( frame_number, timestamp ):
+def generate_color_frame( frame_number, timestamp, next_expected=None ):
     """
     """
     global playback_status
@@ -219,6 +221,8 @@ def generate_color_frame( frame_number, timestamp ):
     color_frame.profile = color_profile
     #
     log.d( "-->", color_frame )
+    if next_expected is not None:
+        color_sensor.set_metadata( rs.frame_metadata_value.actual_fps, round( 1000 / ( next_expected - timestamp ) ) )
     color_sensor.on_video_frame( color_frame )
 
 def generate_depth_and_color( frame_number, timestamp ):
