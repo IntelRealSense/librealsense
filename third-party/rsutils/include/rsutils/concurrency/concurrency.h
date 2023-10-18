@@ -129,22 +129,22 @@ public:
     }
 
     template< class Fn >
-    bool peek( Fn fn ) const
+    bool peek( Fn fn, size_t x = 0 ) const
     {
         std::lock_guard< std::mutex > lock( _mutex );
-        if( _queue.empty() )
+        if( _queue.size() <= x )
             return false;
-        fn( _queue.front() );
+        fn( _queue[x] );
         return true;
     }
 
     template< class Fn >
-    bool peek( Fn fn )
+    bool peek( Fn fn, size_t x = 0 )
     {
         std::lock_guard< std::mutex > lock( _mutex );
-        if( _queue.empty() )
+        if( _queue.size() <= x )
             return false;
-        fn( _queue.front() );
+        fn( _queue[x] );
         return true;
     }
 
@@ -225,15 +225,15 @@ public:
     }
 
     template< class Fn >
-    bool peek( Fn fn ) const
+    bool peek( Fn fn, size_t index = 0 ) const
     {
-        return _queue.peek( fn );
+        return _queue.peek( fn, index );
     }
 
     template< class Fn >
-    bool peek( Fn fn )
+    bool peek( Fn fn, size_t index = 0 )
     {
-        return _queue.peek( fn );
+        return _queue.peek( fn, index );
     }
 
     void clear()
