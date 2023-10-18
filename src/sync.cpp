@@ -395,13 +395,64 @@ namespace librealsense
                     // something missing, we can't release anything yet...
                     for( auto i : missing_streams )
                     {
-                        LOG_IF_ENABLE( "... missing " << i->get_name() << ", next expected "
-                                                      << _next_expected[i].value,
+                        LOG_IF_ENABLE( "... missing " << i->get_name() << ", next expected @" << _next_expected[i].value
+                                                      << " (from " << _next_expected[i].fps << " fps)",
                                        env );
                         if( skip_missing_stream( *curr_sync, i, last_arrived, env ) )
                         {
-                            LOG_IF_ENABLE( "...     ignoring it", env );
+                            LOG_IF_ENABLE( "...     cannot be synced; not waiting for it", env );
                             continue;
+                        }
+
+                        // If all the synced frames have newer frames, and the newer frames also match the missing
+                        // stream, then it won't make sense to hold them...
+                        //
+                        // E.g.:
+                        //      Depth@50 <- this is curr_sync (fps=100)
+                        //      Depth@60
+                        // And we're waiting on Color@100 (fps=10).
+                        // Both D@50 and D@60 will match C@100.
+                        // We want to release D@50 because D@60 is available and can be synced instead...
+                        // 
+                        // This goes against "the synced frames should be the earliest possible!"?
+                        //
+                        if( ! is_smaller_than( i, *curr_sync ) )
+                        {
+                            bool have_more_frames = true;
+                            // for( auto index = 0; have_more_frames && index < frames_arrived.size(); ++index )
+                            for( auto index : synced_frames )
+                            {
+                                librealsense::matcher * m = frames_arrived_matchers[index];
+                                if( ! _frames_queue[m].peek(
+                                        [&]( frame_holder & fh )
+                                        {
+                                            if( is_smaller_than( i, fh ) )
+                                            {
+                                                LOG_IF_ENABLE( "...   x " << *fh.frame << " is after next-expected", env );
+                                                have_more_frames = false;
+                                            }
+                                            else if( skip_missing_stream( fh, i, last_arrived, env ) )
+                                            {
+                                                LOG_IF_ENABLE( "...   x " << *fh.frame << " cannot be synced", env );
+                                                have_more_frames = false;
+                                            }
+                                            else
+                                            {
+                                                LOG_IF_ENABLE( "...     " << *fh.frame << " is a better sync", env );
+                                            }
+                                        },
+                                        1 ) )  // We looked at index 0, do the peek for the next index
+                                {
+                                    have_more_frames = false;
+                                }
+                                if( ! have_more_frames )
+                                    break;
+                            }
+                            if( have_more_frames )
+                            {
+                                LOG_IF_ENABLE( "...     not waiting because of above", env );
+                                continue;
+                            }
                         }
 
                         LOG_IF_ENABLE( "...     waiting for it", env );
@@ -467,6 +518,11 @@ namespace librealsense
     bool frame_number_composite_matcher::is_smaller_than(frame_holder & a, frame_holder & b)
     {
         return a->get_frame_number() < b->get_frame_number();
+    }
+    bool frame_number_composite_matcher::is_smaller_than( matcher * missing, frame_holder & a )
+    {
+        auto const & next_expected = _next_expected.at( missing );
+        return next_expected.value < a->get_frame_number();
     }
     void frame_number_composite_matcher::clean_inactive_streams(frame_holder& f)
     {
@@ -562,6 +618,12 @@ namespace librealsense
         return ts.first < ts.second;
     }
 
+    bool timestamp_composite_matcher::is_smaller_than( matcher * missing, frame_holder & a )
+    {
+        auto const & next_expected = _next_expected.at( missing );
+        return next_expected.value < a->get_frame_timestamp();
+    }
+
     void timestamp_composite_matcher::update_last_arrived(frame_holder& f, matcher* m)
     {
         if(f->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
@@ -583,12 +645,12 @@ namespace librealsense
         }
         if( fps )
         {
-            LOG_DEBUG( "...     fps " << fps << " from metadata " << *f );
+            //LOG_DEBUG( "...     fps " << fps << " from metadata " << *f );
         }
         else
         {
             fps = f->get_stream()->get_framerate();
-            LOG_DEBUG( "...     fps " << fps << " from stream framerate " << *f );
+            //LOG_DEBUG( "...     fps " << fps << " from stream framerate " << *f );
         }
         return fps;
     }
@@ -602,7 +664,7 @@ namespace librealsense
 
         auto ts = f.frame->get_frame_timestamp();
         auto ne = ts + gap;
-        LOG_DEBUG( "...     next_expected = {timestamp}" << ts << " + {gap}(1000/{fps}" << fps << "=" << gap << ") = " << ne );
+        //LOG_DEBUG( "...     next_expected = {timestamp}" << ts << " + {gap}(1000/{fps}" << fps << "=" << gap << ") = " << ne );
         auto & next_expected = _next_expected[matcher.get()];
         next_expected.value = ne;
         next_expected.fps = fps;
@@ -628,7 +690,7 @@ namespace librealsense
         //LOG_IF_ENABLE( "...     matcher " << synced[0]->get_name(), env );
 
         auto const & next_expected = _next_expected[missing];
-        // LOG_IF_ENABLE( "...     next    " << std::fixed << next_expected, env );
+        // LOG_IF_ENABLE( "...     next    " << std::fixed << next_expected.value, env );
 
         if( next_expected.domain != last_arrived.timestamp_domain )
         {
@@ -720,11 +782,11 @@ namespace librealsense
         float gap = 1000.f / fps;
         if( abs( a - b ) < (gap / 2) )
         {
-            LOG_DEBUG( "...     " << a << " == " << b << "  {diff}" << abs( a - b ) << " < " << (gap / 2) << "{gap/2}" );
+            //LOG_DEBUG( "...     " << a << " == " << b << "  {diff}" << abs( a - b ) << " < " << (gap / 2) << "{gap/2}" );
             return true;
         }
 
-        LOG_DEBUG( "...     " << a << " != " << b << "  {diff}" << abs( a - b ) << " >= " << ( gap / 2 ) << "{gap/2}" );
+        //LOG_DEBUG( "...     " << a << " != " << b << "  {diff}" << abs( a - b ) << " >= " << ( gap / 2 ) << "{gap/2}" );
         return false;
     }
 
