@@ -39,7 +39,7 @@ sw.expect_nothing()
 
 # 2     @20
 sw.generate_depth_frame( 2, sw.gap_d * 2 )
-sw.expect( depth_frame = 2, color_frame = 0, nothing_else = True )
+sw.expect( depth_frame=2, color_frame=0, nothing_else = True )
 
 test.finish()
 #
@@ -50,36 +50,39 @@ test.start( "Depth waits for next Color" )
 # 3     @ 30
 # 4     @ 40
 # 5     @ 50
-# 6     @ 60
-# 7     @ 70
-# 8     @ 80
-# 9     @ 90
-# 10    @100 -> wait
-# 11    @110
+# 6     @ 60 -> wait
+# 7     @ 70 -> release #6; wait
+# 8     @ 80 -> ...
+# 9     @ 90 -> ...
+# 10    @100 -> release #9; wait
+# 11    @110 -> wait
 #
-sw.generate_depth_frame(  3, sw.gap_d *  3 ); sw.expect( depth_frame =  3 )
-sw.generate_depth_frame(  4, sw.gap_d *  4 ); sw.expect( depth_frame =  4 )
-sw.generate_depth_frame(  5, sw.gap_d *  5 ); sw.expect( depth_frame =  5 )
-sw.generate_depth_frame(  6, sw.gap_d *  6 ); sw.expect( depth_frame =  6 )
-sw.generate_depth_frame(  7, sw.gap_d *  7 ); sw.expect( depth_frame =  7 )
-sw.generate_depth_frame(  8, sw.gap_d *  8 ); sw.expect( depth_frame =  8 )
-sw.generate_depth_frame(  9, sw.gap_d *  9 ); sw.expect( depth_frame =  9 )
-sw.generate_depth_frame( 10, sw.gap_d * 10 ); #sw.expect( depth_frame = 10 )
-# C.NE is @100, so it should wait...
-sw.expect_nothing()
+sw.generate_depth_frame(  3, sw.gap_d *  3 ); sw.expect( depth_frame=3, nothing_else=True )
+sw.generate_depth_frame(  4, sw.gap_d *  4 ); sw.expect( depth_frame=4, nothing_else=True )
+sw.generate_depth_frame(  5, sw.gap_d *  5 ); sw.expect( depth_frame=5, nothing_else=True )
+
+# D@60 should be "==" to C@100 (gap of 100 from the lower FPS of 10), so we wait
+sw.generate_depth_frame(  6, sw.gap_d *  6 ); sw.expect_nothing()
+sw.generate_depth_frame(  7, sw.gap_d *  7 ); sw.expect_nothing()
+sw.generate_depth_frame(  8, sw.gap_d *  8 ); sw.expect_nothing()
+sw.generate_depth_frame(  9, sw.gap_d *  9 ); sw.expect_nothing()
+sw.generate_depth_frame( 10, sw.gap_d * 10 ); sw.expect_nothing()
 sw.generate_depth_frame( 11, sw.gap_d * 11 );
 sw.expect_nothing()
 
-#    1  @100 -> release (D10,C1) and (D11)
+# C@100 -> release (D6,C1)
 sw.generate_color_frame(  1, sw.gap_c *  1 );  # @100 -- small latency
-sw.expect( depth_frame = 10, color_frame = 1 )
-sw.expect( depth_frame = 11 )
-sw.expect_nothing()
+sw.expect( depth_frame=6, color_frame=1 )
+# also everything else up to D@110, because they cannot be matched with next-expected C@200
+sw.expect( depth_frame=7 )
+sw.expect( depth_frame=8 )
+sw.expect( depth_frame=9 )
+sw.expect( depth_frame=10 )
+sw.expect( depth_frame=11, nothing_else=True )
 
-# 12    @120 doesn't wait
+# D@120 doesn't wait
 sw.generate_depth_frame( 12, sw.gap_d * 12 );
-sw.expect( depth_frame = 12 )
-sw.expect_nothing()
+sw.expect( depth_frame=12, nothing_else=True )
 
 test.finish()
 #
@@ -90,23 +93,24 @@ test.start( "Color is early" )
 # 13    @130
 # 14    @140
 # 15    @150
-# 16    @160
+# 16    @160 -> wait
 # 17    @170
 #    2  @200 -> wait
 # 18    @180 -> (D18,C2) ?! why not wait for (D20,C2) ?!
 #
-sw.generate_depth_frame( 13, sw.gap_d * 13 ); sw.expect( depth_frame = 13 )
-sw.generate_depth_frame( 14, sw.gap_d * 14 ); sw.expect( depth_frame = 14 )
-sw.generate_depth_frame( 15, sw.gap_d * 15 ); sw.expect( depth_frame = 15 )
-sw.generate_depth_frame( 16, sw.gap_d * 16 ); sw.expect( depth_frame = 16 )
-sw.generate_depth_frame( 17, sw.gap_d * 17 ); sw.expect( depth_frame = 17 )
+sw.generate_depth_frame( 13, sw.gap_d * 13 ); sw.expect( depth_frame=13, nothing_else=True )
+sw.generate_depth_frame( 14, sw.gap_d * 14 ); sw.expect( depth_frame=14, nothing_else=True )
+sw.generate_depth_frame( 15, sw.gap_d * 15 ); sw.expect( depth_frame=15, nothing_else=True )
+sw.generate_depth_frame( 16, sw.gap_d * 16 ); sw.expect_nothing()
+sw.generate_depth_frame( 17, sw.gap_d * 17 ); sw.expect_nothing()
 
-sw.generate_color_frame( 2, sw.gap_c * 2 ); sw.expect_nothing()
-# We're waiting for D.NE @180, because it's comparable (using min fps of the two)
+sw.generate_color_frame( 2, sw.gap_c * 2 );
+sw.expect( depth_frame=16, color_frame=2 )
 
+# next-expected is C@300
+sw.expect( depth_frame=17, nothing_else=True )
 sw.generate_depth_frame( 18, sw.gap_d * 18 )
-# Now we get both back:
-sw.expect( depth_frame = 18, color_frame = 2, nothing_else = True )
+sw.expect( depth_frame=18, nothing_else=True )
 
 # But wait... why match C@200 to D@180 and not wait for D@200??
 # If we used the faster FPS of the two, 180!=200: we'd get D18, D19, then (D20,C20)
