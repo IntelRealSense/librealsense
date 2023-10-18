@@ -6,8 +6,16 @@ from rspy import log, test
 import sw
 
 
-# The timestamp jumps are closely correlated to the FPS passed to the video streams:
-# syncer expects frames to arrive every 1000/FPS milliseconds!
+#
+# This is a reproduction of a problem we saw with externally-synced cameras, where the master
+# camera is OK but the slave cameras generate delayed color frames (Depth at time X arrives 4ms
+# sooner than Color at time X-18ms) with exaggerated next-expected because of low-calculated-fps
+# (29 versus the nominal 30 that's supposed to be seen).
+#
+# See [TODO]
+#
+
+
 sw.fps_d = 30
 sw.fps_c = 30
 sw.init()
@@ -18,7 +26,6 @@ with test.closure( "Init" ):
     # It can take a few frames for the syncer to actually produce a matched frameset (it doesn't
     # know what to match to in the beginning)
 
-    # (sync.cpp:396) ... missing Color/66, next expected 63231.348758
     sw.generate_color_frame( frame_number=1730, timestamp=63198.01542, next_expected=63231.348758 )
     sw.expect( color_frame=1730 )   # syncer doesn't know about D yet, so releases right away
     sw.generate_depth_frame( frame_number=1742, timestamp=63214.73 )
@@ -71,84 +78,24 @@ with test.closure( "Sync D1748 & C1737" ):
     sw.generate_depth_frame( frame_number=1749, timestamp=63448.13 )
     sw.expect_nothing()  # should be waiting for next color
     sw.generate_color_frame( frame_number=1737, timestamp=63430.32, next_expected=63464.801758 )
-    sw.expect( depth_frame=1748, color_frame=1737 )
+    sw.expect( depth_frame=1748, color_frame=1737, nothing_else=True )
+
+    # NOTE: pre-fix, this was:
+    #     sw.expect( depth_frame=1748, color_frame=1737 )
+    #     sw.expect( depth_frame=1749, nothing_else=True )
+    # And the following sync failed so that we had lone frames:
+    #     sw.generate_depth_frame( frame_number=1750, timestamp=63481.48 )
+    #     sw.expect_nothing()  # should be waiting for next color
+    #     sw.generate_color_frame( frame_number=1738, timestamp=63463.67, next_expected=63498.152758 )
+    #     sw.expect( color_frame=1738 )
+    #     sw.expect( depth_frame=1750 )
 
 #############################################################################################
-with test.closure( "LONE D1749!" ):
-    sw.expect( depth_frame=1749, nothing_else=True )
-
-
-#ing-block.cpp:55) --> syncing [Depth/63 #1750 @63481.48]
-#<-- [Depth/63 #1750 @63481.48]  (TS: Depth/63 Infrared/64 Infrared/65 Color/66 Accel/70 Gyro/71)
-#... have [Depth/63 #1750 @63481.48]
-#... missing Color/66, next expected 63464.801758
-#...     waiting for it
-#ing-block.cpp:55) --> syncing [Color/66 #1738 @63463.67]
-#<-- [Color/66 #1738 @63463.67]  (TS: Depth/63 Infrared/64 Infrared/65 Color/66 Accel/70 Gyro/71)
-#... have [Color/66 #1738 @63463.67]
-#... have [Depth/63 #1750 @63481.48]
-#  - [Depth/63 #1750 @63481.48] is not in sync; won't be released
-#<-- [[Color/66 #1738 @63463.67]]  (CI: (TS: Depth/63 Infrared/64 Infrared/65 Color/66 Accel/70 Gyro/71))
-#ing-block.cpp:20) <-- queueing [[Color/66 #1738 @63463.67]]
-#... have [Depth/63 #1750 @63481.48]
-#... missing Color/66, next expected 63498.152758
-#...     ignoring it
-#<-- [[Depth/63 #1750 @63481.48]]  (CI: (TS: Depth/63 Infrared/64 Infrared/65 Color/66 Accel/70 Gyro/71))
-#ing-block.cpp:20) <-- queueing [[Depth/63 #1750 @63481.48]]
-#ing-block.cpp:76) --> frame ready: [[Color/66 #1738 @63463.67]]
-#ing-block.cpp:76) --> frame ready: [[Depth/63 #1750 @63481.48]]
-
-#############################################################################################
-with test.closure( "No sync on D1750 & C1738" ):
+with test.closure( "Sync on D1749 & C1738" ):
     sw.generate_depth_frame( frame_number=1750, timestamp=63481.48 )
     sw.expect_nothing()  # should be waiting for next color
     sw.generate_color_frame( frame_number=1738, timestamp=63463.67, next_expected=63498.152758 )
-    sw.expect( color_frame=1738 )
-    sw.expect( depth_frame=1750 )
-
-
-#ing-block.cpp:55) --> syncing [Depth/63 #1751 @63514.82]
-#<-- [Depth/63 #1751 @63514.82]  (TS: Depth/63 Infrared/64 Infrared/65 Color/66 Accel/70 Gyro/71)
-#... have [Depth/63 #1751 @63514.82]
-#... missing Color/66, next expected 63498.152758
-#...     waiting for it
-#ing-block.cpp:55) --> syncing [Color/66 #1739 @63497.02]
-#<-- [Color/66 #1739 @63497.02]  (TS: Depth/63 Infrared/64 Infrared/65 Color/66 Accel/70 Gyro/71)
-#... have [Color/66 #1739 @63497.02]
-#... have [Depth/63 #1751 @63514.82]
-#  - [Depth/63 #1751 @63514.82] is not in sync; won't be released
-#<-- [[Color/66 #1739 @63497.02]]  (CI: (TS: Depth/63 Infrared/64 Infrared/65 Color/66 Accel/70 Gyro/71))
-#ing-block.cpp:20) <-- queueing [[Color/66 #1739 @63497.02]]
-#... have [Depth/63 #1751 @63514.82]
-#... missing Color/66, next expected 63531.502758
-#...     ignoring it
-#<-- [[Depth/63 #1751 @63514.82]]  (CI: (TS: Depth/63 Infrared/64 Infrared/65 Color/66 Accel/70 Gyro/71))
-#ing-block.cpp:20) <-- queueing [[Depth/63 #1751 @63514.82]]
-#ing-block.cpp:76) --> frame ready: [[Color/66 #1739 @63497.02]]
-#ing-block.cpp:76) --> frame ready: [[Depth/63 #1751 @63514.82]]
-#ing-block.cpp:55) --> syncing [Depth/63 #1752 @63548.17]
-#<-- [Depth/63 #1752 @63548.17]  (TS: Depth/63 Infrared/64 Infrared/65 Color/66 Accel/70 Gyro/71)
-#... have [Depth/63 #1752 @63548.17]
-#... missing Color/66, next expected 63531.502758
-#...     waiting for it
-#ing-block.cpp:55) --> syncing [Color/66 #1740 @63530.37]
-#<-- [Color/66 #1740 @63530.37]  (TS: Depth/63 Infrared/64 Infrared/65 Color/66 Accel/70 Gyro/71)
-#... have [Color/66 #1740 @63530.37]
-#... have [Depth/63 #1752 @63548.17]
-#  - [Depth/63 #1752 @63548.17] is not in sync; won't be released
-#<-- [[Color/66 #1740 @63530.37]]  (CI: (TS: Depth/63 Infrared/64 Infrared/65 Color/66 Accel/70 Gyro/71))
-#ing-block.cpp:20) <-- queueing [[Color/66 #1740 @63530.37]]
-#... have [Depth/63 #1752 @63548.17]
-#... missing Color/66, next expected 63564.853758
-#...     ignoring it
-#<-- [[Depth/63 #1752 @63548.17]]  (CI: (TS: Depth/63 Infrared/64 Infrared/65 Color/66 Accel/70 Gyro/71))
-#ing-block.cpp:20) <-- queueing [[Depth/63 #1752 @63548.17]]
-#ing-block.cpp:76) --> frame ready: [[Color/66 #1740 @63530.37]]
-#ing-block.cpp:76) --> frame ready: [[Depth/63 #1752 @63548.17]]
-
-
-
-
+    sw.expect( depth_frame=1749, color_frame=1738, nothing_else=True )
 
 
 #############################################################################################
