@@ -9,13 +9,38 @@
 
 namespace librealsense
 {
-    std::string hw_monitor::get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length)
+    std::string hw_monitor::get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length, size_t component_bytes_size)
     {
         std::stringstream formattedBuffer;
         std::string s = "";
+        if( buff.size() < index + ( length * component_bytes_size )  ||
+            component_bytes_size != 1 && component_bytes_size != 2 && component_bytes_size != 4)
+        {
+            // We do not wish to through as we want to be back compatible even w/o a working version
+            LOG_ERROR("GVD FW version cannot be read!");
+            return formattedBuffer.str();
+        }
+
+        // We iterate through the version components (major.minor.patch.build) and append each
+        // string value to the result string
         for (auto i = 1; i <= length; i++)
         {
-            formattedBuffer << s << static_cast<int>(buff[index + (length - i)]);
+            size_t component_index = index + ( ( length * component_bytes_size ) - ( i * component_bytes_size ) );
+
+            uint16_t component_value;
+            switch(component_bytes_size)
+            {
+            case 1: 
+                component_value = * reinterpret_cast<const uint8_t*>( buff.data() + component_index );
+                break;
+            case 2: 
+                component_value = * reinterpret_cast<const uint16_t*>( buff.data() + component_index );
+                break;
+            case 4: 
+                component_value = * reinterpret_cast<const uint32_t*>( buff.data() + component_index );
+                break;
+            }
+            formattedBuffer << s << component_value;
             s = ".";
         }
 
