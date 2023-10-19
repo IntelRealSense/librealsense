@@ -517,7 +517,9 @@ namespace librealsense
             _device_capabilities = ds_caps::CAP_ACTIVE_PROJECTOR | ds_caps::CAP_RGB_SENSOR | ds_caps::CAP_IMU_SENSOR |
                 ds_caps::CAP_BMI_085 | ds_caps::CAP_GLOBAL_SHUTTER | ds_caps::CAP_INTERCAM_HW_SYNC;
 
-            _fw_version = firmware_version(gvd_parsed_fields.fw_version);
+            // TODO Currently HKR version format does not match the expected format of rsutils::version
+            // This will need some special handling
+            //_fw_version = firmware_version(gvd_parsed_fields.fw_version);
 
             auto _usb_mode = usb3_type;
             usb_type_str = usb_spec_names.at(_usb_mode);
@@ -851,7 +853,7 @@ namespace librealsense
         parsed_fields->crc32 = *reinterpret_cast<const uint32_t*>(gvd_buff.data() + static_cast<int>(ds::d500_gvd_fields::crc32_offset));
         parsed_fields->optical_module_sn = _hw_monitor->get_module_serial_string(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::optical_module_serial_offset));
         parsed_fields->mb_module_sn = _hw_monitor->get_module_serial_string(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::mb_module_serial_offset));
-        parsed_fields->fw_version = _hw_monitor->get_firmware_version_string(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::fw_version_offset), 4, 2);
-        parsed_fields->safety_sw_suite_version = _hw_monitor->get_firmware_version_string(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::safety_sw_suite_version_offset), 3);
+        parsed_fields->fw_version = _hw_monitor->get_firmware_version_string<uint16_t>(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::fw_version_offset));
+        parsed_fields->safety_sw_suite_version = _hw_monitor->get_firmware_version_string<uint8_t>(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::safety_sw_suite_version_offset), 3);
     }
 }

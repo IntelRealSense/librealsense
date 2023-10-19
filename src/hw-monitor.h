@@ -350,7 +350,41 @@ namespace librealsense
             size_t dataLength = 0);
 
         void get_gvd(size_t sz, unsigned char* gvd, uint8_t gvd_cmd) const;
-        static std::string get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 4, size_t component_bytes_size = 1);
+
+        template<typename T>
+        std::string get_firmware_version_string( const std::vector< uint8_t > & buff,
+                                                 size_t index,
+                                                 size_t length = 4)
+        {
+            std::stringstream formattedBuffer;
+            auto component_bytes_size = sizeof( T );
+            auto tt = sizeof( T );
+            std::string s = "";
+            if( buff.size() < index + ( length * component_bytes_size ))
+            {
+                // We do not wish to through as we want to be back compatible even w/o a working
+                // version
+                LOG_ERROR( "GVD FW version cannot be read!" );
+                return formattedBuffer.str();
+            }
+
+            // We iterate through the version components (major.minor.patch.build) and append each
+            // string value to the result string
+
+            // TODO might be reversed?? verify before PR
+            for( auto i = 1; i <= length; i++ )
+            {
+                size_t component_index
+                    = index + ( ( length * component_bytes_size ) - ( i * component_bytes_size ) );
+
+                T component_value =  *reinterpret_cast< const T * >( buff.data() + component_index );
+                formattedBuffer << s << component_value;
+                s = ".";
+            }
+
+            return formattedBuffer.str();
+        }
+
         static std::string get_module_serial_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 6);
         bool is_camera_locked(uint8_t gvd_cmd, uint32_t offset) const;
 
