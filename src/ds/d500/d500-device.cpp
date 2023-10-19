@@ -628,21 +628,8 @@ namespace librealsense
 
             if ((_device_capabilities & ds_caps::CAP_INTERCAM_HW_SYNC) == ds_caps::CAP_INTERCAM_HW_SYNC)
             {
-                if ((_device_capabilities & ds_caps::CAP_GLOBAL_SHUTTER) == ds_caps::CAP_GLOBAL_SHUTTER)
-                {
-                    depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                        std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 3));
-                }
-                else if ((_device_capabilities & ds_caps::CAP_GLOBAL_SHUTTER) == ds_caps::CAP_GLOBAL_SHUTTER)
-                {
-                    depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                        std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 2));
-                }
-                else
-                {
-                    depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                        std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 1));
-                }
+                depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
+                    std::make_shared< d500_external_sync_mode >( *_hw_monitor, &raw_depth_sensor) );
             }
 
             roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);

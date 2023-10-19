@@ -86,4 +86,38 @@ namespace librealsense
 
         return temperature;
     }
-}
+
+    
+        d500_external_sync_mode::d500_external_sync_mode( hw_monitor & hwm, sensor_base * ep )
+        : _hwm( hwm )
+        , _sensor( ep )
+    {
+        _range = [this]()
+        {
+            return option_range{ ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT,
+                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_FULL_SLAVE,
+                                 1,
+                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT };
+        };
+    }
+
+    void d500_external_sync_mode::set( float value )
+    {
+        command cmd( ds::SET_CAM_SYNC );
+        cmd.param1 = static_cast< int >( value );
+
+
+        _hwm.send( cmd );
+        _record_action( *this );
+    }
+
+    float d500_external_sync_mode::query() const
+    {
+        command cmd( ds::GET_CAM_SYNC );
+        auto res = _hwm.send( cmd );
+        if( res.empty() )
+            throw invalid_value_exception( "d500_external_sync_mode::query result is empty!" );
+
+        return static_cast< float >( res[0] );
+    }
+} // namespace librealsense

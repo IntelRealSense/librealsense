@@ -74,4 +74,34 @@ namespace librealsense
         temperature_component _component;
         const char* _description;
     };
-}
+
+    class d500_external_sync_mode : public option
+    {
+    public:
+        d500_external_sync_mode( hw_monitor & hwm, sensor_base * depth_ep = nullptr );
+
+        virtual ~d500_external_sync_mode() = default;
+        virtual void set( float value ) override;
+        virtual float query() const override;
+        virtual option_range get_range() const override { return *_range; }
+        virtual bool is_enabled() const override { return true; }
+        virtual bool is_read_only() const override { return _sensor && _sensor->is_opened(); }
+        const char * get_description() const override
+        {
+            return "Inter-camera synchronization mode: 0:No sync, 1:RGB Master, 2:PWM Master, 3:External Master";
+        }
+
+        void enable_recording( std::function< void( const option & ) > record_action ) override
+        {
+            _record_action = record_action;
+        }
+
+    private:
+        std::function< void( const option & ) > _record_action = []( const option & ) {
+        };
+        rsutils::lazy< option_range > _range;
+        hw_monitor & _hwm;
+        sensor_base * _sensor;
+    };
+
+} // namespace librealsense
