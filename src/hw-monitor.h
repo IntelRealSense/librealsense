@@ -377,8 +377,9 @@ namespace librealsense
                 size_t component_index
                     = index + ( ( length * component_bytes_size ) - ( i * component_bytes_size ) );
 
-                T component_value =  *reinterpret_cast< const T * >( buff.data() + component_index );
-                formattedBuffer << s << component_value;
+                // We use int on purpose as types like uint8_t doesn't work as expected with << operator
+                int component_value =  *reinterpret_cast< const T * >( buff.data() + component_index );
+                formattedBuffer << s << static_cast< int >( component_value );
                 s = ".";
             }
 
