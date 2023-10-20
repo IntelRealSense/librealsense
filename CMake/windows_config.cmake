@@ -9,6 +9,7 @@ macro(os_set_flags)
     # Note: this puts the outputs under <binary>/<build-type>
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
     if(BUILD_WITH_OPENMP)
         find_package(OpenMP REQUIRED)
