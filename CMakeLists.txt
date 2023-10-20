@@ -119,3 +119,4 @@ endif()
 
 include(CMake/embedd_udev_rules.cmake)
 
+include( src/realsense2-all.cmake )
