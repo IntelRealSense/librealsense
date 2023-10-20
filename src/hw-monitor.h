@@ -7,6 +7,8 @@
 #include <mutex>
 #include "platform/command-transfer.h"
 #include <string>
+#include <algorithm>
+#include <vector>
 
 
 namespace librealsense
@@ -354,7 +356,8 @@ namespace librealsense
         template<typename T>
         std::string get_firmware_version_string( const std::vector< uint8_t > & buff,
                                                  size_t index,
-                                                 size_t length = 4)
+                                                 size_t length = 4,
+                                                 bool little_endian = true )
         {
             std::stringstream formattedBuffer;
             auto component_bytes_size = sizeof( T );
@@ -370,16 +373,22 @@ namespace librealsense
 
             // We iterate through the version components (major.minor.patch.build) and append each
             // string value to the result string
-
-            // TODO might be reversed?? verify before PR
-            for( auto i = 1; i <= length; i++ )
+            std::vector<int> components_value;
+            for( auto i = 0; i < length; i++ )
             {
-                size_t component_index
-                    = index + ( ( length * component_bytes_size ) - ( i * component_bytes_size ) );
+                size_t component_index = index + ( i * component_bytes_size );
 
                 // We use int on purpose as types like uint8_t doesn't work as expected with << operator
                 int component_value =  *reinterpret_cast< const T * >( buff.data() + component_index );
-                formattedBuffer << s << static_cast< int >( component_value );
+                components_value.push_back(component_value);
+            }
+
+            if (little_endian)
+                 std::reverse(components_value.begin(), components_value.end());
+            
+            for( auto & element : components_value )
+            {
+                formattedBuffer << s << element;
                 s = ".";
             }
 

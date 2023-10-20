@@ -777,6 +777,10 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, gvd_parsed_fields.optical_module_sn);
         register_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, gvd_parsed_fields.optical_module_sn);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, gvd_parsed_fields.fw_version);
+        
+        // Unlock when supported by SMCU + HKR
+        /*register_info(RS2_CAMERA_INFO_SMCU_FW_VERSION, gvd_parsed_fields.safety_sw_suite_version);*/
+        
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, group.uvc_devices.front().device_path);
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
         register_info(RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode) ? "YES" : "NO"));
@@ -788,6 +792,8 @@ namespace librealsense
 
         if (usb_modality)
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
+        
+        
     }
 
     platform::usb_spec d500_device::get_usb_spec() const
@@ -853,7 +859,7 @@ namespace librealsense
         parsed_fields->crc32 = *reinterpret_cast<const uint32_t*>(gvd_buff.data() + static_cast<int>(ds::d500_gvd_fields::crc32_offset));
         parsed_fields->optical_module_sn = _hw_monitor->get_module_serial_string(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::optical_module_serial_offset));
         parsed_fields->mb_module_sn = _hw_monitor->get_module_serial_string(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::mb_module_serial_offset));
-        parsed_fields->fw_version = _hw_monitor->get_firmware_version_string<uint16_t>(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::fw_version_offset));
-        parsed_fields->safety_sw_suite_version = _hw_monitor->get_firmware_version_string<uint8_t>(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::safety_sw_suite_version_offset), 3);
+        parsed_fields->fw_version = _hw_monitor->get_firmware_version_string<uint16_t>(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::fw_version_offset), 4, false);
+        parsed_fields->safety_sw_suite_version = _hw_monitor->get_firmware_version_string<uint8_t>(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::safety_sw_suite_version_offset), 3, false);
     }
 }

@@ -660,6 +660,7 @@ const char * get_string( rs2_camera_info value )
     CASE( FIRMWARE_UPDATE_ID )
     CASE( IP_ADDRESS )
     CASE( DFU_DEVICE_PATH )
+    CASE( SMCU_FW_VERSION )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
