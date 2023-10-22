@@ -22,7 +22,6 @@ def close_resources(sensor):
         log.d("Close_resources: Stopping active streams")
         sensor.stop()
         sensor.close()
-    log.d("Active streams amount is: ", len(sensor.get_active_streams()))
 
 
 def frame_callback(frame):
@@ -59,7 +58,6 @@ if profile_y16:
         time.sleep(0.1)
 
     test.check(not timer.has_expired())
-    log.d("Stopping active streams")
     close_resources(depth_sensor)
 
 test.finish()
