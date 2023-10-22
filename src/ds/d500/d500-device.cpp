@@ -792,8 +792,6 @@ namespace librealsense
 
         if (usb_modality)
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
-        
-        
     }
 
     platform::usb_spec d500_device::get_usb_spec() const

@@ -357,16 +357,14 @@ namespace librealsense
         std::string get_firmware_version_string( const std::vector< uint8_t > & buff,
                                                  size_t index,
                                                  size_t length = 4,
-                                                 bool little_endian = true )
+                                                 bool reversed = true )
         {
             std::stringstream formattedBuffer;
             auto component_bytes_size = sizeof( T );
-            auto tt = sizeof( T );
             std::string s = "";
             if( buff.size() < index + ( length * component_bytes_size ))
             {
-                // We do not wish to through as we want to be back compatible even w/o a working
-                // version
+                // Don't throw as we want to be back compatible even w/o a working version
                 LOG_ERROR( "GVD FW version cannot be read!" );
                 return formattedBuffer.str();
             }
@@ -383,8 +381,8 @@ namespace librealsense
                 components_value.push_back(component_value);
             }
 
-            if (little_endian)
-                 std::reverse(components_value.begin(), components_value.end());
+            if( reversed )
+                std::reverse( components_value.begin(), components_value.end() );
             
             for( auto & element : components_value )
             {
