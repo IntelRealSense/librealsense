@@ -3,17 +3,10 @@
 
 #test:device D585S
 
-# Disabled until RSDEV-537 is fixed
-#test:donotrun
-
 import pyrealsense2 as rs
 from rspy import test, log
 import time
-
-# Constants
-RUN_MODE     = 0 # RS2_SAFETY_MODE_RUN (RESUME)
-STANDBY_MODE = 1 # RS2_SAFETY_MODE_STANDBY (PAUSE)
-SERVICE_MODE = 2 # RS2_SAFETY_MODE_SERVICE (MAINTENANCE)
+from safety_common import set_operational_mode
 
 device = test.find_first_device_or_exit();
 
@@ -45,12 +38,10 @@ f = pipe.wait_for_frames()
 pipeline_device = profile.get_device()
 safety_sensor = pipeline_device.first_safety_sensor()
 log.d( "Verify default is run mode" )
-test.check_equal( int(safety_sensor.get_option(rs.option.safety_mode)), RUN_MODE) # verify default
+test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.run)) # verify default
 
 log.d( "Command standby mode" )
-safety_sensor.set_option(rs.option.safety_mode, STANDBY_MODE)
-time.sleep(0.1)  # sleep 100 milliseconds, see SRS ID 3.3.1.13
-test.check_equal( int(safety_sensor.get_option(rs.option.safety_mode)), STANDBY_MODE)
+test.check(set_operational_mode(safety_sensor, rs.safety_mode.standby))
 verify_frames_received(pipe, profile, count = 10)
 
 pipe.stop()
@@ -58,9 +49,7 @@ pipe.start(cfg)
 verify_frames_received(pipe, profile, count = 10)
 
 log.d( "Command run mode" )
-safety_sensor.set_option(rs.option.safety_mode, RUN_MODE) 
-time.sleep(0.1)  # sleep 100 milliseconds, see SRS ID 3.3.1.13
-test.check_equal( int(safety_sensor.get_option(rs.option.safety_mode)), RUN_MODE)
+test.check(set_operational_mode(safety_sensor, rs.safety_mode.run))
 verify_frames_received(pipe, profile, count = 10)
 
 pipe.stop()
@@ -82,24 +71,19 @@ pipeline_device = profile.get_device()
 safety_sensor = pipeline_device.first_safety_sensor()
 
 log.d( "Command run mode" )
-safety_sensor.set_option(rs.option.safety_mode, RUN_MODE)
-time.sleep(0.1)  # sleep 100 milliseconds, see SRS ID 3.3.1.13
-test.check_equal( int(safety_sensor.get_option(rs.option.safety_mode)), RUN_MODE)
+test.check(set_operational_mode(safety_sensor, rs.safety_mode.run))
 # Verify that on RUN mode we get frames
 verify_frames_received(pipe, profile, count = 10)
 
 log.d( "Command service mode" )
-safety_sensor.set_option(rs.option.safety_mode, SERVICE_MODE)
-time.sleep(0.1)  # sleep 100 milliseconds, see SRS ID 3.3.1.13
-test.check_equal( int(safety_sensor.get_option(rs.option.safety_mode)), SERVICE_MODE)
+test.check(set_operational_mode(safety_sensor, rs.safety_mode.service))
+test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.service)) # verify default
 # Verify that on SERVICE mode we get no frames
-test.check_throws( lambda: verify_frames_received(pipe, profile, 1) , RuntimeError )
+test.check_throws( lambda: verify_frames_received(pipe, profile, 10) , RuntimeError )
 
 # Restore Run mode
 log.d( "Command run mode" )
-safety_sensor.set_option(rs.option.safety_mode, RUN_MODE)
-time.sleep(0.1)  # sleep 100 milliseconds, see SRS ID 3.3.1.13
-test.check_equal( int(safety_sensor.get_option(rs.option.safety_mode)), RUN_MODE)
+test.check(set_operational_mode(safety_sensor, rs.safety_mode.run))
 
 pipe.stop()
 test.finish()
