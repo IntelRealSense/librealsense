@@ -28,8 +28,8 @@ def generate_default_config_1():
     cfg.preset2_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select2_a)
     cfg.preset4_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select4_b)
     cfg.ground = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.gnd)
-    cfg.gpio_stabilization_interval = 150 # ms
-    cfg.safety_zone_selection_overlap_time_period = 0 # Should be 0
+    cfg.gpio_stabilization_interval = 150 # [ms] - SMCU only accept 150 for now
+    cfg.safety_zone_selection_overlap_time_period = 0 # SMCU only accept 0 for now
     return cfg
 
 def generate_default_config_2():
@@ -51,8 +51,8 @@ def generate_default_config_2():
     cfg.preset2_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select2_a)
     cfg.preset4_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select4_b)
     cfg.ground = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.gnd)
-    cfg.gpio_stabilization_interval = 150 # ms
-    cfg.safety_zone_selection_overlap_time_period = 0 # Should be 0
+    cfg.gpio_stabilization_interval = 150 # [ms] - SMCU only accept 150 for now
+    cfg.safety_zone_selection_overlap_time_period = 0 # SMCU only accept 0 for now
     return cfg
 
 def generate_default_config_3():
@@ -74,8 +74,8 @@ def generate_default_config_3():
     cfg.preset2_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select2_a)
     cfg.preset4_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select4_b)
     cfg.ground = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.gnd)
-    cfg.gpio_stabilization_interval = 150  # ms
-    cfg.safety_zone_selection_overlap_time_period = 0  # Should be 0
+    cfg.gpio_stabilization_interval = 150  # [ms] - SMCU only accept 150 for now
+    cfg.safety_zone_selection_overlap_time_period = 0  # SMCU only accept 0 for now
     return cfg
 
 def generate_default_config_4():
@@ -97,8 +97,8 @@ def generate_default_config_4():
     cfg.preset2_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select2_a)
     cfg.preset4_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select4_b)
     cfg.ground = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.gnd)
-    cfg.gpio_stabilization_interval = 150  # ms
-    cfg.safety_zone_selection_overlap_time_period = 0  # Should be 0
+    cfg.gpio_stabilization_interval = 150  # [ms] - SMCU only accept 150 for now
+    cfg.safety_zone_selection_overlap_time_period = 0  # SMCU only accept 0 for now
     return cfg
 
 def generate_config():
@@ -130,8 +130,8 @@ def generate_bad_config():
     cfg.preset2_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select2_a)
     cfg.preset4_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select4_b)
     cfg.ground = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.gnd)
-    cfg.gpio_stabilization_interval = 150  # ms
-    cfg.safety_zone_selection_overlap_time_period = 0 # Should be 0
+    cfg.gpio_stabilization_interval = 150  # [ms] - SMCU only accept 150 for now
+    cfg.safety_zone_selection_overlap_time_period = 0 # SMCU only accept 0 for now
     return cfg
 
 def print_config(config):
