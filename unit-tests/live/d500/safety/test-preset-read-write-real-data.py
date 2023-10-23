@@ -4,12 +4,12 @@
 #test:device D585S
 # we initialize all safety zone , this to start all safety tests with a known table which is 0 (hard coded in FW)
 #test:priority 1
-# Disabled until RSDEV-537 is fixed
-#test:donotrun
+
 import pyrealsense2 as rs
 import random
 from rspy import test, log
 import time
+from safety_common import set_operational_mode
 
 #############################################################################################
 # Helper Functions
@@ -101,10 +101,7 @@ test.finish()
 #############################################################################################
 
 test.start("Switch to Service Mode")  # See SRS ID 3.3.1.7.a
-original_mode = safety_sensor.get_option(rs.option.safety_mode)
-safety_sensor.set_option(rs.option.safety_mode, SERVICE_MODE)
-time.sleep(0.1)  # sleep 100 milliseconds, see SRS ID 3.3.1.13
-test.check_equal( int(safety_sensor.get_option(rs.option.safety_mode)), SERVICE_MODE)
+test.check(set_operational_mode(safety_sensor, rs.safety_mode.service))
 test.finish()
 
 #############################################################################################
@@ -139,7 +136,5 @@ test.finish()
 #############################################################################################
 
 # switch back to original safety mode
-safety_sensor.set_option(rs.option.safety_mode, original_mode)
-time.sleep(0.1)  # sleep 100 milliseconds, see SRS ID 3.3.1.13
-
+test.check(set_operational_mode(safety_sensor, rs.safety_mode.standby))
 test.print_results_and_exit()

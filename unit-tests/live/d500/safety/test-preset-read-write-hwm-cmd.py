@@ -4,12 +4,10 @@
 #test:donotrun:!nightly
 #test:device D585S
 
-# Disabled until RSDEV-537 is fixed
-#test:donotrun
-
 import pyrealsense2 as rs
 from rspy import test
 import time
+from safety_common import set_operational_mode
 
 # Constants
 RUN_MODE     = 0 # RS2_SAFETY_MODE_RUN (RESUME)
@@ -38,10 +36,7 @@ test.finish()
 
 #############################################################################################
 test.start("Switch to Service Mode")  # See SRS ID 3.3.1.7.a
-original_mode = safety_sensor.get_option(rs.option.safety_mode)
-safety_sensor.set_option(rs.option.safety_mode, SERVICE_MODE)
-time.sleep(0.1)  # sleep 100 milliseconds, see SRS ID 3.3.1.13
-test.check_equal( int(safety_sensor.get_option(rs.option.safety_mode)), SERVICE_MODE)
+test.check(set_operational_mode(safety_sensor, rs.safety_mode.service))
 test.finish()
 
 #############################################################################################
@@ -93,7 +88,6 @@ test.finish()
 #############################################################################################
 
 # switch back to original safety mode
-safety_sensor.set_option(rs.option.safety_mode, original_mode)
-time.sleep(0.1)  # sleep 100 milliseconds, see SRS ID 3.3.1.13
+test.check(set_operational_mode(safety_sensor, rs.safety_mode.standby))
 
 test.print_results_and_exit()
