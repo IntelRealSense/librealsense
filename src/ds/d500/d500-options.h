@@ -83,7 +83,7 @@ namespace librealsense
         virtual ~d500_external_sync_mode() = default;
         virtual void set( float value ) override;
         virtual float query() const override;
-        virtual option_range get_range() const override { return *_range; }
+        virtual option_range get_range() const override { return _range; }
         virtual bool is_enabled() const override { return true; }
         virtual bool is_read_only() const override { return _sensor && _sensor->is_opened(); }
         const char * get_description() const override
@@ -99,7 +99,7 @@ namespace librealsense
     private:
         std::function< void( const option & ) > _record_action = []( const option & ) {
         };
-        rsutils::lazy< option_range > _range;
+        option_range _range;
         hw_monitor & _hwm;
         sensor_base * _sensor;
     };

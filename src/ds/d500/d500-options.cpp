@@ -88,17 +88,14 @@ namespace librealsense
     }
 
     
-        d500_external_sync_mode::d500_external_sync_mode( hw_monitor & hwm, sensor_base * ep )
+    d500_external_sync_mode::d500_external_sync_mode( hw_monitor & hwm, sensor_base * ep )
         : _hwm( hwm )
         , _sensor( ep )
     {
-        _range = [this]()
-        {
-            return option_range{ ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT,
-                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_FULL_SLAVE,
-                                 1,
-                                 ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT };
-        };
+        _range = { ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT,
+                   ds::inter_cam_sync_mode::INTERCAM_SYNC_FULL_SLAVE,
+                   1,
+                   ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT };
     }
 
     void d500_external_sync_mode::set( float value )
