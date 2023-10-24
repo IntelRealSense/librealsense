@@ -1,28 +1,27 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
-import random
 import time
 
 #test:device D585S
 #test:donotrun
 
 import pyrealsense2 as rs
-from rspy import test, log
+from rspy import test, log, devices
 
-def generate_default_config_1():
+def generate_valid_table():
     cfg = rs.safety_interface_config()
     cfg.power = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.p24vdc)
     cfg.ossd1_b = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.ossd1_b)
     cfg.ossd1_a = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.ossd1_a)
-    cfg.preset3_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select3_a)
-    cfg.preset3_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select3_b)
-    cfg.preset4_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select4_a)
-    cfg.preset1_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select1_b)
-    cfg.preset1_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select1_a)
     cfg.gpio_0 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select5_a)
     cfg.gpio_1 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select5_b)
-    cfg.gpio_3 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select6_b)
     cfg.gpio_2 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select6_a)
+    cfg.gpio_3 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select6_b)
+    cfg.preset3_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select3_a)
+    cfg.preset3_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select3_b)
+    cfg.preset4_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select4_a)
+    cfg.preset1_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select1_b)
+    cfg.preset1_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select1_a)
     cfg.preset2_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select2_b)
     cfg.gpio_4 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.restart_interlock)
     cfg.preset2_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select2_a)
@@ -31,107 +30,27 @@ def generate_default_config_1():
     cfg.gpio_stabilization_interval = 150 # [ms] - SMCU only accept 150 for now
     cfg.safety_zone_selection_overlap_time_period = 0 # SMCU only accept 0 for now
     return cfg
+ 
 
-def generate_default_config_2():
-    cfg = rs.safety_interface_config()
-    cfg.power = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.p24vdc)
-    cfg.ossd1_b = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.ossd1_b)
-    cfg.ossd1_a = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.ossd1_a)
-    cfg.preset3_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select3_a)
-    cfg.preset3_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select3_b)
-    cfg.preset4_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select4_a)
-    cfg.preset1_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select1_b)
-    cfg.preset1_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select1_a)
-    cfg.gpio_0 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select5_a)
-    cfg.gpio_1 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select5_b)
-    cfg.gpio_3 = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.maintenance)
-    cfg.gpio_2 = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.device_ready)
-    cfg.preset2_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select2_b)
-    cfg.gpio_4 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.restart_interlock)
-    cfg.preset2_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select2_a)
-    cfg.preset4_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select4_b)
-    cfg.ground = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.gnd)
-    cfg.gpio_stabilization_interval = 150 # [ms] - SMCU only accept 150 for now
-    cfg.safety_zone_selection_overlap_time_period = 0 # SMCU only accept 0 for now
+def change_config(cfg):
+    
+    # we query and replace GPIO 2-3 to make sure we have a different table then the one we got.
+    if cfg.gpio_2.functionality == rs.safety_pin_functionality.preset_select6_a:
+      cfg.gpio_2 = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.ossd2_a)
+    else:
+      cfg.gpio_2 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select6_a)
+    
+    if cfg.gpio_3.functionality == rs.safety_pin_functionality.preset_select6_b:
+      cfg.gpio_3 = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.ossd2_b)
+    else:
+      cfg.gpio_3 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select6_b)
+
     return cfg
-
-def generate_default_config_3():
-    cfg = rs.safety_interface_config()
-    cfg.power = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.p24vdc)
-    cfg.ossd1_b = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.ossd1_b)
-    cfg.ossd1_a = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.ossd1_a)
-    cfg.preset3_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select3_a)
-    cfg.preset3_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select3_b)
-    cfg.preset4_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select4_a)
-    cfg.preset1_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select1_b)
-    cfg.preset1_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select1_a)
-    cfg.gpio_0 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select5_a)
-    cfg.gpio_1 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select5_b)
-    cfg.gpio_3 = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.ossd2_b)
-    cfg.gpio_2 = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.ossd2_a)
-    cfg.preset2_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select2_b)
-    cfg.gpio_4 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.restart_interlock)
-    cfg.preset2_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select2_a)
-    cfg.preset4_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select4_b)
-    cfg.ground = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.gnd)
-    cfg.gpio_stabilization_interval = 150  # [ms] - SMCU only accept 150 for now
-    cfg.safety_zone_selection_overlap_time_period = 0  # SMCU only accept 0 for now
-    return cfg
-
-def generate_default_config_4():
-    cfg = rs.safety_interface_config()
-    cfg.power = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.p24vdc)
-    cfg.ossd1_b = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.ossd1_b)
-    cfg.ossd1_a = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.ossd1_a)
-    cfg.preset3_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select3_a)
-    cfg.preset3_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select3_b)
-    cfg.preset4_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select4_a)
-    cfg.preset1_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select1_b)
-    cfg.preset1_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select1_a)
-    cfg.gpio_0 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.ossd2_a_feedback)
-    cfg.gpio_1 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.ossd2_b_feedback)
-    cfg.gpio_3 = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.ossd2_b)
-    cfg.gpio_2 = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.ossd2_a)
-    cfg.preset2_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select2_b)
-    cfg.gpio_4 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.restart_interlock)
-    cfg.preset2_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select2_a)
-    cfg.preset4_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select4_b)
-    cfg.ground = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.gnd)
-    cfg.gpio_stabilization_interval = 150  # [ms] - SMCU only accept 150 for now
-    cfg.safety_zone_selection_overlap_time_period = 0  # SMCU only accept 0 for now
-    return cfg
-
-def generate_config():
-    config_number = random.randint(1, 4)
-    if config_number == 1:
-        return generate_default_config_1()
-    if config_number == 2:
-        return generate_default_config_2()
-    if config_number == 3:
-        return generate_default_config_3()
-    return generate_default_config_4()
 
 def generate_bad_config():
-    cfg = rs.safety_interface_config()
-    cfg.power = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.p24vdc)
+    cfg = generate_valid_table()
     cfg.ossd1_b = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.p24vdc) # intentional error
     cfg.ossd1_a = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.p24vdc) # intentional error
-    cfg.preset3_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select3_a)
-    cfg.preset3_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select3_b)
-    cfg.preset4_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select4_a)
-    cfg.preset1_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select1_b)
-    cfg.preset1_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select1_a)
-    cfg.gpio_0 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.ossd2_a_feedback)
-    cfg.gpio_1 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.ossd2_b_feedback)
-    cfg.gpio_3 = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.ossd2_b)
-    cfg.gpio_2 = rs.safety_interface_config_pin(rs.safety_pin_direction.output, rs.safety_pin_functionality.ossd2_a)
-    cfg.preset2_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select2_b)
-    cfg.gpio_4 = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.restart_interlock)
-    cfg.preset2_a = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select2_a)
-    cfg.preset4_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select4_b)
-    cfg.ground = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.gnd)
-    cfg.gpio_stabilization_interval = 150  # [ms] - SMCU only accept 150 for now
-    cfg.safety_zone_selection_overlap_time_period = 0 # SMCU only accept 0 for now
     return cfg
 
 def print_config(config):
@@ -157,8 +76,8 @@ def print_config(config):
 
 
 def check_pin_equal(first_pin, second_pin):
-    test.check(first_pin.direction, second_pin.direction)
-    test.check(first_pin.functionality, second_pin.functionality)
+    test.check_equal(first_pin.direction, second_pin.direction)
+    test.check_equal(first_pin.functionality, second_pin.functionality)
 def check_configurations_equal(first_config, second_config) :
     check_pin_equal(first_config.power, second_config.power)
     check_pin_equal(first_config.ossd1_b, second_config.ossd1_b)
@@ -185,7 +104,6 @@ def check_configurations_equal(first_config, second_config) :
 # Tests
 #############################################################################################
 
-ctx = rs.context()
 dev = test.find_first_device_or_exit()
 safety_sensor = dev.first_safety_sensor()
 original_mode = safety_sensor.get_option(rs.option.safety_mode)
@@ -199,56 +117,65 @@ test.finish()
 #############################################################################################
 test.start("Valid get/set scenario")
 
-# preparing default config
-default_config = generate_config()
-
-config_to_be_restored = False
-
 # The aim of the following try statement is:
-# - For devices that had never had Safety Interface Configuration (SIC) set:
-#    setting SIC for the first time
-# - For devices that have already SIC set:
-#    it saves the current SIC, and restores it at the end of the test.
+# For devices that had never had Safety Interface Configuration (SIC) set it and fail the test so the user will know and exit with failure
 try:
     # getting safety config
-    safety_config_to_restore = safety_sensor.get_safety_interface_config(rs.calib_location.ram)
+    initial_config = safety_sensor.get_safety_interface_config(rs.calib_location.ram)
 except:
-    log.w("Safety Interface Configuration was not available in this device")
-else:
-    config_to_be_restored = True
-finally:
-    # write default config to the device
-    safety_sensor.set_safety_interface_config(default_config)
+    log.w("Safety Interface Configuration was not available in this device, writing a valid table now, rerun the test to verify it pass")
+    safety_sensor.set_safety_interface_config(generate_valid_table())
+    test.abort()
+   
+# We read the table from the device, modify it and write it back
+# This way we are sure that the write process worked ()   
+config_we_write = change_config(initial_config)
+# write changed config to the device
+safety_sensor.set_safety_interface_config(config_we_write)
 
-    # read the config in the device
-    config_to_check = safety_sensor.get_safety_interface_config()
+# read the config in the device
+config_we_read = safety_sensor.get_safety_interface_config()
 
-    # checking the requested config has been written to the device
-    # uncomment following lines for debugging
-    log.d("default config:")
-    print_config(default_config)
-    log.d("config_to_check:")
-    print_config(config_to_check)
-    check_configurations_equal(default_config, config_to_check)
 
-    # restore original config
-    if safety_config_to_restore:
-        safety_sensor.set_safety_interface_config(safety_config_to_restore)
+# Add debugging info
+log.d("config we write:")
+print_config(config_we_write)
+log.d("config we read:")
+print_config(config_we_read)
+
+# checking the requested config has been written to the device
+check_configurations_equal(config_we_write, config_we_read)
 
 test.finish()
 
+
+
 #############################################################################################
-test.start("Setting bad config - checking error is received, and that config_1 is returned after get action")
+test.start("verify same table after camera reboot")
 
-log.w("Skipping this test as D585S is currently sending OK status on a wrong table")
-# setting bad config
-#test.check_throws(lambda: safety_sensor.set_safety_interface_config(generate_bad_config()), RuntimeError)
+log.d( "Sending HW-reset command" )
+dev.hardware_reset()
 
-# getting active config
-#current_config = safety_sensor.get_safety_interface_config()
+log.d( "sleep to give some time for the device to reconnect" )
+time.sleep( devices.MAX_ENUMERATION_TIME )
 
-# checking active config is the default one
-#check_configurations_equal(generate_default_config_1(), current_config)
+log.d( "Fetching new device" )
+dev = test.find_first_device_or_exit()
+safety_sensor = dev.first_safety_sensor()
+
+log.d( "Setting operational mode to service" )
+test.check(set_operational_mode(safety_sensor, rs.safety_mode.service))
+
+config_after_reboot = safety_sensor.get_safety_interface_config(rs.calib_location.flash)
+
+# Add debugging info
+log.d("config we write:")
+print_config(config_we_write)
+log.d("config after reboot:")
+print_config(config_after_reboot)
+
+# checking our last write stay the same after reboot
+check_configurations_equal(config_we_write, config_after_reboot)
 
 test.finish()
 
@@ -266,7 +193,22 @@ check_configurations_equal(config_from_ram, config_from_flash)
 test.finish()
 
 #############################################################################################
-test.start("Restoring original safety mode")
+test.start("Setting bad config - checking error is received, and that config_1 is returned after get action")
+
+log.w("Skipping this test as D585S is currently sending OK status on a wrong table")
+# setting bad config
+test.check_throws(lambda: safety_sensor.set_safety_interface_config(generate_bad_config()), RuntimeError)
+
+# getting active config
+current_config = safety_sensor.get_safety_interface_config()
+
+# checking active config is the default one
+check_configurations_equal(generate_valid_table(), current_config)
+
+#############################################################################################
+test.finish()
+test.start("Restoring original table + safety mode")
+# write initial config back to the device
 safety_sensor.set_option(rs.option.safety_mode, original_mode)
 test.check_equal( safety_sensor.get_option(rs.option.safety_mode), original_mode)
 test.finish()
