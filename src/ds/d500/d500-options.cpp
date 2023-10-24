@@ -88,9 +88,11 @@ namespace librealsense
     }
 
     
-    d500_external_sync_mode::d500_external_sync_mode( hw_monitor & hwm, sensor_base * ep )
+    d500_external_sync_mode::d500_external_sync_mode( hw_monitor & hwm, sensor_base * ep,
+                                                      const std::map< float, std::string > & description_per_value )
         : _hwm( hwm )
         , _sensor( ep )
+        , _description_per_value( description_per_value )
     {
         _range = { RS2_D500_INTERCAM_SYNC_NONE,
                    RS2_D500_INTERCAM_SYNC_EXTERNAL_MASTER,
@@ -119,5 +121,18 @@ namespace librealsense
             throw invalid_value_exception( "d500_external_sync_mode::query result is empty!" );
 
         return static_cast< float >( res[0] );
+    }
+
+    const char * d500_external_sync_mode::get_value_description( float val ) const
+    {
+        try
+        {
+            return _description_per_value.at( val ).c_str();
+        }
+        catch( std::out_of_range )
+        {
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "d500_external_sync_mode description of value " << val << " not found." );
+        }
     }
 } // namespace librealsense
