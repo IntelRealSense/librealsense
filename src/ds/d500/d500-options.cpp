@@ -92,17 +92,20 @@ namespace librealsense
         : _hwm( hwm )
         , _sensor( ep )
     {
-        _range = { ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT,
-                   ds::inter_cam_sync_mode::INTERCAM_SYNC_FULL_SLAVE,
+        _range = { RS2_D500_INTERCAM_SYNC_NONE,
+                   RS2_D500_INTERCAM_SYNC_EXTERNAL_MASTER,
                    1,
-                   ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT };
+                   RS2_D500_INTERCAM_SYNC_NONE };
     }
 
     void d500_external_sync_mode::set( float value )
     {
         command cmd( ds::SET_CAM_SYNC );
-        cmd.param1 = static_cast< int >( value );
+        if( ! is_valid( static_cast < rs2_d500_intercam_sync_mode >( value ) ) )
+            throw invalid_value_exception( "d500_external_sync_mode::set invalid value!" );
 
+        cmd.param1 = static_cast< int >( value );
+        cmd.require_response = false;
 
         _hwm.send( cmd );
         _record_action( *this );
