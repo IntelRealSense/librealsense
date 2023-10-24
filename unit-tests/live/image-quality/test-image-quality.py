@@ -149,7 +149,7 @@ def is_depth_meaningful(config, laser_enabled=True, save_image=False, show_image
         log.f("Error getting depth frame")
         return False
     if DEBUG_MODE and not color:
-        log.d("Error getting color frame")
+        log.e("Error getting color frame")
 
     dists, total = get_distances(depth)
 
