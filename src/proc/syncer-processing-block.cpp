@@ -14,7 +14,7 @@ namespace librealsense
         : processing_block("syncer"), _matcher((new composite_identity_matcher({})))
         , _enable_opts(enable_opts.begin(), enable_opts.end())
     {
-        _matcher->set_callback( [this]( frame_holder f, syncronization_environment env ) {
+        _matcher->set_callback( []( frame_holder f, syncronization_environment const & env ) {
             if( env.log )
             {
                 LOG_DEBUG( "<-- queueing " << f );
