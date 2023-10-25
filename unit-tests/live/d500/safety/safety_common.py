@@ -5,7 +5,7 @@ import time
 import pyrealsense2 as rs
 from rspy.timer import Timer
 
-MAX_TIME_TO_WAIT_FOR_OP_MODE = 1  # [sec]
+MAX_TIME_TO_WAIT_FOR_OP_MODE = 2  # [sec]
 
 
 def set_operational_mode(safety_sensor, required_mode, max_time=MAX_TIME_TO_WAIT_FOR_OP_MODE):
