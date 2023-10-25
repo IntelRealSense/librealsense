@@ -63,7 +63,7 @@ if profile_y16:
 test.finish()
 
 test.start("Restoring original safety mode")
-log.d("Original mode is:", original_mode, type(original_mode))
+log.d("Original mode is:", original_mode)
 test.check(set_operational_mode(safety_sensor, original_mode))
 test.finish()
 
