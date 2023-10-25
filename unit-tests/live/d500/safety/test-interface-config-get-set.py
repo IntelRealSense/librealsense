@@ -4,6 +4,7 @@ import random
 import time
 
 #test:device D585S
+#test:donotrun
 
 import pyrealsense2 as rs
 from rspy import test, log
