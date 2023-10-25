@@ -110,6 +110,17 @@ namespace librealsense
         safety_ep->register_option(RS2_OPTION_SAFETY_MCU_TEMPERATURE,
             std::make_shared<temperature_option>(_hw_monitor, raw_safety_sensor.get(), 
                 temperature_option::temperature_component::SMCU, "Temperature reading for Safety MCU"));
+
+        std::shared_ptr< option > intercam_sync_option
+            = std::make_shared< d500_external_sync_mode >( static_cast< d500_external_sync_mode & >(
+                get_depth_sensor().get_option( RS2_OPTION_INTER_CAM_SYNC_MODE ) ) );
+        std::vector< std::tuple< std::shared_ptr< option >, float, std::string > > options_and_reasons
+            = { std::make_tuple( safety_camera_oper_mode,
+                                 static_cast< float >( RS2_SAFETY_MODE_SERVICE ),
+                                 std::string( "Intercamera sync mode can be set only in safety service mode" ) ) };
+        get_depth_sensor().register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
+                                           std::make_shared< gated_by_value_option >( intercam_sync_option,
+                                                                                      options_and_reasons ) );
     }
 
     void d500_safety::register_metadata(std::shared_ptr<uvc_sensor> raw_safety_ep)

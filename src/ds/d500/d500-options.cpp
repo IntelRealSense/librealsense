@@ -102,9 +102,14 @@ namespace librealsense
 
     void d500_external_sync_mode::set( float value )
     {
-        command cmd( ds::SET_CAM_SYNC );
+        if( _sensor->is_streaming() )
+            throw std::runtime_error( "Cannot change external sync mode while streaming!" );
+
         if( ! is_valid( static_cast < rs2_d500_intercam_sync_mode >( value ) ) )
-            throw invalid_value_exception( "d500_external_sync_mode::set invalid value!" );
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "d500_external_sync_mode::set invalid value " << value );
+
+        command cmd( ds::SET_CAM_SYNC );
 
         cmd.param1 = static_cast< int >( value );
         cmd.require_response = false;
