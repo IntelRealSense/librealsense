@@ -500,13 +500,20 @@ namespace librealsense
             if (realpath(path.c_str(), usb_actual_path) != nullptr)
             {
                 path = std::string(usb_actual_path);
-                std::string val;
-                if(!(std::ifstream(path + "/version") >> val))
+                std::string camera_usb_version;
+                if(!(std::ifstream(path + "/version") >> camera_usb_version))
                     throw linux_backend_exception("Failed to read usb version specification");
 
-                auto it = usb_name_to_spec.find( val );
-                if( it != usb_name_to_spec.end() )
-                    res = it->second;
+                // go through the usb_name_to_spec map to find a usb type where the first element is contained in 'camera_usb_version'
+                // (contained and not strictly equal because of differences like "3.2" vs "3.20")
+                for(const auto usb_type : usb_name_to_spec ) {
+                    std::string usb_name = usb_type.first;
+                    if (std::string::npos != camera_usb_version.find(usb_name))
+                    {
+                         res = usb_type.second;
+                         return res;
+                    }
+                }
             }
             return res;
         }
