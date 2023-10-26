@@ -223,6 +223,18 @@ unsigned long long frame::get_frame_number() const
     return additional_data.frame_number;
 }
 
+double frame::calc_actual_fps() const
+{
+    auto const dt = ( additional_data.timestamp - additional_data.last_timestamp );
+    if( dt > 0. && additional_data.frame_number > additional_data.last_frame_number )
+    {
+        auto const n_frames = additional_data.frame_number - additional_data.last_frame_number;
+        return 1000. * n_frames / dt;
+    }
+
+    return 0.;  // Unknown actual FPS
+}
+
 rs2_time_t frame::get_frame_system_time() const
 {
     return additional_data.system_time;

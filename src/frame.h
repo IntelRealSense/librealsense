@@ -51,6 +51,9 @@ public:
         additional_data.timestamp_domain = timestamp_domain;
     }
 
+    // Return FPS calculated as (1000*d_frames/d_timestamp), or 0 if this cannot be estimated
+    double calc_actual_fps() const;
+
     rs2_time_t get_frame_system_time() const override;
 
     std::shared_ptr< stream_profile_interface > get_stream() const override { return stream; }
