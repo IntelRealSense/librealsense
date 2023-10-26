@@ -5,6 +5,7 @@
 
 #include "types.h"
 #include "archive.h"
+#include "core/frame-holder.h"
 
 #include <stdint.h>
 #include <vector>
@@ -110,7 +111,14 @@ namespace librealsense
                                            const frame_holder & f )
             = 0;
 
-        std::map<matcher*, single_consumer_frame_queue<frame_holder>> _frames_queue;
+        struct matcher_queue
+        {
+            single_consumer_frame_queue< frame_holder > q;
+
+            matcher_queue();
+        };
+
+        std::map< matcher *, matcher_queue > _frames_queue;
         std::map<stream_id, std::shared_ptr<matcher>> _matchers;
         std::map<matcher*, double> _next_expected;
         std::map<matcher*, rs2_timestamp_domain> _next_expected_domain;
