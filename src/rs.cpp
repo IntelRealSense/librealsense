@@ -919,7 +919,7 @@ int rs2_supports_frame_metadata(const rs2_frame* frame, rs2_frame_metadata_value
 {
     VALIDATE_NOT_NULL(frame);
     VALIDATE_ENUM(frame_metadata);
-    return ((frame_interface*)frame)->supports_frame_metadata(frame_metadata);
+    return ((frame_interface*)frame)->find_metadata( frame_metadata, nullptr );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame, frame_metadata)
 
@@ -927,7 +927,13 @@ rs2_metadata_type rs2_get_frame_metadata(const rs2_frame* frame, rs2_frame_metad
 {
     VALIDATE_NOT_NULL(frame);
     VALIDATE_ENUM(frame_metadata);
-    return ((frame_interface*)frame)->get_frame_metadata(frame_metadata);
+    auto frame_ifc = (frame_interface *)frame;
+    rs2_metadata_type value;
+    if( frame_ifc->find_metadata( frame_metadata, &value ) )
+        return value;
+    throw invalid_value_exception( rsutils::string::from()
+                                   << get_string( frame_ifc->get_stream()->get_stream_type() )
+                                   << " frame does not support metadata \"" << get_string( frame_metadata ) << "\"" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame, frame_metadata)
 

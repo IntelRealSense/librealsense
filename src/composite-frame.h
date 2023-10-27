@@ -39,13 +39,9 @@ public:
     // In the next section we make the composite frame "look and feel" like the first of its
     // children
     frame_header const & get_header() const override { return first()->get_header(); }
-    rs2_metadata_type get_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const override
+    bool find_metadata( rs2_frame_metadata_value frame_metadata, rs2_metadata_type * p_output_value ) const override
     {
-        return first()->get_frame_metadata( frame_metadata );
-    }
-    bool supports_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const override
-    {
-        return first()->supports_frame_metadata( frame_metadata );
+        return first()->find_metadata( frame_metadata, p_output_value );
     }
     int get_frame_data_size() const override { return first()->get_frame_data_size(); }
     const uint8_t * get_frame_data() const override { return first()->get_frame_data(); }

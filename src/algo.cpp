@@ -80,10 +80,14 @@ auto_exposure_mechanism::auto_exposure_mechanism(option& gain_option, option& ex
 
                 double values[2] = {};
 
-                values[0] = frame->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE) ?
-                            static_cast<double>(frame->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) : _exposure_option.query();
-                values[1] = frame->supports_frame_metadata(RS2_FRAME_METADATA_GAIN_LEVEL) ?
-                            static_cast<double>(frame->get_frame_metadata(RS2_FRAME_METADATA_GAIN_LEVEL)) : _gain_option.query();
+                rs2_metadata_type actual_exposure_md;
+                values[0] = frame->find_metadata( RS2_FRAME_METADATA_ACTUAL_EXPOSURE, &actual_exposure_md )
+                              ? static_cast< double >( actual_exposure_md )
+                              : _exposure_option.query();
+                rs2_metadata_type gain_level_md;
+                values[1] = frame->find_metadata( RS2_FRAME_METADATA_GAIN_LEVEL, &gain_level_md )
+                              ? static_cast< double >( gain_level_md )
+                              : _gain_option.query();
 
                 values[0] /= 1000.; // Fisheye exposure value by extension control-
                                     // is in units of MicroSeconds, from FW version 5.6.3.0

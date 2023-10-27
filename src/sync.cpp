@@ -526,10 +526,7 @@ namespace librealsense
         if (a->get_frame_timestamp_domain() == b->get_frame_timestamp_domain())
             return{ a->get_frame_timestamp(), b->get_frame_timestamp() };
         else
-        {
-            return{ (double)a->get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL),
-                    (double)b->get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL) };
-        }
+            return{ a->get_frame_system_time(), b->get_frame_system_time() };
     }
 
     timestamp_composite_matcher::timestamp_composite_matcher(
@@ -571,10 +568,9 @@ namespace librealsense
     double timestamp_composite_matcher::get_fps( frame_interface const * f )
     {
         double fps = 0.;
-        if(f->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
-        {
-            fps = f->get_frame_metadata( RS2_FRAME_METADATA_ACTUAL_FPS ) / 1000.;
-        }
+        rs2_metadata_type fps_md;
+        if( f->find_metadata( RS2_FRAME_METADATA_ACTUAL_FPS, &fps_md ) )
+            fps = fps_md / 1000.;
         if( fps )
         {
             //LOG_DEBUG( "fps " << fps << " from metadata" );

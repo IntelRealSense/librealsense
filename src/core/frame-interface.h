@@ -21,8 +21,8 @@ class frame_interface
 {
 public:
     virtual frame_header const & get_header() const = 0;
-    virtual rs2_metadata_type get_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const = 0;
-    virtual bool supports_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const = 0;
+
+    virtual bool find_metadata( rs2_frame_metadata_value, rs2_metadata_type * p_output_value ) const = 0;
     virtual int get_frame_data_size() const = 0;
     virtual const uint8_t * get_frame_data() const = 0;
     virtual rs2_time_t get_frame_timestamp() const = 0;
@@ -31,7 +31,7 @@ public:
     virtual unsigned long long get_frame_number() const = 0;
 
     virtual void set_timestamp_domain( rs2_timestamp_domain timestamp_domain ) = 0;
-    virtual rs2_time_t get_frame_system_time() const = 0;
+    virtual rs2_time_t get_frame_system_time() const = 0;  // TIME_OF_ARRIVAL
     virtual std::shared_ptr< stream_profile_interface > get_stream() const = 0;
     virtual void set_stream( std::shared_ptr< stream_profile_interface > sp ) = 0;
 
