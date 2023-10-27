@@ -333,11 +333,7 @@ namespace librealsense
                 // In case of frame counter reset fallback to fps from the stream configuration
                 return false;
             if( p_value )
-            {
-                if( frm.additional_data.frame_number <= frm.additional_data.last_frame_number )
-                    LOG_INFO( "Frame counter reset" );  // TODO: this is not a good place!
                 *p_value = fps;
-            }
             return true;
         }
     };
