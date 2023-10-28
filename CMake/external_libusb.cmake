@@ -1,4 +1,10 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+
 include(ExternalProject)
+
+message( STATUS "Fetching libusb..." )
+
 
 ExternalProject_Add(
     libusb
@@ -34,3 +40,6 @@ if (APPLE)
   find_library(iokit_lib IOKit)
   target_link_libraries(usb INTERFACE objc ${corefoundation_lib} ${iokit_lib})
 endif()
+
+message( STATUS "Fetching libusb - Done" )
+

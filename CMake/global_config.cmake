@@ -64,7 +64,6 @@ macro(global_set_flags)
     endif()
 
     if(BUILD_PYTHON_BINDINGS)
-        include(libusb_config)
         include(CMake/external_pybind11.cmake)
     endif()
 
@@ -95,7 +94,6 @@ macro(global_target_config)
             ${ROSBAG_HEADER_DIRS}
             ${BOOST_INCLUDE_PATH}
             ${LZ4_INCLUDE_PATH}
-            ${LIBUSB_LOCAL_INCLUDE_PATH}
         PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
             $<INSTALL_INTERFACE:include>
