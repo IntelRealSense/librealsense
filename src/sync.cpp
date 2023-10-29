@@ -395,8 +395,8 @@ namespace librealsense
                     // something missing, we can't release anything yet...
                     for( auto i : missing_streams )
                     {
-                        LOG_IF_ENABLE( "... missing " << i->get_name() << ", next expected "
-                                                      << _next_expected[i],
+                        LOG_IF_ENABLE( "... missing " << i->get_name() << ", next expected @"
+                                                      << rsutils::string::from( _next_expected[i] ),
                                        env );
                         if( skip_missing_stream( *curr_sync, i, last_arrived, env ) )
                         {
