@@ -41,7 +41,7 @@ function(get_catch2)
 
     # place libraries with other 3rd-party projects
     set_target_properties( Catch2 Catch2WithMain PROPERTIES
-                           FOLDER "ExternalProjectTargets/catch2" )
+                           FOLDER "3rd Party/catch2" )
 
     message( STATUS "Fetching Catch2 - Done" )
 
