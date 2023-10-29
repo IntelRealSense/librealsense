@@ -1077,9 +1077,9 @@ namespace rs2
         descriptions[RS2_FRAME_METADATA_SAFETY_SMCU_STATUS] = "Bitmask, enumerated";
         descriptions[RS2_FRAME_METADATA_SAFETY_SMCU_STATE] = "Bitmask, enumerated";
         descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_ID] = "Designates the Safety Zone index in [0..63] range used in algo pipe";
-        descriptions[RS2_FRAME_METADATA_SENSOR_ANGLE_ROLL] = "In degrees. Relative to X (forward) axis. Positive value is CCW";
-        descriptions[RS2_FRAME_METADATA_SENSOR_ANGLE_PITCH] = "In degrees. Relative to Y (left) axis. Positive value is CCW";
-        descriptions[RS2_FRAME_METADATA_FLOOR_MEDIAN_HEIGHT] = "In meters. Relative to the leveled pointcloud CS";
+        descriptions[RS2_FRAME_METADATA_SENSOR_ANGLE_ROLL] = "In millidegrees. Relative to X (forward) axis. Positive value is CCW";
+        descriptions[RS2_FRAME_METADATA_SENSOR_ANGLE_PITCH] = "In millidegrees. Relative to Y (left) axis. Positive value is CCW";
+        descriptions[RS2_FRAME_METADATA_FLOOR_MEDIAN_HEIGHT] = "In millimeters. Relative to the leveled pointcloud CS";
         descriptions[RS2_FRAME_METADATA_FLOOR_DETECTION] = "Percentage";
         descriptions[RS2_FRAME_METADATA_CLIFF_DETECTION] = "Percentage";
         descriptions[RS2_FRAME_METADATA_DEPTH_FILL_RATE] = "Signed value in range of [0..100]. Use [x = 101] if not applicable";

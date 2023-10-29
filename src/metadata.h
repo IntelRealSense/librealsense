@@ -756,10 +756,10 @@ namespace librealsense
         uint8_t     floor_detection;                 // Percentage
         uint8_t     cliff_detection;                 // Percentage
         uint8_t     depth_fill_rate;                 // signed value in range of [0..100]. Use [x = 101] if not applicable
-        float       sensor_roll_angle;               // In degrees. Relative to X (forward) axis. Positive value is CCW
-        float       sensor_pitch_angle;              // In degrees. Relative to Y (left) axis. Positive value is CCW 
-        float       floor_median_height;             // In meters. Relative to the “leveled pointcloud” CS 
-        uint16_t    depth_stdev;                  // Spatial accuracy in millimetric units: 
+        int32_t     sensor_roll_angle;               // In millidegrees. Relative to X (forward) axis. Positive value is CCW
+        int32_t     sensor_pitch_angle;              // In millidegrees. Relative to Y (left) axis. Positive value is CCW 
+        int32_t     floor_median_height;             // In millimeters. Relative to the “leveled pointcloud” CS 
+        uint16_t    depth_stdev;                     // Spatial accuracy in millimetric units: 
                                                      // [0..1023] - valid range
                                                      // [1024] - attribute was not calculated / not applicable
                                                      // [1025 - 0xFFFF] undefined / invalid range
@@ -785,10 +785,10 @@ namespace librealsense
         uint8_t     floor_detection;                 // Percentage
         uint8_t     cliff_detection;                 // Percentage
         uint8_t     depth_fill_rate;                 // signed value in range of [0..100]. Use [x = 101] if not applicable
-        float       sensor_roll_angle;               // In degrees. Relative to X (forward) axis. Positive value is CCW
-        float       sensor_pitch_angle;              // In degrees. Relative to Y (left) axis. Positive value is CCW 
-        float       floor_median_height;             // In meters. Relative to the “leveled pointcloud” CS 
-        uint16_t    depth_stdev;                  // Spatial accuracy in millimetric units: 
+        int32_t     sensor_roll_angle;               // In millidegrees. Relative to X (forward) axis. Positive value is CCW
+        int32_t     sensor_pitch_angle;              // In millidegrees. Relative to Y (left) axis. Positive value is CCW 
+        int32_t     floor_median_height;             // In millimeters. Relative to the “leveled pointcloud” CS 
+        uint16_t    depth_stdev;                     // Spatial accuracy in millimetric units: 
                                                      // [0..1023] - valid range
                                                      // [1024] - attribute was not calculated / not applicable
                                                      // [1025 - 0xFFFF] undefined / invalid range
