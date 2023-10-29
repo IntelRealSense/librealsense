@@ -28,7 +28,7 @@ string datetime_string()
 int main(int argc, char* argv[])
 {
     int default_polling_interval_ms = 100;
-    CmdLine cmd("librealsense rs-fw-logger example tool", ' ', RS2_API_VERSION_STR);
+    CmdLine cmd("librealsense rs-fw-logger example tool", ' ', RS2_API_FULL_VERSION_STR);
     ValueArg<string> sn_arg("s", "sn", "camera serial number", false, "", "camera serial number");
     ValueArg<string> xml_arg("l", "load", "Full file path of HW Logger Events XML file", false, "", "Load HW Logger Events XML file");
     ValueArg<string> out_arg("o", "out", "Full file path of output file", false, "", "Print Fw logs to output file");
