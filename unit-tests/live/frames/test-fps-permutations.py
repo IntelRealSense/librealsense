@@ -1,16 +1,18 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
+# test:device D400*
 # test:donotrun:!nightly
 # test:timeout 750
-# timeout - on the worst case, we're testing on D585S, which have 8 sensors, so:
+# timeout - on the worst case, we're testing on D585S, which have 8 streams, so:
 # timeout = (8 choose 2) * 24 + 24 = 696
-# 8 choose 2 tests to do (one for each pair), plus one for all sensors on, each test takes 24 secs
+# 8 choose 2 tests to do (one for each pair), plus one for all streams on, each test takes 24 secs
 
 from rspy import test, log
 import time
 import itertools
 import math
+import threading
 
 
 # To add a new test mode (ex. all singles or triplets) only add it below and on should_test
@@ -25,8 +27,8 @@ count_frames = False
 
 # tests parameters
 TEST_ALL_COMBINATIONS = False
-seconds_till_steady_state = 4
-seconds_to_count_frames = 20
+TIME_FOR_STEADY_STATE = 4
+TIME_TO_COUNT_FRAMES = 10
 
 
 ##########################################
@@ -47,7 +49,7 @@ def get_expected_fps(sensor_profiles_dict):
     Return a dictionary between the sensor and its expected fps
     """
     expected_fps_dict = {}
-    # print(sensor_profiles_dict)
+    # log.d(sensor_profiles_dict)
     for key in sensor_profiles_dict:
         avg = 0
         for profile in sensor_profiles_dict[key]:
@@ -59,6 +61,12 @@ def get_expected_fps(sensor_profiles_dict):
 
 
 def should_test(mode, permutation):
+    """
+    Returns true if the given permutation should be tested:
+    If the mode is ALL_PERMUTATIONS returns true (every permutation should be tested)
+    If the mode is ALL_SENSORS return true only if all streams are to be tested
+    If the mode is ALL_PAIRS return true only if there are exactly two streams to be tested
+    """
     return ((mode == ALL_PERMUTATIONS) or
             (mode == ALL_SENSORS and all(v == 1 for v in permutation)) or
             (mode == ALL_PAIRS and permutation.count(1) == 2))
@@ -66,7 +74,7 @@ def should_test(mode, permutation):
 
 def get_dict_for_permutation(sensor_profiles_arr, permutation):
     """
-    Given an array of tuples (sensor, profile) and a permutation of the same length,
+    Given an array of pairs (sensor, profile) and a permutation of the same length,
     return a sensor-profiles dictionary containing the relevant profiles
      - profile will be added only if there's 1 in the corresponding element in the permutation
     """
@@ -82,9 +90,9 @@ def get_time_est_string(num_profiles, modes):
     s = "Estimated time for test:"
     details_str = ""
     total_time = 0
-    global seconds_to_count_frames
-    global seconds_till_steady_state
-    time_per_test = seconds_to_count_frames + seconds_till_steady_state
+    global TIME_TO_COUNT_FRAMES
+    global TIME_FOR_STEADY_STATE
+    time_per_test = TIME_TO_COUNT_FRAMES + TIME_FOR_STEADY_STATE
     for mode in modes:
         test_time = 0
         if mode == ALL_PERMUTATIONS:
@@ -100,6 +108,7 @@ def get_time_est_string(num_profiles, modes):
         details_str += " + "
         total_time += test_time
 
+    # Remove the last " + " for aesthetics
     details_str = details_str[:-3]
     details_str = f"({details_str})"
     details_str += f" * {time_per_test} secs per test"
@@ -112,6 +121,8 @@ def get_tested_profiles_string(sensor_profiles_dict):
     for sensor in sensor_profiles_dict:
         for profile in sensor_profiles_dict[sensor]:
             s += sensor.name + " / " + profile.stream_name() + " + "
+
+    # Remove the last " + " for aesthetics
     s = s[:-3]
     return s
 
@@ -134,12 +145,17 @@ def generate_functions(sensor_profiles_dict):
     Creates callable functions for each sensor to be triggered when a new frame arrives
     Used to count frames received for measuring fps
     """
+    locks = {}
     sensor_function_dict = {}
     for sensor_key in sensor_profiles_dict:
+        new_lock = threading.Lock()
+        locks[sensor_key] = new_lock
+
         def on_frame_received(frame, key=sensor_key):
             global count_frames
             if count_frames:
-                sensor_profiles_dict[key] += 1
+                with locks[key]:
+                    sensor_profiles_dict[key] += 1
 
         sensor_function_dict[sensor_key] = on_frame_received
     return sensor_function_dict
@@ -151,8 +167,8 @@ def measure_fps(sensor_profiles_dict):
     and measure fps
     Return a dictionary of sensors and the fps measured for them
     """
-    global seconds_till_steady_state
-    global seconds_to_count_frames
+    global TIME_FOR_STEADY_STATE
+    global TIME_TO_COUNT_FRAMES
 
     global count_frames
     count_frames = False
@@ -172,14 +188,14 @@ def measure_fps(sensor_profiles_dict):
         sensor.start(funcs_dict[key])
 
     # the core of the test - frames are counted during sleep when count_frames is on
-    time.sleep(seconds_till_steady_state)
+    time.sleep(TIME_FOR_STEADY_STATE)
     count_frames = True  # Start counting frames
-    time.sleep(seconds_to_count_frames)
+    time.sleep(TIME_TO_COUNT_FRAMES)
     count_frames = False  # Stop counting
 
     for key in sensor_profiles_dict:
         sensor_fps_dict[key] /= len(sensor_profiles_dict[key])  # number of profiles on the sensor
-        sensor_fps_dict[key] /= seconds_to_count_frames
+        sensor_fps_dict[key] /= TIME_TO_COUNT_FRAMES
         # now for each sensor we have the average fps received
 
         sensor = key
@@ -210,9 +226,13 @@ def perform_fps_test(sensor_profiles_arr, modes):
     log.d(get_time_est_string(len(sensor_profiles_arr), modes))
 
     for mode in modes:
+        # Generate a list of all possible combinations of 1s and 0s (permutations) in the length of the array
         perms = list(itertools.product([0, 1], repeat=len(sensor_profiles_arr)))
+
+        # Go over every possible permutation and check if we should test it
+        # Each index in a permutation represents a profile, which will be tested only if the value in that index is 1
         for perm in perms:
-            # print(perm)
+            # log.d(perm)
             if all(v == 0 for v in perm):
                 continue
             if should_test(mode, perm):
@@ -276,7 +296,7 @@ def get_mutual_resolution(sensor):
 
 def get_sensors_and_profiles(device):
     """
-    Returns an array of tuples of a (sensor, profile) for each of its profiles
+    Returns an array of pairs of a (sensor, profile) for each of its profiles
     """
     sensor_profiles_arr = []
     for sensor in device.query_sensors():
