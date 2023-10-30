@@ -32,8 +32,8 @@ std::ostream & operator<<( std::ostream & s, const frame_interface & f )
         }
         else
         {
-            s << "[" << f.get_stream()->get_stream_type();
-            s << "/" << f.get_stream()->get_unique_id();
+            s << "[" << get_abbr_string( f.get_stream()->get_stream_type() );
+            s << f.get_stream()->get_unique_id();
             s << " " << f.get_header();
             s << "]";
         }

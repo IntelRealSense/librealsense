@@ -82,8 +82,7 @@ namespace librealsense
         _streams_type = {stream_type};
 
         std::ostringstream ss;
-        ss << rs2_stream_to_string( stream_type );
-        ss << '/';
+        ss << get_abbr_string( stream_type );
         ss << stream;
         _name = ss.str();
     }
@@ -177,8 +176,8 @@ namespace librealsense
                 return matcher;
             }
         }
-        LOG_DEBUG( "no matcher found for " << rs2_stream_to_string( stream_type ) << '/'
-                                           << stream_id << "; creating matcher from device..." );
+        LOG_DEBUG( "no matcher found for " << get_abbr_string( stream_type ) << '.' << stream_id
+                                           << "; creating matcher from device..." );
 
         auto sensor = frame.frame->get_sensor().get(); //TODO: Potential deadlock if get_sensor() gets a hold of the last reference of that sensor
         auto dev_exist = false;
@@ -573,12 +572,12 @@ namespace librealsense
             fps = fps_md / 1000.;
         if( fps )
         {
-            //LOG_DEBUG( "fps " << fps << " from metadata" );
+            //LOG_DEBUG( "fps " << rsutils::string::from( fps ) << " from metadata" );
         }
         else
         {
             fps = f->get_stream()->get_framerate();
-            //LOG_DEBUG( "fps " << fps << " from stream framerate" );
+            //LOG_DEBUG( "fps " << rsutils::string::from( fps ) << " from stream framerate" );
         }
         return fps;
     }
@@ -592,7 +591,9 @@ namespace librealsense
 
         auto ts = f.frame->get_frame_timestamp();
         auto ne = ts + gap;
-        //LOG_DEBUG( "... next_expected = {timestamp}" << ts << " + {gap}(1000/{fps}" << fps << ") = " << ne );
+        //LOG_DEBUG( "... next_expected = {timestamp}" << rsutils::string::from( ts ) << " + {gap}(1000/{fps}"
+        //                                             << rsutils::string::from( fps )
+        //                                             << ") = " << rsutils::string::from( ne ) );
         _next_expected[matcher.get()] = ne;
         _next_expected_domain[matcher.get()] = f.frame->get_frame_timestamp_domain();
     }
@@ -616,7 +617,7 @@ namespace librealsense
         //LOG_IF_ENABLE( "...     matcher " << synced[0]->get_name(), env );
 
         auto next_expected = _next_expected[missing];
-        // LOG_IF_ENABLE( "...     next    " << std::fixed << next_expected, env );
+        // LOG_IF_ENABLE( "...     next    " << rsutils::string::from( next_expected ), env );
 
         auto it = _next_expected_domain.find( missing );
         if( it != _next_expected_domain.end() )
@@ -685,10 +686,14 @@ namespace librealsense
             auto threshold = 7 * gap;  // really 7+1 because NE is already 1 away
             if( now - next_expected < threshold )
             {
-                //LOG_IF_ENABLE( "...     still below cutout of {NE+7*gap}" << ( next_expected + threshold ), env );
+                //LOG_IF_ENABLE( "...     still below cutout of {NE+7*gap}"
+                //                   << rsutils::string::from( next_expected + threshold ),
+                //               env );
                 return false;
             }
-            LOG_IF_ENABLE( "...     exceeded cutout of {NE+7*gap}" << ( next_expected + threshold ) << "; deactivating matcher!", env );
+            LOG_IF_ENABLE( "...     exceeded cutout of {NE+7*gap}" << rsutils::string::from( next_expected + threshold )
+                                                                   << "; deactivating matcher!",
+                           env );
 
             auto const q_it = _frames_queue.find( missing );
             if( q_it != _frames_queue.end() )
@@ -710,11 +715,14 @@ namespace librealsense
         auto gap = 1000. / fps;
         if( abs( a - b ) < (gap / 2) )
         {
-            //LOG_DEBUG( "...     " << a << " == " << b << "  {diff}" << abs( a - b ) << " < " << (gap / 2) << "{gap/2}" );
+            //LOG_DEBUG( "...     " << rsutils::string::from( a ) << " == " << rsutils::string::from( b ) << "  {diff}"
+            //                      << abs( a - b ) << " < " << rsutils::string::from( gap / 2 ) << "{gap/2}" );
             return true;
         }
 
-        //LOG_DEBUG( "...     " << a << " != " << b << "  {diff}" << abs( a - b ) << " >= " << ( gap / 2 ) << "{gap/2}" );
+        //LOG_DEBUG( "...     " << rsutils::string::from( a ) << " != " << rsutils::string::from( b ) << "  {diff}"
+        //                      << rsutils::string::from( abs( a - b ) ) << " >= " << rsutils::string::from( gap / 2 )
+        //                      << "{gap/2}" );
         return false;
     }
 
@@ -731,7 +739,7 @@ namespace librealsense
         if (!composite)
         {
             std::vector<frame_holder> match;
-            std::stringstream frame_string_for_logging;
+            std::ostringstream frame_string_for_logging;
             frame_string_for_logging << f; // Saving frame holder string before moving frame
 
             match.push_back(std::move(f));
