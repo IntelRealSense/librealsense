@@ -27,8 +27,8 @@ count_frames = False
 
 # tests parameters
 TEST_ALL_COMBINATIONS = False
-TIME_FOR_STEADY_STATE = 4
-TIME_TO_COUNT_FRAMES = 10
+TIME_FOR_STEADY_STATE = 1
+TIME_TO_COUNT_FRAMES = 5
 
 
 ##########################################
@@ -133,7 +133,7 @@ def get_tested_profiles_string(sensor_profiles_dict):
 def check_fps(expected_fps, fps_measured):
     all_fps_ok = True
     for key in expected_fps:
-        res = check_fps_pair(expected_fps[key], fps_measured[key])
+        res = check_fps_pair(fps_measured[key], expected_fps[key])
         if not res:
             all_fps_ok = False
             log.e(f"Expected {expected_fps[key]} fps, received {fps_measured[key]} fps in sensor {key.name}")
@@ -251,18 +251,19 @@ def perform_fps_test(sensor_profiles_arr, modes):
 def get_profiles_by_resolution(sensor, resolution, fps=None):
     # resolution is a required parameter because on a sensor all active profiles must have the same resolution
     profiles = []
-    p_streams_added = []
+    stream_types_added = []
     for p in sensor.get_stream_profiles():
         if get_resolution(p) == resolution:
             if fps is None or p.fps() == fps:
-                if p.stream_type() not in p_streams_added:  # can't open same stream twice
+                # to avoid having a long run time, we don't choose the same stream more than once
+                if p.stream_type() not in stream_types_added:
                     profiles.append(p)
-                    p_streams_added.append(p.stream_type())
+                    stream_types_added.append(p.stream_type())
     return profiles
 
 
 def get_mutual_resolution(sensor):
-    profile_resolutions_dict = {}  # a map between a stream type and all of its possible resolutions
+    stream_resolutions_dict = {}  # a map between a stream type and all of its possible resolutions
     possible_combinations = []
     for profile in sensor.get_stream_profiles():
         stream_type = profile.stream_type()
@@ -270,7 +271,7 @@ def get_mutual_resolution(sensor):
         fps = profile.fps()
 
         # d[key] = d.get(key, []) + [value] -> adds to the dictionary or appends if it exists
-        profile_resolutions_dict[stream_type] = profile_resolutions_dict.get(stream_type, []) + [resolution]
+        stream_resolutions_dict[stream_type] = stream_resolutions_dict.get(stream_type, []) + [resolution]
 
         if (resolution, fps) not in possible_combinations:
             possible_combinations.append((resolution, fps))
@@ -280,15 +281,14 @@ def get_mutual_resolution(sensor):
     # first, try to find a resolution and fps that all profiles have
     for option in possible_combinations:
         profiles = get_profiles_by_resolution(sensor, option[0], option[1])
-        if len(profiles) == len(profile_resolutions_dict):
+        if len(profiles) == len(stream_resolutions_dict):
             return profiles
 
     # if none found, try to find a resolution that all profiles have, on any fps (fps will be taken as an average later)
     for option in possible_combinations:
         profiles = get_profiles_by_resolution(sensor, option[0], None)
-        if len(profiles) == len(profile_resolutions_dict):
+        if len(profiles) == len(stream_resolutions_dict):
             return profiles
-
     # if reached here, then we couldn't find a resolution that all profiles have, so we can't test them together :(
     log.f("Can't run test, sensor", sensor.name, "doesn't have a resolution for all profiles")
     return []
