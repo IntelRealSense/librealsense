@@ -154,6 +154,9 @@ void uvc_sensor::open( const stream_profiles & requests )
                                << rs2_timestamp_domain_to_string( timestamp_domain ) << ",last_frame_number,"
                                << last_frame_number << ",last_timestamp," << last_timestamp );
 
+                    if( frame_counter <= last_frame_number )
+                        LOG_INFO( "Frame counter reset" );
+
                     last_frame_number = frame_counter;
                     last_timestamp = timestamp;
 

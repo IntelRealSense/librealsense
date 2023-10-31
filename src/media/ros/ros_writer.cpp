@@ -106,9 +106,9 @@ namespace librealsense
         for (int i = 0; i < static_cast<rs2_frame_metadata_value>(rs2_frame_metadata_value::RS2_FRAME_METADATA_COUNT); i++)
         {
             rs2_frame_metadata_value type = static_cast<rs2_frame_metadata_value>(i);
-            if (frame->supports_frame_metadata(type))
+            rs2_metadata_type md;
+            if (frame->find_metadata(type, &md))
             {
-                auto md = frame->get_frame_metadata(type);
                 diagnostic_msgs::KeyValue md_msg;
                 md_msg.key = librealsense::get_string(type);
                 md_msg.value = std::to_string(md);

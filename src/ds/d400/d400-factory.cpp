@@ -1345,7 +1345,7 @@ namespace librealsense
         std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get() };
         std::vector<stream_interface*> mm_streams = { _accel_stream.get(), _gyro_stream.get()};
         streams.insert(streams.end(), mm_streams.begin(), mm_streams.end());
-        if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        if( frame.frame->find_metadata( RS2_FRAME_METADATA_FRAME_COUNTER, nullptr ) )
         {
             return matcher_factory::create(RS2_MATCHER_DLR_C, streams);
         }
