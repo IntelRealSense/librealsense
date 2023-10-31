@@ -406,7 +406,8 @@ namespace librealsense
                     for( auto i : missing_streams )
                     {
                         LOG_IF_ENABLE( "... missing " << i->get_name() << ", next expected @"
-                                                      << rsutils::string::from( _next_expected[i] ),
+                                                      << rsutils::string::from( _next_expected[i].value ) << " (from "
+                                                      << rsutils::string::from( _next_expected[i].fps ) << " fps)",
                                        env );
                         if( skip_missing_stream( *curr_sync, i, last_arrived, env ) )
                         {
@@ -516,9 +517,10 @@ namespace librealsense
          if(!missing->get_active())
              return true;
 
-        auto next_expected = _next_expected[missing];
+        auto const & next_expected = _next_expected[missing];
 
-        if(synced_frame->get_frame_number() - next_expected > 4 || synced_frame->get_frame_number() < next_expected)
+        if( synced_frame->get_frame_number() - next_expected.value > 4
+            || synced_frame->get_frame_number() < next_expected.value )
         {
             return true;
         }
@@ -528,7 +530,7 @@ namespace librealsense
     void frame_number_composite_matcher::update_next_expected(
         std::shared_ptr< matcher > const & matcher, const frame_holder & f )
     {
-        _next_expected[matcher.get()] = f.frame->get_frame_number()+1.;
+        _next_expected[matcher.get()].value = f.frame->get_frame_number()+1.;
     }
 
     std::pair<double, double> extract_timestamps(frame_holder & a, frame_holder & b)
@@ -583,12 +585,12 @@ namespace librealsense
             fps = fps_md / 1000.;
         if( fps )
         {
-            //LOG_DEBUG( "fps " << rsutils::string::from( fps ) << " from metadata" );
+            //LOG_DEBUG( "fps " << rsutils::string::from( fps ) << " from metadata " << *f );
         }
         else
         {
             fps = f->get_stream()->get_framerate();
-            //LOG_DEBUG( "fps " << rsutils::string::from( fps ) << " from stream framerate" );
+            //LOG_DEBUG( "fps " << rsutils::string::from( fps ) << " from stream framerate " << *f );
         }
         return fps;
     }
@@ -605,8 +607,10 @@ namespace librealsense
         //LOG_DEBUG( "... next_expected = {timestamp}" << rsutils::string::from( ts ) << " + {gap}(1000/{fps}"
         //                                             << rsutils::string::from( fps )
         //                                             << ") = " << rsutils::string::from( ne ) );
-        _next_expected[matcher.get()] = ne;
-        _next_expected_domain[matcher.get()] = f.frame->get_frame_timestamp_domain();
+        auto & next_expected = _next_expected[matcher.get()];
+        next_expected.value = ne;
+        next_expected.fps = fps;
+        next_expected.domain = f.frame->get_frame_timestamp_domain();
     }
 
     void timestamp_composite_matcher::clean_inactive_streams(frame_holder& f)
@@ -627,20 +631,16 @@ namespace librealsense
 
         //LOG_IF_ENABLE( "...     matcher " << synced[0]->get_name(), env );
 
-        auto next_expected = _next_expected[missing];
-        // LOG_IF_ENABLE( "...     next    " << rsutils::string::from( next_expected ), env );
+        auto const & next_expected = _next_expected[missing];
+        // LOG_IF_ENABLE( "...     next    " << std::fixed << next_expected, env );
 
-        auto it = _next_expected_domain.find( missing );
-        if( it != _next_expected_domain.end() )
+        if( next_expected.domain != last_arrived.timestamp_domain )
         {
-            if( it->second != last_arrived.timestamp_domain )
-            {
-                // LOG_IF_ENABLE( "...     not the same domain: frameset not ready!", env );
-                // D457 dev - return false removed
-                // because IR has no md, so its ts domain is "system time"
-                // other streams have md, and their ts domain is "hardware clock"
-                //return false;
-            }
+            // LOG_IF_ENABLE( "...     not the same domain: frameset not ready!", env );
+            // D457 dev - return false removed
+            // because IR has no md, so its ts domain is "system time"
+            // other streams have md, and their ts domain is "hardware clock"
+            //return false;
         }
 
         // We want to calculate a cutout for inactive stream detection: if we wait too long past
@@ -686,7 +686,7 @@ namespace librealsense
         auto const fps = get_fps( waiting_to_be_released );
 
         rs2_time_t now = last_arrived.timestamp;
-        if( now > next_expected )
+        if( now > next_expected.value )
         {
             // Wait for the missing stream frame to arrive -- up to a cutout: anything more and we
             // let the frameset be ready without it...
@@ -695,15 +695,15 @@ namespace librealsense
             // between the streams we're willing to live with. Each gap is a frame so we are limited
             // by the number of frames we're willing to keep (which is our queue limit)
             auto threshold = 7 * gap;  // really 7+1 because NE is already 1 away
-            if( now - next_expected < threshold )
+            if( now - next_expected.value < threshold )
             {
                 //LOG_IF_ENABLE( "...     still below cutout of {NE+7*gap}"
                 //                   << rsutils::string::from( next_expected + threshold ),
                 //               env );
                 return false;
             }
-            LOG_IF_ENABLE( "...     exceeded cutout of {NE+7*gap}" << rsutils::string::from( next_expected + threshold )
-                                                                   << "; deactivating matcher!",
+            LOG_IF_ENABLE( "...     exceeded cutout of {NE+7*gap}"
+                               << rsutils::string::from( next_expected.value + threshold ) << "; deactivating matcher!",
                            env );
 
             auto const q_it = _frames_queue.find( missing );
@@ -717,8 +717,8 @@ namespace librealsense
         }
 
         return ! are_equivalent( waiting_to_be_released->get_frame_timestamp(),
-                                 next_expected,
-                                 fps );  // should be min fps to match behavior elsewhere?
+                                 next_expected.value,
+                                 fps );
     }
 
     bool timestamp_composite_matcher::are_equivalent( double a, double b, double fps )

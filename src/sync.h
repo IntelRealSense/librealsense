@@ -120,8 +120,13 @@ namespace librealsense
 
         std::map< matcher *, matcher_queue > _frames_queue;
         std::map<stream_id, std::shared_ptr<matcher>> _matchers;
-        std::map<matcher*, double> _next_expected;
-        std::map<matcher*, rs2_timestamp_domain> _next_expected_domain;
+        struct next_expected_t
+        {
+            double value;  // timestamp/frame-number/etc.
+            double fps;
+            rs2_timestamp_domain domain;
+        };
+        std::map< matcher *, next_expected_t > _next_expected;
 
         std::mutex _mutex;
     };
