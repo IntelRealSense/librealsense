@@ -31,6 +31,10 @@
   <build_depend>git</build_depend>
   <build_depend>udev</build_depend>
 
+  <depend>libx11</depend>
+  <depend>libglfw3-dev</depend>
+  <depend>opengl</depend>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>
