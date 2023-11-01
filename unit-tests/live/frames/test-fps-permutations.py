@@ -3,10 +3,10 @@
 
 # test:device D400*
 # test:donotrun:!nightly
-# test:timeout 750
+# test:timeout 300
 # timeout - on the worst case, we're testing on D585S, which have 8 streams, so:
-# timeout = (8 choose 2) * 24 + 24 = 696
-# 8 choose 2 tests to do (one for each pair), plus one for all streams on, each test takes 24 secs
+# timeout = ((8 choose 2)+1) * (TIME_FOR_STEADY_STATE + TIME_TO_COUNT_FRAMES)
+# 8 choose 2 tests to do (one for each pair), plus one for all streams on
 
 from rspy import test, log
 import time
@@ -27,7 +27,7 @@ count_frames = False
 
 # tests parameters
 TEST_ALL_COMBINATIONS = False
-TIME_FOR_STEADY_STATE = 1
+TIME_FOR_STEADY_STATE = 3
 TIME_TO_COUNT_FRAMES = 5
 
 
