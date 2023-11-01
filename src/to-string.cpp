@@ -84,6 +84,9 @@ char const * get_abbr_string( rs2_stream value)
     case RS2_STREAM_POSE: return "P";
     case RS2_STREAM_CONFIDENCE: return "Conf";
     case RS2_STREAM_MOTION: return "M";
+    case RS2_STREAM_SAFETY: return "S";
+    case RS2_STREAM_OCCUPANCY: return "O";
+    case RS2_STREAM_LABELED_POINT_CLOUD: return "LPC";
     default:
         assert( !is_valid( value ) );
         return "?";
