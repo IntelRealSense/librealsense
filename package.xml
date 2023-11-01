@@ -2,7 +2,6 @@
 
 <!-- This file is only used to enable the building librealsense2 -->
 <!-- as a debian package for use with ROS 2 (http://ros.org) -->
-<!-- via ament_cmake (which invokes cmake) -->
 
 <package format="2">
   <name>librealsense2</name>
@@ -20,7 +19,7 @@
 
   <license>Apache License, Version 2.0</license>
 
-  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>cmake</buildtool_depend>
 
   <build_depend>pkg-config</build_depend>
 
@@ -36,6 +35,6 @@
   <depend>opengl</depend>
 
   <export>
-    <build_type>ament_cmake</build_type>
+    <build_type>cmake</build_type>
   </export>
 </package>
