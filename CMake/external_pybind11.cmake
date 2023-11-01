@@ -56,7 +56,7 @@ function(get_pybind11)
     add_subdirectory( "${CMAKE_BINARY_DIR}/third-party/pybind11"
                       "${CMAKE_BINARY_DIR}/third-party/pybind11/build" )
 
-    set_target_properties( pybind11 PROPERTIES FOLDER "ExternalProjectTargets" )
+    set_target_properties( pybind11 PROPERTIES FOLDER "3rd Party" )
 
     # Besides pybind11, any python module will also need to be installed using:
     #     install(

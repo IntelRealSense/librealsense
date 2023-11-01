@@ -1083,12 +1083,12 @@ void frame_drops_dashboard::process_frame(rs2::frame f)
         {
             auto last = stream_to_time[f.get_profile().unique_id()];
 
-            long long fps = f.get_profile().fps();
+            double fps = (double)f.get_profile().fps();
 
-            if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
-                fps = f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
+            if( f.supports_frame_metadata( RS2_FRAME_METADATA_ACTUAL_FPS ) )
+                fps = f.get_frame_metadata( RS2_FRAME_METADATA_ACTUAL_FPS ) / 1000.;
 
-            if (1000.f * (ts - last) > 1.5f * (1000.f / fps)) {
+            if (1000. * (ts - last) > 1.5 * (1000. / fps)) {
                 drops++;
             }
         }

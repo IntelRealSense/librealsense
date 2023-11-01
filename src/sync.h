@@ -5,6 +5,7 @@
 
 #include "types.h"
 #include "archive.h"
+#include "core/frame-holder.h"
 
 #include <stdint.h>
 #include <vector>
@@ -110,10 +111,22 @@ namespace librealsense
                                            const frame_holder & f )
             = 0;
 
-        std::map<matcher*, single_consumer_frame_queue<frame_holder>> _frames_queue;
+        struct matcher_queue
+        {
+            single_consumer_frame_queue< frame_holder > q;
+
+            matcher_queue();
+        };
+
+        std::map< matcher *, matcher_queue > _frames_queue;
         std::map<stream_id, std::shared_ptr<matcher>> _matchers;
-        std::map<matcher*, double> _next_expected;
-        std::map<matcher*, rs2_timestamp_domain> _next_expected_domain;
+        struct next_expected_t
+        {
+            double value;  // timestamp/frame-number/etc.
+            double fps;
+            rs2_timestamp_domain domain;
+        };
+        std::map< matcher *, next_expected_t > _next_expected;
 
         std::mutex _mutex;
     };
@@ -180,10 +193,8 @@ namespace librealsense
                                    const frame_holder & f ) override;
 
     private:
-        unsigned int get_fps( frame_interface const * f );
-        bool are_equivalent( double a, double b, unsigned int fps );
+        double get_fps( frame_interface const * f );
+        bool are_equivalent( double a, double b, double fps );
         std::map<matcher*, double> _last_arrived;
-        std::map<matcher*, unsigned int> _fps;
-
     };
 }

@@ -69,6 +69,28 @@ const char * get_string( rs2_stream value )
 #undef CASE
 }
 
+char const * get_abbr_string( rs2_stream value)
+{
+    switch( value )
+    {
+    case RS2_STREAM_ANY: return "Any";
+    case RS2_STREAM_DEPTH: return "D";
+    case RS2_STREAM_COLOR: return "C";
+    case RS2_STREAM_INFRARED: return "IR";
+    case RS2_STREAM_FISHEYE: return "FE";
+    case RS2_STREAM_GYRO: return "G";
+    case RS2_STREAM_ACCEL: return "A";
+    case RS2_STREAM_GPIO: return "GPIO";
+    case RS2_STREAM_POSE: return "P";
+    case RS2_STREAM_CONFIDENCE: return "Conf";
+    case RS2_STREAM_MOTION: return "M";
+    default:
+        assert( !is_valid( value ) );
+        return "?";
+    }
+}
+
+
 const char * get_string( rs2_sr300_visual_preset value )
 {
 #define CASE( X ) STRCASE( SR300_VISUAL_PRESET, X )

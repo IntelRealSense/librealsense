@@ -39,7 +39,7 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_TIME_OF_ARRIVAL                      , /**< Time of arrival in system clock */
     RS2_FRAME_METADATA_TEMPERATURE                          , /**< Temperature of the device, measured at the time of the frame capture. Celsius degrees */
     RS2_FRAME_METADATA_BACKEND_TIMESTAMP                    , /**< Timestamp get from uvc driver. usec*/
-    RS2_FRAME_METADATA_ACTUAL_FPS                           , /**< Actual fps */
+    RS2_FRAME_METADATA_ACTUAL_FPS                           , /**< Actual fps, times 1000 (30.1 fps would be 30100 in the metadata) */
     RS2_FRAME_METADATA_FRAME_LASER_POWER                    , /**< Laser power value 0-360. */
     RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE               , /**< Laser power mode. Zero corresponds to Laser power switched off and one for switched on. deprecated, replaced by RS2_FRAME_METADATA_FRAME_EMITTER_MODE*/
     RS2_FRAME_METADATA_EXPOSURE_PRIORITY                    , /**< Exposure priority. */

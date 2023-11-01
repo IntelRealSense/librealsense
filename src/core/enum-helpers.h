@@ -48,6 +48,7 @@ std::ostream & operator<<( std::ostream & out, rs2_option option );
 bool try_parse( const std::string & option_name, rs2_option & result );
 
 RS2_ENUM_HELPERS( rs2_stream, STREAM )
+LRS_EXTENSION_API char const * get_abbr_string( rs2_stream );
 RS2_ENUM_HELPERS( rs2_format, FORMAT )
 RS2_ENUM_HELPERS( rs2_distortion, DISTORTION )
 RS2_ENUM_HELPERS( rs2_camera_info, CAMERA_INFO )

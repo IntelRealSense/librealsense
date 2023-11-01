@@ -10,7 +10,7 @@
 #endif
 
 #include <librealsense2/hpp/rs_types.hpp>  // rs2_devices_changed_callback
-#include <librealsense2/rs.h>              // RS2_API_VERSION_STR
+#include <librealsense2/rs.h>              // RS2_API_FULL_VERSION_STR
 #include <src/librealsense-exception.h>
 
 #include <rsutils/easylogging/easyloggingpp.h>
@@ -29,7 +29,7 @@ namespace librealsense
         if( ! version_logged )
         {
             version_logged = true;
-            LOG_DEBUG( "Librealsense VERSION: " << RS2_API_VERSION_STR );
+            LOG_DEBUG( "Librealsense VERSION: " << RS2_API_FULL_VERSION_STR );
         }
 
         _factories.push_back( std::make_shared< backend_device_factory >(

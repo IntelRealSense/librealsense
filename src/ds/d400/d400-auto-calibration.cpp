@@ -1266,13 +1266,16 @@ namespace librealsense
     {
         try
         {
+            auto fi = (frame_interface *)f;
             std::vector<uint8_t> res;
-            rs2_metadata_type frame_counter = ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
-            rs2_metadata_type frame_ts = ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
+            rs2_metadata_type frame_counter;
+            if( ! fi->find_metadata( RS2_FRAME_METADATA_FRAME_COUNTER, &frame_counter ) )
+                throw invalid_value_exception( "missing FRAME_COUNTER" );
+            rs2_metadata_type frame_ts;
+            if( ! fi->find_metadata( RS2_FRAME_METADATA_FRAME_TIMESTAMP, &frame_ts ) )
+                throw invalid_value_exception( "missing FRAME_TIMESTAMP" );
             bool tare_fc_workaround = (_action == auto_calib_action::RS2_OCC_ACTION_TARE_CALIB); //Tare calib shall use rolling frame counter
-            bool mipi_sku = ((frame_interface*)f)->supports_frame_metadata(RS2_FRAME_METADATA_CALIB_INFO);
-            if (mipi_sku)
-                frame_counter = ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_CALIB_INFO);
+            bool mipi_sku = fi->find_metadata( RS2_FRAME_METADATA_CALIB_INFO, &frame_counter );
 
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CAMERA_START)
             {

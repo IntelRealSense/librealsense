@@ -48,7 +48,7 @@ function(get_fastdds)
 
     # place FastDDS project with other 3rd-party projects
     set_target_properties(fastcdr fastrtps PROPERTIES
-                          FOLDER "ExternalProjectTargets/fastdds")
+                          FOLDER "3rd Party/fastdds")
 
     list(POP_BACK CMAKE_MESSAGE_INDENT) # Unindent outputs
 

@@ -164,7 +164,7 @@ rs2::device wait_for_device(const rs2::device_hub& hub, bool print_info = true)
 
 int main(int argc, char** argv)
 {
-    CmdLine cmd("librealsense rs-terminal tool", ' ', RS2_API_VERSION_STR);
+    CmdLine cmd("librealsense rs-terminal tool", ' ', RS2_API_FULL_VERSION_STR);
     SwitchArg debug_arg( "", "debug", "Turn on LibRS debug logs" );
     ValueArg<string> xml_arg("l", "load", "Full file path of commands XML file", false, "", "Load commands XML file");
     ValueArg<int> device_id_arg("d", "deviceId", "Device ID could be obtain from rs-enumerate-devices example", false, 0, "Select a device to work with");

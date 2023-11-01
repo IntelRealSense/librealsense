@@ -46,6 +46,8 @@ PYBIND11_MODULE(NAME, m) {
     m.def( "executable_path", &rsutils::os::executable_path );
     m.def( "executable_name", &rsutils::os::executable_name, py::arg( "with_extension" ) = false );
 
+    m.def( "string_from_double", []( double d ) { return rsutils::string::from( d ).str(); } );
+
     using rsutils::version;
     py::class_< version >( m, "version" )
         .def( py::init<>() )
