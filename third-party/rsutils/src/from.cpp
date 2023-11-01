@@ -9,6 +9,25 @@ namespace rsutils {
 namespace string {
 
 
+from::from( double d, int precision )
+{
+    char base[64];
+    auto const len = std::snprintf( base, sizeof( base ), "%.*f", precision, d );
+    if( len < 0 || len >= sizeof( base ) )
+        _ss << d;
+    else
+    {
+        char const * end = base + len;
+        while( end > base && end[-1] == '0' )
+            --end;
+        if( *base == '0' && base[1] == '.' && end == base + 2 )
+            _ss << d;
+        else
+            _ss.write( base, end - base );
+    }
+}
+
+
 std::string from::datetime( tm const * time, char const * format )
 {
     std::string buffer;

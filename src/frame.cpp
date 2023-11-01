@@ -32,8 +32,8 @@ std::ostream & operator<<( std::ostream & s, const frame_interface & f )
         }
         else
         {
-            s << "[" << f.get_stream()->get_stream_type();
-            s << "/" << f.get_stream()->get_unique_id();
+            s << "[" << get_abbr_string( f.get_stream()->get_stream_type() );
+            s << f.get_stream()->get_unique_id();
             s << " " << f.get_header();
             s << "]";
         }
@@ -45,7 +45,7 @@ std::ostream & operator<<( std::ostream & s, const frame_interface & f )
 std::ostream & operator<<( std::ostream & os, frame_header const & header )
 {
     os << "#" << header.frame_number;
-    os << " @" << ( rsutils::string::from() << std::fixed << std::setprecision( 2 ) << (double)header.timestamp ).str();
+    os << " @" << rsutils::string::from( header.timestamp );
     if( header.timestamp_domain != RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK )
         os << "/" << rs2_timestamp_domain_to_string( header.timestamp_domain );
     return os;
