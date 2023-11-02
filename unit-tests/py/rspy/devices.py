@@ -33,7 +33,8 @@ from rspy import repo
 pyrs_dir = repo.find_pyrs_dir()
 sys.path.insert( 1, pyrs_dir )
 
-MAX_ENUMERATION_TIME = 10  # [sec]
+# D585S can take up to 15 sec to boot according to PRD
+MAX_ENUMERATION_TIME = 15  # [sec]
 
 # We need both pyrealsense2 and acroname. We can work without acroname, but
 # without pyrealsense2 no devices at all will be returned.
