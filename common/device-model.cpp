@@ -2708,16 +2708,11 @@ namespace rs2
                 if (pair.first == "Firmware Version")
                 {
                     fw_version = pair.second;
-                    ImGui::PushItemWidth(80);
                 }
                 ImGui::InputText(label.c_str(),
                     (char*)pair.second.data(),
                     pair.second.size() + 1,
                     ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
-                if (pair.first == "Firmware Version")
-                {
-                    ImGui::PopItemWidth();
-                }
                 ImGui::PopStyleColor(3);
                 ImGui::SetCursorPos({ rc.x, rc.y + line_h });
             }
