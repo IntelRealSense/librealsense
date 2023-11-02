@@ -94,14 +94,16 @@ namespace librealsense
         safety_ep->register_option(RS2_OPTION_SAFETY_PRESET_ACTIVE_INDEX, active_safety_preset);
         
         // Register operational mode option
-        auto safety_camera_oper_mode = std::make_shared< uvc_xu_option< uint16_t > >(
-        *raw_safety_sensor,
-        safety_xu,
-        xu_id::SAFETY_CAMERA_OPER_MODE,
-        "Safety camera operational mode",
-        std::map< float, std::string >{ { float( RS2_SAFETY_MODE_RUN ),     "Run" },
-                                        { float( RS2_SAFETY_MODE_STANDBY ), "Standby" },
-                                        { float( RS2_SAFETY_MODE_SERVICE ), "Service" } } );
+        static const std::chrono::milliseconds safety_mode_change_timeout( 2000 );
+        auto safety_camera_oper_mode = std::make_shared< ensure_set_xu_option< uint16_t > >(
+            *raw_safety_sensor,
+            safety_xu,
+            xu_id::SAFETY_CAMERA_OPER_MODE,
+            "Safety camera operational mode",
+            std::map< float, std::string >{ { float( RS2_SAFETY_MODE_RUN ),     "Run" },
+                                            { float( RS2_SAFETY_MODE_STANDBY ), "Standby" },
+                                            { float( RS2_SAFETY_MODE_SERVICE ), "Service" } },
+            safety_mode_change_timeout );
 
         safety_ep->register_option( RS2_OPTION_SAFETY_MODE, safety_camera_oper_mode );
 

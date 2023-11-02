@@ -8,7 +8,6 @@ import time
 import pyrealsense2 as rs
 from rspy import test, log
 from rspy.timer import Timer
-from safety.safety_common import set_operational_mode
 
 y16_streamed = False
 
@@ -37,8 +36,9 @@ depth_sensor = device.first_depth_sensor()
 
 
 test.start("Switch to Service Mode")
-original_mode = int(safety_sensor.get_option(rs.option.safety_mode))
-test.check(set_operational_mode(safety_sensor, rs.safety_mode.service))
+original_mode = safety_sensor.get_option(rs.option.safety_mode)
+safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.service)
+test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.service))
 test.finish()
 
 test.start('Check that y16 is streaming:')
@@ -64,7 +64,8 @@ test.finish()
 
 test.start("Restoring original safety mode")
 log.d("Original mode is:", original_mode)
-test.check(set_operational_mode(safety_sensor, original_mode))
+safety_sensor.set_option(rs.option.safety_mode, original_mode)
+test.check_equal( safety_sensor.get_option(rs.option.safety_mode), original_mode)
 test.finish()
 
 test.print_results_and_exit()
