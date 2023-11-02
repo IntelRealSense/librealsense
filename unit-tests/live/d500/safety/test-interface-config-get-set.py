@@ -3,7 +3,7 @@
 import time
 
 #test:device D585S
-#test:donotrun
+
 
 import pyrealsense2 as rs
 from rspy import test, log, devices
@@ -164,7 +164,8 @@ dev = test.find_first_device_or_exit()
 safety_sensor = dev.first_safety_sensor()
 
 log.d( "Setting operational mode to service" )
-test.check(set_operational_mode(safety_sensor, rs.safety_mode.service))
+safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.service)
+test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.service))
 
 config_after_reboot = safety_sensor.get_safety_interface_config(rs.calib_location.flash)
 
