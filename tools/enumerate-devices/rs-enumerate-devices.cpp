@@ -300,7 +300,7 @@ void output_modes( std::vector< stream_profile > const & profiles, bool verbose,
 
 int main(int argc, char** argv) try
 {
-    CmdLine cmd("librealsense rs-enumerate-devices tool", ' ', RS2_API_VERSION_STR);
+    CmdLine cmd("librealsense rs-enumerate-devices tool", ' ', RS2_API_FULL_VERSION_STR);
 
     SwitchArg debug_arg( "", "debug", "Turn on LibRS debug logs" );
     SwitchArg short_view_arg("s", "short", "Provide a one-line summary of the devices");

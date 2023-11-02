@@ -5,7 +5,7 @@
 Brainstem Acroname Hub
 
 See documentation for brainstem here:
-https://acroname.com/reference/python/index.html
+https://acroname.com/reference/api/python/index.html
 """
 
 from rspy import log
@@ -145,7 +145,14 @@ def ports():
 
 
 def is_port_enabled( port ):
-    return port_state( port ) == "OK"
+    """
+    query if the input port number is enabled through Acroname
+    It doesn't mean the device is enumerated as sometimes if the FW crashed we can have a situation where the port is "Disconnected" and not "OK"
+    :param port: port number;
+    :return: True if Acroname enabled this port, False otherwise
+    """
+
+    return port_state( port ) != "Disabled"
 
 
 def port_state( port ):
@@ -154,14 +161,37 @@ def port_state( port ):
     #
     global hub
     status = hub.usb.getPortState( port )
-    #
-    if status.value == 0:
+    #log.d("getPortState for port", port ,"return", port_state_bitmask_to_string( status.value ))
+    return port_state_bitmask_to_string( status.value )
+
+
+def port_state_bitmask_to_string( bitmask ):
+    """
+    https://acroname.com/reference/devices/usbhub3p/entities/usb.html#usb-port-state
+    Bit   |  Port State: Result Bitwise Description
+    -----------------------------------------------
+    0     |  USB Vbus Enabled - Port is Disabled/Enabled by the Acroname
+    1     |  USB2 Data Enabled
+    2     |  Reserved
+    3     |  USB3 Data Enabled
+    4:10  |  Reserved
+    11    |  USB2 Device Attached
+    12    |  USB3 Device Attached
+    13:18 |  Reserved
+    19    |  USB Error Flag
+    20    |  USB2 Boost Enabled
+    21:22 |  Reserved
+    23    |  Device Attached
+    24:31 |  Reserved
+    """
+
+    if bitmask == 0: # Port is disabled by Acroname
         return "Disabled"
-    if status.value == 11:
+    if bitmask == 11: # Port is enabled but no device was detected
         return "Disconnected"
-    if status.value > 100:
+    if bitmask > 100: # Normally we hope it will cover "Device Attached" use cases (Note, can also be turn on when 'USB Error Flag' is on...but we havn't seen that )
         return "OK"
-    return "Unknown Error ({})".format( status.value )
+    return "Unknown Error ({})".format( bitmask )
 
 
 def enable_ports( ports = None, disable_other_ports = False, sleep_on_change = 0 ):
@@ -189,6 +219,7 @@ def enable_ports( ports = None, disable_other_ports = False, sleep_on_change = 0
         #
         elif disable_other_ports:
             if is_port_enabled( port ):
+                #log.d("disabling port", port)
                 action_result = hub.usb.setPortDisable( port )
                 if action_result != brainstem.result.Result.NO_ERROR:
                     result = False

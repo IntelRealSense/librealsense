@@ -38,8 +38,7 @@ public:
 
     virtual ~frame() { on_release.reset(); }
     frame_header const & get_header() const override { return additional_data; }
-    rs2_metadata_type get_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const override;
-    bool supports_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const override;
+    bool find_metadata( rs2_frame_metadata_value, rs2_metadata_type * p_output_value ) const override;
     int get_frame_data_size() const override;
     const uint8_t * get_frame_data() const override;
     rs2_time_t get_frame_timestamp() const override;
@@ -50,6 +49,9 @@ public:
     {
         additional_data.timestamp_domain = timestamp_domain;
     }
+
+    // Return FPS calculated as (1000*d_frames/d_timestamp), or 0 if this cannot be estimated
+    double calc_actual_fps() const;
 
     rs2_time_t get_frame_system_time() const override;
 

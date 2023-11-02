@@ -32,8 +32,8 @@ std::ostream & operator<<( std::ostream & s, const frame_interface & f )
         }
         else
         {
-            s << "[" << f.get_stream()->get_stream_type();
-            s << "/" << f.get_stream()->get_unique_id();
+            s << "[" << get_abbr_string( f.get_stream()->get_stream_type() );
+            s << f.get_stream()->get_unique_id();
             s << " " << f.get_header();
             s << "]";
         }
@@ -45,7 +45,7 @@ std::ostream & operator<<( std::ostream & s, const frame_interface & f )
 std::ostream & operator<<( std::ostream & os, frame_header const & header )
 {
     os << "#" << header.frame_number;
-    os << " @" << ( rsutils::string::from() << std::fixed << std::setprecision( 2 ) << (double)header.timestamp ).str();
+    os << " @" << rsutils::string::from( header.timestamp );
     if( header.timestamp_domain != RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK )
         os << "/" << rs2_timestamp_domain_to_string( header.timestamp_domain );
     return os;
@@ -133,62 +133,18 @@ frame_interface * frame::publish( std::shared_ptr< archive_interface > new_owner
     return owner->publish_frame( this );
 }
 
-rs2_metadata_type frame::get_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const
+bool frame::find_metadata( rs2_frame_metadata_value frame_metadata, rs2_metadata_type * p_value ) const
 {
     if( ! metadata_parsers )
-        throw invalid_value_exception( rsutils::string::from()
-                                       << "metadata not available for " << get_string( get_stream()->get_stream_type() )
-                                       << " stream" );
-
-    auto parsers = metadata_parsers->equal_range( frame_metadata );
-    if( parsers.first
-        == metadata_parsers
-               ->end() )  // Possible user error - md attribute is not supported by this frame type
-        throw invalid_value_exception( rsutils::string::from()
-                                       << get_string( frame_metadata ) << " attribute is not applicable for "
-                                       << get_string( get_stream()->get_stream_type() ) << " stream " );
-
-    rs2_metadata_type result = -1;
-    bool value_retrieved = false;
-    std::string exc_str;
-    for( auto it = parsers.first; it != parsers.second; ++it )
-    {
-        try
-        {
-            result = it->second->get( *this );
-            value_retrieved = true;
-            break;
-        }
-        catch( invalid_value_exception & e )
-        {
-            exc_str = e.what();
-        }
-    }
-    if( ! value_retrieved )
-        throw invalid_value_exception( exc_str );
-
-    return result;
-}
-
-bool frame::supports_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const
-{
-    // verify preconditions
-    if( ! metadata_parsers )
-        return false;  // No parsers are available or no metadata was attached
-
-    bool ret = false;
-    auto found = metadata_parsers->equal_range( frame_metadata );
-    if( found.first == metadata_parsers->end() )
         return false;
+    auto parsers = metadata_parsers->equal_range( frame_metadata );
 
-    for( auto it = found.first; it != found.second; ++it )
-        if( it->second->supports( *this ) )
-        {
-            ret = true;
-            break;
-        }
+    bool value_retrieved = false;
+    for( auto it = parsers.first; it != parsers.second; ++it )
+        if( it->second->find( *this, p_value ) )
+            value_retrieved = true;
 
-    return ret;
+    return value_retrieved;
 }
 
 int frame::get_frame_data_size() const
@@ -221,6 +177,18 @@ rs2_time_t frame::get_frame_timestamp() const
 unsigned long long frame::get_frame_number() const
 {
     return additional_data.frame_number;
+}
+
+double frame::calc_actual_fps() const
+{
+    auto const dt = ( additional_data.timestamp - additional_data.last_timestamp );
+    if( dt > 0. && additional_data.frame_number > additional_data.last_frame_number )
+    {
+        auto const n_frames = additional_data.frame_number - additional_data.last_frame_number;
+        return 1000. * n_frames / dt;
+    }
+
+    return 0.;  // Unknown actual FPS
 }
 
 rs2_time_t frame::get_frame_system_time() const

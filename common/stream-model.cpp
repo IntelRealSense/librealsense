@@ -822,7 +822,7 @@ namespace rs2
                                     "Frame Timestamp is normalized represetation of when the frame was taken.\n"
                                     "It's a property of every frame, so when exact creation time is not provided by "
                                     "the hardware, an approximation will be used.\n"
-                                    "Clock Domain feilds helps to interpret the meaning of timestamp\n"
+                                    "Clock Domain fields helps to interpret the meaning of timestamp\n"
                                     "Timestamp is measured in milliseconds, and is allowed to roll-over (reset to "
                                     "zero) in some situations" } );
         stream_details.push_back(
@@ -904,10 +904,10 @@ namespace rs2
                                                                         "When AE is set On, the value is controlled by firmware. Integer value" },
             { RS2_FRAME_METADATA_AUTO_EXPOSURE                        , "Auto Exposure Mode indicator. Zero corresponds to AE switched off. " },
             { RS2_FRAME_METADATA_WHITE_BALANCE                        , "White Balance setting as a color temperature. Kelvin degrees" },
-            { RS2_FRAME_METADATA_TIME_OF_ARRIVAL                      , "Time of arrival in system clock " },
+            { RS2_FRAME_METADATA_TIME_OF_ARRIVAL                      , "Time of arrival in system clock" },
             { RS2_FRAME_METADATA_TEMPERATURE                          , "Temperature of the device, measured at the time of the frame capture. Celsius degrees " },
             { RS2_FRAME_METADATA_BACKEND_TIMESTAMP                    , "Timestamp get from uvc driver. usec" },
-            { RS2_FRAME_METADATA_ACTUAL_FPS                           , "Actual hardware FPS. May differ from requested due to Auto-Exposure" },
+            { RS2_FRAME_METADATA_ACTUAL_FPS                           , "Hardware FPS * 1000 =\n1000000 * (frame-number - prev-frame-number) / (timestamp - prev-timestamp)" },
             { RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE               , "Laser power mode. Zero corresponds to Laser power switched off and one for switched on." },
             { RS2_FRAME_METADATA_EXPOSURE_PRIORITY                    , "Exposure priority. When enabled Auto-exposure algorithm is allowed to reduce requested FPS to sufficiently increase exposure time (an get enough light)" },
             { RS2_FRAME_METADATA_POWER_LINE_FREQUENCY                 , "Power Line Frequency for anti-flickering Off/50Hz/60Hz/Auto. " },
@@ -925,10 +925,10 @@ namespace rs2
             {
                 auto val = (rs2_frame_metadata_value)i;
                 std::string name = rs2_frame_metadata_to_string(val);
-                std::string desc = "";
+                std::string desc;
                 if( descriptions.find( val ) != descriptions.end() )
                     desc = descriptions[val];
-                stream_details.push_back( { name, rsutils::string::from() << kvp.second, desc } );
+                stream_details.push_back( { name, rsutils::string::from( kvp.second ), desc } );
             }
         }
 

@@ -262,7 +262,7 @@ try
     bool is_d500_device = false;
     bool ignore_unsigned_request = false;
 
-    CmdLine cmd("librealsense rs-fw-update tool", ' ', RS2_API_VERSION_STR);
+    CmdLine cmd("librealsense rs-fw-update tool", ' ', RS2_API_FULL_VERSION_STR);
 
     SwitchArg list_devices_arg("l", "list_devices", "List all available devices");
     SwitchArg recover_arg("r", "recover", "Recover all connected devices which are in recovery mode");

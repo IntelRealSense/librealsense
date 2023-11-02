@@ -149,6 +149,18 @@ if(APPLE)
 endif()
 endif()
 
+if(${BACKEND} STREQUAL RS2_USE_V4L2_BACKEND)
+    if(UDEV_FOUND)
+        target_sources( pybackend2
+            PRIVATE
+                ../../src/linux/udev-device-watcher.cpp
+                ../../src/linux/udev-device-watcher.h
+            )
+        target_link_libraries( pybackend2 PRIVATE udev )
+        target_compile_definitions( pybackend2 PRIVATE -DUSING_UDEV )
+    endif()
+endif()
+
 install(TARGETS pybackend2 pyrealsense2
     EXPORT pyrealsense2Targets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
