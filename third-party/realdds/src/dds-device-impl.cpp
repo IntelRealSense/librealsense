@@ -343,7 +343,12 @@ void dds_device::impl::open( const dds_stream_profiles & profiles )
         { "stream-profiles", stream_profiles },
     };
 
-    write_control_message( j );
+    nlohmann::json reply;
+    write_control_message( j, &reply );
+
+    if( rsutils::json::get( reply, status_key, status_ok ) != status_ok )
+        throw std::runtime_error( "failed to open stream: "
+                                  + rsutils::json::get< std::string >( reply, explanation_key, "no explanation" ) );
 }
 
 

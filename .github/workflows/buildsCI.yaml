@@ -137,7 +137,7 @@ jobs:
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       shell: bash
       run: |        
-        LRS_SRC_DIR=$(pwd)   
+        LRS_SRC_DIR=$(pwd)
         cd ${{env.WIN_BUILD_DIR}}
         cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DBUILD_SHARED_LIBS=false -DBUILD_EXAMPLES=false -DBUILD_TOOLS=true -DBUILD_UNIT_TESTS=true -DUNIT_TESTS_ARGS="--not-live --context=windows" -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=false -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true 
 
@@ -153,6 +153,15 @@ jobs:
       shell: bash
       run: |
         python3 unit-tests/run-unit-tests.py --no-color --debug --stdout --not-live --context "windows" ${{env.WIN_BUILD_DIR}}/Release
+
+    - name: Client for realsense2-all
+      shell: bash
+      run: |
+        mkdir ${{env.WIN_BUILD_DIR}}/rs-all-client
+        cd ${{env.WIN_BUILD_DIR}}/rs-all-client
+        cmake $GITHUB_WORKSPACE/.github/workflows/rs-all-client -G "Visual Studio 16 2019"
+        cmake --build . --config Release -- -m
+        ./Release/rs-all-client
 
 
   #--------------------------------------------------------------------------------
@@ -382,7 +391,16 @@ jobs:
       run: |
         cd build
         cmake .. -DCMAKE_BUILD_TYPE=${{env.LRS_RUN_CONFIG}} -DBUILD_SHARED_LIBS=false -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_UNIT_TESTS=false -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=true -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3) -DFORCE_RSUSB_BACKEND=true
-        cmake --build . -- -j4  
+        cmake --build . -- -j4
+
+    - name: Client for realsense2-all
+      shell: bash
+      run: |
+        mkdir build/rs-all-client
+        cd build/rs-all-client
+        cmake ../../.github/workflows/rs-all-client -DBUILD_WITH_DDS=ON -DFORCE_RSUSB_BACKEND=ON
+        cmake --build . -- -j4
+        ./rs-all-client
 
     - name: LibCI
       # Note: we specifically disable BUILD_UNIT_TESTS so the executable C++ unit-tests won't run
@@ -394,12 +412,12 @@ jobs:
 
   #--------------------------------------------------------------------------------
   U22_SH_RSUSB_LiveTest:  # Ubuntu 2022, Shared, Legacy live-tests
-    runs-on: ubuntu-22.04     
+    runs-on: ubuntu-22.04
     timeout-minutes: 60
     env: 
       LRS_BUILD_NODEJS: true
     steps:
-    - uses: actions/checkout@v3   
+    - uses: actions/checkout@v3
           
     - name: Check_API
       shell: bash

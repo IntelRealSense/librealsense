@@ -47,13 +47,13 @@ function(get_fastdds)
     mark_as_advanced(FETCHCONTENT_UPDATES_DISCONNECTED_FASTDDS)
 
     # place FastDDS project with other 3rd-party projects
-    set_target_properties(fastcdr fastrtps PROPERTIES
+    set_target_properties(fastcdr fastrtps foonathan_memory PROPERTIES
                           FOLDER "3rd Party/fastdds")
 
     list(POP_BACK CMAKE_MESSAGE_INDENT) # Unindent outputs
 
     add_library(dds INTERFACE)
-    target_link_libraries(dds INTERFACE  fastcdr fastrtps)
+    target_link_libraries( dds INTERFACE fastcdr fastrtps )
 
     add_definitions(-DBUILD_WITH_DDS)
 
