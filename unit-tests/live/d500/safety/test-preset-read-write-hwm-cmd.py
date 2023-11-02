@@ -7,7 +7,6 @@
 import pyrealsense2 as rs
 from rspy import test
 import time
-from safety_common import set_operational_mode
 
 # Constants
 RUN_MODE     = 0 # RS2_SAFETY_MODE_RUN (RESUME)
@@ -36,7 +35,8 @@ test.finish()
 
 #############################################################################################
 test.start("Switch to Service Mode")  # See SRS ID 3.3.1.7.a
-test.check(set_operational_mode(safety_sensor, rs.safety_mode.service))
+safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.service)
+test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.service))
 test.finish()
 
 #############################################################################################
@@ -88,6 +88,7 @@ test.finish()
 #############################################################################################
 
 # switch back to original safety mode
-test.check(set_operational_mode(safety_sensor, rs.safety_mode.standby))
+safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.standby)
+test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.standby))
 
 test.print_results_and_exit()
