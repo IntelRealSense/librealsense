@@ -54,6 +54,8 @@ namespace rs2
 
     class windows_metadata_helper : public metadata_helper
     {
+        using super = metadata_helper;
+
     public:
         static bool parse_device_id(const std::string& id, device_id* res)
         {
@@ -239,11 +241,13 @@ namespace rs2
 
         bool is_enabled(std::string id) const override
         {
-            bool res = false;
-
             device_id did;
-            if (parse_device_id(id, &did))
-                foreach_device_path({ did }, [&res, did](const device_id&, std::wstring path) {
+            if( ! parse_device_id( id, &did ) )
+                // If it's not parsed, it's not a valid USB device; return the default
+                return super::is_enabled( id );
+
+            bool res = false;
+            foreach_device_path({ did }, [&res, did](const device_id&, std::wstring path) {
 
                 HKEY key;
                 if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, path.c_str(), 0, KEY_READ | KEY_WOW64_64KEY, &key) == ERROR_SUCCESS)
