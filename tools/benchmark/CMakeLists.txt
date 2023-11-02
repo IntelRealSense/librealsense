@@ -11,8 +11,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 if(BUILD_GRAPHICAL_EXAMPLES)
     add_executable(rs-benchmark rs-benchmark.cpp ../../third-party/glad/glad.c)
     set_property(TARGET rs-benchmark PROPERTY CXX_STANDARD 11)
-    target_link_libraries(rs-benchmark ${DEPENDENCIES} realsense2-gl)
-    include_directories(../../third-party/tclap/include ../../third-party/glad ../../examples)
+    target_link_libraries( rs-benchmark ${DEPENDENCIES} realsense2-gl tclap )
+    include_directories( ../../third-party/glad ../../examples )
     set_target_properties (rs-benchmark PROPERTIES
         FOLDER Tools
     )
