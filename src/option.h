@@ -12,6 +12,7 @@
 
 #include <rsutils/string/from.h>
 #include <rsutils/lazy.h>
+#include <rsutils/time/timer.h>
 
 #include <chrono>
 #include <memory>
@@ -448,6 +449,50 @@ namespace librealsense
     protected:
 
         mutable std::mutex _mtx;
+    };
+
+    template< typename T >
+    class ensure_set_xu_option : public uvc_xu_option< T >
+    {
+    public:
+        ensure_set_xu_option( uvc_sensor & ep, platform::extension_unit xu, uint8_t id, std::string description,
+                              std::chrono::milliseconds timeout = std::chrono::milliseconds( 1000 ),
+                              bool allow_set_while_streaming = true )
+            : uvc_xu_option< T >( ep, xu, id, description, allow_set_while_streaming )
+            , _timer( timeout )
+        {
+        }
+
+        ensure_set_xu_option( uvc_sensor & ep, platform::extension_unit xu, uint8_t id, std::string description,
+                              const std::map< float, std::string > & description_per_value,
+                              std::chrono::milliseconds timeout = std::chrono::milliseconds( 1000 ),
+                              bool allow_set_while_streaming = true )
+            : uvc_xu_option< T >( ep, xu, id, description, description_per_value, allow_set_while_streaming )
+            , _timer( timeout )
+        {
+        }
+
+        void set( float value ) override
+        {
+            uvc_xu_option< T >::set( value );
+
+            // Check that set operation succeeded
+            _timer.start();
+            do
+            {
+                std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+
+                float current_value = uvc_xu_option< T >::query();
+                if( current_value == value )
+                    return;
+            }
+            while( ! _timer.has_expired() );
+
+            throw std::runtime_error( rsutils::string::from() << "Failed to set the option to value " << value );
+        }
+
+    protected:
+        rsutils::time::timer _timer;
     };
 
     template<class T, class R, class W, class U>
