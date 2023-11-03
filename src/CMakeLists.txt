@@ -111,6 +111,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/platform/platform-device-info.h"
         "${CMAKE_CURRENT_LIST_DIR}/platform/device-watcher.h"
         "${CMAKE_CURRENT_LIST_DIR}/platform/frame-object.h"
+        "${CMAKE_CURRENT_LIST_DIR}/platform/hid-data.h"
         "${CMAKE_CURRENT_LIST_DIR}/platform/hid-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/platform/hid-device-info.h"
         "${CMAKE_CURRENT_LIST_DIR}/platform/playback-device-info.h"

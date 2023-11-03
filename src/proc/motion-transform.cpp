@@ -6,6 +6,8 @@
 #include "synthetic-stream.h"
 #include "motion-transform.h"
 #include "stream.h"
+#include <src/platform/hid-data.h>
+
 
 namespace librealsense
 {
