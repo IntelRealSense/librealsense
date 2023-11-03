@@ -14,6 +14,7 @@
 #include "platform/uvc-option.h"
 #include "core/depth-frame.h"
 #include "core/stream-profile-interface.h"
+#include "core/frame-callback.h"
 
 #include <rsutils/string/from.h>
 #include <rsutils/json.h>
@@ -618,15 +619,6 @@ void log_callback_end( uint32_t fps,
         _post_process_callback.reset();
     }
 
-    template<class T>
-    frame_callback_ptr make_callback(T callback)
-    {
-        return {
-            new internal_frame_callback<T>(callback),
-            [](rs2_frame_callback* p) { p->release(); }
-        };
-    }
-
     void synthetic_sensor::start(frame_callback_ptr callback)
     {
         std::lock_guard<std::mutex> lock(_synthetic_configure_lock);
@@ -634,15 +626,11 @@ void log_callback_end( uint32_t fps,
         // Set the post-processing callback as the user callback.
         // This callback might be modified by other object.
         set_frames_callback(callback);
-        _formats_converter.set_frames_callback( callback );
-
-        // Invoke processing blocks callback
-        auto process_cb = make_callback( [&, this]( frame_holder f ) {
-            _formats_converter.convert_frame( f );
-        } );
+        _formats_converter.set_frames_callback( callback );  // TODO duplicate?! Something fishy here!
 
         // Call the processing block on the frame
-        _raw_sensor->start(process_cb);
+        _raw_sensor->start(
+            make_frame_callback( [&, this]( frame_holder f ) { _formats_converter.convert_frame( f ); } ) );
     }
 
     void synthetic_sensor::stop()

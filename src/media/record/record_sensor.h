@@ -101,18 +101,4 @@ namespace librealsense
         void release() override { delete this; }
     };
 
-    class frame_holder_callback : public rs2_frame_callback
-    {
-        std::function<void(frame_holder)> on_frame_function;
-    public:
-        explicit frame_holder_callback(std::function<void(frame_holder)> on_frame) : on_frame_function(on_frame) {}
-
-        void on_frame(rs2_frame * fref) override
-        {
-            on_frame_function({ (frame_interface*)fref });
-        }
-
-        void release() override { delete this; }
-    };
-
 }

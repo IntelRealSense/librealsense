@@ -316,67 +316,6 @@ namespace librealsense
     using firmware_version = rsutils::version;
 
 
-    typedef void(*frame_callback_function_ptr)(rs2_frame * frame, void * user);
-
-    class frame_callback : public rs2_frame_callback
-    {
-        frame_callback_function_ptr fptr;
-        void * user;
-    public:
-        frame_callback() : frame_callback(nullptr, nullptr) {}
-        frame_callback(frame_callback_function_ptr on_frame, void * user) : fptr(on_frame), user(user) {}
-
-        operator bool() const { return fptr != nullptr; }
-        void on_frame (rs2_frame * frame) override {
-            if (fptr)
-            {
-                try { fptr(frame, user); } catch (...)
-                {
-                    LOG_ERROR("Received an exception from frame callback!");
-                }
-            }
-        }
-        void release() override { delete this; }
-    };
-
-    class internal_frame_processor_fptr_callback : public rs2_frame_processor_callback
-    {
-        rs2_frame_processor_callback_ptr fptr;
-        void * user;
-    public:
-        internal_frame_processor_fptr_callback() : internal_frame_processor_fptr_callback(nullptr, nullptr) {}
-        internal_frame_processor_fptr_callback(rs2_frame_processor_callback_ptr on_frame, void * user)
-            : fptr(on_frame), user(user) {}
-
-        operator bool() const { return fptr != nullptr; }
-        void on_frame(rs2_frame * frame, rs2_source * source) override {
-            if (fptr)
-            {
-                try { fptr(frame, source, user); }
-                catch (...)
-                {
-                    LOG_ERROR("Received an exception from frame callback!");
-                }
-            }
-        }
-        void release() override { delete this; }
-    };
-
-
-    template<class T>
-    class internal_frame_callback : public rs2_frame_callback
-    {
-        T on_frame_function; //Callable of type: void(frame_interface* frame)
-    public:
-        explicit internal_frame_callback(T on_frame) : on_frame_function(on_frame) {}
-
-        void on_frame(rs2_frame* fref) override
-        {
-            on_frame_function((frame_interface*)(fref));
-        }
-
-        void release() override { delete this; }
-    };
 
     typedef void(*notifications_callback_function_ptr)(rs2_notification * notification, void * user);
 
@@ -402,30 +341,6 @@ namespace librealsense
         void release() override { delete this; }
     };
 
-    typedef void(*software_device_destruction_callback_function_ptr)(void * user);
-
-    class software_device_destruction_callback : public rs2_software_device_destruction_callback
-    {
-        software_device_destruction_callback_function_ptr nptr;
-        void * user;
-    public:
-        software_device_destruction_callback() : software_device_destruction_callback(nullptr, nullptr) {}
-        software_device_destruction_callback(software_device_destruction_callback_function_ptr on_destruction, void * user)
-            : nptr(on_destruction), user(user) {}
-
-        operator bool() const { return nptr != nullptr; }
-        void on_destruction() override {
-            if (nptr)
-            {
-                try { nptr(user); }
-                catch (...)
-                {
-                    LOG_ERROR("Received an exception from software device destruction callback!");
-                }
-            }
-        }
-        void release() override { delete this; }
-    };
 
     typedef void(*devices_changed_function_ptr)(rs2_device_list* removed, rs2_device_list* added, void * user);
 

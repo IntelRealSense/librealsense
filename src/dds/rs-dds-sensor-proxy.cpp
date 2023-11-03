@@ -14,6 +14,7 @@
 #include <realdds/topics/imu-msg.h>
 
 #include <src/core/options-registry.h>
+#include <src/core/frame-callback.h>
 #include <src/stream.h>
 
 // Processing blocks for DDS SW sensors
@@ -428,16 +429,6 @@ void dds_sensor_proxy::add_frame_metadata( frame * const f, nlohmann::json && dd
 }
 
 
-template<class T>
-frame_callback_ptr make_callback( T callback )
-{
-    return {
-        new internal_frame_callback<T>( callback ),
-        []( rs2_frame_callback * p ) { p->release(); }
-    };
-}
-
-
 void dds_sensor_proxy::start( frame_callback_ptr callback )
 {
     for( auto & profile : sensor_base::get_active_streams() )
@@ -488,7 +479,7 @@ void dds_sensor_proxy::start( frame_callback_ptr callback )
     }
 
     _formats_converter.set_frames_callback( callback );
-    const auto && process_cb = make_callback( [&, this]( frame_holder f ) {
+    const auto && process_cb = make_frame_callback( [&, this]( frame_holder f ) {
         _formats_converter.convert_frame( f );
     } );
 

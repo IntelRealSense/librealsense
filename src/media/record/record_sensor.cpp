@@ -6,6 +6,7 @@
 #include "stream.h"
 #include <src/depth-sensor.h>
 #include <src/color-sensor.h>
+#include <src/core/frame-callback.h>
 
 #include <rsutils/string/from.h>
 
@@ -289,17 +290,16 @@ void record_sensor::hook_sensor_callbacks()
 }
 frame_callback_ptr librealsense::record_sensor::wrap_frame_callback(frame_callback_ptr callback)
 {
-    auto record_cb = [this, callback](frame_holder frame)
-    {
-        record_frame(frame.clone());
+    return make_frame_callback(
+        [this, callback]( frame_holder frame )
+        {
+            record_frame( frame.clone() );
 
-        //Raise to user callback
-        frame_interface* ref = nullptr;
-        std::swap(frame.frame, ref);
-        callback->on_frame((rs2_frame*)ref);
-    };
-
-    return std::make_shared<frame_holder_callback>(record_cb);
+            // Raise to user callback
+            frame_interface * ref = nullptr;
+            std::swap( frame.frame, ref );
+            callback->on_frame( (rs2_frame *)ref );
+        } );
 }
 void record_sensor::unhook_sensor_callbacks()
 {

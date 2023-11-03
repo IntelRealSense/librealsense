@@ -8,6 +8,7 @@
 #include "media/record/record_device.h"
 #include "media/ros/ros_writer.h"
 #include <src/proc/syncer-processing-block.h>
+#include <src/core/frame-callback.h>
 
 #include <rsutils/string/from.h>
 
@@ -201,33 +202,22 @@ namespace librealsense
 
         frame_callback_ptr pipeline::get_callback(std::vector<int> synced_streams_ids)
         {
-            auto pipeline_process_callback = [&](frame_holder fref)
-            {
-                _aggregator->invoke(std::move(fref));
-            };
+            _syncer->set_output_callback(
+                make_frame_callback( [&]( frame_holder fref ) { _aggregator->invoke( std::move( fref ) ); } ) );
 
-            frame_callback_ptr to_pipeline_process = {
-                new internal_frame_callback<decltype(pipeline_process_callback)>(pipeline_process_callback),
-                [](rs2_frame_callback* p) { p->release(); }
-            };
-
-            _syncer->set_output_callback(to_pipeline_process);
-
-            auto to_syncer = [&, synced_streams_ids](frame_holder fref)
-            {
-                // if the user requested to sync the frame push it to the syncer, otherwise push it to the aggregator
-                if (std::find(synced_streams_ids.begin(), synced_streams_ids.end(), fref->get_stream()->get_unique_id()) != synced_streams_ids.end())
-                    _syncer->invoke(std::move(fref));
-                else
-                    _aggregator->invoke(std::move(fref));
-            };
-
-            frame_callback_ptr rv = {
-                new internal_frame_callback<decltype(to_syncer)>(to_syncer),
-                [](rs2_frame_callback* p) { p->release(); }
-            };
-
-            return rv;
+            return make_frame_callback(
+                [&, synced_streams_ids]( frame_holder fref )
+                {
+                    // if the user requested to sync the frame push it to the syncer, otherwise push it to the
+                    // aggregator
+                    if( std::find( synced_streams_ids.begin(),
+                                   synced_streams_ids.end(),
+                                   fref->get_stream()->get_unique_id() )
+                        != synced_streams_ids.end() )
+                        _syncer->invoke( std::move( fref ) );
+                    else
+                        _aggregator->invoke( std::move( fref ) );
+                } );
         }
 
         frame_holder pipeline::wait_for_frames(unsigned int timeout_ms)

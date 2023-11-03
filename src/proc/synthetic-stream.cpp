@@ -7,6 +7,7 @@
 #include "core/motion-frame.h"
 #include "core/depth-frame.h"
 #include <src/composite-frame.h>
+#include <src/core/frame-callback.h>
 #include "option.h"
 #include "stream.h"
 #include "types.h"
@@ -558,10 +559,8 @@ namespace librealsense
         size_t i = 0;
         for (i = 1; i < _processing_blocks.size(); i++)
         {
-            auto output_cb = [i, this](frame_holder fh) {
-                _processing_blocks[i]->invoke(std::move(fh));
-            };
-            _processing_blocks[i - 1]->set_output_callback(std::make_shared<internal_frame_callback<decltype(output_cb)>>(output_cb));
+            _processing_blocks[i - 1]->set_output_callback( make_frame_callback(
+                [i, this]( frame_holder fh ) { _processing_blocks[i]->invoke( std::move( fh ) ); } ) );
         }
 
         // Set the output callback of the composite processing block as last processing block in the vector.
