@@ -103,12 +103,6 @@ namespace librealsense
         return sz * arr_size(arr[0]);
     }
 
-    template<typename T, size_t sz>
-    constexpr size_t arr_size_bytes(T(&arr)[sz])
-    {
-        return arr_size(arr) * sizeof(T);
-    }
-
     template<typename T>
     std::string array2str(T& data)
     {
@@ -116,49 +110,6 @@ namespace librealsense
         for (auto i = 0; i < arr_size(data); i++)
             ss << " [" << i << "] = " << data[i] << "\t";
         return ss.str();
-    }
-
-    // Auxillary function for compiler to highlight the invoking user code
-    template <typename T, typename S>
-    struct isNarrowing { static bool constexpr value = std::numeric_limits<S>::max() > std::numeric_limits<T>::max(); };
-
-    template<const bool force_narrowing=false, typename T, typename S, size_t size_tgt, size_t size_src>
-    inline size_t copy_array(T(&dst)[size_tgt], const S(&src)[size_src])
-    {
-        static_assert((size_tgt && (size_tgt == size_src)), "copy_array requires similar non-zero size for target and source containers");
-        static_assert((std::is_arithmetic<S>::value) && (std::is_arithmetic<T>::value), "copy_array supports arithmetic types only");
-        if (!force_narrowing && isNarrowing<T, S>::value)
-        {
-            static_assert(!(isNarrowing<T, S>::value && !force_narrowing), "Passing narrowing conversion to copy_array requires setting the force flag on");
-        }
-
-        assert(dst != nullptr && src != nullptr);
-        for (size_t i = 0; i < size_tgt; i++)
-        {
-            dst[i] = static_cast<T>(src[i]);
-        }
-        return size_tgt;
-    }
-
-    template<const bool force_narrowing=false, typename T, typename S, size_t tgt_m, size_t tgt_n, size_t src_m, size_t src_n>
-    inline size_t copy_2darray(T(&dst)[tgt_m][tgt_n], const S(&src)[src_m][src_n])
-    {
-        static_assert((src_m && src_n && (tgt_n == src_n) && (tgt_m == src_m)), "copy_array requires similar non-zero size for target and source containers");
-        static_assert((std::is_arithmetic<S>::value) && (std::is_arithmetic<T>::value), "copy_2darray supports arithmetic types only");
-        if (isNarrowing<T, S>::value && !force_narrowing)
-        {
-            static_assert(!(isNarrowing<T, S>::value && !force_narrowing), "Passing narrowing conversion to copy_2darray requires setting the force flag on");
-        }
-
-        assert(dst != nullptr && src != nullptr);
-        for (size_t i = 0; i < src_m; i++)
-        {
-            for (size_t j = 0; j < src_n; j++)
-            {
-                dst[i][j] = static_cast<T>(src[i][j]);
-            }
-        }
-        return src_m * src_n;
     }
 
     // Comparing parameter against a range of values of the same type
@@ -362,49 +313,8 @@ namespace librealsense
     ///////////////////
 
 
-    struct stream_descriptor
-    {
-        stream_descriptor() : type(RS2_STREAM_ANY), index(0) {}
-        stream_descriptor(rs2_stream type, int index = 0) : type(type), index(index) {}
-
-        rs2_stream type;
-        int index;
-    };
-
-    class stream_profile_interface;
-
-    class frame_interface;
-
     using firmware_version = rsutils::version;
 
-    // Provides an efficient wraparound for built-in arithmetic times, for use-cases such as a rolling timestamp
-    template <typename T, typename S>
-    class arithmetic_wraparound
-    {
-    public:
-        arithmetic_wraparound() :
-            last_input(std::numeric_limits<T>::lowest()), accumulated(0) {
-            static_assert(
-                (std::is_arithmetic<T>::value) &&
-                (std::is_arithmetic<S>::value) &&
-                (std::numeric_limits<T>::max() < std::numeric_limits<S>::max()) &&
-                (std::numeric_limits<T>::lowest() >= std::numeric_limits<S>::lowest())
-                , "Wraparound class requirements are not met");
-        }
-
-        S calc(const T input)
-        {
-            accumulated += static_cast<T>(input - last_input); // Automatically resolves wraparounds
-            last_input = input;
-            return (accumulated);
-        }
-
-        void reset() { last_input = std::numeric_limits<T>::lowest();  accumulated = 0; }
-
-    private:
-        T last_input;
-        S accumulated;
-    };
 
     typedef void(*frame_callback_function_ptr)(rs2_frame * frame, void * user);
 
@@ -570,41 +480,10 @@ namespace librealsense
     typedef std::shared_ptr<rs2_devices_changed_callback> devices_changed_callback_ptr;
     typedef std::shared_ptr<rs2_update_progress_callback> update_progress_callback_ptr;
 
-    using internal_callback = std::function<void(rs2_device_list* removed, rs2_device_list* added)>;
-    class devices_changed_callback_internal : public rs2_devices_changed_callback
-    {
-        internal_callback _callback;
-
-    public:
-        explicit devices_changed_callback_internal(internal_callback callback)
-            : _callback(callback)
-        {}
-
-        void on_devices_changed(rs2_device_list* removed, rs2_device_list* added) override
-        {
-            _callback(removed , added);
-        }
-
-        void release() override { delete this; }
-    };
-
 
     ////////////////////////////////////////
     // Helper functions for library types //
     ////////////////////////////////////////
-
-    inline rs2_intrinsics pad_crop_intrinsics(const rs2_intrinsics & i, int pad_crop)
-    {
-        return{ i.width + pad_crop * 2, i.height + pad_crop * 2, i.ppx + pad_crop, i.ppy + pad_crop,
-            i.fx, i.fy, i.model, {i.coeffs[0], i.coeffs[1], i.coeffs[2], i.coeffs[3], i.coeffs[4]} };
-    }
-
-    inline rs2_intrinsics scale_intrinsics(const rs2_intrinsics & i, int width, int height)
-    {
-        const float sx = static_cast<float>(width) / i.width, sy = static_cast<float>(height) / i.height;
-        return{ width, height, i.ppx*sx, i.ppy*sy, i.fx*sx, i.fy*sy, i.model,
-                {i.coeffs[0], i.coeffs[1], i.coeffs[2], i.coeffs[3], i.coeffs[4]} };
-    }
 
     inline bool operator == (const rs2_intrinsics & a, const rs2_intrinsics & b) { return std::memcmp(&a, &b, sizeof(a)) == 0; }
 
@@ -679,39 +558,17 @@ namespace librealsense
             (a.unique_id == b.unique_id);
     }
 
-    // this class is a convinience wrapper for intrinsics / extrinsics validation methods
-    class calibration_validator
-    {
-    public:
-        calibration_validator(std::function<bool(rs2_stream, rs2_stream)> extrinsic_validator,
-                              std::function<bool(rs2_stream)>            intrinsic_validator);
-        calibration_validator();
-
-        bool validate_extrinsics(rs2_stream from_stream, rs2_stream to_stream) const;
-        bool validate_intrinsics(rs2_stream stream) const;
-
-    private:
-        std::function<bool(rs2_stream from_stream, rs2_stream to_stream)> extrinsic_validator;
-        std::function<bool(rs2_stream stream)> intrinsic_validator;
-    };
-
-    inline bool check_not_all_zeros(std::vector<byte> data)
-    {
-        return std::find_if(data.begin(), data.end(), [](byte b){ return b!=0; }) != data.end();
-    }
-
 
     bool file_exists(const char* filename);
 
     ///////////////////////////////////////////
     // Extrinsic auxillary routines routines //
     ///////////////////////////////////////////
-    float3x3 calc_rotation_from_rodrigues_angles(const std::vector<double> rot);
+
     // Auxillary function that calculates standard 32bit CRC code. used in verificaiton
     uint32_t calc_crc32(const uint8_t *buf, size_t bufsize);
 
 
-    
 
 
     template <typename T>

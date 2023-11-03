@@ -43,6 +43,15 @@ enum ros_file_versions
 
 namespace librealsense
 {
+    struct stream_descriptor
+    {
+        stream_descriptor() : type( RS2_STREAM_ANY ), index( 0 ) {}
+        stream_descriptor( rs2_stream type, int index = 0 ) : type( type ), index( index ) {}
+
+        rs2_stream type;
+        int index;
+    };
+
     inline void convert(rs2_format source, std::string& target)
     {
         switch (source)

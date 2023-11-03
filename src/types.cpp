@@ -81,64 +81,6 @@ namespace librealsense
     }
 
 
-    /// Convert orientation angles stored in rodrigues conventions to rotation matrix
-    /// for details: http://mesh.brown.edu/en193s08-2003/notes/en193s08-rots.pdf
-    float3x3 calc_rotation_from_rodrigues_angles(const std::vector<double> rot)
-    {
-        assert(3 == rot.size());
-        float3x3 rot_mat{};
-
-        double theta = sqrt(std::inner_product(rot.begin(), rot.end(), rot.begin(), 0.0));
-        double r1 = rot[0], r2 = rot[1], r3 = rot[2];
-        if (theta <= SQRT_DBL_EPSILON) // identityMatrix
-        {
-            rot_mat(0, 0) = rot_mat(1, 1) = rot_mat(2, 2) = 1.0;
-            rot_mat(0, 1) = rot_mat(0, 2) = rot_mat(1, 0) = rot_mat(1, 2) = rot_mat(2, 0) = rot_mat(2, 1) = 0.0;
-        }
-        else
-        {
-            r1 /= theta;
-            r2 /= theta;
-            r3 /= theta;
-
-            double c = cos(theta);
-            double s = sin(theta);
-            double g = 1 - c;
-
-            rot_mat(0, 0) = float(c + g * r1 * r1);
-            rot_mat(0, 1) = float(g * r1 * r2 - s * r3);
-            rot_mat(0, 2) = float(g * r1 * r3 + s * r2);
-            rot_mat(1, 0) = float(g * r2 * r1 + s * r3);
-            rot_mat(1, 1) = float(c + g * r2 * r2);
-            rot_mat(1, 2) = float(g * r2 * r3 - s * r1);
-            rot_mat(2, 0) = float(g * r3 * r1 - s * r2);
-            rot_mat(2, 1) = float(g * r3 * r2 + s * r1);
-            rot_mat(2, 2) = float(c + g * r3 * r3);
-        }
-
-        return rot_mat;
-    }
-
-    calibration_validator::calibration_validator(std::function<bool(rs2_stream, rs2_stream)> extrinsic_validator, std::function<bool(rs2_stream)> intrinsic_validator)
-        : extrinsic_validator(extrinsic_validator), intrinsic_validator(intrinsic_validator)
-    {
-    }
-
-    calibration_validator::calibration_validator()
-        : extrinsic_validator([](rs2_stream, rs2_stream) { return true; }), intrinsic_validator([](rs2_stream) { return true; })
-    {
-    }
-
-    bool calibration_validator::validate_extrinsics(rs2_stream from_stream, rs2_stream to_stream) const
-    {
-        return extrinsic_validator(from_stream, to_stream);
-    }
-    bool calibration_validator::validate_intrinsics(rs2_stream stream) const
-    {
-        return intrinsic_validator(stream);
-    }
-
-
 #define UPDC32(octet, crc) (crc_32_tab[((crc) ^ (octet)) & 0xff] ^ ((crc) >> 8))
 
     static const uint32_t crc_32_tab[] = { /* CRC polynomial 0xedb88320 */
