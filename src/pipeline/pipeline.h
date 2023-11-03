@@ -15,6 +15,8 @@
 
 namespace librealsense
 {
+    class syncer_process_unit;
+
     namespace pipeline
     {
         class pipeline : public std::enable_shared_from_this<pipeline>

@@ -55,6 +55,9 @@
 #include "debug-stream-sensor.h"
 #include "max-usable-range-sensor.h"
 #include "fw-update/fw-update-device-interface.h"
+#include "color-sensor.h"
+#include "composite-frame.h"
+#include "points.h"
 
 #include <rsutils/string/from.h>
 

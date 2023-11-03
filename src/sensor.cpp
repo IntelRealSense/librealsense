@@ -11,6 +11,7 @@
 #include "global_timestamp_reader.h"
 #include "device-calibration.h"
 #include "core/depth-frame.h"
+#include "core/stream-profile-interface.h"
 
 #include <rsutils/string/from.h>
 #include <rsutils/json.h>

@@ -6,7 +6,6 @@
 #include "archive.h"
 #include "hw-monitor.h"
 #include "sensor.h"
-#include "core/streaming.h"
 #include "platform/command-transfer.h"
 #include "error-handling.h"
 

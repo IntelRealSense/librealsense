@@ -17,6 +17,7 @@
 #include <src/core/pose-frame.h>
 #include <src/core/motion-frame.h>
 #include <src/core/video-frame.h>
+#include <src/color-sensor.h>
 
 #include <rsutils/string/from.h>
 

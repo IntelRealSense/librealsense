@@ -1,19 +1,21 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
-#include "types.h"
-#include "archive.h"
+#include "callback-invocation.h"
 #include "core/frame-holder.h"
 
+#include <librealsense2/h/rs_sensor.h>
+#include <rsutils/concurrency/concurrency.h>
 #include <stdint.h>
 #include <vector>
 #include <mutex>
 #include <memory>
+#include <map>
 
-namespace librealsense
-{
+
+namespace librealsense {
+
 
     class synthetic_source_interface;
 
@@ -197,4 +199,6 @@ namespace librealsense
         bool are_equivalent( double a, double b, double fps );
         std::map<matcher*, double> _last_arrived;
     };
-}
+
+
+}  // namespace librealsense

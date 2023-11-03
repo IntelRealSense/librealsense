@@ -1,12 +1,14 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "core/frame-holder.h"
-#include "proc/synthetic-stream.h"
 #include "sync.h"
-#include "environment.h"
+#include "core/frame-holder.h"
+#include "core/processing.h"
+#include "core/stream-profile-interface.h"
 #include "core/device-interface.h"
 #include "core/sensor-interface.h"
+#include "composite-frame.h"
+#include "core/time-service.h"
 
 namespace librealsense
 {

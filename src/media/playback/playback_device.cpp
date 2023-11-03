@@ -9,6 +9,8 @@
 #include "media/ros/ros_reader.h"
 #include "environment.h"
 #include "sync.h"
+#include <src/depth-sensor.h>
+#include <src/color-sensor.h>
 
 #include <rsutils/string/from.h>
 

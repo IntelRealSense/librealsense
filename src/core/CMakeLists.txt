@@ -2,7 +2,6 @@
 # Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 target_sources(${LRS_TARGET}
     PRIVATE
-        "${CMAKE_CURRENT_LIST_DIR}/streaming.h"
         "${CMAKE_CURRENT_LIST_DIR}/debug.h"
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode.h"
         "${CMAKE_CURRENT_LIST_DIR}/enum-helpers.h"
@@ -31,8 +30,11 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/processing.h"
         "${CMAKE_CURRENT_LIST_DIR}/processing-block-interface.h"
         "${CMAKE_CURRENT_LIST_DIR}/recommended-proccesing-blocks-interface.h"
+        "${CMAKE_CURRENT_LIST_DIR}/recommended-proccesing-blocks-base.h"
         "${CMAKE_CURRENT_LIST_DIR}/sensor-interface.h"
         "${CMAKE_CURRENT_LIST_DIR}/serialization.h"
+        "${CMAKE_CURRENT_LIST_DIR}/stream-interface.h"
         "${CMAKE_CURRENT_LIST_DIR}/stream-profile.h"
+        "${CMAKE_CURRENT_LIST_DIR}/stream-profile-interface.h"
         "${CMAKE_CURRENT_LIST_DIR}/tagged-profile.h"
 )

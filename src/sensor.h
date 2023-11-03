@@ -8,7 +8,7 @@
 #include "core/debug.h"
 
 #include "archive.h"
-#include "core/streaming.h"
+#include "core/recommended-proccesing-blocks-base.h"
 #include "core/roi.h"
 #include "core/options.h"
 #include "source.h"
@@ -34,6 +34,7 @@ namespace librealsense
 {
     class device;
     class option;
+    class stream_interface;
     enum class format_conversion;
 
 

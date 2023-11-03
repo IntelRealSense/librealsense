@@ -4,7 +4,6 @@
 #pragma once
 
 #include "../types.h"
-#include "../core/streaming.h"
 #include <src/core/device-interface.h>
 #include "../usb/usb-types.h"
 #include <cstddef>
@@ -39,6 +38,8 @@ namespace librealsense
         virtual void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode) = 0;
     };
 
+    MAP_EXTENSION( RS2_EXTENSION_UPDATABLE, updatable );
+
     class update_device_interface : public device_interface, public firmware_check_interface 
     {
     public:
@@ -50,5 +51,4 @@ namespace librealsense
     };
 
     MAP_EXTENSION(RS2_EXTENSION_UPDATE_DEVICE, update_device_interface);
-    MAP_EXTENSION(RS2_EXTENSION_UPDATABLE, updatable);
 }

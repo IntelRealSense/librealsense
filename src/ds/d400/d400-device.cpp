@@ -14,6 +14,7 @@
 #include "ds/ds-timestamp.h"
 #include <src/stream.h>
 #include <src/environment.h>
+#include <src/depth-sensor.h>
 #include "d400-color.h"
 #include "d400-nonmonochrome.h"
 #include <src/platform/platform-utils.h>

@@ -4,6 +4,7 @@
 #include "option.h"
 #include "environment.h"
 #include "software-sensor.h"
+#include <src/depth-sensor.h>
 #include "proc/synthetic-stream.h"
 #include "proc/hole-filling-filter.h"
 #include "proc/spatial-filter.h"

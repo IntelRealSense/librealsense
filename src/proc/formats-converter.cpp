@@ -3,6 +3,7 @@
 
 #include "proc/formats-converter.h"
 #include "stream.h"
+#include <src/composite-frame.h>
 
 #include <ostream>
 

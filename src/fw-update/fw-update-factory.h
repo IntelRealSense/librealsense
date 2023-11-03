@@ -4,7 +4,6 @@
 #pragma once
 
 #include "platform/platform-device-info.h"
-#include "core/streaming.h"
 
 namespace librealsense
 {

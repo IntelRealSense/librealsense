@@ -4,8 +4,7 @@
 
 #pragma once
 
-#include "types.h"
-#include "archive.h"
+#include "frame.h"
 #include "metadata.h"
 #include <cmath>
 

@@ -6,6 +6,7 @@
 #include "core/video.h"
 #include "core/motion-frame.h"
 #include "core/depth-frame.h"
+#include <src/composite-frame.h>
 #include "option.h"
 #include "stream.h"
 #include "types.h"
