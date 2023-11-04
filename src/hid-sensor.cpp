@@ -230,7 +230,7 @@ void hid_sensor::start( frame_callback_ptr callback )
                 = _source.alloc_frame( RS2_EXTENSION_MOTION_FRAME, data_size, std::move( fr->additional_data ), true );
             memcpy( (void *)frame->get_frame_data(),
                     sensor_data.fo.pixels,
-                    sizeof( byte ) * sensor_data.fo.frame_size );
+                    sizeof( uint8_t ) * sensor_data.fo.frame_size );
             if( ! frame )
             {
                 LOG_INFO( "Dropped frame. alloc_frame(...) returned nullptr" );

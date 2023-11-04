@@ -117,7 +117,7 @@ namespace librealsense
             return width * height * bpp >> 3;
         }
 
-        std::vector<byte> align_width_to_64(int width, int height, int bpp, byte* pix) const;
+        std::vector<uint8_t> align_width_to_64(int width, int height, int bpp, uint8_t * pix) const;
 
         std::atomic<bool> _is_streaming;
         std::atomic<bool> _is_opened;

@@ -195,8 +195,8 @@ void uvc_sensor::open( const stream_profiles & requests )
                         // when the resolution's width is not aligned to 64
                         if( ( width * bpp >> 3 ) % 64 != 0 && f.frame_size > expected_size )
                         {
-                            std::vector< byte > pixels = align_width_to_64( width, height, bpp, (byte *)f.pixels );
-                            assert( expected_size == sizeof( byte ) * pixels.size() );
+                            std::vector< uint8_t > pixels = align_width_to_64( width, height, bpp, (uint8_t *)f.pixels );
+                            assert( expected_size == sizeof( uint8_t ) * pixels.size() );
                             memcpy( (void *)fh->get_frame_data(), pixels.data(), expected_size );
                         }
                         else
@@ -206,10 +206,10 @@ void uvc_sensor::open( const stream_profiles & requests )
                             // 24 bit support is achieved by comparing actual vs expected size: when it is exactly 75%
                             // of the MIPI-generated size (24/32bpp), then 24bpp-sized image will be processed
                             if( req_profile_base->get_format() == RS2_FORMAT_Y12I )
-                                if( ( ( expected_size >> 2 ) * 3 ) == sizeof( byte ) * f.frame_size )
-                                    expected_size = sizeof( byte ) * f.frame_size;
+                                if( ( ( expected_size >> 2 ) * 3 ) == sizeof( uint8_t ) * f.frame_size )
+                                    expected_size = sizeof( uint8_t ) * f.frame_size;
 
-                            assert( expected_size == sizeof( byte ) * f.frame_size );
+                            assert( expected_size == sizeof( uint8_t ) * f.frame_size );
                             memcpy( (void *)fh->get_frame_data(), f.pixels, expected_size );
                         }
 

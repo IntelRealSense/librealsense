@@ -402,7 +402,7 @@ namespace librealsense
                 _section.on_unpublish();
                 T::unpublish();
             }
-            const byte* get_frame_data() const override
+            const uint8_t * get_frame_data() const override
             {
                 auto res = T::get_frame_data();
                 _section.fetch_frame((void*)res);

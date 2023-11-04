@@ -66,7 +66,7 @@ namespace librealsense
         int recv_msg_length = get_msg_length(cmd);
         uint16_t overall_chunks = get_number_of_chunks(recv_msg_length);
 
-        std::vector<byte> recv_msg;
+        std::vector< uint8_t > recv_msg;
         for (int i = 0; i < overall_chunks; ++i)
         {
             // chunk number is in param4

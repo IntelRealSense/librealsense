@@ -266,12 +266,12 @@ void log_callback_end( uint32_t fps,
     }
 
     // TODO - make this method more efficient, using parralel computation, with SSE or CUDA, when available
-    std::vector<byte> sensor_base::align_width_to_64(int width, int height, int bpp, byte* pix) const
+    std::vector<uint8_t> sensor_base::align_width_to_64(int width, int height, int bpp, uint8_t * pix) const
     {
         int factor = bpp >> 3;
         int bytes_in_width = width * factor;
         int actual_input_bytes_in_width = (((bytes_in_width / 64 ) + 1) * 64);
-        std::vector<byte> pixels;
+        std::vector<uint8_t> pixels;
         for (int j = 0; j < height; ++j)
         {
             int start_index = j * actual_input_bytes_in_width;

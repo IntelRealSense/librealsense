@@ -257,10 +257,10 @@ namespace librealsense
             if (f.supports_frame_metadata(RS2_FRAME_METADATA_RAW_FRAME_SIZE))
                 raw_size = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_RAW_FRAME_SIZE));
         }
-        byte* planes[1];
-        planes[0] = (byte*)ret.get_data();
+        uint8_t * planes[1];
+        planes[0] = (uint8_t *)ret.get_data();
 
-        process_function(planes, static_cast<const byte*>(f.get_data()), width, height, height * width * _target_bpp, raw_size);
+        process_function(planes, static_cast<const uint8_t *>(f.get_data()), width, height, height * width * _target_bpp, raw_size);
 
         return ret;
     }
@@ -648,11 +648,11 @@ namespace librealsense
                 w, h, w * _right_target_bpp, _right_extension_type);
 
             // process the frame
-            byte* planes[2];
-            planes[0] = (byte*)lf.frame->get_frame_data();
-            planes[1] = (byte*)rf.frame->get_frame_data();
+            uint8_t * planes[2];
+            planes[0] = (uint8_t *)lf.frame->get_frame_data();
+            planes[1] = (uint8_t *)rf.frame->get_frame_data();
 
-            process_function(planes, (const byte*)frame->get_frame_data(), w, h, 0, 0);
+            process_function(planes, (const uint8_t *)frame->get_frame_data(), w, h, 0, 0);
 
             source->frame_ready(std::move(lf));
             source->frame_ready(std::move(rf));

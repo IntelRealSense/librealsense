@@ -655,7 +655,7 @@ namespace librealsense
         new_frame->get_stream()->set_format(RS2_FORMAT_6DOF);
         new_frame->get_stream()->set_stream_index(int(stream_id.stream_index));
         new_frame->get_stream()->set_stream_type(stream_id.stream_type);
-        byte* data = pose_frame->data.data();
+        uint8_t * data = pose_frame->data.data();
         memcpy(data, &pose, frame_size);
         frame_holder fh{ new_frame };
         LOG_DEBUG("Created new frame " << frame_type);

@@ -141,10 +141,10 @@ namespace librealsense
 
     struct tare_params3
     {
-        byte average_step_count;
-        byte step_count;
-        byte accuracy;
-        byte reserved;
+        uint8_t average_step_count;
+        uint8_t step_count;
+        uint8_t accuracy;
+        uint8_t reserved;
     };
 
     struct params4
@@ -932,14 +932,14 @@ namespace librealsense
 
                 auto param2 = static_cast< uint32_t >( ground_truth_mm ) * 100;
 
-                tare_calibration_params param3{ static_cast< byte >( average_step_count ),
-                                                static_cast< byte >( step_count ),
-                                                static_cast< byte >( accuracy ),
+                tare_calibration_params param3{ static_cast< uint8_t >( average_step_count ),
+                                                static_cast< uint8_t >( step_count ),
+                                                static_cast< uint8_t >( accuracy ),
                                                 0 };
 
-                param4 param{ static_cast< byte >( scan_parameter ),
+                param4 param{ static_cast< uint8_t >( scan_parameter ),
                               0,
-                              static_cast< byte >( data_sampling ) };
+                              static_cast< uint8_t >( data_sampling ) };
 
                 if (host_assistance != host_assistance_type::no_assistance)
                     param.param_4 |= (1 << 8);

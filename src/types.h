@@ -38,8 +38,6 @@
 #include <limits>
 #include <iomanip>
 
-typedef unsigned char byte;
-
 // Usage of non-standard C++ PI derivatives is prohibitive, use local definitions
 static const double pi = std::acos(-1);
 static const double d2r = pi / 180;
