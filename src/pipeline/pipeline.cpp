@@ -34,7 +34,7 @@ namespace librealsense
             }
         }
 
-        std::shared_ptr<profile> pipeline::start(std::shared_ptr<config> conf, frame_callback_ptr callback)
+        std::shared_ptr<profile> pipeline::start(std::shared_ptr<config> conf, rs2_frame_callback_sptr callback)
         {
             std::lock_guard<std::mutex> lock(_mtx);
             if (_active_profile)
@@ -93,7 +93,7 @@ namespace librealsense
 
             auto synced_streams_ids = on_start(profile);
 
-            frame_callback_ptr callbacks = get_callback(synced_streams_ids);
+            rs2_frame_callback_sptr callbacks = get_callback(synced_streams_ids);
 
             auto dev = profile->get_device();
             if (auto playback = As<librealsense::playback_device>(dev))
@@ -200,7 +200,7 @@ namespace librealsense
             return _streams_to_sync_ids;
         }
 
-        frame_callback_ptr pipeline::get_callback(std::vector<int> synced_streams_ids)
+        rs2_frame_callback_sptr pipeline::get_callback(std::vector<int> synced_streams_ids)
         {
             _syncer->set_output_callback(
                 make_frame_callback( [&]( frame_holder fref ) { _aggregator->invoke( std::move( fref ) ); } ) );

@@ -94,11 +94,9 @@ namespace librealsense {
     // Logging mechanism //
     ///////////////////////
 
-    typedef std::shared_ptr< rs2_log_callback > log_callback_ptr;
-
     void log_to_console(rs2_log_severity min_severity);
     void log_to_file( rs2_log_severity min_severity, const char* file_path );
-    void log_to_callback( rs2_log_severity min_severity, log_callback_ptr callback );
+    void log_to_callback( rs2_log_severity min_severity, rs2_log_callback_sptr callback );
     void reset_logger();
     void enable_rolling_log_file( unsigned max_size );
 
@@ -273,10 +271,6 @@ namespace librealsense {
         return stream << "Position:\n " << elem.position  << "\n Orientation :\n" << elem.orientation;
     }
 
-    ///////////////////
-    // Pixel formats //
-    ///////////////////
-
 
     using firmware_version = rsutils::version;
 
@@ -353,12 +347,6 @@ namespace librealsense {
         }
         void release() { delete this; }
     };
-
-    typedef std::shared_ptr<rs2_frame_callback> frame_callback_ptr;
-    typedef std::shared_ptr<rs2_frame_processor_callback> frame_processor_callback_ptr;
-    typedef std::shared_ptr<rs2_calibration_change_callback> calibration_change_callback_ptr;
-    typedef std::shared_ptr<rs2_devices_changed_callback> devices_changed_callback_ptr;
-    typedef std::shared_ptr<rs2_update_progress_callback> update_progress_callback_ptr;
 
 
     ////////////////////////////////////////

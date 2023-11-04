@@ -348,7 +348,7 @@ void uvc_sensor::register_xu( platform::extension_unit xu )
 }
 
 
-void uvc_sensor::start( frame_callback_ptr callback )
+void uvc_sensor::start( rs2_frame_callback_sptr callback )
 {
     std::lock_guard< std::mutex > lock( _configure_lock );
     if( _is_streaming )

@@ -334,7 +334,7 @@ namespace librealsense
         return result;
     }
 
-    std::vector<uint8_t> auto_calibrated::run_on_chip_calibration(int timeout_ms, std::string json, float* const health, update_progress_callback_ptr progress_callback)
+    std::vector<uint8_t> auto_calibrated::run_on_chip_calibration(int timeout_ms, std::string json, float* const health, rs2_update_progress_callback_sptr progress_callback)
     {
         int calib_type = DEFAULT_CALIB_TYPE;
 
@@ -835,7 +835,7 @@ namespace librealsense
         return res;
     }
 
-    std::vector<uint8_t> auto_calibrated::run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* const health, update_progress_callback_ptr progress_callback)
+    std::vector<uint8_t> auto_calibrated::run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* const health, rs2_update_progress_callback_sptr progress_callback)
     {
         int average_step_count = DEFAULT_AVERAGE_STEP_COUNT;
         int step_count = DEFAULT_STEP_COUNT;
@@ -1266,7 +1266,7 @@ namespace librealsense
 #endif
     }
 
-    std::vector<uint8_t> auto_calibrated::process_calibration_frame(int timeout_ms, const rs2_frame* f, float* const health, update_progress_callback_ptr progress_callback)
+    std::vector<uint8_t> auto_calibrated::process_calibration_frame(int timeout_ms, const rs2_frame* f, float* const health, rs2_update_progress_callback_sptr progress_callback)
     {
         try
         {
@@ -1859,7 +1859,7 @@ namespace librealsense
         _hw_monitor->send(cmd);
     }
 
-    void auto_calibrated::get_target_rect_info(rs2_frame_queue* frames, float rect_sides[4], float& fx, float& fy, int progress, update_progress_callback_ptr progress_callback)
+    void auto_calibrated::get_target_rect_info(rs2_frame_queue* frames, float rect_sides[4], float& fx, float& fy, int progress, rs2_update_progress_callback_sptr progress_callback)
     {
         fx = -1.0f;
         std::vector<std::array<float, 4>> rect_sides_arr;
@@ -1917,7 +1917,7 @@ namespace librealsense
     }
 
     std::vector<uint8_t> auto_calibrated::run_focal_length_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h,
-        int adjust_both_sides, float *ratio, float * angle, update_progress_callback_ptr progress_callback)
+        int adjust_both_sides, float *ratio, float * angle, rs2_update_progress_callback_sptr progress_callback)
     {
         float fx[2] = { -1.0f, -1.0f };
         float fy[2] = { -1.0f, -1.0f };
@@ -2110,7 +2110,7 @@ namespace librealsense
         memmove(img, tmp.data(), size3);
     }
 
-    void auto_calibrated::get_target_dots_info(rs2_frame_queue* frames, float dots_x[4], float dots_y[4], rs2::stream_profile& profile, rs2_intrinsics& intrin, int progress, update_progress_callback_ptr progress_callback)
+    void auto_calibrated::get_target_dots_info(rs2_frame_queue* frames, float dots_x[4], float dots_y[4], rs2::stream_profile& profile, rs2_intrinsics& intrin, int progress, rs2_update_progress_callback_sptr progress_callback)
     {
         bool got_intrinsics = false;
         std::vector<std::array<float, 4>> dots_x_arr;
@@ -2282,7 +2282,7 @@ namespace librealsense
     }
 
     std::vector<uint8_t> auto_calibrated::run_uv_map_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
-        float* const health, int health_size, update_progress_callback_ptr progress_callback)
+        float* const health, int health_size, rs2_update_progress_callback_sptr progress_callback)
     {
         float left_dots_x[4];
         float left_dots_y[4];
@@ -2462,7 +2462,7 @@ namespace librealsense
     }
 
     float auto_calibrated::calculate_target_z(rs2_frame_queue* queue1, rs2_frame_queue* queue2, rs2_frame_queue* queue3,
-        float target_w, float target_h, update_progress_callback_ptr progress_callback)
+        float target_w, float target_h, rs2_update_progress_callback_sptr progress_callback)
     {
         constexpr size_t min_frames_required = 10;
         bool created = false;

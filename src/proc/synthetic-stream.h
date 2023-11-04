@@ -51,8 +51,8 @@ namespace librealsense
     public:
         processing_block(const char* name);
 
-        void set_processing_callback(frame_processor_callback_ptr callback) override;
-        void set_output_callback(frame_callback_ptr callback) override;
+        void set_processing_callback( rs2_frame_processor_callback_sptr callback) override;
+        void set_output_callback( rs2_frame_callback_sptr callback) override;
         void invoke(frame_holder frames) override;
         synthetic_source_interface& get_source() override { return _source_wrapper; }
 
@@ -60,7 +60,7 @@ namespace librealsense
     protected:
         frame_source _source;
         std::mutex _mutex;
-        frame_processor_callback_ptr _callback;
+        rs2_frame_processor_callback_sptr _callback;
         synthetic_source _source_wrapper;
     };
 
@@ -250,7 +250,7 @@ namespace librealsense
 
         processing_block& get(rs2_option option);
         void add(std::shared_ptr<processing_block> block);
-        void set_output_callback(frame_callback_ptr callback) override;
+        void set_output_callback(rs2_frame_callback_sptr callback) override;
         void invoke(frame_holder frames) override;
 
     protected:

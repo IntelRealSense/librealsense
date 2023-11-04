@@ -17,13 +17,13 @@
 
 namespace librealsense
 {
-    void processing_block::set_processing_callback(frame_processor_callback_ptr callback)
+    void processing_block::set_processing_callback( rs2_frame_processor_callback_sptr callback )
     {
         std::lock_guard<std::mutex> lock(_mutex);
         _callback = callback;
     }
 
-    void processing_block::set_output_callback(frame_callback_ptr callback)
+    void processing_block::set_output_callback( rs2_frame_callback_sptr callback )
     {
         _source.set_callback(callback);
     }
@@ -553,7 +553,7 @@ namespace librealsense
         update_info(RS2_CAMERA_INFO_NAME, block->get_info(RS2_CAMERA_INFO_NAME));
     }
 
-    void composite_processing_block::set_output_callback(frame_callback_ptr callback)
+    void composite_processing_block::set_output_callback( rs2_frame_callback_sptr callback )
     {
         // Each processing block will process the preceding processing block output frame.
         size_t i = 0;

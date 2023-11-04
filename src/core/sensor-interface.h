@@ -38,21 +38,20 @@ public:
     virtual stream_profiles const & get_raw_stream_profiles() const = 0;
 
     virtual void open( const stream_profiles & requests ) = 0;
-    virtual void start( frame_callback_ptr callback ) = 0;
+    virtual void start( rs2_frame_callback_sptr callback ) = 0;
     virtual void stop() = 0;
     virtual void close() = 0;
 
     virtual bool is_streaming() const = 0;
 
-    using notifications_callback_ptr = std::shared_ptr< rs2_notifications_callback >;
-    virtual notifications_callback_ptr get_notifications_callback() const = 0;
-    virtual void register_notifications_callback( notifications_callback_ptr callback ) = 0;
+    virtual rs2_notifications_callback_sptr get_notifications_callback() const = 0;
+    virtual void register_notifications_callback( rs2_notifications_callback_sptr callback ) = 0;
 
     virtual int register_before_streaming_changes_callback( std::function< void( bool ) > callback ) = 0;
     virtual void unregister_before_start_callback( int token ) = 0;
 
-    virtual frame_callback_ptr get_frames_callback() const = 0;
-    virtual void set_frames_callback( frame_callback_ptr cb ) = 0;
+    virtual rs2_frame_callback_sptr get_frames_callback() const = 0;
+    virtual void set_frames_callback( rs2_frame_callback_sptr cb ) = 0;
 };
 
 

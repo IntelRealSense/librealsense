@@ -49,7 +49,7 @@ public:
 
     void open( const stream_profiles & requests ) override;
     void close() override;
-    void start( frame_callback_ptr callback ) override;
+    void start( rs2_frame_callback_sptr callback ) override;
     void stop() override;
 
     std::vector< uint8_t > get_custom_report_data( const std::string & custom_sensor_name,

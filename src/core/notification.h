@@ -12,9 +12,6 @@
 namespace librealsense {
 
 
-using notifications_callback_ptr = std::shared_ptr< rs2_notifications_callback >;
-
-
 struct notification
 {
     notification( rs2_notification_category category, int type, rs2_log_severity severity, std::string const & description )
@@ -51,12 +48,12 @@ public:
     notifications_processor();
     ~notifications_processor();
 
-    void set_callback( notifications_callback_ptr callback );
-    notifications_callback_ptr get_callback() const;
+    void set_callback( rs2_notifications_callback_sptr callback );
+    rs2_notifications_callback_sptr get_callback() const;
     void raise_notification( const notification );
 
 private:
-    notifications_callback_ptr _callback;
+    rs2_notifications_callback_sptr _callback;
     std::mutex _callback_mutex;
     dispatcher _dispatcher;
 };

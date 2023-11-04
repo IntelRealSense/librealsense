@@ -429,7 +429,7 @@ void dds_sensor_proxy::add_frame_metadata( frame * const f, nlohmann::json && dd
 }
 
 
-void dds_sensor_proxy::start( frame_callback_ptr callback )
+void dds_sensor_proxy::start( rs2_frame_callback_sptr callback )
 {
     for( auto & profile : sensor_base::get_active_streams() )
     {

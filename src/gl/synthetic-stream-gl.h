@@ -501,11 +501,11 @@ namespace librealsense
                 update_info(RS2_CAMERA_INFO_NAME, block->get_info(RS2_CAMERA_INFO_NAME));
             }
 
-            void set_processing_callback(frame_processor_callback_ptr callback) override
+            void set_processing_callback( rs2_frame_processor_callback_sptr callback ) override
             {
                 for (auto&& pb : _blocks) pb->set_processing_callback(callback);
             }
-            void set_output_callback(frame_callback_ptr callback) override
+            void set_output_callback( rs2_frame_callback_sptr callback ) override
             {
                 for (auto&& pb : _blocks) pb->set_output_callback(callback);
             }

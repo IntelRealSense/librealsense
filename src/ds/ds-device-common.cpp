@@ -127,7 +127,7 @@ namespace librealsense
         fwv = _hw_monitor->get_firmware_version_string<uint8_t>(gvd_buff, camera_fw_version_offset);
     }
 
-    std::vector<uint8_t> ds_device_common::backup_flash(update_progress_callback_ptr callback)
+    std::vector<uint8_t> ds_device_common::backup_flash( rs2_update_progress_callback_sptr callback )
     {
         int flash_size = 1024 * 2048;
         int max_bulk_size = 1016;
@@ -180,7 +180,7 @@ namespace librealsense
         return flash;
     }
 
-    void update_flash_section(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, uint32_t offset, uint32_t size, update_progress_callback_ptr callback, float continue_from, float ratio)
+    void update_flash_section(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, uint32_t offset, uint32_t size, rs2_update_progress_callback_sptr callback, float continue_from, float ratio)
     {
         size_t sector_count = size / ds::FLASH_SECTOR_SIZE;
         size_t first_sector = offset / ds::FLASH_SECTOR_SIZE;
@@ -222,7 +222,7 @@ namespace librealsense
     }
 
     void update_section(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& merged_image, flash_section fs, uint32_t tables_size,
-        update_progress_callback_ptr callback, float continue_from, float ratio)
+        rs2_update_progress_callback_sptr callback, float continue_from, float ratio)
     {
         auto first_table_offset = fs.tables.front().offset;
         float total_size = float(fs.app_size + tables_size);
@@ -234,7 +234,7 @@ namespace librealsense
         update_flash_section(hwm, merged_image, first_table_offset, tables_size, callback, app_ratio, tables_ratio);
     }
 
-    void update_flash_internal(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, std::vector<uint8_t>& flash_backup, update_progress_callback_ptr callback, int update_mode)
+    void update_flash_internal(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, std::vector<uint8_t>& flash_backup, rs2_update_progress_callback_sptr callback, int update_mode)
     {
         auto flash_image_info = ds::get_flash_info(image);
         auto flash_backup_info = ds::get_flash_info(flash_backup);
@@ -254,7 +254,7 @@ namespace librealsense
         }
     }
 
-    void ds_device_common::update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode)
+    void ds_device_common::update_flash(const std::vector<uint8_t>& image, rs2_update_progress_callback_sptr callback, int update_mode)
     {
         if (_is_locked)
             throw std::runtime_error("this camera is locked and doesn't allow direct flash write, for firmware update use rs2_update_firmware method (DFU)");

@@ -129,19 +129,19 @@ void playback_sensor::close()
         _on_closed( closed_streams );
 }
 
-void playback_sensor::register_notifications_callback(notifications_callback_ptr callback)
+void playback_sensor::register_notifications_callback( rs2_notifications_callback_sptr callback )
 {
     LOG_DEBUG("register_notifications_callback for sensor " << m_sensor_id);
     _notifications_processor.set_callback(std::move(callback));
 }
 
-notifications_callback_ptr playback_sensor::get_notifications_callback() const
+rs2_notifications_callback_sptr playback_sensor::get_notifications_callback() const
 {
     return _notifications_processor.get_callback();
 }
 
 
-void playback_sensor::start(frame_callback_ptr callback)
+void playback_sensor::start( rs2_frame_callback_sptr callback )
 {
     LOG_DEBUG("Start sensor " << m_sensor_id);
     bool was_started = false;
@@ -298,11 +298,11 @@ void playback_sensor::update(const device_serializer::sensor_snapshot& sensor_sn
     register_sensor_options(sensor_snapshot);
 }
 
-frame_callback_ptr playback_sensor::get_frames_callback() const
+rs2_frame_callback_sptr playback_sensor::get_frames_callback() const
 {
     return m_user_callback;
 }
-void playback_sensor::set_frames_callback(frame_callback_ptr callback)
+void playback_sensor::set_frames_callback( rs2_frame_callback_sptr callback )
 {
     m_user_callback = callback;
 }

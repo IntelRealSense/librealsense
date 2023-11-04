@@ -369,7 +369,7 @@ formats_converter::find_pbf_matching_most_profiles( const stream_profiles & from
     return { best_match_processing_block_factory, best_match_profiles };
 }
 
-void formats_converter::set_frames_callback( frame_callback_ptr callback )
+void formats_converter::set_frames_callback( rs2_frame_callback_sptr callback )
 {
     _converted_frames_callback = callback;
 

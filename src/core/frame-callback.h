@@ -31,7 +31,7 @@ private:
 };
 
 
-inline frame_callback_ptr make_frame_callback( std::function< void( frame_interface * ) > && callback )
+inline rs2_frame_callback_sptr make_frame_callback( std::function< void( frame_interface * ) > && callback )
 {
     return { new frame_callback( std::move( callback ) ),
              []( rs2_frame_callback * p ) { p->release(); } };

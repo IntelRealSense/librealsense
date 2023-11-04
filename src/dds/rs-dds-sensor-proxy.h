@@ -66,7 +66,7 @@ public:
     std::shared_ptr<stream_profile_interface> add_motion_stream( rs2_motion_stream motion_stream, bool is_default ) override;
 
     void open( const stream_profiles & profiles ) override;
-    void start( frame_callback_ptr callback ) override;
+    void start( rs2_frame_callback_sptr callback ) override;
     void stop();
 
     void add_option( std::shared_ptr< realdds::dds_option > option );

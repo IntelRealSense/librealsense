@@ -95,7 +95,7 @@ bool librealsense::record_sensor::supports_option(rs2_option id) const
     return m_sensor.supports_option(id);
 }
 
-void librealsense::record_sensor::register_notifications_callback(notifications_callback_ptr callback)
+void librealsense::record_sensor::register_notifications_callback( rs2_notifications_callback_sptr callback )
 {
     if (m_register_notification_to_base)
     {
@@ -104,7 +104,7 @@ void librealsense::record_sensor::register_notifications_callback(notifications_
     }
 
     m_user_notification_callback = std::move(callback);
-    auto from_live_sensor = notifications_callback_ptr(new notification_callback([&](rs2_notification* n)
+    auto from_live_sensor = rs2_notifications_callback_sptr(new notification_callback([&](rs2_notification* n)
     {
         if (m_is_recording)
         {
@@ -118,12 +118,12 @@ void librealsense::record_sensor::register_notifications_callback(notifications_
     m_sensor.register_notifications_callback(std::move(from_live_sensor));
 }
 
-notifications_callback_ptr librealsense::record_sensor::get_notifications_callback() const
+rs2_notifications_callback_sptr librealsense::record_sensor::get_notifications_callback() const
 {
     return m_sensor.get_notifications_callback();
 }
 
-void librealsense::record_sensor::start(frame_callback_ptr callback)
+void librealsense::record_sensor::start( rs2_frame_callback_sptr callback )
 {
     m_sensor.start(callback);
 }
@@ -182,12 +182,12 @@ device_interface& record_sensor::get_device()
     return m_parent_device;
 }
 
-frame_callback_ptr record_sensor::get_frames_callback() const
+rs2_frame_callback_sptr record_sensor::get_frames_callback() const
 {
     return m_frame_callback;
 }
 
-void record_sensor::set_frames_callback(frame_callback_ptr callback)
+void record_sensor::set_frames_callback( rs2_frame_callback_sptr callback )
 {
     m_frame_callback = callback;
 }
@@ -288,7 +288,7 @@ void record_sensor::hook_sensor_callbacks()
         m_is_recording = true;
     }
 }
-frame_callback_ptr librealsense::record_sensor::wrap_frame_callback(frame_callback_ptr callback)
+rs2_frame_callback_sptr librealsense::record_sensor::wrap_frame_callback( rs2_frame_callback_sptr callback )
 {
     return make_frame_callback(
         [this, callback]( frame_holder frame )

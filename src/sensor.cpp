@@ -93,7 +93,7 @@ void log_callback_end( uint32_t fps,
         return _active_profiles;
     }
 
-    void sensor_base::register_notifications_callback(notifications_callback_ptr callback)
+    void sensor_base::register_notifications_callback( rs2_notifications_callback_sptr callback )
     {
         if (supports_option(RS2_OPTION_ERROR_POLLING_ENABLED))
         {
@@ -103,7 +103,7 @@ void log_callback_end( uint32_t fps,
         _notifications_processor->set_callback(std::move(callback));
     }
 
-    notifications_callback_ptr sensor_base::get_notifications_callback() const
+    rs2_notifications_callback_sptr sensor_base::get_notifications_callback() const
     {
         return _notifications_processor->get_callback();
     }
@@ -120,11 +120,11 @@ void log_callback_end( uint32_t fps,
         _on_before_streaming_changes.remove( slot );
     }
 
-    frame_callback_ptr sensor_base::get_frames_callback() const
+    rs2_frame_callback_sptr sensor_base::get_frames_callback() const
     {
         return _source.get_callback();
     }
-    void sensor_base::set_frames_callback(frame_callback_ptr callback)
+    void sensor_base::set_frames_callback( rs2_frame_callback_sptr callback )
     {
         return _source.set_callback(callback);
     }
@@ -619,7 +619,7 @@ void log_callback_end( uint32_t fps,
         _post_process_callback.reset();
     }
 
-    void synthetic_sensor::start(frame_callback_ptr callback)
+    void synthetic_sensor::start( rs2_frame_callback_sptr callback )
     {
         std::lock_guard<std::mutex> lock(_synthetic_configure_lock);
 
@@ -662,19 +662,19 @@ void log_callback_end( uint32_t fps,
         _formats_converter.register_converters( pbfs );
     }
 
-    frame_callback_ptr synthetic_sensor::get_frames_callback() const
+    rs2_frame_callback_sptr synthetic_sensor::get_frames_callback() const
     {
         return _formats_converter.get_frames_callback();
     }
 
-    void synthetic_sensor::set_frames_callback(frame_callback_ptr callback)
+    void synthetic_sensor::set_frames_callback( rs2_frame_callback_sptr callback )
     {
         // This callback is mutable, might be modified.
         // For instance, record_sensor modifies this callback in order to hook it to record frames.
         _formats_converter.set_frames_callback( callback );
     }
 
-    void synthetic_sensor::register_notifications_callback(notifications_callback_ptr callback)
+    void synthetic_sensor::register_notifications_callback( rs2_notifications_callback_sptr callback )
     {
         sensor_base::register_notifications_callback(callback);
         _raw_sensor->register_notifications_callback(callback);

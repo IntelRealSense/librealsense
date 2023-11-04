@@ -148,7 +148,7 @@ static rs2_stream custom_gpio_to_stream_type( uint32_t custom_gpio )
     return RS2_STREAM_ANY;
 }
 
-void hid_sensor::start( frame_callback_ptr callback )
+void hid_sensor::start( rs2_frame_callback_sptr callback )
 {
     std::lock_guard< std::mutex > lock( _configure_lock );
     if( _is_streaming )

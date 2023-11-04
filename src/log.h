@@ -204,7 +204,7 @@ namespace librealsense
         class elpp_dispatcher : public el::LogDispatchCallback
         {
         public:
-            log_callback_ptr callback;
+            rs2_log_callback_sptr callback;
             rs2_log_severity min_severity = RS2_LOG_SEVERITY_NONE;
 
         protected:
@@ -229,7 +229,7 @@ namespace librealsense
             callback_dispatchers.clear();
         }
 
-        void log_to_callback( rs2_log_severity min_severity, log_callback_ptr callback )
+        void log_to_callback( rs2_log_severity min_severity, rs2_log_callback_sptr callback )
         {
             open();
             
