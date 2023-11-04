@@ -45,11 +45,6 @@ static const double r2d = 180 / pi;
 template<typename T> T deg2rad(T val) { return T(val * d2r); }
 template<typename T> T rad2deg(T val) { return T(val * r2d); }
 
-// global abs() is only defined for int for some GCC impl on Linux, meaning we may
-// get unwanted behavior without any warning whatsoever. Instead, we want to use the
-// C++ version in std!
-using std::abs;
-
 #ifdef ANDROID
 #include "../common/android_helpers.h"
 #endif

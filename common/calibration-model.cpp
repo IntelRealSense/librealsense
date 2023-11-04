@@ -28,7 +28,8 @@ bool calibration_model::supports()
 
 void calibration_model::draw_float(std::string name, float& x, const float& orig, bool& changed)
 {
-    if (abs(x - orig) > 0.00001) ImGui::PushStyleColor(ImGuiCol_FrameBg, regular_blue);
+    if( std::abs( x - orig ) > 0.00001 )
+        ImGui::PushStyleColor( ImGuiCol_FrameBg, regular_blue );
     else ImGui::PushStyleColor(ImGuiCol_FrameBg, black);
     if (ImGui::DragFloat(std::string( rsutils::string::from() << "##" << name).c_str(), &x, 0.001f))
     {

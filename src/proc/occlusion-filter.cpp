@@ -188,7 +188,8 @@ namespace librealsense
                    auto uv_index = ((rotated_depth_height - i - 1) + (rotated_depth_width - j - 1) * rotated_depth_height);
                    auto index_right = index + 1;
                    uint16_t* diff_depth_ptr = (uint16_t*)depth_planes[0];
-                   uint16_t diff_right = abs((uint16_t)(*(diff_depth_ptr + index)) - (uint16_t)(*(diff_depth_ptr + index_right)));
+                   uint16_t diff_right = std::abs( (uint16_t)( *( diff_depth_ptr + index ) )
+                                                   - (uint16_t)( *( diff_depth_ptr + index_right ) ) );
                    float scaled_threshold = DEPTH_OCCLUSION_THRESHOLD / _depth_units;
                    if (diff_right > scaled_threshold)
                    {

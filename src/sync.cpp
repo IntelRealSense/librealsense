@@ -491,9 +491,7 @@ namespace librealsense
         for(auto m: _matchers)
         {
             if( _last_arrived[m.second.get()]
-                && ( fabs( (long long)f->get_frame_number()
-                           - (long long)_last_arrived[m.second.get()] ) )
-                       > 5 )
+                && ( std::abs( (long long)f->get_frame_number() - (long long)_last_arrived[m.second.get()] ) ) > 5 )
             {
                 std::stringstream s;
                 s << "clean inactive stream in "<<_name;
@@ -730,15 +728,15 @@ namespace librealsense
     bool timestamp_composite_matcher::are_equivalent( double a, double b, double fps )
     {
         auto gap = 1000. / fps;
-        if( abs( a - b ) < (gap / 2) )
+        if( std::abs( a - b ) < ( gap / 2 ) )
         {
             //LOG_DEBUG( "...     " << rsutils::string::from( a ) << " == " << rsutils::string::from( b ) << "  {diff}"
-            //                      << abs( a - b ) << " < " << rsutils::string::from( gap / 2 ) << "{gap/2}" );
+            //                      << std::abs( a - b ) << " < " << rsutils::string::from( gap / 2 ) << "{gap/2}" );
             return true;
         }
 
         //LOG_DEBUG( "...     " << rsutils::string::from( a ) << " != " << rsutils::string::from( b ) << "  {diff}"
-        //                      << rsutils::string::from( abs( a - b ) ) << " >= " << rsutils::string::from( gap / 2 )
+        //                      << rsutils::string::from( std::abs( a - b ) ) << " >= " << rsutils::string::from( gap / 2 )
         //                      << "{gap/2}" );
         return false;
     }

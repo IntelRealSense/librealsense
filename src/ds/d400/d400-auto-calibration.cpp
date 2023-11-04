@@ -812,10 +812,10 @@ namespace librealsense
 
                     res = get_PyRxFL_calibration_results(&h_1, &h_2);
 
-                    int health_1 = static_cast<int>(abs(h_1) * 1000.0f + 0.5f);
+                    int health_1 = static_cast<int>(std::abs(h_1) * 1000.0f + 0.5f);
                     health_1 &= 0xFFF;
 
-                    int health_2 = static_cast<int>(abs(h_2) * 1000.0f + 0.5f);
+                    int health_2 = static_cast<int>(std::abs(h_2) * 1000.0f + 0.5f);
                     health_2 &= 0xFFF;
 
                     int sign = 0;
@@ -1968,7 +1968,7 @@ namespace librealsense
             ave_gt += gt[i];
         ave_gt /= 4.0;
 
-        ta[0] = atanf(align * ave_gt / abs(table->baseline));
+        ta[0] = atanf(align * ave_gt / std::abs(table->baseline));
         ta[0] = rad2deg(ta[0]);
 
         if (right_rect_sides[0] > 0)
@@ -1988,7 +1988,7 @@ namespace librealsense
             ave_gt += gt[i];
         ave_gt /= 4.0;
 
-        ta[1] = atanf(align * ave_gt / abs(table->baseline));
+        ta[1] = atanf(align * ave_gt / std::abs(table->baseline));
         ta[1] = rad2deg(ta[1]);
 
         *angle = (ta[0] + ta[1]) / 2;
@@ -2075,7 +2075,7 @@ namespace librealsense
                 x = static_cast<float>(i);
                 y = static_cast<float>(j);
 
-                if (abs(intrin.fx) > 0.00001f && abs(intrin.fy) > 0.0001f)
+                if( std::abs( intrin.fx ) > 0.00001f && std::abs( intrin.fy ) > 0.0001f )
                 {
                     x = (x - intrin.ppx) / intrin.fx;
                     y = (y - intrin.ppy) / intrin.fy;
@@ -2452,10 +2452,10 @@ namespace librealsense
 
             table->header.crc32 = calc_crc32(ret.data() + sizeof(librealsense::ds::table_header), ret.size() - sizeof(librealsense::ds::table_header));
 
-            health[0] = (abs(table->intrinsic(2, 0) / health[0]) - 1) * 100; // px
-            health[1] = (abs(table->intrinsic(2, 1) / health[1]) - 1) * 100; // py
-            health[2] = (abs(table->intrinsic(0, 0) / health[2]) - 1) * 100; // fx
-            health[3] = (abs(table->intrinsic(1, 1) / health[3]) - 1) * 100; // fy
+            health[0] = (std::abs(table->intrinsic(2, 0) / health[0]) - 1) * 100; // px
+            health[1] = (std::abs(table->intrinsic(2, 1) / health[1]) - 1) * 100; // py
+            health[2] = (std::abs(table->intrinsic(0, 0) / health[2]) - 1) * 100; // fx
+            health[3] = (std::abs(table->intrinsic(1, 1) / health[3]) - 1) * 100; // fy
         }
 
         return ret;
