@@ -40,8 +40,6 @@
 
 typedef unsigned char byte;
 
-const int RS2_USER_QUEUE_SIZE = 128;
-
 // Usage of non-standard C++ PI derivatives is prohibitive, use local definitions
 static const double pi = std::acos(-1);
 static const double d2r = pi / 180;
