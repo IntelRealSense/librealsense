@@ -8,6 +8,7 @@
 
 #include "os.h"
 
+#include <rsutils/easylogging/easyloggingpp.h>
 #include <map>
 #include <vector>
 #include <string>
