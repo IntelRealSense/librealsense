@@ -10,6 +10,7 @@ if(BUILD_EASYLOGGINGPP)
 endif()
 
 add_subdirectory(${_rel_path}/realsense-file)
+add_subdirectory( ${_rel_path}/tclap )
 
 if( BUILD_WITH_DDS )
     add_subdirectory( "${CMAKE_CURRENT_LIST_DIR}/realdds" )
