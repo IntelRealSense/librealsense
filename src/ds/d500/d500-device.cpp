@@ -14,6 +14,7 @@
 #include "d500-info.h"
 #include "ds/ds-options.h"
 #include "ds/ds-timestamp.h"
+#include <src/depth-sensor.h>
 #include "stream.h"
 #include "environment.h"
 #include "d500-color.h"

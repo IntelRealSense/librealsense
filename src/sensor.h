@@ -3,18 +3,12 @@
 
 #pragma once
 
-#include <chrono>
-#include <memory>
-#include <vector>
-#include <unordered_set>
-#include <unordered_map>
-#include <limits.h>
-#include <atomic>
-#include <functional>
+#include "core/sensor-interface.h"
+
 #include "core/debug.h"
 
 #include "archive.h"
-#include "core/streaming.h"
+#include "core/recommended-proccesing-blocks-base.h"
 #include "core/roi.h"
 #include "core/options.h"
 #include "source.h"
@@ -26,11 +20,21 @@
 #include <rsutils/lazy.h>
 #include <rsutils/signal.h>
 
+#include <chrono>
+#include <memory>
+#include <vector>
+#include <unordered_set>
+#include <unordered_map>
+#include <limits.h>
+#include <atomic>
+#include <functional>
+
 
 namespace librealsense
 {
     class device;
     class option;
+    class stream_interface;
     enum class format_conversion;
 
 

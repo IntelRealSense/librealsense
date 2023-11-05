@@ -44,6 +44,8 @@
 #include "environment.h"
 #include "proc/temporal-filter.h"
 #include "software-device.h"
+#include "software-device-info.h"
+#include "software-sensor.h"
 #include "global_timestamp_reader.h"
 #include "auto-calibrated-device.h"
 #include "terminal-parser.h"
@@ -53,6 +55,9 @@
 #include "debug-stream-sensor.h"
 #include "max-usable-range-sensor.h"
 #include "fw-update/fw-update-device-interface.h"
+#include "color-sensor.h"
+#include "composite-frame.h"
+#include "points.h"
 
 #include <rsutils/string/from.h>
 
@@ -803,7 +808,7 @@ void rs2_software_device_set_destruction_callback(const rs2_device* dev, rs2_sof
     VALIDATE_NOT_NULL(dev);
     auto swdev = VALIDATE_INTERFACE(dev->device, librealsense::software_device);
     VALIDATE_NOT_NULL(on_destruction);
-    librealsense::software_device_destruction_callback_ptr callback(
+    librealsense::software_device::destruction_callback_ptr callback(
         new librealsense::software_device_destruction_callback(on_destruction, user),
         [](rs2_software_device_destruction_callback* p) { delete p; });
     swdev->register_destruction_callback(std::move(callback));
@@ -867,10 +872,11 @@ void rs2_software_device_set_destruction_callback_cpp(const rs2_device* dev, rs2
     // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
     // 'new' when calling us)
     VALIDATE_NOT_NULL( callback );
-    software_device_destruction_callback_ptr callback_ptr{ callback,
-                                                           []( rs2_software_device_destruction_callback * p ) {
-                                                               p->release();
-                                                           } };
+    software_device::destruction_callback_ptr callback_ptr{ callback,
+                                                            []( rs2_software_device_destruction_callback * p )
+                                                            {
+                                                                p->release();
+                                                            } };
 
     VALIDATE_NOT_NULL(dev);
     auto swdev = VALIDATE_INTERFACE(dev->device, librealsense::software_device);

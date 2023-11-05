@@ -7,6 +7,7 @@
 #include "media/playback/playback_device.h"
 #include "media/record/record_device.h"
 #include "media/ros/ros_writer.h"
+#include <src/proc/syncer-processing-block.h>
 
 #include <rsutils/string/from.h>
 

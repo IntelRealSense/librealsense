@@ -4,10 +4,9 @@
 
 #include "ds/ds-private.h"
 #include "hw-monitor.h"
-#include "streaming.h"
 #include "option.h"
 #include "ds/advanced_mode/presets.h"
-#include "../../include/librealsense2/h/rs_advanced_mode_command.h"
+#include <librealsense2/h/rs_advanced_mode_command.h>
 #include "serializable-interface.h"
 #include <rsutils/lazy.h>
 

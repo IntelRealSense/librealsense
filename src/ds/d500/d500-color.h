@@ -5,6 +5,7 @@
 
 #include "d500-device.h"
 #include "ds/ds-color-common.h"
+#include <src/color-sensor.h>
 
 #include "stream.h"
 

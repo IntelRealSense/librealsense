@@ -5,7 +5,7 @@
 
 
 #include "sid_index.h"
-#include <src/software-device.h>
+#include <src/software-sensor.h>
 #include <src/proc/formats-converter.h>
 
 #include <realdds/dds-metadata-syncer.h>

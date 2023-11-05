@@ -51,17 +51,6 @@ namespace librealsense
         virtual rs2_source* get_c_wrapper() = 0;
     };
 
-    class processing_block_interface : public virtual options_interface, public virtual info_interface
-    {
-    public:
-        virtual void set_processing_callback(frame_processor_callback_ptr callback) = 0;
-        virtual void set_output_callback(frame_callback_ptr callback) = 0;
-        virtual void invoke(frame_holder frame) = 0;
-        virtual synthetic_source_interface& get_source() = 0;
-
-        virtual ~processing_block_interface() = default;
-    };
-
     template<class T>
     class internal_frame_processor_callback : public rs2_frame_processor_callback
     {

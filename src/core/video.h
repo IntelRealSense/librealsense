@@ -2,7 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "streaming.h"
+#include "stream-profile-interface.h"
 
 namespace librealsense
 {

@@ -2,9 +2,10 @@
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #include "core/depth-frame.h"
+#include "composite-frame.h"
+#include "core/stream-profile-interface.h"
 #include "archive.h"
 #include "metadata-parser.h"
-#include "environment.h"
 
 #include <rsutils/string/from.h>
 

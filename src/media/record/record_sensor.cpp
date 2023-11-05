@@ -4,6 +4,8 @@
 #include "record_sensor.h"
 #include "api.h"
 #include "stream.h"
+#include <src/depth-sensor.h>
+#include <src/color-sensor.h>
 
 #include <rsutils/string/from.h>
 

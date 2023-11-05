@@ -4,6 +4,7 @@
 #pragma once
 
 #include "../core/processing.h"
+#include "../core/processing-block-interface.h"
 #include "../image.h"
 #include "../source.h"
 #include <librealsense2/hpp/rs_frame.hpp>

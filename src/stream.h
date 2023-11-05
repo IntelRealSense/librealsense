@@ -2,10 +2,12 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "core/streaming.h"
+#include "core/stream-interface.h"
+#include "core/stream-profile-interface.h"
 #include "core/video.h"
 #include "core/motion.h"
 #include "core/stream-profile.h"
+#include "core/tagged-profile.h"
 #include "context.h"
 #include "image.h"
 #include "environment.h"
