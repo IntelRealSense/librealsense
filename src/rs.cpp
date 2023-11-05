@@ -49,7 +49,6 @@
 #include "terminal-parser.h"
 #include "firmware_logger_device.h"
 #include "device-calibration.h"
-#include "calibrated-sensor.h"
 #include <librealsense2/h/rs_internal.h>
 #include "debug-stream-sensor.h"
 #include "max-usable-range-sensor.h"
@@ -1226,40 +1225,13 @@ HANDLE_EXCEPTIONS_AND_RETURN(, from, to, extrin)
 
 void rs2_override_extrinsics( const rs2_sensor* sensor, const rs2_extrinsics* extrinsics, rs2_error** error ) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL( sensor );
-    VALIDATE_NOT_NULL( extrinsics );
-
-    auto ois = VALIDATE_INTERFACE( sensor->sensor, librealsense::calibrated_sensor );
-    ois->override_extrinsics( *extrinsics );
+    throw not_implemented_exception( "deprecated" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , sensor, extrinsics )
 
-void rs2_get_dsm_params( const rs2_sensor * sensor, rs2_dsm_params * p_params_out, rs2_error** error ) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL( sensor );
-    VALIDATE_NOT_NULL( p_params_out );
-
-    auto cs = VALIDATE_INTERFACE( sensor->sensor, librealsense::calibrated_sensor );
-    *p_params_out = cs->get_dsm_params();
-}
-HANDLE_EXCEPTIONS_AND_RETURN( , sensor, p_params_out )
-
-void rs2_override_dsm_params( const rs2_sensor * sensor, rs2_dsm_params const * p_params, rs2_error** error ) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL( sensor );
-    VALIDATE_NOT_NULL( p_params );
-
-    auto cs = VALIDATE_INTERFACE( sensor->sensor, librealsense::calibrated_sensor );
-    cs->override_dsm_params( *p_params );
-}
-HANDLE_EXCEPTIONS_AND_RETURN( , sensor, p_params )
-
 void rs2_reset_sensor_calibration( rs2_sensor const * sensor, rs2_error** error ) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL( sensor );
-
-    auto cs = VALIDATE_INTERFACE( sensor->sensor, librealsense::calibrated_sensor );
-    cs->reset_calibration();
+    throw not_implemented_exception( "deprecated" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , sensor )
 
@@ -1469,7 +1441,7 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
     case RS2_EXTENSION_COLOR_SENSOR            : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::color_sensor)           != nullptr;
     case RS2_EXTENSION_MOTION_SENSOR           : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::motion_sensor)          != nullptr;
     case RS2_EXTENSION_FISHEYE_SENSOR          : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::fisheye_sensor)         != nullptr;
-    case RS2_EXTENSION_CALIBRATED_SENSOR       : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::calibrated_sensor)      != nullptr;
+    case RS2_EXTENSION_CALIBRATED_SENSOR       : return false;
     case RS2_EXTENSION_MAX_USABLE_RANGE_SENSOR : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::max_usable_range_sensor)!= nullptr;
     case RS2_EXTENSION_DEBUG_STREAM_SENSOR     : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::debug_stream_sensor )   != nullptr;
 
@@ -2786,11 +2758,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, sensor, profile, intrinsics)
 
 void rs2_override_intrinsics( const rs2_sensor* sensor, const rs2_intrinsics* intrinsics, rs2_error** error ) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL( sensor );
-    VALIDATE_NOT_NULL( intrinsics );
-    
-    auto ois = VALIDATE_INTERFACE( sensor->sensor, librealsense::calibrated_sensor );
-    ois->override_intrinsics( *intrinsics );
+    throw not_implemented_exception( "deprecated" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , sensor, intrinsics )
 

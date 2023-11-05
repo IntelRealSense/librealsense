@@ -636,24 +636,6 @@ void rs2_override_intrinsics( const rs2_sensor* sensor, const rs2_intrinsics* in
 void rs2_set_extrinsics(const rs2_sensor* from_sensor, const rs2_stream_profile* from_profile, rs2_sensor* to_sensor, const rs2_stream_profile* to_profile, const rs2_extrinsics* extrinsics, rs2_error** error);
 
 /**
- * Get the DSM parameters for a sensor
- * \param[in]  sensor        Sensor that supports the CALIBRATED_SENSOR extension
- * \param[out] p_params_out  Pointer to the structure that will get the DSM parameters
- * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
- */
-void rs2_get_dsm_params( rs2_sensor const * sensor, rs2_dsm_params * p_params_out, rs2_error** error );
-
-/**
- * Set the sensor DSM parameters
- * This should ideally be done when the stream is NOT running. If it is, the
- * parameters may not take effect immediately.
- * \param[in]  sensor        Sensor that supports the CALIBRATED_SENSOR extension
- * \param[out] p_params      Pointer to the structure that contains the DSM parameters
- * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
- */
-void rs2_override_dsm_params( rs2_sensor const * sensor, rs2_dsm_params const * p_params, rs2_error** error );
-
-/**
  * Reset the sensor DSM parameters
  * This should ideally be done when the stream is NOT running. May not take effect immediately.
  * \param[in]  sensor        Sensor that supports the CALIBRATED_SENSOR extension

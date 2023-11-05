@@ -3,7 +3,6 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "pyrealsense2.h"
 #include <librealsense2/hpp/rs_sensor.hpp>
-#include "calibrated-sensor.h"
 #include "max-usable-range-sensor.h"
 
 void init_sensor(py::module &m) {
@@ -75,7 +74,6 @@ void init_sensor(py::module &m) {
         .def(BIND_DOWNCAST(sensor, motion_sensor))
         .def(BIND_DOWNCAST(sensor, fisheye_sensor))
         .def(BIND_DOWNCAST(sensor, pose_sensor))
-        .def(BIND_DOWNCAST(sensor, calibrated_sensor))
         .def(BIND_DOWNCAST(sensor, wheel_odometer))
         .def(BIND_DOWNCAST(sensor, max_usable_range_sensor))
         .def(BIND_DOWNCAST(sensor, debug_stream_sensor))
@@ -116,27 +114,6 @@ void init_sensor(py::module &m) {
     py::class_<rs2::fisheye_sensor, rs2::sensor> fisheye_sensor(m, "fisheye_sensor"); // No docstring in C++
     fisheye_sensor.def(py::init<rs2::sensor>(), "sensor"_a);
 
-    py::class_<rs2::calibrated_sensor, rs2::sensor> cal_sensor( m, "calibrated_sensor" );
-    cal_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
-        .def("override_intrinsics",
-            &rs2::calibrated_sensor::override_intrinsics,
-            "intrinsics"_a,
-            py::call_guard< py::gil_scoped_release >())
-        .def("override_extrinsics",
-            &rs2::calibrated_sensor::override_extrinsics,
-            "extrinsics"_a,
-            py::call_guard< py::gil_scoped_release >())
-        .def("get_dsm_params",
-            &rs2::calibrated_sensor::get_dsm_params,
-            py::call_guard< py::gil_scoped_release >())
-        .def("override_dsm_params",
-            &rs2::calibrated_sensor::override_dsm_params,
-            "dsm_params"_a,
-            py::call_guard< py::gil_scoped_release >())
-        .def("reset_calibration",
-            &rs2::calibrated_sensor::reset_calibration,
-            py::call_guard< py::gil_scoped_release >());
-    
     py::class_<rs2::max_usable_range_sensor, rs2::sensor> mur_sensor(m, "max_usable_range_sensor");
     mur_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
         .def("get_max_usable_depth_range",
