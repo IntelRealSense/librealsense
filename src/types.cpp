@@ -138,28 +138,4 @@ namespace librealsense
         return ~oldcrc32;
     }
 
-    notifications_processor::notifications_processor()
-        :_dispatcher(10), _callback(nullptr , [](rs2_notifications_callback*) {})
-    {
-    }
-
-    notifications_processor::~notifications_processor()
-    {
-        _dispatcher.stop();
-    }
-
-    void notifications_processor::set_callback( rs2_notifications_callback_sptr callback )
-    {
-
-        _dispatcher.stop();
-
-        std::lock_guard<std::mutex> lock(_callback_mutex);
-        _callback = std::move(callback);
-        _dispatcher.start();
-    }
-    
-    rs2_notifications_callback_sptr notifications_processor::get_callback() const
-    {
-        return _callback;
-    }
 }

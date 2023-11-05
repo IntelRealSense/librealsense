@@ -28,6 +28,7 @@ namespace librealsense
     class device;
     class option;
     class stream_interface;
+    class notifications_processor;
     enum class format_conversion;
 
 
