@@ -3,7 +3,7 @@
 #pragma once
 
 #include "stream-profile-interface.h"
-#include <src/types.h>
+#include <src/float3.h>
 
 
 namespace librealsense

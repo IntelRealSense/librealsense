@@ -1,12 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-
 #pragma once
+
 #include "core/frame-holder.h"
 #include "core/roi.h"
 #include "core/options-container.h"
-#include "types.h"
+#include "float3.h"
 
+#include <rsutils/concurrency/concurrency.h>
 #include <stdint.h>
 #include <vector>
 #include <mutex>
