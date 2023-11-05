@@ -504,13 +504,15 @@ namespace librealsense
         hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
-            [&, mm_correct_opt]() { return std::make_shared<acceleration_transform>(_mm_calib, mm_correct_opt);
+            [&, mm_correct_opt]() { return std::make_shared< acceleration_transform >( _mm_calib, mm_correct_opt );
             });
 
+        bool high_sensitivity = _owner->is_gyro_high_sensitivity();
         hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
-            [&, mm_correct_opt]() { return std::make_shared<gyroscope_transform>(_mm_calib, mm_correct_opt);
+            [&, mm_correct_opt, high_sensitivity]() {
+                return std::make_shared< gyroscope_transform >( _mm_calib, mm_correct_opt, high_sensitivity );
             });
 
         return hid_ep;

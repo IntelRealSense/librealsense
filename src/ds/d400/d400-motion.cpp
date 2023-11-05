@@ -81,7 +81,7 @@ namespace librealsense
         motion_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL}, {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
-            [&, mm_correct_opt]() { return std::make_shared<motion_to_accel_gyro>(_mm_calib, mm_correct_opt);
+            [&, mm_correct_opt]() { return std::make_shared<motion_to_accel_gyro>(_mm_calib, mm_correct_opt, false);
         });
 
         return motion_ep;
