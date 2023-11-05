@@ -502,18 +502,8 @@ namespace librealsense
         group_multiple_fw_calls(depth_sensor, [&]() {
 
             _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), ds::fw_cmd::GVD);
-
-            constexpr auto gvd_header_size = 8;
             get_gvd_details(gvd_buff, &gvd_parsed_fields);
-            auto gvd_payload_data = gvd_buff.data() + gvd_header_size;
-            auto computed_crc = calc_crc32(gvd_payload_data, gvd_parsed_fields.payload_size);
-            LOG_INFO("gvd version = " << gvd_parsed_fields.gvd_version);
-            LOG_INFO("gvd payload size = " << gvd_parsed_fields.payload_size);
-            LOG_INFO("gvd crc = " << gvd_parsed_fields.crc32);
-            LOG_INFO("gvd optical module sn = " << gvd_parsed_fields.optical_module_sn);
-            if (computed_crc != gvd_parsed_fields.crc32)
-                LOG_ERROR("CRC mismatch in D500 GVD - received CRC = " << gvd_parsed_fields.crc32 << ", computed CRC = " << computed_crc);
-
+            
             _device_capabilities = ds_caps::CAP_ACTIVE_PROJECTOR | ds_caps::CAP_RGB_SENSOR | ds_caps::CAP_IMU_SENSOR |
                 ds_caps::CAP_BMI_085 | ds_caps::CAP_GLOBAL_SHUTTER | ds_caps::CAP_INTERCAM_HW_SYNC;
 
@@ -852,12 +842,29 @@ namespace librealsense
     
     void d500_device::get_gvd_details(const std::vector<uint8_t>& gvd_buff, ds::d500_gvd_parsed_fields* parsed_fields) const
     {
-        parsed_fields->gvd_version = *reinterpret_cast<const uint16_t*>(gvd_buff.data() + static_cast<int>(ds::d500_gvd_fields::version_offset));
-        parsed_fields->payload_size = *reinterpret_cast<const uint32_t*>(gvd_buff.data() + static_cast<int>(ds::d500_gvd_fields::payload_size_offset));
-        parsed_fields->crc32 = *reinterpret_cast<const uint32_t*>(gvd_buff.data() + static_cast<int>(ds::d500_gvd_fields::crc32_offset));
-        parsed_fields->optical_module_sn = _hw_monitor->get_module_serial_string(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::optical_module_serial_offset));
-        parsed_fields->mb_module_sn = _hw_monitor->get_module_serial_string(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::mb_module_serial_offset));
-        parsed_fields->fw_version = _hw_monitor->get_firmware_version_string<uint16_t>(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::fw_version_offset), 4, false);
-        parsed_fields->safety_sw_suite_version = _hw_monitor->get_firmware_version_string<uint8_t>(gvd_buff, static_cast<size_t>(ds::d500_gvd_fields::safety_sw_suite_version_offset), 3, false);
+        parsed_fields->gvd_version[0] = *reinterpret_cast<const uint8_t*>(gvd_buff.data() + ds::d500_gvd_offsets::version_offset);
+        parsed_fields->gvd_version[1] = *reinterpret_cast<const uint8_t*>(gvd_buff.data() + ds::d500_gvd_offsets::version_offset + sizeof(uint8_t));
+        
+        parsed_fields->payload_size = *reinterpret_cast<const uint32_t*>(gvd_buff.data() + ds::d500_gvd_offsets::payload_size_offset);
+        parsed_fields->crc32 = *reinterpret_cast<const uint32_t*>(gvd_buff.data() + ds::d500_gvd_offsets::crc32_offset);
+        parsed_fields->optical_module_sn = _hw_monitor->get_module_serial_string(gvd_buff, ds::d500_gvd_offsets::optical_module_serial_offset);
+        parsed_fields->mb_module_sn = _hw_monitor->get_module_serial_string(gvd_buff, ds::d500_gvd_offsets::mb_module_serial_offset);
+        parsed_fields->fw_version = _hw_monitor->get_firmware_version_string<uint16_t>(gvd_buff, ds::d500_gvd_offsets::fw_version_offset, 4, false);
+        parsed_fields->safety_sw_suite_version = _hw_monitor->get_firmware_version_string<uint8_t>(gvd_buff, ds::d500_gvd_offsets::safety_sw_suite_version_offset, 3, false);
+
+        constexpr size_t gvd_header_size = 8;
+        auto gvd_payload_data = gvd_buff.data() + gvd_header_size;
+        auto computed_crc = calc_crc32( gvd_payload_data, parsed_fields->payload_size );
+        LOG_INFO( "D500 GVD version is: " << static_cast< int >( parsed_fields->gvd_version[0] )
+                                          << "."
+                                          << static_cast< int >( parsed_fields->gvd_version[1] ) );
+        LOG_INFO( "D500 GVD payload_size is: " << parsed_fields->payload_size );
+
+        if( computed_crc != parsed_fields->crc32 )
+        {
+            LOG_ERROR( "CRC mismatch in D500 GVD - received CRC = "
+                << parsed_fields->crc32 << ", computed CRC = " << computed_crc );
+        }
+
     }
 }

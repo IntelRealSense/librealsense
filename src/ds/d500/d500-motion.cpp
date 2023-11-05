@@ -29,6 +29,11 @@ namespace librealsense
         return _ds_motion_common->get_motion_intrinsics(stream);
     }
 
+    bool d500_motion::is_gyro_high_sensitivity() const
+    {
+        return false;
+    }
+
     std::shared_ptr<synthetic_sensor> d500_motion::create_hid_device(std::shared_ptr<context> ctx,
                                                                 const std::vector<platform::hid_device_info>& all_hid_infos,
                                                                 const firmware_version& camera_fw_version)

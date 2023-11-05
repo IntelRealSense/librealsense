@@ -19,6 +19,7 @@
 #include <vector>
 #include <cmath>
 #include <type_traits>
+#include <tuple>
 
 namespace librealsense
 {
@@ -728,6 +729,48 @@ namespace librealsense
     private:
         std::vector < std::pair<std::weak_ptr<option>, std::string> >  _gated_options;
     };
+
+    /** \brief gated_by_value_option class will permit the user to
+     *  perform only read (query) of the read_only option when its affecting_option value is not as needed.
+     *  Receives a tuple of < option, value write is allowed in, explenation string in case of failure to read >*/
+    class gated_by_value_option : public proxy_option
+    {
+    public:
+        explicit gated_by_value_option(
+            std::shared_ptr< option > leading_to_read_only,
+            std::vector< std::tuple< std::shared_ptr< option >, float, std::string > > gated_options )
+            : proxy_option( leading_to_read_only )
+        {
+            for( auto & gated : gated_options )
+            {
+                _gated_options.push_back( gated );
+            }
+        }
+
+        void set( float requested_option_value ) override
+        {
+            for( auto & gated : _gated_options )
+            {
+                auto gating_option = std::get<0>( gated ).lock();
+                if( ! gating_option )
+                    continue;  // if gated option is not available, step over it
+                auto current_gate_value = gating_option->query();
+                if( current_gate_value == std::get< 1 >( gated ) )
+                {
+                    _proxy->set( requested_option_value );
+                    _recording_function( *this );
+                }
+                else
+                {
+                    throw std::runtime_error( std::get< 2 >( gated ) );
+                }
+            }
+        }
+
+    private:
+        std::vector< std::tuple< std::weak_ptr< option >, float, std::string > > _gated_options;
+    };
+
 
     /** \brief class provided a control
     * that changes min distance value when changing max distance value */
