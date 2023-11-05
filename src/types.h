@@ -325,29 +325,6 @@ namespace librealsense {
         void release() override { delete this; }
     };
 
-    class update_progress_callback : public rs2_update_progress_callback
-    {
-        rs2_update_progress_callback_ptr _nptr;
-        void* _client_data;
-    public:
-        update_progress_callback() {}
-        update_progress_callback(rs2_update_progress_callback_ptr on_update_progress, void* client_data = NULL)
-        : _nptr(on_update_progress), _client_data(client_data){}
-
-        operator bool() const { return _nptr != nullptr; }
-        void on_update_progress(const float progress) {
-            if (_nptr)
-            {
-                try { _nptr(progress, _client_data); }
-                catch (...)
-                {
-                    LOG_ERROR("Received an exception from firmware update progress callback!");
-                }
-            }
-        }
-        void release() { delete this; }
-    };
-
 
     ////////////////////////////////////////
     // Helper functions for library types //

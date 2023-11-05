@@ -3048,6 +3048,38 @@ int rs2_send_wheel_odometry(const rs2_sensor* sensor, char wo_sensor_id, unsigne
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, wo_sensor_id, frame_num, translational_velocity)
 
+
+class update_progress_callback : public rs2_update_progress_callback
+{
+    rs2_update_progress_callback_ptr _nptr;
+    void * _client_data;
+
+public:
+    update_progress_callback( rs2_update_progress_callback_ptr on_update_progress, void * client_data = NULL )
+        : _nptr( on_update_progress )
+        , _client_data( client_data )
+    {
+    }
+
+    void on_update_progress( const float progress )
+    {
+        if( _nptr )
+        {
+            try
+            {
+                _nptr( progress, _client_data );
+            }
+            catch( ... )
+            {
+                LOG_ERROR( "Received an exception from firmware update progress callback!" );
+            }
+        }
+    }
+
+    void release() { delete this; }
+};
+
+
 void rs2_update_firmware_cpp(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback* callback, rs2_error** error) BEGIN_API_CALL
 {
     // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
@@ -3083,7 +3115,7 @@ void rs2_update_firmware(const rs2_device* device, const void* fw_image, int fw_
         fwu->update(fw_image, fw_image_size, nullptr);
     else
     {
-        rs2_update_progress_callback_sptr cb(new librealsense::update_progress_callback(callback, client_data),
+        rs2_update_progress_callback_sptr cb(new update_progress_callback(callback, client_data),
             [](update_progress_callback* p) { delete p; });
         fwu->update(fw_image, fw_image_size, std::move(cb));
     }
@@ -3124,7 +3156,7 @@ const rs2_raw_data_buffer* rs2_create_flash_backup(const rs2_device* device, rs2
         res = fwud->backup_flash(nullptr);
     else
     {
-        rs2_update_progress_callback_sptr cb(new librealsense::update_progress_callback(callback, client_data),
+        rs2_update_progress_callback_sptr cb(new update_progress_callback(callback, client_data),
             [](update_progress_callback* p) { delete p; });
         res = fwud->backup_flash(std::move(cb));
     }
@@ -3184,7 +3216,7 @@ void rs2_update_firmware_unsigned(const rs2_device* device, const void* image, i
         fwud->update_flash(buffer, nullptr, update_mode);
     else
     {
-        rs2_update_progress_callback_sptr cb(new librealsense::update_progress_callback(callback, client_data),
+        rs2_update_progress_callback_sptr cb(new update_progress_callback(callback, client_data),
             [](update_progress_callback* p) { delete p; });
         fwud->update_flash(buffer, std::move(cb), update_mode);
     }
@@ -3272,7 +3304,7 @@ const rs2_raw_data_buffer* rs2_run_on_chip_calibration(rs2_device* device, const
         buffer = auto_calib->run_on_chip_calibration(timeout_ms, json, health, nullptr);
     else
     {
-        rs2_update_progress_callback_sptr cb(new librealsense::update_progress_callback(progress_callback, user),
+        rs2_update_progress_callback_sptr cb(new update_progress_callback(progress_callback, user),
             [](update_progress_callback* p) { delete p; });
 
         buffer = auto_calib->run_on_chip_calibration(timeout_ms, json, health, cb);
@@ -3320,7 +3352,7 @@ const rs2_raw_data_buffer* rs2_run_tare_calibration(rs2_device* device, float gr
         buffer = auto_calib->run_tare_calibration(timeout_ms, ground_truth_mm, json, health, nullptr);
     else
     {
-        rs2_update_progress_callback_sptr cb(new librealsense::update_progress_callback(progress_callback, user),
+        rs2_update_progress_callback_sptr cb(new update_progress_callback(progress_callback, user),
             [](update_progress_callback* p) { delete p; });
 
         buffer = auto_calib->run_tare_calibration(timeout_ms, ground_truth_mm, json, health, cb);
@@ -3904,7 +3936,7 @@ const rs2_raw_data_buffer* rs2_run_focal_length_calibration(rs2_device* device, 
         buffer = auto_calib->run_focal_length_calibration(left, right, target_w, target_h, adjust_both_sides, ratio, angle, nullptr);
     else
     {
-        rs2_update_progress_callback_sptr cb(new librealsense::update_progress_callback(callback, client_data), [](update_progress_callback* p) { delete p; });
+        rs2_update_progress_callback_sptr cb(new update_progress_callback(callback, client_data), [](update_progress_callback* p) { delete p; });
         buffer = auto_calib->run_focal_length_calibration(left, right, target_w, target_h, adjust_both_sides, ratio, angle, cb);
     }
 
@@ -3959,7 +3991,7 @@ const rs2_raw_data_buffer* rs2_run_uv_map_calibration(rs2_device* device, rs2_fr
         buffer = auto_calib->run_uv_map_calibration(left, color, depth, py_px_only, health, health_size, nullptr);
     else
     {
-        rs2_update_progress_callback_sptr cb(new librealsense::update_progress_callback(callback, client_data), [](update_progress_callback* p) { delete p; });
+        rs2_update_progress_callback_sptr cb(new update_progress_callback(callback, client_data), [](update_progress_callback* p) { delete p; });
         buffer = auto_calib->run_uv_map_calibration(left, color, depth, py_px_only, health, health_size, cb);
     }
 
@@ -4008,7 +4040,7 @@ float rs2_calculate_target_z(rs2_device* device, rs2_frame_queue* queue1, rs2_fr
         return auto_calib->calculate_target_z(queue1, queue2, queue3, target_width, target_height, nullptr);
     else
     {
-        rs2_update_progress_callback_sptr cb(new librealsense::update_progress_callback(progress_callback, client_data), [](update_progress_callback* p) { delete p; });
+        rs2_update_progress_callback_sptr cb(new update_progress_callback(progress_callback, client_data), [](update_progress_callback* p) { delete p; });
         return auto_calib->calculate_target_z(queue1, queue2, queue3, target_width, target_height, cb);
     }
 }
