@@ -31,6 +31,8 @@ public:
     uint16_t get_pid() const { return _pid; }
     std::shared_ptr< platform::backend > get_backend();
 
+    virtual bool is_gyro_high_sensitivity() const { return false; }
+
 protected:
     uint16_t _pid = 0;
 };

@@ -2731,8 +2731,6 @@ namespace rs2
         pos = ImGui::GetCursorPos();
 
         ImVec2 rc;
-        std::string fw_version;
-        std::string min_fw_version;
 
         int info_control_panel_height = 0;
         if (show_device_info)
@@ -2748,7 +2746,6 @@ namespace rs2
                 if (pair.first == "Recommended Firmware Version")
                 {
                     info_category = "Min FW Version";
-                    min_fw_version = pair.second;
                 }
                 else
                 {
@@ -2761,19 +2758,10 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
                 ImGui::SetCursorPos({ rc.x + 145, rc.y + 1 });
                 std::string label = rsutils::string::from() << "##" << id << " " << pair.first;
-                if (pair.first == "Firmware Version")
-                {
-                    fw_version = pair.second;
-                    ImGui::PushItemWidth(80);
-                }
                 ImGui::InputText(label.c_str(),
                     (char*)pair.second.data(),
                     pair.second.size() + 1,
                     ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
-                if (pair.first == "Firmware Version")
-                {
-                    ImGui::PopItemWidth();
-                }
                 ImGui::PopStyleColor(3);
                 ImGui::SetCursorPos({ rc.x, rc.y + line_h });
             }

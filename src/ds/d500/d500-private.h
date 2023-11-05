@@ -58,26 +58,20 @@ namespace librealsense
         bool d500_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
             const platform::uvc_device_info& info, platform::usb_device_info& result);
 
-        // Keep sorted
-        enum class d500_gvd_fields      // gvd fields for Safety Camera
+        namespace d500_gvd_offsets 
         {
-            version_offset = 0,                  //ES1
-            payload_size_offset = 0x2,           //ES1
-            crc32_offset = 0x4,                  //ES1
-            optical_module_serial_offset = 0x54,         //ES1
-            mb_module_serial_offset = 0x7a,             //ES2
-            fw_version_offset = 0xba,                  //ES2
-            safety_sw_suite_version_offset = 0x10F      //ES2
-            //rgb_sensor = 0x17,
-            //imu_sensor = 0x19,
-            //active_projector = 0x1a,
-            //camera_fw_version_offset = 0x8c,
-            //is_camera_locked_offset = 0x9e,
-        };
+            constexpr size_t version_offset = 0;
+            constexpr size_t payload_size_offset = 0x2;
+            constexpr size_t crc32_offset = 0x4;
+            constexpr size_t optical_module_serial_offset = 0x54;
+            constexpr size_t mb_module_serial_offset = 0x7a;
+            constexpr size_t fw_version_offset = 0xba;
+            constexpr size_t safety_sw_suite_version_offset = 0x10F;
+        }  // namespace d500_gvd_offsets
 
         struct d500_gvd_parsed_fields
         {
-            uint16_t gvd_version;
+            uint8_t gvd_version[2];
             uint16_t payload_size;
             uint32_t crc32; 
             std::string optical_module_sn;

@@ -870,43 +870,6 @@ inline std::ostream& operator<<( std::ostream& out, rs2_intrinsics const & i )
         << "] ]";
 }
 
-inline std::ostream& operator<<( std::ostream& s, rs2_dsm_params const & self )
-{
-    s << "[ ";
-    if( self.timestamp )
-    {
-        time_t t = self.timestamp;
-        auto ptm = localtime( &t );
-        char buf[256];
-        strftime( buf, sizeof( buf ), "%F.%T ", ptm );
-        s << buf;
-
-        unsigned patch = self.version & 0xF;
-        unsigned minor = (self.version >> 4) & 0xFF;
-        unsigned major = (self.version >> 12);
-        s << major << '.' << minor << '.' << patch << ' ';
-    }
-    else
-    {
-        s << "new: ";
-    }
-    switch( self.model )
-    {
-    case RS2_DSM_CORRECTION_NONE: break;
-    case RS2_DSM_CORRECTION_AOT: s << "AoT "; break;
-    case RS2_DSM_CORRECTION_TOA: s << "ToA "; break;
-    }
-    s << "x[" << self.h_scale << " " << self.v_scale << "] ";
-    s << "+[" << self.h_offset << " " << self.v_offset;
-    if( self.rtd_offset )
-        s << " rtd " << self.rtd_offset;
-    s << "]";
-    if( self.temp_x2 )
-        s << " @" << float( self.temp_x2 ) / 2 << "degC";
-    s << " ]";
-    return s;
-}
-
 template<typename T>
 uint32_t rs_fourcc(const T a, const T b, const  T c, const T d)
 {

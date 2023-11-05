@@ -19,6 +19,8 @@ namespace librealsense
 
         rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const;
 
+        bool is_gyro_high_sensitivity() const override;
+
     protected:
         friend class ds_motion_common;
         friend class ds_fisheye_sensor;
