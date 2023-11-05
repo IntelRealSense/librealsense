@@ -90,15 +90,6 @@ namespace librealsense {
         return false;
     }
 
-    ///////////////////////
-    // Logging mechanism //
-    ///////////////////////
-
-    void log_to_console(rs2_log_severity min_severity);
-    void log_to_file( rs2_log_severity min_severity, const char* file_path );
-    void log_to_callback( rs2_log_severity min_severity, rs2_log_callback_sptr callback );
-    void reset_logger();
-    void enable_rolling_log_file( unsigned max_size );
 
     // Enhancement for debug mode that incurs performance penalty with STL
     // std::clamp to be introduced with c++17
