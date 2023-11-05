@@ -45,28 +45,6 @@ namespace librealsense
         return extr;
     }
 
-    std::string make_less_screamy(const char* str)
-    {
-        std::string res(str);
-
-        bool first = true;
-        for (auto i = 0; i < res.size(); i++)
-        {
-            if (res[i] != '_')
-            {
-                if (!first) res[i] = tolower(res[i]);
-                first = false;
-            }
-            else
-            {
-                res[i] = ' ';
-                first = true;
-            }
-        }
-
-        return res;
-    }
-
     recoverable_exception::recoverable_exception(const std::string& msg,
         rs2_exception_type exception_type) noexcept
         : librealsense_exception(msg, exception_type)
