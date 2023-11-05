@@ -576,6 +576,22 @@ const char * get_string( rs2_camera_info value )
 #undef CASE
 }
 
+const char * get_string( rs2_feature value )
+{
+#define CASE( X ) STRCASE( FEATURE, X )
+    switch( value )
+    {
+        CASE( AUTO_EXPOSURE_ROI )
+        CASE( HDR )
+        CASE( EMITTER_FREQUENCY )
+        CASE( AMPLITUDE_FACTOR )
+    default:
+        assert( ! is_valid( value ) );
+        return UNKNOWN_VALUE;
+    }
+#undef CASE
+}
+
 std::string const & get_string( rs2_frame_metadata_value value )
 {
     static auto str_array = []()
@@ -742,6 +758,7 @@ rs2_option rs2_option_from_string( char const * option_name )
 }
 
 const char * rs2_camera_info_to_string( rs2_camera_info info ) { return librealsense::get_string( info ); }
+const char * rs2_feature_to_string( rs2_feature feature) { return librealsense::get_string( feature ); }
 const char * rs2_timestamp_domain_to_string( rs2_timestamp_domain info ) { return librealsense::get_string( info ); }
 const char * rs2_notification_category_to_string( rs2_notification_category category ) { return librealsense::get_string( category ); }
 const char * rs2_calib_target_type_to_string( rs2_calib_target_type type ) { return librealsense::get_string( type ); }

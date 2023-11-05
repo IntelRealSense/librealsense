@@ -52,6 +52,7 @@ LRS_EXTENSION_API char const * get_abbr_string( rs2_stream );
 RS2_ENUM_HELPERS( rs2_format, FORMAT )
 RS2_ENUM_HELPERS( rs2_distortion, DISTORTION )
 RS2_ENUM_HELPERS( rs2_camera_info, CAMERA_INFO )
+RS2_ENUM_HELPERS( rs2_feature, FEATURE )
 RS2_ENUM_HELPERS_CUSTOMIZED( rs2_frame_metadata_value, 0, RS2_FRAME_METADATA_COUNT - 1, std::string const & )
 RS2_ENUM_HELPERS( rs2_timestamp_domain, TIMESTAMP_DOMAIN )
 RS2_ENUM_HELPERS( rs2_calib_target_type, CALIB_TARGET )

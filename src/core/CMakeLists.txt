@@ -12,6 +12,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/frame-additional-data.h"
         "${CMAKE_CURRENT_LIST_DIR}/frame-callback.h"
         "${CMAKE_CURRENT_LIST_DIR}/frame-header.h"
+        "${CMAKE_CURRENT_LIST_DIR}/feature-interface.h"
         "${CMAKE_CURRENT_LIST_DIR}/frame-holder.h"
         "${CMAKE_CURRENT_LIST_DIR}/frame-interface.h"
         "${CMAKE_CURRENT_LIST_DIR}/info-interface.h"
