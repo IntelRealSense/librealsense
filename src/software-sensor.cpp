@@ -57,7 +57,6 @@ software_sensor::software_sensor( std::string const & name, software_device * ow
     // also share their parsers:
     static auto software_metadata_parser_map = create_software_metadata_parser_map();
     _metadata_parsers = software_metadata_parser_map;
-    _unique_id = unique_id::generate_id();
 }
 
 

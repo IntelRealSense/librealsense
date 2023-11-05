@@ -121,19 +121,6 @@ namespace librealsense {
     };
 #pragma pack(pop)
 
-    class unique_id
-    {
-    public:
-        static uint64_t generate_id()
-        {
-            static std::atomic<uint64_t> id(0);
-            return ++id;
-        }
-
-        unique_id(const unique_id&) = delete;
-        unique_id& operator=(const unique_id&) = delete;
-    };
-
     typedef float float_4[4];
 
     ////////////////////////////////////////////
