@@ -18,14 +18,26 @@ test.start("Get ds5 standard buffer")
 
 # getting gvd
 gvd_opcode = 0x10
-gvd_size = 606
+gvd_opcode_size = 4 # bytes
+gvd_header_size = 8
+gvd_expected_full_size = 602
+gvd_expected_payload_size = gvd_expected_full_size - gvd_header_size
+gvd_payload_size_offset = 2
+gvd_payload_size_element_size = 2
+
 cmd = dp_device.build_command(opcode=gvd_opcode)
 ans = dp_device.send_and_receive_raw_data(cmd)
 
 # returns 4 bytes with opcode, and then the requested buffer
 test.check_equal(ans[0], gvd_opcode)
-test.check_equal(len(ans), gvd_size + 4)
+# remove first 4 bytes of opcode and continue testing the GVD message itself
+rcv_gvd = ans[gvd_opcode_size:]
 
+test.check_equal(len(rcv_gvd), gvd_expected_full_size)
+
+rcv_gvd_payload_size = rcv_gvd[gvd_payload_size_offset : gvd_payload_size_offset + gvd_payload_size_element_size]
+rcv_gvd_payload_size_integer = int.from_bytes(rcv_gvd_payload_size, byteorder='little')
+test.check_equal(rcv_gvd_payload_size_integer, gvd_expected_payload_size)
 test.finish()
 #############################################################################################
 
