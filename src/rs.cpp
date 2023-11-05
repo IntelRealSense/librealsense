@@ -811,12 +811,44 @@ void rs2_start_queue(const rs2_sensor* sensor, rs2_frame_queue* queue, rs2_error
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, queue)
 
+
+class notifications_callback : public rs2_notifications_callback
+{
+    rs2_notification_callback_ptr nptr;
+    void * user;
+
+public:
+    notifications_callback( rs2_notification_callback_ptr on_notification, void * user )
+        : nptr( on_notification )
+        , user( user )
+    {
+    }
+
+    void on_notification( rs2_notification * notification ) override
+    {
+        if( nptr )
+        {
+            try
+            {
+                nptr( notification, user );
+            }
+            catch( ... )
+            {
+                LOG_ERROR( "Received an exception from notification callback!" );
+            }
+        }
+    }
+ 
+    void release() override { delete this; }
+};
+
+
 void rs2_set_notifications_callback(const rs2_sensor* sensor, rs2_notification_callback_ptr on_notification, void* user, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);
     VALIDATE_NOT_NULL(on_notification);
     rs2_notifications_callback_sptr callback(
-        new librealsense::notifications_callback(on_notification, user),
+        new notifications_callback(on_notification, user),
         [](rs2_notifications_callback* p) { delete p; });
     sensor->sensor->register_notifications_callback(std::move(callback));
 }

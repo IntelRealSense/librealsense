@@ -254,31 +254,6 @@ namespace librealsense {
 
 
 
-    typedef void(*notifications_callback_function_ptr)(rs2_notification * notification, void * user);
-
-    class notifications_callback : public rs2_notifications_callback
-    {
-        notifications_callback_function_ptr nptr;
-        void * user;
-    public:
-        notifications_callback() : notifications_callback(nullptr, nullptr) {}
-        notifications_callback(notifications_callback_function_ptr on_notification, void * user) : nptr(on_notification), user(user) {}
-
-        operator bool() const { return nptr != nullptr; }
-        void on_notification(rs2_notification * notification) override {
-            if (nptr)
-            {
-                try { nptr(notification, user); }
-                catch (...)
-                {
-                    LOG_ERROR("Received an exception from notification callback!");
-                }
-            }
-        }
-        void release() override { delete this; }
-    };
-
-
     typedef void(*devices_changed_function_ptr)(rs2_device_list* removed, rs2_device_list* added, void * user);
 
     class devices_changed_callback: public rs2_devices_changed_callback
