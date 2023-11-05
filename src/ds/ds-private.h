@@ -22,6 +22,26 @@
 
 namespace librealsense
 {
+    typedef float float_4[4];
+
+    template<typename T>
+    constexpr size_t arr_size( T const & ) { return 1; }
+
+    template<typename T, size_t sz>
+    constexpr size_t arr_size( T( &arr )[sz] )
+    {
+        return sz * arr_size( arr[0] );
+    }
+
+    template<typename T>
+    std::string array2str( T & data )
+    {
+        std::stringstream ss;
+        for( auto i = 0; i < arr_size( data ); i++ )
+            ss << " [" << i << "] = " << data[i] << "\t";
+        return ss.str();
+    }
+
     namespace ds
     {
         // DS5 depth XU identifiers
