@@ -269,11 +269,6 @@ namespace librealsense {
     // Extrinsic auxillary routines routines //
     ///////////////////////////////////////////
 
-    // Auxillary function that calculates standard 32bit CRC code. used in verificaiton
-    uint32_t calc_crc32(const uint8_t *buf, size_t bufsize);
-
-
-
 
     template <typename T>
     class optional_value

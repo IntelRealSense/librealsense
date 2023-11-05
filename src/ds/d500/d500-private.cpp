@@ -204,7 +204,7 @@ namespace librealsense
             // updating crc after values have been modified
             auto ptr = reinterpret_cast<uint8_t*>(&rgb_calib_table);
             std::vector<uint8_t> raw_data(ptr, ptr + sizeof(rgb_calib_table));
-            rgb_calib_table.header.crc32 = calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header));
+            rgb_calib_table.header.crc32 = rsutils::number::calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header));
         }
 
         rs2_intrinsics get_d500_color_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)

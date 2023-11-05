@@ -2038,7 +2038,7 @@ namespace librealsense
 
         auto actual_data = calib_table.data() + sizeof(librealsense::ds::table_header);
         auto actual_data_size = calib_table.size() - sizeof(librealsense::ds::table_header);
-        auto crc = librealsense::calc_crc32(actual_data, actual_data_size);
+        auto crc = rsutils::number::calc_crc32(actual_data, actual_data_size);
         table->header.crc32 = crc;
 
         return calib_table;
@@ -2450,7 +2450,8 @@ namespace librealsense
                 table->intrinsic(2, 0) /= actual_aspect_ratio / calib_aspect_ratio; // ppx
             }
 
-            table->header.crc32 = calc_crc32(ret.data() + sizeof(librealsense::ds::table_header), ret.size() - sizeof(librealsense::ds::table_header));
+            table->header.crc32 = rsutils::number::calc_crc32( ret.data() + sizeof( librealsense::ds::table_header ),
+                                                               ret.size() - sizeof( librealsense::ds::table_header ) );
 
             health[0] = (std::abs(table->intrinsic(2, 0) / health[0]) - 1) * 100; // px
             health[1] = (std::abs(table->intrinsic(2, 1) / health[1]) - 1) * 100; // py

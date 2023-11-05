@@ -11,12 +11,6 @@ namespace librealsense
     struct float3x3;
 }
 
-namespace helpers
-{
-    // Calculate CRC code for arbitrary characters buffer
-    uint32_t calc_crc32(const uint8_t* buf, size_t bufsize);
-}
-
 namespace rs2
 {
     class ux_window;
