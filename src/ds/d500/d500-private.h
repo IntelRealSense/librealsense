@@ -43,40 +43,33 @@ namespace librealsense
         bool d500_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
             const platform::uvc_device_info& info, platform::usb_device_info& result);
 
-        // Keep sorted
-        enum class d500_gvd_fields      // gvd fields for Safety Camera
+        namespace d500_gvd_offsets 
         {
-            version_offset = 0,                  //ES1
-            payload_size_offset = 0x2,           //ES1
-            crc32_offset = 0x4,                  //ES1
-            optical_module_serial_offset = 0x54,         //ES1
-            mb_module_serial_offset = 0x7a,             //ES2
-            fw_version_offset = 0xba,                  //ES2
-            safety_sw_suite_version_offset = 0x10F      //ES2
-            //rgb_sensor = 0x17,
-            //imu_sensor = 0x19,
-            //active_projector = 0x1a,
-            //camera_fw_version_offset = 0x8c,
-            //is_camera_locked_offset = 0x9e,
-        };
+            constexpr size_t version_offset = 0;
+            constexpr size_t payload_size_offset = 0x2;
+            constexpr size_t crc32_offset = 0x4;
+            constexpr size_t optical_module_serial_offset = 0x54;
+            constexpr size_t mb_module_serial_offset = 0x7a;
+            constexpr size_t fw_version_offset = 0xba;
+        }  // namespace d500_gvd_offsets
 
         struct d500_gvd_parsed_fields
         {
-            uint16_t gvd_version;
+            uint8_t gvd_version[2];
             uint16_t payload_size;
             uint32_t crc32; 
             std::string optical_module_sn;
             std::string mb_module_sn;
             std::string fw_version;
-            std::string safety_sw_suite_version;
         };
 
         enum class d500_calibration_table_id
         {
             depth_eeprom_toc_id = 0xb0,
-            module_info_id = 0xb1,
+            module_info_id = 0x1b1,
             rgb_lens_shading_id = 0xb2,
-            str_lens_shading_id = 0xb3,
+            left_lens_shading_id = 0x1b3,
+            right_lens_shading_id = 0x2b3,
             depth_calibration_id = 0xb4,
             left_x_lut_id = 0xb5,
             left_y_lut_id = 0xb6,
@@ -91,9 +84,10 @@ namespace librealsense
         const std::map<ds::d500_calibration_table_id, uint32_t> d500_calibration_tables_size =
         {
             {d500_calibration_table_id::depth_eeprom_toc_id, 640},
-            {d500_calibration_table_id::module_info_id, 320},
+            {d500_calibration_table_id::module_info_id, 512},
             {d500_calibration_table_id::rgb_lens_shading_id, 1088},
-            {d500_calibration_table_id::str_lens_shading_id, 1088},
+            {d500_calibration_table_id::left_lens_shading_id, 576},
+            {d500_calibration_table_id::right_lens_shading_id, 512},
             {d500_calibration_table_id::depth_calibration_id, 512},
             {d500_calibration_table_id::left_x_lut_id, 4160},
             {d500_calibration_table_id::left_y_lut_id, 4160},
@@ -146,7 +140,9 @@ namespace librealsense
             single_sensor_coef_table  left_coefficients_table;
             single_sensor_coef_table  right_coefficients_table;
             float                     baseline;                   //  the baseline between the cameras in mm units
-            uint16_t                  translation_dir;
+            uint8_t                   translation_dir;
+            uint8_t                   realignement_essential;     // 1/0 - indicates whether the vertical alignement
+                                                                  // is required to avoiid overflow in the REC buffer
             int16_t                   vertical_shift;             // in pixels
             mini_intrinsics           rectified_intrinsics;
             uint8_t                   reserved[148];
