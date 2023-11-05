@@ -899,25 +899,26 @@ void rs2_software_device_set_destruction_callback(const rs2_device* dev, rs2_sof
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, on_destruction, user)
 
+
 void rs2_set_devices_changed_callback(const rs2_context* context, rs2_devices_changed_callback_ptr callback, void* user, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(context);
     VALIDATE_NOT_NULL(callback);
-    rs2_devices_changed_callback_sptr cb(
-        new librealsense::devices_changed_callback(callback, user),
-        [](rs2_devices_changed_callback* p) { delete p; });
     context->devices_changed_subscription = context->ctx->on_device_changes(
-        [ctx = context->ctx, cb]( std::vector< std::shared_ptr< device_info > > const & removed,
-                                  std::vector< std::shared_ptr< device_info > > const & added )
+        [ctx = context->ctx, callback, user]( std::vector< std::shared_ptr< device_info > > const & removed,
+                                              std::vector< std::shared_ptr< device_info > > const & added )
         {
             try
             {
-                cb->on_devices_changed( new rs2_device_list{ ctx, removed },
-                                        new rs2_device_list{ ctx, added } );
+                callback( new rs2_device_list{ ctx, removed }, new rs2_device_list{ ctx, added }, user );
             }
             catch( std::exception const & e )
             {
-                LOG_ERROR( "Exception thrown from user callback handler: " << e.what() );
+                LOG_ERROR( "Exception thrown from user devices-changed callback: " << e.what() );
+            }
+            catch( ... )
+            {
+                LOG_ERROR( "Exception thrown from user devices-changed callback!" );
             }
         } );
 }

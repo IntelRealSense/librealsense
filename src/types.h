@@ -254,29 +254,6 @@ namespace librealsense {
 
 
 
-    typedef void(*devices_changed_function_ptr)(rs2_device_list* removed, rs2_device_list* added, void * user);
-
-    class devices_changed_callback: public rs2_devices_changed_callback
-    {
-        devices_changed_function_ptr nptr;
-        void * user;
-    public:
-        devices_changed_callback() : devices_changed_callback(nullptr, nullptr) {}
-        devices_changed_callback(devices_changed_function_ptr on_devices_changed, void * user) : nptr(on_devices_changed), user(user) {}
-
-        operator bool() const { return nptr != nullptr; }
-        void on_devices_changed(rs2_device_list* removed, rs2_device_list* added) override {
-            if (nptr)
-            {
-                try { nptr(removed, added, user); }
-                catch (...)
-                {
-                    LOG_ERROR("Received an exception from devices_changed callback!");
-                }
-            }
-        }
-        void release() override { delete this; }
-    };
 
 
     ////////////////////////////////////////
