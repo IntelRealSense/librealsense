@@ -64,10 +64,6 @@ namespace librealsense
             auto fw_ver = firmware_version(_depth_sensor.get_device().get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION));
             return (fw_ver >= firmware_version("5.11.9.0"));
         };
-        _rgb_exposure_gain_bind = [this]() {
-            auto fw_ver = firmware_version(_depth_sensor.get_device().get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION));
-            return (fw_ver >= firmware_version("5.11.9.0"));
-        };
     }
 
     bool ds_advanced_mode_base::is_enabled() const

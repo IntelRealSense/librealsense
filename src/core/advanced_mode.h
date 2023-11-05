@@ -203,7 +203,6 @@ namespace librealsense
         rsutils::lazy< synthetic_sensor * > _color_sensor;
         rsutils::lazy< bool > _enabled;
         std::shared_ptr<advanced_mode_preset_option> _preset_opt;
-        rsutils::lazy< bool > _rgb_exposure_gain_bind;
         rsutils::lazy< bool > _amplitude_factor_support;
 
         preset get_all() const;
