@@ -4,6 +4,7 @@
 #pragma once
 
 #include "info-interface.h"
+#include "feature-interface.h"
 #include "tagged-profile.h"
 #include "stream-profile.h"
 
@@ -30,6 +31,7 @@ class stream_profile_interface;
 //
 class device_interface
     : public virtual info_interface
+    , public virtual feature_interface
     , public std::enable_shared_from_this< device_interface >
 {
 public:

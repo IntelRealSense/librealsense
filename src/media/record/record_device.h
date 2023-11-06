@@ -31,6 +31,7 @@ namespace librealsense
         size_t get_sensors_count() const override;
         const std::string& get_info(rs2_camera_info info) const override;
         bool supports_info(rs2_camera_info info) const override;
+        bool supports_feature( rs2_feature feature ) const override;
         const sensor_interface& get_sensor(size_t i) const override;
         void hardware_reset() override;
 
