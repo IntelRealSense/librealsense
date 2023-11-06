@@ -9,6 +9,7 @@
 # 8 choose 2 tests to do (one for each pair), plus one for all streams on
 
 from rspy import test, log
+import pyrealsense2 as rs
 import time
 import itertools
 import math
@@ -38,9 +39,9 @@ def get_resolution(profile):
     return profile.as_video_stream_profile().width(), profile.as_video_stream_profile().height()
 
 
-def check_fps_pair(fps, expected_fps):
+def check_fps_pair(measured_fps, expected_fps):
     delta_Hz = expected_fps * 0.05  # Validation KPI is 5%
-    return (fps <= (expected_fps + delta_Hz) and fps >= (expected_fps - delta_Hz))
+    return (measured_fps <= (expected_fps + delta_Hz) and measured_fps >= (expected_fps - delta_Hz))
 
 
 def get_expected_fps(sensor_profiles_dict):
@@ -130,13 +131,14 @@ def get_tested_profiles_string(sensor_profiles_dict):
 #############################################
 # ---------- Core Test Functions ---------- #
 #############################################
-def check_fps(expected_fps, fps_measured):
+def check_fps_dict(measured_fps, expected_fps):
     all_fps_ok = True
     for key in expected_fps:
-        res = check_fps_pair(fps_measured[key], expected_fps[key])
+        res = check_fps_pair(measured_fps[key], expected_fps[key])
         if not res:
             all_fps_ok = False
-            log.e(f"Expected {expected_fps[key]} fps, received {fps_measured[key]} fps in sensor {key.name}")
+        log.e(f"Expected {expected_fps[key]} fps, received {measured_fps[key]} fps in sensor {key.name}"
+              f" { '(Pass)' if res else '(Fail)' }")
     return all_fps_ok
 
 
@@ -181,11 +183,9 @@ def measure_fps(sensor_profiles_dict):
     # generate sensor-callable dictionary
     funcs_dict = generate_functions(sensor_fps_dict)
 
-    for key in sensor_profiles_dict:
-        sensor = key
-        profiles = sensor_profiles_dict[key]
+    for sensor, profiles in sensor_profiles_dict.items():
         sensor.open(profiles)
-        sensor.start(funcs_dict[key])
+        sensor.start(funcs_dict[sensor])
 
     # the core of the test - frames are counted during sleep when count_frames is on
     time.sleep(TIME_FOR_STEADY_STATE)
@@ -193,12 +193,11 @@ def measure_fps(sensor_profiles_dict):
     time.sleep(TIME_TO_COUNT_FRAMES)
     count_frames = False  # Stop counting
 
-    for key in sensor_profiles_dict:
-        sensor_fps_dict[key] /= len(sensor_profiles_dict[key])  # number of profiles on the sensor
-        sensor_fps_dict[key] /= TIME_TO_COUNT_FRAMES
+    for sensor, profiles in sensor_profiles_dict.items():
+        sensor_fps_dict[sensor] /= len(profiles)  # number of profiles on the sensor
+        sensor_fps_dict[sensor] /= TIME_TO_COUNT_FRAMES
         # now for each sensor we have the average fps received
 
-        sensor = key
         sensor.stop()
         sensor.close()
 
@@ -217,7 +216,6 @@ def get_test_details_str(sensor_profile_dict, expected_fps_dict):
                   f"{sensor_profile_dict[sensor_key][0].stream_name()} is {expected_fps_dict[sensor_key]}"
                   f" on {get_resolution(sensor_profile_dict[sensor_key][0])}\n")
     s = s.replace("on (0, 0)", "")  # remove no resolution for Motion Module profiles
-    s += "***************"
     return s
 
 
@@ -241,7 +239,7 @@ def perform_fps_test(sensor_profiles_arr, modes):
                 expected_fps = get_expected_fps(partial_dict)
                 log.d(get_test_details_str(partial_dict, expected_fps))
                 fps_dict = measure_fps(partial_dict)
-                test.check(check_fps(expected_fps, fps_dict))
+                test.check(check_fps_dict(fps_dict, expected_fps))
                 test.finish()
 
 
@@ -300,6 +298,14 @@ def get_sensors_and_profiles(device):
     """
     sensor_profiles_arr = []
     for sensor in device.query_sensors():
+        if sensor.is_depth_sensor() and sensor.supports(rs.option.enable_auto_exposure):
+            sensor.set_option(rs.option.enable_auto_exposure, 1)
+        if sensor.is_color_sensor():
+            if sensor.supports(rs.option.enable_auto_exposure):
+                sensor.set_option(rs.option.enable_auto_exposure, 1)
+            if sensor.supports(rs.option.auto_exposure_priority):
+                sensor.set_option(rs.option.auto_exposure_priority, 0)  # AE priority should be 0 for constant FPS
+
         profiles = get_mutual_resolution(sensor)
         for profile in profiles:
             sensor_profiles_arr.append((sensor, profile))
