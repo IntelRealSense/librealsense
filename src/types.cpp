@@ -52,10 +52,4 @@ namespace librealsense
         LOG_DEBUG("recoverable_exception: " << msg);
     }
 
-    bool file_exists(const char* filename)
-    {
-        std::ifstream f(filename);
-        return f.good();
-    }
-
 }

@@ -228,8 +228,6 @@ namespace librealsense {
     inline bool operator == (const rs2_intrinsics & a, const rs2_intrinsics & b) { return std::memcmp(&a, &b, sizeof(a)) == 0; }
 
 
-    bool file_exists(const char* filename);
-
     ///////////////////////////////////////////
     // Extrinsic auxillary routines routines //
     ///////////////////////////////////////////
