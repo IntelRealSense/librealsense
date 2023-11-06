@@ -431,6 +431,7 @@ EXPORTS
     rs2_project_color_pixel_to_depth_pixel
 
     rs2_safety_mode_to_string
+    rs2_d500_intercam_sync_mode_to_string
     rs2_get_safety_preset
     rs2_set_safety_preset
     rs2_get_safety_interface_config

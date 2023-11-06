@@ -252,6 +252,16 @@ extern "C" {
     } rs2_safety_mode;
     const char* rs2_safety_mode_to_string( rs2_safety_mode mode );
 
+    /** \brief values for RS2_OPTION_INTER_CAM_SYNC_MODE option. */
+    typedef enum rs2_d500_intercam_sync_mode {
+        RS2_D500_INTERCAM_SYNC_NONE = 0,
+        RS2_D500_INTERCAM_SYNC_RGB_MASTER = 1,
+        RS2_D500_INTERCAM_SYNC_PWM_MASTER = 2,
+        RS2_D500_INTERCAM_SYNC_EXTERNAL_MASTER = 3,
+        RS2_D500_INTERCAM_SYNC_COUNT
+    } rs2_d500_intercam_sync_mode;
+    const char * rs2_d500_intercam_sync_mode_to_string( rs2_d500_intercam_sync_mode mode );
+
     /**
     * check if an option is read-only
     * \param[in] options  the options container

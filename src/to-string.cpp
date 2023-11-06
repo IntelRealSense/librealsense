@@ -256,6 +256,22 @@ const char * get_string( rs2_safety_mode mode )
 #undef CASE
 }
 
+const char * get_string( rs2_d500_intercam_sync_mode mode )
+{
+#define CASE( X ) STRCASE( D500_INTERCAM_SYNC, X )
+    switch( mode )
+    {
+        CASE( NONE )
+        CASE( RGB_MASTER )
+        CASE( PWM_MASTER )
+        CASE( EXTERNAL_MASTER )
+    default:
+        assert( ! is_valid( mode ) );
+        return UNKNOWN_VALUE;
+    }
+#undef CASE
+}
+
 const char* get_string(rs2_point_cloud_label label)
 {
 #define CASE( X ) STRCASE( POINT_CLOUD_LABEL, X )
@@ -914,6 +930,7 @@ const char * rs2_host_perf_mode_to_string( rs2_host_perf_mode mode ) { return li
 const char * rs2_emitter_frequency_mode_to_string( rs2_emitter_frequency_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_depth_auto_exposure_mode_to_string( rs2_depth_auto_exposure_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_safety_mode_to_string( rs2_safety_mode mode ) { return librealsense::get_string( mode ); }
+const char * rs2_d500_intercam_sync_mode_to_string( rs2_d500_intercam_sync_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_point_cloud_label_to_string(rs2_point_cloud_label label) { return librealsense::get_string(label); }
 const char * rs2_calib_location_to_string(rs2_calib_location calib_location) { return librealsense::get_string(calib_location); }
 const char * rs2_safety_pin_direction_to_string(rs2_safety_pin_direction direction) { return librealsense::get_string(direction); }

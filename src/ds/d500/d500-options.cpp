@@ -86,4 +86,58 @@ namespace librealsense
 
         return temperature;
     }
-}
+
+    
+    d500_external_sync_mode::d500_external_sync_mode( hw_monitor & hwm, sensor_base * ep,
+                                                      const std::map< float, std::string > & description_per_value )
+        : _hwm( hwm )
+        , _sensor( ep )
+        , _description_per_value( description_per_value )
+    {
+        _range = { RS2_D500_INTERCAM_SYNC_NONE,
+                   RS2_D500_INTERCAM_SYNC_EXTERNAL_MASTER,
+                   1,
+                   RS2_D500_INTERCAM_SYNC_NONE };
+    }
+
+    void d500_external_sync_mode::set( float value )
+    {
+        if( _sensor->is_streaming() )
+            throw std::runtime_error( "Cannot change external sync mode while streaming!" );
+
+        if( ! is_valid( static_cast < rs2_d500_intercam_sync_mode >( value ) ) )
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "d500_external_sync_mode::set invalid value " << value );
+
+        command cmd( ds::SET_CAM_SYNC );
+
+        cmd.param1 = static_cast< int >( value );
+        cmd.require_response = false;
+
+        _hwm.send( cmd );
+        _record_action( *this );
+    }
+
+    float d500_external_sync_mode::query() const
+    {
+        command cmd( ds::GET_CAM_SYNC );
+        auto res = _hwm.send( cmd );
+        if( res.empty() )
+            throw invalid_value_exception( "d500_external_sync_mode::query result is empty!" );
+
+        return static_cast< float >( res[0] );
+    }
+
+    const char * d500_external_sync_mode::get_value_description( float val ) const
+    {
+        try
+        {
+            return _description_per_value.at( val ).c_str();
+        }
+        catch( std::out_of_range )
+        {
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "d500_external_sync_mode description of value " << val << " not found." );
+        }
+    }
+} // namespace librealsense
