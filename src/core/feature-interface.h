@@ -22,7 +22,5 @@ public:
     virtual ~feature_interface() = default;
 };
 
-MAP_EXTENSION( RS2_EXTENSION_FEATURE, librealsense::feature_interface );
-
 
 }  // namespace librealsense
