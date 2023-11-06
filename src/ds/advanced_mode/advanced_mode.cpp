@@ -61,8 +61,7 @@ namespace librealsense
         };
 
         _amplitude_factor_support = [this]() {
-            auto fw_ver = firmware_version(_depth_sensor.get_device().get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION));
-            return (fw_ver >= firmware_version("5.11.9.0"));
+            return _depth_sensor.get_device().supports_feature( RS2_FEATURE_AMPLITUDE_FACTOR );
         };
     }
 
@@ -169,12 +168,8 @@ namespace librealsense
             break;
         case RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN:
         {
-            static const firmware_version remove_ir_pattern_fw_ver{ "5.9.10.0" };
-            if (fw_version < remove_ir_pattern_fw_ver)
-                throw invalid_value_exception(
-                    rsutils::string::from()
-                    << "apply_preset(...) failed! FW version doesn't support Remove IR Pattern Preset (curr_fw_ver="
-                    << fw_version << " ; required_fw_ver=" << remove_ir_pattern_fw_ver << ")" );
+            if( ! _depth_sensor.get_device().supports_feature( RS2_FEATURE_REMOVE_IR_PATTERN ) )
+                throw invalid_value_exception( "apply_preset(...) failed! The device does not support remove IR pattern feature" );
 
             switch (device_pid)
             {

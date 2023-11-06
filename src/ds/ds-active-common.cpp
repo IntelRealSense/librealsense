@@ -78,8 +78,7 @@ namespace librealsense
             }
 
             // EMITTER FREQUENCY OPTION
-            if ((pid == ds::RS457_PID || pid == ds::RS455_PID)
-                && _fw_version >= firmware_version("5.14.0"))
+            if (_owner->supports_feature( RS2_FEATURE_EMITTER_FREQUENCY ) )
             {
                 auto emitter_freq = std::make_shared<uvc_xu_option<uint16_t>>(
                     _raw_depth_ep,

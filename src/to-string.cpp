@@ -585,6 +585,7 @@ const char * get_string( rs2_feature value )
         CASE( HDR )
         CASE( EMITTER_FREQUENCY )
         CASE( AMPLITUDE_FACTOR )
+        CASE( REMOVE_IR_PATTERN )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;

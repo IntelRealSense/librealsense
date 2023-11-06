@@ -133,6 +133,27 @@ namespace librealsense
         return result;
     }
 
+    bool d400_device::supports_feature( rs2_feature feature ) const
+    {
+        firmware_version fw_ver = firmware_version( get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
+        auto pid = get_pid();
+
+        switch( feature )
+        {
+        case RS2_FEATURE_AUTO_EXPOSURE_ROI:
+            return ( fw_ver >= firmware_version( "5.10.9.0" ) );
+        case RS2_FEATURE_EMITTER_FREQUENCY:
+            return ( pid == ds::RS457_PID || pid == ds::RS455_PID ) && fw_ver >= firmware_version( "5.14.0" );
+        case RS2_FEATURE_AMPLITUDE_FACTOR:
+            return ( fw_ver >= firmware_version( "5.11.9.0" ) );
+        case RS2_FEATURE_REMOVE_IR_PATTERN:
+            return ( fw_ver >= firmware_version( "5.9.10.0" ) ); // TODO - add PID here? Now checked at advanced_mode
+        case RS2_FEATURE_HDR: // Fallthrough
+        default:
+            return false;
+        }
+    }
+
     class d400_depth_sensor
         : public synthetic_sensor
         , public video_sensor_interface

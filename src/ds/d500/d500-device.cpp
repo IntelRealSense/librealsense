@@ -117,6 +117,21 @@ namespace librealsense
         _ds_device_common->update_flash(image, callback, update_mode);
     }
 
+    bool d500_device::supports_feature( rs2_feature feature ) const
+    {
+        switch( feature )
+        {
+        case RS2_FEATURE_AUTO_EXPOSURE_ROI: // Fallthrough
+        case RS2_FEATURE_AMPLITUDE_FACTOR:  // Fallthrough
+            return true;
+        case RS2_FEATURE_HDR:               // Fallthrough
+        case RS2_FEATURE_EMITTER_FREQUENCY: // Fallthrough
+        case RS2_FEATURE_REMOVE_IR_PATTERN: // Fallthrough
+        default:
+            return false;
+        }
+    }
+
     class d500_depth_sensor : public synthetic_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
     {
     public:

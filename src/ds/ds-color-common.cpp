@@ -66,8 +66,7 @@ namespace librealsense
                 gain_option,
                 auto_exposure_option));
 
-        // Starting with firmware 5.10.9, auto-exposure ROI is available for color sensor
-        if (_fw_version >= firmware_version("5.10.9.0"))
+        if ( _owner->supports_feature( RS2_FEATURE_AUTO_EXPOSURE_ROI ) )
         {
             roi_sensor_interface* roi_sensor;
             if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&_color_ep)))
