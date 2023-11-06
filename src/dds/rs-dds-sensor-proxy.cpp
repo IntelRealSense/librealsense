@@ -69,10 +69,7 @@ void dds_sensor_proxy::add_dds_stream( sid_index sidx, std::shared_ptr< realdds:
 std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_video_stream( rs2_video_stream video_stream,
                                                                                 bool is_default )
 {
-    auto profile = std::make_shared< video_stream_profile >( platform::stream_profile{ (uint32_t)video_stream.width,
-                                                                                       (uint32_t)video_stream.height,
-                                                                                       (uint32_t)video_stream.fps,
-                                                                                       0 } );
+    auto profile = std::make_shared< video_stream_profile >();
     profile->set_dims( video_stream.width, video_stream.height );
     profile->set_format( video_stream.fmt );
     profile->set_framerate( video_stream.fps );
@@ -93,10 +90,7 @@ std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_video_stream( 
 std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_motion_stream( rs2_motion_stream motion_stream,
                                                                                  bool is_default )
 {
-    auto profile = std::make_shared< motion_stream_profile >( platform::stream_profile{ 0,
-                                                                                        0,
-                                                                                        (uint32_t)motion_stream.fps,
-                                                                                        0 } );
+    auto profile = std::make_shared< motion_stream_profile >();
     profile->set_format( motion_stream.fmt );
     profile->set_framerate( motion_stream.fps );
     profile->set_stream_index( motion_stream.index );

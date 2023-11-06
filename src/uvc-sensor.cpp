@@ -8,6 +8,7 @@
 #include "core/video-frame.h"
 #include "core/notification.h"
 #include "platform/uvc-option.h"
+#include "platform/stream-profile-impl.h"
 
 
 namespace librealsense {
@@ -446,7 +447,7 @@ stream_profiles uvc_sensor::init_stream_profiles()
         // D457 development
         if( rs2_fmt == RS2_FORMAT_MOTION_XYZ32F )
         {
-            auto profile = std::make_shared< motion_stream_profile >( p );
+            auto profile = std::make_shared< platform::stream_profile_impl< motion_stream_profile > >( p );
             if( ! profile )
                 throw librealsense::invalid_value_exception( "null pointer passed for argument \"profile\"." );
 
@@ -458,7 +459,7 @@ stream_profiles uvc_sensor::init_stream_profiles()
         }
         else
         {
-            auto && profile = std::make_shared< video_stream_profile >( p );
+            auto profile = std::make_shared< platform::stream_profile_impl< video_stream_profile > >( p );
             if( ! profile )
                 throw librealsense::invalid_value_exception( "null pointer passed for argument \"profile\"." );
 
