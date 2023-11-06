@@ -22,6 +22,7 @@
 #include "ds-options.h"
 #include "ds-private.h"
 #include <src/stream.h>
+#include <src/fourcc.h>
 
 #include <cstddef>
 

@@ -6,12 +6,19 @@
 #include "stream.h"
 #include "global_timestamp_reader.h"
 #include "metadata.h"
+#include "fourcc.h"
 
 
 namespace librealsense {
 
 
-// in sensor.cpp
+static const std::map< rs2_stream, uint32_t > stream_and_fourcc
+    = { { RS2_STREAM_GYRO,  rs_fourcc( 'G', 'Y', 'R', 'O' ) },
+        { RS2_STREAM_ACCEL, rs_fourcc( 'A', 'C', 'C', 'L' ) },
+        { RS2_STREAM_GPIO,  rs_fourcc( 'G', 'P', 'I', 'O' ) } };
+
+
+    // in sensor.cpp
 void log_callback_end( uint32_t fps,
                        rs2_time_t callback_start_time,
                        rs2_time_t callback_end_time,

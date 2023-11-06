@@ -18,6 +18,7 @@
 #include "d400-color.h"
 #include "d400-nonmonochrome.h"
 #include <src/platform/platform-utils.h>
+#include <src/fourcc.h>
 
 #include <src/proc/depth-formats-converter.h>
 #include <src/proc/y8i-to-y8y8.h>

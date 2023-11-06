@@ -29,6 +29,7 @@
 #include "hdr-config.h"
 #include "../common/fw/firmware-version.h"
 #include "fw-update/fw-update-unsigned.h"
+#include <src/fourcc.h>
 
 #include <rsutils/string/hexdump.h>
 #include <nlohmann/json.hpp>
