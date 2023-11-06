@@ -128,6 +128,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/device-info.h"
         "${CMAKE_CURRENT_LIST_DIR}/device_hub.h"
         "${CMAKE_CURRENT_LIST_DIR}/environment.h"
+        "${CMAKE_CURRENT_LIST_DIR}/firmware-version.h"
         "${CMAKE_CURRENT_LIST_DIR}/log.h"
         "${CMAKE_CURRENT_LIST_DIR}/error-handling.h"
         "${CMAKE_CURRENT_LIST_DIR}/firmware_logger_device.h"

@@ -5,6 +5,7 @@
 
 #include "types.h"
 #include "fw-update/fw-update-unsigned.h"
+#include <src/firmware-version.h>
 #include <rsutils/string/from.h>
 #include <rsutils/number/crc32.h>
 

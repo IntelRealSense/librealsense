@@ -217,8 +217,6 @@ namespace librealsense {
     }
 
 
-    using firmware_version = rsutils::version;
-
 
 
 
