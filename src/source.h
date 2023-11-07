@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include "core/processing.h"
-#include "archive.h"
 #include "metadata-parser.h"
 #include "frame-archive.h"
 #include "core/time-service.h"
@@ -13,6 +11,7 @@
 namespace librealsense
 {
     class option;
+    class frame_holder;
 
     class LRS_EXTENSION_API frame_source
     {

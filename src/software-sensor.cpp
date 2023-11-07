@@ -6,6 +6,7 @@
 #include "stream.h"
 #include "option.h"
 #include "core/video-frame.h"
+#include "core/notification.h"
 #include "depth-sensor.h"
 
 #include <rsutils/string/from.h>

@@ -5,6 +5,7 @@
 #include "metadata.h"
 #include <src/option.h>
 
+#include <src/platform/uvc-option.h>
 #include <cstddef>
 
 namespace librealsense

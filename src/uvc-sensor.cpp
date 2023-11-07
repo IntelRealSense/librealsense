@@ -6,6 +6,8 @@
 #include "stream.h"
 #include "global_timestamp_reader.h"
 #include "core/video-frame.h"
+#include "core/notification.h"
+#include "platform/uvc-option.h"
 
 
 namespace librealsense {

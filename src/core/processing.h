@@ -3,8 +3,9 @@
 #pragma once
 
 #include "frame-holder.h"
-#include "options.h"
+#include "options-container.h"
 #include "info.h"
+
 #include <src/types.h>
 #include <vector>
 #include <memory>

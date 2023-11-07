@@ -5,6 +5,7 @@
 #include "software-sensor.h"
 #include "environment.h"
 #include "core/matcher-factory.h"
+#include "core/notification.h"
 
 
 namespace librealsense

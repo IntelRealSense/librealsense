@@ -377,29 +377,6 @@ namespace librealsense
 
     using firmware_version = rsutils::version;
 
-    // This class is used to buffer up several writes to a structure-valued XU control, and send the entire structure all at once
-    // Additionally, it will ensure that any fields not set in a given struct will retain their original values
-    template<class T, class R, class W> struct struct_interface
-    {
-        T struct_;
-        R reader;
-        W writer;
-        bool active;
-
-        struct_interface(R r, W w) : reader(r), writer(w), active(false) {}
-
-        void activate() { if (!active) { struct_ = reader(); active = true; } }
-        template<class U> double get(U T::* field) { activate(); return static_cast<double>(struct_.*field); }
-        template<class U, class V> void set(U T::* field, V value) { activate(); struct_.*field = static_cast<U>(value); }
-        void commit() { if (active) writer(struct_); }
-    };
-
-    template<class T, class R, class W>
-    std::shared_ptr<struct_interface<T, R, W>> make_struct_interface(R r, W w)
-    {
-        return std::make_shared<struct_interface<T, R, W>>(r, w);
-    }
-
     // Provides an efficient wraparound for built-in arithmetic times, for use-cases such as a rolling timestamp
     template <typename T, typename S>
     class arithmetic_wraparound
@@ -589,7 +566,6 @@ namespace librealsense
 
     typedef std::shared_ptr<rs2_frame_callback> frame_callback_ptr;
     typedef std::shared_ptr<rs2_frame_processor_callback> frame_processor_callback_ptr;
-    typedef std::shared_ptr<rs2_notifications_callback> notifications_callback_ptr;
     typedef std::shared_ptr<rs2_calibration_change_callback> calibration_change_callback_ptr;
     typedef std::shared_ptr<rs2_devices_changed_callback> devices_changed_callback_ptr;
     typedef std::shared_ptr<rs2_update_progress_callback> update_progress_callback_ptr;
@@ -613,46 +589,6 @@ namespace librealsense
     };
 
 
-    struct notification
-    {
-        notification(rs2_notification_category category, int type, rs2_log_severity severity, std::string description)
-            :category(category), type(type), severity(severity), description(description)
-        {
-            timestamp = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
-            LOG_INFO(description);
-        }
-
-        rs2_notification_category category;
-        int type;
-        rs2_log_severity severity;
-        std::string description;
-        double timestamp;
-        std::string serialized_data;
-    };
-
-
-    class notification_decoder
-    {
-    public:
-        virtual ~notification_decoder() = default;
-        virtual notification decode(int value) = 0;
-    };
-
-    class notifications_processor
-    {
-    public:
-        notifications_processor();
-        ~notifications_processor();
-
-        void set_callback(notifications_callback_ptr callback);
-        notifications_callback_ptr get_callback() const;
-        void raise_notification(const notification);
-
-    private:
-        notifications_callback_ptr _callback;
-        std::mutex _callback_mutex;
-        dispatcher _dispatcher;
-    };
     ////////////////////////////////////////
     // Helper functions for library types //
     ////////////////////////////////////////
