@@ -6,12 +6,19 @@
 #include "stream.h"
 #include "global_timestamp_reader.h"
 #include "metadata.h"
+#include "fourcc.h"
 
 
 namespace librealsense {
 
 
-// in sensor.cpp
+static const std::map< rs2_stream, uint32_t > stream_and_fourcc
+    = { { RS2_STREAM_GYRO,  rs_fourcc( 'G', 'Y', 'R', 'O' ) },
+        { RS2_STREAM_ACCEL, rs_fourcc( 'A', 'C', 'C', 'L' ) },
+        { RS2_STREAM_GPIO,  rs_fourcc( 'G', 'P', 'I', 'O' ) } };
+
+
+    // in sensor.cpp
 void log_callback_end( uint32_t fps,
                        rs2_time_t callback_start_time,
                        rs2_time_t callback_end_time,
@@ -148,7 +155,7 @@ static rs2_stream custom_gpio_to_stream_type( uint32_t custom_gpio )
     return RS2_STREAM_ANY;
 }
 
-void hid_sensor::start( frame_callback_ptr callback )
+void hid_sensor::start( rs2_frame_callback_sptr callback )
 {
     std::lock_guard< std::mutex > lock( _configure_lock );
     if( _is_streaming )
@@ -230,7 +237,7 @@ void hid_sensor::start( frame_callback_ptr callback )
                 = _source.alloc_frame( RS2_EXTENSION_MOTION_FRAME, data_size, std::move( fr->additional_data ), true );
             memcpy( (void *)frame->get_frame_data(),
                     sensor_data.fo.pixels,
-                    sizeof( byte ) * sensor_data.fo.frame_size );
+                    sizeof( uint8_t ) * sensor_data.fo.frame_size );
             if( ! frame )
             {
                 LOG_INFO( "Dropped frame. alloc_frame(...) returned nullptr" );

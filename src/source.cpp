@@ -107,13 +107,13 @@ namespace librealsense
         }
     }
 
-    void frame_source::set_callback(frame_callback_ptr callback)
+    void frame_source::set_callback( rs2_frame_callback_sptr callback )
     {
         std::lock_guard<std::mutex> lock(_callback_mutex);
         _callback = callback;
     }
 
-    frame_callback_ptr frame_source::get_callback() const
+    rs2_frame_callback_sptr frame_source::get_callback() const
     {
         std::lock_guard<std::mutex> lock(_callback_mutex);
         return _callback;

@@ -29,6 +29,7 @@
 #include "hdr-config.h"
 #include "../common/fw/firmware-version.h"
 #include "fw-update/fw-update-unsigned.h"
+#include <src/fourcc.h>
 
 #include <rsutils/string/hexdump.h>
 #include <nlohmann/json.hpp>
@@ -105,13 +106,13 @@ namespace librealsense
         _ds_device_common->enter_update_state();
     }
 
-    std::vector<uint8_t> d500_device::backup_flash(update_progress_callback_ptr callback)
+    std::vector<uint8_t> d500_device::backup_flash( rs2_update_progress_callback_sptr callback )
     {
         // No flash backup process for D500 device
         return std::vector< uint8_t >{};
     }
 
-    void d500_device::update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode)
+    void d500_device::update_flash(const std::vector<uint8_t>& image, rs2_update_progress_callback_sptr callback, int update_mode)
     {
         _ds_device_common->update_flash(image, callback, update_mode);
     }
@@ -803,7 +804,7 @@ namespace librealsense
 
         constexpr size_t gvd_header_size = 8;
         auto gvd_payload_data = gvd_buff.data() + gvd_header_size;
-        auto computed_crc = calc_crc32( gvd_payload_data, parsed_fields->payload_size );
+        auto computed_crc = rsutils::number::calc_crc32( gvd_payload_data, parsed_fields->payload_size );
         LOG_INFO( "D500 GVD version is: " << static_cast< int >( parsed_fields->gvd_version[0] )
                                           << "."
                                           << static_cast< int >( parsed_fields->gvd_version[1] ) );

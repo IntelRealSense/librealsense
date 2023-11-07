@@ -24,8 +24,8 @@ class processing_block_interface
 public:
     virtual ~processing_block_interface() = default;
 
-    virtual void set_processing_callback( frame_processor_callback_ptr callback ) = 0;
-    virtual void set_output_callback( frame_callback_ptr callback ) = 0;
+    virtual void set_processing_callback( rs2_frame_processor_callback_sptr callback ) = 0;
+    virtual void set_output_callback( rs2_frame_callback_sptr callback ) = 0;
     virtual void invoke( frame_holder frame ) = 0;
     virtual synthetic_source_interface & get_source() = 0;
 };

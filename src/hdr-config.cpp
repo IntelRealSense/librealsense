@@ -31,7 +31,7 @@ namespace librealsense
 
         // restoring current HDR configuration if such subpreset is active
         bool existing_subpreset_restored = false;
-        std::vector<byte> res;
+        std::vector< uint8_t > res;
         if (is_hdr_enabled_in_device(res))
             existing_subpreset_restored = configure_hdr_as_in_fw(res);
 
@@ -50,7 +50,7 @@ namespace librealsense
         }
     }
 
-    bool hdr_config::is_hdr_enabled_in_device(std::vector<byte>& result) const
+    bool hdr_config::is_hdr_enabled_in_device( std::vector< uint8_t > & result ) const
     {
         command cmd(ds::GETSUBPRESET);
         bool hdr_enabled_in_device = false;
@@ -64,7 +64,7 @@ namespace librealsense
         return hdr_enabled_in_device;
     }
 
-    bool hdr_config::is_current_subpreset_hdr(const std::vector<byte>& current_subpreset) const
+    bool hdr_config::is_current_subpreset_hdr( const std::vector< uint8_t > & current_subpreset ) const
     {
         bool result = false;
         if (current_subpreset.size() > 0)
@@ -80,7 +80,7 @@ namespace librealsense
         return id >= 0 && id <= 3;
     }
 
-    bool hdr_config::configure_hdr_as_in_fw(const std::vector<byte>& current_subpreset)
+    bool hdr_config::configure_hdr_as_in_fw( const std::vector< uint8_t > & current_subpreset )
     {
         // parsing subpreset pattern, considering:
         // SubPresetHeader::iterations always equals 0 (continuous subpreset)
@@ -259,7 +259,7 @@ namespace librealsense
         {
             if (validate_config())
             {
-                std::vector<byte> res;
+                std::vector< uint8_t > res;
                 _is_enabled = is_hdr_enabled_in_device(res);
                 if (!_is_enabled)
                 {

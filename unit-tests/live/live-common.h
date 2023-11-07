@@ -5,6 +5,7 @@
 #include <librealsense2/rs.hpp>
 #include <condition_variable>
 #include <src/hw-monitor.h>
+#include <src/firmware-version.h>
 
 using namespace rs2;
 

@@ -100,7 +100,7 @@ namespace librealsense
     }
 
     template< class callback >
-    calibration_change_callback_ptr create_calibration_change_callback_ptr( callback&& cb )
+    rs2_calibration_change_callback_sptr create_calibration_change_callback_ptr( callback&& cb )
     {
         return {
             new rs2::calibration_change_callback< callback >( std::move( cb ) ),

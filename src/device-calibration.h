@@ -13,7 +13,7 @@ namespace librealsense
     class calibration_change_device
     {
     public:
-        virtual void register_calibration_change_callback(calibration_change_callback_ptr) = 0;
+        virtual void register_calibration_change_callback( rs2_calibration_change_callback_sptr ) = 0;
     };
 
     MAP_EXTENSION(RS2_EXTENSION_CALIBRATION_CHANGE_DEVICE, calibration_change_device);

@@ -14,6 +14,8 @@
 #include "platform/uvc-option.h"
 #include "core/depth-frame.h"
 #include "core/stream-profile-interface.h"
+#include "core/frame-callback.h"
+#include "core/notification.h"
 
 #include <rsutils/string/from.h>
 #include <rsutils/json.h>
@@ -55,7 +57,7 @@ void log_callback_end( uint32_t fps,
     : recommended_proccesing_blocks_base( owner )
     , _is_streaming( false )
     , _is_opened( false )
-    , _notifications_processor( std::shared_ptr< notifications_processor >( new notifications_processor() ) )
+    , _notifications_processor( std::make_shared< notifications_processor >() )
     , _on_open( nullptr )
     , _metadata_modifier( nullptr )
     , _metadata_parsers( std::make_shared< metadata_parser_map >() )
@@ -92,7 +94,7 @@ void log_callback_end( uint32_t fps,
         return _active_profiles;
     }
 
-    void sensor_base::register_notifications_callback(notifications_callback_ptr callback)
+    void sensor_base::register_notifications_callback( rs2_notifications_callback_sptr callback )
     {
         if (supports_option(RS2_OPTION_ERROR_POLLING_ENABLED))
         {
@@ -102,7 +104,7 @@ void log_callback_end( uint32_t fps,
         _notifications_processor->set_callback(std::move(callback));
     }
 
-    notifications_callback_ptr sensor_base::get_notifications_callback() const
+    rs2_notifications_callback_sptr sensor_base::get_notifications_callback() const
     {
         return _notifications_processor->get_callback();
     }
@@ -119,11 +121,11 @@ void log_callback_end( uint32_t fps,
         _on_before_streaming_changes.remove( slot );
     }
 
-    frame_callback_ptr sensor_base::get_frames_callback() const
+    rs2_frame_callback_sptr sensor_base::get_frames_callback() const
     {
         return _source.get_callback();
     }
-    void sensor_base::set_frames_callback(frame_callback_ptr callback)
+    void sensor_base::set_frames_callback( rs2_frame_callback_sptr callback )
     {
         return _source.set_callback(callback);
     }
@@ -265,12 +267,12 @@ void log_callback_end( uint32_t fps,
     }
 
     // TODO - make this method more efficient, using parralel computation, with SSE or CUDA, when available
-    std::vector<byte> sensor_base::align_width_to_64(int width, int height, int bpp, byte* pix) const
+    std::vector<uint8_t> sensor_base::align_width_to_64(int width, int height, int bpp, uint8_t * pix) const
     {
         int factor = bpp >> 3;
         int bytes_in_width = width * factor;
         int actual_input_bytes_in_width = (((bytes_in_width / 64 ) + 1) * 64);
-        std::vector<byte> pixels;
+        std::vector<uint8_t> pixels;
         for (int j = 0; j < height; ++j)
         {
             int start_index = j * actual_input_bytes_in_width;
@@ -618,31 +620,18 @@ void log_callback_end( uint32_t fps,
         _post_process_callback.reset();
     }
 
-    template<class T>
-    frame_callback_ptr make_callback(T callback)
-    {
-        return {
-            new internal_frame_callback<T>(callback),
-            [](rs2_frame_callback* p) { p->release(); }
-        };
-    }
-
-    void synthetic_sensor::start(frame_callback_ptr callback)
+    void synthetic_sensor::start( rs2_frame_callback_sptr callback )
     {
         std::lock_guard<std::mutex> lock(_synthetic_configure_lock);
 
         // Set the post-processing callback as the user callback.
         // This callback might be modified by other object.
         set_frames_callback(callback);
-        _formats_converter.set_frames_callback( callback );
-
-        // Invoke processing blocks callback
-        auto process_cb = make_callback( [&, this]( frame_holder f ) {
-            _formats_converter.convert_frame( f );
-        } );
+        _formats_converter.set_frames_callback( callback );  // TODO duplicate?! Something fishy here!
 
         // Call the processing block on the frame
-        _raw_sensor->start(process_cb);
+        _raw_sensor->start(
+            make_frame_callback( [&, this]( frame_holder f ) { _formats_converter.convert_frame( f ); } ) );
     }
 
     void synthetic_sensor::stop()
@@ -674,19 +663,19 @@ void log_callback_end( uint32_t fps,
         _formats_converter.register_converters( pbfs );
     }
 
-    frame_callback_ptr synthetic_sensor::get_frames_callback() const
+    rs2_frame_callback_sptr synthetic_sensor::get_frames_callback() const
     {
         return _formats_converter.get_frames_callback();
     }
 
-    void synthetic_sensor::set_frames_callback(frame_callback_ptr callback)
+    void synthetic_sensor::set_frames_callback( rs2_frame_callback_sptr callback )
     {
         // This callback is mutable, might be modified.
         // For instance, record_sensor modifies this callback in order to hook it to record frames.
         _formats_converter.set_frames_callback( callback );
     }
 
-    void synthetic_sensor::register_notifications_callback(notifications_callback_ptr callback)
+    void synthetic_sensor::register_notifications_callback( rs2_notifications_callback_sptr callback )
     {
         sensor_base::register_notifications_callback(callback);
         _raw_sensor->register_notifications_callback(callback);

@@ -5,7 +5,9 @@
 
 #include "types.h"
 #include "fw-update/fw-update-unsigned.h"
+#include <src/firmware-version.h>
 #include <rsutils/string/from.h>
+#include <rsutils/number/crc32.h>
 
 #include <map>
 #include <iomanip>
@@ -21,6 +23,26 @@
 
 namespace librealsense
 {
+    typedef float float_4[4];
+
+    template<typename T>
+    constexpr size_t arr_size( T const & ) { return 1; }
+
+    template<typename T, size_t sz>
+    constexpr size_t arr_size( T( &arr )[sz] )
+    {
+        return sz * arr_size( arr[0] );
+    }
+
+    template<typename T>
+    std::string array2str( T & data )
+    {
+        std::stringstream ss;
+        for( auto i = 0; i < arr_size( data ); i++ )
+            ss << " [" << i << "] = " << data[i] << "\t";
+        return ss.str();
+    }
+
     namespace ds
     {
         // DS5 depth XU identifiers
@@ -286,7 +308,7 @@ namespace librealsense
                                                << sizeof( table_header ) << " , actual: " << raw_data.size() );
             }
             // verify the parsed table
-            if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
+            if (table->header.crc32 != rsutils::number::calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
             {
                 throw invalid_value_exception("Calibration data CRC error, parsing aborted!");
             }

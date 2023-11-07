@@ -16,7 +16,7 @@ ds_update_device::ds_update_device( std::shared_ptr< const device_info > const &
         _serial_number = parse_serial_number(_serial_number_buffer);
     }
 
-    void ds_update_device::update(const void* fw_image, int fw_image_size, update_progress_callback_ptr callback) const
+    void ds_update_device::update(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr callback) const
     {
         update_device::update(fw_image, fw_image_size, callback);
     }

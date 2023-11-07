@@ -2,9 +2,8 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include <librealsense2/h/rs_types.h>
+#include <librealsense2/hpp/rs_types.hpp>
 #include <rsutils/concurrency/concurrency.h>
-#include <rsutils/easylogging/easyloggingpp.h>
 #include <memory>
 #include <string>
 
@@ -12,21 +11,12 @@
 namespace librealsense {
 
 
-using notifications_callback_ptr = std::shared_ptr< rs2_notifications_callback >;
-
-
 struct notification
 {
-    notification( rs2_notification_category category, int type, rs2_log_severity severity, std::string const & description )
-        : category( category )
-        , type( type )
-        , severity( severity )
-        , description( description )
-    {
-        timestamp = std::chrono::duration< double, std::milli >( std::chrono::system_clock::now().time_since_epoch() )
-                        .count();
-        LOG_INFO( description );
-    }
+    notification( rs2_notification_category category,
+                  int type,
+                  rs2_log_severity severity,
+                  std::string const & description );
 
     rs2_notification_category category;
     int type;
@@ -51,12 +41,12 @@ public:
     notifications_processor();
     ~notifications_processor();
 
-    void set_callback( notifications_callback_ptr callback );
-    notifications_callback_ptr get_callback() const;
+    void set_callback( rs2_notifications_callback_sptr callback );
+    rs2_notifications_callback_sptr get_callback() const;
     void raise_notification( const notification );
 
 private:
-    notifications_callback_ptr _callback;
+    rs2_notifications_callback_sptr _callback;
     std::mutex _callback_mutex;
     dispatcher _dispatcher;
 };

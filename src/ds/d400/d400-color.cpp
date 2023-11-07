@@ -11,6 +11,7 @@
 #include "d400-info.h"
 #include <src/backend.h>
 #include <src/platform/platform-utils.h>
+#include <src/fourcc.h>
 
 #include <rsutils/string/from.h>
 

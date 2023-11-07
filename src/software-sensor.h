@@ -85,7 +85,6 @@ protected:
 
 private:
     friend class software_device;
-    uint64_t _unique_id;
 
     class stereo_extension;
     rsutils::lazy< stereo_extension > _stereo_extension;

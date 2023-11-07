@@ -13,7 +13,7 @@
 
 namespace librealsense
 {
-    template<int N> struct bytes { byte b[N]; };
+    template<int N> struct bytes { uint8_t b[N]; };
 
     template<class GET_DEPTH, class TRANSFER_PIXEL>
     void align_images(const rs2_intrinsics& depth_intrin, const rs2_extrinsics& depth_to_other,
@@ -67,7 +67,7 @@ namespace librealsense
     void align::align_z_to_other(rs2::video_frame& aligned, 
         const rs2::video_frame& depth, const rs2::video_stream_profile& other_profile, float z_scale)
     {
-        byte* aligned_data = reinterpret_cast<byte*>(const_cast<void*>(aligned.get_data()));
+        uint8_t * aligned_data = reinterpret_cast<uint8_t *>(const_cast<void*>(aligned.get_data()));
         auto aligned_profile = aligned.get_profile().as<rs2::video_stream_profile>();
         memset(aligned_data, 0, aligned_profile.height() * aligned_profile.width() * aligned.get_bytes_per_pixel());
 
@@ -91,7 +91,7 @@ namespace librealsense
     }
 
     template<int N, class GET_DEPTH>
-    void align_other_to_depth_bytes(byte* other_aligned_to_depth, GET_DEPTH get_depth, const rs2_intrinsics& depth_intrin, const rs2_extrinsics& depth_to_other, const rs2_intrinsics& other_intrin, const byte* other_pixels)
+    void align_other_to_depth_bytes( uint8_t * other_aligned_to_depth, GET_DEPTH get_depth, const rs2_intrinsics& depth_intrin, const rs2_extrinsics& depth_to_other, const rs2_intrinsics& other_intrin, const uint8_t * other_pixels)
     {
         auto in_other = (const bytes<N> *)(other_pixels);
         auto out_other = (bytes<N> *)(other_aligned_to_depth);
@@ -100,7 +100,7 @@ namespace librealsense
     }
 
     template<class GET_DEPTH>
-    void align_other_to_depth(byte* other_aligned_to_depth, GET_DEPTH get_depth, const rs2_intrinsics& depth_intrin, const rs2_extrinsics & depth_to_other, const rs2_intrinsics& other_intrin, const byte* other_pixels, rs2_format other_format)
+    void align_other_to_depth( uint8_t * other_aligned_to_depth, GET_DEPTH get_depth, const rs2_intrinsics& depth_intrin, const rs2_extrinsics & depth_to_other, const rs2_intrinsics& other_intrin, const uint8_t * other_pixels, rs2_format other_format)
     {
         switch (other_format)
         {
@@ -126,7 +126,7 @@ namespace librealsense
 
     void align::align_other_to_z(rs2::video_frame& aligned, const rs2::video_frame& depth, const rs2::video_frame& other, float z_scale)
     {
-        byte* aligned_data = reinterpret_cast<byte*>(const_cast<void*>(aligned.get_data()));
+        uint8_t * aligned_data = reinterpret_cast<uint8_t *>(const_cast<void*>(aligned.get_data()));
         auto aligned_profile = aligned.get_profile().as<rs2::video_stream_profile>();
         memset(aligned_data, 0, aligned_profile.height() * aligned_profile.width() * aligned.get_bytes_per_pixel());
 
@@ -138,7 +138,7 @@ namespace librealsense
         auto z_to_other = depth_profile.get_extrinsics_to(other_profile);
 
         auto z_pixels = reinterpret_cast<const uint16_t*>(depth.get_data());
-        auto other_pixels = reinterpret_cast<const byte*>(other.get_data());
+        auto other_pixels = reinterpret_cast<const uint8_t *>(other.get_data());
 
         align_other_to_depth(aligned_data, [z_pixels, z_scale](int z_pixel_index) { return z_scale * z_pixels[z_pixel_index]; },
             z_intrin, z_to_other, other_intrin, other_pixels, other_profile.format());

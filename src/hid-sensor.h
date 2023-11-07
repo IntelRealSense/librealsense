@@ -49,7 +49,7 @@ public:
 
     void open( const stream_profiles & requests ) override;
     void close() override;
-    void start( frame_callback_ptr callback ) override;
+    void start( rs2_frame_callback_sptr callback ) override;
     void stop() override;
 
     std::vector< uint8_t > get_custom_report_data( const std::string & custom_sensor_name,
@@ -60,10 +60,6 @@ protected:
     stream_profiles init_stream_profiles() override;
 
 private:
-    const std::map< rs2_stream, uint32_t > stream_and_fourcc = { { RS2_STREAM_GYRO, rs_fourcc( 'G', 'Y', 'R', 'O' ) },
-                                                                 { RS2_STREAM_ACCEL, rs_fourcc( 'A', 'C', 'C', 'L' ) },
-                                                                 { RS2_STREAM_GPIO, rs_fourcc( 'G', 'P', 'I', 'O' ) } };
-
     const std::vector< std::pair< std::string, stream_profile > > _sensor_name_and_hid_profiles;
     std::map< rs2_stream, std::map< uint32_t, uint32_t > > _fps_and_sampling_frequency_per_rs2_stream;
     std::shared_ptr< platform::hid_device > _hid_device;

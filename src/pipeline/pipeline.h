@@ -25,7 +25,7 @@ namespace librealsense
             //Top level API
             explicit pipeline(std::shared_ptr<librealsense::context> ctx);
             virtual ~pipeline();
-            std::shared_ptr<profile> start(std::shared_ptr<config> conf, frame_callback_ptr callback = nullptr);
+            std::shared_ptr<profile> start(std::shared_ptr<config> conf, rs2_frame_callback_sptr callback = nullptr);
             void stop();
             std::shared_ptr<profile> get_active_profile() const;
             frame_holder wait_for_frames(unsigned int timeout_ms);
@@ -38,7 +38,7 @@ namespace librealsense
             std::shared_ptr<librealsense::context> get_context() const;
 
         protected:
-            frame_callback_ptr get_callback(std::vector<int> unique_ids);
+            rs2_frame_callback_sptr get_callback(std::vector<int> unique_ids);
             std::vector<int> on_start(std::shared_ptr<profile> profile);
 
             void unsafe_start(std::shared_ptr<config> conf);
@@ -59,7 +59,7 @@ namespace librealsense
             std::unique_ptr<syncer_process_unit> _syncer;
             std::unique_ptr<aggregator> _aggregator;
 
-            frame_callback_ptr _streams_callback;
+            rs2_frame_callback_sptr _streams_callback;
             std::vector<rs2_stream> _synced_streams;
         };
     }

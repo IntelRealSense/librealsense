@@ -3,6 +3,7 @@
 
 #include "backend-v4l2.h"
 #include <src/platform/command-transfer.h>
+#include <src/platform/hid-data.h>
 #include <src/core/time-service.h>
 #include <src/core/notification.h>
 #include "backend-hid.h"
@@ -382,7 +383,7 @@ namespace librealsense
                 if (!_use_memory_map)
                 {
                     auto metadata_offset = get_full_length() - MAX_META_DATA_SIZE;
-                    memset((byte*)(get_frame_start()) + metadata_offset, 0, MAX_META_DATA_SIZE);
+                    memset((uint8_t *)(get_frame_start()) + metadata_offset, 0, MAX_META_DATA_SIZE);
                 }
 
                 LOG_DEBUG_V4L("Enqueue buf " << std::dec << _buf.index << " for fd " << fd);

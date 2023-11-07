@@ -143,7 +143,7 @@ namespace librealsense
 
     }
 
-    void update_device::update(const void* fw_image, int fw_image_size, update_progress_callback_ptr update_progress_callback) const
+    void update_device::update(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr update_progress_callback) const
     {
         // checking fw compatibility (covering the case of recovery device with wrong product line fw )
         std::vector<uint8_t> buffer((uint8_t*)fw_image, (uint8_t*)fw_image + fw_image_size);

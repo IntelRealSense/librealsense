@@ -31,8 +31,8 @@ namespace librealsense
                                        frame_additional_data && additional_data,
                                        bool requires_memory ) const;
 
-        void set_callback(frame_callback_ptr callback);
-        frame_callback_ptr get_callback() const;
+        void set_callback(rs2_frame_callback_sptr callback);
+        rs2_frame_callback_sptr get_callback() const;
 
         void invoke_callback(frame_holder frame) const;
 
@@ -62,7 +62,7 @@ namespace librealsense
         std::map<rs2_extension, std::shared_ptr<archive_interface>> _archive;
 
         std::atomic<uint32_t> _max_publish_list_size;
-        frame_callback_ptr _callback;
+        rs2_frame_callback_sptr _callback;
         std::shared_ptr<metadata_parser_map> _metadata_parsers;
     };
 }

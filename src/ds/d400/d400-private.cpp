@@ -5,7 +5,6 @@
 
 using namespace std;
 
-#define intrinsics_string(res) #res << "\t" << array2str((float_4&)table->rect_params[res]) << endl
 
 namespace librealsense
 {
@@ -112,6 +111,8 @@ namespace librealsense
         {
             auto table = check_calib<ds::d400_coefficients_table>(raw_data);
 
+#define intrinsics_string(res) #res << "\t" << array2str((float_4&)table->rect_params[res]) << endl
+
             LOG_DEBUG(endl
                 << "baseline = " << table->baseline << " mm" << endl
                 << "Rect params:  \t fX\t\t fY\t\t ppX\t\t ppY \n"
@@ -125,6 +126,8 @@ namespace librealsense
                 << intrinsics_string(res_480_270)
                 << intrinsics_string(res_1280_800)
                 << intrinsics_string(res_960_540));
+
+#undef intrinsics_string
 
             auto resolution = width_height_to_ds_rect_resolutions(width, height);
 

@@ -12,7 +12,7 @@ namespace librealsense
 //D457 dev - padding of 8 bits added after each bits, should be removed after it is corrected in SerDes
     struct y12i_pixel_mipi { uint8_t rl : 8, rh : 4, ll : 4, lh : 8, padding : 8; int l() const { return lh << 4 | ll; } int r() const { return rh << 8 | rl; } };
 
-    void unpack_y16_y16_from_y12i_10_mipi(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void unpack_y16_y16_from_y12i_10_mipi( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size)
     {
         auto count = width * height;
 #ifdef RS2_USE_CUDA
@@ -32,7 +32,7 @@ namespace librealsense
                                                                          RS2_FORMAT_Y16, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME, 2)
     {}
 
-    void y12i_to_y16y16_mipi::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
+    void y12i_to_y16y16_mipi::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size)
     {
         unpack_y16_y16_from_y12i_10_mipi(dest, source, width, height, actual_size);
     }
