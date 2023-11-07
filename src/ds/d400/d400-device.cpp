@@ -133,22 +133,22 @@ namespace librealsense
         return result;
     }
 
-    bool d400_device::supports_feature( rs2_feature feature ) const
+    bool d400_device::supports_feature( feature_interface::feature feat ) const
     {
         firmware_version fw_ver = firmware_version( get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
         auto pid = get_pid();
 
-        switch( feature )
+        switch( feat )
         {
-        case RS2_FEATURE_AUTO_EXPOSURE_ROI:
+        case feature_interface::feature::AUTO_EXPOSURE_ROI:
             return ( fw_ver >= firmware_version( "5.10.9.0" ) );
-        case RS2_FEATURE_EMITTER_FREQUENCY:
+        case feature_interface::feature::EMITTER_FREQUENCY:
             return ( pid == ds::RS457_PID || pid == ds::RS455_PID ) && fw_ver >= firmware_version( "5.14.0" );
-        case RS2_FEATURE_AMPLITUDE_FACTOR:
+        case feature_interface::feature::AMPLITUDE_FACTOR:
             return ( fw_ver >= firmware_version( "5.11.9.0" ) );
-        case RS2_FEATURE_REMOVE_IR_PATTERN:
+        case feature_interface::feature::REMOVE_IR_PATTERN:
             return ( fw_ver >= firmware_version( "5.9.10.0" ) ); // TODO - add PID here? Now checked at advanced_mode
-        case RS2_FEATURE_HDR: // Fallthrough
+        case feature_interface::feature::HDR:                    // Fallthrough
         default:
             return false;
         }

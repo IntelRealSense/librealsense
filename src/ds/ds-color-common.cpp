@@ -66,7 +66,7 @@ namespace librealsense
                 gain_option,
                 auto_exposure_option));
 
-        if ( _owner->supports_feature( RS2_FEATURE_AUTO_EXPOSURE_ROI ) )
+        if( _owner->supports_feature( feature_interface::feature::AUTO_EXPOSURE_ROI ) )
         {
             roi_sensor_interface* roi_sensor;
             if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&_color_ep)))

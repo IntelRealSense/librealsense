@@ -76,7 +76,7 @@ namespace librealsense
         void update_flash(const std::vector<uint8_t>& image, rs2_update_progress_callback_sptr callback, int update_mode) override;
         bool check_fw_compatibility( const std::vector<uint8_t>& image ) const override { return true; };
 
-        bool supports_feature( rs2_feature feature ) const override;
+        bool supports_feature( feature_interface::feature feat ) const override;
 
     protected:
         std::shared_ptr<ds_device_common> _ds_device_common;

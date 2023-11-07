@@ -117,16 +117,16 @@ namespace librealsense
         _ds_device_common->update_flash(image, callback, update_mode);
     }
 
-    bool d500_device::supports_feature( rs2_feature feature ) const
+    bool d500_device::supports_feature( feature_interface::feature feat ) const
     {
-        switch( feature )
+        switch( feat )
         {
-        case RS2_FEATURE_AUTO_EXPOSURE_ROI: // Fallthrough
-        case RS2_FEATURE_AMPLITUDE_FACTOR:  // Fallthrough
+        case feature_interface::feature::AUTO_EXPOSURE_ROI: // Fallthrough
+        case feature_interface::feature::AMPLITUDE_FACTOR:  // Fallthrough
             return true;
-        case RS2_FEATURE_HDR:               // Fallthrough
-        case RS2_FEATURE_EMITTER_FREQUENCY: // Fallthrough
-        case RS2_FEATURE_REMOVE_IR_PATTERN: // Fallthrough
+        case feature_interface::feature::HDR:               // Fallthrough
+        case feature_interface::feature::EMITTER_FREQUENCY: // Fallthrough
+        case feature_interface::feature::REMOVE_IR_PATTERN: // Fallthrough
         default:
             return false;
         }

@@ -78,7 +78,7 @@ namespace librealsense
             }
 
             // EMITTER FREQUENCY OPTION
-            if (_owner->supports_feature( RS2_FEATURE_EMITTER_FREQUENCY ) )
+            if( _owner->supports_feature( feature_interface::feature::EMITTER_FREQUENCY ) )
             {
                 auto emitter_freq = std::make_shared<uvc_xu_option<uint16_t>>(
                     _raw_depth_ep,

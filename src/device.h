@@ -70,7 +70,7 @@ public:
 
     format_conversion get_format_conversion() const;
 
-    bool supports_feature( rs2_feature feature ) const override { return false; } // Default implementation, override in derived classes
+    bool supports_feature( feature_interface::feature feat ) const override { return false; } // Default implementation, override in derived classes
 
 protected:
     int add_sensor(const std::shared_ptr<sensor_interface>& sensor_base);

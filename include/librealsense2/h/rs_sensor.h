@@ -39,18 +39,6 @@ typedef enum rs2_camera_info {
 } rs2_camera_info;
 const char* rs2_camera_info_to_string(rs2_camera_info info);
 
-/** \brief Features that can be queried if supported.
-   Some features may be available only on some models or as of specific FW version. */
-typedef enum rs2_feature {
-    RS2_FEATURE_AUTO_EXPOSURE_ROI,  /**< Auto exposure is optimized for set region of interest */
-    RS2_FEATURE_HDR,                /**< Combine images of varying exposure value into a single image for better visibility */
-    RS2_FEATURE_EMITTER_FREQUENCY,  /**< Control laser emitter frequency */
-    RS2_FEATURE_AMPLITUDE_FACTOR,   /**< Advanced mode. Can set disparity modulation amplitude factor value */
-    RS2_FEATURE_REMOVE_IR_PATTERN,  /**< Advanced mode. Can use "remove IR pattern" preset */
-    RS2_FEATURE_COUNT               /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
-} rs2_feature;
-const char * rs2_feature_to_string( rs2_feature feature );
-
 /** \brief Streams are different types of data provided by RealSense devices. */
 typedef enum rs2_stream
 {

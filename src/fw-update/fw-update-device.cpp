@@ -311,7 +311,7 @@ namespace librealsense
         }
     }
 
-    bool update_device::supports_feature( rs2_feature feature ) const
+    bool update_device::supports_feature( feature_interface::feature feat ) const
     {
         return false;
     }
