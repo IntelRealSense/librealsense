@@ -137,7 +137,7 @@ def check_fps_dict(measured_fps, expected_fps):
         res = check_fps_pair(measured_fps[key], expected_fps[key])
         if not res:
             all_fps_ok = False
-        log.e(f"Expected {expected_fps[key]} fps, received {measured_fps[key]} fps in sensor {key.name}"
+        log.d(f"Expected {expected_fps[key]} fps, received {measured_fps[key]} fps in sensor {key.name}"
               f" { '(Pass)' if res else '(Fail)' }")
     return all_fps_ok
 
