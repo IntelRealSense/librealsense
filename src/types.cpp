@@ -58,7 +58,6 @@ namespace librealsense
             }
             else
             {
-                res[i] = ' ';
                 first = true;
             }
         }
