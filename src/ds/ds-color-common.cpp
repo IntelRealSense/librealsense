@@ -65,7 +65,10 @@ namespace librealsense
                 auto_exposure_option));
 
         // Starting with firmware 5.10.9, auto-exposure ROI is available for color sensor
-        if (_fw_version >= firmware_version("5.10.9.0"))
+        // TODO - This is a patch for SC QS1 bundle, need to use planned "feature interface" instead.
+        auto pid = _owner->get_info( rs2_camera_info::RS2_CAMERA_INFO_PRODUCT_ID );
+        if( pid == "0B6B" || // 0x0B6B is safety camera PID
+            _fw_version >= firmware_version("5.10.9.0") )
         {
             roi_sensor_interface* roi_sensor;
             if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&_color_ep)))
