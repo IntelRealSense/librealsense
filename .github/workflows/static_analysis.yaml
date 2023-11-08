@@ -105,10 +105,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: "Get current CMake version"
-        id: cmake_version
+      - name: "Install Dependencies"
         run: |
-          
           work_dir=$(pwd)       
           # Go back from RealSense directory to parent directory  
           cd ..
@@ -123,33 +121,60 @@ jobs:
           
           python3 -mvenv venv
           venv/bin/pip3 install -r requirements.txt
+          
+      - name: "Get Current CMake version"
+        id: cmake_version
+        run: |
+          work_dir=$(pwd)
+          cd ..
+          
+          cd cmake_min_version
           venv/bin/python3 cmake_downloader.py --first_minor
           output=$(venv/bin/python3 cmake_min_version.py $work_dir)
-          echo "$output"
+          echo $output
           
           # Retrieve CMake minimal version from the last line of the tool output.
-          current_cmake_version=$(echo ${output: -30} | cut -d'(' -f 2 | head -c -2)
-
-          # Saving cmake minimal version string in GitHub output
-          echo "current_cmake_version=$current_cmake_version" >> $GITHUB_OUTPUT
-
-      - name: "Check minimal CMake version"
-        env:
-          EXPECTED_CMAKE_VERSION: "VERSION 3.8.0"
-          CURRENT_CMAKE_VERSION: ${{ steps.cmake_version.outputs.current_cmake_version }}
-
-        run: |
-          regex_pattern="VERSION [0-9]+\.[0-9]+\.[0-9]+"
-          if ! [[ "$CURRENT_CMAKE_VERSION" =~ $regex_pattern ]];
+          current_cmake_version=$(echo ${output} | grep -oP "VERSION \d+\.\d+")
+           
+          regex_pattern="VERSION [0-9]+\.[0-9]+"
+          if ! [[ "$current_cmake_version" =~ $regex_pattern ]];
           then
-            echo "Error - CMake version $CURRENT_CMAKE_VERSION does not match the pattern VERSION dd.dd.dd"
+            echo "Error - CMake version $current_cmake_version does not match the pattern VERSION dd.dd"
             exit 1
           fi
+          
+          current_cmake_major_ver=$(echo $current_cmake_version | grep -oP "\d+\.\d+" | cut -d'.' -f 1)
+          current_cmake_minor_ver=$(echo $current_cmake_version | grep -oP "\d+\.\d+" | cut -d'.' -f 2)
+          
+          # Saving cmake output in GitHub output
+          echo "current_cmake_major_ver=$current_cmake_major_ver" >> $GITHUB_OUTPUT
+          echo "current_cmake_minor_ver=$current_cmake_minor_ver" >> $GITHUB_OUTPUT
+        
+      - name: "Check minimal CMake version"
+        env:
+          EXPECTED_CMAKE_MAJOR_VER: 3
+          EXPECTED_CMAKE_MINOR_VER: 8
+          CURRENT_CMAKE_MAJOR_VER: ${{ steps.cmake_version.outputs.current_cmake_major_ver }}
+          CURRENT_CMAKE_MINOR_VER: ${{ steps.cmake_version.outputs.current_cmake_minor_ver }}
 
-          if [ "$CURRENT_CMAKE_VERSION" == "${EXPECTED_CMAKE_VERSION}" ] || [ "$CURRENT_CMAKE_VERSION" \< "${EXPECTED_CMAKE_VERSION}" ]
+        run: |
+          if [ $CURRENT_CMAKE_MAJOR_VER -lt ${EXPECTED_CMAKE_MAJOR_VER} ]
           then
-            echo "The test PASSED, current CMake version is $CURRENT_CMAKE_VERSION and it is not higher than ${EXPECTED_CMAKE_VERSION}"
+            STATUS="PASSED"
+          elif [ $CURRENT_CMAKE_MAJOR_VER -eq ${EXPECTED_CMAKE_MAJOR_VER} ] && [ $CURRENT_CMAKE_MINOR_VER -eq ${EXPECTED_CMAKE_MINOR_VER} ]
+          then
+            STATUS="PASSED"
+          elif [ $CURRENT_CMAKE_MAJOR_VER -eq ${EXPECTED_CMAKE_MAJOR_VER} ] && [ $CURRENT_CMAKE_MINOR_VER -lt ${EXPECTED_CMAKE_MINOR_VER} ]
+          then
+            STATUS="PASSED"
           else
-            echo "Error - The minimal CMake version required for LibRS is ${EXPECTED_CMAKE_VERSION} but on this build the minimal CMake version that works is $CURRENT_CMAKE_VERSION"
+            STATUS="FAILED"
+          fi
+          
+          if [ $STATUS == "PASSED" ]
+          then
+            echo "The test PASSED, current CMake version is $CURRENT_CMAKE_MAJOR_VER.$CURRENT_CMAKE_MINOR_VER and it is not higher than VERSION ${EXPECTED_CMAKE_MAJOR_VER}.${EXPECTED_CMAKE_MINOR_VER}"
+          else
+            echo "Error - The minimal CMake version required for LibRS is ${EXPECTED_CMAKE_MAJOR_VER}.${EXPECTED_CMAKE_MINOR_VER} but on this build the minimal CMake version that works is $CURRENT_CMAKE_MAJOR_VER.$CURRENT_CMAKE_MINOR_VER"
             exit 1
           fi              
