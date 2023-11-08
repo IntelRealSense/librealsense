@@ -53,9 +53,8 @@ void log_callback_end( uint32_t fps,
     /////////////////// Sensor Base //////////////////////
     //////////////////////////////////////////////////////
 
-    sensor_base::sensor_base( std::string const & name, device * dev, recommended_proccesing_blocks_interface * owner )
-    : recommended_proccesing_blocks_base( owner )
-    , _is_streaming( false )
+    sensor_base::sensor_base( std::string const & name, device * dev )
+    : _is_streaming( false )
     , _is_opened( false )
     , _notifications_processor( std::make_shared< notifications_processor >() )
     , _on_open( nullptr )
@@ -398,7 +397,7 @@ void log_callback_end( uint32_t fps,
                                         device * device,
                                         const std::map< uint32_t, rs2_format > & fourcc_to_rs2_format_map,
                                         const std::map< uint32_t, rs2_stream > & fourcc_to_rs2_stream_map )
-        : sensor_base( name, device, (recommended_proccesing_blocks_interface *)this )
+        : sensor_base( name, device )
         , _raw_sensor( raw_sensor )
     {
         // synthetic sensor and its raw sensor will share the formats and streams mapping

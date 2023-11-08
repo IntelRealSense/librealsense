@@ -5,7 +5,6 @@
 
 #include "core/sensor-interface.h"
 
-#include "core/recommended-proccesing-blocks-base.h"
 #include "source.h"
 #include "core/extension.h"
 #include "proc/formats-converter.h"
@@ -52,12 +51,9 @@ namespace librealsense
         , public virtual sensor_interface
         , public options_container
         , public virtual info_container
-        , public recommended_proccesing_blocks_base
     {
     public:
-        explicit sensor_base( std::string const & name,
-                              device * device,
-                              recommended_proccesing_blocks_interface * owner );
+        explicit sensor_base( std::string const & name, device * device );
         virtual ~sensor_base() override { _source.flush(); }
 
         void set_source_owner(sensor_base* owner); // will direct the source to the top in the source hierarchy.
@@ -168,9 +164,8 @@ namespace librealsense
 
     protected:
         explicit raw_sensor_base( std::string const & name,
-                                  device * device,
-                                  recommended_proccesing_blocks_interface * owner )
-            : super( name, device, owner )
+                                  device * device )
+            : super( name, device )
         {
         }
 

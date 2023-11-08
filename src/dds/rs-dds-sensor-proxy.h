@@ -36,6 +36,8 @@ class dds_device_proxy;
 
 class dds_sensor_proxy : public software_sensor
 {
+    using super = software_sensor;
+
     std::shared_ptr< realdds::dds_device > const _dev;
     std::string const _name;
     bool const _md_enabled;
@@ -71,9 +73,7 @@ public:
 
     void add_option( std::shared_ptr< realdds::dds_option > option );
 
-    void add_processing_block( std::string filter_name );
-    bool processing_block_exists( processing_blocks const & blocks, std::string const & block_name ) const;
-    void create_processing_block( std::string & filter_name );
+    void add_processing_block( std::string const & filter_name );
 
     const std::map< sid_index, std::shared_ptr< realdds::dds_stream > > & streams() const { return _streams; }
 
