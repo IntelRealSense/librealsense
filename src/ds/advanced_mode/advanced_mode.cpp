@@ -6,8 +6,8 @@
 #include "ds/d400/d400-color.h"
 #include "ds/d500/d500-color.h"
 
-#include <core/features/amplitude-factor-feature.h>
-#include <core/features/remove-ir-pattern-feature.h>
+#include <src/ds/features/amplitude-factor-feature.h>
+#include <src/features/remove-ir-pattern-feature.h>
 
 #include <rsutils/string/from.h>
 #include <rsutils/string/hexdump.h>
@@ -64,7 +64,7 @@ namespace librealsense
         };
 
         _amplitude_factor_support = [this]() {
-            return _depth_sensor.supports_feature( amplitude_factor_feature().get_name() );
+            return _depth_sensor.supports_feature( amplitude_factor_feature::ID );
         };
     }
 
@@ -171,7 +171,7 @@ namespace librealsense
             break;
         case RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN:
         {
-            if( ! _depth_sensor.supports_feature( remove_ir_pattern_feature().get_name() ) )
+            if( ! _depth_sensor.supports_feature( remove_ir_pattern_feature::ID ) )
                 throw invalid_value_exception( "apply_preset(...) failed! The device does not support remove IR pattern feature" );
 
             switch (device_pid)

@@ -1,28 +1,28 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
-#include <device.h>
-#include <image.h>
-#include <metadata-parser.h>
-#include <metadata.h>
-#include <backend.h>
+#include <src/device.h>
+#include <src/image.h>
+#include <src/metadata-parser.h>
+#include <src/metadata.h>
+#include <src/backend.h>
 
 #include "d400-device.h"
 #include "d400-private.h"
 #include "d400-options.h"
 #include "d400-info.h"
 #include "ds/ds-timestamp.h"
-#include <stream.h>
-#include <environment.h>
-#include <depth-sensor.h>
+#include <src/stream.h>
+#include <src/environment.h>
+#include <src/depth-sensor.h>
 #include "d400-color.h"
 #include "d400-nonmonochrome.h"
-#include <platform/platform-utils.h>
-#include <fourcc.h>
+#include <src/platform/platform-utils.h>
+#include <src/fourcc.h>
 
-#include <core/features/amplitude-factor-feature.h>
-#include <core/features/emitter-frequency-feature.h>
-#include <core/features/remove-ir-pattern-feature.h>
+#include <src/ds/features/amplitude-factor-feature.h>
+#include <src/features/emitter-frequency-feature.h>
+#include <src/features/remove-ir-pattern-feature.h>
 
 #include <proc/depth-formats-converter.h>
 #include <proc/y8i-to-y8y8.h>
@@ -33,7 +33,7 @@
 #include <hdr-config.h>
 #include "d400-thermal-monitor.h"
 #include <common/fw/firmware-version.h>
-#include <fw-update/fw-update-unsigned.h>
+#include <src/fw-update/fw-update-unsigned.h>
 #include <nlohmann/json.hpp>
 
 #include <rsutils/string/hexdump.h>
@@ -331,16 +331,16 @@ namespace librealsense
             return preset_max_value;
         }
 
-        bool supports_feature( const std::string & feature_name ) const
+        bool supports_feature( const std::string & feature_id ) const
         {
             firmware_version fw_ver = firmware_version( get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
             auto pid = _owner->get_pid();
 
-            if( feature_name == emitter_frequency_feature().get_name() )
+            if( feature_id == emitter_frequency_feature::ID )
                 return ( pid == ds::RS457_PID || pid == ds::RS455_PID ) && fw_ver >= firmware_version( "5.14.0" );
-            else if( feature_name == amplitude_factor_feature().get_name() )
+            else if( feature_id == amplitude_factor_feature::ID )
                 return ( fw_ver >= firmware_version( "5.11.9.0" ) );
-            else if( feature_name == remove_ir_pattern_feature().get_name() )
+            else if( feature_id == remove_ir_pattern_feature::ID )
                 return ( fw_ver >= firmware_version( "5.9.10.0" ) );  // TODO - add PID here? Now checked at advanced_mode
 
             return false;

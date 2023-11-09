@@ -3,17 +3,19 @@
 
 #pragma once
 
-#include <core/features/feature-interface.h>
+#include <src/feature-interface.h>
 
 #include <string>
 
 
 namespace librealsense {
 
-class emitter_frequency_feature : public feature_interface
+class amplitude_factor_feature : public feature_interface
 {
 public:
-    emitter_frequency_feature() : feature_interface( "Emitter frequency feature" )
+    static constexpr char * ID = "Amplitude factor feature";
+
+    amplitude_factor_feature() : feature_interface( ID )
     {
     }
 };

@@ -11,16 +11,16 @@ namespace librealsense {
 class feature_interface
 {
 public:
-    feature_interface( const std::string& name ) : _name( name )
+    feature_interface( const std::string& id ) : _id( id )
     {
     }
 
-    const std::string & get_name() const { return _name; }
+    const std::string & get_id() const { return _id; }
 
     virtual ~feature_interface() = default;
 
 private:
-    std::string _name;
+    std::string _id;
 };
 
 }  // namespace librealsense

@@ -3,17 +3,19 @@
 
 #pragma once
 
-#include <core/features/feature-interface.h>
+#include <src/feature-interface.h>
 
 #include <string>
 
 
 namespace librealsense {
 
-class amplitude_factor_feature : public feature_interface
+class auto_exposure_roi_feature : public feature_interface
 {
 public:
-    amplitude_factor_feature() : feature_interface( "Amplitude factor feature" )
+    static constexpr char * ID = "Auto exposure ROI feature";
+
+    auto_exposure_roi_feature() : feature_interface( ID )
     {
     }
 };

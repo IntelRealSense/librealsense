@@ -27,4 +27,5 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/json_loader.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/presets.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds-calib-parsers.h"
+        "${CMAKE_CURRENT_LIST_DIR}/features/amplitude-factor-feature.h"
 )

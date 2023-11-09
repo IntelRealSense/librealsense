@@ -13,7 +13,7 @@
 #include "platform/platform-utils.h"
 #include <src/fourcc.h>
 
-#include <core/features/auto-exposure-roi-feature.h>
+#include <src/features/auto-exposure-roi-feature.h>
 
 namespace librealsense
 {
@@ -183,9 +183,9 @@ namespace librealsense
         return get_color_recommended_proccesing_blocks();
     }
 
-    bool d500_color_sensor::supports_feature( const std::string & feature_name ) const
+    bool d500_color_sensor::supports_feature( const std::string & feature_id ) const
     {
-        if( feature_name == auto_exposure_roi_feature().get_name() )
+        if( feature_id == auto_exposure_roi_feature::ID )
             return true;
 
         return false;

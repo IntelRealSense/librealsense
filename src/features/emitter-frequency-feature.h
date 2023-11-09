@@ -3,17 +3,19 @@
 
 #pragma once
 
-#include <core/features/feature-interface.h>
+#include <src/feature-interface.h>
 
 #include <string>
 
 
 namespace librealsense {
 
-class remove_ir_pattern_feature : public feature_interface
+class emitter_frequency_feature : public feature_interface
 {
 public:
-    remove_ir_pattern_feature() : feature_interface( "Remove IR pattern feature" )
+    static constexpr char * ID = "Emitter frequency feature";
+
+    emitter_frequency_feature() : feature_interface( ID )
     {
     }
 };

@@ -13,7 +13,7 @@
 #include <src/platform/platform-utils.h>
 #include <src/fourcc.h>
 
-#include <core/features/auto-exposure-roi-feature.h>
+#include <src/features/auto-exposure-roi-feature.h>
 
 #include <rsutils/string/from.h>
 
@@ -381,11 +381,11 @@ namespace librealsense
         return get_color_recommended_proccesing_blocks();
     }
 
-     bool d400_color_sensor::supports_feature( const std::string & feature_name ) const
+     bool d400_color_sensor::supports_feature( const std::string & feature_id ) const
     {
         firmware_version fw_ver = firmware_version( get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
 
-        if( feature_name == auto_exposure_roi_feature().get_name() )
+        if( feature_id == auto_exposure_roi_feature::ID )
             return ( fw_ver >= firmware_version( "5.10.9.0" ) );
 
         return false;

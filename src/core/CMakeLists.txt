@@ -42,9 +42,4 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/stream-profile.h"
         "${CMAKE_CURRENT_LIST_DIR}/stream-profile-interface.h"
         "${CMAKE_CURRENT_LIST_DIR}/tagged-profile.h"
-        "${CMAKE_CURRENT_LIST_DIR}/features/amplitude-factor-feature.h"
-        "${CMAKE_CURRENT_LIST_DIR}/features/auto-exposure-roi-feature.h"
-        "${CMAKE_CURRENT_LIST_DIR}/features/emitter-frequency-feature.h"
-        "${CMAKE_CURRENT_LIST_DIR}/features/feature-interface.h"
-        "${CMAKE_CURRENT_LIST_DIR}/features/remove-ir-pattern-feature.h"
 )

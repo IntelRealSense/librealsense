@@ -5,8 +5,8 @@
 #include "image.h"
 #include "metadata-parser.h"
 #include "metadata.h"
-#include <backend.h>
-#include <platform/platform-utils.h>
+#include <src/backend.h>
+#include <src/platform/platform-utils.h>
 
 #include "d500-device.h"
 #include "d500-private.h"
@@ -14,13 +14,13 @@
 #include "d500-info.h"
 #include "ds/ds-options.h"
 #include "ds/ds-timestamp.h"
-#include <depth-sensor.h>
+#include <src/depth-sensor.h>
 #include "stream.h"
 #include "environment.h"
 #include "d500-color.h"
 #include "ds/d400/d400-nonmonochrome.h"
 
-#include <core/features/amplitude-factor-feature.h>
+#include <src/ds/features/amplitude-factor-feature.h>
 
 #include "proc/depth-formats-converter.h"
 #include "proc/y8i-to-y8y8.h"
@@ -278,9 +278,9 @@ namespace librealsense
         }
 
         
-        bool supports_feature( const std::string & feature_name ) const
+        bool supports_feature( const std::string & feature_id ) const
         {
-            if( feature_name == amplitude_factor_feature().get_name() )
+            if( feature_id == amplitude_factor_feature::ID )
                 return true;
 
             return false;

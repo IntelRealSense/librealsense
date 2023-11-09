@@ -3,17 +3,19 @@
 
 #pragma once
 
-#include <core/features/feature-interface.h>
+#include <src/feature-interface.h>
 
 #include <string>
 
 
 namespace librealsense {
 
-class auto_exposure_roi_feature : public feature_interface
+class remove_ir_pattern_feature : public feature_interface
 {
 public:
-    auto_exposure_roi_feature() : feature_interface( "Auto exposure ROI feature" )
+    static constexpr char * ID = "Remove IR pattern feature";
+
+    remove_ir_pattern_feature() : feature_interface( ID )
     {
     }
 };
