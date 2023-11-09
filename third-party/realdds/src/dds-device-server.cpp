@@ -203,7 +203,7 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
                 auto topic = topics::flexible_msg::create_topic( _publisher->get_participant(),
                                                                  _topic_root + topics::METADATA_TOPIC_NAME );
                 _metadata_writer = std::make_shared< dds_topic_writer >( topic, _publisher );
-                dds_topic_writer::qos wqos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS );
+                dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
                 wqos.history().depth = 10;  // default is 1
                 _metadata_writer->run( wqos );
             }

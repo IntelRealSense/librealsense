@@ -86,7 +86,7 @@ void dds_device::impl::set_state( state_t new_state )
             else
             {
                 LOG_DEBUG( "... metadata is enabled" );
-                dds_topic_reader::qos rqos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS );
+                dds_topic_reader::qos rqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
                 rqos.history().depth = 10; // Support receive metadata from multiple streams
                 _metadata_reader->run( rqos );
             }
