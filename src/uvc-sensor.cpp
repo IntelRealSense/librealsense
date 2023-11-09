@@ -26,7 +26,7 @@ uvc_sensor::uvc_sensor( std::string const & name,
                         std::shared_ptr< platform::uvc_device > uvc_device,
                         std::unique_ptr< frame_timestamp_reader > timestamp_reader,
                         device * dev )
-    : super( name, dev, (recommended_proccesing_blocks_interface *)this )
+    : super( name, dev )
     , _device( std::move( uvc_device ) )
     , _user_count( 0 )
     , _timestamp_reader( std::move( timestamp_reader ) )

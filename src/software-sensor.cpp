@@ -48,7 +48,7 @@ private:
 
 
 software_sensor::software_sensor( std::string const & name, software_device * owner )
-    : sensor_base( name, owner, &_pbs )
+    : sensor_base( name, owner )
     , _stereo_extension( [this]() { return stereo_extension( this ); } )
     , _metadata_map{}  // to all 0's
 {
@@ -358,13 +358,12 @@ void software_sensor::add_option( rs2_option option, option_range range, bool is
 }
 
 
-void software_recommended_proccesing_blocks::add_processing_block(
-    std::shared_ptr< processing_block_interface > const & block )
+void software_sensor::add_processing_block( std::shared_ptr< processing_block_interface > const & block )
 {
     if( ! block )
         throw invalid_value_exception( "trying to add an empty software processing block" );
 
-    _blocks.push_back( block );
+    _pbs.push_back( block );
 }
 
 
