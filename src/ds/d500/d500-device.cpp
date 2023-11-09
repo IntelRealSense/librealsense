@@ -5,8 +5,8 @@
 #include "image.h"
 #include "metadata-parser.h"
 #include "metadata.h"
-#include <src/backend.h>
-#include <src/platform/platform-utils.h>
+#include <backend.h>
+#include <platform/platform-utils.h>
 
 #include "d500-device.h"
 #include "d500-private.h"
@@ -14,11 +14,13 @@
 #include "d500-info.h"
 #include "ds/ds-options.h"
 #include "ds/ds-timestamp.h"
-#include <src/depth-sensor.h>
+#include <depth-sensor.h>
 #include "stream.h"
 #include "environment.h"
 #include "d500-color.h"
 #include "ds/d400/d400-nonmonochrome.h"
+
+#include <core/features/amplitude-factor-feature.h>
 
 #include "proc/depth-formats-converter.h"
 #include "proc/y8i-to-y8y8.h"
@@ -115,21 +117,6 @@ namespace librealsense
     void d500_device::update_flash(const std::vector<uint8_t>& image, rs2_update_progress_callback_sptr callback, int update_mode)
     {
         _ds_device_common->update_flash(image, callback, update_mode);
-    }
-
-    bool d500_device::supports_feature( feature_interface::feature feat ) const
-    {
-        switch( feat )
-        {
-        case feature_interface::feature::AUTO_EXPOSURE_ROI: // Fallthrough
-        case feature_interface::feature::AMPLITUDE_FACTOR:  // Fallthrough
-            return true;
-        case feature_interface::feature::HDR:               // Fallthrough
-        case feature_interface::feature::EMITTER_FREQUENCY: // Fallthrough
-        case feature_interface::feature::REMOVE_IR_PATTERN: // Fallthrough
-        default:
-            return false;
-        }
     }
 
     class d500_depth_sensor : public synthetic_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
@@ -288,6 +275,15 @@ namespace librealsense
         float get_preset_max_value() const override
         {
             return static_cast<float>(RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY);
+        }
+
+        
+        bool supports_feature( const std::string & feature_name ) const
+        {
+            if( feature_name == amplitude_factor_feature().get_name() )
+                return true;
+
+            return false;
         }
 
     protected:

@@ -9,7 +9,6 @@
 
 #include "device-info.h"
 
-#include "core/feature-interface.h"
 #include <rsutils/lazy.h>
 #include <rsutils/subscription.h>
 #include <chrono>
@@ -34,7 +33,6 @@ enum class format_conversion
 //
 class device
     : public virtual device_interface
-    , public virtual feature_interface
     , public info_container
 {
 public:
@@ -69,8 +67,6 @@ public:
     bool device_changed_notifications_on() const { return _device_change_subscription.is_active(); }
 
     format_conversion get_format_conversion() const;
-
-    bool supports_feature( feature_interface::feature feat ) const override { return false; } // Default implementation, override in derived classes
 
 protected:
     int add_sensor(const std::shared_ptr<sensor_interface>& sensor_base);

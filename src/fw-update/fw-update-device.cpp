@@ -311,11 +311,6 @@ namespace librealsense
         }
     }
 
-    bool update_device::supports_feature( feature_interface::feature feat ) const
-    {
-        return false;
-    }
-
     void update_device::create_snapshot(std::shared_ptr<info_interface>& snapshot) const
     {
 

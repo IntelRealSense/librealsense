@@ -134,9 +134,6 @@ namespace librealsense
 
         virtual bool supports_info(rs2_camera_info info) const override;
 
-        //feture_interface
-        virtual bool supports_feature( feature_interface::feature feat ) const override;
-
         //recordable
         virtual void create_snapshot(std::shared_ptr<info_interface>& snapshot) const override;
 

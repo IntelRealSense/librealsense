@@ -72,6 +72,8 @@ namespace librealsense
         stream_profiles init_stream_profiles() override;
         processing_blocks get_recommended_processing_blocks() const override;
 
+        bool supports_feature( const std::string & feature_name ) const override;
+
     protected:
         const d500_color* _owner;
     };

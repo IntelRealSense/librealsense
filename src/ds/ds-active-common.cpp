@@ -4,6 +4,8 @@
 #include "ds-active-common.h"
 #include "d400/d400-color.h"
 
+#include <core/features/emitter-frequency-feature.h>
+
 namespace librealsense
 {
     using namespace ds;
@@ -78,7 +80,7 @@ namespace librealsense
             }
 
             // EMITTER FREQUENCY OPTION
-            if( _owner->supports_feature( feature_interface::feature::EMITTER_FREQUENCY ) )
+            if( _depth_ep.supports_feature( emitter_frequency_feature().get_name() ) )
             {
                 auto emitter_freq = std::make_shared<uvc_xu_option<uint16_t>>(
                     _raw_depth_ep,

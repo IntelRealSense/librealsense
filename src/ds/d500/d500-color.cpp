@@ -13,6 +13,8 @@
 #include "platform/platform-utils.h"
 #include <src/fourcc.h>
 
+#include <core/features/auto-exposure-roi-feature.h>
+
 namespace librealsense
 {
     std::map<uint32_t, rs2_format> d500_color_fourcc_to_rs2_format = {
@@ -132,6 +134,11 @@ namespace librealsense
         color_ep.register_processing_block(processing_block_factory::create_pbf_vector<m420_converter>(RS2_FORMAT_M420, map_supported_color_formats(RS2_FORMAT_M420), RS2_STREAM_COLOR));
     }
 
+    void d500_color::register_stream_to_extrinsic_group( const stream_interface & stream, uint32_t group_index )
+    {
+        device::register_stream_to_extrinsic_group( stream, group_index );
+    }
+    
     rs2_intrinsics d500_color_sensor::get_intrinsics(const stream_profile& profile) const
     {
         return get_d500_intrinsic_by_resolution(
@@ -176,8 +183,11 @@ namespace librealsense
         return get_color_recommended_proccesing_blocks();
     }
 
-    void d500_color::register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index)
+    bool d500_color_sensor::supports_feature( const std::string & feature_name ) const
     {
-        device::register_stream_to_extrinsic_group(stream, group_index);
+        if( feature_name == auto_exposure_roi_feature().get_name() )
+            return true;
+
+        return false;
     }
 }

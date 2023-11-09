@@ -6,6 +6,8 @@
 #include <src/option.h>
 
 #include <src/platform/uvc-option.h>
+#include <core/features/auto-exposure-roi-feature.h>
+
 #include <cstddef>
 
 namespace librealsense
@@ -66,7 +68,7 @@ namespace librealsense
                 gain_option,
                 auto_exposure_option));
 
-        if( _owner->supports_feature( feature_interface::feature::AUTO_EXPOSURE_ROI ) )
+        if( _color_ep.supports_feature( auto_exposure_roi_feature().get_name() ) )
         {
             roi_sensor_interface* roi_sensor;
             if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&_color_ep)))

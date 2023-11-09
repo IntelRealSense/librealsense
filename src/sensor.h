@@ -9,6 +9,7 @@
 #include "source.h"
 #include "core/extension.h"
 #include "proc/formats-converter.h"
+#include "core/features/feature-interface.h"
 
 #include <rsutils/lazy.h>
 #include <rsutils/signal.h>
@@ -89,6 +90,8 @@ namespace librealsense
         {
             return {};
         }
+
+        virtual bool supports_feature( const std::string & feature_name ) const { return false; } // Default implementation, override in derived classes
 
     protected:
         // Since _profiles is private, we need a way to get the final profiles

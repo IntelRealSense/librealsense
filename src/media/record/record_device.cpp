@@ -191,11 +191,6 @@ bool librealsense::record_device::supports_info(rs2_camera_info info) const
     return m_device->supports_info(info);
 }
 
-bool librealsense::record_device::supports_feature( feature_interface::feature feat ) const
-{
-    return m_device->supports_feature( feat );
-}
-
 const librealsense::sensor_interface& librealsense::record_device::get_sensor(size_t i) const
 {
     return *m_sensors.at(i);
