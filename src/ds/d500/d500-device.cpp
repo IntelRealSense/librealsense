@@ -114,7 +114,7 @@ namespace librealsense
 
     void d500_device::update_flash(const std::vector<uint8_t>& image, rs2_update_progress_callback_sptr callback, int update_mode)
     {
-        _ds_device_common->update_flash(image, callback, update_mode);
+        throw not_implemented_exception("D500 device does not support unsigned FW update");
     }
 
     class d500_depth_sensor : public synthetic_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
@@ -583,21 +583,7 @@ namespace librealsense
 
             if ((_device_capabilities & ds_caps::CAP_INTERCAM_HW_SYNC) == ds_caps::CAP_INTERCAM_HW_SYNC)
             {
-                if ((_device_capabilities & ds_caps::CAP_GLOBAL_SHUTTER) == ds_caps::CAP_GLOBAL_SHUTTER)
-                {
-                    depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                        std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 3));
-                }
-                else if ((_device_capabilities & ds_caps::CAP_GLOBAL_SHUTTER) == ds_caps::CAP_GLOBAL_SHUTTER)
-                {
-                    depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                        std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 2));
-                }
-                else
-                {
-                    depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                        std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 1));
-                }
+                // Register RS2_OPTION_INTER_CAM_SYNC_MODE here if needed
             }
 
             roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);

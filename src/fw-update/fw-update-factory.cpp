@@ -5,7 +5,9 @@
 #include "fw-update-device.h"
 #include "usb/usb-enumerator.h"
 #include "ds/d400/d400-private.h"
+#include "ds/d500/d500-private.h"
 #include "ds/d400/d400-fw-update-device.h"
+#include "ds/d500/d500-fw-update-device.h"
 
 #include <rsutils/string/from.h>
 
@@ -17,10 +19,12 @@ namespace librealsense
 {
     int get_product_line(const platform::usb_device_info &usb_info)
     {
-        if( ds::RS_RECOVERY_PID == usb_info.pid )
+        if( ds::RS_D400_RECOVERY_PID == usb_info.pid )
             return RS2_PRODUCT_LINE_D400;
-        if( ds::RS_USB2_RECOVERY_PID == usb_info.pid )
+        if( ds::RS_D400_USB2_RECOVERY_PID == usb_info.pid )
             return RS2_PRODUCT_LINE_D400;
+        if( ds::RS_D500_RECOVERY_PID == usb_info.pid )
+            return RS2_PRODUCT_LINE_D500;
         return 0;
     }
 
@@ -50,10 +54,17 @@ namespace librealsense
                 auto usb = platform::usb_enumerator::create_usb_device(info);
                 if (!usb)
                     continue;
-                if (ds::RS_RECOVERY_PID == info.pid)
-                    return std::make_shared< ds_update_device >( shared_from_this(), usb );
-                if (ds::RS_USB2_RECOVERY_PID == info.pid)
-                    return std::make_shared< ds_update_device >( shared_from_this(), usb );
+                switch( info.pid )
+                {
+                case ds::RS_D400_RECOVERY_PID:
+                case ds::RS_D400_USB2_RECOVERY_PID:
+                    return std::make_shared< ds_d400_update_device >( shared_from_this(), usb, "D400");
+                case ds::RS_D500_RECOVERY_PID:
+                    return std::make_shared< ds_d500_update_device >( shared_from_this(), usb, "D500");
+                default:
+                    // Do nothing
+                    break;
+                }
             }
         }
         throw std::runtime_error( rsutils::string::from()

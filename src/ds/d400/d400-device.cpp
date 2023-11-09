@@ -1,6 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
+#include <librealsense2/h/rs_internal.h>
 #include <src/device.h>
 #include <src/image.h>
 #include <src/metadata-parser.h>
@@ -116,6 +117,11 @@ namespace librealsense
 
     bool d400_device::check_fw_compatibility( const std::vector< uint8_t > & image ) const
     {
+        // check if the given FW size matches the expected FW size
+        if( ( static_cast< int >( image.size() ) != signed_fw_size ) )
+            throw librealsense::invalid_value_exception(
+                rsutils::string::from() << "Unsupported firmware binary image provided - " << image.size() << " bytes" );
+
         std::string fw_version = firmware_check_interface::extract_firmware_version_string( image );
 
         auto it = ds::d400_device_to_fw_min_version.find( _pid );

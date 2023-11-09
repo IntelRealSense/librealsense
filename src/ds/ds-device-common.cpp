@@ -19,6 +19,7 @@
 #include "proc/temporal-filter.h"
 
 #include <src/backend.h>
+#include <librealsense2/h/rs_internal.h>
 
 namespace librealsense
 {
@@ -256,6 +257,13 @@ namespace librealsense
 
     void ds_device_common::update_flash(const std::vector<uint8_t>& image, rs2_update_progress_callback_sptr callback, int update_mode)
     {
+            // check if the given FW size matches the expected FW size
+        if( image.size() != unsigned_fw_size )
+        throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                     << "Unsupported firmware binary image (unsigned) provided - "
+                                                     << image.size() << " bytes" );
+
+
         if (_is_locked)
             throw std::runtime_error("this camera is locked and doesn't allow direct flash write, for firmware update use rs2_update_firmware method (DFU)");
 
