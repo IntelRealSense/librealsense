@@ -74,6 +74,10 @@ namespace librealsense
             };
         }
         _amplitude_factor_support = [this]() {
+            // TODO - This is a patch for SC QS1 bundle, need to use planned "feature interface" instead.
+            auto pid = _depth_sensor.get_device().get_info(rs2_camera_info::RS2_CAMERA_INFO_PRODUCT_ID);
+            if( pid == "0B6B" ) // 0x0B6B is safety camera PID
+                return true;
             auto fw_ver = firmware_version(_depth_sensor.get_device().get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION));
             return (fw_ver >= firmware_version("5.11.9.0"));
         };
