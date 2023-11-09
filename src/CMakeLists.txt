@@ -118,6 +118,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/platform/platform-utils.h"
         "${CMAKE_CURRENT_LIST_DIR}/platform/platform-utils.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/platform/stream-profile.h"
+        "${CMAKE_CURRENT_LIST_DIR}/platform/stream-profile-impl.h"
         "${CMAKE_CURRENT_LIST_DIR}/core/time-service.h"
         "${CMAKE_CURRENT_LIST_DIR}/platform/uvc-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/platform/uvc-device-info.h"

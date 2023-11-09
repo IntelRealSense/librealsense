@@ -171,7 +171,7 @@ formats_converter::clone_profile( const std::shared_ptr< stream_profile_interfac
     auto msp = std::dynamic_pointer_cast< motion_stream_profile >( raw_profile );
     if( vsp )
     {
-        cloned = std::make_shared< video_stream_profile >( platform::stream_profile{} );
+        cloned = std::make_shared< video_stream_profile >();
         if( ! cloned )
             throw librealsense::invalid_value_exception( "failed to clone profile" );
 
@@ -184,7 +184,7 @@ formats_converter::clone_profile( const std::shared_ptr< stream_profile_interfac
     }
     else if( msp )
     {
-        cloned = std::make_shared< motion_stream_profile >( platform::stream_profile{} );
+        cloned = std::make_shared< motion_stream_profile >();
         if( ! cloned )
             throw librealsense::invalid_value_exception( "failed to clone profile" );
 

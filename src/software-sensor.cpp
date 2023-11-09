@@ -68,10 +68,7 @@ software_sensor::~software_sensor()
 std::shared_ptr< stream_profile_interface > software_sensor::add_video_stream( rs2_video_stream video_stream,
                                                                                bool is_default )
 {
-    auto profile = std::make_shared< video_stream_profile >( platform::stream_profile{ (uint32_t)video_stream.width,
-                                                                                       (uint32_t)video_stream.height,
-                                                                                       (uint32_t)video_stream.fps,
-                                                                                       0 } );
+    auto profile = std::make_shared< video_stream_profile >();
     profile->set_dims( video_stream.width, video_stream.height );
     profile->set_format( video_stream.fmt );
     profile->set_framerate( video_stream.fps );
@@ -90,8 +87,7 @@ std::shared_ptr< stream_profile_interface > software_sensor::add_video_stream( r
 std::shared_ptr< stream_profile_interface > software_sensor::add_motion_stream( rs2_motion_stream motion_stream,
                                                                                 bool is_default )
 {
-    auto profile
-        = std::make_shared< motion_stream_profile >( platform::stream_profile{ 0, 0, (uint32_t)motion_stream.fps, 0 } );
+    auto profile = std::make_shared< motion_stream_profile >();
     profile->set_format( motion_stream.fmt );
     profile->set_framerate( motion_stream.fps );
     profile->set_stream_index( motion_stream.index );
@@ -109,8 +105,7 @@ std::shared_ptr< stream_profile_interface > software_sensor::add_motion_stream( 
 std::shared_ptr< stream_profile_interface > software_sensor::add_pose_stream( rs2_pose_stream pose_stream,
                                                                               bool is_default )
 {
-    auto profile
-        = std::make_shared< pose_stream_profile >( platform::stream_profile{ 0, 0, (uint32_t)pose_stream.fps, 0 } );
+    auto profile = std::make_shared< pose_stream_profile >();
     if( ! profile )
         throw librealsense::invalid_value_exception( "null pointer passed for argument \"profile\"." );
 

@@ -6,6 +6,7 @@
 #include "stream.h"
 #include "global_timestamp_reader.h"
 #include "metadata.h"
+#include "platform/stream-profile-impl.h"
 #include "fourcc.h"
 
 
@@ -82,7 +83,7 @@ stream_profiles hid_sensor::get_sensor_profiles( std::string sensor_name ) const
         {
             auto && p = elem.second;
             platform::stream_profile sp{ 1, 1, p.fps, stream_to_fourcc( p.stream ) };
-            auto profile = std::make_shared< motion_stream_profile >( sp );
+            auto profile = std::make_shared< platform::stream_profile_impl< motion_stream_profile > >( sp );
             profile->set_stream_index( p.index );
             profile->set_stream_type( p.stream );
             profile->set_format( p.format );
