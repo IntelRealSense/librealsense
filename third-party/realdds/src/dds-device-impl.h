@@ -50,6 +50,7 @@ class dds_device::impl
 
 public:
     topics::device_info const _info;
+    nlohmann::json const _device_settings;
     dds_guid _server_guid;
     std::shared_ptr< dds_participant > const _participant;
     std::shared_ptr< dds_subscriber > _subscriber;
