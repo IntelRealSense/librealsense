@@ -258,7 +258,7 @@ void dds_device_server::publish_metadata( nlohmann::json && md )
     LOG_DEBUG(
         "publishing metadata: " << shorten_json_string( slice( msg.custom_data< char const >(), msg._data.size() ),
                                                         300 ) );
-    msg.write_to( *_metadata_writer );
+    std::move( msg ).write_to( *_metadata_writer );
 }
 
 

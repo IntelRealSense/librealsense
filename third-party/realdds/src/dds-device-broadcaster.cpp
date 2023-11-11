@@ -142,7 +142,7 @@ void dds_device_broadcaster::broadcast() const
     {
         topics::flexible_msg msg( _device_info.to_json() );
         LOG_DEBUG( "sending device-info message " << slice( msg.custom_data< char const >(), msg._data.size() ) );
-        msg.write_to( *_writer );
+        std::move( msg ).write_to( *_writer );
     }
     catch( std::exception const & e )
     {

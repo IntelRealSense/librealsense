@@ -423,7 +423,7 @@ float dds_device::impl::query_option_value( const std::shared_ptr< dds_option > 
 void dds_device::impl::write_control_message( topics::flexible_msg && msg, nlohmann::json * reply )
 {
     assert( _control_writer != nullptr );
-    auto this_sequence_number = msg.write_to( *_control_writer );
+    auto this_sequence_number = std::move( msg ).write_to( *_control_writer );
     if( reply )
     {
         std::unique_lock< std::mutex > lock( _replies_mutex );
@@ -437,7 +437,7 @@ void dds_device::impl::write_control_message( topics::flexible_msg && msg, nlohm
                                         return true;
                                     } ) )
         {
-            throw std::runtime_error( "timeout waiting for reply #" + std::to_string( this_sequence_number ) );
+            DDS_THROW( runtime_error, "timeout waiting for reply #" << this_sequence_number );
         }
         //LOG_DEBUG( "got reply: " << actual_reply );
         *reply = std::move( actual_reply );
