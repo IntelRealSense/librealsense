@@ -412,7 +412,11 @@ void dds_sensor_proxy::add_frame_metadata( frame * const f, nlohmann::json && dd
         std::string const & keystr = librealsense::get_string( key );
         try
         {
-            metadata[key] = { true, rsutils::json::get< rs2_metadata_type >( md, keystr ) };
+            if( auto value = rsutils::json::nested( md, keystr ) )
+            {
+                if( value->is_number_integer() )
+                    metadata[key] = { true, rsutils::json::get< rs2_metadata_type >( md, keystr ) };
+            }
         }
         catch( nlohmann::json::exception const & )
         {
