@@ -193,7 +193,7 @@ namespace librealsense
                 return matcher;
             }
         }
-        LOG_DEBUG( "no matcher found for " << get_abbr_string( stream_type ) << '.' << stream_id
+        LOG_DEBUG( "no matcher found for " << get_abbr_string( stream_type ) << stream_id
                                            << "; creating matcher from device..." );
 
         auto sensor = frame.frame->get_sensor().get(); //TODO: Potential deadlock if get_sensor() gets a hold of the last reference of that sensor

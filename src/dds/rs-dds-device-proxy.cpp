@@ -9,6 +9,7 @@
 #include <realdds/dds-device.h>
 #include <realdds/dds-stream.h>
 #include <realdds/dds-trinsics.h>
+#include <realdds/dds-participant.h>
 
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/flexible-msg.h>
@@ -335,6 +336,17 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
         }
     }
     // TODO - need to register extrinsics group in dev?
+
+    // Use the default D400 matchers:
+    // Depth & IR matched by frame-number, time-stamp-matched to color.
+    // Motion streams will not get synced.
+    rs2_matchers matcher = RS2_MATCHER_DLR_C;
+    if( auto matcher_j = rsutils::json::nested( _dds_dev->participant()->settings(), "device", "matcher" ) )
+    {
+        if( ! matcher_j->is_string() || ! try_parse( matcher_j.string_ref(), matcher ) )
+            LOG_WARNING( "Invalid 'device/matcher' value " << matcher_j );
+    }
+    set_matcher_type( matcher );
 }
 
 
