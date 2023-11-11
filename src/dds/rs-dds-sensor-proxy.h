@@ -45,12 +45,14 @@ class dds_sensor_proxy : public software_sensor
     typedef realdds::dds_metadata_syncer syncer_type;
     static void frame_releaser( syncer_type::frame_type * f ) { static_cast< frame * >( f )->release(); }
 
+protected:
     struct streaming_impl
     {
         syncer_type syncer;
         std::atomic< unsigned long long > last_frame_number{ 0 };
     };
 
+private:
     std::map< sid_index, std::shared_ptr< realdds::dds_stream > > _streams;
     std::map< std::string, streaming_impl > _streaming_by_name;
 
@@ -77,7 +79,7 @@ public:
 
     const std::map< sid_index, std::shared_ptr< realdds::dds_stream > > & streams() const { return _streams; }
 
-private:
+protected:
     void register_basic_converters();
     stream_profiles init_stream_profiles() override;
 
@@ -95,7 +97,8 @@ private:
                              streaming_impl & );
     void handle_new_metadata( std::string const & stream_name, nlohmann::json && metadata );
 
-    void add_frame_metadata( frame * const, nlohmann::json && metadata, streaming_impl & );
+    virtual void add_no_metadata( frame *, streaming_impl & );
+    virtual void add_frame_metadata( frame * const, nlohmann::json && metadata, streaming_impl & );
 
     friend class dds_device_proxy;  // Currently calls handle_new_metadata
 };
