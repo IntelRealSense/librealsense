@@ -139,7 +139,7 @@ dds_device::impl::impl( std::shared_ptr< dds_participant > const & participant,
     , _subscriber( std::make_shared< dds_subscriber >( participant ) )
     , _device_settings( device_settings( participant ) )
     , _reply_timeout_ms(
-          rsutils::json::nested( _device_settings, "control", "reply-timeout-ms" ).value< size_t >( 1000 ) )
+          rsutils::json::nested( _device_settings, "control", "reply-timeout-ms" ).value< size_t >( 2000 ) )
 {
     create_notifications_reader();
     create_control_writer();

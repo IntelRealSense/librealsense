@@ -64,7 +64,7 @@ Note that these settings are **overrides**. The default values may be different 
 | Field                    | Default | Type    | Description        |
 |--------------------------|--------:|---------|--------------------|
 | `control`/
-| &nbsp;&nbsp;&nbsp;&nbsp;`reply-timeout-ms` |    1000 | size_t  | How long to wait for a control reply to arrive, in milliseconds
+| &nbsp;&nbsp;&nbsp;&nbsp;`reply-timeout-ms` |    2000 | size_t  | Reply timeout, in milliseconds
 
 #### Device Options
 
