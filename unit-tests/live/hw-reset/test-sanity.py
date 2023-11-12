@@ -5,7 +5,7 @@
 # test:device each(D500*)
 
 import pyrealsense2 as rs
-from rspy import test, log
+from rspy import test, log, devices
 from rspy.timer import Timer
 import time
 
@@ -49,6 +49,7 @@ while not t.has_expired():
 test.check(device_removed)
 
 log.out("Pending for device addition")
+t = Timer( devices.MAX_ENUMERATION_TIME )
 t.start()
 while not t.has_expired():
     if ( device_added ):

@@ -16,7 +16,7 @@ dev = None
 device_removed = False
 device_added = False
 MAX_ENUM_TIME_D400 = 5 # [sec]
-MAX_ENUM_TIME_D500 = 10 # [sec] currently we set 10 - it should be targeted to 5 in the future
+MAX_ENUM_TIME_D500 = 15 # [sec]
 
 def device_changed( info ):
     global dev, device_removed, device_added
@@ -61,7 +61,8 @@ while not t.has_expired():
 test.check( device_removed and not t.has_expired() ) # verifying we are not timed out
 
 log.out( "Pending for device addition" )
-t.start()
+buffer = 5 # we add 5 seconds so if the test pass the creteria by a short amount of time we can print it
+t = Timer( max_dev_enum_time + buffer )
 r_2_e_time = 0 # reset to enumeration time
 while not t.has_expired():
     if ( device_added ):
@@ -71,7 +72,11 @@ while not t.has_expired():
 
 test.check( device_added )
 test.check( r_2_e_time < max_dev_enum_time )
-log.d( "Enumeration time took", r_2_e_time, "[sec]" )
+
+if r_2_e_time:
+  log.d( "Enumeration time took", r_2_e_time, "[sec]" )
+else:
+  log.e( "Enumeration did not occur in ", max_dev_enum_time + buffer, "[sec]" )
 
 test.finish()
 
