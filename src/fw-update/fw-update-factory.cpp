@@ -58,9 +58,9 @@ namespace librealsense
                 {
                 case ds::RS_D400_RECOVERY_PID:
                 case ds::RS_D400_USB2_RECOVERY_PID:
-                    return std::make_shared< ds_d400_update_device >( shared_from_this(), usb, "D400");
+                    return std::make_shared< ds_d400_update_device >( shared_from_this(), usb );
                 case ds::RS_D500_RECOVERY_PID:
-                    return std::make_shared< ds_d500_update_device >( shared_from_this(), usb, "D500");
+                    return std::make_shared< ds_d500_update_device >( shared_from_this(), usb );
                 default:
                     // Do nothing
                     break;

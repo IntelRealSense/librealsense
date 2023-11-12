@@ -98,7 +98,8 @@ namespace librealsense
     {
     public:
         update_device( std::shared_ptr< const device_info > const &,
-                       std::shared_ptr< platform::usb_device > const & usb_device );
+                       std::shared_ptr< platform::usb_device > const & usb_device,
+                       const std::string & _product_line );
         virtual ~update_device();
 
         virtual void update(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr = nullptr) const override;

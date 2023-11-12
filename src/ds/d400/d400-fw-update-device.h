@@ -11,8 +11,7 @@ namespace librealsense
     {
     public:
         ds_d400_update_device( std::shared_ptr< const device_info > const &,
-                               std::shared_ptr< platform::usb_device > const & usb_device,
-                               std::string const & product_line );
+                               std::shared_ptr< platform::usb_device > const & usb_device );
         virtual ~ds_d400_update_device() = default;
 
         virtual bool check_fw_compatibility(const std::vector<uint8_t>& image) const override;

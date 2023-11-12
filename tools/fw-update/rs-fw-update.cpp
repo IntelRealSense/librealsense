@@ -321,7 +321,7 @@ try
             std::cout << "Waiting for new device..." << std::endl;
             {
                 std::unique_lock< std::mutex > lk( mutex );
-                if( cv.wait_for( lk, std::chrono::seconds( 5 ) ) == std::cv_status::timeout )
+                if( cv.wait_for( lk, std::chrono::seconds( WAIT_FOR_DEVICE_TIMEOUT ) ) == std::cv_status::timeout )
                 {
                     std::cout << "... timed out!" << std::endl;
                     return EXIT_FAILURE;

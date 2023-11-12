@@ -8,13 +8,12 @@
 
 namespace librealsense
 {
-ds_d400_update_device::ds_d400_update_device( std::shared_ptr< const device_info > const & dev_info,
-                                    std::shared_ptr< platform::usb_device > const & usb_device,
-                                    std::string const & product_line)
-    : update_device( dev_info, usb_device )
+ds_d400_update_device::ds_d400_update_device(
+    std::shared_ptr< const device_info > const & dev_info,
+    std::shared_ptr< platform::usb_device > const & usb_device )
+    : update_device( dev_info, usb_device, "D400" )
     {
         auto info = usb_device->get_info(); 
-        _product_line = product_line;
         _name = ds::rs400_sku_names.find(info.pid) != ds::rs400_sku_names.end() ? ds::rs400_sku_names.at(info.pid) : "unknown";          
         _serial_number = parse_serial_number(_serial_number_buffer);
     }
