@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.8.0)  # source_group(TREE)
 project( rsutils )
 
 add_library( ${PROJECT_NAME} STATIC "" )
+target_link_libraries( ${PROJECT_NAME} PUBLIC nlohmann_json )
 set_target_properties( ${PROJECT_NAME} PROPERTIES FOLDER Library )
 
 target_include_directories( ${PROJECT_NAME}
