@@ -87,6 +87,11 @@ def get_dict_for_permutation(sensor_profiles_arr, permutation):
     return partial_dict
 
 
+# To reduce required python version, we implement choose instead of using math.comb
+def choose(n, k):
+    return math.factorial(n)/(math.factorial(k) * math.factorial(n - k))
+
+
 def get_time_est_string(num_profiles, modes):
     s = "Estimated time for test:"
     details_str = ""
@@ -100,8 +105,9 @@ def get_time_est_string(num_profiles, modes):
             test_time = math.factorial(num_profiles) * time_per_test
             details_str += f"{math.factorial(num_profiles)} tests for all permutations"
         elif mode == ALL_PAIRS:
-            test_time = math.comb(num_profiles, 2) * time_per_test
-            details_str += f"{math.comb(num_profiles,2)} tests for all pairs"
+            # test_time = math.comb(num_profiles, 2) * time_per_test
+            test_time = choose(num_profiles, 2) * time_per_test
+            details_str += f"{choose(num_profiles,2)} tests for all pairs"
         elif mode == ALL_SENSORS:
             test_time = time_per_test
             details_str += f"1 test for all sensors on"
