@@ -629,11 +629,15 @@ namespace librealsense
 
             depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
                 std::make_shared<temperature_option>(_hw_monitor, &raw_depth_sensor, 
-                    temperature_option::temperature_component::MAIN_ASIC, "Temperature reading for Main ASIC"));
+                    temperature_option::temperature_component::HKR_PVT, "Temperature reading for SOC PVT"));
 
-            depth_sensor.register_option(RS2_OPTION_LEFT_IR_TEMPERATURE,
+            depth_sensor.register_option(RS2_OPTION_OHM_TEMPERATURE,
                 std::make_shared<temperature_option>(_hw_monitor, &raw_depth_sensor, 
                     temperature_option::temperature_component::LEFT_IR, "Temperature reading for Left Infrared Sensor"));
+
+            depth_sensor.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
+                std::make_shared<temperature_option>(_hw_monitor, &raw_depth_sensor,
+                    temperature_option::temperature_component::LEFT_PROJ, "Temperature reading for Left Projector"));
 
             // Metadata registration
             depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc_header::timestamp));

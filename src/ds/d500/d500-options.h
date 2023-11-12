@@ -48,7 +48,7 @@ namespace librealsense
             RGB,
             RIGHT_IR,
             RIGHT_PROJ,
-            MAIN_ASIC,
+            HKR_PVT,
             SHT4XX,
             SMCU,
             COUNT
