@@ -257,7 +257,7 @@ namespace librealsense
 
     void ds_device_common::update_flash(const std::vector<uint8_t>& image, rs2_update_progress_callback_sptr callback, int update_mode)
     {
-            // check if the given FW size matches the expected FW size
+        // check if the given FW size matches the expected FW size
         if( image.size() != unsigned_fw_size )
         throw librealsense::invalid_value_exception( rsutils::string::from()
                                                      << "Unsupported firmware binary image (unsigned) provided - "
