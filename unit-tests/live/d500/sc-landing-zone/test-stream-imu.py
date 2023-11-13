@@ -13,7 +13,7 @@ FRAMES_TO_COLLECT = 3
 
 def check_imu_streaming(stream, fps):
     cfg = rs.config()
-    cfg.enable_stream(stream, 0, rs.format.xyz32f, fps)
+    cfg.enable_stream(stream, 0, rs.format.motion_xyz32f, fps)
     pipe = rs.pipeline()
     pipe.start(cfg)
     iterations = 0
