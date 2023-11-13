@@ -14,16 +14,22 @@ class dds_depth_sensor_proxy
     : public dds_sensor_proxy
     , public depth_sensor
 {
+    using super = dds_sensor_proxy;
+
 public:
     dds_depth_sensor_proxy( std::string const & sensor_name,
                             software_device * owner,
                             std::shared_ptr< realdds::dds_device > const & dev )
-        : dds_sensor_proxy( sensor_name, owner, dev )
+        : super( sensor_name, owner, dev )
     {
     }
 
     // Needed by abstract interfaces
-    float get_depth_scale() const override { return get_option( RS2_OPTION_DEPTH_UNITS ).query(); }
+    float get_depth_scale() const override;
+
+protected:
+    void add_no_metadata( frame *, streaming_impl & ) override;
+    void add_frame_metadata( frame * const f, nlohmann::json && dds_md, streaming_impl & streaming ) override;
 };
 
 

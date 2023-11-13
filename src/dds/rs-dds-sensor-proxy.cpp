@@ -39,7 +39,6 @@ static const std::string frame_number_key( "frame-number", 12 );
 static const std::string metadata_key( "metadata", 8 );
 static const std::string timestamp_key( "timestamp", 9 );
 static const std::string timestamp_domain_key( "timestamp-domain", 16 );
-static const std::string depth_units_key( "depth-units", 11 );
 static const std::string metadata_header_key( "header", 6 );
 
 
@@ -303,6 +302,7 @@ void dds_sensor_proxy::handle_video_data( realdds::topics::image_msg && dds_fram
     }
     else
     {
+        add_no_metadata( new_frame, streaming );
         invoke_new_frame( new_frame,
                           nullptr,    // pixels are already inside new_frame->data
                           nullptr );  // so no deleter is necessary
@@ -360,20 +360,20 @@ void dds_sensor_proxy::handle_new_metadata( std::string const & stream_name, nlo
 }
 
 
+void dds_sensor_proxy::add_no_metadata( frame * const f, streaming_impl & streaming )
+{
+    // Without MD, we have no way of knowing the frame-number - we assume it's one higher than the last
+    f->additional_data.last_frame_number = streaming.last_frame_number.fetch_add( 1 );
+    f->additional_data.frame_number = f->additional_data.last_frame_number + 1;
+
+    // the frame should already have empty metadata, so no need to do anything else
+}
+
+
 void dds_sensor_proxy::add_frame_metadata( frame * const f, nlohmann::json && dds_md, streaming_impl & streaming )
 {
-    if( dds_md.empty() )
-    {
-        // Without MD, we have no way of knowing the frame-number - we assume it's one higher than
-        // the last
-        f->additional_data.last_frame_number = streaming.last_frame_number.fetch_add( 1 );
-        f->additional_data.frame_number = f->additional_data.last_frame_number + 1;
-        // the frame should already have empty metadata, so no need to do anything else
-        return;
-    }
-
-    nlohmann::json const & md_header = dds_md[metadata_header_key];
-    nlohmann::json const & md = dds_md[metadata_key];
+    nlohmann::json const & md_header = rsutils::json::nested( dds_md, metadata_header_key );
+    nlohmann::json const & md = rsutils::json::nested( dds_md, metadata_key );
 
     // A frame number is "optional". If the server supplies it, we try to use it for the simple fact that,
     // otherwise, we have no way of detecting drops without some advanced heuristic tracking the FPS and
@@ -401,23 +401,27 @@ void dds_sensor_proxy::add_frame_metadata( frame * const f, nlohmann::json && dd
     f->additional_data.timestamp;
     rsutils::json::get_ex( md_header, timestamp_domain_key, &f->additional_data.timestamp_domain );
 
-    // Expected metadata for all depth images
-    rsutils::json::get_ex( md_header, depth_units_key, &f->additional_data.depth_units );
-
-    // Other metadata fields. Metadata fields that are present but unknown by librealsense will be ignored.
-    auto & metadata = reinterpret_cast< metadata_array & >( f->additional_data.metadata_blob );
-    for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
+    if( ! md.empty() )
     {
-        auto key = static_cast< rs2_frame_metadata_value >( i );
-        std::string const & keystr = librealsense::get_string( key );
-        try
+        // Other metadata fields. Metadata fields that are present but unknown by librealsense will be ignored.
+        auto & metadata = reinterpret_cast< metadata_array & >( f->additional_data.metadata_blob );
+        for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
         {
-            metadata[key] = { true, rsutils::json::get< rs2_metadata_type >( md, keystr ) };
-        }
-        catch( nlohmann::json::exception const & )
-        {
-            // The metadata key doesn't exist or the value isn't the right type... we ignore it!
-            // (all metadata is not there when we create the frame, so no need to erase)
+            auto key = static_cast< rs2_frame_metadata_value >( i );
+            std::string const & keystr = librealsense::get_string( key );
+            try
+            {
+                if( auto value = rsutils::json::nested( md, keystr ) )
+                {
+                    if( value->is_number_integer() )
+                        metadata[key] = { true, rsutils::json::get< rs2_metadata_type >( md, keystr ) };
+                }
+            }
+            catch( nlohmann::json::exception const & )
+            {
+                // The metadata key doesn't exist or the value isn't the right type... we ignore it!
+                // (all metadata is not there when we create the frame, so no need to erase)
+            }
         }
     }
 }
@@ -443,7 +447,10 @@ void dds_sensor_proxy::start( rs2_frame_callback_sptr callback )
             {
                 if( _is_streaming ) // stop was not called
                 {
-                    add_frame_metadata( static_cast< frame * >( fh.get() ), std::move( md ), streaming );
+                    if( md.empty() )
+                        add_no_metadata( static_cast< frame * >( fh.get() ), streaming );
+                    else
+                        add_frame_metadata( static_cast< frame * >( fh.get() ), std::move( md ), streaming );
                     invoke_new_frame( static_cast< frame * >( fh.release() ), nullptr, nullptr );
                 }
             } );

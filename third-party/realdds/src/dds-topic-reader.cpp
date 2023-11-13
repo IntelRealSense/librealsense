@@ -5,6 +5,7 @@
 #include <realdds/dds-topic.h>
 #include <realdds/dds-participant.h>
 #include <realdds/dds-subscriber.h>
+#include <realdds/dds-serialization.h>
 #include <realdds/dds-utilities.h>
 
 #include <fastdds/dds/domain/DomainParticipant.hpp>
@@ -12,6 +13,8 @@
 #include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/topic/Topic.hpp>
 #include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
+
+#include <rsutils/json.h>
 
 
 namespace realdds {
@@ -79,8 +82,23 @@ dds_topic_reader::qos::qos( eprosima::fastdds::dds::ReliabilityQosPolicyKind rel
 
     // Does not allocate for every sample but still gives flexibility. See:
     //     https://github.com/eProsima/Fast-DDS/discussions/2707
-    // (default is PREALLOCATED_MEMORY_MODE)
+    // (default is PREALLOCATED_WITH_REALLOC_MEMORY_MODE)
     endpoint().history_memory_policy = eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
+}
+
+
+void dds_topic_reader::qos::override_from_json( nlohmann::json const & qos_settings )
+{
+    // Default values should be set before we're called:
+    // All we do here is override those - if specified!
+    if( qos_settings.is_null() )
+        return;
+
+    override_reliability_qos_from_json( reliability(), rsutils::json::nested( qos_settings, "reliability" ) );
+    override_durability_qos_from_json( durability(), rsutils::json::nested( qos_settings, "durability" ) );
+    override_history_qos_from_json( history(), rsutils::json::nested( qos_settings, "history" ) );
+    override_data_sharing_qos_from_json( data_sharing(), rsutils::json::nested( qos_settings, "data-sharing" ) );
+    override_endpoint_qos_from_json( endpoint(), rsutils::json::nested( qos_settings, "endpoint" ) );
 }
 
 
