@@ -106,47 +106,46 @@ namespace librealsense
             unregister_from_visual_preset_option();
     }
 
-    void ds_advanced_mode_base::apply_preset(const std::vector<platform::stream_profile>& configuration,
+    void ds_advanced_mode_base::apply_preset( const std::vector< platform::stream_profile > & configuration,
                                               rs2_rs400_visual_preset preset, uint16_t device_pid,
-                                              const firmware_version& fw_version)
+                                              const firmware_version & fw_version )
     {
         auto p = get_all();
         res_type res;
         // configuration is empty before first streaming - so set default res
-        if (configuration.empty())
+        if( configuration.empty() )
             res = low_resolution;
         else
-            res = get_res_type(configuration.front().width, configuration.front().height);
+            res = get_res_type( configuration.front().width, configuration.front().height );
 
-        switch (preset)
+        switch( preset )
         {
         case RS2_RS400_VISUAL_PRESET_DEFAULT:
-            switch (device_pid)
+            switch( device_pid )
             {
             case ds::RS410_PID:
             case ds::RS415_PID:
-                default_410(p);
+                default_410( p );
                 break;
             case ds::RS430_PID:
             case ds::RS430I_PID:
             case ds::RS435_RGB_PID:
             case ds::RS465_PID:
             case ds::RS435I_PID:
-                default_430(p);
+                default_430( p );
                 break;
             case ds::RS455_PID:
             case ds::RS457_PID:
             case ds::RS_D585_PID:
-            case ds::RS_D585S_PID:
-                default_450_mid_low_res(p);
-                switch (res)
+                default_450_mid_low_res( p );
+                switch( res )
                 {
                 case low_resolution:
                 case medium_resolution:
-                    //applied defaultly 
+                    // applied defaultly
                     break;
                 case high_resolution:
-                    default_450_high_res(p);
+                    default_450_high_res( p );
                     break;
                 default:
                     throw invalid_value_exception(
@@ -155,17 +154,20 @@ namespace librealsense
                         << rsutils::string::hexdump( device_pid ) << ")" );
                     break;
                 }
+            case ds::RS_D585S_PID:
+                default_585S( p );
+                break;
             case ds::RS405U_PID:
-                default_405u(p);
+                default_405u( p );
                 break;
             case ds::RS405_PID:
-                default_405(p);
+                default_405( p );
                 break;
             case ds::RS400_PID:
-                default_400(p);
+                default_400( p );
                 break;
             case ds::RS420_PID:
-                default_420(p);
+                default_420( p );
                 break;
             default:
                 throw invalid_value_exception(
@@ -176,39 +178,39 @@ namespace librealsense
             }
             break;
         case RS2_RS400_VISUAL_PRESET_HAND:
-            hand_gesture(p);
+            hand_gesture( p );
             // depth units for D405
-            if (device_pid == ds::RS405_PID)
-                p.depth_table.depthUnits = 100; // 0.1mm
+            if( device_pid == ds::RS405_PID )
+                p.depth_table.depthUnits = 100;  // 0.1mm
             break;
         case RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY:
-            high_accuracy(p);
+            high_accuracy( p );
             break;
         case RS2_RS400_VISUAL_PRESET_HIGH_DENSITY:
-            high_density(p);
+            high_density( p );
             break;
         case RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY:
-            mid_density(p);
+            mid_density( p );
             break;
         case RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN:
         {
             static const firmware_version remove_ir_pattern_fw_ver{ "5.9.10.0" };
-            if (fw_version < remove_ir_pattern_fw_ver)
+            if( fw_version < remove_ir_pattern_fw_ver )
                 throw invalid_value_exception(
                     rsutils::string::from()
                     << "apply_preset(...) failed! FW version doesn't support Remove IR Pattern Preset (curr_fw_ver="
                     << fw_version << " ; required_fw_ver=" << remove_ir_pattern_fw_ver << ")" );
 
-            switch (device_pid)
+            switch( device_pid )
             {
             case ds::RS400_PID:
             case ds::RS410_PID:
             case ds::RS415_PID:
-            case ds::RS465_PID://TODO: verify
-                d415_remove_ir(p);
+            case ds::RS465_PID:  // TODO: verify
+                d415_remove_ir( p );
                 break;
             case ds::RS460_PID:
-                d460_remove_ir(p);
+                d460_remove_ir( p );
                 break;
             default:
                 throw invalid_value_exception(
@@ -221,9 +223,9 @@ namespace librealsense
             break;
         default:
             throw invalid_value_exception( rsutils::string::from()
-                                            << "apply_preset(...) failed! Invalid preset! (" << preset << ")" );
+                                           << "apply_preset(...) failed! Invalid preset! (" << preset << ")" );
         }
-        set_all(p);
+        set_all( p );
     }
 
     void ds_advanced_mode_base::get_depth_control_group(STDepthControlGroup* ptr, int mode) const
