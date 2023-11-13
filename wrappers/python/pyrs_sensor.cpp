@@ -65,10 +65,6 @@ void init_sensor(py::module &m) {
         .def("get_active_streams", &rs2::sensor::get_active_streams, "Retrieves the list of stream profiles currently streaming on the sensor.")
         .def_property_readonly("profiles", &rs2::sensor::get_stream_profiles, "The list of stream profiles supported by the sensor. Identical to calling get_stream_profiles")
         .def("get_recommended_filters", &rs2::sensor::get_recommended_filters, "Return the recommended list of filters by the sensor.")
-        .def("sensor_from_frame", [](rs2::frame f) {
-            auto sptr = rs2::sensor_from_frame(f);
-            return *sptr;
-            }, "frame"_a)
         .def(py::init<>())
         .def("__nonzero__", &rs2::sensor::operator bool) // Called to implement truth value testing in Python 2
         .def("__bool__", &rs2::sensor::operator bool)    // Called to implement truth value testing in Python 3
@@ -96,6 +92,10 @@ void init_sensor(py::module &m) {
             ss << ">";
             return ss.str();
         } );
+        m.def("sensor_from_frame", [](rs2::frame f) {
+            auto sptr = rs2::sensor_from_frame(f);
+            return *sptr;
+            }, "frame"_a);
 
     py::class_<rs2::roi_sensor, rs2::sensor> roi_sensor(m, "roi_sensor"); // No docstring in C++
     roi_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
