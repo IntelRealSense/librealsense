@@ -440,7 +440,7 @@ std::string const & get_string_( rs2_option value )
         CASE( EMITTER_FREQUENCY )
         arr[RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE] = "Auto Exposure Mode";
         CASE( OHM_TEMPERATURE )
-        CASE(SOC_PVT_TEMPERATURE)
+        CASE( SOC_PVT_TEMPERATURE )
 #undef CASE
         return arr;
     }();

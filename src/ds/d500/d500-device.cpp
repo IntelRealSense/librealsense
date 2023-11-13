@@ -627,7 +627,7 @@ namespace librealsense
                         rsutils::lazy< float >( [default_depth_units]() { return default_depth_units; } ) ) );
             }
 
-            depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
+            depth_sensor.register_option(RS2_OPTION_SOC_PVT_TEMPERATURE,
                 std::make_shared<temperature_option>(_hw_monitor, &raw_depth_sensor, 
                     temperature_option::temperature_component::HKR_PVT, "Temperature reading for SOC PVT"));
 
