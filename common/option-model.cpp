@@ -432,7 +432,14 @@ bool option_model::draw_slider( notifications_model & model,
                 }
                 else
                 {
-                    set_option( opt, new_value, error_message );
+                    // run when the value is valid and the enter key is pressed to submit the new value
+                    auto option_was_set = set_option(opt, new_value, error_message);
+                    if (option_was_set)
+                    {
+                        if (invalidate_flag)
+                            *invalidate_flag = true;
+                        model.add_log(rsutils::string::from() << "Setting " << opt << " to " << value);
+                    }
                 }
                 edit_mode = false;
             }
@@ -446,6 +453,7 @@ bool option_model::draw_slider( notifications_model & model,
         }
         else if( is_all_integers() )
         {
+            // runs when changing a value with slider and not the textbox
             auto int_value = static_cast< int >( value );
 
             if( ImGui::SliderIntWithSteps( id.c_str(),
