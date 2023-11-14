@@ -37,10 +37,8 @@ function(get_nlohmann_json)
     add_subdirectory( "${CMAKE_BINARY_DIR}/third-party/json"
                       "${CMAKE_BINARY_DIR}/third-party/json/build" )
 
-    install( TARGETS nlohmann_json
-        EXPORT realsense2Targets
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        )
+    # We cannot directly interface with nlohmann_json (doesn't work on bionic)
+    #install( TARGETS nlohmann_json EXPORT realsense2Targets )
 
     message( STATUS #CHECK_PASS
         "Fetching nlohmann/json - Done" )
