@@ -95,15 +95,19 @@ void init_safety(py::module &m) {
 
     py::class_<rs2_safety_environment> safety_environment(m, "safety_environment"); // No docstring in C++
     safety_environment.def(py::init<>())
-        .def_readwrite("grid_cell_size", &rs2_safety_environment::grid_cell_size, "Grid Cell Size")
-        .def_readwrite("safety_trigger_duration", &rs2_safety_environment::safety_trigger_duration, "Safety Trigger Duration")
-        .def_readwrite("linear_velocity", &rs2_safety_environment::linear_velocity, "Linear Velocity")
-        .def_readwrite("angular_velocity", &rs2_safety_environment::angular_velocity, "Angular Velocity")
-        .def_readwrite("payload_weight", &rs2_safety_environment::payload_weight, "Payload Weight")
-        .def_readwrite("surface_inclination", &rs2_safety_environment::surface_inclination, "Surface Inclination")
-        .def_readwrite("surface_height", &rs2_safety_environment::surface_height, "Surface Height")
-        .def_readwrite("surface_confidence", &rs2_safety_environment::surface_confidence, "Surface Confidence")
-        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_safety_environment, reserved, uint8_t, sizeof(rs2_safety_environment::reserved)), "Reserved");
+        .def_readwrite( "grid_cell_size", &rs2_safety_environment::grid_cell_size, "Grid Cell Size" )
+        .def_readwrite( "safety_trigger_duration", &rs2_safety_environment::safety_trigger_duration, "Safety Trigger Duration" )
+        .def_readwrite( "linear_velocity", &rs2_safety_environment::linear_velocity, "Linear Velocity" )
+        .def_readwrite( "angular_velocity", &rs2_safety_environment::angular_velocity, "Angular Velocity" )
+        .def_readwrite( "payload_weight", &rs2_safety_environment::payload_weight, "Payload Weight" )
+        .def_readwrite( "surface_inclination", &rs2_safety_environment::surface_inclination, "Surface Inclination" )
+        .def_readwrite( "surface_height", &rs2_safety_environment::surface_height, "Surface Height" )
+        .def_readwrite( "surface_confidence", &rs2_safety_environment::surface_confidence, "Surface Confidence" )
+        .def_readwrite( "floor_fill_threshold", &rs2_safety_environment::floor_fill_threshold, "Floor fill threshold" )
+        .def_readwrite( "depth_fill_threshold", &rs2_safety_environment::depth_fill_threshold, "Depth fill threshold" )
+        .def_readwrite( "surface_height_threshold", &rs2_safety_environment::surface_height_threshold, "Surface height threshold" )
+        .def_readwrite( "vision_hara_persistency", &rs2_safety_environment::vision_hara_persistency, "Vision HaRa persistency" )
+        .def_property( BIND_RAW_ARRAY_PROPERTY( rs2_safety_environment, reserved, uint8_t, sizeof( rs2_safety_environment::reserved ) ), "Reserved" );
 
     py::class_<rs2_safety_preset> safety_preset(m, "safety_preset"); // No docstring in C++
     safety_preset.def(py::init<>())

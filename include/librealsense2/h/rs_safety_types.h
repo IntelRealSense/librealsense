@@ -84,20 +84,24 @@ typedef struct rs2_safety_2d_masking_zone
 
 typedef struct rs2_safety_environment
 {
-    float grid_cell_size; // Denotes the square tile size for occupancy grid in meters (square)
+    float grid_cell_size;          // Denotes the square tile size for occupancy grid in meters (square)
     float safety_trigger_duration; // duration in seconds to keep safety signal high after safety MCU is back to normal
 
     // Platform dynamics properties
-    float linear_velocity; // m/sec
+    float linear_velocity;  // m/sec
     float angular_velocity; // rad/sec
-    float payload_weight; // a typical mass of the carriage payload in kg
+    float payload_weight;   // a typical mass of the carriage payload in kg
 
     // Environmetal properties
-    float surface_inclination; // expected floor min/max inclination angle, degrees
-    float  surface_height; // min height above surface to be used for obstacle avoidance (meter)
-    uint8_t surface_confidence; // min fill rate required for safe floor detection [0...100%]
+    float   surface_inclination;      // expected floor min/max inclination angle, degrees
+    float   surface_height;           // min height above surface to be used for obstacle avoidance (meter)
+    uint8_t surface_confidence;       // min fill rate required for safe floor detection [0...100%]
+    uint8_t floor_fill_threshold;     // Depth fill rate threshold for the floor area [0...100%]
+    uint8_t depth_fill_threshold;     // Depth Fill rate threshold for the full image [0...100%]
+    uint8_t surface_height_threshold; // Surface height deviation threshold in [ 0..255 ] millimeter range. Absolute
+    uint8_t vision_hara_persistency;  // represents the number of consecutive frames with alarming Vision HaRa parameters to raise safety signal [1..5]. Default = 1
 
-    uint8_t             reserved[15]; // Can be modified  by changing the table minor version, without breaking back-compat
+    uint8_t reserved[11];             // Can be modified by changing the table minor version, without breaking back-compat
 } rs2_safety_environment;
 
 

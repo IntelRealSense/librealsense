@@ -76,7 +76,11 @@ def get_random_preset():
     safety_environment.surface_confidence = random.randint(0, 100)  # [0..100%]
     safety_environment.surface_height = random.uniform(0, 1)  # [m]
     safety_environment.surface_inclination = random.uniform(0, 360)  # angle in degrees
-    safety_environment.reserved = random.sample(range(0, 255), 15)
+    safety_environment.floor_fill_threshold = random.randint(0, 100)  # [0..100%]
+    safety_environment.depth_fill_threshold = random.randint(0, 100)  # [0..100%]
+    safety_environment.surface_height_threshold = random.randint(0, 255)  # [millimeter]
+    safety_environment.vision_hara_persistency = random.randint(1, 5)  # consecutive frames
+    safety_environment.reserved = random.sample(range(0, 255), 11)
 
     safety_preset = rs.safety_preset()
     safety_preset.platform_config = safety_platform
