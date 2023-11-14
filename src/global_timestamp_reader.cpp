@@ -216,7 +216,7 @@ namespace librealsense
                 _coefs.add_const_y_coefs(command_delay - _min_command_delay);
                 _min_command_delay = command_delay;
             }
-            double system_time(system_time_finish - _min_command_delay);
+            double system_time(system_time_start + _min_command_delay);
             if (_is_ready)
             {
                 _coefs.update_samples_base(sample_hw_time);
