@@ -196,7 +196,6 @@ test.finish()
 #############################################################################################
 test.start("Setting bad config - checking error is received, and that config_1 is returned after get action")
 
-log.w("Skipping this test as D585S is currently sending OK status on a wrong table")
 # setting bad config
 test.check_throws(lambda: safety_sensor.set_safety_interface_config(generate_bad_config()), RuntimeError)
 
@@ -205,11 +204,12 @@ current_config = safety_sensor.get_safety_interface_config()
 
 # checking active config is the default one
 check_configurations_equal(generate_valid_table(), current_config)
-
-#############################################################################################
 test.finish()
+#############################################################################################
+
 test.start("Restoring original table + safety mode")
 # write initial config back to the device
+safety_sensor.set_safety_interface_config(config_we_write)
 safety_sensor.set_option(rs.option.safety_mode, original_mode)
 test.check_equal( safety_sensor.get_option(rs.option.safety_mode), original_mode)
 test.finish()
