@@ -517,7 +517,7 @@ try
         }
         else if(smcu_arg.isSet()) // SMCU DFU
         {
-            std::vector<uint8_t> smcu_image = read_firmware_data(smcu_arg.isSet(), smcu_arg.getValue(), true);
+            std::vector<uint8_t> smcu_image = read_firmware_data(smcu_arg.isSet(), smcu_arg.getValue());
 
             std::cout << std::endl << "Updating device Safety MCU:" << std::endl;
             print_device_info(d);
