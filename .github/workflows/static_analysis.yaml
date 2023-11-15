@@ -132,6 +132,7 @@ jobs:
           venv/bin/python3 cmake_downloader.py --first_minor
           output=$(venv/bin/python3 cmake_min_version.py $work_dir)
 
+          echo ""
           echo "*** Sample of Expected Output of cmake_min_version.py ***"
           echo "[  0%] CMake 3.9.2    ✔ works"
           echo "[ 12%] CMake 3.2.2    ✘ error"
@@ -147,12 +148,10 @@ jobs:
 
           echo ""
           echo "*** Current Output of cmake_min_version.py ***"
-          echo $output
-          
-          wrong_output = "WRONG STRING"
-          
+          echo "$output"
+                    
           # Retrieve CMake minimal version from the last line of the tool output.
-          current_cmake_version=$(echo ${wrong_output} | grep -oP "VERSION \d+\.\d+")
+          current_cmake_version=$(echo ${output} | grep -oP "VERSION \d+\.\d+")
            
           regex_pattern="VERSION [0-9]+\.[0-9]+"
           if ! [[ "$current_cmake_version" =~ $regex_pattern ]];
