@@ -4,6 +4,7 @@
 #pragma once
 
 #include "d500-device.h"
+#include <src/depth-mapping-sensor.h>
 #include "core/video.h"
 #include <rsutils/lazy.h>
 

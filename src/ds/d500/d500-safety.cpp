@@ -14,6 +14,7 @@
 #include "stream.h"
 #include "backend.h"
 #include "platform/platform-utils.h"
+#include <src/fourcc.h>
 
 namespace librealsense
 {
@@ -272,7 +273,7 @@ namespace librealsense
     void d500_safety_sensor::set_safety_preset(int index, const rs2_safety_preset& sp) const
     {
         //calculate CRC
-        auto computed_crc32 = calc_crc32(reinterpret_cast<const uint8_t*>(&sp), sizeof(rs2_safety_preset));
+        auto computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<const uint8_t*>(&sp), sizeof(rs2_safety_preset));
 
         // prepare vector of data to be sent (header + sp)
         rs2_safety_preset_with_header data;
@@ -312,7 +313,7 @@ namespace librealsense
         result = reinterpret_cast<rs2_safety_preset_with_header*>(response.data());
 
         // check CRC before returning result       
-        auto computed_crc32 = calc_crc32(response.data() + sizeof(rs2_safety_preset_header), sizeof(rs2_safety_preset));
+        auto computed_crc32 = rsutils::number::calc_crc32(response.data() + sizeof(rs2_safety_preset_header), sizeof(rs2_safety_preset));
         if (computed_crc32 != result->header.crc32)
         {
             throw invalid_value_exception(rsutils::string::from() << "invalid CRC value for index=" << index);
@@ -327,7 +328,7 @@ namespace librealsense
         safety_interface_config sic_cpp(sic);
 
         // calculate CRC
-        uint32_t computed_crc32 = calc_crc32(reinterpret_cast<const uint8_t*>(&sic_cpp), sizeof(safety_interface_config));
+        uint32_t computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<const uint8_t*>(&sic_cpp), sizeof(safety_interface_config));
 
         // prepare vector of data to be sent (header + sp)
         safety_interface_config_with_header sic_with_header(sic_cpp);
@@ -405,7 +406,7 @@ namespace librealsense
             throw io_exception(rsutils::string::from() << "Safety Interface Config failed");
         }
         // check CRC before returning result       
-        auto computed_crc32 = calc_crc32(response.data() + sizeof(safety_interface_config_header), 
+        auto computed_crc32 = rsutils::number::calc_crc32(response.data() + sizeof(safety_interface_config_header), 
             sizeof(safety_interface_config));
         result = reinterpret_cast<safety_interface_config_with_header*>(response.data());
         if (computed_crc32 != result->header.crc32)

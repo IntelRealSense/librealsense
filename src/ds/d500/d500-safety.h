@@ -4,6 +4,7 @@
 #pragma once
 
 #include "d500-device.h"
+#include "safety-sensor.h"
 #include "core/video.h"
 
 namespace librealsense

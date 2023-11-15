@@ -57,6 +57,8 @@
 #include "fw-update/fw-update-device-interface.h"
 #include "core/frame-callback.h"
 #include "color-sensor.h"
+#include "safety-sensor.h"
+#include "depth-mapping-sensor.h"
 #include "composite-frame.h"
 #include "points.h"
 

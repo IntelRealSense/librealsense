@@ -184,17 +184,6 @@ namespace rs2
         else
             serial = _dev.query_sensors().front().get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
 
-
-        // TODO: DFU flow on HKR is different, we need to refactor this flow to look better and more generic
-        if (_dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
-        {
-            std::string product_line = _dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-            if (product_line == "D500")
-            {
-                _is_d500_device = true;
-            }
-        }
-
         // Clear FW update related notification to avoid dismissing the notification on ~device_model()
         // We want the notification alive during the whole process.
         _model.related_notifications.erase(
@@ -365,7 +354,6 @@ namespace rs2
             {
                 _progress = (ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress;
             });
-
             log("Firmware Update completed, waiting for device to reconnect");
         }
 

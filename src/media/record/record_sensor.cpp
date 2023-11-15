@@ -6,6 +6,8 @@
 #include "stream.h"
 #include <src/depth-sensor.h>
 #include <src/color-sensor.h>
+#include <src/safety-sensor.h>
+#include <src/depth-mapping-sensor.h>
 #include <src/core/frame-callback.h>
 
 #include <rsutils/string/from.h>

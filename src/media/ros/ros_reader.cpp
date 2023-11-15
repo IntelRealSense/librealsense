@@ -19,6 +19,9 @@
 #include <src/core/motion-frame.h>
 #include <src/core/video-frame.h>
 #include <src/color-sensor.h>
+#include <src/safety-sensor.h>
+#include <src/depth-mapping-sensor.h>
+#include <src/points.h>
 
 #include <rsutils/string/from.h>
 
@@ -476,7 +479,7 @@ namespace librealsense
             rs2_format stream_format;
             convert(msg->encoding, stream_format);
             //attaching a temp stream to the frame. Playback sensor should assign the real stream
-            frame->set_stream(std::make_shared<stream_profile_base>(platform::stream_profile{}));
+            frame->set_stream( std::make_shared< video_stream_profile >() );
             frame->get_stream()->set_format(stream_format);
             frame->get_stream()->set_stream_index(int(stream_id.stream_index));
             frame->get_stream()->set_stream_type(stream_id.stream_type);

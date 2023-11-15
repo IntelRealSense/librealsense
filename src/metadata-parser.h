@@ -364,7 +364,7 @@ namespace librealsense
                  auto safety_md_const = reinterpret_cast<const md_safety_info*>(((const uint8_t*)s));
                  auto safety_md = const_cast<md_safety_info*>(safety_md_const);
                  uint32_t safety_crc = safety_md->crc32;
-                 auto computed_crc32 = calc_crc32(reinterpret_cast<uint8_t*>(safety_md),
+                 auto computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<uint8_t*>(safety_md),
                      sizeof(md_safety_info) - sizeof(safety_crc));
                  return (safety_crc == computed_crc32);
             }
