@@ -5,7 +5,7 @@
 
 #include <string>
 #include <iosfwd>
-
+#include <cstdint>
 
 struct tm;
 
