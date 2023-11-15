@@ -259,9 +259,11 @@ namespace librealsense
     {
         // check if the given FW size matches the expected FW size
         if( image.size() != unsigned_fw_size )
-        throw librealsense::invalid_value_exception( rsutils::string::from()
-                                                     << "Unsupported firmware binary image (unsigned) provided - "
-                                                     << image.size() << " bytes" );
+        {
+            throw librealsense::invalid_value_exception( rsutils::string::from()
+                << "Unsupported firmware binary image (unsigned) provided - "
+                << image.size() << " bytes" );
+        }
 
 
         if (_is_locked)
