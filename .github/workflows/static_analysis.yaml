@@ -149,8 +149,10 @@ jobs:
           echo "*** Current Output of cmake_min_version.py ***"
           echo $output
           
+          wrong_output = "WRONG STRING"
+          
           # Retrieve CMake minimal version from the last line of the tool output.
-          current_cmake_version=$(echo ${output} | grep -oP "VERSION \d+\.\d+")
+          current_cmake_version=$(echo ${wrong_output} | grep -oP "VERSION \d+\.\d+")
            
           regex_pattern="VERSION [0-9]+\.[0-9]+"
           if ! [[ "$current_cmake_version" =~ $regex_pattern ]];
