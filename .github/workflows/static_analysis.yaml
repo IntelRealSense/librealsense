@@ -131,6 +131,22 @@ jobs:
           cd cmake_min_version
           venv/bin/python3 cmake_downloader.py --first_minor
           output=$(venv/bin/python3 cmake_min_version.py $work_dir)
+
+          echo "*** Sample of Expected Output of cmake_min_version.py ***"
+          echo "[  0%] CMake 3.9.2    ✔ works"
+          echo "[ 12%] CMake 3.2.2    ✘ error"
+          echo "       CMakeLists.txt:7 (cmake_minimum_required)"
+          echo "[ 33%] CMake 3.8.0    ✔ works"
+          echo "[ 50%] CMake 3.7.1    ✘ error"
+          echo "       CMakeLists.txt:16 (target_compile_features)"
+          echo "[ 80%] CMake 3.7.2    ✘ error"
+          echo "       CMakeLists.txt:16 (target_compile_features)"
+          echo "[100%] Minimal working version: CMake 3.8.0"
+          echo ""
+          echo "cmake_minimum_required(VERSION 3.8.0)"
+
+          echo ""
+          echo "*** Current Output of cmake_min_version.py ***"
           echo $output
           
           # Retrieve CMake minimal version from the last line of the tool output.
