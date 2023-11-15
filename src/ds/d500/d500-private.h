@@ -14,7 +14,6 @@ namespace librealsense
     namespace ds
     {
         const uint16_t D555E_PID = 0x0B56;
-        const uint16_t RS_D500_RECOVERY_PID = 0x0ADD;
 
         namespace xu_id
         {
@@ -38,8 +37,7 @@ namespace librealsense
         };
 
         static const std::map< std::uint16_t, std::string > rs500_sku_names = {
-            { ds::D555E_PID, "Intel RealSense D555e" },
-            { ds::RS_D500_RECOVERY_PID,  "Intel RealSense D5XX Recovery"}
+            { ds::D555E_PID, "Intel RealSense D555e" }
         };
 
         bool d500_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
