@@ -22,8 +22,8 @@ extern "C" {
 /**
 * Firmware size constants
 */
-    const int signed_fw_size = 0x18031C;
-    const int unsigned_fw_size = 0x200000;
+    const unsigned int signed_fw_size = 0x18031C;
+    const unsigned int unsigned_fw_size = 0x200000;
 
 /**
  * librealsense Recorder is intended for effective unit-testing

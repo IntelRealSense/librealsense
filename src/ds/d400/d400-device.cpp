@@ -118,7 +118,7 @@ namespace librealsense
     bool d400_device::check_fw_compatibility( const std::vector< uint8_t > & image ) const
     {
         // check if the given FW size matches the expected FW size
-        if( ( static_cast< int >( image.size() ) != signed_fw_size ) )
+        if( ( image.size() != signed_fw_size ) )
             throw librealsense::invalid_value_exception(
                 rsutils::string::from() << "Unsupported firmware binary image provided - " << image.size() << " bytes" );
 
