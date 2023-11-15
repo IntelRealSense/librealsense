@@ -240,8 +240,6 @@ namespace librealsense
                 _depth_units = df->get_units();
                 bool disparity = f.get_profile().format() == RS2_FORMAT_DISPARITY32 ? true : false;
 
-                auto gf = dynamic_cast<gpu_addon_interface*>((frame_interface*)res.get());
-
                 uint32_t depth_texture;
                 uint32_t hist_texture = _cm_texture;
 
@@ -290,64 +288,68 @@ namespace librealsense
                     }
                 }
                 
-                uint32_t output_rgb;
-                gf->get_gpu_section().output_texture(0, &output_rgb, TEXTYPE_RGB);
-                glBindTexture(GL_TEXTURE_2D, output_rgb);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _width, _height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-                gf->get_gpu_section().set_size(_width, _height);
-
-                glBindFramebuffer(GL_FRAMEBUFFER, _fbo->get());
-                glDrawBuffer(GL_COLOR_ATTACHMENT0);
-
-                glBindTexture(GL_TEXTURE_2D, output_rgb);
-                _fbo->createTextureAttachment(output_rgb);
-
-                _fbo->bind();
-                glClearColor(1, 0, 0, 1);
-                glClear(GL_COLOR_BUFFER_BIT);
-
-                auto& shader = (colorize_shader&)_viz->get_shader();
-                shader.begin();
-                float max = _max;;
-                float min = _min;;
-                if (disparity)
+                if( auto gf = dynamic_cast< gpu_addon_interface * >( (frame_interface *)res.get() ) )
                 {
-                    auto __min = _min;
-                    if (__min < 1e-6f) { __min = 1e-6f; } // Min value set to prevent zero division. only when _min is zero. 
-                    max = (_d2d_convert_factor / (__min)) * _depth_units + .5f;
-                    min = (_d2d_convert_factor / (_max)) * _depth_units + .5f;
-                }
-                shader.set_params(_depth_units, min, max, MAX_DISPARITY, _equalize, disparity);
-                shader.end();
+                    uint32_t output_rgb = 0;
+                    gf->get_gpu_section().output_texture( 0, &output_rgb, TEXTYPE_RGB );
+                    glBindTexture( GL_TEXTURE_2D, output_rgb );
+                    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, _width, _height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr );
+                    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+                    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 
-                glActiveTexture(GL_TEXTURE0 + shader.histogram_slot());
-                glBindTexture(GL_TEXTURE_2D, hist_texture);
+                    gf->get_gpu_section().set_size( _width, _height );
 
-                glActiveTexture(GL_TEXTURE0 + shader.color_map_slot());
-                glBindTexture(GL_TEXTURE_2D, _cm_texture);
+                    glBindFramebuffer(GL_FRAMEBUFFER, _fbo->get());
+                    glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-                glActiveTexture(GL_TEXTURE0 + shader.texture_slot());
-                glBindTexture(GL_TEXTURE_2D, depth_texture);
+                    glBindTexture(GL_TEXTURE_2D, output_rgb);
+                    _fbo->createTextureAttachment(output_rgb);
 
-                _viz->draw_texture(depth_texture);
+                    _fbo->bind();
+                    glClearColor(1, 0, 0, 1);
+                    glClear(GL_COLOR_BUFFER_BIT);
 
-                glActiveTexture(GL_TEXTURE0 + shader.texture_slot());
-
-                _fbo->unbind();
-
-                glBindTexture(GL_TEXTURE_2D, 0);
-
-                if (!f.is<rs2::gl::gpu_frame>())
-                {
-                    if (_equalize)
+                    auto& shader = (colorize_shader&)_viz->get_shader();
+                    shader.begin();
+                    float max = _max;;
+                    float min = _min;;
+                    if (disparity)
                     {
-                        glDeleteTextures(1, &hist_texture);
+                        auto __min = _min;
+                        if (__min < 1e-6f) { __min = 1e-6f; } // Min value set to prevent zero division. only when _min is zero. 
+                        max = (_d2d_convert_factor / (__min)) * _depth_units + .5f;
+                        min = (_d2d_convert_factor / (_max)) * _depth_units + .5f;
                     }
-                    glDeleteTextures(1, &depth_texture);
+                    shader.set_params(_depth_units, min, max, MAX_DISPARITY, _equalize, disparity);
+                    shader.end();
+
+                    glActiveTexture(GL_TEXTURE0 + shader.histogram_slot());
+                    glBindTexture(GL_TEXTURE_2D, hist_texture);
+
+                    glActiveTexture(GL_TEXTURE0 + shader.color_map_slot());
+                    glBindTexture(GL_TEXTURE_2D, _cm_texture);
+
+                    glActiveTexture(GL_TEXTURE0 + shader.texture_slot());
+                    glBindTexture(GL_TEXTURE_2D, depth_texture);
+
+                    _viz->draw_texture(depth_texture);
+
+                    glActiveTexture(GL_TEXTURE0 + shader.texture_slot());
+
+                    _fbo->unbind();
+
+                    glBindTexture(GL_TEXTURE_2D, 0);
+
+                    if (!f.is<rs2::gl::gpu_frame>())
+                    {
+                        if (_equalize)
+                        {
+                            glDeleteTextures(1, &hist_texture);
+                        }
+                        glDeleteTextures(1, &depth_texture);
+                    }
                 }
+
             }, 
             [this]{
                 _enabled = false;
