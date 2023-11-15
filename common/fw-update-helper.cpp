@@ -335,16 +335,16 @@ namespace rs2
         {
             _progress = float(next_progress);
 
-            log("Recovery device connected, starting update");
+            log("Recovery device connected, starting update..\n"
+                "Internal write is in progress\n"
+                "Please DO NOT DISCONNECT the camera");
 
             dfu.update(_fw, [&](const float progress)
             {
                 _progress = ((ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress);
             });
 
-            log( "Firmware Download completed, await DFU transition event\n"
-                "Internal write is in progress\n"
-                "Please DO NOT DISCONNECT the camera");
+            log( "Firmware Download completed, await DFU transition event" );
             std::this_thread::sleep_for( std::chrono::seconds( 3 ) );
         }
         else

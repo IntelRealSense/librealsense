@@ -19,7 +19,7 @@
 
 using namespace TCLAP;
 
-#define WAIT_FOR_DEVICE_TIMEOUT 20
+#define WAIT_FOR_DEVICE_TIMEOUT 15
 
 #if _WIN32
 #include <io.h>

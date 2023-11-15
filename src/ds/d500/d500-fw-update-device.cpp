@@ -45,7 +45,7 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
     {
         update_device::update( fw_image, fw_image_size );
 
-        static constexpr float D500_FW_DFU_TIME = 100.0; // [sec]
+        static constexpr float D500_FW_DFU_TIME = 180.0; // [sec]
         // We calculate the sleep time needed for each cycle to get to 100% progress bar
         // On D500 devices after transferring the FW image the internal DFU progress start on the device
         float iteration_sleep_time_ms = (static_cast<float>(D500_FW_DFU_TIME) / 100.0f) * 1000.0f;
