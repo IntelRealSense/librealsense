@@ -76,7 +76,11 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_environment const&
     out << "\n\t\t" << "Surface Inclination: " << se.surface_inclination << " [deg]";
     out << "\n\t\t" << "Surface Height: " << se.surface_height << " [m]";
     out << "\n\t\t" << "Surface Confidence: " << (int)(se.surface_confidence) << " [%]";
-    out << "\n\t\t" << "Reserved[15]: " << sc_reserved_arr_to_string(se.reserved, 15);
+    out << "\n\t\t" << "Floor fill threshold: " << (int)(se.floor_fill_threshold) << " [%]";
+    out << "\n\t\t" << "Depth fill threshold: " << (int)(se.depth_fill_threshold) << " [%]";
+    out << "\n\t\t" << "Surface height threshold: " << (int)(se.surface_height_threshold);
+    out << "\n\t\t" << "Vision HaRa persistency: " << (int)(se.vision_hara_persistency);
+    out << "\n\t\t" << "Reserved[11]: " << sc_reserved_arr_to_string(se.reserved, 11);
     return out;
 }
 

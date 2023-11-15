@@ -262,7 +262,7 @@ namespace librealsense
         level2_verdict_attribute                = (1u << 8),
         operational_mode_attribute              = (1u << 9),
         vision_safety_verdict_attribute         = (1u << 10),
-        safety_hara_status_attribute            = (1u << 11),
+        vision_hara_status_attribute            = (1u << 11),
         safety_preset_integrity_attribute       = (1u << 12),
         safety_preset_id_selected_attribute     = (1u << 13),
         safety_preset_id_used_attribute         = (1u << 14),
@@ -646,14 +646,17 @@ namespace librealsense
                                                   // Setting bit_0 = 1 (high) implies having one or more of mask bits[1 - 2] set to 1 as well
     * uint16_t    vision_hara_status;             // Bitmask: 
                                                   // (0x1 << 0) - HaRa triggers identified(1 - yes; 0 - no)
-                                                  // (0x1 << 1) Collision(s) identified in Danger Safety Zone
-                                                  // (0x1 << 2) Collision(s) identified in Warning Safety Zone
+                                                  // (0x1 << 1) - Collision(s) identified in Danger Safety Zone
+                                                  // (0x1 << 2) - Collision(s) identified in Warning Safety Zone
                                                   // (0x1 << 3) - Depth Fill Rate is lower than the require confidence level(1 - yes; 0 - no)
                                                   // (0x1 << 4) - Floor Detection(fill rate) is lower than the required confidence level(1 - yes; 0 - no)
                                                   // (0x1 << 5) - (Reserved for) Cliff detection was triggered(1 - yes; 0 - no).opt*
                                                   // (0x1 << 6) - (Reserved for)  Depth noise standard deviation  is higher than permitted level(1 - yes; 0 - no).opt*
                                                   // (0x1 << 7) - Camera Posture / Floor position critical deviation is detected(calibration offset)
-                                                  // bits[8..15] are reserved and must be zeroed
+                                                  // (0x1 << 8) - Safety Preset error (1 - yes; 0 - no) 
+                                                  // (0x1 << 9) – Image Depth Fill Rate is lower than the require confidence level (1 - yes; 0 - no) 
+                                                  // (0x1 << 10) – Frame drops/insufficient data (1 - yes; 0 - no)
+                                                  // bits[11..15] are reserved and must be zeroed
                                                   // Setting bit_0 = 1 (high)implies having one or more of mask bits[1 - 8] set to 1 as well
     * uint8_t     safety_preset_integrity;        // Bitmask: 
                                                   // (0x1 << 0) - Preset Integrity / inconsistency identified
@@ -720,7 +723,7 @@ namespace librealsense
         uint8_t     fusa_reserved[15];              // zeroed
         // Vision Monitor
         uint32_t    vision_safety_verdict;          // Bitmask: see details above the struct
-        uint16_t    safety_hara_status;             // Bitmask: see details above the struct
+        uint16_t    vision_hara_status;             // Bitmask: see details above the struct
         uint8_t     safety_preset_integrity;        // Bitmask: see details above the struct
         uint8_t     safety_preset_id_selected;      // Safety Preset index set via Adaptive Field selection GPIO
         uint8_t     safety_preset_id_used;          // Safety Preset index used in the latest Vision Safety algo processing - retrieved from cpfpVisionSafetyResults message

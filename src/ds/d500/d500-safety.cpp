@@ -177,8 +177,8 @@ namespace librealsense
                 md_safety_info_attributes::vision_safety_verdict_attribute, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_HARA_EVENTS,
-            make_attribute_parser(&md_safety_info::safety_hara_status,
-                md_safety_info_attributes::safety_hara_status_attribute, md_prop_offset));
+            make_attribute_parser( &md_safety_info::vision_hara_status,
+                md_safety_info_attributes::vision_hara_status_attribute, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_PRESET_INTEGRITY,
             make_attribute_parser(&md_safety_info::safety_preset_integrity,
