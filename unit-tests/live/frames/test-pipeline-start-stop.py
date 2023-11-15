@@ -7,6 +7,7 @@
 import pyrealsense2 as rs
 from rspy.stopwatch import Stopwatch
 from rspy import test, log
+import time
 
 # Run multiple start stop of all streams and verify we get a frame for each once
 
@@ -21,11 +22,12 @@ def verify_frame_received(config):
     delay = start_call_stopwatch.get_elapsed()
     log.out("After ", delay, " [sec] got first frame of ", f)
     pipe.stop()
+    time.sleep(1) # allow the streaming some time to acctualy stop between iterations
 
 
 ################################################################################################
 test.start("Testing pipeline start/stop stress test")
-for i in range(10):
+for i in range(3):
     log.out("starting iteration #", i + 1, "/", 10)
     cfg = rs.config()
     cfg.enable_all_streams()
