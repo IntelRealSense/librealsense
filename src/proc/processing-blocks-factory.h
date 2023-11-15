@@ -4,6 +4,7 @@
 #pragma once
 
 #include <src/core/stream-profile.h>
+#include <src/core/stream-profile-interface.h>
 
 #include <vector>
 

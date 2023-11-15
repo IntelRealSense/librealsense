@@ -5,7 +5,6 @@
 #include "core/roi.h"
 #include "core/extension.h"
 #include "core/serialization.h"
-#include "core/streaming.h"
 #include "archive.h"
 #include "sensor.h"
 
@@ -40,15 +39,15 @@ namespace librealsense
         const std::string& get_info(rs2_camera_info info) const override;
         bool supports_info(rs2_camera_info info) const override;
         bool supports_option(rs2_option id) const override;
-        void register_notifications_callback(notifications_callback_ptr callback) override;
-        notifications_callback_ptr get_notifications_callback() const override;
-        void start(frame_callback_ptr callback) override;
+        void register_notifications_callback( rs2_notifications_callback_sptr callback ) override;
+        rs2_notifications_callback_sptr get_notifications_callback() const override;
+        void start( rs2_frame_callback_sptr callback ) override;
         void stop() override;
         bool is_streaming() const override;
         bool extend_to(rs2_extension extension_type, void** ext) override;
         device_interface& get_device() override;
-        frame_callback_ptr get_frames_callback() const override;
-        void set_frames_callback(frame_callback_ptr callback) override;
+        rs2_frame_callback_sptr get_frames_callback() const override;
+        void set_frames_callback( rs2_frame_callback_sptr callback ) override;
         stream_profiles get_active_streams() const override;
         stream_profiles const & get_raw_stream_profiles() const override;
         int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
@@ -67,7 +66,7 @@ namespace librealsense
         void enable_sensor_hooks();
         void disable_sensor_hooks();
         void hook_sensor_callbacks();
-        frame_callback_ptr wrap_frame_callback(frame_callback_ptr callback);
+        rs2_frame_callback_sptr wrap_frame_callback( rs2_frame_callback_sptr callback );
         void unhook_sensor_callbacks();
         void enable_sensor_options_recording();
         void disable_sensor_options_recording();
@@ -78,10 +77,10 @@ namespace librealsense
         sensor_interface& m_sensor;
         std::set<int> m_recorded_streams_ids;
         std::set<rs2_option> m_recording_options;
-        librealsense::notifications_callback_ptr m_user_notification_callback;
+        rs2_notifications_callback_sptr m_user_notification_callback;
         std::atomic_bool m_is_recording;
-        frame_callback_ptr m_frame_callback;
-        frame_callback_ptr m_original_callback;
+        rs2_frame_callback_sptr m_frame_callback;
+        rs2_frame_callback_sptr m_original_callback;
         int m_before_start_callback_token;
         device_interface& m_parent_device;
         bool m_is_sensor_hooked;
@@ -99,20 +98,6 @@ namespace librealsense
         {
             on_notification_function(_notification);
         }
-        void release() override { delete this; }
-    };
-
-    class frame_holder_callback : public rs2_frame_callback
-    {
-        std::function<void(frame_holder)> on_frame_function;
-    public:
-        explicit frame_holder_callback(std::function<void(frame_holder)> on_frame) : on_frame_function(on_frame) {}
-
-        void on_frame(rs2_frame * fref) override
-        {
-            on_frame_function({ (frame_interface*)fref });
-        }
-
         void release() override { delete this; }
     };
 

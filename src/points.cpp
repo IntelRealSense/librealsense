@@ -71,10 +71,10 @@ void points::export_to_ply( const std::string & fname, const frame_holder & text
             auto a = y * width + x, b = y * width + x + 1, c = ( y + 1 ) * width + x,
                  d = ( y + 1 ) * width + x + 1;
             if( vertices[a].z && vertices[b].z && vertices[c].z && vertices[d].z
-                && abs( vertices[a].z - vertices[b].z ) < threshold
-                && abs( vertices[a].z - vertices[c].z ) < threshold
-                && abs( vertices[b].z - vertices[d].z ) < threshold
-                && abs( vertices[c].z - vertices[d].z ) < threshold )
+                && std::abs( vertices[a].z - vertices[b].z ) < threshold
+                && std::abs( vertices[a].z - vertices[c].z ) < threshold
+                && std::abs( vertices[b].z - vertices[d].z ) < threshold
+                && std::abs( vertices[c].z - vertices[d].z ) < threshold )
             {
                 if( index2reducedIndex.count( a ) == 0 || index2reducedIndex.count( b ) == 0
                     || index2reducedIndex.count( c ) == 0 || index2reducedIndex.count( d ) == 0 )

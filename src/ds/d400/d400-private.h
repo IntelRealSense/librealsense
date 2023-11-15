@@ -18,8 +18,8 @@ namespace librealsense
         const uint16_t RS430_PID = 0x0ad4; // AWG
         const uint16_t RS430_MM_PID = 0x0ad5; // AWGT
         const uint16_t RS_USB2_PID = 0x0ad6; // USB2
-        const uint16_t RS_RECOVERY_PID = 0x0adb;
-        const uint16_t RS_USB2_RECOVERY_PID = 0x0adc;
+        const uint16_t RS_D400_RECOVERY_PID = 0x0adb;
+        const uint16_t RS_D400_USB2_RECOVERY_PID = 0x0adc;
         const uint16_t RS400_IMU_PID = 0x0af2; // IMU
         const uint16_t RS420_PID = 0x0af6; // PWG
         const uint16_t RS420_MM_PID = 0x0afe; // PWGT
@@ -111,8 +111,8 @@ namespace librealsense
             { RS430_PID,            "Intel RealSense D430"},
             { RS430_MM_PID,         "Intel RealSense D430 with Tracking Module"},
             { RS_USB2_PID,          "Intel RealSense USB2" },
-            { RS_RECOVERY_PID,      "Intel RealSense D4XX Recovery"},
-            { RS_USB2_RECOVERY_PID, "Intel RealSense D4XX USB2 Recovery"},
+            { RS_D400_RECOVERY_PID,      "Intel RealSense D4XX Recovery"},
+            { RS_D400_USB2_RECOVERY_PID, "Intel RealSense D4XX USB2 Recovery"},
             { RS400_IMU_PID,        "Intel RealSense IMU" },
             { RS420_PID,            "Intel RealSense D420"},
             { RS420_MM_PID,         "Intel RealSense D420 with Tracking Module"},
@@ -139,8 +139,8 @@ namespace librealsense
             {RS430_PID, "5.8.15.0"},
             {RS430_MM_PID, "5.8.15.0"},
             {RS_USB2_PID, "5.8.15.0"},
-            {RS_RECOVERY_PID, "5.8.15.0"},
-            {RS_USB2_RECOVERY_PID, "5.8.15.0"},
+            {RS_D400_RECOVERY_PID, "5.8.15.0"},
+            {RS_D400_USB2_RECOVERY_PID, "5.8.15.0"},
             {RS400_IMU_PID, "5.8.15.0"},
             {RS420_PID, "5.8.15.0"},
             {RS420_MM_PID, "5.8.15.0"},

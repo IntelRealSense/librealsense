@@ -141,10 +141,10 @@ namespace librealsense
 
     struct tare_params3
     {
-        byte average_step_count;
-        byte step_count;
-        byte accuracy;
-        byte reserved;
+        uint8_t average_step_count;
+        uint8_t step_count;
+        uint8_t accuracy;
+        uint8_t reserved;
     };
 
     struct params4
@@ -334,7 +334,7 @@ namespace librealsense
         return result;
     }
 
-    std::vector<uint8_t> auto_calibrated::run_on_chip_calibration(int timeout_ms, std::string json, float* const health, update_progress_callback_ptr progress_callback)
+    std::vector<uint8_t> auto_calibrated::run_on_chip_calibration(int timeout_ms, std::string json, float* const health, rs2_update_progress_callback_sptr progress_callback)
     {
         int calib_type = DEFAULT_CALIB_TYPE;
 
@@ -808,10 +808,10 @@ namespace librealsense
 
                     res = get_PyRxFL_calibration_results(&h_1, &h_2);
 
-                    int health_1 = static_cast<int>(abs(h_1) * 1000.0f + 0.5f);
+                    int health_1 = static_cast<int>(std::abs(h_1) * 1000.0f + 0.5f);
                     health_1 &= 0xFFF;
 
-                    int health_2 = static_cast<int>(abs(h_2) * 1000.0f + 0.5f);
+                    int health_2 = static_cast<int>(std::abs(h_2) * 1000.0f + 0.5f);
                     health_2 &= 0xFFF;
 
                     int sign = 0;
@@ -831,7 +831,7 @@ namespace librealsense
         return res;
     }
 
-    std::vector<uint8_t> auto_calibrated::run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* const health, update_progress_callback_ptr progress_callback)
+    std::vector<uint8_t> auto_calibrated::run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* const health, rs2_update_progress_callback_sptr progress_callback)
     {
         int average_step_count = DEFAULT_AVERAGE_STEP_COUNT;
         int step_count = DEFAULT_STEP_COUNT;
@@ -928,14 +928,14 @@ namespace librealsense
 
                 auto param2 = static_cast< uint32_t >( ground_truth_mm ) * 100;
 
-                tare_calibration_params param3{ static_cast< byte >( average_step_count ),
-                                                static_cast< byte >( step_count ),
-                                                static_cast< byte >( accuracy ),
+                tare_calibration_params param3{ static_cast< uint8_t >( average_step_count ),
+                                                static_cast< uint8_t >( step_count ),
+                                                static_cast< uint8_t >( accuracy ),
                                                 0 };
 
-                param4 param{ static_cast< byte >( scan_parameter ),
+                param4 param{ static_cast< uint8_t >( scan_parameter ),
                               0,
-                              static_cast< byte >( data_sampling ) };
+                              static_cast< uint8_t >( data_sampling ) };
 
                 if (host_assistance != host_assistance_type::no_assistance)
                     param.param_4 |= (1 << 8);
@@ -1262,7 +1262,7 @@ namespace librealsense
 #endif
     }
 
-    std::vector<uint8_t> auto_calibrated::process_calibration_frame(int timeout_ms, const rs2_frame* f, float* const health, update_progress_callback_ptr progress_callback)
+    std::vector<uint8_t> auto_calibrated::process_calibration_frame(int timeout_ms, const rs2_frame* f, float* const health, rs2_update_progress_callback_sptr progress_callback)
     {
         try
         {
@@ -1855,7 +1855,7 @@ namespace librealsense
         _hw_monitor->send(cmd);
     }
 
-    void auto_calibrated::get_target_rect_info(rs2_frame_queue* frames, float rect_sides[4], float& fx, float& fy, int progress, update_progress_callback_ptr progress_callback)
+    void auto_calibrated::get_target_rect_info(rs2_frame_queue* frames, float rect_sides[4], float& fx, float& fy, int progress, rs2_update_progress_callback_sptr progress_callback)
     {
         fx = -1.0f;
         std::vector<std::array<float, 4>> rect_sides_arr;
@@ -1913,7 +1913,7 @@ namespace librealsense
     }
 
     std::vector<uint8_t> auto_calibrated::run_focal_length_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h,
-        int adjust_both_sides, float *ratio, float * angle, update_progress_callback_ptr progress_callback)
+        int adjust_both_sides, float *ratio, float * angle, rs2_update_progress_callback_sptr progress_callback)
     {
         float fx[2] = { -1.0f, -1.0f };
         float fy[2] = { -1.0f, -1.0f };
@@ -1964,7 +1964,7 @@ namespace librealsense
             ave_gt += gt[i];
         ave_gt /= 4.0;
 
-        ta[0] = atanf(align * ave_gt / abs(table->baseline));
+        ta[0] = atanf(align * ave_gt / std::abs(table->baseline));
         ta[0] = rad2deg(ta[0]);
 
         if (right_rect_sides[0] > 0)
@@ -1984,7 +1984,7 @@ namespace librealsense
             ave_gt += gt[i];
         ave_gt /= 4.0;
 
-        ta[1] = atanf(align * ave_gt / abs(table->baseline));
+        ta[1] = atanf(align * ave_gt / std::abs(table->baseline));
         ta[1] = rad2deg(ta[1]);
 
         *angle = (ta[0] + ta[1]) / 2;
@@ -2034,7 +2034,7 @@ namespace librealsense
 
         auto actual_data = calib_table.data() + sizeof(librealsense::ds::table_header);
         auto actual_data_size = calib_table.size() - sizeof(librealsense::ds::table_header);
-        auto crc = librealsense::calc_crc32(actual_data, actual_data_size);
+        auto crc = rsutils::number::calc_crc32(actual_data, actual_data_size);
         table->header.crc32 = crc;
 
         return calib_table;
@@ -2071,7 +2071,7 @@ namespace librealsense
                 x = static_cast<float>(i);
                 y = static_cast<float>(j);
 
-                if (abs(intrin.fx) > 0.00001f && abs(intrin.fy) > 0.0001f)
+                if( std::abs( intrin.fx ) > 0.00001f && std::abs( intrin.fy ) > 0.0001f )
                 {
                     x = (x - intrin.ppx) / intrin.fx;
                     y = (y - intrin.ppy) / intrin.fy;
@@ -2106,7 +2106,7 @@ namespace librealsense
         memmove(img, tmp.data(), size3);
     }
 
-    void auto_calibrated::get_target_dots_info(rs2_frame_queue* frames, float dots_x[4], float dots_y[4], rs2::stream_profile& profile, rs2_intrinsics& intrin, int progress, update_progress_callback_ptr progress_callback)
+    void auto_calibrated::get_target_dots_info(rs2_frame_queue* frames, float dots_x[4], float dots_y[4], rs2::stream_profile& profile, rs2_intrinsics& intrin, int progress, rs2_update_progress_callback_sptr progress_callback)
     {
         bool got_intrinsics = false;
         std::vector<std::array<float, 4>> dots_x_arr;
@@ -2278,7 +2278,7 @@ namespace librealsense
     }
 
     std::vector<uint8_t> auto_calibrated::run_uv_map_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
-        float* const health, int health_size, update_progress_callback_ptr progress_callback)
+        float* const health, int health_size, rs2_update_progress_callback_sptr progress_callback)
     {
         float left_dots_x[4];
         float left_dots_y[4];
@@ -2446,19 +2446,20 @@ namespace librealsense
                 table->intrinsic(2, 0) /= actual_aspect_ratio / calib_aspect_ratio; // ppx
             }
 
-            table->header.crc32 = calc_crc32(ret.data() + sizeof(librealsense::ds::table_header), ret.size() - sizeof(librealsense::ds::table_header));
+            table->header.crc32 = rsutils::number::calc_crc32( ret.data() + sizeof( librealsense::ds::table_header ),
+                                                               ret.size() - sizeof( librealsense::ds::table_header ) );
 
-            health[0] = (abs(table->intrinsic(2, 0) / health[0]) - 1) * 100; // px
-            health[1] = (abs(table->intrinsic(2, 1) / health[1]) - 1) * 100; // py
-            health[2] = (abs(table->intrinsic(0, 0) / health[2]) - 1) * 100; // fx
-            health[3] = (abs(table->intrinsic(1, 1) / health[3]) - 1) * 100; // fy
+            health[0] = (std::abs(table->intrinsic(2, 0) / health[0]) - 1) * 100; // px
+            health[1] = (std::abs(table->intrinsic(2, 1) / health[1]) - 1) * 100; // py
+            health[2] = (std::abs(table->intrinsic(0, 0) / health[2]) - 1) * 100; // fx
+            health[3] = (std::abs(table->intrinsic(1, 1) / health[3]) - 1) * 100; // fy
         }
 
         return ret;
     }
 
     float auto_calibrated::calculate_target_z(rs2_frame_queue* queue1, rs2_frame_queue* queue2, rs2_frame_queue* queue3,
-        float target_w, float target_h, update_progress_callback_ptr progress_callback)
+        float target_w, float target_h, rs2_update_progress_callback_sptr progress_callback)
     {
         constexpr size_t min_frames_required = 10;
         bool created = false;

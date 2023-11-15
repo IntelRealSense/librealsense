@@ -98,10 +98,11 @@ namespace librealsense
     {
     public:
         update_device( std::shared_ptr< const device_info > const &,
-                       std::shared_ptr< platform::usb_device > const & usb_device );
+                       std::shared_ptr< platform::usb_device > const & usb_device,
+                       const std::string & _product_line );
         virtual ~update_device();
 
-        virtual void update(const void* fw_image, int fw_image_size, update_progress_callback_ptr = nullptr) const override;
+        virtual void update(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr = nullptr) const override;
         
         virtual sensor_interface& get_sensor(size_t i) override;
 
@@ -144,6 +145,9 @@ namespace librealsense
         void detach(std::shared_ptr<platform::usb_messenger> messenger) const;
         bool wait_for_state(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, size_t timeout = 1000) const;
         void read_device_info(std::shared_ptr<platform::usb_messenger> messenger);
+        virtual const std::string& get_name() const override { return _name; }
+        virtual const std::string& get_product_line() const override { return _product_line; }
+        virtual const std::string& get_serial_number() const override { return _serial_number; }
 
 
         const std::shared_ptr< const device_info > _dev_info;
@@ -154,5 +158,8 @@ namespace librealsense
         std::string _physical_port;
         std::string _pid;
         bool _is_dfu_locked = false;
+        std::string _name;
+        std::string _product_line;
+        std::string _serial_number;
     };
 }

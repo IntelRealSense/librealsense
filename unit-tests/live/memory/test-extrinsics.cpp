@@ -68,7 +68,7 @@ void data_filter(const std::vector<double>& stream_vec, std::vector<double>& fil
     std::vector<double> diff_y_fit;
     for (auto i = 0; i < stream_vec.size(); i++)
     {
-        double diff = abs(*(y_fit_it + i) - *(stream_vec_it + i));
+        double diff = std::abs(*(y_fit_it + i) - *(stream_vec_it + i));
         diff_y_fit.push_back(diff);
     }
     // calc stdev from fitted linear line

@@ -8,6 +8,7 @@
 #include "proc/color-formats-converter.h"
 #include "backend.h"
 #include "platform/platform-utils.h"
+#include <src/fourcc.h>
 
 
 namespace librealsense {

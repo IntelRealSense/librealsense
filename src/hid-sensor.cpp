@@ -6,12 +6,20 @@
 #include "stream.h"
 #include "global_timestamp_reader.h"
 #include "metadata.h"
+#include "platform/stream-profile-impl.h"
+#include "fourcc.h"
 
 
 namespace librealsense {
 
 
-// in sensor.cpp
+static const std::map< rs2_stream, uint32_t > stream_and_fourcc
+    = { { RS2_STREAM_GYRO,  rs_fourcc( 'G', 'Y', 'R', 'O' ) },
+        { RS2_STREAM_ACCEL, rs_fourcc( 'A', 'C', 'C', 'L' ) },
+        { RS2_STREAM_GPIO,  rs_fourcc( 'G', 'P', 'I', 'O' ) } };
+
+
+    // in sensor.cpp
 void log_callback_end( uint32_t fps,
                        rs2_time_t callback_start_time,
                        rs2_time_t callback_end_time,
@@ -26,7 +34,7 @@ hid_sensor::hid_sensor(
     const std::map< rs2_stream, std::map< unsigned, unsigned > > & fps_and_sampling_frequency_per_rs2_stream,
     const std::vector< std::pair< std::string, stream_profile > > & sensor_name_and_hid_profiles,
     device * dev )
-    : super( "Raw Motion Module", dev, (recommended_proccesing_blocks_interface *)this )
+    : super( "Raw Motion Module", dev )
     , _sensor_name_and_hid_profiles( sensor_name_and_hid_profiles )
     , _fps_and_sampling_frequency_per_rs2_stream( fps_and_sampling_frequency_per_rs2_stream )
     , _hid_device( hid_device )
@@ -75,7 +83,7 @@ stream_profiles hid_sensor::get_sensor_profiles( std::string sensor_name ) const
         {
             auto && p = elem.second;
             platform::stream_profile sp{ 1, 1, p.fps, stream_to_fourcc( p.stream ) };
-            auto profile = std::make_shared< motion_stream_profile >( sp );
+            auto profile = std::make_shared< platform::stream_profile_impl< motion_stream_profile > >( sp );
             profile->set_stream_index( p.index );
             profile->set_stream_type( p.stream );
             profile->set_format( p.format );
@@ -148,7 +156,7 @@ static rs2_stream custom_gpio_to_stream_type( uint32_t custom_gpio )
     return RS2_STREAM_ANY;
 }
 
-void hid_sensor::start( frame_callback_ptr callback )
+void hid_sensor::start( rs2_frame_callback_sptr callback )
 {
     std::lock_guard< std::mutex > lock( _configure_lock );
     if( _is_streaming )
@@ -230,7 +238,7 @@ void hid_sensor::start( frame_callback_ptr callback )
                 = _source.alloc_frame( RS2_EXTENSION_MOTION_FRAME, data_size, std::move( fr->additional_data ), true );
             memcpy( (void *)frame->get_frame_data(),
                     sensor_data.fo.pixels,
-                    sizeof( byte ) * sensor_data.fo.frame_size );
+                    sizeof( uint8_t ) * sensor_data.fo.frame_size );
             if( ! frame )
             {
                 LOG_INFO( "Dropped frame. alloc_frame(...) returned nullptr" );

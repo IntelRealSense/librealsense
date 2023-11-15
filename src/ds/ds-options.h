@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <src/platform/uvc-option.h>
 #include "ds-private.h"
 
 #include "algo.h"

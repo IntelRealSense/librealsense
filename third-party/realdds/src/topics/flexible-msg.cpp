@@ -117,7 +117,7 @@ json flexible_msg::json_data() const
 }
 
 
-raw::flexible flexible_msg::to_raw()
+raw::flexible flexible_msg::to_raw() &&
 {
     raw::flexible raw_msg;
     raw_msg.data_format( (raw::flexible_data_format) _data_format );
@@ -130,9 +130,9 @@ raw::flexible flexible_msg::to_raw()
 }
 
 
-dds_sequence_number flexible_msg::write_to( dds_topic_writer & writer )
+dds_sequence_number flexible_msg::write_to( dds_topic_writer & writer ) &&
 {
-    auto raw_msg = to_raw();
+    auto raw_msg = std::move( *this ).to_raw();
 
     eprosima::fastrtps::rtps::WriteParams params;
     bool success = DDS_API_CALL( writer.get()->write( &raw_msg, params ) );

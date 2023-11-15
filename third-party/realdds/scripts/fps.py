@@ -40,7 +40,7 @@ dds.debug( args.debug )
 
 settings = {}
 if not args.with_metadata:
-    settings['disable-metadata'] = True
+    settings['device'] = { 'metadata' : False };
 
 participant = dds.participant()
 participant.init( args.domain, 'fps', settings )

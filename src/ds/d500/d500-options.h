@@ -4,7 +4,7 @@
 #pragma once
 
 #include "ds/ds-private.h"
-#include "core/options.h"
+#include "core/options-container.h"
 #include "option.h"
 
 #include <rsutils/lazy.h>
@@ -48,7 +48,7 @@ namespace librealsense
             RGB,
             RIGHT_IR,
             RIGHT_PROJ,
-            MAIN_ASIC,
+            HKR_PVT,
             SHT4XX,
             SMCU,
             COUNT

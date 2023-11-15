@@ -75,10 +75,10 @@ public:
                            eprosima::fastdds::dds::SampleInfo * optional_info = nullptr );
 
     // WARNING: this moves the message content!
-    raw::flexible to_raw();
+    raw::flexible to_raw() &&;
     // WARNING: this moves the message content!
     // Returns some unique (to the writer) identifier for the sample that was sent, or 0 if unsuccessful
-    dds_sequence_number write_to( dds_topic_writer & );
+    dds_sequence_number write_to( dds_topic_writer & ) &&;
 
     flexible_msg() = default;
     flexible_msg( raw::flexible && );

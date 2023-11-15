@@ -5,6 +5,7 @@
 #include <realdds/dds-topic.h>
 #include <realdds/dds-participant.h>
 #include <realdds/dds-publisher.h>
+#include <realdds/dds-serialization.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-guid.h>
 
@@ -12,6 +13,8 @@
 #include <fastdds/dds/publisher/Publisher.hpp>
 #include <fastdds/dds/publisher/DataWriter.hpp>
 #include <fastdds/dds/topic/Topic.hpp>
+
+#include <rsutils/json.h>
 
 
 namespace realdds {
@@ -79,6 +82,21 @@ dds_topic_writer::qos::qos( eprosima::fastdds::dds::ReliabilityQosPolicyKind rel
     // See https://github.com/eProsima/Fast-DDS/issues/2641
     //
     data_sharing().off();
+}
+
+
+void dds_topic_writer::qos::override_from_json( nlohmann::json const & qos_settings )
+{
+    // Default values should be set before we're called:
+    // All we do here is override those - if specified!
+    if( qos_settings.is_null() )
+        return;
+
+    override_reliability_qos_from_json( reliability(), rsutils::json::nested( qos_settings, "reliability" ) );
+    override_durability_qos_from_json( durability(), rsutils::json::nested( qos_settings, "durability" ) );
+    override_history_qos_from_json( history(), rsutils::json::nested( qos_settings, "history" ) );
+    override_data_sharing_qos_from_json( data_sharing(), rsutils::json::nested( qos_settings, "data-sharing" ) );
+    override_endpoint_qos_from_json( endpoint(), rsutils::json::nested( qos_settings, "endpoint" ) );
 }
 
 

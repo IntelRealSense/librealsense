@@ -5,7 +5,7 @@
 
 
 #include "sid_index.h"
-#include <src/software-device.h>
+#include <src/software-sensor.h>
 #include <src/proc/formats-converter.h>
 
 #include <realdds/dds-metadata-syncer.h>
@@ -36,6 +36,8 @@ class dds_device_proxy;
 
 class dds_sensor_proxy : public software_sensor
 {
+    using super = software_sensor;
+
     std::shared_ptr< realdds::dds_device > const _dev;
     std::string const _name;
     bool const _md_enabled;
@@ -43,12 +45,14 @@ class dds_sensor_proxy : public software_sensor
     typedef realdds::dds_metadata_syncer syncer_type;
     static void frame_releaser( syncer_type::frame_type * f ) { static_cast< frame * >( f )->release(); }
 
+protected:
     struct streaming_impl
     {
         syncer_type syncer;
         std::atomic< unsigned long long > last_frame_number{ 0 };
     };
 
+private:
     std::map< sid_index, std::shared_ptr< realdds::dds_stream > > _streams;
     std::map< std::string, streaming_impl > _streaming_by_name;
 
@@ -66,18 +70,16 @@ public:
     std::shared_ptr<stream_profile_interface> add_motion_stream( rs2_motion_stream motion_stream, bool is_default ) override;
 
     void open( const stream_profiles & profiles ) override;
-    void start( frame_callback_ptr callback ) override;
+    void start( rs2_frame_callback_sptr callback ) override;
     void stop();
 
     void add_option( std::shared_ptr< realdds::dds_option > option );
 
-    void add_processing_block( std::string filter_name );
-    bool processing_block_exists( processing_blocks const & blocks, std::string const & block_name ) const;
-    void create_processing_block( std::string & filter_name );
+    void add_processing_block( std::string const & filter_name );
 
     const std::map< sid_index, std::shared_ptr< realdds::dds_stream > > & streams() const { return _streams; }
 
-private:
+protected:
     void register_basic_converters();
     stream_profiles init_stream_profiles() override;
 
@@ -95,7 +97,8 @@ private:
                              streaming_impl & );
     void handle_new_metadata( std::string const & stream_name, nlohmann::json && metadata );
 
-    void add_frame_metadata( frame * const, nlohmann::json && metadata, streaming_impl & );
+    virtual void add_no_metadata( frame *, streaming_impl & );
+    virtual void add_frame_metadata( frame * const, nlohmann::json && metadata, streaming_impl & );
 
     friend class dds_device_proxy;  // Currently calls handle_new_metadata
 };

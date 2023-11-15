@@ -5,6 +5,8 @@
 
 #include "hw-monitor.h"
 #include "ds-private.h"
+#include <src/core/notification.h>
+#include <src/core/roi.h>
 
 
 namespace librealsense
@@ -32,8 +34,8 @@ namespace librealsense
         {}
 
         void enter_update_state() const;
-        std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback);
-        void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode);
+        std::vector<uint8_t> backup_flash( rs2_update_progress_callback_sptr callback);
+        void update_flash(const std::vector<uint8_t>& image, rs2_update_progress_callback_sptr callback, int update_mode);
 
         bool is_camera_in_advanced_mode() const;
         bool is_locked(uint8_t gvd_cmd, uint32_t offset);

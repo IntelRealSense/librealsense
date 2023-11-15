@@ -48,7 +48,7 @@ namespace librealsense
                               std::shared_ptr< enable_motion_correction > mm_correct_opt,
                               bool high_sensitivity = false );
         void configure_processing_callback();
-        void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size) override;
+        void process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size ) override;
         void correct_motion(float3* xyz) const;
 
         std::shared_ptr<stream_profile_interface> _source_stream_profile;
@@ -63,7 +63,7 @@ namespace librealsense
 
     protected:
         acceleration_transform(const char* name, std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt);
-        void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size) override;
+        void process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size) override;
 
     };
 
@@ -79,7 +79,8 @@ namespace librealsense
                              std::shared_ptr< mm_calib_handler > mm_calib,
                              std::shared_ptr< enable_motion_correction > mm_correct_opt,
                              bool high_sensitivity = false );
-        void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size) override;
+                             
+        void process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size ) override;
 
         bool _high_sensitivity = false;
     };

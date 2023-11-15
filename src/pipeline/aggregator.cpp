@@ -4,6 +4,7 @@
 #include <algorithm>
 #include "stream.h"
 #include "aggregator.h"
+#include <src/composite-frame.h>
 
 namespace librealsense
 {

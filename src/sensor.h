@@ -3,6 +3,15 @@
 
 #pragma once
 
+#include "core/sensor-interface.h"
+
+#include "source.h"
+#include "core/extension.h"
+#include "proc/formats-converter.h"
+
+#include <rsutils/lazy.h>
+#include <rsutils/signal.h>
+
 #include <chrono>
 #include <memory>
 #include <vector>
@@ -11,26 +20,14 @@
 #include <limits.h>
 #include <atomic>
 #include <functional>
-#include "core/debug.h"
-
-#include "archive.h"
-#include "core/streaming.h"
-#include "core/roi.h"
-#include "core/options.h"
-#include "source.h"
-#include "core/extension.h"
-#include "proc/formats-converter.h"
-#include "platform/stream-profile.h"
-#include "platform/frame-object.h"
-
-#include <rsutils/lazy.h>
-#include <rsutils/signal.h>
 
 
 namespace librealsense
 {
     class device;
     class option;
+    class stream_interface;
+    class notifications_processor;
     enum class format_conversion;
 
 
@@ -47,30 +44,29 @@ namespace librealsense
         virtual void reset() = 0;
     };
 
+    class notifications_processor;
+
     class sensor_base
         : public std::enable_shared_from_this< sensor_base >
         , public virtual sensor_interface
         , public options_container
         , public virtual info_container
-        , public recommended_proccesing_blocks_base
     {
     public:
-        explicit sensor_base( std::string const & name,
-                              device * device,
-                              recommended_proccesing_blocks_interface * owner );
+        explicit sensor_base( std::string const & name, device * device );
         virtual ~sensor_base() override { _source.flush(); }
 
         void set_source_owner(sensor_base* owner); // will direct the source to the top in the source hierarchy.
         virtual stream_profiles init_stream_profiles() = 0;
         stream_profiles get_stream_profiles(int tag = profile_tag::PROFILE_TAG_ANY) const override;
         stream_profiles get_active_streams() const override;
-        notifications_callback_ptr get_notifications_callback() const override;
-        void register_notifications_callback(notifications_callback_ptr callback) override;
+        rs2_notifications_callback_sptr get_notifications_callback() const override;
+        void register_notifications_callback( rs2_notifications_callback_sptr callback ) override;
         int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
         void unregister_before_start_callback(int token) override;
         virtual std::shared_ptr<notifications_processor> get_notifications_processor() const;
-        virtual frame_callback_ptr get_frames_callback() const override;
-        virtual void set_frames_callback(frame_callback_ptr callback) override;
+        virtual rs2_frame_callback_sptr get_frames_callback() const override;
+        virtual void set_frames_callback( rs2_frame_callback_sptr callback ) override;
         bool is_streaming() const override;
         virtual bool is_opened() const;
         virtual void register_metadata(rs2_frame_metadata_value metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const;
@@ -118,7 +114,7 @@ namespace librealsense
             return width * height * bpp >> 3;
         }
 
-        std::vector<byte> align_width_to_64(int width, int height, int bpp, byte* pix) const;
+        std::vector<uint8_t> align_width_to_64(int width, int height, int bpp, uint8_t * pix) const;
 
         std::atomic<bool> _is_streaming;
         std::atomic<bool> _is_opened;
@@ -168,9 +164,8 @@ namespace librealsense
 
     protected:
         explicit raw_sensor_base( std::string const & name,
-                                  device * device,
-                                  recommended_proccesing_blocks_interface * owner )
-            : super( name, device, owner )
+                                  device * device )
+            : super( name, device )
         {
         }
 
@@ -211,7 +206,7 @@ namespace librealsense
 
         void open(const stream_profiles& requests) override;
         void close() override;
-        void start(frame_callback_ptr callback) override;
+        void start( rs2_frame_callback_sptr callback ) override;
         void stop() override;
 
         virtual float get_preset_max_value() const;
@@ -223,9 +218,9 @@ namespace librealsense
         void register_processing_block(const std::vector<processing_block_factory>& pbfs);
 
         std::shared_ptr< raw_sensor_base > const & get_raw_sensor() const { return _raw_sensor; }
-        frame_callback_ptr get_frames_callback() const override;
-        void set_frames_callback(frame_callback_ptr callback) override;
-        void register_notifications_callback(notifications_callback_ptr callback) override;
+        rs2_frame_callback_sptr get_frames_callback() const override;
+        void set_frames_callback( rs2_frame_callback_sptr callback ) override;
+        void register_notifications_callback( rs2_notifications_callback_sptr callback ) override;
         int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
         void unregister_before_start_callback(int token) override;
         void register_metadata(rs2_frame_metadata_value metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const override;
@@ -238,7 +233,7 @@ namespace librealsense
 
         std::mutex _synthetic_configure_lock;
 
-        frame_callback_ptr _post_process_callback;
+        rs2_frame_callback_sptr _post_process_callback;
         std::shared_ptr<raw_sensor_base> _raw_sensor;
         formats_converter _formats_converter;
         std::vector<rs2_option> _cached_processing_blocks_options;

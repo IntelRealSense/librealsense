@@ -11,6 +11,7 @@
 #include "d500-info.h"
 #include "backend.h"
 #include "platform/platform-utils.h"
+#include <src/fourcc.h>
 
 namespace librealsense
 {

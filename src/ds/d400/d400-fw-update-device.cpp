@@ -4,25 +4,28 @@
 #include "d400-fw-update-device.h"
 #include "d400-private.h"
 
+#include <librealsense2/h/rs_internal.h>
+
 namespace librealsense
 {
-ds_update_device::ds_update_device( std::shared_ptr< const device_info > const & dev_info,
-                                    std::shared_ptr< platform::usb_device > const & usb_device )
-    : update_device( dev_info, usb_device )
-    , _product_line( "D400" )
+ds_d400_update_device::ds_d400_update_device(
+    std::shared_ptr< const device_info > const & dev_info,
+    std::shared_ptr< platform::usb_device > const & usb_device )
+    : update_device( dev_info, usb_device, "D400" )
     {
-        auto info = usb_device->get_info();
-        _name = ds::rs400_sku_names.find(info.pid) != ds::rs400_sku_names.end() ? ds::rs400_sku_names.at(info.pid) : "unknown";        
+        auto info = usb_device->get_info(); 
+        _name = ds::rs400_sku_names.find(info.pid) != ds::rs400_sku_names.end() ? ds::rs400_sku_names.at(info.pid) : "unknown";          
         _serial_number = parse_serial_number(_serial_number_buffer);
     }
 
-    void ds_update_device::update(const void* fw_image, int fw_image_size, update_progress_callback_ptr callback) const
-    {
-        update_device::update(fw_image, fw_image_size, callback);
-    }
 
-    bool ds_update_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
+    bool ds_d400_update_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
     {
+        // check if the given FW size matches the expected FW size
+        if( image.size() != signed_fw_size )
+            throw librealsense::invalid_value_exception(
+                rsutils::string::from() << "Unsupported firmware binary image provided - " << image.size() << " bytes" );
+
         std::string fw_version = extract_firmware_version_string(image);
         auto it = ds::d400_device_to_fw_min_version.find(_usb_device->get_info().pid);
         if (it == ds::d400_device_to_fw_min_version.end())
@@ -36,7 +39,7 @@ ds_update_device::ds_update_device( std::shared_ptr< const device_info > const &
         return result;
     }
 
-    std::string ds_update_device::parse_serial_number(const std::vector<uint8_t>& buffer) const
+    std::string ds_d400_update_device::parse_serial_number(const std::vector<uint8_t>& buffer) const
     {
         if (buffer.size() != sizeof(serial_number_data))
             throw std::runtime_error("DFU - failed to parse serial number!");

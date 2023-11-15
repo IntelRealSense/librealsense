@@ -6,6 +6,9 @@
 #include "stream.h"
 #include "global_timestamp_reader.h"
 #include "core/video-frame.h"
+#include "core/notification.h"
+#include "platform/uvc-option.h"
+#include "platform/stream-profile-impl.h"
 
 
 namespace librealsense {
@@ -23,7 +26,7 @@ uvc_sensor::uvc_sensor( std::string const & name,
                         std::shared_ptr< platform::uvc_device > uvc_device,
                         std::unique_ptr< frame_timestamp_reader > timestamp_reader,
                         device * dev )
-    : super( name, dev, (recommended_proccesing_blocks_interface *)this )
+    : super( name, dev )
     , _device( std::move( uvc_device ) )
     , _user_count( 0 )
     , _timestamp_reader( std::move( timestamp_reader ) )
@@ -193,8 +196,8 @@ void uvc_sensor::open( const stream_profiles & requests )
                         // when the resolution's width is not aligned to 64
                         if( ( width * bpp >> 3 ) % 64 != 0 && f.frame_size > expected_size )
                         {
-                            std::vector< byte > pixels = align_width_to_64( width, height, bpp, (byte *)f.pixels );
-                            assert( expected_size == sizeof( byte ) * pixels.size() );
+                            std::vector< uint8_t > pixels = align_width_to_64( width, height, bpp, (uint8_t *)f.pixels );
+                            assert( expected_size == sizeof( uint8_t ) * pixels.size() );
                             memcpy( (void *)fh->get_frame_data(), pixels.data(), expected_size );
                         }
                         else
@@ -204,10 +207,10 @@ void uvc_sensor::open( const stream_profiles & requests )
                             // 24 bit support is achieved by comparing actual vs expected size: when it is exactly 75%
                             // of the MIPI-generated size (24/32bpp), then 24bpp-sized image will be processed
                             if( req_profile_base->get_format() == RS2_FORMAT_Y12I )
-                                if( ( ( expected_size >> 2 ) * 3 ) == sizeof( byte ) * f.frame_size )
-                                    expected_size = sizeof( byte ) * f.frame_size;
+                                if( ( ( expected_size >> 2 ) * 3 ) == sizeof( uint8_t ) * f.frame_size )
+                                    expected_size = sizeof( uint8_t ) * f.frame_size;
 
-                            assert( expected_size == sizeof( byte ) * f.frame_size );
+                            assert( expected_size == sizeof( uint8_t ) * f.frame_size );
                             memcpy( (void *)fh->get_frame_data(), f.pixels, expected_size );
                         }
 
@@ -346,7 +349,7 @@ void uvc_sensor::register_xu( platform::extension_unit xu )
 }
 
 
-void uvc_sensor::start( frame_callback_ptr callback )
+void uvc_sensor::start( rs2_frame_callback_sptr callback )
 {
     std::lock_guard< std::mutex > lock( _configure_lock );
     if( _is_streaming )
@@ -444,7 +447,7 @@ stream_profiles uvc_sensor::init_stream_profiles()
         // D457 development
         if( rs2_fmt == RS2_FORMAT_MOTION_XYZ32F )
         {
-            auto profile = std::make_shared< motion_stream_profile >( p );
+            auto profile = std::make_shared< platform::stream_profile_impl< motion_stream_profile > >( p );
             if( ! profile )
                 throw librealsense::invalid_value_exception( "null pointer passed for argument \"profile\"." );
 
@@ -456,7 +459,7 @@ stream_profiles uvc_sensor::init_stream_profiles()
         }
         else
         {
-            auto && profile = std::make_shared< video_stream_profile >( p );
+            auto profile = std::make_shared< platform::stream_profile_impl< video_stream_profile > >( p );
             if( ! profile )
                 throw librealsense::invalid_value_exception( "null pointer passed for argument \"profile\"." );
 

@@ -184,7 +184,7 @@ float measurement::calculate_area(std::vector<float3> poly)
     auto a = poly[1] - poly[0];
     auto b = poly[2] - poly[0];
     auto n = cross(a, b);
-    return abs(total * n.normalize()) / 2;
+    return std::abs( total * n.normalize() ) / 2;
 }
 
 void draw_sphere(const float3& pos, float r, int lats, int longs)

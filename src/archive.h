@@ -3,14 +3,15 @@
 
 #pragma once
 
-#include "types.h"
-#include "core/streaming.h"
+#include "core/stream-profile.h"
+#include "core/frame-additional-data.h"
 #include "callback-invocation.h"
 
 
 namespace librealsense
 {
-    struct frame_additional_data;
+    class frame_interface;
+    class sensor_interface;
 
     class archive_interface
     {

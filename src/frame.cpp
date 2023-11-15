@@ -2,9 +2,10 @@
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #include "core/depth-frame.h"
+#include "composite-frame.h"
+#include "core/stream-profile-interface.h"
 #include "archive.h"
 #include "metadata-parser.h"
-#include "environment.h"
 
 #include <rsutils/string/from.h>
 
@@ -152,13 +153,13 @@ int frame::get_frame_data_size() const
     return (int)data.size();
 }
 
-const byte * frame::get_frame_data() const
+const uint8_t * frame::get_frame_data() const
 {
-    const byte * frame_data = data.data();
+    const uint8_t * frame_data = data.data();
 
     if( on_release.get_data() )
     {
-        frame_data = static_cast< const byte * >( on_release.get_data() );
+        frame_data = static_cast< const uint8_t * >( on_release.get_data() );
     }
 
     return frame_data;

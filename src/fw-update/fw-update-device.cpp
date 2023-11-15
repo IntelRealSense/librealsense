@@ -113,11 +113,13 @@ namespace librealsense
     }
 
     update_device::update_device( std::shared_ptr< const device_info > const & dev_info,
-                                  std::shared_ptr< platform::usb_device > const & usb_device )
+                                  std::shared_ptr< platform::usb_device > const & usb_device,
+                                  const std::string & product_line )
         : _dev_info( dev_info )
         , _usb_device( usb_device )
         , _physical_port( usb_device->get_info().id )
-        , _pid( rsutils::string::from() << std::uppercase << rsutils::string::hexdump( usb_device->get_info().pid ) )
+        , _pid( rsutils::string::from() << std::uppercase << rsutils::string::hexdump( usb_device->get_info().pid ))
+        , _product_line( product_line )
     {
         if (auto messenger = _usb_device->open(FW_UPDATE_INTERFACE_NUMBER))
         {
@@ -143,7 +145,7 @@ namespace librealsense
 
     }
 
-    void update_device::update(const void* fw_image, int fw_image_size, update_progress_callback_ptr update_progress_callback) const
+    void update_device::update(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr update_progress_callback) const
     {
         // checking fw compatibility (covering the case of recovery device with wrong product line fw )
         std::vector<uint8_t> buffer((uint8_t*)fw_image, (uint8_t*)fw_image + fw_image_size);

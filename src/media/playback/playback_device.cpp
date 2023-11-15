@@ -9,6 +9,8 @@
 #include "media/ros/ros_reader.h"
 #include "environment.h"
 #include "sync.h"
+#include <src/depth-sensor.h>
+#include <src/color-sensor.h>
 
 #include <rsutils/string/from.h>
 
@@ -71,7 +73,7 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
         //Each sensor will know its capabilities from the sensor_snapshot
         auto sensor = std::make_shared<playback_sensor>(*this, sensor_snapshot);
 
-        sensor->on_started( [this](uint32_t id, frame_callback_ptr user_callback) -> void
+        sensor->on_started( [this](uint32_t id, rs2_frame_callback_sptr user_callback) -> void
         {
             (*m_read_thread)->invoke([this, id, user_callback](dispatcher::cancellable_timer c)
             {

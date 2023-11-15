@@ -79,7 +79,7 @@ namespace librealsense
 
             constexpr uint8_t ms_header_size = sizeof(ms_metadata_header);
 
-            bool try_read_metadata(IMFSample *pSample, uint8_t& metadata_size, byte** bytes)
+            bool try_read_metadata(IMFSample *pSample, uint8_t& metadata_size, uint8_t ** bytes)
             {
                 CComPtr<IUnknown>       spUnknown;
                 CComPtr<IMFAttributes>  spSample;
@@ -109,7 +109,7 @@ namespace librealsense
                     // Microsoft converts the standard UVC (12-byte) header into MS proprietary 40-bytes struct
                     // Therefore we revert it to the original structure for uniform handling
                     static const uint8_t md_lenth_max = 0xff;
-                    auto md_raw = reinterpret_cast<byte*>(pMetadata);
+                    auto md_raw = reinterpret_cast<uint8_t *>(pMetadata);
                     ms_metadata_header *ms_hdr = reinterpret_cast<ms_metadata_header*>(md_raw);
                     uvc_header *uvc_hdr = reinterpret_cast<uvc_header*>(md_raw + ms_header_size - uvc_header_size);
                     try
@@ -133,7 +133,7 @@ namespace librealsense
                     uvc_hdr->info = 0x0; // TODO - currently not available
                     metadata_size = static_cast<uint8_t>(uvc_hdr->length + uvc_header_size);
 
-                    *bytes = (byte*)uvc_hdr;
+                    *bytes = (uint8_t *)uvc_hdr;
 
                     return true;
                 }
@@ -197,11 +197,11 @@ namespace librealsense
                     CComPtr<IMFMediaBuffer> buffer = nullptr;
                     if (SUCCEEDED(sample->GetBufferByIndex(0, &buffer)))
                     {
-                        byte* byte_buffer=nullptr;
+                        uint8_t * byte_buffer=nullptr;
                         DWORD max_length{}, current_length{};
                         if (SUCCEEDED(buffer->Lock(&byte_buffer, &max_length, &current_length)))
                         {
-                            byte* metadata = nullptr;
+                            uint8_t * metadata = nullptr;
                             uint8_t metadata_size = 0;
 #ifdef METADATA_SUPPORT
                             try_read_metadata(sample, metadata_size, &metadata);

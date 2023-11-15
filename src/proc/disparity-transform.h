@@ -8,6 +8,8 @@
 #include <librealsense2/hpp/rs_frame.hpp>
 #include <librealsense2/hpp/rs_processing.hpp>
 #include <src/core/depth-frame.h>
+#include <src/core/sensor-interface.h>
+#include <src/depth-sensor.h>
 #include "synthetic-stream.h"
 
 namespace librealsense
