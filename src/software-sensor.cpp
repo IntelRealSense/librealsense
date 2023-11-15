@@ -217,10 +217,11 @@ frame_interface * software_sensor::allocate_new_frame( rs2_extension extension,
                                                        stream_profile_interface * profile,
                                                        frame_additional_data && data )
 {
+    auto frame_number = data.frame_number; // For logging
     auto frame = _source.alloc_frame( extension, 0, std::move( data ), false );
     if( ! frame )
     {
-        LOG_WARNING( "Failed to allocate frame " << data.frame_number << " type " << extension );
+        LOG_WARNING( "Failed to allocate frame " << frame_number << " type " << extension );
     }
     else
     {
