@@ -6,8 +6,9 @@
 
 #include "frame.h"
 #include "metadata.h"
-#include <cmath>
 
+#include <cmath>
+#include <rsutils/number/crc32.h>
 #include <rsutils/string/from.h>
 
 
