@@ -700,7 +700,7 @@ namespace librealsense
         {
             for(auto iter = 0, rec =0; iter < 2; iter++, rec++)
             {
-                std::vector<byte> cal;
+                std::vector< uint8_t > cal;
                 try
                 {
                     cal = *_color_calib_table_raw;
@@ -789,7 +789,7 @@ namespace librealsense
             }
         }
 
-        void assign_rgb_stream_extrinsic(const std::vector<byte>& calib)
+        void assign_rgb_stream_extrinsic( const std::vector< uint8_t > & calib )
         {
             //write calibration to preset
             command cmd(ds::fw_cmd::SETINTCALNEW, 0x20, 0x2);  // TODO - REMI - CAN BE REMOVED???
@@ -797,7 +797,7 @@ namespace librealsense
             d400_device::_hw_monitor->send(cmd);
         }
 
-        std::vector<byte> read_sector(const uint32_t address, const uint16_t size) const
+        std::vector< uint8_t > read_sector( const uint32_t address, const uint16_t size ) const
         {
             if (size > ds_advanced_mode_base::HW_MONITOR_COMMAND_SIZE)
                 throw std::runtime_error( rsutils::string::from()
@@ -808,13 +808,13 @@ namespace librealsense
             return d400_device::_hw_monitor->send(cmd);
         }
 
-        std::vector<byte> read_rgb_gold() const
+        std::vector< uint8_t > read_rgb_gold() const
         {
             command cmd(ds::fw_cmd::LOADINTCAL, 0x20, 0x1);
             return d400_device::_hw_monitor->send(cmd);
         }
 
-        std::vector<byte> restore_calib_factory_settings() const
+        std::vector< uint8_t > restore_calib_factory_settings() const
         {
             command cmd(ds::fw_cmd::CAL_RESTORE_DFLT);
             return d400_device::_hw_monitor->send(cmd);

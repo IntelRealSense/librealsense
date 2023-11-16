@@ -12,6 +12,8 @@ namespace librealsense
 {
     using namespace device_serializer;
 
+    class recommended_proccesing_blocks_interface;
+
     class ros_writer: public writer
     {
     public:

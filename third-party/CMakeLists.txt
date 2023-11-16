@@ -1,5 +1,7 @@
 string(REPLACE ${PROJECT_SOURCE_DIR}/ "" _rel_path ${CMAKE_CURRENT_LIST_DIR})
 
+include(CMake/external_json.cmake)
+
 add_subdirectory( "${CMAKE_CURRENT_LIST_DIR}/rsutils" )
 
 # Add additional include directories to allow file to include rosbag headers

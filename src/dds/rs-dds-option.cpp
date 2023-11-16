@@ -41,6 +41,13 @@ float rs_dds_option::query() const
 }
 
 
+float rs_dds_option::get_last_known_value() const
+{
+    return _dds_opt->get_value();
+}
+
+
+
 const char * rs_dds_option::get_description() const
 {
     return _dds_opt->get_description().c_str();

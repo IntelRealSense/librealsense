@@ -1,11 +1,17 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "core/frame-holder.h"
-#include "proc/synthetic-stream.h"
 #include "sync.h"
-#include "environment.h"
+#include "core/frame-holder.h"
+#include "core/processing.h"
+#include "core/stream-profile-interface.h"
 #include "core/device-interface.h"
+#include "core/sensor-interface.h"
+#include "composite-frame.h"
+#include "core/time-service.h"
+
+#include <rsutils/string/from.h>
+
 
 namespace librealsense
 {
@@ -187,7 +193,7 @@ namespace librealsense
                 return matcher;
             }
         }
-        LOG_DEBUG( "no matcher found for " << get_abbr_string( stream_type ) << '.' << stream_id
+        LOG_DEBUG( "no matcher found for " << get_abbr_string( stream_type ) << stream_id
                                            << "; creating matcher from device..." );
 
         auto sensor = frame.frame->get_sensor().get(); //TODO: Potential deadlock if get_sensor() gets a hold of the last reference of that sensor
@@ -485,9 +491,7 @@ namespace librealsense
         for(auto m: _matchers)
         {
             if( _last_arrived[m.second.get()]
-                && ( fabs( (long long)f->get_frame_number()
-                           - (long long)_last_arrived[m.second.get()] ) )
-                       > 5 )
+                && ( std::abs( (long long)f->get_frame_number() - (long long)_last_arrived[m.second.get()] ) ) > 5 )
             {
                 std::stringstream s;
                 s << "clean inactive stream in "<<_name;
@@ -724,15 +728,15 @@ namespace librealsense
     bool timestamp_composite_matcher::are_equivalent( double a, double b, double fps )
     {
         auto gap = 1000. / fps;
-        if( abs( a - b ) < (gap / 2) )
+        if( std::abs( a - b ) < ( gap / 2 ) )
         {
             //LOG_DEBUG( "...     " << rsutils::string::from( a ) << " == " << rsutils::string::from( b ) << "  {diff}"
-            //                      << abs( a - b ) << " < " << rsutils::string::from( gap / 2 ) << "{gap/2}" );
+            //                      << std::abs( a - b ) << " < " << rsutils::string::from( gap / 2 ) << "{gap/2}" );
             return true;
         }
 
         //LOG_DEBUG( "...     " << rsutils::string::from( a ) << " != " << rsutils::string::from( b ) << "  {diff}"
-        //                      << rsutils::string::from( abs( a - b ) ) << " >= " << rsutils::string::from( gap / 2 )
+        //                      << rsutils::string::from( std::abs( a - b ) ) << " >= " << rsutils::string::from( gap / 2 )
         //                      << "{gap/2}" );
         return false;
     }

@@ -13,6 +13,9 @@
 #include "fw-update/fw-update-factory.h"
 #include "platform-camera.h"
 
+#include <librealsense2/h/rs_context.h>
+
+#include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/shared-ptr-singleton.h>
 #include <rsutils/signal.h>
 #include <rsutils/json.h>

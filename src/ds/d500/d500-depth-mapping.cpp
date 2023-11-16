@@ -6,6 +6,7 @@
 #include "d500-safety.h"
 #include "d500-info.h"
 
+
 #include <vector>
 #include <map>
 #include <cstddef>
@@ -13,6 +14,7 @@
 #include "ds/ds-timestamp.h"
 #include "ds/ds-options.h"
 #include <src/backend.h>
+#include <src/fourcc.h>
 #include "stream.h"
 
 #include "platform/platform-utils.h"

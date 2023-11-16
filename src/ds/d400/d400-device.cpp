@@ -1,6 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
+#include <librealsense2/h/rs_internal.h>
 #include <src/device.h>
 #include <src/image.h>
 #include <src/metadata-parser.h>
@@ -14,9 +15,11 @@
 #include "ds/ds-timestamp.h"
 #include <src/stream.h>
 #include <src/environment.h>
+#include <src/depth-sensor.h>
 #include "d400-color.h"
 #include "d400-nonmonochrome.h"
 #include <src/platform/platform-utils.h>
+#include <src/fourcc.h>
 
 #include <src/proc/depth-formats-converter.h>
 #include <src/proc/y8i-to-y8y8.h>
@@ -102,18 +105,23 @@ namespace librealsense
         _ds_device_common->enter_update_state();
     }
 
-    std::vector<uint8_t> d400_device::backup_flash(update_progress_callback_ptr callback)
+    std::vector<uint8_t> d400_device::backup_flash( rs2_update_progress_callback_sptr callback )
     {
         return _ds_device_common->backup_flash(callback);
     }
 
-    void d400_device::update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode)
+    void d400_device::update_flash(const std::vector<uint8_t>& image, rs2_update_progress_callback_sptr callback, int update_mode)
     {
         _ds_device_common->update_flash(image, callback, update_mode);
     }
 
     bool d400_device::check_fw_compatibility( const std::vector< uint8_t > & image ) const
     {
+        // check if the given FW size matches the expected FW size
+        if( ( image.size() != signed_fw_size ) )
+            throw librealsense::invalid_value_exception(
+                rsutils::string::from() << "Unsupported firmware binary image provided - " << image.size() << " bytes" );
+
         std::string fw_version = firmware_check_interface::extract_firmware_version_string( image );
 
         auto it = ds::d400_device_to_fw_min_version.find( _pid );

@@ -37,6 +37,8 @@ public:
 
     void set( float value ) override;
 
+    float get_last_known_value() const;
+
     float query() const override;
 
     bool is_enabled() const override { return true; }

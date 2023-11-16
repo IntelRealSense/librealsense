@@ -19,6 +19,7 @@
 #include "stream.h"
 #include "proc/motion-transform.h"
 #include "proc/auto-exposure-processor.h"
+#include <src/fourcc.h>
 
 using namespace librealsense;
 namespace librealsense

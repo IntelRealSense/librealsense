@@ -3,6 +3,7 @@
 
 #include "matcher-factory.h"
 #include "frame-holder.h"
+#include "stream-interface.h"
 
 #include <src/sync.h>
 

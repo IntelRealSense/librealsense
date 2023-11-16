@@ -5,6 +5,7 @@
 #include "rendering.h"
 #include "option.h"
 #include <src/core/device-interface.h>
+#include <src/core/sensor-interface.h>
 
 using namespace rs2;
 

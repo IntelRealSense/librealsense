@@ -12,7 +12,9 @@
 #include "ros_writer.h"
 #include "core/pose-frame.h"
 #include "core/motion-frame.h"
+#include <src/core/sensor-interface.h>
 #include <src/core/device-interface.h>
+#include <src/points.h>
 
 #include <rsutils/string/from.h>
 

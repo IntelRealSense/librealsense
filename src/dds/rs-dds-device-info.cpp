@@ -9,6 +9,8 @@
 #include <realdds/dds-device.h>
 #include <realdds/topics/device-info-msg.h>
 
+#include <rsutils/string/from.h>
+
 
 namespace librealsense {
 

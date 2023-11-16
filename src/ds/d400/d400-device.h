@@ -64,8 +64,8 @@ namespace librealsense
 
         void enter_update_state() const override;
         void enter_update_safety_mcu_state() const override{}
-        std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback) override;
-        void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode) override;
+        std::vector<uint8_t> backup_flash( rs2_update_progress_callback_sptr callback) override;
+        void update_flash(const std::vector<uint8_t>& image, rs2_update_progress_callback_sptr callback, int update_mode) override;
         bool check_fw_compatibility(const std::vector<uint8_t>& image) const override;
     protected:
         std::shared_ptr<ds_device_common> _ds_device_common;

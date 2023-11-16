@@ -5,6 +5,7 @@
 
 #include "sensor.h"
 #include "error-handling.h"
+#include "option.h"
 #include <deque>
 
 namespace librealsense

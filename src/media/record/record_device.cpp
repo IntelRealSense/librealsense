@@ -5,6 +5,8 @@
 #include <core/motion.h>
 #include <core/advanced_mode.h>
 #include "record_device.h"
+#include <src/safety-sensor.h>
+#include <src/depth-mapping-sensor.h>
 #include <src/platform/backend-device-group.h>
 
 using namespace librealsense;

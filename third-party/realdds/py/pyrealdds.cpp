@@ -482,7 +482,8 @@ PYBIND11_MODULE(NAME, m) {
         .def( "json_string",
               []( flexible_msg const & self )
               { return std::string( (char const *)self._data.data(), self._data.size() ); } )
-        .def( "write_to", &flexible_msg::write_to, py::call_guard< py::gil_scoped_release >() );
+        .def( "write_to",
+              []( flexible_msg & self, dds_topic_writer & writer ) { std::move( self ).write_to( writer ); } );
 
 
     using image_msg = realdds::topics::image_msg;

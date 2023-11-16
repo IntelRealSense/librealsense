@@ -112,6 +112,7 @@ namespace librealsense
         struct backend_device_group;
     }
 
+    class context;
     class backend_device;
 
     class ds_motion_common

@@ -3,8 +3,9 @@
 #pragma once
 
 #include "frame-holder.h"
-#include "options.h"
+#include "options-container.h"
 #include "info.h"
+
 #include <src/types.h>
 #include <vector>
 #include <memory>
@@ -49,17 +50,6 @@ namespace librealsense
 
         virtual void frame_ready(frame_holder result) = 0;
         virtual rs2_source* get_c_wrapper() = 0;
-    };
-
-    class processing_block_interface : public virtual options_interface, public virtual info_interface
-    {
-    public:
-        virtual void set_processing_callback(frame_processor_callback_ptr callback) = 0;
-        virtual void set_output_callback(frame_callback_ptr callback) = 0;
-        virtual void invoke(frame_holder frame) = 0;
-        virtual synthetic_source_interface& get_source() = 0;
-
-        virtual ~processing_block_interface() = default;
     };
 
     template<class T>

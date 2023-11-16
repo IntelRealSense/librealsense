@@ -3,7 +3,9 @@
 
 #include "backend-v4l2.h"
 #include <src/platform/command-transfer.h>
+#include <src/platform/hid-data.h>
 #include <src/core/time-service.h>
+#include <src/core/notification.h>
 #include "backend-hid.h"
 #include "backend.h"
 #include "types.h"
@@ -381,7 +383,7 @@ namespace librealsense
                 if (!_use_memory_map)
                 {
                     auto metadata_offset = get_full_length() - MAX_META_DATA_SIZE;
-                    memset((byte*)(get_frame_start()) + metadata_offset, 0, MAX_META_DATA_SIZE);
+                    memset((uint8_t *)(get_frame_start()) + metadata_offset, 0, MAX_META_DATA_SIZE);
                 }
 
                 LOG_DEBUG_V4L("Enqueue buf " << std::dec << _buf.index << " for fd " << fd);
@@ -500,13 +502,20 @@ namespace librealsense
             if (realpath(path.c_str(), usb_actual_path) != nullptr)
             {
                 path = std::string(usb_actual_path);
-                std::string val;
-                if(!(std::ifstream(path + "/version") >> val))
+                std::string camera_usb_version;
+                if(!(std::ifstream(path + "/version") >> camera_usb_version))
                     throw linux_backend_exception("Failed to read usb version specification");
 
-                auto it = usb_name_to_spec.find( val );
-                if( it != usb_name_to_spec.end() )
-                    res = it->second;
+                // go through the usb_name_to_spec map to find a usb type where the first element is contained in 'camera_usb_version'
+                // (contained and not strictly equal because of differences like "3.2" vs "3.20")
+                for(const auto usb_type : usb_name_to_spec ) {
+                    std::string usb_name = usb_type.first;
+                    if (std::string::npos != camera_usb_version.find(usb_name))
+                    {
+                         res = usb_type.second;
+                         return res;
+                    }
+                }
             }
             return res;
         }

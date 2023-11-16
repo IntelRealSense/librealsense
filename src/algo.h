@@ -4,7 +4,7 @@
 #pragma once
 #include "core/frame-holder.h"
 #include "core/roi.h"
-#include "core/options.h"
+#include "core/options-container.h"
 #include "types.h"
 
 #include <stdint.h>

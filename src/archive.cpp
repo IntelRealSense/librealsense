@@ -6,6 +6,8 @@
 #include "core/pose-frame.h"
 #include "core/motion-frame.h"
 #include "core/disparity-frame.h"
+#include "composite-frame.h"
+#include "points.h"
 
 
 namespace librealsense

@@ -45,6 +45,7 @@ test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safe
 verify_frames_received(pipe, profile, count = 10)
 
 pipe.stop()
+time.sleep(1) # allow some time for the streaming to actually stop
 pipe.start(cfg)
 verify_frames_received(pipe, profile, count = 10)
 

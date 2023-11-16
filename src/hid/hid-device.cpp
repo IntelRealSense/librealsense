@@ -3,6 +3,7 @@
 
 #include <queue>
 #include "hid-device.h"
+#include <src/platform/hid-data.h>
 
 #include <rsutils/string/from.h>
 #include <rsutils/string/hexdump.h>

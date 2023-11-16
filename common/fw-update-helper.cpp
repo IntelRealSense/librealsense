@@ -8,6 +8,7 @@
 
 #include "os.h"
 
+#include <rsutils/easylogging/easyloggingpp.h>
 #include <map>
 #include <vector>
 #include <string>
@@ -147,7 +148,7 @@ namespace rs2
 
         _progress = 30;
 
-        // Write signed firmware to appropriate file descritptor
+        // Write signed firmware to appropriate file descriptor
         std::ofstream fw_path_in_device(_dev.get_info(RS2_CAMERA_INFO_DFU_DEVICE_PATH), std::ios::binary);
         if (fw_path_in_device)
         {
@@ -182,17 +183,6 @@ namespace rs2
             serial = _dev.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
         else
             serial = _dev.query_sensors().front().get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
-
-
-        // TODO: DFU flow on HKR is different, we need to refactor this flow to look better and more generic
-        if (_dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
-        {
-            std::string product_line = _dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-            if (product_line == "D500")
-            {
-                _is_d500_device = true;
-            }
-        }
 
         // Clear FW update related notification to avoid dismissing the notification on ~device_model()
         // We want the notification alive during the whole process.
@@ -255,7 +245,7 @@ namespace rs2
                 }
                 else
                 {
-                    log_backup_status = "Back-up camera flash cannot be saved";
+                    log_backup_status = "Backup flash is not supported";
                 }
             }
             catch( const std::exception& e )
@@ -278,7 +268,9 @@ namespace rs2
                 }
             }
 
-            log(log_backup_status);
+            if ( !log_backup_status.empty() )
+                log(log_backup_status);
+            
 
             
 
@@ -307,6 +299,7 @@ namespace rs2
                                 {
                                     if (serial == d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))
                                     {
+                                        log( "DFU device '" + serial + "' found" );
                                         dfu = d;
                                         return true;
                                     }
@@ -342,29 +335,17 @@ namespace rs2
         {
             _progress = float(next_progress);
 
-            log("Recovery device connected, starting update");
+            log("Recovery device connected, starting update..\n"
+                "Internal write is in progress\n"
+                "Please DO NOT DISCONNECT the camera");
 
             dfu.update(_fw, [&](const float progress)
             {
                 _progress = ((ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress);
             });
 
-            // D400 devices takes 3 seconds after image transition until DFU process finish.
-            // D500 only starts the process after the image is transferred and it takes much time..
-            if( !_is_d500_device )
-            {
-                log( "Firmware Download completed, await DFU transition event" );
-                std::this_thread::sleep_for( std::chrono::seconds( 3 ) );
-            }
-            else
-            {
-                log( "Firmware Download completed, await DFU transition event\n"
-                    "Internal write is in progress\n"
-                    "Please DO NOT DISCONNECT the camera (might take a few minutes)");
-                std::this_thread::sleep_for( std::chrono::seconds( 60 ) );
-            }
-
-            log("Firmware Update completed, waiting for device to reconnect");
+            log( "Firmware Download completed, await DFU transition event" );
+            std::this_thread::sleep_for( std::chrono::seconds( 3 ) );
         }
         else
         {
@@ -373,7 +354,6 @@ namespace rs2
             {
                 _progress = (ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress;
             });
-
             log("Firmware Update completed, waiting for device to reconnect");
         }
 
@@ -400,13 +380,14 @@ namespace rs2
             }
 
             return false;
-        }, cleanup, std::chrono::seconds(_is_d500_device ? 120 : 60))) // TODO: HKR DFU issue - increased timeout from 60 to 120 seconds for HKR to complete FW write to flash
+        }, cleanup, std::chrono::seconds(60)))
         {
             fail("Original device did not reconnect in time!");
             return;
         }
 
-        log("Device reconnected successfully!");
+        log( "Device reconnected successfully!\n"
+             "FW update process completed successfully" );
 
         _progress = 100;
 

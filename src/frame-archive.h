@@ -6,6 +6,8 @@
 
 namespace librealsense
 {
+    constexpr static int RS2_USER_QUEUE_SIZE = 128;
+
     // Defines general frames storage model
     template<class T>
     class frame_archive : public std::enable_shared_from_this<frame_archive<T>>, public archive_interface

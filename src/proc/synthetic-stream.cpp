@@ -6,6 +6,8 @@
 #include "core/video.h"
 #include "core/motion-frame.h"
 #include "core/depth-frame.h"
+#include <src/composite-frame.h>
+#include <src/core/frame-callback.h>
 #include "option.h"
 #include "stream.h"
 #include "types.h"
@@ -15,13 +17,13 @@
 
 namespace librealsense
 {
-    void processing_block::set_processing_callback(frame_processor_callback_ptr callback)
+    void processing_block::set_processing_callback( rs2_frame_processor_callback_sptr callback )
     {
         std::lock_guard<std::mutex> lock(_mutex);
         _callback = callback;
     }
 
-    void processing_block::set_output_callback(frame_callback_ptr callback)
+    void processing_block::set_output_callback( rs2_frame_callback_sptr callback )
     {
         _source.set_callback(callback);
     }
@@ -255,10 +257,10 @@ namespace librealsense
             if (f.supports_frame_metadata(RS2_FRAME_METADATA_RAW_FRAME_SIZE))
                 raw_size = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_RAW_FRAME_SIZE));
         }
-        byte* planes[1];
-        planes[0] = (byte*)ret.get_data();
+        uint8_t * planes[1];
+        planes[0] = (uint8_t *)ret.get_data();
 
-        process_function(planes, static_cast<const byte*>(f.get_data()), width, height, height * width * _target_bpp, raw_size);
+        process_function(planes, static_cast<const uint8_t *>(f.get_data()), width, height, height * width * _target_bpp, raw_size);
 
         return ret;
     }
@@ -551,16 +553,14 @@ namespace librealsense
         update_info(RS2_CAMERA_INFO_NAME, block->get_info(RS2_CAMERA_INFO_NAME));
     }
 
-    void composite_processing_block::set_output_callback(frame_callback_ptr callback)
+    void composite_processing_block::set_output_callback( rs2_frame_callback_sptr callback )
     {
         // Each processing block will process the preceding processing block output frame.
         size_t i = 0;
         for (i = 1; i < _processing_blocks.size(); i++)
         {
-            auto output_cb = [i, this](frame_holder fh) {
-                _processing_blocks[i]->invoke(std::move(fh));
-            };
-            _processing_blocks[i - 1]->set_output_callback(std::make_shared<internal_frame_callback<decltype(output_cb)>>(output_cb));
+            _processing_blocks[i - 1]->set_output_callback( make_frame_callback(
+                [i, this]( frame_holder fh ) { _processing_blocks[i]->invoke( std::move( fh ) ); } ) );
         }
 
         // Set the output callback of the composite processing block as last processing block in the vector.
@@ -648,11 +648,11 @@ namespace librealsense
                 w, h, w * _right_target_bpp, _right_extension_type);
 
             // process the frame
-            byte* planes[2];
-            planes[0] = (byte*)lf.frame->get_frame_data();
-            planes[1] = (byte*)rf.frame->get_frame_data();
+            uint8_t * planes[2];
+            planes[0] = (uint8_t *)lf.frame->get_frame_data();
+            planes[1] = (uint8_t *)rf.frame->get_frame_data();
 
-            process_function(planes, (const byte*)frame->get_frame_data(), w, h, 0, 0);
+            process_function(planes, (const uint8_t *)frame->get_frame_data(), w, h, 0, 0);
 
             source->frame_ready(std::move(lf));
             source->frame_ready(std::move(rf));

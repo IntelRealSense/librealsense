@@ -5,6 +5,7 @@
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-guid.h>
 #include <realdds/dds-time.h>
+#include <realdds/dds-serialization.h>
 
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/domain/DomainParticipantListener.hpp>
@@ -138,8 +139,8 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
         {
         case eprosima::fastrtps::rtps::WriterDiscoveryInfo::DISCOVERED_WRITER:
             /* Process the case when a new publisher was found in the domain */
-            LOG_DEBUG( _owner.name() << ": +writer (" << _owner.print( info.info.guid() ) << ") publishing '"
-                                     << info.info.topicName() << "' of type '" << info.info.typeName() << "'" );
+            LOG_DEBUG( _owner.name() << ": +writer (" << _owner.print( info.info.guid() ) << ") publishing "
+                                     << info.info );
             _owner.on_writer_added( info.info.guid(), info.info.topicName().c_str() );
             break;
 
@@ -158,8 +159,7 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
         switch( info.status )
         {
         case eprosima::fastrtps::rtps::ReaderDiscoveryInfo::DISCOVERED_READER:
-            LOG_DEBUG( _owner.name() << ": +reader (" << _owner.print( info.info.guid() ) << ") of '"
-                                     << info.info.topicName() << "' of type '" << info.info.typeName() << "'" );
+            LOG_DEBUG( _owner.name() << ": +reader (" << _owner.print( info.info.guid() ) << ") of " << info.info );
             _owner.on_reader_added( info.info.guid(), info.info.topicName().c_str() );
             break;
 

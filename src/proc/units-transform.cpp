@@ -5,6 +5,7 @@
 #include <librealsense2/hpp/rs_processing.hpp>
 
 #include "core/depth-frame.h"
+#include "core/sensor-interface.h"
 #include "proc/synthetic-stream.h"
 #include "environment.h"
 #include "units-transform.h"

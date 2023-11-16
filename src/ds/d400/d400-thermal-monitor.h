@@ -58,16 +58,14 @@ namespace librealsense
                 });
         }
 
-        void register_calibration_change_callback(calibration_change_callback_ptr callback) override
+        void register_calibration_change_callback( rs2_calibration_change_callback_sptr callback ) override
         {
-            {
-                _user_callbacks.insert(callback);
-            }
+            _user_callbacks.insert(callback);
         }
 
     private:
         std::weak_ptr<d400_thermal_monitor>  _monitor;
-        std::set<calibration_change_callback_ptr> _user_callbacks;
+        std::set< rs2_calibration_change_callback_sptr > _user_callbacks;
     };
 
 }
