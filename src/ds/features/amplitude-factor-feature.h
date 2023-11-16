@@ -13,7 +13,7 @@ namespace librealsense {
 class amplitude_factor_feature : public feature_interface
 {
 public:
-    static constexpr char * ID = "Amplitude factor feature";
+    static constexpr const char * ID = "Amplitude factor feature";
 
     amplitude_factor_feature() : feature_interface( ID )
     {

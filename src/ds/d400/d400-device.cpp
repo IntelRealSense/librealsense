@@ -21,7 +21,7 @@
 #include <src/fourcc.h>
 
 #include <src/ds/features/amplitude-factor-feature.h>
-#include <src/features/emitter-frequency-feature.h>
+#include <src/ds/features/emitter-frequency-feature.h>
 #include <src/features/remove-ir-pattern-feature.h>
 
 #include <proc/depth-formats-converter.h>
@@ -329,21 +329,6 @@ namespace librealsense
                 preset_max_value = static_cast<float>(RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY);
             }
             return preset_max_value;
-        }
-
-        bool supports_feature( const std::string & feature_id ) const
-        {
-            firmware_version fw_ver = firmware_version( get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
-            auto pid = _owner->get_pid();
-
-            if( feature_id == emitter_frequency_feature::ID )
-                return ( pid == ds::RS457_PID || pid == ds::RS455_PID ) && fw_ver >= firmware_version( "5.14.0" );
-            else if( feature_id == amplitude_factor_feature::ID )
-                return ( fw_ver >= firmware_version( "5.11.9.0" ) );
-            else if( feature_id == remove_ir_pattern_feature::ID )
-                return ( fw_ver >= firmware_version( "5.9.10.0" ) );  // TODO - add PID here? Now checked at advanced_mode
-
-            return false;
         }
 
     protected:
@@ -964,6 +949,24 @@ namespace librealsense
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
 
         std::string curr_version= _fw_version;
+
+        register_features();
+    }
+
+    void d400_device::register_features()
+    {
+        firmware_version fw_ver = firmware_version( get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
+        auto pid = get_pid();
+
+        if( ( pid == ds::RS457_PID || pid == ds::RS455_PID ) && fw_ver >= firmware_version( "5.14.0" ) )
+            register_feature( emitter_frequency_feature::ID,
+                            std::make_shared< emitter_frequency_feature >( get_depth_sensor() ) );
+
+        if( fw_ver >= firmware_version( "5.11.9.0" ) )
+            register_feature( amplitude_factor_feature::ID, std::make_shared< amplitude_factor_feature >() );
+
+        if( fw_ver >= firmware_version( "5.9.10.0" ) ) // TODO - add PID here? Now checked at advanced_mode
+            register_feature( remove_ir_pattern_feature::ID, std::make_shared< remove_ir_pattern_feature >() );
     }
 
     void d400_device::register_metadata(const synthetic_sensor &depth_sensor, const firmware_version& hdr_firmware_version) const

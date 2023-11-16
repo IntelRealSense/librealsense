@@ -4,7 +4,7 @@
 #include "ds-active-common.h"
 #include "d400/d400-color.h"
 
-#include <src/features/emitter-frequency-feature.h>
+#include <src/ds/features/emitter-frequency-feature.h>
 
 namespace librealsense
 {
@@ -80,18 +80,10 @@ namespace librealsense
             }
 
             // EMITTER FREQUENCY OPTION
-            if( _depth_ep.supports_feature( emitter_frequency_feature::ID ) )
+            auto feature = _owner->get_feature( emitter_frequency_feature::ID );
+            if( auto emitter_freq_feature = std::dynamic_pointer_cast< emitter_frequency_feature >( feature ) )
             {
-                auto emitter_freq = std::make_shared<uvc_xu_option<uint16_t>>(
-                    _raw_depth_ep,
-                    ds::depth_xu,
-                    ds::DS5_EMITTER_FREQUENCY,
-                    "Controls the emitter frequency, 57 [KHZ] / 91 [KHZ]",
-                    std::map<float, std::string>{
-                        { (float)RS2_EMITTER_FREQUENCY_57_KHZ, "57 KHZ" },
-                    { (float)RS2_EMITTER_FREQUENCY_91_KHZ, "91 KHZ" } }, false);
-
-                _depth_ep.register_option(RS2_OPTION_EMITTER_FREQUENCY, emitter_freq);
+                emitter_freq_feature->activate();
             }
         }
         else

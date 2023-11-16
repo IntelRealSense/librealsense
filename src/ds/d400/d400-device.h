@@ -86,8 +86,8 @@ namespace librealsense
         void register_metadata(const synthetic_sensor& depth_sensor, const firmware_version& hdr_firmware_version) const;
         void register_metadata_mipi(const synthetic_sensor& depth_sensor, const firmware_version& hdr_firmware_version) const;
 
-        void init(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group);
+        void init(std::shared_ptr<context> ctx, const platform::backend_device_group& group);
+        virtual void register_features();
 
         friend class d400_depth_sensor;
 

@@ -13,7 +13,7 @@ namespace librealsense {
 class remove_ir_pattern_feature : public feature_interface
 {
 public:
-    static constexpr char * ID = "Remove IR pattern feature";
+    static constexpr const char * ID = "Remove IR pattern feature";
 
     remove_ir_pattern_feature() : feature_interface( ID )
     {

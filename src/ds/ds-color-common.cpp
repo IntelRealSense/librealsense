@@ -68,7 +68,7 @@ namespace librealsense
                 gain_option,
                 auto_exposure_option));
 
-        if( _color_ep.supports_feature( auto_exposure_roi_feature::ID ) )
+        if( _color_ep.get_device().supports_feature( auto_exposure_roi_feature::ID ) )
         {
             roi_sensor_interface* roi_sensor;
             if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&_color_ep)))

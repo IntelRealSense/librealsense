@@ -277,15 +277,6 @@ namespace librealsense
             return static_cast<float>(RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY);
         }
 
-        
-        bool supports_feature( const std::string & feature_id ) const
-        {
-            if( feature_id == amplitude_factor_feature::ID )
-                return true;
-
-            return false;
-        }
-
     protected:
         const d500_device* _owner;
         mutable std::atomic<float> _depth_units;
@@ -744,6 +735,13 @@ namespace librealsense
 
         if (usb_modality)
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
+
+        register_features();
+    }
+
+    void d500_device::register_features()
+    {
+        register_feature( amplitude_factor_feature::ID, std::make_shared< amplitude_factor_feature >() );
     }
 
     platform::usb_spec d500_device::get_usb_spec() const

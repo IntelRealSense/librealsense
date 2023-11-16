@@ -120,14 +120,22 @@ namespace librealsense
         }
     }
 
+    void d400_color::register_features()
+    {
+        firmware_version fw_ver = firmware_version( get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
+
+        if( fw_ver >= firmware_version( "5.10.9.0" ) )
+            register_feature( auto_exposure_roi_feature::ID, std::make_shared< auto_exposure_roi_feature >() );
+    }
+
     void d400_color::init()
     {
         auto& color_ep = get_color_sensor();
         auto& raw_color_ep = get_raw_color_sensor();
     
-        _ds_color_common = std::make_shared<ds_color_common>(raw_color_ep, color_ep, 
-            _fw_version, _hw_monitor, this);
+        _ds_color_common = std::make_shared<ds_color_common>(raw_color_ep, color_ep, _fw_version, _hw_monitor, this);
 
+        register_features();
         register_options();
         if (_pid != ds::RS457_PID)
         {
@@ -379,15 +387,5 @@ namespace librealsense
     processing_blocks d400_color_sensor::get_recommended_processing_blocks() const
     {
         return get_color_recommended_proccesing_blocks();
-    }
-
-     bool d400_color_sensor::supports_feature( const std::string & feature_id ) const
-    {
-        firmware_version fw_ver = firmware_version( get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
-
-        if( feature_id == auto_exposure_roi_feature::ID )
-            return ( fw_ver >= firmware_version( "5.10.9.0" ) );
-
-        return false;
     }
 }

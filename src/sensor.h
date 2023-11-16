@@ -90,8 +90,6 @@ namespace librealsense
             return {};
         }
 
-        virtual bool supports_feature( const std::string & feature_id ) const { return false; } // Default implementation, override in derived classes
-
     protected:
         // Since _profiles is private, we need a way to get the final profiles
         stream_profiles const & initialized_profiles() const { return *_profiles; }

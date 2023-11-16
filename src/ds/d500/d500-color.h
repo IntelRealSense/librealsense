@@ -32,6 +32,8 @@ namespace librealsense
         }
 
     protected:
+        void register_features() override;
+
         std::shared_ptr<stream_interface> _color_stream;
         std::shared_ptr<ds_color_common> _ds_color_common;
 
@@ -71,8 +73,6 @@ namespace librealsense
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override;
         stream_profiles init_stream_profiles() override;
         processing_blocks get_recommended_processing_blocks() const override;
-
-        bool supports_feature( const std::string & feature_id ) const override;
 
     protected:
         const d500_color* _owner;

@@ -13,7 +13,7 @@ namespace librealsense {
 class auto_exposure_roi_feature : public feature_interface
 {
 public:
-    static constexpr char * ID = "Auto exposure ROI feature";
+    static constexpr const char * ID = "Auto exposure ROI feature";
 
     auto_exposure_roi_feature() : feature_interface( ID )
     {

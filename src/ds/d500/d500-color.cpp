@@ -84,6 +84,13 @@ namespace librealsense
         _color_device_idx = add_sensor(color_ep);
     }
 
+    void d500_color::register_features()
+    {
+        register_feature( auto_exposure_roi_feature::ID, std::make_shared< auto_exposure_roi_feature >() );
+
+        d500_device::register_features();
+    }
+
     void d500_color::init()
     {
         auto& color_ep = get_color_sensor();
@@ -181,13 +188,5 @@ namespace librealsense
     processing_blocks d500_color_sensor::get_recommended_processing_blocks() const
     {
         return get_color_recommended_proccesing_blocks();
-    }
-
-    bool d500_color_sensor::supports_feature( const std::string & feature_id ) const
-    {
-        if( feature_id == auto_exposure_roi_feature::ID )
-            return true;
-
-        return false;
     }
 }

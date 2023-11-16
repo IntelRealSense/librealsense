@@ -28,4 +28,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/presets.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds-calib-parsers.h"
         "${CMAKE_CURRENT_LIST_DIR}/features/amplitude-factor-feature.h"
+        "${CMAKE_CURRENT_LIST_DIR}/features/emitter-frequency-feature.h"
+        "${CMAKE_CURRENT_LIST_DIR}/features/emitter-frequency-feature.cpp"
 )

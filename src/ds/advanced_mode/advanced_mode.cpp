@@ -64,7 +64,7 @@ namespace librealsense
         };
 
         _amplitude_factor_support = [this]() {
-            return _depth_sensor.supports_feature( amplitude_factor_feature::ID );
+            return _depth_sensor.get_device().supports_feature( amplitude_factor_feature::ID );
         };
     }
 
@@ -171,7 +171,7 @@ namespace librealsense
             break;
         case RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN:
         {
-            if( ! _depth_sensor.supports_feature( remove_ir_pattern_feature::ID ) )
+            if( ! _depth_sensor.get_device().supports_feature( remove_ir_pattern_feature::ID ) )
                 throw invalid_value_exception( "apply_preset(...) failed! The device does not support remove IR pattern feature" );
 
             switch (device_pid)
