@@ -95,10 +95,11 @@ namespace librealsense
 
                 if (FORMAT == RS2_FORMAT_Y8)
                 {
-                    // Align all Y components and output 16 pixels (16 bytes) at once
-                    __m128i y0 = _mm_shuffle_epi8(s0, _mm_setr_epi8(1, 3, 5, 7, 9, 11, 13, 15, 0, 2, 4, 6, 8, 10, 12, 14));
-                    __m128i y1 = _mm_shuffle_epi8(s1, _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15));
-                    _mm_storeu_si128(&dst[i], _mm_alignr_epi8(y0, y1, 8));
+                    const __m128i vmask = _mm_set1_epi16( 0x00ff );
+                    s0 = _mm_and_si128( s0, vmask );  // mask unwanted bytes
+                    s1 = _mm_and_si128( s1, vmask );
+                    // Convert packed signed 16-bit integers from a and b to packed 8-bit integers using unsigned saturation
+                    _mm_storeu_si128( &dst[i], _mm_packus_epi16( s0, s1 ) );
                     continue;
                 }
 
@@ -748,14 +749,11 @@ namespace librealsense
     {
         switch (dst_format)
         {
-        case RS2_FORMAT_Y8:
-            unpack_yuy2<RS2_FORMAT_Y8>(d, s, w, h, actual_size);
-            break;
-        case RS2_FORMAT_Y16:
-            unpack_yuy2<RS2_FORMAT_Y16>(d, s, w, h, actual_size);
-            break;
         case RS2_FORMAT_RGB8:
             unpack_yuy2<RS2_FORMAT_RGB8>(d, s, w, h, actual_size);
+            break;
+        case RS2_FORMAT_Y8:
+            unpack_yuy2<RS2_FORMAT_Y8>(d, s, w, h, actual_size);
             break;
         case RS2_FORMAT_RGBA8:
             unpack_yuy2<RS2_FORMAT_RGBA8>(d, s, w, h, actual_size);
@@ -765,6 +763,9 @@ namespace librealsense
             break;
         case RS2_FORMAT_BGRA8:
             unpack_yuy2<RS2_FORMAT_BGRA8>(d, s, w, h, actual_size);
+            break;
+        case RS2_FORMAT_Y16:
+            unpack_yuy2<RS2_FORMAT_Y16>( d, s, w, h, actual_size );
             break;
         default:
             LOG_ERROR("Unsupported format for YUY2 conversion.");
