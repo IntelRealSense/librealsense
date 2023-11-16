@@ -132,28 +132,25 @@ jobs:
           venv/bin/python3 cmake_downloader.py --first_minor
           output=$(venv/bin/python3 cmake_min_version.py $work_dir)
           
-          echo ""
-          echo "*** Sample of Expected Output of cmake_min_version.py ***"
-          echo "[  0%] CMake 3.9.2    ✔ works"
-          echo "[ 12%] CMake 3.2.2    ✘ error"
-          echo "       CMakeLists.txt:7 (cmake_minimum_required)"
-          echo "[ 33%] CMake 3.8.0    ✔ works"
-          echo "[ 50%] CMake 3.7.1    ✘ error"
-          echo "       CMakeLists.txt:16 (target_compile_features)"
-          echo "[ 80%] CMake 3.7.2    ✘ error"
-          echo "       CMakeLists.txt:16 (target_compile_features)"
-          echo "[100%] Minimal working version: CMake 3.8.0"
-          echo ""
-          echo "cmake_minimum_required(VERSION 3.8.0)"
+          # Sample of Expected Output of cmake_min_version.py ***
+          # [  0%] CMake 3.9.2    ✔ works
+          # [ 12%] CMake 3.2.2    ✘ error
+          #        CMakeLists.txt:7 (cmake_minimum_required)
+          # [ 33%] CMake 3.8.0    ✔ works
+          # [ 50%] CMake 3.7.1    ✘ error
+          #        CMakeLists.txt:16 (target_compile_features)
+          # [ 80%] CMake 3.7.2    ✘ error
+          #        CMakeLists.txt:16 (target_compile_features)
+          # [100%] Minimal working version: CMake 3.8.0
           
-          echo ""
-          echo "*** Current Output of cmake_min_version.py ***"
+          # cmake_minimum_required(VERSION 3.8.0)
+          
           echo "$output"
                     
           # Retrieve CMake minimal version from the last line of the tool output.
           current_cmake_version=$(echo ${output} | grep -oP "VERSION \d+\.\d+" || echo "VERSION NOT FOUND")
           
-          if [ "$current_cmake_version" -eq "VERSION NOT FOUND" ]
+          if [ "$current_cmake_version" == "VERSION NOT FOUND" ]
           then
             echo "Error - CMake version not found."
             exit 1
