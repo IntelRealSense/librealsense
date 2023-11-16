@@ -13,17 +13,79 @@
 #include <librealsense2/rs.h>              // RS2_API_FULL_VERSION_STR
 #include <src/librealsense-exception.h>
 
+#include <rsutils/os/special-folder.h>
+#include <rsutils/os/executable-name.h>
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/string/from.h>
 #include <rsutils/json.h>
 using json = nlohmann::json;
 
+#include <fstream>
 
-namespace librealsense
-{
+
+namespace librealsense {
+
+
+    static nlohmann::json load_config()
+    {
+        std::ifstream f( rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME );
+        if( ! f.good() )
+            return nlohmann::json::object();
+
+        // Load the realsense configuration file settings
+        try
+        {
+            return nlohmann::json::parse( f );
+        }
+        catch( std::exception const & e )
+        {
+            throw invalid_value_exception( "failed to load configuration file: " + std::string( e.what() ) );
+        }
+    }
+
+
+    static void merge_settings( nlohmann::json & settings, nlohmann::json const & overrides, std::string const & name )
+    {
+        if( ! overrides.is_object() )
+            throw invalid_value_exception( name + ": expecting an object; got " + overrides.dump() );
+        try
+        {
+            settings.merge_patch( overrides );
+        }
+        catch( std::exception const & e )
+        {
+            throw invalid_value_exception( "failed to merge " + name + ": " + std::string( e.what() ) );
+        }
+    }
+
+
+    static nlohmann::json load_settings( nlohmann::json const & context_settings )
+    {
+        // Allow ignoring of any other settings, global or not!
+        if( ! rsutils::json::get( context_settings, "inherit", true ) )
+            return context_settings;
+
+        auto config = load_config();
+
+        // Take the global 'context' settings out of the configuration
+        nlohmann::json settings;
+        if( auto global_context = rsutils::json::nested( config, "context" ) )
+            merge_settings( settings, global_context, "global config-file/context" );
+
+        // Merge any application-specific context settings
+        auto const executable = rsutils::os::executable_name();
+        if( auto executable_context = rsutils::json::nested( config, executable, "context" ) )
+            merge_settings( settings, executable_context, "config-file/" + executable + "/context" );
+
+        // Finally, merge the given context settings on top of all that
+        merge_settings( settings, context_settings, "context settings" );
+        return settings;
+    }
+
+
     context::context( json const & settings )
-        : _settings( settings )
-        , _device_mask( rsutils::json::get< unsigned >( settings, "device-mask", RS2_PRODUCT_LINE_ANY ) )
+        : _settings( load_settings( settings ) )  // global | application | local
+        , _device_mask( rsutils::json::get< unsigned >( _settings, "device-mask", RS2_PRODUCT_LINE_ANY ) )
     {
         static bool version_logged = false;
         if( ! version_logged )
@@ -49,7 +111,7 @@ namespace librealsense
 
 
     context::context( char const * json_settings )
-        : context( json_settings ? json::parse( json_settings ) : json() )
+        : context( json_settings ? json::parse( json_settings ) : json::object() )
     {
     }
 
@@ -141,4 +203,5 @@ namespace librealsense
         }
     }
 
-}
+
+}  // namespace librealsense
