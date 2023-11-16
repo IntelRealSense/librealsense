@@ -3,6 +3,7 @@
 
 #include "rs-config.h"
 
+#include <librealsense2/rs.h>
 #include <rsutils/os/special-folder.h>
 #include <rsutils/json.h>
 #include <fstream>
@@ -79,7 +80,7 @@ void config_file::save(const char* filename)
 config_file& config_file::instance()
 {
     static config_file inst( rsutils::os::get_special_folder( rsutils::os::special_folder::app_data )
-                             + "realsense-config.json" );
+                             + RS2_CONFIG_FILENAME );
     return inst;
 }
 
