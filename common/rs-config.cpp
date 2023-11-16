@@ -4,13 +4,8 @@
 #include "rs-config.h"
 
 #include <rsutils/os/special-folder.h>
-#include <nlohmann/json.hpp>
-
-#include "model-views.h"
-
+#include <rsutils/json.h>
 #include <fstream>
-
-#include "os.h"
 
 using json = nlohmann::json;
 
@@ -18,7 +13,7 @@ using namespace rs2;
 
 void config_file::set(const char* key, const char* value)
 {
-    _values[key] = value;
+    _j[key] = value;
     save();
 }
 
@@ -29,30 +24,30 @@ void config_file::set_default(const char* key, const char* calculate)
 
 void config_file::remove(const char* key)
 {
-    _values.erase(key);
+    _j.erase(key);
     save();
 }
 
 void config_file::reset()
 {
-    _values.clear();
+    _j = nlohmann::json::object();
     save();
 }
 
 std::string config_file::get(const char* key, const char* def) const
 {
-    auto it = _values.find(key);
-    if (it != _values.end())
+    auto it = _j.find(key);
+    if (it != _j.end() && it->is_string())
     {
-        return it->second;
+        return rsutils::json::string_ref( *it );
     }
     return get_default(key, def);
 }
 
 bool config_file::contains(const char* key) const
 {
-    auto it = _values.find(key);
-    return it != _values.end();
+    auto it = _j.find(key);
+    return it != _j.end() && it->is_string();
 }
 
 std::string config_file::get_default(const char* key, const char* def) const
@@ -70,16 +65,10 @@ config_value config_file::get(const char* key) const
 
 void config_file::save(const char* filename)
 {
-    json j;
-    for(auto kvp : _values)
-    {
-        j[kvp.first] = kvp.second; 
-    }
-    std::string s = j.dump(2);
     try
     {
         std::ofstream out(filename);
-        out << s;
+        out << _j.dump( 2 );
         out.close();
     }
     catch (...)
@@ -94,24 +83,14 @@ config_file& config_file::instance()
     return inst;
 }
 
-config_file::config_file(std::string filename)
-    : _filename(std::move(filename)), _values()
+config_file::config_file( std::string const & filename )
+    : _filename( filename )
 {
     try
     {
-
         std::ifstream t(_filename);
         if (!t.good()) return;
-        std::string str((std::istreambuf_iterator<char>(t)),
-                 std::istreambuf_iterator<char>());
-        if( ! str.empty() )
-        {
-            auto j = json::parse( str );
-            for( json::iterator it = j.begin(); it != j.end(); ++it )
-            {
-                _values[it.key()] = it.value().get< std::string >();
-            }
-        }
+        _j = json::parse( t );
     }
     catch(...)
     {
@@ -125,7 +104,7 @@ void config_file::save()
 }
 
 config_file::config_file()
-    : _filename(""), _values()
+    : _j( nlohmann::json::object() )
 {
 }
 
@@ -133,7 +112,7 @@ config_file& config_file::operator=(const config_file& other)
 {
     if (this != &other)
     {
-        _values = other._values;
+        _j = other._j;
         _defaults = other._defaults;
         save();
     }
@@ -142,5 +121,5 @@ config_file& config_file::operator=(const config_file& other)
 
 bool config_file::operator==(const config_file& other) const
 {
-    return _values == other._values;
+    return _j == other._j;
 }
