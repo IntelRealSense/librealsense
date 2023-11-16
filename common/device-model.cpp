@@ -13,6 +13,7 @@
 #include "imgui-fonts-fontawesome.hpp"
 #include "imgui-fonts-monofont.hpp"
 
+#include <rsutils/os/special-folder.h>
 #include "os.h"
 #include <rsutils/os/os.h>
 #include "viewer.h"
@@ -416,7 +417,7 @@ namespace rs2
 
         refresh_notifications(viewer);
 
-        auto path = get_folder_path( special_folder::user_documents );
+        auto path = rsutils::os::get_special_folder( rsutils::os::special_folder::user_documents );
         path += "librealsense2/presets/";
         try
         {
