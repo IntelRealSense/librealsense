@@ -34,7 +34,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/pose-frame.h"
         "${CMAKE_CURRENT_LIST_DIR}/processing.h"
         "${CMAKE_CURRENT_LIST_DIR}/processing-block-interface.h"
-        "${CMAKE_CURRENT_LIST_DIR}/recommended-proccesing-blocks-interface.h"
+        "${CMAKE_CURRENT_LIST_DIR}/recommended-processing-blocks-interface.h"
         "${CMAKE_CURRENT_LIST_DIR}/sensor-interface.h"
         "${CMAKE_CURRENT_LIST_DIR}/serialization.h"
         "${CMAKE_CURRENT_LIST_DIR}/stream-interface.h"
