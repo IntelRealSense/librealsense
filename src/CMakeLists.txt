@@ -88,6 +88,8 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/sensor.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/hid-sensor.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/uvc-sensor.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/rscore-pp-block-factory.h"
+        "${CMAKE_CURRENT_LIST_DIR}/rscore-pp-block-factory.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/software-device.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/software-device-info.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/software-sensor.cpp"
