@@ -85,6 +85,20 @@ namespace librealsense
             }
             return false;
         }
+
+        void register_color_processing_blocks() override
+        {
+            auto & color_ep = get_color_sensor();
+
+            color_ep.register_processing_block(
+                processing_block_factory::create_id_pbf( RS2_FORMAT_RAW16, RS2_STREAM_COLOR ) );
+
+            color_ep.register_processing_block(
+                processing_block_factory::create_pbf_vector< m420_converter >(
+                    RS2_FORMAT_M420,
+                    map_supported_color_formats( RS2_FORMAT_M420 ),
+                    RS2_STREAM_COLOR ) );
+        }
     };
     
     class rs_d585s_device : public d500_active,
@@ -140,6 +154,21 @@ namespace librealsense
             }
             return false;
         }
+
+        void register_color_processing_blocks() override
+        {
+            auto & color_ep = get_color_sensor();
+
+            color_ep.register_processing_block(
+                processing_block_factory::create_id_pbf( RS2_FORMAT_RAW16, RS2_STREAM_COLOR ) );
+
+            color_ep.register_processing_block(
+                processing_block_factory::create_pbf_vector< m420_converter >(
+                    RS2_FORMAT_M420,
+                    map_supported_color_formats( RS2_FORMAT_M420 ),
+                    RS2_STREAM_COLOR ) );
+
+        }
     };
     
     class d555e_device
@@ -173,17 +202,17 @@ namespace librealsense
         }
 
 
-    void register_color_processing_blocks() override
-    {
-        auto & color_ep = get_color_sensor();
+        void register_color_processing_blocks() override
+        {
+            auto & color_ep = get_color_sensor();
 
-        color_ep.register_processing_block( processing_block_factory::create_pbf_vector< yuy2_converter >(
-            RS2_FORMAT_YUYV,
-            map_supported_color_formats( RS2_FORMAT_YUYV ),
-            RS2_STREAM_COLOR ) );
-        color_ep.register_processing_block(  // Color Raw (Bayer 10-bit embedded in 16-bit) for calibration
-            processing_block_factory::create_id_pbf( RS2_FORMAT_RAW16, RS2_STREAM_COLOR ) );
-    }
+            color_ep.register_processing_block( processing_block_factory::create_pbf_vector< yuy2_converter >(
+                RS2_FORMAT_YUYV,
+                map_supported_color_formats( RS2_FORMAT_YUYV ),
+                RS2_STREAM_COLOR ) );
+            color_ep.register_processing_block(  // Color Raw (Bayer 10-bit embedded in 16-bit) for calibration
+                processing_block_factory::create_id_pbf( RS2_FORMAT_RAW16, RS2_STREAM_COLOR ) );
+        }
 
 
         std::vector< tagged_profile > get_profiles_tags() const override
@@ -222,6 +251,7 @@ namespace librealsense
             return false;
         }
     };
+
 
     std::shared_ptr< device_interface > d500_info::create_device()
     {
