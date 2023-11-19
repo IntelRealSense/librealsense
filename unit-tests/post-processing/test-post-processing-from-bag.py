@@ -15,7 +15,7 @@ import time
 frame_processor_lock = threading.Lock()
 frames_lock = threading.Lock()
 completion_event = threading.Event()
-all_paris = True
+all_pairs = True
 composite_frames = []
 sensor_to_frames = {}
 sensor_to_framesets = {}
@@ -41,7 +41,7 @@ class AlignRecordBlock:
 
 def create_sw_frame(video_frame, profile):
     new_video_frame = rs.software_video_frame()
-    new_video_frame.data = np.array(np.hstack(np.asarray(video_frame.get_data(), dtype=np.uint8)), dtype=np.uint8)
+    new_video_frame.data = bytearray(video_frame.get_data())
     new_video_frame.bpp = video_frame.get_bytes_per_pixel()
     new_video_frame.stride = video_frame.get_width() * video_frame.get_bytes_per_pixel()
     new_video_frame.timestamp = video_frame.get_timestamp()
@@ -58,13 +58,13 @@ def validate_ppf_results(result_frame, reference_frame):
     test.check_equal(result_profile.width(), reference_profile.width())
     test.check_equal(result_profile.height(), reference_profile.height())
 
-    v1 = np.asarray(result_frame.get_data()).astype(dtype=np.uint8).reshape(-1)
-    v2 = np.asarray(reference_frame.get_data()).astype(dtype=np.uint8).reshape(-1)
+    v1 = bytearray(result_frame.get_data())
+    v2 = bytearray(reference_frame.get_data())
     test.check_equal_lists(v1,v2)
 
 
 def process_frame(frame, frame_source):
-    sensor_name = rs.sensor_from_frame(frame).get_info(rs.camera_info.name)
+    sensor_name = rs.sensor.from_frame(frame).get_info(rs.camera_info.name)
     with frame_processor_lock:
         if sensor_name in sensor_to_frames:
             sensor_to_frames[sensor_name].append(frame)
@@ -75,9 +75,9 @@ def process_frame(frame, frame_source):
             frameset = frame_source.allocate_composite_frame(sensor_to_frames[sensor_name])
             frameset.keep()
             sensor_to_framesets[sensor_name] = frameset
-            all_paris = True
+            all_pairs = True
         else:
-            all_paris = False
+            all_pairs = False
 
 
 def check_condition(sensors):
@@ -95,7 +95,7 @@ def callback_for_get_frames(frame, sensor_to_frame, sensors):
     with frames_lock:
         if len(sensor_to_frame) < len(sensors):
             frame.keep()
-            sensor_name = rs.sensor_from_frame(frame).get_info(rs.camera_info.name)
+            sensor_name = rs.sensor.from_frame(frame).get_info(rs.camera_info.name)
             sensor_to_frame[sensor_name] = frame
 
 
@@ -138,7 +138,7 @@ def get_composite_frames(sensors):
 
     while True:
         with frame_processor_lock:
-            if len(sensor_to_framesets) >= len(sensors) and all_paris is True:
+            if len(sensor_to_framesets) >= len(sensors) and all_pairs is True:
                 break
             time.sleep(0.0001)
 
@@ -178,24 +178,21 @@ def compare_processed_frames_vs_recorded_frames(record_block, file):
 
 
 ################################################################################################
-test.start("Test align depth to color from recording")
+with test.closure("Test align depth to color from recording"):
+    record_block = AlignRecordBlock(rs.stream.color, rs.stream.depth)
+    compare_processed_frames_vs_recorded_frames(record_block, "[aligned_2c]_all_combinations_depth_color.bag")
 
-record_block = AlignRecordBlock(rs.stream.color, rs.stream.depth)
-compare_processed_frames_vs_recorded_frames(record_block, "[aligned_2c]_all_combinations_depth_color.bag")
-
-test.finish()
 ################################################################################################
-test.start("Test align color to depth from recording")
+with test.closure("Test align color to depth from recording"):
 
-composite_frames = []
-sensor_to_frames = {}
-sensor_to_framesets = {}
-sensor_to_frame = {}
-all_paris = True
+    composite_frames = []
+    sensor_to_frames = {}
+    sensor_to_framesets = {}
+    sensor_to_frame = {}
+    all_pairs = True
 
-record_block = AlignRecordBlock(rs.stream.depth, rs.stream.color)
-compare_processed_frames_vs_recorded_frames(record_block, "[aligned_2d]_all_combinations_depth_color.bag")
+    record_block = AlignRecordBlock(rs.stream.depth, rs.stream.color)
+    compare_processed_frames_vs_recorded_frames(record_block, "[aligned_2d]_all_combinations_depth_color.bag")
 
-test.finish()
 ################################################################################################
 test.print_results_and_exit()

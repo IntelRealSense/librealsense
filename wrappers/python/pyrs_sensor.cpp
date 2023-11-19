@@ -56,10 +56,10 @@ void init_sensor(py::module &m) {
         }, "Start passing frames into user provided callback.", "callback"_a,py::call_guard< py::gil_scoped_release >())
         .def("start", [](const rs2::sensor& self, rs2::syncer& syncer) {
             self.start(syncer);
-        }, "Start passing frames into user provided syncer.", "syncer"_a)
+        }, "Start passing frames into user provided syncer.", "syncer"_a, py::call_guard< py::gil_scoped_release >())
         .def("start", [](const rs2::sensor& self, rs2::frame_queue& queue) {
             self.start(queue);
-        }, "start passing frames into specified frame_queue", "queue"_a)
+        }, "start passing frames into specified frame_queue", "queue"_a, py::call_guard< py::gil_scoped_release >())
         .def("stop", &rs2::sensor::stop, "Stop streaming.", py::call_guard<py::gil_scoped_release>())
         .def("get_stream_profiles", &rs2::sensor::get_stream_profiles, "Retrieves the list of stream profiles supported by the sensor.")
         .def("get_active_streams", &rs2::sensor::get_active_streams, "Retrieves the list of stream profiles currently streaming on the sensor.")
@@ -91,9 +91,9 @@ void init_sensor(py::module &m) {
                 ss << ": \"" << self.get_info( RS2_CAMERA_INFO_NAME ) << "\"";
             ss << ">";
             return ss.str();
-        } );
-        m.def("sensor_from_frame", [](rs2::frame f) {
-            auto sptr = rs2::sensor_from_frame(f);
+        } )
+        .def_static("from_frame", [](rs2::frame frame) {
+            auto sptr = rs2::sensor_from_frame(frame);
             return *sptr;
             }, "frame"_a);
 
