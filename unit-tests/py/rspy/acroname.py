@@ -9,6 +9,7 @@ https://acroname.com/reference/api/python/index.html
 """
 
 from rspy import log
+import time
 
 
 if __name__ == '__main__':
@@ -49,7 +50,7 @@ class NoneFoundError( RuntimeError ):
         super().__init__( self, message  or  'no Acroname module found' )
 
 
-def discover():
+def discover(retries = 0):
     """
     Return all Acroname module specs in a list. Raise NoneFoundError if one is not found!
     """
@@ -58,37 +59,70 @@ def discover():
     # see https://acroname.com/reference/_modules/brainstem/module.html#Module.discoverAndConnect
     try:
         log.debug_indent()
-        specs = brainstem.discover.findAllModules( brainstem.link.Spec.USB )
+        for i in range(retries + 1):
+            specs = brainstem.discover.findAllModules( brainstem.link.Spec.USB )
+            if not specs:
+                time.sleep(1)
+            else:
+                for spec in specs:
+                    log.d( '...', spec )
+                break
         if not specs:
             raise NoneFoundError()
-        for spec in specs:
-            log.d( '...', spec )
     finally:
         log.debug_unindent()
 
     return specs
 
 
-def connect( spec = None ):
+def connect( reset = False, req_spec = None ):
     """
     Connect to the hub. Raises RuntimeError on failure
+    :param reset: When true, the acroname will be reset as part of the connection process
+    :param req_spec: Required spec to connect to.
     """
 
     global hub
     if not hub:
         hub = brainstem.stem.USBHub3p()
 
-    if spec:
-        specs = [spec]
+    if req_spec:
+        spec = req_spec
     else:
         specs = discover()
         spec = specs[0]
 
     result = hub.connectFromSpec( spec )
     if result != brainstem.result.Result.NO_ERROR:
-        raise RuntimeError( "failed to connect to acroname (result={})".format( result ))
+        raise RuntimeError( "failed to connect to Acroname (result={})".format( result ))
     elif len(specs) > 1:
         log.d( 'connected to', spec )
+
+    if reset:
+        log.d("resetting Acroname...")
+        result = hub.system.reset()
+        # According to brainstem support:
+        # Result error is expected so we do not test it
+        # Disconnection is needed after a reset command
+        hub.disconnect()
+        if req_spec:
+            spec = req_spec
+        else:
+            specs = discover(10)
+            spec = specs[0]
+
+        log.d("Reconnecting to Acroname")
+        result = None
+        for i in range(10):
+            result = hub.connectFromSpec(spec)
+            if result != brainstem.result.Result.NO_ERROR:
+                time.sleep(1)
+            else:
+                log.d('Reconnected to', spec)
+                return
+        raise RuntimeError("failed to reconnect to Acroname (result={})".format(result))
+
+
 
 
 def find_all_hubs():

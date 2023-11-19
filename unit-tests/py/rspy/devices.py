@@ -217,7 +217,7 @@ def query( monitor_changes = True ):
     # on the acroname, if any:
     if acroname:
         if not acroname.hub:
-            acroname.connect()  # MAY THROW!
+            acroname.connect( reset = True )  # MAY THROW!
 
             acroname.disable_ports( sleep_on_change = 5 )
             acroname.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
