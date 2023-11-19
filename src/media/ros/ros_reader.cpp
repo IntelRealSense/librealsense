@@ -456,7 +456,7 @@ namespace librealsense
         rs2_format stream_format;
         convert(msg->encoding, stream_format);
         //attaching a temp stream to the frame. Playback sensor should assign the real stream
-        frame->set_stream(std::make_shared<video_stream_profile>(platform::stream_profile{}));
+        frame->set_stream( std::make_shared< video_stream_profile >() );
         frame->get_stream()->set_format(stream_format);
         frame->get_stream()->set_stream_index(int(stream_id.stream_index));
         frame->get_stream()->set_stream_type(stream_id.stream_type);
@@ -505,7 +505,7 @@ namespace librealsense
         }
         librealsense::motion_frame* motion_frame = static_cast<librealsense::motion_frame*>(frame);
         //attaching a temp stream to the frame. Playback sensor should assign the real stream
-        frame->set_stream(std::make_shared<motion_stream_profile>(platform::stream_profile{}));
+        frame->set_stream( std::make_shared< motion_stream_profile >() );
         frame->get_stream()->set_format(RS2_FORMAT_MOTION_XYZ32F);
         frame->get_stream()->set_stream_index(stream_id.stream_index);
         frame->get_stream()->set_stream_type(stream_id.stream_type);
@@ -651,7 +651,7 @@ namespace librealsense
         }
         librealsense::pose_frame* pose_frame = static_cast<librealsense::pose_frame*>(new_frame);
         //attaching a temp stream to the frame. Playback sensor should assign the real stream
-        new_frame->set_stream(std::make_shared<pose_stream_profile>(platform::stream_profile{}));
+        new_frame->set_stream( std::make_shared< pose_stream_profile >() );
         new_frame->get_stream()->set_format(RS2_FORMAT_6DOF);
         new_frame->get_stream()->set_stream_index(int(stream_id.stream_index));
         new_frame->get_stream()->set_stream_type(stream_id.stream_type);
@@ -1203,7 +1203,7 @@ namespace librealsense
     std::shared_ptr<pose_stream_profile> ros_reader::create_pose_profile(uint32_t stream_index, uint32_t fps)
     {
         rs2_format format = RS2_FORMAT_6DOF;
-        auto profile = std::make_shared<pose_stream_profile>(platform::stream_profile{ 0, 0, fps, static_cast<uint32_t>(format) });
+        auto profile = std::make_shared< pose_stream_profile >();
         profile->set_stream_index(stream_index);
         profile->set_stream_type(RS2_STREAM_POSE);
         profile->set_format(format);
@@ -1213,7 +1213,7 @@ namespace librealsense
 
     std::shared_ptr<motion_stream_profile> ros_reader::create_motion_stream(rs2_stream stream_type, uint32_t stream_index, uint32_t fps, rs2_format format, rs2_motion_device_intrinsic intrinsics)
     {
-        auto profile = std::make_shared<motion_stream_profile>(platform::stream_profile{ 0, 0, fps, static_cast<uint32_t>(format) });
+        auto profile = std::make_shared< motion_stream_profile >();
         profile->set_stream_index(stream_index);
         profile->set_stream_type(stream_type);
         profile->set_format(format);
@@ -1226,7 +1226,7 @@ namespace librealsense
         const sensor_msgs::CameraInfo& ci,
         const stream_descriptor& sd)
     {
-        auto profile = std::make_shared<video_stream_profile>(sp);
+        auto profile = std::make_shared<video_stream_profile>();
         rs2_intrinsics intrinsics{};
         intrinsics.height = ci.height;
         intrinsics.width = ci.width;

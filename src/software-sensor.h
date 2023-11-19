@@ -11,18 +11,6 @@
 namespace librealsense {
 
 
-class software_recommended_proccesing_blocks : public recommended_proccesing_blocks_interface
-{
-public:
-    processing_blocks get_recommended_processing_blocks() const override { return _blocks; }
-
-    void add_processing_block( std::shared_ptr< processing_block_interface > const & block );
-
-private:
-    processing_blocks _blocks;
-};
-
-
 class software_device;
 class stream_profile_interface;
 class video_stream_profile_interface;
@@ -72,12 +60,8 @@ protected:
 
     metadata_array _metadata_map;
 
-    processing_blocks get_recommended_processing_blocks() const override
-    {
-        return _pbs.get_recommended_processing_blocks();
-    }
-
-    software_recommended_proccesing_blocks & get_software_recommended_proccesing_blocks() { return _pbs; }
+    processing_blocks get_recommended_processing_blocks() const override { return _pbs; }
+    void add_processing_block( std::shared_ptr< processing_block_interface > const & );
 
     // We build profiles using add_video_stream(), etc., and feed those into init_stream_profiles() which could in
     // theory change them: so these are our "raw" profiles before initialization...
@@ -89,7 +73,7 @@ private:
     class stereo_extension;
     rsutils::lazy< stereo_extension > _stereo_extension;
 
-    software_recommended_proccesing_blocks _pbs;
+    processing_blocks _pbs;
 };
 
 MAP_EXTENSION( RS2_EXTENSION_SOFTWARE_SENSOR, software_sensor );

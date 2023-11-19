@@ -39,7 +39,6 @@ static const std::string frame_number_key( "frame-number", 12 );
 static const std::string metadata_key( "metadata", 8 );
 static const std::string timestamp_key( "timestamp", 9 );
 static const std::string timestamp_domain_key( "timestamp-domain", 16 );
-static const std::string depth_units_key( "depth-units", 11 );
 static const std::string metadata_header_key( "header", 6 );
 
 
@@ -69,10 +68,7 @@ void dds_sensor_proxy::add_dds_stream( sid_index sidx, std::shared_ptr< realdds:
 std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_video_stream( rs2_video_stream video_stream,
                                                                                 bool is_default )
 {
-    auto profile = std::make_shared< video_stream_profile >( platform::stream_profile{ (uint32_t)video_stream.width,
-                                                                                       (uint32_t)video_stream.height,
-                                                                                       (uint32_t)video_stream.fps,
-                                                                                       0 } );
+    auto profile = std::make_shared< video_stream_profile >();
     profile->set_dims( video_stream.width, video_stream.height );
     profile->set_format( video_stream.fmt );
     profile->set_framerate( video_stream.fps );
@@ -93,10 +89,7 @@ std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_video_stream( 
 std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_motion_stream( rs2_motion_stream motion_stream,
                                                                                  bool is_default )
 {
-    auto profile = std::make_shared< motion_stream_profile >( platform::stream_profile{ 0,
-                                                                                        0,
-                                                                                        (uint32_t)motion_stream.fps,
-                                                                                        0 } );
+    auto profile = std::make_shared< motion_stream_profile >();
     profile->set_format( motion_stream.fmt );
     profile->set_framerate( motion_stream.fps );
     profile->set_stream_index( motion_stream.index );
@@ -145,12 +138,12 @@ void dds_sensor_proxy::register_basic_converters()
     _formats_converter.register_converters(
         processing_block_factory::create_pbf_vector< uyvy_converter >(
             RS2_FORMAT_UYVY,
-            { RS2_FORMAT_UYVY, RS2_FORMAT_YUYV, RS2_FORMAT_RGB8, RS2_FORMAT_RGBA8, RS2_FORMAT_BGR8, RS2_FORMAT_BGRA8 },
+            { RS2_FORMAT_UYVY, RS2_FORMAT_YUYV, RS2_FORMAT_RGB8, RS2_FORMAT_Y8, RS2_FORMAT_RGBA8, RS2_FORMAT_BGR8, RS2_FORMAT_BGRA8 },
             RS2_STREAM_COLOR ) );
     _formats_converter.register_converters(
         processing_block_factory::create_pbf_vector< yuy2_converter >(
             RS2_FORMAT_YUYV,
-            { RS2_FORMAT_YUYV, RS2_FORMAT_RGB8, RS2_FORMAT_RGBA8, RS2_FORMAT_BGR8, RS2_FORMAT_BGRA8 },
+            { RS2_FORMAT_YUYV, RS2_FORMAT_RGB8, RS2_FORMAT_Y8, RS2_FORMAT_RGBA8, RS2_FORMAT_BGR8, RS2_FORMAT_BGRA8 },
             RS2_STREAM_COLOR ) );
 
     // Depth
@@ -309,6 +302,7 @@ void dds_sensor_proxy::handle_video_data( realdds::topics::image_msg && dds_fram
     }
     else
     {
+        add_no_metadata( new_frame, streaming );
         invoke_new_frame( new_frame,
                           nullptr,    // pixels are already inside new_frame->data
                           nullptr );  // so no deleter is necessary
@@ -366,20 +360,20 @@ void dds_sensor_proxy::handle_new_metadata( std::string const & stream_name, nlo
 }
 
 
+void dds_sensor_proxy::add_no_metadata( frame * const f, streaming_impl & streaming )
+{
+    // Without MD, we have no way of knowing the frame-number - we assume it's one higher than the last
+    f->additional_data.last_frame_number = streaming.last_frame_number.fetch_add( 1 );
+    f->additional_data.frame_number = f->additional_data.last_frame_number + 1;
+
+    // the frame should already have empty metadata, so no need to do anything else
+}
+
+
 void dds_sensor_proxy::add_frame_metadata( frame * const f, nlohmann::json && dds_md, streaming_impl & streaming )
 {
-    if( dds_md.empty() )
-    {
-        // Without MD, we have no way of knowing the frame-number - we assume it's one higher than
-        // the last
-        f->additional_data.last_frame_number = streaming.last_frame_number.fetch_add( 1 );
-        f->additional_data.frame_number = f->additional_data.last_frame_number + 1;
-        // the frame should already have empty metadata, so no need to do anything else
-        return;
-    }
-
-    nlohmann::json const & md_header = dds_md[metadata_header_key];
-    nlohmann::json const & md = dds_md[metadata_key];
+    nlohmann::json const & md_header = rsutils::json::nested( dds_md, metadata_header_key );
+    nlohmann::json const & md = rsutils::json::nested( dds_md, metadata_key );
 
     // A frame number is "optional". If the server supplies it, we try to use it for the simple fact that,
     // otherwise, we have no way of detecting drops without some advanced heuristic tracking the FPS and
@@ -407,23 +401,27 @@ void dds_sensor_proxy::add_frame_metadata( frame * const f, nlohmann::json && dd
     f->additional_data.timestamp;
     rsutils::json::get_ex( md_header, timestamp_domain_key, &f->additional_data.timestamp_domain );
 
-    // Expected metadata for all depth images
-    rsutils::json::get_ex( md_header, depth_units_key, &f->additional_data.depth_units );
-
-    // Other metadata fields. Metadata fields that are present but unknown by librealsense will be ignored.
-    auto & metadata = reinterpret_cast< metadata_array & >( f->additional_data.metadata_blob );
-    for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
+    if( ! md.empty() )
     {
-        auto key = static_cast< rs2_frame_metadata_value >( i );
-        std::string const & keystr = librealsense::get_string( key );
-        try
+        // Other metadata fields. Metadata fields that are present but unknown by librealsense will be ignored.
+        auto & metadata = reinterpret_cast< metadata_array & >( f->additional_data.metadata_blob );
+        for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
         {
-            metadata[key] = { true, rsutils::json::get< rs2_metadata_type >( md, keystr ) };
-        }
-        catch( nlohmann::json::exception const & )
-        {
-            // The metadata key doesn't exist or the value isn't the right type... we ignore it!
-            // (all metadata is not there when we create the frame, so no need to erase)
+            auto key = static_cast< rs2_frame_metadata_value >( i );
+            std::string const & keystr = librealsense::get_string( key );
+            try
+            {
+                if( auto value = rsutils::json::nested( md, keystr ) )
+                {
+                    if( value->is_number_integer() )
+                        metadata[key] = { true, rsutils::json::get< rs2_metadata_type >( md, keystr ) };
+                }
+            }
+            catch( nlohmann::json::exception const & )
+            {
+                // The metadata key doesn't exist or the value isn't the right type... we ignore it!
+                // (all metadata is not there when we create the frame, so no need to erase)
+            }
         }
     }
 }
@@ -449,7 +447,10 @@ void dds_sensor_proxy::start( rs2_frame_callback_sptr callback )
             {
                 if( _is_streaming ) // stop was not called
                 {
-                    add_frame_metadata( static_cast< frame * >( fh.get() ), std::move( md ), streaming );
+                    if( md.empty() )
+                        add_no_metadata( static_cast< frame * >( fh.get() ), streaming );
+                    else
+                        add_frame_metadata( static_cast< frame * >( fh.get() ), std::move( md ), streaming );
                     invoke_new_frame( static_cast< frame * >( fh.release() ), nullptr, nullptr );
                 }
             } );
@@ -547,18 +548,7 @@ void dds_sensor_proxy::add_option( std::shared_ptr< realdds::dds_option > option
 }
 
 
-void dds_sensor_proxy::add_processing_block( std::string filter_name )
-{
-    auto & current_filters = get_software_recommended_proccesing_blocks();
-
-    if( processing_block_exists( current_filters.get_recommended_processing_blocks(), filter_name ) )
-        return;  // Already created by another stream of this sensor
-
-    create_processing_block( filter_name );
-}
-
-
-bool dds_sensor_proxy::processing_block_exists( processing_blocks const & blocks, std::string const & block_name ) const
+static bool processing_block_exists( processing_blocks const & blocks, std::string const & block_name )
 {
     for( auto & block : blocks )
         if( block_name.compare( block->get_info( RS2_CAMERA_INFO_NAME ) ) == 0 )
@@ -568,30 +558,31 @@ bool dds_sensor_proxy::processing_block_exists( processing_blocks const & blocks
 }
 
 
-void dds_sensor_proxy::create_processing_block( std::string & filter_name )
+void dds_sensor_proxy::add_processing_block( std::string const & filter_name )
 {
-    auto & current_filters = get_software_recommended_proccesing_blocks();
+    if( processing_block_exists( get_recommended_processing_blocks(), filter_name ) )
+        return;  // Already created by another stream of this sensor
 
     if( filter_name.compare( "Decimation Filter" ) == 0 )
         // sensor.cpp sets format option based on sensor type, but the filter does not use it and selects the
         // appropriate decimation algorithm based on processed frame profile format.
-        current_filters.add_processing_block( std::make_shared< decimation_filter >() );
+        super::add_processing_block( std::make_shared< decimation_filter >() );
     else if( filter_name.compare( "HDR Merge" ) == 0 )
-        current_filters.add_processing_block( std::make_shared< hdr_merge >() );
+        super::add_processing_block( std::make_shared< hdr_merge >() );
     else if( filter_name.compare( "Filter By Sequence id" ) == 0 )
-        current_filters.add_processing_block( std::make_shared< sequence_id_filter >() );
+        super::add_processing_block( std::make_shared< sequence_id_filter >() );
     else if( filter_name.compare( "Threshold Filter" ) == 0 )
-        current_filters.add_processing_block( std::make_shared< threshold >() );
+        super::add_processing_block( std::make_shared< threshold >() );
     else if( filter_name.compare( "Depth to Disparity" ) == 0 )
-        current_filters.add_processing_block( std::make_shared< disparity_transform >( true ) );
+        super::add_processing_block( std::make_shared< disparity_transform >( true ) );
     else if( filter_name.compare( "Disparity to Depth" ) == 0 )
-        current_filters.add_processing_block( std::make_shared< disparity_transform >( false ) );
+        super::add_processing_block( std::make_shared< disparity_transform >( false ) );
     else if( filter_name.compare( "Spatial Filter" ) == 0 )
-        current_filters.add_processing_block( std::make_shared< spatial_filter >() );
+        super::add_processing_block( std::make_shared< spatial_filter >() );
     else if( filter_name.compare( "Temporal Filter" ) == 0 )
-        current_filters.add_processing_block( std::make_shared< temporal_filter >() );
+        super::add_processing_block( std::make_shared< temporal_filter >() );
     else if( filter_name.compare( "Hole Filling Filter" ) == 0 )
-        current_filters.add_processing_block( std::make_shared< hole_filling_filter >() );
+        super::add_processing_block( std::make_shared< hole_filling_filter >() );
     else
         throw std::runtime_error( "Unsupported processing block '" + filter_name + "' received" );
 }

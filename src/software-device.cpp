@@ -6,6 +6,7 @@
 #include "environment.h"
 #include "core/matcher-factory.h"
 #include "core/notification.h"
+#include "stream.h"
 
 
 namespace librealsense
@@ -67,13 +68,16 @@ namespace librealsense
 
     std::shared_ptr<matcher> software_device::create_matcher(const frame_holder& frame) const
     {
-        std::vector<stream_interface*> profiles;
+        using stream_uid = std::pair< rs2_stream, int >;
+        std::set< stream_uid > streams;
+        std::vector< stream_interface * > stream_interfaces;
 
-        for (auto&& s : _software_sensors)
-            for (auto&& p : s->get_stream_profiles())
-                profiles.push_back(p.get());
+        for( auto const & s : _software_sensors )
+            for( auto const & p : s->_sw_profiles )
+                if( streams.insert( { p->get_stream_type(), p->get_unique_id() } ).second )
+                    stream_interfaces.push_back( p.get() );
 
-        return matcher_factory::create(_matcher, profiles);
+        return matcher_factory::create( _matcher, stream_interfaces );
     }
 
 

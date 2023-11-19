@@ -46,6 +46,25 @@ static std::string const entries_key( "entries", 7 );
 static std::string const id_hwm( "hwm", 3 );
 
 
+namespace {
+
+
+nlohmann::json device_settings( std::shared_ptr< realdds::dds_participant > const & participant )
+{
+    nlohmann::json settings = rsutils::json::nested( participant->settings(), "device" );
+    if( settings.is_null() )
+        // Nothing there: default is empty object
+        return nlohmann::json::object();
+    if( ! settings.is_object() )
+        // Device settings, if they exist, must be an object!
+        DDS_THROW( runtime_error, "participant 'device' settings must be an object: " << settings );
+    return settings;
+}
+
+
+}
+
+
 namespace realdds {
 
 
@@ -78,9 +97,10 @@ void dds_device::impl::set_state( state_t new_state )
     {
         if( _metadata_reader )
         {
-            if( rsutils::json::get( _participant->settings(), "disable-metadata", false ) )
+            nlohmann::json md_settings = rsutils::json::nested( _device_settings, "metadata" );
+            if( ! md_settings.is_null() && ! md_settings.is_object() )  // not found is null
             {
-                LOG_DEBUG( "... metadata is available but 'disable-metadata' is set" );
+                LOG_DEBUG( "... metadata is available but device/metadata is disabled" );
                 _metadata_reader.reset();
             }
             else
@@ -88,6 +108,7 @@ void dds_device::impl::set_state( state_t new_state )
                 LOG_DEBUG( "... metadata is enabled" );
                 dds_topic_reader::qos rqos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS );
                 rqos.history().depth = 10; // Support receive metadata from multiple streams
+                rqos.override_from_json( md_settings );
                 _metadata_reader->run( rqos );
             }
         }
@@ -116,7 +137,9 @@ dds_device::impl::impl( std::shared_ptr< dds_participant > const & participant,
     : _info( info )
     , _participant( participant )
     , _subscriber( std::make_shared< dds_subscriber >( participant ) )
-    , _reply_timeout_ms( rsutils::json::get< size_t >( participant->settings(), "device-reply-timeout-ms", 1000 ) )
+    , _device_settings( device_settings( participant ) )
+    , _reply_timeout_ms(
+          rsutils::json::nested( _device_settings, "control", "reply-timeout-ms" ).value< size_t >( 2000 ) )
 {
     create_notifications_reader();
     create_control_writer();
@@ -400,7 +423,7 @@ float dds_device::impl::query_option_value( const std::shared_ptr< dds_option > 
 void dds_device::impl::write_control_message( topics::flexible_msg && msg, nlohmann::json * reply )
 {
     assert( _control_writer != nullptr );
-    auto this_sequence_number = msg.write_to( *_control_writer );
+    auto this_sequence_number = std::move( msg ).write_to( *_control_writer );
     if( reply )
     {
         std::unique_lock< std::mutex > lock( _replies_mutex );
@@ -414,7 +437,7 @@ void dds_device::impl::write_control_message( topics::flexible_msg && msg, nlohm
                                         return true;
                                     } ) )
         {
-            throw std::runtime_error( "timeout waiting for reply #" + std::to_string( this_sequence_number ) );
+            DDS_THROW( runtime_error, "timeout waiting for reply #" << this_sequence_number );
         }
         //LOG_DEBUG( "got reply: " << actual_reply );
         *reply = std::move( actual_reply );
@@ -438,6 +461,7 @@ void dds_device::impl::create_notifications_reader()
     //On discovery writer sends a burst of messages, if history is too small we might loose some of them
     //(even if reliable). Setting depth to cover known use-cases plus some spare
     rqos.history().depth = 24;
+    rqos.override_from_json( rsutils::json::nested( _device_settings, "notification" ) );
 
     _notifications_reader->on_data_available(
         [&]()
@@ -503,6 +527,7 @@ void dds_device::impl::create_control_writer()
     _control_writer = std::make_shared< dds_topic_writer >( topic );
     dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
     wqos.history().depth = 10;  // default is 1
+    wqos.override_from_json( rsutils::json::nested( _device_settings, "control" ) );
     _control_writer->run( wqos );
 }
 

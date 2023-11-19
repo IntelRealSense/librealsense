@@ -205,6 +205,8 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
                 _metadata_writer = std::make_shared< dds_topic_writer >( topic, _publisher );
                 dds_topic_writer::qos wqos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS );
                 wqos.history().depth = 10;  // default is 1
+                wqos.override_from_json(
+                    rsutils::json::nested( _subscriber->get_participant()->settings(), "device", "metadata" ) );
                 _metadata_writer->run( wqos );
             }
         }
@@ -218,6 +220,7 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
         _control_reader->on_data_available( [&]() { on_control_message_received(); } );
 
         dds_topic_reader::qos rqos( RELIABLE_RELIABILITY_QOS );
+        rqos.override_from_json( rsutils::json::nested( _subscriber->get_participant()->settings(), "device", "control" ) );
         _control_reader->run( rqos );
     }
     catch( std::exception const & )
@@ -255,7 +258,7 @@ void dds_device_server::publish_metadata( nlohmann::json && md )
     LOG_DEBUG(
         "publishing metadata: " << shorten_json_string( slice( msg.custom_data< char const >(), msg._data.size() ),
                                                         300 ) );
-    msg.write_to( *_metadata_writer );
+    std::move( msg ).write_to( *_metadata_writer );
 }
 
 

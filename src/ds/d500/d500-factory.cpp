@@ -1,17 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <mutex>
-#include <chrono>
-#include <vector>
-#include <iterator>
-#include <cstddef>
-
 #include "device.h"
 #include "image.h"
 #include "metadata-parser.h"
 
 #include <src/core/matcher-factory.h>
+#include <src/proc/color-formats-converter.h>
 
 #include "d500-info.h"
 #include "d500-private.h"
@@ -29,6 +24,12 @@
 
 #include <rsutils/string/hexdump.h>
 using rsutils::string::hexdump;
+
+#include <mutex>
+#include <chrono>
+#include <vector>
+#include <iterator>
+#include <cstddef>
 
 
 namespace librealsense
@@ -64,6 +65,20 @@ public:
         streams.insert( streams.end(), mm_streams.begin(), mm_streams.end() );
         return matcher_factory::create( RS2_MATCHER_DEFAULT, streams );
     }
+
+
+    void register_color_processing_blocks() override
+    {
+        auto & color_ep = get_color_sensor();
+
+        color_ep.register_processing_block( processing_block_factory::create_pbf_vector< yuy2_converter >(
+            RS2_FORMAT_YUYV,
+            map_supported_color_formats( RS2_FORMAT_YUYV ),
+            RS2_STREAM_COLOR ) );
+        color_ep.register_processing_block(  // Color Raw (Bayer 10-bit embedded in 16-bit) for calibration
+            processing_block_factory::create_id_pbf( RS2_FORMAT_RAW16, RS2_STREAM_COLOR ) );
+    }
+
 
     std::vector< tagged_profile > get_profiles_tags() const override
     {

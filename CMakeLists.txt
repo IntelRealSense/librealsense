@@ -57,12 +57,6 @@ include(include/CMakeLists.txt)
 include(src/CMakeLists.txt)
 include(third-party/CMakeLists.txt)
 
-include(CMake/external_json.cmake)
-target_include_directories( rsutils
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/third-party/json/include>
-    )
-
 target_link_libraries( ${LRS_TARGET} PUBLIC rsutils )
 
 if(BUILD_WITH_DDS)

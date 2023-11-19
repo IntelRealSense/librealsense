@@ -116,7 +116,7 @@ namespace librealsense
 
     void d500_device::update_flash(const std::vector<uint8_t>& image, rs2_update_progress_callback_sptr callback, int update_mode)
     {
-        _ds_device_common->update_flash(image, callback, update_mode);
+        throw not_implemented_exception("D500 device does not support unsigned FW update");
     }
 
     class d500_depth_sensor : public synthetic_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
@@ -585,21 +585,7 @@ namespace librealsense
 
             if ((_device_capabilities & ds_caps::CAP_INTERCAM_HW_SYNC) == ds_caps::CAP_INTERCAM_HW_SYNC)
             {
-                if ((_device_capabilities & ds_caps::CAP_GLOBAL_SHUTTER) == ds_caps::CAP_GLOBAL_SHUTTER)
-                {
-                    depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                        std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 3));
-                }
-                else if ((_device_capabilities & ds_caps::CAP_GLOBAL_SHUTTER) == ds_caps::CAP_GLOBAL_SHUTTER)
-                {
-                    depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                        std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 2));
-                }
-                else
-                {
-                    depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                        std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 1));
-                }
+                // Register RS2_OPTION_INTER_CAM_SYNC_MODE here if needed
             }
 
             roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);
@@ -629,13 +615,17 @@ namespace librealsense
                         rsutils::lazy< float >( [default_depth_units]() { return default_depth_units; } ) ) );
             }
 
-            depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
+            depth_sensor.register_option(RS2_OPTION_SOC_PVT_TEMPERATURE,
                 std::make_shared<temperature_option>(_hw_monitor, &raw_depth_sensor, 
-                    temperature_option::temperature_component::MAIN_ASIC, "Temperature reading for Main ASIC"));
+                    temperature_option::temperature_component::HKR_PVT, "Temperature reading for SOC PVT"));
 
-            depth_sensor.register_option(RS2_OPTION_LEFT_IR_TEMPERATURE,
+            depth_sensor.register_option(RS2_OPTION_OHM_TEMPERATURE,
                 std::make_shared<temperature_option>(_hw_monitor, &raw_depth_sensor, 
                     temperature_option::temperature_component::LEFT_IR, "Temperature reading for Left Infrared Sensor"));
+
+            depth_sensor.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
+                std::make_shared<temperature_option>(_hw_monitor, &raw_depth_sensor,
+                    temperature_option::temperature_component::LEFT_PROJ, "Temperature reading for Left Projector"));
 
             // Metadata registration
             depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc_header::timestamp));

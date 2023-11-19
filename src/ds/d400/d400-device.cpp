@@ -1,6 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
+#include <librealsense2/h/rs_internal.h>
 #include <src/device.h>
 #include <src/image.h>
 #include <src/metadata-parser.h>
@@ -24,13 +25,13 @@
 #include <src/ds/features/emitter-frequency-feature.h>
 #include <src/features/remove-ir-pattern-feature.h>
 
-#include <proc/depth-formats-converter.h>
-#include <proc/y8i-to-y8y8.h>
-#include <proc/y12i-to-y16y16.h>
-#include <proc/y12i-to-y16y16-mipi.h>
-#include <proc/color-formats-converter.h>
+#include <src/proc/depth-formats-converter.h>
+#include <src/proc/y8i-to-y8y8.h>
+#include <src/proc/y12i-to-y16y16.h>
+#include <src/proc/y12i-to-y16y16-mipi.h>
+#include <src/proc/color-formats-converter.h>
 
-#include <hdr-config.h>
+#include <src/hdr-config.h>
 #include "d400-thermal-monitor.h"
 #include <common/fw/firmware-version.h>
 #include <src/fw-update/fw-update-unsigned.h>
@@ -120,6 +121,11 @@ namespace librealsense
 
     bool d400_device::check_fw_compatibility( const std::vector< uint8_t > & image ) const
     {
+        // check if the given FW size matches the expected FW size
+        if( ( image.size() != signed_fw_size ) )
+            throw librealsense::invalid_value_exception(
+                rsutils::string::from() << "Unsupported firmware binary image provided - " << image.size() << " bytes" );
+
         std::string fw_version = firmware_check_interface::extract_firmware_version_string( image );
 
         auto it = ds::d400_device_to_fw_min_version.find( _pid );
@@ -136,7 +142,6 @@ namespace librealsense
 
         return result;
     }
-
 
     class d400_depth_sensor
         : public synthetic_sensor

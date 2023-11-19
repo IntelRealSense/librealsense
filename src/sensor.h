@@ -1,11 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
 #include "core/sensor-interface.h"
 
-#include "core/recommended-proccesing-blocks-base.h"
 #include "source.h"
 #include "core/extension.h"
 #include "proc/formats-converter.h"
@@ -52,12 +50,10 @@ namespace librealsense
         , public virtual sensor_interface
         , public options_container
         , public virtual info_container
-        , public recommended_proccesing_blocks_base
+        , public recordable< recommended_proccesing_blocks_interface >
     {
     public:
-        explicit sensor_base( std::string const & name,
-                              device * device,
-                              recommended_proccesing_blocks_interface * owner );
+        explicit sensor_base( std::string const & name, device * device );
         virtual ~sensor_base() override { _source.flush(); }
 
         void set_source_owner(sensor_base* owner); // will direct the source to the top in the source hierarchy.
@@ -88,6 +84,15 @@ namespace librealsense
         processing_blocks get_recommended_processing_blocks() const override
         {
             return {};
+        }
+
+        // recordable< recommended_proccesing_blocks_interface > is needed to record our recommended processing blocks
+    public:
+        void enable_recording( std::function< void( const recommended_proccesing_blocks_interface & ) > ) override {}
+        void create_snapshot( std::shared_ptr< recommended_proccesing_blocks_interface > & snapshot ) const override
+        {
+            snapshot
+                = std::make_shared< recommended_proccesing_blocks_snapshot >( get_recommended_processing_blocks() );
         }
 
     protected:
@@ -168,9 +173,8 @@ namespace librealsense
 
     protected:
         explicit raw_sensor_base( std::string const & name,
-                                  device * device,
-                                  recommended_proccesing_blocks_interface * owner )
-            : super( name, device, owner )
+                                  device * device )
+            : super( name, device )
         {
         }
 

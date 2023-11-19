@@ -101,7 +101,7 @@ namespace librealsense
 
         register_options();
         register_metadata();
-        register_processing_blocks();
+        register_color_processing_blocks();
     }
 
     void d500_color::register_options()
@@ -130,15 +130,6 @@ namespace librealsense
             [](rs2_metadata_type param) { return (param != 1); })); // OFF value via UVC is 1 (ON is 8)
 
         _ds_color_common->register_metadata();
-    }
-
-    void d500_color::register_processing_blocks()
-    {
-        auto& color_ep = get_color_sensor();
-
-        color_ep.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_COLOR));
-
-        color_ep.register_processing_block(processing_block_factory::create_pbf_vector<m420_converter>(RS2_FORMAT_M420, map_supported_color_formats(RS2_FORMAT_M420), RS2_STREAM_COLOR));
     }
 
     void d500_color::register_stream_to_extrinsic_group( const stream_interface & stream, uint32_t group_index )

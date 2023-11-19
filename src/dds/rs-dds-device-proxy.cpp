@@ -9,6 +9,7 @@
 #include <realdds/dds-device.h>
 #include <realdds/dds-stream.h>
 #include <realdds/dds-trinsics.h>
+#include <realdds/dds-participant.h>
 
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/flexible-msg.h>
@@ -203,7 +204,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
             auto const & default_profile = profiles[stream->default_profile_index()];
             for( auto & profile : profiles )
             {
-                LOG_DEBUG( "    " << profile->details_to_string() );
+                //LOG_DEBUG( "    " << profile->details_to_string() );
                 if( video_stream )
                 {
                     auto video_profile = std::static_pointer_cast< realdds::dds_video_stream_profile >( profile );
@@ -243,17 +244,17 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
         // Set profile's ID based on the dds_stream's ID (index already set). Connect the profile to the extrinsics graph.
         for( auto & profile : sensor_info.second.proxy->get_stream_profiles() )
         {
-            if( auto p = std::dynamic_pointer_cast< librealsense::video_stream_profile_interface >( profile ) )
-            {
-                LOG_DEBUG( "    " << get_string( p->get_stream_type() ) << ' ' << p->get_stream_index() << ' '
-                                  << get_string( p->get_format() ) << ' ' << p->get_width() << 'x' << p->get_height()
-                                  << " @ " << p->get_framerate() );
-            }
-            else if( auto p = std::dynamic_pointer_cast<librealsense::motion_stream_profile_interface>( profile ) )
-            {
-                LOG_DEBUG( "    " << get_string( p->get_stream_type() ) << ' ' << p->get_stream_index() << ' '
-                                  << get_string( p->get_format() ) << " @ " << p->get_framerate() );
-            }
+            //if( auto p = std::dynamic_pointer_cast< librealsense::video_stream_profile_interface >( profile ) )
+            //{
+            //    LOG_DEBUG( "    " << get_string( p->get_stream_type() ) << ' ' << p->get_stream_index() << ' '
+            //                      << get_string( p->get_format() ) << ' ' << p->get_width() << 'x' << p->get_height()
+            //                      << " @ " << p->get_framerate() );
+            //}
+            //else if( auto p = std::dynamic_pointer_cast<librealsense::motion_stream_profile_interface>( profile ) )
+            //{
+            //    LOG_DEBUG( "    " << get_string( p->get_stream_type() ) << ' ' << p->get_stream_index() << ' '
+            //                      << get_string( p->get_format() ) << " @ " << p->get_framerate() );
+            //}
             sid_index type_and_index( profile->get_stream_type(), profile->get_stream_index() );
             
             auto & streams = sensor_info.second.proxy->streams();
@@ -335,6 +336,17 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
         }
     }
     // TODO - need to register extrinsics group in dev?
+
+    // Use the default D400 matchers:
+    // Depth & IR matched by frame-number, time-stamp-matched to color.
+    // Motion streams will not get synced.
+    rs2_matchers matcher = RS2_MATCHER_DLR_C;
+    if( auto matcher_j = rsutils::json::nested( _dds_dev->participant()->settings(), "device", "matcher" ) )
+    {
+        if( ! matcher_j->is_string() || ! try_parse( matcher_j.string_ref(), matcher ) )
+            LOG_WARNING( "Invalid 'device/matcher' value " << matcher_j );
+    }
+    set_matcher_type( matcher );
 }
 
 

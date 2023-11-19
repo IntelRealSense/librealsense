@@ -103,10 +103,13 @@ config_file::config_file(std::string filename)
         if (!t.good()) return;
         std::string str((std::istreambuf_iterator<char>(t)),
                  std::istreambuf_iterator<char>());
-        auto j = json::parse(str);
-        for (json::iterator it = j.begin(); it != j.end(); ++it) 
+        if( ! str.empty() )
         {
-            _values[it.key()] = it.value().get<std::string>();
+            auto j = json::parse( str );
+            for( json::iterator it = j.begin(); it != j.end(); ++it )
+            {
+                _values[it.key()] = it.value().get< std::string >();
+            }
         }
     }
     catch(...)

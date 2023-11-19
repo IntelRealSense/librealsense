@@ -3122,11 +3122,8 @@ void rs2_update_firmware_cpp(const rs2_device* device, const void* fw_image, int
         callback_ptr.reset( callback, []( rs2_update_progress_callback * p ) { p->release(); } );
 
     VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(device->device);
     VALIDATE_NOT_NULL(fw_image);
-    // check if the given FW size matches the expected FW size
-    if (!val_in_range(fw_image_size, { signed_fw_size, signed_sr300_size }))
-        throw librealsense::invalid_value_exception(
-            rsutils::string::from() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes" );
 
     auto fwu = VALIDATE_INTERFACE(device->device, librealsense::update_device_interface);
     fwu->update( fw_image, fw_image_size, callback_ptr );
@@ -3136,11 +3133,8 @@ HANDLE_EXCEPTIONS_AND_RETURN(, device, fw_image)
 void rs2_update_firmware(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(device->device);
     VALIDATE_NOT_NULL(fw_image);
-    // check if the given FW size matches the expected FW size
-    if (!val_in_range(fw_image_size, { signed_fw_size, signed_sr300_size }))
-        throw librealsense::invalid_value_exception(
-            rsutils::string::from() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes" );
 
     auto fwu = VALIDATE_INTERFACE(device->device, librealsense::update_device_interface);
 
@@ -3212,12 +3206,8 @@ void rs2_update_firmware_unsigned_cpp( const rs2_device * device,
         callback_ptr.reset( callback, []( rs2_update_progress_callback * p ) { p->release(); } );
 
     VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(device->device);
     VALIDATE_NOT_NULL(image);
-    // check if the given FW size matches the expected FW size
-    if (!val_in_range(image_size, { unsigned_fw_size, unsigned_sr300_size }))
-        throw librealsense::invalid_value_exception( rsutils::string::from()
-                                                     << "Unsupported firmware binary image (unsigned) provided - "
-                                                     << image_size << " bytes" );
 
     auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
     if (!fwud)
@@ -3233,11 +3223,6 @@ void rs2_update_firmware_unsigned(const rs2_device* device, const void* image, i
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(image);
-    // check if the given FW size matches the expected FW size
-    if (!val_in_range(image_size, { unsigned_fw_size, unsigned_sr300_size }))
-        throw librealsense::invalid_value_exception( rsutils::string::from()
-                                                     << "Unsupported firmware binary image (unsigned) provided - "
-                                                     << image_size << " bytes" );
 
     auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
     if (!fwud)
@@ -3260,10 +3245,6 @@ int rs2_check_firmware_compatibility(const rs2_device* device, const void* fw_im
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(fw_image);
-    // check if the given FW size matches the expected FW size
-    if (!val_in_range(fw_image_size, { signed_fw_size, signed_sr300_size }))
-        throw librealsense::invalid_value_exception(
-            rsutils::string::from() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes" );
 
     auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
     if (!fwud)

@@ -48,7 +48,7 @@ private:
 
 
 software_sensor::software_sensor( std::string const & name, software_device * owner )
-    : sensor_base( name, owner, &_pbs )
+    : sensor_base( name, owner )
     , _stereo_extension( [this]() { return stereo_extension( this ); } )
     , _metadata_map{}  // to all 0's
 {
@@ -68,10 +68,7 @@ software_sensor::~software_sensor()
 std::shared_ptr< stream_profile_interface > software_sensor::add_video_stream( rs2_video_stream video_stream,
                                                                                bool is_default )
 {
-    auto profile = std::make_shared< video_stream_profile >( platform::stream_profile{ (uint32_t)video_stream.width,
-                                                                                       (uint32_t)video_stream.height,
-                                                                                       (uint32_t)video_stream.fps,
-                                                                                       0 } );
+    auto profile = std::make_shared< video_stream_profile >();
     profile->set_dims( video_stream.width, video_stream.height );
     profile->set_format( video_stream.fmt );
     profile->set_framerate( video_stream.fps );
@@ -90,8 +87,7 @@ std::shared_ptr< stream_profile_interface > software_sensor::add_video_stream( r
 std::shared_ptr< stream_profile_interface > software_sensor::add_motion_stream( rs2_motion_stream motion_stream,
                                                                                 bool is_default )
 {
-    auto profile
-        = std::make_shared< motion_stream_profile >( platform::stream_profile{ 0, 0, (uint32_t)motion_stream.fps, 0 } );
+    auto profile = std::make_shared< motion_stream_profile >();
     profile->set_format( motion_stream.fmt );
     profile->set_framerate( motion_stream.fps );
     profile->set_stream_index( motion_stream.index );
@@ -109,8 +105,7 @@ std::shared_ptr< stream_profile_interface > software_sensor::add_motion_stream( 
 std::shared_ptr< stream_profile_interface > software_sensor::add_pose_stream( rs2_pose_stream pose_stream,
                                                                               bool is_default )
 {
-    auto profile
-        = std::make_shared< pose_stream_profile >( platform::stream_profile{ 0, 0, (uint32_t)pose_stream.fps, 0 } );
+    auto profile = std::make_shared< pose_stream_profile >();
     if( ! profile )
         throw librealsense::invalid_value_exception( "null pointer passed for argument \"profile\"." );
 
@@ -363,13 +358,12 @@ void software_sensor::add_option( rs2_option option, option_range range, bool is
 }
 
 
-void software_recommended_proccesing_blocks::add_processing_block(
-    std::shared_ptr< processing_block_interface > const & block )
+void software_sensor::add_processing_block( std::shared_ptr< processing_block_interface > const & block )
 {
     if( ! block )
         throw invalid_value_exception( "trying to add an empty software processing block" );
 
-    _blocks.push_back( block );
+    _pbs.push_back( block );
 }
 
 

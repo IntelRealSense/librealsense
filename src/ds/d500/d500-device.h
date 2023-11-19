@@ -75,7 +75,6 @@ namespace librealsense
         std::vector<uint8_t> backup_flash( rs2_update_progress_callback_sptr callback ) override;
         void update_flash(const std::vector<uint8_t>& image, rs2_update_progress_callback_sptr callback, int update_mode) override;
         bool check_fw_compatibility( const std::vector<uint8_t>& image ) const override { return true; };
-
     protected:
         std::shared_ptr<ds_device_common> _ds_device_common;
 

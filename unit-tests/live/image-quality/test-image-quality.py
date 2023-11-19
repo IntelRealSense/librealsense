@@ -84,6 +84,8 @@ def get_frames(config, laser_enabled):
     pipeline_profile = pipeline.start(config)
 
     sensor = pipeline_profile.get_device().first_depth_sensor()
+    if laser_enabled and sensor.supports(rs.option.laser_power):
+        sensor.set_option(rs.option.laser_power, sensor.get_option_range(rs.option.laser_power).max)
     sensor.set_option(rs.option.emitter_enabled, 1 if laser_enabled else 0)
 
     # to get a proper image, we sometimes need to wait a few frames, like when the camera is facing a light source
@@ -173,20 +175,6 @@ test.start("Testing depth frame - laser ON -", dev.get_info(rs.camera_info.name)
 res, laser_black_pixels = is_depth_meaningful(cfg, laser_enabled=True, save_image=DEBUG_MODE, show_image=DEBUG_MODE)
 test.check(res is True)
 test.finish()
-
-################################################################################################
-
-test.start("Testing depth frame - laser OFF -", dev.get_info(rs.camera_info.name))
-res, no_laser_black_pixels = is_depth_meaningful(cfg, laser_enabled=False, save_image=DEBUG_MODE, show_image=DEBUG_MODE)
-test.check(res is True)
-test.finish()
-
-################################################################################################
-
-# Test temporarily removed, 
-# test.start("Testing less black pixels with the laser on")
-# test.check(no_laser_black_pixels > laser_black_pixels)
-# test.finish()
 
 ################################################################################################
 
