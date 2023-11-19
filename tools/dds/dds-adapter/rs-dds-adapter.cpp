@@ -1,9 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <rsutils/easylogging/easyloggingpp.h>
-#include <rsutils/json.h>
-
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
 #include <realdds/dds-participant.h>
@@ -16,6 +13,11 @@
 
 #include <tclap/CmdLine.h>
 #include <tclap/ValueArg.h>
+
+#include <rsutils/os/executable-name.h>
+#include <rsutils/os/special-folder.h>
+#include <rsutils/easylogging/easyloggingpp.h>
+#include <rsutils/json.h>
 
 #include <string>
 #include <iostream>
@@ -58,10 +60,67 @@ topics::device_info rs2_device_to_info( rs2::device const & dev )
 }
 
 
+static nlohmann::json load_config()
+{
+    std::ifstream f( rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME );
+    if( ! f.good() )
+        return nlohmann::json::object();
+
+    // Load the realsense configuration file settings
+    try
+    {
+        return nlohmann::json::parse( f );
+    }
+    catch( std::exception const & e )
+    {
+        throw std::runtime_error( "failed to load configuration file: " + std::string( e.what() ) );
+    }
+}
+
+
+static void merge_settings( nlohmann::json & settings, nlohmann::json const & overrides, std::string const & name )
+{
+    if( ! overrides.is_object() )
+        throw std::runtime_error( name + ": expecting an object; got " + overrides.dump() );
+    try
+    {
+        settings.merge_patch( overrides );
+    }
+    catch( std::exception const & e )
+    {
+        throw std::runtime_error( "failed to merge " + name + ": " + std::string( e.what() ) );
+    }
+}
+
+
+static nlohmann::json load_settings( nlohmann::json const & local_settings )
+{
+    // Allow ignoring of any other settings, global or not!
+    auto config = load_config();
+
+    // Take the global 'context' settings out of the configuration
+    nlohmann::json settings;
+    if( auto global_context = rsutils::json::nested( config, "context" ) )
+        merge_settings( settings, global_context, "global config-file/context" );
+
+    // Merge any application-specific context settings
+    auto const executable = rsutils::os::executable_name();
+    if( auto executable_context = rsutils::json::nested( config, executable, "context" ) )
+        merge_settings( settings, executable_context, "config-file/" + executable + "/context" );
+
+    // Take the "dds" settings only
+    settings = rsutils::json::nested( settings, "dds" );
+
+    // Finally, merge the given local settings on top of all that
+    merge_settings( settings, local_settings, "local settings" );
+    return settings;
+}
+
+
 int main( int argc, char * argv[] )
 try
 {
-    dds_domain_id domain = 0;
+    dds_domain_id domain = -1;  // from settings; default to 0
     CmdLine cmd( "librealsense rs-dds-adapter tool, use CTRL + C to stop..", ' ' );
     ValueArg< dds_domain_id > domain_arg( "d",
                                           "domain",
@@ -104,9 +163,9 @@ try
 
     std::cout << "Starting RS DDS Adapter.." << std::endl;
 
-    // Create a DDS publisher
+    // Create a DDS participant
     auto participant = std::make_shared< dds_participant >();
-    auto settings = nlohmann::json::object();
+    auto settings = load_settings( nlohmann::json::object() );
     participant->init( domain, "rs-dds-adapter", std::move( settings ) );
 
     struct device_handler
