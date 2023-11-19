@@ -15,6 +15,7 @@
 #include <fastdds/rtps/transport/UDPv4TransportDescriptor.h>
 
 #include <rsutils/string/slice.h>
+#include <rsutils/json.h>
 
 #include <map>
 #include <mutex>
@@ -192,6 +193,13 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
         DDS_THROW( runtime_error,
                    "participant is already initialized; cannot init '" + participant_name + "' on domain id "
                        + std::to_string( domain_id ) );
+    }
+
+    if( domain_id == -1 )
+    {
+        // Get it from settings and default to 0
+        if( ! rsutils::json::get_ex( settings, "domain", &domain_id ) )
+            domain_id = 0;
     }
 
     _domain_listener = std::make_shared< listener_impl >( *this );
