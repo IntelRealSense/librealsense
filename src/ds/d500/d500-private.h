@@ -13,10 +13,11 @@ namespace librealsense
 
     namespace ds
     {
+        const uint16_t D555E_PID = 0x0B56;
         const uint16_t RS_D585_PID = 0x0B6A; // D585, D for depth
         const uint16_t RS_D585S_PID = 0x0B6B; // D585S, S for safety
+        const uint16_t RS_D500_RECOVERY_PID = 0x0ADD;
 
-        const uint16_t D555E_PID = 0x0B56;
 
         // d500 Devices supported by the current version
         static const std::set<std::uint16_t> rs500_sku_pid = {
@@ -45,14 +46,16 @@ namespace librealsense
 
         static const std::map<std::uint16_t, std::string> rs500_sku_names = {
             { ds::D555E_PID,            "Intel RealSense D555e" },
-            { ds::RS_D585_PID,          "Intel RealSense D585" },
-            { ds::RS_D585S_PID,         "Intel RealSense D585S" }
+            { ds::RS_D585_PID,           "Intel RealSense D585" },
+            { ds::RS_D585S_PID,          "Intel RealSense D585S" },
+            { ds::RS_D500_RECOVERY_PID,  "Intel RealSense D5XX Recovery"},
         };
 
         //TODO
         //static std::map<uint16_t, std::string> d500_device_to_fw_min_version = {
-        //    {RS_D585_PID, "5.8.15.0"},
-        //    {RS_D585S_PID, "5.8.15.0"}
+        //    {RS_D585_PID, "0.0.0.0"},
+        //    {RS_D585S_PID, "0.0.0.0"},
+        //    {RS_D500_RECOVERY_PID , "0.0.0.0"}
         //};
 
         bool d500_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,

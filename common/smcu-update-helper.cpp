@@ -171,7 +171,7 @@ namespace rs2
             return;
         }
 
-        log("Device reconnected succesfully!");
+        log("Device reconnected successfully!");
 
         _progress = 100;
 
