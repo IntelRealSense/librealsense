@@ -15,6 +15,7 @@
 #include <fastdds/rtps/transport/UDPv4TransportDescriptor.h>
 
 #include <rsutils/string/slice.h>
+#include <rsutils/json.h>
 
 #include <map>
 #include <mutex>
@@ -190,8 +191,8 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
     if( is_valid() )
     {
         DDS_THROW( runtime_error,
-                   "participant is already initialized; cannot init '" + participant_name + "' on domain id "
-                       + std::to_string( domain_id ) );
+                   "participant is already initialized; cannot init '" << participant_name << "' on domain id "
+                                                                       << domain_id );
     }
 
     _domain_listener = std::make_shared< listener_impl >( *this );
@@ -216,6 +217,9 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
     udp_transport->receiveBufferSize = 16 * 1024 * 1024;
     pqos.transport().use_builtin_transports = false;
     pqos.transport().user_transports.push_back( udp_transport );
+
+    // Above are defaults
+    override_participant_qos_from_json( pqos, settings );
 
     // Listener will call DataReaderListener::on_data_available for a specific reader,
     // not SubscriberListener::on_data_on_readers for any reader

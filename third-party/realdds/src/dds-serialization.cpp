@@ -7,6 +7,9 @@
 #include <fastdds/rtps/writer/WriterDiscoveryInfo.h>
 #include <fastdds/rtps/reader/ReaderDiscoveryInfo.h>
 
+#include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
+#include <fastdds/rtps/transport/UDPTransportDescriptor.h>
+
 #include <rsutils/json.h>
 
 
@@ -238,6 +241,38 @@ void override_endpoint_qos_from_json( eprosima::fastdds::dds::RTPSEndpointQos & 
         std::string policy_str;
         if( rsutils::json::get_ex( j, "history-memory-policy", &policy_str ) )
             qos.history_memory_policy = history_memory_policy_from_string( policy_str );
+    }
+}
+
+
+void override_participant_qos_from_json( eprosima::fastdds::dds::DomainParticipantQos & qos, nlohmann::json const & j )
+{
+    if( ! j.is_object() )
+        return;
+    rsutils::json::get_ex( j, "participant-id", &qos.wire_protocol().participant_id );
+    rsutils::json::get_ex( j, "lease-duration", &qos.wire_protocol().builtin.discovery_config.leaseDuration.seconds );
+
+    rsutils::json::get_ex( j, "use-builtin-transports", &qos.transport().use_builtin_transports );
+    if( auto udp_j = rsutils::json::nested( j, "udp" ) )
+    {
+        for( auto t : qos.transport().user_transports )
+            if( auto udp_t = std::dynamic_pointer_cast< eprosima::fastdds::rtps::UDPTransportDescriptor >( t ) )
+            {
+                rsutils::json::get_ex( udp_j, "send-buffer-size", &udp_t->sendBufferSize );
+                rsutils::json::get_ex( udp_j, "receive-buffer-size", &udp_t->receiveBufferSize );
+                if( auto whitelist_j = rsutils::json::nested( udp_j, "whitelist" ) )
+                {
+                    if( ! whitelist_j->is_array() )
+                        LOG_WARNING( "UDP whitelist in settings should be an array" );
+                    else
+                        for( auto & ip : whitelist_j.get() )
+                        {
+                            if( ip.is_string() )
+                                udp_t->interfaceWhiteList.push_back( rsutils::json::string_ref( ip ) );
+                        }
+                }
+                break;
+            }
     }
 }
 
