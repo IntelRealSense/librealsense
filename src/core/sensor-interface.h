@@ -5,7 +5,7 @@
 
 #include "info-interface.h"
 #include "options-container.h"
-#include "recommended-proccesing-blocks-interface.h"
+#include "recommended-processing-blocks-interface.h"
 
 #include "tagged-profile.h"
 

@@ -138,12 +138,12 @@ void dds_sensor_proxy::register_basic_converters()
     _formats_converter.register_converters(
         processing_block_factory::create_pbf_vector< uyvy_converter >(
             RS2_FORMAT_UYVY,
-            { RS2_FORMAT_UYVY, RS2_FORMAT_YUYV, RS2_FORMAT_RGB8, RS2_FORMAT_RGBA8, RS2_FORMAT_BGR8, RS2_FORMAT_BGRA8 },
+            { RS2_FORMAT_UYVY, RS2_FORMAT_YUYV, RS2_FORMAT_RGB8, RS2_FORMAT_Y8, RS2_FORMAT_RGBA8, RS2_FORMAT_BGR8, RS2_FORMAT_BGRA8 },
             RS2_STREAM_COLOR ) );
     _formats_converter.register_converters(
         processing_block_factory::create_pbf_vector< yuy2_converter >(
             RS2_FORMAT_YUYV,
-            { RS2_FORMAT_YUYV, RS2_FORMAT_RGB8, RS2_FORMAT_RGBA8, RS2_FORMAT_BGR8, RS2_FORMAT_BGRA8 },
+            { RS2_FORMAT_YUYV, RS2_FORMAT_RGB8, RS2_FORMAT_Y8, RS2_FORMAT_RGBA8, RS2_FORMAT_BGR8, RS2_FORMAT_BGRA8 },
             RS2_STREAM_COLOR ) );
 
     // Depth
