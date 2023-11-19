@@ -78,13 +78,6 @@ namespace librealsense
                     std::make_shared<asic_and_projector_temperature_options>(_raw_depth_ep,
                         RS2_OPTION_PROJECTOR_TEMPERATURE));
             }
-
-            // EMITTER FREQUENCY OPTION
-            auto feature = _owner->get_feature( emitter_frequency_feature::ID );
-            if( auto emitter_freq_feature = std::dynamic_pointer_cast< emitter_frequency_feature >( feature ) )
-            {
-                emitter_freq_feature->activate();
-            }
         }
         else
         {

@@ -13,7 +13,7 @@
 #include <src/platform/platform-utils.h>
 #include <src/fourcc.h>
 
-#include <src/features/auto-exposure-roi-feature.h>
+#include <src/ds/features/auto-exposure-roi-feature.h>
 
 #include <rsutils/string/from.h>
 
@@ -125,7 +125,8 @@ namespace librealsense
         firmware_version fw_ver = firmware_version( get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
 
         if( fw_ver >= firmware_version( "5.10.9.0" ) )
-            register_feature( auto_exposure_roi_feature::ID, std::make_shared< auto_exposure_roi_feature >() );
+            register_feature( auto_exposure_roi_feature::ID,
+                              std::make_shared< auto_exposure_roi_feature >( get_color_sensor(), _hw_monitor, true ) );
     }
 
     void d400_color::init()

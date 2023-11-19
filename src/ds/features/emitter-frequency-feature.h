@@ -4,7 +4,6 @@
 #pragma once
 
 #include <src/feature-interface.h>
-#include <src/option.h>
 
 #include <string>
 
@@ -12,6 +11,7 @@
 namespace librealsense {
 
 class synthetic_sensor;
+class option;
 
 class emitter_frequency_feature : public feature_interface
 {
@@ -19,9 +19,6 @@ public:
     static constexpr const char * ID = "Emitter frequency feature";
 
     emitter_frequency_feature( synthetic_sensor & raw_sensor );
-
-    void activate();
-    void deactivate();
 
     private:
     synthetic_sensor & _sensor;

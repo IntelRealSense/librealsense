@@ -21,6 +21,7 @@
 #include "ds/d400/d400-nonmonochrome.h"
 
 #include <src/ds/features/amplitude-factor-feature.h>
+#include <src/ds/features/auto-exposure-roi-feature.h>
 
 #include "proc/depth-formats-converter.h"
 #include "proc/y8i-to-y8y8.h"
@@ -588,10 +589,6 @@ namespace librealsense
                 // Register RS2_OPTION_INTER_CAM_SYNC_MODE here if needed
             }
 
-            roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);
-            if (roi_sensor)
-                roi_sensor->set_roi_method(std::make_shared<ds_auto_exposure_roi_method>(*_hw_monitor));
-
             depth_sensor.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
                     rsutils::lazy< float >( [this]() { return get_stereo_baseline_mm(); } ) ) );
 
@@ -732,6 +729,9 @@ namespace librealsense
     void d500_device::register_features()
     {
         register_feature( amplitude_factor_feature::ID, std::make_shared< amplitude_factor_feature >() );
+
+        register_feature( auto_exposure_roi_feature::ID,
+                          std::make_shared< auto_exposure_roi_feature >( get_depth_sensor(), _hw_monitor ) );
     }
 
     platform::usb_spec d500_device::get_usb_spec() const

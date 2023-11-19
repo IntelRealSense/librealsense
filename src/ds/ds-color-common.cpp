@@ -6,7 +6,7 @@
 #include <src/option.h>
 
 #include <src/platform/uvc-option.h>
-#include <src/features/auto-exposure-roi-feature.h>
+#include <src/ds/features/auto-exposure-roi-feature.h>
 
 #include <cstddef>
 
@@ -67,13 +67,6 @@ namespace librealsense
             std::make_shared<auto_disabling_control>(
                 gain_option,
                 auto_exposure_option));
-
-        if( _color_ep.get_device().supports_feature( auto_exposure_roi_feature::ID ) )
-        {
-            roi_sensor_interface* roi_sensor;
-            if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&_color_ep)))
-                roi_sensor->set_roi_method(std::make_shared<ds_auto_exposure_roi_method>(*_hw_monitor, ds::fw_cmd::SETRGBAEROI));
-        }
     }
 
     void ds_color_common::register_metadata()

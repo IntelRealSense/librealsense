@@ -23,6 +23,7 @@
 
 #include <src/ds/features/amplitude-factor-feature.h>
 #include <src/ds/features/emitter-frequency-feature.h>
+#include <src/ds/features/auto-exposure-roi-feature.h>
 #include <src/features/remove-ir-pattern-feature.h>
 
 #include <src/proc/depth-formats-converter.h>
@@ -887,10 +888,6 @@ namespace librealsense
                 }
             }
 
-            roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);
-            if (roi_sensor)
-                roi_sensor->set_roi_method(std::make_shared<ds_auto_exposure_roi_method>(*_hw_monitor));
-
             if (!val_in_range(_pid, { ds::RS457_PID }))
             {
                 depth_sensor.register_option( RS2_OPTION_STEREO_BASELINE,
@@ -972,6 +969,9 @@ namespace librealsense
 
         if( fw_ver >= firmware_version( "5.9.10.0" ) ) // TODO - add PID here? Now checked at advanced_mode
             register_feature( remove_ir_pattern_feature::ID, std::make_shared< remove_ir_pattern_feature >() );
+
+        register_feature( auto_exposure_roi_feature::ID,
+                          std::make_shared< auto_exposure_roi_feature >( get_depth_sensor(), _hw_monitor ) );
     }
 
     void d400_device::register_metadata(const synthetic_sensor &depth_sensor, const firmware_version& hdr_firmware_version) const

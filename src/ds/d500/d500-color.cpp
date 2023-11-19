@@ -13,7 +13,7 @@
 #include "platform/platform-utils.h"
 #include <src/fourcc.h>
 
-#include <src/features/auto-exposure-roi-feature.h>
+#include <src/ds/features/auto-exposure-roi-feature.h>
 
 namespace librealsense
 {
@@ -86,7 +86,8 @@ namespace librealsense
 
     void d500_color::register_features()
     {
-        register_feature( auto_exposure_roi_feature::ID, std::make_shared< auto_exposure_roi_feature >() );
+        register_feature( auto_exposure_roi_feature::ID,
+                          std::make_shared< auto_exposure_roi_feature >( get_color_sensor(), _hw_monitor, true ) );
 
         d500_device::register_features();
     }
@@ -99,6 +100,7 @@ namespace librealsense
         _ds_color_common = std::make_shared<ds_color_common>(raw_color_ep, color_ep,
              _fw_version, _hw_monitor, this);
 
+        register_features();
         register_options();
         register_metadata();
         register_color_processing_blocks();
