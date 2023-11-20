@@ -116,6 +116,19 @@ namespace rs2
             return res > 0;
         }
 
+        /**
+         * check if particular option is volatile
+         * \param[in] option     option id to be checked
+         * \return true if option is read-only
+         */
+        bool is_option_volatile( rs2_option option ) const
+        {
+            rs2_error * e = nullptr;
+            auto res = rs2_is_option_volatile( _options, option, &e );
+            error::handle( e );
+            return res > 0;
+        }
+
         std::vector<rs2_option> get_supported_options()
         {
             std::vector<rs2_option> res;

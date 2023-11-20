@@ -38,6 +38,7 @@ namespace rs2
             {
                 option.range = options->get_option_range(opt);
                 option.read_only = options->is_option_read_only(opt);
+                option._volatile = options->is_option_volatile( opt );
                 option.value = options->get_option(opt);
             }
             catch (const error& e)
@@ -633,7 +634,7 @@ bool option_model::draw_option(bool update_read_only_options,
         if (supported && is_streaming)
         {
             update_read_only_status(error_message);
-            if (read_only)
+            if( read_only || _volatile )
             {
                 update_all_fields(error_message, model);
             }

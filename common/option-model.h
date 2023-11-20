@@ -32,6 +32,7 @@ namespace rs2
         bool* invalidate_flag = nullptr;
         bool supported = false;
         bool read_only = false;
+        bool _volatile = false;
         float value = 0.0f;
         std::string label = "";
         std::string id = "";

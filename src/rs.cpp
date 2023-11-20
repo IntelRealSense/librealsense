@@ -654,6 +654,13 @@ int rs2_is_option_read_only(const rs2_options* options, rs2_option option, rs2_e
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, options, option)
 
+int rs2_is_option_volatile( const rs2_options * options, rs2_option option, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( options );
+    return options->options->get_option( option ).is_volatile();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( 0, options, option )
+
 float rs2_get_option(const rs2_options* options, rs2_option option, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);

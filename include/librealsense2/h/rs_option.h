@@ -247,6 +247,15 @@ extern "C" {
     int rs2_is_option_read_only(const rs2_options* options, rs2_option option, rs2_error** error);
 
     /**
+     * check if an option is volatile, that is, value set by us can change without us setting it again
+     * \param[in] options  the options container
+     * \param[in] option   option id to be checked
+     * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+     * \return true if option is volatile
+     */
+    int rs2_is_option_volatile( const rs2_options * options, rs2_option option, rs2_error ** error );
+
+    /**
     * read option value from the sensor
     * \param[in] options  the options container
     * \param[in] option   option id to be queried

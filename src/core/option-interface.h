@@ -26,6 +26,7 @@ public:
     virtual option_range get_range() const = 0;
     virtual bool is_enabled() const = 0;
     virtual bool is_read_only() const { return false; }
+    virtual bool is_volatile() const { return false; }
     virtual const char * get_description() const = 0;
     virtual const char * get_value_description( float ) const { return nullptr; }
     

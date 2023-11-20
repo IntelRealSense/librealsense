@@ -103,17 +103,20 @@ public:
     }
 
     bool is_enabled() const override { return true; }
+    bool is_volatile() const override { return _is_volatile; }
 
     uvc_xu_option( uvc_sensor & ep,
                    platform::extension_unit xu,
                    uint8_t id,
                    std::string description,
-                   bool allow_set_while_streaming = true )
+                   bool allow_set_while_streaming = true,
+                   bool is_volatile = false )
         : _ep( ep )
         , _xu( xu )
         , _id( id )
         , _desciption( std::move( description ) )
         , _allow_set_while_streaming( allow_set_while_streaming )
+        , _is_volatile( is_volatile )
     {
     }
 
@@ -122,13 +125,15 @@ public:
                    uint8_t id,
                    std::string description,
                    const std::map< float, std::string > & description_per_value,
-                   bool allow_set_while_streaming = true )
+                   bool allow_set_while_streaming = true,
+                   bool is_volatile = false )
         : _ep( ep )
         , _xu( xu )
         , _id( id )
         , _desciption( std::move( description ) )
         , _description_per_value( description_per_value )
         , _allow_set_while_streaming( allow_set_while_streaming )
+        , _is_volatile( is_volatile )
     {
     }
 
@@ -153,6 +158,7 @@ protected:
     };
     const std::map< float, std::string > _description_per_value;
     bool _allow_set_while_streaming;
+    bool _is_volatile = false;
 };
 
 

@@ -93,6 +93,7 @@ EXPORTS
     rs2_get_option_name
     rs2_get_option_value_description
     rs2_is_option_read_only
+    rs2_is_option_volatile
     rs2_get_options_list
     rs2_get_option_from_list
     rs2_get_options_list_size

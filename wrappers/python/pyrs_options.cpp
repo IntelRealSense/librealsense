@@ -9,6 +9,7 @@ void init_options(py::module &m) {
     py::class_<rs2::options> options(m, "options", "Base class for options interface. Should be used via sensor or processing_block."); // No docstring in C++
     options.def("is_option_read_only", &rs2::options::is_option_read_only, "Check if particular option "
                 "is read only.", "option"_a)
+        .def("is_option_volatile", &rs2::options::is_option_volatile, "Check if particular option is volatile.", "option"_a)
         .def("get_option", &rs2::options::get_option, "Read option value from the device.", "option"_a, py::call_guard<py::gil_scoped_release>())
         .def("get_option_range", &rs2::options::get_option_range, "Retrieve the available range of values "
              "of a supported option", "option"_a, py::call_guard<py::gil_scoped_release>())
