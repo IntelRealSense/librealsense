@@ -49,7 +49,7 @@ public:
         , backend_device( dev_info )
         , d500_device( dev_info )
         , d500_active( dev_info )
-        , d500_color( dev_info )
+        , d500_color( dev_info, RS2_FORMAT_YUYV )
         , d500_motion( dev_info )
         , ds_advanced_mode_base( d500_device::_hw_monitor, get_depth_sensor() )
         , firmware_logger_device(
@@ -64,19 +64,6 @@ public:
                                                        _ds_motion_common->get_gyro_stream().get() };
         streams.insert( streams.end(), mm_streams.begin(), mm_streams.end() );
         return matcher_factory::create( RS2_MATCHER_DEFAULT, streams );
-    }
-
-
-    void register_color_processing_blocks() override
-    {
-        auto & color_ep = get_color_sensor();
-
-        color_ep.register_processing_block( processing_block_factory::create_pbf_vector< yuy2_converter >(
-            RS2_FORMAT_YUYV,
-            map_supported_color_formats( RS2_FORMAT_YUYV ),
-            RS2_STREAM_COLOR ) );
-        color_ep.register_processing_block(  // Color Raw (Bayer 10-bit embedded in 16-bit) for calibration
-            processing_block_factory::create_id_pbf( RS2_FORMAT_RAW16, RS2_STREAM_COLOR ) );
     }
 
 
