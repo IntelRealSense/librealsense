@@ -200,7 +200,10 @@ int main(int argc, char** argv)
     nlohmann::json settings;
 #ifdef BUILD_WITH_DDS
     nlohmann::json dds;
-    dds["domain"] = domain_arg.getValue();
+    if( domain_arg.isSet() )
+        dds["domain"] = domain_arg.getValue();
+    if( only_sw_arg.isSet() )
+        dds["enabled"] = true;  // override global dds:false or dds/enabled:false, if any
     settings["dds"] = std::move( dds );
 #endif
     if( only_sw_arg.getValue() )

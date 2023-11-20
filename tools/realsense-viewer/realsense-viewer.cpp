@@ -332,9 +332,12 @@ int main(int argc, const char** argv) try
 
     std::shared_ptr<device_models_list> device_models = std::make_shared<device_models_list>();
 
-    nlohmann::json settings;
+    nlohmann::json settings = nlohmann::json::object();
     if( only_sw_arg.getValue() )
+    {
+        settings["dds"]["enabled"] = true;  // override global dds:false or dds/enabled:false, if any
         settings["device-mask"] = RS2_PRODUCT_LINE_SW_ONLY | RS2_PRODUCT_LINE_ANY;
+    }
 
     context ctx( settings.dump() );
     ux_window window("Intel RealSense Viewer", ctx);
