@@ -123,15 +123,17 @@ The `context` has been augmented to be able to see DDS devices. This is on by de
 
 When a context is created, a JSON representation may be passed to it, e.g.: `{"dds": { "domain": 123, "participant": "librs" }}`. This allows various customizations:
 
-| Field                | Description                            |
-|----------------------|----------------------------------------|
-| dds                  | Set to `false` to turn off DDS in this context; otherwise a JSON object
+| Field                | Default | Description                  |
+|----------------------|--------:|------------------------------|
+| dds                  | `{}`      | Set to `false` to turn off DDS in this context
+| dds/`enabled`          | `true`    | If `false`, DDS is disabled
 
 The `dds` is there by default (i.e., not `false`). The value may contain the following settings dealing with discovery:
 
-| Field                | Description                            |
-|----------------------|----------------------------------------|
-| domain               | The domain number to use (0-232); `0` is the default
-| participant          | The name given this context (how other participants will see it); defaults to the executable name
+| Field            | Default         | Description                      |
+|------------------|----------------:|----------------------------------|
+| domain           | `0`               | The domain number to use (0-232)
+| participant      | Executable name | The name given this context (how other participants will see it)
+| participant-id   | Automatic       | The ID; not recommended to use, but may be needed in special circumstances
 
 See a comprehensive list of settings under [device](device.md#Settings).

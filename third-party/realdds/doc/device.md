@@ -74,8 +74,8 @@ If available, the [`query-option` and `set-option` controls](control.md#query-op
 
 The following device options may be available:
 
-| Setting        | Default | Type             | `option-name`   | Description
-|----------------|--------:|------------------|-----------------|---------------
+| Setting        | Default | Type             | `option-name`   | Description          |
+|----------------|--------:|------------------|-----------------|---------------|
 | Domain ID      |       0 | int 0-232        | `domain-id`     | The DDS domain number to use to segment communications on the network
 | IP address     |       ? | string "#.#.#.#" | `ip-address`    | The static IP that the server uses for itself (if DHCP is off)
 | DHCP enable    |       ? | bool             | `dhcp`          | If on, the `ip-address` is ignored and retrieved on startup from a DHCP server
