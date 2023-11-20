@@ -3,6 +3,7 @@
 
 #include "rs-config.h"
 
+#include <rsutils/os/special-folder.h>
 #include <nlohmann/json.hpp>
 
 #include "model-views.h"
@@ -88,8 +89,8 @@ void config_file::save(const char* filename)
 
 config_file& config_file::instance()
 {
-    static config_file inst(get_folder_path(rs2::special_folder::app_data) 
-                            + std::string("realsense-config.json"));
+    static config_file inst( rsutils::os::get_special_folder( rsutils::os::special_folder::app_data )
+                             + "realsense-config.json" );
     return inst;
 }
 
