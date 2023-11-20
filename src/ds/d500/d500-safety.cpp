@@ -11,6 +11,7 @@
 #include "ds/ds-options.h"
 #include "d500-options.h"
 #include "d500-info.h"
+#include "d500-md.h"
 #include "stream.h"
 #include "backend.h"
 #include "platform/platform-utils.h"
@@ -132,7 +133,7 @@ namespace librealsense
             make_uvc_header_parser(&platform::uvc_header::timestamp));
 
         // attributes of md_safety_mode
-        auto md_prop_offset = offsetof(metadata_raw, mode) +
+        auto md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_safety_mode, intel_safety_info);
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, 
