@@ -5,8 +5,7 @@
 #test:donotrun:dds
 
 import pyrealsense2 as rs
-from rspy import test
-import numpy as np
+from rspy import test, repo
 import tempfile, os.path
 import threading
 import time
@@ -155,8 +154,7 @@ def get_composite_frames(sensors):
 
 
 def compare_processed_frames_vs_recorded_frames(record_block, file):
-    temp_dir = os.path.join(tempfile.gettempdir())
-    filename = os.path.join(temp_dir, "all_combinations_depth_color.bag")
+    filename = os.path.join(repo.build, 'unit-tests', 'recordings', 'all_combinations_depth_color.bag')
 
     ctx = rs.context()
     dev = ctx.load_device(filename)
@@ -164,7 +162,8 @@ def compare_processed_frames_vs_recorded_frames(record_block, file):
 
     sensors = dev.query_sensors()
     frames = get_composite_frames(sensors)
-    ref_dev = ctx.load_device(os.path.join(temp_dir, file))
+
+    ref_dev = ctx.load_device(os.path.join(repo.build, 'unit-tests', 'recordings', file))
     ref_dev.set_real_time(False)
 
     ref_sensors = ref_dev.query_sensors()
