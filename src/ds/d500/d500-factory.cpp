@@ -1,17 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <mutex>
-#include <chrono>
-#include <vector>
-#include <iterator>
-#include <cstddef>
-
 #include "device.h"
 #include "image.h"
 #include "metadata-parser.h"
 
 #include <src/core/matcher-factory.h>
+#include <src/proc/color-formats-converter.h>
 
 #include "d500-info.h"
 #include "d500-private.h"
@@ -32,6 +27,12 @@
 #include <rsutils/string/hexdump.h>
 using rsutils::string::hexdump;
 
+#include <mutex>
+#include <chrono>
+#include <vector>
+#include <iterator>
+#include <cstddef>
+
 
 namespace librealsense
 {
@@ -47,7 +48,7 @@ namespace librealsense
             , backend_device( dev_info )
             , d500_device( dev_info )
             , d500_active( dev_info )
-            , d500_color( dev_info )
+            , d500_color( dev_info, RS2_FORMAT_M420 )
             , d500_motion( dev_info )
             , ds_advanced_mode_base( d500_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device( dev_info,
@@ -100,7 +101,7 @@ namespace librealsense
             , backend_device( dev_info )
             , d500_device( dev_info )
             , d500_active( dev_info )
-            , d500_color( dev_info )
+            , d500_color( dev_info, RS2_FORMAT_M420 )
             , d500_safety( dev_info )
             , d500_depth_mapping( dev_info )
             , d500_motion( dev_info )
@@ -154,7 +155,7 @@ namespace librealsense
         , backend_device( dev_info )
             , d500_device( dev_info )
             , d500_active( dev_info )
-            , d500_color( dev_info )
+            , d500_color( dev_info, RS2_FORMAT_YUYV )
             , d500_motion( dev_info )
             , ds_advanced_mode_base( d500_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device(
@@ -170,6 +171,7 @@ namespace librealsense
             streams.insert( streams.end(), mm_streams.begin(), mm_streams.end() );
             return matcher_factory::create( RS2_MATCHER_DEFAULT, streams );
         }
+
 
         std::vector< tagged_profile > get_profiles_tags() const override
         {
@@ -207,6 +209,7 @@ namespace librealsense
             return false;
         }
     };
+
 
     std::shared_ptr< device_interface > d500_info::create_device()
     {

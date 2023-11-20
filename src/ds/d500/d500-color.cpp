@@ -32,10 +32,12 @@ namespace librealsense
         {rs_fourcc('M','4','2','0'), RS2_STREAM_COLOR}
     };
 
-    d500_color::d500_color( std::shared_ptr< const d500_info > const & dev_info )
-        : d500_device(dev_info), device(dev_info),
-          _color_stream(new stream(RS2_STREAM_COLOR)),
-          _separate_color(true)
+    d500_color::d500_color( std::shared_ptr< const d500_info > const & dev_info, rs2_format native_format )
+        : d500_device( dev_info )
+        , device( dev_info )
+        , _color_stream( new stream( RS2_STREAM_COLOR ) )
+        , _separate_color( true )
+        , _native_format( native_format )
     {
         create_color_device( dev_info->get_context(), dev_info->get_group() );
         init();
@@ -92,7 +94,33 @@ namespace librealsense
 
         register_options();
         register_metadata();
-        register_processing_blocks();
+        register_color_processing_blocks();
+    }
+
+    void d500_color::register_color_processing_blocks()
+    {
+        auto & color_ep = get_color_sensor();
+
+        switch( _native_format )
+        {
+        case RS2_FORMAT_YUYV:
+            color_ep.register_processing_block( processing_block_factory::create_pbf_vector< yuy2_converter >(
+                RS2_FORMAT_YUYV,
+                map_supported_color_formats( RS2_FORMAT_YUYV ),
+                RS2_STREAM_COLOR ) );
+            break;
+        case RS2_FORMAT_M420:
+            color_ep.register_processing_block( processing_block_factory::create_pbf_vector< m420_converter >(
+                RS2_FORMAT_M420,
+                map_supported_color_formats( RS2_FORMAT_M420 ),
+                RS2_STREAM_COLOR ) );
+            break;
+        default:
+            throw invalid_value_exception( "invalid native color format "
+                                           + std::string( get_string( _native_format ) ) );
+        }
+        color_ep.register_processing_block(  // Color Raw (Bayer 10-bit embedded in 16-bit) for calibration
+            processing_block_factory::create_id_pbf( RS2_FORMAT_RAW16, RS2_STREAM_COLOR ) );
     }
 
     void d500_color::register_options()
@@ -123,15 +151,6 @@ namespace librealsense
             [](rs2_metadata_type param) { return (param != 1); })); // OFF value via UVC is 1 (ON is 8)
 
         _ds_color_common->register_metadata();
-    }
-
-    void d500_color::register_processing_blocks()
-    {
-        auto& color_ep = get_color_sensor();
-
-        color_ep.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_COLOR));
-
-        color_ep.register_processing_block(processing_block_factory::create_pbf_vector<m420_converter>(RS2_FORMAT_M420, map_supported_color_formats(RS2_FORMAT_M420), RS2_STREAM_COLOR));
     }
 
     rs2_intrinsics d500_color_sensor::get_intrinsics(const stream_profile& profile) const
