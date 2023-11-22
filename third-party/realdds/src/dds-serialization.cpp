@@ -3,6 +3,7 @@
 
 #include <realdds/dds-serialization.h>
 #include <realdds/dds-utilities.h>
+#include <realdds/dds-time.h>
 
 #include <fastdds/rtps/writer/WriterDiscoveryInfo.h>
 #include <fastdds/rtps/reader/ReaderDiscoveryInfo.h>
@@ -10,6 +11,7 @@
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
 #include <fastdds/rtps/transport/UDPTransportDescriptor.h>
 
+#include <rsutils/string/from.h>
 #include <rsutils/json.h>
 
 
@@ -66,6 +68,33 @@ std::ostream & operator<<( std::ostream & os, HistoryQosPolicy const & qos )
 }
 
 
+std::ostream & operator<<( std::ostream & os, LivelinessQosPolicyKind kind )
+{
+    switch( kind )
+    {
+    case eprosima::fastdds::dds::AUTOMATIC_LIVELINESS_QOS:
+        return os << "automatic";
+    case eprosima::fastdds::dds::MANUAL_BY_PARTICIPANT_LIVELINESS_QOS:
+        return os << "by-participant";
+    case eprosima::fastdds::dds::MANUAL_BY_TOPIC_LIVELINESS_QOS:
+        return os << "by-topic";
+    }
+    return os << (int) kind;
+}
+
+
+std::ostream & operator<<( std::ostream & os, LivelinessQosPolicy const & qos )
+{
+    os << qos.kind;
+    if( qos.lease_duration != eprosima::fastrtps::c_TimeInfinite )
+        os << "/" << rsutils::string::from( qos.lease_duration.to_ns() / 1e9 ) << 's';
+    if( qos.kind == eprosima::fastdds::dds::AUTOMATIC_LIVELINESS_QOS
+        && qos.announcement_period != eprosima::fastrtps::c_TimeInfinite )
+        os << "/" << rsutils::string::from( qos.announcement_period.to_ns() / 1e9 ) << 's';
+    return os;
+}
+
+
 std::ostream & operator<<( std::ostream & os, DataSharingQosPolicy const & qos )
 {
     return os;
@@ -85,6 +114,39 @@ std::ostream & operator<<( std::ostream & os, RTPSEndpointQos const & qos )
 
 namespace eprosima {
 namespace fastrtps {
+
+
+// Allow j["key"] = qos.lease_duration;
+void to_json( nlohmann::json & j, Duration_t const & duration )
+{
+    if( duration == c_TimeInfinite )
+        j = "infinite";
+    else if( duration == c_TimeInvalid )
+        j = "invalid";
+    else
+        j = realdds::time_to_double( duration );
+}
+
+
+// Allow j.get< eprosima::fastrtps::Duration_t >();
+void from_json( nlohmann::json const & j, Duration_t & duration )
+{
+    if( j.is_string() )
+    {
+        auto & s = rsutils::json::string_ref( j );
+        // TODO switch to rsutils::string::nocaase_equal()
+        if( s == "infinite" )
+            duration = c_TimeInfinite;
+        else if( s == "invalid" )
+            duration = c_TimeInvalid;
+        else
+            throw nlohmann::json::type_error::create( 317, "unknown duration value '" + s + "'", &j );
+    }
+    else
+        duration = realdds::dds_time( j.get< double >() );
+}
+
+
 namespace rtps {
 
 
@@ -95,6 +157,8 @@ std::ostream & operator<<( std::ostream & os, WriterProxyData const & info )
     os << /*" reliability"*/ " " << info.m_qos.m_reliability;
     if( ! ( info.m_qos.m_durability == eprosima::fastdds::dds::DurabilityQosPolicy() ) )
         os << /*" durability"*/ " " << info.m_qos.m_durability;
+    if( ! ( info.m_qos.m_liveliness == eprosima::fastdds::dds::LivelinessQosPolicy() ) )
+        os << " liveliness" " " << info.m_qos.m_liveliness;
     os << "]";
     return os;
 }
@@ -151,6 +215,18 @@ eprosima::fastdds::dds::HistoryQosPolicyKind history_kind_from_string( std::stri
     if( s == "keep-all" )
         return eprosima::fastdds::dds::KEEP_ALL_HISTORY_QOS;
     DDS_THROW( runtime_error, "invalid history kind '" << s << "'" );
+}
+
+
+eprosima::fastdds::dds::LivelinessQosPolicyKind liveliness_kind_from_string( std::string const & s )
+{
+    if( s == "automatic" )
+        return eprosima::fastdds::dds::AUTOMATIC_LIVELINESS_QOS;
+    if( s == "by-participant" )
+        return eprosima::fastdds::dds::MANUAL_BY_PARTICIPANT_LIVELINESS_QOS;
+    if( s == "by-topic" )
+        return eprosima::fastdds::dds::MANUAL_BY_TOPIC_LIVELINESS_QOS;
+    DDS_THROW( runtime_error, "invalid liveliness kind '" << s << "'" );
 }
 
 
@@ -214,10 +290,39 @@ void override_history_qos_from_json( eprosima::fastdds::dds::HistoryQosPolicy & 
 }
 
 
+void override_liveliness_qos_from_json( eprosima::fastdds::dds::LivelinessQosPolicy & qos, nlohmann::json const & j )
+{
+    if( j.is_object() )
+    {
+        if( auto kind = rsutils::json::nested( j, "kind" ) )
+        {
+            if( kind->is_string() )
+                qos.kind = liveliness_kind_from_string( rsutils::json::string_ref( kind ) );
+            else
+                DDS_THROW( runtime_error, "liveliness kind not a string: " << kind );
+        }
+
+        if( auto lease = rsutils::json::nested( j, "lease-duration" ) )
+        {
+            if( lease->is_null() )
+                qos.lease_duration = eprosima::fastdds::dds::LivelinessQosPolicy().lease_duration;
+            else
+                lease->get_to( qos.lease_duration );
+        }
+
+        if( auto announce = rsutils::json::nested( j, "announcement-period" ) )
+        {
+            if( announce->is_null() )
+                qos.announcement_period = eprosima::fastdds::dds::LivelinessQosPolicy().announcement_period;
+            else
+                announce->get_to( qos.announcement_period );
+        }
+    }
+}
+
+
 void override_data_sharing_qos_from_json( eprosima::fastdds::dds::DataSharingQosPolicy & qos, nlohmann::json const & j )
 {
-    if( j.is_null() )
-        return;
     if( j.is_boolean() )
     {
         if( rsutils::json::value< bool >( j ) )
@@ -225,9 +330,9 @@ void override_data_sharing_qos_from_json( eprosima::fastdds::dds::DataSharingQos
         else
             qos.off();
     }
-    else
+    else if( ! j.is_null() )
     {
-        DDS_THROW( runtime_error, "data-sharing must be a boolean (off/automatic)" );
+        DDS_THROW( runtime_error, "data-sharing must be a boolean (off/automatic); got " << j );
     }
 }
 
@@ -250,7 +355,7 @@ void override_participant_qos_from_json( eprosima::fastdds::dds::DomainParticipa
     if( ! j.is_object() )
         return;
     rsutils::json::get_ex( j, "participant-id", &qos.wire_protocol().participant_id );
-    rsutils::json::get_ex( j, "lease-duration", &qos.wire_protocol().builtin.discovery_config.leaseDuration.seconds );
+    rsutils::json::get_ex( j, "lease-duration", &qos.wire_protocol().builtin.discovery_config.leaseDuration );
 
     rsutils::json::get_ex( j, "use-builtin-transports", &qos.transport().use_builtin_transports );
     if( auto udp_j = rsutils::json::nested( j, "udp" ) )
