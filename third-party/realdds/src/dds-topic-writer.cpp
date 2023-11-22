@@ -95,6 +95,7 @@ void dds_topic_writer::qos::override_from_json( nlohmann::json const & qos_setti
     override_reliability_qos_from_json( reliability(), rsutils::json::nested( qos_settings, "reliability" ) );
     override_durability_qos_from_json( durability(), rsutils::json::nested( qos_settings, "durability" ) );
     override_history_qos_from_json( history(), rsutils::json::nested( qos_settings, "history" ) );
+    override_liveliness_qos_from_json( liveliness(), rsutils::json::nested( qos_settings, "liveliness" ) );
     override_data_sharing_qos_from_json( data_sharing(), rsutils::json::nested( qos_settings, "data-sharing" ) );
     override_endpoint_qos_from_json( endpoint(), rsutils::json::nested( qos_settings, "endpoint" ) );
 }
