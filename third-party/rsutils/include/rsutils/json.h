@@ -68,7 +68,7 @@ bool get_ex( nlohmann::json const & j, std::string const & key, T * pv )
     try
     {
         // This will throw for type mismatches, etc.
-        *pv = it->get< T >();
+        it->get_to( *pv );
     }
     catch( nlohmann::json::exception & e )
     {
