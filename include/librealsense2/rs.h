@@ -45,6 +45,20 @@ extern "C" {
 #define RS2_API_FULL_VERSION_STR (VAR_ARG_STRING(RS2_API_MAJOR_VERSION.RS2_API_MINOR_VERSION.RS2_API_PATCH_VERSION.RS2_API_BUILD_VERSION))
 
 /**
+ * The library keeps persistent global settings in a per-user configuration file. These settings can relate to tool
+ * behavior (e.g., realsense-viewer) or library functionality (context creation, etc.) where settings are accepted
+ * (e.g., rs2_create_context_ex).
+ * 
+ * The filename is appended to the user's AppData folder on Windows (<AppData>/<filename>) and home directory as a
+ * hidden file on Linux (~/.<filename>).
+ * 
+ * The content is a JSON file and by default contains an empty object so default values are used. JSON ordering may
+ * shift when written to by the various tools but the contents should stay the same. Any values that do not match the
+ * expected type may be ignored.
+ */
+#define RS2_CONFIG_FILENAME "realsense-config.json"
+
+/**
 * get the size of rs2_raw_data_buffer
 * \param[in] buffer  pointer to rs2_raw_data_buffer returned by rs2_send_and_receive_raw_data
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored

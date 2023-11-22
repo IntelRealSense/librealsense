@@ -59,8 +59,11 @@ public:
     dds_participant( const dds_participant & ) = delete;
     ~dds_participant();
 
-    // Creates the underlying DDS participant and sets the QoS
-    // If need to use callbacks set them before calling init, they may be called before init returns.
+    // Creates the underlying DDS participant and sets the QoS.
+    // If callbacks are needed, set them before calling init. Note they may be called before init returns!
+    // 
+    // The domain ID may be -1: in this case the settings "domain" is queried and a default of 0 is used
+    //
     void init( dds_domain_id, std::string const & participant_name, nlohmann::json const & settings );
 
     bool is_valid() const { return ( nullptr != _participant ); }
