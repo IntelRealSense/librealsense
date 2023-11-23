@@ -50,13 +50,13 @@ namespace librealsense
     {
     public:
         processing_block(const char* name);
+        virtual ~processing_block() { _source.flush(); }
 
         void set_processing_callback( rs2_frame_processor_callback_sptr callback) override;
         void set_output_callback( rs2_frame_callback_sptr callback) override;
         void invoke(frame_holder frames) override;
         synthetic_source_interface& get_source() override { return _source_wrapper; }
 
-        virtual ~processing_block() { _source.flush(); }
     protected:
         frame_source _source;
         std::mutex _mutex;
@@ -68,7 +68,6 @@ namespace librealsense
     {
     public:
         generic_processing_block(const char* name);
-        virtual ~generic_processing_block() { _source.flush(); }
 
     protected:
         virtual rs2::frame prepare_output(const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results);
@@ -131,7 +130,6 @@ namespace librealsense
     {
     public:
         stream_filter_processing_block(const char* name);
-        virtual ~stream_filter_processing_block() { _source.flush(); }
 
     protected:
         stream_filter _stream_filter;
@@ -199,8 +197,6 @@ namespace librealsense
     public:
         depth_processing_block(const char* name) : stream_filter_processing_block(name) {}
 
-        virtual ~depth_processing_block() { _source.flush(); }
-
     protected:
         bool should_process(const rs2::frame& frame) override;
     };
@@ -246,7 +242,6 @@ namespace librealsense
 
         composite_processing_block();
         composite_processing_block(const char* name);
-        virtual ~composite_processing_block() { _source.flush(); };
 
         processing_block& get(rs2_option option);
         void add(std::shared_ptr<processing_block> block);
