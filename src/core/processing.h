@@ -16,9 +16,11 @@ namespace librealsense
     class synthetic_source_interface;
 }
 
+struct rs2_frame_source;
 struct rs2_source
 {
     librealsense::synthetic_source_interface* source;
+    std::shared_ptr< rs2_frame_source > frame_source;
 };
 
 namespace librealsense

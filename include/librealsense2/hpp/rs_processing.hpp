@@ -18,6 +18,18 @@ namespace rs2
     class frame_source
     {
     public:
+        frame_source() = default;
+        frame_source( std::shared_ptr< rs2_context > const & context, unsigned max_publish_list_size = 16 )
+            : _source( nullptr )
+        {
+            rs2_error * e = nullptr;
+            _source.reset( rs2_create_frame_source( context.get(), max_publish_list_size, &e ),
+                           rs2_delete_frame_source );
+            error::handle( e );
+        }
+
+        operator bool() const { return _source.get(); }
+
         /**
         * Allocate a new video frame with given params
         *
@@ -39,7 +51,7 @@ namespace rs2
             rs2_extension frame_type = RS2_EXTENSION_VIDEO_FRAME) const
         {
             rs2_error* e = nullptr;
-            auto result = rs2_allocate_synthetic_video_frame(_source, profile.get(),
+            auto result = rs2_allocate_synthetic_video_frame(_source.get(), profile.get(),
                 original.get(), new_bpp, new_width, new_height, new_stride, frame_type, &e);
             error::handle(e);
             return result;
@@ -58,7 +70,7 @@ namespace rs2
             rs2_extension frame_type = RS2_EXTENSION_MOTION_FRAME) const
         {
             rs2_error* e = nullptr;
-            auto result = rs2_allocate_synthetic_motion_frame(_source, profile.get(),
+            auto result = rs2_allocate_synthetic_motion_frame(_source.get(), profile.get(),
                 original.get(), frame_type, &e);
             error::handle(e);
             return result;
@@ -68,7 +80,7 @@ namespace rs2
             const frame& original) const
         {
             rs2_error* e = nullptr;
-            auto result = rs2_allocate_points(_source, profile.get(), original.get(), &e);
+            auto result = rs2_allocate_points( _source.get(), profile.get(), original.get(), &e );
             error::handle(e);
             return result;
         }
@@ -87,7 +99,7 @@ namespace rs2
             for (size_t i = 0; i < frames.size(); i++)
                 std::swap(refs[i], frames[i].frame_ref);
 
-            auto result = rs2_allocate_composite_frame(_source, refs.data(), (int)refs.size(), &e);
+            auto result = rs2_allocate_composite_frame( _source.get(), refs.data(), (int)refs.size(), &e );
             error::handle(e);
             return result;
         }
@@ -99,18 +111,21 @@ namespace rs2
         void frame_ready(frame result) const
         {
             rs2_error* e = nullptr;
-            rs2_synthetic_frame_ready(_source, result.get(), &e);
+            rs2_synthetic_frame_ready( _source.get(), result.get(), &e );
             error::handle(e);
             result.frame_ref = nullptr;
         }
 
-        rs2_source* _source;
+        std::shared_ptr< rs2_source > _source;
+
     private:
         template<class T>
         friend class frame_processor_callback;
 
-        frame_source(rs2_source* source) : _source(source) {}
-        frame_source(const frame_source&) = delete;
+        frame_source( rs2_source * source )
+            : _source( source, []( rs2_source * ) {} )  // we don't own it; don't delete it
+        {
+        }
 
     };
 
@@ -479,8 +494,6 @@ namespace rs2
         pointcloud(std::shared_ptr<rs2_processing_block> block) : filter(block, 1) {}
 
     private:
-        friend class context;
-
         std::shared_ptr<rs2_processing_block> init()
         {
             rs2_error* e = nullptr;
@@ -736,7 +749,6 @@ namespace rs2
         align(std::shared_ptr<rs2_processing_block> block) : filter(block, 1) {}
 
     private:
-        friend class context;
         std::shared_ptr<rs2_processing_block> init(rs2_stream align_to)
         {
             rs2_error* e = nullptr;
@@ -834,8 +846,6 @@ namespace rs2
         }
 
     private:
-        friend class context;
-
         std::shared_ptr<rs2_processing_block> init()
         {
             rs2_error* e = nullptr;
@@ -895,8 +905,6 @@ namespace rs2
             error::handle(e);
         }
     private:
-        friend class context;
-
         std::shared_ptr<rs2_processing_block> init()
         {
             rs2_error* e = nullptr;
@@ -951,8 +959,6 @@ namespace rs2
             error::handle(e);
         }
     private:
-        friend class context;
-
         std::shared_ptr<rs2_processing_block> init()
         {
             rs2_error* e = nullptr;
@@ -987,7 +993,6 @@ namespace rs2
             error::handle(e);
         }
     private:
-        friend class context;
         std::shared_ptr<rs2_processing_block> init(bool transform_to_disparity)
         {
             rs2_error* e = nullptr;
@@ -1023,8 +1028,6 @@ namespace rs2
         }
 
     private:
-        friend class context;
-
         std::shared_ptr<rs2_processing_block> init()
         {
             rs2_error* e = nullptr;
@@ -1069,8 +1072,6 @@ namespace rs2
             error::handle(e);
         }
     private:
-        friend class context;
-
         std::shared_ptr<rs2_processing_block> init()
         {
             rs2_error* e = nullptr;
@@ -1096,8 +1097,6 @@ namespace rs2
         rates_printer() : filter(init(), 1) {}
 
     private:
-        friend class context;
-
         std::shared_ptr<rs2_processing_block> init()
         {
             rs2_error* e = nullptr;
@@ -1131,8 +1130,6 @@ namespace rs2
         }
 
     private:
-        friend class context;
-
         std::shared_ptr<rs2_processing_block> init()
         {
             rs2_error* e = nullptr;
@@ -1175,8 +1172,6 @@ namespace rs2
         }
 
     private:
-        friend class context;
-
         std::shared_ptr<rs2_processing_block> init()
         {
             rs2_error* e = nullptr;

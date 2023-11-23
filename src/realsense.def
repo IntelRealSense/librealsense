@@ -184,6 +184,8 @@ EXPORTS
     rs2_clone_stream_profile
     rs2_clone_video_stream_profile
 
+    rs2_create_frame_source
+    rs2_delete_frame_source
     rs2_allocate_synthetic_video_frame
     rs2_allocate_synthetic_motion_frame
     rs2_allocate_points

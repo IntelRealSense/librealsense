@@ -272,6 +272,22 @@ const rs2_stream_profile* rs2_get_frame_stream_profile(const rs2_frame* frame, r
 int rs2_is_frame_extendable_to(const rs2_frame* frame, rs2_extension extension_type, rs2_error ** error);
 
 /**
+ * Create a source that can be used to allocate frames. Usually this is provided inside processing blocks, but there may
+ * be situations where one would need to creat frames on the fly.
+ * 
+ * \param[in]  context                 The context for the source, and frames
+ * \param[in]  max_publish_list_size   The maximum size of built-in archive; librealsense defaults to 16
+ * \return The new source; use rs2_delete_frame_source when done with it
+ */
+rs2_source * rs2_create_frame_source( rs2_context * context, unsigned max_publish_list_size, rs2_error ** error );
+
+/**
+ * Delete a source created with rs2_create_frame_source.
+ * \param[in]  source                  The source created with rs2_create_frame_source
+ */
+void rs2_delete_frame_source( rs2_source * source );
+
+/**
 * Allocate new video frame using a frame-source provided form a processing block
 * \param[in] source      Frame pool to allocate the frame from
 * \param[in] new_stream  New stream profile to assign to newly created frame

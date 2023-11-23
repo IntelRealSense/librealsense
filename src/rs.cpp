@@ -1837,11 +1837,44 @@ const char* rs2_record_device_filename(const rs2_device* device, rs2_error** err
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
 
+struct rs2_frame_source
+{
+    frame_source source;
+    synthetic_source source_wrapper;
+
+    rs2_frame_source( uint32_t max_publish_list_size = 16 )
+        : source( max_publish_list_size )
+        , source_wrapper( source )
+    {
+        source.init( std::shared_ptr< metadata_parser_map >() );
+    }
+};
+
+
+rs2_source * rs2_create_frame_source( rs2_context * context, unsigned max_publish_list_size, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( context );
+    auto sptr = std::make_shared< rs2_frame_source >( max_publish_list_size );
+    auto source = sptr->source_wrapper.get_c_wrapper();
+    source->frame_source = sptr;
+    return source;
+}
+HANDLE_EXCEPTIONS_AND_RETURN( nullptr, context, max_publish_list_size )
+
+
+void rs2_delete_frame_source( rs2_source * source ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( source );
+    VALIDATE_NOT_NULL( source->frame_source );
+    source->frame_source.reset();
+}
+NOEXCEPT_RETURN( , source )
+
+
 rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, const rs2_stream_profile* new_stream, rs2_frame* original,
     int new_bpp, int new_width, int new_height, int new_stride, rs2_extension frame_type, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(source);
-    VALIDATE_NOT_NULL(original);
     VALIDATE_NOT_NULL(new_stream);
 
     auto recovered_profile = std::dynamic_pointer_cast<stream_profile_interface>(new_stream->profile->shared_from_this());

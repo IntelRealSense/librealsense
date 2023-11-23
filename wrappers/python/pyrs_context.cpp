@@ -36,8 +36,12 @@ void init_context(py::module &m) {
         .def("load_device", &rs2::context::load_device, "Creates a devices from a RealSense file.\n"
              "On successful load, the device will be appended to the context and a devices_changed event triggered.",
              "filename"_a)
-        .def("unload_device", &rs2::context::unload_device, "filename"_a) // No docstring in C++
-        .def("unload_tracking_module", &rs2::context::unload_tracking_module); // No docstring in C++
+        .def("unload_device", &rs2::context::unload_device, "filename"_a)
+        .def("unload_tracking_module", &rs2::context::unload_tracking_module)
+        .def( "create_frame_source",
+              []( rs2::context & self, unsigned size )
+                  { return rs2::frame_source( self.operator std::shared_ptr< rs2_context >(), size ); },
+              py::arg( "max_publish_list_size" ) = 16 );
 
     // rs2::device_hub
     /** end rs_context.hpp **/
