@@ -7,7 +7,7 @@
 #include "tagged-profile.h"
 #include "stream-profile.h"
 
-#include <src/features-container.h>
+#include <src/core/has-features-interface.h>
 
 #include <librealsense2/h/rs_sensor.h>
 #include <functional>
@@ -32,7 +32,7 @@ class stream_profile_interface;
 //
 class device_interface
     : public virtual info_interface
-    , public features_container
+    , public virtual has_features_interface
     , public std::enable_shared_from_this< device_interface >
 {
 public:

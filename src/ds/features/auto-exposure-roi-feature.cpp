@@ -7,23 +7,23 @@
 #include <src/ds/ds-private.h>
 #include <src/sensor.h>
 
+
 namespace librealsense {
 
+
+/* static */ const feature_id auto_exposure_roi_feature::ID = "Auto exposure ROI feature";
 
 auto_exposure_roi_feature::auto_exposure_roi_feature( synthetic_sensor & sensor,
                                                       std::shared_ptr< hw_monitor > hwm,
                                                       bool rgb )
     : feature_interface( ID )
-    , _rgb( rgb )
-    , _sensor( sensor )
-    , _hwm( hwm )
 {
     roi_sensor_interface * roi_sensor = dynamic_cast< roi_sensor_interface * >( &sensor );
     if( ! roi_sensor )
         throw std::runtime_error( "Sensor is not a roi_sensor_interface. Can't support auto_exposure_roi_feature" );
 
-    ds::fw_cmd cmd = _rgb ? ds::fw_cmd::SETRGBAEROI : ds::fw_cmd::SETAEROI;
-    roi_sensor->set_roi_method( std::make_shared< ds_auto_exposure_roi_method >( *_hwm, cmd ) );
+    ds::fw_cmd cmd = rgb ? ds::fw_cmd::SETRGBAEROI : ds::fw_cmd::SETAEROI;
+    roi_sensor->set_roi_method( std::make_shared< ds_auto_exposure_roi_method >( *hwm, cmd ) );
 }
 
 

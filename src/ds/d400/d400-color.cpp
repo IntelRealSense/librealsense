@@ -124,7 +124,7 @@ namespace librealsense
     {
         firmware_version fw_ver = firmware_version( get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
 
-        if( fw_ver >= firmware_version( "5.10.9.0" ) )
+        if( fw_ver >= firmware_version( 5, 10, 9, 0 ) )
             register_feature( auto_exposure_roi_feature::ID,
                               std::make_shared< auto_exposure_roi_feature >( get_color_sensor(), _hw_monitor, true ) );
     }

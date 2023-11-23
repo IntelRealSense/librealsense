@@ -174,6 +174,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/basics.h"
         "${CMAKE_CURRENT_LIST_DIR}/feature-interface.h"
         "${CMAKE_CURRENT_LIST_DIR}/features/remove-ir-pattern-feature.h"
+        "${CMAKE_CURRENT_LIST_DIR}/features/remove-ir-pattern-feature.cpp"
 )
 
 if(BUILD_WITH_DDS)
