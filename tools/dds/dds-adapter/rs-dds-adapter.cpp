@@ -60,60 +60,33 @@ topics::device_info rs2_device_to_info( rs2::device const & dev )
 }
 
 
-static nlohmann::json load_config()
-{
-    std::ifstream f( rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME );
-    if( ! f.good() )
-        return nlohmann::json::object();
-
-    // Load the realsense configuration file settings
-    try
-    {
-        return nlohmann::json::parse( f );
-    }
-    catch( std::exception const & e )
-    {
-        throw std::runtime_error( "failed to load configuration file: " + std::string( e.what() ) );
-    }
-}
-
-
-static void merge_settings( nlohmann::json & settings, nlohmann::json const & overrides, std::string const & name )
-{
-    if( ! overrides.is_object() )
-        throw std::runtime_error( name + ": expecting an object; got " + overrides.dump() );
-    try
-    {
-        settings.merge_patch( overrides );
-    }
-    catch( std::exception const & e )
-    {
-        throw std::runtime_error( "failed to merge " + name + ": " + std::string( e.what() ) );
-    }
-}
-
-
 static nlohmann::json load_settings( nlohmann::json const & local_settings )
 {
-    // Allow ignoring of any other settings, global or not!
-    auto config = load_config();
+    nlohmann::json config;
 
-    // Take the global 'context' settings out of the configuration
-    nlohmann::json settings;
-    if( auto global_context = rsutils::json::nested( config, "context" ) )
-        merge_settings( settings, global_context, "global config-file/context" );
+    // Load the realsense configuration file settings
+    std::ifstream f( rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME );
+    if( f.good() )
+    {
+        try
+        {
+            config = nlohmann::json::parse( f );
+        }
+        catch( std::exception const & e )
+        {
+            throw std::runtime_error( "failed to load configuration file: " + std::string( e.what() ) );
+        }
+    }
 
-    // Merge any application-specific context settings
-    auto const executable = rsutils::os::executable_name();
-    if( auto executable_context = rsutils::json::nested( config, executable, "context" ) )
-        merge_settings( settings, executable_context, "config-file/" + executable + "/context" );
+    config = rsutils::json::load_settings( config, "context", "config-file" );
 
     // Take the "dds" settings only
-    settings = rsutils::json::nested( settings, "dds" );
+    config = rsutils::json::nested( config, "dds" );
 
-    // Finally, merge the given local settings on top of all that
-    merge_settings( settings, local_settings, "local settings" );
-    return settings;
+    // Patch the given local settings into the configuration
+    rsutils::json::patch( config, local_settings, "local settings" );
+
+    return config;
 }
 
 
@@ -165,8 +138,12 @@ try
 
     // Create a DDS participant
     auto participant = std::make_shared< dds_participant >();
-    auto settings = load_settings( nlohmann::json::object() );
-    participant->init( domain, "rs-dds-adapter", std::move( settings ) );
+    {
+        nlohmann::json dds_settings;
+        dds_settings["enabled"];  // create a 'null' json key in there to remove any enabled:false
+        dds_settings = load_settings( dds_settings );
+        participant->init( domain, "rs-dds-adapter", std::move( dds_settings ) );
+    }
 
     struct device_handler
     {

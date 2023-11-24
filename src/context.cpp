@@ -26,60 +26,33 @@ using json = nlohmann::json;
 namespace librealsense {
 
 
-    static nlohmann::json load_config()
-    {
-        std::ifstream f( rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME );
-        if( ! f.good() )
-            return nlohmann::json::object();
-
-        // Load the realsense configuration file settings
-        try
-        {
-            return nlohmann::json::parse( f );
-        }
-        catch( std::exception const & e )
-        {
-            throw invalid_value_exception( "failed to load configuration file: " + std::string( e.what() ) );
-        }
-    }
-
-
-    static void merge_settings( nlohmann::json & settings, nlohmann::json const & overrides, std::string const & name )
-    {
-        if( ! overrides.is_object() )
-            throw invalid_value_exception( name + ": expecting an object; got " + overrides.dump() );
-        try
-        {
-            settings.merge_patch( overrides );
-        }
-        catch( std::exception const & e )
-        {
-            throw invalid_value_exception( "failed to merge " + name + ": " + std::string( e.what() ) );
-        }
-    }
-
-
     static nlohmann::json load_settings( nlohmann::json const & context_settings )
     {
         // Allow ignoring of any other settings, global or not!
         if( ! rsutils::json::get( context_settings, "inherit", true ) )
             return context_settings;
 
-        auto config = load_config();
+        nlohmann::json config;
 
-        // Take the global 'context' settings out of the configuration
-        nlohmann::json settings;
-        if( auto global_context = rsutils::json::nested( config, "context" ) )
-            merge_settings( settings, global_context, "global config-file/context" );
+        // Load the realsense configuration file settings
+        std::ifstream f( rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME );
+        if( f.good() )
+        {
+            try
+            {
+                config = nlohmann::json::parse( f );
+            }
+            catch( std::exception const & e )
+            {
+                throw std::runtime_error( "failed to load configuration file: " + std::string( e.what() ) );
+            }
+        }
 
-        // Merge any application-specific context settings
-        auto const executable = rsutils::os::executable_name();
-        if( auto executable_context = rsutils::json::nested( config, executable, "context" ) )
-            merge_settings( settings, executable_context, "config-file/" + executable + "/context" );
+        config = rsutils::json::load_settings( config, "context", "config-file" );
 
-        // Finally, merge the given context settings on top of all that
-        merge_settings( settings, context_settings, "context settings" );
-        return settings;
+        // Patch the given context settings into the configuration
+        rsutils::json::patch( config, context_settings, "context settings" );
+        return config;
     }
 
 
