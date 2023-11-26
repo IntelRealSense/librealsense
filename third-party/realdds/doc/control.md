@@ -92,6 +92,18 @@ Both querying and setting options involve a very similar reply that can be handl
 
 A new option value should conform to the specific option's value range as communicated when the device was [initialized](initialization.md).
 
+Option values that are changed *by the server* (without a control message) are expected to send `set-option` notifications with no `control` or `sample` fields and an `option-values` array:
+
+```JSON
+{
+    "id": "set-option",
+    "option-values": {
+        "option1": 5,
+        "option2": "Stacy"
+    }
+}
+```
+
 
 ### `hw-reset`
 
