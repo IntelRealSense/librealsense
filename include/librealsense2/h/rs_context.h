@@ -16,6 +16,7 @@ extern "C" {
 
 /**
 * \brief Creates RealSense context that is required for the rest of the API.
+* Context settings are taken from the library configuration file's 'context' key.
 * \param[in] api_version Users are expected to pass their version of \c RS2_API_VERSION to make sure they are running the correct librealsense version.
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return            Context object
@@ -27,6 +28,10 @@ rs2_context* rs2_create_context(int api_version, rs2_error** error);
 * \param[in] api_version Users are expected to pass their version of \c RS2_API_VERSION to make sure they are running the correct librealsense version.
 * \param[in] json_settings Pointer to a string containing a JSON configuration to use, or null if none
 *     Possible <setting>:<default-value> :
+*         inherit: true                - (bool) whether to inherit and override library configuration file values:
+*             the 'context' key in the file is taken as-is
+*             '<executable-name>/context' is merged, if it exists
+*             then the context-settings are merged
 *         dds: {}                      - (requires BUILD_WITH_DDS) false disables DDS; otherwise the DDS settings:
 *             domain: 0                - (int) the number of the DDS domain [0-232]
 *             participant: <exe name>  - (string) the name of the participant

@@ -83,10 +83,8 @@ static std::mutex domain_context_by_id_mutex;
 rsdds_device_factory::rsdds_device_factory( context & ctx, callback && cb )
     : super( ctx )
 {
-    nlohmann::json dds_settings = rsutils::json::get< nlohmann::json >( _context.get_settings(),
-                                                                        std::string( "dds", 3 ),
-                                                                        nlohmann::json::object() );
-    if( dds_settings.is_object() )
+    nlohmann::json const & dds_settings = rsutils::json::nested( _context.get_settings(), std::string( "dds", 3 ) );
+    if( dds_settings.is_object() && rsutils::json::get( dds_settings, std::string( "enabled", 7 ), true ) )
     {
         auto domain_id = rsutils::json::get< realdds::dds_domain_id >( dds_settings, std::string( "domain", 6 ), 0 );
         std::string participant_name = rsutils::json::get< std::string >( dds_settings,
