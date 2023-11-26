@@ -300,8 +300,8 @@ try
         try
         {
             update_serial_number = recovery_device.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
+            volatile bool recovery_device_found = false;
             ctx.set_devices_changed_callback( [&]( rs2::event_information & info ) {
-                std::lock_guard< std::mutex > lk( mutex );
                 for( auto && d : info.get_new_devices() )
                 {
                     if( d.is< rs2::update_device >() )
@@ -309,7 +309,10 @@ try
                     auto recovery_sn = d.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
                     if( recovery_sn == update_serial_number )
                     {
-                        std::cout << "... found it" << std::endl;
+                        {
+                            std::lock_guard< std::mutex > lk( mutex );
+                            recovery_device_found = true;
+                        }
                         cv.notify_one();
                         break;
                     }
@@ -321,7 +324,10 @@ try
             std::cout << "Waiting for new device..." << std::endl;
             {
                 std::unique_lock< std::mutex > lk( mutex );
-                if( cv.wait_for( lk, std::chrono::seconds( WAIT_FOR_DEVICE_TIMEOUT ) ) == std::cv_status::timeout )
+                if( ! recovery_device_found
+                    && ! cv.wait_for( lk, std::chrono::seconds( WAIT_FOR_DEVICE_TIMEOUT ), [&]() {
+                           return recovery_device_found;
+                       } ) )
                 {
                     std::cout << "... timed out!" << std::endl;
                     return EXIT_FAILURE;
