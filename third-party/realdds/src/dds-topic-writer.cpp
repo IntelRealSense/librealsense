@@ -108,6 +108,12 @@ void dds_topic_writer::run( qos const & wqos )
 }
 
 
+bool dds_topic_writer::wait_for_acks( dds_time timeout )
+{
+    return !! _writer->wait_for_acknowledgments( timeout );
+}
+
+
 void dds_topic_writer::on_publication_matched( eprosima::fastdds::dds::DataWriter *,
                                                eprosima::fastdds::dds::PublicationMatchedStatus const & info )
 {

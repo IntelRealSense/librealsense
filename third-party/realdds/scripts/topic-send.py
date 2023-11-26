@@ -15,6 +15,7 @@ def json_arg(x):
     except Exception as e:
         raise ArgumentError( str(e) )
 args.add_argument( '--message', metavar='<json>', type=json_arg, help='a message to send', default='{"id":"ping","message":"some message"}' )
+args.add_argument( '--ack', action='store_true', help='wait for acks' )
 def domain_arg(x):
     t = int(x)
     if t <= 0 or t > 232:
@@ -78,7 +79,16 @@ else:
     writer.run( dds.topic_writer.qos() )
     # Let the client pick up on the new entity - if we send it too quickly, they won't see it before we disappear...
     time.sleep( 1 )
+    if not writer.has_readers():
+        e( 'No readers exist on topic:', topic_path )
+        sys.exit( 1 )
+    start = dds.now()
     dds.message.flexible( message ).write_to( writer )
     i( f'Sent {message} on {topic_path}' )
+    if args.ack:
+        if not writer.wait_for_acks( dds.time( 5. ) ):  # seconds
+            e( 'Timeout waiting for ack' )
+            sys.exit( 1 )
+        i( f'Acknowledged ({dds.timestr( dds.now(), start )})' )
 
 

@@ -298,8 +298,10 @@ PYBIND11_MODULE(NAME, m) {
                       callback( self, status.current_count_change ); ) )
         .def( "topic", &dds_topic_writer::topic )
         .def( "run", &dds_topic_writer::run )
-        .def( "qos", []() { return writer_qos(); } )
-        .def( "qos", []( reliability r, durability d ) { return writer_qos( r, d ); } );
+        .def( "has_readers", &dds_topic_writer::has_readers )
+        .def( "wait_for_acks", &dds_topic_writer::wait_for_acks )
+        .def_static( "qos", []() { return writer_qos(); } )
+        .def_static( "qos", []( reliability r, durability d ) { return writer_qos( r, d ); } );
 
 
     // The actual types are declared as functions and not classes: the py::init<> inheritance rules are pretty strict
