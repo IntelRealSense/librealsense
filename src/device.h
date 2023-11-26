@@ -4,8 +4,9 @@
 #pragma once
 
 #include "basics.h"  // C4250
-#include "core/device-interface.h"
-#include "core/info.h"
+#include <src/core/device-interface.h>
+#include <src/core/info.h>
+#include <src/core/features-container.h>
 
 #include "device-info.h"
 
@@ -34,6 +35,7 @@ enum class format_conversion
 class device
     : public virtual device_interface
     , public info_container
+    , public features_container
 {
 public:
     virtual ~device();
