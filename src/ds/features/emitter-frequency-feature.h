@@ -7,7 +7,6 @@
 #include <src/feature-interface.h>
 
 
-
 namespace librealsense {
 
 class synthetic_sensor;
@@ -18,6 +17,8 @@ public:
     static const feature_id ID;
 
     emitter_frequency_feature( synthetic_sensor & raw_sensor );
+
+    feature_id get_id() const override;
 };
 
 

@@ -84,12 +84,9 @@ namespace librealsense
         _color_device_idx = add_sensor(color_ep);
     }
 
-    void d500_color::register_features()
+    void d500_color::register_color_features()
     {
-        register_feature( auto_exposure_roi_feature::ID,
-                          std::make_shared< auto_exposure_roi_feature >( get_color_sensor(), _hw_monitor, true ) );
-
-        d500_device::register_features();
+        register_feature( std::make_shared< auto_exposure_roi_feature >( get_color_sensor(), _hw_monitor, true ) );
     }
 
     void d500_color::init()
@@ -100,7 +97,7 @@ namespace librealsense
         _ds_color_common = std::make_shared<ds_color_common>(raw_color_ep, color_ep,
              _fw_version, _hw_monitor, this);
 
-        register_features();
+        register_color_features();
         register_options();
         register_metadata();
         register_color_processing_blocks();

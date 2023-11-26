@@ -4,8 +4,6 @@
 #include "ds-active-common.h"
 #include "d400/d400-color.h"
 
-#include <src/ds/features/emitter-frequency-feature.h>
-
 namespace librealsense
 {
     using namespace ds;

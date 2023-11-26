@@ -7,7 +7,7 @@
 #include "ds/d500/d500-color.h"
 
 #include <src/ds/features/amplitude-factor-feature.h>
-#include <src/features/remove-ir-pattern-feature.h>
+#include <src/ds/features/remove-ir-pattern-feature.h>
 
 #include <rsutils/string/from.h>
 #include <rsutils/string/hexdump.h>

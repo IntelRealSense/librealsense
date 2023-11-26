@@ -728,10 +728,9 @@ namespace librealsense
 
     void d500_device::register_features()
     {
-        register_feature( amplitude_factor_feature::ID, std::make_shared< amplitude_factor_feature >() );
+        register_feature( std::make_shared< amplitude_factor_feature >() );
 
-        register_feature( auto_exposure_roi_feature::ID,
-                          std::make_shared< auto_exposure_roi_feature >( get_depth_sensor(), _hw_monitor ) );
+        register_feature( std::make_shared< auto_exposure_roi_feature >( get_depth_sensor(), _hw_monitor ) );
     }
 
     platform::usb_spec d500_device::get_usb_spec() const

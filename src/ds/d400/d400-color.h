@@ -31,7 +31,7 @@ namespace librealsense
         }
 
     protected:
-        void register_features() override;
+        void register_color_features();
 
         std::shared_ptr<stream_interface> _color_stream;
         std::shared_ptr<ds_color_common> _ds_color_common;

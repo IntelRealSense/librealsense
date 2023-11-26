@@ -120,13 +120,12 @@ namespace librealsense
         }
     }
 
-    void d400_color::register_features()
+    void d400_color::register_color_features()
     {
         firmware_version fw_ver = firmware_version( get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
 
         if( fw_ver >= firmware_version( 5, 10, 9, 0 ) )
-            register_feature( auto_exposure_roi_feature::ID,
-                              std::make_shared< auto_exposure_roi_feature >( get_color_sensor(), _hw_monitor, true ) );
+            register_feature( std::make_shared< auto_exposure_roi_feature >( get_color_sensor(), _hw_monitor, true ) );
     }
 
     void d400_color::init()
@@ -136,7 +135,7 @@ namespace librealsense
     
         _ds_color_common = std::make_shared<ds_color_common>(raw_color_ep, color_ep, _fw_version, _hw_monitor, this);
 
-        register_features();
+        register_color_features();
         register_options();
         if (_pid != ds::RS457_PID)
         {

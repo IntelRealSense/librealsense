@@ -14,9 +14,7 @@ class remove_ir_pattern_feature : public feature_interface
 public:
     static const feature_id ID;
 
-    remove_ir_pattern_feature() : feature_interface( ID )
-    {
-    }
+    feature_id get_id() const override;
 };
 
 }  // namespace librealsense

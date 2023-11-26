@@ -13,7 +13,6 @@ namespace librealsense {
 /* static */ const feature_id emitter_frequency_feature::ID = "Emitter frequency feature";
 
 emitter_frequency_feature::emitter_frequency_feature( synthetic_sensor & sensor )
-    : feature_interface( ID )
 {
     auto emitter_freq_option = std::make_shared< uvc_xu_option< uint16_t > >(
         dynamic_cast< uvc_sensor & >( *sensor.get_raw_sensor() ),
@@ -27,5 +26,9 @@ emitter_frequency_feature::emitter_frequency_feature( synthetic_sensor & sensor 
     sensor.register_option( RS2_OPTION_EMITTER_FREQUENCY, emitter_freq_option );
 }
 
+feature_id emitter_frequency_feature::get_id() const
+{
+    return ID;
+}
 
 }  // namespace librealsense

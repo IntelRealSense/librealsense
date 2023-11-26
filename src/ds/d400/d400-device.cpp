@@ -24,7 +24,7 @@
 #include <src/ds/features/amplitude-factor-feature.h>
 #include <src/ds/features/emitter-frequency-feature.h>
 #include <src/ds/features/auto-exposure-roi-feature.h>
-#include <src/features/remove-ir-pattern-feature.h>
+#include <src/ds/features/remove-ir-pattern-feature.h>
 
 #include <src/proc/depth-formats-converter.h>
 #include <src/proc/y8i-to-y8y8.h>
@@ -960,18 +960,16 @@ namespace librealsense
         firmware_version fw_ver = firmware_version( get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
         auto pid = get_pid();
 
-        if( ( pid == ds::RS457_PID || pid == ds::RS455_PID ) && fw_ver >= firmware_version( "5.14.0" ) )
-            register_feature( emitter_frequency_feature::ID,
-                            std::make_shared< emitter_frequency_feature >( get_depth_sensor() ) );
+        if( ( pid == ds::RS457_PID || pid == ds::RS455_PID ) && fw_ver >= firmware_version( 5, 14, 0, 0 ) )
+            register_feature( std::make_shared< emitter_frequency_feature >( get_depth_sensor() ) );
 
         if( fw_ver >= firmware_version( 5, 11, 9, 0 ) )
-            register_feature( amplitude_factor_feature::ID, std::make_shared< amplitude_factor_feature >() );
+            register_feature( std::make_shared< amplitude_factor_feature >() );
 
         if( fw_ver >= firmware_version( 5, 9, 10, 0 ) ) // TODO - add PID here? Now checked at advanced_mode
-            register_feature( remove_ir_pattern_feature::ID, std::make_shared< remove_ir_pattern_feature >() );
+            register_feature( std::make_shared< remove_ir_pattern_feature >() );
 
-        register_feature( auto_exposure_roi_feature::ID,
-                          std::make_shared< auto_exposure_roi_feature >( get_depth_sensor(), _hw_monitor ) );
+        register_feature( std::make_shared< auto_exposure_roi_feature >( get_depth_sensor(), _hw_monitor ) );
     }
 
     void d400_device::register_metadata(const synthetic_sensor &depth_sensor, const firmware_version& hdr_firmware_version) const

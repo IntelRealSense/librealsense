@@ -9,4 +9,9 @@ namespace librealsense {
 
 /* static */ const feature_id amplitude_factor_feature::ID = "Amplitude factor feature";
 
+feature_id amplitude_factor_feature::get_id() const
+{
+    return ID;
+}
+
 }  // namespace librealsense

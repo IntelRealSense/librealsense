@@ -16,7 +16,6 @@ namespace librealsense {
 auto_exposure_roi_feature::auto_exposure_roi_feature( synthetic_sensor & sensor,
                                                       std::shared_ptr< hw_monitor > hwm,
                                                       bool rgb )
-    : feature_interface( ID )
 {
     roi_sensor_interface * roi_sensor = dynamic_cast< roi_sensor_interface * >( &sensor );
     if( ! roi_sensor )
@@ -24,6 +23,11 @@ auto_exposure_roi_feature::auto_exposure_roi_feature( synthetic_sensor & sensor,
 
     ds::fw_cmd cmd = rgb ? ds::fw_cmd::SETRGBAEROI : ds::fw_cmd::SETAEROI;
     roi_sensor->set_roi_method( std::make_shared< ds_auto_exposure_roi_method >( *hwm, cmd ) );
+}
+
+feature_id auto_exposure_roi_feature::get_id() const
+{
+    return ID;
 }
 
 

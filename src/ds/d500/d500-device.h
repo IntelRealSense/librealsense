@@ -94,7 +94,7 @@ namespace librealsense
         command get_flash_logs_command() const;
 
         void init(std::shared_ptr<context> ctx, const platform::backend_device_group& group);
-        virtual void register_features();
+        void register_features();
 
         friend class d500_depth_sensor;
 

@@ -17,7 +17,7 @@ public:
         if( it != _features.end() )
         {
             if( feat_obj != nullptr )
-                feat_obj = &it->second;
+                *feat_obj = it->second;
 
             return true;
         }
@@ -25,14 +25,19 @@ public:
         return false;
     }
 
-    std::map< feature_id, std::shared_ptr< feature_interface > > get_supported_features() override
+    size_t foreach_feature( std::function< void( std::shared_ptr< feature_interface > const & ) > const & fn ) override
     {
-        return _features;
+        for( auto const & feat : _features )
+        {
+            fn( feat.second );
+        }
+
+        return _features.size();
     }
 
-    void register_feature( const std::string id, std::shared_ptr< feature_interface > feature )
+    void register_feature( std::shared_ptr< feature_interface > feature )
     {
-        _features[id] = feature;
+        _features[feature->get_id()] = feature;
     }
 
 protected:

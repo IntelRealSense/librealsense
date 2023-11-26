@@ -4,8 +4,6 @@
 #pragma once
 
 #include <string>
-#include <map>
-#include <memory>
 
 
 namespace librealsense {
@@ -16,16 +14,9 @@ using feature_id = std::string;
 class feature_interface
 {
 public:
-    feature_interface( feature_id id ) : _id( id )
-    {
-    }
-
-    feature_id get_id() const { return _id; }
+    virtual feature_id get_id() const = 0;
 
     virtual ~feature_interface() = default;
-
-private:
-    std::string _id;
 };
 
 

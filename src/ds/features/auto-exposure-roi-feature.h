@@ -6,6 +6,8 @@
 
 #include <src/feature-interface.h>
 
+#include <memory>
+
 
 namespace librealsense {
 
@@ -18,6 +20,8 @@ public:
     static const feature_id ID;
 
     auto_exposure_roi_feature( synthetic_sensor & sensor, std::shared_ptr< hw_monitor > hwm, bool rgb = false );
+
+    feature_id get_id() const override;
 };
 
 }  // namespace librealsense
