@@ -443,7 +443,7 @@ try:
             sys.path.insert( 1, pyrs_path )  # Make sure we pick up the right pyrealsense2!
         from rspy import devices
 
-        devices.query( acroname_reset )
+        devices.query( hub_reset = acroname_reset )
         devices.map_unknown_ports()
         #
         # Under a development environment (i.e., without an Acroname), we may only have one device connected

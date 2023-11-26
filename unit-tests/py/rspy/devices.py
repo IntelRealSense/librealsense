@@ -204,7 +204,7 @@ def map_unknown_ports():
         log.debug_unindent()
 
 
-def query( monitor_changes = True, acroname_reset = False ):
+def query( monitor_changes = True, hub_reset = False ):
     """
     Start a new LRS context, and collect all devices
     :param monitor_changes: If True, devices will update dynamically as they are removed/added
@@ -217,7 +217,7 @@ def query( monitor_changes = True, acroname_reset = False ):
     # on the acroname, if any:
     if acroname:
         if not acroname.hub:
-            acroname.connect( acroname_reset )  # MAY THROW!
+            acroname.connect( hub_reset )  # MAY THROW!
 
             acroname.disable_ports( sleep_on_change = 5 )
             acroname.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
