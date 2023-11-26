@@ -22,10 +22,11 @@ if __name__ == '__main__':
         print( '        --enable       Enable all ports' )
         print( '        --disable      Disable all ports' )
         print( '        --recycle      Recycle all ports' )
+        print( '        --reset        Reset the acroname' )
         sys.exit(2)
     try:
         opts,args = getopt.getopt( sys.argv[1:], '',
-            longopts = [ 'help', 'recycle', 'enable', 'disable' ])
+            longopts = [ 'help', 'recycle', 'enable', 'disable', 'reset' ])
     except getopt.GetoptError as err:
         print( '-F-', err )   # something like "option -a not recognized"
         usage()
@@ -387,3 +388,5 @@ if __name__ == '__main__':
             connect()
             enable_ports()   # so ports() will return all
             recycle_ports()
+        elif opt in ('--reset'):
+            connect( reset = True )
