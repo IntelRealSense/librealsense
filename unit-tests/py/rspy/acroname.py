@@ -88,11 +88,11 @@ def connect( reset = False, req_spec = None ):
         hub = brainstem.stem.USBHub3p()
 
     if req_spec:
-        spec = req_spec
+        specs = [req_spec]
     else:
         specs = discover()
-        spec = specs[0]
 
+    spec = specs[0]
     result = hub.connectFromSpec( spec )
     if result != brainstem.result.Result.NO_ERROR:
         raise RuntimeError( "failed to connect to Acroname (result={})".format( result ))
