@@ -106,11 +106,6 @@ def connect( reset = False, req_spec = None ):
         # Result error is expected so we do not test it
         # Disconnection is needed after a reset command
         hub.disconnect()
-        if req_spec:
-            spec = req_spec
-        else:
-            specs = discover(10)
-            spec = specs[0]
 
         log.d("Reconnecting to Acroname")
         result = None
