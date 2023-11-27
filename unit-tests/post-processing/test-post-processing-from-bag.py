@@ -15,6 +15,7 @@ playback_status = None
 sensors = []
 align_from = rs.stream(rs.stream.depth)
 align = rs.align(rs.stream.color)
+callback = None
 
 
 def playback_callback(status):
@@ -40,7 +41,7 @@ def process_frame(frame, frame_source):
 
     if len(pre_aligned_frames_map[sensor_name]) == 2:
         frameset = frame_source.allocate_composite_frame(pre_aligned_frames_map[sensor_name])
-        fs_align = align.process(frameset.as_frameset()).first_or_default(align_from)
+        fs_align = callback(frameset.as_frameset())
         fs_align_data = bytearray(fs_align.get_data())
         fs_align_profile = fs_align.get_profile().as_video_stream_profile()
         frames_data_map[sensor_name] = (fs_align_data, fs_align_profile)
@@ -109,12 +110,14 @@ def compare_processed_frames_vs_recorded_frames(file):
 with test.closure("Test align depth to color from recording"):
     align_from = rs.stream(rs.stream.depth)
     align = rs.align(rs.stream.color)
+    callback = lambda fs: align.process(fs).first_or_default(align_from)
 
     compare_processed_frames_vs_recorded_frames("[aligned_2c]_all_combinations_depth_color.bag")
 ################################################################################################
 with test.closure("Test align color to depth from recording"):
     align_from = rs.stream(rs.stream.color)
     align = rs.align(rs.stream.depth)
+    callback = lambda fs: align.process(fs).first_or_default(align_from)
     pre_aligned_frames_map = {}
 
     compare_processed_frames_vs_recorded_frames("[aligned_2d]_all_combinations_depth_color.bag")
