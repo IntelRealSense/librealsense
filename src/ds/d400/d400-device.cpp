@@ -21,6 +21,11 @@
 #include <src/platform/platform-utils.h>
 #include <src/fourcc.h>
 
+#include <src/ds/features/amplitude-factor-feature.h>
+#include <src/ds/features/emitter-frequency-feature.h>
+#include <src/ds/features/auto-exposure-roi-feature.h>
+#include <src/ds/features/remove-ir-pattern-feature.h>
+
 #include <src/proc/depth-formats-converter.h>
 #include <src/proc/y8i-to-y8y8.h>
 #include <src/proc/y12i-to-y16y16.h>
@@ -883,10 +888,6 @@ namespace librealsense
                 }
             }
 
-            roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);
-            if (roi_sensor)
-                roi_sensor->set_roi_method(std::make_shared<ds_auto_exposure_roi_method>(*_hw_monitor));
-
             if (!val_in_range(_pid, { ds::RS457_PID }))
             {
                 depth_sensor.register_option( RS2_OPTION_STEREO_BASELINE,
@@ -950,6 +951,25 @@ namespace librealsense
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
 
         std::string curr_version= _fw_version;
+
+        register_features();
+    }
+
+    void d400_device::register_features()
+    {
+        firmware_version fw_ver = firmware_version( get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
+        auto pid = get_pid();
+
+        if( ( pid == ds::RS457_PID || pid == ds::RS455_PID ) && fw_ver >= firmware_version( 5, 14, 0, 0 ) )
+            register_feature( std::make_shared< emitter_frequency_feature >( get_depth_sensor() ) );
+
+        if( fw_ver >= firmware_version( 5, 11, 9, 0 ) )
+            register_feature( std::make_shared< amplitude_factor_feature >() );
+
+        if( fw_ver >= firmware_version( 5, 9, 10, 0 ) ) // TODO - add PID here? Now checked at advanced_mode
+            register_feature( std::make_shared< remove_ir_pattern_feature >() );
+
+        register_feature( std::make_shared< auto_exposure_roi_feature >( get_depth_sensor(), _hw_monitor ) );
     }
 
     void d400_device::register_metadata(const synthetic_sensor &depth_sensor, const firmware_version& hdr_firmware_version) const

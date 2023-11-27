@@ -358,8 +358,11 @@ int main(int argc, char** argv) try
     json settings;
 #ifdef BUILD_WITH_DDS
     json dds;
-    dds["domain"] = domain_arg.getValue();
-    settings["dds"] = std::move( dds ); 
+    if( domain_arg.isSet() )
+        dds["domain"] = domain_arg.getValue();
+    if( only_sw_arg.isSet() )
+        dds["enabled"];  // null: remove global dds:false or dds/enabled:false, if any
+    settings["dds"] = std::move( dds );
 #endif
     settings["format-conversion"] = format_arg.getValue();
     context ctx( settings.dump() );

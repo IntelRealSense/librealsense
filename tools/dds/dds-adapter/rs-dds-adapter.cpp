@@ -1,9 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <rsutils/easylogging/easyloggingpp.h>
-#include <rsutils/json.h>
-
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
 #include <realdds/dds-participant.h>
@@ -16,6 +13,11 @@
 
 #include <tclap/CmdLine.h>
 #include <tclap/ValueArg.h>
+
+#include <rsutils/os/executable-name.h>
+#include <rsutils/os/special-folder.h>
+#include <rsutils/easylogging/easyloggingpp.h>
+#include <rsutils/json.h>
 
 #include <string>
 #include <iostream>
@@ -58,10 +60,40 @@ topics::device_info rs2_device_to_info( rs2::device const & dev )
 }
 
 
+static nlohmann::json load_settings( nlohmann::json const & local_settings )
+{
+    nlohmann::json config;
+
+    // Load the realsense configuration file settings
+    std::ifstream f( rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME );
+    if( f.good() )
+    {
+        try
+        {
+            config = nlohmann::json::parse( f );
+        }
+        catch( std::exception const & e )
+        {
+            throw std::runtime_error( "failed to load configuration file: " + std::string( e.what() ) );
+        }
+    }
+
+    config = rsutils::json::load_settings( config, "context", "config-file" );
+
+    // Take the "dds" settings only
+    config = rsutils::json::nested( config, "dds" );
+
+    // Patch the given local settings into the configuration
+    rsutils::json::patch( config, local_settings, "local settings" );
+
+    return config;
+}
+
+
 int main( int argc, char * argv[] )
 try
 {
-    dds_domain_id domain = 0;
+    dds_domain_id domain = -1;  // from settings; default to 0
     CmdLine cmd( "librealsense rs-dds-adapter tool, use CTRL + C to stop..", ' ' );
     ValueArg< dds_domain_id > domain_arg( "d",
                                           "domain",
@@ -104,10 +136,14 @@ try
 
     std::cout << "Starting RS DDS Adapter.." << std::endl;
 
-    // Create a DDS publisher
+    // Create a DDS participant
     auto participant = std::make_shared< dds_participant >();
-    auto settings = nlohmann::json::object();
-    participant->init( domain, "rs-dds-adapter", std::move( settings ) );
+    {
+        nlohmann::json dds_settings;
+        dds_settings["enabled"];  // create a 'null' json key in there to remove any enabled:false
+        dds_settings = load_settings( dds_settings );
+        participant->init( domain, "rs-dds-adapter", std::move( dds_settings ) );
+    }
 
     struct device_handler
     {

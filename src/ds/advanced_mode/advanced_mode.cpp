@@ -6,6 +6,9 @@
 #include "ds/d400/d400-color.h"
 #include "ds/d500/d500-color.h"
 
+#include <src/ds/features/amplitude-factor-feature.h>
+#include <src/ds/features/remove-ir-pattern-feature.h>
+
 #include <rsutils/string/from.h>
 #include <rsutils/string/hexdump.h>
 
@@ -74,16 +77,7 @@ namespace librealsense
             };
         }
         _amplitude_factor_support = [this]() {
-            // TODO - This is a patch for SC QS1 bundle, need to use planned "feature interface" instead.
-            auto pid = _depth_sensor.get_device().get_info(rs2_camera_info::RS2_CAMERA_INFO_PRODUCT_ID);
-            if( pid == "0B6B" ) // 0x0B6B is safety camera PID
-                return true;
-            auto fw_ver = firmware_version(_depth_sensor.get_device().get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION));
-            return (fw_ver >= firmware_version("5.11.9.0"));
-        };
-        _rgb_exposure_gain_bind = [this]() {
-            auto fw_ver = firmware_version(_depth_sensor.get_device().get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION));
-            return (fw_ver >= firmware_version("5.11.9.0"));
+            return _depth_sensor.get_device().supports_feature( amplitude_factor_feature::ID );
         };
     }
 
@@ -194,12 +188,8 @@ namespace librealsense
             break;
         case RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN:
         {
-            static const firmware_version remove_ir_pattern_fw_ver{ "5.9.10.0" };
-            if( fw_version < remove_ir_pattern_fw_ver )
-                throw invalid_value_exception(
-                    rsutils::string::from()
-                    << "apply_preset(...) failed! FW version doesn't support Remove IR Pattern Preset (curr_fw_ver="
-                    << fw_version << " ; required_fw_ver=" << remove_ir_pattern_fw_ver << ")" );
+            if( ! _depth_sensor.get_device().supports_feature( remove_ir_pattern_feature::ID ) )
+                throw invalid_value_exception( "apply_preset(...) failed! The device does not support remove IR pattern feature" );
 
             switch( device_pid )
             {
@@ -785,8 +775,8 @@ namespace librealsense
     void ds_advanced_mode_base::set_all( const preset & p )
     {
         set_all_depth( p );
-        if( should_set_color_preset() )
-            set_all_color( p );
+        if( should_set_rgb_preset() )
+            set_all_rgb( p );
     }
 
     void ds_advanced_mode_base::set_all_depth(const preset& p)
@@ -816,15 +806,16 @@ namespace librealsense
             set_depth_gain(p.depth_gain);
             set_depth_exposure(p.depth_exposure);
         }
-    }
 
-    void ds_advanced_mode_base::set_all_color( const preset & p )
-    {
+        // Depth sensor related even though they have color in the name. Probably color from left IR imager.
         set( p.color_control, advanced_mode_traits< STColorControl >::group );
         set( p.rctc         , advanced_mode_traits< STRauColorThresholdsControl >::group );
         set( p.sctc         , advanced_mode_traits< STSloColorThresholdsControl >::group );
         set( p.spc          , advanced_mode_traits< STSloPenaltyControl >::group );
+    }
 
+    void ds_advanced_mode_base::set_all_rgb( const preset & p )
+    {
         set_color_auto_exposure(p.color_auto_exposure);
         if (p.color_auto_exposure.was_set && p.color_auto_exposure.auto_exposure == 0)
         {
@@ -848,7 +839,7 @@ namespace librealsense
         //set_color_power_line_frequency(p.color_power_line_frequency);
     }
 
-    bool ds_advanced_mode_base::should_set_color_preset() const
+    bool ds_advanced_mode_base::should_set_rgb_preset() const
     {
         auto product_line = _depth_sensor.get_device().get_info( rs2_camera_info::RS2_CAMERA_INFO_PRODUCT_LINE );
 

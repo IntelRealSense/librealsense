@@ -6,6 +6,7 @@
 #include "viewer.h"
 #include "ux-window.h"
 
+#include <rsutils/os/special-folder.h>
 #include "os.h"
 
 #include <rsutils/easylogging/easyloggingpp.h>
@@ -234,7 +235,7 @@ namespace rs2
                 // Not all cameras supports this feature
                 if( !flash.empty() )
                 {
-                    auto temp = get_folder_path( special_folder::app_data );
+                    auto temp = rsutils::os::get_special_folder( rsutils::os::special_folder::app_data );
                     temp += serial + "." + get_timestamped_file_name() + ".bin";
 
                     {

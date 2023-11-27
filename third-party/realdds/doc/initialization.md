@@ -63,20 +63,30 @@ This is optional: not all devices have options. See [device](device.md).
 {
     "id": "device-options",
     "options": [
-        {"description":"Enable/Disable global timestamp","name":"Global Time Enabled","range-default":1.0,"range-max":1.0,"range-min":0.0,"range-step":1.0,"value":1.0},
-        {"description":"HDR Option","name":"Hdr Enabled","range-default":0.0,"range-max":1.0,"range-min":0.0,"range-step":1.0,"value":0.0}
+        ["Domain",0,0,232,1,0,"The DDS domain (0-232) in which this device will be discovered"],
+        ["IP Address","1.2.3.4",[],"","Which IP address to assign to the device; if empty, DHCP will be used"]
     ]
 }
 ```
 
-* A `name`
-* The `type` defaults to `float`
-    * `bool`
-    * `float` is accompanied by a valid range (`default`, `min`, `max`, `step`)
-    * `int` is accompanied by a valid range (`default`, `min`, `max`, `step`)
-    * `string` for free text, or a choice from a `choices` array, e.g. `"type":"string","choices":["Value A","Value B"]`
-* A `description` is a brief string description of the functionality this option exposes
-* The `value` of the option
+* `"options"` is an array of options
+    * Each option is an array of `[name, value, range..., default-value, description, options...]`:
+        * The `name` is what will be displayed to the user
+        * The current `value`
+        * An optional `range` of valid values
+            * Numeric options (`float`, `int`), defined by a `minimum`, `maximum`, and `stepping`, e.g. "Domain" in the example above
+                * I.e., is-valid = one-of( `minimum`, `minimum+1*stepping`, `minimum+2*stepping`, ..., `maximum` )
+            * Booleans can remove the range, e.g. `["Enabled", true, true, "Description"]`
+            * Free string options would likewise have no range, e.g. `["Name", "Bob", "", "The customer's name"]`
+            * Choice options are strings with an array of choices, e.g. `["Preset", "Maximum Quality", ["Maximum Range", "Maximum Quality", "Maximum Speed"], "Maximum Speed", "Standard preset combination of options"]`
+            * **NOTE**: Only numeric options are implemented at this time
+                * Booleans can be expressed as a range with `minimum=0`, `maximum=1`, `stepping=1`
+        * A `default-value` which also adheres to the range
+        * A user-friendly description that describes the option, to be shown in any tooltip
+        * Additional `options` describing behavior
+            * E.g., `"read-only"`, `"volatile"`, etc.
+            * **NOTE**: none are implemented at this time
+    * The device server has final say whether an option value is valid or not, and return an error if `set-option` specifies an unsupported or invalid value based on context
 
 Device options will not be shown in the Viewer.
 
@@ -157,9 +167,8 @@ Information about a specific stream:
         [1280,720,640.2379150390625,357.3431396484375,631.3428955078125,631.3428955078125,4,0.0,0.0,0.0,0.0,0.0]
     ],
     "options": [
-        {"description":"Enable / disable backlight compensation","name":"Backlight Compensation","range-default":0.0,"range-max":1.0,"range-min":0.0,"range-step":1.0,"value":0.0},
-        {"description":"UVC image brightness","name":"Brightness","range-default":0.0,"range-max":64.0,"range-min":-64.0,"range-step":1.0,"value":0.0},
-        {"description":"UVC image contrast","name":"Contrast","range-default":50.0,"range-max":100.0,"range-min":0.0,"range-step":1.0,"value":50.0}
+        ["Backlight Compensation",0.0,0.0,1.0,1.0,0.0,"Enable / disable backlight compensation"],
+        ["Brightness",0.0,-64.0,64.0,1.0,0.0,"UVC image brightness"],
     ],
     "stream-name":"Infrared 1"
 }

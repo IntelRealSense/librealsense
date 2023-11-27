@@ -1,6 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
 #include <nlohmann/json.hpp>
@@ -68,7 +67,7 @@ bool get_ex( nlohmann::json const & j, std::string const & key, T * pv )
     try
     {
         // This will throw for type mismatches, etc.
-        *pv = it->get< T >();
+        it->get_to( *pv );
     }
     catch( nlohmann::json::exception & e )
     {
@@ -171,6 +170,69 @@ public:
     // Get a JSON string by reference (zero copy); it must be a string or it'll throw
     inline std::string const & string_ref() const { return json::string_ref( get() ); }
 };
+
+
+// Recursively patches existing 'j' with contents of 'patches', which must be a JSON object.
+// A 'null' value inside erases previous contents. Any other value overrides.
+// See: https://json.nlohmann.me/api/basic_json/merge_patch/
+// Example below, for load_app_settings.
+// Use 'what' to denote what it is we're patching in, if a failure happens. The std::runtime_error will populate with
+// it.
+//
+void patch( nlohmann::json & j, nlohmann::json const & patches, std::string const & what = {} );
+
+
+// Loads configuration settings from 'global' content.
+// E.g., a configuration file may contain:
+//     {
+//         "context": {
+//             "dds": {
+//                 "enabled": false,
+//                 "domain" : 5
+//             }
+//         },
+//         ...
+//     }
+// This function will load a specific key 'context' inside and return it. The result will be a disabling of dds:
+// Besides this "global" key, application-specific settings can override the global settings, e.g.:
+//     {
+//         "context": {
+//             "dds": {
+//                 "enabled": false,
+//                 "domain" : 5
+//             }
+//         },
+//         "realsense-viewer": {
+//             "context": {
+//                 "dds": { "enabled": null }
+//             }
+//         },
+//         ...
+//     }
+// If the current application is 'realsense-viewer', then the global 'context' settings will be patched with the
+// application-specific 'context' and returned:
+//     {
+//         "dds": {
+//             "domain" : 5
+//         }
+//     }
+// See rules for patching in patch().
+// The 'application' is usually any single-word executable name (without extension).
+// The 'subkey' is mandatory.
+// The 'error_context' is used for error reporting, to show what failed. Like application, it should be a single word
+// that can be used to denote hierarchy within the global json.
+//
+nlohmann::json load_app_settings( nlohmann::json const & global,
+                                  std::string const & application,
+                                  std::string const & subkey,
+                                  std::string const & error_context );
+
+
+// Same as above, but automatically takes the application name from the executable-name.
+//
+nlohmann::json load_settings( nlohmann::json const & global,
+                              std::string const & subkey,
+                              std::string const & error_context );
 
 
 }  // namespace json

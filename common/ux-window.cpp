@@ -12,6 +12,8 @@
 #include <imgui_impl_glfw.h>
 
 #include "device-model.h"
+
+#include <rsutils/os/special-folder.h>
 #include "os.h"
 
 // We use STB image to load the splash-screen from memory
@@ -86,7 +88,7 @@ namespace rs2
         std::string path;
         try
         {
-            path = get_folder_path(special_folder::user_documents);
+            path = rsutils::os::get_special_folder( rsutils::os::special_folder::user_documents );
         }
         catch (const std::exception&)
         {

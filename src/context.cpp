@@ -13,17 +13,52 @@
 #include <librealsense2/rs.h>              // RS2_API_FULL_VERSION_STR
 #include <src/librealsense-exception.h>
 
+#include <rsutils/os/special-folder.h>
+#include <rsutils/os/executable-name.h>
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/string/from.h>
 #include <rsutils/json.h>
 using json = nlohmann::json;
 
+#include <fstream>
 
-namespace librealsense
-{
+
+namespace librealsense {
+
+
+    static nlohmann::json load_settings( nlohmann::json const & context_settings )
+    {
+        // Allow ignoring of any other settings, global or not!
+        if( ! rsutils::json::get( context_settings, "inherit", true ) )
+            return context_settings;
+
+        nlohmann::json config;
+
+        // Load the realsense configuration file settings
+        std::ifstream f( rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME );
+        if( f.good() )
+        {
+            try
+            {
+                config = nlohmann::json::parse( f );
+            }
+            catch( std::exception const & e )
+            {
+                throw std::runtime_error( "failed to load configuration file: " + std::string( e.what() ) );
+            }
+        }
+
+        config = rsutils::json::load_settings( config, "context", "config-file" );
+
+        // Patch the given context settings into the configuration
+        rsutils::json::patch( config, context_settings, "context settings" );
+        return config;
+    }
+
+
     context::context( json const & settings )
-        : _settings( settings )
-        , _device_mask( rsutils::json::get< unsigned >( settings, "device-mask", RS2_PRODUCT_LINE_ANY ) )
+        : _settings( load_settings( settings ) )  // global | application | local
+        , _device_mask( rsutils::json::get< unsigned >( _settings, "device-mask", RS2_PRODUCT_LINE_ANY ) )
     {
         static bool version_logged = false;
         if( ! version_logged )
@@ -49,7 +84,7 @@ namespace librealsense
 
 
     context::context( char const * json_settings )
-        : context( json_settings ? json::parse( json_settings ) : json() )
+        : context( json_settings ? json::parse( json_settings ) : json::object() )
     {
     }
 
@@ -141,4 +176,5 @@ namespace librealsense
         }
     }
 
-}
+
+}  // namespace librealsense
