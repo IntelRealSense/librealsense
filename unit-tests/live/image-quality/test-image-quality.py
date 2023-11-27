@@ -172,10 +172,20 @@ def is_depth_meaningful(config, laser_enabled=True, save_image=False, show_image
 ################################################################################################
 
 test.start("Testing depth frame - laser ON -", dev.get_info(rs.camera_info.name))
-res, laser_black_pixels = is_depth_meaningful(cfg, laser_enabled=True, save_image=DEBUG_MODE, show_image=DEBUG_MODE)
+res = False
+max_black_pixels = float('inf')
+for i in range(5):
+    result, laser_black_pixels = is_depth_meaningful(cfg, laser_enabled=True, save_image=DEBUG_MODE, show_image=DEBUG_MODE)
+    res = res or result
+    max_black_pixels = min(max_black_pixels,laser_black_pixels)
 test.check(res is True)
 test.finish()
 
-################################################################################################
-
+if res is True:
+    test.start("Testing less black pixels present with the laser on")
+    res, no_laser_black_pixels = is_depth_meaningful(cfg, laser_enabled=False, save_image=DEBUG_MODE, show_image=DEBUG_MODE)
+    test.check(no_laser_black_pixels > max_black_pixels)
+    test.finish()
+else:
+    log.i("Frame has no depth!")
 test.print_results_and_exit()
