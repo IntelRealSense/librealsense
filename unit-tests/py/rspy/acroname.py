@@ -103,7 +103,8 @@ def connect( reset = False, req_spec = None ):
         log.d("resetting Acroname...")
         result = hub.system.reset()
         # According to brainstem support:
-        # Result error is expected so we do not test it
+        # Result error is expected, so we do not check it
+        # * there is also a brainstem internal console print on Linux "error release -4"
         # Disconnection is needed after a reset command
         hub.disconnect()
 
