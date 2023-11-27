@@ -107,14 +107,13 @@ def connect( reset = False, req_spec = None ):
         # Disconnection is needed after a reset command
         hub.disconnect()
 
-        log.d("Reconnecting to Acroname")
         result = None
         for i in range(10):
             result = hub.connectFromSpec(spec)
             if result != brainstem.result.Result.NO_ERROR:
                 time.sleep(1)
             else:
-                log.d('Reconnected to', spec)
+                log.d('reconnected')
                 return
         raise RuntimeError("failed to reconnect to Acroname (result={})".format(result))
 
