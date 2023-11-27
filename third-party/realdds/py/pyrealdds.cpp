@@ -29,7 +29,10 @@
 #include <realdds/dds-stream-sensor-bridge.h>
 #include <realdds/dds-metadata-syncer.h>
 
+#include <rsutils/os/special-folder.h>
+#include <rsutils/os/executable-name.h>
 #include <rsutils/easylogging/easyloggingpp.h>
+#include <rsutils/json.h>
 
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
@@ -66,6 +69,55 @@ void set_vector3( geometry_msgs::msg::Vector3 & v, std::array< double, 3 > const
     v.x( l[0] );
     v.y( l[1] );
     v.z( l[2] );
+}
+
+
+std::string script_name()
+{
+    // Returns the name of the python script that's currently running us
+    return rsutils::os::base_name(
+        py::module_::import( "__main__" ).attr( "__file__" ).cast< std::string >() );
+}
+
+
+nlohmann::json load_rs_settings( nlohmann::json const & local_settings )
+{
+    nlohmann::json config;
+
+    // Load the realsense configuration file settings
+    std::ifstream f( rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + "realsense-config.json" );
+    if( f.good() )
+    {
+        try
+        {
+            config = nlohmann::json::parse( f );
+        }
+        catch( std::exception const & e )
+        {
+            throw std::runtime_error( "failed to load configuration file: " + std::string( e.what() ) );
+        }
+    }
+
+    // Load "python"-specific settings
+    auto settings = rsutils::json::load_app_settings( config, "python", "context", "config-file" );
+
+    // Take the "dds" settings only
+    settings = rsutils::json::nested( settings, "dds" );
+
+    // Patch any script-specific settings
+    // NOTE: this is also accessed by pyrealsense2, where a "context" hierarchy is still used
+    auto script = script_name();
+    if( auto script_settings = rsutils::json::nested( config, script, "context", "dds" ) )
+        rsutils::json::patch( settings, script_settings, "config-file/" + script + "/context" );
+
+    // We should always have DDS enabled
+    if( settings.is_object() )
+        settings.erase( "enabled" );
+
+    // Patch the given local settings into the configuration
+    rsutils::json::patch( settings, local_settings, "local settings" );
+
+    return settings;
 }
 
 
@@ -149,12 +201,19 @@ PYBIND11_MODULE(NAME, m) {
                       ( char const * topic_name, eprosima::fastrtps::types::DynamicType_ptr dyn_type ),
                       callback( topic_name, dyn_type->get_name() ); ) );
 
+    m.def( "load_rs_settings", &load_rs_settings, "local-settings"_a = nlohmann::json::object() );
+    m.def( "script_name", &script_name );
+
     py::class_< dds_participant,
                 std::shared_ptr< dds_participant >  // handled with a shared_ptr
                 >
         participant( m, "participant" );
     participant.def( py::init<>() )
-        .def( "init", &dds_participant::init, "domain-id"_a, "participant-name"_a, "settings"_a = nlohmann::json::object() )
+        .def( "init",
+              []( dds_participant & self, nlohmann::json const & local_settings, realdds::dds_domain_id domain_id )
+                    { self.init( domain_id, script_name(), local_settings ); },
+              "local-settings"_a = nlohmann::json::object(), "domain-id"_a = -1 )
+        .def( "init", &dds_participant::init, "domain-id"_a, "participant-name"_a, "local-settings"_a = nlohmann::json::object() )
         .def( "is_valid", &dds_participant::is_valid )
         .def( "guid", &dds_participant::guid )
         .def( "create_guid", &dds_participant::create_guid )
