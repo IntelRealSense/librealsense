@@ -53,9 +53,6 @@ def load_ref_frames_to_map(frame):
 
 
 def get_frames(callback):
-    global frames_data_map
-    frame_data_list = []
-
     for s in sensors:
         s.open(s.get_stream_profiles())
 
@@ -71,11 +68,6 @@ def get_frames(callback):
     for s in sensors:
         s.close()
 
-    for sf in frames_data_map:
-        frame_data_list.append(frames_data_map[sf])
-
-    return frame_data_list
-
 
 def playback_file(file, callback):
     global playback_status
@@ -89,10 +81,14 @@ def playback_file(file, callback):
 
     global sensors
     sensors = dev.query_sensors()
+
     global frames_data_map
     frames_data_map = {}
+    get_frames(callback)
 
-    frames_data_list = get_frames(callback)
+    frames_data_list = []
+    for sf in frames_data_map:
+        frames_data_list.append(frames_data_map[sf])
 
     return frames_data_list
 
