@@ -9,13 +9,6 @@ from rspy import test, repo
 import os.path
 import time
 ################################################################################################
-pre_aligned_frames_map ={}
-frames_data_map = {}
-playback_status = None
-sensors = []
-align_from = rs.stream(rs.stream.depth)
-align = rs.align(rs.stream.color)
-callback = None
 
 
 def playback_callback(status):
@@ -33,18 +26,19 @@ def validate_ppf_results(result_frame_data, reference_frame_data):
 
 
 def process_frame(frame, frame_source):
+    global pre_processed_frames_map
     sensor_name = rs.sensor.from_frame(frame).get_info(rs.camera_info.name)
-    if sensor_name in pre_aligned_frames_map:
-        pre_aligned_frames_map[sensor_name].append(frame)
+    if sensor_name in pre_processed_frames_map:
+        pre_processed_frames_map[sensor_name].append(frame)
     else:
-        pre_aligned_frames_map[sensor_name] = [frame]
+        pre_processed_frames_map[sensor_name] = [frame]
 
-    if len(pre_aligned_frames_map[sensor_name]) == 2:
-        frameset = frame_source.allocate_composite_frame(pre_aligned_frames_map[sensor_name])
-        fs_align = callback(frameset.as_frameset())
-        fs_align_data = bytearray(fs_align.get_data())
-        fs_align_profile = fs_align.get_profile().as_video_stream_profile()
-        frames_data_map[sensor_name] = (fs_align_data, fs_align_profile)
+    if len(pre_processed_frames_map[sensor_name]) == 2:
+        frameset = frame_source.allocate_composite_frame(pre_processed_frames_map[sensor_name])
+        fs_processed = process_frame_callback(frameset.as_frameset())
+        fs_processed_data = bytearray(fs_processed.get_data())
+        fs_processed_profile = fs_processed.get_profile().as_video_stream_profile()
+        frames_data_map[sensor_name] = (fs_processed_data, fs_processed_profile)
 
 
 def load_ref_frames_to_map(frame):
@@ -71,7 +65,7 @@ def get_frames(callback):
 
 
 def playback_file(file, callback):
-    global playback_status
+    global playback_status, sensors
     playback_status = None
     filename = os.path.join(repo.build, 'unit-tests', 'recordings', file)
     ctx = rs.context()
@@ -80,45 +74,45 @@ def playback_file(file, callback):
     dev.set_real_time(False)
     dev.set_status_changed_callback(playback_callback)
 
-    global sensors
     sensors = dev.query_sensors()
 
-    global frames_data_map
-    frames_data_map = {}
     get_frames(callback)
-
-    frames_data_list = []
-    for sf in frames_data_map:
-        frames_data_list.append(frames_data_map[sf])
-
-    return frames_data_list
 
 
 def compare_processed_frames_vs_recorded_frames(file):
     # we need processing_block in order to have frame_source.
     # frame_source is used to composite frames (by calling allocate_composite_frames function).
+    global frames_data_map, pre_processed_frames_map, sensors
     frame_processor = rs.processing_block(process_frame)
+    frames_data_map = {}
+    pre_processed_frames_map = {}
+    sensors = []
+    playback_file('all_combinations_depth_color.bag', lambda frame: (frame_processor.invoke(frame)))
+    processed_frames_data_list = []
+    for sf in frames_data_map:
+        processed_frames_data_list.append(frames_data_map[sf])
 
-    aligned_frames_data_list = playback_file('all_combinations_depth_color.bag', lambda frame: (frame_processor.invoke(frame)))
-    ref_frame_data_list = playback_file(file, lambda frame: load_ref_frames_to_map(frame))
-    test.check_equal(len(aligned_frames_data_list),len(ref_frame_data_list))
+    frames_data_map = {}
+    playback_file(file, lambda frame: load_ref_frames_to_map(frame))
+    ref_frame_data_list = []
+    for sf in frames_data_map:
+        ref_frame_data_list.append(frames_data_map[sf])
 
-    for i in range(len(aligned_frames_data_list)):
-        validate_ppf_results(aligned_frames_data_list[i], ref_frame_data_list[i])
+    test.check_equal(len(processed_frames_data_list),len(ref_frame_data_list))
+
+    for i in range(len(processed_frames_data_list)):
+        validate_ppf_results(processed_frames_data_list[i], ref_frame_data_list[i])
 
 ################################################################################################
 with test.closure("Test align depth to color from recording"):
-    align_from = rs.stream(rs.stream.depth)
     align = rs.align(rs.stream.color)
-    callback = lambda fs: align.process(fs).first_or_default(align_from)
+    process_frame_callback = lambda fs: align.process(fs).first_or_default(rs.stream.depth)
 
     compare_processed_frames_vs_recorded_frames("[aligned_2c]_all_combinations_depth_color.bag")
 ################################################################################################
 with test.closure("Test align color to depth from recording"):
-    align_from = rs.stream(rs.stream.color)
     align = rs.align(rs.stream.depth)
-    callback = lambda fs: align.process(fs).first_or_default(align_from)
-    pre_aligned_frames_map = {}
+    process_frame_callback = lambda fs: align.process(fs).first_or_default(rs.stream.color)
 
     compare_processed_frames_vs_recorded_frames("[aligned_2d]_all_combinations_depth_color.bag")
 ################################################################################################
