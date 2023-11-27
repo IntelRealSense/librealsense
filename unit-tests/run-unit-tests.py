@@ -76,7 +76,7 @@ else:
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
-                                          'list-tests', 'no-exceptions', 'context=', 'repeat=', 'config=', 'no-reset',
+                                          'list-tests', 'no-exceptions', 'context=', 'repeat=', 'config=', 'no-reset', 'acroname-reset',
                                           'rslog', 'skip-disconnected', 'live', 'not-live'] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
