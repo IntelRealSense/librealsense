@@ -7,8 +7,6 @@
 #endif
 #endif
 
-#include <regex>
-
 #include "viewer.h"
 #include "os.h"
 
@@ -19,10 +17,14 @@
 #include <imgui_internal.h>
 
 #define ARCBALL_CAMERA_IMPLEMENTATION
-#include <arcball_camera.h>
+#include <third-party/arcball_camera.h>
+
+#include <rsutils/os/special-folder.h>
 #include <rsutils/string/trim-newlines.h>
-#include "../common/utilities/imgui/wrap.h"
+#include <common/utilities/imgui/wrap.h>
 #include <common/labeled-point-cloud-utilities.h>
+
+#include <regex>
 
 namespace rs2
 {
@@ -817,7 +819,9 @@ namespace rs2
 
             if (create_file)
             {
-                std::string tmp_filename = rsutils::string::from() << get_folder_path(special_folder::app_data) << "/.99-realsense-libusb.rules";
+                std::string tmp_filename
+                    = rsutils::os::get_special_folder( rsutils::os::special_folder::app_data )  // ~/.
+                    + "99-realsense-libusb.rules";
 
                 std::ofstream out(tmp_filename.c_str());
                 out << realsense_udev_rules;

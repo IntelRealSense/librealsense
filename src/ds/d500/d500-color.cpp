@@ -13,6 +13,8 @@
 #include "platform/platform-utils.h"
 #include <src/fourcc.h>
 
+#include <src/ds/features/auto-exposure-roi-feature.h>
+
 namespace librealsense
 {
     std::map<uint32_t, rs2_format> d500_color_fourcc_to_rs2_format = {
@@ -84,6 +86,11 @@ namespace librealsense
         _color_device_idx = add_sensor(color_ep);
     }
 
+    void d500_color::register_color_features()
+    {
+        register_feature( std::make_shared< auto_exposure_roi_feature >( get_color_sensor(), _hw_monitor, true ) );
+    }
+
     void d500_color::init()
     {
         auto& color_ep = get_color_sensor();
@@ -92,6 +99,7 @@ namespace librealsense
         _ds_color_common = std::make_shared<ds_color_common>(raw_color_ep, color_ep,
              _fw_version, _hw_monitor, this);
 
+        register_color_features();
         register_options();
         register_metadata();
         register_color_processing_blocks();
@@ -153,6 +161,11 @@ namespace librealsense
         _ds_color_common->register_metadata();
     }
 
+    void d500_color::register_stream_to_extrinsic_group( const stream_interface & stream, uint32_t group_index )
+    {
+        device::register_stream_to_extrinsic_group( stream, group_index );
+    }
+    
     rs2_intrinsics d500_color_sensor::get_intrinsics(const stream_profile& profile) const
     {
         return get_d500_intrinsic_by_resolution(
@@ -195,10 +208,5 @@ namespace librealsense
     processing_blocks d500_color_sensor::get_recommended_processing_blocks() const
     {
         return get_color_recommended_proccesing_blocks();
-    }
-
-    void d500_color::register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index)
-    {
-        device::register_stream_to_extrinsic_group(stream, group_index);
     }
 }

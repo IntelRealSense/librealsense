@@ -15,8 +15,8 @@ namespace librealsense
     class ds_active_common
     {
     public:
-        ds_active_common(uvc_sensor& raw_color_ep,
-            synthetic_sensor& color_ep,
+        ds_active_common(uvc_sensor& raw_depth_ep,
+            synthetic_sensor& depth_ep,
             backend_device* owner, 
             ds::ds_caps device_capabilities,
             std::shared_ptr<hw_monitor> hw_monitor,
