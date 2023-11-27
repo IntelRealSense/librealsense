@@ -48,9 +48,8 @@ std::string executable_path()
 }
 
 
-std::string executable_name( bool with_extension )
+std::string base_name( std::string path, bool with_extension )
 {
-    auto path = executable_path();
     auto sep = path.find_last_of( "/\\" );
     if( sep != std::string::npos )
         path = path.substr( sep + 1 );
