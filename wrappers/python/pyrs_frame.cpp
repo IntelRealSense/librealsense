@@ -58,7 +58,7 @@ void init_frame(py::module &m) {
             }
         }
         else
-            return BufData(const_cast<void*>(self.get_data()), 1, std::string("@B"), 0); };
+            return BufData(const_cast<void*>(self.get_data()), 1, std::string("@B"), self.get_data_size()); };
     
     /* rs_frame.hpp */
     py::class_<rs2::stream_profile> stream_profile(m, "stream_profile", "Stores details about the profile of a stream.");
