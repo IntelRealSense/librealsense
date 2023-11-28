@@ -9,6 +9,7 @@ https://acroname.com/reference/api/python/index.html
 """
 
 from rspy import log
+import time
 
 
 if __name__ == '__main__':
@@ -21,10 +22,11 @@ if __name__ == '__main__':
         print( '        --enable       Enable all ports' )
         print( '        --disable      Disable all ports' )
         print( '        --recycle      Recycle all ports' )
+        print( '        --reset        Reset the acroname' )
         sys.exit(2)
     try:
         opts,args = getopt.getopt( sys.argv[1:], '',
-            longopts = [ 'help', 'recycle', 'enable', 'disable' ])
+            longopts = [ 'help', 'recycle', 'enable', 'disable', 'reset' ])
     except getopt.GetoptError as err:
         print( '-F-', err )   # something like "option -a not recognized"
         usage()
@@ -49,7 +51,7 @@ class NoneFoundError( RuntimeError ):
         super().__init__( self, message  or  'no Acroname module found' )
 
 
-def discover():
+def discover(retries = 0):
     """
     Return all Acroname module specs in a list. Raise NoneFoundError if one is not found!
     """
@@ -58,37 +60,65 @@ def discover():
     # see https://acroname.com/reference/_modules/brainstem/module.html#Module.discoverAndConnect
     try:
         log.debug_indent()
-        specs = brainstem.discover.findAllModules( brainstem.link.Spec.USB )
+        for i in range(retries + 1):
+            specs = brainstem.discover.findAllModules( brainstem.link.Spec.USB )
+            if not specs:
+                time.sleep(1)
+            else:
+                for spec in specs:
+                    log.d( '...', spec )
+                break
         if not specs:
             raise NoneFoundError()
-        for spec in specs:
-            log.d( '...', spec )
     finally:
         log.debug_unindent()
 
     return specs
 
 
-def connect( spec = None ):
+def connect( reset = False, req_spec = None ):
     """
     Connect to the hub. Raises RuntimeError on failure
+    :param reset: When true, the acroname will be reset as part of the connection process
+    :param req_spec: Required spec to connect to.
     """
 
     global hub
     if not hub:
         hub = brainstem.stem.USBHub3p()
 
-    if spec:
-        specs = [spec]
+    if req_spec:
+        specs = [req_spec]
     else:
         specs = discover()
-        spec = specs[0]
 
+    spec = specs[0]
     result = hub.connectFromSpec( spec )
     if result != brainstem.result.Result.NO_ERROR:
-        raise RuntimeError( "failed to connect to acroname (result={})".format( result ))
+        raise RuntimeError( "failed to connect to Acroname (result={})".format( result ))
     elif len(specs) > 1:
         log.d( 'connected to', spec )
+
+    if reset:
+        log.d("resetting Acroname...")
+        result = hub.system.reset()
+        # According to brainstem support:
+        # Result error is expected, so we do not check it
+        # * there is also a brainstem internal console print on Linux "error release -4"
+        # Disconnection is needed after a reset command
+        hub.disconnect()
+
+        result = None
+        for i in range(10):
+            result = hub.connectFromSpec(spec)
+            if result != brainstem.result.Result.NO_ERROR:
+                time.sleep(1)
+            else:
+                log.d('reconnected')
+                return
+        raise RuntimeError("failed to reconnect to Acroname (result={})".format(result))
+
+
 
 
 def find_all_hubs():
@@ -353,3 +383,5 @@ if __name__ == '__main__':
             connect()
             enable_ports()   # so ports() will return all
             recycle_ports()
+        elif opt in ('--reset'):
+            connect( reset = True )
