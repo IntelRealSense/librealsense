@@ -48,6 +48,7 @@ def usage():
     print( '        --repeat <#>         Repeat each test <#> times' )
     print( '        --config <>          Ignore test configurations; use the one provided' )
     print( '        --no-reset           Do not try to reset any devices, with or without Acroname' )
+    print( '        --acroname-reset     If acroname is available, reset the acroname itself' )
     print( '        --rslog              Enable LibRS logging (LOG_DEBUG etc.) to console in each test' )
     print( '        --skip-disconnected  Skip live test if required device is disconnected (only applies w/o Acroname)' )
     print( 'Examples:' )
@@ -75,7 +76,7 @@ else:
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
-                                          'list-tests', 'no-exceptions', 'context=', 'repeat=', 'config=', 'no-reset',
+                                          'list-tests', 'no-exceptions', 'context=', 'repeat=', 'config=', 'no-reset', 'acroname-reset',
                                           'rslog', 'skip-disconnected', 'live', 'not-live'] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
@@ -90,6 +91,7 @@ context = []
 repeat = 1
 forced_configurations = None
 no_reset = False
+acroname_reset = False
 skip_disconnected = False
 rslog = False
 only_live = False
@@ -124,6 +126,8 @@ for opt, arg in opts:
         forced_configurations = [[arg]]
     elif opt == '--no-reset':
         no_reset = True
+    elif opt == '--acroname-reset':
+        acroname_reset = True
     elif opt == '--rslog':
         rslog = True
     elif opt == '--skip-disconnected':
@@ -439,7 +443,7 @@ try:
             sys.path.insert( 1, pyrs_path )  # Make sure we pick up the right pyrealsense2!
         from rspy import devices
 
-        devices.query()
+        devices.query( hub_reset = acroname_reset )
         devices.map_unknown_ports()
         #
         # Under a development environment (i.e., without an Acroname), we may only have one device connected
