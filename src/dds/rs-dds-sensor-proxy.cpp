@@ -17,16 +17,7 @@
 #include <src/core/frame-callback.h>
 #include <src/stream.h>
 
-// Processing blocks for DDS SW sensors
-#include <proc/decimation-filter.h>
-#include <proc/disparity-transform.h>
-#include <proc/hdr-merge.h>
-#include <proc/hole-filling-filter.h>
-#include <proc/sequence-id-filter.h>
-#include <proc/spatial-filter.h>
-#include <proc/temporal-filter.h>
-#include <proc/threshold.h>
-#include <proc/color-formats-converter.h>
+#include <src/proc/color-formats-converter.h>
 
 #include <rsutils/json.h>
 
@@ -563,28 +554,19 @@ void dds_sensor_proxy::add_processing_block( std::string const & filter_name )
     if( processing_block_exists( get_recommended_processing_blocks(), filter_name ) )
         return;  // Already created by another stream of this sensor
 
-    if( filter_name.compare( "Decimation Filter" ) == 0 )
-        // sensor.cpp sets format option based on sensor type, but the filter does not use it and selects the
-        // appropriate decimation algorithm based on processed frame profile format.
-        super::add_processing_block( std::make_shared< decimation_filter >() );
-    else if( filter_name.compare( "HDR Merge" ) == 0 )
-        super::add_processing_block( std::make_shared< hdr_merge >() );
-    else if( filter_name.compare( "Filter By Sequence id" ) == 0 )
-        super::add_processing_block( std::make_shared< sequence_id_filter >() );
-    else if( filter_name.compare( "Threshold Filter" ) == 0 )
-        super::add_processing_block( std::make_shared< threshold >() );
-    else if( filter_name.compare( "Depth to Disparity" ) == 0 )
-        super::add_processing_block( std::make_shared< disparity_transform >( true ) );
-    else if( filter_name.compare( "Disparity to Depth" ) == 0 )
-        super::add_processing_block( std::make_shared< disparity_transform >( false ) );
-    else if( filter_name.compare( "Spatial Filter" ) == 0 )
-        super::add_processing_block( std::make_shared< spatial_filter >() );
-    else if( filter_name.compare( "Temporal Filter" ) == 0 )
-        super::add_processing_block( std::make_shared< temporal_filter >() );
-    else if( filter_name.compare( "Hole Filling Filter" ) == 0 )
-        super::add_processing_block( std::make_shared< hole_filling_filter >() );
-    else
-        throw std::runtime_error( "Unsupported processing block '" + filter_name + "' received" );
+    try
+    {
+        auto ppb = get_device().get_context()->create_pp_block( filter_name, {} );
+        if( ! ppb )
+            LOG_WARNING( "Unsupported processing block '" + filter_name + "' received" );
+        else
+            super::add_processing_block( ppb );
+    }
+    catch( std::exception const & e )
+    {
+        // Bad settings, error in configuration, etc.
+        LOG_ERROR( "Failed to create processing block '" << filter_name << "': " << e.what() );
+    }
 }
 
 

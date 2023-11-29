@@ -1,25 +1,18 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
-#include <cstring>
 #include "ros_reader.h"
 #include "ds/ds-device-common.h"
 #include "ds/d400/d400-private.h"
-#include "proc/disparity-transform.h"
-#include "proc/decimation-filter.h"
-#include "proc/threshold.h" 
-#include "proc/spatial-filter.h"
-#include "proc/temporal-filter.h"
-#include "proc/hole-filling-filter.h"
-#include "proc/hdr-merge.h"
-#include "proc/sequence-id-filter.h"
 #include "std_msgs/Float32MultiArray.h"
+#include <src/depth-sensor.h>
 #include <src/core/pose-frame.h>
 #include <src/core/motion-frame.h>
 #include <src/core/video-frame.h>
 #include <src/color-sensor.h>
 
 #include <rsutils/string/from.h>
+#include <cstring>
 
 
 namespace librealsense
@@ -885,7 +878,13 @@ namespace librealsense
         {
             throw invalid_value_exception("Failed to get options interface from sensor snapshots");
         }
-        auto proccesing_blocks = read_proccesing_blocks(file, { get_device_index(), sensor_index }, time, options_api, file_version, pid, sensor_name);
+        auto proccesing_blocks = read_proccesing_blocks( file,
+                                                         { get_device_index(), sensor_index },
+                                                         time,
+                                                         options_api,
+                                                         file_version,
+                                                         pid,
+                                                         sensor_name );
         sensor_extensions[RS2_EXTENSION_RECOMMENDED_FILTERS] = proccesing_blocks;
     }
 
@@ -1002,8 +1001,14 @@ namespace librealsense
         return std::make_shared<recommended_proccesing_blocks_snapshot>(processing_blocks{});
     }
 
-    std::shared_ptr<recommended_proccesing_blocks_snapshot> ros_reader::read_proccesing_blocks(const rosbag::Bag& file, device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp,
-        std::shared_ptr<options_interface> options, uint32_t file_version, std::string pid, std::string sensor_name)
+    std::shared_ptr< recommended_proccesing_blocks_snapshot >
+    ros_reader::read_proccesing_blocks( const rosbag::Bag & file,
+                                        device_serializer::sensor_identifier sensor_id,
+                                        const nanoseconds & timestamp,
+                                        std::shared_ptr< options_interface > options,
+                                        uint32_t file_version,
+                                        std::string pid,
+                                        std::string sensor_name )
     {
         processing_blocks blocks;
         std::shared_ptr<recommended_proccesing_blocks_snapshot> res;
@@ -1027,8 +1032,8 @@ namespace librealsense
                 last_item = it++;
 
                 auto block = create_processing_block(*last_item, depth_to_disparity, options);
-                assert(block);
-                blocks.push_back(block);
+                if( block )
+                    blocks.push_back(block);
             }
 
             res = std::make_shared<recommended_proccesing_blocks_snapshot>(blocks);
@@ -1434,35 +1439,34 @@ namespace librealsense
         return std::make_pair(id, std::make_shared<const_value_option>(description, value));
     }
 
-    std::shared_ptr<librealsense::processing_block_interface> ros_reader::create_processing_block(const rosbag::MessageInstance& value_message_instance, bool& depth_to_disparity, std::shared_ptr<options_interface> options)
+    std::shared_ptr< librealsense::processing_block_interface >
+    ros_reader::create_processing_block( const rosbag::MessageInstance & value_message_instance,
+                                         bool & depth_to_disparity,
+                                         std::shared_ptr< options_interface > sensor_options )
     {
         auto processing_block_msg = instantiate_msg<std_msgs::String>(value_message_instance);
-        rs2_extension id;
-        convert(processing_block_msg->data, id);
-        std::shared_ptr<librealsense::processing_block_interface> disparity;
-
-        switch (id)
+        std::string name = processing_block_msg->data;
+        if( name == "Disparity Filter" )
         {
-        case RS2_EXTENSION_DECIMATION_FILTER:
-            return std::make_shared<ExtensionToType<RS2_EXTENSION_DECIMATION_FILTER>::type>();
-        case RS2_EXTENSION_THRESHOLD_FILTER:
-            return std::make_shared<ExtensionToType<RS2_EXTENSION_THRESHOLD_FILTER>::type>();
-        case RS2_EXTENSION_DISPARITY_FILTER:
-            disparity = std::make_shared<ExtensionToType<RS2_EXTENSION_DISPARITY_FILTER>::type>(depth_to_disparity);
-            depth_to_disparity = false;
-            return disparity;
-        case RS2_EXTENSION_SPATIAL_FILTER:
-            return std::make_shared<ExtensionToType<RS2_EXTENSION_SPATIAL_FILTER>::type>();
-        case RS2_EXTENSION_TEMPORAL_FILTER:
-            return std::make_shared<ExtensionToType<RS2_EXTENSION_TEMPORAL_FILTER>::type>();
-        case RS2_EXTENSION_HOLE_FILLING_FILTER:
-            return std::make_shared<ExtensionToType<RS2_EXTENSION_HOLE_FILLING_FILTER>::type>();
-        case RS2_EXTENSION_HDR_MERGE:
-            return std::make_shared<ExtensionToType<RS2_EXTENSION_HDR_MERGE>::type>();
-        case RS2_EXTENSION_SEQUENCE_ID_FILTER:
-            return std::make_shared<ExtensionToType<RS2_EXTENSION_SEQUENCE_ID_FILTER>::type>();
-        default:
-            return nullptr;
+            // What was recorded was the extension type (without its settings!), but we need to create different
+            // variants. "Disparity Filter" gets recorded twice! This workaround ensures it's instantiated in its
+            // non-default flavor the second time:
+            if( depth_to_disparity )
+                depth_to_disparity = false;
+            else
+                name = "Disparity to Depth";
+        }
+        try
+        {
+            auto block = m_context->create_pp_block( name, {} );
+            if( ! block )
+                LOG_DEBUG( "unknown processing block '" << name << "'; ignored" );
+            return block;
+        }
+        catch( std::exception const & e )
+        {
+            LOG_DEBUG( "failed to create processing block '" << name << "': " << e.what() );
+            return {};
         }
     }
 

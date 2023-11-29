@@ -13,6 +13,7 @@ namespace librealsense
 {
     class device_factory;
     class device_info;
+    class processing_block_interface;
 
 
     class context : public std::enable_shared_from_this<context>
@@ -57,6 +58,11 @@ namespace librealsense
         void remove_device( std::shared_ptr< device_info > const & );
 
         const nlohmann::json & get_settings() const { return _settings; }
+
+        // Create processing blocks given a name and settings.
+        //
+        std::shared_ptr< processing_block_interface > create_pp_block( std::string const & name,
+                                                                       nlohmann::json const & settings );
 
     private:
         void invoke_devices_changed_callbacks( std::vector< std::shared_ptr< device_info > > const & devices_removed,

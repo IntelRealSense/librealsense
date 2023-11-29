@@ -115,7 +115,11 @@ namespace librealsense
         static std::pair<rs2_option, std::shared_ptr<librealsense::option>> create_property(const rosbag::MessageInstance& property_message_instance);
         /*Starting version 3*/
         static std::pair<rs2_option, std::shared_ptr<librealsense::option>> create_option(const rosbag::Bag& file, const rosbag::MessageInstance& value_message_instance);
-        static std::shared_ptr<processing_block_interface> create_processing_block(const rosbag::MessageInstance& value_message_instance, bool& depth_to_disparity, std::shared_ptr<options_interface> options);
+
+        std::shared_ptr< processing_block_interface >
+        create_processing_block( const rosbag::MessageInstance & value_message_instance,
+                                 bool & depth_to_disparity,
+                                 std::shared_ptr< options_interface > options );
 
         static notification create_notification(const rosbag::Bag& file, const rosbag::MessageInstance& message_instance);
         static std::shared_ptr<options_container> read_sensor_options(const rosbag::Bag& file, device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, uint32_t file_version);
