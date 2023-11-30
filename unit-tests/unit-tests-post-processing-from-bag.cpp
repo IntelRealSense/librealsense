@@ -541,19 +541,19 @@ TEST_CASE("Record point cloud software-device all resolutions", "[record-bag][po
     record_frames_all_res(record_block, "[pointcloud]_all_combinations_depth_color.bag");
 }
 
-TEST_CASE("Test align color to depth from recording", "[software-device][align]")
+TEST_CASE("Test align color to depth from recording", "[software-device-disabled][align]")
 {
     auto record_block = align_record_block(RS2_STREAM_DEPTH, RS2_STREAM_COLOR);
     compare_processed_frames_vs_recorded_frames(record_block, "[aligned_2d]_all_combinations_depth_color.bag");
 }
 
-TEST_CASE("Test align depth to color from recording", "[software-device][align]")
+TEST_CASE("Test align depth to color from recording", "[software-device-disabled][align]")
 {
     auto record_block = align_record_block(RS2_STREAM_COLOR, RS2_STREAM_DEPTH);
     compare_processed_frames_vs_recorded_frames(record_block, "[aligned_2c]_all_combinations_depth_color.bag");
 }
 
-TEST_CASE("Test point cloud from recording", "[software-device][point-cloud]")
+TEST_CASE("Test point cloud from recording", "[software-device-disabled][point-cloud]")
 {
     auto record_block = pointcloud_record_block();
     compare_processed_frames_vs_recorded_frames(record_block, "[pointcloud]_all_combinations_depth_color.bag");

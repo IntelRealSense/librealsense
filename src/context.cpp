@@ -8,6 +8,7 @@
 #ifdef BUILD_WITH_DDS
 #include "dds/rsdds-device-factory.h"
 #endif
+#include "rscore-pp-block-factory.h"
 
 #include <librealsense2/hpp/rs_types.hpp>  // rs2_devices_changed_callback
 #include <librealsense2/rs.h>              // RS2_API_FULL_VERSION_STR
@@ -176,5 +177,11 @@ namespace librealsense {
         }
     }
 
+
+    std::shared_ptr< processing_block_interface > context::create_pp_block( std::string const & name,
+                                                                            nlohmann::json const & settings )
+    {
+        return rscore_pp_block_factory().create_pp_block( name, settings );
+    }
 
 }  // namespace librealsense

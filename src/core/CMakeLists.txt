@@ -32,6 +32,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/info.h"
         "${CMAKE_CURRENT_LIST_DIR}/extension.h"
         "${CMAKE_CURRENT_LIST_DIR}/pose-frame.h"
+        "${CMAKE_CURRENT_LIST_DIR}/pp-block-factory.h"
         "${CMAKE_CURRENT_LIST_DIR}/processing.h"
         "${CMAKE_CURRENT_LIST_DIR}/processing-block-interface.h"
         "${CMAKE_CURRENT_LIST_DIR}/recommended-processing-blocks-interface.h"

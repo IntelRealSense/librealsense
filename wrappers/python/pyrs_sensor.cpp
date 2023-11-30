@@ -53,13 +53,13 @@ void init_sensor(py::module &m) {
         .def("close", &rs2::sensor::close, "Close sensor for exclusive access.", py::call_guard<py::gil_scoped_release>())
         .def("start", [](const rs2::sensor& self, std::function<void(rs2::frame)> callback) {
             self.start(callback);
-        }, "Start passing frames into user provided callback.", "callback"_a)
+        }, "Start passing frames into user provided callback.", "callback"_a,py::call_guard< py::gil_scoped_release >())
         .def("start", [](const rs2::sensor& self, rs2::syncer& syncer) {
             self.start(syncer);
-        }, "Start passing frames into user provided syncer.", "syncer"_a)
+        }, "Start passing frames into user provided syncer.", "syncer"_a, py::call_guard< py::gil_scoped_release >())
         .def("start", [](const rs2::sensor& self, rs2::frame_queue& queue) {
             self.start(queue);
-        }, "start passing frames into specified frame_queue", "queue"_a)
+        }, "start passing frames into specified frame_queue", "queue"_a, py::call_guard< py::gil_scoped_release >())
         .def("stop", &rs2::sensor::stop, "Stop streaming.", py::call_guard<py::gil_scoped_release>())
         .def("get_stream_profiles", &rs2::sensor::get_stream_profiles, "Retrieves the list of stream profiles supported by the sensor.")
         .def("get_active_streams", &rs2::sensor::get_active_streams, "Retrieves the list of stream profiles currently streaming on the sensor.")
@@ -92,9 +92,11 @@ void init_sensor(py::module &m) {
                 ss << ": \"" << self.get_info( RS2_CAMERA_INFO_NAME ) << "\"";
             ss << ">";
             return ss.str();
-        } );
-    // rs2::sensor_from_frame [frame.def("get_sensor", ...)?
-    // rs2::sensor==sensor?
+        } )
+        .def_static("from_frame", [](rs2::frame frame) {
+            auto sptr = rs2::sensor_from_frame(frame);
+            return *sptr;
+            }, "frame"_a);
 
     py::class_<rs2::roi_sensor, rs2::sensor> roi_sensor(m, "roi_sensor"); // No docstring in C++
     roi_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
