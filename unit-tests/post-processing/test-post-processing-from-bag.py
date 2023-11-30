@@ -116,4 +116,10 @@ with test.closure("Test align color to depth from recording"):
 
     compare_processed_frames_vs_recorded_frames("[aligned_2d]_all_combinations_depth_color.bag")
 ################################################################################################
+with test.closure("Test point cloud from recording"):
+    pc = rs.pointcloud()
+    process_frame_callback = lambda fs: pc.calculate(fs.get_depth_frame())
+
+    compare_processed_frames_vs_recorded_frames("[pointcloud]_all_combinations_depth_color.bag")
+################################################################################################
 test.print_results_and_exit()
