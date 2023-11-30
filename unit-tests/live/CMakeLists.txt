@@ -14,4 +14,5 @@ dl_file( ${PP_Rosbag_Recordings_URL} recordings [aligned_2c]_all_combinations_de
 # for post-processing/post-processing-from-bag.py
 dl_file( ${PP_Rosbag_Recordings_URL} recordings [aligned_2d]_all_combinations_depth_color.bag OFF )
 
-
+# for post-processing/post-processing-from-bag.py
+dl_file( ${PP_Rosbag_Recordings_URL} recordings [pointcloud]_all_combinations_depth_color.bag OFF )
