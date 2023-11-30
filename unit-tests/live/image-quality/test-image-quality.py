@@ -19,6 +19,7 @@ DEBUG_MODE = False
 # Defines how far in cm do pixels have to be, to be considered in a different distance
 # for example, 10 for 10cm, will define the range 100-109 cm as one (as 100)
 DETAIL_LEVEL = 10
+FRAMES_TO_CHECK = 30
 
 dev = test.find_first_device_or_exit()
 
@@ -172,18 +173,22 @@ def is_depth_meaningful(config, laser_enabled=True, save_image=False, show_image
 ################################################################################################
 
 test.start("Testing depth frame - laser ON -", dev.get_info(rs.camera_info.name))
-res = False
+is_there_depth = False
 max_black_pixels = float('inf')
-for i in range(5):
+
+# we perform the check on a few different frames to make sure we get the best indication if we have depth
+for frame_num in range(FRAMES_TO_CHECK):
     result, laser_black_pixels = is_depth_meaningful(cfg, laser_enabled=True, save_image=DEBUG_MODE, show_image=DEBUG_MODE)
-    res = res or result
-    max_black_pixels = min(max_black_pixels,laser_black_pixels)
-test.check(res is True)
+    is_there_depth = is_there_depth or result  # we check if we found depth at any frame checked
+    max_black_pixels = min(max_black_pixels, laser_black_pixels)
+
+test.check(is_there_depth is True)
 test.finish()
 
-if res is True:
+# if there is no depth, we might get different results running this test, so we only run it if we actually find depth
+if is_there_depth is True:
     test.start("Testing less black pixels present with the laser on")
-    res, no_laser_black_pixels = is_depth_meaningful(cfg, laser_enabled=False, save_image=DEBUG_MODE, show_image=DEBUG_MODE)
+    is_there_depth, no_laser_black_pixels = is_depth_meaningful(cfg, laser_enabled=False, save_image=DEBUG_MODE, show_image=DEBUG_MODE)
     test.check(no_laser_black_pixels > max_black_pixels)
     test.finish()
 else:
