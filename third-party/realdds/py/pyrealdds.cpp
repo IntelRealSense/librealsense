@@ -32,6 +32,7 @@
 #include <rsutils/os/special-folder.h>
 #include <rsutils/os/executable-name.h>
 #include <rsutils/easylogging/easyloggingpp.h>
+#include <rsutils/string/from.h>
 #include <rsutils/json.h>
 
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
@@ -47,12 +48,6 @@
 
 
 namespace {
-
-std::string to_string( realdds::dds_guid const & guid )
-{
-    return realdds::print( guid );
-}
-
 
 py::list get_vector3( geometry_msgs::msg::Vector3 const & v )
 {
@@ -146,14 +141,19 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_guid;
     py::class_< dds_guid >( m, "guid" )
         .def( py::init<>() )
-        .def( "__bool__", []( dds_guid const& self ) { return self != dds_guid::unknown(); } )
-        .def( "__repr__", []( dds_guid const & self ) { return to_string( self ); } )
+        .def_static( "from_string",
+                     []( std::string const & raw_guid ) { return realdds::guid_from_string( raw_guid ); } )
+        .def( "__bool__", []( dds_guid const & self ) { return self != realdds::unknown_guid; } )
+        .def( "__str__",
+              []( dds_guid const & self ) { return rsutils::string::from( realdds::print_guid( (self) ) ).str(); } )
+        .def( "__repr__",
+              []( dds_guid const & self ) { return rsutils::string::from( realdds::print_raw_guid( ( self ) ) ).str(); } )
         // Following two (hash and ==) are needed if we want to be able to use guids as dictionary keys
         .def( "__hash__",
               []( dds_guid const & self )
               {
                   return std::hash< std::string >{}(
-                      realdds::print( self, false ) );  // use hex; not the human-readable name
+                      rsutils::string::from( realdds::print_raw_guid( self ) ) );
               } )
         .def( py::self == py::self );
 
@@ -241,7 +241,7 @@ PYBIND11_MODULE(NAME, m) {
                       eprosima::fastdds::dds::DomainParticipantQos qos;
                       if( ReturnCode_t::RETCODE_OK == self.get()->get_qos( qos ) )
                           os << " \"" << qos.name() << "\"";
-                      os << " " << to_string( self.guid() );
+                      os << " " << realdds::print_guid( self.guid() );
                   }
                   os << ">";
                   return os.str();
@@ -411,7 +411,7 @@ PYBIND11_MODULE(NAME, m) {
               []( SampleIdentity const & self )
               {
                   std::ostringstream os;
-                  os << to_string( self.writer_guid() );
+                  os << realdds::print_guid( self.writer_guid() );
                   os << '.';
                   os << self.sequence_number();
                   return os.str();
