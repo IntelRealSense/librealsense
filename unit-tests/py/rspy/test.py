@@ -203,11 +203,13 @@ def check_passed():
     return True
 
 
-def check_failed( on_fail=LOG ):
+def check_failed( on_fail=LOG, description=None ):
     """
     Function for when a check fails
     :return: always False (so you can 'return check_failed()'
     """
+    if description:
+        log.out( f'    {description}' )
     _count_check()
     global n_failed_assertions, test_failed
     n_failed_assertions += 1
@@ -235,11 +237,7 @@ def check( exp, description=None, on_fail=LOG ):
     """
     if not exp:
         print_stack()
-        if description:
-            log.out( f'        {description}' )
-        else:
-            log.out( f'        check failed; received {exp}' )
-        return check_failed( on_fail )
+        return check_failed( on_fail, description=( description or f'Got \'{exp}\'' ))
     return check_passed()
 
 
@@ -247,7 +245,10 @@ def check_false( exp, description=None, on_fail=LOG ):
     """
     Opposite of check()
     """
-    return check( not exp, description, on_fail )
+    if exp:
+        print_stack()
+        return check_failed( on_fail, description=( description or f'Expecting False; got \'{exp}\'' ))
+    return check_passed()
 
 
 def check_equal( result, expected, on_fail=LOG ):
@@ -315,8 +316,7 @@ def _unexpected_exception( type, e, tb ):
     print_stack_( traceback.format_list( traceback.extract_tb( tb )))
     for line in traceback.format_exception_only( type, e ):
         log.out( line[:-1], line_prefix = '    ' )
-    log.out( '      Unexpected exception!' )
-    check_failed()
+    check_failed( description='Unexpected exception!' )
 
 
 def unexpected_exception():
