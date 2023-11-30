@@ -369,9 +369,16 @@ TEST_CASE( "hexarray", "[hexarray]" )
     {
         CHECK( hexarray::from_string( ba_string ).get_bytes() == ba );
     }
+    SECTION( "case insensitive" )
+    {
+        CHECK( hexarray::from_string( { "0A", 2 } ).to_string() == "0a" );
+    }
+    SECTION( "empty string is an empty array" )
+    {
+        CHECK( hexarray::from_string( { "abc", size_t(0) } ).to_string() == "" );
+    }
     SECTION( "throws on invalid chars" )
     {
-        CHECK_NOTHROW( hexarray::from_string( std::string( "" ) ) );
         CHECK_THROWS( hexarray::from_string( std::string( "1" ) ) );  // invalid length
         CHECK_NOTHROW( hexarray::from_string( std::string( "01" ) ) );
         CHECK_NOTHROW( hexarray::from_string( std::string( "02" ) ) );
@@ -389,7 +396,6 @@ TEST_CASE( "hexarray", "[hexarray]" )
         CHECK_NOTHROW( hexarray::from_string( std::string( "0e" ) ) );
         CHECK_NOTHROW( hexarray::from_string( std::string( "0f" ) ) );
         CHECK_THROWS( hexarray::from_string( std::string( "0g" ) ) );  // all the rest should throw
-        CHECK_THROWS( hexarray::from_string( std::string( "0A" ) ) );  // upper-case isn't accepted
     }
     SECTION( "to json" )
     {

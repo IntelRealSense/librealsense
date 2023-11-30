@@ -4,7 +4,7 @@
 #pragma once
 
 #include <cstdint>
-#include <iosfwd>
+#include <ostream>
 #include <type_traits>
 
 
