@@ -17,6 +17,9 @@ namespace string {
 // E.g.:
 //     std::ostringstream ss;
 //     ss << hexdump( this );  // output pointer to this object as a hex value
+// 
+// If you don't want a memory dump which may involve extra leading 0s but instead just to write a number in hex, use
+// in_hex() below.
 //
 struct hexdump
 {
@@ -136,6 +139,33 @@ struct hexdump
 
 std::ostream & operator<<( std::ostream & os, hexdump const & );
 std::ostream & operator<<( std::ostream & os, hexdump::_format const & );
+
+
+// Write something out in hex without affecting the stream flags:
+//
+template< class T >
+struct _in_hex
+{
+    T const & _t;
+
+    _in_hex( T const & t )
+        : _t( t )
+    {
+    }
+};
+template< class T >
+inline std::ostream & operator<<( std::ostream & os, _in_hex< T > const & h )
+{
+    auto flags = os.flags();
+    os << std::hex << h._t;
+    os.flags( flags );
+    return os;
+}
+template< class T >
+inline _in_hex< T > in_hex( T const & t )
+{
+    return _in_hex< T >( t );
+}
 
 
 }  // namespace string
