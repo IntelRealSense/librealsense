@@ -22,9 +22,12 @@ if not os.path.isdir( build ):
     #
     build = os.path.join( root, 'build' )
     if not os.path.isdir( build ):
-        log.w( 'repo.build directory wasn\'t found' )
-        log.d( 'repo.root=', root )
-        build = None
+        # Under GHA, we use a build directory under this env variable:
+        build = os.environ.get( 'WIN_BUILD_DIR' )
+        if not build or not os.path.isdir( build ):
+            log.w( 'repo.build directory wasn\'t found' )
+            log.d( 'repo.root=', root )
+            build = None
 
 
 def find_pyrs():
