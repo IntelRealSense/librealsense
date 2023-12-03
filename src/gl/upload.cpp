@@ -75,8 +75,11 @@ namespace librealsense
                     if (new_f) perform_gl_action([&]()
                     {
                         auto gf = dynamic_cast<gpu_addon_interface*>((frame_interface*)new_f.get());
+                        if (!gf)
+                            throw std::runtime_error("Frame is not gpu_addon_interface, cannot output texture");
 
                         uint32_t output_yuv;
+
                         gf->get_gpu_section().output_texture(0, &output_yuv, TEXTYPE_UINT16);
                         glBindTexture(GL_TEXTURE_2D, output_yuv);
                         glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, f.get_data());

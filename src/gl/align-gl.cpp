@@ -62,7 +62,12 @@ void align_gl::align_z_to_other(rs2::video_frame& aligned,
     auto p = _pc->calculate(depth);
 
     auto frame_ref = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)aligned.get());
+    if (!frame_ref)
+        throw std::runtime_error("Frame is not depth frame, cannot cast");
+
     auto gf = dynamic_cast<gpu_addon_interface*>(frame_ref);
+    if (!gf)
+        throw std::runtime_error("Frame is not gpu_addon_interface, cannot output texture");
 
     gf->get_gpu_section().set_size(width, height);
 
