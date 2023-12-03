@@ -127,7 +127,7 @@ namespace librealsense
             throw librealsense::invalid_value_exception(
                 rsutils::string::from() << "Unsupported firmware binary image provided - " << image.size() << " bytes" );
 
-        std::string fw_version = firmware_check_interface::extract_firmware_version_string( image );
+        std::string fw_version = ds::extract_firmware_version_string( image );
 
         auto it = ds::d400_device_to_fw_min_version.find( _pid );
         if( it == ds::d400_device_to_fw_min_version.end() )

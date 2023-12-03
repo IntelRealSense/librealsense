@@ -183,6 +183,8 @@ namespace librealsense
             return min_gvd_version <= cur_gvd_version;
         }
 
+        std::string extract_firmware_version_string( const std::vector< uint8_t > & fw_image );
+
         enum class d400_calibration_table_id
         {
             coefficients_table_id = 25,

@@ -20,13 +20,7 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
     bool ds_d500_update_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
     {
         // Currently we cannot extract FW version from HKR FW image
-        bool result = true;
-
-        // TODO::: Once verified we can check against the minimal FW version map
-        std::string fw_version = extract_firmware_version_string(image);
-        LOG_INFO( "FW version extracted from the FW image is" + fw_version );
-
-        return result;
+        return true;
     }
 
     std::string ds_d500_update_device::parse_serial_number(const std::vector<uint8_t>& buffer) const
