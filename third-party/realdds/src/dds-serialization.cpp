@@ -12,6 +12,7 @@
 #include <fastdds/rtps/transport/UDPTransportDescriptor.h>
 
 #include <rsutils/string/from.h>
+#include <rsutils/string/nocase.h>
 #include <rsutils/json.h>
 
 
@@ -134,10 +135,9 @@ void from_json( nlohmann::json const & j, Duration_t & duration )
     if( j.is_string() )
     {
         auto & s = rsutils::json::string_ref( j );
-        // TODO switch to rsutils::string::nocaase_equal()
-        if( s == "infinite" )
+        if( rsutils::string::nocase_equal( s, "infinite" ) )
             duration = c_TimeInfinite;
-        else if( s == "invalid" )
+        else if( rsutils::string::nocase_equal( s, "invalid" ) )
             duration = c_TimeInvalid;
         else
             throw nlohmann::json::type_error::create( 317, "unknown duration value '" + s + "'", &j );
@@ -350,6 +350,33 @@ void override_endpoint_qos_from_json( eprosima::fastdds::dds::RTPSEndpointQos & 
 }
 
 
+static bool parse_ip_list( nlohmann::json const & j, std::string const & key, std::vector< std::string > * output )
+{
+    if( auto whitelist_j = rsutils::json::nested( j, key ) )
+    {
+        if( ! whitelist_j->is_array() )
+            return false;
+        for( auto & ip : whitelist_j.get() )
+        {
+            if( ! ip.is_string() )
+                return false;
+            if( output )
+                output->push_back( rsutils::json::string_ref( ip ) );
+        }
+    }
+    return true;
+}
+
+
+static void override_udp_settings( eprosima::fastdds::rtps::UDPTransportDescriptor & udp, nlohmann::json const & j )
+{
+    rsutils::json::get_ex( j, "send-buffer-size", &udp.sendBufferSize );
+    rsutils::json::get_ex( j, "receive-buffer-size", &udp.receiveBufferSize );
+    if( ! parse_ip_list( j, "whitelist", &udp.interfaceWhiteList ) )
+        LOG_WARNING( "invalid UDP whitelist in settings" );
+}
+
+
 void override_participant_qos_from_json( eprosima::fastdds::dds::DomainParticipantQos & qos, nlohmann::json const & j )
 {
     if( ! j.is_object() )
@@ -361,21 +388,9 @@ void override_participant_qos_from_json( eprosima::fastdds::dds::DomainParticipa
     if( auto udp_j = rsutils::json::nested( j, "udp" ) )
     {
         for( auto t : qos.transport().user_transports )
-            if( auto udp_t = std::dynamic_pointer_cast< eprosima::fastdds::rtps::UDPTransportDescriptor >( t ) )
+            if( auto udp_t = std::dynamic_pointer_cast<eprosima::fastdds::rtps::UDPTransportDescriptor>(t) )
             {
-                rsutils::json::get_ex( udp_j, "send-buffer-size", &udp_t->sendBufferSize );
-                rsutils::json::get_ex( udp_j, "receive-buffer-size", &udp_t->receiveBufferSize );
-                if( auto whitelist_j = rsutils::json::nested( udp_j, "whitelist" ) )
-                {
-                    if( ! whitelist_j->is_array() )
-                        LOG_WARNING( "UDP whitelist in settings should be an array" );
-                    else
-                        for( auto & ip : whitelist_j.get() )
-                        {
-                            if( ip.is_string() )
-                                udp_t->interfaceWhiteList.push_back( rsutils::json::string_ref( ip ) );
-                        }
-                }
+                override_udp_settings( *udp_t, udp_j );
                 break;
             }
     }
