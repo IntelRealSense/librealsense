@@ -2,7 +2,7 @@
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 # test:device D400*
-# This test check that A Factor of Disparity can be changed
+# This test checks that A Factor of Disparity can be changed
 
 import pyrealsense2 as rs
 from rspy import test, log
@@ -18,16 +18,18 @@ def close_resources(sensor):
         sensor.close()
 
 
-def test_amp_factor(am_device, a_factor: float):
+def test_amp_factor(am_device, new_a_factor: float):
     """
-
+    This function set new A Factor value to advance mode device
+    :am_am_device: advance mode device
+    :a_factor: new A Factor value
     """
     factor = am_device.get_amp_factor()
-    factor.a_factor = a_factor
+    factor.a_factor = new_a_factor
     am_device.set_amp_factor(factor)
 
-    log.d('Checking A factor: ' + str(a_factor))
-    test.check(am_device.get_amp_factor().a_factor - a_factor < 0.01)
+    log.d('Checking A factor: ' + str(new_a_factor))
+    test.check(am_device.get_amp_factor().a_factor - new_a_factor < 0.01)
 
 
 device = test.find_first_device_or_exit()
