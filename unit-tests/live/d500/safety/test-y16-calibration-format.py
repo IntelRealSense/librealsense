@@ -24,8 +24,10 @@ def close_resources(sensor):
 
 
 def frame_callback(frame):
-    global y16_streamed
-    y16_streamed = True
+    frame_profile = frame.get_profile()
+    if frame_profile.format() == rs.format.y16:
+        global y16_streamed
+        y16_streamed = True
 
 
 timer = Timer(5)
@@ -34,14 +36,14 @@ device = test.find_first_device_or_exit()
 safety_sensor = device.first_safety_sensor()
 depth_sensor = device.first_depth_sensor()
 
-
-test.start("Switch to Service Mode")
-original_mode = safety_sensor.get_option(rs.option.safety_mode)
+########################################################################
+test.start("Switch to service mode")
 safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.service)
 test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.service))
 test.finish()
 
-test.start('Check that y16 is streaming:')
+#########################################################################
+test.start('Check that y16 is streaming')
 
 profile_y16 = next(p for p in depth_sensor.profiles if p.format() == rs.format.y16)
 test.check(profile_y16)
@@ -57,15 +59,16 @@ if profile_y16:
             break
         time.sleep(0.1)
 
-    test.check(not timer.has_expired())
+    test.check( not timer.has_expired() )
+    test.check( y16_streamed )
     close_resources(depth_sensor)
 
 test.finish()
 
-test.start("Restoring original safety mode")
-log.d("Original mode is:", original_mode)
-safety_sensor.set_option(rs.option.safety_mode, original_mode)
-test.check_equal( safety_sensor.get_option(rs.option.safety_mode), original_mode)
+###########################################################################
+test.start("Restoring to run safety mode")
+safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.run)
+test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.run))
 test.finish()
 
 test.print_results_and_exit()
