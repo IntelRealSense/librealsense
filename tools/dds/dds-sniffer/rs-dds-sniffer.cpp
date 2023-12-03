@@ -30,7 +30,6 @@
 using namespace TCLAP;
 using namespace eprosima::fastdds::dds;
 using namespace eprosima::fastrtps::types;
-using realdds::print;
 
 // FastDDS GUID_t: (MSB first, little-endian; see GuidUtils.hpp)
 //     2 bytes  -  vendor ID
@@ -49,6 +48,11 @@ using realdds::print;
 constexpr uint8_t GUID_PROCESS_LOCATION = 4;
 
 static eprosima::fastrtps::rtps::GuidPrefix_t std_prefix;
+
+static inline auto print_guid( realdds::dds_guid const & guid )
+{
+    return realdds::print_guid( guid, std_prefix );
+}
 
 
 int main( int argc, char ** argv ) try
@@ -417,11 +421,11 @@ void dds_sniffer::dds_reader_listener::on_subscription_matched( DataReader * rea
 {
     if( info.current_count_change == 1 )
     {
-        LOG_DEBUG( "Subscriber matched by reader " << print( reader->guid(), std_prefix ) );
+        LOG_DEBUG( "Subscriber matched by reader " << print_guid( reader->guid() ) );
     }
     else if( info.current_count_change == -1 )
     {
-        LOG_DEBUG( "Subscriber unmatched by reader " << print( reader->guid(), std_prefix ) );
+        LOG_DEBUG( "Subscriber unmatched by reader " << print_guid( reader->guid() ) );
     }
     else
     {
@@ -501,12 +505,12 @@ void dds_sniffer::print_writer_discovered( realdds::dds_guid guid,
         return;
     if( _print_machine_readable )
     {
-        std::cout << "DataWriter," << print( guid, std_prefix ) << "," << topic_name
+        std::cout << "DataWriter," << print_guid( guid ) << "," << topic_name
                   << ( discovered ? ",discovered" : ",removed" ) << std::endl;
     }
     else
     {
-        std::cout << "DataWriter " << print( guid, std_prefix ) << " publishing topic '" << topic_name
+        std::cout << "DataWriter " << print_guid( guid ) << " publishing topic '" << topic_name
                   << ( discovered ? "' discovered" : "' removed" ) << std::endl;
     }
 }
@@ -519,12 +523,12 @@ void dds_sniffer::print_reader_discovered( realdds::dds_guid guid,
         return;
     if( _print_machine_readable )
     {
-        std::cout << "DataReader," << print( guid, std_prefix ) << "," << topic_name
+        std::cout << "DataReader," << print_guid( guid ) << "," << topic_name
                   << ( discovered ? ",discovered" : ",removed" ) << std::endl;
     }
     else
     {
-        std::cout << "DataReader " << print( guid, std_prefix ) << " reading topic '" << topic_name
+        std::cout << "DataReader " << print_guid( guid ) << " reading topic '" << topic_name
                   << ( discovered ? "' discovered" : "' removed" ) << std::endl;
     }
 }
@@ -535,7 +539,7 @@ void dds_sniffer::print_participant_discovered( realdds::dds_guid guid,
 {
     if( _print_machine_readable )
     {
-        std::cout << "Participant," << print( guid, std_prefix ) << "," << participant_name
+        std::cout << "Participant," << print_guid( guid ) << "," << participant_name
                   << ( discovered ? ",discovered" : ",removed" )
                   << std::endl;
     }
@@ -545,7 +549,7 @@ void dds_sniffer::print_participant_discovered( realdds::dds_guid guid,
         //prefix_.value[5] = static_cast<octet>( ( pid >> 8 ) & 0xFF );
         uint16_t pid
             = guid.guidPrefix.value[GUID_PROCESS_LOCATION] + ( guid.guidPrefix.value[GUID_PROCESS_LOCATION + 1] << 8 );
-        std::cout << "Participant " << print( guid, std_prefix ) << " '" << participant_name << "' (" << std::hex << pid
+        std::cout << "Participant " << print_guid( guid ) << " '" << participant_name << "' (" << std::hex << pid
                   << std::dec << ") " << ( discovered ? " discovered" : " removed" ) << std::endl;
     }
 }
@@ -639,7 +643,7 @@ void dds_sniffer::print_participants( bool with_guids ) const
     {
         std::cout << guid2name.second;
         if( with_guids )
-            std::cout << ' ' << realdds::print( guid2name.first );
+            std::cout << ' ' << realdds::print_raw_guid( guid2name.first );
         std::cout << std::endl;
     }
 }

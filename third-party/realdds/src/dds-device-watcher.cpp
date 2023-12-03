@@ -110,7 +110,7 @@ void dds_device_watcher::start()
         init();
     }
     LOG_DEBUG( "DDS device watcher started on '" << _participant->get()->get_qos().name() << "' "
-                                                 << realdds::print( _participant->guid() ) );
+                                                 << realdds::print_guid( _participant->guid() ) );
 }
 
 void dds_device_watcher::stop()
