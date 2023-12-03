@@ -243,6 +243,10 @@ frame_interface * software_sensor::allocate_new_video_frame( video_stream_profil
     if( frame )
     {
         auto vid_frame = dynamic_cast< video_frame * >( frame );
+
+        if (!vid_frame)
+            throw std::runtime_error("Frame is not video frame");
+
         vid_frame->assign( profile->get_width(), profile->get_height(), stride, bpp * 8 );
         auto sd = dynamic_cast< software_device * >( _owner );
         sd->register_extrinsic( *profile );
