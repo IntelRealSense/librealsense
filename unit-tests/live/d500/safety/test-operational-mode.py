@@ -22,75 +22,73 @@ def verify_frames_received(pipe, pipe_profile, count):
 
 ########################### SRS - 3.3.1.14.b ##############################################
 
-test.start("Pause / Resume - no impact on streaming")
+with test.closure("Pause / Resume - no impact on streaming"):
 
-cfg = rs.config()
-cfg.enable_stream(rs.stream.safety, rs.format.raw8, 30)
-cfg.enable_stream(rs.stream.depth, rs.format.z16, 30)
-cfg.enable_stream(rs.stream.color, rs.format.rgb8, 30)
+    cfg = rs.config()
+    cfg.enable_stream(rs.stream.safety, rs.format.raw8, 30)
+    cfg.enable_stream(rs.stream.depth, rs.format.z16, 30)
+    cfg.enable_stream(rs.stream.color, rs.format.rgb8, 30)
 
-pipe = rs.pipeline()
-profile = pipe.start(cfg)
+    pipe = rs.pipeline()
+    profile = pipe.start(cfg)
 
-f = pipe.wait_for_frames()
+    f = pipe.wait_for_frames()
 
-pipeline_device = profile.get_device()
-safety_sensor = pipeline_device.first_safety_sensor()
-log.d( "Verify default is run mode" )
-test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.run)) # verify default
+    pipeline_device = profile.get_device()
+    safety_sensor = pipeline_device.first_safety_sensor()
+    log.d( "Verify default is run mode" )
+    test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.run)) # verify default
 
-log.d( "Command standby mode" )
-safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.standby)
-test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.standby))
-verify_frames_received(pipe, profile, count = 10)
+    log.d( "Command standby mode" )
+    safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.standby)
+    test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.standby))
+    verify_frames_received(pipe, profile, count = 10)
 
-pipe.stop()
-time.sleep(1) # allow some time for the streaming to actually stop
-pipe.start(cfg)
-verify_frames_received(pipe, profile, count = 10)
+    pipe.stop()
+    time.sleep(1) # allow some time for the streaming to actually stop
+    pipe.start(cfg)
+    verify_frames_received(pipe, profile, count = 10)
 
-log.d( "Command run mode" )
-safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.run)
-test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.run))
-verify_frames_received(pipe, profile, count = 10)
+    log.d( "Command run mode" )
+    safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.run)
+    test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.run))
+    verify_frames_received(pipe, profile, count = 10)
 
-pipe.stop()
-test.finish()
+    pipe.stop()
 
 ########################### SRS - 3.3.1.14.c ##############################################
 
-test.start("Resume --> Maintenance deactivate streaming")
+with test.closure("Resume --> Maintenance deactivate streaming"):
 
-cfg = rs.config()
-cfg.enable_stream(rs.stream.safety, rs.format.raw8, 30)
+    cfg = rs.config()
+    cfg.enable_stream(rs.stream.safety, rs.format.raw8, 30)
 
-pipe = rs.pipeline()
-profile = pipe.start(cfg)
+    pipe = rs.pipeline()
+    profile = pipe.start(cfg)
 
-f = pipe.wait_for_frames()
+    f = pipe.wait_for_frames()
 
-pipeline_device = profile.get_device()
-safety_sensor = pipeline_device.first_safety_sensor()
+    pipeline_device = profile.get_device()
+    safety_sensor = pipeline_device.first_safety_sensor()
 
-log.d( "Command run mode" )
-safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.run)
-test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.run))
-# Verify that on RUN mode we get frames
-verify_frames_received(pipe, profile, count = 10)
+    log.d( "Command run mode" )
+    safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.run)
+    test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.run))
+    # Verify that on RUN mode we get frames
+    verify_frames_received(pipe, profile, count = 10)
 
-log.d( "Command service mode" )
-safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.service)
-test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.service))
-# Verify that on SERVICE mode we get no frames
-test.check_throws( lambda: verify_frames_received(pipe, profile, 10) , RuntimeError )
+    log.d( "Command service mode" )
+    safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.service)
+    test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.service))
+    # Verify that on SERVICE mode we get no frames
+    test.check_throws( lambda: verify_frames_received(pipe, profile, 10) , RuntimeError )
 
-# Restore Run mode
-log.d( "Command run mode" )
-safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.run)
-test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.run))
+    # Restore Run mode
+    log.d( "Command run mode" )
+    safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.run)
+    test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.run))
 
-pipe.stop()
-test.finish()
+    pipe.stop()
 
 ################################################################################################
 test.print_results_and_exit()
