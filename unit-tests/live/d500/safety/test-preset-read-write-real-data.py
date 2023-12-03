@@ -139,7 +139,7 @@ test.finish()
 
 #############################################################################################
 
-# switch back to original safety mode
-safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.standby)
-test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.standby))
+# switch back to Run safety mode
+safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.run)
+test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.run))
 test.print_results_and_exit()

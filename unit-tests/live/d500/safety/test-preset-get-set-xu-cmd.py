@@ -31,19 +31,16 @@ current_index = safety_sensor.get_option(rs.option.safety_preset_active_index)
 test.check_equal( int(current_index), 0)
 
 safety_sensor.set_option(rs.option.safety_preset_active_index, 1)
-time.sleep(0.1)  # sleep 100 milliseconds, see SRS ID 3.3.1.13
 
 current_index = safety_sensor.get_option(rs.option.safety_preset_active_index)
 test.check_equal( int(current_index), 1)
 
 safety_sensor.set_option(rs.option.safety_preset_active_index, 20)
-time.sleep(0.1)  # sleep 100 milliseconds, see SRS ID 3.3.1.13
 
 current_index = safety_sensor.get_option(rs.option.safety_preset_active_index)
 test.check_equal( int(current_index), 20)
 
 safety_sensor.set_option(rs.option.safety_preset_active_index, 63)
-time.sleep(0.1)  # sleep 100 milliseconds, see SRS ID 3.3.1.13
 
 current_index = safety_sensor.get_option(rs.option.safety_preset_active_index)
 test.check_equal( int(current_index), 63)

@@ -86,11 +86,13 @@ namespace librealsense
     void d500_safety::register_options(std::shared_ptr<d500_safety_sensor> safety_ep, std::shared_ptr<uvc_sensor> raw_safety_sensor)
     {
         // Register safety preset active index option
-        auto active_safety_preset = std::make_shared<uvc_xu_option<uint16_t>>(
+        static const std::chrono::milliseconds safety_preset_change_timeout( 1000 );
+        auto active_safety_preset = std::make_shared<ensure_set_xu_option<uint16_t>>(
             *raw_safety_sensor,
             safety_xu,
             xu_id::SAFETY_PRESET_ACTIVE_INDEX,
-            "Safety Preset Active Index");
+            "Safety Preset Active Index",
+            safety_preset_change_timeout);
 
         safety_ep->register_option(RS2_OPTION_SAFETY_PRESET_ACTIVE_INDEX, active_safety_preset);
         
