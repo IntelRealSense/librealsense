@@ -18,36 +18,35 @@ def close_resources(sensor):
         sensor.close()
 
 
-def test_amp_factor(am_device, new_a_factor: float):
+def test_amp_factor(am_device, input_factor_values: list):
     """
     This function set new A Factor value to advance mode device
-    :am_am_device: advance mode device
-    :a_factor: new A Factor value
+    :am_device: advance mode device
+    :input_factor_values: list of A Factor values
     """
-    factor = am_device.get_amp_factor()
-    factor.a_factor = new_a_factor
-    am_device.set_amp_factor(factor)
+    amp_factor = am_device.get_amp_factor()
+    output_factor_values = []
 
-    log.d('Checking A factor: ' + str(new_a_factor))
-    test.check(am_device.get_amp_factor().a_factor - new_a_factor < 0.01)
+    for factor_value in input_factor_values:
+        amp_factor.a_factor = factor_value
+        am_device.set_amp_factor(amp_factor)
+        output_factor_values.append(am_device.get_amp_factor().a_factor)
+
+    test.check_float_lists(input_factor_values, output_factor_values)
 
 
 device = test.find_first_device_or_exit()
 depth_sensor = device.first_depth_sensor()
 advance_mode_device = rs.rs400_advanced_mode(device)
 
-if depth_sensor and advance_mode_device:
+with test.closure('Verify set/get of Disparity modulation'):
+    if depth_sensor and advance_mode_device:
+        a_factor_values = [0.05, 0.0]
+        test_amp_factor(advance_mode_device, a_factor_values)
+    else:
+        log.d('Depth sensor or advanced mode not found.')
+        test.fail()
 
-    depth_profile_depth = next(p for p in depth_sensor.profiles if p.stream_type() == rs.stream.depth)
-    depth_profile_infrared = next(p for p in depth_sensor.profiles if p.stream_type() == rs.stream.infrared)
-
-    test.start('Check that Disparity modulation receive values:')
-    test_amp_factor(advance_mode_device, 0.05)
-    test_amp_factor(advance_mode_device, 0.1)
-    test_amp_factor(advance_mode_device, 0.15)
-    test_amp_factor(advance_mode_device, 0.2)
-    test_amp_factor(advance_mode_device, 0.0)
 
 close_resources(depth_sensor)
-test.finish()
 test.print_results_and_exit()
