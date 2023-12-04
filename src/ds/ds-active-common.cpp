@@ -73,7 +73,7 @@ namespace librealsense
             else
             {
                 _depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                    std::make_shared<asic_and_projector_temperature_options>(_raw_depth_ep,
+                    std::make_shared<asic_and_projector_temperature_options>(std::make_shared<uvc_sensor>(_raw_depth_ep),
                         RS2_OPTION_PROJECTOR_TEMPERATURE));
             }
         }
