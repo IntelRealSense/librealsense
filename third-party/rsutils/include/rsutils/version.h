@@ -19,7 +19,7 @@ namespace rsutils {
 //
 struct version
 {
-    typedef unsigned sub_type;
+    typedef uint16_t sub_type;
     typedef uint64_t number_type;
 
     number_type number;
@@ -47,12 +47,12 @@ struct version
 
     void clear() { number = 0; }
 
-    sub_type get_major() const { return ( number >> ( 8 * 7 ) ) & 0xFF; }
-    sub_type get_minor() const { return ( number >> ( 8 * 5 ) ) & 0xFFFF; }
-    sub_type get_patch() const { return ( number >> ( 8 * 4 ) ) & 0xFF; }
-    sub_type get_build() const { return number & 0xFFFFFFFF; }
+    sub_type get_major() const { return sub_type( number >> ( 8 * 6 ) ); }
+    sub_type get_minor() const { return sub_type( number >> ( 8 * 4 ) ); }
+    sub_type get_patch() const { return sub_type( number >> ( 8 * 2 ) ); }
+    sub_type get_build() const { return sub_type( number              ); }
 
-    version without_build() const { return version( number & ~0xFFFFFFFFULL ); }
+    version without_build() const { return version( number & ~0xFFFFULL ); }
 
     bool operator<=( version const & other ) const { return number <= other.number; }
     bool operator==( version const & other ) const { return number == other.number; }

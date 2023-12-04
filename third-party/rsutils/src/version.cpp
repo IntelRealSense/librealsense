@@ -9,8 +9,7 @@ namespace rsutils {
 
 
 version::version( sub_type m, sub_type n, sub_type p, sub_type b )
-    : version( ( ( m & 0xFFULL ) << ( 8 * 7 ) ) + ( ( n & 0xFFFFULL ) << ( 8 * 5 ) )
-             + ( ( p & 0xFFULL ) << ( 8 * 4 ) ) +   ( b & 0xFFFFFFFFULL ) )
+    : version( ( uint64_t( m ) << ( 8 * 6 ) ) + ( uint64_t( n ) << ( 8 * 4 ) ) + ( uint64_t( p ) << ( 8 * 2 ) ) + b )
 {
     // Invalidate if any overflow
     if( m != get_major() )
@@ -37,7 +36,7 @@ version::version( char const * base )
             return;  // If 0, unexpected; otherwise invalid
         major *= 10;
         major += *ptr - '0';
-        if( major > 0xFF )
+        if( major > 0xFFFF )
             return;  // Overflow
         ++ptr;
     }
@@ -69,14 +68,14 @@ version::version( char const * base )
             return;  // Invalid
         patch *= 10;
         patch += *ptr - '0';
-        if( patch > 0xFF )
+        if( patch > 0xFFFF )
             return;  // Overflow
         ++ptr;
     }
     if( ptr == base )
         return;  // No patch
 
-    uint64_t build = 0;
+    unsigned build = 0;
     if( *ptr )
     {
         base = ++ptr;
@@ -86,7 +85,7 @@ version::version( char const * base )
                 return;  // Invalid
             build *= 10;
             build += *ptr - '0';
-            if( build > 0xFFFFFFFFULL )
+            if( build > 0xFFFF )
                 return;  // Overflow
             ++ptr;
         }
@@ -94,7 +93,7 @@ version::version( char const * base )
             return;  // No build, but there was a period at the end...!?
     }
 
-    number = version( major, minor, patch, (unsigned)build ).number;
+    number = version( major, minor, patch, build ).number;
 }
 
 
@@ -106,8 +105,6 @@ std::string version::to_string() const
 
 std::ostream & operator<<( std::ostream & os, version const & v )
 {
-    // NOTE: FW versions were padded to 2 characters with leading 0s:
-    //      os << std::setfill('0') << std::setw(2) << v.major() << '.' ...
     os << v.get_major() << '.' << v.get_minor() << '.' << v.get_patch();
     if( v.get_build() )
         os << '.' << v.get_build();

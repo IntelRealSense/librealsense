@@ -27,7 +27,7 @@ namespace librealsense
 
         fw_log_data fw_logs_parser::parse_fw_log(const fw_logs_binary_data* fw_log_msg) 
         {
-            fw_log_data log_data;
+            fw_log_data log_data = fw_log_data();
 
             if (!fw_log_msg || fw_log_msg->logs_buffer.size() == 0)
                 return log_data;
