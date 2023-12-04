@@ -35,6 +35,8 @@
 #include <src/fourcc.h>
 
 #include <rsutils/string/hexdump.h>
+#include <rsutils/version.h>
+
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <string>
@@ -465,9 +467,7 @@ namespace librealsense
             _device_capabilities = ds_caps::CAP_ACTIVE_PROJECTOR | ds_caps::CAP_RGB_SENSOR | ds_caps::CAP_IMU_SENSOR |
                 ds_caps::CAP_BMI_085 | ds_caps::CAP_GLOBAL_SHUTTER | ds_caps::CAP_INTERCAM_HW_SYNC;
 
-            // TODO Currently D500 version format does not match the expected format of rsutils::version
-            // This will need some special handling
-            //_fw_version = firmware_version(gvd_parsed_fields.fw_version);
+            _fw_version = rsutils::version(gvd_parsed_fields.fw_version);
 
             auto _usb_mode = usb3_type;
             usb_type_str = usb_spec_names.at(_usb_mode);
