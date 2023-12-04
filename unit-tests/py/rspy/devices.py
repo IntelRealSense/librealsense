@@ -333,16 +333,18 @@ def by_name( name, ignored_products ):
                 result.add(device.serial_number)
     return result
 
-def _get_sns_from_spec( spec, ignored_products ):
+def by_spec( spec, ignored_products ):
     """
     Helper function for by_configuration. Yields all serial-numbers matching the given spec
-    :param spec: A product name/line (as a string) we want to get serial number of
+    :param spec: A product name/line (as a string) we want to get serial number of, or an actual s/n
     :param ignored_products: List of products we want to ignore. e.g. ['D455', 'D457', etc.]
     :return: A set of device serial-numbers
     """
     if spec.endswith( '*' ):
         for sn in by_product_line( spec[:-1], ignored_products ):
             yield sn
+    elif get( spec ):
+        yield spec   # the device serial number
     else:
         for sn in by_name( spec, ignored_products ):
             yield sn
@@ -357,7 +359,7 @@ def expand_specs( specs ):
     """
     expanded = set()
     for spec in specs:
-        sns = {sn for sn in _get_sns_from_spec( spec )}
+        sns = {sn for sn in by_spec( spec )}
         if sns:
             expanded.update( sns )
         else:
@@ -392,7 +394,7 @@ def by_configuration( config, exceptions = None ):
     Yields the serial numbers fitting the given configuration. If configuration includes an 'each' directive
     will yield all fitting serial numbers one at a time. Otherwise yields one set of serial numbers fitting the configuration
 
-    :param config: A test:device line collection of arguments (e.g., [L515 D400*])
+    :param config: A test:device line collection of arguments (e.g., [L515 D400*]) or serial numbers
     :param exceptions: A collection of serial-numbers that serve as exceptions that will never get matched
 
     If no device matches the configuration devices specified, a RuntimeError will be
@@ -413,14 +415,14 @@ def by_configuration( config, exceptions = None ):
 
     if len( new_config ) > 0 and re.fullmatch( r'each\(.+\)', new_config[0], re.IGNORECASE ):
         spec = new_config[0][5:-1]
-        for sn in _get_sns_from_spec( spec, ignored_products ):
+        for sn in by_spec( spec, ignored_products ):
             if sn not in exceptions:
                 yield { sn }
     else:
         sns = set()
         for spec in new_config:
             old_len = len(sns)
-            for sn in _get_sns_from_spec( spec, ignored_products ):
+            for sn in by_spec( spec, ignored_products ):
                 if sn in exceptions:
                     continue
                 if sn not in sns:
