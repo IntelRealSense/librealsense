@@ -47,6 +47,7 @@ def usage():
     print( '        --context <>         The context to use for test configuration' )
     print( '        --repeat <#>         Repeat each test <#> times' )
     print( '        --config <>          Ignore test configurations; use the one provided' )
+    print( '        --device <>          Run only on the specified devices; ignore any test that does not match (implies --live)' )
     print( '        --no-reset           Do not try to reset any devices, with or without Acroname' )
     print( '        --acroname-reset     If acroname is available, reset the acroname itself' )
     print( '        --rslog              Enable LibRS logging (LOG_DEBUG etc.) to console in each test' )
@@ -77,7 +78,7 @@ try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
                                           'list-tests', 'no-exceptions', 'context=', 'repeat=', 'config=', 'no-reset', 'acroname-reset',
-                                          'rslog', 'skip-disconnected', 'live', 'not-live'] )
+                                          'rslog', 'skip-disconnected', 'live', 'not-live', 'device='] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
@@ -90,6 +91,7 @@ no_exceptions = False
 context = []
 repeat = 1
 forced_configurations = None
+device_set = None
 no_reset = False
 acroname_reset = False
 skip_disconnected = False
@@ -124,6 +126,12 @@ for opt, arg in opts:
         repeat = int(arg)
     elif opt == '--config':
         forced_configurations = [[arg]]
+    elif opt == '--device':
+        if only_not_live:
+            log.e( "--device and --not-live are mutually exclusive" )
+            usage()
+        only_live = True
+        device_set = arg.split()
     elif opt == '--no-reset':
         no_reset = True
     elif opt == '--acroname-reset':
@@ -237,16 +245,20 @@ for dir in pyd_dirs:
     os.environ["PYTHONPATH"] += os.pathsep + dir
 
 
-def configuration_str( configuration, repetition=1, retry=0, sns=None, prefix='', suffix='' ):
+def serial_numbers_to_string( sns ):
+    return ' '.join( [f'{devices.get(sn).name}_{sn}' for sn in sns] )
+
+
+def configuration_str( configuration, repetition=0, retry=0, sns=None, prefix='', suffix='' ):
     """ Return a string repr (with a prefix and/or suffix) of the configuration or '' if it's None """
     s = ''
     if configuration is not None:
         s += '[' + ' '.join( configuration )
         if sns is not None:
-            s += ' -> ' + ' '.join( [f'{devices.get(sn).name}_{sn}' for sn in sns] )
+            s += ' -> ' + serial_numbers_to_string( sns )
         s += ']'
     elif sns is not None:
-        s += '[' + ' '.join( [f'{devices.get(sn).name}_{sn}' for sn in sns] ) + ']'
+        s += '[' + serial_numbers_to_string( sns ) + ']'
     if repetition:
         s += '[' + str(repetition+1) + ']'
     if retry:
@@ -379,11 +391,14 @@ def devices_by_test_config( test, exceptions ):
 
     :param test: The test (of class type Test) we're interested in
     """
-    global forced_configurations
+    global forced_configurations, device_set
     for configuration in ( forced_configurations  or  test.config.configurations ):
         try:
-            for serial_numbers in devices.by_configuration( configuration, exceptions ):
-                yield configuration, serial_numbers
+            for serial_numbers in devices.by_configuration( configuration, exceptions, device_set ):
+                if not serial_numbers:
+                    log.d( 'configuration:', configuration_str( configuration ), 'has no matching device; ignoring' )
+                else:
+                    yield configuration, serial_numbers
         except RuntimeError as e:
             if devices.acroname:
                 log.e( log.red + test.name + log.reset + ': ' + str( e ) )
@@ -461,6 +476,17 @@ try:
                     log.d( '==>', exceptions )
                 finally:
                     log.debug_unindent()
+        #
+        if device_set is not None:
+            sns = set()  # convert the list of specs to a list of serial numbers
+            ignored_list = list()
+            for spec in device_set:
+                included_devices = [sn for sn in devices.by_spec( spec, ignored_list )]
+                if not included_devices:
+                    log.f( f'No match for --device "{spec}"' )
+                sns.update( included_devices )
+            device_set = sns
+            log.d( f'ignoring devices other than: {serial_numbers_to_string( device_set )}' )
         #
         log.progress()
     #
@@ -543,7 +569,7 @@ try:
             for configuration, serial_numbers in devices_by_test_config( test, exceptions ):
                 for repetition in range(repeat):
                     try:
-                        log.d( 'configuration:', configuration )
+                        log.d( 'configuration:', configuration_str( configuration, repetition, sns=serial_numbers ) )
                         log.debug_indent()
                         if not no_reset:
                             devices.enable_only( serial_numbers, recycle=True )

@@ -173,7 +173,9 @@ namespace librealsense
             if (p->get_stream_type() == RS2_STREAM_ACCEL || p->get_stream_type() == RS2_STREAM_GYRO)
             {
                 auto motion = dynamic_cast<motion_stream_profile_interface*>(p.get());
-                assert(motion);
+                if (!motion)
+                    throw std::runtime_error("Stream profile is not motion stream profile");
+
                 auto st = p->get_stream_type();
                 motion->set_intrinsics([this, st]() { return get_motion_intrinsics(st); });
             }

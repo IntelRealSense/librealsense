@@ -26,7 +26,7 @@ ds_d400_update_device::ds_d400_update_device(
             throw librealsense::invalid_value_exception(
                 rsutils::string::from() << "Unsupported firmware binary image provided - " << image.size() << " bytes" );
 
-        std::string fw_version = extract_firmware_version_string(image);
+        std::string fw_version = ds::extract_firmware_version_string(image);
         auto it = ds::d400_device_to_fw_min_version.find(_usb_device->get_info().pid);
         if (it == ds::d400_device_to_fw_min_version.end())
             throw librealsense::invalid_value_exception(

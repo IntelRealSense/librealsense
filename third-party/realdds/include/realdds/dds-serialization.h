@@ -16,14 +16,22 @@ std::ostream & operator<<( std::ostream &, ReliabilityQosPolicy const & );
 std::ostream & operator<<( std::ostream &, DurabilityQosPolicyKind );
 std::ostream & operator<<( std::ostream &, DurabilityQosPolicy const & );
 std::ostream & operator<<( std::ostream &, HistoryQosPolicy const & );
+std::ostream & operator<<( std::ostream &, LivelinessQosPolicyKind );
+std::ostream & operator<<( std::ostream &, LivelinessQosPolicy const & );
 std::ostream & operator<<( std::ostream &, DataSharingQosPolicy const & );
 std::ostream & operator<<( std::ostream &, RTPSEndpointQos const & );
+
+class DomainParticipantQos;
 }  // namespace dds
 }  // namespace fastdds
 }  // namespace eprosima
 
 namespace eprosima {
 namespace fastrtps {
+// Allow j["key"] = qos.lease_duration;
+void to_json( nlohmann::json &, Duration_t const & );
+// Allow j.get< eprosima::fastrtps::Duration_t >();
+void from_json( nlohmann::json const &, Duration_t & );
 namespace rtps {
 std::ostream & operator<<( std::ostream &, class WriterProxyData const & );
 std::ostream & operator<<( std::ostream &, class ReaderProxyData const & );
@@ -38,6 +46,7 @@ namespace realdds {
 eprosima::fastdds::dds::ReliabilityQosPolicyKind reliability_kind_from_string( std::string const & );
 eprosima::fastdds::dds::DurabilityQosPolicyKind durability_kind_from_string( std::string const & );
 eprosima::fastdds::dds::HistoryQosPolicyKind history_kind_from_string( std::string const & );
+eprosima::fastdds::dds::LivelinessQosPolicyKind liveliness_kind_from_string( std::string const & );
 eprosima::fastrtps::rtps::MemoryManagementPolicy_t history_memory_policy_from_string( std::string const & );
 
 // Override QoS reliability from a JSON source.
@@ -71,6 +80,18 @@ void override_durability_qos_from_json( eprosima::fastdds::dds::DurabilityQosPol
 //
 void override_history_qos_from_json( eprosima::fastdds::dds::HistoryQosPolicy & qos, nlohmann::json const & );
 
+
+// Override QoS liveliness from a JSON source.
+// Liveliness settings are an object
+//      {
+//          "kind": "automatic",
+//          "lease-duration": 5,      // seconds
+//          "announcement-period": 3  // seconds
+//      }
+//
+void override_liveliness_qos_from_json( eprosima::fastdds::dds::LivelinessQosPolicy & qos, nlohmann::json const & );
+
+
 // Override QoS data-sharing from a JSON source.
 // The JSON can be a simple boolean indicating off or automatic mode:
 //      "data-sharing": true  // <-- the JSON is the true value
@@ -78,12 +99,22 @@ void override_history_qos_from_json( eprosima::fastdds::dds::HistoryQosPolicy & 
 void override_data_sharing_qos_from_json( eprosima::fastdds::dds::DataSharingQosPolicy & qos, nlohmann::json const & );
 
 // Override QoS endpoint from a JSON source.
-// The JSON can is an object:
-//      "endpoint": {  // <-- the JSON is the true value
+// The JSON is an object:
+//      {
 //          "history-memory-policy": "preallocated-with-realloc"
-//          }
+//      }
 //
 void override_endpoint_qos_from_json( eprosima::fastdds::dds::RTPSEndpointQos & qos, nlohmann::json const & );
+
+
+// Override participant QoS from a JSON source.
+// The JSON is an object:
+//      {
+//          "participant-id": -1,
+//          "lease-duration": 10,  // seconds
+//      }
+//
+void override_participant_qos_from_json( eprosima::fastdds::dds::DomainParticipantQos & qos, nlohmann::json const & );
 
 
 }  // namespace realdds
