@@ -47,6 +47,7 @@ def usage():
     print( '        --context <>         The context to use for test configuration' )
     print( '        --repeat <#>         Repeat each test <#> times' )
     print( '        --config <>          Ignore test configurations; use the one provided' )
+    print( '        --device <>          Run only on the specified devices; ignore any test that does not match (implies --live)' )
     print( '        --no-reset           Do not try to reset any devices, with or without Acroname' )
     print( '        --acroname-reset     If acroname is available, reset the acroname itself' )
     print( '        --rslog              Enable LibRS logging (LOG_DEBUG etc.) to console in each test' )
@@ -77,7 +78,7 @@ try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
                                           'list-tests', 'no-exceptions', 'context=', 'repeat=', 'config=', 'no-reset', 'acroname-reset',
-                                          'rslog', 'skip-disconnected', 'live', 'not-live'] )
+                                          'rslog', 'skip-disconnected', 'live', 'not-live', 'device='] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
@@ -90,6 +91,7 @@ no_exceptions = False
 context = []
 repeat = 1
 forced_configurations = None
+device_set = None
 no_reset = False
 acroname_reset = False
 skip_disconnected = False
@@ -124,6 +126,12 @@ for opt, arg in opts:
         repeat = int(arg)
     elif opt == '--config':
         forced_configurations = [[arg]]
+    elif opt == '--device':
+        if only_not_live:
+            log.e( "--device and --not-live are mutually exclusive" )
+            usage()
+        only_live = True
+        device_set = arg.split()
     elif opt == '--no-reset':
         no_reset = True
     elif opt == '--acroname-reset':
@@ -379,10 +387,22 @@ def devices_by_test_config( test, exceptions ):
 
     :param test: The test (of class type Test) we're interested in
     """
-    global forced_configurations
+    global forced_configurations, device_set
     for configuration in ( forced_configurations  or  test.config.configurations ):
         try:
             for serial_numbers in devices.by_configuration( configuration, exceptions ):
+                if device_set is not None:
+                    # We're asked to look only at certain devices and ignore configurations that do
+                    # not use them - without any errors!
+                    for sn in serial_numbers:
+                        dev = devices.get(sn)
+                        if dev is not None and dev.serial_number in device_set:
+                            break  # Device was asked for; use this config
+                    else:
+                        # No device in the configuration is part of the set that was asked for;
+                        # skip this configuration!
+                        log.d( f'configuration: {configuration} devices do not match --device directive: {" ".join( serial_numbers )}' )
+                        continue
                 yield configuration, serial_numbers
         except RuntimeError as e:
             if devices.acroname:
@@ -461,6 +481,14 @@ try:
                     log.d( '==>', exceptions )
                 finally:
                     log.debug_unindent()
+        #
+        if device_set is not None:
+            sns = set()  # convert the list of specs to a list of serial numbers
+            ignored_list = list()
+            for spec in device_set:
+                sns.update( devices.by_spec( spec, ignored_list ) )
+            device_set = sns
+            log.d( f'ignoring any configuration not using --device serial numbers: {" ".join( device_set )}' )
         #
         log.progress()
     #
