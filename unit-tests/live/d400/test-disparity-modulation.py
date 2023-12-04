@@ -8,16 +8,6 @@ import pyrealsense2 as rs
 from rspy import test, log
 
 
-def close_resources(sensor):
-    """
-    Stop and Close sensor.
-    :sensor: sensor of device
-    """
-    if len(sensor.get_active_streams()) > 0:
-        sensor.stop()
-        sensor.close()
-
-
 def test_amp_factor(am_device, input_factor_values: list):
     """
     This function set new A Factor value to advance mode device
@@ -36,17 +26,15 @@ def test_amp_factor(am_device, input_factor_values: list):
 
 
 device = test.find_first_device_or_exit()
-depth_sensor = device.first_depth_sensor()
 advance_mode_device = rs.rs400_advanced_mode(device)
 
 with test.closure('Verify set/get of Disparity modulation'):
-    if depth_sensor and advance_mode_device:
-        a_factor_values = [0.05, 0.0]
+    if advance_mode_device:
+        a_factor_values = [0.05, 0.01]
         test_amp_factor(advance_mode_device, a_factor_values)
     else:
         log.d('Depth sensor or advanced mode not found.')
         test.fail()
 
 
-close_resources(depth_sensor)
 test.print_results_and_exit()
