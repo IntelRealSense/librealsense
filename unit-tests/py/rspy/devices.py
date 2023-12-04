@@ -333,16 +333,18 @@ def by_name( name, ignored_products ):
                 result.add(device.serial_number)
     return result
 
-def _get_sns_from_spec( spec, ignored_products ):
+def by_spec( spec, ignored_products ):
     """
     Helper function for by_configuration. Yields all serial-numbers matching the given spec
-    :param spec: A product name/line (as a string) we want to get serial number of
+    :param spec: A product name/line (as a string) we want to get serial number of, or an actual s/n
     :param ignored_products: List of products we want to ignore. e.g. ['D455', 'D457', etc.]
     :return: A set of device serial-numbers
     """
     if spec.endswith( '*' ):
         for sn in by_product_line( spec[:-1], ignored_products ):
             yield sn
+    elif get( spec ):
+        yield spec   # the device serial number
     else:
         for sn in by_name( spec, ignored_products ):
             yield sn
@@ -357,7 +359,7 @@ def expand_specs( specs ):
     """
     expanded = set()
     for spec in specs:
-        sns = {sn for sn in _get_sns_from_spec( spec )}
+        sns = {sn for sn in by_spec( spec )}
         if sns:
             expanded.update( sns )
         else:
@@ -387,16 +389,17 @@ def load_specs_from_file( filename ):
     return exceptions
 
 
-def by_configuration( config, exceptions = None ):
+def by_configuration( config, exceptions=None, inclusions=None ):
     """
     Yields the serial numbers fitting the given configuration. If configuration includes an 'each' directive
     will yield all fitting serial numbers one at a time. Otherwise yields one set of serial numbers fitting the configuration
 
-    :param config: A test:device line collection of arguments (e.g., [L515 D400*])
+    :param config: A test:device line collection of arguments (e.g., [L515 D400*]) or serial numbers
     :param exceptions: A collection of serial-numbers that serve as exceptions that will never get matched
+    :param inclusions: A collection of serial-numbers from which to match - nothing else will get matched
 
-    If no device matches the configuration devices specified, a RuntimeError will be
-    raised!
+    If no device matches the configuration devices specified, a RuntimeError will be raised unless
+    'inclusions' is provided and the configuration is simple, and an empty set yielded to signify.
     """
     exceptions = exceptions or set()
     # split the current config to two lists:
@@ -411,33 +414,49 @@ def by_configuration( config, exceptions = None ):
         else:
             new_config.append(p)
 
+    nothing_matched = True
     if len( new_config ) > 0 and re.fullmatch( r'each\(.+\)', new_config[0], re.IGNORECASE ):
         spec = new_config[0][5:-1]
-        for sn in _get_sns_from_spec( spec, ignored_products ):
-            if sn not in exceptions:
-                yield { sn }
+        for sn in by_spec( spec, ignored_products ):
+            if sn in exceptions:
+                continue
+            if inclusions and sn not in inclusions:
+                continue
+            nothing_matched = False
+            yield { sn }
     else:
         sns = set()
         for spec in new_config:
             old_len = len(sns)
-            for sn in _get_sns_from_spec( spec, ignored_products ):
+            for sn in by_spec( spec, ignored_products ):
                 if sn in exceptions:
+                    continue
+                if inclusions and sn not in inclusions:
                     continue
                 if sn not in sns:
                     sns.add( sn )
                     break
             new_len = len(sns)
             if new_len == old_len:
-                error = 'no device matches configuration "' + spec + '"'
-                if old_len:
-                    error += ' (after already matching ' + str(sns) + ')'
-                if ignored_products:
-                    error += ' (!' + str(ignored_products) + ')'
-                if exceptions:
-                    error += ' (-' + str(exceptions) + ')'
-                raise RuntimeError( error )
+                # No new device matches the spec:
+                #   - if no inclusions were specified, this is always an error
+                #   - with inclusions, it's not an error only if it's the only spec
+                if not inclusions or len(new_config) > 1:
+                    error = 'no device matches configuration "' + spec + '"'
+                    if old_len:
+                        error += ' (after already matching ' + str(sns) + ')'
+                    if ignored_products:
+                        error += ' (!' + str(ignored_products) + ')'
+                    if exceptions:
+                        error += ' (-' + str(exceptions) + ')'
+                    if inclusions:
+                        error += ' (+' + str(inclusions) + ')'
+                    raise RuntimeError( error )
         if sns:
+            nothing_matched = False
             yield sns
+    if nothing_matched and inclusions:
+        yield set()  # let the caller decide how to deal with it
 
 
 def get_first( sns ):
