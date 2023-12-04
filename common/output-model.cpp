@@ -527,8 +527,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
         ImGui::PushItemWidth(0.7f * w - 32);
 
         bool force_refresh = false;
-
-        if (ImGui::IsKeyPressed(GLFW_KEY_UP) || ImGui::IsKeyPressed(GLFW_KEY_DOWN))
+        if (ImGui::IsWindowFocused() && (ImGui::IsKeyPressed(GLFW_KEY_UP) || ImGui::IsKeyPressed(GLFW_KEY_DOWN)))
         {
             if (commands_histroy.size())
             {
@@ -540,7 +539,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             }
         }
 
-        if (ImGui::IsKeyPressed(GLFW_KEY_TAB))
+        if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(GLFW_KEY_TAB))
         {
             if (!autocomplete.size() || !starts_with(to_lower(autocomplete.front()), to_lower(command_line)))
             {
@@ -597,7 +596,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
         ImGui::PopFont();
         ImGui::PopStyleColor();
 
-        if (ImGui::IsKeyPressed(GLFW_KEY_ENTER) || ImGui::IsKeyPressed(GLFW_KEY_KP_ENTER))
+        if (ImGui::IsWindowFocused() && (ImGui::IsKeyPressed(GLFW_KEY_ENTER) || ImGui::IsKeyPressed(GLFW_KEY_KP_ENTER)))
         {
             if (commands_histroy.size() > 100) commands_histroy.pop_back();
             commands_histroy.push_front(command_line);
@@ -607,7 +606,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
         }
         else command_focus = false;
 
-        if (ImGui::IsKeyPressed(GLFW_KEY_ESCAPE))
+        if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(GLFW_KEY_ESCAPE))
         {
             command_line = "";
         }
