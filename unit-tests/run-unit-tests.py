@@ -249,7 +249,7 @@ def serial_numbers_to_string( sns ):
     return ' '.join( [f'{devices.get(sn).name}_{sn}' for sn in sns] )
 
 
-def configuration_str( configuration, repetition=1, retry=0, sns=None, prefix='', suffix='' ):
+def configuration_str( configuration, repetition=0, retry=0, sns=None, prefix='', suffix='' ):
     """ Return a string repr (with a prefix and/or suffix) of the configuration or '' if it's None """
     s = ''
     if configuration is not None:
@@ -394,20 +394,11 @@ def devices_by_test_config( test, exceptions ):
     global forced_configurations, device_set
     for configuration in ( forced_configurations  or  test.config.configurations ):
         try:
-            for serial_numbers in devices.by_configuration( configuration, exceptions ):
-                if device_set is not None:
-                    # We're asked to look only at certain devices and ignore configurations that do
-                    # not use them - without any errors!
-                    for sn in serial_numbers:
-                        dev = devices.get(sn)
-                        if dev is not None and dev.serial_number in device_set:
-                            break  # Device was asked for; use this config
-                    else:
-                        # No device in the configuration is part of the set that was asked for;
-                        # skip this configuration!
-                        log.d( f'configuration: {configuration} devices do not match --device directive: {serial_numbers_to_string( serial_numbers )}' )
-                        continue
-                yield configuration, serial_numbers
+            for serial_numbers in devices.by_configuration( configuration, exceptions, device_set ):
+                if not serial_numbers:
+                    log.d( 'configuration:', configuration_str( configuration ), 'has no matching device; ignoring' )
+                else:
+                    yield configuration, serial_numbers
         except RuntimeError as e:
             if devices.acroname:
                 log.e( log.red + test.name + log.reset + ': ' + str( e ) )
@@ -490,9 +481,12 @@ try:
             sns = set()  # convert the list of specs to a list of serial numbers
             ignored_list = list()
             for spec in device_set:
-                sns.update( devices.by_spec( spec, ignored_list ) )
+                included_devices = [sn for sn in devices.by_spec( spec, ignored_list )]
+                if not included_devices:
+                    log.f( f'No match for --device "{spec}"' )
+                sns.update( included_devices )
             device_set = sns
-            log.d( f'ignoring any configuration not using --device serial numbers: {" ".join( device_set )}' )
+            log.d( f'ignoring devices other than: {serial_numbers_to_string( device_set )}' )
         #
         log.progress()
     #
@@ -575,7 +569,7 @@ try:
             for configuration, serial_numbers in devices_by_test_config( test, exceptions ):
                 for repetition in range(repeat):
                     try:
-                        log.d( 'configuration:', configuration_str( configuration, repetition=repetition, sns=serial_numbers ) )
+                        log.d( 'configuration:', configuration_str( configuration, repetition, sns=serial_numbers ) )
                         log.debug_indent()
                         if not no_reset:
                             devices.enable_only( serial_numbers, recycle=True )
