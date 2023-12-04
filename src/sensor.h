@@ -7,6 +7,7 @@
 #include "source.h"
 #include "core/extension.h"
 #include "proc/formats-converter.h"
+#include <core/options-updater.h>
 
 #include <rsutils/lazy.h>
 #include <rsutils/signal.h>
@@ -204,7 +205,7 @@ namespace librealsense
 
         virtual void register_option(rs2_option id, std::shared_ptr<option> option);
         virtual bool try_register_option(rs2_option id, std::shared_ptr<option> option);
-        void unregister_option(rs2_option id);
+        virtual void unregister_option(rs2_option id);
         void register_pu(rs2_option id);
         bool try_register_pu(rs2_option id);
 
@@ -236,6 +237,10 @@ namespace librealsense
         bool is_streaming() const override;
         bool is_opened() const override;
 
+        virtual void register_options_callback( std::function< void( const rs2_options_list * ) > && callback );
+        virtual void register_option_to_update( rs2_option id, std::shared_ptr< option > option );
+        virtual void unregister_option_from_update( rs2_option id );
+
     private:
         void register_processing_block_options(const processing_block& pb);
         void unregister_processing_block_options(const processing_block& pb);
@@ -246,6 +251,8 @@ namespace librealsense
         std::shared_ptr<raw_sensor_base> _raw_sensor;
         formats_converter _formats_converter;
         std::vector<rs2_option> _cached_processing_blocks_options;
+
+        options_updater _options_updater;
     };
 
 

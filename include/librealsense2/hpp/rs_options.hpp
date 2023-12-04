@@ -8,6 +8,25 @@
 
 namespace rs2
 {
+    template< class T >
+    class option_value_update_callback : public rs2_option_value_update_callback
+    {
+        T _callback;
+
+    public:
+        explicit option_value_update_callback( T callback )
+            : _callback( callback )
+        {
+        }
+
+        void on_value_changed( const rs2_options_list * list ) override
+        {
+            _callback( list );
+        }
+
+        void release() override { delete this; }
+    };
+
     class options
     {
     public:
@@ -114,6 +133,19 @@ namespace rs2
             auto res = rs2_is_option_read_only(_options, option, &e);
             error::handle(e);
             return res > 0;
+        }
+
+        /**
+         * sets a callback in case an option in this options container value is updated
+         * \param[in] callback     the callback function
+         * \return true if option is read-only
+         */
+        template< class T >
+        void on_option_value_update( T callback ) const
+        {
+            rs2_error * e = nullptr;
+            rs2_on_option_value_update_cpp( _options, new option_value_update_callback< T >( callback ), &e );
+            error::handle( e );
         }
 
         std::vector<rs2_option> get_supported_options()

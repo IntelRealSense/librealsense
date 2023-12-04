@@ -1202,6 +1202,32 @@ const char* rs2_get_option_value_description(const rs2_options* options, rs2_opt
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options, option, value)
 
+void rs2_on_option_value_update( const rs2_options * options, rs2_option_value_update_callback_ptr callback, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( options );
+    VALIDATE_NOT_NULL( callback );
+    auto sens = dynamic_cast< synthetic_sensor * >( options->options );
+    VALIDATE_NOT_NULL( sens );
+    sens->register_options_callback( [callback]( const rs2_options_list * list ) { callback( list ); } );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , options, callback )
+
+void rs2_on_option_value_update_cpp( const rs2_options * options, rs2_option_value_update_callback* callback, rs2_error ** error ) BEGIN_API_CALL
+{
+    // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a 'new' when calling us)
+    VALIDATE_NOT_NULL( callback );
+    rs2_option_value_update_callback_sptr cb{ callback,
+                                              []( rs2_option_value_update_callback * p )
+                                              {
+                                                  p->release();
+                                              } };
+    VALIDATE_NOT_NULL( options );
+    auto sens = dynamic_cast< synthetic_sensor * >( options->options );
+    VALIDATE_NOT_NULL( sens );
+    sens->register_options_callback( [cb]( const rs2_options_list * list ) { cb->on_value_changed( list ); } );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , options, callback )
+
 rs2_frame_queue* rs2_create_frame_queue(int capacity, rs2_error** error) BEGIN_API_CALL
 {
     return new rs2_frame_queue(capacity);

@@ -97,6 +97,8 @@ EXPORTS
     rs2_get_option_from_list
     rs2_get_options_list_size
     rs2_delete_options_list
+    rs2_on_option_value_update
+    rs2_on_option_value_update_cpp
 
     rs2_set_region_of_interest
     rs2_get_region_of_interest

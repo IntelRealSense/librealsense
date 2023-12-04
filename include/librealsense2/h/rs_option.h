@@ -340,6 +340,22 @@ extern "C" {
     */
     const char* rs2_get_option_value_description(const rs2_options* options, rs2_option option, float value, rs2_error ** error);
 
+    /**
+    * sets a callback in case an option in this options container value is updated
+    * \param[in] options    the options container
+    * \param[in] callback   callback function pointer to update on value changes
+    * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    */
+    void rs2_on_option_value_update( const rs2_options * options, rs2_option_value_update_callback_ptr callback, rs2_error ** error );
+
+    /**
+    * sets a callback in case an option in this options container value is updated
+    * \param[in] options    the options container
+    * \param[in] callback   callback object created from c++ application. ownership over the callback object is moved to librealsense
+    * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    */
+    void rs2_on_option_value_update_cpp( const rs2_options * options, rs2_option_value_update_callback* callback, rs2_error ** error );
+
 #ifdef __cplusplus
 }
 #endif
