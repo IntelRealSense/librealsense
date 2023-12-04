@@ -245,16 +245,20 @@ for dir in pyd_dirs:
     os.environ["PYTHONPATH"] += os.pathsep + dir
 
 
+def serial_numbers_to_string( sns ):
+    return ' '.join( [f'{devices.get(sn).name}_{sn}' for sn in sns] )
+
+
 def configuration_str( configuration, repetition=1, retry=0, sns=None, prefix='', suffix='' ):
     """ Return a string repr (with a prefix and/or suffix) of the configuration or '' if it's None """
     s = ''
     if configuration is not None:
         s += '[' + ' '.join( configuration )
         if sns is not None:
-            s += ' -> ' + ' '.join( [f'{devices.get(sn).name}_{sn}' for sn in sns] )
+            s += ' -> ' + serial_numbers_to_string( sns )
         s += ']'
     elif sns is not None:
-        s += '[' + ' '.join( [f'{devices.get(sn).name}_{sn}' for sn in sns] ) + ']'
+        s += '[' + serial_numbers_to_string( sns ) + ']'
     if repetition:
         s += '[' + str(repetition+1) + ']'
     if retry:
@@ -401,7 +405,7 @@ def devices_by_test_config( test, exceptions ):
                     else:
                         # No device in the configuration is part of the set that was asked for;
                         # skip this configuration!
-                        log.d( f'configuration: {configuration} devices do not match --device directive: {" ".join( serial_numbers )}' )
+                        log.d( f'configuration: {configuration} devices do not match --device directive: {serial_numbers_to_string( serial_numbers )}' )
                         continue
                 yield configuration, serial_numbers
         except RuntimeError as e:
@@ -571,7 +575,7 @@ try:
             for configuration, serial_numbers in devices_by_test_config( test, exceptions ):
                 for repetition in range(repeat):
                     try:
-                        log.d( 'configuration:', configuration )
+                        log.d( 'configuration:', configuration_str( configuration, repetition=repetition, sns=serial_numbers ) )
                         log.debug_indent()
                         if not no_reset:
                             devices.enable_only( serial_numbers, recycle=True )
