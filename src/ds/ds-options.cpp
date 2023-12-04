@@ -128,8 +128,8 @@ namespace librealsense
         }
     }
 
-    asic_and_projector_temperature_options::asic_and_projector_temperature_options(std::shared_ptr<uvc_sensor> ep, rs2_option opt)
-        : _option(opt), _ep(ep)
+    asic_and_projector_temperature_options::asic_and_projector_temperature_options(std::shared_ptr<uvc_sensor> && ep, rs2_option opt)
+        : _option(opt), _ep(std::move(ep))
         {}
 
     float motion_module_temperature_option::query() const

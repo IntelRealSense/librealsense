@@ -683,7 +683,7 @@ namespace librealsense
                             "Generate trigger from the camera to external device once per frame"));
 
                     depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
-                        std::make_shared<asic_and_projector_temperature_options>(std::make_shared<uvc_sensor>(raw_depth_sensor),
+                        std::make_shared<asic_and_projector_temperature_options>(std::dynamic_pointer_cast<uvc_sensor>(raw_depth_sensor.shared_from_this()),
                             RS2_OPTION_ASIC_TEMPERATURE));
 
                     // D457 dev - get_xu fails for D457 - error polling id not defined
@@ -1300,7 +1300,7 @@ namespace librealsense
                     std::vector<float>{0.f, 2.f}, 1.f));
 
             depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                std::make_shared<asic_and_projector_temperature_options>(std::make_shared<uvc_sensor>(depth_ep),
+                std::make_shared<asic_and_projector_temperature_options>(std::dynamic_pointer_cast<uvc_sensor>(depth_ep.shared_from_this()),
                     RS2_OPTION_PROJECTOR_TEMPERATURE));
         }
     }

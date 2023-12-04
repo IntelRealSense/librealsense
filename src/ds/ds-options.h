@@ -31,7 +31,7 @@ namespace librealsense
 
         const char* get_description() const override;
 
-        explicit asic_and_projector_temperature_options(std::shared_ptr<uvc_sensor> ep, rs2_option opt);
+        explicit asic_and_projector_temperature_options(std::shared_ptr <uvc_sensor> && ep, rs2_option opt);
 
     private:
         std::weak_ptr<uvc_sensor>   _ep;
