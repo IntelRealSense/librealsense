@@ -47,7 +47,7 @@ namespace librealsense
                 frame_interface* ptr = nullptr;
                 std::swap(f.frame, ptr);
 
-                _callback->on_frame((rs2_frame*)ptr, _source_wrapper.get_c_wrapper());
+                _callback->on_frame( (rs2_frame *)ptr, _source_wrapper.get_rs2_source() );
             }
         }
         catch (std::exception const & e)

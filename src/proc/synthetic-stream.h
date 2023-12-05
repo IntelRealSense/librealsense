@@ -43,7 +43,7 @@ namespace librealsense
 
         void frame_ready(frame_holder result) override;
 
-        rs2_source* get_c_wrapper() override { return _c_wrapper.get(); }
+        rs2_source* get_rs2_source() const { return _c_wrapper.get(); }
 
     private:
         frame_source & _actual_source;
