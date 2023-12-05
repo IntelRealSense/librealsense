@@ -7,18 +7,23 @@
 #include "../core/processing-block-interface.h"
 #include "../image.h"
 #include "../source.h"
+
+#include <src/core/info.h>
+#include <src/core/options-container.h>
+
 #include <librealsense2/hpp/rs_frame.hpp>
 #include <librealsense2/hpp/rs_processing.hpp>
 
 namespace librealsense
 {
+
+
+    // A synthetic source is simply a wrapper around a new frame_source and its exposure thru the rs2_source APIs
+    //
     class synthetic_source : public synthetic_source_interface
     {
     public:
-        synthetic_source(frame_source& actual)
-            : _actual_source(actual), _c_wrapper(new rs2_source{ this })
-        {
-        }
+        synthetic_source( frame_source & actual );
 
         frame_interface* allocate_video_frame(std::shared_ptr<stream_profile_interface> stream,
             frame_interface* original,

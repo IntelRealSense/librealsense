@@ -8,6 +8,7 @@
 #include "core/depth-frame.h"
 #include <src/composite-frame.h>
 #include <src/core/frame-callback.h>
+#include <src/core/frame-processor-callback.h>
 #include "option.h"
 #include "stream.h"
 #include "types.h"
@@ -326,6 +327,12 @@ namespace librealsense
         return _stream_filter.match(frame);
     }
 
+    synthetic_source::synthetic_source( frame_source & actual )
+        : _actual_source( actual )
+        , _c_wrapper( new rs2_source{ this } )
+    {
+    }
+
     void synthetic_source::frame_ready(frame_holder result)
     {
         _actual_source.invoke_callback(std::move(result));
@@ -617,7 +624,7 @@ namespace librealsense
     void interleaved_functional_processing_block::configure_processing_callback()
     {
         // define and set the frame processing callback
-        auto process_callback = [&](frame_holder frame, synthetic_source_interface* source)
+        auto process_callback = [&](frame_holder && frame, synthetic_source_interface* source)
         {
             auto profile = As<video_stream_profile, stream_profile_interface>(frame.frame->get_stream());
             if (!profile)
@@ -674,7 +681,6 @@ namespace librealsense
             source->frame_ready(std::move(rf));
         };
 
-        set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
-            new internal_frame_processor_callback<decltype(process_callback)>(process_callback)));
+        set_processing_callback( make_frame_processor_callback( std::move( process_callback ) ) );
     }
 }

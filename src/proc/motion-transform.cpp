@@ -7,6 +7,7 @@
 #include "motion-transform.h"
 #include "stream.h"
 #include <src/platform/hid-data.h>
+#include <src/core/frame-processor-callback.h>
 
 
 namespace librealsense
@@ -141,7 +142,7 @@ namespace librealsense
     void motion_to_accel_gyro::configure_processing_callback()
     {
         // define and set the frame processing callback
-        auto process_callback = [&](frame_holder frame, synthetic_source_interface* source)
+        auto process_callback = [&](frame_holder && frame, synthetic_source_interface* source)
         {
             auto profile = As<motion_stream_profile, stream_profile_interface>(frame.frame->get_stream());
             if (!profile)
@@ -187,8 +188,7 @@ namespace librealsense
             source->frame_ready(std::move(agf));
         };
 
-        set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
-            new internal_frame_processor_callback<decltype(process_callback)>(process_callback)));
+        set_processing_callback( make_frame_processor_callback( std::move( process_callback ) ) );
     }
 
     void motion_to_accel_gyro::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int output_size, int actual_size)
