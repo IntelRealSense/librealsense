@@ -94,8 +94,15 @@ namespace librealsense
         {
             auto tgt_format = _transform_to_disparity ? RS2_FORMAT_DISPARITY32 : RS2_FORMAT_Z16;
             _target_stream_profile = _source_stream_profile.clone(RS2_STREAM_DEPTH, 0, tgt_format);
+
             auto src_vspi = dynamic_cast<video_stream_profile_interface*>(_source_stream_profile.get()->profile);
+            if (!src_vspi)
+                throw std::runtime_error("Stream profile is not video stream profile");
+
             auto tgt_vspi = dynamic_cast<video_stream_profile_interface*>(_target_stream_profile.get()->profile);
+            if (!tgt_vspi)
+                throw std::runtime_error("Stream profile is not video stream profile");
+
             rs2_intrinsics src_intrin   = src_vspi->get_intrinsics();
 
             tgt_vspi->set_intrinsics([src_intrin]() { return src_intrin; });

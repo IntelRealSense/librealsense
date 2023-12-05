@@ -177,7 +177,8 @@ namespace librealsense
     {
         sensor_msgs::Image image;
         auto vid_frame = dynamic_cast<librealsense::video_frame*>(frame.frame);
-        assert(vid_frame != nullptr);
+        if (!vid_frame)
+            throw std::runtime_error("Frame is not video frame");
 
         image.width = static_cast<uint32_t>(vid_frame->get_width());
         image.height = static_cast<uint32_t>(vid_frame->get_height());
