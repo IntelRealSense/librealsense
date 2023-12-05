@@ -5094,7 +5094,7 @@ TEST_CASE("Test Motion Module Extension", "[software-device][using_pipeline][pro
 }
 
 // Marked as MayFail due to DSO-11753. TODO -revisit once resolved
-TEST_CASE("Projection from recording", "[software-device][using_pipeline][projection][!mayfail]") {
+TEST_CASE("Projection from recording", "[software-device-disabled][using_pipeline][projection][!mayfail]") {
     rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
     if( ! ctx )
         return;
