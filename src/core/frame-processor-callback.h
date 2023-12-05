@@ -2,7 +2,7 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "processing.h"
+#include "synthetic-source-interface.h"
 
 #include <librealsense2/hpp/rs_types.hpp>
 #include <memory>

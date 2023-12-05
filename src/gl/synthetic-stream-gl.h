@@ -3,10 +3,8 @@
 
 #pragma once
 
+#include "../proc/synthetic-stream.h"
 #include "../core/depth-frame.h"
-#include "../core/processing.h"
-#include "../image.h"
-#include "../source.h"
 #include "../points.h"
 
 #include <librealsense2/hpp/rs_frame.hpp>
@@ -21,7 +19,6 @@
 #include <deque>
 #include <unordered_set>
 
-#include "../proc/synthetic-stream.h"
 
 #define RS2_EXTENSION_VIDEO_FRAME_GL (rs2_extension)(RS2_EXTENSION_COUNT)
 #define RS2_EXTENSION_DEPTH_FRAME_GL (rs2_extension)(RS2_EXTENSION_COUNT + 1)

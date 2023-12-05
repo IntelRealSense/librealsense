@@ -3,7 +3,7 @@
 
 #include "sync.h"
 #include "core/frame-holder.h"
-#include "core/processing.h"
+#include "core/synthetic-source-interface.h"
 #include "core/stream-profile-interface.h"
 #include "core/device-interface.h"
 #include "core/sensor-interface.h"
