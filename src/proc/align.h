@@ -1,14 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
+#include "synthetic-stream.h"
+
+#include <src/basics.h>
 #include <map>
 #include <utility>
-#include "../core/processing.h"
-#include "synthetic-stream.h"
-#include "../image.h"
-#include "../source.h"
+
 
 namespace librealsense
 {
@@ -19,7 +18,7 @@ namespace librealsense
 
     protected:
         align(rs2_stream to_stream, const char* name)
-            : generic_processing_block(name), 
+            : generic_processing_block(name),
               _to_stream_type(to_stream), _depth_scale(0)
         {}
 

@@ -3,9 +3,8 @@
 
 #pragma once
 
-#include "../core/processing.h"
+#include <src/core/synthetic-source-interface.h>
 #include "../core/processing-block-interface.h"
-#include "../image.h"
 #include "../source.h"
 
 #include <src/core/info.h>
