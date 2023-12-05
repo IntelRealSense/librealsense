@@ -101,6 +101,8 @@ namespace librealsense
                 assign_stream(fisheye_stream, p);
 
             auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+            if (!video)
+                throw std::runtime_error("Stream profile interface is not video stream profile interface");
 
             auto profile = to_profile(p.get());
             std::weak_ptr<ds_fisheye_sensor> wp =

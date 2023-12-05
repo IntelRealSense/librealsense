@@ -293,7 +293,13 @@ namespace librealsense
             {
                 _target_stream_profile = pf->second;
                 auto tgt_vspi = dynamic_cast<video_stream_profile_interface*>(_target_stream_profile.get()->profile);
+                if (!tgt_vspi)
+                    throw std::runtime_error("Stream profile interface is not video stream profile interface");
+
                 auto f_pf = dynamic_cast<video_stream_profile_interface*>(_source_stream_profile.get()->profile);
+                if (!f_pf)
+                    throw std::runtime_error("Stream profile interface is not video stream profile interface");
+
                 rs2_intrinsics tgt_intrin = tgt_vspi->get_intrinsics();
 
                 // Update real/padded output frame size based on retrieved input properties
@@ -315,6 +321,9 @@ namespace librealsense
 
             auto tmp_profile = _source_stream_profile.clone(_source_stream_profile.stream_type(), _source_stream_profile.stream_index(), _source_stream_profile.format());
             auto src_vspi = dynamic_cast<video_stream_profile_interface*>(_source_stream_profile.get()->profile);
+            if (!src_vspi)
+                throw std::runtime_error("Stream profile interface is not video stream profile interface");
+
             auto tgt_vspi = dynamic_cast<video_stream_profile_interface*>(tmp_profile.get()->profile);
             rs2_intrinsics src_intrin = src_vspi->get_intrinsics();
             rs2_intrinsics tgt_intrin = tgt_vspi->get_intrinsics();

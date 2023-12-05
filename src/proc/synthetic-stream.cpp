@@ -408,10 +408,16 @@ namespace librealsense
         }
 
         auto of = dynamic_cast<frame*>(original);
+        if (!of)
+            throw std::runtime_error("Can not cast frame interface to frame");
+
         frame_additional_data data = of->additional_data;
         auto res = _actual_source.alloc_frame( frame_type, stride * height, std::move( data ), true );
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
         vf = dynamic_cast<video_frame*>(res);
+        if (!vf)
+            throw std::runtime_error("Frame is not video frame");
+
         vf->metadata_parsers = of->metadata_parsers;
         vf->assign(width, height, stride, bpp);
         vf->set_sensor(original->get_sensor());
@@ -420,7 +426,10 @@ namespace librealsense
         if (frame_type == RS2_EXTENSION_DEPTH_FRAME)
         {
             original->acquire();
-            (dynamic_cast<depth_frame*>(res))->set_original(original);
+            auto frame = dynamic_cast<depth_frame*>(res);
+            if (!frame)
+                throw std::runtime_error("Frame interface is not depth frame");
+            frame->set_original(original);
         }
 
         return res;
@@ -431,10 +440,17 @@ namespace librealsense
         rs2_extension frame_type)
     {
         auto of = dynamic_cast<frame*>(original);
+        if (!of)
+            throw std::runtime_error("Frame interface is not frame");
+
         frame_additional_data data = of->additional_data;
         auto res = _actual_source.alloc_frame( frame_type, of->get_frame_data_size(), std::move( data ), true );
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
+
         auto mf = dynamic_cast<motion_frame*>(res);
+        if (!mf)
+            throw std::runtime_error("Frame interface is not motion frame");
+
         mf->metadata_parsers = of->metadata_parsers;
         mf->set_sensor(original->get_sensor());
         res->set_stream(stream);

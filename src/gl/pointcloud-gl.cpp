@@ -435,6 +435,8 @@ void pointcloud_gl::get_texture_map(
         auto frame_ref = (frame_interface*)output.get();
 
         auto gf = dynamic_cast<gpu_addon_interface*>(frame_ref);
+        if (!gf)
+            throw std::runtime_error("Frame interface is not gpu addon interface");
 
         uint32_t depth_texture;
 
