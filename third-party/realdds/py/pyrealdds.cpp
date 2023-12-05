@@ -29,7 +29,11 @@
 #include <realdds/dds-stream-sensor-bridge.h>
 #include <realdds/dds-metadata-syncer.h>
 
+#include <rsutils/os/special-folder.h>
+#include <rsutils/os/executable-name.h>
 #include <rsutils/easylogging/easyloggingpp.h>
+#include <rsutils/string/from.h>
+#include <rsutils/json.h>
 
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
@@ -44,12 +48,6 @@
 
 
 namespace {
-
-std::string to_string( realdds::dds_guid const & guid )
-{
-    return realdds::print( guid );
-}
-
 
 py::list get_vector3( geometry_msgs::msg::Vector3 const & v )
 {
@@ -66,6 +64,55 @@ void set_vector3( geometry_msgs::msg::Vector3 & v, std::array< double, 3 > const
     v.x( l[0] );
     v.y( l[1] );
     v.z( l[2] );
+}
+
+
+std::string script_name()
+{
+    // Returns the name of the python script that's currently running us
+    return rsutils::os::base_name(
+        py::module_::import( "__main__" ).attr( "__file__" ).cast< std::string >() );
+}
+
+
+nlohmann::json load_rs_settings( nlohmann::json const & local_settings )
+{
+    nlohmann::json config;
+
+    // Load the realsense configuration file settings
+    std::ifstream f( rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + "realsense-config.json" );
+    if( f.good() )
+    {
+        try
+        {
+            config = nlohmann::json::parse( f );
+        }
+        catch( std::exception const & e )
+        {
+            throw std::runtime_error( "failed to load configuration file: " + std::string( e.what() ) );
+        }
+    }
+
+    // Load "python"-specific settings
+    auto settings = rsutils::json::load_app_settings( config, "python", "context", "config-file" );
+
+    // Take the "dds" settings only
+    settings = rsutils::json::nested( settings, "dds" );
+
+    // Patch any script-specific settings
+    // NOTE: this is also accessed by pyrealsense2, where a "context" hierarchy is still used
+    auto script = script_name();
+    if( auto script_settings = rsutils::json::nested( config, script, "context", "dds" ) )
+        rsutils::json::patch( settings, script_settings, "config-file/" + script + "/context" );
+
+    // We should always have DDS enabled
+    if( settings.is_object() )
+        settings.erase( "enabled" );
+
+    // Patch the given local settings into the configuration
+    rsutils::json::patch( settings, local_settings, "local settings" );
+
+    return settings;
 }
 
 
@@ -94,14 +141,19 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_guid;
     py::class_< dds_guid >( m, "guid" )
         .def( py::init<>() )
-        .def( "__bool__", []( dds_guid const& self ) { return self != dds_guid::unknown(); } )
-        .def( "__repr__", []( dds_guid const & self ) { return to_string( self ); } )
+        .def_static( "from_string",
+                     []( std::string const & raw_guid ) { return realdds::guid_from_string( raw_guid ); } )
+        .def( "__bool__", []( dds_guid const & self ) { return self != realdds::unknown_guid; } )
+        .def( "__str__",
+              []( dds_guid const & self ) { return rsutils::string::from( realdds::print_guid( (self) ) ).str(); } )
+        .def( "__repr__",
+              []( dds_guid const & self ) { return rsutils::string::from( realdds::print_raw_guid( ( self ) ) ).str(); } )
         // Following two (hash and ==) are needed if we want to be able to use guids as dictionary keys
         .def( "__hash__",
               []( dds_guid const & self )
               {
                   return std::hash< std::string >{}(
-                      realdds::print( self, false ) );  // use hex; not the human-readable name
+                      rsutils::string::from( realdds::print_raw_guid( self ) ) );
               } )
         .def( py::self == py::self );
 
@@ -149,12 +201,19 @@ PYBIND11_MODULE(NAME, m) {
                       ( char const * topic_name, eprosima::fastrtps::types::DynamicType_ptr dyn_type ),
                       callback( topic_name, dyn_type->get_name() ); ) );
 
+    m.def( "load_rs_settings", &load_rs_settings, "local-settings"_a = nlohmann::json::object() );
+    m.def( "script_name", &script_name );
+
     py::class_< dds_participant,
                 std::shared_ptr< dds_participant >  // handled with a shared_ptr
                 >
         participant( m, "participant" );
     participant.def( py::init<>() )
-        .def( "init", &dds_participant::init, "domain-id"_a, "participant-name"_a, "settings"_a = nlohmann::json::object() )
+        .def( "init",
+              []( dds_participant & self, nlohmann::json const & local_settings, realdds::dds_domain_id domain_id )
+                    { self.init( domain_id, script_name(), local_settings ); },
+              "local-settings"_a = nlohmann::json::object(), "domain-id"_a = -1 )
+        .def( "init", &dds_participant::init, "domain-id"_a, "participant-name"_a, "local-settings"_a = nlohmann::json::object() )
         .def( "is_valid", &dds_participant::is_valid )
         .def( "guid", &dds_participant::guid )
         .def( "create_guid", &dds_participant::create_guid )
@@ -182,7 +241,7 @@ PYBIND11_MODULE(NAME, m) {
                       eprosima::fastdds::dds::DomainParticipantQos qos;
                       if( ReturnCode_t::RETCODE_OK == self.get()->get_qos( qos ) )
                           os << " \"" << qos.name() << "\"";
-                      os << " " << to_string( self.guid() );
+                      os << " " << realdds::print_guid( self.guid() );
                   }
                   os << ">";
                   return os.str();
@@ -298,8 +357,10 @@ PYBIND11_MODULE(NAME, m) {
                       callback( self, status.current_count_change ); ) )
         .def( "topic", &dds_topic_writer::topic )
         .def( "run", &dds_topic_writer::run )
-        .def( "qos", []() { return writer_qos(); } )
-        .def( "qos", []( reliability r, durability d ) { return writer_qos( r, d ); } );
+        .def( "has_readers", &dds_topic_writer::has_readers )
+        .def( "wait_for_acks", &dds_topic_writer::wait_for_acks )
+        .def_static( "qos", []() { return writer_qos(); } )
+        .def_static( "qos", []( reliability r, durability d ) { return writer_qos( r, d ); } );
 
 
     // The actual types are declared as functions and not classes: the py::init<> inheritance rules are pretty strict
@@ -350,7 +411,7 @@ PYBIND11_MODULE(NAME, m) {
               []( SampleIdentity const & self )
               {
                   std::ostringstream os;
-                  os << to_string( self.writer_guid() );
+                  os << realdds::print_guid( self.writer_guid() );
                   os << '.';
                   os << self.sequence_number();
                   return os.str();

@@ -25,6 +25,8 @@ public:
     void print_machine_readable( bool enable ) { _print_machine_readable = enable; }
     void print_topic_samples( bool enable ) { _print_topic_samples = enable; }
 
+    void set_root( std::string const & root ) { _root = root; }
+
     bool init( realdds::dds_domain_id domain = 0 );
 
     realdds::dds_participant const & get_participant() const { return _participant; }
@@ -50,6 +52,8 @@ private:
     bool _print_by_topics = false;
     bool _print_machine_readable = false;
     bool _print_topic_samples = false;
+
+    std::string _root;
 
     mutable std::mutex _dds_entities_lock;
 

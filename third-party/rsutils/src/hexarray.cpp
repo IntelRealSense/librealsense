@@ -54,6 +54,36 @@ void from_json( nlohmann::json const & j, hexarray & hexa )
 }
 
 
+uint8_t * hex_to_bytes( char const * pch, char const * const end, uint8_t * pb )
+{
+    while( pch < end )
+    {
+        if( *pch >= '0' && *pch <= '9' )
+            *pb = (*pch - '0') << 4;
+        else if( *pch >= 'a' && *pch <= 'f' )
+            *pb = (*pch - 'a' + 10) << 4;
+        else if( *pch >= 'A' && *pch <= 'F' )
+            *pb = (*pch - 'A' + 10) << 4;
+        else
+            return nullptr;
+        ++pch;
+
+        if( *pch >= '0' && *pch <= '9' )
+            *pb += (*pch - '0');
+        else if( *pch >= 'a' && *pch <= 'f' )
+            *pb += (*pch - 'a' + 10);
+        else if( *pch >= 'A' && *pch <= 'F' )
+            *pb += (*pch - 'A' + 10);
+        else
+            return nullptr;
+        ++pch;
+
+        ++pb;
+    }
+    return pb;
+}
+
+
 hexarray hexarray::from_string( slice const & s )
 {
     if( s.length() % 2 != 0 )
@@ -62,26 +92,8 @@ hexarray hexarray::from_string( slice const & s )
     hexarray hexa;
     hexa._bytes.resize( s.length() / 2 );
     uint8_t * pb = hexa._bytes.data();
-    while( pch < s.end() )
-    {
-        if( *pch >= '0' && *pch <= '9' )
-            *pb = ( *pch - '0' ) << 4;
-        else if( *pch >= 'a' && *pch <= 'f' )
-            *pb = ( *pch - 'a' + 10 ) << 4;
-        else
-            throw std::runtime_error( "invalid character" );
-
-        ++pch;
-        if( *pch >= '0' && *pch <= '9' )
-            *pb += ( *pch - '0' );
-        else if( *pch >= 'a' && *pch <= 'f' )
-            *pb += ( *pch - 'a' + 10 );
-        else
-            throw std::runtime_error( "invalid character" );
-        ++pch;
-
-        ++pb;
-    }
+    if( pb && ! hex_to_bytes( pch, s.end(), pb ) )
+        throw std::runtime_error( "invalid character" );
     return hexa;
 }
 
