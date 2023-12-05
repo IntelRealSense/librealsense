@@ -135,10 +135,17 @@ y411_2rgb::y411_2rgb()
 
 y411_2rgb::~y411_2rgb()
 {
-    perform_gl_action([&]()
+    try
     {
-        cleanup_gpu_resources();
-    }, []{});
+        perform_gl_action([&]()
+        {
+            cleanup_gpu_resources();
+        }, [] {});
+    }
+    catch (...)
+    {
+        LOG_INFO("Exception occurred during y411_2rgb destruction");
+    }
 }
 
 rs2::frame y411_2rgb::process_frame(const rs2::frame_source& src, const rs2::frame& f)

@@ -44,8 +44,17 @@ struct callback_invocation_holder
 
     ~callback_invocation_holder()
     {
-        if( invocation )
-            owner->deallocate( invocation );
+        if (invocation)
+        {
+            try
+            {
+                owner->deallocate(invocation);
+            }
+            catch (...)
+            {
+                LOG_INFO("Exception occurred during callback_invocation_holder destruction");
+            }
+        }
     }
 
     callback_invocation_holder & operator=( callback_invocation_holder && other )

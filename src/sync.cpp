@@ -79,7 +79,14 @@ namespace librealsense
             LOG_WARNING(callbacks_inflight << " callbacks are still running on some other threads. Waiting until all callbacks return...");
         }
         // wait until user is done with all the stuff he chose to borrow
-        _callback_inflight.wait_until_empty();
+        try
+        {
+            _callback_inflight.wait_until_empty();
+        }
+        catch (...)
+        {
+            LOG_INFO("Exception occurred in time waiting for empty callback");
+        }
     }
 
     identity_matcher::identity_matcher(stream_id stream, rs2_stream stream_type)

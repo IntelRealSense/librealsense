@@ -175,10 +175,17 @@ namespace librealsense
 
         colorizer::~colorizer()
         {
-            perform_gl_action([&]()
+            try
             {
-                cleanup_gpu_resources();
-            }, []{});
+                perform_gl_action([&]()
+                    {
+                        cleanup_gpu_resources();
+                    }, [] {});
+            }
+            catch (...)
+            {
+                LOG_INFO("Exception occurred during colorizer destruction");
+            }
         }
 
         void colorizer::populate_floating_histogram(float* f, int* hist)

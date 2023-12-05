@@ -178,7 +178,14 @@ namespace librealsense
 
         named_mutex::~named_mutex()
         {
-            unlock();
+            try
+            {
+                unlock();
+            }
+            catch (...)
+            {
+                LOG_INFO("Exception occurred during named_mutex destruction");
+            }
         }
 
         void named_mutex::lock()
