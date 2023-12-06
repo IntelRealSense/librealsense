@@ -786,17 +786,20 @@ if __name__ == '__main__':
                 ports = [int(port) for port in str_ports if port.isnumeric() and int(port) in all_ports]
                 if len(ports) != len(str_ports):
                     log.f( 'Invalid ports', str_ports )
-                acroname.enable_ports( ports, disable_other_ports=False, sleep_on_change=MAX_ENUMERATION_TIME )
+                acroname.enable_ports( ports, disable_other_ports=False )
+                action = 'none'
             elif opt in ('--ports'):
                 printer = get_phys_port
             elif opt in ('--all'):
                 if not acroname:
                     log.f( 'No acroname available' )
-                acroname.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
+                acroname.enable_ports()
+                action = 'none'
             elif opt in ('--none'):
                 if not acroname:
                     log.f( 'No acroname available' )
                 acroname.disable_ports()
+                action = 'none'
             elif opt in ('--recycle'):
                 action = 'recycle'
             else:
