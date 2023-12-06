@@ -752,7 +752,7 @@ if __name__ == '__main__':
     import os, sys, getopt
     try:
         opts,args = getopt.getopt( sys.argv[1:], '',
-            longopts = [ 'help', 'recycle', 'all', 'list', 'port=', 'ports' ])
+            longopts = [ 'help', 'recycle', 'all', 'none', 'list', 'port=', 'ports' ])
     except getopt.GetoptError as err:
         print( '-F-', err )   # something like "option -a not recognized"
         usage()
@@ -786,13 +786,17 @@ if __name__ == '__main__':
                 ports = [int(port) for port in str_ports if port.isnumeric() and int(port) in all_ports]
                 if len(ports) != len(str_ports):
                     log.f( 'Invalid ports', str_ports )
-                acroname.enable_ports( ports, disable_other_ports = True, sleep_on_change = MAX_ENUMERATION_TIME )
+                acroname.enable_ports( ports, disable_other_ports=False, sleep_on_change=MAX_ENUMERATION_TIME )
             elif opt in ('--ports'):
                 printer = get_phys_port
             elif opt in ('--all'):
                 if not acroname:
                     log.f( 'No acroname available' )
                 acroname.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
+            elif opt in ('--none'):
+                if not acroname:
+                    log.f( 'No acroname available' )
+                acroname.disable_ports()
             elif opt in ('--recycle'):
                 action = 'recycle'
             else:
