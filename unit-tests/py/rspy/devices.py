@@ -204,7 +204,7 @@ def map_unknown_ports():
         log.debug_unindent()
 
 
-def query( monitor_changes = True, hub_reset = False ):
+def query( monitor_changes=True, hub_reset=False ):
     """
     Start a new LRS context, and collect all devices
     :param monitor_changes: If True, devices will update dynamically as they are removed/added
@@ -219,8 +219,9 @@ def query( monitor_changes = True, hub_reset = False ):
         if not acroname.hub:
             acroname.connect( hub_reset )  # MAY THROW!
 
-            acroname.disable_ports( sleep_on_change = 5 )
-            acroname.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
+            if monitor_changes:
+                acroname.disable_ports( sleep_on_change = 5 )
+                acroname.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
 
             if platform.system() == 'Linux':
                 global _acroname_hubs
@@ -797,7 +798,7 @@ if __name__ == '__main__':
             else:
                 usage()
         if action == 'list':
-            query()
+            query( monitor_changes=False )
             for sn in all():
                 device = get( sn )
                 print( '{port} {name:30} {sn:20} {handle}'.format(
