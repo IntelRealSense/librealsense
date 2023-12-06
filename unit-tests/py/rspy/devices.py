@@ -204,10 +204,13 @@ def map_unknown_ports():
         log.debug_unindent()
 
 
-def query( monitor_changes=True, hub_reset=False ):
+def query( monitor_changes=True, hub_reset=False, recycle_ports=True ):
     """
     Start a new LRS context, and collect all devices
     :param monitor_changes: If True, devices will update dynamically as they are removed/added
+    :param recycle_ports: True to recycle all ports before querying devices; False to leave as-is
+    :param hub_reset: Whether we want to reset the Acroname hub - this might be an better way to
+        recycle the ports in certain cases that leave the ports in a bad state
     """
     global rs
     if not rs:
@@ -219,7 +222,7 @@ def query( monitor_changes=True, hub_reset=False ):
         if not acroname.hub:
             acroname.connect( hub_reset )  # MAY THROW!
 
-            if monitor_changes:
+            if recycle_ports:
                 acroname.disable_ports( sleep_on_change = 5 )
                 acroname.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
 
@@ -805,7 +808,7 @@ if __name__ == '__main__':
             else:
                 usage()
         if action == 'list':
-            query( monitor_changes=False )
+            query( monitor_changes=False, recycle_ports=False )
             for sn in all():
                 device = get( sn )
                 print( '{port} {name:30} {sn:20} {handle}'.format(
