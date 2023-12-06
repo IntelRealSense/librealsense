@@ -204,10 +204,13 @@ def map_unknown_ports():
         log.debug_unindent()
 
 
-def query( monitor_changes = True, hub_reset = False ):
+def query( monitor_changes=True, hub_reset=False, recycle_ports=True ):
     """
     Start a new LRS context, and collect all devices
     :param monitor_changes: If True, devices will update dynamically as they are removed/added
+    :param recycle_ports: True to recycle all ports before querying devices; False to leave as-is
+    :param hub_reset: Whether we want to reset the Acroname hub - this might be an better way to
+        recycle the ports in certain cases that leave the ports in a bad state
     """
     global rs
     if not rs:
@@ -219,8 +222,9 @@ def query( monitor_changes = True, hub_reset = False ):
         if not acroname.hub:
             acroname.connect( hub_reset )  # MAY THROW!
 
-            acroname.disable_ports( sleep_on_change = 5 )
-            acroname.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
+            if recycle_ports:
+                acroname.disable_ports( sleep_on_change = 5 )
+                acroname.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
 
             if platform.system() == 'Linux':
                 global _acroname_hubs
@@ -751,7 +755,7 @@ if __name__ == '__main__':
     import os, sys, getopt
     try:
         opts,args = getopt.getopt( sys.argv[1:], '',
-            longopts = [ 'help', 'recycle', 'all', 'list', 'port=', 'ports' ])
+            longopts = [ 'help', 'recycle', 'all', 'none', 'list', 'port=', 'ports' ])
     except getopt.GetoptError as err:
         print( '-F-', err )   # something like "option -a not recognized"
         usage()
@@ -785,19 +789,26 @@ if __name__ == '__main__':
                 ports = [int(port) for port in str_ports if port.isnumeric() and int(port) in all_ports]
                 if len(ports) != len(str_ports):
                     log.f( 'Invalid ports', str_ports )
-                acroname.enable_ports( ports, disable_other_ports = True, sleep_on_change = MAX_ENUMERATION_TIME )
+                acroname.enable_ports( ports, disable_other_ports=False )
+                action = 'none'
             elif opt in ('--ports'):
                 printer = get_phys_port
             elif opt in ('--all'):
                 if not acroname:
                     log.f( 'No acroname available' )
-                acroname.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
+                acroname.enable_ports()
+                action = 'none'
+            elif opt in ('--none'):
+                if not acroname:
+                    log.f( 'No acroname available' )
+                acroname.disable_ports()
+                action = 'none'
             elif opt in ('--recycle'):
                 action = 'recycle'
             else:
                 usage()
         if action == 'list':
-            query()
+            query( monitor_changes=False, recycle_ports=False )
             for sn in all():
                 device = get( sn )
                 print( '{port} {name:30} {sn:20} {handle}'.format(
