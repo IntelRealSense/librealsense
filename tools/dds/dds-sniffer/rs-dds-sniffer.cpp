@@ -49,7 +49,7 @@ constexpr uint8_t GUID_PROCESS_LOCATION = 4;
 
 static eprosima::fastrtps::rtps::GuidPrefix_t std_prefix;
 
-static inline auto print_guid( realdds::dds_guid const & guid )
+static inline realdds::print_guid print_guid( realdds::dds_guid const & guid )
 {
     return realdds::print_guid( guid, std_prefix );
 }
