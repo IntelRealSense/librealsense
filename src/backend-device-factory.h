@@ -37,7 +37,7 @@ class backend_device_factory : public device_factory
     rsutils::subscription const _dtor;  // raii generic code, used to automatically unsubscribe our callback
 
 public:
-    backend_device_factory( context &, callback && );
+    backend_device_factory( std::shared_ptr< context > const &, callback && );
     ~backend_device_factory();
 
     // Query any subset of available devices and return them as device-info objects

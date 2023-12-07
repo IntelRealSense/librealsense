@@ -67,16 +67,23 @@ namespace librealsense {
             version_logged = true;
             LOG_DEBUG( "Librealsense VERSION: " << RS2_API_FULL_VERSION_STR );
         }
+    }
+
+
+    void context::create_factories()
+    {
+        // This can only get called once the constructor is done:
+        auto sptr = shared_from_this();
 
         _factories.push_back( std::make_shared< backend_device_factory >(
-            *this,
+            sptr,
             [this]( std::vector< std::shared_ptr< device_info > > const & removed,
                     std::vector< std::shared_ptr< device_info > > const & added )
             { invoke_devices_changed_callbacks( removed, added ); } ) );
 
 #ifdef BUILD_WITH_DDS
         _factories.push_back( std::make_shared< rsdds_device_factory >(
-            *this,
+            sptr,
             [this]( std::vector< std::shared_ptr< device_info > > const & removed,
                     std::vector< std::shared_ptr< device_info > > const & added )
             { invoke_devices_changed_callbacks( removed, added ); } ) );
@@ -84,9 +91,17 @@ namespace librealsense {
     }
 
 
-    context::context( char const * json_settings )
-        : context( json_settings ? json::parse( json_settings ) : json::object() )
+    /*static*/ std::shared_ptr< context > context::make( json const & settings )
     {
+        std::shared_ptr< context > ctx( new context( settings ) );
+        ctx->create_factories();
+        return ctx;
+    }
+
+
+    /*static*/ std::shared_ptr< context > context::make( char const * json_settings )
+    {
+        return make( json_settings ? json::parse( json_settings ) : json::object() );
     }
 
 
