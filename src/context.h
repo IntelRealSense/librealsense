@@ -18,9 +18,13 @@ namespace librealsense
 
     class context : public std::enable_shared_from_this<context>
     {
+        context( nlohmann::json const & );  // private! use make()
+
+        void create_factories();
+
     public:
-        explicit context( nlohmann::json const & );
-        explicit context( char const * json_settings );
+        static std::shared_ptr< context > make( nlohmann::json const & );
+        static std::shared_ptr< context > make( char const * json_settings );
 
         ~context();
 
