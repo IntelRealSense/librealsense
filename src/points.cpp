@@ -4,6 +4,7 @@
 #include "core/video.h"
 #include "core/video-frame.h"
 #include "core/frame-holder.h"
+#include <rsutils/string/from.h>
 #include <fstream>
 
 #define MIN_DISTANCE 1e-6
@@ -155,7 +156,7 @@ float2 * points::get_texture_coordinates()
 
 size_t labeled_points::get_vertex_count() const
 {
-    return LABELS_RESOLUTION;
+    return data.size() / ( sizeof( float3 ) + sizeof( uint8_t ) );
 }
 
 float3* labeled_points::get_vertices()
@@ -167,7 +168,45 @@ float3* labeled_points::get_vertices()
 uint8_t* labeled_points::get_labels() const
 {
     get_frame_data();  // call GetData to ensure data is in main memory
-    return (uint8_t *) (data.data() + OFFSET_TO_LABELS);
+    return (uint8_t *) (data.data() + 3 * sizeof(float) * get_vertex_count());
+}
+
+int labeled_points::get_width() const
+{
+    int width = 0;
+    auto buffer_size = data.size();
+    switch( buffer_size )
+    {
+    case 748800: // 320 x 180 x 13 
+        width = 320;
+        break;
+    case 2995200: // 640 x 360 x 13 
+        width = 640;
+        break;
+    default:
+        LOG_ERROR(rsutils::string::from() <<  "unsupported buffer size of " << buffer_size << " received for labeled point cloud" );
+        break;
+    }
+    return width;
+}
+
+int labeled_points::get_height() const
+{
+    int height = 0;
+    auto buffer_size = data.size();
+    switch( buffer_size )
+    {
+    case 748800: // 320 x 180 x 13 
+        height = 180;
+        break;
+    case 2995200: // 640 x 360 x 13 
+        height = 360;
+        break;
+    default:
+        LOG_ERROR(rsutils::string::from() <<  "unsupported buffer size of " << buffer_size << " received for labeled point cloud" );
+        break;
+    }
+    return height;
 }
 
 }  // namespace librealsense

@@ -5,7 +5,6 @@
 #include "frame.h"
 #include "core/extension.h"
 #include "types.h"
-
 #include <string>
 
 
@@ -32,11 +31,11 @@ public:
     float3* get_vertices();
     size_t get_vertex_count() const;
     uint8_t* get_labels() const;
+    int get_width() const;
+    int get_height() const;
     // bytes per pixel = 1 vertex + 1 label
     static const size_t BYTES_PER_PIXEL = 3 * sizeof(float) + sizeof(uint8_t);
 private:
-    static const size_t LABELS_RESOLUTION = 320 * 180;
-    static const size_t OFFSET_TO_LABELS = 3 * sizeof(float) * LABELS_RESOLUTION;
 };
 MAP_EXTENSION( RS2_EXTENSION_LABELED_POINTS, librealsense::labeled_points );
 

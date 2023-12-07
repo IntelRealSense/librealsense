@@ -1087,7 +1087,7 @@ namespace rs2
         descriptions[RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS] = "Number of rows in the grid. Max value is 250 (corresponding to 5M width with 2cm tile)";
         descriptions[RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS] = "Number of columns in the grid. Max value is 320 (corresponding to ~6.5M depth with 2cm tile)";
         descriptions[RS2_FRAME_METADATA_OCCUPANCY_CELL_SIZE] = "Edge size of each tile, measured in cm ";
-        descriptions[RS2_FRAME_METADATA_NUMBER_OF_3D_VERTICES] = "The max number of points is 320X240";
+        descriptions[RS2_FRAME_METADATA_NUMBER_OF_3D_VERTICES] = "The max number of points is 640*360";
     }
 
     void stream_model::show_stream_footer(ImFont* font, const rect &stream_rect, const mouse_info& mouse, const std::map<int, stream_model> &streams, viewer_model& viewer)

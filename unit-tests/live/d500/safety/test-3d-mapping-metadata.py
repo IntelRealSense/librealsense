@@ -71,8 +71,10 @@ def check_counter_and_timestamp_increase(frame, fps):
     else:
         current_counter = frame.get_frame_metadata(rs.frame_metadata_value.frame_counter)
         current_ts = frame.get_frame_metadata(rs.frame_metadata_value.frame_timestamp)
-        test.info("prev_counter", prev_counter)
-        test.info("current_counter", current_counter)
+        log.d("prev_counter", prev_counter)
+        log.d("current_counter", current_counter)
+        log.d("prev_ts", prev_ts)
+        log.d("current_ts", current_ts)
         test.check(
             current_counter > prev_counter)  # D500 has a skip frames mechanism on low fps meaning no sequential frame numbers
         test.check((current_ts - prev_ts) / 1000 < 2 * 1000 / fps)
@@ -114,7 +116,7 @@ test.finish()
 test.start("Checking occupancy stream metadata frame counter and timestamp increasing")
 cfg = rs.config()
 fps = 30
-cfg.enable_stream(rs.stream.occupancy, rs.format.raw8, fps)
+cfg.enable_stream(rs.stream.occupancy)
 pipe = rs.pipeline()
 pipe.start(cfg)
 iterations = 0
@@ -130,7 +132,7 @@ test.finish()
 test.start("Checking labeled point cloud stream metadata frame counter and timestamp increasing")
 cfg = rs.config()
 fps = 30
-cfg.enable_stream(rs.stream.labeled_point_cloud, rs.format.raw8, fps)
+cfg.enable_stream(rs.stream.labeled_point_cloud)
 pipe = rs.pipeline()
 pipe.start(cfg)
 iterations = 0

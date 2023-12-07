@@ -842,7 +842,7 @@ namespace rs2
 
         /**
         * Retrieve the vertices of the point cloud
-        * \param[in] vertex* - pointer of vertex sturcture
+        * \param[in] vertex* - pointer of vertex structure
         */
         const vertex* get_vertices() const
         {
@@ -854,7 +854,7 @@ namespace rs2
 
         /**
         * Retrieve the attributes of the point cloud stream
-        * \param[out] attributes* - pointer of attributes sturcture
+        * \param[out] attributes* - pointer of attributes structure
         */
         const uint8_t* get_labels() const
         {
@@ -864,9 +864,34 @@ namespace rs2
             return (uint8_t * )res;
         }
 
+        // Returns the vertices counts
         size_t size() const
         {
             return _size;
+        }
+
+        /**
+        * returns labeled point cloud width in pixels
+        * \return        frame width in pixels
+        */
+        int get_width() const
+        {
+            rs2_error* e = nullptr;
+            auto r = rs2_get_frame_labeled_points_width(get(), &e);
+            error::handle(e);
+            return r;
+        }
+
+        /**
+        * returns labeled point cloud height in pixels
+        * \return        frame height in pixels
+        */
+        int get_height() const
+        {
+            rs2_error* e = nullptr;
+            auto r = rs2_get_frame_labeled_points_height(get(), &e);
+            error::handle(e);
+            return r;
         }
 
     private:
