@@ -72,8 +72,12 @@ namespace librealsense
             }
             else
             {
+                auto uvc_s = std::dynamic_pointer_cast<uvc_sensor>(_raw_depth_ep.shared_from_this());
+                if (!uvc_s)
+                    throw std::runtime_error("Sensor base is not uvc sensor");
+
                 _depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                    std::make_shared<asic_and_projector_temperature_options>(std::dynamic_pointer_cast<uvc_sensor>(_raw_depth_ep.shared_from_this()),
+                    std::make_shared<asic_and_projector_temperature_options>(std::move(uvc_s),
                         RS2_OPTION_PROJECTOR_TEMPERATURE));
             }
         }

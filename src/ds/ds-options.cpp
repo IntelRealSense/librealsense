@@ -57,7 +57,7 @@ namespace librealsense
 
         auto strong_ep = _ep.lock();
         if (!strong_ep)
-            throw invalid_value_exception(rsutils::string::from() << "EP is not exists");
+            throw camera_disconnected_exception("asic and proj temperatures cannot access the sensor");
 
         auto temperature_data = static_cast<temperature>(strong_ep->invoke_powered(
             [this](platform::uvc_device& dev)
@@ -106,7 +106,7 @@ namespace librealsense
     {
         auto strong_ep = _ep.lock();
         if (!strong_ep)
-            throw invalid_value_exception(rsutils::string::from() << "Can not retriev temperature as no valid EP");
+            throw camera_disconnected_exception("asic and proj temperatures cannot access the sensor");
 
         return strong_ep->is_streaming();
     }
@@ -115,7 +115,7 @@ namespace librealsense
     {
         auto strong_ep = _ep.lock();
         if (! strong_ep)
-            throw invalid_value_exception(rsutils::string::from() << "EP is not exists");
+            throw camera_disconnected_exception("asic and proj temperatures cannot access the sensor");
 
         switch (_option)
         {
