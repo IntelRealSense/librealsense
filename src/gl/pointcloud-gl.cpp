@@ -397,7 +397,7 @@ pointcloud_gl::~pointcloud_gl()
     }
     catch (...)
     {
-        LOG_INFO("Exception occurred during pointcloud_gl destruction");
+        LOG_DEBUG("Error while cleaning up gpu resources");
     }
 }
 

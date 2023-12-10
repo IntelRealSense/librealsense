@@ -52,7 +52,7 @@ namespace librealsense
             }
             catch (...)
             {
-                LOG_INFO("Exception occurred during upload destruction");
+                LOG_DEBUG("Error while cleaning up gpu resources");
             }
         }
 

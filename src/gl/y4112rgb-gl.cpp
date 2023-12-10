@@ -144,7 +144,7 @@ y411_2rgb::~y411_2rgb()
     }
     catch (...)
     {
-        LOG_INFO("Exception occurred during y411_2rgb destruction");
+        LOG_DEBUG("Error while cleaning up gpu resources");
     }
 }
 

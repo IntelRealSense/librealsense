@@ -231,7 +231,7 @@ namespace librealsense
             }
             catch (...)
             {
-                LOG_INFO("Exception occurred during locked_transfer destruction");
+                LOG_DEBUG("Error while waiting for an empty heap");
             }
         }
     private:

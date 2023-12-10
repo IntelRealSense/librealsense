@@ -85,7 +85,7 @@ namespace librealsense
         }
         catch (...)
         {
-            LOG_INFO("Exception occurred in time waiting for empty callback");
+            LOG_DEBUG("Error while waiting for an empty callback");
         }
     }
 

@@ -121,13 +121,13 @@ yuy2rgb::~yuy2rgb()
     try
     {
         perform_gl_action([&]()
-            {
-                cleanup_gpu_resources();
-            }, [] {});
+        {
+            cleanup_gpu_resources();
+        }, [] {});
     }
     catch (...)
     {
-        LOG_INFO("Exception occurred during yuy2rgb destruction");
+        LOG_DEBUG("Error while cleaning up gpu resources");
     }
 }
 

@@ -283,6 +283,6 @@ align_gl::~align_gl()
     }
     catch (...)
     {
-        LOG_INFO("Exception occurred during align_gl destruction");
+        LOG_DEBUG("Error while cleaning up gpu resources");
     }
 }

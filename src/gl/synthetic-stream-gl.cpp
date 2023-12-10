@@ -194,7 +194,7 @@ namespace librealsense
             }
             catch (...)
             {
-                LOG_INFO("Exception occurred during gpu_section destruction");
+                LOG_DEBUG("Error while cleaning up gpu resources");
             }
         }
 

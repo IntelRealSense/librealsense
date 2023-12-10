@@ -184,7 +184,7 @@ namespace librealsense
             }
             catch (...)
             {
-                LOG_INFO("Exception occurred during colorizer destruction");
+                LOG_DEBUG("Error while performing cleaning up gpu resources");
             }
         }
 

@@ -837,7 +837,7 @@ namespace rs2
 
         void on_calibration_change( rs2_calibration_status status ) noexcept override
         {
-            _callback(status);
+            _callback( status );
         }
         void release() override { delete this; }
     };

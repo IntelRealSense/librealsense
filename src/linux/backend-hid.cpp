@@ -62,7 +62,7 @@ namespace librealsense
             }
             catch (...)
             {
-                LOG_INFO("Exception occurred during hid_input destruction");
+                LOG_DEBUG("Error while enabling a hid device");
             }
         }
 
@@ -967,7 +967,7 @@ namespace librealsense
                 }
                 catch (...)
                 {
-                    LOG_INFO("An exception occurred during stopping a sensor");
+                    LOG_DEBUG("Error while stopping capture sensor");
                 }
             }
 

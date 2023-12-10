@@ -52,7 +52,7 @@ struct callback_invocation_holder
             }
             catch (...)
             {
-                LOG_INFO("Exception occurred during callback_invocation_holder destruction");
+                LOG_DEBUG("Error while callback holder deallocation");
             }
         }
     }

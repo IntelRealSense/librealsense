@@ -184,7 +184,7 @@ namespace librealsense
             }
             catch (...)
             {
-                LOG_INFO("Exception occurred during named_mutex destruction");
+                LOG_DEBUG("Error while unlocking mutex");
             }
         }
 
