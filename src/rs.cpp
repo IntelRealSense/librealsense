@@ -2245,6 +2245,8 @@ int rs2_processing_block_register_simple_option(rs2_processing_block* block, rs2
     std::shared_ptr<option> opt = std::make_shared<float_option>(option_range{ min, max, step, def });
     // TODO: am I supposed to use the extensions API here?
     auto options = dynamic_cast<options_container*>(block->options);
+    if (!options)
+        throw std::runtime_error("Options are not container options");
     options->register_option(option_id, opt);
     return true;
 }

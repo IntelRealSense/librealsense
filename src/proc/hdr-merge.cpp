@@ -189,7 +189,12 @@ namespace librealsense
         if (new_f)
         {
             auto ptr = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)new_f.get());
+            if (!ptr)
+                throw std::runtime_error("Frame interface is not depth frame");
+
             auto orig = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)first_depth.get());
+            if (!orig)
+                throw std::runtime_error("Frame interface is not depth frame");
 
             auto d0 = (uint16_t*)first_depth.get_data();
             auto d1 = (uint16_t*)second_depth.get_data();

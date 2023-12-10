@@ -1595,6 +1595,9 @@ namespace librealsense
         if (_preset_change)
         {
             auto advanced_mode = dynamic_cast<ds_advanced_mode_base*>(this);
+            if (!advanced_mode)
+                throw std::runtime_error("Can not cast to advance mode base");
+
             if (_old_preset == RS2_RS400_VISUAL_PRESET_CUSTOM)
             {
                 advanced_mode->_preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);

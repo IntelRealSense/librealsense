@@ -680,8 +680,12 @@ namespace librealsense
                         std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_EXT_TRIGGER,
                             "Generate trigger from the camera to external device once per frame"));
 
+                    auto uvc_s = std::dynamic_pointer_cast<uvc_sensor>(raw_depth_sensor.shared_from_this());
+                    if (!uvc_s)
+                        throw std::runtime_error("Sensor base is not uvc sensor");
+
                     depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
-                        std::make_shared<asic_and_projector_temperature_options>(raw_depth_sensor,
+                        std::make_shared<asic_and_projector_temperature_options>(std::move(uvc_s),
                             RS2_OPTION_ASIC_TEMPERATURE));
 
                     // D457 dev - get_xu fails for D457 - error polling id not defined
@@ -1297,8 +1301,12 @@ namespace librealsense
                     emitter_enabled,
                     std::vector<float>{0.f, 2.f}, 1.f));
 
+            auto uvc_s = std::dynamic_pointer_cast<uvc_sensor>(depth_ep.shared_from_this());
+            if (!uvc_s)
+                throw std::runtime_error("Sensor base is not uvc sensor");
+
             depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                std::make_shared<asic_and_projector_temperature_options>(depth_ep,
+                std::make_shared<asic_and_projector_temperature_options>(std::move(uvc_s),
                     RS2_OPTION_PROJECTOR_TEMPERATURE));
         }
     }

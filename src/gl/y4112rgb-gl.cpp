@@ -172,6 +172,8 @@ rs2::frame y411_2rgb::process_frame(const rs2::frame_source& src, const rs2::fra
         if (!res) return;
         
         auto gf = dynamic_cast<gpu_addon_interface*>((frame_interface*)res.get());
+        if (!gf)
+            throw std::runtime_error("Frame interface is not gpu addon interface");
         
         uint32_t yuy_texture;
         

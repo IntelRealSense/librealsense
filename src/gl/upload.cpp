@@ -105,6 +105,8 @@ namespace librealsense
                     if (new_f)
                     {
                         auto ptr = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)new_f.get());
+                        if (!ptr)
+                            throw std::runtime_error("Frame is not depth frame");
 
                         auto orig = (librealsense::frame_interface*)f.get();
                         auto depth_data = (uint16_t*)orig->get_frame_data();
@@ -128,7 +130,9 @@ namespace librealsense
                             //scoped_timer t("upload.depth");
 
                             auto gf = dynamic_cast<gpu_addon_interface*>((frame_interface*)new_f.get());
-
+                            if (!gf)
+                                throw std::runtime_error("Frame interface is not gpu addon interface");
+        
                             uint32_t depth_texture;
                             gf->get_gpu_section().output_texture(0, &depth_texture, TEXTYPE_UINT16);
                             glBindTexture(GL_TEXTURE_2D, depth_texture);
