@@ -211,7 +211,7 @@ NOEXCEPT_RETURN(, context)
 
 rs2_device_hub* rs2_create_device_hub(const rs2_context* context, rs2_error** error) BEGIN_API_CALL
 {
-    return new rs2_device_hub{ std::make_shared<librealsense::device_hub>(context->ctx) };
+    return new rs2_device_hub{ device_hub::make( context->ctx ) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context)
 
