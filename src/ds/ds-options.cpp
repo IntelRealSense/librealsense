@@ -4,6 +4,8 @@
 
 #include "ds-options.h"
 #include <src/hid-sensor.h>
+#include <memory>
+
 
 
 namespace librealsense
@@ -53,7 +55,11 @@ namespace librealsense
         };
         #pragma pack(pop)
 
-        auto temperature_data = static_cast<temperature>(_ep.invoke_powered(
+        auto strong_ep = _ep.lock();
+        if (!strong_ep)
+            throw camera_disconnected_exception("asic and proj temperatures cannot access the sensor");
+
+        auto temperature_data = static_cast<temperature>(strong_ep->invoke_powered(
             [this](platform::uvc_device& dev)
             {
                 temperature temp{};
@@ -82,11 +88,11 @@ namespace librealsense
             is_valid_field = &temperature::is_projector_valid;
             break;
         default:
-            throw invalid_value_exception(rsutils::string::from() << _ep.get_option_name(_option) << " is not temperature option!");
+            throw invalid_value_exception(rsutils::string::from() << strong_ep->get_option_name(_option) << " is not temperature option!");
         }
 
         if (0 == temperature_data.*is_valid_field)
-            LOG_ERROR(_ep.get_option_name(_option) << " value is not valid!");
+            LOG_ERROR(strong_ep->get_option_name(_option) << " value is not valid!");
 
         return temperature_data.*field;
     }
@@ -98,11 +104,19 @@ namespace librealsense
 
     bool asic_and_projector_temperature_options::is_enabled() const
     {
-        return _ep.is_streaming();
+        auto strong_ep = _ep.lock();
+        if (!strong_ep)
+            throw camera_disconnected_exception("asic and proj temperatures cannot access the sensor");
+
+        return strong_ep->is_streaming();
     }
 
     const char* asic_and_projector_temperature_options::get_description() const
     {
+        auto strong_ep = _ep.lock();
+        if (! strong_ep)
+            throw camera_disconnected_exception("asic and proj temperatures cannot access the sensor");
+
         switch (_option)
         {
         case RS2_OPTION_ASIC_TEMPERATURE:
@@ -110,12 +124,12 @@ namespace librealsense
         case RS2_OPTION_PROJECTOR_TEMPERATURE:
             return "Current Projector Temperature (degree celsius)";
         default:
-            throw invalid_value_exception(rsutils::string::from() << _ep.get_option_name(_option) << " is not temperature option!");
+            throw invalid_value_exception(rsutils::string::from() << strong_ep->get_option_name(_option) << " is not temperature option!");
         }
     }
 
-    asic_and_projector_temperature_options::asic_and_projector_temperature_options(uvc_sensor& ep, rs2_option opt)
-        : _option(opt), _ep(ep)
+    asic_and_projector_temperature_options::asic_and_projector_temperature_options(std::shared_ptr<uvc_sensor> && ep, rs2_option opt)
+        : _option(opt), _ep(std::move(ep))
         {}
 
     float motion_module_temperature_option::query() const
