@@ -46,7 +46,7 @@ namespace librealsense
 
             mutable std::mutex _mtx;
             std::shared_ptr<profile> _active_profile;
-            device_hub _hub;
+            std::shared_ptr< device_hub > _hub;
             std::shared_ptr<config> _prev_conf;
 
         private:
