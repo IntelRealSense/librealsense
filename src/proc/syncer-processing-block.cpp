@@ -6,6 +6,7 @@
 #include "sync.h"
 #include "proc/synthetic-stream.h"
 #include "proc/syncer-processing-block.h"
+#include <src/core/frame-processor-callback.h>
 
 
 namespace librealsense
@@ -29,7 +30,7 @@ namespace librealsense
         // call the matchers with the frame and eventually call the next callback in the list using frame_ready().
         // This callback can get called from multiple threads, one thread per stream -- but always in the correct
         // frame order per stream.
-        auto f = [&, log](frame_holder frame, synthetic_source_interface* source)
+        auto f = [&, log](frame_holder && frame, synthetic_source_interface* source)
         {
             // if the syncer is disabled passthrough the frame
             bool enabled = false;
@@ -80,8 +81,7 @@ namespace librealsense
 
         };
 
-        set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
-            new internal_frame_processor_callback<decltype(f)>(f)));
+        set_processing_callback( make_frame_processor_callback( std::move( f ) ) );
     }
 
     // Stopping the syncer means no more frames will be enqueued, and any existing frames

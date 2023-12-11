@@ -3,10 +3,9 @@
 #pragma once
 
 #include "frame-holder.h"
-#include "options-container.h"
-#include "info.h"
 
-#include <src/types.h>
+#include <librealsense2/hpp/rs_types.hpp>
+
 #include <vector>
 #include <memory>
 
@@ -25,6 +24,8 @@ namespace librealsense
 {
     class stream_profile_interface;
 
+    // A synthetic source is simply the interface for exposing frame_source APIs
+    //
     class synthetic_source_interface
     {
     public:
@@ -49,22 +50,5 @@ namespace librealsense
             rs2_extension frame_type = RS2_EXTENSION_POINTS) = 0;
 
         virtual void frame_ready(frame_holder result) = 0;
-        virtual rs2_source* get_c_wrapper() = 0;
-    };
-
-    template<class T>
-    class internal_frame_processor_callback : public rs2_frame_processor_callback
-    {
-        T on_frame_function;
-    public:
-        explicit internal_frame_processor_callback(T on_frame) : on_frame_function(on_frame) {}
-
-        void on_frame(rs2_frame * f, rs2_source * source) override
-        {
-            frame_holder front((frame_interface*)f);
-            on_frame_function(std::move(front), source->source);
-        }
-
-        void release() override { delete this; }
     };
 }

@@ -20,7 +20,6 @@
 #include "core/motion-frame.h"
 #include "core/disparity-frame.h"
 #include "source.h"
-#include "core/processing.h"
 #include "proc/synthetic-stream.h"
 #include "proc/processing-blocks-factory.h"
 #include "proc/colorizer.h"
