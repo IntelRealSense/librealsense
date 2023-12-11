@@ -29,5 +29,26 @@ namespace librealsense
             _device_capabilities, _hw_monitor, _fw_version);
 
         _ds_active_common->register_options();
+
+        //PROJECTOR TEMPERATURE OPTION
+        auto pid = this->_pid;
+        auto& depth_ep = get_depth_sensor();
+        auto &raw_depth_ep = get_raw_depth_sensor();
+        auto uvc_s = std::dynamic_pointer_cast<uvc_sensor>(raw_depth_ep.shared_from_this());
+          if (!uvc_s)
+            throw std::runtime_error("Sensor base is not uvc sensor");
+
+        if (pid == ds::RS457_PID)
+        {
+            depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
+                std::make_shared<projector_temperature_option_mipi>(_hw_monitor,
+                    RS2_OPTION_PROJECTOR_TEMPERATURE));
+        }
+        else
+        {
+            depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
+                std::make_shared<asic_and_projector_temperature_options>(std::move(uvc_s),
+                    RS2_OPTION_PROJECTOR_TEMPERATURE));
+        }
     }
 }
