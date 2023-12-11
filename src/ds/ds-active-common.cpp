@@ -2,7 +2,10 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include "ds-active-common.h"
-#include "d400/d400-color.h"
+#include "d400/d400-private.h" // for RS_USB2_PID
+#include "ds-options.h"
+
+#include  <src/backend-device.h>
 
 namespace librealsense
 {
@@ -61,24 +64,6 @@ namespace librealsense
             {
                 _depth_ep.register_option(RS2_OPTION_EMITTER_ENABLED, emitter_enabled);
                 _depth_ep.register_option(RS2_OPTION_LASER_POWER, laser_power_auto_disabling);
-            }
-
-            //PROJECTOR TEMPERATURE OPTION
-            if (pid == ds::RS457_PID)
-            {
-                _depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                    std::make_shared<projector_temperature_option_mipi>(_hw_monitor,
-                        RS2_OPTION_PROJECTOR_TEMPERATURE));
-            }
-            else
-            {
-                auto uvc_s = std::dynamic_pointer_cast<uvc_sensor>(_raw_depth_ep.shared_from_this());
-                if (!uvc_s)
-                    throw std::runtime_error("Sensor base is not uvc sensor");
-
-                _depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                    std::make_shared<asic_and_projector_temperature_options>(std::move(uvc_s),
-                        RS2_OPTION_PROJECTOR_TEMPERATURE));
             }
         }
         else
