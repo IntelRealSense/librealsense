@@ -70,11 +70,8 @@ namespace librealsense {
     }
 
 
-    void context::create_factories()
+    void context::create_factories( std::shared_ptr< context > const & sptr )
     {
-        // This can only get called once the constructor is done:
-        auto sptr = shared_from_this();
-
         _factories.push_back( std::make_shared< backend_device_factory >(
             sptr,
             [this]( std::vector< std::shared_ptr< device_info > > const & removed,
@@ -93,9 +90,9 @@ namespace librealsense {
 
     /*static*/ std::shared_ptr< context > context::make( json const & settings )
     {
-        std::shared_ptr< context > ctx( new context( settings ) );
-        ctx->create_factories();
-        return ctx;
+        std::shared_ptr< context > sptr( new context( settings ) );
+        sptr->create_factories( sptr );
+        return sptr;
     }
 
 
