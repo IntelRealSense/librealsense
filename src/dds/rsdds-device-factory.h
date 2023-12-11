@@ -34,7 +34,7 @@ class rsdds_device_factory : public device_factory
     rsutils::subscription _subscription;
 
 public:
-    rsdds_device_factory( context &, callback && );
+    rsdds_device_factory( std::shared_ptr< context > const &, callback && );
     ~rsdds_device_factory();
 
     // Query any subset of available devices and return them as device-info objects

@@ -25,10 +25,10 @@ class context;
 
 class device_factory
 {
-protected:
-    context & _context;
+    std::weak_ptr< context > _context;
 
-    device_factory( context & ctx )
+protected:
+    device_factory( std::shared_ptr< context > const & ctx )
         : _context( ctx )
     {
     }
@@ -40,6 +40,8 @@ public:
                                           std::vector< std::shared_ptr< device_info > > const & devices_added ) >;
 
     virtual ~device_factory() = default;
+
+    std::shared_ptr< context > get_context() const { return _context.lock(); }
 
     // Query any subset of available devices and return them as device-info objects from which actual devices can be
     // created as needed.

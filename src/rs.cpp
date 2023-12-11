@@ -188,7 +188,7 @@ rs2_context* rs2_create_context(int api_version, rs2_error** error) BEGIN_API_CA
     verify_version_compatibility(api_version);
 
     nlohmann::json settings;
-    return new rs2_context{ std::make_shared< librealsense::context >( settings ) };
+    return new rs2_context{ context::make( settings ) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
 
@@ -196,8 +196,7 @@ rs2_context* rs2_create_context_ex(int api_version, const char * json_settings, 
 {
     verify_version_compatibility(api_version);
 
-    return new rs2_context{
-        std::make_shared< librealsense::context >( json_settings ) };
+    return new rs2_context{ context::make( json_settings ) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, json_settings)
 
@@ -210,7 +209,7 @@ NOEXCEPT_RETURN(, context)
 
 rs2_device_hub* rs2_create_device_hub(const rs2_context* context, rs2_error** error) BEGIN_API_CALL
 {
-    return new rs2_device_hub{ std::make_shared<librealsense::device_hub>(context->ctx) };
+    return new rs2_device_hub{ device_hub::make( context->ctx ) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context)
 
@@ -2652,7 +2651,7 @@ NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0)
 rs2_device* rs2_create_software_device(rs2_error** error) BEGIN_API_CALL
 {
     // We're not given a context...
-    auto ctx = std::make_shared< context >( nlohmann::json::object( { { "dds", false } } ) );
+    auto ctx = context::make( nlohmann::json::object( { { "dds", false } } ) );
     auto dev_info = std::make_shared< software_device_info >( ctx );
     auto dev = std::make_shared< software_device >( dev_info );
     dev_info->set_device( dev );
