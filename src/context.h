@@ -16,11 +16,11 @@ namespace librealsense
     class processing_block_interface;
 
 
-    class context : public std::enable_shared_from_this<context>
+    class context
     {
         context( nlohmann::json const & );  // private! use make()
 
-        void create_factories();
+        void create_factories( std::shared_ptr< context > const & sptr );
 
     public:
         static std::shared_ptr< context > make( nlohmann::json const & );
