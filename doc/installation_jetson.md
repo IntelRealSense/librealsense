@@ -1,4 +1,4 @@
-# NVidia Jetson Devices
+# Nvidia Jetson Devices
 
 **NOTE**: See [support-matrix.md](./support-matrix.md) to learn more about Jetson support for RealSense devices.
 
@@ -8,12 +8,12 @@
 
 ### 1. Prerequisites
 
-* NVIDIA® **Jetson Nano™**, **Jetson TX2™** and **Jetson AGX Xavier™** board (may also work on other Jetson devices)
+* Nvidia® **Jetson Nano™**, **Jetson TX2™** and **Jetson AGX Xavier™** board (may also work on other Jetson devices)
 * RealSense **D415**, **D435**, **D435i**, **D455** and **L515** Camera devices.
 
 ### 2. Establish Developer's Environment
 
-Follow [official instructions](https://developer.nvidia.com/embedded/learn/getting-started-jetson) to get your board ready. This guide will assume you are using **NVIDIA® L4T Ubuntu 16.04/18.04/20.04** image with kernels 4.9/5.10. Note that in most cases it is necessary to install a toll named "SDK Manager" to flash and install **Jetson** boards with both the L4T (Linux for Tegra) and NVIDIA-specific software packages (CUDA, Tensor Flow, AI, etc.)
+Follow [official instructions](https://developer.nvidia.com/embedded/learn/getting-started-jetson) to get your board ready. This guide will assume you are using **Nvidia® L4T Ubuntu 16.04/18.04/20.04** image with kernels 4.9/5.10. Note that in most cases it is necessary to install a toll named "SDK Manager" to flash and install **Jetson** boards with both the L4T (Linux for Tegra) and Nvidia-specific software packages (CUDA, Tensor Flow, AI, etc.)
 For **Jetson Nano™** we strongly recommend enabling the Barrel Jack connector for extra power (See [jetsonhacks.com/jetson-nano-use-more-power/](https://www.jetsonhacks.com/2019/04/10/jetson-nano-use-more-power/) to learn how)
 
 ![Jetson Nano](./img/jetson.jpg)
@@ -36,7 +36,7 @@ If that's the case, what is the dilemma?
 
 In order to enable the full capabilities of RealSense devices certain modifications in the kernel (driver) modules shall be applied, such as support of Depth-related streaming formats and access to per-frame metadata attributes. There is a small set of generic kernel changes that are mostly retrofitted with more advanced kernel versions aimed at improving the overall drivers stability.
 
-NVIDIA's L4T delivers an Ubuntu-based distribution with a customized kernel based on version 4.9/5.10. The way the kernel is configured and deployed is different from a desktop Ubuntu image with two notable differences being the list of kernel modules included in default configuration and the way a new image is flashed.
+Nvidia's L4T delivers an Ubuntu-based distribution with a customized kernel based on version 4.9/5.10. The way the kernel is configured and deployed is different from a desktop Ubuntu image with two notable differences being the list of kernel modules included in default configuration and the way a new image is flashed.
 
 And while it is possible to rebuild and flash a new kernel image the procedure can be perceived as challenging and shall be performed with extra caution.
 This guide comes with a script that allows to modify the kernel modules with Librealsense2-related patches without replacing the kernel image. The script has been verified with **Jetson AGX Xavier™** board using L4T versions 4.2.3, 4.3, 4.4 (Sept 2020) and 5.0.2. Scroll to the end of the guide for details.
@@ -133,7 +133,7 @@ The method has not yet been verified on the **Jetson Nano** board.
     cmake .. -DBUILD_EXAMPLES=true -DCMAKE_BUILD_TYPE=release -DFORCE_RSUSB_BACKEND=false -DBUILD_WITH_CUDA=true && make -j$(($(nproc)-1)) && sudo make install
     ```
 
-  The CMAKE `-DBUILD_WITH_CUDA=true` flag assumes CUDA modules are installed. If not, please reconnect the board to the Ubuntu Host PC and use NVIDIA `SDK Manager` tool to install the missing components.
+  The CMAKE `-DBUILD_WITH_CUDA=true` flag assumes CUDA modules are installed. If not, please reconnect the board to the Ubuntu Host PC and use Nvidia `SDK Manager` tool to install the missing components.
 
 * **Connect Realsense Device, run `realsense-viewer` and inspect the results**
 
