@@ -7,7 +7,7 @@
 #include "source.h"
 #include "core/extension.h"
 #include "proc/formats-converter.h"
-#include <core/options-updater.h>
+#include <core/options-watcher.h>
 
 #include <rsutils/lazy.h>
 #include <rsutils/signal.h>
@@ -237,8 +237,9 @@ namespace librealsense
         bool is_streaming() const override;
         bool is_opened() const override;
 
-        virtual void register_options_callback( std::function< void( const rs2_options_list * ) > && callback );
-        virtual void register_option_to_update( rs2_option id, std::shared_ptr< option > option );
+        virtual rsutils::subscription register_options_value_changed_callback(
+            std::function< void( const std::map< rs2_option, std::shared_ptr< option > > & ) > && callback );
+        virtual void register_option_to_update( rs2_option id, std::shared_ptr< option > option, bool update_from_hw = false );
         virtual void unregister_option_from_update( rs2_option id );
 
     private:
@@ -252,7 +253,7 @@ namespace librealsense
         formats_converter _formats_converter;
         std::vector<rs2_option> _cached_processing_blocks_options;
 
-        options_updater _options_updater;
+        options_watcher _options_watcher;
     };
 
 

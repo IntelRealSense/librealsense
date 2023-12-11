@@ -341,20 +341,29 @@ extern "C" {
     const char* rs2_get_option_value_description(const rs2_options* options, rs2_option option, float value, rs2_error ** error);
 
     /**
-    * sets a callback in case an option in this options container value is updated
+    * Sets a callback in case an option in this options container value is updated
+    * Will create a thread that will periodically check the options in the container for updates
     * \param[in] options    the options container
     * \param[in] callback   callback function pointer to update on value changes
     * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    * \return a subscription to options value changed notifications.
+    * Caller must keep the subscription until it is no longer needed, then canel it using cancel_sucscription().
     */
-    void rs2_on_option_value_update( const rs2_options * options, rs2_option_value_update_callback_ptr callback, rs2_error ** error );
+    rs2_subscription * rs2_set_options_changed_callback( const rs2_options * options,
+                                                         rs2_option_value_update_callback_ptr callback,
+                                                         rs2_error ** error );
 
     /**
-    * sets a callback in case an option in this options container value is updated
+    * Sets a callback in case an option in this options container value is updated
     * \param[in] options    the options container
     * \param[in] callback   callback object created from c++ application. ownership over the callback object is moved to librealsense
     * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    * \return a subscription to options value changed notifications.
+    * Caller must keep the subscription until it is no longer needed, then canel it using cancel_sucscription().
     */
-    void rs2_on_option_value_update_cpp( const rs2_options * options, rs2_option_value_update_callback* callback, rs2_error ** error );
+    rs2_subscription * rs2_set_options_changed_callback_cpp( const rs2_options * options,
+                                                             rs2_option_value_update_callback * callback,
+                                                             rs2_error ** error );
 
 #ifdef __cplusplus
 }

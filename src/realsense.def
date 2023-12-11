@@ -1,6 +1,8 @@
 LIBRARY
 
 EXPORTS
+    rs2_cancel_subscription
+
     rs2_create_context
     rs2_create_context_ex
     rs2_delete_context
@@ -97,8 +99,8 @@ EXPORTS
     rs2_get_option_from_list
     rs2_get_options_list_size
     rs2_delete_options_list
-    rs2_on_option_value_update
-    rs2_on_option_value_update_cpp
+    rs2_set_options_changed_callback
+    rs2_set_options_changed_callback_cpp
 
     rs2_set_region_of_interest
     rs2_get_region_of_interest

@@ -105,6 +105,11 @@ struct rs2_context
     mutable rsutils::subscription devices_changed_subscription;
 };
 
+struct rs2_subscription
+{
+    rsutils::subscription _subscription;
+};
+
 struct rs2_device_hub
 {
     std::shared_ptr<librealsense::device_hub> hub;
@@ -165,6 +170,13 @@ struct rs2_error
     std::string args;
     rs2_exception_type exception_type;
 };
+
+void rs2_cancel_subscription( rs2_subscription * subscription ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( subscription );
+    delete subscription;
+}
+NOEXCEPT_RETURN(, subscription )
 
 rs2_error *rs2_create_error(const char* what, const char* name, const char* args, rs2_exception_type type) BEGIN_API_CALL
 {
@@ -1202,17 +1214,31 @@ const char* rs2_get_option_value_description(const rs2_options* options, rs2_opt
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options, option, value)
 
-void rs2_on_option_value_update( const rs2_options * options, rs2_option_value_update_callback_ptr callback, rs2_error ** error ) BEGIN_API_CALL
+rs2_subscription * rs2_set_options_changed_callback( const rs2_options * options,
+                                                     rs2_option_value_update_callback_ptr callback,
+                                                     rs2_error ** error ) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL( options );
     VALIDATE_NOT_NULL( callback );
     auto sens = dynamic_cast< synthetic_sensor * >( options->options );
     VALIDATE_NOT_NULL( sens );
-    sens->register_options_callback( [callback]( const rs2_options_list * list ) { callback( list ); } );
+    rs2_subscription* sub = new rs2_subscription;
+    VALIDATE_NOT_NULL( sub );
+    sub->_subscription = sens->register_options_value_changed_callback(
+        [callback]( const std::map< rs2_option, std::shared_ptr< option > > & updated_options )
+        {
+            rs2_options_list updated_options_list;
+            for( auto option : updated_options )
+                updated_options_list.list.push_back( option.first );
+            callback( &updated_options_list );
+        } );
+    return sub;
 }
-HANDLE_EXCEPTIONS_AND_RETURN( , options, callback )
+HANDLE_EXCEPTIONS_AND_RETURN( nullptr, options, callback )
 
-void rs2_on_option_value_update_cpp( const rs2_options * options, rs2_option_value_update_callback* callback, rs2_error ** error ) BEGIN_API_CALL
+rs2_subscription * rs2_set_options_changed_callback_cpp( const rs2_options * options,
+                                                         rs2_option_value_update_callback * callback,
+                                                         rs2_error ** error ) BEGIN_API_CALL
 {
     // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a 'new' when calling us)
     VALIDATE_NOT_NULL( callback );
@@ -1224,9 +1250,19 @@ void rs2_on_option_value_update_cpp( const rs2_options * options, rs2_option_val
     VALIDATE_NOT_NULL( options );
     auto sens = dynamic_cast< synthetic_sensor * >( options->options );
     VALIDATE_NOT_NULL( sens );
-    sens->register_options_callback( [cb]( const rs2_options_list * list ) { cb->on_value_changed( list ); } );
+    rs2_subscription * sub = new rs2_subscription;
+    VALIDATE_NOT_NULL( sub );
+    sub->_subscription = sens->register_options_value_changed_callback(
+        [cb]( const std::map< rs2_option, std::shared_ptr< option > > & updated_options )
+        {
+            std::vector< rs2_option > updated_options_list;
+            for( auto option : updated_options )
+                updated_options_list.push_back( option.first );
+            cb->on_value_changed( updated_options_list );
+        } );
+    return sub;
 }
-HANDLE_EXCEPTIONS_AND_RETURN( , options, callback )
+HANDLE_EXCEPTIONS_AND_RETURN( nullptr, options, callback )
 
 rs2_frame_queue* rs2_create_frame_queue(int capacity, rs2_error** error) BEGIN_API_CALL
 {

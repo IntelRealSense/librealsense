@@ -98,7 +98,7 @@ typedef std::shared_ptr<rs2_update_progress_callback> rs2_update_progress_callba
 
 struct rs2_option_value_update_callback
 {
-    virtual void on_value_changed( const rs2_options_list * list ) = 0;
+    virtual void on_value_changed( const std::vector< rs2_option > & list ) = 0;
     virtual void release() = 0;
     virtual ~rs2_option_value_update_callback() {}
 };

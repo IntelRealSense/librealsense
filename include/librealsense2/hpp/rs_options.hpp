@@ -19,7 +19,7 @@ namespace rs2
         {
         }
 
-        void on_value_changed( const rs2_options_list * list ) override
+        void on_value_changed( const std::vector< rs2_option > & list ) override
         {
             _callback( list );
         }
@@ -141,11 +141,12 @@ namespace rs2
          * \return true if option is read-only
          */
         template< class T >
-        void on_option_value_update( T callback ) const
+        rs2_subscription* on_options_value_update( T callback ) const
         {
             rs2_error * e = nullptr;
-            rs2_on_option_value_update_cpp( _options, new option_value_update_callback< T >( callback ), &e );
+            auto res = rs2_set_options_changed_callback_cpp( _options, new option_value_update_callback< T >( callback ), &e );
             error::handle( e );
+            return res;
         }
 
         std::vector<rs2_option> get_supported_options()
@@ -172,6 +173,12 @@ namespace rs2
         options(const options& other) : _options(other._options) {}
 
         virtual ~options() = default;
+
+        void cancel_subscription( rs2_subscription * subscription )
+        {
+            rs2_cancel_subscription( subscription );
+        }
+
     protected:
         explicit options(rs2_options* o = nullptr) : _options(o)
         {
