@@ -2,6 +2,7 @@
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
+#test:retries:gha 2
 
 from rspy import log, test
 import pyrealsense2 as rs
