@@ -16,3 +16,6 @@ dl_file( ${PP_Rosbag_Recordings_URL} recordings [aligned_2d]_all_combinations_de
 
 # for post-processing/post-processing-from-bag.py
 dl_file( ${PP_Rosbag_Recordings_URL} recordings [pointcloud]_all_combinations_depth_color.bag OFF )
+
+# for 3D/projection-from-recording.bag
+dl_file( ${PP_Rosbag_Recordings_URL} recordings single_depth_color_640x480.bag OFF )
