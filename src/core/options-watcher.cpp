@@ -17,14 +17,25 @@ options_watcher::options_watcher( std::chrono::milliseconds update_interval )
 
 options_watcher::~options_watcher()
 {
-    stop();
+    try
+    {
+        std::lock_guard< std::mutex > lock( _mutex );
+        _options.clear();
+        stop();
+    }
+    catch( ... )
+    {
+        LOG_DEBUG( "Failures taking lock or stoping thread while destructing options_watcher" );
+    }
 }
 
-void options_watcher::register_option( rs2_option id, std::shared_ptr< option > option, bool update_from_hw )
+void options_watcher::register_option( rs2_option id, std::shared_ptr< option > option )
 {
-    _options[id] = option;
-    _update_from_hw[id] = update_from_hw;
-    _option_values[id] = update_from_hw ? option->query() : option->query(); // TODO - when implemented use option->get_last_known_value();
+    {
+        std::lock_guard< std::mutex > lock( _mutex );
+        _options[id] = option;
+        _option_values[id] = option->query();
+    }
 
     if( should_start() )
         start();
@@ -32,40 +43,21 @@ void options_watcher::register_option( rs2_option id, std::shared_ptr< option > 
 
 void options_watcher::unregister_option( rs2_option id )
 {
-    _options.erase( id );
+    {
+        std::lock_guard< std::mutex > lock( _mutex );
+        _options.erase( id );
+    }
 
     if( should_stop() )
         stop();
 }
 
-rsutils::subscription
-options_watcher::subscribe( std::function< void( const std::map< rs2_option, std::shared_ptr< option > > & ) > && callback )
+rsutils::subscription options_watcher::subscribe( callback && cb )
 {
-    rsutils::subscription ret = _on_values_changed.subscribe( std::move( callback ) );
+    rsutils::subscription ret = _on_values_changed.subscribe( std::move( cb ) );
 
     if( should_start() )
         start();
-
-    return ret;
-}
-
-rsutils::subscription_slot options_watcher::add_callback(
-    std::function< void( const std::map< rs2_option, std::shared_ptr< option > > & ) > && callback )
-{
-    rsutils::subscription_slot ret = _on_values_changed.add( std::move( callback ) );
-
-    if( should_start() )
-        start();
-
-    return ret;
-}
-
-bool options_watcher::remove_callback( rsutils::subscription_slot callback_id )
-{
-    bool ret = _on_values_changed.remove( callback_id );
-
-    if( should_stop() )
-        stop();
 
     return ret;
 }
@@ -84,7 +76,7 @@ void options_watcher::start()
 {
     if( ! _updater.joinable() ) // If not already started
     {
-        _updater = std::thread( [this]() { update_options_and_notify(); } );
+        _updater = std::thread( [this]() { thread_loop(); } );
     }
 }
 
@@ -94,33 +86,13 @@ void options_watcher::stop()
         _updater.join();
 }
 
-void options_watcher::update_options_and_notify()
+void options_watcher::thread_loop()
 {
     // Checking should_stop because subscriptions can be canceled without us knowing
     while( ! should_stop() )
     {
-        std::map< rs2_option, std::shared_ptr< option > > updated_options;
-
-        for( auto & option : _options )
-        {
-            if( ! _update_from_hw[option.first] )
-                continue;
-
-            auto curr_val = option.second->query();
-
-            // TODO - When option->get_last_known_value() is implemented use line below instead of lines above 
-            //auto curr_val = _update_from_hw[option.first] ? option.second->query()
-            //                                              : option.second->get_last_known_value();
-
-            if( _option_values[option.first] != curr_val )
-            {
-                _option_values[option.first] = curr_val;
-                updated_options.insert( option );
-            }
-        }
-
-        if( ! updated_options.empty() )
-            _on_values_changed.raise( updated_options );
+        std::map< rs2_option, std::shared_ptr< option > > updated_options = update_options();
+        notify( updated_options );
 
         // Checking again for stop conditions after callbacks but before sleep.
         if(  should_stop() )
@@ -130,5 +102,32 @@ void options_watcher::update_options_and_notify()
     }
 }
 
+std::map< rs2_option, std::shared_ptr< option > > options_watcher::update_options()
+{
+    std::map< rs2_option, std::shared_ptr< option > > updated_options;
+
+    {
+        std::lock_guard< std::mutex > lock( _mutex );
+
+        for( const auto & option : _options )
+        {
+            auto curr_val = option.second->query();
+
+            if( _option_values[option.first] != curr_val )
+            {
+                _option_values[option.first] = curr_val;
+                updated_options.insert( option );
+            }
+        }
+    }
+
+    return updated_options;
+}
+
+void options_watcher::notify( const std::map< rs2_option, std::shared_ptr< option > > & updated_options )
+{
+    if( ! updated_options.empty() )
+        _on_values_changed.raise( updated_options );
+}
 
 }  // namespace librealsense

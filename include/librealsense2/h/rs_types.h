@@ -221,8 +221,6 @@ typedef enum rs2_matchers
 } rs2_matchers;
 const char* rs2_matchers_to_string(rs2_matchers stream);
 
-typedef struct rs2_subscription rs2_subscription;
-void rs2_cancel_subscription( rs2_subscription * subscription );
 
 typedef struct rs2_device_info rs2_device_info;
 typedef struct rs2_device rs2_device;

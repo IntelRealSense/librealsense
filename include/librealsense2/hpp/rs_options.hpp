@@ -5,27 +5,20 @@
 #define LIBREALSENSE_RS2_OPTIONS_HPP
 
 #include "rs_types.hpp"
+#include <librealsense2/h/rs_types.h>
 
+#include <memory>
+
+// API struct, defined in general namespace
+struct rs2_options_list
+{
+    std::vector< rs2_option > list;
+};
+    
 namespace rs2
 {
-    template< class T >
-    class option_value_update_callback : public rs2_option_value_update_callback
-    {
-        T _callback;
-
-    public:
-        explicit option_value_update_callback( T callback )
-            : _callback( callback )
-        {
-        }
-
-        void on_value_changed( const std::vector< rs2_option > & list ) override
-        {
-            _callback( list );
-        }
-
-        void release() override { delete this; }
-    };
+    class options_list;
+    template< class T > class option_value_update_callback;
 
     class options
     {
@@ -138,22 +131,20 @@ namespace rs2
         /**
          * sets a callback in case an option in this options container value is updated
          * \param[in] callback     the callback function
-         * \return true if option is read-only
          */
         template< class T >
-        rs2_subscription* on_options_value_update( T callback ) const
+        void on_options_value_update( T callback ) const
         {
             rs2_error * e = nullptr;
-            auto res = rs2_set_options_changed_callback_cpp( _options, new option_value_update_callback< T >( callback ), &e );
+            rs2_set_options_changed_callback_cpp( _options, new option_value_update_callback< T >( callback ), &e );
             error::handle( e );
-            return res;
         }
 
         std::vector<rs2_option> get_supported_options()
         {
             std::vector<rs2_option> res;
             rs2_error* e = nullptr;
-            std::shared_ptr<rs2_options_list> options_list(
+            std::shared_ptr< rs2_options_list > options_list(
                 rs2_get_options_list(_options, &e),
                 rs2_delete_options_list);
 
@@ -174,11 +165,6 @@ namespace rs2
 
         virtual ~options() = default;
 
-        void cancel_subscription( rs2_subscription * subscription )
-        {
-            rs2_cancel_subscription( subscription );
-        }
-
     protected:
         explicit options(rs2_options* o = nullptr) : _options(o)
         {
@@ -193,6 +179,98 @@ namespace rs2
 
     private:
         rs2_options* _options;
+    };
+
+    class options_list
+    {
+    public:
+        explicit options_list( std::shared_ptr< rs2_options_list > list )
+            : _list( std::move( list ) )
+        {
+        }
+
+        options_list()
+            : _list( nullptr )
+        {
+        }
+
+        operator std::vector< rs2_option >() const
+        {
+            std::vector< rs2_option > res;
+            for( auto & opt : _list->list )
+                res.push_back( opt );
+            return res;
+        }
+
+        options_list & operator=( std::shared_ptr< rs2_options_list > list )
+        {
+            _list = std::move( list );
+            return *this;
+        }
+
+        rs2_option operator[]( size_t index ) const { return _list->list[index]; }
+
+        size_t size() const { return _list->list.size(); }
+
+        rs2_option front() const { return _list->list[0]; }
+        rs2_option back() const { return _list->list[size() - 1]; }
+
+        class options_list_iterator
+        {
+            options_list_iterator( const options_list & options_list, size_t index )
+                : _list( options_list )
+                , _index( index )
+            {
+            }
+
+        public:
+            rs2_option operator*() const { return _list[_index]; }
+            bool operator!=( const options_list_iterator & other ) const
+            {
+                return other._index != _index || &other._list != &_list;
+            }
+            bool operator==( const options_list_iterator & other ) const { return ! ( *this != other ); }
+            options_list_iterator & operator++()
+            {
+                _index++;
+                return *this;
+            }
+
+        private:
+            friend options_list;
+            const options_list & _list;
+            size_t _index;
+        };
+
+        options_list_iterator begin() const { return options_list_iterator( *this, 0 ); }
+        options_list_iterator end() const { return options_list_iterator( *this, size() ); }
+        const rs2_options_list * get_list() const { return _list.get(); }
+
+        operator std::shared_ptr< rs2_options_list >() { return _list; };
+
+    private:
+        std::shared_ptr< rs2_options_list > _list;
+    };
+
+    template< class T >
+    class option_value_update_callback : public rs2_option_value_update_callback
+    {
+        T _callback;
+
+    public:
+        explicit option_value_update_callback( T callback )
+            : _callback( callback )
+        {
+        }
+
+        void on_value_changed( rs2_options_list * list ) override
+        {
+            std::shared_ptr< rs2_options_list > sptr( list, rs2_delete_options_list );
+            options_list opt_list( sptr );
+            _callback( opt_list );
+        }
+
+        void release() override { delete this; }
     };
 }
 #endif // LIBREALSENSE_RS2_OIPTIONS_HPP

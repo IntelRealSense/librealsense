@@ -14,41 +14,44 @@
 #include <functional>
 #include <memory>
 #include <thread>
+#include <mutex>
 
 
 namespace librealsense {
 
 
-// Automatically updates (queries) registered options values according to set time intervals
-// Can notify if a value have changed through a callback subscription.
+// Watches registered options value and notifies interested users.
+// When a user subscribes to notification the options_watcher will automatically update (query) registered options
+// values in set time intervals (creates a thread). If one or more of the values have changed the watcher will notify
+// through the callback subscription.
 class options_watcher
 {
 public:
+    using callback = std::function< void( const std::map< rs2_option, std::shared_ptr< option > > & ) >;
+
     options_watcher( std::chrono::milliseconds update_interval = std::chrono::milliseconds( 1000 ) );
     ~options_watcher();
 
-    // Register option to monitor value updates. Can set if update from HW (query) is necessary.
-    void register_option( rs2_option id, std::shared_ptr< option > option, bool update_from_hw = false );
+    void register_option( rs2_option id, std::shared_ptr< option > option );
     void unregister_option( rs2_option id );
 
-    rsutils::subscription subscribe( std::function< void( const std::map< rs2_option, std::shared_ptr< option > > & ) > && callback );
-    rsutils::subscription_slot add_callback( std::function< void( const std::map< rs2_option, std::shared_ptr< option > > & ) > && callback );
-    bool remove_callback( rsutils::subscription_slot callback_id );
+    rsutils::subscription subscribe( callback && cb);
 
 private:
     bool should_start() const;
     bool should_stop() const;
     void start();
     void stop();
-    void update_options_and_notify();
+    void thread_loop();
+    std::map< rs2_option, std::shared_ptr< option > > update_options();
+    void notify( const std::map< rs2_option, std::shared_ptr< option > > & updated_options );
 
     std::map< rs2_option, std::shared_ptr< option > > _options;
     std::map< rs2_option, float > _option_values;
-    std::map< rs2_option, float > _update_from_hw;
     rsutils::signal< const std::map< rs2_option, std::shared_ptr< option > > & > _on_values_changed;
     std::chrono::milliseconds _update_interval;
     std::thread _updater;
-    bool _should_update = false;
+    std::mutex _mutex;
 };
 
 

@@ -711,15 +711,14 @@ void log_callback_end( uint32_t fps,
         return _owner->get_format_conversion();
     }
 
-    rsutils::subscription synthetic_sensor::register_options_value_changed_callback(
-        std::function< void( const std::map< rs2_option, std::shared_ptr< option > > & ) > && callback )
+    rsutils::subscription synthetic_sensor::register_options_value_changed_callback( options_watcher::callback && cb )
     {
-        return _options_watcher.subscribe( std::move( callback ) );
+        return _options_watcher.subscribe( std::move( cb ) );
     }
 
-    void synthetic_sensor::register_option_to_update( rs2_option id, std::shared_ptr< option > option, bool update_from_hw )
+    void synthetic_sensor::register_option_to_update( rs2_option id, std::shared_ptr< option > option )
     {
-        _options_watcher.register_option( id, option, update_from_hw );
+        _options_watcher.register_option( id, option );
     }
 
     void synthetic_sensor::unregister_option_from_update( rs2_option id )

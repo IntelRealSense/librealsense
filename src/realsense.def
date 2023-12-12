@@ -1,8 +1,6 @@
 LIBRARY
 
 EXPORTS
-    rs2_cancel_subscription
-
     rs2_create_context
     rs2_create_context_ex
     rs2_delete_context
