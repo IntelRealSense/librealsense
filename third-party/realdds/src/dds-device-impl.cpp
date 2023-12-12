@@ -368,10 +368,6 @@ void dds_device::impl::open( const dds_stream_profiles & profiles )
 
     nlohmann::json reply;
     write_control_message( j, &reply );
-
-    if( rsutils::json::get( reply, status_key, status_ok ) != status_ok )
-        throw std::runtime_error( "failed to open stream: "
-                                  + rsutils::json::get< std::string >( reply, explanation_key, "no explanation" ) );
 }
 
 
@@ -390,10 +386,6 @@ void dds_device::impl::set_option_value( const std::shared_ptr< dds_option > & o
 
     nlohmann::json reply;
     write_control_message( j, &reply );
-
-    if( rsutils::json::get( reply, status_key, status_ok ) != status_ok )
-        throw std::runtime_error(
-            rsutils::json::get< std::string >( reply, explanation_key, "failed to set-option; no explanation" ) );
     //option->set_value( new_value );
 }
 
@@ -413,9 +405,6 @@ float dds_device::impl::query_option_value( const std::shared_ptr< dds_option > 
     nlohmann::json reply;
     write_control_message( j, &reply );
 
-    if( rsutils::json::get( reply, status_key, status_ok ) != status_ok )
-        throw std::runtime_error(
-            rsutils::json::get< std::string >( reply, explanation_key, "failed to query-option; no explanation" ) );
     return rsutils::json::get< float >( reply, value_key );
 }
 
@@ -442,6 +431,23 @@ void dds_device::impl::write_control_message( topics::flexible_msg && msg, nlohm
         //LOG_DEBUG( "got reply: " << actual_reply );
         *reply = std::move( actual_reply );
         _replies.erase( this_sequence_number );
+
+        if( rsutils::json::get( *reply, status_key, status_ok ) != status_ok )
+        {
+            std::ostringstream os;
+            os << "control #" << this_sequence_number;
+            if( auto id = rsutils::json::nested( *reply, control_key, id_key ) )
+            {
+                if( id->is_string() )
+                    os << " \"" << id.string_ref() << "\"";
+            }
+            os << " failed: ";
+            if( auto e = rsutils::json::nested( *reply, explanation_key ) )
+                os << e.get();
+            else
+                os << "no explanation";
+            DDS_THROW( runtime_error, os.str() );
+        }
     }
 }
 
