@@ -31,7 +31,6 @@ namespace librealsense
         _color_ep.register_pu(RS2_OPTION_SATURATION);
         _color_ep.register_pu(RS2_OPTION_GAMMA);
         _color_ep.register_pu(RS2_OPTION_SHARPNESS);
-        _color_ep.register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
 
         auto white_balance_option = std::make_shared<uvc_pu_option>(_raw_color_ep, RS2_OPTION_WHITE_BALANCE);
         _color_ep.register_option(RS2_OPTION_WHITE_BALANCE, white_balance_option);
