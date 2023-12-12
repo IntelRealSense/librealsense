@@ -14,6 +14,7 @@
 #include <fastdds/dds/publisher/DataWriter.hpp>
 #include <fastdds/dds/topic/Topic.hpp>
 
+#include <rsutils/time/timer.h>
 #include <rsutils/json.h>
 
 
@@ -30,6 +31,7 @@ dds_topic_writer::dds_topic_writer( std::shared_ptr< dds_topic > const & topic,
                                     std::shared_ptr< dds_publisher > const & publisher )
     : _topic( topic )
     , _publisher( publisher )
+    , _n_readers( 0 )
 {
 }
 
@@ -106,6 +108,21 @@ void dds_topic_writer::run( qos const & wqos )
     eprosima::fastdds::dds::StatusMask status_mask;
     status_mask << eprosima::fastdds::dds::StatusMask::publication_matched();
     _writer = DDS_API_CALL( _publisher->get()->create_datawriter( _topic->get(), wqos, this, status_mask ) );
+}
+
+
+bool dds_topic_writer::wait_for_readers( dds_time timeout )
+{
+    // Better to use on_publication_matched, but that would require additional data members etc.
+    // For now, keep it simple:
+    rsutils::time::timer timer( std::chrono::nanoseconds( timeout.to_ns() ) );
+    while( _n_readers.load() < 1 )
+    {
+        if( timer.has_expired() )
+            return false;
+        std::this_thread::sleep_for( std::chrono::milliseconds( 250 ) );
+    }
+    return true;
 }
 
 

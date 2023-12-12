@@ -9,6 +9,7 @@
 
 #include <nlohmann/json_fwd.hpp>
 #include <memory>
+#include <atomic>
 
 
 namespace eprosima {
@@ -39,7 +40,7 @@ class dds_topic_writer : protected eprosima::fastdds::dds::DataWriterListener
 
     eprosima::fastdds::dds::DataWriter * _writer = nullptr;
 
-    int _n_readers = 0;
+    std::atomic< int > _n_readers;
 
 public:
     dds_topic_writer( std::shared_ptr< dds_topic > const & topic );
@@ -79,6 +80,9 @@ public:
 
     // The callbacks should be set before we actually create the underlying DDS objects, so the writer does not
     void run( qos const & = qos() );
+
+    // Waits until readers are detected; return false on timeout
+    bool wait_for_readers( dds_time timeout );
 
     // Waits until all changes were acknowledged; return false on timeout
     bool wait_for_acks( dds_time timeout );

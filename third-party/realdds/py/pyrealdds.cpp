@@ -358,6 +358,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "topic", &dds_topic_writer::topic )
         .def( "run", &dds_topic_writer::run )
         .def( "has_readers", &dds_topic_writer::has_readers )
+        .def( "wait_for_readers", &dds_topic_writer::wait_for_readers )
         .def( "wait_for_acks", &dds_topic_writer::wait_for_acks )
         .def_static( "qos", []() { return writer_qos(); } )
         .def_static( "qos", []( reliability r, durability d ) { return writer_qos( r, d ); } );
