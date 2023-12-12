@@ -2,7 +2,6 @@
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 # test:device D585S
-#test:donotrun
 # test not running until HSD is solved: https://hsdes.intel.com/appstore/article/#/13010957807
 import pyrealsense2 as rs
 from rspy import test, log
@@ -24,6 +23,7 @@ def check_imu_streaming(stream, fps):
     pipe.stop()
 
 
+time.sleep(5)  # due to a WIP bug, we have to wait after enumeration for a few secs before Accel stream
 ################# Checking accel streaming with fps 100/200 ##################
 stream = rs.stream.accel
 
