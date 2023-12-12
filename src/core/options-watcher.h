@@ -37,6 +37,8 @@ public:
 
     rsutils::subscription subscribe( callback && cb);
 
+    void set_update_interval( std::chrono::milliseconds update_interval ) { _update_interval = update_interval; }
+
 private:
     bool should_start() const;
     bool should_stop() const;

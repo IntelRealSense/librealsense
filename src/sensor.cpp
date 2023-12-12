@@ -400,6 +400,12 @@ void log_callback_end( uint32_t fps,
         : sensor_base( name, device )
         , _raw_sensor( raw_sensor )
     {
+        nlohmann::json const & settings = device->get_context()->get_settings();
+        if( settings.is_object() && rsutils::json::has_value( settings, std::string( "options-update-interval", 23 ) ) )
+        {
+            uint32_t interval = rsutils::json::get<uint32_t>( settings, std::string( "options-update-interval", 23 ) );
+            _options_watcher.set_update_interval( std::chrono::milliseconds( interval ) );
+        }
         // synthetic sensor and its raw sensor will share the formats and streams mapping
         auto& raw_fourcc_to_rs2_format_map = _raw_sensor->get_fourcc_to_rs2_format_map();
         raw_fourcc_to_rs2_format_map = std::make_shared<std::map<uint32_t, rs2_format>>(fourcc_to_rs2_format_map);

@@ -40,6 +40,7 @@ rs2_context* rs2_create_context(int api_version, rs2_error** error);
 *             full: provide all conversions (e.g., YUYV -> RGB8 etc.)
 *             basic: use mostly raw camera formats (no RGB8 etc.); convert interleaved (Y8I -> 2xY8)
 *             raw: leave all formats from camera as they are
+*         options-update-interval      - (uint32_t) time interval in milliseconds for option value change notifications
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return            Context object
 */
