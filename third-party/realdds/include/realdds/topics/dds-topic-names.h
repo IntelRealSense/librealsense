@@ -23,6 +23,7 @@ constexpr char const * DEVICE_INFO_TOPIC_NAME = "realsense/device-info";
 constexpr char const * NOTIFICATION_TOPIC_NAME = "/notification";
 constexpr char const * CONTROL_TOPIC_NAME = "/control";
 constexpr char const * METADATA_TOPIC_NAME = "/metadata";
+constexpr char const * DFU_TOPIC_NAME = "/dfu";
 
 
 namespace notification {

@@ -254,6 +254,7 @@ PYBIND11_MODULE(NAME, m) {
     topics.attr( "device_notification" ) = realdds::topics::NOTIFICATION_TOPIC_NAME;
     topics.attr( "device_control" ) = realdds::topics::CONTROL_TOPIC_NAME;
     topics.attr( "device_metadata" ) = realdds::topics::METADATA_TOPIC_NAME;
+    topics.attr( "device_dfu" ) = realdds::topics::DFU_TOPIC_NAME;
 
     using realdds::video_intrinsics;
     py::class_< video_intrinsics, std::shared_ptr< video_intrinsics > >( m, "video_intrinsics" )
