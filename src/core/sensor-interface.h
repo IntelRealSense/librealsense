@@ -9,8 +9,8 @@
 
 #include "tagged-profile.h"
 
+#include "options-watcher.h"
 #include <librealsense2/hpp/rs_types.hpp>
-#include <core/options-watcher.h>
 
 #include <rsutils/subscription.h>
 

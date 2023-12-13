@@ -5,7 +5,7 @@
 #define LIBREALSENSE_RS2_OPTIONS_HPP
 
 #include "rs_types.hpp"
-#include <librealsense2/h/rs_types.h>
+#include "../h/rs_types.h"
 
 #include <memory>
 
