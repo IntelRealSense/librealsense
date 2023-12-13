@@ -1213,11 +1213,11 @@ namespace rs2
         textual_icon button_icon = is_recording ? textual_icons::stop : textual_icons::circle;
         const float icons_width = 78.0f;
         const ImVec2 device_panel_icons_size{ icons_width, 25 };
-        std::string recorod_button_name = rsutils::string::from() << button_icon << "##" << id;
+        std::string record_button_name = rsutils::string::from() << button_icon << "##" << id;
         auto record_button_color = is_recording ? light_blue : light_grey;
         ImGui::PushStyleColor(ImGuiCol_Text, record_button_color);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, record_button_color);
-        if (ImGui::ButtonEx(recorod_button_name.c_str(), device_panel_icons_size, (!is_streaming || is_playback_device) ? ImGuiButtonFlags_Disabled : 0))
+        if (ImGui::ButtonEx(record_button_name.c_str(), device_panel_icons_size, (disable_record_button_logic(is_streaming, is_playback_device)) ? ImGuiButtonFlags_Disabled : 0))
         {
             if (is_recording) //is_recording is changed inside stop/start_recording
             {
@@ -1249,7 +1249,7 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
-            std::string record_button_hover_text = (!is_streaming ? "Start streaming to enable recording" : (is_recording ? "Stop Recording" : "Start Recording"));
+            std::string record_button_hover_text = get_record_button_hover_text(is_streaming);
             ImGui::SetTooltip("%s", record_button_hover_text.c_str());
             if (is_streaming) window.link_hovered();
         }
@@ -3272,6 +3272,25 @@ namespace rs2
     void device_model::handle_hardware_events(const std::string& serialized_data)
     {
         //TODO: Move under hour glass
+    }
+
+    bool device_model::disable_record_button_logic(bool is_streaming, bool is_playback_device)
+    {
+        return (!is_streaming || is_playback_device);
+    }
+
+    std::string device_model::get_record_button_hover_text(bool is_streaming)
+    {
+        std::string record_button_hover_text;
+        if (!is_streaming)
+        {
+            record_button_hover_text = "Start streaming to enable recording";
+        }
+        else
+        {
+            record_button_hover_text = is_recording ? "Stop Recording" : "Start Recording";
+        }
+        return record_button_hover_text;
     }
 
     std::vector<std::pair<std::string, std::string>> get_devices_names(const device_list& list)

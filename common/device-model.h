@@ -367,6 +367,8 @@ namespace rs2
             viewer_model& viewer, std::string& error_message);
         void begin_update_unsigned(viewer_model& viewer, std::string& error_message);
         void check_for_device_updates(viewer_model& viewer, bool activated_by_user = false);
+        bool disable_record_button_logic(bool is_streaming, bool is_playback_device);
+        std::string get_record_button_hover_text(bool is_streaming);
 
 
         std::shared_ptr< atomic_objects_in_frame > get_detected_objects() const { return _detected_objects; }
