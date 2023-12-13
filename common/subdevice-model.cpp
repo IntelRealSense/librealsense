@@ -85,7 +85,7 @@ namespace rs2
             {
                 for( auto opt_id : list )
                 {
-                    auto & it = model->options_metadata.find( opt_id );
+                    auto it = model->options_metadata.find( opt_id );
                     if( it != model->options_metadata.end() &&
                         model->options_metadata[opt_id].endpoint->supports( opt_id ) )
                     {
