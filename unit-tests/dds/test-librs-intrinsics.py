@@ -2,6 +2,7 @@
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
+#test:retries:gha 2
 
 from rspy import log, test
 log.nested = 'C  '
@@ -12,7 +13,7 @@ if log.is_debug_on():
     rs.log_to_console( rs.log_severity.debug )
 from time import sleep
 
-context = rs.context( { 'dds': { 'domain': 123 }} )
+context = rs.context( { 'dds': { 'enabled': True, 'domain': 123 }} )
 only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
 
 import os.path
