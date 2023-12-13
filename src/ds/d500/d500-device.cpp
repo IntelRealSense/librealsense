@@ -161,7 +161,7 @@ namespace librealsense
     std::vector<uint8_t> d500_device::backup_flash( rs2_update_progress_callback_sptr callback )
     {
         // No flash backup process for D500 device
-        return std::vector<uint8_t>{};
+        return std::vector< uint8_t >{};
     }
 
     void d500_device::update_flash(const std::vector<uint8_t>& image, rs2_update_progress_callback_sptr callback, int update_mode)

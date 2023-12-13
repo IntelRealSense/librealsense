@@ -28,7 +28,4 @@ namespace librealsense
         std::shared_ptr<hw_monitor> _hw_monitor;
         device* _owner;
     };
-
-    
-
 }

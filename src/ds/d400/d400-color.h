@@ -38,7 +38,6 @@ namespace librealsense
 
     private:
         void register_options();
-        void register_metadata();
         void register_processing_blocks();
 
         void register_metadata(const synthetic_sensor& color_ep) const;
