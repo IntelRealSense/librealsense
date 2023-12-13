@@ -117,9 +117,9 @@ bool dds_device::supports_metadata() const
     return !! _impl->_metadata_reader;
 }
 
-void dds_device::on_metadata_available( on_metadata_available_callback cb )
+rsutils::subscription dds_device::on_metadata_available( on_metadata_available_callback && cb )
 {
-    _impl->on_metadata_available( cb );
+    return _impl->on_metadata_available( std::move( cb ) );
 }
 
 void dds_device::on_device_log( on_device_log_callback cb )

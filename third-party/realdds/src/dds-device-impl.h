@@ -12,6 +12,7 @@
 
 #include <fastdds/rtps/common/Guid.h>
 
+#include <rsutils/signal.h>
 #include <nlohmann/json.hpp>
 
 #include <map>
@@ -85,8 +86,12 @@ public:
     void set_option_value( const std::shared_ptr< dds_option > & option, float new_value );
     float query_option_value( const std::shared_ptr< dds_option > & option );
 
-    typedef std::function< void( nlohmann::json && md ) > on_metadata_available_callback;
-    void on_metadata_available( on_metadata_available_callback cb ) { _on_metadata_available = cb; }
+    using on_metadata_available_signal = rsutils::signal< std::shared_ptr< const nlohmann::json > const & >;
+    using on_metadata_available_callback = on_metadata_available_signal::callback;
+    rsutils::subscription on_metadata_available( on_metadata_available_callback && cb )
+    {
+        return _on_metadata_available.subscribe( std::move( cb ) );
+    }
 
     typedef std::function< void(
         dds_time const & timestamp, char type, std::string const & text, nlohmann::json const & data ) >
@@ -117,7 +122,7 @@ private:
     static notification_handlers const _notification_handlers;
     void handle_notification( nlohmann::json const &, eprosima::fastdds::dds::SampleInfo const & );
 
-    on_metadata_available_callback _on_metadata_available;
+    on_metadata_available_signal _on_metadata_available;
     on_device_log_callback _on_device_log;
     on_notification_callback _on_notification;
 };

@@ -868,6 +868,25 @@ PYBIND11_MODULE(NAME, m) {
         .def( "set_gyro_intrinsics", &dds_motion_stream::set_gyro_intrinsics )
         .def( "set_accel_intrinsics", &dds_motion_stream::set_accel_intrinsics );
 
+
+    using subscription = rsutils::subscription;
+    py::class_< subscription,
+                std::shared_ptr< subscription >  // handled with a shared_ptr
+                >( m, "subscription" )
+        .def( "cancel", &subscription::cancel )
+        .def( "__bool__", []( subscription const & self ) { return self.is_active(); } )
+        .def( "__repr__",
+              []( subscription const & self )
+              {
+                  std::ostringstream os;
+                  os << "<" SNAME ".subscription";
+                  if( ! self.is_active() )
+                      os << " cancelled";
+                  os << ">";
+                  return os.str();
+              } );
+
+
     using realdds::dds_device;
     py::class_< dds_device,
         std::shared_ptr< dds_device >  // handled with a shared_ptr
@@ -882,11 +901,13 @@ PYBIND11_MODULE(NAME, m) {
               &dds_device::wait_until_ready,
               py::call_guard< py::gil_scoped_release >(),
               "timeout-ms"_a = 5000 )
-        .def( FN_FWD( dds_device,
-                      on_metadata_available,
-                      ( dds_device &, py::object && ),
-                      ( nlohmann::json && j ),
-                      callback( self, json_to_py( j ) ); ) )
+        .def( "on_metadata_available",
+              []( dds_device & self, std::function< void( dds_device &, py::object && ) > callback )
+              {
+                  return std::make_shared< subscription >( self.on_metadata_available(
+                      [&self, callback]( std::shared_ptr< const nlohmann::json > const & pj )
+                      { FN_FWD_CALL( dds_device, "on_metadata_available", callback( self, json_to_py( *pj ) ); ) } ) );
+              } )
         .def( FN_FWD( dds_device,
                       on_device_log,
                       (dds_device &, dds_time const &, char, std::string const &, py::object && ),
@@ -1027,16 +1048,18 @@ PYBIND11_MODULE(NAME, m) {
         .def( py::init<>() )
         .def( FN_FWD( dds_metadata_syncer,
                       on_frame_ready,
-                      ( dds_metadata_syncer::frame_type, nlohmann::json && ),
-                      ( dds_metadata_syncer::frame_holder && fh, nlohmann::json && metadata ),
-                      callback( self.get_frame( fh ), std::move( metadata ) ); ) )
+                      ( dds_metadata_syncer::frame_type, nlohmann::json const & ),
+                      ( dds_metadata_syncer::frame_holder && fh, std::shared_ptr< const nlohmann::json > const & metadata ),
+                      callback( self.get_frame( fh ), metadata ? *metadata : nlohmann::json() ); ) )
         .def( FN_FWD( dds_metadata_syncer,
                       on_metadata_dropped,
-                      ( dds_metadata_syncer::key_type, nlohmann::json && ),
-                      ( dds_metadata_syncer::key_type key, nlohmann::json && metadata ),
-                      callback( key, std::move( metadata ) ); ) )
+                      ( dds_metadata_syncer::key_type, nlohmann::json const & ),
+                      ( dds_metadata_syncer::key_type key, std::shared_ptr< const nlohmann::json > const & metadata ),
+                      callback( key, metadata ? *metadata : nlohmann::json() ); ) )
         .def( "enqueue_frame", &dds_metadata_syncer::enqueue_frame )
-        .def( "enqueue_metadata", &dds_metadata_syncer::enqueue_metadata );
+        .def( "enqueue_metadata",
+              []( dds_metadata_syncer & self, dds_metadata_syncer::key_type key, nlohmann::json const & j )
+              { self.enqueue_metadata( key, std::make_shared< const nlohmann::json >( j ) ); } );
     metadata_syncer.attr( "max_frame_queue_size" ) = dds_metadata_syncer::max_frame_queue_size;
     metadata_syncer.attr( "max_md_queue_size" ) = dds_metadata_syncer::max_md_queue_size;
 }

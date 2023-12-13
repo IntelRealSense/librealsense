@@ -7,6 +7,7 @@
 #include "dds-stream-profile.h"
 #include "dds-stream.h"
 
+#include <rsutils/subscription.h>
 #include <nlohmann/json_fwd.hpp>
 #include <memory>
 #include <vector>
@@ -65,8 +66,8 @@ public:
 
     bool supports_metadata() const;
 
-    typedef std::function< void( nlohmann::json && md ) > on_metadata_available_callback;
-    void on_metadata_available( on_metadata_available_callback cb );
+    typedef std::function< void( std::shared_ptr< const nlohmann::json > const & md ) > on_metadata_available_callback;
+    rsutils::subscription on_metadata_available( on_metadata_available_callback && cb );
 
     typedef std::function< void(
         dds_time const & timestamp, char type, std::string const & text, nlohmann::json const & data ) >

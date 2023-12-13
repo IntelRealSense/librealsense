@@ -89,7 +89,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         metadata_content.append( md )
         metadata_received.set()
 
-    device_direct.on_metadata_available( on_metadata_available )
+    metadata_subscription = device_direct.on_metadata_available( on_metadata_available )
 
     def detect_metadata():
         metadata_content.clear()

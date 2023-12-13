@@ -95,10 +95,11 @@ protected:
     void handle_motion_data( realdds::topics::imu_msg &&,
                              const std::shared_ptr< stream_profile_interface > &,
                              streaming_impl & );
-    void handle_new_metadata( std::string const & stream_name, nlohmann::json && metadata );
+    void handle_new_metadata( std::string const & stream_name,
+                              std::shared_ptr< const nlohmann::json > const & metadata );
 
     virtual void add_no_metadata( frame *, streaming_impl & );
-    virtual void add_frame_metadata( frame * const, nlohmann::json && metadata, streaming_impl & );
+    virtual void add_frame_metadata( frame *, nlohmann::json const & metadata, streaming_impl & );
 
     friend class dds_device_proxy;  // Currently calls handle_new_metadata
 };

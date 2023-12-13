@@ -282,13 +282,13 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
 
     if( _dds_dev->supports_metadata() )
     {
-        _dds_dev->on_metadata_available(
-            [this]( nlohmann::json && dds_md )
+        _metadata_subscription = _dds_dev->on_metadata_available(
+            [this]( std::shared_ptr< const nlohmann::json > const & dds_md )
             {
-                std::string stream_name = rsutils::json::get< std::string >( dds_md, stream_name_key );
+                std::string const & stream_name = rsutils::json::nested( *dds_md, stream_name_key ).string_ref();
                 auto it = _stream_name_to_owning_sensor.find( stream_name );
                 if( it != _stream_name_to_owning_sensor.end() )
-                    it->second->handle_new_metadata( stream_name, std::move( dds_md ) );
+                    it->second->handle_new_metadata( stream_name, dds_md );
             } );
     }
 

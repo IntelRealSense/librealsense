@@ -275,7 +275,7 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
                 return;
             }
         }
-        throw std::runtime_error( "not found" );
+        LOG_DEBUG( "option '" << option_name << "': not found" );
     };
 
     rsutils::json::nested value_j( j, value_key );
@@ -285,16 +285,7 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
         if( ! option_values.is_object() )
             throw std::runtime_error( "missing value or option-values" );
         for( auto it = option_values->begin(); it != option_values->end(); ++it )
-        {
-            try
-            {
-                update_option( it.key(), it.value().get< float >() );
-            }
-            catch( std::exception const & e )
-            {
-                LOG_DEBUG( "option '" << it.key() << "': " << e.what() );
-            }
-        }
+            update_option( it.key(), it.value().get< float >() );
         return;
     }
 
@@ -314,14 +305,7 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
         {
             auto const & option_name = rsutils::json::string_ref( option_name_j->at( x ) );
             auto const new_value = rsutils::json::value< float >( value_j->at( x ) );
-            try
-            {
-                update_option( option_name, new_value );
-            }
-            catch( std::exception const & e )
-            {
-                LOG_DEBUG( "option '" << option_name << "': " << e.what() );
-            }
+            update_option( option_name, new_value );
         }
         return;
     }
@@ -329,15 +313,7 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
     if( ! option_name_j->is_string() )
         throw std::runtime_error( "option-name is not a string" );
     auto & option_name = option_name_j.string_ref();
-
-    try
-    {
-        update_option( option_name, rsutils::json::value< float >( value_j ) );
-    }
-    catch( std::exception const & e )
-    {
-        LOG_DEBUG( "option '" << option_name << "': " << e.what() );
-    }
+    update_option( option_name, rsutils::json::value< float >( value_j ) );
 }
 
 
@@ -562,11 +538,12 @@ void dds_device::impl::create_metadata_reader()
             topics::flexible_msg message;
             while( topics::flexible_msg::take_next( *_metadata_reader, &message ) )
             {
-                if( message.is_valid() && _on_metadata_available )
+                if( message.is_valid() && _on_metadata_available.size() )
                 {
                     try
                     {
-                        _on_metadata_available( std::move( message.json_data() ) );
+                        auto sptr = std::make_shared< const nlohmann::json >( message.json_data() );
+                        _on_metadata_available.raise( sptr );
                     }
                     catch( std::exception const & e )
                     {
