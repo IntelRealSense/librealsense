@@ -435,6 +435,7 @@ void log_callback_end( uint32_t fps,
     {
         _raw_sensor->register_option(id, option);
         sensor_base::register_option(id, option);
+        _options_watcher.register_option( id, option);
     }
 
     // Used in dynamic discovery of supported controls in generic UVC devices
@@ -485,6 +486,7 @@ void log_callback_end( uint32_t fps,
     {
         _raw_sensor->unregister_option(id);
         sensor_base::unregister_option(id);
+        _options_watcher.unregister_option( id );
     }
 
     void synthetic_sensor::register_pu(rs2_option id)
