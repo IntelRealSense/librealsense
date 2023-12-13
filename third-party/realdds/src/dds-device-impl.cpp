@@ -32,6 +32,7 @@ static std::string const id_device_options( "device-options", 14 );
 static std::string const id_stream_header( "stream-header", 13 );
 static std::string const id_stream_options( "stream-options", 14 );
 static std::string const value_key( "value", 5 );
+static std::string const option_values_key( "option-values", 13 );
 static std::string const sample_key( "sample", 6 );
 static std::string const status_key( "status", 6 );
 static std::string const status_ok( "ok", 2 );
@@ -240,11 +241,6 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
         // Ignore errors
         throw std::runtime_error( "status not OK" );
     }
-    float new_value;
-    if( ! rsutils::json::get_ex( j, value_key, &new_value ) )
-    {
-        throw std::runtime_error( "missing value" );
-    }
     // We need the original control request as part of the reply, otherwise we can't know what option this is for
     auto it = j.find( control_key );
     if( it == j.end() )
@@ -256,33 +252,92 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
     {
         throw std::runtime_error( "control is not an object" );
     }
-    std::string option_name;
-    if( ! rsutils::json::get_ex( control, option_name_key, &option_name ) )
-    {
-        throw std::runtime_error( "missing control/option-name" );
-    }
-    
-    // Find the option and set its value
+
+    // Find the relevant (stream) options to update
     dds_options const * options = &_options;
     std::string stream_name;  // default = empty = device option
-    if( rsutils::json::get_ex( control, stream_name_key, &stream_name ) && !stream_name.empty() )
+    if( rsutils::json::get_ex( control, stream_name_key, &stream_name ) && ! stream_name.empty() )
     {
         auto stream_it = _streams.find( stream_name );
         if( stream_it == _streams.end() )
-        {
-            throw std::runtime_error( "owner not found" );
-        }
+            throw std::runtime_error( "stream not found" );
         options = &stream_it->second->options();
     }
-    for( auto & option : *options )
+
+    auto update_option = [&]( std::string const & option_name, float const new_value )
     {
-        if( option->get_name() == option_name )
+        // Find the option and set its value
+        for( auto & option : *options )
         {
-            option->set_value( new_value );
-            return;
+            if( option->get_name() == option_name )
+            {
+                option->set_value( new_value );
+                return;
+            }
         }
+        throw std::runtime_error( "not found" );
+    };
+
+    rsutils::json::nested value_j( j, value_key );
+    if( ! value_j.exists() )
+    {
+        rsutils::json::nested option_values( j, option_values_key );
+        if( ! option_values.is_object() )
+            throw std::runtime_error( "missing value or option-values" );
+        for( auto it = option_values->begin(); it != option_values->end(); ++it )
+        {
+            try
+            {
+                update_option( it.key(), it.value().get< float >() );
+            }
+            catch( std::exception const & e )
+            {
+                LOG_DEBUG( "option '" << it.key() << "': " << e.what() );
+            }
+        }
+        return;
     }
-    throw std::runtime_error( "option not found" );
+
+    rsutils::json::nested option_name_j( control, option_name_key );
+    if( ! option_name_j.exists() )
+        throw std::runtime_error( "missing option-name" );
+
+    if( value_j.is_array() )
+    {
+        if( ! option_name_j->is_array() )
+            throw std::runtime_error( "'option-name' does not match 'value' array type" );
+        if( value_j->size() != option_name_j->size() )
+            throw std::runtime_error( "'option-name' does not match 'value' array size" );
+
+        auto size = value_j->size();
+        for( auto x = 0; x < size; ++x )
+        {
+            auto const & option_name = rsutils::json::string_ref( option_name_j->at( x ) );
+            auto const new_value = rsutils::json::value< float >( value_j->at( x ) );
+            try
+            {
+                update_option( option_name, new_value );
+            }
+            catch( std::exception const & e )
+            {
+                LOG_DEBUG( "option '" << option_name << "': " << e.what() );
+            }
+        }
+        return;
+    }
+
+    if( ! option_name_j->is_string() )
+        throw std::runtime_error( "option-name is not a string" );
+    auto & option_name = option_name_j.string_ref();
+
+    try
+    {
+        update_option( option_name, rsutils::json::value< float >( value_j ) );
+    }
+    catch( std::exception const & e )
+    {
+        LOG_DEBUG( "option '" << option_name << "': " << e.what() );
+    }
 }
 
 

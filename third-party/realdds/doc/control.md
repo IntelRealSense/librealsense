@@ -61,6 +61,7 @@ Returns or sets the current `value` of an option within a device.
 
 - `id` is `query-option` or `set-option`
 - `option-name` is the unique option name within its owner
+    - Usually this is a single string value, but can also be an array of names for bulk queries: `["option1", "option2", ...]`
 - `stream-name` is the unique name of the stream it's in within the device
     - for a device option, this may be omitted
 - for `set-option`, `value` is the new value (float)
@@ -75,6 +76,8 @@ Returns or sets the current `value` of an option within a device.
 The reply should include the original control, plus:
 
 - `value` will include the current or new value
+    - In the case of bulk queries, this will be an array of values, in the same size and ordering as the control's `option-name` array: `[<value-of-option1>, <value-of-option2>, ...]`
+    - If the `option-name` array is empty, all option values will be returned in a `option-values` key, instead (see below)
 
 ```JSON
 {
