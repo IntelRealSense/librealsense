@@ -122,9 +122,9 @@ rsutils::subscription dds_device::on_metadata_available( on_metadata_available_c
     return _impl->on_metadata_available( std::move( cb ) );
 }
 
-void dds_device::on_device_log( on_device_log_callback cb )
+rsutils::subscription dds_device::on_device_log( on_device_log_callback && cb )
 {
-    _impl->on_device_log( cb );
+    return _impl->on_device_log( std::move( cb ) );
 }
 
 rsutils::subscription dds_device::on_notification( on_notification_callback && cb )

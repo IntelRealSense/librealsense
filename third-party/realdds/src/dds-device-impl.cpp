@@ -348,25 +348,17 @@ void dds_device::impl::on_log( nlohmann::json const & j, eprosima::fastdds::dds:
         {
             if( ! entry.is_array() )
                 throw std::runtime_error( "not an array" );
-            if( entry.size() > 4 )
-                throw std::runtime_error( "too long" );
+            if( entry.size() < 3 || entry.size() > 4 )
+                throw std::runtime_error( "bad array length" );
             auto timestamp = time_from( rsutils::json::get< dds_nsec >( entry, 0 ) );
-            auto const stype = rsutils::json::get< std::string >( entry, 1 );
+            auto const & stype = rsutils::json::string_ref( entry[1] );
             if( stype.length() != 1 || ! strchr( "EWID", stype[0] ) )
                 throw std::runtime_error( "type not one of 'EWID'" );
             char const type = stype[0];
-            auto const text = rsutils::json::get< std::string >( entry, 2 );
-            nlohmann::json data;
-            if( entry.size() > 3 )
-            {
-                data = entry.at( 3 );
-                if( ! data.is_object() )
-                    throw std::runtime_error( "data is not an object" );
-            }
+            auto const & text = rsutils::json::string_ref( entry[2] );
+            nlohmann::json const & data = entry.size() > 3 ? entry[3] : rsutils::json::null_json;
 
-            if( _on_device_log )
-                _on_device_log( timestamp, type, text, data );
-            else
+            if( ! _on_device_log.raise( timestamp, type, text, data ) )
                 LOG_DEBUG( "[" << debug_name() << "][" << timestr( timestamp ) << "][" << type << "] " << text
                                << " [" << data << "]" );
         }

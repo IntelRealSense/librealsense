@@ -94,10 +94,15 @@ public:
         return _on_metadata_available.subscribe( std::move( cb ) );
     }
 
-    typedef std::function< void(
-        dds_time const & timestamp, char type, std::string const & text, nlohmann::json const & data ) >
-        on_device_log_callback;
-    void on_device_log( on_device_log_callback cb ) { _on_device_log = cb; }
+    using on_device_log_signal = rsutils::signal< dds_time const &,          // timestamp
+                                                  char,                      // type
+                                                  std::string const &,       // text
+                                                  nlohmann::json const & >;  // data
+    using on_device_log_callback = on_device_log_signal::callback;
+    rsutils::subscription on_device_log( on_device_log_callback && cb )
+    {
+        return _on_device_log.subscribe( std::move( cb ) );
+    }
 
     using on_notification_signal = rsutils::signal< std::string const &, nlohmann::json const & >;
     using on_notification_callback = on_notification_signal::callback;
@@ -128,7 +133,7 @@ private:
     void handle_notification( nlohmann::json const &, eprosima::fastdds::dds::SampleInfo const & );
 
     on_metadata_available_signal _on_metadata_available;
-    on_device_log_callback _on_device_log;
+    on_device_log_signal _on_device_log;
     on_notification_signal _on_notification;
 };
 

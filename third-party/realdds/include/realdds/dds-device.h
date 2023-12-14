@@ -72,7 +72,7 @@ public:
     typedef std::function< void(
         dds_time const & timestamp, char type, std::string const & text, nlohmann::json const & data ) >
         on_device_log_callback;
-    void on_device_log( on_device_log_callback cb );
+    rsutils::subscription on_device_log( on_device_log_callback && cb );
 
     typedef std::function< void( std::string const & id, nlohmann::json const & ) > on_notification_callback;
     rsutils::subscription on_notification( on_notification_callback && );
