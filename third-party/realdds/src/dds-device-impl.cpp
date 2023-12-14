@@ -101,19 +101,19 @@ void dds_device::impl::set_state( state_t new_state )
             nlohmann::json md_settings = rsutils::json::nested( _device_settings, "metadata" );
             if( ! md_settings.is_null() && ! md_settings.is_object() )  // not found is null
             {
-                LOG_DEBUG( "... metadata is available but device/metadata is disabled" );
+                LOG_DEBUG( "[" << debug_name() << "] ... metadata is available but device/metadata is disabled" );
                 _metadata_reader.reset();
             }
             else
             {
-                LOG_DEBUG( "... metadata is enabled" );
+                LOG_DEBUG( "[" << debug_name() << "] ... metadata is enabled" );
                 dds_topic_reader::qos rqos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS );
                 rqos.history().depth = 10; // Support receive metadata from multiple streams
                 rqos.override_from_json( md_settings );
                 _metadata_reader->run( rqos );
             }
         }
-        LOG_DEBUG( "device '" << _info.debug_name() << "' (" << _participant->print( guid() ) << ") is ready" );
+        LOG_DEBUG( "[" << debug_name() << "] device is ready" );
     }
 
     _state = new_state;
@@ -153,17 +153,22 @@ dds_guid const & dds_device::impl::guid() const
 }
 
 
+std::string dds_device::impl::debug_name() const
+{
+    return rsutils::string::from() << _info.debug_name() << _participant->print( guid() );
+}
+
+
 void dds_device::impl::wait_until_ready( size_t timeout_ms )
 {
     if( is_ready() )
         return;
 
-    LOG_DEBUG( "waiting for '" << _info.debug_name() << "' ..." );
     rsutils::time::timer timer{ std::chrono::milliseconds( timeout_ms ) };
     do
     {
         if( timer.has_expired() )
-            DDS_THROW( runtime_error, "timeout waiting for '" << _info.debug_name() << "'" );
+            DDS_THROW( runtime_error, "timeout waiting for '" << debug_name() << "'" );
         std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
     }
     while( ! is_ready() );
@@ -185,11 +190,11 @@ void dds_device::impl::handle_notification( nlohmann::json const & j,
     }
     catch( std::exception const & e )
     {
-        LOG_DEBUG( "notification error: " << e.what() << "  " << j );
+        LOG_DEBUG( "[" << debug_name() << "] notification error: " << e.what() << "\n    " << j );
     }
     catch( ... )
     {
-        LOG_DEBUG( "notification error: unknown exception  " << j );
+        LOG_DEBUG( "[" << debug_name() << "] notification error: unknown exception\n    " << j );
     }
 
     try
@@ -220,11 +225,11 @@ void dds_device::impl::handle_notification( nlohmann::json const & j,
     }
     catch( std::exception const & e )
     {
-        LOG_DEBUG( "reply error: " << e.what() << "  " << j );
+        LOG_DEBUG( "[" << debug_name() << "] reply error: " << e.what() << "  " << j );
     }
     catch( ... )
     {
-        LOG_DEBUG( "reply error: unknown exception  " << j );
+        LOG_DEBUG( "[" << debug_name() << "] reply error: unknown exception  " << j );
     }
 }
 
@@ -275,7 +280,7 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
                 return;
             }
         }
-        LOG_DEBUG( "option '" << option_name << "': not found" );
+        LOG_DEBUG( "[" << debug_name() << "] option '" << option_name << "': not found" );
     };
 
     rsutils::json::nested value_j( j, value_key );
@@ -363,7 +368,7 @@ void dds_device::impl::on_log( nlohmann::json const & j, eprosima::fastdds::dds:
             if( _on_device_log )
                 _on_device_log( timestamp, type, text, data );
             else
-                LOG_DEBUG( "[" << _info.debug_name() << "][" << timestr( timestamp ) << "][" << type << "] " << text
+                LOG_DEBUG( "[" << debug_name() << "][" << timestr( timestamp ) << "][" << type << "] " << text
                                << " [" << data << "]" );
         }
         catch( std::exception const & e )
@@ -547,7 +552,7 @@ void dds_device::impl::create_metadata_reader()
                     }
                     catch( std::exception const & e )
                     {
-                        LOG_DEBUG( "metadata exception: " << e.what() );
+                        LOG_DEBUG( "[" << debug_name() << "] metadata exception: " << e.what() );
                     }
                 }
             }
@@ -580,7 +585,7 @@ void dds_device::impl::on_device_header( nlohmann::json const & j, eprosima::fas
     eprosima::fastrtps::rtps::iHandle2GUID( _server_guid, sample.publication_handle );
 
     _n_streams_expected = rsutils::json::get< size_t >( j, "n-streams" );
-    LOG_DEBUG( "... " << id_device_header << ": " << _n_streams_expected << " streams expected" );
+    LOG_DEBUG( "[" << debug_name() << "] ... " << id_device_header << ": " << _n_streams_expected << " streams expected" );
 
     if( rsutils::json::has( j, "extrinsics" ) )
     {
@@ -588,7 +593,7 @@ void dds_device::impl::on_device_header( nlohmann::json const & j, eprosima::fas
         {
             std::string from_name = rsutils::json::get< std::string >( ex, 0 );
             std::string to_name = rsutils::json::get< std::string >( ex, 1 );
-            LOG_DEBUG( "    ... got extrinsics from " << from_name << " to " << to_name );
+            LOG_DEBUG( "[" << debug_name() << "]     ... got extrinsics from " << from_name << " to " << to_name );
             extrinsics extr = extrinsics::from_json( rsutils::json::get< nlohmann::json >( ex, 2 ) );
             _extrinsics_map[std::make_pair( from_name, to_name )] = std::make_shared< extrinsics >( extr );
         }
@@ -605,7 +610,7 @@ void dds_device::impl::on_device_options( nlohmann::json const & j, eprosima::fa
 
     if( rsutils::json::has( j, "options" ) )
     {
-        LOG_DEBUG( "... " << id_device_options << ": " << j["options"].size() << " options received" );
+        LOG_DEBUG( "[" << debug_name() << "] ... " << id_device_options << ": " << j["options"].size() << " options received" );
 
         for( auto & option_json : j["options"] )
         {
@@ -674,7 +679,7 @@ void dds_device::impl::on_stream_header( nlohmann::json const & j, eprosima::fas
                    "failed to instantiate stream type '" << stream_type << "' (instead, got '" << stream->type_string()
                                                          << "')" );
 
-    LOG_DEBUG( "... stream " << _streams.size() << "/" << _n_streams_expected << " '" << stream_name
+    LOG_DEBUG( "[" << debug_name() << "] ... stream " << _streams.size() << "/" << _n_streams_expected << " '" << stream_name
                              << "' received with " << profiles.size() << " profiles"
                              << ( stream->metadata_enabled() ? " and metadata" : "" ) );
 

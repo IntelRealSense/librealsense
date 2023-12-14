@@ -75,6 +75,7 @@ public:
           topics::device_info const & info );
 
     dds_guid const & guid() const;
+    std::string debug_name() const;
 
     void wait_until_ready( size_t timeout_ms );
     bool is_ready() const { return state_t::READY == _state; }
