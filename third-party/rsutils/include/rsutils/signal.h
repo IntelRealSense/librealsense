@@ -88,22 +88,27 @@ public:
             } );
     }
 
-    void raise( Args... args )
+    bool raise( Args... args )
     {
-        std::vector< callback > functions;
+        std::unique_lock< std::mutex > locker( _impl->mutex );
+        auto const N = _impl->subscribers.size();
+        if( ! N )
+            return false;  // no notifications generated
 
-        {
-            std::lock_guard< std::mutex > locker( _impl->mutex );
-            functions.reserve( _impl->subscribers.size() );
-            for( auto const & s : _impl->subscribers )
-                functions.push_back( s.second );
-        }
+        std::vector< callback > functions;
+        functions.reserve( N );
+        for( auto const & s : _impl->subscribers )
+            functions.push_back( s.second );
+
+        locker.unlock();
 
         // NOTE: when calling our subscribers, we do not perfectly forward on purpose to avoid the situation where the
         // first subscriber will move an argument and the second will then get nothing!
         //
         for( auto const & func : functions )
             func( /*std::forward< Args >(*/ args /*)*/... );
+
+        return true;  // notifications went out
     }
 
     // How many subscriptions are active
