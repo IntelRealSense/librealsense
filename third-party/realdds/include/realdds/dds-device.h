@@ -67,15 +67,15 @@ public:
     bool supports_metadata() const;
 
     typedef std::function< void( std::shared_ptr< const nlohmann::json > const & md ) > on_metadata_available_callback;
-    rsutils::subscription on_metadata_available( on_metadata_available_callback && cb );
+    rsutils::subscription on_metadata_available( on_metadata_available_callback && );
 
     typedef std::function< void(
         dds_time const & timestamp, char type, std::string const & text, nlohmann::json const & data ) >
         on_device_log_callback;
     void on_device_log( on_device_log_callback cb );
 
-    typedef std::function< bool( std::string const & id, nlohmann::json const & ) > on_notification_callback;
-    void on_notification( on_notification_callback );
+    typedef std::function< void( std::string const & id, nlohmann::json const & ) > on_notification_callback;
+    rsutils::subscription on_notification( on_notification_callback && );
 
 private:
     class impl;

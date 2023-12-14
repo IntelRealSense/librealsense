@@ -127,9 +127,9 @@ void dds_device::on_device_log( on_device_log_callback cb )
     _impl->on_device_log( cb );
 }
 
-void dds_device::on_notification( on_notification_callback cb )
+rsutils::subscription dds_device::on_notification( on_notification_callback && cb )
 {
-    _impl->on_notification( cb );
+    return _impl->on_notification( std::move( cb ) );
 }
 
 

@@ -99,8 +99,12 @@ public:
         on_device_log_callback;
     void on_device_log( on_device_log_callback cb ) { _on_device_log = cb; }
 
-    typedef std::function< bool( std::string const &, nlohmann::json const & ) > on_notification_callback;
-    void on_notification( on_notification_callback cb ) { _on_notification = cb; }
+    using on_notification_signal = rsutils::signal< std::string const &, nlohmann::json const & >;
+    using on_notification_callback = on_notification_signal::callback;
+    rsutils::subscription on_notification( on_notification_callback && cb )
+    {
+        return _on_notification.subscribe( std::move( cb ) );
+    }
 
 private:
     void create_notifications_reader();
@@ -125,7 +129,7 @@ private:
 
     on_metadata_available_signal _on_metadata_available;
     on_device_log_callback _on_device_log;
-    on_notification_callback _on_notification;
+    on_notification_signal _on_notification;
 };
 
 

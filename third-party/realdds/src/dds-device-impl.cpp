@@ -185,8 +185,7 @@ void dds_device::impl::handle_notification( nlohmann::json const & j,
         auto it = _notification_handlers.find( id );
         if( it != _notification_handlers.end() )
             ( this->*( it->second ) )( j, sample );
-        else if( ! _on_notification || ! _on_notification( id, j ) )
-            throw std::runtime_error( "unhandled" );
+        _on_notification.raise( id, j );
     }
     catch( std::exception const & e )
     {

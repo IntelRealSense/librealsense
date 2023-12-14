@@ -913,12 +913,13 @@ PYBIND11_MODULE(NAME, m) {
                       (dds_device &, dds_time const &, char, std::string const &, py::object && ),
                       (dds_time const & timestamp, char type, std::string const & text, nlohmann::json const & data),
                       callback( self, timestamp, type, text, json_to_py( data ) ); ) )
-        .def( FN_FWD_R( dds_device,
-                        on_notification,
-                        false,
-                        (dds_device &, std::string const &, py::object &&),
-                        ( std::string const & id, nlohmann::json const & data ),
-                        return callback( self, id, json_to_py( data ) ); ) )
+        .def( "on_notification",
+              []( dds_device & self, std::function< void( dds_device &, std::string const &, py::object && ) > callback )
+              {
+                  return std::make_shared< subscription >( self.on_notification(
+                      [&self, callback]( std::string const & id, nlohmann::json const & data )
+                      { FN_FWD_CALL( dds_device, "on_notification", callback( self, id, json_to_py( data ) ); ) } ) );
+              } )
         .def( "n_streams", &dds_device::number_of_streams )
         .def( "streams",
               []( dds_device const & self ) {
