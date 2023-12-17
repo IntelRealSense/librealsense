@@ -186,4 +186,14 @@ for frame_num in range(FRAMES_TO_CHECK):
 test.check(is_there_depth is True)
 test.finish()
 
+# if there is no depth, we might get different results running this test, so we only run it if we actually find depth
+if is_there_depth:
+    # only the safety camera makes a clear difference between laser on and off in some cases
+    if "D585S" in dev.get_info(rs.camera_info.name):
+        test.start("Testing less black pixels present with the laser on")
+        _, no_laser_black_pixels = is_depth_meaningful(cfg, laser_enabled=False, save_image=DEBUG_MODE, show_image=DEBUG_MODE)
+        test.check(no_laser_black_pixels > max_black_pixels)
+        test.finish()
+else:
+    log.i("Frame has no depth! ")
 test.print_results_and_exit()
