@@ -351,8 +351,10 @@ namespace librealsense
 
         bool is_crc_valid(const S* md_info) const
         {
-            LOG_ERROR("No CRC is sent within this stream's metadata");
-            return false;
+            Attribute crc = *(Attribute*)(reinterpret_cast<const uint8_t*>(md_info) + _crc_offset); //Attribute = CRC's type (ex. uint32_t)
+            auto computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<const uint8_t*>(md_info),
+                sizeof(S) - sizeof(crc));
+            return (crc == computed_crc32);
         }
     };
 
