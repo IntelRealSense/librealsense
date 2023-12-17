@@ -2,7 +2,7 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 
-#include "options-watcher.h"
+#include <src/core/options-watcher.h>
 #include <proc/synthetic-stream.h>
 
 

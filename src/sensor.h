@@ -7,7 +7,7 @@
 #include "source.h"
 #include "core/extension.h"
 #include "proc/formats-converter.h"
-#include <core/options-watcher.h>
+#include <src/core/options-watcher.h>
 
 #include <rsutils/lazy.h>
 #include <rsutils/signal.h>
