@@ -6,8 +6,9 @@
 
 #include "frame.h"
 #include "metadata.h"
-#include <cmath>
 
+#include <cmath>
+#include <rsutils/number/crc32.h>
 #include <rsutils/string/from.h>
 
 
@@ -320,6 +321,50 @@ namespace librealsense
             return true;
         }
     };
+
+    template<class S, class Attribute, typename Flag>
+    class md_attribute_parser_with_crc : public md_attribute_parser<S, Attribute, Flag>
+    {
+    public: 
+        md_attribute_parser_with_crc(Attribute S::* attribute_name, Flag flag, unsigned long long offset, attrib_modifyer mod, unsigned long long crc_offset)
+            : md_attribute_parser<S, Attribute, Flag>(attribute_name, flag, offset, mod), _crc_offset(crc_offset) {}
+
+    protected:
+        unsigned long long _crc_offset; // offset of the crc inside the S class
+        bool is_attribute_valid(const S* s) const override
+        {
+            if (!md_attribute_parser<S, Attribute, Flag>::is_attribute_valid(s))
+                return false;
+
+            if (!is_crc_valid(s))
+            {
+                LOG_DEBUG("Metadata CRC mismatch");
+                return false;
+            }
+
+            return true;
+        }
+
+    private:
+        md_attribute_parser_with_crc() = delete;
+        md_attribute_parser_with_crc(const md_attribute_parser_with_crc&) = delete;
+
+        bool is_crc_valid(const S* md_info) const
+        {
+            LOG_ERROR("No CRC is sent within this stream's metadata");
+            return false;
+        }
+    };
+
+    /**\brief A helper function to create a specialized attribute parser.
+     *  Return it as a pointer to a base-class*/
+    template<class S, class Attribute, typename Flag>
+    std::shared_ptr<md_attribute_parser_base> make_attribute_parser_with_crc(Attribute S::* attribute, Flag flag, unsigned long long offset, unsigned long long crc_offset, attrib_modifyer mod = nullptr)
+    {
+        std::shared_ptr<md_attribute_parser<S, Attribute, Flag>> parser(new md_attribute_parser_with_crc<S, Attribute, Flag>(attribute, flag, offset, mod, crc_offset));
+        return parser;
+    }
+
 
 
     class ds_md_attribute_actual_fps : public md_attribute_parser_base

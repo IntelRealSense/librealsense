@@ -197,7 +197,7 @@ namespace librealsense
     {
         if (_separate_color)
         {
-            auto md_prop_offset = offsetof(metadata_raw, mode) +
+            auto md_prop_offset = metadata_raw_mode_offset +
                 offsetof(md_rgb_mode, rgb_mode) +
                 offsetof(md_rgb_normal_mode, intel_rgb_control);
 
@@ -207,7 +207,7 @@ namespace librealsense
         else
         {
             // attributes of md_rgb_control
-            auto md_prop_offset = offsetof(metadata_raw, mode) +
+            auto md_prop_offset = metadata_raw_mode_offset +
                 offsetof(md_rgb_mode, rgb_mode) +
                 offsetof(md_rgb_normal_mode, intel_rgb_control);
 

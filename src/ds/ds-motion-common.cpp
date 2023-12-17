@@ -410,7 +410,7 @@ namespace librealsense
         _raw_fisheye_ep->register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE, make_additional_data_parser(&frame_additional_data::fisheye_ae_mode));
 
         // attributes of md_capture_timing
-        auto md_prop_offset = offsetof(metadata_raw, mode) +
+        auto md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_fisheye_mode, fisheye_mode) +
             offsetof(md_fisheye_normal_mode, intel_capture_timing);
 
@@ -419,12 +419,12 @@ namespace librealsense
             make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
 
         // attributes of md_capture_stats
-        md_prop_offset = offsetof(metadata_raw, mode) +
+        md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_fisheye_mode, fisheye_mode) +
             offsetof(md_fisheye_normal_mode, intel_capture_stats);
 
         // attributes of md_capture_stats
-        md_prop_offset = offsetof(metadata_raw, mode) +
+        md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_fisheye_mode, fisheye_mode) +
             offsetof(md_fisheye_normal_mode, intel_configuration);
 
@@ -435,7 +435,7 @@ namespace librealsense
         _raw_fisheye_ep->register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_HEIGHT, make_attribute_parser(&md_configuration::height, md_configuration_attributes::height_attribute, md_prop_offset));
 
         // attributes of md_fisheye_control
-        md_prop_offset = offsetof(metadata_raw, mode) +
+        md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_fisheye_mode, fisheye_mode) +
             offsetof(md_fisheye_normal_mode, intel_fisheye_control);
 
