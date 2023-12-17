@@ -111,12 +111,19 @@ std::map< rs2_option, std::shared_ptr< option > > options_watcher::update_option
 
         for( const auto & option : _options )
         {
-            auto curr_val = option.second->query();
-
-            if( _option_values[option.first] != curr_val )
+            try
             {
-                _option_values[option.first] = curr_val;
-                updated_options.insert( option );
+                auto curr_val = option.second->query();
+
+                if( _option_values[option.first] != curr_val )
+                {
+                    _option_values[option.first] = curr_val;
+                    updated_options.insert( option );
+                }
+            }
+            catch( ... )
+            {
+                // Some options cannot be queried all the time (i.e. streaming only)
             }
         }
     }
