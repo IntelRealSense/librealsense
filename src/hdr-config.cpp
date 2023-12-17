@@ -15,7 +15,6 @@ namespace librealsense
         _sensor(depth_ep),
         _is_enabled(false),
         _is_config_in_process(false),
-        _has_config_changed(false),
         _current_hdr_sequence_index(DEFAULT_CURRENT_HDR_SEQUENCE_INDEX),
         _auto_exposure_to_be_restored(false),
         _emitter_on_off_to_be_restored(false),
@@ -215,12 +214,6 @@ namespace librealsense
         default:
             throw invalid_value_exception("option is not an HDR option");
         }
-
-        // subpreset configuration change is immediately sent to firmware if HDR is already running
-        if (_is_enabled && _has_config_changed)
-        {
-            send_sub_preset_to_fw();
-        }
     }
 
     bool hdr_config::is_config_in_process() const
@@ -264,7 +257,7 @@ namespace librealsense
                 if (!_is_enabled)
                 {
                     // saving status of options that are not compatible with hdr,
-                // so that they could be reenabled after hdr disable
+                    // so that they could be reenabled after hdr disable
                     set_options_to_be_restored_after_disable();
 
                     if (_use_workaround)
@@ -281,7 +274,14 @@ namespace librealsense
                     }
 
                     _is_enabled = send_sub_preset_to_fw();
-                    _has_config_changed = false;
+                    if (!_is_enabled)
+                    {
+                        LOG_WARNING("Couldn't enable HDR." );
+                    }
+                }
+                else
+                {
+                    LOG_WARNING("HDR is already enabled. Skipping the request." );
                 }
             }
             else
@@ -504,14 +504,22 @@ namespace librealsense
 
     void hdr_config::set_exposure(float value)
     {
-        _hdr_sequence_params[_current_hdr_sequence_index]._exposure = value;
-        _has_config_changed = true;
+        if (!_is_enabled)
+            _hdr_sequence_params[_current_hdr_sequence_index]._exposure = value;
+        else
+            throw wrong_api_call_sequence_exception(rsutils::string::from()
+                << "Cannot update HDR config (exposure) while HDR mode is active." );
     }
 
     void hdr_config::set_gain(float value)
     {
-        _hdr_sequence_params[_current_hdr_sequence_index]._gain = value;
-        _has_config_changed = true;
+        if (!_is_enabled)
+        {
+            _hdr_sequence_params[_current_hdr_sequence_index]._gain = value;
+        }
+        else
+            throw wrong_api_call_sequence_exception(rsutils::string::from()
+                << "Cannot update HDR config (gain) while HDR mode is active." );
     }
 
 

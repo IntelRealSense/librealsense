@@ -200,10 +200,6 @@ namespace librealsense
 
                 synthetic_sensor::open(requests);
 
-                // needed in order to restore the HDR sub-preset when streaming is turned off and on
-                if (_hdr_cfg && _hdr_cfg->is_enabled())
-                    get_option(RS2_OPTION_HDR_ENABLED).set(1.f);
-
                 // Activate Thermal Compensation tracking
                 if (supports_option(RS2_OPTION_THERMAL_COMPENSATION))
                     _owner->_thermal_monitor->update(true);
