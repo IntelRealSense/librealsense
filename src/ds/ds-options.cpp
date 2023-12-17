@@ -629,8 +629,9 @@ namespace librealsense
         else
         {
             if (_hdr_cfg->is_enabled())
-                LOG_WARNING("The control - " << _uvc_option->get_description()
-                     << " - is locked while HDR mode is active.\n"); 
+                throw wrong_api_call_sequence_exception(
+                    rsutils::string::from() << "The control - " << _uvc_option->get_description()
+                                    << " - is locked while HDR mode is active.");
             else
                 _uvc_option->set(value);
         }

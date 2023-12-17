@@ -79,7 +79,6 @@ namespace librealsense
         int _current_hdr_sequence_index;
         mutable bool _is_enabled;
         bool _is_config_in_process;
-        bool _has_config_changed;
         bool _auto_exposure_to_be_restored;
         bool _emitter_on_off_to_be_restored;
         hw_monitor& _hwm;
