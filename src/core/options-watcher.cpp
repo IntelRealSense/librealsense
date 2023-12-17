@@ -34,7 +34,15 @@ void options_watcher::register_option( rs2_option id, std::shared_ptr< option > 
     {
         std::lock_guard< std::mutex > lock( _mutex );
         _options[id] = option;
-        _option_values[id] = option->query();
+        try
+        {
+            _option_values[id] = option->query();
+        }
+        catch( ... )
+        {
+            // Some options cannot be queried all the time (i.e. streaming only)
+            _option_values[id] = 0.0f;
+        }
     }
 
     if( should_start() )
