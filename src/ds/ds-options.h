@@ -31,10 +31,10 @@ namespace librealsense
 
         const char* get_description() const override;
 
-        explicit asic_and_projector_temperature_options(uvc_sensor& ep, rs2_option opt);
+        explicit asic_and_projector_temperature_options(std::shared_ptr <uvc_sensor> && ep, rs2_option opt);
 
     private:
-        uvc_sensor&                 _ep;
+        std::weak_ptr<uvc_sensor>   _ep;
         rs2_option                  _option;
     };
 
@@ -242,7 +242,7 @@ namespace librealsense
     class alternating_emitter_option : public option
     {
     public:
-        alternating_emitter_option(hw_monitor& hwm, sensor_base* depth_ep, bool is_fw_version_using_id = true);
+        alternating_emitter_option(hw_monitor& hwm, sensor_base* depth_ep, bool is_fw_version_using_id);
         virtual ~alternating_emitter_option() = default;
         virtual void set(float value) override;
         virtual float query() const override;

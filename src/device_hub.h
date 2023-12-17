@@ -21,8 +21,12 @@ namespace librealsense
     */
     class device_hub
     {
+        device_hub( std::shared_ptr< context > ctx, int device_mask );  // private; use make()!
+        void init( std::shared_ptr< device_hub > const & );
+
     public:
-        explicit device_hub(std::shared_ptr<librealsense::context> ctx, int mask = RS2_PRODUCT_LINE_ANY);
+        static std::shared_ptr< device_hub > make( std::shared_ptr< context > const &,
+                                                   int device_mask = RS2_PRODUCT_LINE_ANY );
 
         ~device_hub();
 

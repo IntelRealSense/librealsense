@@ -792,7 +792,7 @@ namespace librealsense
         void assign_rgb_stream_extrinsic( const std::vector< uint8_t > & calib )
         {
             //write calibration to preset
-            command cmd(ds::fw_cmd::SETINTCALNEW, 0x20, 0x2);  // TODO - REMI - CAN BE REMOVED???
+            command cmd(ds::fw_cmd::SETINTCALNEW, 0x20, 0x2);
             cmd.data = calib;
             d400_device::_hw_monitor->send(cmd);
         }

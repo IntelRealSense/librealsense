@@ -103,7 +103,7 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
         {
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DISCOVERED_PARTICIPANT: {
             std::string name;
-            std::string guid = realdds::print( info.info.m_guid );  // has to be outside the mutex
+            std::string guid = rsutils::string::from( realdds::print_guid( info.info.m_guid ) );  // has to be outside the mutex
             {
                 std::lock_guard< std::mutex > lock( participants_mutex );
                 participant_info pinfo( info.info.m_participantName, info.info.m_guid.guidPrefix );
@@ -246,7 +246,7 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
         DDS_THROW( runtime_error, "provided settings are invalid" );
     _settings = settings;
 
-    LOG_DEBUG( "participant '" << participant_name << "' (" << realdds::print( guid() ) << ") is up on domain "
+    LOG_DEBUG( "participant '" << participant_name << "' (" << realdds::print_guid( guid() ) << ") is up on domain "
                                << domain_id << " with settings: " << _settings.dump( 4 ) );
 #ifdef BUILD_EASYLOGGINGPP
     // DDS participant destruction happens when all contexts are done with it but, in some situations (e.g., Python), it
@@ -294,7 +294,7 @@ rsutils::string::slice dds_participant::name() const
 
 std::string dds_participant::print( dds_guid const & guid_to_print ) const
 {
-    return realdds::print( guid_to_print, guid() );
+    return rsutils::string::from( realdds::print_guid( guid_to_print, guid() ) );
 }
 
 

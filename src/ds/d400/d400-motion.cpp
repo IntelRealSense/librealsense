@@ -165,7 +165,6 @@ namespace librealsense
 
         bool is_fisheye_avaialable = false;
         auto fisheye_infos = _ds_motion_common->init_fisheye(group, is_fisheye_avaialable);
-
         if (!is_fisheye_avaialable)
             return;
 

@@ -1,35 +1,51 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include <librealsense2/rs.hpp>
-#include "source.h"
-#include "core/processing.h"
-#include "proc/synthetic-stream.h"
 #include "device_hub.h"
+
+#include <rsutils/easylogging/easyloggingpp.h>
+#include <librealsense2/rs.hpp>
+
 
 namespace librealsense
 {
     typedef rs2::devices_changed_callback<std::function<void(rs2::event_information& info)>> hub_devices_changed_callback;
 
-    device_hub::device_hub(std::shared_ptr<librealsense::context> ctx, int mask)
+    device_hub::device_hub( std::shared_ptr< librealsense::context > ctx, int mask )
         : _ctx( ctx )
         , _mask( mask )
     {
-        _device_list = _ctx->query_devices(mask);
+    }
+
+    void device_hub::init( std::shared_ptr< device_hub > const & sptr )
+    {
+        _device_list = _ctx->query_devices( _mask );
 
         _device_change_subscription = _ctx->on_device_changes(
-            [&, mask]( std::vector< std::shared_ptr< device_info > > const & /*removed*/,
-                       std::vector< std::shared_ptr< device_info > > const & /*added*/ )
+            [&, liveliness = std::weak_ptr< device_hub >( sptr )](
+                std::vector< std::shared_ptr< device_info > > const & /*removed*/,
+                std::vector< std::shared_ptr< device_info > > const & /*added*/ )
             {
-                std::unique_lock< std::mutex > lock( _mutex );
+                if( auto keepalive = liveliness.lock() )
+                {
+                    std::unique_lock< std::mutex > lock( _mutex );
 
-                _device_list = _ctx->query_devices( mask );
+                    _device_list = _ctx->query_devices( _mask );
 
-                // Current device will point to the first available device
-                _camera_index = 0;
-                if( _device_list.size() > 0 )
-                    _cv.notify_all();
+                    // Current device will point to the first available device
+                    _camera_index = 0;
+                    if( _device_list.size() > 0 )
+                        _cv.notify_all();
+                }
             } );
+    }
+
+    /*static*/ std::shared_ptr< device_hub > device_hub::make( std::shared_ptr< librealsense::context > const & ctx,
+                                                               int mask )
+    {
+        std::shared_ptr< device_hub > sptr( new device_hub( ctx, mask ) );
+        sptr->init( sptr );
+        return sptr;
     }
 
     device_hub::~device_hub()

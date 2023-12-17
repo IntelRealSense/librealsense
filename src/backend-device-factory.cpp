@@ -126,13 +126,18 @@ std::shared_ptr< platform::backend > backend_device::get_backend()
 }
 
 
-backend_device_factory::backend_device_factory( context & ctx, callback && cb )
+backend_device_factory::backend_device_factory( std::shared_ptr< context > const & ctx, callback && cb )
     : super( ctx )
     , _device_watcher( backend_device_watcher.instance() )
     , _dtor( _device_watcher->subscribe(
-          [this, cb = std::move( cb )]( platform::backend_device_group const & old,
-                                        platform::backend_device_group const & curr )
+          [this, liveliness = std::weak_ptr< context >( ctx ), cb = std::move( cb )](
+              platform::backend_device_group const & old, platform::backend_device_group const & curr )
           {
+              // the factory should be alive as long as the context is alive
+              auto live_ctx = liveliness.lock();
+              if( ! live_ctx )
+                  return;
+
               auto old_list = create_devices_from_group( old, RS2_PRODUCT_LINE_ANY );
               auto new_list = create_devices_from_group( curr, RS2_PRODUCT_LINE_ANY );
 
@@ -166,7 +171,11 @@ backend_device_factory::~backend_device_factory()
 
 std::vector< std::shared_ptr< device_info > > backend_device_factory::query_devices( unsigned requested_mask ) const
 {
-    if( ( requested_mask & RS2_PRODUCT_LINE_SW_ONLY ) || ( _context.get_device_mask() & RS2_PRODUCT_LINE_SW_ONLY ) )
+    auto ctx = get_context();
+    if( ! ctx )
+        return {};
+
+    if( ( requested_mask & RS2_PRODUCT_LINE_SW_ONLY ) || ( ctx->get_device_mask() & RS2_PRODUCT_LINE_SW_ONLY ) )
         return {};  // We don't carry any software devices
 
     auto backend = _device_watcher->get_backend();
@@ -181,33 +190,34 @@ std::vector< std::shared_ptr< device_info > > backend_device_factory::query_devi
 std::vector< std::shared_ptr< platform::platform_device_info > >
 backend_device_factory::create_devices_from_group( platform::backend_device_group devices, int requested_mask ) const
 {
+    auto ctx = get_context();
     std::vector< std::shared_ptr< platform::platform_device_info > > list;
-    unsigned const mask = context::combine_device_masks( requested_mask, _context.get_device_mask() );
+    unsigned const mask = context::combine_device_masks( requested_mask, ctx->get_device_mask() );
     if( ! ( mask & RS2_PRODUCT_LINE_SW_ONLY ) )
     {
         if( mask & RS2_PRODUCT_LINE_D400 )
         {
-            auto d400_devices = d400_info::pick_d400_devices( _context.shared_from_this(), devices );
+            auto d400_devices = d400_info::pick_d400_devices( ctx, devices );
             std::copy( std::begin( d400_devices ), end( d400_devices ), std::back_inserter( list ) );
         }
 
         if( mask & RS2_PRODUCT_LINE_D500 )
         {
-            auto d500_devices = d500_info::pick_d500_devices( _context.shared_from_this(), devices );
+            auto d500_devices = d500_info::pick_d500_devices( ctx, devices );
             std::copy( begin( d500_devices ), end( d500_devices ), std::back_inserter( list ) );
         }
 
         // Supported recovery devices
         {
             auto recovery_devices
-                = fw_update_info::pick_recovery_devices( _context.shared_from_this(), devices.usb_devices, mask );
+                = fw_update_info::pick_recovery_devices( ctx, devices.usb_devices, mask );
             std::copy( begin( recovery_devices ), end( recovery_devices ), std::back_inserter( list ) );
         }
 
         if( mask & RS2_PRODUCT_LINE_NON_INTEL )
         {
             auto uvc_devices
-                = platform_camera_info::pick_uvc_devices( _context.shared_from_this(), devices.uvc_devices );
+                = platform_camera_info::pick_uvc_devices( ctx, devices.uvc_devices );
             std::copy( begin( uvc_devices ), end( uvc_devices ), std::back_inserter( list ) );
         }
     }

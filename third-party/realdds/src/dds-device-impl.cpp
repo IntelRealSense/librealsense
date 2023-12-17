@@ -201,9 +201,9 @@ void dds_device::impl::handle_notification( nlohmann::json const & j,
             if( sample.size() == 2 && sample.is_array() )
             {
                 // We have to be the ones who sent the control!
-                auto const guid_string = rsutils::json::get< std::string >( sample, 0 );
-                auto const control_guid_string = realdds::print( _control_writer->get()->guid(), false );  // raw guid
-                if( guid_string == control_guid_string )
+                auto const reply_guid = guid_from_string( rsutils::json::get< std::string >( sample, 0 ) );
+                auto const control_guid = _control_writer->get()->guid();
+                if( reply_guid == control_guid )
                 {
                     auto const sequence_number = rsutils::json::get< uint64_t >( sample, 1 );
                     std::unique_lock< std::mutex > lock( _replies_mutex );

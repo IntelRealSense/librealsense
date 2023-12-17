@@ -73,6 +73,9 @@ void align_gl::align_z_to_other(rs2::video_frame& aligned,
 
     // Set the depth origin of new depth frame to the old depth frame
     auto depth_ptr = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)depth.get());
+    if (!depth_ptr)
+        throw std::runtime_error("Frame interface is not depth frame");
+
     frame_ref->set_sensor(depth_ptr->get_sensor());
     depth_ptr->acquire();
     frame_holder h{ depth_ptr };
@@ -238,6 +241,8 @@ void align_gl::align_other_to_z(rs2::video_frame& aligned,
 
     auto frame_ref = (frame_interface*)aligned.get();
     auto gf = dynamic_cast<gpu_addon_interface*>(frame_ref);
+    if (!gf)
+        throw std::runtime_error("Frame interface is not gpu addon interface");
 
     uint32_t output_rgb;
     auto format = other.get_profile().format();

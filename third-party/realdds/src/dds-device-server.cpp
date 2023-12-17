@@ -282,7 +282,7 @@ void dds_device_server::on_control_message_received()
             {
                 json reply;
                 reply[sample_key] = json::array( {
-                    realdds::print( sample.sample_identity.writer_guid(), false ),  // raw guid
+                    rsutils::string::from( realdds::print_raw_guid( sample.sample_identity.writer_guid() ) ),
                     sample.sample_identity.sequence_number().to64long(),
                 } );
                 try

@@ -237,6 +237,9 @@ namespace librealsense
 
                 auto fi = (frame_interface*)f.get();
                 auto df = dynamic_cast<librealsense::depth_frame*>(fi);
+                if (!df)
+                    throw std::runtime_error("Frame interface is not depth frame");
+
                 _depth_units = df->get_units();
                 bool disparity = f.get_profile().format() == RS2_FORMAT_DISPARITY32 ? true : false;
 

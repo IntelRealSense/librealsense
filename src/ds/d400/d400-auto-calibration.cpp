@@ -709,12 +709,16 @@ namespace librealsense
                 p4 |= (1 << 6);
             if (white_wall_mode)
                 p4 |= (1 << 7);
+            if (scan_only_v3)
+                p4 |= (1 << 8);
+            if (interactive_scan_v3)
+                p4 |= (1 << 9);
 
-            std::shared_ptr<ds_advanced_mode_base> preset_recover;
             if (speed == speed_white_wall && apply_preset)
+            {
                 preset_recover = change_preset();
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            }
 
             // Begin auto-calibration
             if (host_assistance == host_assistance_type::no_assistance || host_assistance == host_assistance_type::assistance_start)
@@ -1595,6 +1599,9 @@ namespace librealsense
         if (_preset_change)
         {
             auto advanced_mode = dynamic_cast<ds_advanced_mode_base*>(this);
+            if (!advanced_mode)
+                throw std::runtime_error("Can not cast to advance mode base");
+
             if (_old_preset == RS2_RS400_VISUAL_PRESET_CUSTOM)
             {
                 advanced_mode->_preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);

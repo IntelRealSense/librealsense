@@ -80,10 +80,10 @@ static std::map< realdds::dds_domain_id, domain_context > domain_context_by_id;
 static std::mutex domain_context_by_id_mutex;
 
 
-rsdds_device_factory::rsdds_device_factory( context & ctx, callback && cb )
+rsdds_device_factory::rsdds_device_factory( std::shared_ptr< context > const & ctx, callback && cb )
     : super( ctx )
 {
-    nlohmann::json const & dds_settings = rsutils::json::nested( _context.get_settings(), std::string( "dds", 3 ) );
+    nlohmann::json const & dds_settings = rsutils::json::nested( ctx->get_settings(), std::string( "dds", 3 ) );
     if( dds_settings.is_object() && rsutils::json::get( dds_settings, std::string( "enabled", 7 ), true ) )
     {
         auto domain_id = rsutils::json::get< realdds::dds_domain_id >( dds_settings, std::string( "domain", 6 ), 0 );
@@ -107,11 +107,15 @@ rsdds_device_factory::rsdds_device_factory( context & ctx, callback && cb )
         }
         _watcher_singleton = domain.device_watcher.instance( _participant );
         _subscription = _watcher_singleton->subscribe(
-            [this, cb = std::move( cb )]( std::shared_ptr< realdds::dds_device > const & dev, bool added )
+            [liveliness = std::weak_ptr< context >( ctx ),
+             cb = std::move( cb )]( std::shared_ptr< realdds::dds_device > const & dev, bool added )
             {
+                // the factory should be alive as long as the context is alive
+                auto ctx = liveliness.lock();
+                if( ! ctx )
+                    return;
                 std::vector< std::shared_ptr< device_info > > infos_added;
                 std::vector< std::shared_ptr< device_info > > infos_removed;
-                auto ctx = _context.shared_from_this();
                 auto dev_info = std::make_shared< dds_device_info >( ctx, dev );
                 if( added )
                     infos_added.push_back( dev_info );
@@ -131,7 +135,7 @@ std::vector< std::shared_ptr< device_info > > rsdds_device_factory::query_device
     std::vector< std::shared_ptr< device_info > > list;
     if( _watcher_singleton )
     {
-        unsigned const mask = context::combine_device_masks( requested_mask, _context.get_device_mask() );
+        unsigned const mask = context::combine_device_masks( requested_mask, get_context()->get_device_mask() );
 
         _watcher_singleton->get_device_watcher()->foreach_device(
             [&]( std::shared_ptr< realdds::dds_device > const & dev ) -> bool
@@ -156,9 +160,11 @@ std::vector< std::shared_ptr< device_info > > rsdds_device_factory::query_device
                     return true;
                 }
 
-                std::shared_ptr< device_info > info
-                    = std::make_shared< dds_device_info >( _context.shared_from_this(), dev );
-                list.push_back( info );
+                if( auto ctx = get_context() )
+                {
+                    std::shared_ptr< device_info > info = std::make_shared< dds_device_info >( ctx, dev );
+                    list.push_back( info );
+                }
                 return true;  // continue iteration
             } );
     }

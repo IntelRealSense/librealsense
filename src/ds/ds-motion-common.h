@@ -4,7 +4,6 @@
 #pragma once
 
 #include "ds-device-common.h"
-#include "core/video.h"
 #include <rsutils/string/from.h>
 #include "ds-calib-parsers.h"
 

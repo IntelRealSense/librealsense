@@ -78,5 +78,12 @@ void from_json( nlohmann::json const &, hexarray & );
 // See https://github.com/nlohmann/json#arbitrary-types-conversions
 
 
+// Utility function for parsing hexarray strings to the corresponding bytes.
+// Output in 'pb'.
+// Returns the new 'pb', or null if an invalid character was encountered;
+//
+uint8_t * hex_to_bytes( char const * start, char const * end, uint8_t * pb );
+
+
 }  // namespace string
 }  // namespace rsutils

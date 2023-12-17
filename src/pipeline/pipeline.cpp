@@ -20,7 +20,7 @@ namespace librealsense
         pipeline::pipeline(std::shared_ptr<librealsense::context> ctx) :
             _ctx(ctx),
             _dispatcher(10),
-            _hub(ctx, RS2_PRODUCT_LINE_ANY_INTEL),
+            _hub( device_hub::make( ctx, RS2_PRODUCT_LINE_ANY_INTEL )),
             _synced_streams({ RS2_STREAM_COLOR, RS2_STREAM_DEPTH, RS2_STREAM_INFRARED, RS2_STREAM_FISHEYE })
         {}
 
@@ -165,7 +165,7 @@ namespace librealsense
         std::shared_ptr<device_interface> pipeline::wait_for_device(const std::chrono::milliseconds& timeout, const std::string& serial)
         {
             // pipeline's device selection shall be deterministic
-            return _hub.wait_for_device(timeout, false, serial);
+            return _hub->wait_for_device(timeout, false, serial);
         }
 
         std::shared_ptr<librealsense::context> pipeline::get_context() const
@@ -239,7 +239,7 @@ namespace librealsense
             }
 
             //hub returns true even if device already reconnected
-            if (!_hub.is_connected(*_active_profile->get_device()))
+            if (!_hub->is_connected(*_active_profile->get_device()))
             {
                 try
                 {
@@ -300,7 +300,7 @@ namespace librealsense
             }
 
             //hub returns true even if device already reconnected
-            if (!_hub.is_connected(*_active_profile->get_device()))
+            if (!_hub->is_connected(*_active_profile->get_device()))
             {
                 try
                 {

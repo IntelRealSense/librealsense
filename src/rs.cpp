@@ -20,7 +20,6 @@
 #include "core/motion-frame.h"
 #include "core/disparity-frame.h"
 #include "source.h"
-#include "core/processing.h"
 #include "proc/synthetic-stream.h"
 #include "proc/processing-blocks-factory.h"
 #include "proc/colorizer.h"
@@ -190,7 +189,7 @@ rs2_context* rs2_create_context(int api_version, rs2_error** error) BEGIN_API_CA
     verify_version_compatibility(api_version);
 
     nlohmann::json settings;
-    return new rs2_context{ std::make_shared< librealsense::context >( settings ) };
+    return new rs2_context{ context::make( settings ) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
 
@@ -198,8 +197,7 @@ rs2_context* rs2_create_context_ex(int api_version, const char * json_settings, 
 {
     verify_version_compatibility(api_version);
 
-    return new rs2_context{
-        std::make_shared< librealsense::context >( json_settings ) };
+    return new rs2_context{ context::make( json_settings ) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, json_settings)
 
@@ -212,7 +210,7 @@ NOEXCEPT_RETURN(, context)
 
 rs2_device_hub* rs2_create_device_hub(const rs2_context* context, rs2_error** error) BEGIN_API_CALL
 {
-    return new rs2_device_hub{ std::make_shared<librealsense::device_hub>(context->ctx) };
+    return new rs2_device_hub{ device_hub::make( context->ctx ) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context)
 
@@ -2245,6 +2243,8 @@ int rs2_processing_block_register_simple_option(rs2_processing_block* block, rs2
     std::shared_ptr<option> opt = std::make_shared<float_option>(option_range{ min, max, step, def });
     // TODO: am I supposed to use the extensions API here?
     auto options = dynamic_cast<options_container*>(block->options);
+    if (!options)
+        throw std::runtime_error("Options are not container options");
     options->register_option(option_id, opt);
     return true;
 }
@@ -2687,7 +2687,7 @@ NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0)
 rs2_device* rs2_create_software_device(rs2_error** error) BEGIN_API_CALL
 {
     // We're not given a context...
-    auto ctx = std::make_shared< context >( nlohmann::json::object( { { "dds", false } } ) );
+    auto ctx = context::make( nlohmann::json::object( { { "dds", false } } ) );
     auto dev_info = std::make_shared< software_device_info >( ctx );
     auto dev = std::make_shared< software_device >( dev_info );
     dev_info->set_device( dev );
