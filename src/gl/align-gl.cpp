@@ -274,8 +274,15 @@ align_gl::align_gl(rs2_stream to_stream) : align(to_stream, "Align (GLSL)")
 
 align_gl::~align_gl()
 {
-    perform_gl_action([&]()
+    try
     {
-        cleanup_gpu_resources();
-    }, []{});
+        perform_gl_action( [&]()
+        {
+            cleanup_gpu_resources();
+        }, [] {} );
+    }
+    catch(...)
+    {
+        LOG_DEBUG( "Error while cleaning up gpu resources" );
+    }
 }

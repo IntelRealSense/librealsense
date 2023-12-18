@@ -225,7 +225,14 @@ namespace librealsense
 
         ~locked_transfer()
         {
-            _heap.wait_until_empty();
+            try
+            {
+                _heap.wait_until_empty();
+            }
+            catch(...)
+            {
+                LOG_DEBUG( "Error while waiting for an empty heap" );
+            }
         }
     private:
         std::shared_ptr<platform::command_transfer> _command_transfer;
