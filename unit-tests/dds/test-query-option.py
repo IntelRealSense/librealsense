@@ -66,7 +66,7 @@ with test.remote.fork( nested_indent=None ) as remote:
                 'option-name': 'custom option'
             }, True ),  # Wait for reply
             RuntimeError,
-            'control #2 "query-option" failed: "\'s1\' option \'custom option\' not found"' )
+            'control #1 "query-option" failed: [error] \'s1\' option \'custom option\' not found' )
 
     with test.closure( 'Query all options, option-name:[]' ):
         reply = device.send_control( {

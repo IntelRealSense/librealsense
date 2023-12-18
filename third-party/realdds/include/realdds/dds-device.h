@@ -47,6 +47,11 @@ public:
     // Wait until ready. Will throw if not ready within the timeout!
     void wait_until_ready( size_t timeout_ns = 5000 );
 
+    // Utility function for checking replies:
+    // If 'p_explanation' is nullptr, will throw if the reply status is not 'ok'.
+    // Otherise will return a false if not 'ok', and the explanation will be filled out.
+    static bool check_reply( nlohmann::json const & reply, std::string * p_explanation = nullptr );
+
     //----------- below this line, a device must be running!
 
     size_t number_of_streams() const;

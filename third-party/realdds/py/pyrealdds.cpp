@@ -948,6 +948,7 @@ PYBIND11_MODULE(NAME, m) {
             },
             py::arg( "json" ), py::arg( "wait-for-reply" ) = false,
             py::call_guard< py::gil_scoped_release >() )
+        .def_static( "check_reply", &dds_device::check_reply )
         .def( "__repr__", []( dds_device const & self ) {
             std::ostringstream os;
             os << "<" SNAME ".device";

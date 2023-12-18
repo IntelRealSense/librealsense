@@ -34,11 +34,8 @@ static std::string const id_stream_options( "stream-options", 14 );
 static std::string const value_key( "value", 5 );
 static std::string const option_values_key( "option-values", 13 );
 static std::string const sample_key( "sample", 6 );
-static std::string const status_key( "status", 6 );
-static std::string const status_ok( "ok", 2 );
 static std::string const option_name_key( "option-name", 11 );
 static std::string const stream_name_key( "stream-name", 11 );
-static std::string const explanation_key( "explanation", 11 );
 static std::string const control_key( "control", 7 );
 
 static std::string const id_log( "log", 3 );
@@ -240,11 +237,11 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
 
     // This is the notification for "set-option" or "query-option", meaning someone sent a control request to set/get an
     // option value. In either case a value will be sent; we want to update ours accordingly to reflect the latest:
-    if( rsutils::json::get( j, status_key, status_ok ) != status_ok )
-    {
-        // Ignore errors
-        throw std::runtime_error( "status not OK" );
-    }
+
+    // Ignore errors
+    dds_device::check_reply( j );
+
+
     // We need the original control request as part of the reply, otherwise we can't know what option this is for
     auto it = j.find( control_key );
     if( it == j.end() )
@@ -459,7 +456,8 @@ void dds_device::impl::write_control_message( topics::flexible_msg && msg, nlohm
         *reply = std::move( actual_reply );
         _replies.erase( this_sequence_number );
 
-        if( rsutils::json::get( *reply, status_key, status_ok ) != status_ok )
+        std::string explanation;
+        if( ! dds_device::check_reply( *reply, &explanation ) )
         {
             std::ostringstream os;
             os << "control #" << this_sequence_number;
@@ -468,11 +466,7 @@ void dds_device::impl::write_control_message( topics::flexible_msg && msg, nlohm
                 if( id->is_string() )
                     os << " \"" << id.string_ref() << "\"";
             }
-            os << " failed: ";
-            if( auto e = rsutils::json::nested( *reply, explanation_key ) )
-                os << e.get();
-            else
-                os << "no explanation";
+            os << " failed: " << explanation;
             DDS_THROW( runtime_error, os.str() );
         }
     }

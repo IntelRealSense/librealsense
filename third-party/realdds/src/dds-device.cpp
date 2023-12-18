@@ -6,6 +6,8 @@
 #include <realdds/dds-topic-writer.h>
 #include "dds-device-impl.h"
 
+#include <rsutils/json.h>
+
 
 namespace realdds {
 
@@ -130,6 +132,44 @@ rsutils::subscription dds_device::on_device_log( on_device_log_callback && cb )
 rsutils::subscription dds_device::on_notification( on_notification_callback && cb )
 {
     return _impl->on_notification( std::move( cb ) );
+}
+
+
+static std::string const status_key( "status", 6 );
+static std::string const status_ok( "ok", 2 );
+static std::string const explanation_key( "explanation", 11 );
+
+
+bool dds_device::check_reply( nlohmann::json const & reply, std::string * p_explanation )
+{
+    auto status_j = rsutils::json::nested( reply, status_key );
+    if( ! status_j )
+        return true;
+    std::string explanation;
+    if( ! status_j->is_string() )
+        explanation = rsutils::string::from() << "bad status: " << status_j;
+    else if( status_j.string_ref() == status_ok )
+        return true;
+    else
+    {
+        if( auto explanation_j = rsutils::json::nested( reply, explanation_key ) )
+        {
+            if( ! explanation_j->is_string() || explanation_j.string_ref().empty() )
+                explanation = rsutils::string::from() << "[" << status_j.string_ref() << "] bad explanation: " << explanation_j;
+            else
+                explanation = rsutils::string::from() << "[" << status_j.string_ref() << "] " << explanation_j.string_ref();
+        }
+        else
+            explanation = "no explanation";
+    }
+    if( ! explanation.empty() )
+    {
+        if( ! p_explanation )
+            DDS_THROW( runtime_error, explanation );
+        *p_explanation = std::move( explanation );
+        return false;
+    }
+    return true;
 }
 
 
