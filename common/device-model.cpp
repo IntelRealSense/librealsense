@@ -3358,6 +3358,7 @@ namespace rs2
         return record_button_hover_text;
     }
 
+    //In order to record LPC and enable 3D we need to also record depth stereo sensor
     bool device_model::is_depth_mapping_camera_streaming_alone()
     {
         std::string pid = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
