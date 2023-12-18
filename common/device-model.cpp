@@ -3332,11 +3332,13 @@ namespace rs2
 
     bool device_model::disable_record_button_logic(bool is_streaming, bool is_playback_device)
     {
-        return (!is_streaming || is_playback_device);
+        bool depth_mapping_camera_streaming_alone = is_depth_mapping_camera_streaming_alone();
+        return (!is_streaming || is_playback_device || depth_mapping_camera_streaming_alone);
     }
 
     std::string device_model::get_record_button_hover_text(bool is_streaming)
     {
+        bool depth_mapping_camera_streaming_alone = is_depth_mapping_camera_streaming_alone();
         std::string record_button_hover_text;
         if (!is_streaming)
         {
@@ -3344,10 +3346,44 @@ namespace rs2
         }
         else
         {
-            record_button_hover_text = is_recording ? "Stop Recording" : "Start Recording";
+            if (depth_mapping_camera_streaming_alone)
+            {
+                record_button_hover_text = "To record Depth Mapping Camera also stream Stereo Module";
+            }
+            else
+            { 
+                record_button_hover_text = is_recording ? "Stop Recording" : "Start Recording";
+            }
         }
         return record_button_hover_text;
     }
+
+    bool device_model::is_depth_mapping_camera_streaming_alone()
+    {
+        std::string pid = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+        if (pid == "0B6B")
+        {
+            bool depth_mapping_sensor_streaming = false;
+            bool depth_stereo_sensor_streaming = false;
+            for (auto&& sub : subdevices)
+            {
+                if (sub->s->is<rs2::depth_mapping_sensor>() && sub->streaming)
+                {
+                    depth_mapping_sensor_streaming = true;
+                }
+                if (sub->s->is<rs2::depth_stereo_sensor>() && sub->streaming)
+                {
+                    depth_stereo_sensor_streaming = true;
+                }
+            }
+            if (depth_mapping_sensor_streaming && !depth_stereo_sensor_streaming)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    
 
     std::vector<std::pair<std::string, std::string>> get_devices_names(const device_list& list)
     {
