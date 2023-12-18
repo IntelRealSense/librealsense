@@ -45,14 +45,14 @@ namespace librealsense
         {
             try
             {
-                perform_gl_action([&]()
+                perform_gl_action( [&]()
                 {
                     cleanup_gpu_resources();
-                }, [] {});
+                }, [] {} );
             }
-            catch (...)
+            catch(...)
             {
-                LOG_DEBUG("Error while cleaning up gpu resources");
+                LOG_DEBUG( "Error while cleaning up gpu resources" );
             }
         }
 

@@ -58,11 +58,11 @@ namespace librealsense
         {
             try
             {
-                enable(false);
+                enable( false );
             }
-            catch (...)
+            catch(...)
             {
-                LOG_DEBUG("Error while enabling a hid device");
+                LOG_DEBUG( "Error while disabling a hid device" );
             }
         }
 
@@ -965,9 +965,9 @@ namespace librealsense
                 {
                     elem->stop_capture();
                 }
-                catch (...)
+                catch(...)
                 {
-                    LOG_DEBUG("Error while stopping capture sensor");
+                    LOG_DEBUG( "Error while stopping capture sensor" );
                 }
             }
 

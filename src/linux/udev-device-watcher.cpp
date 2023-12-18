@@ -183,9 +183,9 @@ udev_device_watcher::~udev_device_watcher()
     {
         stop();
     }
-    catch (...)
+    catch(...)
     {
-        LOG_DEBUG("Error while stopping udev device watcher");
+        LOG_DEBUG( "Error while stopping udev device watcher" );
     }
     /* Release the udev monitor */
     if( _udev_monitor )

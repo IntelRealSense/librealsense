@@ -44,15 +44,15 @@ struct callback_invocation_holder
 
     ~callback_invocation_holder()
     {
-        if (invocation)
+        if( invocation && owner )
         {
             try
             {
-                owner->deallocate(invocation);
+                owner->deallocate( invocation );
             }
-            catch (...)
+            catch( const std::exception & e )
             {
-                LOG_DEBUG("Error while callback holder deallocation");
+                LOG_DEBUG( "Error while callback holder deallocation: " << e.what() );
             }
         }
     }

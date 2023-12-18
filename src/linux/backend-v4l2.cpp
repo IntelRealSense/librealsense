@@ -182,9 +182,9 @@ namespace librealsense
             {
                 unlock();
             }
-            catch (...)
+            catch(...)
             {
-                LOG_DEBUG("Error while unlocking mutex");
+                LOG_DEBUG( "Error while unlocking mutex" );
             }
         }
 

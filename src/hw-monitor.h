@@ -229,9 +229,9 @@ namespace librealsense
             {
                 _heap.wait_until_empty();
             }
-            catch (...)
+            catch(...)
             {
-                LOG_DEBUG("Error while waiting for an empty heap");
+                LOG_DEBUG( "Error while waiting for an empty heap" );
             }
         }
     private:

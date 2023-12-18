@@ -83,9 +83,9 @@ namespace librealsense
         {
             _callback_inflight.wait_until_empty();
         }
-        catch (...)
+        catch( const std::exception & e )
         {
-            LOG_DEBUG("Error while waiting for an empty callback");
+            LOG_DEBUG( "Error while waiting for user callback to finish: " << e.what() );
         }
     }
 
