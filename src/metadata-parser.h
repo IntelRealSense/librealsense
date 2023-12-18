@@ -359,6 +359,7 @@ namespace librealsense
     };
 
     /**\brief A helper function to create a specialized attribute parser.
+     *  **Note that this class is assuming that the CRC is the last variable in the struct**
      *  Return it as a pointer to a base-class*/
     template<class S, class Attribute, typename Flag>
     std::shared_ptr<md_attribute_parser_base> make_attribute_parser_with_crc(Attribute S::* attribute, Flag flag, unsigned long long offset, unsigned long long crc_offset, attrib_modifyer mod = nullptr)
