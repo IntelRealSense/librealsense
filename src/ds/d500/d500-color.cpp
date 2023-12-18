@@ -149,7 +149,7 @@ namespace librealsense
     {
         auto& color_ep = get_color_sensor();
 
-        auto md_prop_offset = offsetof(metadata_raw, mode) +
+        auto md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_rgb_mode, rgb_mode) +
             offsetof(md_rgb_normal_mode, intel_rgb_control);
 

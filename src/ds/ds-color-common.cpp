@@ -74,7 +74,7 @@ namespace librealsense
         _color_ep.register_metadata(RS2_FRAME_METADATA_ACTUAL_FPS, std::make_shared<ds_md_attribute_actual_fps>());
 
         // attributes of md_capture_timing
-        auto md_prop_offset = offsetof(metadata_raw, mode) +
+        auto md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_rgb_mode, rgb_mode) +
             offsetof(md_rgb_normal_mode, intel_capture_timing);
 
@@ -83,7 +83,7 @@ namespace librealsense
             make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
 
         // attributes of md_rgb_control
-        md_prop_offset = offsetof(metadata_raw, mode) +
+        md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_rgb_mode, rgb_mode) +
             offsetof(md_rgb_normal_mode, intel_rgb_control);
 
@@ -91,14 +91,14 @@ namespace librealsense
         _color_ep.register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, make_attribute_parser(&md_rgb_control::manual_exp, md_rgb_control_attributes::manual_exp_attribute, md_prop_offset));
 
         // attributes of md_capture_stats
-        md_prop_offset = offsetof(metadata_raw, mode) +
+        md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_rgb_mode, rgb_mode) +
             offsetof(md_rgb_normal_mode, intel_capture_stats);
 
         _color_ep.register_metadata(RS2_FRAME_METADATA_WHITE_BALANCE, make_attribute_parser(&md_capture_stats::white_balance, md_capture_stat_attributes::white_balance_attribute, md_prop_offset));
 
         // attributes of md_rgb_control
-        md_prop_offset = offsetof(metadata_raw, mode) +
+        md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_rgb_mode, rgb_mode) +
             offsetof(md_rgb_normal_mode, intel_rgb_control);
 
