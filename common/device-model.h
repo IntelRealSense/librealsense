@@ -376,6 +376,7 @@ namespace rs2
         void check_for_device_updates(viewer_model& viewer, bool activated_by_user = false);
         bool disable_record_button_logic(bool is_streaming, bool is_playback_device);
         std::string get_record_button_hover_text(bool is_streaming);
+        bool is_depth_mapping_camera_streaming_alone();
 
 
         std::shared_ptr< atomic_objects_in_frame > get_detected_objects() const { return _detected_objects; }
