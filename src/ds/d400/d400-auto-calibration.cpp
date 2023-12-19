@@ -653,12 +653,15 @@ namespace librealsense
                         done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
                     }
 
-                    if (progress_callback)
+                    if( progress_callback )
                     {
-                        if (host_assistance != host_assistance_type::no_assistance)
-                            if (count < 20) progress_callback->on_update_progress(static_cast<float>(80 + count++));
-                        else
-                            progress_callback->on_update_progress(count++* (2.f * 3)); //curently this number does not reflect the actual progress
+                        if( host_assistance != host_assistance_type::no_assistance )
+                        {
+                            if( count < 20 )
+                                progress_callback->on_update_progress( static_cast< float >( 80 + count++ ) );
+                            else
+                                progress_callback->on_update_progress( count++ * ( 2.f * 3 ) );  // currently this number does not reflect the actual progress
+                        }
                     }
 
                     now = std::chrono::high_resolution_clock::now();
