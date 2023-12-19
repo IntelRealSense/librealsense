@@ -657,7 +657,7 @@ namespace librealsense
 
             if (_fw_version >= firmware_version("5.6.3.0"))
             {
-                _is_locked = _ds_device_common->is_locked(GVD, is_camera_locked_offset);
+                _is_locked = _ds_device_common->is_locked( gvd_buff.data(), is_camera_locked_offset );
             }
 
             if (_fw_version >= firmware_version("5.5.8.0"))

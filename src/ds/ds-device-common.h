@@ -30,7 +30,7 @@ namespace librealsense
         ds_device_common(device* ds_device, std::shared_ptr<hw_monitor> hwm) :
             _owner(ds_device),
             _hw_monitor(hwm),
-            _is_locked(false)
+            _is_locked(true)
         {}
 
         void enter_update_state() const;
@@ -39,6 +39,7 @@ namespace librealsense
 
         bool is_camera_in_advanced_mode() const;
         bool is_locked(uint8_t gvd_cmd, uint32_t offset);
+        bool is_locked( const uint8_t * gvd_buff, uint32_t offset );
         void get_fw_details( const std::vector<uint8_t> &gvd_buff, std::string& optic_serial, std::string& asic_serial, std::string& fwv ) const;
 
     private:

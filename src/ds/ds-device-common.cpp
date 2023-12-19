@@ -121,6 +121,12 @@ namespace librealsense
         return _is_locked;
     }
 
+    bool ds_device_common::is_locked( const uint8_t * gvd_buff, uint32_t offset )
+    {
+        std::memcpy( &_is_locked, gvd_buff + offset, 1 );
+        return _is_locked;
+    }
+
     void ds_device_common::get_fw_details( const std::vector<uint8_t> &gvd_buff, std::string& optic_serial, std::string& asic_serial, std::string& fwv ) const
     {
         optic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset);
