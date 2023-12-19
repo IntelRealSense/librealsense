@@ -2370,7 +2370,6 @@ namespace librealsense
             {
                 // D457 development - added for mipi device, for IR because no metadata there
                 return;
-                throw linux_backend_exception(rsutils::string::from() << "Cannot open '" << _md_name);
             }
 
             //The minimal video/metadata nodes syncer will be implemented by using two blocking calls:
@@ -2408,7 +2407,6 @@ namespace librealsense
             {
                 // D457 development - added for mipi device, for IR because no metadata there
                 return;
-                throw linux_backend_exception("v4l_uvc_meta_device: close(_md_fd) failed");
             }
 
             _md_fd = 0;
@@ -2427,7 +2425,6 @@ namespace librealsense
             {
                 // D457 development - added for mipi device, for IR because no metadata there
                 return;
-                throw linux_backend_exception(_md_name + " ioctl(VIDIOC_G_FMT) for metadata node failed");
             }
 
             if (fmt.type != _md_type)
