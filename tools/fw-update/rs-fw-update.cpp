@@ -3,6 +3,7 @@
 
 #include <librealsense2/rs.hpp>
 
+#include <rsutils/json.h>
 #include <vector>
 #include <map>
 #include <string>
@@ -119,9 +120,23 @@ void update(rs2::update_device fwu_dev, std::vector<uint8_t> fw_image)
     std::cout << std::endl << std::endl << "Firmware update done" << std::endl;
 }
 
-void list_devices(rs2::context ctx)
+void list_devices( rs2::context ctx, bool only_sw_devs )
 {
     auto devs = ctx.query_devices();
+    if( only_sw_devs )
+    {
+        // For SW-only devices, allow some time for DDS devices to connect
+        int tries = 3;
+        std::cout << "No device detected. Waiting..." << std::flush;
+        while( ! devs.size() && tries-- )
+        {
+            std::cout << "." << std::flush;
+            std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+            devs = ctx.query_devices();
+        }
+        std::cout << std::endl;
+    }
+
     if (devs.size() == 0)
     {
         std::cout << std::endl << "There are no connected devices" << std::endl;
@@ -206,12 +221,6 @@ bool is_mipi_device( const rs2::device & dev )
 int main( int argc, char ** argv )
 try
 {
-#ifdef BUILD_EASYLOGGINGPP
-    rs2::log_to_console(RS2_LOG_SEVERITY_WARN);
-#endif
-
-    rs2::context ctx;
-
     std::condition_variable cv;
     std::mutex mutex;
     std::string selected_serial_number;
@@ -223,35 +232,57 @@ try
 
     CmdLine cmd("librealsense rs-fw-update tool", ' ', RS2_API_FULL_VERSION_STR);
 
+    SwitchArg debug_arg( "", "debug", "Turn on LibRS debug logs" );
     SwitchArg list_devices_arg("l", "list_devices", "List all available devices");
     SwitchArg recover_arg("r", "recover", "Recover all connected devices which are in recovery mode");
     SwitchArg unsigned_arg("u", "unsigned", "Update unsigned firmware, available only for unlocked cameras");
     ValueArg<std::string> backup_arg("b", "backup", "Create a backup to the camera flash and saved it to the given path", false, "", "string");
     ValueArg<std::string> file_arg("f", "file", "Path of the firmware image file", false, "", "string");
     ValueArg<std::string> serial_number_arg("s", "serial_number", "The serial number of the device to be update, this is mandetory if more than one device is connected", false, "", "string");
+    SwitchArg only_sw_arg( "", "sw-only", "Show only software devices (playback, DDS, etc. -- but not USB/HID/etc.)" );
 
+    cmd.add(debug_arg);
     cmd.add(list_devices_arg);
     cmd.add(recover_arg);
     cmd.add(unsigned_arg);
     cmd.add(file_arg);
     cmd.add(serial_number_arg);
     cmd.add(backup_arg);
+    cmd.add(only_sw_arg);
+#ifdef BUILD_WITH_DDS
+    ValueArg< int > domain_arg( "", "dds-domain", "Set the DDS domain ID (default to 0)", false, 0, "0-232" );
+    cmd.add( domain_arg );
+#endif
 
     cmd.parse(argc, argv);
+
+#ifdef BUILD_EASYLOGGINGPP
+    bool debugging = debug_arg.getValue();
+    rs2::log_to_console( debugging ? RS2_LOG_SEVERITY_DEBUG : RS2_LOG_SEVERITY_WARN );
+#endif
+
+    nlohmann::json settings = nlohmann::json::object();
+#ifdef BUILD_WITH_DDS
+    nlohmann::json dds;
+    if( domain_arg.isSet() )
+        dds["domain"] = domain_arg.getValue();
+    if( only_sw_arg.isSet() )
+        dds["enabled"];  // null: remove global dds:false or dds/enabled:false, if any
+    settings["dds"] = std::move( dds );
+#endif
+    rs2::context ctx( settings.dump() );
 
     if (!list_devices_arg.isSet() && !recover_arg.isSet() && !unsigned_arg.isSet() &&
         !backup_arg.isSet() && !file_arg.isSet() && !serial_number_arg.isSet())
     {
         std::cout << std::endl << "Nothing to do, run again with -h for help" << std::endl;
-        list_devices(ctx);
+        list_devices( ctx, only_sw_arg.isSet() );
         return EXIT_SUCCESS;
     }
 
-    bool recovery_request = recover_arg.getValue();
-
     if (list_devices_arg.isSet())
     {
-        list_devices(ctx);
+        list_devices( ctx, only_sw_arg.isSet() );
         return EXIT_SUCCESS;
     }
 
@@ -266,6 +297,7 @@ try
         selected_serial_number = serial_number_arg.getValue();
         std::cout << std::endl << "Search for device with serial number: " << selected_serial_number << std::endl;
     }
+
 
     std::string update_serial_number;
 
@@ -363,7 +395,23 @@ try
             cv.notify_one();
     });
 
-    auto devs = ctx.query_devices(RS2_PRODUCT_LINE_DEPTH);
+    int mask = RS2_PRODUCT_LINE_DEPTH;  // why not RS2_PRODUCT_LINE_ANY_INTEL?!
+    if( only_sw_arg.getValue() )
+        mask |= RS2_PRODUCT_LINE_SW_ONLY;
+    auto devs = ctx.query_devices( mask );
+    if( only_sw_arg.isSet() )
+    {
+        // For SW-only devices, allow some time for DDS devices to connect
+        int tries = 10;
+        std::cout << "No device detected. Waiting..." << std::flush;
+        while( ! devs.size() && tries-- )
+        {
+            std::cout << "." << std::flush;
+            std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+            devs = ctx.query_devices( mask );
+        }
+        std::cout << std::endl;
+    }
 
     if (!serial_number_arg.isSet() && devs.size() > 1)
     {
