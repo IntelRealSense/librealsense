@@ -973,7 +973,14 @@ namespace librealsense
 
             for (auto& elem : _streaming_custom_sensors)
             {
-                elem->stop_capture();
+                try
+                {
+                    elem->stop_capture();
+                }
+                catch(...)
+                {
+                    LOG_DEBUG( "Error while stopping capture sensor" );
+                }
             }
         }
 
