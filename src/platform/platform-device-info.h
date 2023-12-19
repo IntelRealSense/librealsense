@@ -35,10 +35,10 @@ public:
 
     std::string get_address() const override
     {
-        for( auto & d : _group.uvc_devices )
-            return d.device_path;
-        for( auto & d : _group.usb_devices )
-            return d.id;
+        if( _group.uvc_devices.size() )
+            return _group.uvc_devices.front().device_path;
+        if( _group.usb_devices.size() )
+            return _group.usb_devices.front().id;
         throw std::runtime_error( "non-standard platform-device-info" );
     }
 
