@@ -44,7 +44,7 @@ std::vector<std::shared_ptr<librealsense::record_sensor>> librealsense::record_d
             { write_notification( sensor_index, n ); } );
         auto on_error = [weak = std::weak_ptr< librealsense::record_sensor >( recording_sensor )](const std::string& s) {
             auto strong_recording_sensor = weak.lock();
-            if(strong_recording_sensor)
+            if( strong_recording_sensor )
                 strong_recording_sensor->stop_with_error(s);
         };
         recording_sensor->on_frame( [this, sensor_index, on_error]( frame_holder f )
