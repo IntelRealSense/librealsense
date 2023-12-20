@@ -229,7 +229,7 @@ namespace librealsense
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_CRC,
             make_attribute_parser_with_crc(&md_safety_info::crc32,
-                md_safety_info_attributes::crc32_attribute, md_prop_offset));
+                md_safety_info_attributes::crc32_attribute, md_prop_offset, offsetof(md_safety_info,crc32)));
     }
 
     void d500_safety::register_processing_blocks(std::shared_ptr<d500_safety_sensor> safety_ep)
