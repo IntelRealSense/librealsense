@@ -138,6 +138,7 @@ rsutils::subscription dds_device::on_notification( on_notification_callback && c
 static std::string const status_key( "status", 6 );
 static std::string const status_ok( "ok", 2 );
 static std::string const explanation_key( "explanation", 11 );
+static std::string const id_key( "id", 2 );
 
 
 bool dds_device::check_reply( nlohmann::json const & reply, std::string * p_explanation )
@@ -145,31 +146,33 @@ bool dds_device::check_reply( nlohmann::json const & reply, std::string * p_expl
     auto status_j = rsutils::json::nested( reply, status_key );
     if( ! status_j )
         return true;
-    std::string explanation;
+    std::ostringstream os;
     if( ! status_j->is_string() )
-        explanation = rsutils::string::from() << "bad status: " << status_j;
+        os << "bad status " << status_j;
     else if( status_j.string_ref() == status_ok )
         return true;
     else
     {
+        os << "[";
+        if( auto id = rsutils::json::nested( reply, id_key ) )
+        {
+            if( id->is_string() )
+                os << "\"" << id.string_ref() << "\" ";
+        }
+        os << status_j.string_ref() << "]";
         if( auto explanation_j = rsutils::json::nested( reply, explanation_key ) )
         {
+            os << ' ';
             if( ! explanation_j->is_string() || explanation_j.string_ref().empty() )
-                explanation = rsutils::string::from() << "[" << status_j.string_ref() << "] bad explanation: " << explanation_j;
+                os << "bad explanation " << explanation_j;
             else
-                explanation = rsutils::string::from() << "[" << status_j.string_ref() << "] " << explanation_j.string_ref();
+                os << explanation_j.string_ref();
         }
-        else
-            explanation = "no explanation";
     }
-    if( ! explanation.empty() )
-    {
-        if( ! p_explanation )
-            DDS_THROW( runtime_error, explanation );
-        *p_explanation = std::move( explanation );
-        return false;
-    }
-    return true;
+    if( ! p_explanation )
+        DDS_THROW( runtime_error, os.str() );
+    *p_explanation = os.str();
+    return false;
 }
 
 

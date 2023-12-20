@@ -215,6 +215,11 @@ void dds_device::impl::handle_notification( nlohmann::json const & j,
                         replyit->second = std::move( j );
                         _replies_cv.notify_all();
                     }
+                    else
+                    {
+                        // Nobody's waiting for it - but we can still log any errors:
+                        dds_device::check_reply( j );
+                    }
                 }
             }
         }
@@ -456,19 +461,8 @@ void dds_device::impl::write_control_message( topics::flexible_msg && msg, nlohm
         *reply = std::move( actual_reply );
         _replies.erase( this_sequence_number );
 
-        std::string explanation;
-        if( ! dds_device::check_reply( *reply, &explanation ) )
-        {
-            std::ostringstream os;
-            os << "control #" << this_sequence_number;
-            if( auto id = rsutils::json::nested( *reply, control_key, id_key ) )
-            {
-                if( id->is_string() )
-                    os << " \"" << id.string_ref() << "\"";
-            }
-            os << " failed: " << explanation;
-            DDS_THROW( runtime_error, os.str() );
-        }
+        // Throw if there's an error
+        dds_device::check_reply( *reply );
     }
 }
 
