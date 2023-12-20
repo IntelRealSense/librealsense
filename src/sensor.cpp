@@ -401,11 +401,12 @@ void log_callback_end( uint32_t fps,
         , _raw_sensor( raw_sensor )
     {
         nlohmann::json const & settings = device->get_context()->get_settings();
-        if( settings.is_object() && rsutils::json::has_value( settings, std::string( "options-update-interval", 23 ) ) )
+        if( auto interval_j = rsutils::json::nested( settings, std::string( "options-update-interval", 23 ) ) )
         {
-            uint32_t interval = rsutils::json::get<uint32_t>( settings, std::string( "options-update-interval", 23 ) );
+            auto interval = interval_j.value< uint32_t >();  // NOTE: can throw!
             _options_watcher.set_update_interval( std::chrono::milliseconds( interval ) );
         }
+
         // synthetic sensor and its raw sensor will share the formats and streams mapping
         auto& raw_fourcc_to_rs2_format_map = _raw_sensor->get_fourcc_to_rs2_format_map();
         raw_fourcc_to_rs2_format_map = std::make_shared<std::map<uint32_t, rs2_format>>(fourcc_to_rs2_format_map);
@@ -431,11 +432,11 @@ void log_callback_end( uint32_t fps,
     }
 
     // Register the option to both raw sensor and synthetic sensor.
-    void synthetic_sensor::register_option(rs2_option id, std::shared_ptr<option> option)
+    void synthetic_sensor::register_option( rs2_option id, std::shared_ptr< option > option )
     {
-        _raw_sensor->register_option(id, option);
-        sensor_base::register_option(id, option);
-        _options_watcher.register_option( id, option);
+        _raw_sensor->register_option( id, option );
+        sensor_base::register_option( id, option );
+        _options_watcher.register_option( id, option );
     }
 
     // Used in dynamic discovery of supported controls in generic UVC devices
@@ -482,10 +483,10 @@ void log_callback_end( uint32_t fps,
         return res;
     }
 
-    void synthetic_sensor::unregister_option(rs2_option id)
+    void synthetic_sensor::unregister_option( rs2_option id )
     {
-        _raw_sensor->unregister_option(id);
-        sensor_base::unregister_option(id);
+        _raw_sensor->unregister_option( id );
+        sensor_base::unregister_option( id );
         _options_watcher.unregister_option( id );
     }
 
@@ -719,7 +720,7 @@ void log_callback_end( uint32_t fps,
         return _owner->get_format_conversion();
     }
 
-    rsutils::subscription synthetic_sensor::register_options_value_changed_callback( options_watcher::callback && cb )
+    rsutils::subscription synthetic_sensor::register_options_changed_callback( options_watcher::callback && cb )
     {
         return _options_watcher.subscribe( std::move( cb ) );
     }

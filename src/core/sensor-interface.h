@@ -57,7 +57,7 @@ public:
     virtual rs2_frame_callback_sptr get_frames_callback() const = 0;
     virtual void set_frames_callback( rs2_frame_callback_sptr cb ) = 0;
 
-    virtual rsutils::subscription register_options_value_changed_callback( options_watcher::callback && cb ) = 0;
+    virtual rsutils::subscription register_options_changed_callback( options_watcher::callback && cb ) = 0;
 };
 
 

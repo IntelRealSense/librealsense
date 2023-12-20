@@ -77,7 +77,7 @@ namespace librealsense
             return processing_blocks_api->get_recommended_processing_blocks();
         }
 
-        rsutils::subscription register_options_value_changed_callback( options_watcher::callback && cb ) override
+        rsutils::subscription register_options_changed_callback( options_watcher::callback && cb ) override
         {
             throw not_implemented_exception( "Registering options value changed callback is not implemented for this sensor" );
         }

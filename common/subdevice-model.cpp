@@ -81,15 +81,14 @@ namespace rs2
             auto opt = static_cast<rs2_option>(i);
 
             opt_container[opt] = create_option_model(opt, opt_base_label, model, options, options_invalidated, error_message);
-            model->s->on_options_value_update( [model]( const options_list & list )
+            model->s->on_options_changed( [model]( const options_list & list )
             {
                 for( auto opt_id : list )
                 {
                     auto it = model->options_metadata.find( opt_id );
-                    if( it != model->options_metadata.end() &&
-                        model->options_metadata[opt_id].endpoint->supports( opt_id ) )
+                    if( it != model->options_metadata.end() )
                     {
-                        model->options_metadata[opt_id].value = model->options_metadata[opt_id].endpoint->get_option( opt_id );
+                        it->second.value = it->second.endpoint->get_option( opt_id );
                     }
                 }
             } );

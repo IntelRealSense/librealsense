@@ -35,21 +35,25 @@ public:
     void register_option( rs2_option id, std::shared_ptr< option > option );
     void unregister_option( rs2_option id );
 
-    rsutils::subscription subscribe( callback && cb);
+    rsutils::subscription subscribe( callback && cb );
 
     void set_update_interval( std::chrono::milliseconds update_interval ) { _update_interval = update_interval; }
 
-private:
+protected:
     bool should_start() const;
     bool should_stop() const;
     void start();
     void stop();
     void thread_loop();
-    std::map< rs2_option, std::shared_ptr< option > > update_options();
+    virtual std::map< rs2_option, std::shared_ptr< option > > update_options();
     void notify( const std::map< rs2_option, std::shared_ptr< option > > & updated_options );
 
-    std::map< rs2_option, std::shared_ptr< option > > _options;
-    std::map< rs2_option, float > _option_values;
+    struct registered_option
+    {
+        std::shared_ptr< option > sptr = std::shared_ptr< option >( nullptr );
+        float last_known_value = 0.0f;
+    };
+    std::map< rs2_option, registered_option > _options;
     rsutils::signal< const std::map< rs2_option, std::shared_ptr< option > > & > _on_values_changed;
     std::chrono::milliseconds _update_interval;
     std::thread _updater;

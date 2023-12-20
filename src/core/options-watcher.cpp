@@ -11,7 +11,6 @@ namespace librealsense {
 
 options_watcher::options_watcher( std::chrono::milliseconds update_interval )
     : _update_interval( update_interval )
-    , _updater()
 {
 }
 
@@ -31,18 +30,19 @@ options_watcher::~options_watcher()
 
 void options_watcher::register_option( rs2_option id, std::shared_ptr< option > option )
 {
+    registered_option opt = { option, 0.0f };
+    try
+    {
+        opt.last_known_value = option->query();
+    }
+    catch( ... )
+    {
+        // Some options cannot be queried all the time (i.e. streaming only)
+    }
+
     {
         std::lock_guard< std::mutex > lock( _mutex );
-        _options[id] = option;
-        try
-        {
-            _option_values[id] = option->query();
-        }
-        catch( ... )
-        {
-            // Some options cannot be queried all the time (i.e. streaming only)
-            _option_values[id] = 0.0f;
-        }
+        _options[id] = std::move( opt );
     }
 
     if( should_start() )
@@ -114,25 +114,23 @@ std::map< rs2_option, std::shared_ptr< option > > options_watcher::update_option
 {
     std::map< rs2_option, std::shared_ptr< option > > updated_options;
 
+    std::lock_guard< std::mutex > lock( _mutex );
+
+    for( auto & opt : _options )
     {
-        std::lock_guard< std::mutex > lock( _mutex );
-
-        for( const auto & option : _options )
+        try
         {
-            try
-            {
-                auto curr_val = option.second->query();
+            auto curr_val = opt.second.sptr->query();
 
-                if( _option_values[option.first] != curr_val )
-                {
-                    _option_values[option.first] = curr_val;
-                    updated_options.insert( option );
-                }
-            }
-            catch( ... )
+            if( opt.second.last_known_value != curr_val )
             {
-                // Some options cannot be queried all the time (i.e. streaming only)
+                opt.second.last_known_value = curr_val;
+                updated_options[opt.first] = opt.second.sptr;
             }
+        }
+        catch( ... )
+        {
+            // Some options cannot be queried all the time (i.e. streaming only)
         }
     }
 

@@ -83,6 +83,11 @@ struct rs2_device_list
     std::vector< std::shared_ptr< librealsense::device_info > > list;
 };
 
+struct rs2_options_list
+{
+    std::vector< rs2_option > list;
+};
+
 struct rs2_sensor : public rs2_options
 {
     rs2_sensor( std::shared_ptr<librealsense::device_interface> parent,
@@ -1203,14 +1208,14 @@ const char* rs2_get_option_value_description(const rs2_options* options, rs2_opt
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options, option, value)
 
 void rs2_set_options_changed_callback( rs2_options * options,
-                                       rs2_option_value_update_callback_ptr callback,
+                                       rs2_options_changed_callback_ptr callback,
                                        rs2_error ** error ) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL( options );
     VALIDATE_NOT_NULL( callback );
     auto sens = dynamic_cast< rs2_sensor * >( options );
     VALIDATE_NOT_NULL( sens );
-    sens->subscription = sens->sensor->register_options_value_changed_callback(
+    sens->subscription = sens->sensor->register_options_changed_callback(
         [callback]( const std::map< rs2_option, std::shared_ptr< option > > & updated_options )
         {
             rs2_options_list * updated_options_list = new rs2_options_list(); // Should be on heap if user will choose to save for later use.
@@ -1222,20 +1227,20 @@ void rs2_set_options_changed_callback( rs2_options * options,
 HANDLE_EXCEPTIONS_AND_RETURN( , options, callback )
 
 void rs2_set_options_changed_callback_cpp( rs2_options * options,
-                                           rs2_option_value_update_callback * callback,
+                                           rs2_options_changed_callback * callback,
                                            rs2_error ** error ) BEGIN_API_CALL
 {
     // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a 'new' when calling us)
     VALIDATE_NOT_NULL( callback );
-    rs2_option_value_update_callback_sptr cb{ callback,
-                                              []( rs2_option_value_update_callback * p )
-                                              {
-                                                  p->release();
-                                              } };
+    rs2_options_changed_callback_sptr cb{ callback,
+                                          []( rs2_options_changed_callback * p )
+                                          {
+                                              p->release();
+                                          } };
     VALIDATE_NOT_NULL( options );
     auto sens = dynamic_cast< rs2_sensor * >( options );
     VALIDATE_NOT_NULL( sens );
-    sens->subscription = sens->sensor->register_options_value_changed_callback(
+    sens->subscription = sens->sensor->register_options_changed_callback(
         [cb]( const std::map< rs2_option, std::shared_ptr< option > > & updated_options )
         {
             rs2_options_list * updated_options_list = new rs2_options_list(); // Should be on heap if user will choose to save for later use.

@@ -96,7 +96,7 @@ namespace librealsense
                 = std::make_shared< recommended_proccesing_blocks_snapshot >( get_recommended_processing_blocks() );
         }
 
-        rsutils::subscription register_options_value_changed_callback( options_watcher::callback && cb ) override
+        rsutils::subscription register_options_changed_callback( options_watcher::callback && cb ) override
         {
             throw not_implemented_exception( "Registering options value changed callback is not implemented for this sensor" );
         }
@@ -242,7 +242,7 @@ namespace librealsense
         bool is_streaming() const override;
         bool is_opened() const override;
 
-        rsutils::subscription register_options_value_changed_callback( options_watcher::callback && cb ) override;
+        rsutils::subscription register_options_changed_callback( options_watcher::callback && cb ) override;
         virtual void register_option_to_update( rs2_option id, std::shared_ptr< option > option );
         virtual void unregister_option_from_update( rs2_option id );
 
