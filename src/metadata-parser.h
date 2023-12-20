@@ -327,22 +327,22 @@ namespace librealsense
                 *p_value = frame_value - sensor_value;
             return true;
         }
-
     };
 
     template<class S, class Attribute, typename Flag>
     class md_attribute_parser_with_crc : public md_attribute_parser<S, Attribute, Flag>
     {
     public: 
-        md_attribute_parser_with_crc(Attribute S::* attribute_name, Flag flag, unsigned long long offset, attrib_modifyer mod)
-            : md_attribute_parser<S, Attribute, Flag>(attribute_name, flag, offset, mod) {}
+        md_attribute_parser_with_crc(Attribute S::* attribute_name, Flag flag, unsigned long long offset, attrib_modifyer mod, unsigned long long crc_offset)
+            : md_attribute_parser<S, Attribute, Flag>(attribute_name, flag, offset, mod), _crc_offset(crc_offset) {}
 
     protected:
+        unsigned long long _crc_offset; // offset of the crc inside the S class
         bool is_attribute_valid(const S* s) const override
         {
             if (!md_attribute_parser<S, Attribute, Flag>::is_attribute_valid(s))
                 return false;
-                
+
             if (!is_crc_valid(s))
             {
                 LOG_DEBUG("Metadata CRC mismatch");
@@ -356,33 +356,24 @@ namespace librealsense
         md_attribute_parser_with_crc() = delete;
         md_attribute_parser_with_crc(const md_attribute_parser_with_crc&) = delete;
 
-        bool is_crc_valid(const S* s) const
+        bool is_crc_valid(const S* md_info) const
         {
-            md_type current_type = md_type_trait< S >::type;
-
-            if (current_type == md_type::META_DATA_INTEL_SAFETY_ID)
-            {
-                 auto safety_md_const = reinterpret_cast<const md_safety_info*>(((const uint8_t*)s));
-                 auto safety_md = const_cast<md_safety_info*>(safety_md_const);
-                 uint32_t safety_crc = safety_md->crc32;
-                 auto computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<uint8_t*>(safety_md),
-                     sizeof(md_safety_info) - sizeof(safety_crc));
-                 return (safety_crc == computed_crc32);
-            }
-            LOG_ERROR("No CRC is sent within this stream's metadata");
-            return false;
+            Attribute crc = *(Attribute*)(reinterpret_cast<const uint8_t*>(md_info) + _crc_offset); //Attribute = CRC's type (ex. uint32_t)
+            auto computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<const uint8_t*>(md_info),
+                sizeof(S) - sizeof(crc));
+            return (crc == computed_crc32);
         }
     };
 
     /**\brief A helper function to create a specialized attribute parser.
+     *  **Note that this class is assuming that the CRC is the last variable in the struct**
      *  Return it as a pointer to a base-class*/
     template<class S, class Attribute, typename Flag>
-    std::shared_ptr<md_attribute_parser_base> make_attribute_parser_with_crc(Attribute S::* attribute, Flag flag, unsigned long long offset, attrib_modifyer mod = nullptr)
+    std::shared_ptr<md_attribute_parser_base> make_attribute_parser_with_crc(Attribute S::* attribute, Flag flag, unsigned long long offset, unsigned long long crc_offset, attrib_modifyer mod = nullptr)
     {
-        std::shared_ptr<md_attribute_parser<S, Attribute, Flag>> parser(new md_attribute_parser_with_crc<S, Attribute, Flag>(attribute, flag, offset, mod));
+        std::shared_ptr<md_attribute_parser<S, Attribute, Flag>> parser(new md_attribute_parser_with_crc<S, Attribute, Flag>(attribute, flag, offset, mod, crc_offset));
         return parser;
     }
-
 
 
 

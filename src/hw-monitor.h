@@ -225,7 +225,14 @@ namespace librealsense
 
         ~locked_transfer()
         {
-            _heap.wait_until_empty();
+            try
+            {
+                _heap.wait_until_empty();
+            }
+            catch(...)
+            {
+                LOG_DEBUG( "Error while waiting for an empty heap" );
+            }
         }
     private:
         std::shared_ptr<platform::command_transfer> _command_transfer;
@@ -394,7 +401,6 @@ namespace librealsense
         }
 
         static std::string get_module_serial_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 6);
-        bool is_camera_locked(uint8_t gvd_cmd, uint32_t offset) const;
 
         template <typename T>
         T get_gvd_field(const std::vector<uint8_t>& data, size_t index)

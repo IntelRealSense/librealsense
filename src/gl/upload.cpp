@@ -43,10 +43,17 @@ namespace librealsense
 
         upload::~upload()
         {
-            perform_gl_action([&]()
+            try
             {
-                cleanup_gpu_resources();
-            }, [] {});
+                perform_gl_action( [&]()
+                {
+                    cleanup_gpu_resources();
+                }, [] {} );
+            }
+            catch(...)
+            {
+                LOG_DEBUG( "Error while cleaning up gpu resources" );
+            }
         }
 
         void upload::cleanup_gpu_resources()

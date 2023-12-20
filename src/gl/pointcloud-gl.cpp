@@ -388,10 +388,17 @@ void pointcloud_gl::create_gpu_resources()
 
 pointcloud_gl::~pointcloud_gl()
 {
-    perform_gl_action([&]()
+    try
     {
-        cleanup_gpu_resources();
-    }, []{});
+        perform_gl_action( [&]()
+        {
+            cleanup_gpu_resources();
+        }, [] {} );
+    }
+    catch(...)
+    {
+        LOG_DEBUG( "Error while cleaning up gpu resources" );
+    }
 }
 
 pointcloud_gl::pointcloud_gl()

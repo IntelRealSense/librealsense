@@ -538,7 +538,7 @@ namespace librealsense
                 
             pid_hex_str = rsutils::string::from() << std::uppercase << rsutils::string::hexdump( _pid );
 
-            _is_locked = _ds_device_common->is_locked(GVD, is_camera_locked_offset);
+            _is_locked = _ds_device_common->is_locked( gvd_buff.data(), is_camera_locked_offset );
 
             depth_sensor.register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
                 std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_EXT_TRIGGER,
@@ -679,7 +679,7 @@ namespace librealsense
         }); //group_multiple_fw_calls
 
         // attributes of md_capture_timing
-        auto md_prop_offset = offsetof(metadata_raw, mode) +
+        auto md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_depth_mode, depth_y_mode) +
             offsetof(md_depth_y_normal_mode, intel_capture_timing);
 
@@ -688,14 +688,14 @@ namespace librealsense
             make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
 
         // attributes of md_capture_stats
-        md_prop_offset = offsetof(metadata_raw, mode) +
+        md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_depth_mode, depth_y_mode) +
             offsetof(md_depth_y_normal_mode, intel_capture_stats);
 
         depth_sensor.register_metadata(RS2_FRAME_METADATA_WHITE_BALANCE, make_attribute_parser(&md_capture_stats::white_balance, md_capture_stat_attributes::white_balance_attribute, md_prop_offset));
 
         // attributes of md_depth_control
-        md_prop_offset = offsetof(metadata_raw, mode) +
+        md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_depth_mode, depth_y_mode) +
             offsetof(md_depth_y_normal_mode, intel_depth_control);
 
@@ -715,7 +715,7 @@ namespace librealsense
         depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_LED_POWER, make_attribute_parser(&md_depth_control::ledPower, md_depth_control_attributes::led_power_attribute, md_prop_offset));
 
         // md_configuration - will be used for internal validation only
-        md_prop_offset = offsetof(metadata_raw, mode) + offsetof(md_depth_mode, depth_y_mode) + offsetof(md_depth_y_normal_mode, intel_configuration);
+        md_prop_offset = metadata_raw_mode_offset + offsetof(md_depth_mode, depth_y_mode) + offsetof(md_depth_y_normal_mode, intel_configuration);
 
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_HW_TYPE, make_attribute_parser(&md_configuration::hw_type, md_configuration_attributes::hw_type_attribute, md_prop_offset));
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_SKU_ID, make_attribute_parser(&md_configuration::sku_id, md_configuration_attributes::sku_id_attribute, md_prop_offset));
@@ -727,7 +727,7 @@ namespace librealsense
         depth_sensor.register_metadata(RS2_FRAME_METADATA_GPIO_INPUT_DATA, make_attribute_parser(&md_configuration::gpioInputData, md_configuration_attributes::gpio_input_data_attribute, md_prop_offset));
 
         // attributes of md_capture_timing
-        md_prop_offset = offsetof(metadata_raw, mode) + offsetof(md_depth_mode, depth_y_mode) + offsetof(md_depth_y_normal_mode, intel_configuration);
+        md_prop_offset = metadata_raw_mode_offset + offsetof(md_depth_mode, depth_y_mode) + offsetof(md_depth_y_normal_mode, intel_configuration);
 
         depth_sensor.register_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE,
             make_attribute_parser(&md_configuration::sub_preset_info,
