@@ -241,13 +241,4 @@ namespace librealsense
         auto minSize = std::min(sz, data.size());
         std::memcpy( gvd, data.data(), minSize );
     }
-
-    bool hw_monitor::is_camera_locked(uint8_t gvd_cmd, uint32_t offset) const
-    {
-        std::vector<unsigned char> gvd(HW_MONITOR_BUFFER_SIZE);
-        get_gvd(gvd.size(), gvd.data(), gvd_cmd);
-        bool value;
-        std::memcpy( &value, gvd.data() + offset, 1 );
-        return value;
-    }
 }
