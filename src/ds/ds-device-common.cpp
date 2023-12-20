@@ -115,12 +115,6 @@ namespace librealsense
         throw std::runtime_error("device not referenced in the product line");
     }
 
-    bool ds_device_common::is_locked(uint8_t gvd_cmd, uint32_t offset)
-    {
-        _is_locked = _hw_monitor->is_camera_locked(gvd_cmd, offset);
-        return _is_locked;
-    }
-
     bool ds_device_common::is_locked( const uint8_t * gvd_buff, uint32_t offset )
     {
         std::memcpy( &_is_locked, gvd_buff + offset, 1 );
