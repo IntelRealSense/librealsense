@@ -2,7 +2,7 @@
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #temporary fix to prevent the test from running on Win_SH_Py_DDS_CI
-#test:donotrun:dds
+#test:donotrun
 
 import pyrealsense2 as rs
 from rspy import test, repo
