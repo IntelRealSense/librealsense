@@ -3,8 +3,6 @@
 #pragma once
 
 #include <src/metadata.h>
-#include <src/metadata-parser.h>
-#include <src/types.h>
 
 namespace librealsense
 {
