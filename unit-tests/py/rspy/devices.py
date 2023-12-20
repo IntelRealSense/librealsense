@@ -3,6 +3,8 @@
 
 import sys, os, re, platform
 
+from rspy import usb_relay
+
 def usage():
     ourname = os.path.basename( sys.argv[0] )
     print( 'Syntax: devices [actions|flags]' )
@@ -11,8 +13,8 @@ def usage():
     print( '        --list         Enumerate devices (default action)' )
     print( '        --recycle      Recycle all' )
     print( 'Flags:' )
-    print( '        --all          Enable all port [requires acroname]' )
-    print( '        --port <#>     Enable only this port [requires acroname]' )
+    print( '        --all          Enable all port [requires relay]' )
+    print( '        --port <#>     Enable only this port [requires relay]' )
     print( '        --ports        Show physical port for each device (rather than the RS string)' )
     sys.exit(2)
 
@@ -36,33 +38,24 @@ sys.path.insert( 1, pyrs_dir )
 # D585S can take up to 15 sec to boot according to PRD
 MAX_ENUMERATION_TIME = 15  # [sec]
 
-# We need both pyrealsense2 and acroname. We can work without acroname, but
+# We need both pyrealsense2 and relay. We can work without relay, but
 # without pyrealsense2 no devices at all will be returned.
 try:
     import pyrealsense2 as rs
     log.d( rs )
-    #
-    try:
-        from rspy import acroname
-    except ModuleNotFoundError:
-        # Error should have already been printed
-        # We assume there's no brainstem library, meaning no acroname either
-        log.d( 'sys.path=', sys.path )
-        acroname = None
-    #
+    relay = usb_relay.usb_relay()
     sys.path = sys.path[:-1]  # remove what we added
 except ModuleNotFoundError:
     log.w( 'No pyrealsense2 library is available! Running as if no cameras available...' )
     import sys
     log.d( 'sys.path=', sys.path )
     rs = None
-    acroname = None
 
 import time
 
 _device_by_sn = dict()
 _context = None
-_acroname_hubs = set()
+_hubs = set()
 
 
 class Device:
@@ -78,19 +71,9 @@ class Device:
         if dev.supports( rs.camera_info.product_line ):
             self._product_line = dev.get_info( rs.camera_info.product_line )
         self._physical_port = dev.supports( rs.camera_info.physical_port ) and dev.get_info( rs.camera_info.physical_port ) or None
-        self._usb_location = None
-        try:
-            self._usb_location = _get_usb_location( self._physical_port )
-        except Exception as e:
-            log.e( 'Failed to get usb location:', e )
-        self._port = None
-        if acroname:
-            try:
-                self._port = _get_port_by_loc( self._usb_location )
-            except Exception as e:
-                log.e( 'Failed to get device port:', e )
-                log.d( '    physical port is', self._physical_port )
-                log.d( '    USB location is', self._usb_location )
+
+        self._usb_location, self._port = relay.get_usb_and_port_location(self._physical_port, _hubs)
+
         self._removed = False
 
     @property
@@ -143,14 +126,14 @@ def map_unknown_ports():
     Fill in unknown ports in devices by enabling one port at a time, finding out which device
     is there.
     """
-    if not acroname:
+    if relay.not_supports_port_mapping:
         return
     global _device_by_sn
     devices_with_unknown_ports = [device for device in _device_by_sn.values() if device.port is None]
     if not devices_with_unknown_ports:
         return
     #
-    ports = acroname.ports()
+    ports = relay.ports()
     known_ports = [device.port for device in _device_by_sn.values() if device.port is not None]
     unknown_ports = [port for port in ports if port not in known_ports]
     try:
@@ -162,7 +145,7 @@ def map_unknown_ports():
         #
         for known_port in known_ports:
             if known_port not in ports:
-                log.e( "A device was found on port", known_port, "but the port is not reported as used by Acroname!" )
+                log.e( "A device was found on port", known_port, "but the port is not reported as used by the relay!" )
         #
         if len( unknown_ports ) == 1:
             device = devices_with_unknown_ports[0]
@@ -170,7 +153,7 @@ def map_unknown_ports():
             device._port = unknown_ports[0]
             return
         #
-        acroname.disable_ports( ports )
+        relay.disable_ports( ports )
         wait_until_all_ports_disabled()
         #
         # Enable one port at a time to try and find what device is connected to it
@@ -178,7 +161,7 @@ def map_unknown_ports():
         for port in unknown_ports:
             #
             log.d( 'enabling port', port )
-            acroname.enable_ports( [port], disable_other_ports=True )
+            relay.enable_ports( [port], disable_other_ports=True )
             sn = None
             for retry in range( MAX_ENUMERATION_TIME ):
                 if len( enabled() ) == 1:
@@ -199,7 +182,7 @@ def map_unknown_ports():
                 else:
                     log.w( "Device with serial number", sn, "was found in port", port,
                             "but was not in context" )
-            acroname.disable_ports( [port] )
+            relay.disable_ports( [port] )
             wait_until_all_ports_disabled()
     finally:
         log.debug_unindent()
@@ -210,7 +193,7 @@ def query( monitor_changes=True, hub_reset=False, recycle_ports=True ):
     Start a new LRS context, and collect all devices
     :param monitor_changes: If True, devices will update dynamically as they are removed/added
     :param recycle_ports: True to recycle all ports before querying devices; False to leave as-is
-    :param hub_reset: Whether we want to reset the Acroname hub - this might be an better way to
+    :param hub_reset: Whether we want to reset the relay hub - this might be a better way to
         recycle the ports in certain cases that leave the ports in a bad state
     """
     global rs
@@ -218,18 +201,15 @@ def query( monitor_changes=True, hub_reset=False, recycle_ports=True ):
         return
     #
     # Before we can start a context and query devices, we need to enable all the ports
-    # on the acroname, if any:
-    if acroname:
-        if not acroname.hub:
-            acroname.connect( hub_reset )  # MAY THROW!
+    # on the relay, if any:
+    if not relay.is_connected():
+        relay.connect(hub_reset)
+    relay.disable_ports( sleep_on_change = 5 )
+    relay.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
 
-            if recycle_ports:
-                acroname.disable_ports( sleep_on_change = 5 )
-                acroname.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
-
-            if platform.system() == 'Linux':
-                global _acroname_hubs
-                _acroname_hubs = set( acroname.find_all_hubs() )
+    if platform.system() == 'Linux':
+        global _hubs
+        _hubs = set(relay.find_all_hubs())
     #
     # Get all devices, and store by serial-number
     global _device_by_sn, _context, _port_to_sn
@@ -507,7 +487,7 @@ def recovery():
 def enable_only( serial_numbers, recycle = False, timeout = MAX_ENUMERATION_TIME ):
     """
     Enable only the devices corresponding to the given serial-numbers. This can work either
-    with or without Acroname: without, the devices will simply be HW-reset, but other devices
+    with or without a relay: without, the devices will simply be HW-reset, but other devices
     will still be present.
 
     NOTE: will raise an exception if any SN is unknown!
@@ -519,23 +499,23 @@ def enable_only( serial_numbers, recycle = False, timeout = MAX_ENUMERATION_TIME
                     re-enabling
     :param timeout: The maximum seconds to wait to make sure the devices are indeed online
     """
-    if acroname:
+    if relay.has_relay:
         #
         ports = [ get( sn ).port for sn in serial_numbers ]
         #
         if recycle:
             #
-            log.d( 'recycling ports via acroname:', ports )
+            log.d( 'recycling ports via relay:', ports )
             #
             enabled_devices = enabled()
-            acroname.disable_ports( )
+            relay.disable_ports( )
             _wait_until_removed( enabled_devices, timeout = timeout )
             #
-            acroname.enable_ports( ports )
+            relay.enable_ports( ports )
             #
         else:
             #
-            acroname.enable_ports( ports, disable_other_ports = True )
+            relay.enable_ports( ports, disable_other_ports = True )
         #
         _wait_for( serial_numbers, timeout = timeout )
         #
@@ -544,15 +524,14 @@ def enable_only( serial_numbers, recycle = False, timeout = MAX_ENUMERATION_TIME
         hw_reset( serial_numbers )
         #
     else:
-        log.d( 'no acroname; ports left as-is' )
+        log.d( 'no relay; ports left as-is' )
 
 
 def enable_all():
     """
-    Enables all ports on an Acroname -- without an Acroname, this does nothing!
+    Enables all ports on the relay -- without a relay, this does nothing!
     """
-    if acroname:
-        acroname.enable_ports()
+    relay.enable_ports()
 
 
 def _wait_until_removed( serial_numbers, timeout = 5 ):
@@ -616,7 +595,7 @@ def _wait_for( serial_numbers, timeout = MAX_ENUMERATION_TIME ):
 
 def hw_reset( serial_numbers, timeout = MAX_ENUMERATION_TIME ):
     """
-    Recycles the given devices manually, using a hardware-reset (rather than any acroname port
+    Recycles the given devices manually, using a hardware-reset (rather than any relay port
     reset). The devices are sent a HW-reset command and then we'll wait until they come back
     online.
 
@@ -644,116 +623,12 @@ def hw_reset( serial_numbers, timeout = MAX_ENUMERATION_TIME ):
     return _wait_for( serial_numbers, timeout = timeout )
 
 
-###############################################################################################
-import platform
-if 'windows' in platform.system().lower():
-    #
-    def _get_usb_location( physical_port ):
-        """
-        Helper method to get windows USB location from registry
-        """
-        if not physical_port:
-            return None
-        # physical port example:
-        #   \\?\usb#vid_8086&pid_0b07&mi_00#6&8bfcab3&0&0000#{e5323777-f976-4f5b-9b55-b94699c46e44}\global
-        #
-        re_result = re.match( r'.*\\(.*)#vid_(.*)&pid_(.*)(?:&mi_(.*))?#(.*)#', physical_port, flags = re.IGNORECASE )
-        dev_type = re_result.group(1)
-        vid = re_result.group(2)
-        pid = re_result.group(3)
-        mi = re_result.group(4)
-        unique_identifier = re_result.group(5)
-        #
-        import winreg
-        if mi:
-            registry_path = "SYSTEM\CurrentControlSet\Enum\{}\VID_{}&PID_{}&MI_{}\{}".format(
-                dev_type, vid, pid, mi, unique_identifier
-                )
-        else:
-            registry_path = "SYSTEM\CurrentControlSet\Enum\{}\VID_{}&PID_{}\{}".format(
-                dev_type, vid, pid, unique_identifier
-                )
-        try:
-            reg_key = winreg.OpenKey( winreg.HKEY_LOCAL_MACHINE, registry_path )
-        except FileNotFoundError:
-            log.e( 'Could not find registry key for port:', registry_path )
-            log.e( '    usb location:', physical_port )
-            return None
-        result = winreg.QueryValueEx( reg_key, "LocationInformation" )
-        # location example: 0000.0014.0000.016.003.004.003.000.000
-        # and, for T265: Port_#0002.Hub_#0006
-        return result[0]
-    #
-    def _get_port_by_loc( usb_location ):
-        """
-        """
-        if usb_location:
-            #
-            # T265 locations look differently...
-            match = re.fullmatch( r'Port_#(\d+)\.Hub_#(\d+)', usb_location, re.IGNORECASE )
-            if match:
-                # We don't know how to get the port from these yet!
-                return None #int(match.group(2))
-            else:
-                split_location = [int(x) for x in usb_location.split('.')]
-                # only the last two digits are necessary
-                return acroname.get_port_from_usb( split_location[-5], split_location[-4] )
-    #
-else:
-    #
-    def _get_usb_location( physical_port ):
-        """
-        """
-        if not physical_port:
-            return None
-        # physical port example:
-        # u'/sys/devices/pci0000:00/0000:00:14.0/usb2/2-3/2-3.3/2-3.3.1/2-3.3.1:1.0/video4linux/video0'
-        #
-        split_location = physical_port.split( '/' )
-        if len(split_location) > 4:
-            port_location = split_location[-4]
-        elif len(split_location) == 1:
-            # Recovery devices may have only the relevant port: e.g., L515 Recovery has "2-2.4.4-84"
-            port_location = physical_port
-        else:
-            raise RuntimeError( f"invalid physical port '{physical_port}'" )
-        # location example: 2-3.3.1
-        return port_location
-    #
-    def _get_port_by_loc( usb_location ):
-        """
-        """
-        if usb_location:
-            #
-            # Devices connected thru an acroname will be in one of two sub-hubs under the acroname main
-            # hub. Each is a 4-port hub with a different port (4 for ports 0-3, 3 for ports 4-7):
-            #     /:  Bus 02.Port 1: Dev 1, Class=root_hub, Driver=xhci_hcd/6p, 10000M
-            #         |__ Port 2: Dev 2, If 0, Class=Hub, Driver=hub/4p, 5000M                       <--- ACRONAME
-            #             |__ Port 3: Dev 3, If 0, Class=Hub, Driver=hub/4p, 5000M
-            #                 |__ Port X: Dev, If...
-            #                 |__ Port Y: ...
-            #             |__ Port 4: Dev 4, If 0, Class=Hub, Driver=hub/4p, 5000M
-            #                 |__ Port Z: ...
-            # (above is output from 'lsusb -t')
-            # For the above acroname at '2-2' (bus 2, port 2), there are at least 3 devices:
-            #     2-2.3.X
-            #     2-2.3.Y
-            #     2-2.4.Z
-            # Given the two sub-ports (3.X, 3.Y, 4.Z), we can get the port number.
-            # NOTE: some of our devices are hubs themselves! For example, the SR300 will show as '2-2.3.2.1' --
-            # we must start a known hub or else the ports we look at are meaningless...
-            #
-            global _acroname_hubs
-            for port in _acroname_hubs:
-                if usb_location.startswith( port + '.' ):
-                    match = re.search( r'^(\d+)\.(\d+)', usb_location[len(port)+1:] )
-                    if match:
-                        return acroname.get_port_from_usb( int(match.group(1)), int(match.group(2)) )
 
 
 ###############################################################################################
 if __name__ == '__main__':
     import os, sys, getopt
+
     try:
         opts,args = getopt.getopt( sys.argv[1:], '',
             longopts = [ 'help', 'recycle', 'all', 'none', 'list', 'port=', 'ports' ])
@@ -763,16 +638,12 @@ if __name__ == '__main__':
     if args:
         usage()
     try:
-        if acroname:
-            if not acroname.hub:
-                try:
-                    acroname.connect()
-                    if platform.system() == 'Linux':
-                        _acroname_hubs = set( acroname.find_all_hubs() )
-                except acroname.NoneFoundError as e:
-                    # This can happen, e.g. on Jetson with D457...
-                    log.d( 'connect() failed:', e )
-                    acroname = None
+        if not relay.is_connected():
+            relay.connect()
+
+        if platform.system() == 'Linux':
+            _hubs = set(relay.find_all_hubs())
+
         action = 'list'
         def get_handle(dev):
             return dev.handle
@@ -783,31 +654,32 @@ if __name__ == '__main__':
             if opt in ('--list'):
                 action = 'list'
             elif opt in ('--port'):
-                if not acroname:
-                    log.f( 'No acroname available' )
-                all_ports = acroname.all_ports()
+                if relay.has_relay:
+                    log.f( 'No relay available' )
+                all_ports = relay.all_ports()
                 str_ports = arg.split(',')
                 ports = [int(port) for port in str_ports if port.isnumeric() and int(port) in all_ports]
                 if len(ports) != len(str_ports):
                     log.f( 'Invalid ports', str_ports )
-                acroname.enable_ports( ports, disable_other_ports=False )
+                relay.enable_ports( ports, disable_other_ports=False )
                 action = 'none'
             elif opt in ('--ports'):
                 printer = get_phys_port
             elif opt in ('--all'):
-                if not acroname:
-                    log.f( 'No acroname available' )
-                acroname.enable_ports()
+                if relay.has_relay:
+                    log.f( 'No relay available' )
+                relay.enable_ports()
                 action = 'none'
             elif opt in ('--none'):
-                if not acroname:
-                    log.f( 'No acroname available' )
-                acroname.disable_ports()
+                if relay.has_relay:
+                    log.f( 'No relay available' )
+                relay.disable_ports()
                 action = 'none'
             elif opt in ('--recycle'):
                 action = 'recycle'
             else:
                 usage()
+        #
         if action == 'list':
             query( monitor_changes=False, recycle_ports=False )
             for sn in all():
@@ -819,11 +691,9 @@ if __name__ == '__main__':
                     handle = printer(device)
                     ))
         elif action == 'recycle':
-            acroname.recycle_ports()
+            relay.recycle_ports()
     finally:
-        #
-        # Disconnect from the Acroname -- if we don't it'll crash on Linux...
-        if acroname:
-            acroname.disconnect()
+        # Disconnect from the relay -- if we don't it might crash on Linux...
+        relay.disconnect()
 
 
