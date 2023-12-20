@@ -178,7 +178,14 @@ namespace librealsense
 
         named_mutex::~named_mutex()
         {
-            unlock();
+            try
+            {
+                unlock();
+            }
+            catch(...)
+            {
+                LOG_DEBUG( "Error while unlocking mutex" );
+            }
         }
 
         void named_mutex::lock()

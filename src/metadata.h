@@ -963,6 +963,7 @@ namespace librealsense
         platform::uvc_header    header;
         md_modes                mode;
     };
+    constexpr int metadata_raw_mode_offset = sizeof(metadata_raw::header);
 
     /**\brief metadata_mipi_raw - metadata structure
      *  layout as transmitted and received by backend */
