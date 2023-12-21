@@ -2368,8 +2368,7 @@ namespace librealsense
             _md_fd = open(_md_name.c_str(), O_RDWR | O_NONBLOCK, 0);
             if(_md_fd < 0)
             {
-                // D457 development - added for mipi device, for IR because no metadata there
-                return;
+                return;  // Does not throw, MIPI device metadata not received through UVC, no metadata here may be valid
             }
 
             //The minimal video/metadata nodes syncer will be implemented by using two blocking calls:
@@ -2405,8 +2404,7 @@ namespace librealsense
 
             if(::close(_md_fd) < 0)
             {
-                // D457 development - added for mipi device, for IR because no metadata there
-                return;
+                return;  // Does not throw, MIPI device metadata not received through UVC, no metadata here may be valid
             }
 
             _md_fd = 0;
@@ -2423,8 +2421,7 @@ namespace librealsense
 
             if (xioctl(_md_fd, VIDIOC_G_FMT, &fmt))
             {
-                // D457 development - added for mipi device, for IR because no metadata there
-                return;
+                return;  // Does not throw, MIPI device metadata not received through UVC, no metadata here may be valid
             }
 
             if (fmt.type != _md_type)
