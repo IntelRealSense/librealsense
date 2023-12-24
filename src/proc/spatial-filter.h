@@ -30,7 +30,7 @@ namespace librealsense
         void dxf_smooth(void *frame_data, float alpha, float delta, int iterations)
         {
             static_assert((std::is_arithmetic<T>::value), "Spatial filter assumes numeric types");
-            bool fp = (std::is_floating_point<T>::value);
+            const bool fp = (std::is_floating_point<T>::value);
 
             for (int i = 0; i < iterations; i++)
             {
@@ -61,7 +61,7 @@ namespace librealsense
             size_t v{}, u{};
 
             // Handle conversions for invalid input data
-            bool fp = (std::is_floating_point<T>::value);
+            const bool fp = (std::is_floating_point<T>::value);
 
             // Filtering integer values requires round-up to the nearest discrete value
             const float round = fp ? 0.f : 0.5f;
@@ -156,7 +156,7 @@ namespace librealsense
             size_t v{}, u{};
 
             // Handle conversions for invalid input data
-            bool fp = (std::is_floating_point<T>::value);
+            const bool fp = (std::is_floating_point<T>::value);
 
             // Filtering integer values requires round-up to the nearest discrete value
             const float round = fp ? 0.f : 0.5f;
