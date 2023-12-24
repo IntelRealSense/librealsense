@@ -3524,22 +3524,17 @@ namespace rs2
             std::vector<uint8_t> labels_vec;
             labels_vec.insert(labels_vec.begin(), labels, labels + vertices_size);
 
-            std::vector< std::pair<uint8_t, std::vector<rs2::vertex> > > labels_to_vertices =
-                labeled_point_cloud_utilities::prepare_labeled_points_data(vertices_vec, labels_vec, vertices_size);
-
             auto label_to_color3f = labeled_point_cloud_utilities::get_label_to_color3f();
+
             /* this segment actually renders the labeled pointcloud */
-            for (int i = 0; i < labels_to_vertices.size(); ++i)
+            for (int i = 0; i < labels_vec.size(); ++i)
             {
-                auto label = labels_to_vertices[i].first;
-                auto vertices = labels_to_vertices[i].second;
+                auto label = labels_vec[i];
+                auto vertice = vertices[i];
                 auto color = label_to_color3f[static_cast<rs2_point_cloud_label>(label)];
 
-                for (auto&& v : vertices)
-                {
-                    glColor3f(color.x, color.y, color.z);
-                    glVertex3fv(v);
-                }
+                glColor3f(color.x, color.y, color.z);
+                glVertex3fv(vertice);
             }
         }
         glEnd();
