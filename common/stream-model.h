@@ -109,7 +109,8 @@ namespace rs2
         std::string format_value(rs2_frame_metadata_value& md_val, rs2_metadata_type& attribute_val) const;
         bool should_show_in_hex(rs2_frame_metadata_value& md_val) const;
         void show_metadata_by_default(const rs2::stream_profile& p);
-        void add_d500_metadata_descriptions(std::map<rs2_frame_metadata_value, std::string>& descriptions) const;
+        void add_d585S_metadata_descriptions(std::map<rs2_frame_metadata_value, std::string>& descriptions) const;
+        std::string get_meaning(rs2_frame_metadata_value md_val, std::vector<std::string>& reasons, std::string reason_for_zero = "") const;
     };
 
     
