@@ -100,6 +100,11 @@ void options_watcher::thread_loop()
     while( ! should_stop() )
     {
         std::map< rs2_option, std::shared_ptr< option > > updated_options = update_options();
+
+        // Checking stop conditions after update, if stop requested no need to notify.
+        if( should_stop() )
+            break;
+
         notify( updated_options );
 
         // Checking again for stop conditions after callbacks but before sleep.
@@ -132,6 +137,10 @@ std::map< rs2_option, std::shared_ptr< option > > options_watcher::update_option
         {
             // Some options cannot be queried all the time (i.e. streaming only)
         }
+
+        // Checking stop conditions after each query to ensure stop when requested.
+        if( should_stop() )
+            break;
     }
 
     return updated_options;
