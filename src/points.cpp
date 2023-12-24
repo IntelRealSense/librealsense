@@ -177,11 +177,11 @@ int labeled_points::get_width() const
     auto buffer_size = data.size();
     switch( buffer_size )
     {
-    case 748800: // 320 x 180 x 13 
-        width = 320;
+    case LOW_RES_BUFFER_SIZE: 
+        width = LOW_RES_WIDTH;
         break;
-    case 2995200: // 640 x 360 x 13 
-        width = 640;
+    case HIGH_RES_BUFFER_SIZE: 
+        width = HIGH_RES_WIDTH;
         break;
     default:
         LOG_ERROR(rsutils::string::from() <<  "unsupported buffer size of " << buffer_size << " received for labeled point cloud" );
@@ -196,11 +196,11 @@ int labeled_points::get_height() const
     auto buffer_size = data.size();
     switch( buffer_size )
     {
-    case 748800: // 320 x 180 x 13 
-        height = 180;
+    case LOW_RES_BUFFER_SIZE: 
+        height = LOW_RES_HEIGHT;
         break;
-    case 2995200: // 640 x 360 x 13 
-        height = 360;
+    case HIGH_RES_BUFFER_SIZE: 
+        height = HIGH_RES_HEIGHT;
         break;
     default:
         LOG_ERROR(rsutils::string::from() <<  "unsupported buffer size of " << buffer_size << " received for labeled point cloud" );
