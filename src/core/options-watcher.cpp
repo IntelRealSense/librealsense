@@ -30,15 +30,7 @@ options_watcher::~options_watcher()
 
 void options_watcher::register_option( rs2_option id, std::shared_ptr< option > option )
 {
-    registered_option opt = { option, 0.0f };
-    try
-    {
-        opt.last_known_value = option->query();
-    }
-    catch( ... )
-    {
-        // Some options cannot be queried all the time (i.e. streaming only)
-    }
+    registered_option opt = { option, 0.0f }; //Option actual value will be queried in start if needed.
 
     {
         std::lock_guard< std::mutex > lock( _mutex );
@@ -84,6 +76,11 @@ void options_watcher::start()
 {
     if( ! _updater.joinable() ) // If not already started
     {
+        if( _should_query_for_first_time )
+        {
+            update_options();
+            _should_query_for_first_time = false;
+        }
         _updater = std::thread( [this]() { thread_loop(); } );
     }
 }

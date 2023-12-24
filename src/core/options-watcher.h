@@ -50,7 +50,7 @@ protected:
 
     struct registered_option
     {
-        std::shared_ptr< option > sptr = std::shared_ptr< option >( nullptr );
+        std::shared_ptr< option > sptr;
         float last_known_value = 0.0f;
     };
     std::map< rs2_option, registered_option > _options;
@@ -58,6 +58,7 @@ protected:
     std::chrono::milliseconds _update_interval;
     std::thread _updater;
     std::mutex _mutex;
+    bool _should_query_for_first_time = true;
 };
 
 
