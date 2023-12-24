@@ -5,6 +5,7 @@
 
 #include "d500-safety.h"
 #include "d500-info.h"
+#include "d500-md.h"
 
 
 #include <vector>
@@ -152,7 +153,7 @@ namespace librealsense
     void d500_depth_mapping::register_occupancy_metadata(std::shared_ptr<uvc_sensor> raw_mapping_ep)
     {
         // attributes of md_occupancy
-        auto md_prop_offset = offsetof(metadata_raw, mode) +
+        auto md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_mapping_mode, intel_occupancy);
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER,
@@ -219,7 +220,7 @@ namespace librealsense
     void d500_depth_mapping::register_point_cloud_metadata(std::shared_ptr<uvc_sensor> raw_mapping_ep)
     {
         // attributes of md_point_cloud
-        auto md_prop_offset = offsetof(metadata_raw, mode) +
+        auto md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_mapping_mode, intel_point_cloud);
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER,
