@@ -328,7 +328,7 @@ namespace librealsense
 
         convert(RS2_FORMAT_RAW8, image.encoding);
         image.is_bigendian = is_big_endian();
-        auto size = labeled_points_frame->get_vertex_count() * librealsense::labeled_points::BYTES_PER_PIXEL;
+        auto size = labeled_points_frame->get_vertex_count() * labeled_points_frame->get_bpp();
         auto p_data = frame->get_frame_data();
         image.data.assign(p_data, p_data + size);
         image.header.seq = static_cast<uint32_t>(frame->get_frame_number());

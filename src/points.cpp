@@ -11,6 +11,18 @@
 
 namespace librealsense {
 
+static constexpr size_t LOW_RES_WIDTH = 320;  
+static constexpr size_t LOW_RES_HEIGHT = 180;  
+    
+static constexpr size_t HIGH_RES_WIDTH = 640; 
+static constexpr size_t HIGH_RES_HEIGHT = 360; 
+
+// bytes per pixel = 1 vertex + 1 label
+static constexpr size_t BYTES_PER_PIXEL = 3 * sizeof(float) + sizeof(uint8_t);
+
+static constexpr size_t LOW_RES_BUFFER_SIZE = LOW_RES_WIDTH * LOW_RES_HEIGHT * BYTES_PER_PIXEL;   // 320 x 180 x 13 
+static constexpr size_t HIGH_RES_BUFFER_SIZE = HIGH_RES_WIDTH * HIGH_RES_HEIGHT * BYTES_PER_PIXEL; // 640 x 360 x 13
+
 float3 * points::get_vertices()
 {
     get_frame_data();  // call GetData to ensure data is in main memory
@@ -198,18 +210,23 @@ unsigned int labeled_points::get_height() const
     auto buffer_size = data.size();
     switch( buffer_size )
     {
-    case LOW_RES_BUFFER_SIZE: 
+    case LOW_RES_BUFFER_SIZE:
         height = LOW_RES_HEIGHT;
         break;
-    case HIGH_RES_BUFFER_SIZE: 
+    case HIGH_RES_BUFFER_SIZE:
         height = HIGH_RES_HEIGHT;
         break;
     default:
         throw wrong_api_call_sequence_exception( rsutils::string::from()
-                                                 << "unsupported buffer size of " << buffer_size
-                                                 << " received for labeled point cloud" );        break;
+            << "unsupported buffer size of " << buffer_size
+            << " received for labeled point cloud" );        
+        break;
     }
     return height;
 }
 
-}  // namespace librealsense
+size_t labeled_points::get_bpp() const
+{
+    return BYTES_PER_PIXEL;
+}  
+} // namespace librealsense
