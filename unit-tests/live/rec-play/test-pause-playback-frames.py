@@ -2,16 +2,16 @@
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #test:device D400* !D457
-# Currently fail on D585S, need to be investigated and return the following string later #test:device D500*
+#test:device D585S
 
 # Objective:
 #
 # Verify that pause & resume did not mess up the recorded timestamps and the sleep time between each 2 frames is
 # reasonable. We had a BUG with calculating the sleep time between each 2 frames when the pause action occurred
 # before the recording base time was set (first frame arrival time), causing the recorded bag file "capture
-# time" to go up and down, and therefore huge sleep times. See [DSO-14342]
+# time" to go up and down, and therefore huge sleep times. See [RSDSO-14342]
 #
-# Here we test multiple flows on pause & resume actions and verify that the whole file will be be played until a
+# Here we test multiple flows on pause & resume actions and verify that the whole file will be played until a
 # stop event (EOF) within a reasonable time.
 
 import pyrealsense2 as rs, os, time, tempfile
