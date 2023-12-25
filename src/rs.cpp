@@ -2407,7 +2407,7 @@ void* rs2_get_frame_labels(const rs2_frame* frame, rs2_error** error) BEGIN_API_
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
 
-int rs2_get_frame_labeled_points_width(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
+unsigned int rs2_get_frame_labeled_points_width(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame_ref);
     auto vf = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::labeled_points);
@@ -2415,7 +2415,7 @@ int rs2_get_frame_labeled_points_width(const rs2_frame* frame_ref, rs2_error** e
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 
-int rs2_get_frame_labeled_points_height(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
+unsigned int rs2_get_frame_labeled_points_height(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame_ref);
     auto vf = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::labeled_points);

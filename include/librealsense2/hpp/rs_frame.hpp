@@ -874,7 +874,7 @@ namespace rs2
         * returns labeled point cloud width in pixels
         * \return        frame width in pixels
         */
-        int get_width() const
+        unsigned int get_width() const
         {
             rs2_error* e = nullptr;
             auto r = rs2_get_frame_labeled_points_width(get(), &e);
@@ -886,7 +886,7 @@ namespace rs2
         * returns labeled point cloud height in pixels
         * \return        frame height in pixels
         */
-        int get_height() const
+        unsigned int get_height() const
         {
             rs2_error* e = nullptr;
             auto r = rs2_get_frame_labeled_points_height(get(), &e);

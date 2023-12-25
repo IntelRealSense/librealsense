@@ -315,7 +315,7 @@ void* rs2_get_frame_labels(const rs2_frame* frame, rs2_error** error);
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               frame width in pixels
 */
-int rs2_get_frame_labeled_points_width(const rs2_frame* frame, rs2_error** error);
+unsigned int rs2_get_frame_labeled_points_width(const rs2_frame* frame, rs2_error** error);
 
 /**
 * retrieve labeled point cloud height in pixels
@@ -323,7 +323,7 @@ int rs2_get_frame_labeled_points_width(const rs2_frame* frame, rs2_error** error
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               frame height in pixels
 */
-int rs2_get_frame_labeled_points_height(const rs2_frame* frame, rs2_error** error);
+unsigned int rs2_get_frame_labeled_points_height(const rs2_frame* frame, rs2_error** error);
 
 /**
 * Returns the stream profile that was used to start the stream of this frame

@@ -171,9 +171,9 @@ uint8_t* labeled_points::get_labels() const
     return (uint8_t *) (data.data() + 3 * sizeof(float) * get_vertex_count());
 }
 
-int labeled_points::get_width() const
+unsigned int labeled_points::get_width() const
 {
-    int width = 0;
+    unsigned int width = 0;
     auto buffer_size = data.size();
     switch( buffer_size )
     {
@@ -190,9 +190,9 @@ int labeled_points::get_width() const
     return width;
 }
 
-int labeled_points::get_height() const
+unsigned int labeled_points::get_height() const
 {
-    int height = 0;
+    unsigned int height = 0;
     auto buffer_size = data.size();
     switch( buffer_size )
     {
