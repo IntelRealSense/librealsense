@@ -246,18 +246,10 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
     // Ignore errors
     dds_device::check_reply( j );
 
-
     // We need the original control request as part of the reply, otherwise we can't know what option this is for
-    auto it = j.find( control_key );
-    if( it == j.end() )
-    {
-        throw std::runtime_error( "missing control" );
-    }
-    nlohmann::json const & control = it.value();
+    rsutils::json::nested control( j, control_key );
     if( ! control.is_object() )
-    {
-        throw std::runtime_error( "control is not an object" );
-    }
+        throw std::runtime_error( "missing control object" );
 
     // Find the relevant (stream) options to update
     dds_options const * options = &_options;
@@ -266,10 +258,11 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
     {
         auto stream_it = _streams.find( stream_name );
         if( stream_it == _streams.end() )
-            throw std::runtime_error( "stream not found" );
+            throw std::runtime_error( "stream '" + stream_name + "' not found" );
         options = &stream_it->second->options();
     }
 
+    // This little function is used in all use-cases below:
     auto update_option = [&]( std::string const & option_name, float const new_value )
     {
         // Find the option and set its value
@@ -287,6 +280,9 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
     rsutils::json::nested value_j( j, value_key );
     if( ! value_j.exists() )
     {
+        // Use case:
+        //      Bulk query without ANY option names supplied, { "option-name": [] }
+        // There is no 'value' key; instead, the server returns option-value pairs in 'option-values':
         rsutils::json::nested option_values( j, option_values_key );
         if( ! option_values.is_object() )
             throw std::runtime_error( "missing value or option-values" );
@@ -299,8 +295,12 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
     if( ! option_name_j.exists() )
         throw std::runtime_error( "missing option-name" );
 
-    if( value_j.is_array() )
+    if( value_j->is_array() )
     {
+        // Use case:
+        //      Bulk query, but specific option names were given, { "option-name": ["opt1", ...] }
+        // The 'option-name' should be an array of options for which values are returned
+        // The 'value' should be a similarly-sized array
         if( ! option_name_j->is_array() )
             throw std::runtime_error( "'option-name' does not match 'value' array type" );
         if( value_j->size() != option_name_j->size() )
@@ -316,6 +316,10 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
         return;
     }
 
+    // Use case:
+    //      Simple single-option value update, { "option-name": "opt1" }
+    // 'option-name' should be a string
+    // A single 'value' is returned
     if( ! option_name_j->is_string() )
         throw std::runtime_error( "option-name is not a string" );
     auto & option_name = option_name_j.string_ref();
