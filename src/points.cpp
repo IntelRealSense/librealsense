@@ -227,6 +227,6 @@ unsigned int labeled_points::get_height() const
 
 size_t labeled_points::get_bpp() const
 {
-    return BYTES_PER_PIXEL;
+    return BYTES_PER_PIXEL * 8;
 }  
 } // namespace librealsense

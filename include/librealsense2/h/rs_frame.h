@@ -326,6 +326,14 @@ unsigned int rs2_get_frame_labeled_points_width(const rs2_frame* frame, rs2_erro
 unsigned int rs2_get_frame_labeled_points_height(const rs2_frame* frame, rs2_error** error);
 
 /**
+* retrieve bits per pixels in the labeled point cloud frame
+* \param[in] frame      handle returned from a callback
+* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               bits per pixel
+*/
+unsigned int rs2_get_frame_labeled_points_bits_per_pixel(const rs2_frame* frame, rs2_error** error);
+
+/**
 * Returns the stream profile that was used to start the stream of this frame
 * \param[in] frame       frame reference, owned by the user
 * \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored

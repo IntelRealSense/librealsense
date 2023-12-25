@@ -894,6 +894,18 @@ namespace rs2
             return r;
         }
 
+        /**
+        * retrieve bits per pixel
+        * \return            number of bits per one pixel
+        */
+        unsigned int get_bits_per_pixel() const
+        {
+            rs2_error* e = nullptr;
+            auto r = rs2_get_frame_labeled_points_bits_per_pixel(get(), &e);
+            error::handle(e);
+            return r;
+        }
+
     private:
         size_t _size;
     };

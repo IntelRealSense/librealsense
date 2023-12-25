@@ -33,7 +33,7 @@ public:
     const uint8_t* get_labels() const;
     unsigned int get_width() const;
     unsigned int get_height() const;
-    size_t get_bpp() const;
+    size_t get_bpp() const; // bits per pixel
  
 private:    
 

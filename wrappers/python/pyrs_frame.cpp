@@ -303,11 +303,12 @@ void init_frame(py::module &m) {
         .def("get_labels", [](rs2::labeled_points& self) {
         auto labels = const_cast<uint8_t*>(self.get_labels());
         return BufData(labels, sizeof(uint8_t), "@B", self.size());
-            }, "Retrieve the labels of the labeled point cloud", py::keep_alive<0, 1>())
-        .def("get_width", &rs2::labeled_points::get_width, "Returns labeled point cloud width in pixels.")
-        .def_property_readonly("width", &rs2::labeled_points::get_width, "labeled point cloud width in pixels. Identical to calling get_width.")
-        .def("get_height", &rs2::labeled_points::get_height, "Returns labeled point cloud height in pixels.")
-        .def_property_readonly("height", &rs2::labeled_points::get_height, "labeled point cloud height in pixels. Identical to calling get_height.");
+            }, "Retrieve the labels of the labeled point cloud", py::keep_alive<0, 1>() )
+                .def( "get_width", &rs2::labeled_points::get_width, "Returns labeled point cloud width in pixels." )
+                .def_property_readonly( "width", &rs2::labeled_points::get_width, "labeled point cloud width in pixels. Identical to calling get_width." )
+                .def( "get_height", &rs2::labeled_points::get_height, "Returns labeled point cloud height in pixels." )
+                .def_property_readonly( "height", &rs2::labeled_points::get_height, "labeled point cloud height in pixels. Identical to calling get_height." )
+                .def( "get_bpp", &rs2::labeled_points::get_bits_per_pixel, "Returns labeled point cloud bpp (bits per pixel)." );
 
     // TODO: Deprecate composite_frame, replace with frameset
     py::class_<rs2::frameset, rs2::frame> frameset(m, "composite_frame", "Extends the frame class with additional frameset related attributes and functions");
