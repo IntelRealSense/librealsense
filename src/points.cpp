@@ -184,7 +184,9 @@ unsigned int labeled_points::get_width() const
         width = HIGH_RES_WIDTH;
         break;
     default:
-        LOG_ERROR(rsutils::string::from() <<  "unsupported buffer size of " << buffer_size << " received for labeled point cloud" );
+        throw wrong_api_call_sequence_exception( rsutils::string::from()
+                                                 << "unsupported buffer size of " << buffer_size
+                                                 << " received for labeled point cloud" );
         break;
     }
     return width;
@@ -203,8 +205,9 @@ unsigned int labeled_points::get_height() const
         height = HIGH_RES_HEIGHT;
         break;
     default:
-        LOG_ERROR(rsutils::string::from() <<  "unsupported buffer size of " << buffer_size << " received for labeled point cloud" );
-        break;
+        throw wrong_api_call_sequence_exception( rsutils::string::from()
+                                                 << "unsupported buffer size of " << buffer_size
+                                                 << " received for labeled point cloud" );        break;
     }
     return height;
 }
