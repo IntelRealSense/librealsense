@@ -38,22 +38,13 @@ int main(int argc, char * argv[]) try
 
         auto labels_frame = data.get_labeled_point_cloud_frame();
 
-        auto vertices = labels_frame.get_vertices();
-        auto vertices_size = labels_frame.size();
-
-        std::vector<rs2::vertex> vertices_vec;
-        vertices_vec.insert(vertices_vec.begin(), vertices, vertices + vertices_size);
-
-        auto labels = labels_frame.get_labels();
-
-        std::vector<uint8_t> labels_vec;
-        labels_vec.insert(labels_vec.begin(), labels, labels + vertices_size);
-
-        std::vector< std::pair<uint8_t, std::vector<rs2::vertex> > > labels_to_vertices = 
-            rs2::labeled_point_cloud_utilities::prepare_labeled_points_data(vertices_vec, labels_vec, vertices_size);
-
         // Draw the labeled pointcloud
-        draw_labeled_pointcloud(app.width(), app.height(), app_state, labels_to_vertices);
+        draw_labeled_pointcloud( app.width(),
+                                 app.height(),
+                                 app_state,
+                                 labels_frame.get_vertices(),
+                                 labels_frame.get_labels(),
+                                 labels_frame.size() );
     }
 
     return EXIT_SUCCESS;

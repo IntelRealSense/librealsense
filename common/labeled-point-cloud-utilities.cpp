@@ -40,36 +40,4 @@ namespace rs2
 
         return label_to_color3f;
     }
-
-    std::vector< std::pair<uint8_t, std::vector<rs2::vertex> > >
-        labeled_point_cloud_utilities::prepare_labeled_points_data(const std::vector<rs2::vertex>& vertices_vec, 
-            const std::vector<uint8_t>& labels_vec, size_t vertices_size)
-    {
-        std::vector< std::pair<uint8_t, std::vector<rs2::vertex> > > labels_to_vertices;
-
-        for (int i = 0; i < vertices_size; ++i)
-        {
-            auto it = std::find_if(labels_to_vertices.begin(), labels_to_vertices.end(),
-                [&](const std::pair<uint8_t, std::vector<rs2::vertex> >& p) {return p.first == labels_vec[i]; });
-            if (it == labels_to_vertices.end())
-                labels_to_vertices.push_back(std::make_pair(labels_vec[i], std::vector<rs2::vertex>()));
-        }
-        std::sort(labels_to_vertices.begin(), labels_to_vertices.end(),
-            [&](const std::pair<uint8_t, std::vector<rs2::vertex> >& left, const std::pair<uint8_t, std::vector<rs2::vertex> >& right)
-            {
-                return left.first < right.first;
-            });
-
-        for (int i = 0; i < vertices_size; ++i)
-        {
-            auto it = std::find_if(labels_to_vertices.begin(), labels_to_vertices.end(),
-                [&](const std::pair<uint8_t, std::vector<rs2::vertex> >& p) {return p.first == labels_vec[i]; });
-            if (it == labels_to_vertices.end())
-                throw std::runtime_error("Should not happen");
-
-            it->second.push_back(vertices_vec[i]);
-        }
-
-        return labels_to_vertices;
-    }
 } // rs2 namespace

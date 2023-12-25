@@ -11,10 +11,6 @@ namespace rs2
     {
     public:
         static std::map<rs2_point_cloud_label, float3> get_label_to_color3f();
-
-        static std::vector< std::pair<uint8_t, std::vector<rs2::vertex> > >
-            prepare_labeled_points_data(const std::vector<rs2::vertex>& vertices_vec,
-                const std::vector<uint8_t>& labels_vec, size_t vertices_size);
     };
     
 }

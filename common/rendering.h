@@ -740,7 +740,10 @@ namespace rs2
             {
                 // Upload vertices
                 auto data = lpc.get_vertices();
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, 320, 180, 0, GL_RGB, GL_FLOAT, (const void*)data);
+                auto lpc_width = lpc.get_width();
+                auto lpc_height = lpc.get_height();
+
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, lpc_width, lpc_height, 0, GL_RGB, GL_FLOAT, (const void*)data);
 
                 // TODO: use of labels 
                 auto labels = lpc.get_labels();

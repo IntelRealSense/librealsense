@@ -104,7 +104,7 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS                  , /**< Number of rows in the grid. Max value is 250 (corresponding to 5M width with 2cm tile) */
     RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS               , /**< Number of columns in the grid. Max value is 320 (corresponding to ~6.5M depth with 2cm tile) */
     RS2_FRAME_METADATA_OCCUPANCY_CELL_SIZE                  , /**< Edge size of each tile, measured in cm  */
-    RS2_FRAME_METADATA_NUMBER_OF_3D_VERTICES                , /**< The max number of points is 320X240 */
+    RS2_FRAME_METADATA_NUMBER_OF_3D_VERTICES                , /**< The max number of points is 640x360 */
     RS2_FRAME_METADATA_COUNT
 } rs2_frame_metadata_value;
 const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata);
@@ -308,6 +308,30 @@ int rs2_get_frame_labeled_points_count(const rs2_frame* frame, rs2_error** error
 * \return                Pointer to an array of attributes, lifetime is managed by the frame
 */
 void* rs2_get_frame_labels(const rs2_frame* frame, rs2_error** error);
+
+/**
+* retrieve labeled point cloud width in pixels
+* \param[in] frame      handle returned from a callback
+* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               frame width in pixels
+*/
+unsigned int rs2_get_frame_labeled_points_width(const rs2_frame* frame, rs2_error** error);
+
+/**
+* retrieve labeled point cloud height in pixels
+* \param[in] frame      handle returned from a callback
+* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               frame height in pixels
+*/
+unsigned int rs2_get_frame_labeled_points_height(const rs2_frame* frame, rs2_error** error);
+
+/**
+* retrieve bits per pixels in the labeled point cloud frame
+* \param[in] frame      handle returned from a callback
+* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               bits per pixel
+*/
+unsigned int rs2_get_frame_labeled_points_bits_per_pixel(const rs2_frame* frame, rs2_error** error);
 
 /**
 * Returns the stream profile that was used to start the stream of this frame

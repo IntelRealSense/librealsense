@@ -2407,6 +2407,30 @@ void* rs2_get_frame_labels(const rs2_frame* frame, rs2_error** error) BEGIN_API_
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
 
+unsigned int rs2_get_frame_labeled_points_width(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(frame_ref);
+    auto labeled_points = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::labeled_points);
+    return labeled_points->get_width();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
+
+unsigned int rs2_get_frame_labeled_points_height(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(frame_ref);
+    auto labeled_points = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::labeled_points);
+    return labeled_points->get_height();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
+
+unsigned int rs2_get_frame_labeled_points_bits_per_pixel(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(frame_ref);
+    auto labeled_points = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::labeled_points);
+    return static_cast<unsigned int>(labeled_points->get_bpp());
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
+
 rs2_processing_block* rs2_create_pointcloud(rs2_error** error) BEGIN_API_CALL
 {
     return new rs2_processing_block { pointcloud::create() };

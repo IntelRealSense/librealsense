@@ -82,6 +82,9 @@ EXPORTS
     rs2_get_frame_labeled_vertices
     rs2_get_frame_labeled_points_count
     rs2_get_frame_labels
+    rs2_get_frame_labeled_points_width
+    rs2_get_frame_labeled_points_height
+    rs2_get_frame_labeled_points_bits_per_pixel
     rs2_release_frame
     rs2_keep_frame
     rs2_frame_add_ref

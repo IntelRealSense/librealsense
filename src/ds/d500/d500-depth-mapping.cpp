@@ -276,10 +276,23 @@ namespace librealsense
                 md_point_cloud_attributes::payload_crc32_attribute, md_prop_offset));
     }
 
-    void d500_depth_mapping::register_processing_blocks(std::shared_ptr<d500_depth_mapping_sensor> mapping_ep)
+void d500_depth_mapping::register_processing_blocks( std::shared_ptr< d500_depth_mapping_sensor > mapping_ep )
     {
-        mapping_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW8, RS2_STREAM_OCCUPANCY));
-        mapping_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW8, RS2_STREAM_LABELED_POINT_CLOUD));
+        processing_block_factory occ_pbf
+            = { { { RS2_FORMAT_RAW8, RS2_STREAM_OCCUPANCY } },
+                { { RS2_FORMAT_RAW8, RS2_STREAM_OCCUPANCY } },
+                []() {
+                    return std::make_shared< identity_processing_block >();
+                } };
+        mapping_ep->register_processing_block( occ_pbf );
+
+        processing_block_factory lpc_pbf
+            = { { { RS2_FORMAT_RAW8, RS2_STREAM_LABELED_POINT_CLOUD } },
+                { { RS2_FORMAT_RAW8, RS2_STREAM_LABELED_POINT_CLOUD } },
+                []() {
+                    return std::make_shared< identity_processing_block >();
+                } };
+        mapping_ep->register_processing_block( lpc_pbf );
     }
 
     stream_profiles d500_depth_mapping_sensor::init_stream_profiles()

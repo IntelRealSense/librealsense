@@ -11,9 +11,9 @@
 
 // Handles all the OpenGL calls needed to display the labeled point cloud
 void draw_labeled_pointcloud(float width, float height, glfw_state& app_state, 
-    const std::vector< std::pair<uint8_t, std::vector<rs2::vertex> > >& labels_to_vertices)
+    const rs2::vertex* vertices, const uint8_t* labels, size_t vertices_count)
 {
-    if (labels_to_vertices.size() == 0)
+    if( vertices_count == 0 || ! vertices || ! labels )
         return;
 
     // OpenGL commands that prep screen for the pointcloud
@@ -49,18 +49,19 @@ void draw_labeled_pointcloud(float width, float height, glfw_state& app_state,
 
     auto label_to_color3f = rs2::labeled_point_cloud_utilities::get_label_to_color3f();
     /* this segment actually renders the labeled pointcloud */
-    for (int i = 0; i < labels_to_vertices.size(); ++i)
+    for (int i = 0; i < vertices_count; ++i)
     {
-        auto label = labels_to_vertices[i].first;
-        auto vertices = labels_to_vertices[i].second;
+        // Set the vertex color from the label value
+        auto label = labels[i];
         auto color = label_to_color3f[static_cast<rs2_point_cloud_label>(label)];
+        glColor3f(color.x, color.y, color.z);
 
-        for (auto&& v : vertices)
-        {
-            GLfloat vert[3] = {-v.y, v.z, -v.x};
-            glVertex3fv(vert);
-            glColor3f(color.x, color.y, color.z);
-        }
+        // Draw the vertex
+        // Note: LPC is in Robot coordinate system and not optical coordinate system.
+        // Normally we need to use the extrinsic to do this conversion.
+        // Currently in this example we use the conversion hard-coded
+        rs2::vertex vtx = { -vertices[i].y, vertices[i].z, -vertices[i].x };
+        glVertex3fv(std::move(vtx));
     }
 
     // OpenGL cleanup
