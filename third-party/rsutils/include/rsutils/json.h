@@ -152,6 +152,8 @@ class nested
     nlohmann::json const * _pj;
 
 public:
+    nested() : _pj( nullptr ) {}
+
     template< typename... Rest >
     nested( nlohmann::json const & j, Rest... rest )
         : _pj( _nested( j, std::forward< Rest >( rest )... ) )
@@ -168,6 +170,14 @@ public:
     bool is_array() const { return exists() && _pj->is_array(); }
     bool is_object() const { return exists() && _pj->is_object(); }
     bool is_string() const { return exists() && _pj->is_string(); }
+
+    // Dig deeper
+    template< typename... Rest >
+    inline nested find( Rest... rest ) const
+    {
+        return _pj ? nested( *_pj, std::forward< Rest >( rest )... ) : nested();
+    }
+    inline nested operator[]( std::string const & key ) const { return find( key ); }
 
     // Get the JSON as a value
     template< class T > T value() const { return json::value< T >( get() ); }

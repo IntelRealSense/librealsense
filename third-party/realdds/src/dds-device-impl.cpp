@@ -253,8 +253,8 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
 
     // Find the relevant (stream) options to update
     dds_options const * options = &_options;
-    std::string stream_name;  // default = empty = device option
-    if( rsutils::json::get_ex( control, stream_name_key, &stream_name ) && ! stream_name.empty() )
+    std::string const & stream_name = control.find( stream_name_key ).string_ref_or_empty();  // default = empty = device option
+    if( ! stream_name.empty() )
     {
         auto stream_it = _streams.find( stream_name );
         if( stream_it == _streams.end() )
@@ -291,7 +291,7 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
         return;
     }
 
-    rsutils::json::nested option_name_j( control, option_name_key );
+    auto option_name_j = control.find( option_name_key );
     if( ! option_name_j.exists() )
         throw std::runtime_error( "missing option-name" );
 
