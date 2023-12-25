@@ -168,7 +168,7 @@ float2 * points::get_texture_coordinates()
 
 size_t labeled_points::get_vertex_count() const
 {
-    return data.size() / ( sizeof( float3 ) + sizeof( uint8_t ) );
+    return data.size() / BYTES_PER_PIXEL;
 }
 
 float3* labeled_points::get_vertices()
