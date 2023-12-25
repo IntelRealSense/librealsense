@@ -11,6 +11,8 @@ namespace json {
 
 
 extern nlohmann::json const null_json;
+extern nlohmann::json const empty_json_string;
+extern nlohmann::json const empty_json_object;
 
 
 // Returns true if the json has a certain key.
@@ -168,11 +170,15 @@ public:
     bool is_string() const { return exists() && _pj->is_string(); }
 
     // Get the JSON as a value
-    template< class T > T value() { return json::value< T >( get() ); }
+    template< class T > T value() const { return json::value< T >( get() ); }
     // Get the JSON as a value, or a default if not there
-    template < class T > T value( T const & default_value ) { return json::value< T >( get(), default_value ); }
+    template < class T > T default_value( T const & default_value ) const { return json::value< T >( get(), default_value ); }
+    // Get the object, with a default being an empty one
+    nlohmann::json const & default_object() const { return is_object() ? *_pj : empty_json_object; }
     // Get a JSON string by reference (zero copy); it must be a string or it'll throw
     inline std::string const & string_ref() const { return json::string_ref( get() ); }
+    // Get a JSON string by reference (zero copy); does not throw
+    inline std::string const & string_ref_or_empty() const { return json::string_ref( exists() ? *_pj : empty_json_string ); }
 };
 
 
