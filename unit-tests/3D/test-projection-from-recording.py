@@ -4,6 +4,9 @@
 #temporary fix to prevent the test from running on Win_SH_Py_DDS_CI
 #test:donotrun:dds
 
+#disabled until LRS-986 ticket is resolved due to stability issues
+#test:donotrun
+
 import pyrealsense2 as rs
 from rspy import test, repo
 import os.path
