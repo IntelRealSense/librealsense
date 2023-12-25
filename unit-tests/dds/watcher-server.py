@@ -19,11 +19,10 @@ broadcasters = []
 
 def broadcast( props ):
     global broadcasters, publisher
-    di = dds.message.device_info()
-    di.serial = props.get( 'serial', str(len(broadcasters)) )
-    di.name = props.get( 'name', f'device{di.serial}' )
-    di.product_line = props.get( 'product_line', '' )
-    di.topic_root = props.get( 'topic_root', f'path/to/{di.name}' )
+    serial = props.setdefault( 'serial', str(len(broadcasters)) )
+    props.setdefault( 'name', f'device{serial}' )
+    props.setdefault( 'topic-root', f'device{serial}' )
+    di = dds.message.device_info.from_json( props )
     broadcasters.append( dds.device_broadcaster( publisher, di ) )
 
 

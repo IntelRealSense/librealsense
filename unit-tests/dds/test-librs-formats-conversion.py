@@ -13,7 +13,7 @@ if log.is_debug_on():
 log.nested = 'C  '
 
 context = rs.context( { 'dds': { 'enabled': True, 'domain': 123, 'participant': 'test-formats-conversion' }} )
-only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
+only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any)
 
 import os.path
 cwd = os.path.dirname(os.path.realpath(__file__))

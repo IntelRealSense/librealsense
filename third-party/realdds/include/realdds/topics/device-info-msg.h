@@ -1,9 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
-#include <nlohmann/json_fwd.hpp>
+#include <nlohmann/json.hpp>
 
 #include <rsutils/string/slice.h>
 
@@ -12,14 +11,23 @@ namespace topics {
 
 class device_info
 {
-public:
-    std::string name;
-    std::string serial;
-    std::string product_line;
-    std::string topic_root;
-    bool locked = true;
+    nlohmann::json _json;
 
-    nlohmann::json to_json() const;
+public:
+    //std::string serial;
+    //std::string product_line;
+    //bool locked = true;
+
+    std::string const & name() const;
+    void set_name( std::string && );
+
+    std::string const & topic_root() const;
+    void set_topic_root( std::string && );
+
+    std::string const & serial_number() const;
+    void set_serial_number( std::string && );
+
+    nlohmann::json const & to_json() const;
     static device_info from_json( nlohmann::json const & j );
 
     // Substring of information already stored in the device-info that can be used to print the device 'name'.

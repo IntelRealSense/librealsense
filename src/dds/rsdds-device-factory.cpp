@@ -145,15 +145,23 @@ std::vector< std::shared_ptr< device_info > > rsdds_device_factory::query_device
                     LOG_DEBUG( "device '" << dev->device_info().debug_name() << "' is not ready" );
                     return true;
                 }
-                if( dev->device_info().product_line == "D400" )
+                std::string product_line;
+                if( rsutils::json::get_ex( dev->device_info().to_json(), "product-line", &product_line ) )
                 {
-                    if( ! ( mask & RS2_PRODUCT_LINE_D400 ) )
+                    if( product_line == "D400" )
+                    {
+                        if( ! ( mask & RS2_PRODUCT_LINE_D400 ) )
+                            return true;
+                    }
+                    else if( product_line == "D500" )
+                    {
+                        if( ! ( mask & RS2_PRODUCT_LINE_D500 ) )
+                            return true;
+                    }
+                    else if( ! ( mask & RS2_PRODUCT_LINE_NON_INTEL ) )
+                    {
                         return true;
-                }
-                else if( dev->device_info().product_line == "D500" )
-                {
-                    if( ! ( mask & RS2_PRODUCT_LINE_D500 ) )
-                        return true;
+                    }
                 }
                 else if( ! ( mask & RS2_PRODUCT_LINE_NON_INTEL ) )
                 {

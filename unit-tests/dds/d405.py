@@ -5,11 +5,12 @@ import pyrealdds as dds
 from rspy import log, test
 
 
-device_info = dds.message.device_info()
-device_info.name = "Intel RealSense D405"
-device_info.serial = "123622270732"
-device_info.product_line = "D400"
-device_info.topic_root = "realdds/D405/" + device_info.serial
+device_info = dds.message.device_info.from_json( {
+    "name": "Intel RealSense D405",
+    "serial": "123622270732",
+    "product-line": "D400",
+    "topic-root": "realdds/D405/123622270732"
+} )
 
 
 def build( participant ):

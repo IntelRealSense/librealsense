@@ -475,7 +475,7 @@ void dds_device::impl::create_notifications_reader()
     if( _notifications_reader )
         return;
 
-    auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + topics::NOTIFICATION_TOPIC_NAME );
+    auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root() + topics::NOTIFICATION_TOPIC_NAME );
 
     // We have some complicated topic structures. In particular, the metadata topic is created on demand while handling
     // other notifications, which doesn't work well (deadlock) if the notification is not called from another thread. So
@@ -518,7 +518,7 @@ void dds_device::impl::create_metadata_reader()
     if( _metadata_reader ) // We can be called multiple times, once per stream
         return;
 
-    auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + topics::METADATA_TOPIC_NAME );
+    auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root() + topics::METADATA_TOPIC_NAME );
     _metadata_reader = std::make_shared< dds_topic_reader_thread >( topic, _subscriber );
     _metadata_reader->on_data_available(
         [this]()
@@ -549,7 +549,7 @@ void dds_device::impl::create_control_writer()
     if( _control_writer )
         return;
 
-    auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + topics::CONTROL_TOPIC_NAME );
+    auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root() + topics::CONTROL_TOPIC_NAME );
     _control_writer = std::make_shared< dds_topic_writer >( topic );
     dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
     wqos.history().depth = 10;  // default is 1

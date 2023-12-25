@@ -3,6 +3,7 @@
 
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/dds-topic-names.h>
+#include <realdds/dds-exceptions.h>
 
 #include <rsutils/json.h>
 #include <rsutils/easylogging/easyloggingpp.h>
@@ -11,41 +12,71 @@ namespace realdds {
 namespace topics {
 
 
+static std::string name_key( "name", 4 );
+static std::string topic_root_key( "topic-root", 10 );
+static std::string serial_number_key( "serial", 6 );
+
+
 /* static  */ device_info device_info::from_json( nlohmann::json const & j )
 {
     device_info ret;
+    ret._json = j;
 
-    ret.name         = rsutils::json::get< std::string >( j, "name" );
-    rsutils::json::get_ex( j, "serial", &ret.serial );
-    rsutils::json::get_ex( j, "product-line", &ret.product_line );
-    ret.topic_root   = rsutils::json::get< std::string >( j, "topic-root" );
-    rsutils::json::get_ex( j, "locked", &ret.locked );
+    // Check the two mandatory fields are there
+    if( ret.name().empty() )
+        DDS_THROW( runtime_error, "empty device-info name" );
+    if( ret.topic_root().empty() )
+        DDS_THROW( runtime_error, "empty device-info topic-root" );
 
     return ret;
 }
 
 
-nlohmann::json device_info::to_json() const
+nlohmann::json const & device_info::to_json() const
 {
-    auto msg = nlohmann::json( {
-        { "name", name },
-        { "topic-root", topic_root },
-    } );
-    if( ! serial.empty() )
-        msg["serial"] = serial;
-    if( ! product_line.empty() )
-        msg["product-line"] = product_line;
-    if( ! locked )
-        msg["locked"] = false;
-    return msg;
+    return _json;
+}
+
+
+std::string const & device_info::name() const
+{
+    return rsutils::json::nested( _json, name_key ).string_ref_or_empty();
+}
+
+void device_info::set_name( std::string && v )
+{
+    _json[name_key] = std::move( v );
+}
+
+
+std::string const & device_info::topic_root() const
+{
+    return rsutils::json::nested( _json, topic_root_key ).string_ref_or_empty();
+}
+
+void device_info::set_topic_root( std::string && v )
+{
+    _json[topic_root_key] = std::move( v );
+}
+
+
+std::string const & device_info::serial_number() const
+{
+    return rsutils::json::nested( _json, serial_number_key ).string_ref_or_empty();
+}
+
+void device_info::set_serial_number( std::string && v )
+{
+    _json[serial_number_key] = std::move( v );
 }
 
 
 rsutils::string::slice device_info::debug_name() const
 {
-    auto begin = topic_root.c_str();
-    auto end = begin + topic_root.length();
-    if( topic_root.length() > ROOT_LEN && SEPARATOR == begin[ROOT_LEN-1] )
+    auto & root = topic_root();
+    auto begin = root.c_str();
+    auto end = begin + root.length();
+    if( root.length() > ROOT_LEN && SEPARATOR == begin[ROOT_LEN-1] )
         begin += ROOT_LEN;
     return{ begin, end };
 }
