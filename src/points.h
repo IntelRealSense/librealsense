@@ -30,7 +30,7 @@ class labeled_points : public frame
 public:
     float3* get_vertices();
     size_t get_vertex_count() const;
-    uint8_t* get_labels() const;
+    const uint8_t* get_labels() const;
     unsigned int get_width() const;
     unsigned int get_height() const;
     // bytes per pixel = 1 vertex + 1 label

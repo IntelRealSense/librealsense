@@ -165,10 +165,10 @@ float3* labeled_points::get_vertices()
     return (float3 *)data.data();
 }
 
-uint8_t* labeled_points::get_labels() const
+const uint8_t* labeled_points::get_labels() const
 {
     get_frame_data();  // call GetData to ensure data is in main memory
-    return (uint8_t *) (data.data() + 3 * sizeof(float) * get_vertex_count());
+    return data.data() + 3 * sizeof(float) * get_vertex_count();
 }
 
 unsigned int labeled_points::get_width() const
