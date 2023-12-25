@@ -57,6 +57,9 @@ void draw_labeled_pointcloud(float width, float height, glfw_state& app_state,
         glColor3f(color.x, color.y, color.z);
 
         // Draw the vertex
+        // Note: LPC is in Robot coordinate system and not optical coordinate system.
+        // Normally we need to use the extrinsic to do this conversion.
+        // Currently in this example we use the conversion hard-coded
         rs2::vertex vtx = { -vertices[i].y, vertices[i].z, -vertices[i].x };
         glVertex3fv(std::move(vtx));
     }
