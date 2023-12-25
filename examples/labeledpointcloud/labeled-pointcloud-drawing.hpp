@@ -11,9 +11,9 @@
 
 // Handles all the OpenGL calls needed to display the labeled point cloud
 void draw_labeled_pointcloud(float width, float height, glfw_state& app_state, 
-    const std::vector<rs2::vertex> vertices_vec, const std::vector<uint8_t> labels_vec)
+    const rs2::vertex* vertices, const uint8_t* labels, size_t vertices_count)
 {
-    if (vertices_vec.size() == 0 || labels_vec.size() == 0)
+    if( vertices_count == 0 || ! vertices || ! labels )
         return;
 
     // OpenGL commands that prep screen for the pointcloud
@@ -49,14 +49,16 @@ void draw_labeled_pointcloud(float width, float height, glfw_state& app_state,
 
     auto label_to_color3f = rs2::labeled_point_cloud_utilities::get_label_to_color3f();
     /* this segment actually renders the labeled pointcloud */
-    for (int i = 0; i < vertices_vec.size(); ++i)
+    for (int i = 0; i < vertices_count; ++i)
     {
-        auto label = labels_vec[i];
-        auto vertice = vertices_vec[i];
+        // Set the vertex color from the label value
+        auto label = labels[i];
         auto color = label_to_color3f[static_cast<rs2_point_cloud_label>(label)];
-        GLfloat vert[3] = {-vertice.y, vertice.z, -vertice.x};
-        glVertex3fv(vert);
         glColor3f(color.x, color.y, color.z);
+
+        // Draw the vertex
+        rs2::vertex vtx = { -vertices[i].y, vertices[i].z, -vertices[i].x };
+        glVertex3fv(std::move(vtx));
     }
 
     // OpenGL cleanup
