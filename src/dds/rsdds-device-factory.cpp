@@ -83,23 +83,21 @@ static std::mutex domain_context_by_id_mutex;
 rsdds_device_factory::rsdds_device_factory( std::shared_ptr< context > const & ctx, callback && cb )
     : super( ctx )
 {
-    nlohmann::json const & dds_settings = rsutils::json::nested( ctx->get_settings(), std::string( "dds", 3 ) );
-    if( dds_settings.is_object() && rsutils::json::get( dds_settings, std::string( "enabled", 7 ), true ) )
+    rsutils::json::nested dds_settings( ctx->get_settings(), std::string( "dds", 3 ) );
+    if( dds_settings.is_object() && dds_settings.find( std::string( "enabled", 7 ) ).default_value( true ) )
     {
-        auto domain_id = rsutils::json::get< realdds::dds_domain_id >( dds_settings, std::string( "domain", 6 ), 0 );
-        std::string participant_name = rsutils::json::get< std::string >( dds_settings,
-                                                                          std::string( "participant", 11 ),
-                                                                          rsutils::os::executable_name() );
+        auto domain_id = dds_settings.find( std::string( "domain", 6 ) ).default_value< realdds::dds_domain_id >( 0 );
+        auto participant_name_j = dds_settings.find( std::string( "participant", 11 ) );
+        auto participant_name = participant_name_j.default_value( rsutils::os::executable_name() );
 
         std::lock_guard< std::mutex > lock( domain_context_by_id_mutex );
         auto & domain = domain_context_by_id[domain_id];
         _participant = domain.participant.instance();
         if( ! _participant->is_valid() )
         {
-            _participant->init( domain_id, participant_name, std::move( dds_settings ) );
+            _participant->init( domain_id, participant_name, dds_settings.default_object() );
         }
-        else if( rsutils::json::has_value( dds_settings, std::string( "participant", 11 ) )
-                 && participant_name != _participant->name() )
+        else if( participant_name_j.exists() && participant_name != _participant->name() )
         {
             throw std::runtime_error( rsutils::string::from()
                                       << "A DDS participant '" << _participant->name() << "' already exists in domain "

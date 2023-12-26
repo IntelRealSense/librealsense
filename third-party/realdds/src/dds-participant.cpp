@@ -242,9 +242,12 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
                    "failed creating participant " + participant_name + " on domain id " + std::to_string( domain_id ) );
     }
 
-    if( ! settings.is_object() )
-        DDS_THROW( runtime_error, "provided settings are invalid" );
-    _settings = settings;
+    if( settings.is_object() )
+        _settings = settings;
+    else if( settings.is_null() )
+        _settings = nlohmann::json::object();
+    else
+        DDS_THROW( runtime_error, "provided settings are invalid: " << settings );
 
     LOG_DEBUG( "participant '" << participant_name << "' (" << realdds::print_guid( guid() ) << ") is up on domain "
                                << domain_id << " with settings: " << _settings.dump( 4 ) );
