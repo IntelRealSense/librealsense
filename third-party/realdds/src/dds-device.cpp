@@ -6,6 +6,8 @@
 #include <realdds/dds-topic-writer.h>
 #include "dds-device-impl.h"
 
+#include <rsutils/json.h>
+
 
 namespace realdds {
 
@@ -13,7 +15,7 @@ namespace realdds {
 dds_device::dds_device( std::shared_ptr< dds_participant > const & participant, topics::device_info const & info )
     : _impl( std::make_shared< dds_device::impl >( participant, info ) )
 {
-    LOG_DEBUG( "+device '" << info.debug_name() << "' on " << info.topic_root );
+    LOG_DEBUG( "+device '" << _impl->debug_name() << "' on " << info.topic_root );
 }
 
 
@@ -117,19 +119,60 @@ bool dds_device::supports_metadata() const
     return !! _impl->_metadata_reader;
 }
 
-void dds_device::on_metadata_available( on_metadata_available_callback cb )
+rsutils::subscription dds_device::on_metadata_available( on_metadata_available_callback && cb )
 {
-    _impl->on_metadata_available( cb );
+    return _impl->on_metadata_available( std::move( cb ) );
 }
 
-void dds_device::on_device_log( on_device_log_callback cb )
+rsutils::subscription dds_device::on_device_log( on_device_log_callback && cb )
 {
-    _impl->on_device_log( cb );
+    return _impl->on_device_log( std::move( cb ) );
 }
 
-void dds_device::on_notification( on_notification_callback cb )
+rsutils::subscription dds_device::on_notification( on_notification_callback && cb )
 {
-    _impl->on_notification( cb );
+    return _impl->on_notification( std::move( cb ) );
+}
+
+
+static std::string const status_key( "status", 6 );
+static std::string const status_ok( "ok", 2 );
+static std::string const explanation_key( "explanation", 11 );
+static std::string const id_key( "id", 2 );
+
+
+bool dds_device::check_reply( nlohmann::json const & reply, std::string * p_explanation )
+{
+    auto status_j = rsutils::json::nested( reply, status_key );
+    if( ! status_j )
+        return true;
+    std::ostringstream os;
+    if( ! status_j->is_string() )
+        os << "bad status " << status_j;
+    else if( status_j.string_ref() == status_ok )
+        return true;
+    else
+    {
+        os << "[";
+        if( auto id = rsutils::json::nested( reply, id_key ) )
+        {
+            if( id->is_string() )
+                os << "\"" << id.string_ref() << "\" ";
+        }
+        os << status_j.string_ref() << "]";
+        if( auto explanation_j = rsutils::json::nested( reply, explanation_key ) )
+        {
+            os << ' ';
+            if( ! explanation_j->is_string() || explanation_j.string_ref().empty() )
+                os << "bad explanation " << explanation_j;
+            else
+                os << explanation_j.string_ref();
+        }
+    }
+    if( ! p_explanation )
+        DDS_THROW( runtime_error, os.str() );
+    *p_explanation = os.str();
+    return false;
 }
 
 

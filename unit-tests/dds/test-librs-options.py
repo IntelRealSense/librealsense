@@ -44,7 +44,7 @@ with test.remote.fork( nested_indent=None ) as remote:
     from dds import wait_for_devices
 
     with test.closure( 'Initialize librealsense context', on_fail=test.ABORT ):
-        context = rs.context( { 'dds': { 'domain': 123, 'participant': 'client' }} )
+        context = rs.context( { 'dds': { 'enabled': True, 'domain': 123, 'participant': 'client' }} )
         only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any)
 
     with test.closure( 'Find the server', on_fail=test.ABORT ):

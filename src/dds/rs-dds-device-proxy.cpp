@@ -282,13 +282,13 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
 
     if( _dds_dev->supports_metadata() )
     {
-        _dds_dev->on_metadata_available(
-            [this]( nlohmann::json && dds_md )
+        _metadata_subscription = _dds_dev->on_metadata_available(
+            [this]( std::shared_ptr< const nlohmann::json > const & dds_md )
             {
-                std::string stream_name = rsutils::json::get< std::string >( dds_md, stream_name_key );
+                std::string const & stream_name = rsutils::json::nested( *dds_md, stream_name_key ).string_ref();
                 auto it = _stream_name_to_owning_sensor.find( stream_name );
                 if( it != _stream_name_to_owning_sensor.end() )
-                    it->second->handle_new_metadata( stream_name, std::move( dds_md ) );
+                    it->second->handle_new_metadata( stream_name, dds_md );
             } );
     }
 
@@ -496,10 +496,6 @@ void dds_device_proxy::hardware_reset()
     nlohmann::json control = nlohmann::json::object( { { "id", "hw-reset" } } );
     nlohmann::json reply;
     _dds_dev->send_control( control, &reply );
-    std::string default_status( "OK", 2 );
-    if( rsutils::json::get( reply, "status", default_status ) != default_status )
-        throw std::runtime_error( "Failed to reset: "
-                                  + rsutils::json::get( reply, "explanation", std::string( "unknown reason" ) ) );
 }
 
 
@@ -510,10 +506,6 @@ std::vector< uint8_t > dds_device_proxy::send_receive_raw_data( const std::vecto
     nlohmann::json control = nlohmann::json::object( { { "id", "hwm" }, { "data", hexdata } } );
     nlohmann::json reply;
     _dds_dev->send_control( control, &reply );
-    std::string default_status( "OK", 2 );
-    if( rsutils::json::get( reply, "status", default_status ) != default_status )
-        throw std::runtime_error( "Failed HWM: "
-                                  + rsutils::json::get( reply, "explanation", std::string( "unknown reason" ) ) );
     rsutils::string::hexarray data;
     if( ! rsutils::json::get_ex( reply, "data", &data ) )
         throw std::runtime_error( "Failed HWM: missing 'data' in reply" );
@@ -541,10 +533,6 @@ std::vector< uint8_t > dds_device_proxy::build_command( uint32_t opcode,
                                                        { "build-command", true } } );
     nlohmann::json reply;
     _dds_dev->send_control( control, &reply );
-    std::string default_status( "OK", 2 );
-    if( rsutils::json::get( reply, "status", default_status ) != default_status )
-        throw std::runtime_error( "Failed build-command: "
-                                  + rsutils::json::get( reply, "explanation", std::string( "unknown reason" ) ) );
     if( ! rsutils::json::get_ex( reply, "data", &hexdata ) )
         throw std::runtime_error( "Failed HWM: missing 'data' in reply" );
     return hexdata.detach();

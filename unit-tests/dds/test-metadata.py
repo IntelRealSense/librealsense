@@ -89,7 +89,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         metadata_content.append( md )
         metadata_received.set()
 
-    device_direct.on_metadata_available( on_metadata_available )
+    metadata_subscription = device_direct.on_metadata_available( on_metadata_available )
 
     def detect_metadata():
         metadata_content.clear()
@@ -141,7 +141,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         if log.is_debug_on():
             rs.log_to_console( rs.log_severity.debug )
         from dds import wait_for_devices
-        context = rs.context( { 'dds': { 'domain': 123, 'participant': 'librs' }} )
+        context = rs.context( { 'dds': { 'enabled': True, 'domain': 123, 'participant': 'librs' }} )
         only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
         device = wait_for_devices( context, only_sw_devices, n=1. )
         sensors = device.sensors
