@@ -18,8 +18,10 @@ options_watcher::~options_watcher()
 {
     try
     {
-        std::lock_guard< std::mutex > lock( _mutex );
-        _options.clear();
+        {
+            std::lock_guard< std::mutex > lock( _mutex );
+            _options.clear();
+        }
         stop();
     }
     catch( ... )
@@ -76,17 +78,16 @@ void options_watcher::start()
 {
     if( ! _updater.joinable() ) // If not already started
     {
-        if( _should_query_for_first_time )
-        {
+        _updater = std::thread( [this]() {
             update_options();
-            _should_query_for_first_time = false;
-        }
-        _updater = std::thread( [this]() { thread_loop(); } );
+            thread_loop();
+        } );
     }
 }
 
 void options_watcher::stop()
 {
+    _stopping.notify_all();
     if( _updater.joinable() )
         _updater.join();
 }
@@ -108,7 +109,8 @@ void options_watcher::thread_loop()
         if(  should_stop() )
             break;
 
-        std::this_thread::sleep_for( _update_interval );
+        std::unique_lock< std::mutex > lock( _mutex );
+        _stopping.wait_for( lock, _update_interval );
     }
 }
 
@@ -117,6 +119,9 @@ std::map< rs2_option, std::shared_ptr< option > > options_watcher::update_option
     std::map< rs2_option, std::shared_ptr< option > > updated_options;
 
     std::lock_guard< std::mutex > lock( _mutex );
+
+    if( should_stop() )
+        return updated_options;
 
     for( auto & opt : _options )
     {

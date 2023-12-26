@@ -7,7 +7,7 @@
 #include "source.h"
 #include "core/extension.h"
 #include "proc/formats-converter.h"
-#include <src/core/options-watcher.h>
+#include <src/syntethic-options-watcher.h>
 
 #include <rsutils/lazy.h>
 #include <rsutils/signal.h>
@@ -193,6 +193,11 @@ namespace librealsense
 
         std::shared_ptr< std::map< uint32_t, rs2_format > > & get_fourcc_to_rs2_format_map();
         std::shared_ptr< std::map< uint32_t, rs2_stream > > & get_fourcc_to_rs2_stream_map();
+
+        // Sometimes it is more efficient to prepare for large or repeating operations. Depending on the actual sensor
+        // type we might want to change power state or encapsulate small transactions into a large one.
+        virtual void prepare_for_bulk_operation() {};
+        virtual void finished_bulk_operation(){};
     };
 
     // A sensor pointer to another "raw sensor", usually UVC/HID
@@ -257,7 +262,7 @@ namespace librealsense
         formats_converter _formats_converter;
         std::vector<rs2_option> _cached_processing_blocks_options;
 
-        options_watcher _options_watcher;
+        syntethic_options_watcher _options_watcher;
     };
 
 

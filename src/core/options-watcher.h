@@ -58,7 +58,7 @@ protected:
     std::chrono::milliseconds _update_interval;
     std::thread _updater;
     std::mutex _mutex;
-    bool _should_query_for_first_time = true;
+    std::condition_variable _stopping;
 };
 
 

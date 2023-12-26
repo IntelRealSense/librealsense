@@ -399,6 +399,7 @@ void log_callback_end( uint32_t fps,
                                         const std::map< uint32_t, rs2_stream > & fourcc_to_rs2_stream_map )
         : sensor_base( name, device )
         , _raw_sensor( raw_sensor )
+        , _options_watcher( _raw_sensor )
     {
         nlohmann::json const & settings = device->get_context()->get_settings();
         if( auto interval_j = rsutils::json::nested( settings, std::string( "options-update-interval", 23 ) ) )
