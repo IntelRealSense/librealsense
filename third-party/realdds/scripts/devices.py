@@ -35,6 +35,8 @@ import time
 
 dds.debug( args.debug )
 
+settings = {}
+
 participant = dds.participant()
 participant.init( dds.load_rs_settings( settings ), args.domain )
 
