@@ -795,6 +795,7 @@ PYBIND11_MODULE(NAME, m) {
             py::call_guard< py::gil_scoped_release >() )
         .def( "publish_metadata", &dds_device_server::publish_metadata, py::call_guard< py::gil_scoped_release >() )
         .def( "broadcast", &dds_device_server::broadcast )
+        .def( "broadcast_disconnect", &dds_device_server::broadcast_disconnect, py::arg( "ack-timeout" ) = dds_time() )
         .def( FN_FWD_R( dds_device_server, on_control,
                         false,
                         (dds_device_server &, std::string const &, py::object &&, json_ref &&),

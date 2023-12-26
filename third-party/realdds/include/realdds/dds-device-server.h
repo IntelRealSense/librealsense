@@ -4,6 +4,7 @@
 
 #include <realdds/dds-option.h>
 #include <realdds/dds-defines.h>
+#include <realdds/dds-time.h>
 #include <realdds/dds-trinsics.h>
 
 #include <rsutils/concurrency/concurrency.h>
@@ -78,6 +79,7 @@ public:
                const dds_options & options, const extrinsics_map & extr );
 
     void broadcast( topics::device_info const & );
+    void broadcast_disconnect( dds_time ack_timeout = {} );
 
     bool is_valid() const { return( nullptr != _notification_server.get() ); }
     bool operator!() const { return ! is_valid(); }

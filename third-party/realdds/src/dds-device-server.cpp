@@ -243,6 +243,16 @@ void dds_device_server::broadcast( topics::device_info const & device_info )
 }
 
 
+void dds_device_server::broadcast_disconnect( dds_time ack_timeout )
+{
+    if( _broadcaster )
+    {
+        _broadcaster->broadcast_disconnect( ack_timeout );
+        _broadcaster.reset();
+    }
+}
+
+
 void dds_device_server::publish_notification( topics::flexible_msg && notification )
 {
     _notification_server->send_notification( std::move( notification ) );

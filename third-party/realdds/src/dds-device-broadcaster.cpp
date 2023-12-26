@@ -151,6 +151,26 @@ void dds_device_broadcaster::broadcast() const
 }
 
 
+bool dds_device_broadcaster::broadcast_disconnect( dds_time ack_timeout ) const
+{
+    try
+    {
+        topics::flexible_msg msg(
+            nlohmann::json::object( { { "topic-root", _device_info.topic_root() }, { "stopping", true } } ) );
+        LOG_DEBUG( "sending disconnect message " << slice( msg.custom_data< char const >(), msg._data.size() ) );
+        std::move( msg ).write_to( *_writer );
+
+        if( ack_timeout.to_ns() )
+            return _writer->wait_for_acks( ack_timeout );
+    }
+    catch( std::exception const & e )
+    {
+        LOG_ERROR( "Error sending disconnect message for S/N " << _device_info.serial_number() << ": " << e.what() );
+    }
+    return false;
+}
+
+
 dds_device_broadcaster::~dds_device_broadcaster()
 {
     _manager->unregister_broadcaster( this );
