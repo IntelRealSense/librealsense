@@ -18,15 +18,7 @@ options_watcher::options_watcher( std::chrono::milliseconds update_interval )
 options_watcher::~options_watcher()
 {
     _destructing = true;
-    try
-    {
-        _options.clear();
-        stop();
-    }
-    catch( ... )
-    {
-        LOG_DEBUG( "Failures taking lock or stoping thread while destructing options_watcher" );
-    }
+    stop();
 }
 
 void options_watcher::register_option( rs2_option id, std::shared_ptr< option > option )
@@ -88,7 +80,16 @@ void options_watcher::stop()
 {
     _stopping.notify_all();
     if( _updater.joinable() )
-        _updater.join();
+    {
+        try
+        {
+            _updater.join();
+        }
+        catch( ... )
+        {
+            // Nothing to do on error
+        }
+    }
 }
 
 void options_watcher::thread_loop()

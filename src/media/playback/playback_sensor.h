@@ -79,7 +79,7 @@ namespace librealsense
 
         rsutils::subscription register_options_changed_callback( options_watcher::callback && cb ) override
         {
-            throw not_implemented_exception( "Registering options value changed callback is not implemented for this sensor" );
+            throw not_implemented_exception( "Registering options value changed callback is not implemented for playback sensor" );
         }
 
     protected:
