@@ -4,6 +4,7 @@
 #pragma once
 
 #include <realdds/topics/device-info-msg.h>
+#include <realdds/dds-defines.h>
 
 #include <memory>
 
@@ -48,6 +49,8 @@ protected:
 public:
     dds_device_broadcaster( std::shared_ptr< dds_publisher > const &, topics::device_info const & );
     virtual ~dds_device_broadcaster();
+
+    virtual bool broadcast_disconnect( dds_time ack_timeout ) const;
 
 protected:
     virtual void broadcast() const;
