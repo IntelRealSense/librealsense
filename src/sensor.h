@@ -196,8 +196,8 @@ namespace librealsense
 
         // Sometimes it is more efficient to prepare for large or repeating operations. Depending on the actual sensor
         // type we might want to change power state or encapsulate small transactions into a large one.
-        virtual void prepare_for_bulk_operation() {};
-        virtual void finished_bulk_operation(){};
+        virtual void prepare_for_bulk_operation() {}
+        virtual void finished_bulk_operation(){}
     };
 
     // A sensor pointer to another "raw sensor", usually UVC/HID

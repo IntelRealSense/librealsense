@@ -59,6 +59,7 @@ protected:
     std::thread _updater;
     std::mutex _mutex;
     std::condition_variable _stopping;
+    std::atomic_bool _destructing;
 };
 
 

@@ -11,17 +11,16 @@ namespace librealsense {
 
 options_watcher::options_watcher( std::chrono::milliseconds update_interval )
     : _update_interval( update_interval )
+    , _destructing( false )
 {
 }
 
 options_watcher::~options_watcher()
 {
+    _destructing = true;
     try
     {
-        {
-            std::lock_guard< std::mutex > lock( _mutex );
-            _options.clear();
-        }
+        _options.clear();
         stop();
     }
     catch( ... )
@@ -71,7 +70,7 @@ bool options_watcher::should_start() const
 
 bool options_watcher::should_stop() const
 {
-    return _on_values_changed.size() == 0 || _options.size() == 0;
+    return _on_values_changed.size() == 0 || _options.size() == 0 || _destructing;
 }
 
 void options_watcher::start()
