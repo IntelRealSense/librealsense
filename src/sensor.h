@@ -7,7 +7,7 @@
 #include "source.h"
 #include "core/extension.h"
 #include "proc/formats-converter.h"
-#include <src/syntethic-options-watcher.h>
+#include <src/synthetic-options-watcher.h>
 
 #include <rsutils/lazy.h>
 #include <rsutils/signal.h>
@@ -262,7 +262,7 @@ namespace librealsense
         formats_converter _formats_converter;
         std::vector<rs2_option> _cached_processing_blocks_options;
 
-        syntethic_options_watcher _options_watcher;
+        synthetic_options_watcher _options_watcher;
     };
 
 

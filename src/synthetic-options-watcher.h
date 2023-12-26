@@ -10,7 +10,7 @@ namespace librealsense {
 
 class raw_sensor_base;
 
-// Used by synthetic sensor and uses the raw_sensor bulk operations.
+// Used by syntethic sensor and uses the raw_sensor bulk operations.
 class synthetic_options_watcher : public options_watcher
 {
 public:

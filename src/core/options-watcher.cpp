@@ -97,6 +97,15 @@ void options_watcher::thread_loop()
     // Checking should_stop because subscriptions can be canceled without us knowing
     while( ! should_stop() )
     {
+        {
+            std::unique_lock< std::mutex > lock( _mutex );
+            _stopping.wait_for( lock, _update_interval );
+        }
+
+        // Checking for stop conditions after sleep.
+        if( should_stop() )
+            break;
+
         std::map< rs2_option, std::shared_ptr< option > > updated_options = update_options();
 
         // Checking stop conditions after update, if stop requested no need to notify.
@@ -104,13 +113,6 @@ void options_watcher::thread_loop()
             break;
 
         notify( updated_options );
-
-        // Checking again for stop conditions after callbacks but before sleep.
-        if(  should_stop() )
-            break;
-
-        std::unique_lock< std::mutex > lock( _mutex );
-        _stopping.wait_for( lock, _update_interval );
     }
 }
 
