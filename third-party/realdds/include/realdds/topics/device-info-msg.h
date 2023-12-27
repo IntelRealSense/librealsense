@@ -19,16 +19,16 @@ public:
     //bool locked = true;
 
     std::string const & name() const;
-    void set_name( std::string && );
+    void set_name( std::string const & );
 
     std::string const & topic_root() const;
-    void set_topic_root( std::string && );
+    void set_topic_root( std::string const & );
 
     std::string const & serial_number() const;
-    void set_serial_number( std::string && );
+    void set_serial_number( std::string const & );
 
     nlohmann::json const & to_json() const;
-    static device_info from_json( nlohmann::json const & j );
+    static device_info from_json( nlohmann::json const & );
 
     // Substring of information already stored in the device-info that can be used to print the device 'name'.
     // (mostly for use with debug messages)
