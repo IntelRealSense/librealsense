@@ -898,10 +898,10 @@ PYBIND11_MODULE(NAME, m) {
                       { FN_FWD_CALL( dds_device, "on_metadata_available", callback( self, json_to_py( *pj ) ); ) } ) );
               } )
         .def( "on_device_log",
-              []( dds_device & self, std::function< void( dds_device &, dds_time const &, char, std::string const &, py::object && ) > callback )
+              []( dds_device & self, std::function< void( dds_device &, dds_nsec, char, std::string const &, py::object && ) > callback )
               {
                   return std::make_shared< subscription >( self.on_device_log(
-                      [&self, callback]( dds_time const & timestamp, char type, std::string const & text, nlohmann::json const & data )
+                      [&self, callback]( dds_nsec timestamp, char type, std::string const & text, nlohmann::json const & data )
                       { FN_FWD_CALL( dds_device, "on_device_log", callback( self, timestamp, type, text, json_to_py( data ) ); ) } ) );
               } )
         .def( "on_notification",
