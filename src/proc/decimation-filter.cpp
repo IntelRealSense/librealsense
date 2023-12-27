@@ -325,6 +325,9 @@ namespace librealsense
                 throw std::runtime_error("Stream profile interface is not video stream profile interface");
 
             auto tgt_vspi = dynamic_cast<video_stream_profile_interface*>(tmp_profile.get()->profile);
+            if( ! tgt_vspi )
+                throw std::runtime_error( "Profile is not video stream profile" );
+
             rs2_intrinsics src_intrin = src_vspi->get_intrinsics();
             rs2_intrinsics tgt_intrin = tgt_vspi->get_intrinsics();
 

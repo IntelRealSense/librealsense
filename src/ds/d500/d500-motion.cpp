@@ -32,7 +32,7 @@ namespace librealsense
 
     bool d500_motion::is_gyro_high_sensitivity() const
     {
-        return get_info( RS2_CAMERA_INFO_NAME ) == ds::rs500_sku_names.at( ds::RS_D585S_PID );
+        return get_info( RS2_CAMERA_INFO_NAME ) == ds::rs500_sku_names.at( ds::D585S_PID );
     }
 
     std::shared_ptr<synthetic_sensor> d500_motion::create_hid_device(std::shared_ptr<context> ctx,

@@ -42,13 +42,17 @@ std::vector<std::shared_ptr<librealsense::record_sensor>> librealsense::record_d
         auto& live_sensor = device->get_sensor(sensor_index);
         auto recording_sensor = std::make_shared<librealsense::record_sensor>(*this, live_sensor);
         recording_sensor->on_notification(
-            [this, recording_sensor, sensor_index]( const notification & n )
+            [this, sensor_index]( const notification & n )
             { write_notification( sensor_index, n ); } );
-        auto on_error = [recording_sensor](const std::string& s) {recording_sensor->stop_with_error(s); };
-        recording_sensor->on_frame( [this, recording_sensor, sensor_index, on_error]( frame_holder f )
+        auto on_error = [weak = std::weak_ptr< librealsense::record_sensor >( recording_sensor )](const std::string& s) {
+            auto strong_recording_sensor = weak.lock();
+            if( strong_recording_sensor )
+                strong_recording_sensor->stop_with_error(s);
+        };
+        recording_sensor->on_frame( [this, sensor_index, on_error]( frame_holder f )
                                     { write_data( sensor_index, std::move( f ), on_error ); } );
         recording_sensor->on_extension_change(
-            [this, recording_sensor, sensor_index, on_error]( rs2_extension ext,
+            [this, sensor_index, on_error]( rs2_extension ext,
                                                               std::shared_ptr< extension_snapshot > snapshot )
             { write_sensor_extension_snapshot( sensor_index, ext, snapshot, on_error ); } );
         recording_sensor->init(); //Calling init AFTER register to the above events

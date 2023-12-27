@@ -29,7 +29,7 @@ public:
 
 protected:
     void add_no_metadata( frame *, streaming_impl & ) override;
-    void add_frame_metadata( frame * const f, nlohmann::json && dds_md, streaming_impl & streaming ) override;
+    void add_frame_metadata( frame *, nlohmann::json const & md, streaming_impl & ) override;
 };
 
 

@@ -117,7 +117,7 @@ namespace librealsense
                 break;
             case ds::RS455_PID:
             case ds::RS457_PID:
-            case ds::RS_D585_PID:
+            case ds::D585_PID:
                 default_450_mid_low_res( p );
                 switch( res )
                 {
@@ -135,7 +135,7 @@ namespace librealsense
                         << rsutils::string::hexdump( device_pid ) << ")" );
                     break;
                 }
-            case ds::RS_D585S_PID:
+            case ds::D585S_PID:
                 default_585S( p );
                 break;
             case ds::RS405U_PID:

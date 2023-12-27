@@ -545,12 +545,15 @@ namespace librealsense
 
                 DirectSearchCalibrationResult result = get_calibration_status(timeout_ms, [progress_callback, host_assistance, speed](int count)
                     {
-                        if (progress_callback)
+                        if( progress_callback )
                         {
-                            if (host_assistance != host_assistance_type::no_assistance)
-                                if (count < 20) progress_callback->on_update_progress(static_cast<float>(80 + count++));
-                            else
-                                progress_callback->on_update_progress(count++ * (2.f * static_cast<int>(speed))); //curently this number does not reflect the actual progress
+                            if( host_assistance != host_assistance_type::no_assistance )
+                            {
+                                if( count < 20 )
+                                    progress_callback->on_update_progress( static_cast< float >( 80 + count++ ) );
+                                else
+                                    progress_callback->on_update_progress( count++ * ( 2.f * static_cast< int >( speed ) ) );  // currently this number does not reflect the actual progress
+                            }
                         }
                     });
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -653,12 +656,15 @@ namespace librealsense
                         done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
                     }
 
-                    if (progress_callback)
+                    if( progress_callback )
                     {
-                        if (host_assistance != host_assistance_type::no_assistance)
-                            if (count < 20) progress_callback->on_update_progress(static_cast<float>(80 + count++));
-                        else
-                            progress_callback->on_update_progress(count++* (2.f * 3)); //curently this number does not reflect the actual progress
+                        if( host_assistance != host_assistance_type::no_assistance )
+                        {
+                            if( count < 20 )
+                                progress_callback->on_update_progress( static_cast< float >( 80 + count++ ) );
+                            else
+                                progress_callback->on_update_progress( count++ * ( 2.f * 3 ) );  // currently this number does not reflect the actual progress
+                        }
                     }
 
                     now = std::chrono::high_resolution_clock::now();

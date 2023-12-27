@@ -2,7 +2,7 @@
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
-#test:retries 2
+#test:retries:gha 2
 
 from rspy import log, test
 import pyrealdds as dds
@@ -81,8 +81,7 @@ with test.remote.fork( nested_indent=None ) as remote:
                 reply_count[device.guid()] += 1
             else:
                 log.d( f'notification to {device}' )
-            return True  # otherwise the notification will be flagged as unhandled
-        device.on_notification( _on_notification )
+        notification_subscription = device.on_notification( _on_notification )
 
     with test.closure( 'Send a notification that is not a reply' ):
         dev1_notifications = notification_count[device.guid()]
@@ -117,7 +116,7 @@ with test.remote.fork( nested_indent=None ) as remote:
         device2 = dds.device( participant, device_info )
         notification_count[device2.guid()] = 0
         reply_count[device2.guid()] = 0
-        device2.on_notification( _on_notification )
+        notification2_subscription = device2.on_notification( _on_notification )
         device2.wait_until_ready()
 
     with test.closure( 'Controls generate notifications to all devices' ):

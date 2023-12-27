@@ -98,7 +98,7 @@ namespace librealsense {
 
     /*static*/ std::shared_ptr< context > context::make( char const * json_settings )
     {
-        return make( json_settings ? json::parse( json_settings ) : json::object() );
+        return make( ( ! json_settings || ! *json_settings ) ? json::object() : json::parse( json_settings ) );
     }
 
 

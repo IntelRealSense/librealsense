@@ -163,6 +163,10 @@ public:
     nlohmann::json const & get() const { return _pj ? *_pj : null_json; }
     operator nlohmann::json const & () const { return get(); }
 
+    bool is_array() const { return exists() && _pj->is_array(); }
+    bool is_object() const { return exists() && _pj->is_object(); }
+    bool is_string() const { return exists() && _pj->is_string(); }
+
     // Get the JSON as a value
     template< class T > T value() { return json::value< T >( get() ); }
     // Get the JSON as a value, or a default if not there

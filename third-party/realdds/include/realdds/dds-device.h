@@ -7,6 +7,7 @@
 #include "dds-stream-profile.h"
 #include "dds-stream.h"
 
+#include <rsutils/subscription.h>
 #include <nlohmann/json_fwd.hpp>
 #include <memory>
 #include <vector>
@@ -46,6 +47,11 @@ public:
     // Wait until ready. Will throw if not ready within the timeout!
     void wait_until_ready( size_t timeout_ns = 5000 );
 
+    // Utility function for checking replies:
+    // If 'p_explanation' is nullptr, will throw if the reply status is not 'ok'.
+    // Otherise will return a false if not 'ok', and the explanation will be filled out.
+    static bool check_reply( nlohmann::json const & reply, std::string * p_explanation = nullptr );
+
     //----------- below this line, a device must be running!
 
     size_t number_of_streams() const;
@@ -65,16 +71,16 @@ public:
 
     bool supports_metadata() const;
 
-    typedef std::function< void( nlohmann::json && md ) > on_metadata_available_callback;
-    void on_metadata_available( on_metadata_available_callback cb );
+    typedef std::function< void( std::shared_ptr< const nlohmann::json > const & md ) > on_metadata_available_callback;
+    rsutils::subscription on_metadata_available( on_metadata_available_callback && );
 
     typedef std::function< void(
         dds_time const & timestamp, char type, std::string const & text, nlohmann::json const & data ) >
         on_device_log_callback;
-    void on_device_log( on_device_log_callback cb );
+    rsutils::subscription on_device_log( on_device_log_callback && cb );
 
-    typedef std::function< bool( std::string const & id, nlohmann::json const & ) > on_notification_callback;
-    void on_notification( on_notification_callback );
+    typedef std::function< void( std::string const & id, nlohmann::json const & ) > on_notification_callback;
+    rsutils::subscription on_notification( on_notification_callback && );
 
 private:
     class impl;

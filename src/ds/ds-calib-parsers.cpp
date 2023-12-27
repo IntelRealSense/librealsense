@@ -172,7 +172,7 @@ namespace librealsense
             _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.10125f, -0.00375f, -0.0013f } };
             _imu_2_depth_rot = { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } };
         }
-        else if ( _pid == ds::RS_D585_PID || _pid == ds::RS_D585S_PID )
+        else if ( _pid == ds::D585_PID || _pid == ds::D585S_PID )
         {
             // D585/D585S specific - Bosch BMI085
             _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.0195f, 0.0f, -0.0114f } };

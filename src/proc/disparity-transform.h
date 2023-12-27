@@ -33,7 +33,7 @@ namespace librealsense
             auto in = reinterpret_cast<const Tin*>(in_data);
             auto out = reinterpret_cast<Tout*>(out_data);
 
-            bool fp = (std::is_floating_point<Tin>::value);
+            const bool fp = (std::is_floating_point<Tin>::value);
             const float round = fp ? 0.5f : 0.f;
 
             float input{};

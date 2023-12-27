@@ -2013,7 +2013,7 @@ namespace librealsense
                                 // On D585S, we need to distinguish the occupancy and the label point cloud streams.
                                 // The condition currently support 2 resolutions for LPC
                                 // This needs to be refactored!
-                                if (this->_info.pid == 0X0B6B && frame_size.discrete.width == 2880 && (frame_size.discrete.height == 1040 || frame_size.discrete.height == 260)) // 0x0B6B pid for RS_D585S_PID
+                                if (this->_info.pid == 0X0B6B && frame_size.discrete.width == 2880 && (frame_size.discrete.height == 1040 || frame_size.discrete.height == 260)) // 0x0B6B pid for D585S_PID
                                 {
                                     fourcc = 0x50414c38; // PAL8 used instead of GREY in order to distinguish between occupancy and point cloud streams
                                 }
@@ -2376,9 +2376,7 @@ namespace librealsense
             _md_fd = open(_md_name.c_str(), O_RDWR | O_NONBLOCK, 0);
             if(_md_fd < 0)
             {
-                // D457 development - added for mipi device, for IR because no metadata there
-                return;
-                throw linux_backend_exception(rsutils::string::from() << "Cannot open '" << _md_name);
+                return;  // Does not throw, MIPI device metadata not received through UVC, no metadata here may be valid
             }
 
             //The minimal video/metadata nodes syncer will be implemented by using two blocking calls:
@@ -2414,9 +2412,7 @@ namespace librealsense
 
             if(::close(_md_fd) < 0)
             {
-                // D457 development - added for mipi device, for IR because no metadata there
-                return;
-                throw linux_backend_exception("v4l_uvc_meta_device: close(_md_fd) failed");
+                return;  // Does not throw, MIPI device metadata not received through UVC, no metadata here may be valid
             }
 
             _md_fd = 0;
@@ -2433,9 +2429,7 @@ namespace librealsense
 
             if (xioctl(_md_fd, VIDIOC_G_FMT, &fmt))
             {
-                // D457 development - added for mipi device, for IR because no metadata there
-                return;
-                throw linux_backend_exception(_md_name + " ioctl(VIDIOC_G_FMT) for metadata node failed");
+                return;  // Does not throw, MIPI device metadata not received through UVC, no metadata here may be valid
             }
 
             if (fmt.type != _md_type)
