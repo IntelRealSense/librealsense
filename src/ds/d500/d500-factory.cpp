@@ -224,9 +224,9 @@ public:
         {
         case ds::D555E_PID:
             return std::make_shared< d555e_device >( dev_info );
-        case ds::RS_D585_PID:
+        case ds::D585_PID:
             return std::make_shared<rs_d585_device>( dev_info );
-        case ds::RS_D585S_PID:
+        case ds::D585S_PID:
             return std::make_shared<rs_d585s_device>( dev_info );
         default:
             throw std::runtime_error( rsutils::string::from() << "unsupported D500 PID 0x" << hexdump( pid ) );
