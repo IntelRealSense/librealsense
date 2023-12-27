@@ -3,46 +3,32 @@
 
 #test:device D400*
 
+#The test flow is a result of a fixed bug - viewer crashed when starting stream after finishing record session
+
 import pyrealsense2 as rs, os, time, tempfile
 from rspy import test
 
-depth_format = None
-depth_fps = None
-depth_width = None
-depth_height = None
-depth_profile = None
-
-
 def find_default_profile():
-    global depth_format, depth_fps, depth_width, depth_height
-
-    for p in depth_sensor.profiles:
-        if p.is_default() and p.stream_type() == rs.stream.depth:
-            depth_format = p.format()
-            depth_fps = p.fps()
-            depth_width = p.as_video_stream_profile().width()
-            depth_height = p.as_video_stream_profile().height()
-            break
+    default_profile = next(p for p in depth_sensor.profiles if p.is_default() and p.stream_type() == rs.stream.depth)
+    return default_profile
 
 
-def restart_profile():
+def restart_profile(default_profile):
     """
     You can't use the same profile twice, but we need the same profile several times. So this function resets the
     profiles with the given parameters to allow quick profile creation
     """
-    global depth_profile
-
-    depth_profile = next( p for p in depth_sensor.profiles if p.fps() == depth_fps
+    depth_profile = next( p for p in depth_sensor.profiles if p.fps() == default_profile.fps()
                and p.stream_type() == rs.stream.depth
-               and p.format() == p.format() == depth_format
-               and p.as_video_stream_profile().width() == depth_width
-               and p.as_video_stream_profile().height() == depth_height )
+               and p.format() == default_profile.format()
+               and p.as_video_stream_profile().width() == default_profile.as_video_stream_profile().width()
+               and p.as_video_stream_profile().height() == default_profile.as_video_stream_profile().height())
+    return depth_profile
 
-
-def record():
+def record(file_name, default_profile):
     global depth_sensor
 
-    restart_profile()
+    depth_profile = restart_profile(default_profile)
     depth_sensor.open(depth_profile)
     depth_sensor.start(sync)
 
@@ -55,10 +41,10 @@ def record():
     depth_sensor.close()
 
 
-def try_streaming():
+def try_streaming(default_profile):
     global depth_sensor
 
-    restart_profile()
+    depth_profile = restart_profile(default_profile)
     depth_sensor.open(depth_profile)
     depth_sensor.start(sync)
     time.sleep(3)
@@ -66,14 +52,14 @@ def try_streaming():
     depth_sensor.close()
 
 
-def play_recording():
+def play_recording(default_profile):
     global depth_sensor
 
     ctx = rs.context()
     playback = ctx.load_device(file_name)
     depth_sensor = playback.first_depth_sensor()
 
-    restart_profile()
+    depth_profile = restart_profile(default_profile)
     depth_sensor.open(depth_profile)
     depth_sensor.start(sync)
 
@@ -92,12 +78,12 @@ with test.closure("Record, stream and playback using sensor interface with synce
     sync = rs.syncer()
     dev = test.find_first_device_or_exit()
     depth_sensor = dev.first_depth_sensor()
-    find_default_profile()
-    record()
+    default_profile = find_default_profile()
+    record(file_name, default_profile)
 
     # after we finish recording we close the sensor and then open it again and try streaming
-    try_streaming()
+    try_streaming(default_profile)
 
-    play_recording()
+    play_recording(default_profile)
 ################################################################################################
 test.print_results_and_exit()
