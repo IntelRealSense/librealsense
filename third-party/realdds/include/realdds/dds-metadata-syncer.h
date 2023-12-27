@@ -54,13 +54,13 @@ public:
     typedef std::unique_ptr< frame_type, on_frame_release_callback > frame_holder;
 
     // Metadata is intended to be JSON
-    typedef nlohmann::json metadata_type;
+    typedef std::shared_ptr< const nlohmann::json > metadata_type;
 
     // So our main callback gets this generic frame and metadata:
-    typedef std::function< void( frame_holder &&, metadata_type && metadata ) > on_frame_ready_callback;
+    typedef std::function< void( frame_holder &&, metadata_type const & metadata ) > on_frame_ready_callback;
 
     // And we provide other callbacks, for control, testing, etc.
-    typedef std::function< void( key_type, metadata_type && ) > on_metadata_dropped_callback;
+    typedef std::function< void( key_type, metadata_type const & ) > on_metadata_dropped_callback;
 
 private:
     using key_frame = std::pair< key_type, frame_holder >;
@@ -70,9 +70,9 @@ private:
     std::deque< key_metadata > _metadata_queue;
     std::mutex _queues_lock;
 
-    on_frame_release_callback _on_frame_release = nullptr;
-    on_frame_ready_callback _on_frame_ready = nullptr;
-    on_metadata_dropped_callback _on_metadata_dropped = nullptr;
+    on_frame_release_callback _on_frame_release;
+    on_frame_ready_callback _on_frame_ready;
+    on_metadata_dropped_callback _on_metadata_dropped;
 
     std::shared_ptr< bool > _is_alive; // Ensures object can be accessed
 
@@ -81,7 +81,7 @@ public:
     virtual ~dds_metadata_syncer();
 
     void enqueue_frame( key_type, frame_holder && );
-    void enqueue_metadata( key_type, metadata_type && );
+    void enqueue_metadata( key_type, metadata_type const & );
 
     void on_frame_release( on_frame_release_callback cb ) { _on_frame_release = cb; }
     void on_frame_ready( on_frame_ready_callback cb ) { _on_frame_ready = cb; }

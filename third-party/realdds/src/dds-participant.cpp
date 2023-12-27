@@ -228,10 +228,10 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
     // Above are defaults
     override_participant_qos_from_json( pqos, settings );
 
-    // Listener will call DataReaderListener::on_data_available for a specific reader,
-    // not SubscriberListener::on_data_on_readers for any reader
-    // ( See note on https://fast-dds.docs.eprosima.com/en/v2.7.0/fastdds/dds_layer/core/entity/entity.html )
-    StatusMask par_mask = StatusMask::all() >> StatusMask::data_on_readers();
+    // NOTE: the listener callbacks we use are all specific to FastDDS and so are always enabled:
+    // https://fast-dds.docs.eprosima.com/en/latest/fastdds/dds_layer/core/entity/entity.html#listener
+    // We need none of the standard callbacks at this level: these can be enabled on a per-reader/-writer basis!
+    StatusMask const par_mask = StatusMask::none();
     _participant_factory = DomainParticipantFactory::get_shared_instance();
     _participant
         = DDS_API_CALL( _participant_factory->create_participant( domain_id, pqos, _domain_listener.get(), par_mask ) );

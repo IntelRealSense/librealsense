@@ -44,6 +44,8 @@ class dds_device_proxy
     std::map< std::string, std::shared_ptr< librealsense::stream > > _stream_name_to_librs_stream;
     std::map< std::string, std::shared_ptr< dds_sensor_proxy > > _stream_name_to_owning_sensor;
 
+    rsutils::subscription _metadata_subscription;
+
     int get_index_from_stream_name( const std::string & name ) const;
     void set_profile_intrinsics( std::shared_ptr< stream_profile_interface > & profile,
                                  const std::shared_ptr< realdds::dds_stream > & stream ) const;

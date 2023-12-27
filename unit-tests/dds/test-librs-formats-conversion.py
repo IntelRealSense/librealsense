@@ -12,7 +12,7 @@ if log.is_debug_on():
     rs.log_to_console( rs.log_severity.debug )
 log.nested = 'C  '
 
-context = rs.context( { 'dds': { 'domain': 123, 'participant': 'test-formats-conversion' }} )
+context = rs.context( { 'dds': { 'enabled': True, 'domain': 123, 'participant': 'test-formats-conversion' }} )
 only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
 
 import os.path

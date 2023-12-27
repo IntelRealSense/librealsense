@@ -12,6 +12,7 @@
 
 #include <fastdds/rtps/common/Guid.h>
 
+#include <rsutils/signal.h>
 #include <nlohmann/json.hpp>
 
 #include <map>
@@ -74,6 +75,7 @@ public:
           topics::device_info const & info );
 
     dds_guid const & guid() const;
+    std::string debug_name() const;
 
     void wait_until_ready( size_t timeout_ms );
     bool is_ready() const { return state_t::READY == _state; }
@@ -85,16 +87,29 @@ public:
     void set_option_value( const std::shared_ptr< dds_option > & option, float new_value );
     float query_option_value( const std::shared_ptr< dds_option > & option );
 
-    typedef std::function< void( nlohmann::json && md ) > on_metadata_available_callback;
-    void on_metadata_available( on_metadata_available_callback cb ) { _on_metadata_available = cb; }
+    using on_metadata_available_signal = rsutils::signal< std::shared_ptr< const nlohmann::json > const & >;
+    using on_metadata_available_callback = on_metadata_available_signal::callback;
+    rsutils::subscription on_metadata_available( on_metadata_available_callback && cb )
+    {
+        return _on_metadata_available.subscribe( std::move( cb ) );
+    }
 
-    typedef std::function< void(
-        dds_time const & timestamp, char type, std::string const & text, nlohmann::json const & data ) >
-        on_device_log_callback;
-    void on_device_log( on_device_log_callback cb ) { _on_device_log = cb; }
+    using on_device_log_signal = rsutils::signal< dds_time const &,          // timestamp
+                                                  char,                      // type
+                                                  std::string const &,       // text
+                                                  nlohmann::json const & >;  // data
+    using on_device_log_callback = on_device_log_signal::callback;
+    rsutils::subscription on_device_log( on_device_log_callback && cb )
+    {
+        return _on_device_log.subscribe( std::move( cb ) );
+    }
 
-    typedef std::function< bool( std::string const &, nlohmann::json const & ) > on_notification_callback;
-    void on_notification( on_notification_callback cb ) { _on_notification = cb; }
+    using on_notification_signal = rsutils::signal< std::string const &, nlohmann::json const & >;
+    using on_notification_callback = on_notification_signal::callback;
+    rsutils::subscription on_notification( on_notification_callback && cb )
+    {
+        return _on_notification.subscribe( std::move( cb ) );
+    }
 
 private:
     void create_notifications_reader();
@@ -117,9 +132,9 @@ private:
     static notification_handlers const _notification_handlers;
     void handle_notification( nlohmann::json const &, eprosima::fastdds::dds::SampleInfo const & );
 
-    on_metadata_available_callback _on_metadata_available;
-    on_device_log_callback _on_device_log;
-    on_notification_callback _on_notification;
+    on_metadata_available_signal _on_metadata_available;
+    on_device_log_signal _on_device_log;
+    on_notification_signal _on_notification;
 };
 
 

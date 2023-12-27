@@ -390,12 +390,12 @@ namespace librealsense
         auto bpp = new_bpp * 8;
         auto stride = new_stride;
 
-        if (bpp == 0)
+        if( bpp == 0 && vf )
         {
             bpp = vf->get_bpp();
         }
 
-        if (width == 0 && stride == 0)
+        if( width == 0 && stride == 0 && vf )
         {
             width = vf->get_width();
             stride = width * bpp / 8;
@@ -409,7 +409,7 @@ namespace librealsense
             stride = width * bpp / 8;
         }
 
-        if (height == 0)
+        if( height == 0 && vf )
         {
             height = vf->get_height();
         }

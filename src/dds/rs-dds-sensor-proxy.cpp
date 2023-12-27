@@ -337,16 +337,20 @@ void dds_sensor_proxy::handle_motion_data( realdds::topics::imu_msg && imu,
 }
 
 
-void dds_sensor_proxy::handle_new_metadata( std::string const & stream_name, nlohmann::json && dds_md )
+void dds_sensor_proxy::handle_new_metadata( std::string const & stream_name,
+                                            std::shared_ptr< const nlohmann::json > const & dds_md )
 {
     if( ! _md_enabled )
         return;
 
     auto it = _streaming_by_name.find( stream_name );
     if( it != _streaming_by_name.end() )
-        it->second.syncer.enqueue_metadata(
-            rsutils::json::get< realdds::dds_nsec >( dds_md[metadata_header_key], timestamp_key ),
-            std::move( dds_md ) );
+    {
+        if( auto timestamp = rsutils::json::nested( *dds_md, metadata_header_key, timestamp_key ) )
+            it->second.syncer.enqueue_metadata( timestamp.value< realdds::dds_nsec >(), dds_md );
+        else
+            throw std::runtime_error( "missing metadata header/timestamp" );
+    }
     // else we're not streaming -- must be another client that's subscribed
 }
 
@@ -361,7 +365,9 @@ void dds_sensor_proxy::add_no_metadata( frame * const f, streaming_impl & stream
 }
 
 
-void dds_sensor_proxy::add_frame_metadata( frame * const f, nlohmann::json && dds_md, streaming_impl & streaming )
+void dds_sensor_proxy::add_frame_metadata( frame * const f,
+                                           nlohmann::json const & dds_md,
+                                           streaming_impl & streaming )
 {
     nlohmann::json const & md_header = rsutils::json::nested( dds_md, metadata_header_key );
     nlohmann::json const & md = rsutils::json::nested( dds_md, metadata_key );
@@ -434,14 +440,14 @@ void dds_sensor_proxy::start( rs2_frame_callback_sptr callback )
         auto & streaming = _streaming_by_name[dds_stream->name()];
         streaming.syncer.on_frame_release( frame_releaser );
         streaming.syncer.on_frame_ready(
-            [this, &streaming]( syncer_type::frame_holder && fh, nlohmann::json && md )
+            [this, &streaming]( syncer_type::frame_holder && fh, std::shared_ptr< const nlohmann::json > const & md )
             {
                 if( _is_streaming ) // stop was not called
                 {
-                    if( md.empty() )
+                    if( ! md )
                         add_no_metadata( static_cast< frame * >( fh.get() ), streaming );
                     else
-                        add_frame_metadata( static_cast< frame * >( fh.get() ), std::move( md ), streaming );
+                        add_frame_metadata( static_cast< frame * >( fh.get() ), *md, streaming );
                     invoke_new_frame( static_cast< frame * >( fh.release() ), nullptr, nullptr );
                 }
             } );

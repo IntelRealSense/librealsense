@@ -36,6 +36,7 @@ static std::string const id_key( "id", 2 );
 static std::string const id_set_option( "set-option", 10 );
 static std::string const id_query_option( "query-option", 12 );
 static std::string const value_key( "value", 5 );
+static std::string const option_values_key( "option-values", 13 );
 static std::string const sample_key( "sample", 6 );
 static std::string const status_key( "status", 6 );
 static std::string const status_ok( "ok", 2 );
@@ -360,33 +361,72 @@ void dds_device_server::handle_set_option( const nlohmann::json & j, nlohmann::j
 
 void dds_device_server::handle_query_option( const nlohmann::json & j, nlohmann::json & reply )
 {
-    auto option_name = rsutils::json::get< std::string >( j, option_name_key );
     std::string stream_name;  // default is empty, for a device option
     rsutils::json::get_ex( j, stream_name_key, &stream_name );
 
-    std::shared_ptr< dds_option > opt = find_option( option_name, stream_name );
-    if( opt )
+    auto query_option = [&]( std::shared_ptr< dds_option > const & option )
     {
         float value;
         if( _query_option_callback )
         {
-            value = _query_option_callback( opt );
+            value = _query_option_callback( option );
             // Ensure realdds option is up to date with actual value from callback
-            opt->set_value( value );
+            option->set_value( value );
         }
         else
         {
-            value = opt->get_value();
+            value = option->get_value();
         }
-        reply[value_key] = value;
-    }
-    else
+        return value;
+    };
+    auto query_option_j = [&]( rsutils::json::nested const & j )
     {
+        if( ! j->is_string() )
+            DDS_THROW( runtime_error, "option name should be a string; got " << j );
+        std::string const & option_name = j.string_ref();
+        std::shared_ptr< dds_option > option = find_option( option_name, stream_name );
+        if( option )
+            return query_option( option );
+
         if( stream_name.empty() )
             stream_name = "device";
         else
             stream_name = "'" + stream_name + "'";
         DDS_THROW( runtime_error, stream_name + " option '" + option_name + "' not found" );
+    };
+
+    rsutils::json::nested option_name( j, option_name_key );
+    if( option_name.is_array() )
+    {
+        if( option_name->empty() )
+        {
+            // Query all options and return in option:value object
+            nlohmann::json & option_values = reply[option_values_key] = nlohmann::json::object();
+            if( stream_name.empty() )
+            {
+                for( auto const & option : _options )
+                    option_values[option->get_name()] = query_option( option );
+            }
+            else
+            {
+                auto stream_it = _stream_name_to_server.find( stream_name );
+                if( stream_it != _stream_name_to_server.end() )
+                {
+                    for( auto const & option : stream_it->second->options() )
+                        option_values[option->get_name()] = query_option( option );
+                }
+            }
+        }
+        else
+        {
+            nlohmann::json & value = reply[value_key];
+            for( auto x = 0; x < option_name->size(); ++x )
+                value.push_back( query_option_j( option_name->at( x ) ) );
+        }
+    }
+    else
+    {
+        reply[value_key] = query_option_j( option_name );
     }
 }
 
