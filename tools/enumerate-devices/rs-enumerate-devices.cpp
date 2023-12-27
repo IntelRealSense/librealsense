@@ -11,8 +11,8 @@
 #include <limits>
 #include <thread>
 
-#include <nlohmann/json.hpp>
-using nlohmann::json;
+#include <rsutils/json.h>
+using rsutils::json;
 
 #include "tclap/CmdLine.h"
 

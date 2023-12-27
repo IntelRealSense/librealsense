@@ -13,7 +13,7 @@
 #include <fastdds/rtps/common/Guid.h>
 
 #include <rsutils/signal.h>
-#include <nlohmann/json.hpp>
+#include <rsutils/json.h>
 
 #include <map>
 #include <memory>
@@ -51,7 +51,7 @@ class dds_device::impl
 
 public:
     topics::device_info const _info;
-    nlohmann::json const _device_settings;
+    rsutils::json const _device_settings;
     dds_guid _server_guid;
     std::shared_ptr< dds_participant > const _participant;
     std::shared_ptr< dds_subscriber > _subscriber;
@@ -60,7 +60,7 @@ public:
 
     std::mutex _replies_mutex;
     std::condition_variable _replies_cv;
-    std::map< dds_sequence_number, nlohmann::json > _replies;
+    std::map< dds_sequence_number, rsutils::json > _replies;
     size_t _reply_timeout_ms;
 
     std::shared_ptr< dds_topic_reader > _notifications_reader;
@@ -82,12 +82,12 @@ public:
 
     void open( const dds_stream_profiles & profiles );
 
-    void write_control_message( topics::flexible_msg &&, nlohmann::json * reply = nullptr );
+    void write_control_message( topics::flexible_msg &&, rsutils::json * reply = nullptr );
 
     void set_option_value( const std::shared_ptr< dds_option > & option, float new_value );
     float query_option_value( const std::shared_ptr< dds_option > & option );
 
-    using on_metadata_available_signal = rsutils::signal< std::shared_ptr< const nlohmann::json > const & >;
+    using on_metadata_available_signal = rsutils::signal< std::shared_ptr< const rsutils::json > const & >;
     using on_metadata_available_callback = on_metadata_available_signal::callback;
     rsutils::subscription on_metadata_available( on_metadata_available_callback && cb )
     {
@@ -97,14 +97,14 @@ public:
     using on_device_log_signal = rsutils::signal< dds_nsec,                  // timestamp
                                                   char,                      // type
                                                   std::string const &,       // text
-                                                  nlohmann::json const & >;  // data
+                                                  rsutils::json const & >;   // data
     using on_device_log_callback = on_device_log_signal::callback;
     rsutils::subscription on_device_log( on_device_log_callback && cb )
     {
         return _on_device_log.subscribe( std::move( cb ) );
     }
 
-    using on_notification_signal = rsutils::signal< std::string const &, nlohmann::json const & >;
+    using on_notification_signal = rsutils::signal< std::string const &, rsutils::json const & >;
     using on_notification_callback = on_notification_signal::callback;
     rsutils::subscription on_notification( on_notification_callback && cb )
     {
@@ -117,20 +117,20 @@ private:
     void create_control_writer();
 
     // notification handlers
-    void on_option_value( nlohmann::json const &, eprosima::fastdds::dds::SampleInfo const & );
-    void on_known_notification( nlohmann::json const &, eprosima::fastdds::dds::SampleInfo const & );
-    void on_log( nlohmann::json const &, eprosima::fastdds::dds::SampleInfo const & );
-    void on_device_header( nlohmann::json const &, eprosima::fastdds::dds::SampleInfo const & );
-    void on_device_options( nlohmann::json const &, eprosima::fastdds::dds::SampleInfo const & );
-    void on_stream_header( nlohmann::json const &, eprosima::fastdds::dds::SampleInfo const & );
-    void on_stream_options( nlohmann::json const &, eprosima::fastdds::dds::SampleInfo const & );
+    void on_option_value( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
+    void on_known_notification( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
+    void on_log( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
+    void on_device_header( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
+    void on_device_options( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
+    void on_stream_header( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
+    void on_stream_options( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
 
     typedef std::map< std::string,
-                      void ( dds_device::impl::* )( nlohmann::json const &,
+                      void ( dds_device::impl::* )( rsutils::json const &,
                                                     eprosima::fastdds::dds::SampleInfo const & ) >
         notification_handlers;
     static notification_handlers const _notification_handlers;
-    void handle_notification( nlohmann::json const &, eprosima::fastdds::dds::SampleInfo const & );
+    void handle_notification( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
 
     on_metadata_available_signal _on_metadata_available;
     on_device_log_signal _on_device_log;

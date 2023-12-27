@@ -12,8 +12,6 @@
 #include <algorithm>
 #include <iostream>
 
-using nlohmann::json;
-
 
 namespace realdds {
 

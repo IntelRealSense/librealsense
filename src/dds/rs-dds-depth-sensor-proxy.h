@@ -1,6 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
 #include "rs-dds-sensor-proxy.h"
@@ -29,7 +28,7 @@ public:
 
 protected:
     void add_no_metadata( frame *, streaming_impl & ) override;
-    void add_frame_metadata( frame *, nlohmann::json const & md, streaming_impl & ) override;
+    void add_frame_metadata( frame *, rsutils::json const & md, streaming_impl & ) override;
 };
 
 

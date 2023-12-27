@@ -204,7 +204,7 @@ format_conversion device::get_format_conversion() const
         return format_conversion::full;
     std::string const format_conversion( "format-conversion", 17 );
     std::string const full( "full", 4 );
-    auto const value = rsutils::json::get( context->get_settings(), format_conversion, full );
+    auto const value = context->get_settings().nested( format_conversion ).default_value( full );
     if( value == full )
         return format_conversion::full;
     if( value == "basic" )

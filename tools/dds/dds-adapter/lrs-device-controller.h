@@ -1,12 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
-
 #pragma once
+
 #include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
 #include <realdds/dds-stream-sensor-bridge.h>
 #include <realdds/dds-stream-profile.h>
-#include <nlohmann/json_fwd.hpp>
 
+#include <rsutils/json-fwd.h>
 #include <unordered_map>
 #include <vector>
 
@@ -40,10 +40,10 @@ private:
 
     void publish_frame_metadata( const rs2::frame & f, realdds::dds_time const & );
 
-    bool on_control( std::string const & id, nlohmann::json const & control, nlohmann::json & reply );
-    bool on_hardware_reset( nlohmann::json const &, nlohmann::json & );
-    bool on_hwm( nlohmann::json const &, nlohmann::json & );
-    bool on_open_streams( nlohmann::json const &, nlohmann::json & );
+    bool on_control( std::string const & id, rsutils::json const & control, rsutils::json & reply );
+    bool on_hardware_reset( rsutils::json const &, rsutils::json & );
+    bool on_hwm( rsutils::json const &, rsutils::json & );
+    bool on_open_streams( rsutils::json const &, rsutils::json & );
 
     void override_default_profiles( const std::map< std::string, realdds::dds_stream_profiles > & stream_name_to_profiles,
                                     std::map< std::string, size_t > & stream_name_to_default_profile ) const;

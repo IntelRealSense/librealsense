@@ -127,19 +127,19 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
 
     auto & j = dev->device_info().to_json();
     std::string str;
-    if( rsutils::json::get_ex( j, "serial", &str ) )
+    if( j.nested( "serial" ).get_ex( str ) )
     {
         register_info( RS2_CAMERA_INFO_SERIAL_NUMBER, str );
-        rsutils::json::get_ex( j, "fw-update-id", &str );  // if fails, str will be the serial
+        j.nested( "fw-update-id" ).get_ex( str );  // if fails, str will be the serial
         register_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, str );
     }
-    else if( rsutils::json::get_ex( j, "fw-update-id", &str ) )
+    else if( j.nested( "fw-update-id" ).get_ex( str ) )
         register_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, str );
-    if( rsutils::json::get_ex( j, "fw-version", &str ) )
+    if( j.nested( "fw-version" ).get_ex( str ) )
         register_info( RS2_CAMERA_INFO_FIRMWARE_VERSION, str );
-    if( rsutils::json::get_ex( j, "product-line", &str ) )
+    if( j.nested( "product-line" ).get_ex( str ) )
         register_info( RS2_CAMERA_INFO_PRODUCT_LINE, str );
-    register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, rsutils::json::get( j, "locked", true ) ? "YES" : "NO" );
+    register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, j.nested( "locked" ).default_value( true ) ? "YES" : "NO" );
 
     // Assumes dds_device initialization finished
     struct sensor_info
@@ -296,9 +296,9 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
     if( _dds_dev->supports_metadata() )
     {
         _metadata_subscription = _dds_dev->on_metadata_available(
-            [this]( std::shared_ptr< const nlohmann::json > const & dds_md )
+            [this]( std::shared_ptr< const rsutils::json > const & dds_md )
             {
-                std::string const & stream_name = rsutils::json::nested( *dds_md, stream_name_key ).string_ref();
+                std::string const & stream_name = dds_md->nested( stream_name_key ).string_ref();
                 auto it = _stream_name_to_owning_sensor.find( stream_name );
                 if( it != _stream_name_to_owning_sensor.end() )
                     it->second->handle_new_metadata( stream_name, dds_md );
@@ -354,9 +354,9 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
     // Depth & IR matched by frame-number, time-stamp-matched to color.
     // Motion streams will not get synced.
     rs2_matchers matcher = RS2_MATCHER_DLR_C;
-    if( auto matcher_j = rsutils::json::nested( _dds_dev->participant()->settings(), "device", "matcher" ) )
+    if( auto matcher_j = _dds_dev->participant()->settings().nested( "device", "matcher" ) )
     {
-        if( ! matcher_j->is_string() || ! try_parse( matcher_j.string_ref(), matcher ) )
+        if( ! matcher_j.is_string() || ! try_parse( matcher_j.string_ref(), matcher ) )
             LOG_WARNING( "Invalid 'device/matcher' value " << matcher_j );
     }
     set_matcher_type( matcher );
@@ -506,8 +506,8 @@ void dds_device_proxy::tag_profiles( stream_profiles profiles ) const
 
 void dds_device_proxy::hardware_reset()
 {
-    nlohmann::json control = nlohmann::json::object( { { "id", "hw-reset" } } );
-    nlohmann::json reply;
+    rsutils::json control = rsutils::json::object( { { "id", "hw-reset" } } );
+    rsutils::json reply;
     _dds_dev->send_control( control, &reply );
 }
 
@@ -516,11 +516,11 @@ std::vector< uint8_t > dds_device_proxy::send_receive_raw_data( const std::vecto
 {
     // debug_interface function
     auto hexdata = rsutils::string::hexarray::to_string( input );
-    nlohmann::json control = nlohmann::json::object( { { "id", "hwm" }, { "data", hexdata } } );
-    nlohmann::json reply;
+    rsutils::json control = rsutils::json::object( { { "id", "hwm" }, { "data", hexdata } } );
+    rsutils::json reply;
     _dds_dev->send_control( control, &reply );
     rsutils::string::hexarray data;
-    if( ! rsutils::json::get_ex( reply, "data", &data ) )
+    if( ! reply.nested( "data" ).get_ex( data ) )
         throw std::runtime_error( "Failed HWM: missing 'data' in reply" );
     return data.detach();
 }
@@ -536,17 +536,17 @@ std::vector< uint8_t > dds_device_proxy::build_command( uint32_t opcode,
 {
     // debug_interface function
     rsutils::string::hexarray hexdata( std::vector< uint8_t >( data, data + dataLength ) );
-    nlohmann::json control = nlohmann::json::object( { { "id", "hwm" },
-                                                       { "data", hexdata },
-                                                       { "opcode", opcode },
-                                                       { "param1", param1 },
-                                                       { "param2", param2 },
-                                                       { "param3", param3 },
-                                                       { "param4", param4 },
-                                                       { "build-command", true } } );
-    nlohmann::json reply;
+    rsutils::json control = rsutils::json::object( { { "id", "hwm" },
+                                                     { "data", hexdata },
+                                                     { "opcode", opcode },
+                                                     { "param1", param1 },
+                                                     { "param2", param2 },
+                                                     { "param3", param3 },
+                                                     { "param4", param4 },
+                                                     { "build-command", true } } );
+    rsutils::json reply;
     _dds_dev->send_control( control, &reply );
-    if( ! rsutils::json::get_ex( reply, "data", &hexdata ) )
+    if( ! reply.nested( "data" ).get_ex( hexdata ) )
         throw std::runtime_error( "Failed HWM: missing 'data' in reply" );
     return hexdata.detach();
 }

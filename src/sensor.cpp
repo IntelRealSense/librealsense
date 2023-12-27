@@ -401,10 +401,10 @@ void log_callback_end( uint32_t fps,
         , _raw_sensor( raw_sensor )
         , _options_watcher( _raw_sensor )
     {
-        nlohmann::json const & settings = device->get_context()->get_settings();
-        if( auto interval_j = rsutils::json::nested( settings, std::string( "options-update-interval", 23 ) ) )
+        rsutils::json const & settings = device->get_context()->get_settings();
+        if( auto interval_j = settings.nested( std::string( "options-update-interval", 23 ) ) )
         {
-            auto interval = interval_j.value< uint32_t >();  // NOTE: can throw!
+            auto interval = interval_j.get< uint32_t >();  // NOTE: can throw!
             _options_watcher.set_update_interval( std::chrono::milliseconds( interval ) );
         }
 

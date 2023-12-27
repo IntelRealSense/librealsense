@@ -1,10 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
 #include <rsutils/signal.h>
-#include <nlohmann/json.hpp>
+#include <rsutils/json.h>
 #include <vector>
 #include <map>
 
@@ -18,12 +17,12 @@ namespace librealsense
 
     class context
     {
-        context( nlohmann::json const & );  // private! use make()
+        context( rsutils::json const & );  // private! use make()
 
         void create_factories( std::shared_ptr< context > const & sptr );
 
     public:
-        static std::shared_ptr< context > make( nlohmann::json const & );
+        static std::shared_ptr< context > make( rsutils::json const & );
         static std::shared_ptr< context > make( char const * json_settings );
 
         ~context();
@@ -61,12 +60,12 @@ namespace librealsense
         void add_device( std::shared_ptr< device_info > const & );
         void remove_device( std::shared_ptr< device_info > const & );
 
-        const nlohmann::json & get_settings() const { return _settings; }
+        const rsutils::json & get_settings() const { return _settings; }
 
         // Create processing blocks given a name and settings.
         //
         std::shared_ptr< processing_block_interface > create_pp_block( std::string const & name,
-                                                                       nlohmann::json const & settings );
+                                                                       rsutils::json const & settings );
 
     private:
         void invoke_devices_changed_callbacks( std::vector< std::shared_ptr< device_info > > const & devices_removed,
@@ -78,7 +77,7 @@ namespace librealsense
                          std::vector< std::shared_ptr< device_info > > const & /*added*/ >
             _devices_changed;
 
-        nlohmann::json _settings; // Save operation settings
+        rsutils::json _settings; // Save operation settings
         unsigned const _device_mask;
 
         std::vector< std::shared_ptr< device_factory > > _factories;

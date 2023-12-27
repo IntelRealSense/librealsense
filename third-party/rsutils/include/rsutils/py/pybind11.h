@@ -32,6 +32,42 @@ constexpr auto json_to_py = pyjson::from_json;
 constexpr auto py_to_json = pyjson::to_json;
 
 
+// pybind11 caster specifically for rsutils::json
+// This is a copy of the code for nlohmann, in pybind11_json.hpp above
+#include <rsutils/json.h>
+namespace pybind11 {
+namespace detail {
+
+template<>
+struct type_caster< rsutils::json >
+{
+public:
+    PYBIND11_TYPE_CASTER( rsutils::json, _( "json" ) );
+
+    bool load( handle src, bool )
+    {
+        try
+        {
+            value = pyjson::to_json( src );
+            return true;
+        }
+        catch( ... )
+        {
+            return false;
+        }
+    }
+
+    static handle cast( rsutils::json src, return_value_policy /* policy */, handle /* parent */ )
+    {
+        object obj = pyjson::from_json( src );
+        return obj.release();
+    }
+};
+
+}  // namespace detail
+}  // namespace pybind11
+
+
 namespace py = pybind11;
 using namespace pybind11::literals;
 

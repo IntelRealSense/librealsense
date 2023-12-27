@@ -13,8 +13,7 @@
 #include <fastdds/dds/publisher/DataWriter.hpp>
 #include <fastdds/dds/topic/Topic.hpp>
 
-#include <nlohmann/json.hpp>
-using nlohmann::json;
+#include <rsutils/json.h>
 
 
 namespace realdds {
@@ -29,7 +28,7 @@ flexible_msg::flexible_msg( raw::flexible && main )
 }
 
 
-flexible_msg::flexible_msg( json const & j, uint32_t version )
+flexible_msg::flexible_msg( rsutils::json const & j, uint32_t version )
     : _data_format( data_format::JSON )
     , _version( version )
 {
@@ -39,13 +38,13 @@ flexible_msg::flexible_msg( json const & j, uint32_t version )
 }
 
 
-flexible_msg::flexible_msg( data_format format, json const & j, uint32_t version )
+flexible_msg::flexible_msg( data_format format, rsutils::json const & j, uint32_t version )
     : _data_format( format )
     , _version( version )
 {
     if( data_format::CBOR == format )
     {
-        _data = std::move( json::to_cbor( j ) );
+        _data = std::move( rsutils::json::to_cbor( j ) );
     }
     else if( data_format::JSON == format )
     {
@@ -101,17 +100,17 @@ flexible_msg::take_next( dds_topic_reader & reader, flexible_msg * output, epros
 }
 
 
-json flexible_msg::json_data() const
+rsutils::json flexible_msg::json_data() const
 {
     if( _data_format == data_format::JSON )
     {
         char const * begin = (char const *)_data.data();
         char const * end = begin + _data.size();
-        return json::parse( begin, end );
+        return rsutils::json::parse( begin, end );
     }
     if( _data_format == data_format::CBOR )
     {
-        return json::from_cbor( _data.begin(), _data.end() );
+        return rsutils::json::from_cbor( _data.begin(), _data.end() );
     }
     DDS_THROW( runtime_error, "non-json flexible data is still unsupported" );
 }
