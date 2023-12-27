@@ -125,16 +125,16 @@ T get( nlohmann::json const & j, nlohmann::json::const_iterator const & it )
 
 
 template< typename... Rest >
-nlohmann::json const * _nested( nlohmann::json const & j )
+nlohmann::json const & _nested( nlohmann::json const & j )
 {
-    return &j;
+    return j;
 }
 template< typename... Rest >
-nlohmann::json const * _nested( nlohmann::json const & j, std::string const & inner, Rest... rest )
+nlohmann::json const & _nested( nlohmann::json const & j, std::string const & inner, Rest... rest )
 {
     auto it = j.find( inner );
     if( it == j.end() )
-        return nullptr;
+        return null_json;
     return _nested( *it, std::forward< Rest >( rest )... );
 }
 
@@ -149,46 +149,48 @@ nlohmann::json const * _nested( nlohmann::json const & j, std::string const & in
 //
 class nested
 {
-    nlohmann::json const * _pj;
+    nlohmann::json const & _j;
 
 public:
-    nested() : _pj( nullptr ) {}
+    nested() : _j( null_json ) {}
 
     template< typename... Rest >
     nested( nlohmann::json const & j, Rest... rest )
-        : _pj( _nested( j, std::forward< Rest >( rest )... ) )
+        : _j( _nested( j, std::forward< Rest >( rest )... ) )
     {}
 
-    nlohmann::json const * operator->() const { return _pj; }
+    nlohmann::json const * operator->() const { return &_j; }
 
-    bool exists() const { return _pj; }
+    bool exists() const { return ! _j.is_null(); }
     operator bool() const { return exists(); }
 
-    nlohmann::json const & get() const { return _pj ? *_pj : null_json; }
+    nlohmann::json const & get() const { return _j; }
     operator nlohmann::json const & () const { return get(); }
 
-    bool is_array() const { return exists() && _pj->is_array(); }
-    bool is_object() const { return exists() && _pj->is_object(); }
-    bool is_string() const { return exists() && _pj->is_string(); }
+    bool is_array() const { return _j.is_array(); }
+    bool is_object() const { return _j.is_object(); }
+    bool is_string() const { return _j.is_string(); }
 
     // Dig deeper
     template< typename... Rest >
     inline nested find( Rest... rest ) const
     {
-        return _pj ? nested( *_pj, std::forward< Rest >( rest )... ) : nested();
+        return nested( _j, std::forward< Rest >( rest )... );
     }
     inline nested operator[]( std::string const & key ) const { return find( key ); }
 
     // Get the JSON as a value
     template< class T > T value() const { return json::value< T >( get() ); }
-    // Get the JSON as a value, or a default if not there
+    // Get the JSON as a value, or a default if not there (throws if wrong type)
     template < class T > T default_value( T const & default_value ) const { return json::value< T >( get(), default_value ); }
-    // Get the object, with a default being an empty one
-    nlohmann::json const & default_object() const { return is_object() ? *_pj : empty_json_object; }
+    // Get the object, with a default being an empty one; does not throw
+    nlohmann::json const & default_object() const { return is_object() ? _j : empty_json_object; }
+    // Get the object, with a default being an empty one; does not throw
+    nlohmann::json const & default_string() const { return is_string() ? _j : empty_json_string; }
     // Get a JSON string by reference (zero copy); it must be a string or it'll throw
     inline std::string const & string_ref() const { return json::string_ref( get() ); }
     // Get a JSON string by reference (zero copy); does not throw
-    inline std::string const & string_ref_or_empty() const { return json::string_ref( exists() ? *_pj : empty_json_string ); }
+    inline std::string const & string_ref_or_empty() const { return json::string_ref( default_string() ); }
 };
 
 
