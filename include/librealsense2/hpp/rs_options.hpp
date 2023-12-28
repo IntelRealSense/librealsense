@@ -20,6 +20,11 @@ namespace rs2
         {
         }
 
+        options_list()
+            : _list( nullptr )
+        {
+        }
+
         options_list & operator=( std::shared_ptr< rs2_options_list > list )
         {
             _list = std::move( list );
