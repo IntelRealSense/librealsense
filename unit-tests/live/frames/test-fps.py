@@ -3,7 +3,7 @@
 
 # test:device each(D400*)
 # test:donotrun:!nightly
-# test:timeout 250
+# test:timeout 154
 # timeout = (seconds_till_steady_state + seconds_to_count_frames) * tested_fps.size() * 2 + 10. (2 because depth + color, 10 spare)
 
 import pyrealsense2 as rs
@@ -17,13 +17,12 @@ import platform
 
 global first_frame_seconds
 
-def measure_fps(sensor, profile):
+def measure_fps(sensor, profile, seconds_to_count_frames = 10):
     """
     Wait a few seconds to be sure that frames are at steady state after start
     Count number of received frames for seconds_to_count_frames seconds and compare actual fps to requested fps
     """
     seconds_till_steady_state = 4
-    seconds_to_count_frames = 20
 
     steady_state = False
     first_frame_received = False
@@ -66,6 +65,8 @@ def measure_fps(sensor, profile):
 
 delta_Hz = 1
 tested_fps = [6, 15, 30, 60, 90]
+time_to_test_fps = [20, 13, 10, 5, 4]
+test.check_equal( len(tested_fps), len(time_to_test_fps) )
 
 dev = test.find_first_device_or_exit()
 product_line = dev.get_info(rs.camera_info.product_line)
@@ -73,7 +74,8 @@ product_line = dev.get_info(rs.camera_info.product_line)
 #####################################################################################################
 test.start("Testing depth fps " + product_line + " device - "+ platform.system() + " OS")
 
-for requested_fps in tested_fps:
+for i in range(len(tested_fps)):
+    requested_fps = tested_fps[i]
     ds = dev.first_depth_sensor()
     # Set auto-exposure option as it might take precedence over requested FPS
     if product_line == "D400":
@@ -88,7 +90,7 @@ for requested_fps in tested_fps:
     except StopIteration:
         print("Requested fps: {:.1f} [Hz], not supported".format(requested_fps))
     else:
-        fps = measure_fps(ds, dp)
+        fps = measure_fps(ds, dp, time_to_test_fps[i])
         print("Requested fps: {:.1f} [Hz], actual fps: {:.1f} [Hz]. Time to first frame {:.6f}".format(requested_fps, fps, first_frame_seconds))
         delta_Hz = requested_fps * 0.05 # Validation KPI is 5%
         test.check(fps <= (requested_fps + delta_Hz) and fps >= (requested_fps - delta_Hz))
@@ -98,7 +100,8 @@ test.finish()
 #####################################################################################################
 test.start("Testing color fps " + product_line + " device - "+ platform.system() + " OS")
 
-for requested_fps in tested_fps:
+for i in range(len(tested_fps)):
+    requested_fps = tested_fps[i]
     cs = dev.first_color_sensor()
     # Set auto-exposure option as it might take precedence over requested FPS
     if product_line == "D400":
@@ -115,7 +118,7 @@ for requested_fps in tested_fps:
     except StopIteration:
         print("Requested fps: {:.1f} [Hz], not supported".format(requested_fps))
     else:
-        fps = measure_fps(cs, cp)
+        fps = measure_fps(cs, cp, time_to_test_fps[i])
         print("Requested fps: {:.1f} [Hz], actual fps: {:.1f} [Hz]. Time to first frame {:.6f}".format(requested_fps, fps, first_frame_seconds))
         delta_Hz = requested_fps * 0.05 # Validation KPI is 5%
         test.check(fps <= (requested_fps + delta_Hz) and fps >= (requested_fps - delta_Hz))
