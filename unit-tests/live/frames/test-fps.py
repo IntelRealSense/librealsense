@@ -3,8 +3,6 @@
 
 # test:device each(D400*)
 # test:donotrun:!nightly
-# test:timeout 154
-# timeout = (seconds_till_steady_state + seconds_to_count_frames) * tested_fps.size() * 2 + 10. (2 because depth + color, 10 spare)
 
 import pyrealsense2 as rs
 from rspy.stopwatch import Stopwatch
