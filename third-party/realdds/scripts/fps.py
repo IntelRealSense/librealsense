@@ -53,7 +53,7 @@ info.topic_root = args.device
 
 # Create the device and initialize
 # The server must be up and running, or the init will time out!
-device = dds.device( participant, participant.create_guid(), info )
+device = dds.device( participant, info )
 try:
     i( 'Looking for device at', info.topic_root, '...' )
     device.wait_until_ready()  # If unavailable before timeout, this throws

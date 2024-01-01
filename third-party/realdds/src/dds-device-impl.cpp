@@ -137,7 +137,7 @@ dds_device::impl::impl( std::shared_ptr< dds_participant > const & participant,
     , _subscriber( std::make_shared< dds_subscriber >( participant ) )
     , _device_settings( device_settings( participant ) )
     , _reply_timeout_ms(
-          rsutils::json::nested( _device_settings, "control", "reply-timeout-ms" ).value< size_t >( 2000 ) )
+          rsutils::json::nested( _device_settings, "control", "reply-timeout-ms" ).default_value< size_t >( 2000 ) )
 {
     create_notifications_reader();
     create_control_writer();
@@ -253,8 +253,8 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
 
     // Find the relevant (stream) options to update
     dds_options const * options = &_options;
-    std::string stream_name;  // default = empty = device option
-    if( rsutils::json::get_ex( control, stream_name_key, &stream_name ) && ! stream_name.empty() )
+    std::string const & stream_name = control.find( stream_name_key ).string_ref_or_empty();  // default = empty = device option
+    if( ! stream_name.empty() )
     {
         auto stream_it = _streams.find( stream_name );
         if( stream_it == _streams.end() )
@@ -291,7 +291,7 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
         return;
     }
 
-    rsutils::json::nested option_name_j( control, option_name_key );
+    auto option_name_j = control.find( option_name_key );
     if( ! option_name_j.exists() )
         throw std::runtime_error( "missing option-name" );
 
@@ -356,7 +356,7 @@ void dds_device::impl::on_log( nlohmann::json const & j, eprosima::fastdds::dds:
                 throw std::runtime_error( "not an array" );
             if( entry.size() < 3 || entry.size() > 4 )
                 throw std::runtime_error( "bad array length" );
-            auto timestamp = time_from( rsutils::json::get< dds_nsec >( entry, 0 ) );
+            auto timestamp = rsutils::json::get< dds_nsec >( entry, 0 );
             auto const & stype = rsutils::json::string_ref( entry[1] );
             if( stype.length() != 1 || ! strchr( "EWID", stype[0] ) )
                 throw std::runtime_error( "type not one of 'EWID'" );
@@ -365,7 +365,7 @@ void dds_device::impl::on_log( nlohmann::json const & j, eprosima::fastdds::dds:
             nlohmann::json const & data = entry.size() > 3 ? entry[3] : rsutils::json::null_json;
 
             if( ! _on_device_log.raise( timestamp, type, text, data ) )
-                LOG_DEBUG( "[" << debug_name() << "][" << timestr( timestamp ) << "][" << type << "] " << text
+                LOG_DEBUG( "[" << debug_name() << "][" << timestamp << "][" << type << "] " << text
                                << " [" << data << "]" );
         }
         catch( std::exception const & e )
@@ -475,7 +475,7 @@ void dds_device::impl::create_notifications_reader()
     if( _notifications_reader )
         return;
 
-    auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + topics::NOTIFICATION_TOPIC_NAME );
+    auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root() + topics::NOTIFICATION_TOPIC_NAME );
 
     // We have some complicated topic structures. In particular, the metadata topic is created on demand while handling
     // other notifications, which doesn't work well (deadlock) if the notification is not called from another thread. So
@@ -518,7 +518,7 @@ void dds_device::impl::create_metadata_reader()
     if( _metadata_reader ) // We can be called multiple times, once per stream
         return;
 
-    auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + topics::METADATA_TOPIC_NAME );
+    auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root() + topics::METADATA_TOPIC_NAME );
     _metadata_reader = std::make_shared< dds_topic_reader_thread >( topic, _subscriber );
     _metadata_reader->on_data_available(
         [this]()
@@ -549,7 +549,7 @@ void dds_device::impl::create_control_writer()
     if( _control_writer )
         return;
 
-    auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + topics::CONTROL_TOPIC_NAME );
+    auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root() + topics::CONTROL_TOPIC_NAME );
     _control_writer = std::make_shared< dds_topic_writer >( topic );
     dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
     wqos.history().depth = 10;  // default is 1

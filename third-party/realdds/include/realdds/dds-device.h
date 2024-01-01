@@ -75,7 +75,7 @@ public:
     rsutils::subscription on_metadata_available( on_metadata_available_callback && );
 
     typedef std::function< void(
-        dds_time const & timestamp, char type, std::string const & text, nlohmann::json const & data ) >
+        dds_nsec timestamp, char type, std::string const & text, nlohmann::json const & data ) >
         on_device_log_callback;
     rsutils::subscription on_device_log( on_device_log_callback && cb );
 

@@ -375,27 +375,16 @@ PYBIND11_MODULE(NAME, m) {
     py::class_< device_info >( message, "device_info" )
         .def( py::init<>() )
         .def_static( "create_topic", static_cast< flexible_msg_create_topic * >( &flexible_msg::create_topic ) )
-        .def_readwrite( "name", &device_info::name )
-        .def_readwrite( "serial", &device_info::serial )
-        .def_readwrite( "product_line", &device_info::product_line )
-        .def_readwrite( "locked", &device_info::locked )
-        .def_readwrite( "topic_root", &device_info::topic_root )
+        .def_property( "name", &device_info::name, &device_info::set_name )
+        .def_property( "topic_root", &device_info::topic_root, &device_info::set_topic_root )
+        .def_property( "serial", &device_info::serial_number, &device_info::set_serial_number )
         .def_static( "from_json", &device_info::from_json )
         .def( "to_json", &device_info::to_json )
         .def( "__repr__",
               []( device_info const & self ) {
                   std::ostringstream os;
                   os << "<" SNAME ".device_info";
-                    if( ! self.name.empty() )
-                        os << " \"" << self.name << "\"";
-                    if( ! self.serial.empty() )
-                        os << " s/n \"" << self.serial << "\"";
-                    if( ! self.topic_root.empty() )
-                        os << " @ \"" << self.topic_root << "\"";
-                    if( ! self.product_line.empty() )
-                        os << " product-line \"" << self.product_line << "\"";
-                    if( self.locked )
-                        os << " locked";
+                  os << " " << self.to_json();
                   os << ">";
                   return os.str();
               } );
@@ -909,10 +898,10 @@ PYBIND11_MODULE(NAME, m) {
                       { FN_FWD_CALL( dds_device, "on_metadata_available", callback( self, json_to_py( *pj ) ); ) } ) );
               } )
         .def( "on_device_log",
-              []( dds_device & self, std::function< void( dds_device &, dds_time const &, char, std::string const &, py::object && ) > callback )
+              []( dds_device & self, std::function< void( dds_device &, dds_nsec, char, std::string const &, py::object && ) > callback )
               {
                   return std::make_shared< subscription >( self.on_device_log(
-                      [&self, callback]( dds_time const & timestamp, char type, std::string const & text, nlohmann::json const & data )
+                      [&self, callback]( dds_nsec timestamp, char type, std::string const & text, nlohmann::json const & data )
                       { FN_FWD_CALL( dds_device, "on_device_log", callback( self, timestamp, type, text, json_to_py( data ) ); ) } ) );
               } )
         .def( "on_notification",
@@ -953,8 +942,8 @@ PYBIND11_MODULE(NAME, m) {
             std::ostringstream os;
             os << "<" SNAME ".device";
             os << " " << self.participant()->print( self.guid() );
-            if( ! self.device_info().name.empty() )
-                os << " \"" << self.device_info().name << "\"";
+            if( ! self.device_info().name().empty() )
+                os << " \"" << self.device_info().name() << "\"";
             os << " @ " << self.device_info().debug_name();
             os << ">";
             return os.str();

@@ -15,7 +15,7 @@ namespace realdds {
 dds_device::dds_device( std::shared_ptr< dds_participant > const & participant, topics::device_info const & info )
     : _impl( std::make_shared< dds_device::impl >( participant, info ) )
 {
-    LOG_DEBUG( "+device '" << _impl->debug_name() << "' on " << info.topic_root );
+    LOG_DEBUG( "+device '" << _impl->debug_name() << "' on " << info.topic_root() );
 }
 
 

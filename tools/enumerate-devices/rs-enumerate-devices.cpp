@@ -418,11 +418,6 @@ int main(int argc, char** argv) try
 
     if (short_view || compact_view)
     {
-        cout << left << setw(30) << "Device Name"
-            << setw(20) << "Serial Number"
-            << setw(20) << "Firmware Version"
-            << endl;
-
         auto dev_info = []( rs2::device dev, rs2_camera_info info )
         {
             if( dev.supports( info ) )
@@ -430,13 +425,30 @@ int main(int argc, char** argv) try
             return "N/A";
         };
 
+        size_t w_name = 28;
+        size_t w_sn = 18;
+        for( auto i = 0u; i < devices.size(); ++i )
+        {
+            auto dev = devices[i];
+
+            w_name = std::max( strlen( dev_info( dev, RS2_CAMERA_INFO_NAME ) ), w_name );
+            w_sn = std::max( strlen( dev_info( dev, RS2_CAMERA_INFO_SERIAL_NUMBER ) ), w_sn );
+        }
+        w_name += 2;
+        w_sn += 2;
+
+        cout << left << setw(w_name) << "Device Name"
+             << setw(w_sn) << "Serial Number"
+             << "Firmware Version"
+             << endl;
+
         for (auto i = 0u; i < devices.size(); ++i)
         {
             auto dev = devices[i];
 
-            cout << left << setw(30) << dev_info(dev,RS2_CAMERA_INFO_NAME)
-                << setw(20) << dev_info(dev,RS2_CAMERA_INFO_SERIAL_NUMBER)
-                << setw(20) << dev_info(dev,RS2_CAMERA_INFO_FIRMWARE_VERSION)
+            cout << left << setw(w_name) << dev_info(dev,RS2_CAMERA_INFO_NAME)
+                << setw(w_sn) << dev_info(dev,RS2_CAMERA_INFO_SERIAL_NUMBER)
+                << dev_info(dev,RS2_CAMERA_INFO_FIRMWARE_VERSION)
                 << endl;
         }
 

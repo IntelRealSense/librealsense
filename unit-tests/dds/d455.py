@@ -5,11 +5,12 @@ import pyrealdds as dds
 from rspy import log, test
 
 
-device_info = dds.message.device_info()
-device_info.name = "Intel RealSense D455"
-device_info.serial = "114222251267"
-device_info.product_line = "D400"
-device_info.topic_root = "realdds/D455/" + device_info.serial
+device_info = dds.message.device_info.from_json( {
+    "name": "Intel RealSense D455",
+    "serial": "114222251267",
+    "product-line": "D400",
+    "topic-root": "realdds/D455/114222251267"
+} )
 
 
 def build( participant ):
@@ -233,7 +234,7 @@ def stereo_module_options():
     options.append( option )
     option = dds.option( "Stereo Baseline", dds.option_range( 94.9609, 94.9609, 0, 94.9609 ), "Distance in mm between the stereo imagers" )
     options.append( option )
-    option = dds.option( "Inter Cam Sync Mode", dds.option_range( 0, 260, 1, 0 ), 
+    option = dds.option( "Inter Cam Sync Mode", dds.option_range( 0, 260, 1, 0 ),
         "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave, 3:Full Salve, 4-258:Genlock with burst count of 1-255 frames for each trigger, 259 and 260 for two frames per trigger with laser ON-OFF and OFF-ON." )
     options.append( option )
     option = dds.option( "Emitter On Off", dds.option_range( 0, 1, 1, 0 ), "Alternating emitter pattern, toggled on/off on per-frame basis" )
@@ -254,11 +255,11 @@ def stereo_module_options():
     options.append( option )
     option = dds.option( "Sequence Id", dds.option_range( 0, 2, 1, 0 ), "HDR Option" )
     options.append( option )
-    option = dds.option( "Auto Exposure Limit", dds.option_range( 1, 200000, 1, 33000 ), 
+    option = dds.option( "Auto Exposure Limit", dds.option_range( 1, 200000, 1, 33000 ),
         "Exposure limit is in microseconds. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session." )
     option.set_value( 200000 )
     options.append( option )
-    option = dds.option( "Auto Gain Limit", dds.option_range( 16, 248, 1, 16 ), 
+    option = dds.option( "Auto Gain Limit", dds.option_range( 16, 248, 1, 16 ),
         "Gain limits ranges from 16 to 248. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session." )
     option.set_value( 248 )
     options.append( option )
