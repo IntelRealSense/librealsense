@@ -5,7 +5,6 @@
 
 import pyrealsense2 as rs
 from rspy import test, log
-import time
 
 def close_resources(sensor):
     if len(sensor.get_active_streams()) > 0:
