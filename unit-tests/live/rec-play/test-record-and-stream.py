@@ -26,8 +26,9 @@ def restart_profile(default_profile):
     return depth_profile
 
 def record(file_name, default_profile):
-    global depth_sensor, frame_queue
+    global depth_sensor
 
+    frame_queue = rs.frame_queue(10)
     depth_profile = restart_profile(default_profile)
     depth_sensor.open(depth_profile)
     depth_sensor.start(frame_queue)
@@ -42,8 +43,9 @@ def record(file_name, default_profile):
 
 
 def try_streaming(default_profile):
-    global depth_sensor, frame_queue
+    global depth_sensor
 
+    frame_queue = rs.frame_queue(10)
     depth_profile = restart_profile(default_profile)
     depth_sensor.open(depth_profile)
     depth_sensor.start(frame_queue)
@@ -51,30 +53,23 @@ def try_streaming(default_profile):
     depth_sensor.stop()
     depth_sensor.close()
 
+    return frame_queue
+
 
 def play_recording(default_profile):
-    global depth_sensor, frame_queue
+    global depth_sensor
 
     ctx = rs.context()
     playback = ctx.load_device(file_name)
     depth_sensor = playback.first_depth_sensor()
-
-    depth_profile = restart_profile(default_profile)
-    depth_sensor.open(depth_profile)
-    depth_sensor.start(frame_queue)
+    frame_queue = try_streaming(default_profile)
 
     test.check(frame_queue.poll_for_frame())
-
-    depth_sensor.stop()
-    depth_sensor.close()
-
-
 ################################################################################################
 with test.closure("Record, stream and playback using sensor interface with frame queue"):
     temp_dir = tempfile.mkdtemp()
     file_name = os.path.join(temp_dir, "recording.bag")
 
-    frame_queue = rs.frame_queue(1000)
     dev = test.find_first_device_or_exit()
     depth_sensor = dev.first_depth_sensor()
     default_profile = find_default_profile()
