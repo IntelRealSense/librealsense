@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
-# test:device each(D400*)
+# test:device D400*
 
 import pyrealsense2 as rs
 from rspy import test
@@ -10,7 +10,6 @@ import time
 
 dev = test.find_first_device_or_exit()
 depth_sensor = dev.first_depth_sensor()
-product_line = dev.get_info(rs.camera_info.product_line)
 
 changed_options = 0
 
@@ -48,5 +47,19 @@ with test.closure( 'set multiple options' ):
     time.sleep( 2.5 ) # default options-watcher update interval is 1 second, multiple options might be updated on different intervals
     test.check_equal( changed_options, 2 )
     changed_options = 0
+
+with test.closure( 'no sporadic changes' ):
+    changed_options = 0
+    time.sleep( 3 )
+    test.check_equal( changed_options, 0 )
+    
+with test.closure( 'cancel subscription' ):
+    depth_sensor = dev.first_depth_sensor() # Get new sensor, old sensor subscription is canceled
+    changed_options = 0
+    current_gain = depth_sensor.get_option( rs.option.gain )
+    depth_sensor.set_option( rs.option.gain , current_gain + 1 )
+    test.check_equal( depth_sensor.get_option( rs.option.gain ), current_gain + 1 )
+    time.sleep( 1.5 ) # default options-watcher update interval is 1 second
+    test.check_equal( changed_options, 0 )
     
 test.print_results_and_exit()
