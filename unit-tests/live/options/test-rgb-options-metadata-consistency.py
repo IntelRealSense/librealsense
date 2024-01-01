@@ -5,6 +5,7 @@
 
 import pyrealsense2 as rs
 from rspy import test, log
+import time
 
 def close_resources(sensor):
     if len(sensor.get_active_streams()) > 0:
@@ -83,7 +84,7 @@ try:
                 if option == rs.option.white_balance:
                     log.d("iteration", iteration, "setting explicitly enable_auto_white_balance to OFF")
                     color_sensor.set_option(rs.option.enable_auto_white_balance, 0)
-                    log.d("enable_auto_white_balance new value we read back is:", color_sensor.get_option(rs.option.enable_auto_white_balance))
+                    test.check_equal(color_sensor.get_option(rs.option.enable_auto_white_balance) , 0.0)
                 value_to_set = option_range.min
             elif iteration == (num_of_frames_to_wait + 1):
                 value_to_set = option_range.max
