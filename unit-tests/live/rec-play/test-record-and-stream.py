@@ -26,11 +26,11 @@ def restart_profile(default_profile):
     return depth_profile
 
 def record(file_name, default_profile):
-    global depth_sensor
+    global depth_sensor, frame_queue
 
     depth_profile = restart_profile(default_profile)
     depth_sensor.open(depth_profile)
-    depth_sensor.start(sync)
+    depth_sensor.start(frame_queue)
 
     recorder = rs.recorder(file_name, dev)
     time.sleep(3)
@@ -42,18 +42,18 @@ def record(file_name, default_profile):
 
 
 def try_streaming(default_profile):
-    global depth_sensor
+    global depth_sensor, frame_queue
 
     depth_profile = restart_profile(default_profile)
     depth_sensor.open(depth_profile)
-    depth_sensor.start(sync)
+    depth_sensor.start(frame_queue)
     time.sleep(3)
     depth_sensor.stop()
     depth_sensor.close()
 
 
 def play_recording(default_profile):
-    global depth_sensor
+    global depth_sensor, frame_queue
 
     ctx = rs.context()
     playback = ctx.load_device(file_name)
@@ -61,21 +61,20 @@ def play_recording(default_profile):
 
     depth_profile = restart_profile(default_profile)
     depth_sensor.open(depth_profile)
-    depth_sensor.start(sync)
+    depth_sensor.start(frame_queue)
 
-    # if the record-playback worked we will get frames, otherwise the next line will timeout and throw
-    sync.wait_for_frames()
+    test.check(frame_queue.poll_for_frame())
 
     depth_sensor.stop()
     depth_sensor.close()
 
 
 ################################################################################################
-with test.closure("Record, stream and playback using sensor interface with syncer"):
+with test.closure("Record, stream and playback using sensor interface with frame queue"):
     temp_dir = tempfile.mkdtemp()
     file_name = os.path.join(temp_dir, "recording.bag")
 
-    sync = rs.syncer()
+    frame_queue = rs.frame_queue(1000)
     dev = test.find_first_device_or_exit()
     depth_sensor = dev.first_depth_sensor()
     default_profile = find_default_profile()
