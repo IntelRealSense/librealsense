@@ -1050,7 +1050,8 @@ namespace rs2
 
     bool stream_model::should_show_in_hex(rs2_frame_metadata_value& md_val) const
     {
-        static std::unordered_set< rs2_frame_metadata_value > show_in_hex = {};
+        // place in the SET metadata types you wish to display in HEX format
+        static std::unordered_set< int > show_in_hex;
 
         if (show_in_hex.find(md_val) != show_in_hex.end())
             return true;
