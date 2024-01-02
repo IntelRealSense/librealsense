@@ -238,7 +238,7 @@ void dds_device_server::broadcast( topics::device_info const & device_info )
 {
     if( _broadcaster )
         DDS_THROW( runtime_error, "device server was already broadcast" );
-    if( device_info.topic_root != _topic_root )
+    if( device_info.topic_root() != _topic_root )
         DDS_THROW( runtime_error, "topic roots do not match" );
     _broadcaster = std::make_shared< dds_device_broadcaster >( _publisher, device_info );
 }

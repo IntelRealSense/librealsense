@@ -177,6 +177,8 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/small-heap.h"
         "${CMAKE_CURRENT_LIST_DIR}/basics.h"
         "${CMAKE_CURRENT_LIST_DIR}/feature-interface.h"
+        "${CMAKE_CURRENT_LIST_DIR}/synthetic-options-watcher.h"
+        "${CMAKE_CURRENT_LIST_DIR}/synthetic-options-watcher.cpp"
 )
 
 if(BUILD_WITH_DDS)

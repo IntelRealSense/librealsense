@@ -928,7 +928,7 @@ namespace rs2
                 std::string desc;
                 if( descriptions.find( val ) != descriptions.end() )
                     desc = descriptions[val];
-                stream_details.push_back( { name, rsutils::string::from( kvp.second ), desc } );
+                stream_details.push_back( { name, format_value(val, kvp.second), desc } );
             }
         }
 
@@ -1053,41 +1053,21 @@ namespace rs2
         ImGui::EndChild();
     }
 
-    void stream_model::add_d500_metadata_descriptions(std::map<rs2_frame_metadata_value, std::string>& descriptions) const
+    std::string stream_model::format_value(rs2_frame_metadata_value& md_val, rs2_metadata_type& attribute_val) const
     {
-        descriptions[RS2_FRAME_METADATA_SAFETY_DEPTH_FRAME_COUNTER] = "Counter of the depth frame upon which the stream was calculated";
-        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL1] = "Designates the Yellow zone status: 0x1 - High, 0x0 - Low";
-        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL1_ORIGIN] = "When l1 is low - equals to frame_counter in safety_header - For l1=0x1 : hold the Frame id on last transition to High state";
-        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL2] = "Designates the “Red” zone status: 0x1 – High, 0x0 - Low";
-        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL2_ORIGIN] = "When l2 is low - equals to frame_counter in safety_header - For l2=0x1 : hold the Frame id on last transition to High state";
-        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL1_VERDICT] = "Current verdict for l1 Safety Signal - May differ from l1_signal due to additional logics applied";
-        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL2_VERDICT] = "Current verdict for l2 Safety Signal - May differ from l2_signal due to additional logics applied";
-        descriptions[RS2_FRAME_METADATA_SAFETY_OPERATIONAL_MODE] = "Reflects the SC operational mode (XU control)";
-        descriptions[RS2_FRAME_METADATA_SAFETY_VISION_VERDICT] = "Bitmask, enumerated";
-        descriptions[RS2_FRAME_METADATA_SAFETY_HARA_EVENTS] = "Bitmask, enumerated";
-        descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_INTEGRITY] = "Bitmask, enumerated";
-        descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_ID_SELECTED] = "Safety Preset index set via Adaptive Field selection GPIO";
-        descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_ID_USED] = "Safety Preset index used in the latest Vision Safety algo processing";
-        descriptions[RS2_FRAME_METADATA_SAFETY_SOC_FUSA_EVENTS] = "Bitmask, enumerated";
-        descriptions[RS2_FRAME_METADATA_SAFETY_SOC_FUSA_ACTION] = "Bitmask, enumerated";
-        descriptions[RS2_FRAME_METADATA_SAFETY_SOC_STATUS] = "Bitmask, enumerated";
-        descriptions[RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT] = "Bitmask, enumerated";
-        descriptions[RS2_FRAME_METADATA_SAFETY_MB_FUSA_ACTION] = "Bitmask, enumerated";
-        descriptions[RS2_FRAME_METADATA_SAFETY_MB_STATUS] = "Provision for future enhancements";
-        descriptions[RS2_FRAME_METADATA_SAFETY_SMCU_STATUS] = "Bitmask, enumerated";
-        descriptions[RS2_FRAME_METADATA_SAFETY_SMCU_STATE] = "Bitmask, enumerated";
-        descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_ID] = "Designates the Safety Zone index in [0..63] range used in algo pipe";
-        descriptions[RS2_FRAME_METADATA_SENSOR_ANGLE_ROLL] = "In millidegrees. Relative to X (forward) axis. Positive value is CCW";
-        descriptions[RS2_FRAME_METADATA_SENSOR_ANGLE_PITCH] = "In millidegrees. Relative to Y (left) axis. Positive value is CCW";
-        descriptions[RS2_FRAME_METADATA_FLOOR_MEDIAN_HEIGHT] = "In millimeters. Relative to the leveled pointcloud CS";
-        descriptions[RS2_FRAME_METADATA_FLOOR_DETECTION] = "Percentage";
-        descriptions[RS2_FRAME_METADATA_CLIFF_DETECTION] = "Percentage";
-        descriptions[RS2_FRAME_METADATA_DEPTH_FILL_RATE] = "Signed value in range of [0..100]. Use [x = 101] if not applicable";
-        descriptions[RS2_FRAME_METADATA_DEPTH_STDEV] = "Spatial accuracy in millimetric units";
-        descriptions[RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS] = "Number of rows in the grid. Max value is 250 (corresponding to 5M width with 2cm tile)";
-        descriptions[RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS] = "Number of columns in the grid. Max value is 320 (corresponding to ~6.5M depth with 2cm tile)";
-        descriptions[RS2_FRAME_METADATA_OCCUPANCY_CELL_SIZE] = "Edge size of each tile, measured in cm ";
-        descriptions[RS2_FRAME_METADATA_NUMBER_OF_3D_VERTICES] = "The max number of points is 640*360";
+        if (should_show_in_hex(md_val))
+            return rsutils::string::from() << "0x" << std::hex << attribute_val; // return value as hex
+        return rsutils::string::from() << attribute_val;
+    }
+
+    bool stream_model::should_show_in_hex(rs2_frame_metadata_value& md_val) const
+    {
+        // place in the SET metadata types you wish to display in HEX format
+        static std::unordered_set< int > show_in_hex;
+
+        if (show_in_hex.find(md_val) != show_in_hex.end())
+            return true;
+        return false;
     }
 
     void stream_model::show_stream_footer(ImFont* font, const rect &stream_rect, const mouse_info& mouse, const std::map<int, stream_model> &streams, viewer_model& viewer)

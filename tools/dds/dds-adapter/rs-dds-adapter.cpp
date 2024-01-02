@@ -28,35 +28,49 @@ using namespace TCLAP;
 using namespace realdds;
 
 
-std::string get_topic_root( topics::device_info const & dev_info )
+std::string get_topic_root( std::string const & name, std::string const & serial_number )
 {
     // Build device root path (we use a device model only name like DXXX)
     // example: /realsense/D435/11223344
     constexpr char const * DEVICE_NAME_PREFIX = "Intel RealSense ";
     constexpr size_t DEVICE_NAME_PREFIX_CCH = 16;
     // We don't need the prefix in the path
-    std::string model_name = dev_info.name;
+    std::string model_name = name;
     if ( model_name.length() > DEVICE_NAME_PREFIX_CCH
        && 0 == strncmp( model_name.data(), DEVICE_NAME_PREFIX, DEVICE_NAME_PREFIX_CCH ) )
     {
         model_name.erase( 0, DEVICE_NAME_PREFIX_CCH );
     }
     constexpr char const * RS_ROOT = "realsense/";
-    return RS_ROOT + model_name + '_' + dev_info.serial;
+    return RS_ROOT + model_name + '_' + serial_number;
 }
 
 
 topics::device_info rs2_device_to_info( rs2::device const & dev )
 {
-    topics::device_info dev_info;
-    dev_info.name = dev.get_info( RS2_CAMERA_INFO_NAME );
-    dev_info.serial = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
-    dev_info.product_line = dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
-    dev_info.locked = ( strcmp( dev.get_info( RS2_CAMERA_INFO_CAMERA_LOCKED ), "YES" ) == 0 );
+    nlohmann::json j;
+
+    // Name is mandatory
+    std::string const name = dev.get_info( RS2_CAMERA_INFO_NAME );
+    j["name"] = name;
+
+    if( dev.supports( RS2_CAMERA_INFO_SERIAL_NUMBER ) )
+        j["serial"] = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
+    if( dev.supports( RS2_CAMERA_INFO_PRODUCT_LINE ) )
+        j["product-line"] = dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
+    if( dev.supports( RS2_CAMERA_INFO_CAMERA_LOCKED ) )
+        j["locked"] = ( strcmp( dev.get_info( RS2_CAMERA_INFO_CAMERA_LOCKED ), "YES" ) == 0 );
+
+    // FW update ID is a must for DFU; all cameras should have one
+    std::string const serial_number = dev.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
+    j["fw-update-id"] = serial_number;
+    if( auto update_device = rs2::update_device( dev ) )
+        j["recovery"] = true;
 
     // Build device topic root path
-    dev_info.topic_root = get_topic_root( dev_info );
-    return dev_info;
+    j["topic-root"] = get_topic_root( name, serial_number );
+
+    return topics::device_info::from_json( j );
 }
 
 
@@ -175,7 +189,7 @@ try
 
             // Create a dds-device-server for this device
             auto dds_device_server
-                = std::make_shared< realdds::dds_device_server >( participant, dev_info.topic_root );
+                = std::make_shared< realdds::dds_device_server >( participant, dev_info.topic_root() );
  
             // Create a lrs_device_manager for this device
             std::shared_ptr< tools::lrs_device_controller > lrs_device_controller

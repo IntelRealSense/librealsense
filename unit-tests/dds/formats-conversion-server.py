@@ -11,11 +11,10 @@ dds.debug( log.is_debug_on(), log.nested )
 participant = dds.participant()
 participant.init( 123, "formats-conversion-server" )
 
-device_info = dds.message.device_info()
-device_info.name = "formats-conversion-device"
-device_info.serial = "123"
-device_info.product_line = "D400"
-device_info.topic_root = "root_" + device_info.serial
+device_info = dds.message.device_info.from_json({
+    "name": "formats-conversion-device",
+    "topic-root": "root_123"
+})
 
 # Used to created a device_server per test case, but it currently creates problems when creating a second device while
 # the first did not yet close. Changing to one device_server with different sensor per test case.

@@ -9,6 +9,8 @@ namespace json {
 
 
 nlohmann::json const null_json = {};
+nlohmann::json const empty_json_string = nlohmann::json::value_type( nlohmann::json::value_t::string );
+nlohmann::json const empty_json_object = nlohmann::json::object();
 
 
 void patch( nlohmann::json & j, nlohmann::json const & patches, std::string const & what )

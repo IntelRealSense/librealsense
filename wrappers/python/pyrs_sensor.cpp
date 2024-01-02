@@ -42,6 +42,8 @@ void init_sensor(py::module &m) {
              "Check if specific camera info is supported.", "info")
         .def("supports", (bool (rs2::sensor::*)(rs2_option) const) &rs2::options::supports,
              "Check if specific camera info is supported.", "info")
+        .def( "on_options_changed", &rs2::options::on_options_changed,
+              "Sets a callback to notify in case options in this container change value", "callback"_a )
         .def("get_info", &rs2::sensor::get_info, "Retrieve camera specific information, "
              "like versions of various internal components.", "info"_a)
         .def("set_notifications_callback", [](const rs2::sensor& self, std::function<void(rs2::notification)> callback) {

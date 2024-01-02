@@ -343,6 +343,16 @@ void uvc_sensor::register_pu( rs2_option id )
 }
 
 
+void uvc_sensor::prepare_for_bulk_operation()
+{
+    acquire_power();
+}
+
+void uvc_sensor::finished_bulk_operation()
+{
+    release_power();
+}
+
 void uvc_sensor::register_xu( platform::extension_unit xu )
 {
     _xus.push_back( std::move( xu ) );

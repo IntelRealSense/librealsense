@@ -49,6 +49,48 @@ namespace rs2
             return results;
         }
 
+        /**
+         * \return   the type of device: USB/GMSL/DDS, etc.
+         */
+        std::string get_type() const
+        {
+            if( supports( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
+                return "USB";
+            if( supports( RS2_CAMERA_INFO_PRODUCT_ID ) )
+            {
+                std::string pid = get_info( RS2_CAMERA_INFO_PRODUCT_ID );
+                if( pid == "ABCD" ) // Specific for D457
+                    return "GMSL";
+                return pid;  // for DDS devices, this will be "DDS"
+            }
+            return {};
+        }
+
+        /**
+         * \return   the one-line description: "[<type>] <name> s/n <#>"
+         */
+        std::string get_description() const
+        {
+            std::ostringstream os;
+            auto type = get_type();
+            if( supports( RS2_CAMERA_INFO_NAME ) )
+            {
+                if( ! type.empty() )
+                    os << "[" << type << "] ";
+                os << get_info( RS2_CAMERA_INFO_NAME );
+            }
+            else
+            {
+                if( ! type.empty() )
+                    os << type << " device";
+                else
+                    os << "unknown device";
+            }
+            if( supports( RS2_CAMERA_INFO_SERIAL_NUMBER ) )
+                os << " s/n " << get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
+            return os.str();
+        }
+
         template<class T>
         T first() const
         {

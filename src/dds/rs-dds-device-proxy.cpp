@@ -121,12 +121,25 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
     , _dds_dev( dev )
 {
     LOG_DEBUG( "=====> dds-device-proxy " << this << " created on top of dds-device " << _dds_dev.get() );
-    register_info( RS2_CAMERA_INFO_NAME, dev->device_info().name );
-    register_info( RS2_CAMERA_INFO_SERIAL_NUMBER, dev->device_info().serial );
-    register_info( RS2_CAMERA_INFO_PRODUCT_LINE, dev->device_info().product_line );
+    register_info( RS2_CAMERA_INFO_NAME, dev->device_info().name() );
+    register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, dev->device_info().topic_root() );
     register_info( RS2_CAMERA_INFO_PRODUCT_ID, "DDS" );
-    register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, dev->device_info().topic_root );
-    register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, dev->device_info().locked ? "YES" : "NO" );
+
+    auto & j = dev->device_info().to_json();
+    std::string str;
+    if( rsutils::json::get_ex( j, "serial", &str ) )
+    {
+        register_info( RS2_CAMERA_INFO_SERIAL_NUMBER, str );
+        rsutils::json::get_ex( j, "fw-update-id", &str );  // if fails, str will be the serial
+        register_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, str );
+    }
+    else if( rsutils::json::get_ex( j, "fw-update-id", &str ) )
+        register_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, str );
+    if( rsutils::json::get_ex( j, "fw-version", &str ) )
+        register_info( RS2_CAMERA_INFO_FIRMWARE_VERSION, str );
+    if( rsutils::json::get_ex( j, "product-line", &str ) )
+        register_info( RS2_CAMERA_INFO_PRODUCT_LINE, str );
+    register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, rsutils::json::get( j, "locked", true ) ? "YES" : "NO" );
 
     // Assumes dds_device initialization finished
     struct sensor_info

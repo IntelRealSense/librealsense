@@ -96,6 +96,14 @@ struct rs2_update_progress_callback
 };
 typedef std::shared_ptr<rs2_update_progress_callback> rs2_update_progress_callback_sptr;
 
+struct rs2_options_changed_callback
+{
+    virtual void on_value_changed( rs2_options_list * list ) = 0;
+    virtual void release() = 0;
+    virtual ~rs2_options_changed_callback() {}
+};
+typedef std::shared_ptr< rs2_options_changed_callback > rs2_options_changed_callback_sptr;
+
 namespace rs2
 {
     class error : public std::runtime_error

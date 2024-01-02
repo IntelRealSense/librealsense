@@ -94,7 +94,7 @@ public:
         return _on_metadata_available.subscribe( std::move( cb ) );
     }
 
-    using on_device_log_signal = rsutils::signal< dds_time const &,          // timestamp
+    using on_device_log_signal = rsutils::signal< dds_nsec,                  // timestamp
                                                   char,                      // type
                                                   std::string const &,       // text
                                                   nlohmann::json const & >;  // data
