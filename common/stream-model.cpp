@@ -916,7 +916,7 @@ namespace rs2
                 std::string desc;
                 if( descriptions.find( val ) != descriptions.end() )
                     desc = descriptions[val];
-                stream_details.push_back( { name, rsutils::string::from( kvp.second ), desc } );
+                stream_details.push_back( { name, format_value(val, kvp.second), desc } );
             }
         }
 
@@ -1039,6 +1039,23 @@ namespace rs2
         }
 
         ImGui::EndChild();
+    }
+
+    std::string stream_model::format_value(rs2_frame_metadata_value& md_val, rs2_metadata_type& attribute_val) const
+    {
+        if (should_show_in_hex(md_val))
+            return rsutils::string::from() << "0x" << std::hex << attribute_val; // return value as hex
+        return rsutils::string::from() << attribute_val;
+    }
+
+    bool stream_model::should_show_in_hex(rs2_frame_metadata_value& md_val) const
+    {
+        // place in the SET metadata types you wish to display in HEX format
+        static std::unordered_set< int > show_in_hex;
+
+        if (show_in_hex.find(md_val) != show_in_hex.end())
+            return true;
+        return false;
     }
 
     void stream_model::show_stream_footer(ImFont* font, const rect &stream_rect, const mouse_info& mouse, const std::map<int, stream_model> &streams, viewer_model& viewer)
