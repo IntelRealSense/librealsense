@@ -47,11 +47,11 @@ extern "C" {
         RS2_OPTION_ASIC_TEMPERATURE, /**< Current Asic Temperature */
         RS2_OPTION_ERROR_POLLING_ENABLED, /**< disable error handling */
         RS2_OPTION_PROJECTOR_TEMPERATURE, /**< Current Projector Temperature */
-        RS2_OPTION_OUTPUT_TRIGGER_ENABLED, /**< Enable / disable trigger to be outputed from the camera to any external device on every depth frame */
+        RS2_OPTION_OUTPUT_TRIGGER_ENABLED, /**< Enable / disable trigger to be outputted from the camera to any external device on every depth frame */
         RS2_OPTION_MOTION_MODULE_TEMPERATURE, /**< Current Motion-Module Temperature */
         RS2_OPTION_DEPTH_UNITS, /**< Number of meters represented by a single depth unit */
         RS2_OPTION_ENABLE_MOTION_CORRECTION, /**< Enable/Disable automatic correction of the motion data */
-        RS2_OPTION_AUTO_EXPOSURE_PRIORITY, /**< Allows sensor to dynamically ajust the frame rate depending on lighting conditions */
+        RS2_OPTION_AUTO_EXPOSURE_PRIORITY, /**< Allows sensor to dynamically adjust the frame rate depending on lighting conditions */
         RS2_OPTION_COLOR_SCHEME, /**< Color scheme for data visualization */
         RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, /**< Perform histogram equalization post-processing on the depth data */
         RS2_OPTION_MIN_DISTANCE, /**< Minimal distance to the target */
@@ -62,7 +62,7 @@ extern "C" {
         RS2_OPTION_FILTER_SMOOTH_DELTA, /**< 2D-filter range/validity threshold*/
         RS2_OPTION_HOLES_FILL, /**< Enhance depth data post-processing with holes filling where appropriate*/
         RS2_OPTION_STEREO_BASELINE, /**< The distance in mm between the first and the second imagers in stereo-based depth cameras*/
-        RS2_OPTION_AUTO_EXPOSURE_CONVERGE_STEP, /**< Allows dynamically ajust the converge step value of the target exposure in Auto-Exposure algorithm*/
+        RS2_OPTION_AUTO_EXPOSURE_CONVERGE_STEP, /**< Allows dynamically adjust the converge step value of the target exposure in Auto-Exposure algorithm*/
         RS2_OPTION_INTER_CAM_SYNC_MODE, /**< Impose Inter-camera HW synchronization mode. Applicable for D400/L500/Rolling Shutter SKUs */
         RS2_OPTION_STREAM_FILTER, /**< Select a stream to process */
         RS2_OPTION_STREAM_FORMAT_FILTER, /**< Select a stream format to process */

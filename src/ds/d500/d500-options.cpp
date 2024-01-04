@@ -6,9 +6,12 @@
 
 namespace librealsense
 {
-    temperature_option::temperature_option(std::shared_ptr<hw_monitor> hwm, sensor_base* ep, 
-        temperature_component component, const char* description)
-        : _hwm(hwm), _sensor(ep), _component(component), _description(description)
+    temperature_option::temperature_option( std::shared_ptr< hw_monitor > hwm,
+                                            temperature_component component,
+                                            const char * description )
+        : _hwm( hwm )
+        , _component( component )
+        , _description( description )
     {
         _range = [this]()
         {

@@ -11,18 +11,20 @@ namespace librealsense
 {
     using namespace ds;
 
-    ds_active_common::ds_active_common(uvc_sensor& raw_depth_ep,
-        synthetic_sensor& depth_ep,
-        backend_device* owner,
-        ds_caps device_capabilities,
-        std::shared_ptr<hw_monitor> hw_monitor,
-        firmware_version fw_version) :
-        _raw_depth_ep(raw_depth_ep),
-        _depth_ep(depth_ep),
-        _owner(owner),
-        _device_capabilities(device_capabilities),
-        _hw_monitor(hw_monitor),
-        _fw_version(fw_version) {}
+    ds_active_common::ds_active_common( const std::shared_ptr< uvc_sensor > & raw_depth_ep,
+                                        synthetic_sensor & depth_ep,
+                                        backend_device * owner,
+                                        ds_caps device_capabilities,
+                                        std::shared_ptr< hw_monitor > hw_monitor,
+                                        firmware_version fw_version )
+        : _raw_depth_ep( raw_depth_ep )
+        , _depth_ep( depth_ep )
+        , _owner( owner )
+        , _device_capabilities( device_capabilities )
+        , _hw_monitor( hw_monitor )
+        , _fw_version( fw_version )
+    {
+    }
 
     void ds_active_common::register_options()
     {
