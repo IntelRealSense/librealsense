@@ -227,6 +227,7 @@ namespace rs2
 
         const float SHORT_RANGE_MIN_DISTANCE = 0.05f; // 5 cm
         const float SHORT_RANGE_MAX_DISTANCE = 4.0f;  // 4 meters
+        rs2_extrinsics _extrinsics_from_depth;
         std::atomic_bool _destructing;
     };
 }

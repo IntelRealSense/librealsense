@@ -143,7 +143,7 @@ namespace librealsense
 
         color_ep.register_pu(RS2_OPTION_HUE);
         // TODO: Should be removed for D585S PRQ!
-        color_ep.register_option(RS2_OPTION_RGB_TNR_ENABLED, std::make_shared<rgb_tnr_option>(_hw_monitor, &raw_color_ep));
+        color_ep.register_option(RS2_OPTION_RGB_TNR_ENABLED, std::make_shared<rgb_tnr_option>(_hw_monitor, raw_color_ep));
     }
 
     void d500_color::register_metadata()

@@ -79,7 +79,7 @@ namespace librealsense
     {
     public:
         d500_external_sync_mode( hw_monitor & hwm,
-                                 sensor_base * depth_ep,
+                                 const std::weak_ptr< sensor_base > & ep,
                                  const std::map< float, std::string > & description_per_value );
 
         virtual ~d500_external_sync_mode() = default;
@@ -87,7 +87,7 @@ namespace librealsense
         virtual float query() const override;
         virtual option_range get_range() const override { return _range; }
         virtual bool is_enabled() const override { return true; }
-        virtual bool is_read_only() const override { return _sensor && _sensor->is_opened(); }
+        virtual bool is_read_only() const override;
         const char * get_description() const override
         {
             return "Inter-camera synchronization mode: 0:No sync, 1:RGB Master, 2:PWM Master, 3:External Master";
@@ -105,7 +105,7 @@ namespace librealsense
         option_range _range;
         const std::map< float, std::string > _description_per_value;
         hw_monitor & _hwm;
-        sensor_base * _sensor;
+        std::weak_ptr< sensor_base > _sensor;
     };
 
 } // namespace librealsense
