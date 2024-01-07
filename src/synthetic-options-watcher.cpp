@@ -21,10 +21,20 @@ std::map< rs2_option, std::shared_ptr< option > > synthetic_options_watcher::upd
     std::shared_ptr< raw_sensor_base > strong = _raw_sensor.lock();
     if( ! strong )
         return updated_options;
-
-    strong->prepare_for_bulk_operation();
-    updated_options = options_watcher::update_options();
-    strong->finished_bulk_operation();
+    try
+    {
+        strong->prepare_for_bulk_operation();
+        updated_options = options_watcher::update_options();
+        strong->finished_bulk_operation();
+    }
+    catch( const std::exception & ex )
+    {
+        LOG_ERROR( "Error when updating options: " << ex.what() );
+    }
+    catch( ... )
+    {
+        LOG_ERROR( "Unknown error when updating options!" );
+    }
 
     return updated_options;
 }

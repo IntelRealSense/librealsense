@@ -24,10 +24,10 @@ namespace librealsense
             return dynamic_cast<synthetic_sensor&>(get_sensor(_color_device_idx));
         }
 
-        uvc_sensor& get_raw_color_sensor()
+        std::shared_ptr< uvc_sensor > get_raw_color_sensor()
         {
-            synthetic_sensor& color_sensor = get_color_sensor();
-            return dynamic_cast<uvc_sensor&>(*color_sensor.get_raw_sensor());
+            synthetic_sensor & color_sensor = get_color_sensor();
+            return std::dynamic_pointer_cast< uvc_sensor >( color_sensor.get_raw_sensor() );
         }
 
     protected:

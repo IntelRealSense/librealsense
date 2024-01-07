@@ -94,10 +94,9 @@ namespace librealsense
     void d500_color::init()
     {
         auto& color_ep = get_color_sensor();
-        auto& raw_color_ep = get_raw_color_sensor();
+        auto raw_color_ep = get_raw_color_sensor();
 
-        _ds_color_common = std::make_shared<ds_color_common>(raw_color_ep, color_ep,
-             _fw_version, _hw_monitor, this);
+        _ds_color_common = std::make_shared<ds_color_common>(raw_color_ep, color_ep, _fw_version, _hw_monitor, this);
 
         register_color_features();
         register_options();
@@ -134,7 +133,7 @@ namespace librealsense
     void d500_color::register_options()
     {
         auto& color_ep = get_color_sensor();
-        auto& raw_color_ep = get_raw_color_sensor();
+        auto raw_color_ep = get_raw_color_sensor();
 
         _ds_color_common->register_color_options();
 

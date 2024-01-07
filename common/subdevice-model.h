@@ -75,12 +75,7 @@ namespace rs2
     class subdevice_model
     {
     public:
-        static void populate_options(std::map<int, option_model>& opt_container,
-            const std::string& opt_base_label,
-            subdevice_model* model,
-            std::shared_ptr<options> options,
-            bool* options_invalidated,
-            std::string& error_message);
+        void populate_options( const std::string & opt_base_label, bool * options_invalidated, std::string & error_message );
 
         subdevice_model(device& dev, std::shared_ptr<sensor> s, std::shared_ptr< atomic_objects_in_frame > objects, std::string& error_message, viewer_model& viewer, bool new_device_connected = true);
         ~subdevice_model();
@@ -232,6 +227,6 @@ namespace rs2
 
         const float SHORT_RANGE_MIN_DISTANCE = 0.05f; // 5 cm
         const float SHORT_RANGE_MAX_DISTANCE = 4.0f;  // 4 meters
-        rs2_extrinsics _extrinsics_from_depth;
+        std::atomic_bool _destructing;
     };
 }

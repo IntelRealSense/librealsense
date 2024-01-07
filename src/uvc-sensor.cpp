@@ -339,7 +339,7 @@ void uvc_sensor::close()
 
 void uvc_sensor::register_pu( rs2_option id )
 {
-    register_option( id, std::make_shared< uvc_pu_option >( *this, id ) );
+    register_option( id, std::make_shared< uvc_pu_option >( std::dynamic_pointer_cast< uvc_sensor >( shared_from_this() ), id ) );
 }
 
 

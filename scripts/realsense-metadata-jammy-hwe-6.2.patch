@@ -77,7 +77,7 @@ index 362df9dd3..8f65b969b 100644
 +	  .idProduct		= 0x0b56,
 +	  .bInterfaceClass	= USB_CLASS_VIDEO,
 +	  .bInterfaceSubClass	= 1,
-+	  .bInterfaceProtocol	= 0,
++	  .bInterfaceProtocol	= UVC_PC_PROTOCOL_15,
 +	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
 +	/* Intel D405 Depth Camera */
 +	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
