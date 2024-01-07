@@ -12,7 +12,7 @@ namespace librealsense
     class ds_color_common
     {
     public:
-        ds_color_common(uvc_sensor& raw_color_ep,
+        ds_color_common( const std::shared_ptr< uvc_sensor > & raw_color_ep,
             synthetic_sensor& color_ep,
             firmware_version fw_version,
             std::shared_ptr<hw_monitor> hw_monitor,
@@ -22,7 +22,7 @@ namespace librealsense
         void register_metadata();
 
     private:
-        uvc_sensor& _raw_color_ep;
+        std::shared_ptr< uvc_sensor > _raw_color_ep;
         synthetic_sensor& _color_ep;
         firmware_version _fw_version;
         std::shared_ptr<hw_monitor> _hw_monitor;

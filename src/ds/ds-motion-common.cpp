@@ -211,9 +211,9 @@ namespace librealsense
     std::shared_ptr<auto_exposure_mechanism> ds_motion_common::register_auto_exposure_options(synthetic_sensor* ep, const platform::extension_unit* fisheye_xu)
     {
         auto uvc_raw_sensor = As<uvc_sensor, sensor_base>(ep->get_raw_sensor());
-        auto gain_option = std::make_shared<uvc_pu_option>(*uvc_raw_sensor, RS2_OPTION_GAIN);
+        auto gain_option = std::make_shared<uvc_pu_option>(uvc_raw_sensor, RS2_OPTION_GAIN);
 
-        auto exposure_option = std::make_shared<uvc_xu_option<uint16_t>>(*uvc_raw_sensor,
+        auto exposure_option = std::make_shared<uvc_xu_option<uint16_t>>(uvc_raw_sensor,
             *fisheye_xu,
             librealsense::ds::FISHEYE_EXPOSURE, "Exposure time of Fisheye camera");
 
@@ -393,10 +393,10 @@ namespace librealsense
         else
         {
             _fisheye_ep->register_option(RS2_OPTION_GAIN,
-                std::make_shared<uvc_pu_option>(*_raw_fisheye_ep.get(),
+                std::make_shared<uvc_pu_option>(_raw_fisheye_ep,
                     RS2_OPTION_GAIN));
             _fisheye_ep->register_option(RS2_OPTION_EXPOSURE,
-                std::make_shared<uvc_xu_option<uint16_t>>(*_raw_fisheye_ep.get(),
+                std::make_shared<uvc_xu_option<uint16_t>>(_raw_fisheye_ep,
                     ds::fisheye_xu,
                     librealsense::ds::FISHEYE_EXPOSURE,
                     "Exposure time of Fisheye camera"));

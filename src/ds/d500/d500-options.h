@@ -15,7 +15,7 @@ namespace librealsense
     class rgb_tnr_option : public option
     {
     public:
-        rgb_tnr_option(std::shared_ptr<hw_monitor> hwm, sensor_base* ep);
+        rgb_tnr_option(std::shared_ptr<hw_monitor> hwm, const std::weak_ptr< sensor_base > & ep);
         virtual ~rgb_tnr_option() = default;
         virtual void set(float value) override;
         virtual float query() const override;
@@ -34,7 +34,7 @@ namespace librealsense
         std::function<void(const option&)> _record_action = [](const option&) {};
         rsutils::lazy< option_range > _range;
         std::shared_ptr<hw_monitor> _hwm;
-        sensor_base* _sensor;
+        std::weak_ptr< sensor_base > _sensor;
     };
     
     class temperature_option : public readonly_option
@@ -53,8 +53,9 @@ namespace librealsense
             SMCU,
             COUNT
         };
-        explicit temperature_option(std::shared_ptr<hw_monitor> hwm, sensor_base* ep, 
-            temperature_component component, const char* description);
+        explicit temperature_option( std::shared_ptr< hw_monitor > hwm,
+                                     temperature_component component,
+                                     const char * description );
         float query() const override;
         inline option_range get_range() const override { return *_range; }
         inline bool is_enabled() const override { return true; }
@@ -70,7 +71,6 @@ namespace librealsense
         std::function<void(const option&)> _record_action = [](const option&) {};
         rsutils::lazy< option_range > _range;
         std::shared_ptr<hw_monitor> _hwm;
-        sensor_base* _sensor;
         temperature_component _component;
         const char* _description;
     };

@@ -15,7 +15,7 @@ namespace librealsense {
 
 class uvc_pu_option : public option
 {
-    uvc_sensor & _ep;
+    std::weak_ptr< uvc_sensor > _ep;
     rs2_option _id;
     const std::map< float, std::string > _description_per_value;
     std::function< void( const option & ) > _record = []( const option & ) {};
@@ -30,9 +30,10 @@ public:
 
     bool is_enabled() const override { return true; }
 
-    uvc_pu_option( uvc_sensor & ep, rs2_option id );
+    uvc_pu_option( const std::weak_ptr< uvc_sensor > & ep, rs2_option id );
 
-    uvc_pu_option( uvc_sensor & ep, rs2_option id, const std::map< float, std::string > & description_per_value );
+    uvc_pu_option( const std::weak_ptr < uvc_sensor > & ep, rs2_option id,
+                   const std::map< float, std::string > & description_per_value );
 
     const char * get_description() const override;
 
@@ -53,11 +54,14 @@ class uvc_xu_option : public option
 public:
     void set( float value ) override
     {
-        if( ! _allow_set_while_streaming && _ep.is_streaming() )
-            throw invalid_value_exception( rsutils::string::from()
-                                           << "setting this option during streaming is not allowed!" );
+        auto ep = _ep.lock();
+        if( ! ep )
+            throw invalid_value_exception( "UVC sensor is not alive for setting" );
 
-        _ep.invoke_powered(
+        if( ! _allow_set_while_streaming && ep->is_streaming() )
+            throw invalid_value_exception( "setting this option during streaming is not allowed!" );
+
+        ep->invoke_powered(
             [this, value]( platform::uvc_device & dev )
             {
                 T t = static_cast< T >( value );
@@ -71,7 +75,11 @@ public:
 
     float query() const override
     {
-        return static_cast< float >( _ep.invoke_powered(
+        auto ep = _ep.lock();
+        if( ! ep )
+            return static_cast< float >( T() );
+
+        return static_cast< float >( ep->invoke_powered(
             [this]( platform::uvc_device & dev )
             {
                 T t;
@@ -86,7 +94,11 @@ public:
 
     option_range get_range() const override
     {
-        auto uvc_range = _ep.invoke_powered( [this]( platform::uvc_device & dev )
+        auto uvc_range = platform::control_range();
+        
+        auto ep = _ep.lock();
+        if( ep )
+            uvc_range = ep->invoke_powered( [this]( platform::uvc_device & dev )
                                              { return dev.get_xu_range( _xu, _id, sizeof( T ) ); } );
 
         if( uvc_range.min.size() < sizeof( int32_t ) )
@@ -104,7 +116,7 @@ public:
 
     bool is_enabled() const override { return true; }
 
-    uvc_xu_option( uvc_sensor & ep,
+    uvc_xu_option( const std::weak_ptr< uvc_sensor > & ep,
                    platform::extension_unit xu,
                    uint8_t id,
                    std::string description,
@@ -117,7 +129,7 @@ public:
     {
     }
 
-    uvc_xu_option( uvc_sensor & ep,
+    uvc_xu_option( const std::weak_ptr< uvc_sensor > & ep,
                    platform::extension_unit xu,
                    uint8_t id,
                    std::string description,
@@ -145,7 +157,7 @@ public:
     }
 
 protected:
-    uvc_sensor & _ep;
+    std::weak_ptr < uvc_sensor > _ep;
     platform::extension_unit _xu;
     uint8_t _id;
     std::string _desciption;
@@ -160,12 +172,15 @@ template< typename T >
 class protected_xu_option : public uvc_xu_option< T >
 {
 public:
-    protected_xu_option( uvc_sensor & ep, platform::extension_unit xu, uint8_t id, std::string description )
+    protected_xu_option( const std::weak_ptr< uvc_sensor > & ep,
+                         platform::extension_unit xu,
+                         uint8_t id,
+                         std::string description )
         : uvc_xu_option< T >( ep, xu, id, description )
     {
     }
 
-    protected_xu_option( uvc_sensor & ep,
+    protected_xu_option( const std::weak_ptr< uvc_sensor > & ep,
                          platform::extension_unit xu,
                          uint8_t id,
                          std::string description,
@@ -195,7 +210,7 @@ template< typename T >
 class ensure_set_xu_option : public uvc_xu_option< T >
 {
 public:
-    ensure_set_xu_option( uvc_sensor & ep,
+    ensure_set_xu_option( const std::weak_ptr< uvc_sensor > & ep,
                           platform::extension_unit xu,
                           uint8_t id,
                           std::string description,
@@ -206,7 +221,7 @@ public:
     {
     }
 
-    ensure_set_xu_option( uvc_sensor & ep,
+    ensure_set_xu_option( const std::weak_ptr< uvc_sensor > & ep,
                           platform::extension_unit xu,
                           uint8_t id,
                           std::string description,

@@ -493,14 +493,14 @@ void log_callback_end( uint32_t fps,
 
     void synthetic_sensor::register_pu(rs2_option id)
     {
-        const auto&& raw_uvc_sensor = As<uvc_sensor, sensor_base>(_raw_sensor);
-        register_option(id, std::make_shared<uvc_pu_option>(*raw_uvc_sensor.get(), id));
+        const auto raw_uvc_sensor = As<uvc_sensor, sensor_base>(_raw_sensor);
+        register_option(id, std::make_shared<uvc_pu_option>(raw_uvc_sensor, id));
     }
 
     bool synthetic_sensor::try_register_pu(rs2_option id)
     {
-        const auto&& raw_uvc_sensor = As<uvc_sensor, sensor_base>(_raw_sensor);
-        return try_register_option(id, std::make_shared<uvc_pu_option>(*raw_uvc_sensor.get(), id));
+        const auto raw_uvc_sensor = As<uvc_sensor, sensor_base>(_raw_sensor);
+        return try_register_option(id, std::make_shared<uvc_pu_option>(raw_uvc_sensor, id));
     }
 
     void sensor_base::sort_profiles( stream_profiles & profiles )

@@ -48,10 +48,10 @@ namespace librealsense
             return dynamic_cast<synthetic_sensor&>(get_sensor(_depth_device_idx));
         }
 
-        uvc_sensor& get_raw_depth_sensor()
+        std::shared_ptr< uvc_sensor > get_raw_depth_sensor()
         {
-            synthetic_sensor& depth_sensor = get_depth_sensor();
-            return dynamic_cast<uvc_sensor&>(*depth_sensor.get_raw_sensor());
+            synthetic_sensor & depth_sensor = get_depth_sensor();
+            return std::dynamic_pointer_cast< uvc_sensor >( depth_sensor.get_raw_sensor() );
         }
 
         d500_device( std::shared_ptr< const d500_info > const & );

@@ -14,15 +14,18 @@ namespace librealsense
 {
     using namespace ds;
 
-    ds_color_common::ds_color_common(uvc_sensor& raw_color_ep,
-        synthetic_sensor& color_ep,
-        firmware_version fw_version,
-        std::shared_ptr<hw_monitor> hw_monitor, device* owner) :
-        _raw_color_ep(raw_color_ep),
-        _color_ep(color_ep),
-        _fw_version(fw_version),
-        _hw_monitor(hw_monitor),
-        _owner(owner) {}
+    ds_color_common::ds_color_common( const std::shared_ptr< uvc_sensor > & raw_color_ep,
+                                      synthetic_sensor & color_ep,
+                                      firmware_version fw_version,
+                                      std::shared_ptr< hw_monitor > hw_monitor,
+                                      device * owner )
+        : _raw_color_ep( raw_color_ep )
+        , _color_ep( color_ep )
+        , _fw_version( fw_version )
+        , _hw_monitor( hw_monitor )
+        , _owner( owner )
+    {
+    }
 
     void ds_color_common::register_color_options()
     {
