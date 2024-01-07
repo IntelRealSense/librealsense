@@ -443,7 +443,7 @@ namespace librealsense
     {
         using namespace ds;
 
-        auto& raw_sensor = get_raw_depth_sensor();
+        auto raw_sensor = get_raw_depth_sensor();
         _pid = group.uvc_devices.front().pid;
 
         _color_calib_table_raw = [this]()
@@ -455,8 +455,7 @@ namespace librealsense
         {
             _hw_monitor = std::make_shared<hw_monitor_extended_buffers>(
                 std::make_shared<locked_transfer>(
-                    std::make_shared<command_transfer_over_xu>(
-                        raw_sensor, depth_xu, DS5_HWMONITOR),
+                    std::make_shared<command_transfer_over_xu>( *raw_sensor, depth_xu, DS5_HWMONITOR ),
                     raw_sensor));
         }
         else
@@ -494,7 +493,7 @@ namespace librealsense
         std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
 
         auto& depth_sensor = get_depth_sensor();
-        auto& raw_depth_sensor = get_raw_depth_sensor();
+        auto raw_depth_sensor = get_raw_depth_sensor();
 
         using namespace platform;
 
@@ -514,7 +513,7 @@ namespace librealsense
 
             auto _usb_mode = usb3_type;
             usb_type_str = usb_spec_names.at(_usb_mode);
-            _usb_mode = raw_depth_sensor.get_usb_specification();
+            _usb_mode = raw_depth_sensor->get_usb_specification();
             if (usb_spec_names.count(_usb_mode) && (usb_undefined != _usb_mode))
                 usb_type_str = usb_spec_names.at(_usb_mode);
             else  // Backend fails to provide USB descriptor  - occurs with RS3 build. Requires further work
@@ -623,7 +622,7 @@ namespace librealsense
 
             if ((_device_capabilities & ds_caps::CAP_GLOBAL_SHUTTER) == ds_caps::CAP_GLOBAL_SHUTTER)
             {
-                auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>(*_hw_monitor, &depth_sensor);
+                auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>( *_hw_monitor );
                 depth_sensor.register_option(RS2_OPTION_EMITTER_ALWAYS_ON,emitter_always_on_opt);
             }
 
@@ -635,7 +634,7 @@ namespace librealsense
                                                                          { 3.f, "External master" } };
                 depth_sensor.register_option( RS2_OPTION_INTER_CAM_SYNC_MODE,
                                               std::make_shared< d500_external_sync_mode >( *_hw_monitor,
-                                                                                           &raw_depth_sensor,
+                                                                                           raw_depth_sensor,
                                                                                            description_per_value ) );
             }
 
@@ -663,15 +662,15 @@ namespace librealsense
             }
 
             depth_sensor.register_option(RS2_OPTION_SOC_PVT_TEMPERATURE,
-                std::make_shared<temperature_option>(_hw_monitor, &raw_depth_sensor, 
+                std::make_shared<temperature_option>(_hw_monitor,
                     temperature_option::temperature_component::HKR_PVT, "Temperature reading for SOC PVT"));
 
             depth_sensor.register_option(RS2_OPTION_OHM_TEMPERATURE,
-                std::make_shared<temperature_option>(_hw_monitor, &raw_depth_sensor, 
+                std::make_shared<temperature_option>(_hw_monitor,
                     temperature_option::temperature_component::LEFT_IR, "Temperature reading for Left Infrared Sensor"));
 
             depth_sensor.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                std::make_shared<temperature_option>(_hw_monitor, &raw_depth_sensor,
+                std::make_shared<temperature_option>(_hw_monitor,
                     temperature_option::temperature_component::LEFT_PROJ, "Temperature reading for Left Projector"));
 
             // Metadata registration

@@ -89,7 +89,7 @@ namespace librealsense
         // Register safety preset active index option
         static const std::chrono::milliseconds safety_preset_change_timeout( 1000 );
         auto active_safety_preset = std::make_shared<ensure_set_xu_option<uint16_t>>(
-            *raw_safety_sensor,
+            raw_safety_sensor,
             safety_xu,
             xu_id::SAFETY_PRESET_ACTIVE_INDEX,
             "Safety Preset Active Index",
@@ -100,7 +100,7 @@ namespace librealsense
         // Register operational mode option
         static const std::chrono::milliseconds safety_mode_change_timeout( 2000 );
         auto safety_camera_oper_mode = std::make_shared< ensure_set_xu_option< uint16_t > >(
-            *raw_safety_sensor,
+            raw_safety_sensor,
             safety_xu,
             xu_id::SAFETY_CAMERA_OPER_MODE,
             "Safety camera operational mode",
@@ -112,8 +112,7 @@ namespace librealsense
         safety_ep->register_option( RS2_OPTION_SAFETY_MODE, safety_camera_oper_mode );
 
         safety_ep->register_option(RS2_OPTION_SAFETY_MCU_TEMPERATURE,
-            std::make_shared<temperature_option>(_hw_monitor, raw_safety_sensor.get(), 
-                temperature_option::temperature_component::SMCU, "Temperature reading for Safety MCU"));
+            std::make_shared<temperature_option>(_hw_monitor, temperature_option::temperature_component::SMCU, "Temperature reading for Safety MCU"));
 
         std::shared_ptr< option > intercam_sync_option
             = std::make_shared< d500_external_sync_mode >( static_cast< d500_external_sync_mode & >(

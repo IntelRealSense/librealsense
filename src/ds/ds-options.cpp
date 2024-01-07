@@ -33,7 +33,7 @@ namespace librealsense
         }
     }
 
-    emitter_option::emitter_option(uvc_sensor& ep)
+    emitter_option::emitter_option( const std::weak_ptr< uvc_sensor > & ep )
         : uvc_xu_option(ep, ds::depth_xu, ds::DS5_DEPTH_EMITTER_ENABLED,
                         "Emitter select, 0-disable all emitters, 1-enable laser, 2-enable laser auto (opt), 3-enable LED (opt)")
     {}
@@ -126,7 +126,7 @@ namespace librealsense
         }
     }
 
-    asic_and_projector_temperature_options::asic_and_projector_temperature_options(std::shared_ptr<uvc_sensor> && ep, rs2_option opt)
+    asic_and_projector_temperature_options::asic_and_projector_temperature_options( const std::weak_ptr<uvc_sensor> & ep, rs2_option opt)
         : _option(opt), _ep(std::move(ep))
         {}
 
@@ -386,7 +386,7 @@ namespace librealsense
         return *_range;
     }
 
-    external_sync_mode::external_sync_mode(hw_monitor& hwm, sensor_base* ep, int ver)
+    external_sync_mode::external_sync_mode( hw_monitor & hwm, const std::weak_ptr< sensor_base > & ep, int ver )
         : _hwm(hwm), _sensor(ep), _ver(ver)
     {
         _range = [this]()
@@ -407,7 +407,11 @@ namespace librealsense
         }
         else
         {
-            if (_sensor->is_streaming())
+            auto strong = _sensor.lock();
+            if( ! strong )
+                throw std::runtime_error( "Cannot set Inter-camera HW synchronization, sensor is not alive" );
+
+            if( strong->is_streaming() )
                 throw std::runtime_error("Cannot change Inter-camera HW synchronization mode while streaming!");
 
             if (value < 4)
@@ -457,7 +461,13 @@ namespace librealsense
         return *_range;
     }
 
-    emitter_on_and_off_option::emitter_on_and_off_option(hw_monitor& hwm, sensor_base* ep)
+    bool external_sync_mode::is_read_only() const
+    {
+        auto strong = _sensor.lock();
+        return strong && strong->is_opened();
+    }
+
+    emitter_on_and_off_option::emitter_on_and_off_option( hw_monitor & hwm, const std::weak_ptr< sensor_base > & ep )
         : _hwm(hwm), _sensor(ep)
     {
         _range = [this]()
@@ -468,7 +478,11 @@ namespace librealsense
 
     void emitter_on_and_off_option::set(float value)
     {
-        if (_sensor->is_streaming())
+        auto strong = _sensor.lock();
+        if( ! strong )
+            throw std::runtime_error( "Cannot set Emitter On/Off option, sensor is not alive" );
+
+        if( strong->is_streaming() )
             throw std::runtime_error("Cannot change Emitter On/Off option while streaming!");
 
         command cmd(ds::SET_PWM_ON_OFF);
@@ -503,8 +517,8 @@ namespace librealsense
             return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave";
     }
 
-    alternating_emitter_option::alternating_emitter_option(hw_monitor& hwm, sensor_base* ep, bool is_fw_version_using_id)
-        : _hwm(hwm), _sensor(ep), _is_fw_version_using_id(is_fw_version_using_id)
+    alternating_emitter_option::alternating_emitter_option(hw_monitor& hwm, bool is_fw_version_using_id)
+        : _hwm(hwm), _is_fw_version_using_id(is_fw_version_using_id)
     {
         _range = [this]()
         {
@@ -562,8 +576,8 @@ namespace librealsense
         }
     }
 
-    emitter_always_on_option::emitter_always_on_option(hw_monitor& hwm, sensor_base* ep)
-        : _hwm(hwm), _sensor(ep)
+    emitter_always_on_option::emitter_always_on_option( hw_monitor & hwm )
+        : _hwm(hwm)
     {
         _range = [this]()
         {

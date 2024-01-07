@@ -6,7 +6,7 @@
 
 namespace librealsense
 {
-    rgb_tnr_option::rgb_tnr_option(std::shared_ptr<hw_monitor> hwm, sensor_base* ep)
+    rgb_tnr_option::rgb_tnr_option(std::shared_ptr<hw_monitor> hwm, const std::weak_ptr< sensor_base > & ep)
         : _hwm(hwm), _sensor(ep)
     {
         _range = [this]()
@@ -17,7 +17,11 @@ namespace librealsense
 
     void rgb_tnr_option::set(float value)
     {
-        if (_sensor->is_streaming())
+        auto strong_sensor = _sensor.lock();
+        if( ! strong_sensor )
+            throw std::runtime_error( "Cannot set option as sensor is not alive" );
+
+        if (strong_sensor->is_streaming())
             throw std::runtime_error("Cannot change RGB TNR option while streaming!");
 
         command cmd(ds::RGB_TNR);
@@ -45,9 +49,12 @@ namespace librealsense
         return *_range;
     }
 
-    temperature_option::temperature_option(std::shared_ptr<hw_monitor> hwm, sensor_base* ep, 
-        temperature_component component, const char* description)
-        : _hwm(hwm), _sensor(ep), _component(component), _description(description)
+    temperature_option::temperature_option( std::shared_ptr< hw_monitor > hwm,
+                                            temperature_component component,
+                                            const char * description )
+        : _hwm( hwm )
+        , _component( component )
+        , _description( description )
     {
         _range = [this]()
         {
@@ -88,7 +95,7 @@ namespace librealsense
     }
 
     
-    d500_external_sync_mode::d500_external_sync_mode( hw_monitor & hwm, sensor_base * ep,
+    d500_external_sync_mode::d500_external_sync_mode( hw_monitor & hwm, const std::weak_ptr< sensor_base > & ep,
                                                       const std::map< float, std::string > & description_per_value )
         : _hwm( hwm )
         , _sensor( ep )
@@ -102,7 +109,11 @@ namespace librealsense
 
     void d500_external_sync_mode::set( float value )
     {
-        if( _sensor->is_streaming() )
+        auto strong_sensor = _sensor.lock();
+        if( ! strong_sensor )
+            throw invalid_value_exception( "Cannot set option as sensor is not alive" );
+
+        if( strong_sensor->is_streaming() )
             throw std::runtime_error( "Cannot change external sync mode while streaming!" );
 
         if( ! is_valid( static_cast < rs2_d500_intercam_sync_mode >( value ) ) )
@@ -126,6 +137,12 @@ namespace librealsense
             throw invalid_value_exception( "d500_external_sync_mode::query result is empty!" );
 
         return static_cast< float >( res[0] );
+    }
+
+    bool d500_external_sync_mode::is_read_only() const 
+    { 
+        auto strong_sensor = _sensor.lock();
+        return strong_sensor && strong_sensor->is_opened();
     }
 
     const char * d500_external_sync_mode::get_value_description( float val ) const

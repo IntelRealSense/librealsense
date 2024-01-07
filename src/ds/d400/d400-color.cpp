@@ -131,7 +131,7 @@ namespace librealsense
     void d400_color::init()
     {
         auto& color_ep = get_color_sensor();
-        auto& raw_color_ep = get_raw_color_sensor();
+        auto raw_color_ep = get_raw_color_sensor();
     
         _ds_color_common = std::make_shared<ds_color_common>(raw_color_ep, color_ep, _fw_version, _hw_monitor, this);
 
@@ -151,7 +151,6 @@ namespace librealsense
     void d400_color::register_options()
     {
         auto& color_ep = get_color_sensor();
-        auto& raw_color_ep = get_raw_color_sensor();
 
         if (!val_in_range(_pid, { ds::RS457_PID }))
         {
@@ -222,7 +221,7 @@ namespace librealsense
         // attributes of md_capture_stats
         auto& color_ep = get_color_sensor();
         // attributes of md_rgb_control
-        auto& raw_color_ep = get_raw_color_sensor();
+        auto raw_color_ep = get_raw_color_sensor();
 
         if (_pid != ds::RS457_PID)
         {
@@ -231,7 +230,7 @@ namespace librealsense
         }
         else
         {
-            auto uvc_dev = raw_color_ep.get_uvc_device();
+            auto uvc_dev = raw_color_ep->get_uvc_device();
             if (uvc_dev->is_platform_jetson())
             {
                 // Work-around for discrepancy between the RGB YUYV descriptor and the parser . Use UYUV parser instead

@@ -146,7 +146,7 @@ void dds_device_broadcaster::broadcast() const
     }
     catch( std::exception const & e )
     {
-        LOG_ERROR( "Error sending device-info message for S/N " << _device_info.serial << ": " << e.what() );
+        LOG_ERROR( "Error sending device-info message for S/N " << _device_info.serial_number() << ": " << e.what() );
     }
 }
 

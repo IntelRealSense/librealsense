@@ -8,19 +8,23 @@
 namespace librealsense {
 
 
-uvc_pu_option::uvc_pu_option(uvc_sensor& ep, rs2_option id)
+uvc_pu_option::uvc_pu_option( const std::weak_ptr< uvc_sensor > & ep, rs2_option id )
     : uvc_pu_option(ep, id, std::map<float, std::string>())
 {    
 }
 
 
-uvc_pu_option::uvc_pu_option(uvc_sensor& ep, rs2_option id, const std::map<float, std::string>& description_per_value)
+uvc_pu_option::uvc_pu_option( const std::weak_ptr< uvc_sensor > & ep, rs2_option id,
+                              const std::map< float, std::string > & description_per_value )
     : _ep(ep), _id(id), _description_per_value(description_per_value)
 {
     _range = [this]()
     {
-        auto uvc_range = _ep.invoke_powered(
-            [this](platform::uvc_device& dev)
+        auto ep = _ep.lock();
+        if( ! ep )
+            throw invalid_value_exception( "Cannot set range, UVC sensor is not alive" );
+
+        auto uvc_range = ep->invoke_powered( [this]( platform::uvc_device & dev )
             {
                 return dev.get_pu_range(_id);
             });
@@ -41,7 +45,10 @@ uvc_pu_option::uvc_pu_option(uvc_sensor& ep, rs2_option id, const std::map<float
 
 void uvc_pu_option::set(float value)
 {
-    _ep.invoke_powered(
+    auto ep = _ep.lock();
+    if( ! ep )
+        throw invalid_value_exception( "Cannot set option, UVC sensor is not alive" );
+    ep->invoke_powered(
         [this, value](platform::uvc_device& dev)
         {
             if (!dev.set_pu(_id, static_cast<int32_t>(value)))
@@ -55,7 +62,10 @@ void uvc_pu_option::set(float value)
 
 float uvc_pu_option::query() const
 {
-    return static_cast<float>(_ep.invoke_powered(
+    auto ep = _ep.lock();
+    if( ! ep )
+        throw invalid_value_exception( "Cannot query option, UVC sensor is not alive" );
+    return static_cast<float>(ep->invoke_powered(
         [this](platform::uvc_device& dev)
         {
             int32_t value = 0;
@@ -93,47 +103,54 @@ const char* uvc_pu_option::get_description() const
     case RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE: return "Enable / disable auto-white-balance";
     case RS2_OPTION_POWER_LINE_FREQUENCY: return "Power Line Frequency";
     case RS2_OPTION_AUTO_EXPOSURE_PRIORITY: return "Restrict Auto-Exposure to enforce constant FPS rate. Turn ON to remove the restrictions (may result in FPS drop)";
-    default: return _ep.get_option_name( _id ).c_str();
+    default:
+        auto ep = _ep.lock();
+        if( ! ep )
+            throw invalid_value_exception( "Cannot get option name, UVC sensor is not alive" );
+
+        return ep->get_option_name( _id ).c_str();
     }
 }
 
 
 std::vector<uint8_t> command_transfer_over_xu::send_receive(const std::vector<uint8_t>& data, int, bool require_response)
 {
-    return _uvc.invoke_powered([this, &data, require_response]
-        (platform::uvc_device& dev)
+    return _uvc.invoke_powered([this, &data, require_response]( platform::uvc_device & dev )
         {
             std::vector<uint8_t> result;
-            std::lock_guard<platform::uvc_device> lock(dev);
 
-            if (data.size() > HW_MONITOR_BUFFER_SIZE)
+            std::lock_guard< platform::uvc_device > lock(dev);
+
+            if( data.size() > HW_MONITOR_BUFFER_SIZE )
             {
-                LOG_ERROR("XU command size is invalid");
+                LOG_ERROR( "XU command size is invalid" );
                 throw invalid_value_exception( rsutils::string::from()
                                                << "Requested XU command size " << std::dec << data.size()
                                                << " exceeds permitted limit " << HW_MONITOR_BUFFER_SIZE );
             }
 
-            std::vector<uint8_t> transmit_buf(HW_MONITOR_BUFFER_SIZE, 0);
-            std::copy(data.begin(), data.end(), transmit_buf.begin());
+            std::vector< uint8_t > transmit_buf( HW_MONITOR_BUFFER_SIZE, 0 );
+            std::copy( data.begin(), data.end(), transmit_buf.begin() );
 
-            if (!dev.set_xu(_xu, _ctrl, transmit_buf.data(), static_cast<int>(transmit_buf.size())))
+            if( ! dev.set_xu( _xu, _ctrl, transmit_buf.data(), static_cast< int >( transmit_buf.size() ) ) )
                 throw invalid_value_exception( rsutils::string::from()
                                                << "set_xu(ctrl=" << unsigned( _ctrl ) << ") failed!"
                                                << " Last Error: " << strerror( errno ) );
 
-            if (require_response)
+            if( require_response )
             {
-                result.resize(HW_MONITOR_BUFFER_SIZE);
-                if (!dev.get_xu(_xu, _ctrl, result.data(), static_cast<int>(result.size())))
+                result.resize( HW_MONITOR_BUFFER_SIZE );
+                if( ! dev.get_xu( _xu, _ctrl, result.data(), static_cast< int >( result.size() ) ) )
                     throw invalid_value_exception( rsutils::string::from()
                                                    << "get_xu(ctrl=" << unsigned( _ctrl ) << ") failed!"
                                                    << " Last Error: " << strerror( errno ) );
 
                 // Returned data size located in the last 4 bytes
-                auto data_size = *(reinterpret_cast<uint32_t*>(result.data() + HW_MONITOR_DATA_SIZE_OFFSET)) + SIZE_OF_HW_MONITOR_HEADER;
-                result.resize(data_size);
+                auto data_size = *( reinterpret_cast< uint32_t * >( result.data() + HW_MONITOR_DATA_SIZE_OFFSET ) )
+                               + SIZE_OF_HW_MONITOR_HEADER;
+                result.resize( data_size );
             }
+
             return result;
         });
 }

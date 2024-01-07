@@ -436,7 +436,7 @@ void dds_sensor_proxy::start( rs2_frame_callback_sptr callback )
         }
         auto const & dds_stream = streamit->second;
         // Opening it will start streaming on the server side automatically
-        dds_stream->open( "rt/" + _dev->device_info().topic_root + '_' + dds_stream->name(), _dev->subscriber() );
+        dds_stream->open( "rt/" + _dev->device_info().topic_root() + '_' + dds_stream->name(), _dev->subscriber() );
         auto & streaming = _streaming_by_name[dds_stream->name()];
         streaming.syncer.on_frame_release( frame_releaser );
         streaming.syncer.on_frame_ready(

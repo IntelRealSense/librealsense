@@ -42,7 +42,7 @@ namespace librealsense
         void get_fw_details( const std::vector<uint8_t> &gvd_buff, std::string& optic_serial, std::string& asic_serial, std::string& fwv ) const;
 
     private:
-        uvc_sensor& get_raw_depth_sensor();
+        std::shared_ptr< uvc_sensor > get_raw_depth_sensor();
 
         device* _owner;
         std::shared_ptr<hw_monitor> _hw_monitor;

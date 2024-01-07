@@ -5,7 +5,7 @@
 #test:device each(D500*)
 
 import pyrealsense2 as rs
-from rspy import test
+from rspy import test, log
 
 def close_resources(sensor):
     if len(sensor.get_active_streams()) > 0:
@@ -44,7 +44,7 @@ def check_option_and_metadata_values(option, metadata, value_to_set, frame):
 #############################################################################################
 test.start("checking color options")
 # test scenario:
-# for each option, set value, wait 10 frames, check value with get_option and get_frame_metadata
+# for each option, set value, wait several frames, check value with get_option and get_frame_metadata
 # values set for each option are min, max, and default values
 ctx = rs.context()
 dev = ctx.query_devices()[0]
@@ -65,7 +65,7 @@ try:
     option_index = -1  # running over options
     value_index = -1  # 0, 1, 2 for min, max, default
     # number of frames to wait between set_option and checking metadata
-    # is set as 10 - the expected delay is ~120ms for Win and ~80-90ms for Linux
+    # is set as 15 - the expected delay is ~120ms for Win and ~80-90ms for Linux
     num_of_frames_to_wait = 15
     while True:
         try:
@@ -82,15 +82,19 @@ try:
                 # the following if statement is needed because of some bug in FW - see DSO-17221
                 # to be removed after this bug is solved
                 if option == rs.option.white_balance:
+                    log.d("iteration", iteration, "setting explicitly enable_auto_white_balance to OFF")
                     color_sensor.set_option(rs.option.enable_auto_white_balance, 0)
+                    test.check_equal(color_sensor.get_option(rs.option.enable_auto_white_balance) , 0.0)
                 value_to_set = option_range.min
             elif iteration == (num_of_frames_to_wait + 1):
                 value_to_set = option_range.max
             elif iteration == 2 * (num_of_frames_to_wait + 1):
                 value_to_set = option_range.default
-            if iteration % (num_of_frames_to_wait + 1) == 0:  # for iterations 0, 11, 22
+            if iteration % (num_of_frames_to_wait + 1) == 0:  # for iterations 0, 16, 32
+                log.d("iteration", iteration, "setting option:", option, "to", value_to_set)
                 color_sensor.set_option(option, value_to_set)
-            if (iteration + 1) % (num_of_frames_to_wait + 1) == 0:  # for iterations 10, 21, 32
+            if (iteration + 1) % (num_of_frames_to_wait + 1) == 0:  # for iterations 15, 31, 47
+                log.d("iteration", iteration, "checking MD:", metadata, "vs option:",  option)
                 check_option_and_metadata_values(option, metadata, value_to_set, lrs_frame)
             iteration = (iteration + 1) % (3 * (num_of_frames_to_wait + 1))
 

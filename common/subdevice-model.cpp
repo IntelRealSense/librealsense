@@ -69,18 +69,34 @@ namespace rs2
         return ss.str();
     }
 
-    void subdevice_model::populate_options(std::map<int, option_model>& opt_container,
-        const std::string& opt_base_label,
-        subdevice_model* model,
-        std::shared_ptr<options> options,
-        bool* options_invalidated,
-        std::string& error_message)
+    void subdevice_model::populate_options( const std::string & opt_base_label,
+                                            bool * options_invalidated,
+                                            std::string & error_message )
     {
-        for (auto&& i : options->get_supported_options())
+        for (auto&& i : s->get_supported_options())
         {
             auto opt = static_cast<rs2_option>(i);
 
-            opt_container[opt] = create_option_model(opt, opt_base_label, model, options, options_invalidated, error_message);
+            options_metadata[opt] = create_option_model(opt, opt_base_label, this, s, options_invalidated, error_message);
+            try
+            {
+                s->on_options_changed( [this]( const options_list & list )
+                {
+                    for( auto opt_id : list )
+                    {
+                        auto it = options_metadata.find( opt_id );
+                        if( it != options_metadata.end() && ! _destructing ) // Callback runs in different context, check options_metadata still valid
+                        {
+                            it->second.value = it->second.endpoint->get_option( opt_id );
+                        }
+                    }
+                } );
+            }
+            catch( const std::exception & e )
+            {
+                if( viewer.not_model )
+                    viewer.not_model->add_log( e.what(), RS2_LOG_SEVERITY_WARN );
+            }
         }
     }
 
@@ -132,7 +148,8 @@ namespace rs2
         m420_to_rgb(std::make_shared<rs2::gl::m420_decoder>()),
         y411(std::make_shared<rs2::gl::y411_decoder>()),
         viewer(viewer),
-        detected_objects(device_detected_objects)
+        detected_objects(device_detected_objects),
+        _destructing( false )
     {
         supported_options = s->get_supported_options();
         restore_processing_block("colorizer", depth_colorizer);
@@ -473,12 +490,14 @@ namespace rs2
         {
             error_message = error_to_string(e);
         }
-        populate_options(options_metadata, ss.str().c_str(), this, s, &_options_invalidated, error_message);
+        populate_options(ss.str().c_str(), &_options_invalidated, error_message);
 
     }
 
     subdevice_model::~subdevice_model()
     {
+        _destructing = true;
+        s->on_options_changed( []( const options_list & list ) {} );
     }
 
     void subdevice_model::sort_resolutions(std::vector<std::pair<int, int>>& resolutions) const

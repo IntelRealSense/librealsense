@@ -339,9 +339,19 @@ void uvc_sensor::close()
 
 void uvc_sensor::register_pu( rs2_option id )
 {
-    register_option( id, std::make_shared< uvc_pu_option >( *this, id ) );
+    register_option( id, std::make_shared< uvc_pu_option >( std::dynamic_pointer_cast< uvc_sensor >( shared_from_this() ), id ) );
 }
 
+
+void uvc_sensor::prepare_for_bulk_operation()
+{
+    acquire_power();
+}
+
+void uvc_sensor::finished_bulk_operation()
+{
+    release_power();
+}
 
 void uvc_sensor::register_xu( platform::extension_unit xu )
 {

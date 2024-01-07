@@ -15,7 +15,7 @@ namespace librealsense
     class rgb_tnr_option : public option
     {
     public:
-        rgb_tnr_option(std::shared_ptr<hw_monitor> hwm, sensor_base* ep);
+        rgb_tnr_option(std::shared_ptr<hw_monitor> hwm, const std::weak_ptr< sensor_base > & ep);
         virtual ~rgb_tnr_option() = default;
         virtual void set(float value) override;
         virtual float query() const override;
@@ -34,7 +34,7 @@ namespace librealsense
         std::function<void(const option&)> _record_action = [](const option&) {};
         rsutils::lazy< option_range > _range;
         std::shared_ptr<hw_monitor> _hwm;
-        sensor_base* _sensor;
+        std::weak_ptr< sensor_base > _sensor;
     };
     
     class temperature_option : public readonly_option
@@ -53,8 +53,9 @@ namespace librealsense
             SMCU,
             COUNT
         };
-        explicit temperature_option(std::shared_ptr<hw_monitor> hwm, sensor_base* ep, 
-            temperature_component component, const char* description);
+        explicit temperature_option( std::shared_ptr< hw_monitor > hwm,
+                                     temperature_component component,
+                                     const char * description );
         float query() const override;
         inline option_range get_range() const override { return *_range; }
         inline bool is_enabled() const override { return true; }
@@ -70,7 +71,6 @@ namespace librealsense
         std::function<void(const option&)> _record_action = [](const option&) {};
         rsutils::lazy< option_range > _range;
         std::shared_ptr<hw_monitor> _hwm;
-        sensor_base* _sensor;
         temperature_component _component;
         const char* _description;
     };
@@ -79,7 +79,7 @@ namespace librealsense
     {
     public:
         d500_external_sync_mode( hw_monitor & hwm,
-                                 sensor_base * depth_ep,
+                                 const std::weak_ptr< sensor_base > & ep,
                                  const std::map< float, std::string > & description_per_value );
 
         virtual ~d500_external_sync_mode() = default;
@@ -87,7 +87,7 @@ namespace librealsense
         virtual float query() const override;
         virtual option_range get_range() const override { return _range; }
         virtual bool is_enabled() const override { return true; }
-        virtual bool is_read_only() const override { return _sensor && _sensor->is_opened(); }
+        virtual bool is_read_only() const override;
         const char * get_description() const override
         {
             return "Inter-camera synchronization mode: 0:No sync, 1:RGB Master, 2:PWM Master, 3:External Master";
@@ -105,7 +105,7 @@ namespace librealsense
         option_range _range;
         const std::map< float, std::string > _description_per_value;
         hw_monitor & _hwm;
-        sensor_base * _sensor;
+        std::weak_ptr< sensor_base > _sensor;
     };
 
 } // namespace librealsense

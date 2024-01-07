@@ -15,7 +15,7 @@ namespace librealsense {
 emitter_frequency_feature::emitter_frequency_feature( synthetic_sensor & sensor )
 {
     auto emitter_freq_option = std::make_shared< uvc_xu_option< uint16_t > >(
-        dynamic_cast< uvc_sensor & >( *sensor.get_raw_sensor() ),
+        std::dynamic_pointer_cast< uvc_sensor >( sensor.get_raw_sensor() ),
         ds::depth_xu,
         ds::DS5_EMITTER_FREQUENCY,
         "Controls the emitter frequency, 57 [KHZ] / 91 [KHZ]",

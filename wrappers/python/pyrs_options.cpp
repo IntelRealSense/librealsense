@@ -6,6 +6,24 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 void init_options(py::module &m) {
     /** rs_options.hpp **/
+
+    py::class_< rs2::options_list > options_list( m, "options_list" );  // No docstring in C++
+    options_list.def( py::init<>() )
+        .def( "__getitem__",
+              []( const rs2::options_list & self, size_t i )
+              {
+                  if( i >= self.size() )
+                      throw py::index_error();
+                  return self[size_t( i )];
+              } )
+        .def( "__len__", &rs2::options_list::size )
+        .def( "size", &rs2::options_list::size )  // No docstring in C++
+        .def( "__iter__",
+            []( const rs2::options_list & self ) { return py::make_iterator( self.begin(), self.end() ); },
+            py::keep_alive< 0, 1 >() )
+        .def( "front", &rs2::options_list::front )  // No docstring in C++
+        .def( "back", &rs2::options_list::back );   // No docstring in C++
+
     py::class_<rs2::options> options(m, "options", "Base class for options interface. Should be used via sensor or processing_block."); // No docstring in C++
     options.def("is_option_read_only", &rs2::options::is_option_read_only, "Check if particular option "
                 "is read only.", "option"_a)
@@ -18,6 +36,9 @@ void init_options(py::module &m) {
         .def("get_option_description", &rs2::options::get_option_description, "Get option description.", "option"_a)
         .def("get_option_value_description", &rs2::options::get_option_value_description, "Get option value description "
              "(In case a specific option value holds special meaning)", "option"_a, "value"_a)
-        .def("get_supported_options", &rs2::options::get_supported_options, "Retrieve list of supported options"); // No docstring in C++
+        .def("get_supported_options", &rs2::options::get_supported_options, "Retrieve list of supported options") // No docstring in C++
+        .def( "on_options_changed", &rs2::options::on_options_changed,
+              "Sets a callback to notify in case options in this container change value", "callback"_a );
+
     /** end rs_options.hpp **/
 }
