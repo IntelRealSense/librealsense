@@ -19,7 +19,7 @@ namespace librealsense
     {
         auto strong_sensor = _sensor.lock();
         if( ! strong_sensor )
-            throw invalid_value_exception( "Cannot set option as sensor is not alive" );
+            throw std::runtime_error( "Cannot set option as sensor is not alive" );
 
         if (strong_sensor->is_streaming())
             throw std::runtime_error("Cannot change RGB TNR option while streaming!");
