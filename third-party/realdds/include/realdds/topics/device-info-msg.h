@@ -2,8 +2,7 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include <nlohmann/json.hpp>
-
+#include <rsutils/json.h>
 #include <rsutils/string/slice.h>
 
 namespace realdds {
@@ -11,7 +10,7 @@ namespace topics {
 
 class device_info
 {
-    nlohmann::json _json;
+    rsutils::json _json;
 
 public:
     //std::string serial;
@@ -27,8 +26,8 @@ public:
     std::string const & serial_number() const;
     void set_serial_number( std::string const & );
 
-    nlohmann::json const & to_json() const;
-    static device_info from_json( nlohmann::json const & );
+    rsutils::json const & to_json() const;
+    static device_info from_json( rsutils::json const & );
 
     // Substring of information already stored in the device-info that can be used to print the device 'name'.
     // (mostly for use with debug messages)

@@ -7,7 +7,7 @@
 #include <fastdds/dds/publisher/qos/DataWriterQos.hpp>
 #include "dds-defines.h"
 
-#include <nlohmann/json_fwd.hpp>
+#include <rsutils/json-fwd.h>
 #include <memory>
 #include <atomic>
 
@@ -75,7 +75,7 @@ public:
                = eprosima::fastdds::dds::VOLATILE_DURABILITY_QOS );  // default is transient local
     
         // Override default values with JSON contents
-        void override_from_json( nlohmann::json const & );
+        void override_from_json( rsutils::json const & );
     };
 
     // The callbacks should be set before we actually create the underlying DDS objects, so the writer does not

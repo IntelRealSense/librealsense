@@ -1,10 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
-
-#include <nlohmann/json_fwd.hpp>
+#include <rsutils/json-fwd.h>
 
 #include <stdint.h>
 #include <string>
@@ -76,7 +74,7 @@ protected:
         : _frequency( frequency )
     {
     }
-    dds_stream_profile( nlohmann::json const &, int & index );
+    dds_stream_profile( rsutils::json const &, int & index );
 
 public:
     std::shared_ptr< dds_stream_base > stream() const { return _stream.lock(); }
@@ -90,13 +88,13 @@ public:
     virtual std::string details_to_string() const;
 
     // Serialization to a JSON array representation
-    virtual nlohmann::json to_json() const;
+    virtual rsutils::json to_json() const;
 
     // Build a profile from a json array object, e.g.:
     //      auto profile = dds_stream_profile::from_json< dds_video_stream_profile >( j );
     // This is the reverse of to_json() which returns a json array
     template< class final_stream_profile >
-    static std::shared_ptr< final_stream_profile > from_json( nlohmann::json const & j )
+    static std::shared_ptr< final_stream_profile > from_json( rsutils::json const & j )
     {
         int it = 0;
         auto profile = std::make_shared< final_stream_profile >( j, it );
@@ -105,7 +103,7 @@ public:
     }
 
 private:
-    static void verify_end_of_json( nlohmann::json const &, int index );
+    static void verify_end_of_json( rsutils::json const &, int index );
 };
 
 
@@ -131,7 +129,7 @@ public:
         , _encoding( encoding )
     {
     }
-    dds_video_stream_profile( nlohmann::json const &, int & index );
+    dds_video_stream_profile( rsutils::json const &, int & index );
 
     uint16_t width() const { return _width; }
     uint16_t height() const { return _height; }
@@ -139,7 +137,7 @@ public:
 
     std::string details_to_string() const override;
 
-    nlohmann::json to_json() const override;
+    rsutils::json to_json() const override;
 };
 
 
@@ -152,7 +150,7 @@ public:
         : super( frequency )
     {
     }
-    dds_motion_stream_profile( nlohmann::json const & j, int & index )
+    dds_motion_stream_profile( rsutils::json const & j, int & index )
         : super( j, index )
     {
     }

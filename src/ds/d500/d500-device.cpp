@@ -37,7 +37,6 @@
 #include <rsutils/string/hexdump.h>
 #include <rsutils/version.h>
 
-#include <nlohmann/json.hpp>
 #include <vector>
 #include <string>
 

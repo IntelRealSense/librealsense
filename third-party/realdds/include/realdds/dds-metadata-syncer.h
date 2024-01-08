@@ -1,9 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
-#include <nlohmann/json.hpp>
+#include <rsutils/json.h>
 
 #include <deque>
 #include <memory>
@@ -54,7 +53,7 @@ public:
     typedef std::unique_ptr< frame_type, on_frame_release_callback > frame_holder;
 
     // Metadata is intended to be JSON
-    typedef std::shared_ptr< const nlohmann::json > metadata_type;
+    typedef std::shared_ptr< const rsutils::json > metadata_type;
 
     // So our main callback gets this generic frame and metadata:
     typedef std::function< void( frame_holder &&, metadata_type const & metadata ) > on_frame_ready_callback;

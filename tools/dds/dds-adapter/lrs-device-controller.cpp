@@ -20,7 +20,7 @@ using rsutils::string::hexarray;
 #include <algorithm>
 #include <iostream>
 
-using nlohmann::json;
+using rsutils::json;
 using namespace realdds;
 using tools::lrs_device_controller;
 
@@ -337,7 +337,7 @@ extrinsics_map get_extrinsics_map( const rs2::device & dev )
 }
 
 
-std::shared_ptr< dds_stream_profile > create_dds_stream_profile( std::string const & type_string, nlohmann::json const & j )
+std::shared_ptr< dds_stream_profile > create_dds_stream_profile( std::string const & type_string, rsutils::json const & j )
 {
     if( "motion" == type_string )
         return dds_stream_profile::from_json< dds_motion_stream_profile >( j );
@@ -503,7 +503,7 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
         return query_option( option );
     } );
     _dds_device_server->on_control(
-        [this]( std::string const & id, nlohmann::json const & control, nlohmann::json & reply )
+        [this]( std::string const & id, rsutils::json const & control, rsutils::json & reply )
         { return on_control( id, control, reply ); } );
 
     _device_sn = _rs_dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
@@ -599,7 +599,7 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
     _bridge.on_error(
         [this]( std::string const & error_string )
         {
-            nlohmann::json j = nlohmann::json::object( {
+            rsutils::json j = rsutils::json::object( {
                 { "id", "error" },
                 { "error", error_string },
             } );
@@ -622,7 +622,7 @@ lrs_device_controller::~lrs_device_controller()
 }
 
 
-bool lrs_device_controller::on_open_streams( nlohmann::json const & control, nlohmann::json & reply )
+bool lrs_device_controller::on_open_streams( rsutils::json const & control, rsutils::json & reply )
 {
     // Note that this function is called "start-streaming" but it's really a response to "open-streams" so does not
     // actually start streaming. It simply sets and locks in which streams should be open when streaming starts.
@@ -630,7 +630,7 @@ bool lrs_device_controller::on_open_streams( nlohmann::json const & control, nlo
     // out, a sensor is reset back to its default state using implicit stream selection.
     // (For example, the 'Stereo Module' sensor controls Depth, IR1, IR2: but turning on all 3 has performance
     // implications and may not be desirable. So you can open only Depth and IR1/2 will stay inactive...)
-    if( rsutils::json::get< bool >( control, "reset", true ) )
+    if( control.nested( "reset" ).default_value( true ) )
         _bridge.reset();
 
     auto const & msg_profiles = control["stream-profiles"];
@@ -653,7 +653,7 @@ bool lrs_device_controller::on_open_streams( nlohmann::json const & control, nlo
     }
 
     // We're here so all the profiles were acceptable; lock them in -- with no implicit profiles!
-    if( rsutils::json::get< bool >( control, "commit", true ) )
+    if( control.nested( "commit" ).default_value( true ) )
         _bridge.commit();
 
     // We don't touch the reply - it's already filled in for us
@@ -666,7 +666,7 @@ void lrs_device_controller::publish_frame_metadata( const rs2::frame & f, realdd
     if( ! _dds_device_server->has_metadata_readers() )
         return;
 
-    nlohmann::json md_header = nlohmann::json::object( {
+    rsutils::json md_header = rsutils::json::object( {
         { "frame-number", f.get_frame_number() },               // communicated; up to client to pick up
         { "timestamp", timestamp.to_ns() },                     // syncer key: needs to match the image timestamp, bit-for-bit!
         { "timestamp-domain", f.get_frame_timestamp_domain() }  // needed if we're dealing with different domains!
@@ -674,7 +674,7 @@ void lrs_device_controller::publish_frame_metadata( const rs2::frame & f, realdd
     if( f.is< rs2::depth_frame >() )
         md_header["depth-units"] = f.as< rs2::depth_frame >().get_units();
 
-    nlohmann::json metadata = nlohmann::json::object();
+    rsutils::json metadata = rsutils::json::object();
     for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
     {
         rs2_frame_metadata_value val = static_cast< rs2_frame_metadata_value >( i );
@@ -682,7 +682,7 @@ void lrs_device_controller::publish_frame_metadata( const rs2::frame & f, realdd
             metadata[rs2_frame_metadata_to_string( val )] = f.get_frame_metadata( val );
     }
 
-    nlohmann::json md_msg = nlohmann::json::object( {
+    rsutils::json md_msg = rsutils::json::object( {
         { "stream-name", stream_name_from_rs2( f.get_profile() ) },
         { "header", std::move( md_header ) },
         { "metadata", std::move( metadata ) },
@@ -838,9 +838,9 @@ size_t lrs_device_controller::get_index_of_profile( const realdds::dds_stream_pr
 }
 
 
-bool lrs_device_controller::on_control( std::string const & id, nlohmann::json const & control, nlohmann::json & reply )
+bool lrs_device_controller::on_control( std::string const & id, rsutils::json const & control, rsutils::json & reply )
 {
-    static std::map< std::string, bool ( lrs_device_controller::* )( nlohmann::json const &, nlohmann::json & ) > const
+    static std::map< std::string, bool ( lrs_device_controller::* )(rsutils::json const &, rsutils::json & ) > const
         control_handlers{
             { "hw-reset", &lrs_device_controller::on_hardware_reset },
             { "open-streams", &lrs_device_controller::on_open_streams },
@@ -854,14 +854,14 @@ bool lrs_device_controller::on_control( std::string const & id, nlohmann::json c
 }
 
 
-bool lrs_device_controller::on_hardware_reset( nlohmann::json const & control, nlohmann::json & reply )
+bool lrs_device_controller::on_hardware_reset( rsutils::json const & control, rsutils::json & reply )
 {
     _rs_dev.hardware_reset();
     return true;
 }
 
 
-bool lrs_device_controller::on_hwm( nlohmann::json const & control, nlohmann::json & reply )
+bool lrs_device_controller::on_hwm( rsutils::json const & control, rsutils::json & reply )
 {
     rs2::debug_protocol dp( _rs_dev );
     if( ! dp )
@@ -870,22 +870,22 @@ bool lrs_device_controller::on_hwm( nlohmann::json const & control, nlohmann::js
     rsutils::string::hexarray data;
 
     uint32_t opcode;
-    if( rsutils::json::get_ex( control, "opcode", &opcode ) )
+    if( control.nested( "opcode" ).get_ex( opcode ) )
     {
         // In the presence of 'opcode', we're asked to build the command using optional parameters
         uint32_t param1 = 0, param2 = 0, param3 = 0, param4 = 0;
-        rsutils::json::get_ex( control, "param1", &param1 );
-        rsutils::json::get_ex( control, "param2", &param2 );
-        rsutils::json::get_ex( control, "param3", &param3 );
-        rsutils::json::get_ex( control, "param4", &param4 );
+        control.nested( "param1" ).get_ex( param1 );
+        control.nested( "param2" ).get_ex( param2 );
+        control.nested( "param3" ).get_ex( param3 );
+        control.nested( "param4" ).get_ex( param4 );
 
-        rsutils::json::get_ex( control, "data", &data );  // optional
+        control.nested( "data" ).get_ex( data );  // optional
 
         // Build the HWM command
         data = dp.build_command( opcode, param1, param2, param3, param4, data.get_bytes() );
 
         // And, if told to not actually run it, we return the HWM command
-        if( rsutils::json::get< bool >( control, "build-command", false ) )
+        if( control.nested( "build-command" ).default_value( false ) )
         {
             reply["data"] = data;
             return true;
@@ -893,7 +893,7 @@ bool lrs_device_controller::on_hwm( nlohmann::json const & control, nlohmann::js
     }
     else
     {
-        if( ! rsutils::json::get_ex( control, "data", &data ) )
+        if( ! control.nested( "data" ).get_ex( data ) )
             throw std::runtime_error( "no 'data' in HWM control" );
     }
 

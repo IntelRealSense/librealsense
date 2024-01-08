@@ -83,12 +83,12 @@ static std::mutex domain_context_by_id_mutex;
 rsdds_device_factory::rsdds_device_factory( std::shared_ptr< context > const & ctx, callback && cb )
     : super( ctx )
 {
-    rsutils::json::nested dds_settings( ctx->get_settings(), std::string( "dds", 3 ) );
+    auto dds_settings = ctx->get_settings().nested( std::string( "dds", 3 ) );
     if( ! dds_settings.exists()
-        || dds_settings->is_object() && dds_settings.find( std::string( "enabled", 7 ) ).default_value( true ) )
+        || dds_settings.is_object() && dds_settings.nested( std::string( "enabled", 7 ) ).default_value( true ) )
     {
-        auto domain_id = dds_settings.find( std::string( "domain", 6 ) ).default_value< realdds::dds_domain_id >( 0 );
-        auto participant_name_j = dds_settings.find( std::string( "participant", 11 ) );
+        auto domain_id = dds_settings.nested( std::string( "domain", 6 ) ).default_value< realdds::dds_domain_id >( 0 );
+        auto participant_name_j = dds_settings.nested( std::string( "participant", 11 ) );
         auto participant_name = participant_name_j.default_value( rsutils::os::executable_name() );
 
         std::lock_guard< std::mutex > lock( domain_context_by_id_mutex );
@@ -145,7 +145,7 @@ std::vector< std::shared_ptr< device_info > > rsdds_device_factory::query_device
                     return true;
                 }
                 std::string product_line;
-                if( rsutils::json::get_ex( dev->device_info().to_json(), "product-line", &product_line ) )
+                if( dev->device_info().to_json().nested( "product-line" ).get_ex( product_line ) )
                 {
                     if( product_line == "D400" )
                     {

@@ -19,47 +19,34 @@
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/string/from.h>
 #include <rsutils/json.h>
-using json = nlohmann::json;
-
-#include <fstream>
+#include <rsutils/json-config.h>
+using json = rsutils::json;
 
 
 namespace librealsense {
 
 
-    static nlohmann::json load_settings( nlohmann::json const & context_settings )
+    static rsutils::json load_settings( rsutils::json const & context_settings )
     {
         // Allow ignoring of any other settings, global or not!
-        if( ! rsutils::json::get( context_settings, "inherit", true ) )
+        if( ! context_settings.nested( "inherit" ).default_value( true ) )
             return context_settings;
 
-        nlohmann::json config;
+        auto const filename = rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME;
+        auto config = rsutils::json_config::load_from_file( filename );
 
-        // Load the realsense configuration file settings
-        std::ifstream f( rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME );
-        if( f.good() )
-        {
-            try
-            {
-                config = nlohmann::json::parse( f );
-            }
-            catch( std::exception const & e )
-            {
-                throw std::runtime_error( "failed to load configuration file: " + std::string( e.what() ) );
-            }
-        }
-
-        config = rsutils::json::load_settings( config, "context", "config-file" );
+        // Take only the 'context' part of it
+        config = rsutils::json_config::load_settings( config, "context", "config-file" );
 
         // Patch the given context settings into the configuration
-        rsutils::json::patch( config, context_settings, "context settings" );
+        config.override( context_settings, "context settings" );
         return config;
     }
 
 
     context::context( json const & settings )
         : _settings( load_settings( settings ) )  // global | application | local
-        , _device_mask( rsutils::json::get< unsigned >( _settings, "device-mask", RS2_PRODUCT_LINE_ANY ) )
+        , _device_mask( _settings.nested( "device-mask" ).default_value< unsigned >( RS2_PRODUCT_LINE_ANY ) )
     {
         static bool version_logged = false;
         if( ! version_logged )
@@ -191,7 +178,7 @@ namespace librealsense {
 
 
     std::shared_ptr< processing_block_interface > context::create_pp_block( std::string const & name,
-                                                                            nlohmann::json const & settings )
+                                                                            rsutils::json const & settings )
     {
         return rscore_pp_block_factory().create_pp_block( name, settings );
     }

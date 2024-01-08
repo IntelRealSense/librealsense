@@ -22,7 +22,7 @@
 #include "device-model.h"
 
 using namespace rs400;
-using namespace nlohmann;
+using rsutils::json;
 using namespace rs2::sw_update;
 
 namespace rs2

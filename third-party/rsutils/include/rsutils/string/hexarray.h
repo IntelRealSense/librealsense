@@ -1,9 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
-#include <nlohmann/json_fwd.hpp>
+#include <rsutils/json-fwd.h>
 
 #include <vector>
 #include <string>
@@ -37,7 +36,7 @@ class hexarray
 private:
     bytes _bytes;
 
-    friend void from_json( nlohmann::json const &, hexarray & );
+    friend void from_json( rsutils::json const &, hexarray & );
 
 public:
     hexarray() = default;
@@ -72,9 +71,9 @@ inline std::ostream & operator<<( std::ostream & os, hexarray const & hexa )
 
 
 // Allow j["key"] = hexarray( bytes );
-void to_json( nlohmann::json &, const hexarray & );
+void to_json( rsutils::json &, const hexarray & );
 // Allow j.get< hexarray >();
-void from_json( nlohmann::json const &, hexarray & );
+void from_json( rsutils::json const &, hexarray & );
 // See https://github.com/nlohmann/json#arbitrary-types-conversions
 
 

@@ -8,7 +8,7 @@
 #include <rsutils/string/hexdump.h>
 #include <rsutils/string/from.h>
 #include <rsutils/string/slice.h>
-#include <nlohmann/json.hpp>
+#include <rsutils/json.h>
 #include <ostream>
 
 using rsutils::string::hexdump;
@@ -399,30 +399,30 @@ TEST_CASE( "hexarray", "[hexarray]" )
     }
     SECTION( "to json" )
     {
-        nlohmann::json j;
+        rsutils::json j;
         j["blah"] = hexarray( std::move( ba ) );
         CHECK( j.dump() == "{\"blah\":\"00010203040506070809\"}");
     }
     SECTION( "(same as using hexarray::to_string)" )
     {
-        nlohmann::json j;
+        rsutils::json j;
         j["blah"] = hexarray::to_string( ba );
         CHECK( j.dump() == "{\"blah\":\"00010203040506070809\"}" );
     }
     SECTION( "from json" )
     {
-        auto j = nlohmann::json::parse( "{\"blah\":\"00010203040506070809\"}" );
+        auto j = rsutils::json::parse( "{\"blah\":\"00010203040506070809\"}" );
         CHECK( j["blah"].get< hexarray >().get_bytes() == ba );
     }
     SECTION( "from json shuld accept bytearrays, too" )
     {
-        auto j = nlohmann::json::parse( "{\"blah\":[0,1,2,3,4,5,6,7,8,9]}" );
+        auto j = rsutils::json::parse( "{\"blah\":[0,1,2,3,4,5,6,7,8,9]}" );
         CHECK( j["blah"].get< hexarray >().get_bytes() == ba );
 
-        j = nlohmann::json::parse( "{\"blah\":[0,1,256]}" );  // out-of-range
+        j = rsutils::json::parse( "{\"blah\":[0,1,256]}" );  // out-of-range
         CHECK_THROWS( j["blah"].get< hexarray >().get_bytes() );
 
-        j = nlohmann::json::parse( "{\"blah\":[0,1,2.0]}" );  // must be integer
+        j = rsutils::json::parse( "{\"blah\":[0,1,2.0]}" );  // must be integer
         CHECK_THROWS( j["blah"].get< hexarray >().get_bytes() );
     }
 }
