@@ -54,7 +54,7 @@ test.start("Testing device creation time on " + platform.system() + " OS")
 device_creation_stopwatch = Stopwatch()
 dev = test.find_first_device_or_exit()
 device_creation_time = device_creation_stopwatch.get_elapsed()
-max_time_for_device_creation = 1.5
+max_time_for_device_creation = 1
 print("Device creation time is: {:.3f} [sec] max allowed is: {:.1f} [sec] ".format(device_creation_time, max_time_for_device_creation))
 test.check(device_creation_time < max_time_for_device_creation)
 test.finish()
@@ -63,11 +63,11 @@ test.finish()
 # Set maximum delay for first frame according to product line
 product_line = dev.get_info(rs.camera_info.product_line)
 if product_line == "D400":
-    max_delay_for_depth_frame = 1.5
-    max_delay_for_color_frame = 1.5
+    max_delay_for_depth_frame = 1
+    max_delay_for_color_frame = 1
 elif product_line == "D500":
-    max_delay_for_depth_frame = 1.5 
-    max_delay_for_color_frame = 1.5
+    max_delay_for_depth_frame = 1
+    max_delay_for_color_frame = 1
 else:
     log.f( "Not supported product line " + product_line )
 

@@ -25,11 +25,11 @@ time.sleep( 3 )
 
 product_line = dev.get_info(rs.camera_info.product_line)
 if product_line == "D400":
-    max_delay_for_depth_frame = 2
-    max_delay_for_color_frame = 2
+    max_delay_for_depth_frame = 1
+    max_delay_for_color_frame = 1
 elif product_line == "D500":
-    max_delay_for_depth_frame = 2
-    max_delay_for_color_frame = 2
+    max_delay_for_depth_frame = 1
+    max_delay_for_color_frame = 1
 else:
     log.f("Not supported product line " + product_line)
 
