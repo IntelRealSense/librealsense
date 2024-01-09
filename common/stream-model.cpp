@@ -1110,8 +1110,8 @@ namespace rs2
     }
 
     // every bit is represented by its own meaning - first bit by first meaning second by second meaning etc.
-   // if the value is 0, meaning_for_zero will be used instead
-    std::string stream_model::get_meaning(rs2_frame_metadata_value md_val, std::vector<std::string>& bits_meanings, std::string meaning_for_zero) const
+    // if the value is 0, meaning_for_zero will be used instead
+    std::string stream_model::get_meaning(const rs2_frame_metadata_value& md_val, const std::vector<std::string>& bits_meanings, const std::string& meaning_for_zero) const
     {
         if (bits_meanings.size() > 63)
             return "bits meanings passed is too long!"; // not supposed to reach here
@@ -1119,7 +1119,7 @@ namespace rs2
         uint64_t attribute_val = frame_md.md_attributes[md_val].second;
         uint64_t bitmask = 1;
         int i = 0;
-        for (std::string& bit_meaning : bits_meanings)
+        for (const std::string& bit_meaning : bits_meanings)
         {
             if (attribute_val & bitmask)
             {
