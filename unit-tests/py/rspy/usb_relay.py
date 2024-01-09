@@ -16,126 +16,64 @@ class usb_relay:
         self._relay_type = NO_RELAY
         self._is_connected = False
 
-    def __del__(self):
-        self.disable_ports()
-        self.disconnect()
-
-    def connect(self, reset = False):
-        if self.is_connected():
-            log.d("Already connected to", self._relay, "disconnecting...")
-            self.disconnect()
-        self._relay_type, self._relay = _find_active_relay()
-        if self._relay:
-            self._relay.connect(reset)
-            self._is_connected = True
-        log.d("Now connected to:", self._relay)
-
-    def disconnect(self):
-        if self._relay:
-            self._relay.disconnect()
-            del self._relay
-            self._relay = None
-            self._relay_type = NO_RELAY
-            self._is_connected = False
-
-    def is_connected(self):
-        return self._is_connected
-
-    def ports(self):
-        if self._relay_type != NO_RELAY:
-            return self._relay.ports()
-
-    def all_ports(self):
-        if self._relay_type != NO_RELAY:
-            return self._relay.all_ports()
-
-    def enable_ports(self, ports=None, disable_other_ports=False, sleep_on_change=0):
+    def _set_connected(self, relay, relay_type):
         """
-        Set enable state to provided ports
-        :param ports: List of port numbers; if not provided, enable all ports
-        :param disable_other_ports: if True, the ports not in the list will be disabled
-        :param sleep_on_change: Number of seconds to sleep if any change is made
-        :return: True if no errors found, False otherwise
+        helper function used by the inheriting classes to set the relay and its type
         """
-        if self._relay_type != NO_RELAY:
-            return self._relay.enable_ports(ports, disable_other_ports, sleep_on_change)
-        return False
+        self._relay = relay
+        self._relay_type = relay_type
+        self._is_connected = True
 
-    def disable_ports(self, ports=None, sleep_on_change=0):
-        """
-        :param ports: List of port numbers; if not provided, disable all ports
-        :param sleep_on_change: Number of seconds to sleep if any change is made
-        :return: True if no errors found, False otherwise
-        """
-        if self._relay_type != NO_RELAY:
-            return self._relay.disable_ports(ports, sleep_on_change)
-        return False
-
-    def recycle_ports(self, portlist=None, timeout=2):
-        """
-        Disable and enable a port
-        :param portlist: List of port numbers; if not provided, recycle all ports
-        :param timeout: how long to wait before re-enabling
-        :return: True if everything OK, False otherwise
-        """
-        if self._relay_type != NO_RELAY:
-            return self._relay.recycle_ports(portlist=portlist, timeout=timeout)
-        return False
-
-    def find_all_hubs(self):
-        """
-        Yields all hub port numbers
-        """
-        if self._relay_type != NO_RELAY:
-            return self._relay.find_all_hubs()
-
-    @property
     def has_relay(self):
         return self._relay_type != NO_RELAY
 
-    @property
-    def not_supports_port_mapping(self):
+    def supports_port_mapping(self):
         """
         :return: whether the connected relay supports port mapping, currently only the acroname supports it
         """
-        return self._relay_type != ACRONAME
+        return self._relay_type == ACRONAME
 
-    def get_usb_and_port_location(self, physical_port, hubs):
-        usb_location = None
-        port = None
+def get_usb_and_port_location(relay, physical_port, hubs):
+    usb_location = None
+    port = None
+    try:
+        usb_location = _get_usb_location( physical_port )
+    except Exception as e:
+        log.e( 'Failed to get usb location:', e )
+
+    if relay and relay.has_relay():
         try:
-            usb_location = _get_usb_location( physical_port )
+            port = _get_port_by_loc( usb_location, hubs, relay._relay, relay._relay_type )
         except Exception as e:
-            log.e( 'Failed to get usb location:', e )
+            log.e( 'Failed to get device port:', e )
+            log.d( '    physical port is', physical_port )
+            log.d( '    USB location is', usb_location )
 
-        if self.has_relay:
-            try:
-                port = _get_port_by_loc( usb_location, hubs, self._relay, self._relay_type )
-            except Exception as e:
-                log.e( 'Failed to get device port:', e )
-                log.d( '    physical port is', physical_port )
-                log.d( '    USB location is', usb_location )
-
-        return usb_location, port
+    return usb_location, port
 
 
 #################################
+def create():
+    return _find_active_relay()[1]
+
+
 def _find_active_relay():
     """
     Function finds an available relay to connect to and returns it
     """
-    acroname_relay = _is_there_acroname()
+    acroname_relay = _create_acroname()
     if acroname_relay:
         return ACRONAME, acroname_relay
 
-    ykush_relay = _is_there_ykush()
+    ykush_relay = _create_ykush()
     if ykush_relay:
         return YKUSH, ykush_relay
-
+    import sys
+    log.d('sys.path=', sys.path)
     return NO_RELAY, None
 
 
-def _is_there_acroname():
+def _create_acroname():
     try:
         from rspy import acroname
         return acroname.Acroname()
@@ -147,7 +85,7 @@ def _is_there_acroname():
         return None
 
 
-def _is_there_ykush():
+def _create_ykush():
     try:
         from rspy import ykush
         return ykush.Ykush()
@@ -199,7 +137,7 @@ if 'windows' in platform.system().lower():
         # and, for T265: Port_#0002.Hub_#0006
         return result[0]
     #
-    def _get_port_by_loc( usb_location, hubs, acroname_relay, relay_type):
+    def _get_port_by_loc( usb_location, hubs, relay, relay_type):
         """
         """
         if usb_location:
@@ -211,8 +149,12 @@ if 'windows' in platform.system().lower():
                 return None #int(match.group(2))
             else:
                 split_location = [int(x) for x in usb_location.split('.')]
+                # lambda helper to return the last 2 non-zero numbers, used when connecting using an additional hub
+                # ex: laptop -> hub -> ykush
+                get_last_two_digits = lambda array: tuple(reversed(list(reversed([i for i in array if i != 0]))[:2]))
                 # only the last two digits are necessary
-                return acroname_relay.get_port_from_usb( split_location[-5], split_location[-4] )
+                first_index, second_index = get_last_two_digits(split_location)
+                return relay.get_port_from_usb(first_index, second_index)
     #
 else:
     #
@@ -236,11 +178,11 @@ else:
         return port_location
     #
 
-    def _get_port_by_loc( usb_location, hubs, acroname_relay, relay_type ):
+    def _get_port_by_loc( usb_location, hubs, relay, relay_type ):
         """
         """
         if relay_type == YKUSH:
-            return acroname_relay.get_port_from_usb(int(usb_location.split(".")[1]), 0)
+            return relay.get_port_from_usb(0, int(usb_location.split(".")[1]))
         if usb_location:
             #
             # Devices connected through an acroname will be in one of two sub-hubs under the acroname main
@@ -265,4 +207,4 @@ else:
                 if usb_location.startswith( port + '.' ):
                     match = re.search( r'^(\d+)\.(\d+)', usb_location[len(port)+1:] )
                     if match:
-                        return acroname_relay.get_port_from_usb( int(match.group(1)), int(match.group(2)) )
+                        return relay.get_port_from_usb(int(match.group(1)), int(match.group(2)))

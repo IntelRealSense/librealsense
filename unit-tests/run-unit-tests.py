@@ -400,7 +400,7 @@ def devices_by_test_config( test, exceptions ):
                 else:
                     yield configuration, serial_numbers
         except RuntimeError as e:
-            if devices.relay.has_relay:
+            if devices.relay.has_relay():
                 log.e( log.red + test.name + log.reset + ': ' + str( e ) )
             else:
                 log.w( log.yellow + test.name + log.reset + ': ' + str( e ) )
@@ -463,7 +463,7 @@ try:
         #
         # Under a development environment (i.e., without a relay), we may only have one device connected
         # or even none and want to only show a warning for live tests:
-        skip_live_tests = len( devices.all() ) == 0 and not devices.relay.has_relay
+        skip_live_tests = len( devices.all() ) == 0 and not devices.relay
         #
         exceptions = None
         if not skip_live_tests:
