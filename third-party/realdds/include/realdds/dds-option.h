@@ -1,10 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
-
-#include <nlohmann/json_fwd.hpp>
+#include <rsutils/json-fwd.h>
 
 #include <string>
 #include <vector>
@@ -31,7 +29,7 @@ class dds_option
     dds_option_range _range;
     std::string _description;
 
-    dds_option( nlohmann::json const & );
+    dds_option( rsutils::json const & );
 
     friend class dds_stream_base;
     std::weak_ptr< dds_stream_base > _stream;
@@ -49,8 +47,8 @@ public:
     const dds_option_range & get_range() const { return _range; }
     const std::string & get_description() const { return _description; }
 
-    nlohmann::json to_json() const;
-    static std::shared_ptr< dds_option > from_json( nlohmann::json const & j );
+    rsutils::json to_json() const;
+    static std::shared_ptr< dds_option > from_json( rsutils::json const & j );
 };
 
 typedef std::vector< std::shared_ptr< dds_option > > dds_options;

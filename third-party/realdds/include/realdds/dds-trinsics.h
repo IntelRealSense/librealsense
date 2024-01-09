@@ -1,9 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
-#include <nlohmann/json_fwd.hpp>
+#include <rsutils/json-fwd.h>
 
 #include <array>
 #include <map>
@@ -33,8 +32,8 @@ struct video_intrinsics
         return width < rhs.width || ( width == rhs.width && height < rhs.height );
     }
 
-    nlohmann::json to_json() const;
-    static video_intrinsics from_json( nlohmann::json const & j );
+    rsutils::json to_json() const;
+    static video_intrinsics from_json( rsutils::json const & j );
 };
 
 // Internal properties of a motion stream.
@@ -45,8 +44,8 @@ struct motion_intrinsics
     std::array< float, 3 > noise_variances = { 0 };
     std::array< float, 3 > bias_variances = { 0 };
 
-    nlohmann::json to_json() const;
-    static motion_intrinsics from_json( nlohmann::json const & j );
+    rsutils::json to_json() const;
+    static motion_intrinsics from_json( rsutils::json const & j );
 };
 
 
@@ -56,8 +55,8 @@ struct extrinsics
     std::array< float, 9 > rotation = { 0 };     // Column-major 3x3 rotation matrix
     std::array< float, 3 > translation = { 0 };  // Three-element translation vector, in meters
 
-    nlohmann::json to_json() const;
-    static extrinsics from_json( nlohmann::json const & j );
+    rsutils::json to_json() const;
+    static extrinsics from_json( rsutils::json const & j );
 };
 
 

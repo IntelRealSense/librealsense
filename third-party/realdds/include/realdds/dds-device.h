@@ -1,6 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
 #include "dds-defines.h"
@@ -8,7 +7,7 @@
 #include "dds-stream.h"
 
 #include <rsutils/subscription.h>
-#include <nlohmann/json_fwd.hpp>
+#include <rsutils/json-fwd.h>
 #include <memory>
 #include <vector>
 #include <functional>
@@ -50,7 +49,7 @@ public:
     // Utility function for checking replies:
     // If 'p_explanation' is nullptr, will throw if the reply status is not 'ok'.
     // Otherise will return a false if not 'ok', and the explanation will be filled out.
-    static bool check_reply( nlohmann::json const & reply, std::string * p_explanation = nullptr );
+    static bool check_reply( rsutils::json const & reply, std::string * p_explanation = nullptr );
 
     //----------- below this line, a device must be running!
 
@@ -64,22 +63,22 @@ public:
     void set_option_value( const std::shared_ptr< dds_option > & option, float new_value );
     float query_option_value( const std::shared_ptr< dds_option > & option );
 
-    void send_control( topics::flexible_msg &&, nlohmann::json * reply = nullptr );
+    void send_control( topics::flexible_msg &&, rsutils::json * reply = nullptr );
 
     bool has_extrinsics() const;
     std::shared_ptr< extrinsics > get_extrinsics( std::string const & from, std::string const & to ) const;
 
     bool supports_metadata() const;
 
-    typedef std::function< void( std::shared_ptr< const nlohmann::json > const & md ) > on_metadata_available_callback;
+    typedef std::function< void( std::shared_ptr< const rsutils::json > const & md ) > on_metadata_available_callback;
     rsutils::subscription on_metadata_available( on_metadata_available_callback && );
 
     typedef std::function< void(
-        dds_nsec timestamp, char type, std::string const & text, nlohmann::json const & data ) >
+        dds_nsec timestamp, char type, std::string const & text, rsutils::json const & data ) >
         on_device_log_callback;
     rsutils::subscription on_device_log( on_device_log_callback && cb );
 
-    typedef std::function< void( std::string const & id, nlohmann::json const & ) > on_notification_callback;
+    typedef std::function< void( std::string const & id, rsutils::json const & ) > on_notification_callback;
     rsutils::subscription on_notification( on_notification_callback && );
 
 private:

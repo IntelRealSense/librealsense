@@ -12,7 +12,7 @@
 #include "parser.hpp"
 #include "auto-complete.h"
 
-#include <nlohmann/json.hpp>
+#include <rsutils/json.h>
 #include <thread>
 
 
@@ -197,9 +197,9 @@ int main(int argc, char** argv)
     // parse command.xml
     rs2::log_to_file(RS2_LOG_SEVERITY_WARN, "librealsense.log");
 
-    nlohmann::json settings;
+    rsutils::json settings;
 #ifdef BUILD_WITH_DDS
-    nlohmann::json dds;
+    rsutils::json dds;
     if( domain_arg.isSet() )
         dds["domain"] = domain_arg.getValue();
     if( only_sw_arg.isSet() )

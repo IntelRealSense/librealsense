@@ -18,7 +18,6 @@
 #include <unordered_map>
 #include <fstream>
 
-#include <nlohmann/json.hpp>
 #include "objects-in-frame.h"
 #include "processing-block-model.h"
 

@@ -40,7 +40,7 @@ PYBIND11_MODULE(NAME, m) {
         py::arg( "max-length" ) = 96 );
     m.def(
         "shorten_json_string",
-        []( nlohmann::json const & j, size_t max_length )
+        []( rsutils::json const & j, size_t max_length )
         { return rsutils::string::shorten_json_string( j.dump(), max_length ).to_string(); },
         py::arg( "json" ),
         py::arg( "max-length" ) = 96 );

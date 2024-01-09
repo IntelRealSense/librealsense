@@ -8,6 +8,8 @@ name: build_lrs_ROS2_package
 #  pull_request:
 #    branches: ['**']
 
+permissions: read-all
+
 jobs:
 
   build_lrs_ros2_package:

@@ -38,15 +38,15 @@ void dds_depth_sensor_proxy::add_no_metadata( frame * const f, streaming_impl & 
 }
 
 
-void dds_depth_sensor_proxy::add_frame_metadata( frame * const f, nlohmann::json const & dds_md, streaming_impl & streaming )
+void dds_depth_sensor_proxy::add_frame_metadata( frame * const f, rsutils::json const & dds_md, streaming_impl & streaming )
 {
-    if( auto du = rsutils::json::nested( dds_md, metadata_header_key, depth_units_key ) )
+    if( auto du = dds_md.nested( metadata_header_key, depth_units_key ) )
     {
         try
         {
-            f->additional_data.depth_units = rsutils::json::value< float >( du );
+            f->additional_data.depth_units = du.get< float >();
         }
-        catch( nlohmann::json::exception const & )
+        catch( rsutils::json::exception const & )
         {
             f->additional_data.depth_units = get_depth_scale();
         }

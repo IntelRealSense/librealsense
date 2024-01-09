@@ -34,6 +34,7 @@
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/string/from.h>
 #include <rsutils/json.h>
+#include <rsutils/json-config.h>
 
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
@@ -75,42 +76,30 @@ std::string script_name()
 }
 
 
-nlohmann::json load_rs_settings( nlohmann::json const & local_settings )
+rsutils::json load_rs_settings( rsutils::json const & local_settings )
 {
-    nlohmann::json config;
-
     // Load the realsense configuration file settings
-    std::ifstream f( rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + "realsense-config.json" );
-    if( f.good() )
-    {
-        try
-        {
-            config = nlohmann::json::parse( f );
-        }
-        catch( std::exception const & e )
-        {
-            throw std::runtime_error( "failed to load configuration file: " + std::string( e.what() ) );
-        }
-    }
+    std::string const filename = rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + "realsense-config.json";
+    auto config = rsutils::json_config::load_from_file( filename );
 
     // Load "python"-specific settings
-    auto settings = rsutils::json::load_app_settings( config, "python", "context", "config-file" );
+    rsutils::json settings = rsutils::json_config::load_app_settings( config, "python", "context", "config-file" );
 
     // Take the "dds" settings only
-    settings = rsutils::json::nested( settings, "dds" );
+    settings = settings.nested( "dds" );
 
     // Patch any script-specific settings
     // NOTE: this is also accessed by pyrealsense2, where a "context" hierarchy is still used
     auto script = script_name();
-    if( auto script_settings = rsutils::json::nested( config, script, "context", "dds" ) )
-        rsutils::json::patch( settings, script_settings, "config-file/" + script + "/context" );
+    if( auto script_settings = config.nested( script, "context", "dds" ) )
+        settings.override( script_settings, "config-file/" + script + "/context" );
 
     // We should always have DDS enabled
     if( settings.is_object() )
         settings.erase( "enabled" );
 
     // Patch the given local settings into the configuration
-    rsutils::json::patch( settings, local_settings, "local settings" );
+    settings.override( local_settings, "local settings" );
 
     return settings;
 }
@@ -201,7 +190,7 @@ PYBIND11_MODULE(NAME, m) {
                       ( char const * topic_name, eprosima::fastrtps::types::DynamicType_ptr dyn_type ),
                       callback( topic_name, dyn_type->get_name() ); ) );
 
-    m.def( "load_rs_settings", &load_rs_settings, "local-settings"_a = nlohmann::json::object() );
+    m.def( "load_rs_settings", &load_rs_settings, "local-settings"_a = rsutils::json::object() );
     m.def( "script_name", &script_name );
 
     py::class_< dds_participant,
@@ -210,10 +199,10 @@ PYBIND11_MODULE(NAME, m) {
         participant( m, "participant" );
     participant.def( py::init<>() )
         .def( "init",
-              []( dds_participant & self, nlohmann::json const & local_settings, realdds::dds_domain_id domain_id )
+              []( dds_participant & self, rsutils::json const & local_settings, realdds::dds_domain_id domain_id )
                     { self.init( domain_id, script_name(), local_settings ); },
-              "local-settings"_a = nlohmann::json::object(), "domain-id"_a = -1 )
-        .def( "init", &dds_participant::init, "domain-id"_a, "participant-name"_a, "local-settings"_a = nlohmann::json::object() )
+              "local-settings"_a = rsutils::json::object(), "domain-id"_a = -1 )
+        .def( "init", &dds_participant::init, "domain-id"_a, "participant-name"_a, "local-settings"_a = rsutils::json::object() )
         .def( "is_valid", &dds_participant::is_valid )
         .def( "guid", &dds_participant::guid )
         .def( "create_guid", &dds_participant::create_guid )
@@ -469,7 +458,7 @@ PYBIND11_MODULE(NAME, m) {
               "json"_a,
               "version"_a = 0 )
         .def( py::init( []( std::string const & json_string ) {
-            return flexible_msg( flexible_msg::data_format::JSON, nlohmann::json::parse( json_string ) );
+            return flexible_msg( flexible_msg::data_format::JSON, rsutils::json::parse( json_string ) );
         } ) )
         .def_static( "create_topic", static_cast< flexible_msg_create_topic * >( &flexible_msg::create_topic ) )
         .def_readwrite( "data_format", &flexible_msg::_data_format )
@@ -777,10 +766,10 @@ PYBIND11_MODULE(NAME, m) {
     //     def callback( json ):
     //         print( json['value'] )            # calls __getitem__
     //         json['value'] = { 'more': True }  # calls __setitem__
-    struct json_ref { nlohmann::json & j; };
+    struct json_ref { rsutils::json & j; };
     py::class_< json_ref, std::shared_ptr< json_ref > >( m, "json_ref" )
         .def( "__getitem__", []( json_ref const & jr, std::string const & key ) { return jr.j.at( key ); } )
-        .def( "__setitem__", []( json_ref & jr, std::string const & key, nlohmann::json const & value ) { jr.j[key] = value; } );
+        .def( "__setitem__", []( json_ref & jr, std::string const & key, rsutils::json const & value ) { jr.j[key] = value; } );
 
     using realdds::dds_device_server;
     py::class_< dds_device_server, std::shared_ptr< dds_device_server > >( m, "device_server" )
@@ -797,14 +786,14 @@ PYBIND11_MODULE(NAME, m) {
               } )
         .def(
             "publish_notification",
-            []( dds_device_server & self, nlohmann::json const & j ) { self.publish_notification( j ); },
+            []( dds_device_server & self, rsutils::json const & j ) { self.publish_notification( j ); },
             py::call_guard< py::gil_scoped_release >() )
         .def( "publish_metadata", &dds_device_server::publish_metadata, py::call_guard< py::gil_scoped_release >() )
         .def( "broadcast", &dds_device_server::broadcast )
         .def( FN_FWD_R( dds_device_server, on_control,
                         false,
                         (dds_device_server &, std::string const &, py::object &&, json_ref &&),
-                        ( std::string const & id, nlohmann::json const & control, nlohmann::json & reply ),
+                        ( std::string const & id, rsutils::json const & control, rsutils::json & reply ),
                         return callback( self, id, json_to_py( control ), json_ref{ reply } ); ) );
 
     using realdds::dds_stream;
@@ -894,21 +883,21 @@ PYBIND11_MODULE(NAME, m) {
               []( dds_device & self, std::function< void( dds_device &, py::object && ) > callback )
               {
                   return std::make_shared< subscription >( self.on_metadata_available(
-                      [&self, callback]( std::shared_ptr< const nlohmann::json > const & pj )
+                      [&self, callback]( std::shared_ptr< const rsutils::json > const & pj )
                       { FN_FWD_CALL( dds_device, "on_metadata_available", callback( self, json_to_py( *pj ) ); ) } ) );
               } )
         .def( "on_device_log",
               []( dds_device & self, std::function< void( dds_device &, dds_nsec, char, std::string const &, py::object && ) > callback )
               {
                   return std::make_shared< subscription >( self.on_device_log(
-                      [&self, callback]( dds_nsec timestamp, char type, std::string const & text, nlohmann::json const & data )
+                      [&self, callback]( dds_nsec timestamp, char type, std::string const & text, rsutils::json const & data )
                       { FN_FWD_CALL( dds_device, "on_device_log", callback( self, timestamp, type, text, json_to_py( data ) ); ) } ) );
               } )
         .def( "on_notification",
               []( dds_device & self, std::function< void( dds_device &, std::string const &, py::object && ) > callback )
               {
                   return std::make_shared< subscription >( self.on_notification(
-                      [&self, callback]( std::string const & id, nlohmann::json const & data )
+                      [&self, callback]( std::string const & id, rsutils::json const & data )
                       { FN_FWD_CALL( dds_device, "on_notification", callback( self, id, json_to_py( data ) ); ) } ) );
               } )
         .def( "n_streams", &dds_device::number_of_streams )
@@ -929,9 +918,9 @@ PYBIND11_MODULE(NAME, m) {
         .def( "query_option_value", &dds_device::query_option_value )
         .def(
             "send_control",
-            []( dds_device & self, nlohmann::json const & j, bool wait_for_reply )
+            []( dds_device & self, rsutils::json const & j, bool wait_for_reply )
             {
-                nlohmann::json reply;
+                rsutils::json reply;
                 self.send_control( j, wait_for_reply ? &reply : nullptr );
                 return reply;
             },
@@ -1041,18 +1030,18 @@ PYBIND11_MODULE(NAME, m) {
         .def( py::init<>() )
         .def( FN_FWD( dds_metadata_syncer,
                       on_frame_ready,
-                      ( dds_metadata_syncer::frame_type, nlohmann::json const & ),
-                      ( dds_metadata_syncer::frame_holder && fh, std::shared_ptr< const nlohmann::json > const & metadata ),
-                      callback( self.get_frame( fh ), metadata ? *metadata : nlohmann::json() ); ) )
+                      ( dds_metadata_syncer::frame_type, rsutils::json const & ),
+                      ( dds_metadata_syncer::frame_holder && fh, std::shared_ptr< const rsutils::json > const & metadata ),
+                      callback( self.get_frame( fh ), metadata ? *metadata : rsutils::json() ); ) )
         .def( FN_FWD( dds_metadata_syncer,
                       on_metadata_dropped,
-                      ( dds_metadata_syncer::key_type, nlohmann::json const & ),
-                      ( dds_metadata_syncer::key_type key, std::shared_ptr< const nlohmann::json > const & metadata ),
-                      callback( key, metadata ? *metadata : nlohmann::json() ); ) )
+                      ( dds_metadata_syncer::key_type, rsutils::json const & ),
+                      ( dds_metadata_syncer::key_type key, std::shared_ptr< const rsutils::json > const & metadata ),
+                      callback( key, metadata ? *metadata : rsutils::json() ); ) )
         .def( "enqueue_frame", &dds_metadata_syncer::enqueue_frame )
         .def( "enqueue_metadata",
-              []( dds_metadata_syncer & self, dds_metadata_syncer::key_type key, nlohmann::json const & j )
-              { self.enqueue_metadata( key, std::make_shared< const nlohmann::json >( j ) ); } );
+              []( dds_metadata_syncer & self, dds_metadata_syncer::key_type key, rsutils::json const & j )
+              { self.enqueue_metadata( key, std::make_shared< const rsutils::json >( j ) ); } );
     metadata_syncer.attr( "max_frame_queue_size" ) = dds_metadata_syncer::max_frame_queue_size;
     metadata_syncer.attr( "max_md_queue_size" ) = dds_metadata_syncer::max_md_queue_size;
 }

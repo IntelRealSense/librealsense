@@ -2,7 +2,7 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include <nlohmann/json_fwd.hpp>
+#include <rsutils/json-fwd.h>
 #include <string>
 
 
@@ -30,7 +30,7 @@ public:
     // The name is case-insensitive.
     //
     virtual std::shared_ptr< processing_block_interface > create_pp_block( std::string const & name,
-                                                                           nlohmann::json const & settings )
+                                                                           rsutils::json const & settings )
         = 0;
 };
 

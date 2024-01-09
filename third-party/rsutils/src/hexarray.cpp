@@ -6,7 +6,7 @@
 #include <rsutils/string/slice.h>
 #include <rsutils/string/hexdump.h>
 
-#include <nlohmann/json.hpp>
+#include <rsutils/json.h>
 
 
 namespace rsutils {
@@ -25,32 +25,32 @@ namespace string {
 }
 
 
-void to_json( nlohmann::json & j, const hexarray & hexa )
+void to_json( rsutils::json & j, const hexarray & hexa )
 {
     j = hexa.to_string();
 }
 
 
-void from_json( nlohmann::json const & j, hexarray & hexa )
+void from_json( rsutils::json const & j, hexarray & hexa )
 {
     if( j.is_array() )
     {
         hexa._bytes.resize( j.size() );
         std::transform( j.begin(), j.end(), std::begin( hexa._bytes ),
-                        []( nlohmann::json const & elem )
+                        []( rsutils::json const & elem )
                         {
                             if( ! elem.is_number_unsigned() )
-                                throw nlohmann::json::type_error::create( 302, "array value not an unsigned integer", &elem );
+                                throw rsutils::json::type_error::create( 302, "array value not an unsigned integer", &elem );
                             auto v = elem.template get< uint64_t >();
                             if( v > 255 )
-                                throw nlohmann::json::out_of_range::create( 401, "array value out of range", &elem );
+                                throw rsutils::json::out_of_range::create( 401, "array value out of range", &elem );
                             return uint8_t( v );
                         } );
     }
     else if( j.is_string() )
         hexa = hexarray::from_string( j.get< std::string >() );
     else
-        throw nlohmann::json::type_error::create( 317, "hexarray should be a string", &j );
+        throw rsutils::json::type_error::create( 317, "hexarray should be a string", &j );
 }
 
 

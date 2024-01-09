@@ -26,6 +26,7 @@
 #include <rsutils/os/executable-name.h>
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/json.h>
+#include <rsutils/json-config.h>
 
 using namespace TCLAP;
 using namespace eprosima::fastdds::dds;
@@ -194,35 +195,24 @@ dds_sniffer::~dds_sniffer()
 }
 
 
-static nlohmann::json load_settings( nlohmann::json const & local_settings )
+static rsutils::json load_settings( rsutils::json const & local_settings )
 {
-    nlohmann::json config;
-
     // Load the realsense configuration file settings
-    std::ifstream f( rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + "realsense-config.json" );
-    if( f.good() )
-    {
-        try
-        {
-            config = nlohmann::json::parse( f );
-        }
-        catch( std::exception const & e )
-        {
-            throw std::runtime_error( "failed to load configuration file: " + std::string( e.what() ) );
-        }
-    }
+    std::string const filename = rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + "realsense-config.json";
+    auto config = rsutils::json_config::load_from_file( filename );
 
-    config = rsutils::json::load_settings( config, "context", "config-file" );
+    // Take just the 'context' part
+    config = rsutils::json_config::load_settings( config, "context", "config-file" );
 
     // Take the "dds" settings only
-    config = rsutils::json::nested( config, "dds" );
+    config = config.nested( "dds" );
 
     // We should always have DDS enabled
     if( config.is_object() )
         config.erase( "enabled" );
 
     // Patch the given local settings into the configuration
-    rsutils::json::patch( config, local_settings, "local settings" );
+    config.override( local_settings, "local settings" );
 
     return config;
 }
@@ -254,7 +244,7 @@ bool dds_sniffer::init( realdds::dds_domain_id domain )
             on_type_discovery( topic_name, dyn_type );
         } );
 
-    nlohmann::json settings( nlohmann::json::object() );
+    rsutils::json settings( rsutils::json::object() );
     settings = load_settings( settings );
     _participant.init( domain, rsutils::os::executable_name(), std::move( settings ) );
 

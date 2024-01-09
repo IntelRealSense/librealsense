@@ -20,7 +20,7 @@ namespace librealsense {
 
 
 std::shared_ptr< processing_block_interface >
-rscore_pp_block_factory::create_pp_block( std::string const & name, nlohmann::json const & settings )
+rscore_pp_block_factory::create_pp_block( std::string const & name, rsutils::json const & settings )
 {
     // These filters do not accept settings (nor are settings recorded in ros_writer)
     (void *)&settings;

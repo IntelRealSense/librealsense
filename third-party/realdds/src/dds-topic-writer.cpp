@@ -87,19 +87,16 @@ dds_topic_writer::qos::qos( eprosima::fastdds::dds::ReliabilityQosPolicyKind rel
 }
 
 
-void dds_topic_writer::qos::override_from_json( nlohmann::json const & qos_settings )
+void dds_topic_writer::qos::override_from_json( rsutils::json const & qos_settings )
 {
     // Default values should be set before we're called:
     // All we do here is override those - if specified!
-    if( qos_settings.is_null() )
-        return;
-
-    override_reliability_qos_from_json( reliability(), rsutils::json::nested( qos_settings, "reliability" ) );
-    override_durability_qos_from_json( durability(), rsutils::json::nested( qos_settings, "durability" ) );
-    override_history_qos_from_json( history(), rsutils::json::nested( qos_settings, "history" ) );
-    override_liveliness_qos_from_json( liveliness(), rsutils::json::nested( qos_settings, "liveliness" ) );
-    override_data_sharing_qos_from_json( data_sharing(), rsutils::json::nested( qos_settings, "data-sharing" ) );
-    override_endpoint_qos_from_json( endpoint(), rsutils::json::nested( qos_settings, "endpoint" ) );
+    override_reliability_qos_from_json( reliability(), qos_settings.nested( "reliability" ) );
+    override_durability_qos_from_json( durability(), qos_settings.nested( "durability" ) );
+    override_history_qos_from_json( history(), qos_settings.nested( "history" ) );
+    override_liveliness_qos_from_json( liveliness(), qos_settings.nested( "liveliness" ) );
+    override_data_sharing_qos_from_json( data_sharing(), qos_settings.nested( "data-sharing" ) );
+    override_endpoint_qos_from_json( endpoint(), qos_settings.nested( "endpoint" ) );
 }
 
 
