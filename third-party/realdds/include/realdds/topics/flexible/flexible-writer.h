@@ -1,13 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
-
 #pragma once
-
 
 #include <realdds/topics/flexible-msg.h>
 
-#include <nlohmann/json_fwd.hpp>
-
+#include <rsutils/json-fwd.h>
 #include <string>
 #include <memory>
 #include <chrono>
@@ -49,7 +46,7 @@ public:
 
     void wait_for_readers( int n_readers, std::chrono::seconds timeout = std::chrono::seconds( 3 ) );
 
-    void write( nlohmann::json && json );
+    void write( rsutils::json && json );
 
 private:
     void on_publication_matched( eprosima::fastdds::dds::PublicationMatchedStatus const & status );

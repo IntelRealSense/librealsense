@@ -10,7 +10,7 @@
 
 #include <realdds/dds-metadata-syncer.h>
 
-#include <nlohmann/json_fwd.hpp>
+#include <rsutils/json-fwd.h>
 #include <memory>
 #include <map>
 
@@ -96,10 +96,10 @@ protected:
                              const std::shared_ptr< stream_profile_interface > &,
                              streaming_impl & );
     void handle_new_metadata( std::string const & stream_name,
-                              std::shared_ptr< const nlohmann::json > const & metadata );
+                              std::shared_ptr< const rsutils::json > const & metadata );
 
     virtual void add_no_metadata( frame *, streaming_impl & );
-    virtual void add_frame_metadata( frame *, nlohmann::json const & metadata, streaming_impl & );
+    virtual void add_frame_metadata( frame *, rsutils::json const & metadata, streaming_impl & );
 
     friend class dds_device_proxy;  // Currently calls handle_new_metadata
 };

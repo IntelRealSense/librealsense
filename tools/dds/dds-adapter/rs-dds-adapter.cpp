@@ -18,6 +18,7 @@
 #include <rsutils/os/special-folder.h>
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/json.h>
+#include <rsutils/json-config.h>
 
 #include <string>
 #include <iostream>
@@ -48,7 +49,7 @@ std::string get_topic_root( std::string const & name, std::string const & serial
 
 topics::device_info rs2_device_to_info( rs2::device const & dev )
 {
-    nlohmann::json j;
+    rsutils::json j;
 
     // Name is mandatory
     std::string const name = dev.get_info( RS2_CAMERA_INFO_NAME );
@@ -74,35 +75,24 @@ topics::device_info rs2_device_to_info( rs2::device const & dev )
 }
 
 
-static nlohmann::json load_settings( nlohmann::json const & local_settings )
+static rsutils::json load_settings( rsutils::json const & local_settings )
 {
-    nlohmann::json config;
-
     // Load the realsense configuration file settings
-    std::ifstream f( rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME );
-    if( f.good() )
-    {
-        try
-        {
-            config = nlohmann::json::parse( f );
-        }
-        catch( std::exception const & e )
-        {
-            throw std::runtime_error( "failed to load configuration file: " + std::string( e.what() ) );
-        }
-    }
+    std::string const filename = rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME;
+    auto config = rsutils::json_config::load_from_file( filename );
 
-    config = rsutils::json::load_settings( config, "context", "config-file" );
+    // Take just the 'context' part
+    config = rsutils::json_config::load_settings( config, "context", "config-file" );
 
     // Take the "dds" settings only
-    config = rsutils::json::nested( config, "dds" );
+    config = config.nested( "dds" );
 
     // We should always have DDS enabled
     if( config.is_object() )
         config.erase( "enabled" );
 
     // Patch the given local settings into the configuration
-    rsutils::json::patch( config, local_settings, "local settings" );
+    config.override( local_settings, "local settings" );
 
     return config;
 }
@@ -157,7 +147,7 @@ try
     // Create a DDS participant
     auto participant = std::make_shared< dds_participant >();
     {
-        nlohmann::json dds_settings = nlohmann::json::object();
+        rsutils::json dds_settings = rsutils::json::object();
         dds_settings = load_settings( dds_settings );
         participant->init( domain, "rs-dds-adapter", std::move( dds_settings ) );
     }
@@ -173,7 +163,7 @@ try
     std::cout << "Start listening to RS devices.." << std::endl;
 
     // Create a RealSense context
-    nlohmann::json j = {
+    rsutils::json j = {
         { "dds",               false   }, // Don't discover DDS devices from the network, we want local devices only 
         { "format-conversion", "basic" }  // Don't convert raw sensor formats (except interleaved) will be done by receiver
     };

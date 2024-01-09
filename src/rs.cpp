@@ -193,7 +193,7 @@ rs2_context* rs2_create_context(int api_version, rs2_error** error) BEGIN_API_CA
 {
     verify_version_compatibility(api_version);
 
-    nlohmann::json settings;
+    rsutils::json settings;
     return new rs2_context{ context::make( settings ) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
@@ -2760,7 +2760,7 @@ NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0)
 rs2_device* rs2_create_software_device(rs2_error** error) BEGIN_API_CALL
 {
     // We're not given a context...
-    auto ctx = context::make( nlohmann::json::object( { { "dds", false } } ) );
+    auto ctx = context::make( rsutils::json::object( { { "dds", false } } ) );
     auto dev_info = std::make_shared< software_device_info >( ctx );
     auto dev = std::make_shared< software_device >( dev_info );
     dev_info->set_device( dev );

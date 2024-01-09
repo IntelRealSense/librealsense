@@ -11,7 +11,7 @@
 #include <fastdds/dds/topic/Topic.hpp>
 
 #include <rsutils/time/timer.h>
-#include <nlohmann/json.hpp>
+#include <rsutils/json.h>
 
 
 namespace realdds {
@@ -46,7 +46,7 @@ void flexible_writer::wait_for_readers( int n_readers, std::chrono::seconds time
 }
 
 
-void flexible_writer::write( nlohmann::json && json )
+void flexible_writer::write( rsutils::json && json )
 {
     std::string json_string = json.dump();
     flexible_msg msg( std::move( json ) );

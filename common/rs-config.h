@@ -2,7 +2,7 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include <nlohmann/json.hpp>
+#include <rsutils/json.h>
 
 #include <map>
 #include <string>
@@ -94,6 +94,6 @@ namespace rs2
 
         std::map<std::string, std::string> _defaults;
         std::string _filename;
-        nlohmann::json _j;
+        rsutils::json _j;
     };
 }

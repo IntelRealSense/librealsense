@@ -5,6 +5,8 @@ on:
     branches: ['**']
   pull_request:
     branches: ['**']
+    
+permissions: read-all
 
 jobs:
   CppCheck:

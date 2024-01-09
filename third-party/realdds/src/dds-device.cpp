@@ -94,7 +94,7 @@ float dds_device::query_option_value( const std::shared_ptr< dds_option > & opti
     return _impl->query_option_value( option );
 }
 
-void dds_device::send_control( topics::flexible_msg && msg, nlohmann::json * reply )
+void dds_device::send_control( topics::flexible_msg && msg, rsutils::json * reply )
 {
     _impl->write_control_message( std::move( msg ), reply );
 }
@@ -141,29 +141,29 @@ static std::string const explanation_key( "explanation", 11 );
 static std::string const id_key( "id", 2 );
 
 
-bool dds_device::check_reply( nlohmann::json const & reply, std::string * p_explanation )
+bool dds_device::check_reply( rsutils::json const & reply, std::string * p_explanation )
 {
-    auto status_j = rsutils::json::nested( reply, status_key );
+    auto status_j = reply.nested( status_key );
     if( ! status_j )
         return true;
     std::ostringstream os;
-    if( ! status_j->is_string() )
+    if( ! status_j.is_string() )
         os << "bad status " << status_j;
     else if( status_j.string_ref() == status_ok )
         return true;
     else
     {
         os << "[";
-        if( auto id = rsutils::json::nested( reply, id_key ) )
+        if( auto id = reply.nested( id_key ) )
         {
-            if( id->is_string() )
+            if( id.is_string() )
                 os << "\"" << id.string_ref() << "\" ";
         }
         os << status_j.string_ref() << "]";
-        if( auto explanation_j = rsutils::json::nested( reply, explanation_key ) )
+        if( auto explanation_j = reply.nested( explanation_key ) )
         {
             os << ' ';
-            if( ! explanation_j->is_string() || explanation_j.string_ref().empty() )
+            if( explanation_j.string_ref_or_empty().empty() )
                 os << "bad explanation " << explanation_j;
             else
                 os << explanation_j.string_ref();

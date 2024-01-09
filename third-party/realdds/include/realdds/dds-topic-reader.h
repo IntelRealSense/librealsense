@@ -1,12 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
 #include <fastdds/dds/subscriber/DataReaderListener.hpp>
 #include <fastdds/dds/subscriber/qos/DataReaderQos.hpp>
 
-#include <nlohmann/json_fwd.hpp>
+#include <rsutils/json-fwd.h>
 #include <functional>
 #include <memory>
 
@@ -76,7 +75,7 @@ public:
                = eprosima::fastdds::dds::VOLATILE_DURABILITY_QOS );  // default is transient local
 
         // Override default values with JSON contents
-        void override_from_json( nlohmann::json const & );
+        void override_from_json( rsutils::json const & );
     };
 
     // The callbacks should be set before we actually create the underlying DDS objects, so the reader does not

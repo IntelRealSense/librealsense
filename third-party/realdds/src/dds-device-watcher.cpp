@@ -51,7 +51,7 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
                 }
 
                 auto j = msg.json_data();
-                if( j.find( "stopping" ) != j.end() )
+                if( j.nested( "stopping" ) )
                 {
                     // This device is stopping for whatever reason (e.g., HW reset); remove it
                     LOG_DEBUG( "DDS device (from " << _participant->print( guid ) << ") is stopping" );

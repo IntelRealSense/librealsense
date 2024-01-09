@@ -36,7 +36,7 @@ with test.remote.fork( nested_indent=None ) as remote:
                 reply['sequence'] = n_replies            # to show that we've processed it
                 reply['nested-json'] = { 'more': True }  # to show off
                 return True  # otherwise the control will be flagged as error
-            server.on_control( _on_control )
+            subscription = server.on_control( _on_control )
 
         raise StopIteration()  # exit the 'with' statement
 

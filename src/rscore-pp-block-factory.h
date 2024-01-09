@@ -12,7 +12,7 @@ class rscore_pp_block_factory : public pp_block_factory
 {
 public:
     std::shared_ptr< processing_block_interface > create_pp_block( std::string const & name,
-                                                                   nlohmann::json const & settings ) override;
+                                                                   rsutils::json const & settings ) override;
 };
 
 

@@ -8,7 +8,7 @@
 #include <rsutils/json.h>
 #include <fstream>
 
-using json = nlohmann::json;
+using json = rsutils::json;
 
 using namespace rs2;
 
@@ -31,7 +31,7 @@ void config_file::remove(const char* key)
 
 void config_file::reset()
 {
-    _j = nlohmann::json::object();
+    _j = json::object();
     save();
 }
 
@@ -40,7 +40,7 @@ std::string config_file::get(const char* key, const char* def) const
     auto it = _j.find(key);
     if (it != _j.end() && it->is_string())
     {
-        return rsutils::json::string_ref( *it );
+        return it->string_ref();
     }
     return get_default(key, def);
 }
@@ -105,7 +105,7 @@ void config_file::save()
 }
 
 config_file::config_file()
-    : _j( nlohmann::json::object() )
+    : _j( rsutils::json::object() )
 {
 }
 

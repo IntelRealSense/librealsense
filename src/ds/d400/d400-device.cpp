@@ -36,7 +36,6 @@
 #include "d400-thermal-monitor.h"
 #include <common/fw/firmware-version.h>
 #include <src/fw-update/fw-update-unsigned.h>
-#include <nlohmann/json.hpp>
 
 #include <rsutils/string/hexdump.h>
 #include <regex>

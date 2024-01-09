@@ -2,7 +2,7 @@
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
 #include <numeric>
-#include <nlohmann/json.hpp>
+#include <rsutils/json.h>
 #include "d400-device.h"
 #include "d400-private.h"
 #include "d400-thermal-monitor.h"
@@ -203,13 +203,11 @@ namespace librealsense
 
     std::map<std::string, int> auto_calibrated::parse_json(std::string json_content)
     {
-        using json = nlohmann::json;
-
-         auto j = json::parse(json_content);
+        auto j = rsutils::json::parse(json_content);
 
         std::map<std::string, int> values;
 
-        for (json::iterator it = j.begin(); it != j.end(); ++it)
+        for (auto it = j.begin(); it != j.end(); ++it)
         {
             values[it.key()] = it.value();
         }

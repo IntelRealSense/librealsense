@@ -1,6 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
 #include <realdds/dds-option.h>
@@ -8,7 +7,7 @@
 #include <realdds/dds-trinsics.h>
 
 #include <rsutils/concurrency/concurrency.h>
-#include <nlohmann/json_fwd.hpp>
+#include <rsutils/json-fwd.h>
 
 #include <map>
 #include <vector>
@@ -86,7 +85,7 @@ public:
     std::map< std::string, std::shared_ptr< dds_stream_server > > const & streams() const { return _stream_name_to_server; }
 
     void publish_notification( topics::flexible_msg && );
-    void publish_metadata( nlohmann::json && );
+    void publish_metadata( rsutils::json && );
 
     bool has_metadata_readers() const;
 
@@ -95,17 +94,17 @@ public:
     void on_set_option( set_option_callback callback ) { _set_option_callback = std::move( callback ); }
     void on_query_option( query_option_callback callback ) { _query_option_callback = std::move( callback ); }
 
-    typedef std::function< bool( std::string const &, nlohmann::json const &, nlohmann::json & ) > control_callback;
+    typedef std::function< bool( std::string const &, rsutils::json const &, rsutils::json & ) > control_callback;
     void on_control( control_callback callback ) { _control_callback = std::move( callback ); }
 
 private:
     void on_control_message_received();
     void handle_control_message( std::string const & id,
-                                 nlohmann::json const & control_message,
-                                 nlohmann::json & reply );
+                                 rsutils::json const & control_message,
+                                 rsutils::json & reply );
 
-    void handle_set_option( const nlohmann::json & msg, nlohmann::json & reply );
-    void handle_query_option( const nlohmann::json & msg, nlohmann::json & reply );
+    void handle_set_option( const rsutils::json & msg, rsutils::json & reply );
+    void handle_query_option( const rsutils::json & msg, rsutils::json & reply );
     std::shared_ptr< dds_option > find_option( const std::string & option_name, const std::string & stream_name ) const;
 
     std::shared_ptr< dds_publisher > _publisher;
