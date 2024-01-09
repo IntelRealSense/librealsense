@@ -915,9 +915,9 @@ namespace rs2
 
 
         //add_descriptions_for_d500_metadata_fields(descriptions);
-        std::string product_line = this->dev->dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-        if (product_line == "D500")
-            add_d500_metadata_descriptions(descriptions);
+        std::string pid = this->dev->dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+        if (pid == "0B6B")
+            add_d585S_metadata_descriptions(descriptions);
         for (auto i = 0; i < RS2_FRAME_METADATA_COUNT; i++)
         {
             auto&& kvp = frame_md.md_attributes[i];
@@ -1053,25 +1053,44 @@ namespace rs2
         ImGui::EndChild();
     }
 
-    void stream_model::add_d500_metadata_descriptions(std::map<rs2_frame_metadata_value, std::string>& descriptions) const
+    void stream_model::add_d585S_metadata_descriptions(std::map<rs2_frame_metadata_value, std::string>& descriptions) const
     {
+        std::vector<std::string> meanings;
         descriptions[RS2_FRAME_METADATA_SAFETY_DEPTH_FRAME_COUNTER] = "Counter of the depth frame upon which the stream was calculated";
-        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL1] = "Designates the Yellow zone status: 0x1 - High, 0x0 - Low";
+        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL1] = "Designates the \"Yellow\" zone status: 1 - High, 0 - Low";
         descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL1_ORIGIN] = "When l1 is low - equals to frame_counter in safety_header - For l1=0x1 : hold the Frame id on last transition to High state";
-        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL2] = "Designates the Red zone status: 0x1 - High, 0x0 - Low";
+        descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL2] = "Designates the \"Red\" zone status: 1 - High, 0 - Low";
         descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL2_ORIGIN] = "When l2 is low - equals to frame_counter in safety_header - For l2=0x1 : hold the Frame id on last transition to High state";
         descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL1_VERDICT] = "Current verdict for l1 Safety Signal - May differ from l1_signal due to additional logics applied";
         descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL2_VERDICT] = "Current verdict for l2 Safety Signal - May differ from l2_signal due to additional logics applied";
         descriptions[RS2_FRAME_METADATA_SAFETY_OPERATIONAL_MODE] = "Reflects the SC operational mode (XU control)";
-        descriptions[RS2_FRAME_METADATA_SAFETY_VISION_VERDICT] = "Bitmask, enumerated";
-        descriptions[RS2_FRAME_METADATA_SAFETY_HARA_EVENTS] = "Bitmask, enumerated";
-        descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_INTEGRITY] = "Bitmask, enumerated";
+
+        meanings = { "Not Safe", "Collison(s) in Red zone", "Collision(s) in Yellow zone" };
+        descriptions[RS2_FRAME_METADATA_SAFETY_VISION_VERDICT] = "Depth Visual Safety Verdict:" + get_meaning(RS2_FRAME_METADATA_SAFETY_VISION_VERDICT, meanings, "Safe");
+        
+        meanings = { "HaRa triggers identified", "Collison(s) in Red zone", "Collision(s) in Yellow zone","Depth Fill Rate in the Diagnostic Zone is lower than the require confidence level","Depth Fill Rate in the Floor Area is lower than the require confidence level",
+        "Cliff detection was triggered","Depth noise standard deviation  is higher than permitted level","Camera Posture/Floor position critical deviation is detected", "Safety Preset error","Image Depth Fill Rate is lower than the require confidence level","Frame drops/insufficient data"};
+        descriptions[RS2_FRAME_METADATA_SAFETY_HARA_EVENTS] = "HaRa events:" + get_meaning(RS2_FRAME_METADATA_SAFETY_HARA_EVENTS, meanings, "No HaRa events identified");
+        
+        meanings = { "Preset inconsistency identified", "Preset CRC check invalid", "Discrepancy between actual and expected Preset Id","Preset Selection with GPIO is invalidated."};
+        descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_INTEGRITY] = "Preset integrity:" + get_meaning(RS2_FRAME_METADATA_SAFETY_PRESET_INTEGRITY, meanings, "Preset integrity identified");
+        
         descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_ID_SELECTED] = "Safety Preset index set via Adaptive Field selection GPIO";
         descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_ID_USED] = "Safety Preset index used in the latest Vision Safety algo processing";
         descriptions[RS2_FRAME_METADATA_SAFETY_SOC_FUSA_EVENTS] = "Bitmask, enumerated";
         descriptions[RS2_FRAME_METADATA_SAFETY_SOC_FUSA_ACTION] = "Bitmask, enumerated";
         descriptions[RS2_FRAME_METADATA_SAFETY_SOC_STATUS] = "Bitmask, enumerated";
-        descriptions[RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT] = "Bitmask, enumerated";
+
+        meanings = { "Not safe", "ADC1 over-voltage", "ADC1 under-voltage", "ADC2 over-voltage", "ADC2 under-voltage", "ADC3 over-voltage", 
+            "ADC3 under-voltage", "ADC4 over-voltage", "ADC4 under-voltage", "ADC5 over-voltage", "ADC5 under-voltage", "ADC6 over-voltage", 
+            "ADC6 under-voltage", "ADC7 over-voltage", "ADC7 under-voltage", "PVT0 over-voltage", "PVT0 under-voltage", "PVT1 over-voltage", 
+            "PVT1 under-voltage", "PVT2 over-voltage", "PVT2 under-voltage", "PVT3 over-voltage", "PVT3 under-voltage", "PVT4 over-voltage", 
+            "PVT4 under-voltage", "PVT5 over-voltage", "PVT5 under-voltage", "PVT6 over-voltage", "PVT6 under-voltage", "IR L over-voltage", 
+            "IR L under-voltage", "Projector L over-voltage", "Projector L under-voltage", "IMU sensor over-voltage", "IMU sensor under-voltage", 
+            "RGB sensor over-voltage", "RGB sensor under-voltage", "IR R over-voltage", "IR R under-voltage", "Projector R over-voltage", 
+            "Projector R under-voltage", "APM PRIN L over-voltage", "APM PRIN L under-voltage", "APM PRIN R over-voltage", "APM PRIN R under-voltage", 
+            "Thermal over-voltage", "Thermal under-voltage", "Humidity over-voltage", "Humidity under-voltage", "SMCU temprature over-voltage", "SMCU temprature under-voltage" };
+        descriptions[RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT] = "MB Fusa events:" + get_meaning(RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT, meanings, "Safe");
         descriptions[RS2_FRAME_METADATA_SAFETY_MB_FUSA_ACTION] = "Bitmask, enumerated";
         descriptions[RS2_FRAME_METADATA_SAFETY_MB_STATUS] = "Provision for future enhancements";
         descriptions[RS2_FRAME_METADATA_SAFETY_SMCU_STATUS] = "Bitmask, enumerated";
@@ -1090,8 +1109,34 @@ namespace rs2
         descriptions[RS2_FRAME_METADATA_NUMBER_OF_3D_VERTICES] = "The max number of points is 640*360";
     }
 
+    // every bit is represented by its own meaning - first bit by first meaning second by second meaning etc.
+    // if the value is 0, meaning_for_zero will be used instead
+    std::string stream_model::get_meaning(const rs2_frame_metadata_value& md_val, const std::vector<std::string>& bits_meanings, const std::string& meaning_for_zero) const
+    {
+        if (bits_meanings.size() > 63)
+            return "bits meanings passed is too long!"; // not supposed to reach here
+        std::string meanings_str = "";
+        uint64_t attribute_val = frame_md.md_attributes[md_val].second;
+        uint64_t bitmask = 1;
+        int i = 0;
+        for (const std::string& bit_meaning : bits_meanings)
+        {
+            if (attribute_val & bitmask)
+            {
+                meanings_str += "\n" + bit_meaning + " (" + std::to_string(i) + ")";
+            }
+            bitmask = bitmask << 1;
+            i++;
+        }
+        if (meanings_str.empty() && !meaning_for_zero.empty())
+            meanings_str = "\n" + meaning_for_zero;
+        return meanings_str;
+    }
+
     std::string stream_model::format_value(rs2_frame_metadata_value& md_val, rs2_metadata_type& attribute_val) const
     {
+        if (md_val == RS2_FRAME_METADATA_SAFETY_OPERATIONAL_MODE)
+            return rs2_safety_mode_to_string((rs2_safety_mode)attribute_val);
         if (should_show_in_hex(md_val))
             return rsutils::string::from() << "0x" << std::hex << attribute_val; // return value as hex
         return rsutils::string::from() << attribute_val;
@@ -1100,7 +1145,10 @@ namespace rs2
     bool stream_model::should_show_in_hex(rs2_frame_metadata_value& md_val) const
     {
         // place in the SET metadata types you wish to display in HEX format
-        static std::unordered_set< int > show_in_hex;
+        static std::unordered_set< int > show_in_hex( { RS2_FRAME_METADATA_SAFETY_VISION_VERDICT,
+                RS2_FRAME_METADATA_SAFETY_HARA_EVENTS,
+                RS2_FRAME_METADATA_SAFETY_PRESET_INTEGRITY,
+                RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT });
 
         if (show_in_hex.find(md_val) != show_in_hex.end())
             return true;
