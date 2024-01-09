@@ -14,6 +14,7 @@ https://github.com/Yepkit/pykush
 from rspy import log
 import time
 
+from rspy import usb_relay
 
 if __name__ == '__main__':
     import os, sys, getopt
@@ -50,17 +51,16 @@ class NoneFoundError(pykush.YKUSHNotFound):
         super().__init__(self, message or 'no YKUSH module found')
 
 
-class Ykush:
+class Ykush(usb_relay.usb_relay):
     _ykush = None
     NUM_PORTS = 3
 
     def __init__(self):
+        super().__init__()
         yk = self.discover()
         if yk == None:
             raise NoneFoundError()
-
-    def __del__(self):
-        self.disconnect()
+        self._ykush = None
 
     def discover(self, retries = 0, serial = None, path = None):
         """
@@ -72,9 +72,9 @@ class Ykush:
             try:
                 ykush_dev = pykush.YKUSH(serial=serial, path=path)
             except pykush.YKUSHNotFound as e:
-                log.e("No YKUSH device found!", e)
+                log.w("YKUSH device not found!")
             except Exception as e:
-                log.e("Unexpected error occurred!", e)
+                log.w("Unexpected error occurred!", e)
             finally:
                 if not ykush_dev and i < retries:
                     time.sleep(1)
@@ -95,6 +95,8 @@ class Ykush:
 
         if not self._ykush:
             self._ykush = self.discover(serial=serial, path=path)
+
+        self._set_connected(self, usb_relay.YKUSH)
 
     def is_connected(self):
         return self._ykush is not None
@@ -212,11 +214,12 @@ class Ykush:
     def get_port_from_usb(self, first_usb_index, second_usb_index ):
         """
         Based on last two USB location index, provide the port number
+        On YKUSH, we only have one USB location index
         """
-        ykush_port_usb_map = {(1, 0): 3,
-                              (2, 0): 2,
-                              (3, 0): 1}
-        return ykush_port_usb_map[(first_usb_index, second_usb_index)]
+        ykush_port_usb_map = {1: 3,
+                              2: 2,
+                              3: 1}
+        return ykush_port_usb_map[second_usb_index]
 
     def find_all_hubs(self):
         """

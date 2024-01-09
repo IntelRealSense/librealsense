@@ -8,7 +8,7 @@ See documentation for brainstem here:
 https://acroname.com/reference/api/python/index.html
 """
 
-from rspy import log
+from rspy import log, usb_relay
 import time
 
 
@@ -45,16 +45,15 @@ class NoneFoundError( RuntimeError ):
     def __init__( self, message = None ):
         super().__init__( self, message  or  'no Acroname module found' )
 
-class Acroname:
+class Acroname(usb_relay.usb_relay):
 
     hub = None
 
     def __init__(self):
-        self.discover()
-
-    def __del__(self):
-        self.disconnect()
-
+        super().__init__()
+        acroname = self.discover()
+        if acroname is None:
+            raise NoneFoundError()
 
     def discover(self, retries = 0):
         """
@@ -118,9 +117,11 @@ class Acroname:
                     time.sleep(1)
                 else:
                     log.d('reconnected')
+                    self._set_connected(self, usb_relay.ACRONAME)
                     return
             raise RuntimeError("failed to reconnect to Acroname (result={})".format(result))
 
+        self._set_connected(self, usb_relay.ACRONAME)
 
     def find_all_hubs(self):
         """
@@ -367,17 +368,17 @@ class Acroname:
 
 
 if __name__ == '__main__':
-    device = Acroname()
+    acroname = Acroname()
     for opt,arg in opts:
         if opt in ('--enable'):
-            device.connect()
-            device.enable_ports()   # so ports() will return all
+            acroname.connect()
+            acroname.enable_ports()   # so ports() will return all
         elif opt in ('--disable'):
-            device.connect()
-            device.disable_ports()
+            acroname.connect()
+            acroname.disable_ports()
         elif opt in ('--recycle'):
-            device.connect()
-            device.enable_ports()   # so ports() will return all
-            device.recycle_ports()
+            acroname.connect()
+            acroname.enable_ports()   # so ports() will return all
+            acroname.recycle_ports()
         elif opt in ('--reset'):
-            device.connect( reset = True )
+            acroname.connect( reset = True )

@@ -43,7 +43,7 @@ MAX_ENUMERATION_TIME = 15  # [sec]
 try:
     import pyrealsense2 as rs
     log.d( rs )
-    relay = usb_relay.usb_relay()
+    relay = usb_relay.create()
     sys.path = sys.path[:-1]  # remove what we added
 except ModuleNotFoundError:
     log.w( 'No pyrealsense2 library is available! Running as if no cameras available...' )
@@ -72,7 +72,7 @@ class Device:
             self._product_line = dev.get_info( rs.camera_info.product_line )
         self._physical_port = dev.supports( rs.camera_info.physical_port ) and dev.get_info( rs.camera_info.physical_port ) or None
 
-        self._usb_location, self._port = relay.get_usb_and_port_location(self._physical_port, _hubs)
+        self._usb_location, self._port = usb_relay.get_usb_and_port_location(relay, self._physical_port, _hubs)
 
         self._removed = False
 
@@ -126,7 +126,7 @@ def map_unknown_ports():
     Fill in unknown ports in devices by enabling one port at a time, finding out which device
     is there.
     """
-    if relay.not_supports_port_mapping:
+    if not relay or not relay.supports_port_mapping():
         return
     global _device_by_sn
     devices_with_unknown_ports = [device for device in _device_by_sn.values() if device.port is None]
@@ -202,14 +202,15 @@ def query( monitor_changes=True, hub_reset=False, recycle_ports=True ):
     #
     # Before we can start a context and query devices, we need to enable all the ports
     # on the relay, if any:
-    if not relay.is_connected():
-        relay.connect(hub_reset)
-    relay.disable_ports( sleep_on_change = 5 )
-    relay.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
+    if relay:
+        if not relay.is_connected():
+            relay.connect(hub_reset)
+        relay.disable_ports( sleep_on_change = 5 )
+        relay.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
 
-    if platform.system() == 'Linux':
-        global _hubs
-        _hubs = set(relay.find_all_hubs())
+        if platform.system() == 'Linux':
+            global _hubs
+            _hubs = set(relay.find_all_hubs())
     #
     # Get all devices, and store by serial-number
     global _device_by_sn, _context, _port_to_sn
@@ -499,7 +500,7 @@ def enable_only( serial_numbers, recycle = False, timeout = MAX_ENUMERATION_TIME
                     re-enabling
     :param timeout: The maximum seconds to wait to make sure the devices are indeed online
     """
-    if relay.has_relay:
+    if relay and relay.has_relay():
         #
         ports = [ get( sn ).port for sn in serial_numbers ]
         #
@@ -654,7 +655,7 @@ if __name__ == '__main__':
             if opt in ('--list'):
                 action = 'list'
             elif opt in ('--port'):
-                if relay.has_relay:
+                if relay.has_relay():
                     log.f( 'No relay available' )
                 all_ports = relay.all_ports()
                 str_ports = arg.split(',')
@@ -666,12 +667,12 @@ if __name__ == '__main__':
             elif opt in ('--ports'):
                 printer = get_phys_port
             elif opt in ('--all'):
-                if relay.has_relay:
+                if relay.has_relay():
                     log.f( 'No relay available' )
                 relay.enable_ports()
                 action = 'none'
             elif opt in ('--none'):
-                if relay.has_relay:
+                if relay.has_relay():
                     log.f( 'No relay available' )
                 relay.disable_ports()
                 action = 'none'
