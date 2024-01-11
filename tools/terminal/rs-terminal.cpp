@@ -18,6 +18,7 @@
 
 using namespace std;
 using namespace TCLAP;
+using rsutils::json;
 
 
 vector<uint8_t> build_raw_command_data(const command& command, const vector<string>& params)
@@ -197,14 +198,16 @@ int main(int argc, char** argv)
     // parse command.xml
     rs2::log_to_file(RS2_LOG_SEVERITY_WARN, "librealsense.log");
 
-    rsutils::json settings;
+    json settings = json::object();
 #ifdef BUILD_WITH_DDS
-    rsutils::json dds;
-    if( domain_arg.isSet() )
-        dds["domain"] = domain_arg.getValue();
-    if( only_sw_arg.isSet() )
+    if( domain_arg.isSet() || only_sw_arg.isSet() )
+    {
+        json dds = json::object();
+        if( domain_arg.isSet() )
+            dds["domain"] = domain_arg.getValue();
         dds["enabled"];  // null: remove global dds:false or dds/enabled:false, if any
-    settings["dds"] = std::move( dds );
+        settings["dds"] = std::move( dds );
+    }
 #endif
     if( only_sw_arg.getValue() )
         settings["device-mask"] = RS2_PRODUCT_LINE_SW_ONLY | RS2_PRODUCT_LINE_ANY;
