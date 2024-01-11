@@ -22,6 +22,7 @@ from site import getusersitepackages   # not the other stuff, like quit(), exit(
 sys.path = [p for p in sys.path if not file.is_inside( p, getusersitepackages() )]
 #log.d( 'modified=', sys.path )
 
+
 def usage():
     ourname = os.path.basename( sys.argv[0] )
     print( 'Syntax: ' + ourname + ' [options] [dir]' )
@@ -400,7 +401,7 @@ def devices_by_test_config( test, exceptions ):
                 else:
                     yield configuration, serial_numbers
         except RuntimeError as e:
-            if devices.relay.has_relay():
+            if devices.relay:
                 log.e( log.red + test.name + log.reset + ': ' + str( e ) )
             else:
                 log.w( log.yellow + test.name + log.reset + ': ' + str( e ) )

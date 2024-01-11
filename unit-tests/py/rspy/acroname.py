@@ -10,7 +10,7 @@ https://acroname.com/reference/api/python/index.html
 
 from rspy import log, usb_relay
 import time
-
+import platform, re
 
 if __name__ == '__main__':
     import os, sys, getopt
@@ -47,38 +47,13 @@ class NoneFoundError( RuntimeError ):
 
 class Acroname(usb_relay.usb_relay):
 
-    hub = None
+
 
     def __init__(self):
         super().__init__()
-        acroname = self.discover()
-        if acroname is None:
+        if discover() is None:  # raise an error if there is no hub connected
             raise NoneFoundError()
-
-    def discover(self, retries = 0):
-        """
-        Return all Acroname module specs in a list. Raise NoneFoundError if one is not found!
-        """
-
-        log.d( 'discovering Acroname modules ...' )
-        # see https://acroname.com/reference/_modules/brainstem/module.html#Module.discoverAndConnect
-        try:
-            log.debug_indent()
-            for i in range(retries + 1):
-                specs = brainstem.discover.findAllModules( brainstem.link.Spec.USB )
-                if not specs:
-                    time.sleep(1)
-                else:
-                    for spec in specs:
-                        log.d( '...', spec )
-                    break
-            if not specs:
-                raise self.NoneFoundError()
-        finally:
-            log.debug_unindent()
-
-        return specs
-
+        self.hub = None
 
     def connect(self,  reset = False, req_spec = None ):
         """
@@ -92,7 +67,7 @@ class Acroname(usb_relay.usb_relay):
         if req_spec:
             specs = [req_spec]
         else:
-            specs = self.discover()
+            specs = discover()
 
         spec = specs[0]
         result = self.hub.connectFromSpec( spec )
@@ -117,34 +92,14 @@ class Acroname(usb_relay.usb_relay):
                     time.sleep(1)
                 else:
                     log.d('reconnected')
-                    self._set_connected(self, usb_relay.ACRONAME)
                     return
             raise RuntimeError("failed to reconnect to Acroname (result={})".format(result))
-
-        self._set_connected(self, usb_relay.ACRONAME)
 
     def find_all_hubs(self):
         """
         Yields all hub port numbers
         """
-        from rspy import lsusb
-        #
-        # 24ff:8013 =
-        #   iManufacturer           Acroname Inc.
-        #   iProduct                USBHub3p-3[A]
-        hubs = set( lsusb.devices_by_vendor( '24ff' ))
-        ports = set()
-        # go thru the tree and find only the top-level ones (which we should encounter first)
-        for dev,dev_port in lsusb.tree():
-            if dev not in hubs:
-                continue
-            for port in ports:
-                # ignore everything inside existing hubs - we only want the top-level
-                if dev_port.startswith( port + '.' ):
-                    break
-            else:
-                ports.add( dev_port )
-                yield dev_port
+        yield from usb_relay.find_all_hubs('24ff')
 
 
     def is_connected(self):
@@ -288,25 +243,6 @@ class Acroname(usb_relay.usb_relay):
         return result
 
 
-    def recycle_ports(self, portlist = None, timeout = 2 ):
-        """
-        Disable and enable a port
-        :param timeout: how long to wait before re-enabling
-        :return: True if everything OK, False otherwise
-        """
-        if portlist is None:
-            portlist = self.ports()
-        #
-        result = self.disable_ports( portlist )
-        #
-        import time
-        time.sleep( timeout )
-        #
-        result = self.enable_ports( portlist ) and result
-        #
-        return result
-
-
     def set_ports_usb2(self,  portlist = None, timeout = 100e-3 ):
         """
         Set USB ports to USB2
@@ -350,21 +286,99 @@ class Acroname(usb_relay.usb_relay):
         #
         return volt * amps
 
+    if 'windows' in platform.system().lower():
+        def _get_port_by_loc(self, usb_location, hubs):
+            """
+            """
+            if usb_location:
+                #
+                # T265 locations look differently...
+                match = re.fullmatch(r'Port_#(\d+)\.Hub_#(\d+)', usb_location, re.IGNORECASE)
+                if match:
+                    # We don't know how to get the port from these yet!
+                    return None  # int(match.group(2))
+                else:
+                    split_location = [int(x) for x in usb_location.split('.')]
+                    # lambda helper to return the last 2 non-zero numbers, used when connecting using an additional hub
+                    # ex: laptop -> hub -> acroname
+                    get_last_two_digits = lambda array: tuple(
+                        reversed(list(reversed([i for i in array if i != 0]))[:2]))
+                    # only the last two digits are necessary
+                    first_index, second_index = get_last_two_digits(split_location)
 
-    def get_port_from_usb(self, first_usb_index, second_usb_index ):
-        """
-        Based on last two USB location index, provide the port number
-        """
-        acroname_port_usb_map = {(4, 4): 0,
-                                 (4, 3): 1,
-                                 (4, 2): 2,
-                                 (4, 1): 3,
-                                 (3, 4): 4,
-                                 (3, 3): 5,
-                                 (3, 2): 6,
-                                 (3, 1): 7,
-                                 }
-        return acroname_port_usb_map[(first_usb_index, second_usb_index)]
+                    return get_port_from_usb(first_index, second_index)
+    else:
+
+        def _get_port_by_loc(self, usb_location, hubs):
+            """
+            """
+            if usb_location:
+                #
+                # Devices connected through an acroname will be in one of two sub-hubs under the acroname main
+                # hub. Each is a 4-port hub with a different port (4 for ports 0-3, 3 for ports 4-7):
+                #     /:  Bus 02.Port 1: Dev 1, Class=root_hub, Driver=xhci_hcd/6p, 10000M
+                #         |__ Port 2: Dev 2, If 0, Class=Hub, Driver=hub/4p, 5000M                       <--- ACRONAME
+                #             |__ Port 3: Dev 3, If 0, Class=Hub, Driver=hub/4p, 5000M
+                #                 |__ Port X: Dev, If...
+                #                 |__ Port Y: ...
+                #             |__ Port 4: Dev 4, If 0, Class=Hub, Driver=hub/4p, 5000M
+                #                 |__ Port Z: ...
+                # (above is output from 'lsusb -t')
+                # For the above acroname at '2-2' (bus 2, port 2), there are at least 3 devices:
+                #     2-2.3.X
+                #     2-2.3.Y
+                #     2-2.4.Z
+                # Given the two sub-ports (3.X, 3.Y, 4.Z), we can get the port number.
+                # NOTE: some of our devices are hubs themselves! For example, the SR300 will show as '2-2.3.2.1' --
+                # we must start a known hub or else the ports we look at are meaningless...
+                #
+                for port in hubs:
+                    if usb_location.startswith(port + '.'):
+                        match = re.search(r'^(\d+)\.(\d+)', usb_location[len(port) + 1:])
+                        if match:
+                            return get_port_from_usb(int(match.group(1)), int(match.group(2)))
+
+
+def discover(retries = 0):
+    """
+    Return all Acroname module specs in a list. Raise NoneFoundError if one is not found!
+    """
+
+    log.d( 'discovering Acroname modules ...' )
+    # see https://acroname.com/reference/_modules/brainstem/module.html#Module.discoverAndConnect
+    try:
+        log.debug_indent()
+        for i in range(retries + 1):
+            specs = brainstem.discover.findAllModules(brainstem.link.Spec.USB)
+            if not specs:
+                time.sleep(1)
+            else:
+                for spec in specs:
+                    log.d( '...', spec )
+                break
+        if not specs:
+            raise NoneFoundError()
+    finally:
+        log.debug_unindent()
+
+    return specs
+
+
+def get_port_from_usb(first_usb_index, second_usb_index ):
+    """
+    Based on last two USB location index, provide the port number
+    """
+    acroname_port_usb_map = {(4, 4): 0,
+                             (4, 3): 1,
+                             (4, 2): 2,
+                             (4, 1): 3,
+                             (3, 4): 4,
+                             (3, 3): 5,
+                             (3, 2): 6,
+                             (3, 1): 7,
+                             }
+    return acroname_port_usb_map[(first_usb_index, second_usb_index)]
+
 
 
 if __name__ == '__main__':
