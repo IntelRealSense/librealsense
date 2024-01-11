@@ -13,7 +13,7 @@ https://github.com/Yepkit/pykush
 
 from rspy import log
 import time
-
+import platform, re
 from rspy import usb_relay
 
 if __name__ == '__main__':
@@ -52,35 +52,13 @@ class NoneFoundError(pykush.YKUSHNotFound):
 
 
 class Ykush(usb_relay.usb_relay):
-    _ykush = None
-    NUM_PORTS = 3
-
     def __init__(self):
         super().__init__()
-        yk = self.discover()
-        if yk == None:
-            raise NoneFoundError()
+        if discover() is None:
+            raise NoneFoundError()  # raise an error if there is no hub connected
         self._ykush = None
+        self.NUM_PORTS = 3
 
-    def discover(self, retries = 0, serial = None, path = None):
-        """
-        Return a YKUSH device. Raise YKUSHNotFound if none found
-        If it was called more than once when there's only one device connected, return it
-        """
-        ykush_dev = None
-        for i in range(retries + 1):
-            try:
-                ykush_dev = pykush.YKUSH(serial=serial, path=path)
-            except pykush.YKUSHNotFound as e:
-                log.w("YKUSH device not found!")
-            except Exception as e:
-                log.w("Unexpected error occurred!", e)
-            finally:
-                if not ykush_dev and i < retries:
-                    time.sleep(1)
-                else:
-                    break
-        return ykush_dev
 
     def connect(self, reset = False, serial = None, path = None):
         """
@@ -94,9 +72,7 @@ class Ykush(usb_relay.usb_relay):
             time.sleep(5)
 
         if not self._ykush:
-            self._ykush = self.discover(serial=serial, path=path)
-
-        self._set_connected(self, usb_relay.YKUSH)
+            self._ykush = discover(serial=serial, path=path)
 
     def is_connected(self):
         return self._ykush is not None
@@ -132,7 +108,7 @@ class Ykush(usb_relay.usb_relay):
 
     def port_state( self, port ):
         if port < 1 or port > self.NUM_PORTS:
-            raise ValueError( "port number must be [1-{}]".format(self.NUM_PORTS) )
+            raise ValueError( f"port number must be [1-{self.NUM_PORTS}]")
         if not self._ykush:
             raise NoneFoundError("No YKUSH found")
         return "Enabled" if self._ykush.get_port_state(port) else "Disabled"
@@ -194,65 +170,81 @@ class Ykush(usb_relay.usb_relay):
 
         return result
 
-    def recycle_ports(self, portlist = None, timeout = 2 ):
-        """
-        Disable and enable a port
-        :param timeout: how long to wait before re-enabling
-        :return: True if everything OK, False otherwise
-        """
-        if portlist is None:
-            portlist = self.ports()
-        #
-        result = self.disable_ports( portlist )
-        #
-        time.sleep( timeout )
-        #
-        result = self.enable_ports( portlist ) and result
-        #
-        return result
-
-    def get_port_from_usb(self, first_usb_index, second_usb_index ):
-        """
-        Based on last two USB location index, provide the port number
-        On YKUSH, we only have one USB location index
-        """
-        ykush_port_usb_map = {1: 3,
-                              2: 2,
-                              3: 1}
-        return ykush_port_usb_map[second_usb_index]
-
     def find_all_hubs(self):
         """
         Yields all hub port numbers
         """
-        from rspy import lsusb
-        hubs = set( lsusb.devices_by_vendor( '04d8' ))
-        ports = set()
-        # go thru the tree and find only the top-level ones (which we should encounter first)
-        for dev,dev_port in lsusb.tree():
-            if dev not in hubs:
-                continue
-            for port in ports:
-                # ignore everything inside existing hubs - we only want the top-level
-                if dev_port.startswith( port + '.' ):
-                    break
+        yield from usb_relay.find_all_hubs('04d8' )
+
+    if 'windows' in platform.system().lower():
+        def _get_port_by_loc(self, usb_location, hubs):
+            """
+            """
+            if usb_location:
+                #
+                # T265 locations look differently...
+                match = re.fullmatch(r'Port_#(\d+)\.Hub_#(\d+)', usb_location, re.IGNORECASE)
+                if match:
+                    # We don't know how to get the port from these yet!
+                    return None  # int(match.group(2))
+                else:
+                    split_location = [int(x) for x in usb_location.split('.')]
+                    # return the last non-zero numbers, used when connecting using an additional hub
+                    # ex: laptop -> hub -> ykush
+                    index = [i for i in split_location[::-1] if i != 0][0]
+                    # only the last digit is necessary
+                    return get_port_from_usb(index)
+    else:
+
+        def _get_port_by_loc(self, usb_location, hubs):
+            """
+            """
+            return get_port_from_usb(int(usb_location.split(".")[1]))
+
+
+def discover(retries = 0, serial = None, path = None):
+    """
+    Return a YKUSH device. Raise YKUSHNotFound if none found
+    If it was called more than once when there's only one device connected, return it
+    """
+    ykush_dev = None
+    for i in range(retries + 1):
+        try:
+            ykush_dev = pykush.YKUSH(serial=serial, path=path)
+        except pykush.YKUSHNotFound as e:
+            log.w("YKUSH device not found!")
+        except Exception as e:
+            log.w("Unexpected error occurred!", e)
+        finally:
+            if not ykush_dev and i < retries:
+                time.sleep(1)
             else:
-                ports.add( dev_port )
-                yield dev_port
+                break
+    return ykush_dev
+
+
+def get_port_from_usb( usb_index ):
+    """
+    Based on last USB location index, provide the port number
+    """
+    ykush_port_usb_map = {1: 3,
+                          2: 2,
+                          3: 1}
+    return ykush_port_usb_map[usb_index]
 
 
 if __name__ == '__main__':
-    device = Ykush()
+    ykush = Ykush()
     for opt,arg in opts:
         if opt in ('--enable'):
-            device.connect()
-            device.enable_ports()   # so ports() will return all
+            ykush.connect()
+            ykush.enable_ports()   # so ports() will return all
         elif opt in ('--disable'):
-            device.connect()
-            device.disable_ports()
+            ykush.connect()
+            ykush.disable_ports()
         elif opt in ('--recycle'):
-            device.connect()
-            device.enable_ports()   # so ports() will return all
-            device.recycle_ports()
+            ykush.connect()
+            ykush.enable_ports()   # so ports() will return all
+            ykush.recycle_ports()
         elif opt in ('--reset'):
-            device.connect( reset = True )
+            ykush.connect( reset = True )
