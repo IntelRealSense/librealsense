@@ -7,7 +7,12 @@ import platform
 from abc import ABC, abstractmethod
 
 
-class usb_relay(ABC):
+class NoneFoundError( RuntimeError ):
+    def __init__( self, message = None ):
+        super().__init__( self, message  or  'no hub found' )
+
+
+class device_hub(ABC):
     @abstractmethod
     def connect(self, reset = False):
         """
@@ -142,20 +147,20 @@ def find_all_hubs(vid):
 
 
 def create():
-    return _find_active_relay()
+    return _find_active_hub()
 
 
-def _find_active_relay():
+def _find_active_hub():
     """
-    Function finds an available relay to connect to and returns it
+    Function finds an available hub to connect to and returns it
     """
-    acroname_relay = _create_acroname()
-    if acroname_relay:
-        return acroname_relay
+    acroname_hub = _create_acroname()
+    if acroname_hub:
+        return acroname_hub
 
-    ykush_relay = _create_ykush()
-    if ykush_relay:
-        return ykush_relay
+    ykush_hub = _create_ykush()
+    if ykush_hub:
+        return ykush_hub
     import sys
     log.d('sys.path=', sys.path)
     return None

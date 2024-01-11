@@ -8,7 +8,7 @@ See documentation for brainstem here:
 https://acroname.com/reference/api/python/index.html
 """
 
-from rspy import log, usb_relay
+from rspy import log, device_hub
 import time
 import platform, re
 
@@ -45,7 +45,7 @@ class NoneFoundError( RuntimeError ):
     def __init__( self, message = None ):
         super().__init__( self, message  or  'no Acroname module found' )
 
-class Acroname(usb_relay.usb_relay):
+class Acroname(device_hub.device_hub):
 
 
 
@@ -99,7 +99,7 @@ class Acroname(usb_relay.usb_relay):
         """
         Yields all hub port numbers
         """
-        yield from usb_relay.find_all_hubs('24ff')
+        yield from device_hub.find_all_hubs('24ff')
 
 
     def is_connected(self):
