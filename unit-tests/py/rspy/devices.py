@@ -3,7 +3,7 @@
 
 import sys, os, re, platform
 
-from rspy import usb_relay
+from rspy import device_hub
 
 def usage():
     ourname = os.path.basename( sys.argv[0] )
@@ -13,8 +13,8 @@ def usage():
     print( '        --list         Enumerate devices (default action)' )
     print( '        --recycle      Recycle all' )
     print( 'Flags:' )
-    print( '        --all          Enable all port [requires relay]' )
-    print( '        --port <#>     Enable only this port [requires relay]' )
+    print( '        --all          Enable all port [requires hub]' )
+    print( '        --port <#>     Enable only this port [requires hub]' )
     print( '        --ports        Show physical port for each device (rather than the RS string)' )
     sys.exit(2)
 
@@ -38,19 +38,19 @@ sys.path.insert( 1, pyrs_dir )
 # D585S can take up to 15 sec to boot according to PRD
 MAX_ENUMERATION_TIME = 15  # [sec]
 
-# We need both pyrealsense2 and relay. We can work without relay, but
+# We need both pyrealsense2 and hub. We can work without hub, but
 # without pyrealsense2 no devices at all will be returned.
 try:
     import pyrealsense2 as rs
     log.d( rs )
-    relay = usb_relay.create()
+    hub = device_hub.create()
     sys.path = sys.path[:-1]  # remove what we added
 except ModuleNotFoundError:
     log.w( 'No pyrealsense2 library is available! Running as if no cameras available...' )
     import sys
     log.d( 'sys.path=', sys.path )
     rs = None
-    relay = None
+    hub = None
 
 import time
 
@@ -75,8 +75,8 @@ class Device:
 
         self._usb_location = None
         self._port = None
-        if relay:
-            self._usb_location, self._port = relay.get_usb_and_port_location(self._physical_port, _hubs)
+        if hub:
+            self._usb_location, self._port = hub.get_usb_and_port_location(self._physical_port, _hubs)
 
         self._removed = False
 
@@ -130,14 +130,14 @@ def map_unknown_ports():
     Fill in unknown ports in devices by enabling one port at a time, finding out which device
     is there.
     """
-    if not relay:
+    if not hub:
         return
     global _device_by_sn
     devices_with_unknown_ports = [device for device in _device_by_sn.values() if device.port is None]
     if not devices_with_unknown_ports:
         return
     #
-    ports = relay.ports()
+    ports = hub.ports()
     known_ports = [device.port for device in _device_by_sn.values() if device.port is not None]
     unknown_ports = [port for port in ports if port not in known_ports]
     try:
@@ -149,7 +149,7 @@ def map_unknown_ports():
         #
         for known_port in known_ports:
             if known_port not in ports:
-                log.e( "A device was found on port", known_port, "but the port is not reported as used by the relay!" )
+                log.e( "A device was found on port", known_port, "but the port is not reported as used by the hub!" )
         #
         if len( unknown_ports ) == 1:
             device = devices_with_unknown_ports[0]
@@ -157,7 +157,7 @@ def map_unknown_ports():
             device._port = unknown_ports[0]
             return
         #
-        relay.disable_ports( ports )
+        hub.disable_ports( ports )
         wait_until_all_ports_disabled()
         #
         # Enable one port at a time to try and find what device is connected to it
@@ -165,7 +165,7 @@ def map_unknown_ports():
         for port in unknown_ports:
             #
             log.d( 'enabling port', port )
-            relay.enable_ports( [port], disable_other_ports=True )
+            hub.enable_ports( [port], disable_other_ports=True )
             sn = None
             for retry in range( MAX_ENUMERATION_TIME ):
                 if len( enabled() ) == 1:
@@ -186,7 +186,7 @@ def map_unknown_ports():
                 else:
                     log.w( "Device with serial number", sn, "was found in port", port,
                             "but was not in context" )
-            relay.disable_ports( [port] )
+            hub.disable_ports( [port] )
             wait_until_all_ports_disabled()
     finally:
         log.debug_unindent()
@@ -197,7 +197,7 @@ def query( monitor_changes=True, hub_reset=False, recycle_ports=True ):
     Start a new LRS context, and collect all devices
     :param monitor_changes: If True, devices will update dynamically as they are removed/added
     :param recycle_ports: True to recycle all ports before querying devices; False to leave as-is
-    :param hub_reset: Whether we want to reset the relay hub - this might be a better way to
+    :param hub_reset: Whether we want to reset the hub - this might be a better way to
         recycle the ports in certain cases that leave the ports in a bad state
     """
     global rs
@@ -205,16 +205,16 @@ def query( monitor_changes=True, hub_reset=False, recycle_ports=True ):
         return
     #
     # Before we can start a context and query devices, we need to enable all the ports
-    # on the relay, if any:
-    if relay:
-        if not relay.is_connected():
-            relay.connect(hub_reset)
-        relay.disable_ports( sleep_on_change = 5 )
-        relay.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
+    # on the hub, if any:
+    if hub:
+        if not hub.is_connected():
+            hub.connect(hub_reset)
+        hub.disable_ports( sleep_on_change = 5 )
+        hub.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
 
         if platform.system() == 'Linux':
             global _hubs
-            _hubs = set(relay.find_all_hubs())
+            _hubs = set(hub.find_all_hubs())
     #
     # Get all devices, and store by serial-number
     global _device_by_sn, _context, _port_to_sn
@@ -492,7 +492,7 @@ def recovery():
 def enable_only( serial_numbers, recycle = False, timeout = MAX_ENUMERATION_TIME ):
     """
     Enable only the devices corresponding to the given serial-numbers. This can work either
-    with or without a relay: without, the devices will simply be HW-reset, but other devices
+    with or without a hub: without, the devices will simply be HW-reset, but other devices
     will still be present.
 
     NOTE: will raise an exception if any SN is unknown!
@@ -504,23 +504,23 @@ def enable_only( serial_numbers, recycle = False, timeout = MAX_ENUMERATION_TIME
                     re-enabling
     :param timeout: The maximum seconds to wait to make sure the devices are indeed online
     """
-    if relay:
+    if hub:
         #
         ports = [ get( sn ).port for sn in serial_numbers ]
         #
         if recycle:
             #
-            log.d( 'recycling ports via relay:', ports )
+            log.d( 'recycling ports via hub:', ports )
             #
             enabled_devices = enabled()
-            relay.disable_ports( )
+            hub.disable_ports( )
             _wait_until_removed( enabled_devices, timeout = timeout )
             #
-            relay.enable_ports( ports )
+            hub.enable_ports( ports )
             #
         else:
             #
-            relay.enable_ports( ports, disable_other_ports = True )
+            hub.enable_ports( ports, disable_other_ports = True )
         #
         _wait_for( serial_numbers, timeout = timeout )
         #
@@ -529,14 +529,14 @@ def enable_only( serial_numbers, recycle = False, timeout = MAX_ENUMERATION_TIME
         hw_reset( serial_numbers )
         #
     else:
-        log.d( 'no relay; ports left as-is' )
+        log.d( 'no hub; ports left as-is' )
 
 
 def enable_all():
     """
-    Enables all ports on the relay -- without a relay, this does nothing!
+    Enables all ports on the hub -- without a hub, this does nothing!
     """
-    relay.enable_ports()
+    hub.enable_ports()
 
 
 def _wait_until_removed( serial_numbers, timeout = 5 ):
@@ -600,7 +600,7 @@ def _wait_for( serial_numbers, timeout = MAX_ENUMERATION_TIME ):
 
 def hw_reset( serial_numbers, timeout = MAX_ENUMERATION_TIME ):
     """
-    Recycles the given devices manually, using a hardware-reset (rather than any relay port
+    Recycles the given devices manually, using a hardware-reset (rather than any hub port
     reset). The devices are sent a HW-reset command and then we'll wait until they come back
     online.
 
@@ -643,12 +643,12 @@ if __name__ == '__main__':
     if args:
         usage()
     try:
-        if relay:
-            if not relay.is_connected():
-                relay.connect()
+        if hub:
+            if not hub.is_connected():
+                hub.connect()
 
             if platform.system() == 'Linux':
-                _hubs = set(relay.find_all_hubs())
+                _hubs = set(hub.find_all_hubs())
 
         action = 'list'
         def get_handle(dev):
@@ -660,26 +660,26 @@ if __name__ == '__main__':
             if opt in ('--list'):
                 action = 'list'
             elif opt in ('--port'):
-                if not relay:
-                    log.f( 'No relay available' )
-                all_ports = relay.all_ports()
+                if not hub:
+                    log.f( 'No hub available' )
+                all_ports = hub.all_ports()
                 str_ports = arg.split(',')
                 ports = [int(port) for port in str_ports if port.isnumeric() and int(port) in all_ports]
                 if len(ports) != len(str_ports):
                     log.f( 'Invalid ports', str_ports )
-                relay.enable_ports( ports, disable_other_ports=False )
+                hub.enable_ports( ports, disable_other_ports=False )
                 action = 'none'
             elif opt in ('--ports'):
                 printer = get_phys_port
             elif opt in ('--all'):
-                if not relay:
-                    log.f( 'No relay available' )
-                relay.enable_ports()
+                if not hub:
+                    log.f( 'No hub available' )
+                hub.enable_ports()
                 action = 'none'
             elif opt in ('--none'):
-                if not relay:
-                    log.f( 'No relay available' )
-                relay.disable_ports()
+                if not hub:
+                    log.f( 'No hub available' )
+                hub.disable_ports()
                 action = 'none'
             elif opt in ('--recycle'):
                 action = 'recycle'
@@ -697,9 +697,9 @@ if __name__ == '__main__':
                     handle = printer(device)
                     ))
         elif action == 'recycle':
-            relay.recycle_ports()
+            hub.recycle_ports()
     finally:
-        # Disconnect from the relay -- if we don't it might crash on Linux...
-        relay.disconnect()
+        # Disconnect from the hub -- if we don't it might crash on Linux...
+        hub.disconnect()
 
 

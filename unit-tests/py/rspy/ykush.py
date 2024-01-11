@@ -14,7 +14,7 @@ https://github.com/Yepkit/pykush
 from rspy import log
 import time
 import platform, re
-from rspy import usb_relay
+from rspy import device_hub
 
 if __name__ == '__main__':
     import os, sys, getopt
@@ -51,7 +51,7 @@ class NoneFoundError(pykush.YKUSHNotFound):
         super().__init__(self, message or 'no YKUSH module found')
 
 
-class Ykush(usb_relay.usb_relay):
+class Ykush(device_hub.device_hub):
     def __init__(self):
         super().__init__()
         if discover() is None:
@@ -174,7 +174,7 @@ class Ykush(usb_relay.usb_relay):
         """
         Yields all hub port numbers
         """
-        yield from usb_relay.find_all_hubs('04d8' )
+        yield from device_hub.find_all_hubs('04d8' )
 
     if 'windows' in platform.system().lower():
         def _get_port_by_loc(self, usb_location, hubs):

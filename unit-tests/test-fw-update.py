@@ -19,14 +19,14 @@ import time
 # This is the first test running, discover acroname modules.
 # Not relevant to MIPI devices running on jetson for LibCI
 if 'jetson' not in test.context:
-    if not devices.acroname:
-        log.i( "No Acroname library found; skipping device FW update" )
+    if not devices.hub:
+        log.i( "No hub library found; skipping device FW update" )
         sys.exit(0)
     # Following will throw if no acroname module is found
-    from rspy import acroname
+    from rspy import device_hub
     try:
-        devices.acroname.discover()
-    except acroname.NoneFoundError as e:
+        devices.hub.discover()
+    except device_hub.NoneFoundError as e:
         log.f( e )
     # Remove acroname -- we're likely running inside run-unit-tests in which case the
     # acroname hub is likely already connected-to from there and we'll get an error
