@@ -9,6 +9,8 @@
 #include "core/notification.h"
 #include "platform/uvc-option.h"
 #include "platform/stream-profile-impl.h"
+#include <src/metadata-parser.h>
+#include <src/core/time-service.h>
 
 
 namespace librealsense {
@@ -180,8 +182,9 @@ void uvc_sensor::open( const stream_profiles & requests )
                     if( val_in_range( req_profile_base->get_format(), { RS2_FORMAT_MJPEG, RS2_FORMAT_Z16H } ) )
                         expected_size = static_cast< int >( f.frame_size );
 
+                    auto extension = frame_source::stream_to_frame_types( req_profile_base->get_stream_type() );
                     frame_holder fh = _source.alloc_frame(
-                        frame_source::stream_to_frame_types( req_profile_base->get_stream_type() ),
+                        { req_profile_base->get_stream_type(), extension },
                         expected_size,
                         std::move( fr->additional_data ),
                         true );

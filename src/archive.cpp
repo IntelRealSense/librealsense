@@ -1,13 +1,15 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
-#include "archive.h"
-#include "metadata-parser.h"
-#include "frame-archive.h"
-#include "core/pose-frame.h"
-#include "core/motion-frame.h"
-#include "core/disparity-frame.h"
-#include "composite-frame.h"
-#include "points.h"
+
+
+#include <src/archive.h>
+#include <src/frame-archive.h>
+#include <src/core/video-frame.h>
+#include <src/core/pose-frame.h>
+#include <src/core/motion-frame.h>
+#include <src/core/disparity-frame.h>
+#include <src/composite-frame.h>
+#include <src/points.h>
 
 
 namespace librealsense

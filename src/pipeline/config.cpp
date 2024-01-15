@@ -6,6 +6,7 @@
 #include "platform/platform-device-info.h"
 #include "media/playback/playback-device-info.h"
 #include "context.h"
+#include <rsutils/string/from.h>
 
 
 namespace librealsense
