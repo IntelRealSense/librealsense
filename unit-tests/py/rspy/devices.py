@@ -3,7 +3,6 @@
 
 import sys, os, re, platform
 
-from rspy import device_hub
 
 def usage():
     ourname = os.path.basename( sys.argv[0] )
@@ -40,6 +39,7 @@ MAX_ENUMERATION_TIME = 15  # [sec]
 
 # We need both pyrealsense2 and hub. We can work without hub, but
 # without pyrealsense2 no devices at all will be returned.
+from rspy import device_hub
 try:
     import pyrealsense2 as rs
     log.d( rs )
@@ -74,9 +74,13 @@ class Device:
         self._physical_port = dev.supports( rs.camera_info.physical_port ) and dev.get_info( rs.camera_info.physical_port ) or None
 
         self._usb_location = None
+        try:
+            self._usb_location = _get_usb_location(self._physical_port)
+        except Exception as e:
+            log.e('Failed to get usb location:', e)
         self._port = None
         if hub:
-            self._usb_location, self._port = hub.get_usb_and_port_location(self._physical_port, _hubs)
+            self._port = hub.get_port_by_location(self._physical_port, self._usb_location, _hubs)
 
         self._removed = False
 
@@ -628,6 +632,63 @@ def hw_reset( serial_numbers, timeout = MAX_ENUMERATION_TIME ):
     return _wait_for( serial_numbers, timeout = timeout )
 
 
+
+###############################################################################################
+if 'windows' in platform.system().lower():
+    def _get_usb_location( physical_port ):
+        """
+        Helper method to get Windows USB location from registry
+        """
+        if not physical_port:
+            return None
+        # physical port example:
+        #   \\?\usb#vid_8086&pid_0b07&mi_00#6&8bfcab3&0&0000#{e5323777-f976-4f5b-9b55-b94699c46e44}\global
+        #
+        re_result = re.match( r'.*\\(.*)#vid_(.*)&pid_(.*)(?:&mi_(.*))?#(.*)#', physical_port, flags = re.IGNORECASE )
+        dev_type = re_result.group(1)
+        vid = re_result.group(2)
+        pid = re_result.group(3)
+        mi = re_result.group(4)
+        unique_identifier = re_result.group(5)
+        #
+        import winreg
+        if mi:
+            registry_path = "SYSTEM\CurrentControlSet\Enum\{}\VID_{}&PID_{}&MI_{}\{}".format(
+                dev_type, vid, pid, mi, unique_identifier
+                )
+        else:
+            registry_path = "SYSTEM\CurrentControlSet\Enum\{}\VID_{}&PID_{}\{}".format(
+                dev_type, vid, pid, unique_identifier
+                )
+        try:
+            reg_key = winreg.OpenKey( winreg.HKEY_LOCAL_MACHINE, registry_path )
+        except FileNotFoundError:
+            log.e( 'Could not find registry key for port:', registry_path )
+            log.e( '    usb location:', physical_port )
+            return None
+        result = winreg.QueryValueEx( reg_key, "LocationInformation" )
+        # location example: 0000.0014.0000.016.003.004.003.000.000
+        # and, for T265: Port_#0002.Hub_#0006
+        return result[0]
+else:
+    def _get_usb_location( physical_port ):
+        """
+        """
+        if not physical_port:
+            return None
+        # physical port example:
+        # u'/sys/devices/pci0000:00/0000:00:14.0/usb2/2-3/2-3.3/2-3.3.1/2-3.3.1:1.0/video4linux/video0'
+        #
+        split_location = physical_port.split( '/' )
+        if len(split_location) > 4:
+            port_location = split_location[-4]
+        elif len(split_location) == 1:
+            # Recovery devices may have only the relevant port: e.g., L515 Recovery has "2-2.4.4-84"
+            port_location = physical_port
+        else:
+            raise RuntimeError( f"invalid physical port '{physical_port}'" )
+        # location example: 2-3.3.1
+        return port_location
 
 
 ###############################################################################################
