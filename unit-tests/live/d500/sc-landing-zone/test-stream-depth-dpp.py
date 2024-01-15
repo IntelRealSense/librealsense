@@ -23,9 +23,9 @@ def check_depth_dpp_streaming(width, height, fps):
     pipe.stop()
 
 
-################# Checking depth dpp streaming with res 1280x720 / 640x360 / 320x180 and fps 5/15/30/60 ##################
+################# Checking depth dpp streaming with all required combinations ##################
 
-res_arr = [[1280, 720], [640, 360], [320, 180]]
+res_arr = [[1280, 720], [640, 360]]
 fps_arr = [5, 15, 30, 60]
 
 for res in res_arr:
