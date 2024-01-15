@@ -732,6 +732,17 @@ class remote:
     def on_finish( self, callback ):
         self._on_finish = callback
 
+    def _output_ready( self ):
+        log.d( self._name, self._exception and 'raised an error' or 'is ready' )
+        if self._events:
+            event = self._events.pop(0)
+            if event:
+                event.set()
+        else:
+            # We raise the error here only as a last resort: we prefer handing it over to
+            # the waiting thread on the event!
+            self._raise_if_needed()
+
     def _output_reader( self ):
         """
         This is the worker function called from a thread to output the process stdout.
@@ -739,22 +750,19 @@ class remote:
         please follow the usage guidelines in the class notes.
         """
         nested_prefix = self._nested_indent and f'[{self._nested_indent}] ' or ''
+        if not nested_prefix:
+            x = -1
+        missing_ready = None
         for line in iter( self._process.stdout.readline, '' ):
             # NOTE: line will include the terminating \n EOL
             # NOTE: so readline will return '' (with no EOL) when EOF is reached - the "sentinel"
             #       2nd argument to iter() - and we'll break out of the loop
             if line == '___ready\n':
-                log.d( self._name, self._exception and 'raised an error' or 'is ready' )
-                if self._events:
-                    event = self._events.pop(0)
-                    if event:
-                        event.set()
-                else:
-                    # We raise the error here only as a last resort: we prefer handing it over to
-                    # the waiting thread on the event!
-                    self._raise_if_needed()
+                self._output_ready()
                 continue
-            if not nested_prefix or line.find( nested_prefix ) < 0:  # there could be color codes in the line
+            if nested_prefix:
+                x = line.find( nested_prefix )  # there could be color codes in the line
+            if x < 0:
                 if self._exception:
                     self._exception.append( line[:-1] )
                     # We cannot raise an error here -- it'll just exit the thread and not be
@@ -764,8 +772,16 @@ class remote:
                 elif line.startswith( '  File "' ):
                     # Some exception are syntax errors in the command, which would not have a 'Traceback'...
                     self._exception = [line[:-1]]
+                if missing_ready and line.endswith( missing_ready ):
+                    self._output_ready()
+                    line = line[:-len(missing_ready)]
+                    missing_ready = None
+                    if not line:
+                        continue
                 print( nested_prefix + line, end='', flush=True )
             else:
+                if x > 0 and line[:x] == '___ready\n'[:x]:
+                    missing_ready = '___ready\n'[x:]
                 print( line, end='', flush=True )
         #
         log.d( self._name, 'stdout is finished' )
