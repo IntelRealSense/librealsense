@@ -14,7 +14,7 @@ In addition you may want to use the 'info' functions in this module to add more 
 messages in case of a failed check
 """
 
-import os, sys, subprocess, traceback, platform, math
+import os, sys, subprocess, threading, traceback, platform, math
 
 from rspy import log
 
@@ -793,13 +793,11 @@ class remote:
         """
         Start the process
         """
-        import subprocess, threading
         log.d( self._name, 'starting:', self._cmd )
         self._process = subprocess.Popen( self._cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True )
         self._thread = threading.Thread( target = remote._output_reader, args=(self,) )
         #
         # We allow waiting until the script is ready for input: see wait_until_ready()
-        import threading
         self._ready = threading.Event()
         self._events = [ self._ready ]
         #
@@ -866,10 +864,11 @@ class remote:
             if self._interactive:
                 self._process.stdin.write( 'exit()\n' )  # make sure we respond to it to avoid timeouts
                 self._process.stdin.flush()
-            log.d( 'waiting for', self._name, 'to finish...' )
-            self._thread.join( timeout )
-            if self._thread.is_alive():
-                log.d( self._name, 'waiting for thread join timed out after', timeout, 'seconds' )
+            if self._thread != threading.current_thread():
+                log.d( 'waiting for', self._name, 'to finish...' )
+                self._thread.join( timeout )
+                if self._thread.is_alive():
+                    log.d( self._name, 'waiting for thread join timed out after', timeout, 'seconds' )
         self._terminate()
         self._raise_if_needed()
         return self.status()
