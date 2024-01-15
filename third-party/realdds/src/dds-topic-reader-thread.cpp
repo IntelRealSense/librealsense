@@ -39,9 +39,7 @@ void dds_topic_reader_thread::run( qos const & rqos )
     if( ! _on_data_available )
         DDS_THROW( runtime_error, "on-data-available must be provided" );
 
-    eprosima::fastdds::dds::StatusMask listener_mask;
-    listener_mask << eprosima::fastdds::dds::StatusMask::subscription_matched();
-    _reader = DDS_API_CALL( _subscriber->get()->create_datareader( _topic->get(), rqos, this, listener_mask ) );
+    _reader = DDS_API_CALL( _subscriber->get()->create_datareader( _topic->get(), rqos ) );
     
     _th = std::thread(
         [this, name = _topic->get()->get_name()]()
@@ -49,6 +47,7 @@ void dds_topic_reader_thread::run( qos const & rqos )
             eprosima::fastdds::dds::WaitSet wait_set;
             auto & condition = _reader->get_statuscondition();
             condition.set_enabled_statuses( eprosima::fastdds::dds::StatusMask::data_available()
+                                            << eprosima::fastdds::dds::StatusMask::subscription_matched()
                                             << eprosima::fastdds::dds::StatusMask::sample_lost() );
             wait_set.attach_condition( condition );
 
@@ -72,6 +71,12 @@ void dds_topic_reader_thread::run( qos const & rqos )
                 if( changed.is_active( eprosima::fastdds::dds::StatusMask::data_available() ) )
                 {
                     on_data_available( _reader );
+                }
+                if( changed.is_active( eprosima::fastdds::dds::StatusMask::subscription_matched() ) )
+                {
+                    eprosima::fastdds::dds::SubscriptionMatchedStatus status;
+                    _reader->get_subscription_matched_status( status );
+                    on_subscription_matched( _reader, status );
                 }
             }
         } );
