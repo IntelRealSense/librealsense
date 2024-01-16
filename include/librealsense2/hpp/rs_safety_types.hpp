@@ -21,26 +21,6 @@ inline std::string sc_reserved_arr_to_string(const uint8_t* data, size_t len)
     return ss.str();
 }
 
-inline std::string sc_mos_target_to_string(rs2_safety_mos_type const& mos) {
-    std::string result;
-    switch (mos)
-    {
-    case rs2_safety_mos_type_value::mos_hand:
-        result = "HAND";
-        break;
-    case rs2_safety_mos_type_value::mos_leg:
-        result = "LEG";
-        break;
-    case rs2_safety_mos_type_value::mos_body:
-        result = "BODY";
-        break;
-    default:
-        result = "UNKNOWN";
-        break;
-    }
-    return result;
-}
-
 inline std::ostream& operator<<(std::ostream& out, rs2_safety_zone const& sz)
 {
     out << "\n\t\t" << "Zone Polygon - Point #0: { x:" << sz.zone_polygon[0].x << ", y:" << sz.zone_polygon[0].y << " }";
@@ -48,10 +28,7 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_zone const& sz)
     out << "\n\t\t" << "Zone Polygon - Point #2: { x:" << sz.zone_polygon[2].x << ", y:" << sz.zone_polygon[2].y << " }";
     out << "\n\t\t" << "Zone Polygon - Point #3: { x:" << sz.zone_polygon[3].x << ", y:" << sz.zone_polygon[3].y << " }";
     out << "\n\t\t" << "Safety Trigger Confidence: " << (int)(sz.safety_trigger_confidence);
-    out << "\n\t\t" << "Minimum Object Size - Diameter: " << sz.minimum_object_size.x << " [mm]";
-    out << "\n\t\t" << "Minimum Object Size - Length: " << sz.minimum_object_size.y << " [mm]";
-    out << "\n\t\t" << "Minimum Object Size - Target Type: " << sc_mos_target_to_string(sz.mos_target_type);
-    out << "\n\t\t" << "Reserved[8]: " << sc_reserved_arr_to_string(sz.reserved, 8);
+    out << "\n\t\t" << "Reserved[7]: " << sc_reserved_arr_to_string(sz.reserved, 7);
     return out;
 }
 
@@ -68,19 +45,19 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_2d_masking_zone co
 
 inline std::ostream& operator<<(std::ostream& out, rs2_safety_environment const& se)
 {
-    out << "\t\t" << "Grid Cell Size: " << se.grid_cell_size << " [m]";
-    out << "\n\t\t" << "Safety Trigger Duration: " << se.safety_trigger_duration << " [sec]";
+    out << "\t\t" << "Safety Trigger Duration: " << se.safety_trigger_duration << " [sec]";
     out << "\n\t\t" << "Linear Velocity: " << se.linear_velocity << " [m/sec]";
     out << "\n\t\t" << "Angular Velocity: " << se.angular_velocity << " [rad/sec]";
     out << "\n\t\t" << "Payload Weight: " << se.payload_weight << " [kg]";
     out << "\n\t\t" << "Surface Inclination: " << se.surface_inclination << " [deg]";
     out << "\n\t\t" << "Surface Height: " << se.surface_height << " [m]";
-    out << "\n\t\t" << "Surface Confidence: " << (int)(se.surface_confidence) << " [%]";
+    out << "\n\t\t" << "Diagnostic Zone fill rate threshold: " << (int)(se.diagnostic_zone_fill_rate_threshold) << " [%]";
     out << "\n\t\t" << "Floor fill threshold: " << (int)(se.floor_fill_threshold) << " [%]";
     out << "\n\t\t" << "Depth fill threshold: " << (int)(se.depth_fill_threshold) << " [%]";
-    out << "\n\t\t" << "Surface height threshold: " << (int)(se.surface_height_threshold);
+    out << "\n\t\t" << "Dignostic Zone height median  threshold: " << (int)(se.diagnostic_zone_height_median_threshold);
     out << "\n\t\t" << "Vision HaRa persistency: " << (int)(se.vision_hara_persistency);
-    out << "\n\t\t" << "Reserved[11]: " << sc_reserved_arr_to_string(se.reserved, 11);
+    out << "\n\t\t" << "Crypto Signature[32]: " << sc_reserved_arr_to_string(se.crypto_signature, 32);
+    out << "\n\t\t" << "Reserved[3]: " << sc_reserved_arr_to_string(se.reserved, 3);
     return out;
 }
 
@@ -94,14 +71,38 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_extrinsics_table c
     return out;
 }
 
+inline std::ostream& operator<<(std::ostream& out, rs2_safety_occupancy_grid_params const& occ_grid_params)
+{
+    out << "\n\t\t\t\t" << "Grid Cell Seed" << occ_grid_params.grid_cell_seed ;
+    out << "\n\t\t\t\t" << "Close Range Quorum" << occ_grid_params.close_range_quorum;
+    out << "\n\t\t\t\t" << "Mid Range Quorum" << occ_grid_params.mid_range_quorum;
+    out << "\n\t\t\t\t" << "Long Range Quorum" << occ_grid_params.long_range_quorum;
+    return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out, rs2_safety_smcu_arbitration_params const& smcu_arbitration_params)
+{
+    out << "\n\t\t\t\t" << "l_0_total_threshold" << smcu_arbitration_params.l_0_total_threshold;
+    out << "\n\t\t\t\t" << "l_0_sustained_rate_threshold" << smcu_arbitration_params.l_0_sustained_rate_threshold;
+    out << "\n\t\t\t\t" << "l_1_total_threshold" << smcu_arbitration_params.l_1_total_threshold;
+    out << "\n\t\t\t\t" << "l_1_sustained_rate_threshold" << smcu_arbitration_params.l_1_sustained_rate_threshold;
+    out << "\n\t\t\t\t" << "l_4_total_threshold" << smcu_arbitration_params.l_4_total_threshold;
+    out << "\n\t\t\t\t" << "hkr_stl_timeout" << smcu_arbitration_params.hkr_stl_timeout;
+    out << "\n\t\t\t\t" << "mcu_stl_timeout" << smcu_arbitration_params.mcu_stl_timeout;
+    out << "\n\t\t\t\t" << "sustained_aicv_frame_drops" << smcu_arbitration_params.sustained_aicv_frame_drops;
+    out << "\n\t\t\t\t" << "generic_threshold_1" << smcu_arbitration_params.generic_threshold_1;
+    return out;
+}
+
+
+
 inline std::ostream& operator<<(std::ostream& out, rs2_safety_preset const& sp)
 {
     out << "Safety Preset:";
     out << "\n\t" << "Platform Config:";
     out << "\n\t\t" << "Transformation Link:" << "\n" << sp.platform_config.transformation_link;
-    out << "\n\t\t" << "Robot Height: " << sp.platform_config.robot_height << " [m]";
-    out << "\n\t\t" << "Robot Mass: " << sp.platform_config.robot_mass << " [kg]";
-    out << "\n\t\t" << "Resereved[16]: " << sc_reserved_arr_to_string(sp.platform_config.reserved, 16);
+    out << "\n\t\t" << "Robot /w Payload Height: " << sp.platform_config.robot_height << " [m]";
+    out << "\n\t\t" << "Resereved[20]: " << sc_reserved_arr_to_string(sp.platform_config.reserved, 20);
     out << "\n\t" << "Safety Zone #0 (Danger):" << "\n" << sp.safety_zones[0];
     out << "\n\t" << "Safety Zone #1 (Warning):" << "\n" << sp.safety_zones[1];
     for (int i = 0; i < 8; i++)
@@ -141,8 +142,13 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_interface_config_w
     out << "\t\t" << sic.payload.preset4_b.direction  << "\t\t" << "|" << "\t\t" << sic.payload.preset4_b.functionality << "\n";
     out << "\t\t" << sic.payload.ground.direction     << "\t\t" << "|" << "\t\t" << sic.payload.ground.functionality << "\n";
     out << "\n";
-    out << "\t\t" << "gpio stabilization interval: " << "\t\t" << sic.payload.gpio_stabilization_interval << "\n";
-    out << "\t\t" << "safety zone selection overlap time period: " << "\t\t" << sic.payload.safety_zone_selection_overlap_time_period << "\n";
+    out << "\t\t" << "gpio stabilization interval: "  << "\t\t" << sic.payload.gpio_stabilization_interval << "\n";
+    out << "\t\t" << "Camera position: " << "\t\t" << sic.payload.camera_position << "\n";
+    out << "\t\t" << "Occupancy grid params: " << "\t\t" << sic.payload.occupancy_grid_params << "\n";
+    out << "\t\t" << "SMCU arbitration params: " << "\t\t" << sic.payload.smcu_arbitration_params << "\n";
+    out << "\t\t" << "Crypto signature[32]: " << "\t\t" << sc_reserved_arr_to_string(sic.payload.crypto_signature, 32) << "\n";
+    out << "\t\t" << "Reserved[17]: " << "\t\t" << sc_reserved_arr_to_string(sic.payload.reserved, 9) << "\n";
+
     return out;
 }
 

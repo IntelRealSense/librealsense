@@ -103,21 +103,18 @@ namespace librealsense
                 auto safety_device = dynamic_cast<d500_safety*>(this);
                 auto& safety_sensor = dynamic_cast<d500_safety_sensor&>(safety_device->get_safety_sensor());
                 
-                // Pull extrinsic from safety preset number 1 for setting labeled point cloud extrinsic
-                // According to SRS ID 3.3.1.7.a: reading/modify safety presets
-                // TODO: Remove this w/a after ES2
-                int safety_preset_index = 1;
+                // Pull extrinsic from safety interface config, according to HKR 0.9 QS
                 rs2_extrinsics res;
-                rs2_safety_preset safety_preset;
+                rs2_safety_interface_config sic;
                 try 
                 {
-                    safety_preset = safety_sensor.get_safety_preset(safety_preset_index);
+                    sic = safety_sensor.get_safety_interface_config();
                 }
                 catch (...)
                 {
-                    throw std::runtime_error("Could not read safety preset at index 1");
+                    throw std::runtime_error("Could not read safety interface config");
                 }
-                auto extrinsics_from_preset = safety_preset.platform_config.transformation_link;
+                auto extrinsics_from_preset = sic.camera_position;
                 auto rot = extrinsics_from_preset.rotation;
 
                 // converting row-major matrix to column-major

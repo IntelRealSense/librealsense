@@ -7,6 +7,7 @@ import time
 
 import pyrealsense2 as rs
 from rspy import test, log, devices
+import random
 
 def generate_valid_table():
     cfg = rs.safety_interface_config()
@@ -28,7 +29,34 @@ def generate_valid_table():
     cfg.preset4_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select4_b)
     cfg.ground = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.gnd)
     cfg.gpio_stabilization_interval = 150 # [ms] - SMCU only accept 150 for now
-    cfg.safety_zone_selection_overlap_time_period = 0 # SMCU only accept 0 for now
+
+    # rotation matrix [-2..2] (no units)
+    rx = rs.float3(random.uniform(-2, 2), random.uniform(-2, 2), random.uniform(-2, 2))
+    ry = rs.float3(random.uniform(-2, 2), random.uniform(-2, 2), random.uniform(-2, 2))
+    rz = rs.float3(random.uniform(-2, 2), random.uniform(-2, 2), random.uniform(-2, 2))
+    rotation = rs.float3x3(rx, ry, rz)
+
+    # translation vector [m]
+    translation = rs.float3(random.uniform(0, 100), random.uniform(0, 100), random.uniform(0, 100))
+
+    # init safety extrinsics table (transformation link) from rotation matrix and translation vector
+    cfg.camera_position = rs.safety_extrinsics_table(rotation, translation)
+
+    cfg.occupancy_grid_params.grid_cell_seed = 1
+    cfg.occupancy_grid_params.close_range_quorum = random.randint(0, 255)
+    cfg.occupancy_grid_params.mid_range_quorum = random.randint(0, 255)
+    cfg.occupancy_grid_params.long_range_quorum = random.randint(0, 255)
+    cfg.smcu_arbitration_params.l_0_total_threshold = 1
+    cfg.smcu_arbitration_params.l_0_sustained_rate_threshold = 1
+    cfg.smcu_arbitration_params.l_1_total_threshold = 1
+    cfg.smcu_arbitration_params.l_1_sustained_rate_threshold = 1
+    cfg.smcu_arbitration_params.l_4_total_threshold = 1
+    cfg.smcu_arbitration_params.hkr_stl_timeout = 1
+    cfg.smcu_arbitration_params.mcu_stl_timeout = 1
+    cfg.smcu_arbitration_params.sustained_aicv_frame_drops = 1
+    cfg.smcu_arbitration_params.generic_threshold_1 = 1
+    cfg.crypto_signature = [0] * 32
+    cfg.reserved = [0] * 17
     return cfg
  
 
