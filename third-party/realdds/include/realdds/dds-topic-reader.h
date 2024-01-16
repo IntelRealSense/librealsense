@@ -57,11 +57,17 @@ public:
     typedef std::function< void() > on_data_available_callback;
     typedef std::function< void( eprosima::fastdds::dds::SubscriptionMatchedStatus const & ) >
         on_subscription_matched_callback;
+    typedef std::function< void( eprosima::fastdds::dds::SampleLostStatus const & ) >
+        on_sample_lost_callback;
 
     void on_data_available( on_data_available_callback callback ) { _on_data_available = std::move( callback ); }
     void on_subscription_matched( on_subscription_matched_callback callback )
     {
         _on_subscription_matched = std::move( callback );
+    }
+    void on_sample_lost( on_sample_lost_callback callback )
+    {
+        _on_sample_lost = std::move( callback );
     }
 
     class qos : public eprosima::fastdds::dds::DataReaderQos
@@ -91,9 +97,12 @@ protected:
 
     void on_data_available( eprosima::fastdds::dds::DataReader * ) override;
 
+    void on_sample_lost( eprosima::fastdds::dds::DataReader *, const eprosima::fastdds::dds::SampleLostStatus & ) override;
+
 protected:
     on_data_available_callback _on_data_available;
     on_subscription_matched_callback _on_subscription_matched;
+    on_sample_lost_callback _on_sample_lost;
 };
 
 

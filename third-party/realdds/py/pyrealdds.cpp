@@ -313,6 +313,11 @@ PYBIND11_MODULE(NAME, m) {
                       (dds_topic_reader &, int),
                       ( eprosima::fastdds::dds::SubscriptionMatchedStatus const & status ),
                       callback( self, status.current_count_change ); ) )
+        .def( FN_FWD( dds_topic_reader,
+                      on_sample_lost,
+                      (dds_topic_reader &, int, int),
+                      (eprosima::fastdds::dds::SampleLostStatus const & status),
+                      callback( self, status.total_count, status.total_count_change ); ) )
         .def( "topic", &dds_topic_reader::topic )
         .def( "run", &dds_topic_reader::run )
         .def( "qos", []() { return reader_qos(); } )
