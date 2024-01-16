@@ -14,7 +14,7 @@ In addition you may want to use the 'info' functions in this module to add more 
 messages in case of a failed check
 """
 
-import os, sys, subprocess, threading, traceback, platform, math
+import os, sys, subprocess, threading, traceback, platform, math, re
 
 from rspy import log
 
@@ -391,7 +391,7 @@ def check_exception( exception, expected_type, expected_msg=None, on_fail=LOG ):
     Used to assert a certain type of exception was raised, placed in the except block
     :param exception: The exception that was raised
     :param expected_type: The expected type of exception
-    :param expected_msg: The expected message in the exception
+    :param expected_msg: The expected message in the exception; can be re.Pattern: use re.compile(...)
     :param on_fail: How to behave on failure; see constants above
     :return: True if assertion passed, False otherwise
     """
@@ -400,9 +400,17 @@ def check_exception( exception, expected_type, expected_msg=None, on_fail=LOG ):
         failed = [ "        raised exception was", type(exception),
                  "\n        but expected", expected_type,
                  "\n      With message:", str(exception) ]
-    elif expected_msg is not None and str(exception) != expected_msg:
-        failed = [ "        exception message:", str(exception),
-                 "\n        but we expected  :", expected_msg ]
+    elif expected_msg is not None:
+        if isinstance( expected_msg, str ):
+            if str(exception) != expected_msg:
+                failed = [ "        exception message:", str(exception),
+                         "\n        but we expected  :", expected_msg ]
+        elif isinstance( expected_msg, re.Pattern ):
+            if not expected_msg.fullmatch( str(exception) ):
+                failed = [ "        exception message :", str(exception),
+                         "\n        but expected regex:", expected_msg.pattern ]
+        else:
+            raise RuntimeError( f"exception message should be string or compiled regex (got {type(expected_msg)})" )
     if failed:
         print_stack()
         log.out( *failed )
