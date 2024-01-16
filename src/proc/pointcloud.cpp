@@ -141,7 +141,8 @@ namespace librealsense
                                         sensor_interface & s = dev->get_sensor( x );
                                         for( auto const & sp : s.get_active_streams() )
                                         {
-                                            if( sp->get_stream_type() == RS2_STREAM_COLOR )
+                                            if(( sp->get_stream_type() == RS2_STREAM_COLOR ) &&
+                                               ( _prev_stream_filter.stream == RS2_STREAM_COLOR ))
                                             {
                                                 auto vspi = As< video_stream_profile_interface >(
                                                     sp.get() );
