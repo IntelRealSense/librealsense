@@ -2306,7 +2306,7 @@ namespace rs2
         bool open_about_popup = false;
 
         ImGui::SetNextWindowPos({ window.width() - 100, panel_y });
-        ImGui::SetNextWindowSize({ 100, 90 });
+        ImGui::SetNextWindowSize({ 100.f + window.get_font_size_delta(), 90.f + window.get_font_size_delta() });
 
         if (ImGui::BeginPopup("More Options"))
         {
@@ -2495,6 +2495,19 @@ namespace rs2
                     {
                         reload_required = true;
                         temp_cfg.set(configurations::performance::font_oversample, font_samples);
+                    }
+                    ImGui::PopItemWidth();
+
+                    int delta_font_size = temp_cfg.get( configurations::window::font_size_delta );
+                    ImGui::Text( "Font Size: " );
+                    if( ImGui::IsItemHovered() )
+                        ImGui::SetTooltip( "Increase a viewer font size on 0.5" );
+                    ImGui::SameLine();
+                    ImGui::PushItemWidth( 109 );
+                    if( ImGui::SliderInt( "##delta_font_size", &delta_font_size, 0, 4 ) )
+                    {
+                        reload_required = true;
+                        temp_cfg.set( configurations::window::font_size_delta, delta_font_size );
                     }
                     ImGui::PopItemWidth();
 
