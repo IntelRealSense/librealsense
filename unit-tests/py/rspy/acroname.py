@@ -54,6 +54,7 @@ class Acroname(device_hub.device_hub):
         if discover() is None:  # raise an error if there is no hub connected
             raise NoneFoundError()
         self.hub = None
+        self.all_hubs = None
 
     def connect(self,  reset = False, req_spec = None ):
         """
@@ -94,12 +95,6 @@ class Acroname(device_hub.device_hub):
                     log.d('reconnected')
                     return
             raise RuntimeError("failed to reconnect to Acroname (result={})".format(result))
-
-    def find_all_hubs(self):
-        """
-        Yields all hub port numbers
-        """
-        yield from device_hub.find_all_hubs('24ff')
 
 
     def is_connected(self):
@@ -287,7 +282,7 @@ class Acroname(device_hub.device_hub):
         return volt * amps
 
     if 'windows' in platform.system().lower():
-        def _get_port_by_loc(self, usb_location, hubs):
+        def get_port_by_location(self, usb_location):
             """
             """
             if usb_location:
@@ -309,9 +304,11 @@ class Acroname(device_hub.device_hub):
                     return get_port_from_usb(first_index, second_index)
     else:
 
-        def _get_port_by_loc(self, usb_location, hubs):
+        def get_port_by_location(self, usb_location):
             """
             """
+            if not self.all_hubs:
+                self.all_hubs = device_hub.find_all_hubs('24ff')  # 24ff is Acroname VendorID
             if usb_location:
                 #
                 # Devices connected through an acroname will be in one of two sub-hubs under the acroname main
@@ -332,7 +329,7 @@ class Acroname(device_hub.device_hub):
                 # NOTE: some of our devices are hubs themselves! For example, the SR300 will show as '2-2.3.2.1' --
                 # we must start a known hub or else the ports we look at are meaningless...
                 #
-                for port in hubs:
+                for port in self.all_hubs:
                     if usb_location.startswith(port + '.'):
                         match = re.search(r'^(\d+)\.(\d+)', usb_location[len(port) + 1:])
                         if match:

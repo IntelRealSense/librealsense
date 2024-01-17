@@ -83,7 +83,7 @@ class device_hub(ABC):
         pass
 
     @abstractmethod
-    def _get_port_by_loc(self, usb_location, hubs):
+    def get_port_by_location(self, usb_location):
         """
         """
         pass
@@ -105,17 +105,6 @@ class device_hub(ABC):
         result = self.enable_ports( portlist ) and result
         #
         return result
-
-    def get_port_by_location(self, physical_port, usb_location, hubs):
-        port = None
-        try:
-            port = self._get_port_by_loc(usb_location, hubs)
-        except Exception as e:
-            log.e('Failed to get device port:', e)
-            log.d('    physical port is', physical_port)
-            log.d('    USB location is', usb_location)
-
-        return usb_location, port
 
 
 #################################

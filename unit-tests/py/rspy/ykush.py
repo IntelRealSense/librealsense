@@ -170,14 +170,8 @@ class Ykush(device_hub.device_hub):
 
         return result
 
-    def find_all_hubs(self):
-        """
-        Yields all hub port numbers
-        """
-        yield from device_hub.find_all_hubs('04d8' )
-
     if 'windows' in platform.system().lower():
-        def _get_port_by_loc(self, usb_location, hubs):
+        def get_port_by_location(self, usb_location):
             """
             """
             if usb_location:
@@ -196,9 +190,10 @@ class Ykush(device_hub.device_hub):
                     return get_port_from_usb(index)
     else:
 
-        def _get_port_by_loc(self, usb_location, hubs):
+        def get_port_by_location(self, usb_location):
             """
             """
+            # if needed at some point, YKUSH VendorID is '04d8'
             return get_port_from_usb(int(usb_location.split(".")[1]))
 
 
