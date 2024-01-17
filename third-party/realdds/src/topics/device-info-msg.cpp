@@ -4,6 +4,7 @@
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/dds-topic-names.h>
 #include <realdds/dds-exceptions.h>
+#include <realdds/dds-utilities.h>
 
 #include <rsutils/easylogging/easyloggingpp.h>
 
@@ -72,12 +73,7 @@ void device_info::set_serial_number( std::string const & v )
 
 rsutils::string::slice device_info::debug_name() const
 {
-    auto & root = topic_root();
-    auto begin = root.c_str();
-    auto end = begin + root.length();
-    if( root.length() > ROOT_LEN && SEPARATOR == begin[ROOT_LEN-1] )
-        begin += ROOT_LEN;
-    return{ begin, end };
+    return device_name_from_root( topic_root() );
 }
 
 
