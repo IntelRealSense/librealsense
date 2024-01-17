@@ -67,8 +67,16 @@ namespace librealsense
         return option_range{ -40, 125, 0, 0 };
     }
 
-    auto_exposure_limit_option::auto_exposure_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range, std::shared_ptr<limits_option> exposure_limit_enable)
-        : option_base(range), _hwm(hwm), _sensor(ep), _exposure_limit_toggle(exposure_limit_enable)
+    auto_exposure_limit_option::auto_exposure_limit_option( hw_monitor & hwm,
+                                                            sensor_base * ep,
+                                                            option_range range,
+                                                            std::shared_ptr< limits_option > exposure_limit_enable,
+                                                            bool ae_gain_limits_new_opcode )
+        : option_base( range )
+        , _hwm( hwm )
+        , _sensor( ep )
+        , _exposure_limit_toggle( exposure_limit_enable )
+        , _ae_gain_limits_new_opcode( ae_gain_limits_new_opcode )
     {
         _range = [range]()
         {
@@ -90,33 +98,70 @@ namespace librealsense
                 toggle->set(1);
         }
 
-        command cmd_get(ds::AUTO_CALIB);
-        cmd_get.param1 = 5;
-        std::vector<uint8_t> ret = _hwm.send(cmd_get);
-        if (ret.empty())
-            throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
+        if( _ae_gain_limits_new_opcode )
+        {
+            // get structure: min ae, min gain, max ae, max gain
+            command cmd_get( ds::GETAELIMITS );
+            std::vector< uint8_t > ret = _hwm.send( cmd_get );
+            if( ret.empty() )
+                throw invalid_value_exception( "auto_exposure_limit_option::query result is empty!" );
 
-        command cmd(ds::AUTO_CALIB);
-        cmd.param1 = 4;
-        cmd.param2 = static_cast<int>(value);
-        cmd.param3 = *(reinterpret_cast<uint32_t*>(ret.data() + 4));
-        _hwm.send(cmd);
-        _record_action(*this);
+            // set structure: min ae, max ae, min gain, max gain
+            command cmd( ds::SETAELIMITS );
+            cmd.param1 = 0;
+            cmd.param2 = static_cast< int >( value );
+            cmd.param3 = 0; 
+            cmd.param4 = *( reinterpret_cast< uint32_t * >( ret.data() ) + 12 );
+            _hwm.send( cmd ); 
+        }
+        else
+        {
+            command cmd_get( ds::AUTO_CALIB );
+            cmd_get.param1 = 5;
+            std::vector< uint8_t > ret = _hwm.send( cmd_get );
+            if( ret.empty() )
+                throw invalid_value_exception( "auto_exposure_limit_option::query result is empty!" );
+
+            command cmd( ds::AUTO_CALIB );
+            cmd.param1 = 4;
+            cmd.param2 = static_cast< int >( value );
+            cmd.param3 = *( reinterpret_cast< uint32_t * >( ret.data() + 4 ) );
+            _hwm.send( cmd );
+        }
+        _record_action( *this );
+        
     }
 
     float auto_exposure_limit_option::query() const
     {
-        command cmd(ds::AUTO_CALIB);
-        cmd.param1 = 5;
-
-        auto res = _hwm.send(cmd);
-        if (res.empty())
-            throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
-
-        auto ret = static_cast<float>(*(reinterpret_cast<uint32_t*>(res.data())));
-        if (ret< get_range().min || ret > get_range().max)
+        float ret;
+        if( _ae_gain_limits_new_opcode )
         {
-            if (auto toggle = _exposure_limit_toggle.lock())
+            // get structure: min ae, min gain, max ae, max gain
+            command cmd( ds::GETAELIMITS );
+
+            auto res = _hwm.send( cmd );
+            if( res.empty() )
+                throw invalid_value_exception( "auto_exposure_limit_option::query result is empty!" );
+
+            ret = static_cast< float >( *( reinterpret_cast< uint32_t * >( res.data() + 8 ) ) );
+            
+        }
+        else
+        {
+            command cmd( ds::AUTO_CALIB );
+            cmd.param1 = 5;
+
+            auto res = _hwm.send( cmd );
+            if( res.empty() )
+                throw invalid_value_exception( "auto_exposure_limit_option::query result is empty!" );
+
+            ret = static_cast< float >( *( reinterpret_cast< uint32_t * >( res.data() ) ) );
+        }
+        
+        if( ret < get_range().min || ret > get_range().max )
+        {
+            if( auto toggle = _exposure_limit_toggle.lock() )
                 return toggle->get_cached_limit();
         }
         return ret;
@@ -127,8 +172,16 @@ namespace librealsense
         return *_range;
     }
 
-    auto_gain_limit_option::auto_gain_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range, std::shared_ptr <limits_option> gain_limit_enable)
-        : option_base(range), _hwm(hwm), _sensor(ep), _gain_limit_toggle(gain_limit_enable)
+    auto_gain_limit_option::auto_gain_limit_option( hw_monitor & hwm,
+                                                    sensor_base * ep,
+                                                    option_range range,
+                                                    std::shared_ptr< limits_option > gain_limit_enable,
+                                                    bool ae_gain_limits_new_opcode )
+        : option_base( range )
+        , _hwm( hwm )
+        , _sensor( ep )
+        , _gain_limit_toggle( gain_limit_enable )
+        , _ae_gain_limits_new_opcode( ae_gain_limits_new_opcode )
     {
         _range = [range]()
         {
@@ -142,7 +195,7 @@ namespace librealsense
     {
         if (!is_valid(value))
             throw invalid_value_exception("set(enable_auto_gain) failed! Invalid Auto-Gain mode request " + std::to_string(value));
-
+          
         if (auto toggle = _gain_limit_toggle.lock())
         {
             toggle->set_cached_limit(value);
@@ -150,31 +203,66 @@ namespace librealsense
                 toggle->set(1);
         }
             
+        if( _ae_gain_limits_new_opcode )
+        {
+            // get structure: min ae, min gain, max ae, max gain
+            command cmd_get( ds::GETAELIMITS );
+            std::vector< uint8_t > ret = _hwm.send( cmd_get );
+            if( ret.empty() )
+                throw invalid_value_exception( "auto_exposure_limit_option::query result is empty!" );
 
-        command cmd_get(ds::AUTO_CALIB);
-        cmd_get.param1 = 5;
-        std::vector<uint8_t> ret = _hwm.send(cmd_get);
-        if (ret.empty())
-            throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
+            // set structure: min ae, max ae, min gain, max gain
+            command cmd( ds::SETAELIMITS );
+            cmd.param1 = 0;
+            cmd.param2 = *( reinterpret_cast< uint32_t * >( ret.data() + 8 ) );
+            cmd.param3 = 0;
+            cmd.param4 = static_cast< int >( value );
+            _hwm.send( cmd );
+        }
+        else
+        {
+            command cmd_get( ds::AUTO_CALIB );
+            cmd_get.param1 = 5;
+            std::vector< uint8_t > ret = _hwm.send( cmd_get );
+            if( ret.empty() )
+                throw invalid_value_exception( "auto_exposure_limit_option::query result is empty!" );
 
-        command cmd(ds::AUTO_CALIB);
-        cmd.param1 = 4;
-        cmd.param2 = *(reinterpret_cast<uint32_t*>(ret.data()));
-        cmd.param3 = static_cast<int>(value);
-        _hwm.send(cmd);
-        _record_action(*this);
+            command cmd( ds::AUTO_CALIB );
+            cmd.param1 = 4;
+            cmd.param2 = *( reinterpret_cast< uint32_t * >( ret.data() ) );
+            cmd.param3 = static_cast< int >( value );
+            _hwm.send( cmd );   
+        }
+        _record_action( *this );
+        
     }
 
     float auto_gain_limit_option::query() const
     {
-        command cmd(ds::AUTO_CALIB);
-        cmd.param1 = 5;
+        float ret;
+        if( _ae_gain_limits_new_opcode )
+        {
+            // get structure: min ae, min gain, max ae, max gain
+            command cmd( ds::GETAELIMITS );
 
-        auto res = _hwm.send(cmd);
-        if (res.empty())
-            throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
+            auto res = _hwm.send( cmd );
+            if( res.empty() )
+                throw invalid_value_exception( "auto_exposure_limit_option::query result is empty!" );
 
-        auto ret = static_cast<float>(*(reinterpret_cast<uint32_t*>(res.data() + 4)));
+            ret = static_cast< float >( *( reinterpret_cast< uint32_t * >( res.data() + 12 ) ) );
+        }
+        else
+        {
+            command cmd( ds::AUTO_CALIB );
+            cmd.param1 = 5;
+
+            auto res = _hwm.send( cmd );
+            if( res.empty() )
+                throw invalid_value_exception( "auto_exposure_limit_option::query result is empty!" );
+
+            ret = static_cast< float >( *( reinterpret_cast< uint32_t * >( res.data() + 4 ) ) );
+        }
+        
         if (ret< get_range().min || ret > get_range().max)
         {
             if (auto toggle = _gain_limit_toggle.lock())
