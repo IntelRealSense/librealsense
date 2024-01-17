@@ -9,6 +9,7 @@
 
 #include <rsutils/concurrency/concurrency.h>
 #include <rsutils/json-fwd.h>
+#include <rsutils/string/slice.h>
 
 #include <map>
 #include <vector>
@@ -71,6 +72,7 @@ public:
     ~dds_device_server();
 
     dds_guid const & guid() const;
+    rsutils::string::slice debug_name() const;
 
     // A server is not valid until init() is called with a list of streams that we want to publish.
     // On successful return from init(), each of the streams will be alive so clients will be able

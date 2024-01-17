@@ -53,7 +53,7 @@ dds_device_server::dds_device_server( std::shared_ptr< dds_participant > const &
     , _topic_root( topic_root )
     , _control_dispatcher( QUEUE_MAX_SIZE )
 {
-    LOG_DEBUG( "[" << _topic_root << "] device server created" );
+    LOG_DEBUG( "[" << debug_name() << "] device server created" );
     _control_dispatcher.start();
 }
 
@@ -64,11 +64,16 @@ dds_guid const & dds_device_server::guid() const
 }
 
 
+rsutils::string::slice dds_device_server::debug_name() const
+{
+    return device_name_from_root( _topic_root );
+}
+
 
 dds_device_server::~dds_device_server()
 {
     _stream_name_to_server.clear();
-    LOG_DEBUG( "[" << _topic_root << "] device server deleted" );
+    LOG_DEBUG( "[" << debug_name() << "] device server deleted" );
 }
 
 
@@ -305,7 +310,7 @@ void dds_device_server::on_control_message_received()
                     rsutils::string::from( realdds::print_raw_guid( sample.sample_identity.writer_guid() ) ),
                     sample.sample_identity.sequence_number().to64long(),
                 } );
-                LOG_DEBUG( "<----- control " << sample_j << ": " << j );
+                LOG_DEBUG( "[" << debug_name() << "] <----- control " << sample_j << ": " << j );
                 json reply;
                 reply[sample_key] = std::move( sample_j );
                 try
@@ -320,7 +325,7 @@ void dds_device_server::on_control_message_received()
                     reply[status_key] = "error";
                     reply[explanation_key] = e.what();
                 }
-                LOG_DEBUG( "----->   reply " << reply );
+                LOG_DEBUG( "[" << debug_name() << "] ----->   reply " << reply );
                 try
                 {
                     publish_notification( reply );

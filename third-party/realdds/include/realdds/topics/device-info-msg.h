@@ -13,10 +13,6 @@ class device_info
     rsutils::json _json;
 
 public:
-    //std::string serial;
-    //std::string product_line;
-    //bool locked = true;
-
     std::string const & name() const;
     void set_name( std::string const & );
 
