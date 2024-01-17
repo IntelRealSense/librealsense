@@ -100,12 +100,12 @@ When it is expected that a server will go offline, the server can elect to send 
 
 The `stopping` field has no set type at this time so any value will do. When it's there, any client should immediately assume the server is offline.
 
-No other fields are necessary with `stopping` -- the server is recognized by its GUID.
+No fields other than the root are necessary with `stopping`.
 
 
 # Recovery
 
-If the device is in "recovery mode" with limited functionality, this needs to be communicated to the client. The only functionality enabled in this mode is device updates.
+If the device is in "recovery mode" with limited functionality, this needs to be communicated to the client:
 
 ```JSON
 {
@@ -116,9 +116,9 @@ If the device is in "recovery mode" with limited functionality, this needs to be
 }
 ```
 
-The `control` and `notification` topics will exist under the topic-root, but will only accept update controls and replies, as discussed elsewhere.
+The `control` and `notification` topics will exist under the topic-root, but will only accept update controls and replies, as discussed elsewhere. No streams should be available in a recovery device.
 
-It is important that the `topic-root` is **distinct from a non-recovery device**: they should be considered two different devices. E.g., for a recovery device, a `_R` suffix can be appended to the root.
+It is important that the `topic-root` stays the **same as a non-recovery device**: otherwise they are considered different devices.
 
 
 # Topic Root
