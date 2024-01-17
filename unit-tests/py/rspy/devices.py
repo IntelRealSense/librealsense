@@ -56,7 +56,6 @@ import time
 
 _device_by_sn = dict()
 _context = None
-_hubs = set()
 
 
 class Device:
@@ -80,7 +79,12 @@ class Device:
             log.e('Failed to get usb location:', e)
         self._port = None
         if hub:
-            self._port = hub.get_port_by_location(self._physical_port, self._usb_location, _hubs)
+            try:
+                self._port = hub.get_port_by_location(self._usb_location)
+            except Exception as e:
+                log.e('Failed to get device port:', e)
+                log.d('    physical port is', self._physical_port)
+                log.d('    USB location is', self._usb_location)
 
         self._removed = False
 
@@ -215,10 +219,6 @@ def query( monitor_changes=True, hub_reset=False, recycle_ports=True ):
             hub.connect(hub_reset)
         hub.disable_ports( sleep_on_change = 5 )
         hub.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
-
-        if platform.system() == 'Linux':
-            global _hubs
-            _hubs = set(hub.find_all_hubs())
     #
     # Get all devices, and store by serial-number
     global _device_by_sn, _context, _port_to_sn
@@ -707,9 +707,6 @@ if __name__ == '__main__':
         if hub:
             if not hub.is_connected():
                 hub.connect()
-
-            if platform.system() == 'Linux':
-                _hubs = set(hub.find_all_hubs())
 
         action = 'list'
         def get_handle(dev):
