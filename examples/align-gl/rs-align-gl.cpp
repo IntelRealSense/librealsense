@@ -1,9 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/rs.hpp>
 #include "example-imgui.hpp"
-#include "example.hpp"          // Include short list of convenience functions for rendering
 #include <librealsense2-gl/rs_processing_gl.hpp> // Include GPU-Processing API
 
 
