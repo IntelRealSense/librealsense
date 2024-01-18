@@ -224,6 +224,7 @@ def _run_test(sensor_profiles_arr, mode=None, custom_perm=None):
             fps_dict = _measure_fps(partial_dict)
             test.check(_check_fps_dict(fps_dict, expected_fps_dict))
             test.finish()
+    test.print_results_and_exit()
 
 
 ############################################
