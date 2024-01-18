@@ -8,7 +8,7 @@
 #include <src/core/enum-helpers.h>
 
 #include <rsutils/string/from.h>
-
+#include <src/core/stream-profile-interface.h>
 
 namespace librealsense
 {
@@ -54,6 +54,8 @@ namespace librealsense
 
     void frame_source::init(std::shared_ptr<metadata_parser_map> metadata_parsers)
     {
+        std::lock_guard< std::recursive_mutex > lock( _mutex );
+
         _supported_extensions = { RS2_EXTENSION_VIDEO_FRAME,
                                   RS2_EXTENSION_COMPOSITE_FRAME,
                                   RS2_EXTENSION_POINTS,
@@ -65,35 +67,36 @@ namespace librealsense
         _metadata_parsers = metadata_parsers;
     }
 
-    void frame_source::create_archive( archive_id id )
+    std::map< frame_source::archive_id, std::shared_ptr< archive_interface > >::iterator
+    frame_source::create_archive( archive_id id )
     {
+        std::lock_guard< std::recursive_mutex > lock( _mutex );
+
         auto it = std::find( _supported_extensions.begin(), _supported_extensions.end(), id.second );
         if( it == _supported_extensions.end() )
             throw wrong_api_call_sequence_exception( "Requested frame type is not supported!" );
 
-        std::lock_guard< std::recursive_mutex > lock( _mutex );
-
-        _archive[id] = make_archive( id.second, &_max_publish_list_size, _metadata_parsers );
-        if( ! _archive[id] )
+        auto ret = _archive.insert( { id, make_archive( id.second, &_max_publish_list_size, _metadata_parsers ) } );
+        if( ! ret.second || ! ret.first->second ) // Check insertion success and allocation success
             throw std::runtime_error( rsutils::string::from()
                                       << "Failed to create archive of type " << get_string( id.second ) );
 
-        _archive[id]->set_sensor( _sensor );
+        ret.first->second->set_sensor( _sensor );
+
+        return ret.first;
     }
 
     callback_invocation_holder frame_source::begin_callback( archive_id id )
     {
+        // We use a special index for extensions, like GPU accelerated frames. See add_extension.
         if( id.second >= RS2_EXTENSION_COUNT )
-            id.first = RS2_STREAM_COUNT; // For added extensions like GPU accelerated frames
+            id.first = RS2_STREAM_COUNT;
 
         std::lock_guard< std::recursive_mutex > lock( _mutex );
 
         auto it = _archive.find( id );
         if( it == _archive.end() )
-        {
-            create_archive( id );
-            it = _archive.find( id );  // Now will successfully find
-        }
+            it = create_archive( id );
 
         return it->second->begin_callback();
     }
@@ -112,6 +115,7 @@ namespace librealsense
                                                  frame_additional_data && additional_data,
                                                  bool requires_memory )
     {
+        // We use a special index for extensions, like GPU accelerated frames. See add_extension.
         if( id.second >= RS2_EXTENSION_COUNT )
             id.first = RS2_STREAM_COUNT;  // For added extensions like GPU accelerated frames
 
@@ -119,10 +123,7 @@ namespace librealsense
 
         auto it = _archive.find( id );
         if( it == _archive.end() )
-        {
-            create_archive( id );
-            it = _archive.find( id );  // Now will successfully find
-        }
+            it = create_archive( id );
 
         return it->second->alloc_and_track( size, std::move( additional_data ), requires_memory );
     }

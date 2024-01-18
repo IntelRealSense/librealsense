@@ -17,7 +17,6 @@ namespace librealsense
     class LRS_EXTENSION_API frame_source
     {
     public:
-        //using stream_uid = std::pair< rs2_stream, int >; // Stream type and index
         using archive_id = std::pair< rs2_stream, rs2_extension >;
 
         frame_source( uint32_t max_publish_list_size = 16 );
@@ -49,10 +48,17 @@ namespace librealsense
         template<class T>
         void add_extension( rs2_extension ex )
         {
-            archive_id special_index = { RS2_STREAM_COUNT, ex };
-            
             std::lock_guard< std::recursive_mutex > lock( _mutex );
 
+            auto it = std::find( _supported_extensions.begin(), _supported_extensions.end(), ex );
+            if( it == _supported_extensions.end() )
+            {
+                _supported_extensions.push_back( ex );
+            }
+
+            // We use a special index for extensions since we don't know the stream type here.
+            // We can't wait with the allocation because we need the type T in the creation.
+            archive_id special_index = { RS2_STREAM_COUNT, ex };
             _archive[special_index] = std::make_shared< frame_archive< T > >( &_max_publish_list_size, _metadata_parsers );
         }
 
@@ -63,7 +69,7 @@ namespace librealsense
     private:
         friend class syncer_process_unit;
 
-        void create_archive( archive_id id );
+        std::map< archive_id, std::shared_ptr< archive_interface > >::iterator create_archive( archive_id id );
 
         mutable std::recursive_mutex _mutex;
 
