@@ -23,6 +23,7 @@
 #include "ds-private.h"
 #include <src/stream.h>
 #include <src/fourcc.h>
+#include <src/metadata-parser.h>
 
 #include <cstddef>
 

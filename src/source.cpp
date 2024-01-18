@@ -1,13 +1,14 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "source.h"
-#include "option.h"
-#include "environment.h"
-#include "core/frame-holder.h"
+#include <src/source.h>
+
+#include <src/option.h>
+#include <src/core/frame-holder.h>
+#include <src/core/enum-helpers.h>
 
 #include <rsutils/string/from.h>
-
+#include <src/core/stream-profile-interface.h>
 
 namespace librealsense
 {
@@ -53,72 +54,105 @@ namespace librealsense
 
     void frame_source::init(std::shared_ptr<metadata_parser_map> metadata_parsers)
     {
-        std::lock_guard<std::mutex> lock(_callback_mutex);
+        std::lock_guard< std::recursive_mutex > lock( _mutex );
 
-        std::vector<rs2_extension> supported { RS2_EXTENSION_VIDEO_FRAME,
-                                               RS2_EXTENSION_COMPOSITE_FRAME,
-                                               RS2_EXTENSION_POINTS,
-                                               RS2_EXTENSION_DEPTH_FRAME,
-                                               RS2_EXTENSION_DISPARITY_FRAME,
-                                               RS2_EXTENSION_MOTION_FRAME,
-                                               RS2_EXTENSION_POSE_FRAME,
-                                               RS2_EXTENSION_LABELED_POINTS};
-
-        for (auto type : supported)
-        {
-            _archive[type] = make_archive(type, &_max_publish_list_size, metadata_parsers);
-        }
+        _supported_extensions = { RS2_EXTENSION_VIDEO_FRAME,
+                                  RS2_EXTENSION_COMPOSITE_FRAME,
+                                  RS2_EXTENSION_POINTS,
+                                  RS2_EXTENSION_DEPTH_FRAME,
+                                  RS2_EXTENSION_DISPARITY_FRAME,
+                                  RS2_EXTENSION_MOTION_FRAME,
+                                  RS2_EXTENSION_POSE_FRAME,
+                                  RS2_EXTENSION_LABELED_POINTS };
 
         _metadata_parsers = metadata_parsers;
     }
 
-    callback_invocation_holder frame_source::begin_callback()
+    std::map< frame_source::archive_id, std::shared_ptr< archive_interface > >::iterator
+    frame_source::create_archive( archive_id id )
     {
-        return _archive[RS2_EXTENSION_VIDEO_FRAME]->begin_callback();
-//        return _archive[RS2_EXTENSION_DEPTH_FRAME]->begin_callback();
+        std::lock_guard< std::recursive_mutex > lock( _mutex );
+
+        rs2_extension & ex = std::get< rs2_extension >( id );
+        auto it = std::find( _supported_extensions.begin(), _supported_extensions.end(), ex );
+        if( it == _supported_extensions.end() )
+            throw wrong_api_call_sequence_exception( "Requested frame type is not supported!" );
+
+        auto ret = _archive.insert( { id, make_archive( ex, &_max_publish_list_size, _metadata_parsers ) } );
+        if( ! ret.second || ! ret.first->second ) // Check insertion success and allocation success
+            throw std::runtime_error( rsutils::string::from() << "Failed to create archive of type " << get_string( ex ) );
+
+        ret.first->second->set_sensor( _sensor );
+
+        return ret.first;
+    }
+
+    callback_invocation_holder frame_source::begin_callback( archive_id id )
+    {
+        // We use a special index for extensions, like GPU accelerated frames. See add_extension.
+        if( std::get< rs2_extension >( id ) >= RS2_EXTENSION_COUNT )
+            std::get< rs2_stream >( id ) = RS2_STREAM_COUNT;  // For added extensions like GPU accelerated frames
+
+        std::lock_guard< std::recursive_mutex > lock( _mutex );
+
+        auto it = _archive.find( id );
+        if( it == _archive.end() )
+            it = create_archive( id );
+
+        return it->second->begin_callback();
     }
 
     void frame_source::reset()
     {
-        std::lock_guard<std::mutex> lock(_callback_mutex);
+        std::lock_guard< std::recursive_mutex > lock( _mutex );
+
         _callback.reset();
-        for (auto&& kvp : _archive)
-        {
-            kvp.second.reset();
-        }
+        _archive.clear();
         _metadata_parsers.reset();
     }
 
-    frame_interface * frame_source::alloc_frame( rs2_extension type,
+    frame_interface * frame_source::alloc_frame( archive_id id,
                                                  size_t size,
                                                  frame_additional_data && additional_data,
-                                                 bool requires_memory ) const
+                                                 bool requires_memory )
     {
-        auto it = _archive.find(type);
+        // We use a special index for extensions, like GPU accelerated frames. See add_extension.
+        if( std::get< rs2_extension>( id ) >= RS2_EXTENSION_COUNT )
+            std::get< rs2_stream >( id ) = RS2_STREAM_COUNT;  // For added extensions like GPU accelerated frames
+
+        std::lock_guard< std::recursive_mutex > lock( _mutex );
+
+        auto it = _archive.find( id );
         if( it == _archive.end() )
-            throw wrong_api_call_sequence_exception( "Requested frame type is not supported!" );
+            it = create_archive( id );
+
         return it->second->alloc_and_track( size, std::move( additional_data ), requires_memory );
     }
 
-    void frame_source::set_sensor(const std::shared_ptr<sensor_interface>& s)
+    void frame_source::set_sensor( const std::weak_ptr< sensor_interface > & s )
     {
-        for (auto&& a : _archive)
+        _sensor = s;
+
+        std::lock_guard< std::recursive_mutex > lock( _mutex );
+
+        for( auto & a : _archive )
         {
-            a.second->set_sensor(s);
+            a.second->set_sensor( _sensor );
         }
     }
 
     void frame_source::set_callback( rs2_frame_callback_sptr callback )
     {
-        std::lock_guard<std::mutex> lock(_callback_mutex);
+        std::lock_guard< std::recursive_mutex > lock( _mutex );
         _callback = callback;
     }
 
     rs2_frame_callback_sptr frame_source::get_callback() const
     {
-        std::lock_guard<std::mutex> lock(_callback_mutex);
+        std::lock_guard< std::recursive_mutex > lock( _mutex );
         return _callback;
     }
+
     void frame_source::invoke_callback(frame_holder frame) const
     {
         if (frame && frame.frame && frame.frame->get_owner())
@@ -145,22 +179,27 @@ namespace librealsense
 
     void frame_source::flush() const
     {
-        for (auto&& kvp : _archive)
+        std::lock_guard< std::recursive_mutex > lock( _mutex );
+
+        for( auto & kvp : _archive )
         {
-            if (kvp.second)
+            if( kvp.second )
                 kvp.second->flush();
         }
     }
 
-    rs2_extension frame_source::stream_to_frame_types(rs2_stream stream)
+        rs2_extension frame_source::stream_to_frame_types( rs2_stream stream )
     {
         // TODO: explicitly return video_frame for relevant streams and default to an error?
-        switch (stream)
+        switch( stream )
         {
-        case RS2_STREAM_DEPTH:  return RS2_EXTENSION_DEPTH_FRAME;
+        case RS2_STREAM_DEPTH:
+            return RS2_EXTENSION_DEPTH_FRAME;
         case RS2_STREAM_ACCEL:
-        case RS2_STREAM_GYRO:   return RS2_EXTENSION_MOTION_FRAME;
-        case RS2_STREAM_LABELED_POINT_CLOUD: return RS2_EXTENSION_LABELED_POINTS;
+        case RS2_STREAM_GYRO:
+            return RS2_EXTENSION_MOTION_FRAME;
+        case RS2_STREAM_LABELED_POINT_CLOUD:
+            return RS2_EXTENSION_LABELED_POINTS;
 
         case RS2_STREAM_COLOR:
         case RS2_STREAM_INFRARED:
@@ -171,6 +210,7 @@ namespace librealsense
         case RS2_STREAM_SAFETY:
         case RS2_STREAM_OCCUPANCY:
             return RS2_EXTENSION_VIDEO_FRAME;
+
         default:
             throw std::runtime_error("could not find matching extension with stream type '" + std::string(get_string(stream)) + "'");
         }

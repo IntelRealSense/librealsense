@@ -176,6 +176,23 @@ with test.remote.fork( nested_indent=None ) as remote:
         device.set_option_value( option, 12. )  # updates server & client
         test.check_equal( option.get_value(), 12. )
 
+    device = None
+    stream = None
+
+
+    #############################################################################################
+    with test.closure( "New device should get the new option value" ):
+        test.check( option is not None )
+        test.check( option.stream() is None )  # Because we removed the device & stream references
+        device = dds.device( participant, info )
+        device.wait_until_ready()
+        if test.check_equal( device.n_streams(), 1 ):
+            stream = device.streams()[0]
+            options = stream.options();
+            test.check_equal( len( options ), 3 )
+            option = options[1]
+            test.check_equal( option.get_value(), 12. )  # The new value - not the default
+
         remote.run( 'close_server()' )
     device = None
 

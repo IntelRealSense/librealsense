@@ -3,6 +3,8 @@
 // Enhancing the input video frame by filling missing data.
 #pragma once
 
+#include <rsutils/string/from.h>
+
 namespace librealsense
 {
     enum holes_filling_types : uint8_t

@@ -14,7 +14,7 @@ In addition you may want to use the 'info' functions in this module to add more 
 messages in case of a failed check
 """
 
-import os, sys, subprocess, traceback, platform, math
+import os, sys, subprocess, threading, traceback, platform, math
 
 from rspy import log
 
@@ -732,6 +732,17 @@ class remote:
     def on_finish( self, callback ):
         self._on_finish = callback
 
+    def _output_ready( self ):
+        log.d( self._name, self._exception and 'raised an error' or 'is ready' )
+        if self._events:
+            event = self._events.pop(0)
+            if event:
+                event.set()
+        else:
+            # We raise the error here only as a last resort: we prefer handing it over to
+            # the waiting thread on the event!
+            self._raise_if_needed()
+
     def _output_reader( self ):
         """
         This is the worker function called from a thread to output the process stdout.
@@ -739,22 +750,19 @@ class remote:
         please follow the usage guidelines in the class notes.
         """
         nested_prefix = self._nested_indent and f'[{self._nested_indent}] ' or ''
+        if not nested_prefix:
+            x = -1
+        missing_ready = None
         for line in iter( self._process.stdout.readline, '' ):
             # NOTE: line will include the terminating \n EOL
             # NOTE: so readline will return '' (with no EOL) when EOF is reached - the "sentinel"
             #       2nd argument to iter() - and we'll break out of the loop
             if line == '___ready\n':
-                log.d( self._name, self._exception and 'raised an error' or 'is ready' )
-                if self._events:
-                    event = self._events.pop(0)
-                    if event:
-                        event.set()
-                else:
-                    # We raise the error here only as a last resort: we prefer handing it over to
-                    # the waiting thread on the event!
-                    self._raise_if_needed()
+                self._output_ready()
                 continue
-            if not nested_prefix or line.find( nested_prefix ) < 0:  # there could be color codes in the line
+            if nested_prefix:
+                x = line.find( nested_prefix )  # there could be color codes in the line
+            if x < 0:
                 if self._exception:
                     self._exception.append( line[:-1] )
                     # We cannot raise an error here -- it'll just exit the thread and not be
@@ -764,8 +772,16 @@ class remote:
                 elif line.startswith( '  File "' ):
                     # Some exception are syntax errors in the command, which would not have a 'Traceback'...
                     self._exception = [line[:-1]]
+                if missing_ready and line.endswith( missing_ready ):
+                    self._output_ready()
+                    line = line[:-len(missing_ready)]
+                    missing_ready = None
+                    if not line:
+                        continue
                 print( nested_prefix + line, end='', flush=True )
             else:
+                if x > 0 and line[:x] == '___ready\n'[:x]:
+                    missing_ready = '___ready\n'[x:]
                 print( line, end='', flush=True )
         #
         log.d( self._name, 'stdout is finished' )
@@ -777,13 +793,11 @@ class remote:
         """
         Start the process
         """
-        import subprocess, threading
         log.d( self._name, 'starting:', self._cmd )
         self._process = subprocess.Popen( self._cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True )
         self._thread = threading.Thread( target = remote._output_reader, args=(self,) )
         #
         # We allow waiting until the script is ready for input: see wait_until_ready()
-        import threading
         self._ready = threading.Event()
         self._events = [ self._ready ]
         #
@@ -850,10 +864,11 @@ class remote:
             if self._interactive:
                 self._process.stdin.write( 'exit()\n' )  # make sure we respond to it to avoid timeouts
                 self._process.stdin.flush()
-            log.d( 'waiting for', self._name, 'to finish...' )
-            self._thread.join( timeout )
-            if self._thread.is_alive():
-                log.d( self._name, 'waiting for thread join timed out after', timeout, 'seconds' )
+            if self._thread != threading.current_thread():
+                log.d( 'waiting for', self._name, 'to finish...' )
+                self._thread.join( timeout )
+                if self._thread.is_alive():
+                    log.d( self._name, 'waiting for thread join timed out after', timeout, 'seconds' )
         self._terminate()
         self._raise_if_needed()
         return self.status()

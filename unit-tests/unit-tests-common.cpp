@@ -155,7 +155,6 @@ bool wait_for_reset( std::function< bool( void ) > func, std::shared_ptr< rs2::d
     }
     catch( ... )
     {
-        int x = 5;
     }
     return func();
 }

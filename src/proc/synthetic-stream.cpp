@@ -12,6 +12,7 @@
 #include "option.h"
 #include "stream.h"
 #include "types.h"
+#include <src/core/time-service.h>
 
 #include <rsutils/string/from.h>
 
@@ -39,7 +40,9 @@ namespace librealsense
 
     void processing_block::invoke(frame_holder f)
     {
-        auto callback = _source.begin_callback();
+        frame_source::archive_id id
+            = { f->get_stream()->get_stream_type(), f->get_stream()->get_stream_index(), RS2_EXTENSION_VIDEO_FRAME };
+        auto callback = _source.begin_callback( id );
         try
         {
             if (_callback)
@@ -348,14 +351,14 @@ namespace librealsense
             data.timestamp = original->get_frame_timestamp();
             data.timestamp_domain = original->get_frame_timestamp_domain();
             data.metadata_size = 0;
-            data.system_time = _actual_source.get_time();
+            data.system_time = time_service::get_time();
             data.is_blocking = original->is_blocking();
 
-            auto res
-                = _actual_source.alloc_frame( frame_type,
-                                              vid_stream->get_width() * vid_stream->get_height() * sizeof( float ) * 5,
-                                              std::move( data ),
-                                              true );
+            auto res = _actual_source.alloc_frame(
+                { vid_stream->get_stream_type(), vid_stream->get_stream_index(), frame_type },
+                vid_stream->get_width() * vid_stream->get_height() * sizeof( float ) * 5,
+                std::move( data ),
+                true );
             if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
             res->set_sensor(original->get_sensor());
             res->set_stream(stream);
@@ -419,7 +422,10 @@ namespace librealsense
             throw std::runtime_error("Can not cast frame interface to frame");
 
         frame_additional_data data = of->additional_data;
-        auto res = _actual_source.alloc_frame( frame_type, stride * height, std::move( data ), true );
+        auto res = _actual_source.alloc_frame( { stream->get_stream_type(), stream->get_stream_index(), frame_type },
+                                               stride * height,
+                                               std::move( data ),
+                                               true );
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
         vf = dynamic_cast<video_frame*>(res);
         if (!vf)
@@ -451,7 +457,10 @@ namespace librealsense
             throw std::runtime_error("Frame interface is not frame");
 
         frame_additional_data data = of->additional_data;
-        auto res = _actual_source.alloc_frame( frame_type, of->get_frame_data_size(), std::move( data ), true );
+        auto res = _actual_source.alloc_frame( { stream->get_stream_type(), stream->get_stream_index(), frame_type },
+                                               of->get_frame_data_size(),
+                                               std::move( data ),
+                                               true );
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
 
         auto mf = dynamic_cast<motion_frame*>(res);
@@ -501,7 +510,7 @@ namespace librealsense
         for (auto&& f : holders)
             req_size += get_embeded_frames_size(f.frame);
 
-        auto res = _actual_source.alloc_frame( RS2_EXTENSION_COMPOSITE_FRAME,
+        auto res = _actual_source.alloc_frame( { RS2_STREAM_ANY, 0, RS2_EXTENSION_COMPOSITE_FRAME }, // Special case for composite frames
                                                req_size * sizeof( rs2_frame * ),
                                                std::move( d ),
                                                true );

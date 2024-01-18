@@ -20,6 +20,7 @@
 
 #include "platform/platform-utils.h"
 
+#include <src/metadata-parser.h>
 #include <thread>
 
 namespace librealsense
