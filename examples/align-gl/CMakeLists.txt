@@ -5,7 +5,10 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(RealsenseExamplesAlignGl )
 
-if(BUILD_GRAPHICAL_EXAMPLES)
+# Save the command line compile commands in the build output
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+
+if(BUILD_GRAPHICAL_EXAMPLES AND NOT APPLE)
     add_executable(rs-align-gl rs-align-gl.cpp ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp)
     set_property(TARGET rs-align-gl PROPERTY CXX_STANDARD 11)
     target_link_libraries(rs-align-gl ${DEPENDENCIES} realsense2-gl)
