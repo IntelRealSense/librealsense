@@ -7,6 +7,7 @@
 #include <librealsense2/hpp/rs_types.hpp>
 #include <src/frame-archive.h>
 
+#include <tuple>
 
 namespace librealsense
 {
@@ -17,7 +18,7 @@ namespace librealsense
     class LRS_EXTENSION_API frame_source
     {
     public:
-        using archive_id = std::pair< rs2_stream, rs2_extension >;
+        using archive_id = std::tuple< rs2_stream, int, rs2_extension >; // Stream type, stream index, extention type.
 
         frame_source( uint32_t max_publish_list_size = 16 );
 
@@ -58,7 +59,7 @@ namespace librealsense
 
             // We use a special index for extensions since we don't know the stream type here.
             // We can't wait with the allocation because we need the type T in the creation.
-            archive_id special_index = { RS2_STREAM_COUNT, ex };
+            archive_id special_index = { RS2_STREAM_COUNT, 0, ex };
             _archive[special_index] = std::make_shared< frame_archive< T > >( &_max_publish_list_size, _metadata_parsers );
         }
 

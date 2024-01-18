@@ -236,10 +236,11 @@ void hid_sensor::start( rs2_frame_callback_sptr callback )
 
             last_frame_number = frame_counter;
             last_timestamp = timestamp;
-            frame_holder frame = _source.alloc_frame( { request->get_stream_type(), RS2_EXTENSION_MOTION_FRAME },
-                                                      data_size,
-                                                      std::move( fr->additional_data ),
-                                                      true );
+            frame_holder frame = _source.alloc_frame(
+                { request->get_stream_type(), request->get_stream_index(), RS2_EXTENSION_MOTION_FRAME },
+                data_size,
+                std::move( fr->additional_data ),
+                true );
             memcpy( (void *)frame->get_frame_data(),
                     sensor_data.fo.pixels,
                     sizeof( uint8_t ) * sensor_data.fo.frame_size );

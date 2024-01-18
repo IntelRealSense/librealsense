@@ -184,7 +184,7 @@ void uvc_sensor::open( const stream_profiles & requests )
 
                     auto extension = frame_source::stream_to_frame_types( req_profile_base->get_stream_type() );
                     frame_holder fh = _source.alloc_frame(
-                        { req_profile_base->get_stream_type(), extension },
+                        { req_profile_base->get_stream_type(), req_profile_base->get_stream_index(), extension },
                         expected_size,
                         std::move( fr->additional_data ),
                         true );
