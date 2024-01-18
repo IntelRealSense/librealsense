@@ -138,7 +138,7 @@ void build_opengl_projection_for_intrinsics(matrix4& frustum,
     // additional row is inserted to map the z-coordinate to
     // OpenGL.
     matrix4 tproj;
-    tproj(0,0) = float(alpha);  tproj(0,1) = float(skew);  tproj(0,2) = 0.f;
+    tproj(0,0) = float(alpha);  tproj(0,1) = float(skew);  tproj(0,2) = float(u0);
     tproj(1,1) = float(beta);   tproj(1,2) = float(v0);
     tproj(2,2) = float(-(N+F)); tproj(2,3) = float(-N*F);
     tproj(3,2) = 1.f;
