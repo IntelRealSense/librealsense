@@ -59,8 +59,9 @@ namespace rs2
 
     void viewer_model::set_export_popup(ImFont* large_font, ImFont* font, rect stream_rect, std::string& error_message, config_file& temp_cfg)
     {
-        float w = 520; // hardcoded size to keep popup layout
-        float h = 325;
+        float font_size = (float)temp_cfg.get( configurations::window::font_size ); 
+        float w = 32.f * font_size;
+        float h = 20.f * font_size;
         float x0 = stream_rect.x + stream_rect.w / 3;
         float y0 = stream_rect.y + stream_rect.h / 3;
         ImGui::SetNextWindowPos({ x0, y0 });
@@ -79,7 +80,6 @@ namespace rs2
         static export_type tab = export_type::ply;
         if (ImGui::BeginPopupModal("Export", nullptr, flags))
         {
-            ImGui::SetCursorScreenPos({ (float)(x0), (float)(y0 + 30) });
             ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
             ImGui::PushFont(large_font);
@@ -108,8 +108,6 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_Text, grey);
                 ImGui::Text("Polygon File Format defines a flexible systematic scheme for storing 3D data");
                 ImGui::PopStyleColor();
-                ImGui::NewLine();
-                ImGui::SetCursorScreenPos({ (float)(x0 + 15), (float)(y0 + 90) });
                 ImGui::Separator();
                 if (ImGui::Checkbox("Meshing", &mesh))
                 {
@@ -187,7 +185,7 @@ namespace rs2
 
             ImGui::SetCursorScreenPos({ (float)(x0 + w / 2), (float)(y0 + h - 30) });
 
-            if (ImGui::Button("Export", ImVec2(120, 0)))
+            if( ImGui::Button( "Export", ImVec2( font_size * 8.f, 0 ) ) )
             {
                 apply();
                 if (!last_points)
@@ -230,7 +228,7 @@ namespace rs2
                 ImGui::SetTooltip("%s", "Save settings and export file");
             }
             ImGui::SameLine();
-            if (ImGui::Button("Cancel", ImVec2(120, 0)))
+            if( ImGui::Button( "Cancel", ImVec2( font_size * 8.f, 0 ) ) )
             {
                 ImGui::CloseCurrentPopup();
             }
@@ -260,6 +258,7 @@ namespace rs2
         auto disabled = !enabled;
         auto font = win.get_font();
         auto large_font = win.get_large_font();
+        int font_size = win.get_font_size();
 
         bool hovered = false;
         bool clicked = false;
@@ -283,22 +282,24 @@ namespace rs2
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, header_color);
         }
 
+        float button_width = font_size * 3.8f;
+
         ImGui::SetCursorPos({float(x), float(y)});
         ImGui::PushFont(large_font);
-        clicked = clicked || ImGui::Button(icon, { 60, 50 });
+        clicked = clicked || ImGui::Button( icon, { button_width, 50 } );
         ImGui::PopFont();
         hovered = hovered || ImGui::IsItemHovered();
 
-        ImGui::SetCursorPos({float(x + 45), float(y)});
+        ImGui::SetCursorPos( { float( x + button_width - font_size ), float( y ) } );
         ImGui::PushFont(font);
         if (dropdown)
         {
-            clicked = clicked || ImGui::Button(u8"\uf078", { 20, 55 });
+            clicked = clicked || ImGui::Button(u8"\uf078", { (float)font_size, 55 });
             hovered = hovered || ImGui::IsItemHovered();
         }
 
         ImGui::SetCursorPos({ float(x), float(y + 35)});
-        clicked = clicked || ImGui::Button(label, { 60, 20 });
+        clicked = clicked || ImGui::Button(label, { button_width, 20 } );
         ImGui::PopFont();
         hovered = hovered || ImGui::IsItemHovered();
 
@@ -421,7 +422,8 @@ namespace rs2
         ImGui::SetCursorPos({ 0, 0 });
         auto cursor = ImGui::GetCursorScreenPos();
 
-        auto left = 5;
+        float left = 5.f;
+        float button_width = win.get_font_size() * 3.8f;
 
         const auto has_stream = tex_sources_str.size() && depth_sources_str.size();
 
@@ -447,7 +449,7 @@ namespace rs2
                 paused = true;
             }
         }
-        left += 60;
+        left += button_width;
 
         // ------------ Reset Viewport ---------------
 
@@ -459,7 +461,7 @@ namespace rs2
             reset_camera();
         }
 
-        left += 60;
+        left += button_width;
 
         // ------------    Lock Mode  ---------------
 
@@ -481,7 +483,7 @@ namespace rs2
                 synchronization_enable = true;
             }
         }
-        left += 70;
+        left += button_width + 10;
 
         ImGui::GetWindowDrawList()->AddLine({ cursor.x + left - 1, cursor.y + 5 },
             { cursor.x + left - 1, cursor.y + top_bar_height - 5 }, ImColor(grey));
@@ -537,7 +539,7 @@ namespace rs2
         {
             select_3d_source = false;
         }
-        left += 80;
+        left += button_width + 20;
 
         // ------------ Texture Selection --------------
 
@@ -579,7 +581,7 @@ namespace rs2
             select_tex_source = false;
         }
 
-        left += 80;
+        left += button_width + 20;
 
         // ------------ Shader Selection --------------
         const auto shader_selection_popup = "Shading Selection";
@@ -619,7 +621,7 @@ namespace rs2
         {
             select_shader_source = false;
         }
-        left += 80;
+        left += button_width + 20;
 
         //-----------------------------
 
@@ -648,7 +650,7 @@ namespace rs2
                 _measurements.enable();
             }
         }
-        left += 60;
+        left += button_width;
 
         // -------------------- Export ------------------
 
@@ -663,7 +665,7 @@ namespace rs2
             ImGui::OpenPopup("Export");
         }
 
-        left += 60;
+        left += button_width;
 
 
         ImGui::PopStyleColor(5);
@@ -2305,8 +2307,8 @@ namespace rs2
         bool open_settings_popup = false;
         bool open_about_popup = false;
 
-        ImGui::SetNextWindowPos({ window.width() - 100, panel_y });
-        ImGui::SetNextWindowSize({ 100.f + window.get_font_size_delta(), 90.f + window.get_font_size_delta() });
+        ImGui::SetNextWindowPos({ window.width() - 130, panel_y });
+        ImGui::SetNextWindowSize({ 6.f * window.get_font_size(), 5.5f * window.get_font_size() });
 
         if (ImGui::BeginPopup("More Options"))
         {
@@ -2485,6 +2487,7 @@ namespace rs2
 
                 if (tab == 1)
                 {
+                    // Font oversample slider
                     int font_samples = temp_cfg.get(configurations::performance::font_oversample);
                     ImGui::Text("Font Samples: ");
                     if (ImGui::IsItemHovered())
@@ -2498,16 +2501,17 @@ namespace rs2
                     }
                     ImGui::PopItemWidth();
 
-                    int delta_font_size = temp_cfg.get( configurations::window::font_size_delta );
+                    // Font slider
+                    int font_size = temp_cfg.get( configurations::window::font_size );
                     ImGui::Text( "Font Size: " );
                     if( ImGui::IsItemHovered() )
-                        ImGui::SetTooltip( "Increase a viewer font size on 0.5" );
+                        ImGui::SetTooltip( "Viewer Font Size" );
                     ImGui::SameLine();
                     ImGui::PushItemWidth( 109 );
-                    if( ImGui::SliderInt( "##delta_font_size", &delta_font_size, 0, 4 ) )
+                    if( ImGui::SliderInt( "##font_size", &font_size, 16, 20 ) )
                     {
                         reload_required = true;
-                        temp_cfg.set( configurations::window::font_size_delta, delta_font_size );
+                        temp_cfg.set( configurations::window::font_size, font_size );
                     }
                     ImGui::PopItemWidth();
 
@@ -2885,8 +2889,8 @@ namespace rs2
         }
 
         {
-            float w = 590.f;
-            float h = 300.f;
+            float w = 590.f + window.get_font_size() * 6.f;
+            float h = 300.f + window.get_font_size();
             float x0 = (window.width() - w) / 2.f;
             float y0 = (window.height() - h) / 2.f;
             ImGui::SetNextWindowPos({ x0, y0 });

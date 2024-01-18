@@ -27,7 +27,7 @@ using namespace rs2::sw_update;
 
 namespace rs2
 {
-    void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18, ImFont*& monofont, int& font_size_delta)
+    void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18, ImFont*& monofont, int& font_size)
     {
         ImGuiStyle& style = ImGui::GetStyle();
 
@@ -35,7 +35,7 @@ namespace rs2
         io.IniFilename = nullptr;
 
         const int OVERSAMPLE = config_file::instance().get(configurations::performance::font_oversample);
-        font_size_delta = config_file::instance().get( configurations::window::font_size_delta );
+        font_size = config_file::instance().get( configurations::window::font_size );
 
         static const ImWchar icons_ranges[] = { 0xf000, 0xf999, 0 }; // will not be copied by AddFont* so keep in scope.
 
@@ -45,7 +45,7 @@ namespace rs2
             config_words.OversampleH = OVERSAMPLE;
             font_14 = io.Fonts->AddFontFromMemoryCompressedTTF( karla_regular_compressed_data,
                                                                 karla_regular_compressed_size,
-                                                                16.f + font_size_delta / 2.f );
+                                                                font_size );
 
             ImFontConfig config_glyphs;
             config_glyphs.MergeMode = true;
@@ -2744,15 +2744,15 @@ namespace rs2
                 {
                     bool stop_recording = false;
 
-                    ImGui::SetCursorPos({ windows_width - 35, pos.y + 3 });
+                    ImGui::SetCursorPos({ windows_width - 42, pos.y + 3 });
                     ImGui_ScopePushFont(window.get_font());
 
                     ImGui_ScopePushStyleColor(ImGuiCol_Button, sensor_bg);
                     ImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
                     ImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
 
-                    int font_size_delta = window.get_font_size_delta();
-                    ImVec2 button_size = { 30.f + font_size_delta, 30.f + font_size_delta };
+                    int font_size = window.get_font_size();
+                    ImVec2 button_size = { font_size * 2.f, font_size * 2.f };
                     
                     if (!sub->streaming)
                     {
@@ -3028,8 +3028,7 @@ namespace rs2
                     const ImVec2 pos = ImGui::GetCursorPos();
 
                     draw_later.push_back([windows_width, &window, sub, pos, &viewer, this]() {
-                        if (!sub->streaming) ImGui::SetCursorPos({ windows_width - 34 , pos.y - 3 });
-                        else ImGui::SetCursorPos({ windows_width - 34, pos.y - 3 });
+                        ImGui::SetCursorPos({ windows_width - 41, pos.y - 3 });
 
                         try
                         {
@@ -3118,9 +3117,7 @@ namespace rs2
                             const ImVec2 pos = ImGui::GetCursorPos();
 
                             draw_later.push_back([windows_width, &window, sub, pos, &viewer, this, pb]() {
-                                if (!sub->streaming || !sub->post_processing_enabled) ImGui::SetCursorPos({ windows_width - 35, pos.y - 3 });
-                                else
-                                    ImGui::SetCursorPos({ windows_width - 35, pos.y - 3 });
+                                ImGui::SetCursorPos({ windows_width - 42, pos.y - 3 });
 
                                 try
                                 {
@@ -3129,7 +3126,8 @@ namespace rs2
                                     ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
                                     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
                                     ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
-                                    const ImVec2 button_size = { 25.f + window.get_font_size_delta(), 24.f + window.get_font_size_delta() };
+                                    int font_size = window.get_font_size();
+                                    const ImVec2 button_size = { font_size * 2.f, font_size * 1.5f };
 
                                     if (!sub->post_processing_enabled)
                                     {

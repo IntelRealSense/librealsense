@@ -61,7 +61,7 @@ inline ImVec4 blend(const ImVec4& c, float a)
 
 namespace rs2
 {
-    void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18, ImFont*& monofont, int& font_size_delta);
+    void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18, ImFont*& monofont, int& font_size);
 
     constexpr const char* server_versions_db_url = "https://librealsense.intel.com/Releases/rs_versions_db.json";
 
@@ -147,7 +147,7 @@ namespace rs2
             static const char* width{ "window.width" };
             static const char* height{ "window.height" };
             static const char* maximized{ "window.maximized" };
-            static const char* font_size_delta{ "window.font_size_delta" };
+            static const char* font_size{ "window.font_size" };
         }
         namespace performance
         {
