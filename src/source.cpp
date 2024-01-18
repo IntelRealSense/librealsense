@@ -72,14 +72,14 @@ namespace librealsense
     {
         std::lock_guard< std::recursive_mutex > lock( _mutex );
 
-        auto it = std::find( _supported_extensions.begin(), _supported_extensions.end(), id.second );
+        rs2_extension & ex = std::get< rs2_extension >( id );
+        auto it = std::find( _supported_extensions.begin(), _supported_extensions.end(), ex );
         if( it == _supported_extensions.end() )
             throw wrong_api_call_sequence_exception( "Requested frame type is not supported!" );
 
-        auto ret = _archive.insert( { id, make_archive( id.second, &_max_publish_list_size, _metadata_parsers ) } );
+        auto ret = _archive.insert( { id, make_archive( ex, &_max_publish_list_size, _metadata_parsers ) } );
         if( ! ret.second || ! ret.first->second ) // Check insertion success and allocation success
-            throw std::runtime_error( rsutils::string::from()
-                                      << "Failed to create archive of type " << get_string( id.second ) );
+            throw std::runtime_error( rsutils::string::from() << "Failed to create archive of type " << get_string( ex ) );
 
         ret.first->second->set_sensor( _sensor );
 
@@ -89,8 +89,8 @@ namespace librealsense
     callback_invocation_holder frame_source::begin_callback( archive_id id )
     {
         // We use a special index for extensions, like GPU accelerated frames. See add_extension.
-        if( id.second >= RS2_EXTENSION_COUNT )
-            id.first = RS2_STREAM_COUNT;
+        if( std::get< rs2_extension >( id ) >= RS2_EXTENSION_COUNT )
+            std::get< rs2_stream >( id ) = RS2_STREAM_COUNT;  // For added extensions like GPU accelerated frames
 
         std::lock_guard< std::recursive_mutex > lock( _mutex );
 
@@ -116,8 +116,8 @@ namespace librealsense
                                                  bool requires_memory )
     {
         // We use a special index for extensions, like GPU accelerated frames. See add_extension.
-        if( id.second >= RS2_EXTENSION_COUNT )
-            id.first = RS2_STREAM_COUNT;  // For added extensions like GPU accelerated frames
+        if( std::get< rs2_extension>( id ) >= RS2_EXTENSION_COUNT )
+            std::get< rs2_stream >( id ) = RS2_STREAM_COUNT;  // For added extensions like GPU accelerated frames
 
         std::lock_guard< std::recursive_mutex > lock( _mutex );
 
