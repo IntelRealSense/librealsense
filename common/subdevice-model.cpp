@@ -489,7 +489,13 @@ namespace rs2
     subdevice_model::~subdevice_model()
     {
         _destructing = true;
-        s->on_options_changed( []( const options_list & list ) {} );
+        try
+        {
+            s->on_options_changed( []( const options_list & list ) {} );
+        }
+        catch( ... )
+        {
+        }
     }
 
     void subdevice_model::sort_resolutions(std::vector<std::pair<int, int>>& resolutions) const

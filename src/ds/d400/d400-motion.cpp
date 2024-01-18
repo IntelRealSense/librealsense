@@ -20,6 +20,7 @@
 #include "proc/motion-transform.h"
 #include "proc/auto-exposure-processor.h"
 #include <src/fourcc.h>
+#include <src/metadata-parser.h>
 
 using namespace librealsense;
 namespace librealsense

@@ -19,6 +19,7 @@
 
 #include <rsutils/json.h>
 #include <rsutils/string/hexarray.h>
+#include <rsutils/string/from.h>
 
 
 namespace librealsense {

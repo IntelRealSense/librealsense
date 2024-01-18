@@ -9,6 +9,7 @@
 #include "backend.h"
 #include "platform/platform-utils.h"
 #include <src/fourcc.h>
+#include <src/metadata-parser.h>
 
 
 namespace librealsense {
