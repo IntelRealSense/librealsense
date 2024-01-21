@@ -3,8 +3,9 @@
 #pragma once
 
 #include <src/frame.h>
-#include "extension.h"
+#include <src/types.h>
 
+#include "extension.h"
 
 namespace librealsense {
 

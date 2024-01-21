@@ -8,6 +8,8 @@
 #include "core/extension.h"
 #include "proc/formats-converter.h"
 #include <src/synthetic-options-watcher.h>
+#include <src/platform/stream-profile.h>
+#include <src/platform/frame-object.h>
 
 #include <rsutils/lazy.h>
 #include <rsutils/signal.h>
@@ -45,6 +47,7 @@ namespace librealsense
     };
 
     class notifications_processor;
+    class frame;
 
     class sensor_base
         : public std::enable_shared_from_this< sensor_base >

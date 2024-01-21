@@ -8,6 +8,8 @@
 #include <realdds/dds-serialization.h>
 #include <realdds/dds-utilities.h>
 
+#include <rsutils/time/stopwatch.h>
+
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/subscriber/Subscriber.hpp>
 #include <fastdds/dds/subscriber/DataReader.hpp>
@@ -106,6 +108,7 @@ void dds_topic_reader::run( qos const & rqos )
     eprosima::fastdds::dds::StatusMask status_mask;
     status_mask << eprosima::fastdds::dds::StatusMask::subscription_matched();
     status_mask << eprosima::fastdds::dds::StatusMask::data_available();
+    status_mask << eprosima::fastdds::dds::StatusMask::sample_lost();
     _reader = DDS_API_CALL( _subscriber->get()->create_datareader( _topic->get(), rqos, this, status_mask ) );
 }
 
@@ -133,11 +136,28 @@ void dds_topic_reader::on_subscription_matched(
         _on_subscription_matched( info );
 }
 
+
 void dds_topic_reader::on_data_available( eprosima::fastdds::dds::DataReader * )
 {
-    // Called when a new  Data Message is received
+    // Called when a new Data Message is received
     if( _on_data_available )
+    {
+        rsutils::time::stopwatch stopwatch;
         _on_data_available();
+        if( stopwatch.get_elapsed() > std::chrono::milliseconds( 500 ) )
+            LOG_WARNING( "<---- '" << _topic->get()->get_name() << "' callback took too long!" );
+    }
+}
+
+
+void dds_topic_reader::on_sample_lost( eprosima::fastdds::dds::DataReader *, const eprosima::fastdds::dds::SampleLostStatus & status )
+{
+    // Called when a sample is lost: i.e., when a fragment is received that is a jump in sequence number
+    // If such a jump in sequence number (sample) isn't received then we never get here!
+    if( _on_sample_lost )
+        _on_sample_lost( status );
+    else
+        LOG_WARNING( "[" << _topic->get()->get_name() << "] " << status.total_count_change << " sample(s) lost" );
 }
 
 

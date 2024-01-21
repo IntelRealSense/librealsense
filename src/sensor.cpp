@@ -16,6 +16,8 @@
 #include "core/stream-profile-interface.h"
 #include "core/frame-callback.h"
 #include "core/notification.h"
+#include <src/metadata-parser.h>
+
 
 #include <rsutils/string/from.h>
 #include <rsutils/json.h>

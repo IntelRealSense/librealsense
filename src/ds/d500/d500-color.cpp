@@ -12,6 +12,7 @@
 #include "backend.h"
 #include "platform/platform-utils.h"
 #include <src/fourcc.h>
+#include <src/metadata-parser.h>
 
 #include <src/ds/features/auto-exposure-roi-feature.h>
 
