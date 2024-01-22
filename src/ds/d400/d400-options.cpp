@@ -328,7 +328,7 @@ namespace librealsense
         , _toggle_range( range )
         , _description( description )
         , _hwm( hwm )
-        , _new_opcode( new_opcode ){};
+        , _new_opcode( new_opcode ){}
 
     void limits_option::set( float value ) 
     {
