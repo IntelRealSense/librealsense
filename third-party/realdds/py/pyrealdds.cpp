@@ -613,8 +613,9 @@ PYBIND11_MODULE(NAME, m) {
 
 
     using realdds::dds_device_broadcaster;
-    py::class_< dds_device_broadcaster >( m, "device_broadcaster" )
-        .def( py::init< std::shared_ptr< dds_publisher > const &, device_info const & >() );
+    py::class_< dds_device_broadcaster, std::shared_ptr< dds_device_broadcaster > >( m, "device_broadcaster" )
+        .def( py::init<>( []( std::shared_ptr< dds_publisher > const & publisher, device_info const & device_info )
+                          { return std::make_shared< dds_device_broadcaster >( publisher, device_info, nullptr ); } ) );
 
     using realdds::dds_option_range;
     py::class_< dds_option_range >( m, "option_range" )

@@ -237,9 +237,20 @@ void dds_device_server::broadcast( topics::device_info const & device_info )
 {
     if( _broadcaster )
         DDS_THROW( runtime_error, "device server was already broadcast" );
+    if( ! _notification_server )
+        DDS_THROW( runtime_error, "not initialized" );
     if( device_info.topic_root() != _topic_root )
-        DDS_THROW( runtime_error, "topic roots do not match" );
-    _broadcaster = std::make_shared< dds_device_broadcaster >( _publisher, device_info );
+        DDS_THROW( runtime_error, "device-info topic root does not match" );
+    _broadcaster = std::make_shared< dds_device_broadcaster >(
+        _publisher,
+        device_info,
+        [weak_notification_server = std::weak_ptr< dds_notification_server >( _notification_server )]
+        {
+            // Once we know our broadcast was acknowledged, send out discovery notifications again so any client who had
+            // us marked offline can get ready again
+            if( auto notification_server = weak_notification_server.lock() )
+                notification_server->trigger_discovery_notifications();
+        } );
 }
 
 
