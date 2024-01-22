@@ -115,16 +115,35 @@ namespace librealsense
         safety_ep->register_option(RS2_OPTION_SAFETY_MCU_TEMPERATURE,
             std::make_shared<temperature_option>(_hw_monitor, temperature_option::temperature_component::SMCU, "Temperature reading for Safety MCU"));
 
-        std::shared_ptr< option > intercam_sync_option
-            = std::make_shared< d500_external_sync_mode >( static_cast< d500_external_sync_mode & >(
-                get_depth_sensor().get_option( RS2_OPTION_INTER_CAM_SYNC_MODE ) ) );
+        auto & ds = get_depth_sensor();
         std::vector< std::tuple< std::shared_ptr< option >, float, std::string > > options_and_reasons
             = { std::make_tuple( safety_camera_oper_mode,
                                  static_cast< float >( RS2_SAFETY_MODE_SERVICE ),
-                                 std::string( "Intercamera sync mode can be set only in safety service mode" ) ) };
-        get_depth_sensor().register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                                           std::make_shared< gated_by_value_option >( intercam_sync_option,
-                                                                                      options_and_reasons ) );
+                                 std::string( "Option can be set only in safety service mode" ) ) };
+
+        gate_depth_option( RS2_OPTION_ENABLE_AUTO_EXPOSURE, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_SEQUENCE_NAME, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_SEQUENCE_SIZE, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_SEQUENCE_ID, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_HDR_ENABLED, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_ENABLE_AUTO_EXPOSURE, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_EXPOSURE, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_GAIN, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_EMITTER_ALWAYS_ON, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_INTER_CAM_SYNC_MODE, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_DEPTH_UNITS, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_EMITTER_ENABLED, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_LASER_POWER, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_VISUAL_PRESET, ds, options_and_reasons );
+    }
+
+    void d500_safety::gate_depth_option( rs2_option opt,
+                                         synthetic_sensor & depth_sensor,
+                                         const std::vector < std::tuple< std::shared_ptr< option >, float, std::string > > & options_and_reasons )
+    {
+        depth_sensor.register_option( opt,
+                                      std::make_shared< gated_by_value_option >( depth_sensor.get_option_handler( opt ),
+                                                                                 options_and_reasons ) );
     }
 
     void d500_safety::register_metadata(std::shared_ptr<uvc_sensor> raw_safety_ep)

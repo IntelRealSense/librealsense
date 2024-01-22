@@ -115,6 +115,10 @@ namespace librealsense
         void register_metadata(std::shared_ptr<uvc_sensor> safety_ep);
         void register_processing_blocks(std::shared_ptr<d500_safety_sensor> safety_ep);
 
+        void gate_depth_option( rs2_option opt,
+                                synthetic_sensor & depth_sensor,
+                                const std::vector< std::tuple< std::shared_ptr< option >, float, std::string > > & options_and_reasons );
+
     protected:
         std::shared_ptr<stream_interface> _safety_stream;
         uint8_t _safety_device_idx;
