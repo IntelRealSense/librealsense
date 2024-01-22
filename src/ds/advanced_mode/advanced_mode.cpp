@@ -457,78 +457,117 @@ namespace librealsense
 
     void ds_advanced_mode_base::set_depth_control_group(const STDepthControlGroup& val)
     {
+        if( _blocked )
+            throw std::runtime_error( _block_message );
+
         set(val, advanced_mode_traits<STDepthControlGroup>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds_advanced_mode_base::set_rsm(const STRsm& val)
     {
+        if( _blocked )
+            throw std::runtime_error( _block_message );
+
         set(val, advanced_mode_traits<STRsm>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds_advanced_mode_base::set_rau_support_vector_control(const STRauSupportVectorControl& val)
     {
+        if( _blocked )
+            throw std::runtime_error( _block_message );
+
         set(val, advanced_mode_traits<STRauSupportVectorControl>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds_advanced_mode_base::set_color_control(const STColorControl& val)
     {
+        if( _blocked )
+            throw std::runtime_error( _block_message );
+
         set(val, advanced_mode_traits<STColorControl>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds_advanced_mode_base::set_rau_color_thresholds_control(const STRauColorThresholdsControl& val)
     {
+        if( _blocked )
+            throw std::runtime_error( _block_message );
+
         set(val, advanced_mode_traits<STRauColorThresholdsControl>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds_advanced_mode_base::set_slo_color_thresholds_control(const STSloColorThresholdsControl& val)
     {
+        if( _blocked )
+            throw std::runtime_error( _block_message );
+
         set(val, advanced_mode_traits<STSloColorThresholdsControl>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds_advanced_mode_base::set_slo_penalty_control(const STSloPenaltyControl& val)
     {
+        if( _blocked )
+            throw std::runtime_error( _block_message );
+
         set(val, advanced_mode_traits<STSloPenaltyControl>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds_advanced_mode_base::set_hdad(const STHdad& val)
     {
+        if( _blocked )
+            throw std::runtime_error( _block_message );
+
         set(val, advanced_mode_traits<STHdad>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds_advanced_mode_base::set_color_correction(const STColorCorrection& val)
     {
+        if( _blocked )
+            throw std::runtime_error( _block_message );
+
         set(val, advanced_mode_traits<STColorCorrection>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds_advanced_mode_base::set_depth_table_control(const STDepthTableControl& val)
     {
+        if( _blocked )
+            throw std::runtime_error( _block_message );
+
         set(val, advanced_mode_traits<STDepthTableControl>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds_advanced_mode_base::set_ae_control(const STAEControl& val)
     {
+        if( _blocked )
+            throw std::runtime_error( _block_message );
+
         set(val, advanced_mode_traits<STAEControl>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds_advanced_mode_base::set_census_radius(const STCensusRadius& val)
     {
+        if( _blocked )
+            throw std::runtime_error( _block_message );
+
         set(val, advanced_mode_traits<STCensusRadius>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
     void ds_advanced_mode_base::set_amp_factor(const STAFactor& val)
     {
+        if( _blocked )
+            throw std::runtime_error( _block_message );
+
         if (*_amplitude_factor_support)
         {
             set(val, advanced_mode_traits<STAFactor>::group);

@@ -20,6 +20,7 @@
 #include "sync.h"
 
 #include <src/platform/platform-utils.h>
+#include <src/core/advanced_mode.h>
 
 #include "firmware_logger_device.h"
 #include "device-calibration.h"
@@ -111,6 +112,7 @@ namespace librealsense
                                       get_firmware_logs_command(),
                                       get_flash_logs_command() )
         {
+            set_advanced_mode_device( this );
         }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;

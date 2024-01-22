@@ -17,6 +17,7 @@
 #include "platform/platform-utils.h"
 #include <src/fourcc.h>
 #include <src/metadata-parser.h>
+#include <src/core/advanced_mode.h>
 
 namespace librealsense
 {
@@ -85,6 +86,23 @@ namespace librealsense
         return safety_ep;
     }
 
+    void d500_safety::set_advanced_mode_device( ds_advanced_mode_base * advanced_mode )
+    {
+        _advanced_mode = advanced_mode;
+        set_advanced_mode_state( _safety_camera_oper_mode->query() );
+    }
+
+    void d500_safety::set_advanced_mode_state( float val )
+    {
+        if( ! _advanced_mode )
+            throw std::runtime_error( "Advanced mode device not set" );
+
+        if( val == static_cast< float >( RS2_SAFETY_MODE_SERVICE ) )
+            _advanced_mode->unblock();
+        else
+            _advanced_mode->block( std::string( "Option can be set only in safety service mode" ) );
+    }
+
     void d500_safety::register_options(std::shared_ptr<d500_safety_sensor> safety_ep, std::shared_ptr<uvc_sensor> raw_safety_sensor)
     {
         // Register safety preset active index option
@@ -100,7 +118,7 @@ namespace librealsense
         
         // Register operational mode option
         static const std::chrono::milliseconds safety_mode_change_timeout( 2000 );
-        auto safety_camera_oper_mode = std::make_shared< ensure_set_xu_option< uint16_t > >(
+        auto safety_camera_oper_mode = std::make_shared< cascade_option< ensure_set_xu_option< uint16_t > > >(
             raw_safety_sensor,
             safety_xu,
             xu_id::SAFETY_CAMERA_OPER_MODE,
@@ -109,6 +127,9 @@ namespace librealsense
                                             { float( RS2_SAFETY_MODE_STANDBY ), "Standby" },
                                             { float( RS2_SAFETY_MODE_SERVICE ), "Service" } },
             safety_mode_change_timeout );
+
+        safety_camera_oper_mode->add_observer( [this]( float val ) { set_advanced_mode_state( val ); } );
+        _safety_camera_oper_mode = safety_camera_oper_mode;
 
         safety_ep->register_option( RS2_OPTION_SAFETY_MODE, safety_camera_oper_mode );
 
