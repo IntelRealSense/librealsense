@@ -20,6 +20,7 @@ skip_hid_patch=0
 apply_hid_gyro_patch=0
 skip_plf_patch=0
 build_only=0
+skip_md_patch=0
 
 #Parse input
 while test $# -gt 0; do
@@ -92,6 +93,7 @@ k_tick=$(echo ${kernel_version[2]} | awk -F'-' '{print $2}')
 [ $k_maj_min -eq 504 ] && [ $k_tick -ge 156 ] && apply_hid_gyro_patch=1 && skip_hid_patch=1
 # For kernel versions 6+ powerline frequency already applied
 [ $k_maj_min -ge 600 ] && skip_plf_patch=1
+[ $k_maj_min -ge 605 ] && skip_md_patch=1
 
 # Construct branch name from distribution codename {xenial,bionic,..} and kernel version
 # ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
@@ -176,8 +178,10 @@ then
 		echo -e "\e[32mApplying patches for \e[36m${ubuntu_codename}-${kernel_branch}\e[32m line\e[0m"
 		echo -e "\e[32mApplying realsense-uvc patch\e[0m"
 		patch -p1 < ../scripts/realsense-camera-formats-${ubuntu_codename}-${kernel_branch}.patch || patch -p1 < ../scripts/realsense-camera-formats-${ubuntu_codename}-master.patch
-		echo -e "\e[32mApplying realsense-metadata patch\e[0m"
-		patch -p1 < ../scripts/realsense-metadata-${ubuntu_codename}-${kernel_branch}.patch || patch -p1 < ../scripts/realsense-metadata-${ubuntu_codename}-master.patch
+		if [ ${skip_md_patch} -eq 0 ]; then
+			echo -e "\e[32mApplying realsense-metadata patch\e[0m"
+			patch -p1 < ../scripts/realsense-metadata-${ubuntu_codename}-${kernel_branch}.patch || patch -p1 < ../scripts/realsense-metadata-${ubuntu_codename}-master.patch
+		fi
 		if [ ${skip_hid_patch} -eq 0 ]; then
 			echo -e "\e[32mApplying realsense-hid patch\e[0m"
 			patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-${kernel_branch}.patch ||  patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-master.patch
@@ -213,8 +217,10 @@ then
 			echo -e "\e[32mApplying 04-xhci-remove-unused-stopped_td-pointer patch\e[0m"
 			patch -p1 < ../scripts/04-xhci-remove-unused-stopped_td-pointer.patch
 		fi
-		echo -e "\e[32mIncrease UVC_URBs in uvcvideo\e[0m"
-		patch -p1 < ../scripts/uvcvideo_increase_UVC_URBS.patch
+		if [ ${skip_md_patch} -eq 0 ]; then
+			echo -e "\e[32mIncrease UVC_URBs in uvcvideo\e[0m"
+			patch -p1 < ../scripts/uvcvideo_increase_UVC_URBS.patch
+		fi
 		if [ $debug_uvc -eq 1 ]; then
 			echo -e "\e[32mApplying uvcvideo and videobuf2 debug patch\e[0m"
 			patch -p1 < ../scripts/uvc_debug.patch

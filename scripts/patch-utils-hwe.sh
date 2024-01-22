@@ -132,6 +132,9 @@ function choose_kernel_branch {
 		"6.2")
 			echo hwe-6.2
 			;;
+		"6.5")
+			echo hwe-6.5
+			;;
 		*)
 			#error message shall be redirected to stderr to be printed properly
 			echo -e "\e[31mUnsupported kernel version $1 . The Jammy patches are maintained for Ubuntu LTS with kernel 5.15, 5.19 only\e[0m" >&2
