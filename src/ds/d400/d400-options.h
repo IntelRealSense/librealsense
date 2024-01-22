@@ -73,6 +73,10 @@ namespace librealsense
             return "Exposure limit is in microseconds. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session.";
         }
         virtual void enable_recording(std::function<void(const option&)> record_action) override { _record_action = record_action; }
+        void set_using_new_opcode( float value );
+        void set_using_old_opcode( float value );
+        float query_using_new_opcode() const;
+        float query_using_old_opcode() const;
 
     private:
         std::function<void(const option&)> _record_action = [](const option&) {};
@@ -80,7 +84,7 @@ namespace librealsense
         hw_monitor& _hwm;
         sensor_base* _sensor;
         std::weak_ptr<limits_option> _exposure_limit_toggle;
-        bool _ae_gain_limits_new_opcode;
+        bool _new_opcode;
     };
 
     class auto_gain_limit_option : public option_base
@@ -90,7 +94,7 @@ namespace librealsense
                                 sensor_base * depth_ep,
                                 option_range range,
                                 std::shared_ptr< limits_option > gain_limit_enable,
-                                bool ae_gain_limits_new_opcode = false );
+                                bool new_opcode = false );
         virtual ~auto_gain_limit_option() = default;
         virtual void set(float value) override;
         virtual float query() const override;
@@ -102,6 +106,10 @@ namespace librealsense
             return "Gain limits ranges from 16 to 248. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session.";
         }
         virtual void enable_recording(std::function<void(const option&)> record_action) override { _record_action = record_action; }
+        void set_using_new_opcode( float value );
+        void set_using_old_opcode( float value );
+        float query_using_new_opcode() const;
+        float query_using_old_opcode() const;
 
     private:
         std::function<void(const option&)> _record_action = [](const option&) {};
@@ -109,7 +117,7 @@ namespace librealsense
         hw_monitor& _hwm;
         sensor_base* _sensor;
         std::weak_ptr<limits_option> _gain_limit_toggle;
-        bool _ae_gain_limits_new_opcode;
+        bool _new_opcode;
     };
 
     // Auto-Limits Enable/ Disable
@@ -121,92 +129,9 @@ namespace librealsense
                        option_range range,
                        const char * description,
                        hw_monitor & hwm,
-                       bool ae_gain_limits_new_opcode = false )
-            : _option( option )
-            , _toggle_range( range )
-            , _description( description )
-            , _hwm( hwm )
-            , _ae_gain_limits_new_opcode( ae_gain_limits_new_opcode ){};
-
-        virtual void set(float value) override
-        {
-            auto set_limit = _cached_limit;
-            if (value == 0) // 0: gain auto-limit is disabled, 1 : gain auto-limit is enabled (all range 16-248 is valid)
-                set_limit = 0;
-
-            if( _ae_gain_limits_new_opcode )
-            {
-                // get structure: min ae, min gain, max ae, max gain
-                command cmd_get( ds::GETAELIMITS );
-                std::vector< uint8_t > ret = _hwm.send( cmd_get );
-                if( ret.empty() )
-                    throw invalid_value_exception( "auto_exposure_limit_option::query result is empty!" );
-
-                // set structure: min ae, max ae, min gain, max gain
-                command cmd( ds::SETAELIMITS );
-                cmd.param1 = 0;
-                cmd.param2 = *( reinterpret_cast< uint32_t * >( ret.data() + 8 ) );
-                cmd.param3 = 0;
-                cmd.param4 = static_cast< int >( set_limit );
-                if( _option == RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE )
-                {
-                    cmd.param2 = static_cast< int >( set_limit );
-                    cmd.param4 = *( reinterpret_cast< uint32_t * >( ret.data() + 12 ) );
-                }
-                _hwm.send( cmd );
-            }
-            else
-            {
-                command cmd_get( ds::AUTO_CALIB );
-                cmd_get.param1 = 5;
-                std::vector< uint8_t > ret = _hwm.send( cmd_get );
-                if( ret.empty() )
-                    throw invalid_value_exception( "auto_exposure_limit_option::query result is empty!" );
-
-                command cmd( ds::AUTO_CALIB );
-                cmd.param1 = 4;
-                cmd.param2 = *( reinterpret_cast< uint32_t * >( ret.data() ) );
-                cmd.param3 = static_cast< int >( set_limit );
-                if( _option == RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE )
-                {
-                    cmd.param2 = static_cast< int >( set_limit );
-                    cmd.param3 = *( reinterpret_cast< uint32_t * >( ret.data() + 4 ) );
-                }
-                _hwm.send( cmd );
-            }
-            
-        };
-        virtual float query() const override 
-        {
-            float limit_val;
-            int offset = 0;
-            std::vector< uint8_t > res;
-            if( _ae_gain_limits_new_opcode )
-            {
-               offset = 8;
-                if( _option == RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE )
-                    offset = 12;
-                // get structure: min ae, min gain, max ae, max gain
-                command cmd( ds::GETAELIMITS );
-                res = _hwm.send( cmd );
-            }
-            else
-            {
-                if( _option == RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE )
-                    offset = 4;
-                command cmd( ds::AUTO_CALIB );
-                cmd.param1 = 5;
-                res = _hwm.send( cmd );   
-            }
-
-            if( res.empty() )
-                throw invalid_value_exception( "auto_exposure_limit_option::query result is empty!" );
-            limit_val = static_cast< float >( *( reinterpret_cast< uint32_t * >( res.data() + offset ) ) );
-
-            if (limit_val ==0)
-                return 0;
-            return 1;
-        };
+                       bool new_opcode = false );
+        virtual void set(float value) override;
+        virtual float query() const override;
         virtual option_range get_range() const override { return _toggle_range; };
         virtual bool is_enabled() const override { return true; }
         virtual const char* get_description() const override { return _description; };
@@ -219,6 +144,10 @@ namespace librealsense
         };
         void set_cached_limit(float value) { _cached_limit = value; };
         float get_cached_limit() { return _cached_limit; };
+        void set_using_new_opcode( float value, float set_limit );
+        void set_using_old_opcode( float value, float set_limit );
+        std::vector< uint8_t > query_using_new_opcode() const;
+        std::vector< uint8_t > query_using_old_opcode() const; 
 
     private:
         std::function<void(const option&)> _record_action = [](const option&) {};
@@ -228,7 +157,7 @@ namespace librealsense
         float _cached_limit;         // used to cache contol limit value when toggle is switched to off
         const char* _description;
         hw_monitor& _hwm;
-        bool _ae_gain_limits_new_opcode; 
+        bool _new_opcode; 
     };
 
     class d400_thermal_monitor;

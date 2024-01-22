@@ -10,47 +10,36 @@
 
 namespace librealsense {
 
-const feature_id auto_exposure_gain_limit_feature::ID = "Auto Exposure Gain Limit feature";
+const feature_id range_limit_feature::ID = "Range Limit feature";
 
-auto_exposure_gain_limit_feature::auto_exposure_gain_limit_feature( synthetic_sensor & sensor, std::shared_ptr< hw_monitor > hw_monitor )
+feature_id range_limit_feature::get_id() const
+{
+    return ID;
+}
+
+const feature_id auto_exposure_limit_feature::ID = "Auto Exposure Limit feature";
+
+auto_exposure_limit_feature::auto_exposure_limit_feature( synthetic_sensor & sensor,
+                                                               std::shared_ptr< hw_monitor > hw_monitor )
 {
     auto exposure_range = sensor.get_option( RS2_OPTION_EXPOSURE ).get_range();
-    auto gain_range = sensor.get_option( RS2_OPTION_GAIN ).get_range();
 
-    bool auto_exposure_new_opcode = false;
     auto fw_ver = firmware_version(sensor.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ));
-    auto_exposure_new_opcode = (fw_ver >= firmware_version( 5, 13, 0, 200 )) ? true : false;
+    bool new_opcode =  fw_ver >= firmware_version( 5, 13, 0, 200 );
 
     option_range enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
-
-    // GAIN Limit
-    auto gain_limit_toggle_control = std::make_shared< limits_option >( RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE,
-                                                                        enable_range,
-                                                                        "Toggle Auto-Gain Limit",
-                                                                        *hw_monitor,
-                                                                        auto_exposure_new_opcode );
-    auto gain_limit_value_control = std::make_shared< auto_gain_limit_option >( *hw_monitor,
-                                                                            &sensor,
-                                                                            gain_range,
-                                                                                gain_limit_toggle_control,
-                                                                                auto_exposure_new_opcode );
-    sensor.register_option( RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE, gain_limit_toggle_control );
-
-    sensor.register_option(
-        RS2_OPTION_AUTO_GAIN_LIMIT,
-        std::make_shared< auto_disabling_control >( gain_limit_value_control, gain_limit_toggle_control  ) );
 
     // EXPOSURE Limit
     auto ae_limit_toggle_control = std::make_shared< limits_option >( RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE,
                                                                       enable_range,
                                                                       "Toggle Auto-Exposure Limit",
                                                                       *hw_monitor,
-                                                                      auto_exposure_new_opcode );
+                                                                      new_opcode );
     auto ae_limit_value_control = std::make_shared< auto_exposure_limit_option >( *hw_monitor,
                                                                               &sensor,
                                                                               exposure_range,
                                                                                   ae_limit_toggle_control,
-                                                                                  auto_exposure_new_opcode );
+                                                                                  new_opcode );
     sensor.register_option( RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE, ae_limit_toggle_control );
 
     sensor.register_option(
@@ -60,7 +49,43 @@ auto_exposure_gain_limit_feature::auto_exposure_gain_limit_feature( synthetic_se
    
 }
 
-feature_id auto_exposure_gain_limit_feature::get_id() const
+feature_id auto_exposure_limit_feature::get_id() const
+{
+    return ID;
+}
+
+
+const feature_id gain_limit_feature::ID = "Gain Limit feature";
+
+gain_limit_feature::gain_limit_feature( synthetic_sensor & sensor,
+                                                          std::shared_ptr< hw_monitor > hw_monitor )
+{
+    auto gain_range = sensor.get_option( RS2_OPTION_GAIN ).get_range();
+
+    auto fw_ver = firmware_version( sensor.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
+    bool new_opcode = fw_ver >= firmware_version( 5, 13, 0, 200 );
+
+    option_range enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
+
+    // GAIN Limit
+    auto gain_limit_toggle_control = std::make_shared< limits_option >( RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE,
+                                                                        enable_range,
+                                                                        "Toggle Auto-Gain Limit",
+                                                                        *hw_monitor,
+                                                                        new_opcode );
+    auto gain_limit_value_control = std::make_shared< auto_gain_limit_option >( *hw_monitor,
+                                                                                &sensor,
+                                                                                gain_range,
+                                                                                gain_limit_toggle_control,
+                                                                                new_opcode );
+    sensor.register_option( RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE, gain_limit_toggle_control );
+
+    sensor.register_option(
+        RS2_OPTION_AUTO_GAIN_LIMIT,
+        std::make_shared< auto_disabling_control >( gain_limit_value_control, gain_limit_toggle_control ) );
+}
+
+feature_id gain_limit_feature::get_id() const
 {
     return ID;
 }
