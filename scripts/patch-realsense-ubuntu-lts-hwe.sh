@@ -274,6 +274,9 @@ cp $KBASE/Module.symvers .
 
 echo -e "\e[32mCompiling uvc module\e[0m"
 make -j -C $KBASE M=$KBASE/drivers/media/usb/uvc/ modules
+if [ $k_maj_min -ge 605 ]; then
+	make -j -C $KBASE M=$KBASE/drivers/media/common/ modules
+fi
 if [ $skip_hid_patch -eq 0 ]; then
 	echo -e "\e[32mCompiling accelerometer and gyro modules\e[0m"
 	make -j -C $KBASE M=$KBASE/drivers/iio/accel modules
@@ -288,6 +291,10 @@ fi
 
 # Copy the patched modules to a  location
 cp $KBASE/drivers/media/usb/uvc/uvcvideo.ko ~/$LINUX_BRANCH-uvcvideo.ko
+if [[ $k_maj_min -ge 605 ]]; then
+	cp $KBASE/drivers/media/common/uvc.ko ~/$LINUX_BRANCH-uvc.ko
+fi
+
 if [ $skip_hid_patch -eq 0 ]; then
 	cp $KBASE/drivers/iio/accel/hid-sensor-accel-3d.ko ~/$LINUX_BRANCH-hid-sensor-accel-3d.ko
 	cp $KBASE/drivers/iio/gyro/hid-sensor-gyro-3d.ko ~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko
@@ -322,6 +329,7 @@ fi
 try_unload_module uvcvideo
 try_unload_module videobuf2_v4l2
 [ ${k_maj_min} -ge 500 ] && try_unload_module videobuf2_common
+[ ${k_maj_min} -ge 605 ] && try_unload_module uvc
 try_unload_module videodev
 
 if [ $build_usbcore_modules -eq 1 ]; then
@@ -349,7 +357,9 @@ if [ $build_usbcore_modules -eq 1 ]; then
 	try_module_insert videobuf2_core ~/$LINUX_BRANCH-videobuf2-core.ko /lib/modules/`uname -r`/kernel/drivers/media/v4l2-core/videobuf2-core.ko
 	try_module_insert videobuf2_v4l2 ~/$LINUX_BRANCH-videobuf2-v4l2.ko /lib/modules/`uname -r`/kernel/drivers/media/v4l2-core/videobuf2-v4l2.ko
 fi
-
+if [ ${k_maj_min} -ge 605 ]; then
+        try_module_insert uvc ~/$LINUX_BRANCH-uvc.ko /lib/modules/`uname -r`/kernel/drivers/media/common/uvc.ko
+fi
 try_module_insert videodev            ~/$LINUX_BRANCH-videodev.ko            /lib/modules/`uname -r`/kernel/drivers/media/v4l2-core/videodev.ko
 if [[ ( ${k_maj_min} -ge 500 ) && ( $debug_uvc -eq 1 ) ]]; then
 	try_module_insert videobuf2-common ~/$LINUX_BRANCH-videobuf2-common.ko /lib/modules/`uname -r`/kernel/drivers/media/common/videobuf2/videobuf2-common.ko
@@ -360,4 +370,5 @@ if [ $skip_hid_patch -eq 0 ]; then
 	try_module_insert hid_sensor_gyro_3d  ~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko  /lib/modules/`uname -r`/kernel/drivers/iio/gyro/hid-sensor-gyro-3d.ko
 fi
 echo -e "\e[92m\n\e[1mScript has completed. Please consult the installation guide for further instruction.\n\e[0m"
+
 
