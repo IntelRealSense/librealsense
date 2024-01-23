@@ -79,6 +79,7 @@ void print_device_info(rs2::device d)
         ", serial number: " << camera_info[RS2_CAMERA_INFO_SERIAL_NUMBER] <<
         ", update serial number: " << camera_info[RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID] <<
         ", firmware version: " << camera_info[RS2_CAMERA_INFO_FIRMWARE_VERSION] <<
+        ", SMCU firmware version: " << camera_info[RS2_CAMERA_INFO_SMCU_FW_VERSION] <<
         ", USB type: " << camera_info[RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR] << std::endl;
 }
 
@@ -567,17 +568,16 @@ try
             if (serial_number_arg.isSet() && sn != selected_serial_number)
                 continue;
 
-            auto fw = d.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ? d.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) : "unknown";
             if(smcu_arg.isSet())
             {
-                std::cout << std::endl << "Device " << sn << " Safety MCU successfully updated" << std::endl;
+                auto smcu_fw_version = d.supports(RS2_CAMERA_INFO_SMCU_FW_VERSION) ? d.get_info(RS2_CAMERA_INFO_SMCU_FW_VERSION) : "unknown";
+                std::cout << std::endl << "Device " << sn << " Safety MCU successfully updated to: " << smcu_fw_version << std::endl;
             }
             else
             {
+                auto fw = d.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ? d.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) : "unknown";
                 std::cout << std::endl << "Device " << sn << " successfully updated to FW: " << fw << std::endl;
             }
-
-           
         }
     }
 
