@@ -2752,7 +2752,7 @@ namespace rs2
                     ImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
 
                     int font_size = window.get_font_size();
-                    ImVec2 button_size = { font_size * 2.f, font_size * 2.f };
+                    ImVec2 button_size = { font_size * 1.9f, font_size * 1.9f };
                     
                     if (!sub->streaming)
                     {
