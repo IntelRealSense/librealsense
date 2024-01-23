@@ -375,11 +375,10 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0,0));
         ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, dark_sensor_bg);
 
+        const auto log_area_width = w - 4;
         ImGui::BeginChild("##LogArea",
-            ImVec2(0.7f * w - 4, h - 38 - ImGui::GetTextLineHeightWithSpacing() - 1), true,
+            ImVec2(log_area_width, h - 38 - ImGui::GetTextLineHeightWithSpacing() - 1), true,
             ImGuiWindowFlags_AlwaysVerticalScrollbar);
-
-        const auto log_area_width = 0.7f * w - 4;
 
         bool copy_all = false;
         bool save_all = false;
@@ -611,8 +610,16 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             command_line = "";
         }
 
+        float child_height = 0;
+        for( auto && dash : dashboards )
+        {
+            child_height += dash->get_height();
+        }
+        float new_dashboard_button_height = 40.f;
+        child_height == 0 ? child_height = new_dashboard_button_height : child_height += 5;
+
         ImGui::SetCursorPos(ImVec2(0.7f * w - 2, 35));
-        ImGui::BeginChild("##StatsArea",ImVec2(0.3f * w - 2, h - 38), true);
+        ImGui::BeginChild( "##StatsArea", ImVec2( 0.3f * w - 2, child_height ), true );
 
         auto top = 0;
         for(auto&& dash : dashboards)
@@ -642,7 +649,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
         if (can_add)
         {
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-            const auto new_dashboard_name = "new_dashaborad";
+            const auto new_dashboard_name = "new_dashboard";
             if (ImGui::Button(u8"\uF0D0 Add Dashboard", ImVec2(-1, 25)))
             {
                 ImGui::OpenPopup(new_dashboard_name);
@@ -688,7 +695,6 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
 
 
         ImGui::EndChild();
-
 
         ImGui::PopStyleColor();
     }
