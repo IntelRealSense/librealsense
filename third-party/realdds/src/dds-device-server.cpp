@@ -53,7 +53,7 @@ dds_device_server::dds_device_server( std::shared_ptr< dds_participant > const &
     , _topic_root( topic_root )
     , _control_dispatcher( QUEUE_MAX_SIZE )
 {
-    LOG_DEBUG( "device server created @ '" << _topic_root << "'" );
+    LOG_DEBUG( "[" << debug_name() << "] device server created" );
     _control_dispatcher.start();
 }
 
@@ -64,11 +64,16 @@ dds_guid const & dds_device_server::guid() const
 }
 
 
+rsutils::string::slice dds_device_server::debug_name() const
+{
+    return device_name_from_root( _topic_root );
+}
+
 
 dds_device_server::~dds_device_server()
 {
     _stream_name_to_server.clear();
-    LOG_DEBUG( "device server deleted @ '" << _topic_root << "'" );
+    LOG_DEBUG( "[" << debug_name() << "] device server deleted" );
 }
 
 
@@ -237,9 +242,30 @@ void dds_device_server::broadcast( topics::device_info const & device_info )
 {
     if( _broadcaster )
         DDS_THROW( runtime_error, "device server was already broadcast" );
+    if( ! _notification_server )
+        DDS_THROW( runtime_error, "not initialized" );
     if( device_info.topic_root() != _topic_root )
-        DDS_THROW( runtime_error, "topic roots do not match" );
-    _broadcaster = std::make_shared< dds_device_broadcaster >( _publisher, device_info );
+        DDS_THROW( runtime_error, "device-info topic root does not match" );
+    _broadcaster = std::make_shared< dds_device_broadcaster >(
+        _publisher,
+        device_info,
+        [weak_notification_server = std::weak_ptr< dds_notification_server >( _notification_server )]
+        {
+            // Once we know our broadcast was acknowledged, send out discovery notifications again so any client who had
+            // us marked offline can get ready again
+            if( auto notification_server = weak_notification_server.lock() )
+                notification_server->trigger_discovery_notifications();
+        } );
+}
+
+
+void dds_device_server::broadcast_disconnect( dds_time ack_timeout )
+{
+    if( _broadcaster )
+    {
+        _broadcaster->broadcast_disconnect( ack_timeout );
+        _broadcaster.reset();
+    }
 }
 
 
@@ -284,7 +310,7 @@ void dds_device_server::on_control_message_received()
                     rsutils::string::from( realdds::print_raw_guid( sample.sample_identity.writer_guid() ) ),
                     sample.sample_identity.sequence_number().to64long(),
                 } );
-                LOG_DEBUG( "<----- control " << sample_j << ": " << j );
+                LOG_DEBUG( "[" << debug_name() << "] <----- control " << sample_j << ": " << j );
                 json reply;
                 reply[sample_key] = std::move( sample_j );
                 try
@@ -299,7 +325,7 @@ void dds_device_server::on_control_message_received()
                     reply[status_key] = "error";
                     reply[explanation_key] = e.what();
                 }
-                LOG_DEBUG( "----->   reply " << reply );
+                LOG_DEBUG( "[" << debug_name() << "] ----->   reply " << reply );
                 try
                 {
                     publish_notification( reply );

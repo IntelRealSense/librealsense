@@ -190,6 +190,7 @@ namespace librealsense
             intrinsics.ppy = k_brown.z.y;
             intrinsics.fx = k_brown.x.x;
             intrinsics.fy = k_brown.y.y;
+            intrinsics.model = RS2_DISTORTION_BROWN_CONRADY;
 
             // update values in the distortion params of the calibration table
             rgb_coefficients_table.distortion_model = RS2_DISTORTION_BROWN_CONRADY;
@@ -220,8 +221,14 @@ namespace librealsense
             intrinsics.width = width;
             intrinsics.height = height;
 
-            auto rect_params = compute_rect_params_from_resolution(table->rectified_intrinsics, 
-                width, height, false);
+            // For D555e, model will be brown and we need the unrectified intrinsics
+            auto rect_params = compute_rect_params_from_resolution( table->rgb_coefficients_table.distortion_model
+                                                                            == RS2_DISTORTION_BROWN_CONRADY
+                                                                        ? table->rgb_coefficients_table.base_instrinsics
+                                                                        : table->rectified_intrinsics,
+                                                                    width,
+                                                                    height,
+                                                                    false );  // symmetry not needed for RGB
 
             intrinsics.fx = rect_params[0];
             intrinsics.fy = rect_params[1];

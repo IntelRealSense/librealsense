@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include <realdds/dds-defines.h>
 #include <realdds/dds-participant.h>
@@ -613,8 +613,9 @@ PYBIND11_MODULE(NAME, m) {
 
 
     using realdds::dds_device_broadcaster;
-    py::class_< dds_device_broadcaster >( m, "device_broadcaster" )
-        .def( py::init< std::shared_ptr< dds_publisher > const &, device_info const & >() );
+    py::class_< dds_device_broadcaster, std::shared_ptr< dds_device_broadcaster > >( m, "device_broadcaster" )
+        .def( py::init<>( []( std::shared_ptr< dds_publisher > const & publisher, device_info const & device_info )
+                          { return std::make_shared< dds_device_broadcaster >( publisher, device_info, nullptr ); } ) );
 
     using realdds::dds_option_range;
     py::class_< dds_option_range >( m, "option_range" )
@@ -795,6 +796,7 @@ PYBIND11_MODULE(NAME, m) {
             py::call_guard< py::gil_scoped_release >() )
         .def( "publish_metadata", &dds_device_server::publish_metadata, py::call_guard< py::gil_scoped_release >() )
         .def( "broadcast", &dds_device_server::broadcast )
+        .def( "broadcast_disconnect", &dds_device_server::broadcast_disconnect, py::arg( "ack-timeout" ) = dds_time() )
         .def( FN_FWD_R( dds_device_server, on_control,
                         false,
                         (dds_device_server &, std::string const &, py::object &&, json_ref &&),
@@ -880,8 +882,18 @@ PYBIND11_MODULE(NAME, m) {
         .def( "server_guid", &dds_device::server_guid )
         .def( "guid", &dds_device::guid )
         .def( "is_ready", &dds_device::is_ready )
+        .def( "is_online", &dds_device::is_online )
+        .def( "is_offline", &dds_device::is_offline )
         .def( "wait_until_ready",
               &dds_device::wait_until_ready,
+              py::call_guard< py::gil_scoped_release >(),
+              "timeout-ms"_a = 5000 )
+        .def( "wait_until_online",
+              &dds_device::wait_until_online,
+              py::call_guard< py::gil_scoped_release >(),
+              "timeout-ms"_a = 5000 )
+        .def( "wait_until_offline",
+              &dds_device::wait_until_offline,
               py::call_guard< py::gil_scoped_release >(),
               "timeout-ms"_a = 5000 )
         .def( "on_metadata_available",
@@ -959,12 +971,19 @@ PYBIND11_MODULE(NAME, m) {
                       ( dds_device_watcher const &, std::shared_ptr< dds_device > const & ),
                       ( std::shared_ptr< dds_device > const & dev ),
                       callback( self, dev ); ) )
-        .def( "foreach_device",
-              []( dds_device_watcher const & self,
-                  std::function< bool( std::shared_ptr< dds_device > const & ) > callback ) {
+        .def( "devices",
+              []( dds_device_watcher const & self )
+              {
+                  std::vector< std::shared_ptr< dds_device > > devices;
                   self.foreach_device(
-                      [callback]( std::shared_ptr< dds_device > const & dev ) { return callback( dev ); } );
-              }, py::call_guard< py::gil_scoped_release >() );
+                      [&]( std::shared_ptr< dds_device > const & dev )
+                      {
+                          devices.push_back( dev );
+                          return true;
+                      } );
+                  return devices;
+              } )
+        .def( "is_device_broadcast", &dds_device_watcher::is_device_broadcast );
 
     using realdds::dds_stream_sensor_bridge;
     py::class_< dds_stream_sensor_bridge >( m, "stream_sensor_bridge" )
