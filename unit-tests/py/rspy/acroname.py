@@ -308,7 +308,7 @@ class Acroname(device_hub.device_hub):
             """
             """
             if not self.all_hubs:
-                self.all_hubs = device_hub.find_all_hubs('24ff')  # 24ff is Acroname VendorID
+                self.all_hubs = set(device_hub.find_all_hubs('24ff'))  # 24ff is Acroname VendorID
             if usb_location:
                 #
                 # Devices connected through an acroname will be in one of two sub-hubs under the acroname main
