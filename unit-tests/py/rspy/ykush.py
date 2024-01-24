@@ -197,24 +197,27 @@ class Ykush(device_hub.device_hub):
             return get_port_from_usb(int(usb_location.split(".")[1]))
 
 
+ykush_dev = None
 def discover(retries = 0, serial = None, path = None):
     """
     Return a YKUSH device. Raise YKUSHNotFound if none found
     If it was called more than once when there's only one device connected, return it
     """
-    ykush_dev = None
-    for i in range(retries + 1):
-        try:
-            ykush_dev = pykush.YKUSH(serial=serial, path=path)
-        except pykush.YKUSHNotFound as e:
-            log.w("YKUSH device not found!")
-        except Exception as e:
-            log.w("Unexpected error occurred!", e)
-        finally:
-            if not ykush_dev and i < retries:
-                time.sleep(1)
-            else:
-                break
+    global ykush_dev
+    if ykush_dev is None:
+        log.d('discovering YKUSH modules ...')
+        for i in range(retries + 1):
+            try:
+                ykush_dev = pykush.YKUSH(serial=serial, path=path)
+            except pykush.YKUSHNotFound as e:
+                log.w("YKUSH device not found!")
+            except Exception as e:
+                log.w("Unexpected error occurred!", e)
+            finally:
+                if not ykush_dev and i < retries:
+                    time.sleep(1)
+                else:
+                    break
     return ykush_dev
 
 

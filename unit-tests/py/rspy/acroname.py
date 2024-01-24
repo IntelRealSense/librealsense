@@ -335,28 +335,29 @@ class Acroname(device_hub.device_hub):
                         if match:
                             return get_port_from_usb(int(match.group(1)), int(match.group(2)))
 
-
+specs = None
 def discover(retries = 0):
     """
     Return all Acroname module specs in a list. Raise NoneFoundError if one is not found!
     """
-
-    log.d( 'discovering Acroname modules ...' )
+    global specs
     # see https://acroname.com/reference/_modules/brainstem/module.html#Module.discoverAndConnect
-    try:
-        log.debug_indent()
-        for i in range(retries + 1):
-            specs = brainstem.discover.findAllModules(brainstem.link.Spec.USB)
+    if specs is None:
+        log.d('discovering Acroname modules ...')
+        try:
+            log.debug_indent()
+            for i in range(retries + 1):
+                specs = brainstem.discover.findAllModules(brainstem.link.Spec.USB)
+                if not specs:
+                    time.sleep(1)
+                else:
+                    for spec in specs:
+                        log.d( '...', spec )
+                    break
             if not specs:
-                time.sleep(1)
-            else:
-                for spec in specs:
-                    log.d( '...', spec )
-                break
-        if not specs:
-            raise NoneFoundError()
-    finally:
-        log.debug_unindent()
+                raise NoneFoundError()
+        finally:
+            log.debug_unindent()
 
     return specs
 
