@@ -2493,8 +2493,11 @@ namespace rs2
                     ImGui::Text("Font Samples: ");
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("Increased font samples produce nicer text, but require more GPU memory, sometimes resulting in boxes instead of font characters");
+
                     ImGui::SameLine();
                     ImGui::PushItemWidth(80);
+                    float slider_position_x = ImGui::GetCursorPosX();
+
                     if (ImGui::SliderInt("##font_samples", &font_samples, 1, 8))
                     {
                         reload_required = true;
@@ -2507,8 +2510,11 @@ namespace rs2
                     ImGui::Text( "Font Size: " );
                     if( ImGui::IsItemHovered() )
                         ImGui::SetTooltip( "Viewer Font Size" );
+                    
                     ImGui::SameLine();
-                    ImGui::PushItemWidth( 109 );
+                    ImGui::PushItemWidth( 80 );
+                    ImGui::SetCursorPosX( slider_position_x );
+
                     if( ImGui::SliderInt( "##font_size", &font_size, 16, 20 ) )
                     {
                         reload_required = true;
