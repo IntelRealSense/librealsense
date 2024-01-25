@@ -35,6 +35,8 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/features/auto-exposure-roi-feature.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/features/remove-ir-pattern-feature.h"
         "${CMAKE_CURRENT_LIST_DIR}/features/remove-ir-pattern-feature.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/features/auto-exposure-gain-limit-feature.h"
-        "${CMAKE_CURRENT_LIST_DIR}/features/auto-exposure-gain-limit-feature.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/features/auto-exposure-limit-feature.h"
+        "${CMAKE_CURRENT_LIST_DIR}/features/auto-exposure-limit-feature.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/features/gain-limit-feature.h"
+        "${CMAKE_CURRENT_LIST_DIR}/features/gain-limit-feature.cpp"
 )

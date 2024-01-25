@@ -99,28 +99,17 @@ namespace librealsense
         }
 
         if( _new_opcode )
-        {
             set_using_new_opcode( value );
-        }
         else
-        {
             set_using_old_opcode( value );
-        }
+
         _record_action( *this );
         
     }
 
     float auto_exposure_limit_option::query() const
     {
-        float ret;
-        if( _new_opcode )
-        {
-            ret = query_using_new_opcode();  
-        }
-        else
-        {
-            ret = query_using_old_opcode();
-        }
+        float ret = _new_opcode ? query_using_new_opcode() : query_using_old_opcode();
         
         if( ret < get_range().min || ret > get_range().max )
         {
@@ -143,13 +132,13 @@ namespace librealsense
         if( ret.empty() )
             throw invalid_value_exception( "auto_exposure_limit_option::query result is empty!" );
 
-        static const int offset = 12;
+        static const int max_gain_offset = 12;
         // set structure: min ae, max ae, min gain, max gain
         command cmd( ds::SETAELIMITS );
         cmd.param1 = 0;
         cmd.param2 = static_cast< int >( value );
         cmd.param3 = 0;
-        cmd.param4 = *( reinterpret_cast< uint32_t * >( ret.data() + offset ) );
+        cmd.param4 = *( reinterpret_cast< uint32_t * >( ret.data() + max_gain_offset ) );
         _hwm.send( cmd );
     }
 
@@ -161,11 +150,11 @@ namespace librealsense
         if( ret.empty() )
             throw invalid_value_exception( "auto_exposure_limit_option::query result is empty!" );
 
-        static const int offset = 4;
+        static const int max_gain_offset = 4;
         command cmd( ds::AUTO_CALIB );
         cmd.param1 = 4;
         cmd.param2 = static_cast< int >( value );
-        cmd.param3 = *( reinterpret_cast< uint32_t * >( ret.data() + offset ) );
+        cmd.param3 = *( reinterpret_cast< uint32_t * >( ret.data() + max_gain_offset ) );
         _hwm.send( cmd );
     }
 
@@ -178,8 +167,8 @@ namespace librealsense
         if( res.empty() )
             throw invalid_value_exception( "auto_exposure_limit_option::query result is empty!" );
 
-        static const int offset = 8;
-        return static_cast< float >( *( reinterpret_cast< uint32_t * >( res.data() + offset ) ) );
+        static const int max_ae_offset = 8;
+        return static_cast< float >( *( reinterpret_cast< uint32_t * >( res.data() + max_ae_offset ) ) );
     }
 
     float auto_exposure_limit_option::query_using_old_opcode() const
@@ -227,28 +216,17 @@ namespace librealsense
         }
             
         if( _new_opcode )
-        {
             set_using_new_opcode( value );
-        }
         else
-        {
             set_using_old_opcode( value );
-        }
+
         _record_action( *this );
         
     }
 
     float auto_gain_limit_option::query() const
     {
-        float ret;
-        if( _new_opcode )
-        {
-           ret = query_using_new_opcode();
-        }
-        else
-        {
-            ret = query_using_old_opcode();
-        }
+        float ret = _new_opcode ? query_using_new_opcode() : query_using_old_opcode();
         
         if (ret< get_range().min || ret > get_range().max)
         {
@@ -271,11 +249,11 @@ namespace librealsense
         if( ret.empty() )
             throw invalid_value_exception( "auto_exposure_limit_option::query result is empty!" );
 
-        static const int offset = 8;
+        static const int max_ae_offset = 8;
         // set structure: min ae, max ae, min gain, max gain
         command cmd( ds::SETAELIMITS );
         cmd.param1 = 0;
-        cmd.param2 = *( reinterpret_cast< uint32_t * >( ret.data() + offset ) );
+        cmd.param2 = *( reinterpret_cast< uint32_t * >( ret.data() + max_ae_offset ) );
         cmd.param3 = 0;
         cmd.param4 = static_cast< int >( value );
         _hwm.send( cmd );
@@ -305,8 +283,8 @@ namespace librealsense
         if( res.empty() )
             throw invalid_value_exception( "auto_exposure_limit_option::query result is empty!" );
 
-        static const int offset = 12;
-        return static_cast< float >( *( reinterpret_cast< uint32_t * >( res.data() + offset ) ) );
+        static const int max_gain_offset = 12;
+        return static_cast< float >( *( reinterpret_cast< uint32_t * >( res.data() + max_gain_offset ) ) );
     }
 
     float auto_gain_limit_option::query_using_old_opcode() const
@@ -318,8 +296,8 @@ namespace librealsense
         if( res.empty() )
             throw invalid_value_exception( "auto_exposure_limit_option::query result is empty!" );
 
-        static const int offset = 4;
-        return static_cast< float >( *( reinterpret_cast< uint32_t * >( res.data() + offset ) ) );
+        static const int max_gain_offset = 4;
+        return static_cast< float >( *( reinterpret_cast< uint32_t * >( res.data() + max_gain_offset ) ) );
     }
 
     limits_option::limits_option(
@@ -337,18 +315,13 @@ namespace librealsense
             set_limit = 0;
 
         if( _new_opcode )
-        {
             set_using_new_opcode(value, set_limit );
-        }
         else
-        {
             set_using_old_opcode( value, set_limit );
-        }
     }
 
     float limits_option::query() const
     {
-        float limit_val;
         int offset = 0;
         std::vector< uint8_t > res;
         if( _new_opcode )
@@ -367,7 +340,7 @@ namespace librealsense
 
         if( res.empty() )
             throw invalid_value_exception( "auto_exposure_limit_option::query result is empty!" );
-        limit_val = static_cast< float >( *( reinterpret_cast< uint32_t * >( res.data() + offset ) ) );
+        float limit_val = static_cast< float >( *( reinterpret_cast< uint32_t * >( res.data() + offset ) ) );
 
         if( limit_val == 0 )
             return 0;

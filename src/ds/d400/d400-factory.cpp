@@ -31,7 +31,8 @@
 
 #include <rsutils/string/from.h>
 
-#include <src/ds/features/auto-exposure-gain-limit-feature.h>
+#include <src/ds/features/auto-exposure-limit-feature.h>
+#include <src/ds/features/gain-limit-feature.h>
 namespace librealsense
 {
     // PSR
