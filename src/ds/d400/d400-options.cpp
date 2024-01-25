@@ -68,13 +68,13 @@ namespace librealsense
     }
 
     auto_exposure_limit_option::auto_exposure_limit_option( hw_monitor & hwm,
-                                                            sensor_base * ep,
+                                                            const std::weak_ptr< sensor_base > & depth_ep,
                                                             option_range range,
                                                             std::shared_ptr< limits_option > exposure_limit_enable,
                                                             bool new_opcode )
         : option_base( range )
         , _hwm( hwm )
-        , _sensor( ep )
+        , _sensor( depth_ep )
         , _exposure_limit_toggle( exposure_limit_enable )
         , _new_opcode( new_opcode )
     {
@@ -122,6 +122,13 @@ namespace librealsense
     option_range auto_exposure_limit_option::get_range() const
     {
         return *_range;
+    }
+
+    bool auto_exposure_limit_option::is_read_only() const
+    {
+        if( auto strong = _sensor.lock() )
+            return strong->is_opened();
+        return false;
     }
 
     void auto_exposure_limit_option::set_using_new_opcode( float value )
@@ -184,13 +191,13 @@ namespace librealsense
     }
 
     auto_gain_limit_option::auto_gain_limit_option( hw_monitor & hwm,
-                                                    sensor_base * ep,
+                                                    const std::weak_ptr< sensor_base > & depth_ep,
                                                     option_range range,
                                                     std::shared_ptr< limits_option > gain_limit_enable,
                                                     bool new_opcode )
         : option_base( range )
         , _hwm( hwm )
-        , _sensor( ep )
+        , _sensor( depth_ep )
         , _gain_limit_toggle( gain_limit_enable )
         , _new_opcode( new_opcode )
     {
@@ -239,6 +246,13 @@ namespace librealsense
     option_range auto_gain_limit_option::get_range() const
     {
         return *_range;
+    }
+
+    bool auto_gain_limit_option::is_read_only() const
+    {
+        if( auto strong = _sensor.lock() )
+            return strong->is_opened();
+        return false;
     }
 
     void auto_gain_limit_option::set_using_new_opcode( float value )

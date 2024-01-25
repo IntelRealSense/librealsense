@@ -28,8 +28,9 @@ gain_limit_feature::gain_limit_feature( synthetic_sensor & sensor,
                                                                         "Toggle Auto-Gain Limit",
                                                                         *hw_monitor,
                                                                         new_opcode );
+    auto raw_depth_sensor = sensor.get_raw_sensor();
     auto gain_limit_value_control = std::make_shared< auto_gain_limit_option >( *hw_monitor,
-                                                                                &sensor,
+                                                                                raw_depth_sensor,
                                                                                 gain_range,
                                                                                 gain_limit_toggle_control,
                                                                                 new_opcode );

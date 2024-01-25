@@ -58,7 +58,7 @@ namespace librealsense
     {
     public:
         auto_exposure_limit_option( hw_monitor & hwm,
-                                    sensor_base * depth_ep,
+                                    const std::weak_ptr< sensor_base > & depth_ep,
                                     option_range range,
                                     std::shared_ptr< limits_option > exposure_limit_enable,
                                     bool ae_gain_limits_new_opcode = false );
@@ -67,7 +67,7 @@ namespace librealsense
         virtual float query() const override;
         virtual option_range get_range() const override;
         virtual bool is_enabled() const override { return true; }
-        virtual bool is_read_only() const override { return _sensor && _sensor->is_opened(); }
+        virtual bool is_read_only() const override;
         virtual const char* get_description() const override
         {
             return "Exposure limit is in microseconds. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session.";
@@ -82,7 +82,7 @@ namespace librealsense
         std::function<void(const option&)> _record_action = [](const option&) {};
         rsutils::lazy< option_range > _range;
         hw_monitor& _hwm;
-        sensor_base* _sensor;
+        std::weak_ptr< sensor_base > _sensor;
         std::weak_ptr<limits_option> _exposure_limit_toggle;
         bool _new_opcode;
     };
@@ -91,7 +91,7 @@ namespace librealsense
     {
     public:
         auto_gain_limit_option( hw_monitor & hwm,
-                                sensor_base * depth_ep,
+                                const std::weak_ptr< sensor_base > & depth_ep,
                                 option_range range,
                                 std::shared_ptr< limits_option > gain_limit_enable,
                                 bool new_opcode = false );
@@ -100,7 +100,7 @@ namespace librealsense
         virtual float query() const override;
         virtual option_range get_range() const override;
         virtual bool is_enabled() const override { return true; }
-        virtual bool is_read_only() const override { return _sensor && _sensor->is_opened(); }
+        virtual bool is_read_only() const override;
         virtual const char* get_description() const override
         {
             return "Gain limits ranges from 16 to 248. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session.";
@@ -115,7 +115,7 @@ namespace librealsense
         std::function<void(const option&)> _record_action = [](const option&) {};
         rsutils::lazy< option_range > _range;
         hw_monitor& _hwm;
-        sensor_base* _sensor;
+        std::weak_ptr< sensor_base > _sensor;
         std::weak_ptr<limits_option> _gain_limit_toggle;
         bool _new_opcode;
     };
