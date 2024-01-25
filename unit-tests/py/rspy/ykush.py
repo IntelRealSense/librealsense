@@ -42,7 +42,7 @@ if __name__ == '__main__':
 try:
     import pykush
 except ModuleNotFoundError:
-    log.w( 'No pykush library is available!' )
+    log.d( 'no pykush library is available' )
     raise
 
 
