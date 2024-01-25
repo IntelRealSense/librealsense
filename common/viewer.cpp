@@ -108,6 +108,7 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_Text, grey);
                 ImGui::Text("Polygon File Format defines a flexible systematic scheme for storing 3D data");
                 ImGui::PopStyleColor();
+                ImGui::NewLine();
                 ImGui::Separator();
                 if (ImGui::Checkbox("Meshing", &mesh))
                 {
@@ -246,7 +247,7 @@ namespace rs2
 
     bool big_button(bool* status,
         ux_window& win,
-        int x, int y,
+        float x, float y,
         const char* icon,
         const char* label,
         bool dropdown,
@@ -258,7 +259,7 @@ namespace rs2
         auto disabled = !enabled;
         auto font = win.get_font();
         auto large_font = win.get_large_font();
-        int font_size = win.get_font_size();
+        float font_size = (float)win.get_font_size();
 
         bool hovered = false;
         bool clicked = false;
@@ -284,22 +285,22 @@ namespace rs2
 
         float button_width = font_size * 3.8f;
 
-        ImGui::SetCursorPos({float(x), float(y)});
+        ImGui::SetCursorPos( { x, y } );
         ImGui::PushFont(large_font);
         clicked = clicked || ImGui::Button( icon, { button_width, 50 } );
         ImGui::PopFont();
         hovered = hovered || ImGui::IsItemHovered();
 
-        ImGui::SetCursorPos( { float( x + button_width - font_size ), float( y ) } );
+        ImGui::SetCursorPos( { x + button_width - font_size, y } );
         ImGui::PushFont(font);
         if (dropdown)
         {
-            clicked = clicked || ImGui::Button(u8"\uf078", { (float)font_size, 55 });
+            clicked = clicked || ImGui::Button(u8"\uf078", { font_size, 55 } );
             hovered = hovered || ImGui::IsItemHovered();
         }
 
-        ImGui::SetCursorPos({ float(x), float(y + 35)});
-        clicked = clicked || ImGui::Button(label, { button_width, 20 } );
+        ImGui::SetCursorPos( { x, y + 35 } );
+        clicked = clicked || ImGui::Button( label, { button_width, 20 } );
         ImGui::PopFont();
         hovered = hovered || ImGui::IsItemHovered();
 
