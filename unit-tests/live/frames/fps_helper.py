@@ -132,7 +132,7 @@ def _check_fps_dict(measured_fps, expected_fps):
     return all_fps_ok
 
 
-def generate_callbacks(sensor_profiles_dict, profile_name_fps_dict, profile_name_lock_dict):
+def generate_callbacks(sensor_profiles_dict, profile_name_fps_dict):
     """
     Creates callable functions for each sensor to be triggered when a new frame arrives
     Used to count frames received for measuring fps
@@ -143,8 +143,7 @@ def generate_callbacks(sensor_profiles_dict, profile_name_fps_dict, profile_name
             global count_frames
             if count_frames:
                 profile_name = frame.profile.stream_name()
-                with profile_name_lock_dict[profile_name]:  # lock and count frame
-                    profile_name_fps_dict[profile_name] += 1
+                profile_name_fps_dict[profile_name] += 1
 
         sensor_function_dict[sensor_key] = on_frame_received
     return sensor_function_dict
@@ -161,16 +160,14 @@ def measure_fps(sensor_profiles_dict):
     global count_frames
     count_frames = False
 
-    # initialize fps and locks dict
+    # initialize fps dict
     profile_name_fps_dict = {}
-    profile_name_lock_dict = {}
     for sensor, profiles in sensor_profiles_dict.items():
         for profile in profiles:
             profile_name_fps_dict[profile.stream_name()] = 0
-            profile_name_lock_dict[profile.stream_name()] = threading.Lock()
 
     # generate sensor-callable dictionary
-    funcs_dict = generate_callbacks(sensor_profiles_dict, profile_name_fps_dict, profile_name_lock_dict)
+    funcs_dict = generate_callbacks(sensor_profiles_dict, profile_name_fps_dict)
 
     for sensor, profiles in sensor_profiles_dict.items():
         sensor.open(profiles)
@@ -197,8 +194,8 @@ def get_test_details_str(sensor_profile_dict):
     for sensor, profiles in sensor_profile_dict.items():
         for profile in profiles:
             test_details_str += (f"Expected fps for profile {profile.stream_name()} on sensor "
-                  f"{sensor.name} is {profile.fps()} "
-                  f"on {get_resolution(profile)}\n")
+                                 f"{sensor.name} is {profile.fps()} "
+                                 f"on {get_resolution(profile)}\n")
 
     test_details_str = test_details_str.replace("on (0, 0)", "")  # remove no resolution for Motion Module profiles
     return test_details_str
@@ -249,11 +246,8 @@ def perform_fps_test(sensor_profiles_arr, modes):
         run_test(sensor_profiles_arr, mode, None)
 
 
-def get_profile(sensor, stream, resolution = None, fps = None):
-    try:
-        return next(profile for profile in sensor.profiles if profile.stream_type() == stream
-                       and (resolution is None or get_resolution(profile) == resolution)
-                       and (fps is None or profile.fps() == fps)
-                       )
-    except StopIteration:
-        return None
+def get_profile(sensor, stream, resolution=None, fps=None):
+    return next((profile for profile in sensor.profiles if profile.stream_type() == stream
+                and (resolution is None or get_resolution(profile) == resolution)
+                and (fps is None or profile.fps() == fps)),
+                None)  # return None if no profile found
