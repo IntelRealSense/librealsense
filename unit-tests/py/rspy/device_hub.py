@@ -159,9 +159,9 @@ def _create_acroname():
         return acroname.Acroname()
     except ModuleNotFoundError:
         return None
-    except acroname.NoneFoundError():
+    except acroname.NoneFoundError:
         return None
-    except:
+    except BaseException:
         return None
 
 
@@ -173,5 +173,5 @@ def _create_ykush():
         return None
     except ykush.NoneFoundError:
         return None
-    except:
+    except BaseException:
         return None
