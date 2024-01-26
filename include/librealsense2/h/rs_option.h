@@ -10,6 +10,10 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #ifndef LIBREALSENSE_RS2_OPTION_H
 #define LIBREALSENSE_RS2_OPTION_H
 
+
+#include <stdint.h>
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -136,6 +140,38 @@ extern "C" {
     */
     rs2_option rs2_option_from_string( const char * option_name );
 
+    /** \brief Defines known option value types.
+    */
+    typedef enum rs2_option_type
+    {
+        RS2_OPTION_TYPE_NUMBER, /**< 64-bit integer value, either as_number_signed or as_number_unsigned */
+        RS2_OPTION_TYPE_FLOAT,
+        RS2_OPTION_TYPE_STRING,
+
+        RS2_OPTION_TYPE_COUNT
+
+    } rs2_option_type;
+
+    /**
+    * Returns the option type as a string, or "UNKNOWN" otherwise.
+    * \param[in] type    the option type identifier
+    */
+    const char * rs2_option_type_to_string( rs2_option_type type );
+
+    /** \brief The value of an option, in a known option type.
+    */
+    typedef struct rs2_option_value
+    {
+        rs2_option id;
+        rs2_option_type type;             /**< RS2_OPTION_TYPE_COUNT if no value is available */
+        union {
+            char const * as_string;       /**< valid only while rs2_option_value is alive! */
+            float as_float;
+            int64_t as_number_signed;
+            uint64_t as_number_unsigned;
+        };
+    } rs2_option_value;
+
     /** \brief For SR300 devices: provides optimized settings (presets) for specific types of usage. */
     typedef enum rs2_sr300_visual_preset
     {
@@ -256,6 +292,15 @@ extern "C" {
     float rs2_get_option(const rs2_options* options, rs2_option option, rs2_error** error);
 
     /**
+    * read option value from the sensor
+    * \param[in] options    the options container
+    * \param[in] option_id  option id to be queried
+    * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    * \return pointer to the value structure of the option; use rs2_delete_option_value to clean up
+    */
+    rs2_option_value const * rs2_get_option_value( const rs2_options * options, rs2_option option_id, rs2_error ** error );
+
+    /**
     * write new value to sensor option
     * \param[in] options    the options container
     * \param[in] option     option id to be queried
@@ -291,8 +336,23 @@ extern "C" {
     * get the specific option from options list
     * \param[in] i    the index of the option
     * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    * \return the option ID
     */
     rs2_option rs2_get_option_from_list(const rs2_options_list* options, int i, rs2_error** error);
+
+    /**
+    * get the specific option from options list
+    * \param[in] i    the index of the option
+    * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    * \return temporary (goes away with the options-list) pointer to the option-value struct
+    */
+    rs2_option_value const * rs2_get_option_value_from_list( const rs2_options_list * options, int i, rs2_error ** error );
+
+    /**
+    * Clean up a value and all it points to
+    * \param[in] handle value to delete
+    */
+    void rs2_delete_option_value( rs2_option_value const * handle );
 
     /**
     * Deletes options list
