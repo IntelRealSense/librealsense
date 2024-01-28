@@ -7,20 +7,18 @@
 #include <src/feature-interface.h>
 
 #include <memory>
-#include <librealsense2/hpp/rs_options.hpp>
 
 namespace librealsense {
 
 class synthetic_sensor;
 class hw_monitor;
-class limits_option;
 
 class auto_exposure_limit_feature : public feature_interface
 {
 public:
     static const feature_id ID;
 
-    auto_exposure_limit_feature( synthetic_sensor & depth_sensor, std::shared_ptr< hw_monitor > hw_monitor );
+    auto_exposure_limit_feature( synthetic_sensor & depth_sensor, const std::shared_ptr< hw_monitor > & hw_monitor );
 
     feature_id get_id() const override;
 };

@@ -6,6 +6,7 @@
 #include <src/ds/d400/d400-options.h>
 #include <src/ds/ds-private.h>
 #include <src/sensor.h>
+#include <librealsense2/hpp/rs_options.hpp>
 
 
 namespace librealsense {
@@ -14,7 +15,7 @@ namespace librealsense {
 const feature_id auto_exposure_limit_feature::ID = "Auto Exposure Limit feature";
 
 auto_exposure_limit_feature::auto_exposure_limit_feature( synthetic_sensor & sensor,
-                                                               std::shared_ptr< hw_monitor > hw_monitor )
+                                                          const std::shared_ptr< hw_monitor > & hw_monitor )
 {
     auto exposure_range = sensor.get_option( RS2_OPTION_EXPOSURE ).get_range();
 

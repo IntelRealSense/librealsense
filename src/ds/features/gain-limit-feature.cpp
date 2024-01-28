@@ -6,14 +6,14 @@
 #include <src/ds/d400/d400-options.h>
 #include <src/ds/ds-private.h>
 #include <src/sensor.h>
+#include <librealsense2/hpp/rs_options.hpp>
 
 
 namespace librealsense {
 
 const feature_id gain_limit_feature::ID = "Gain Limit feature";
 
-gain_limit_feature::gain_limit_feature( synthetic_sensor & sensor,
-                                                          std::shared_ptr< hw_monitor > hw_monitor )
+gain_limit_feature::gain_limit_feature( synthetic_sensor & sensor, const std::shared_ptr< hw_monitor > & hw_monitor )
 {
     auto gain_range = sensor.get_option( RS2_OPTION_GAIN ).get_range();
 
