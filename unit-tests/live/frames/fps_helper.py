@@ -3,20 +3,6 @@
 
 from rspy import test, log
 import time
-import itertools
-import math
-import threading
-from enum import Enum
-
-
-class Modes(Enum):
-    # To add a new test mode (ex. all singles or triplets) only add it below and on should_test
-    # add it in get_time_est_string for an initial time calculation
-    # run perform_fps_test(sensor_profiles_array, [mode])
-    ALL_PERMUTATIONS = 1
-    ALL_PAIRS = 2
-    ALL_STREAMS = 3
-
 
 # global variable used to count on all the sensors simultaneously
 count_frames = False
@@ -44,65 +30,20 @@ def get_expected_fps_dict(sensor_profiles_dict):
     return expected_fps_dict
 
 
-def should_test(mode, permutation, custom_perm):
-    """
-    Returns true if the given permutation should be tested:
-    If the mode is ALL_PERMUTATIONS returns true (every permutation should be tested)
-    If the mode is ALL_SENSORS return true only if all streams are to be tested
-    If the mode is ALL_PAIRS return true only if there are exactly two streams to be tested
-    """
-    if custom_perm is not None:
-        return permutation in custom_perm
-    return ((mode == Modes.ALL_PERMUTATIONS) or
-            (mode == Modes.ALL_STREAMS and all(v == 1 for v in permutation)) or
-            (mode == Modes.ALL_PAIRS and permutation.count(1) == 2))
+def get_dict_for_streams(sensor_profiles_arr, streams_to_test):
+    sensor_profiles_dict = {}
+    for stream_name in streams_to_test:
+        for sensor, profile in sensor_profiles_arr:
+            if stream_name in profile.stream_name():
+                sensor_profiles_dict[sensor] = sensor_profiles_dict.get(sensor, []) + [profile]
+    return sensor_profiles_dict
 
 
-def get_dict_for_permutation(sensor_profiles_arr, permutation):
-    """
-    Given an array of pairs (sensor, profile) and a permutation of the same length,
-    return a sensor-profiles dictionary containing the relevant profiles
-     - profile will be added only if there's 1 in the corresponding element in the permutation
-    """
-    partial_dict = {}
-    for i, j in enumerate(permutation):
-        if j == 1:
-            sensor = sensor_profiles_arr[i][0]
-            partial_dict[sensor] = partial_dict.get(sensor, []) + [sensor_profiles_arr[i][1]]
-    return partial_dict
-
-
-# To reduce required python version, we implement choose instead of using math.comb
-def choose(n, k):
-    return math.factorial(n)/(math.factorial(k) * math.factorial(n - k))
-
-
-def get_time_est_string(num_profiles, modes):
-    time_est_string = "Estimated time for test:"
-    details_str = ""
-    total_time = 0
+def get_time_est_string(profiles_array):
     global TIME_TO_COUNT_FRAMES, TIME_FOR_STEADY_STATE
     time_per_test = TIME_TO_COUNT_FRAMES + TIME_FOR_STEADY_STATE
-    for mode in modes:
-        test_time = 0
-        if mode == Modes.ALL_PERMUTATIONS:
-            test_time = math.factorial(num_profiles) * time_per_test
-            details_str += f"{math.factorial(num_profiles)} tests for all permutations"
-        elif mode == Modes.ALL_PAIRS:
-            test_time = choose(num_profiles, 2) * time_per_test
-            details_str += f"{choose(num_profiles, 2)} tests for all pairs"
-        elif mode == Modes.ALL_STREAMS:
-            test_time = time_per_test
-            details_str += f"1 test for all streams on"
-
-        details_str += " + "
-        total_time += test_time
-
-    # Remove the last " + " for aesthetics
-    details_str = details_str[:-3]
-    details_str = f"({details_str})"
-    details_str += f" * {time_per_test} secs per test"
-    time_est_string = f"{time_est_string} {total_time} secs ({details_str})"
+    time_est_string = (f"Estimated time for test: {len(profiles_array) * time_per_test} secs "
+                       f"({len(profiles_array)} tests * {time_per_test} secs per test)")
     return time_est_string
 
 
@@ -120,7 +61,7 @@ def get_tested_profiles_string(sensor_profiles_dict):
 #############################################
 # ---------- Core Test Functions ---------- #
 #############################################
-def _check_fps_dict(measured_fps, expected_fps):
+def check_fps_dict(measured_fps, expected_fps):
     all_fps_ok = True
     for profile_name in expected_fps:
         res = check_fps_pair(measured_fps[profile_name], expected_fps[profile_name])
@@ -201,25 +142,6 @@ def get_test_details_str(sensor_profile_dict):
     return test_details_str
 
 
-def run_test(sensor_profiles_arr, mode=None, custom_perm=None):
-    # Generate a list of all possible combinations of 1s and 0s (permutations) in the length of the array
-    perms = list(itertools.product([0, 1], repeat=len(sensor_profiles_arr)))
-
-    # Go over every possible permutation and check if we should test it
-    # Each index in a permutation represents a profile, which will be tested only if the value in that index is 1
-    for perm in perms:
-        if all(v == 0 for v in perm):
-            continue
-        if should_test(mode, perm, custom_perm):
-            partial_dict = get_dict_for_permutation(sensor_profiles_arr, perm)
-            with test.closure("Testing", get_tested_profiles_string(partial_dict)):
-                expected_fps_dict = get_expected_fps_dict(partial_dict)
-                log.d(get_test_details_str(partial_dict))
-                fps_dict = measure_fps(partial_dict)
-                test.check(_check_fps_dict(fps_dict, expected_fps_dict))
-    test.print_results_and_exit()
-
-
 ############################################
 # ----------- Public Functions ----------- #
 ############################################
@@ -227,23 +149,21 @@ def get_resolution(profile):
     return profile.as_video_stream_profile().width(), profile.as_video_stream_profile().height()
 
 
-def perform_custom_fps_test(sensor_profiles_arr, custom_perm):
+def perform_fps_test(sensor_profiles_arr, streams_combinations):
     """
     :param sensor_profiles_arr: an array of length N of tuples (sensor, profile) to test on
-    :param custom_perm: an array of tuples of length N each with 1s and 0s, where each tuple represent an fps test to
-    run - the i-th profile will run in that test only if there is 1 in the i-th cell in that tuple
+    :param streams_combinations: an array of combinations to run
+                                 each combination is an array with stream names to test
     """
-    run_test(sensor_profiles_arr, None, custom_perm)
-
-
-def perform_fps_test(sensor_profiles_arr, modes):
-    """
-    :param sensor_profiles_arr: an array of length N of tuples (sensor, profile) to test on
-    :param modes: one of the modes mentioned at the beginning of the file, used to indicate what combinations to run
-    """
-    log.d(get_time_est_string(len(sensor_profiles_arr), modes))
-    for mode in modes:
-        run_test(sensor_profiles_arr, mode, None)
+    log.d(get_time_est_string(streams_combinations))
+    for streams_to_test in streams_combinations:
+        partial_dict = get_dict_for_streams(sensor_profiles_arr, streams_to_test)
+        with test.closure("Testing", get_tested_profiles_string(partial_dict)):
+            expected_fps_dict = get_expected_fps_dict(partial_dict)
+            log.d(get_test_details_str(partial_dict))
+            fps_dict = measure_fps(partial_dict)
+            test.check(check_fps_dict(fps_dict, expected_fps_dict))
+    test.print_results_and_exit()
 
 
 def get_profile(sensor, stream, resolution=None, fps=None):
