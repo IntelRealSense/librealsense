@@ -2303,36 +2303,39 @@ namespace rs2
 
         ImGui::PushFont(window.get_font());
 
-        auto settings = "Settings";
-        auto about = "About";
+        const char* menu_items[] = { "Report Issue", "Intel Store", "Settings", "About" };
         bool open_settings_popup = false;
         bool open_about_popup = false;
 
         ImGui::SetNextWindowPos({ window.width() - 130, panel_y });
-        ImGui::SetNextWindowSize({ 6.f * window.get_font_size(), 5.5f * window.get_font_size() });
+        auto separator_height = 2;
+        auto menu_items_len = sizeof( menu_items ) / sizeof( menu_items[0] );
+        auto popup_height = ( ImGui::GetTextLineHeightWithSpacing() + 2 ) * menu_items_len + separator_height;
+        ImVec2 popup_size = { 6.f * window.get_font_size(), popup_height };
+        ImGui::SetNextWindowSize( popup_size );
 
         if (ImGui::BeginPopup("More Options"))
         {
             settings_open = true;
 
-            if (ImGui::Selectable("Report Issue"))
+            if( ImGui::Selectable( menu_items[0] ) )
             {
                 open_issue(devices);
             }
 
-            if (ImGui::Selectable("Intel Store"))
+            if( ImGui::Selectable( menu_items[1] ) )
             {
                 open_url("https://store.intelrealsense.com/");
             }
 
-            if (ImGui::Selectable(settings))
+            if( ImGui::Selectable( menu_items[2] ) )
             {
                 open_settings_popup = true;
             }
 
             ImGui::Separator();
 
-            if (ImGui::Selectable(about))
+            if( ImGui::Selectable( menu_items[3] ) )
             {
                 open_about_popup = true;
             }
@@ -2355,7 +2358,7 @@ namespace rs2
         {
             _measurements.disable();
             temp_cfg = config_file::instance();
-            ImGui::OpenPopup(settings);
+            ImGui::OpenPopup(menu_items[2]);
             reload_required = false;
             refresh_required = false;
             tab = config_file::instance().get_or_default(configurations::viewer::settings_tab, 0);
@@ -2379,7 +2382,7 @@ namespace rs2
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
             ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
 
-            if (ImGui::BeginPopupModal(settings, nullptr, flags))
+            if (ImGui::BeginPopupModal(menu_items[2], nullptr, flags))
             {
                 if (ImGui::IsWindowHovered()) window.set_hovered_over_input();
 
@@ -2892,7 +2895,7 @@ namespace rs2
         if (open_about_popup)
         {
             _measurements.disable();
-            ImGui::OpenPopup(about);
+            ImGui::OpenPopup(menu_items[3]);
         }
 
         {
@@ -2913,7 +2916,7 @@ namespace rs2
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
             ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
 
-            if (ImGui::BeginPopupModal(about, nullptr, flags))
+            if (ImGui::BeginPopupModal(menu_items[3], nullptr, flags))
             {
                 ImGui::Image((void*)(intptr_t)window.get_splash().get_gl_handle(),
                              ImVec2(w - 30, 100), {0.20f, 0.38f}, {0.80f, 0.56f});
