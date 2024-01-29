@@ -194,6 +194,13 @@ namespace librealsense
 
             // update values in the distortion params of the calibration table
             rgb_coefficients_table.distortion_model = RS2_DISTORTION_BROWN_CONRADY;
+
+            // Since we override the table we need an indication that the table had changed from
+            // outside this function Decided to use a reserve field for that
+            if( rgb_coefficients_table.reserved[3] != 0 )
+                LOG_ERROR( "reserved field expected to be zero - expect bad distortion model" );
+            rgb_coefficients_table.reserved[3] = 1;
+
             rgb_coefficients_table.distortion_coeffs[5] = 0;
             rgb_coefficients_table.distortion_coeffs[6] = 0;
             rgb_coefficients_table.distortion_coeffs[7] = 0;
@@ -222,13 +229,16 @@ namespace librealsense
             intrinsics.height = height;
 
             // For D555e, model will be brown and we need the unrectified intrinsics
-            auto rect_params = compute_rect_params_from_resolution( table->rgb_coefficients_table.distortion_model
-                                                                            == RS2_DISTORTION_BROWN_CONRADY
-                                                                        ? table->rgb_coefficients_table.base_instrinsics
-                                                                        : table->rectified_intrinsics,
-                                                                    width,
-                                                                    height,
-                                                                    false );  // symmetry not needed for RGB
+            bool use_base_intrinsics
+                = ( table->rgb_coefficients_table.distortion_model == RS2_DISTORTION_BROWN_CONRADY
+                    && table->rgb_coefficients_table.reserved[3] == 0 );
+
+            auto rect_params = compute_rect_params_from_resolution(
+                use_base_intrinsics ? table->rgb_coefficients_table.base_instrinsics
+                                    : table->rectified_intrinsics,
+                                      width,
+                                      height,
+                                      false );  // symmetry not needed for RGB
 
             intrinsics.fx = rect_params[0];
             intrinsics.fy = rect_params[1];
