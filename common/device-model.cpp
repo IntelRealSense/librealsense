@@ -27,7 +27,7 @@ using namespace rs2::sw_update;
 
 namespace rs2
 {
-    void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18, ImFont*& monofont, int& font_size)
+    void imgui_easy_theming(ImFont*& font_dynamic, ImFont*& font_18, ImFont*& monofont, int& font_size)
     {
         ImGuiStyle& style = ImGui::GetStyle();
 
@@ -43,15 +43,15 @@ namespace rs2
             ImFontConfig config_words;
             config_words.OversampleV = OVERSAMPLE;
             config_words.OversampleH = OVERSAMPLE;
-            font_14 = io.Fonts->AddFontFromMemoryCompressedTTF( karla_regular_compressed_data,
+            font_dynamic = io.Fonts->AddFontFromMemoryCompressedTTF( karla_regular_compressed_data,
                                                                 karla_regular_compressed_size,
-                                                                font_size );
+                                                                (float)font_size );
 
             ImFontConfig config_glyphs;
             config_glyphs.MergeMode = true;
             config_glyphs.OversampleV = OVERSAMPLE;
             config_glyphs.OversampleH = OVERSAMPLE;
-            font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
+            font_dynamic = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
                 font_awesome_compressed_size, 14.f, &config_glyphs, icons_ranges);
         }
 

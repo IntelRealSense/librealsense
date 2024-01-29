@@ -61,7 +61,7 @@ inline ImVec4 blend(const ImVec4& c, float a)
 
 namespace rs2
 {
-    void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18, ImFont*& monofont, int& font_size);
+    void imgui_easy_theming(ImFont*& font_dynamic, ImFont*& font_18, ImFont*& monofont, int& font_size);
 
     constexpr const char* server_versions_db_url = "https://librealsense.intel.com/Releases/rs_versions_db.json";
 

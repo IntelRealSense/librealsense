@@ -64,7 +64,7 @@ namespace rs2
 
         ImFont* get_large_font() const { return _font_18; }
         ImFont* get_monofont() const { return _monofont; }
-        ImFont* get_font() const { return _font_14; }
+        ImFont* get_font() const { return _font_dynamic; }
         int get_font_size() const { return font_size; }
 
         rs2::mouse_info& get_mouse() { return _mouse; }
@@ -101,7 +101,7 @@ namespace rs2
         int                     _fb_height = 0;
         rs2::rect                _viewer_rect;
 
-        ImFont                   *_font_14, *_font_18, *_monofont;
+        ImFont                   *_font_dynamic, *_font_18, *_monofont;
         int                      font_size;   
         rs2::mouse_info          _mouse{};
         std::string              _error_message;

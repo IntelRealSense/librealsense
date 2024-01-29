@@ -942,9 +942,9 @@ namespace rs2
 
     void rs2::viewer_model::show_popup(const ux_window& window, const popup& p)
     {
-        auto font_14 = window.get_font();
+        auto font_dynamic = window.get_font();
 
-        ImGui_ScopePushFont(font_14);
+        ImGui_ScopePushFont(font_dynamic);
         ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
