@@ -149,6 +149,9 @@ namespace librealsense
         static const uint16_t HW_MONITOR_COMMAND_SIZE = 1000;
         static const uint16_t HW_MONITOR_BUFFER_SIZE = 1024;
 
+        void block( const std::string & exception_message );
+        void unblock();
+
     private:
         friend class auto_calibrated;
         void set_exposure(synthetic_sensor& sensor, const exposure_control& val);
@@ -204,6 +207,8 @@ namespace librealsense
         rsutils::lazy< bool > _enabled;
         std::shared_ptr<advanced_mode_preset_option> _preset_opt;
         rsutils::lazy< bool > _amplitude_factor_support;
+        bool _blocked = false;
+        std::string _block_message;
 
         preset get_all() const;
         void set_all( const preset & p );
@@ -216,6 +221,9 @@ namespace librealsense
         template<class T>
         void set(const T& strct, EtAdvancedModeRegGroup cmd) const
         {
+            if( _blocked )
+                throw std::runtime_error( _block_message );
+
             auto ptr = (uint8_t*)(&strct);
             std::vector<uint8_t> data(ptr, ptr + sizeof(T));
 

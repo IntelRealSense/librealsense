@@ -5,6 +5,7 @@
 
 import pyrealsense2 as rs
 from rspy import test, log
+from rspy import tests_wrapper as tw
 import os
 import math
 
@@ -22,6 +23,7 @@ DETAIL_LEVEL = 10
 FRAMES_TO_CHECK = 30
 
 dev = test.find_first_device_or_exit()
+tw.start_wrapper( dev )
 
 cfg = rs.config()
 cfg.enable_stream(rs.stream.depth, rs.format.z16, 30)
@@ -185,4 +187,5 @@ for frame_num in range(FRAMES_TO_CHECK):
 test.check(is_there_depth is True)
 test.finish()
 
+tw.stop_wrapper( dev )
 test.print_results_and_exit()

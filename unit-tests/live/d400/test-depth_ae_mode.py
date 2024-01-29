@@ -6,11 +6,13 @@
 import pyrealsense2 as rs
 import pyrsutils as rsutils
 from rspy import test, log
+from rspy import tests_wrapper as tw
 
 ctx = rs.context()
 device = test.find_first_device_or_exit();
 depth_sensor = device.first_depth_sensor()
 fw_version = rsutils.version( device.get_info( rs.camera_info.firmware_version ))
+tw.start_wrapper( device )
 
 if fw_version < rsutils.version(5,15,0,0):
     log.i(f"FW version {fw_version} does not support DEPTH_AUTO_EXPOSURE_MODE option, skipping test...")
@@ -68,4 +70,5 @@ depth_sensor.close()
 test.finish()
 
 ################################################################################################
+tw.stop_wrapper( device )
 test.print_results_and_exit()
