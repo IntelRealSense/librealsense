@@ -501,7 +501,12 @@ int main(int argc, const char** argv) try
             }
         }
 
-        ImGui::SetNextWindowSize({ viewer_model.panel_width, 20.f * (new_devices_count + multiline_devices_names) + 8 + (is_ip_device_connected ? 0 : 20) });
+        float line_h = ImGui::GetTextLineHeightWithSpacing() + 2;
+        float separator_h = new_devices_count > 1 ? ImGui::GetStyle().ItemSpacing.y : 0;
+        float popup_select_h = line_h * ( new_devices_count + multiline_devices_names ) + separator_h + ( is_ip_device_connected ? 0 : line_h );
+        ImVec2 popup_select_size = { viewer_model.panel_width, popup_select_h };
+        ImGui::SetNextWindowSize( popup_select_size );
+
         if (ImGui::BeginPopup("select"))
         {
             ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
