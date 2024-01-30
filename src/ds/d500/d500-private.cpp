@@ -198,7 +198,8 @@ namespace librealsense
             // Since we override the table we need an indication that the table had changed from
             // outside this function Decided to use a reserve field for that
             if( rgb_coefficients_table.reserved[3] != 0 )
-                LOG_ERROR( "reserved field expected to be zero - expect bad distortion model" );
+                throw invalid_value_exception( "reserved field read from RGB distortion model table is expected to be zero" );
+
             rgb_coefficients_table.reserved[3] = 1;
 
             rgb_coefficients_table.distortion_coeffs[5] = 0;
