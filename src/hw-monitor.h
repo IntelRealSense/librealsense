@@ -271,49 +271,6 @@ namespace librealsense
     class hw_monitor
     {
     protected:
-        struct hwmon_cmd
-        {
-            uint8_t     cmd;
-            int         param1;
-            int         param2;
-            int         param3;
-            int         param4;
-            uint8_t     data[HW_MONITOR_BUFFER_SIZE];
-            int         sizeOfSendCommandData;
-            long        timeOut;
-            bool        require_response;
-            uint8_t     receivedCommandData[HW_MONITOR_BUFFER_SIZE];
-            size_t      receivedCommandDataLength;
-            uint8_t     receivedOpcode[4];
-
-            explicit hwmon_cmd(uint8_t cmd_id)
-                : cmd(cmd_id),
-                  param1(0),
-                  param2(0),
-                  param3(0),
-                  param4(0),
-                  sizeOfSendCommandData(0),
-                  timeOut(5000),
-                  require_response(true),
-                  receivedCommandDataLength(0)
-            {}
-
-
-            explicit hwmon_cmd(const command& cmd)
-                : cmd(cmd.cmd),
-                  param1(cmd.param1),
-                  param2(cmd.param2),
-                  param3(cmd.param3),
-                  param4(cmd.param4),
-                  sizeOfSendCommandData(std::min((uint16_t)cmd.data.size(), HW_MONITOR_BUFFER_SIZE)),
-                  timeOut(cmd.timeout_ms),
-                  require_response(cmd.require_response),
-                  receivedCommandDataLength(0)
-            {
-                std::memcpy( data, cmd.data.data(), sizeOfSendCommandData );
-            }
-        };
-
         struct hwmon_cmd_details
         {
             bool                                         require_response;
