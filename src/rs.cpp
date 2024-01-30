@@ -174,6 +174,7 @@ struct rs2_error
 
 rs2_error *rs2_create_error(const char* what, const char* name, const char* args, rs2_exception_type type) BEGIN_API_CALL
 {
+    LOG_ERROR( "[" << name << "][" << rs2_exception_type_to_string( type ) << "] " << what << ": " << args );
     return new rs2_error{ what, name, args, type };
 }
 NOEXCEPT_RETURN(nullptr, what, name, args, type)
