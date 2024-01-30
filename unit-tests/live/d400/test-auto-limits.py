@@ -43,28 +43,27 @@ with test.closure("Auto Exposure toggle one device"):
 #############################################################################################
 with test.closure("Auto Exposure two devices"):
     # Scenario 2:
-    for i in range(2):  # exposure or gain
-        s1 = picked_sensor[0][rs.option.auto_exposure_limit]
-        s2 = picked_sensor[1][rs.option.auto_exposure_limit]
+    s1 = picked_sensor[0][rs.option.auto_exposure_limit]
+    s2 = picked_sensor[1][rs.option.auto_exposure_limit]
 
-        option_range = s1.get_option_range(rs.option.auto_exposure_limit) #should be same range from both sensors
-        s1.set_option(rs.option.auto_exposure_limit, option_range.max / 4.0)
-        s1.set_option(rs.option.auto_exposure_limit_toggle, 0.0)  # off
-        s2.set_option(rs.option.auto_exposure_limit, option_range.max - 5.0)
-        s2.set_option(rs.option.auto_exposure_limit_toggle, 0.0)  # off
+    option_range = s1.get_option_range(rs.option.auto_exposure_limit) #should be same range from both sensors
+    s1.set_option(rs.option.auto_exposure_limit, option_range.max / 4.0)
+    s1.set_option(rs.option.auto_exposure_limit_toggle, 0.0)  # off
+    s2.set_option(rs.option.auto_exposure_limit, option_range.max - 5.0)
+    s2.set_option(rs.option.auto_exposure_limit_toggle, 0.0)  # off
 
-        #2.1
-        s1.set_option(rs.option.auto_exposure_limit_toggle, 1.0)  # on
-        limit1 = s1.get_option(rs.option.auto_exposure_limit)
-        test.check_equal(limit1, option_range.max / 4.0)
-        # keep toggle of dev2 off
-        limit2 = s2.get_option(rs.option.auto_exposure_limit)
-        test.check_equal(limit1, limit2)
+    #2.1
+    s1.set_option(rs.option.auto_exposure_limit_toggle, 1.0)  # on
+    limit1 = s1.get_option(rs.option.auto_exposure_limit)
+    test.check_equal(limit1, option_range.max / 4.0)
+    # keep toggle of dev2 off
+    limit2 = s2.get_option(rs.option.auto_exposure_limit)
+    test.check_equal(limit1, limit2)
 
-        # 2.2
-        s2.set_option(rs.option.auto_exposure_limit_toggle, 1.0)  # on
-        limit2 = s2.get_option(rs.option.auto_exposure_limit)
-        test.check_equal(limit2, option_range.max - 5.0)
+    # 2.2
+    s2.set_option(rs.option.auto_exposure_limit_toggle, 1.0)  # on
+    limit2 = s2.get_option(rs.option.auto_exposure_limit)
+    test.check_equal(limit2, option_range.max - 5.0)
 
 #############################################################################################
 with test.closure("Gain toggle one device"):
@@ -88,28 +87,27 @@ with test.closure("Gain toggle one device"):
 #############################################################################################
 with test.closure("Gain toggle two devices"):
     # Scenario 2:
-    for i in range(2):  # exposure or gain
-        s1 = picked_sensor[0][rs.option.auto_gain_limit]
-        s2 = picked_sensor[1][rs.option.auto_gain_limit]
+    s1 = picked_sensor[0][rs.option.auto_gain_limit]
+    s2 = picked_sensor[1][rs.option.auto_gain_limit]
 
-        option_range = s1.get_option_range(rs.option.auto_gain_limit) #should be same range from both sensors
-        s1.set_option(rs.option.auto_gain_limit, option_range.max / 4.0)
-        s1.set_option(rs.option.auto_gain_limit_toggle, 0.0)  # off
-        s2.set_option(rs.option.auto_gain_limit, option_range.max - 5.0)
-        s2.set_option(rs.option.auto_gain_limit_toggle, 0.0)  # off
+    option_range = s1.get_option_range(rs.option.auto_gain_limit) #should be same range from both sensors
+    s1.set_option(rs.option.auto_gain_limit, option_range.max / 4.0)
+    s1.set_option(rs.option.auto_gain_limit_toggle, 0.0)  # off
+    s2.set_option(rs.option.auto_gain_limit, option_range.max - 5.0)
+    s2.set_option(rs.option.auto_gain_limit_toggle, 0.0)  # off
 
-        #2.1
-        s1.set_option(rs.option.auto_gain_limit_toggle, 1.0)  # on
-        limit1 = s1.get_option(rs.option.auto_gain_limit)
-        test.check_equal(limit1, option_range.max / 4.0)
-        # keep toggle of dev2 off
-        limit2 = s2.get_option(rs.option.auto_gain_limit)
-        test.check_equal(limit1, limit2)
+    #2.1
+    s1.set_option(rs.option.auto_gain_limit_toggle, 1.0)  # on
+    limit1 = s1.get_option(rs.option.auto_gain_limit)
+    test.check_equal(limit1, option_range.max / 4.0)
+    # keep toggle of dev2 off
+    limit2 = s2.get_option(rs.option.auto_gain_limit)
+    test.check_equal(limit1, limit2)
 
-        # 2.2
-        s2.set_option(rs.option.auto_gain_limit_toggle, 1.0)  # on
-        limit2 = s2.get_option(rs.option.auto_gain_limit)
-        test.check_equal(limit2, option_range.max - 5.0)
+    # 2.2
+    s2.set_option(rs.option.auto_gain_limit_toggle, 1.0)  # on
+    limit2 = s2.get_option(rs.option.auto_gain_limit)
+    test.check_equal(limit2, option_range.max - 5.0)
 
 #############################################################################################
 test.print_results_and_exit()
