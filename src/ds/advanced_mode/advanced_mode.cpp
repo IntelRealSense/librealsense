@@ -699,6 +699,18 @@ namespace librealsense
             (*_color_sensor)->get_option(RS2_OPTION_POWER_LINE_FREQUENCY).set((float)val.power_line_frequency);
     }
 
+    void ds_advanced_mode_base::block( const std::string & exception_message )
+    {
+        _blocked = true;
+        _block_message = exception_message;
+    }
+
+    void ds_advanced_mode_base::unblock()
+    {
+        _blocked = false;
+        _block_message.clear();
+    }
+
     std::vector<uint8_t> ds_advanced_mode_base::serialize_json() const
     {
         if (!is_enabled())
