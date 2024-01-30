@@ -32,7 +32,7 @@ While a set of initialization messages are outgoing, all other notifications mus
 ## Messages
 
 
-#### `device-header`
+### `device-header`
 
 This is the very first message, for example:
 
@@ -48,14 +48,28 @@ This is the very first message, for example:
 }
 ```
 
-Mainly the number of streams to expect. The device will wait for this many stream headers to arrive to finish initialization.
+- `n-streams` is the number of streams to expect
+     The device will wait for this many stream headers to arrive to finish initialization
+- `extrinsics` describe world coordinate transformations between any two streams in the device, required for proper translation of pixel coordinates between sensors, such as when a point-cloud is needed
+- `presets` is an optional array of preset names
+    The presets may then be applied using `change-preset`
 
-The `extrinsics` describe world coordinate transformations between any two streams in the device. This is required for proper alignment on the client.
+#### Extrinsics
 
-Optionally, the device may supply a `presets` array of preset names. The presets may then be applied (currently not implemented).
+In order to translate from one stream viewpoint to another, a graph needs to be available with nodes for each stream and a directional edge between them (one from A to B; another from B to A).
 
+So `extrinsics` is an array of such edges: `[<edge1>,<edge2>,...]`,
+Each `edge` is also an array: `[<from>,<to>,[<r00>,<r01>,...,<r22>,<tx>,<ty>,<tz>]]`.
+Where `<from>` and `<to>` are stream names, and the array inside contains the 9 rotation values (column-major) followed by 3 translation vector values.
 
-#### `device-options`
+The complete graph can be transmitted like this but this is overkill: given at least one edge from each stream to another, the rest can be computed. This is what librealsense does:
+- Depth to IR = identity
+- Depth to IR2 = {...}
+- RGB to Depth = {...}
+
+With those 3, one can compute IR2 to RGB, for example.
+
+### `device-options`
 
 This is optional: not all devices have options. See [device](device.md).
 
@@ -91,7 +105,7 @@ This is optional: not all devices have options. See [device](device.md).
 Device options will not be shown in the Viewer.
 
 
-#### `stream-header`
+### `stream-header`
 
 Information about a specific stream:
 - `name` is the stream name, e.g. `Color`
@@ -128,12 +142,11 @@ Information about a specific stream:
 }
 ```
 
-#### `stream-options`
+### `stream-options`
 
 - `stream-name` is the name of the stream, same as in `stream-header`
 - `intrinsics` is:
-    - For video streams, an array of (width,height)-specific intrinsic values
-        - Each is itself an array of `[width, height, principal_point_x, principal_point_y, focal_lenght_x, focal_lenght_y, distortion_model,  distortion_coeffs[0], distortion_coeffs[1], distortion_coeffs[2], distortion_coeffs[3], distortion_coeffs[4]]`
+    - For video streams, see below
     - For motion streams, a mapping from either `accel` or `gyro` to an array of float values conforming to:
       ```C++
       struct rs2_motion_device_intrinsic
@@ -159,19 +172,42 @@ Information about a specific stream:
       ```
 - `options` is an array of option objects, same as `device-options` above
 
+Stream options are shown in the Viewer.
+
+#### Video Stream Intrinsics
+
 ```JSON
 {
     "id": "stream-options",
-    "intrinsics": [
-        [640,480,320.14276123046875,238.4058837890625,378.80572509765625,378.80572509765625,4,0.0,0.0,0.0,0.0,0.0],
-        [1280,720,640.2379150390625,357.3431396484375,631.3428955078125,631.3428955078125,4,0.0,0.0,0.0,0.0,0.0]
-    ],
+    "intrinsics": {
+        "width": 1280,
+        "height": 720,
+        "principal-point": [640.2379150390625,357.3431396484375],
+        "focal-length": [631.3428955078125,631.3428955078125]
+    },
     "options": [
         ["Backlight Compensation",0.0,0.0,1.0,1.0,0.0,"Enable / disable backlight compensation"],
         ["Brightness",0.0,-64.0,64.0,1.0,0.0,"UVC image brightness"],
     ],
-    "stream-name":"Infrared 1"
+    "stream-name": "Infrared 1"
 }
 ```
 
-Stream options are shown in the Viewer.
+Like extrinsics are used to communicate translation between different stream viewpoints, the intrinsics serve to transform 2D pixel values to 3D world coordinates. I.e., an RGB pixel has to be converted to a 3D point in space, then mapped to a 3D point from the viewpoint of the Depth stream, then transformed back into a 2D Depth pixel.
+
+The intrinsics are communicated in an object, as shown above:
+- A `width` and `height` are for the native stream resolution, as 16-bit integer values
+- A `principal-point` defined as `[<x>,<y>]` floating point values
+- A `focal-length`, also as `[<x>,<y>]` floats
+
+A distortion model may be applied:
+- The `model` would specify which model is to be used, with the default of `brown`
+- The `coefficients` is an array of floating point values, the number and meaning which depend on the `model`
+    - For `brown`, 5 points [k1, k2, p1, p2, k3] are needed
+
+The coefficients are assumed 0 if not there, applying no un/distortion.
+
+An additional `force-symmetry` boolean can be applied, and defaults to `false`.
+
+The intrinsics are communicated for the native resolution the device chooses. Librealsense, or any client, will need to scale these to a target resolution.
+

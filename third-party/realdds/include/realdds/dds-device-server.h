@@ -4,10 +4,12 @@
 
 #include <realdds/dds-option.h>
 #include <realdds/dds-defines.h>
+#include <realdds/dds-time.h>
 #include <realdds/dds-trinsics.h>
 
 #include <rsutils/concurrency/concurrency.h>
 #include <rsutils/json-fwd.h>
+#include <rsutils/string/slice.h>
 
 #include <map>
 #include <vector>
@@ -70,6 +72,7 @@ public:
     ~dds_device_server();
 
     dds_guid const & guid() const;
+    rsutils::string::slice debug_name() const;
 
     // A server is not valid until init() is called with a list of streams that we want to publish.
     // On successful return from init(), each of the streams will be alive so clients will be able
@@ -78,6 +81,7 @@ public:
                const dds_options & options, const extrinsics_map & extr );
 
     void broadcast( topics::device_info const & );
+    void broadcast_disconnect( dds_time ack_timeout = {} );
 
     bool is_valid() const { return( nullptr != _notification_server.get() ); }
     bool operator!() const { return ! is_valid(); }

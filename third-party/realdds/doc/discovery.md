@@ -64,15 +64,25 @@ The message format is a [flexible message](../include/realdds/topics/flexible/) 
 }
 ```
 
-| Field        | Purpose                                                |
-|--------------|--------------------------------------------------------|
-| name         | The name of the device, as it would show in the Viewer |
-| serial       | The device serial number                               |
-| product-line | The type of device (D400, L500, etc.)                  |
-| topic-root   | The path to the root topic for the device              |
-| multicast-ip | IP address on which topics will be multicast           |
+| Field | Purpose | rs2_camera_info |
+| ---- | ---- | ---- |
+| **name** | The name of the device | `RS2_CAMERA_INFO_NAME` |
+| serial | The device serial number | `RS2_CAMERA_INFO_SERIAL_NUMBER` |
+| product-line | The type of device (D400, L500, etc.) | `RS2_CAMERA_INFO_PRODUCT_LINE` |
+| **topic-root** | The path to the root topic for the device | `RS2_CAMERA_INFO_PHYSICAL_PORT` |
+| fw-version | The version of the software currently on the device | `RS2_CAMERA_INFO_FIRMWARE_VERSION` |
 
 All are optional except `name` and `topic-root`. Any fields not shown above will be ignored.
+
+The fields above are constants and not expected to change between device restarts! They should likewise remain the same in recovery mode.
+
+Besides the fields above, certain configurable settings may be needed before proper initialization of the device is possible (via the notifications topic). These may change between device initializations:
+
+| Field        | Purpose                               |
+|--------------|---------------------------------------|
+| multicast-ip | IP address on which topics will be multicast
+
+For example, when multicasting is enabled then the notification topic will be multicast on the `multicast-ip` address. So knowledge of this address is needed before the device can actually be initialized. Very few settings like this should be needed.
 
 
 # Disconnection
@@ -83,18 +93,19 @@ When it is expected that a server will go offline, the server can elect to send 
 
 ```JSON
 {
+  "topic-root": "realsense/D405_123622270732",
   "stopping": true
 }
 ```
 
 The `stopping` field has no set type at this time so any value will do. When it's there, any client should immediately assume the server is offline.
 
-No other fields are necessary with `stopping` -- the server is recognized by its GUID.
+No fields other than the root are necessary with `stopping`.
 
 
 # Recovery
 
-If the device is in "recovery mode" with limited functionality, this needs to be communicated to the client. The only functionality enabled in this mode is device updates.
+If the device is in "recovery mode" with limited functionality, this needs to be communicated to the client:
 
 ```JSON
 {
@@ -105,7 +116,9 @@ If the device is in "recovery mode" with limited functionality, this needs to be
 }
 ```
 
-The `control` and `notification` topics will exist under the topic-root, but will only accept update controls and replies, as discussed elsewhere.
+The `control` and `notification` topics will exist under the topic-root, but will only accept update controls and replies, as discussed elsewhere. No streams should be available in a recovery device.
+
+It is important that the `topic-root` stays the **same as a non-recovery device**: otherwise they are considered different devices.
 
 
 # Topic Root

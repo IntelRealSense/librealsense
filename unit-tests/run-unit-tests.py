@@ -48,10 +48,10 @@ def usage():
     print( '        --repeat <#>         Repeat each test <#> times' )
     print( '        --config <>          Ignore test configurations; use the one provided' )
     print( '        --device <>          Run only on the specified devices; ignore any test that does not match (implies --live)' )
-    print( '        --no-reset           Do not try to reset any devices, with or without Acroname' )
-    print( '        --acroname-reset     If acroname is available, reset the acroname itself' )
+    print( '        --no-reset           Do not try to reset any devices, with or without a hub' )
+    print( '        --hub-reset          If a hub is available, reset the hub itself' )
     print( '        --rslog              Enable LibRS logging (LOG_DEBUG etc.) to console in each test' )
-    print( '        --skip-disconnected  Skip live test if required device is disconnected (only applies w/o Acroname)' )
+    print( '        --skip-disconnected  Skip live test if required device is disconnected (only applies w/o a hub)' )
     print( 'Examples:' )
     print( 'Running: python run-unit-tests.py -s' )
     print( '    Runs all tests, but direct their output to the console rather than log files' )
@@ -77,7 +77,7 @@ else:
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
-                                          'list-tests', 'no-exceptions', 'context=', 'repeat=', 'config=', 'no-reset', 'acroname-reset',
+                                          'list-tests', 'no-exceptions', 'context=', 'repeat=', 'config=', 'no-reset', 'hub-reset',
                                           'rslog', 'skip-disconnected', 'live', 'not-live', 'device='] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
@@ -93,7 +93,7 @@ repeat = 1
 forced_configurations = None
 device_set = None
 no_reset = False
-acroname_reset = False
+hub_reset = False
 skip_disconnected = False
 rslog = False
 only_live = False
@@ -134,8 +134,8 @@ for opt, arg in opts:
         device_set = arg.split()
     elif opt == '--no-reset':
         no_reset = True
-    elif opt == '--acroname-reset':
-        acroname_reset = True
+    elif opt == '--hub-reset':
+        hub_reset = True
     elif opt == '--rslog':
         rslog = True
     elif opt == '--skip-disconnected':
@@ -247,6 +247,7 @@ for dir in pyd_dirs:
 
 def serial_numbers_to_string( sns ):
     return ' '.join( [f'{devices.get(sn).name}_{sn}' for sn in sns] )
+
 
 
 def configuration_str( configuration, repetition=0, retry=0, sns=None, prefix='', suffix='' ):
@@ -400,7 +401,7 @@ def devices_by_test_config( test, exceptions ):
                 else:
                     yield configuration, serial_numbers
         except RuntimeError as e:
-            if devices.acroname:
+            if devices.hub:
                 log.e( log.red + test.name + log.reset + ': ' + str( e ) )
             else:
                 log.w( log.yellow + test.name + log.reset + ': ' + str( e ) )
@@ -458,12 +459,12 @@ try:
             sys.path.insert( 1, pyrs_path )  # Make sure we pick up the right pyrealsense2!
         from rspy import devices
 
-        devices.query( hub_reset = acroname_reset )
+        devices.query( hub_reset = hub_reset ) #resets the device
         devices.map_unknown_ports()
         #
-        # Under a development environment (i.e., without an Acroname), we may only have one device connected
+        # Under a development environment (i.e., without a hub), we may only have one device connected
         # or even none and want to only show a warning for live tests:
-        skip_live_tests = len( devices.all() ) == 0 and not devices.acroname
+        skip_live_tests = len( devices.all() ) == 0 and not devices.hub
         #
         exceptions = None
         if not skip_live_tests:
@@ -617,12 +618,12 @@ try:
 #
 finally:
     #
-    # Disconnect from the Acroname -- if we don't it'll crash on Linux...
+    # Disconnect from the hub -- if we don't it might crash on Linux...
     # Before that we close all ports, no need for cameras to stay on between LibCI runs
     if not list_only and not only_not_live:
-        if devices.acroname and devices.acroname.is_connected():
-            devices.acroname.disable_ports()
+        if devices.hub and devices.hub.is_connected():
+            devices.hub.disable_ports()
             devices.wait_until_all_ports_disabled()
-            devices.acroname.disconnect()
+            devices.hub.disconnect()
 #
 sys.exit( 0 )

@@ -69,19 +69,14 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
     _writer->on_publication_matched( [this]( PublicationMatchedStatus const & info ) {
         if( info.current_count_change == 1 )
         {
-            {
-                std::lock_guard< std::mutex > lock( _notification_send_mutex );
-                _send_init_msgs = true;
-            }
-            _send_notification_cv.notify_all();
+            trigger_discovery_notifications();
         }
         else if( info.current_count_change == -1 )
         {
         }
         else
         {
-            LOG_ERROR( std::to_string( info.current_count_change )
-                       << " is not a valid value for on_publication_matched" );
+            LOG_ERROR( info.current_count_change << " is not a valid value for on_publication_matched" );
         }
     } );
 
@@ -123,6 +118,16 @@ dds_notification_server::~dds_notification_server()
         _send_notification_cv.notify_all();
         _notifications_loop.stop();
     }
+}
+
+
+void dds_notification_server::trigger_discovery_notifications()
+{
+    {
+        std::lock_guard< std::mutex > lock( _notification_send_mutex );
+        _send_init_msgs = true;
+    }
+    _send_notification_cv.notify_all();
 }
 
 

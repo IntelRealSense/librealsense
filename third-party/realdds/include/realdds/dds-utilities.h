@@ -1,11 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
 #include <fastrtps/types/TypesBase.h>
-#include <rsutils/easylogging/easyloggingpp.h>
 #include "dds-exceptions.h"
+
+#include <rsutils/easylogging/easyloggingpp.h>
+#include <rsutils/string/slice.h>
 
 // FastDDS, in most case, is using two error conventions:
 // 1. ReturnCode_t api_call(...)   -> return ReturnCode_t != RETCODE_OK
@@ -24,6 +25,9 @@ inline std::string get_dds_error( T * address )
     (void)address;
     return "returned null";
 }
+
+// Given a topic-root, return a debug name to use for debug
+rsutils::string::slice device_name_from_root( std::string const & topic_root );
 
 
 }  // namespace realdds
