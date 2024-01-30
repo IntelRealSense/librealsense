@@ -26,7 +26,7 @@ namespace librealsense
         {}
 
         virtual std::vector<uint8_t> send(std::vector<uint8_t> const& data) const override;
-        virtual std::vector<uint8_t> send(command cmd, hwmon_response* = nullptr, bool locked_transfer = false) const override;
+        virtual std::vector<uint8_t> send(command const & cmd, hwmon_response* = nullptr, bool locked_transfer = false) const override;
 
     private:
         int get_msg_length(command cmd) const;

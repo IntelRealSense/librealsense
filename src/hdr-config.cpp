@@ -228,16 +228,26 @@ namespace librealsense
         {
             float rv = 0.f;
             command cmd(ds::GETSUBPRESETID);
-            // if no subpreset is streaming, the firmware returns "ON_DATA_TO_RETURN" error
-            try {
-                auto res = _hwm.send(cmd);
-                // if a subpreset is streaming, checking this is the current HDR sub preset
-                if (res.size())
-                    rv = (is_hdr_id(res[0])) ? 1.0f : 0.f;
+            try
+            {
+                hwmon_response response;
+                auto res = _hwm.send( cmd, &response );  // avoid the throw
+                switch( response )
+                {
+                case hwmon_response::hwm_NoDataToReturn:
+                    // If no subpreset is streaming, the firmware returns "NO_DATA_TO_RETURN" error
+                    break;
+                default:
+                    // If a subpreset is streaming, checking this is the current HDR sub preset
+                    if( res.size() )
+                        rv = ( is_hdr_id( res[0] ) ) ? 1.0f : 0.f;
+                    else
+                        LOG_DEBUG( "hdr_config query: " << hwmon_error_string( cmd, response ) );
+                    break;
+                }
             }
             catch (...)
             {
-                rv = 0.f;
             }
 
             _is_enabled = (rv == 1.f);
