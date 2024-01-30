@@ -204,7 +204,7 @@ namespace librealsense
         {}
 
         std::vector<uint8_t> send_receive(
-            const std::vector<uint8_t>& data,
+            uint8_t const * pb, size_t cb,
             int timeout_ms = 5000,
             bool require_response = true)
         {
@@ -222,7 +222,7 @@ namespace librealsense
             return strong_uvc->invoke_powered([&] ( platform::uvc_device & dev )
                 {
                     std::lock_guard<platform::uvc_device> lock(dev);
-                    return _command_transfer->send_receive(data, timeout_ms, require_response);
+                    return _command_transfer->send_receive(pb, cb, timeout_ms, require_response);
                 });
         }
 
@@ -325,7 +325,7 @@ namespace librealsense
             size_t                                       receivedCommandDataLength;
         };
 
-        void execute_usb_command(uint8_t *out, size_t outSize, uint32_t& op, uint8_t* in, 
+        void execute_usb_command(uint8_t const *out, size_t outSize, uint32_t& op, uint8_t* in, 
             size_t& inSize, bool require_response) const;
         static void update_cmd_details(hwmon_cmd_details& details, size_t receivedCmdLen, unsigned char* outputBuffer);
         void send_hw_monitor_command(hwmon_cmd_details& details) const;

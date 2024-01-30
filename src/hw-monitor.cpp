@@ -85,11 +85,10 @@ namespace librealsense
         return cmd;
     }
 
-    void hw_monitor::execute_usb_command(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, 
+    void hw_monitor::execute_usb_command(uint8_t const *out, size_t outSize, uint32_t & op, uint8_t * in, 
         size_t & inSize, bool require_response) const
     {
-        std::vector<uint8_t> out_vec(out, out + outSize);
-        auto res = _locked_transfer->send_receive(out_vec, 5000, require_response);
+        auto res = _locked_transfer->send_receive( out, outSize, 5000, require_response );
 
         // read
         if (require_response && in && inSize)
@@ -140,7 +139,7 @@ namespace librealsense
 
     std::vector< uint8_t > hw_monitor::send( std::vector< uint8_t > const & data ) const
     {
-        return _locked_transfer->send_receive(data);
+        return _locked_transfer->send_receive( data.data(), data.size() );
     }
 
     std::vector< uint8_t >
@@ -165,7 +164,7 @@ namespace librealsense
 
         if (locked_transfer)
         {
-            return _locked_transfer->send_receive({ details.sendCommandData.begin(),details.sendCommandData.end() });
+            return _locked_transfer->send_receive( details.sendCommandData.data(), details.sendCommandData.size() );
         }
 
         send_hw_monitor_command(details);
