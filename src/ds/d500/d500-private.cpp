@@ -230,6 +230,8 @@ namespace librealsense
             intrinsics.height = height;
 
             // For D555e, model will be brown and we need the unrectified intrinsics
+            // We use reserved[3] as a flag here to indicate the full distortion module is not
+            // really brown but we treat it as such because the HW fixes fisheye distortion.
             bool use_base_intrinsics
                 = ( table->rgb_coefficients_table.distortion_model == RS2_DISTORTION_BROWN_CONRADY
                     && table->rgb_coefficients_table.reserved[3] == 0 );
