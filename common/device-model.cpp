@@ -2704,7 +2704,7 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_FrameBg, sensor_bg);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
                 ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-                ImGui::SetCursorPos({ rc.x + 145, rc.y + 1 });
+                ImGui::SetCursorPos({ rc.x + 9.f * window.get_font_size(), rc.y + 1 });
                 std::string label = rsutils::string::from() << "##" << id << " " << pair.first;
                 ImGui::InputText(label.c_str(),
                     (char*)pair.second.data(),
