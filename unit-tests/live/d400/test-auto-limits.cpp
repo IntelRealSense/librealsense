@@ -7,7 +7,7 @@
 
 //#test:device D400* !D457
 //converted test to python
-#test : donotrun
+//#test:donotrun
 
 #include "../../catch.h"
 #include "../../unit-tests-common.h"
