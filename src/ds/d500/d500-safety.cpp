@@ -89,10 +89,10 @@ namespace librealsense
     void d500_safety::set_advanced_mode_device( ds_advanced_mode_base * advanced_mode )
     {
         _advanced_mode = advanced_mode;
-        set_advanced_mode_state( _safety_camera_oper_mode->query() );
+        block_advanced_mode_if_needed( _safety_camera_oper_mode->query() );
     }
 
-    void d500_safety::set_advanced_mode_state( float val )
+    void d500_safety::block_advanced_mode_if_needed( float val )
     {
         if( ! _advanced_mode )
             throw std::runtime_error( "Advanced mode device not set" );
@@ -128,7 +128,7 @@ namespace librealsense
                                             { float( RS2_SAFETY_MODE_SERVICE ), "Service" } },
             safety_mode_change_timeout );
 
-        safety_camera_oper_mode->add_observer( [this]( float val ) { set_advanced_mode_state( val ); } );
+        safety_camera_oper_mode->add_observer( [this]( float val ) { block_advanced_mode_if_needed( val ); } );
         _safety_camera_oper_mode = safety_camera_oper_mode;
 
         safety_ep->register_option( RS2_OPTION_SAFETY_MODE, safety_camera_oper_mode );
@@ -162,6 +162,8 @@ namespace librealsense
                                          synthetic_sensor & depth_sensor,
                                          const std::vector < std::tuple< std::shared_ptr< option >, float, std::string > > & options_and_reasons )
     {
+        // Replcaes the option registered in depth sensor with a `gated_by_value_option` that proxies the original
+        // options and can block setting it if conditions are not met ( safety not in service mode ).
         depth_sensor.register_option( opt,
                                       std::make_shared< gated_by_value_option >( depth_sensor.get_option_handler( opt ),
                                                                                  options_and_reasons ) );
