@@ -264,7 +264,7 @@ class command_transfer_over_xu : public platform::command_transfer
     uint8_t _ctrl;
 
 public:
-    std::vector< uint8_t > send_receive( const std::vector< uint8_t > & data, int, bool require_response ) override;
+    std::vector< uint8_t > send_receive( uint8_t const * pb, size_t cb, int, bool require_response ) override;
 
     command_transfer_over_xu( uvc_sensor & uvc, platform::extension_unit xu, uint8_t ctrl )
         : _uvc( uvc )

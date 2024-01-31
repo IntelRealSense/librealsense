@@ -550,16 +550,26 @@ namespace librealsense
         {
             float rv = 0.f;
             command cmd(ds::GETSUBPRESETID);
-            // if no subpreset is streaming, the firmware returns "ON_DATA_TO_RETURN" error
-            try {
-                auto res = _hwm.send(cmd);
-                // if a subpreset is streaming, checking this is the alternating emitter sub preset
-                if (res.size())
-                    rv = (res[0] == ds::ALTERNATING_EMITTER_SUBPRESET_ID) ? 1.0f : 0.f;
+            try
+            {
+                hwmon_response response;
+                auto res = _hwm.send( cmd, &response );  // avoid the throw
+                switch( response )
+                {
+                case hwmon_response::hwm_NoDataToReturn:
+                    // If no subpreset is streaming, the firmware returns "NO_DATA_TO_RETURN" error
+                    break;
+                default:
+                    // if a subpreset is streaming, checking this is the alternating emitter sub preset
+                    if( res.size() )
+                        rv = ( res[0] == ds::ALTERNATING_EMITTER_SUBPRESET_ID ) ? 1.0f : 0.f;
+                    else
+                        LOG_DEBUG( "alternating emitter query: " << hwmon_error_string( cmd, response ) );
+                    break;
+                }
             }
             catch (...)
             {
-                rv = 0.f;
             }
 
             return rv;
