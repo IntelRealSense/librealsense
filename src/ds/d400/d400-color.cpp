@@ -164,15 +164,7 @@ namespace librealsense
             // Currently disabled for certain sensors
             if (!val_in_range(_pid, { ds::RS457_PID}))
             {
-                if (!val_in_range(_pid, { ds::RS465_PID }))
-                {
-                    color_ep.register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
-                }
-                // From 5.11.15 auto-exposure priority is supported on the D465
-                else if (_fw_version >= firmware_version("5.11.15.0"))
-                {
-                    color_ep.register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
-                }
+                color_ep.register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
             }
 
             _ds_color_common->register_standard_options();
@@ -187,7 +179,7 @@ namespace librealsense
         }
 
         // Currently disabled for certain sensors
-        if (!val_in_range(_pid, { ds::RS465_PID, ds::RS457_PID}))
+        if (!val_in_range(_pid, { ds::RS457_PID }))
         {
             color_ep.register_pu(RS2_OPTION_HUE);
         }
@@ -241,13 +233,7 @@ namespace librealsense
             {
                 color_ep.register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
             }
-        }
-        
-        if (_pid == ds::RS465_PID)
-        {
-            color_ep.register_processing_block({ {RS2_FORMAT_MJPEG} }, { {RS2_FORMAT_RGB8, RS2_STREAM_COLOR} }, []() { return std::make_shared<mjpeg_converter>(RS2_FORMAT_RGB8); });
-            color_ep.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_MJPEG, RS2_STREAM_COLOR));
-        }
+        }        
     }
 
     void d400_color::register_metadata_mipi(const synthetic_sensor &color_ep) const
