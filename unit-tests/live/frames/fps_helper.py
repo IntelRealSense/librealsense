@@ -23,10 +23,9 @@ def get_expected_fps_dict(sensor_profiles_dict):
     """
     Returns a dictionary between each stream name and its expected fps
     """
-    expected_fps_dict = {}
-    for sensor, profiles in sensor_profiles_dict.items():
-        for profile in profiles:
-            expected_fps_dict[profile.stream_name()] = profile.fps()
+    expected_fps_dict = {profile.stream_name(): profile.fps()
+                         for profiles in sensor_profiles_dict.values()
+                         for profile in profiles}
     return expected_fps_dict
 
 
@@ -53,7 +52,7 @@ def get_tested_profiles_string(sensor_profiles_dict):
         for profile in profiles:
             tested_profile_string += f"{sensor.name} / {profile.stream_name()} + "
 
-    # Remove the last " + " for aesthetics
+    # Remove the last " + "
     tested_profile_string = tested_profile_string[:-3]
     return tested_profile_string
 
@@ -69,7 +68,7 @@ def check_fps_dict(measured_fps, expected_fps):
             all_fps_ok = False
         log.d(f"Expected {expected_fps[profile_name]} fps, received {measured_fps[profile_name]} fps in profile"
               f" {profile_name}"
-              f" { '(Pass)' if res else '(Fail)' }")
+              f" {'(Pass)' if res else '(Fail)'}")
     return all_fps_ok
 
 
@@ -78,15 +77,13 @@ def generate_callbacks(sensor_profiles_dict, profile_name_fps_dict):
     Creates callable functions for each sensor to be triggered when a new frame arrives
     Used to count frames received for measuring fps
     """
-    sensor_function_dict = {}
-    for sensor_key in sensor_profiles_dict:
-        def on_frame_received(frame):  # variables declared on generate_functions should not be used here
-            global count_frames
-            if count_frames:
-                profile_name = frame.profile.stream_name()
-                profile_name_fps_dict[profile_name] += 1
+    def on_frame_received(frame):
+        global count_frames
+        if count_frames:
+            profile_name = frame.profile.stream_name()
+            profile_name_fps_dict[profile_name] += 1
 
-        sensor_function_dict[sensor_key] = on_frame_received
+    sensor_function_dict = {sensor_key: on_frame_received for sensor_key in sensor_profiles_dict}
     return sensor_function_dict
 
 
@@ -102,10 +99,9 @@ def measure_fps(sensor_profiles_dict):
     count_frames = False
 
     # initialize fps dict
-    profile_name_fps_dict = {}
-    for sensor, profiles in sensor_profiles_dict.items():
-        for profile in profiles:
-            profile_name_fps_dict[profile.stream_name()] = 0
+    profile_name_fps_dict = {profile.stream_name(): 0
+                             for profiles in sensor_profiles_dict.values()
+                             for profile in profiles}
 
     # generate sensor-callable dictionary
     funcs_dict = generate_callbacks(sensor_profiles_dict, profile_name_fps_dict)
