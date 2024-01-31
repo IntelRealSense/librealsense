@@ -24,27 +24,26 @@ from rspy import test
 
 ctx = rs.context()
 device_list = ctx.query_devices()
-devices = [device_list.front(), device_list.front()]
-picked_sensor = [{}, {}]
 #############################################################################################
 with test.closure("Auto Exposure toggle one device"):
     # Scenario 1:
-    for j in range(2):#2 devices
-        sensor = devices[j].first_depth_sensor()
-        picked_sensor[j][rs.option.auto_exposure_limit] = sensor
-        option_range = sensor.get_option_range(rs.option.auto_exposure_limit)
-        values = [option_range.min + 5.0, option_range.max / 4.0, option_range.max - 5.0]
-        for val in values:
-            sensor.set_option(rs.option.auto_exposure_limit, val)
-        sensor.set_option(rs.option.auto_exposure_limit_toggle, 0.0)  # off
-        sensor.set_option(rs.option.auto_exposure_limit_toggle, 1.0)  # on
-        limit = sensor.get_option(rs.option.auto_exposure_limit)
-        test.check_equal(limit, values[2])
+    device = device_list.front()
+    sensor = device.first_depth_sensor()
+    option_range = sensor.get_option_range(rs.option.auto_exposure_limit)
+    values = [option_range.min + 5.0, option_range.max / 4.0, option_range.max - 5.0]
+    for val in values:
+        sensor.set_option(rs.option.auto_exposure_limit, val)
+    sensor.set_option(rs.option.auto_exposure_limit_toggle, 0.0)  # off
+    sensor.set_option(rs.option.auto_exposure_limit_toggle, 1.0)  # on
+    limit = sensor.get_option(rs.option.auto_exposure_limit)
+    test.check_equal(limit, values[2])
 #############################################################################################
 with test.closure("Auto Exposure two devices"):
     # Scenario 2:
-    s1 = picked_sensor[0][rs.option.auto_exposure_limit]
-    s2 = picked_sensor[1][rs.option.auto_exposure_limit]
+    device1 = device_list.front()
+    s1 = device1.first_depth_sensor()
+    device2 = device_list.front()
+    s2 = device2.first_depth_sensor()
 
     option_range = s1.get_option_range(rs.option.auto_exposure_limit) #should be same range from both sensors
     s1.set_option(rs.option.auto_exposure_limit, option_range.max / 4.0)
@@ -68,27 +67,28 @@ with test.closure("Auto Exposure two devices"):
 #############################################################################################
 with test.closure("Gain toggle one device"):
     # Scenario 1:
-    for j in range(2):#2 devices
-        sensor = devices[j].first_depth_sensor()
-        picked_sensor[j][rs.option.auto_gain_limit] = sensor
-        option_range = sensor.get_option_range(rs.option.auto_gain_limit)
-        # 1. Scenario 1:
-        # - Change control value few times
-        # - Turn toggle off
-        # - Turn toggle on
-        # - Check that control limit value is the latest value
-        values = [option_range.min + 5.0, option_range.max / 4.0, option_range.max - 5.0]
-        for val in values:
-            sensor.set_option(rs.option.auto_gain_limit, val)
-        sensor.set_option(rs.option.auto_gain_limit_toggle, 0.0)  # off
-        sensor.set_option(rs.option.auto_gain_limit_toggle, 1.0)  # on
-        limit = sensor.get_option(rs.option.auto_gain_limit)
-        test.check_equal(limit, values[2])
+    device = device_list.front()
+    sensor = device.first_depth_sensor()
+    option_range = sensor.get_option_range(rs.option.auto_gain_limit)
+    # 1. Scenario 1:
+    # - Change control value few times
+    # - Turn toggle off
+    # - Turn toggle on
+    # - Check that control limit value is the latest value
+    values = [option_range.min + 5.0, option_range.max / 4.0, option_range.max - 5.0]
+    for val in values:
+        sensor.set_option(rs.option.auto_gain_limit, val)
+    sensor.set_option(rs.option.auto_gain_limit_toggle, 0.0)  # off
+    sensor.set_option(rs.option.auto_gain_limit_toggle, 1.0)  # on
+    limit = sensor.get_option(rs.option.auto_gain_limit)
+    test.check_equal(limit, values[2])
 #############################################################################################
 with test.closure("Gain toggle two devices"):
     # Scenario 2:
-    s1 = picked_sensor[0][rs.option.auto_gain_limit]
-    s2 = picked_sensor[1][rs.option.auto_gain_limit]
+    device1 = device_list.front()
+    s1 = device1.first_depth_sensor()
+    device2 = device_list.front()
+    s2 = device2.first_depth_sensor()
 
     option_range = s1.get_option_range(rs.option.auto_gain_limit) #should be same range from both sensors
     s1.set_option(rs.option.auto_gain_limit, option_range.max / 4.0)
