@@ -311,14 +311,6 @@ namespace librealsense
         return (0 != ret.front());
     }
 
-    notification ds_notification_decoder::decode(int value)
-    {
-        if (ds::ds_fw_error_report.find(static_cast<uint8_t>(value)) != ds::ds_fw_error_report.end())
-            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, ds::ds_fw_error_report.at(static_cast<uint8_t>(value)) };
-
-        return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_WARN, (rsutils::string::from() << "D400 HW report - unresolved type " << value) };
-    }
-
     processing_blocks get_ds_depth_recommended_proccesing_blocks()
     {
         auto res = get_depth_recommended_proccesing_blocks();

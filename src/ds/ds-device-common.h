@@ -49,11 +49,5 @@ namespace librealsense
         bool _is_locked;
     };
 
-    class ds_notification_decoder : public notification_decoder
-    {
-    public:
-        notification decode(int value) override;
-    };
-
     processing_blocks get_ds_depth_recommended_proccesing_blocks();
 }

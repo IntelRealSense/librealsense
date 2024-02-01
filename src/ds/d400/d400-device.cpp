@@ -686,7 +686,7 @@ namespace librealsense
                     _polling_error_handler = std::make_shared<polling_error_handler>(1000,
                         error_control,
                         raw_depth_sensor->get_notifications_processor(),
-                        std::make_shared<ds_notification_decoder>());
+                        std::make_shared<d400_notification_decoder>());
 
                     depth_sensor.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler));
                 }

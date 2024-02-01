@@ -271,5 +271,19 @@ namespace librealsense
 
             return{ rect_rot_mat,trans_vector };
         }
+
+        notification d500_notification_decoder::decode( int value )
+        {
+            if( ds::d500_fw_error_report.find( static_cast< uint8_t >( value ) ) != ds::d500_fw_error_report.end() )
+                return { RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,
+                         value,
+                         RS2_LOG_SEVERITY_ERROR,
+                         ds::d500_fw_error_report.at( static_cast< uint8_t >( value ) ) };
+
+            return { RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,
+                     value,
+                     RS2_LOG_SEVERITY_WARN,
+                     ( rsutils::string::from() << "D500 HW report - unresolved type " << value ) };
+        }
     } // librealsense::ds
 } // namespace librealsense
