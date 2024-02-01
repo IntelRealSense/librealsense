@@ -93,6 +93,7 @@ namespace librealsense
 #pragma pack(pop)
 
     class d500_safety_sensor;
+    class ds_advanced_mode_base;
 
     class d500_safety : public virtual d500_device
     {
@@ -107,6 +108,8 @@ namespace librealsense
             return dynamic_cast<synthetic_sensor&>(get_sensor(_safety_device_idx));
         }
 
+        void set_advanced_mode_device( ds_advanced_mode_base * advanced_mode );
+
     private:
 
         friend class d500_safety_sensor;
@@ -115,9 +118,16 @@ namespace librealsense
         void register_metadata(std::shared_ptr<uvc_sensor> safety_ep);
         void register_processing_blocks(std::shared_ptr<d500_safety_sensor> safety_ep);
 
+        void block_advanced_mode_if_needed( float val );
+        void gate_depth_option( rs2_option opt,
+                                synthetic_sensor & depth_sensor,
+                                const std::vector< std::tuple< std::shared_ptr< option >, float, std::string > > & options_and_reasons );
+
     protected:
         std::shared_ptr<stream_interface> _safety_stream;
         uint8_t _safety_device_idx;
+        ds_advanced_mode_base * _advanced_mode;
+        std::shared_ptr< option > _safety_camera_oper_mode;
     };
 
     class d500_safety_sensor : public synthetic_sensor,

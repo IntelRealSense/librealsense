@@ -17,6 +17,7 @@
 #include "platform/platform-utils.h"
 #include <src/fourcc.h>
 #include <src/metadata-parser.h>
+#include <src/core/advanced_mode.h>
 
 namespace librealsense
 {
@@ -85,6 +86,23 @@ namespace librealsense
         return safety_ep;
     }
 
+    void d500_safety::set_advanced_mode_device( ds_advanced_mode_base * advanced_mode )
+    {
+        _advanced_mode = advanced_mode;
+        block_advanced_mode_if_needed( _safety_camera_oper_mode->query() );
+    }
+
+    void d500_safety::block_advanced_mode_if_needed( float val )
+    {
+        if( ! _advanced_mode )
+            throw std::runtime_error( "Advanced mode device not set" );
+
+        if( val == static_cast< float >( RS2_SAFETY_MODE_SERVICE ) )
+            _advanced_mode->unblock();
+        else
+            _advanced_mode->block( std::string( "Option can be set only in safety service mode" ) );
+    }
+
     void d500_safety::register_options(std::shared_ptr<d500_safety_sensor> safety_ep, std::shared_ptr<uvc_sensor> raw_safety_sensor)
     {
         // Register safety preset active index option
@@ -100,7 +118,7 @@ namespace librealsense
         
         // Register operational mode option
         static const std::chrono::milliseconds safety_mode_change_timeout( 2000 );
-        auto safety_camera_oper_mode = std::make_shared< ensure_set_xu_option< uint16_t > >(
+        auto safety_camera_oper_mode = std::make_shared< cascade_option< ensure_set_xu_option< uint16_t > > >(
             raw_safety_sensor,
             safety_xu,
             xu_id::SAFETY_CAMERA_OPER_MODE,
@@ -110,21 +128,45 @@ namespace librealsense
                                             { float( RS2_SAFETY_MODE_SERVICE ), "Service" } },
             safety_mode_change_timeout );
 
+        safety_camera_oper_mode->add_observer( [this]( float val ) { block_advanced_mode_if_needed( val ); } );
+        _safety_camera_oper_mode = safety_camera_oper_mode;
+
         safety_ep->register_option( RS2_OPTION_SAFETY_MODE, safety_camera_oper_mode );
 
         safety_ep->register_option(RS2_OPTION_SAFETY_MCU_TEMPERATURE,
             std::make_shared<temperature_option>(_hw_monitor, temperature_option::temperature_component::SMCU, "Temperature reading for Safety MCU"));
 
-        std::shared_ptr< option > intercam_sync_option
-            = std::make_shared< d500_external_sync_mode >( static_cast< d500_external_sync_mode & >(
-                get_depth_sensor().get_option( RS2_OPTION_INTER_CAM_SYNC_MODE ) ) );
+        auto & ds = get_depth_sensor();
         std::vector< std::tuple< std::shared_ptr< option >, float, std::string > > options_and_reasons
             = { std::make_tuple( safety_camera_oper_mode,
                                  static_cast< float >( RS2_SAFETY_MODE_SERVICE ),
-                                 std::string( "Intercamera sync mode can be set only in safety service mode" ) ) };
-        get_depth_sensor().register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                                           std::make_shared< gated_by_value_option >( intercam_sync_option,
-                                                                                      options_and_reasons ) );
+                                 std::string( "Option can be set only in safety service mode" ) ) };
+
+        gate_depth_option( RS2_OPTION_ENABLE_AUTO_EXPOSURE, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_SEQUENCE_NAME, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_SEQUENCE_SIZE, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_SEQUENCE_ID, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_HDR_ENABLED, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_ENABLE_AUTO_EXPOSURE, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_EXPOSURE, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_GAIN, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_EMITTER_ALWAYS_ON, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_INTER_CAM_SYNC_MODE, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_DEPTH_UNITS, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_EMITTER_ENABLED, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_LASER_POWER, ds, options_and_reasons );
+        gate_depth_option( RS2_OPTION_VISUAL_PRESET, ds, options_and_reasons );
+    }
+
+    void d500_safety::gate_depth_option( rs2_option opt,
+                                         synthetic_sensor & depth_sensor,
+                                         const std::vector < std::tuple< std::shared_ptr< option >, float, std::string > > & options_and_reasons )
+    {
+        // Replcaes the option registered in depth sensor with a `gated_by_value_option` that proxies the original
+        // options and can block setting it if conditions are not met ( safety not in service mode ).
+        depth_sensor.register_option( opt,
+                                      std::make_shared< gated_by_value_option >( depth_sensor.get_option_handler( opt ),
+                                                                                 options_and_reasons ) );
     }
 
     void d500_safety::register_metadata(std::shared_ptr<uvc_sensor> raw_safety_ep)
