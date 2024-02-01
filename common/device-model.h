@@ -236,6 +236,7 @@ namespace rs2
         static const textual_icon measure{ u8"\uf545" };
         static const textual_icon wifi{ u8"\uf1eb" };
         static const textual_icon grid_6{ u8"\uf58d" };
+        static const textual_icon polygon{ u8"\uf5ee" };
     }
 
     class viewer_model;

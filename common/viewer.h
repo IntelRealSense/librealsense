@@ -191,6 +191,7 @@ namespace rs2
             lpc_large
         };
         lpc_points_size selected_lpc_points_size = lpc_points_size::lpc_small;
+        bool show_lpc_zones = true;
 
         float dim_level = 1.f;
 
@@ -203,7 +204,7 @@ namespace rs2
         bool occlusion_invalidation = true;
         bool glsl_available = false;
         bool modal_notification_on = false; // a notification which was expanded
-        bool select_lpc_settings = false;
+        bool select_lpc_point_size = false;
 
         press_button_model grid_object_button{ u8"\uf1cb", u8"\uf1cb",  "Configure Grid", "Configure Grid", false };
 
@@ -282,5 +283,7 @@ namespace rs2
 
         measurement _measurements;
 
+        typedef enum class Zone { Danger, Warning, Diagnostic } Zone;
+        void draw_zone(Zone zone, rs2::labeled_points labeled_points);
     };
 }
