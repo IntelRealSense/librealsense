@@ -130,7 +130,7 @@ inline std::ostream & operator<<( std::ostream & os, json_ref const & j )
 // operator=() get called. But the implementation is a copy-and-swap one, meaning it attempts to construct a json value
 // from the argument. Since the argument isn't a json object (doesn't matter that it has a conversion operator), it does
 // this by attempting to deserialize it with to_json()! We need to avoid this, for this usage and others...
-inline void to_json( rsutils::json & j, json_ref const & jr )
+inline void to_json( json & j, json_ref const & jr )
 {
     j = jr.get_json();
 }
