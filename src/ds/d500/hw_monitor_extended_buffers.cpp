@@ -47,7 +47,7 @@ namespace librealsense
     // - no buffer bigger than 1 KB is expected with the current command => work as normal hw_monitor::send method
     // - buffer bigger than 1 KB expected to be received => iterate the hw_monitor::send method and append the results
     // - buffer bigger than 1 KB expected to be sent => iterate the hw_monitor, while iterating over the input
-    std::vector<uint8_t> hw_monitor_extended_buffers::send(command cmd, hwmon_response* p_response, bool locked_transfer) const
+    std::vector<uint8_t> hw_monitor_extended_buffers::send(command const & cmd, hwmon_response* p_response, bool locked_transfer) const
     {
         hwm_buffer_type buffer_type = get_buffer_type(cmd);
         if (buffer_type == hwm_buffer_type::standard)

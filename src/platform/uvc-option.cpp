@@ -113,24 +113,24 @@ const char* uvc_pu_option::get_description() const
 }
 
 
-std::vector<uint8_t> command_transfer_over_xu::send_receive(const std::vector<uint8_t>& data, int, bool require_response)
+std::vector<uint8_t> command_transfer_over_xu::send_receive( uint8_t const * const pb, size_t const cb, int, bool require_response)
 {
-    return _uvc.invoke_powered([this, &data, require_response]( platform::uvc_device & dev )
+    return _uvc.invoke_powered([this, pb, cb, require_response]( platform::uvc_device & dev )
         {
             std::vector<uint8_t> result;
 
             std::lock_guard< platform::uvc_device > lock(dev);
 
-            if( data.size() > HW_MONITOR_BUFFER_SIZE )
+            if( cb > HW_MONITOR_BUFFER_SIZE )
             {
                 LOG_ERROR( "XU command size is invalid" );
                 throw invalid_value_exception( rsutils::string::from()
-                                               << "Requested XU command size " << std::dec << data.size()
+                                               << "Requested XU command size " << std::dec << cb
                                                << " exceeds permitted limit " << HW_MONITOR_BUFFER_SIZE );
             }
 
             std::vector< uint8_t > transmit_buf( HW_MONITOR_BUFFER_SIZE, 0 );
-            std::copy( data.begin(), data.end(), transmit_buf.begin() );
+            std::copy( pb, pb + cb, transmit_buf.begin() );
 
             if( ! dev.set_xu( _xu, _ctrl, transmit_buf.data(), static_cast< int >( transmit_buf.size() ) ) )
                 throw invalid_value_exception( rsutils::string::from()

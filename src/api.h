@@ -111,7 +111,7 @@ namespace librealsense
 
 
 
-    static void translate_exception(const char * name, std::string args, rs2_error ** error)
+    static void translate_exception(const char * name, std::string const & args, rs2_error ** error)
     {
         try { throw; }
         catch (const librealsense_exception& e) { if (error) *error = rs2_create_error(e.what(), name, args.c_str(), e.get_exception_type() ); }
