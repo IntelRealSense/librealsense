@@ -623,11 +623,11 @@ namespace librealsense
                                                                                DS5_ERROR_REPORTING,
                                                                                "Error reporting" );
 
-            _polling_error_handler
-                = std::make_shared< polling_error_handler >( 1000,
-                                                             error_control,
-                                                             raw_depth_sensor->get_notifications_processor(),
-                                                             std::make_shared< d500_notification_decoder >() );
+            _polling_error_handler = std::make_shared< polling_error_handler >(
+                1000,
+                error_control,
+                raw_depth_sensor->get_notifications_processor(),
+                std::make_shared< ds_notification_decoder >( d500_fw_error_report ) );
 
             depth_sensor.register_option( RS2_OPTION_ERROR_POLLING_ENABLED,
                                           std::make_shared< polling_errors_disable >( _polling_error_handler ) );

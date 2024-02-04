@@ -311,6 +311,21 @@ namespace librealsense
         return (0 != ret.front());
     }
 
+    ds_notification_decoder::ds_notification_decoder( const std::map< int, std::string > & descriptions )
+        : _descriptions( descriptions )
+    {
+    }
+            
+    notification ds_notification_decoder::decode( int value )
+    {
+        auto iter = _descriptions.find( static_cast< uint8_t >( value ) );
+        if( iter != _descriptions.end() )
+            return { RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, iter->second };
+
+        return { RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_WARN,
+                 ( rsutils::string::from() << "HW report - unresolved type " << value ) };
+    }
+
     processing_blocks get_ds_depth_recommended_proccesing_blocks()
     {
         auto res = get_depth_recommended_proccesing_blocks();

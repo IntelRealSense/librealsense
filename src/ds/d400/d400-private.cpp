@@ -317,19 +317,6 @@ namespace librealsense
             }
             return false;
         }
-        
-        notification d400_notification_decoder::decode( int value )
-        {
-            if( ds::d400_fw_error_report.find( static_cast< uint8_t >( value ) ) != ds::d400_fw_error_report.end() )
-                return { RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,
-                         value,
-                         RS2_LOG_SEVERITY_ERROR,
-                         ds::d400_fw_error_report.at( static_cast< uint8_t >( value ) ) };
 
-            return { RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,
-                     value,
-                     RS2_LOG_SEVERITY_WARN,
-                     ( rsutils::string::from() << "D400 HW report - unresolved type " << value ) };
-        }
     } // librealsense::ds
 } // namespace librealsense

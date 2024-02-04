@@ -49,5 +49,17 @@ namespace librealsense
         bool _is_locked;
     };
 
+    
+        
+    class ds_notification_decoder : public notification_decoder
+    {
+    public:
+        ds_notification_decoder( const std::map< int, std::string > & descriptions );
+        notification decode( int value ) override;
+
+    private:
+        const std::map< int, std::string > & _descriptions;
+    };
+
     processing_blocks get_ds_depth_recommended_proccesing_blocks();
 }

@@ -304,7 +304,7 @@ namespace librealsense
         };
 
         // Elaborate FW XU report. The reports may be consequently extended for PU/CTL/ISP
-        const std::map< uint8_t, std::string > d400_fw_error_report = {
+        const std::map< int, std::string > d400_fw_error_report = {
             { success, "Success" },
             { hot_laser_power_reduce, "Laser hot - power reduce" },
             { hot_laser_disable, "Laser hot - disabled" },
@@ -335,13 +335,6 @@ namespace librealsense
             { cold_laser_disable, "Laser cold - disabled" },
             { no_temperature_disable_laser, "Temperature read failure - laser disabled" },
             { isp_boot_data_upload_failed, "ISP boot data upload failure" },
-        };
-
-        
-        class d400_notification_decoder : public notification_decoder
-        {
-        public:
-            notification decode(int value) override;
         };
 
     } // namespace ds

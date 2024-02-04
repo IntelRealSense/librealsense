@@ -268,8 +268,8 @@ namespace librealsense
             EHU_IDX_HIF_MIPI_CSI_DIAG_INTER1   = 81U,
             EHU_IDX_OPT_ECC_CORR_INT           = 82U,
             EHU_IDX_OPT_ECC_UNCORR_INT         = 83U,
-            EHU_IDX_PCIE_SS_CFG_SAFETY_CORR    = 84U,
-            EHU_IDX_PCIE_SS_CFG_SAFETY_UNCORR  = 85U,
+            EHU_IDX_PCIE_SS_CFG_SF_CORR        = 84U,
+            EHU_IDX_PCIE_SS_CFG_SF_UNCORR      = 85U,
             EHU_IDX_PCIE_ETH_MEM_CORR_ERR      = 86U,
             EHU_IDX_PCIE_ETH_MEM_NON_FATAL_ERR = 87U,
             EHU_IDX_PCIE_ETH_MEM_FATAL_ERR     = 88U,
@@ -307,15 +307,14 @@ namespace librealsense
             EHU_IDX_OPT_BOOT_ERR               = 120U,
             EHU_IDX_OPT_PARITY_ERR             = 121U,
             EHU_IDX_EHU_LOCK                   = 122U,
-            EHU_HKR1_HW_NUM                    = 123U,
             EHU_IDX_SW_OS_EXCEPTION            = 123U,
-            EHU_IDX_SAFE_OS_EXCEPTION          = 124U,
+            EHU_IDX_SF_OS_EXCEPTION            = 124U,
             EHU_IDX_FLASH_DATA_CRC_ERR         = 125U,
             EHU_IDX_FRAME_DELAY_ERR            = 126U,
             EHU_IDX_DSP_UP_CHECKSUM_ERR        = 127U,
         }; 
 
-        const std::map< uint8_t, std::string > d500_fw_error_report = { // Received from HKR team [RSDEV-643]
+        const std::map< int, std::string > d500_fw_error_report = { // Received from HKR team [RSDEV-643]
             { EHU_IDX_START, "NO ERROR" },
             { EHU_IDX_CAN_FD_INT1, "CAN FD INT1 ERROR" },
             { EHU_IDX_CAN_FD_MEM_CORR_ERR, "CAN FD MEM CORR ERROR" },
@@ -400,8 +399,8 @@ namespace librealsense
             { EHU_IDX_HIF_MIPI_CSI_DIAG_INTER1, "HIF MIPI CSI DIAG INTER1 ERROR" },
             { EHU_IDX_OPT_ECC_CORR_INT, "OPT ECC CORR INT ERROR" },
             { EHU_IDX_OPT_ECC_UNCORR_INT, "OPT ECC UNCORR INT ERROR" },
-            { EHU_IDX_PCIE_SS_CFG_SAFETY_CORR, "PCIE SS CFG SAFETY CORR ERROR" },
-            { EHU_IDX_PCIE_SS_CFG_SAFETY_UNCORR, "PCIE SS CFG SAFETY UNCORR ERROR" },
+            { EHU_IDX_PCIE_SS_CFG_SF_CORR, "PCIE SS CFG SF CORR ERROR" },
+            { EHU_IDX_PCIE_SS_CFG_SF_UNCORR, "PCIE SS CFG SF UNCORR ERROR" },
             { EHU_IDX_PCIE_ETH_MEM_CORR_ERR, "PCIE ETH MEM CORR ERROR" },
             { EHU_IDX_PCIE_ETH_MEM_NON_FATAL_ERR, "PCIE ETH MEM NON FATAL ERROR" },
             { EHU_IDX_PCIE_ETH_MEM_FATAL_ERR, "PCIE ETH MEM FATAL ERROR" },
@@ -441,15 +440,9 @@ namespace librealsense
             { EHU_IDX_EHU_LOCK, "EHU LOCK ERROR" },
             { EHU_IDX_SW_OS_EXCEPTION, "SW OS EXCEPTION ERROR" },
             { EHU_IDX_FRAME_DELAY_ERR, "FRAME DELAY ERROR" },
-            { EHU_IDX_SAFE_OS_EXCEPTION, "SAFE OS EXCEPTION ERROR" },
+            { EHU_IDX_SF_OS_EXCEPTION, "SF OS EXCEPTION ERROR" },
             { EHU_IDX_FLASH_DATA_CRC_ERR, "FLASH DATA CRC ERROR" },
             { EHU_IDX_DSP_UP_CHECKSUM_ERR, "DSP UP CHECKSUM ERROR" },
-        };
-
-        class d500_notification_decoder : public notification_decoder
-        {
-        public:
-            notification decode( int value ) override;
         };
 
     } // namespace ds
