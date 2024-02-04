@@ -49,7 +49,10 @@ namespace librealsense
         rs2_exception_type exception_type) noexcept
         : librealsense_exception(msg, exception_type)
     {
-        LOG_DEBUG("recoverable_exception: " << msg);
+        // This is too intrusive: some throws are completely valid and even expected (options-watcher queries all
+        // options, some of which may not be queryable) and this just dirties up the logs. It doesn't have the actual
+        // exception type, either.
+        //LOG_DEBUG("recoverable_exception: " << msg);
     }
 
 }

@@ -85,11 +85,10 @@ namespace librealsense
         return cmd;
     }
 
-    void hw_monitor::execute_usb_command(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, 
+    void hw_monitor::execute_usb_command(uint8_t const *out, size_t outSize, uint32_t & op, uint8_t * in, 
         size_t & inSize, bool require_response) const
     {
-        std::vector<uint8_t> out_vec(out, out + outSize);
-        auto res = _locked_transfer->send_receive(out_vec, 5000, require_response);
+        auto res = _locked_transfer->send_receive( out, outSize, 5000, require_response );
 
         // read
         if (require_response && in && inSize)
@@ -140,32 +139,31 @@ namespace librealsense
 
     std::vector< uint8_t > hw_monitor::send( std::vector< uint8_t > const & data ) const
     {
-        return _locked_transfer->send_receive(data);
+        return _locked_transfer->send_receive( data.data(), data.size() );
     }
 
     std::vector< uint8_t >
-    hw_monitor::send( command cmd, hwmon_response * p_response, bool locked_transfer ) const
+    hw_monitor::send( command const & cmd, hwmon_response * p_response, bool locked_transfer ) const
     {
-        hwmon_cmd newCommand(cmd);
-        auto opCodeXmit = static_cast<uint32_t>(newCommand.cmd);
+        uint32_t const opCodeXmit = cmd.cmd;
 
         hwmon_cmd_details details;
-        details.require_response = newCommand.require_response;
-        details.timeOut = newCommand.timeOut;
+        details.require_response = cmd.require_response;
+        details.timeOut = cmd.timeout_ms;
 
-        fill_usb_buffer(opCodeXmit,
-            newCommand.param1,
-            newCommand.param2,
-            newCommand.param3,
-            newCommand.param4,
-            newCommand.data,
-            newCommand.sizeOfSendCommandData,
-            details.sendCommandData.data(),
-            details.sizeOfSendCommandData);
+        fill_usb_buffer( opCodeXmit,
+                         cmd.param1,
+                         cmd.param2,
+                         cmd.param3,
+                         cmd.param4,
+                         cmd.data.data(),  // memcpy
+                         std::min( (uint16_t)cmd.data.size(), HW_MONITOR_BUFFER_SIZE ),
+                         details.sendCommandData.data(),
+                         details.sizeOfSendCommandData );
 
         if (locked_transfer)
         {
-            return _locked_transfer->send_receive({ details.sendCommandData.begin(),details.sendCommandData.end() });
+            return _locked_transfer->send_receive( details.sendCommandData.data(), details.sendCommandData.size() );
         }
 
         send_hw_monitor_command(details);
@@ -173,14 +171,8 @@ namespace librealsense
         // Error/exit conditions
         if (p_response)
             *p_response = hwm_Success;
-        if( !newCommand.require_response )
-            return std::vector<uint8_t>();
-
-        std::memcpy( newCommand.receivedOpcode, details.receivedOpcode.data(), 4 );
-        std::memcpy( newCommand.receivedCommandData,
-                     details.receivedCommandData.data(),
-                     details.receivedCommandDataLength );
-        newCommand.receivedCommandDataLength = details.receivedCommandDataLength;
+        if( ! cmd.require_response )
+            return {};
 
         // endian?
         auto opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2],
@@ -188,18 +180,18 @@ namespace librealsense
         if (opCodeAsUint32 != opCodeXmit)
         {
             auto err_type = static_cast<hwmon_response>(opCodeAsUint32);
-            std::string err = hwmon_error_string(cmd, err_type);
-            LOG_DEBUG(err);
-            if (p_response)
+            //LOG_DEBUG(err);  // too intrusive; may be an expected error
+            if( p_response )
             {
                 *p_response = err_type;
-                return std::vector<uint8_t>();
+                return {};
             }
+            std::string err = hwmon_error_string( cmd, err_type );
             throw invalid_value_exception(err);
         }
 
-        return std::vector<uint8_t>(newCommand.receivedCommandData,
-            newCommand.receivedCommandData + newCommand.receivedCommandDataLength);
+        auto const pb = details.receivedCommandData.data();
+        return std::vector<uint8_t>( pb, pb + details.receivedCommandDataLength );
     }
 
     /*static*/ std::vector<uint8_t> hw_monitor::build_command(uint32_t opcode,

@@ -273,5 +273,6 @@ namespace librealsense
 
             return{ rect_rot_mat,trans_vector };
         }
+
     } // librealsense::ds
 } // namespace librealsense
