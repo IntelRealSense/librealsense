@@ -5,6 +5,7 @@
 
 #include "ds/ds-private.h"
 #include <src/platform/backend-device-group.h>
+#include <src/core/notification.h>
 
 namespace librealsense
 {
@@ -267,5 +268,74 @@ namespace librealsense
             float3              translation_rect;           // Translation vector for rectification
             uint8_t             reserved[24];
         };
+
+        enum d400_notifications_types
+        {
+            success = 0,
+            hot_laser_power_reduce,
+            hot_laser_disable,
+            flag_B_laser_disable,
+            stereo_module_not_connected,
+            eeprom_corrupted,
+            calibration_corrupted,
+            mm_upd_fail,
+            isp_upd_fail,
+            mm_force_pause,
+            mm_failure,
+            usb_scp_overflow,
+            usb_rec_overflow,
+            usb_cam_overflow,
+            mipi_left_error,
+            mipi_right_error,
+            mipi_rt_error,
+            mipi_fe_error,
+            i2c_cfg_left_error,
+            i2c_cfg_right_error,
+            i2c_cfg_rt_error,
+            i2c_cfg_fe_error,
+            stream_not_start_z,
+            stream_not_start_y,
+            stream_not_start_cam,
+            rec_error,
+            usb2_limit,
+            cold_laser_disable,
+            no_temperature_disable_laser,
+            isp_boot_data_upload_failed,
+        };
+
+        // Elaborate FW XU report. The reports may be consequently extended for PU/CTL/ISP
+        const std::map< int, std::string > d400_fw_error_report = {
+            { success, "Success" },
+            { hot_laser_power_reduce, "Laser hot - power reduce" },
+            { hot_laser_disable, "Laser hot - disabled" },
+            { flag_B_laser_disable, "Flag B - laser disabled" },
+            { stereo_module_not_connected, "Stereo Module is not connected" },
+            { eeprom_corrupted, "EEPROM corrupted" },
+            { calibration_corrupted, "Calibration corrupted" },
+            { mm_upd_fail, "Motion Module update failed" },
+            { isp_upd_fail, "ISP update failed" },
+            { mm_force_pause, "Motion Module force pause" },
+            { mm_failure, "Motion Module failure" },
+            { usb_scp_overflow, "USB SCP overflow" },
+            { usb_rec_overflow, "USB REC overflow" },
+            { usb_cam_overflow, "USB CAM overflow" },
+            { mipi_left_error, "Left MIPI error" },
+            { mipi_right_error, "Right MIPI error" },
+            { mipi_rt_error, "RT MIPI error" },
+            { mipi_fe_error, "FishEye MIPI error" },
+            { i2c_cfg_left_error, "Left IC2 Config error" },
+            { i2c_cfg_right_error, "Right IC2 Config error" },
+            { i2c_cfg_rt_error, "RT IC2 Config error" },
+            { i2c_cfg_fe_error, "FishEye IC2 Config error" },
+            { stream_not_start_z, "Depth stream start failure" },
+            { stream_not_start_y, "IR stream start failure" },
+            { stream_not_start_cam, "Camera stream start failure" },
+            { rec_error, "REC error" },
+            { usb2_limit, "USB2 Limit" },
+            { cold_laser_disable, "Laser cold - disabled" },
+            { no_temperature_disable_laser, "Temperature read failure - laser disabled" },
+            { isp_boot_data_upload_failed, "ISP boot data upload failure" },
+        };
+
     } // namespace ds
 } // namespace librealsense

@@ -618,6 +618,20 @@ namespace librealsense
                 std::make_shared<temperature_option>(_hw_monitor,
                     temperature_option::temperature_component::LEFT_PROJ, "Temperature reading for Left Projector"));
 
+            auto error_control = std::make_shared< uvc_xu_option< uint8_t > >( raw_depth_sensor,
+                                                                               depth_xu,
+                                                                               DS5_ERROR_REPORTING,
+                                                                               "Error reporting" );
+
+            _polling_error_handler = std::make_shared< polling_error_handler >(
+                1000,
+                error_control,
+                raw_depth_sensor->get_notifications_processor(),
+                std::make_shared< ds_notification_decoder >( d500_fw_error_report ) );
+
+            depth_sensor.register_option( RS2_OPTION_ERROR_POLLING_ENABLED,
+                                          std::make_shared< polling_errors_disable >( _polling_error_handler ) );
+
             // Metadata registration
             depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc_header::timestamp));
         }); //group_multiple_fw_calls
