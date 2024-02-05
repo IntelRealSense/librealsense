@@ -27,7 +27,7 @@ using namespace rs2::sw_update;
 
 namespace rs2
 {
-    void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18, ImFont*& monofont)
+    void imgui_easy_theming(ImFont*& font_dynamic, ImFont*& font_18, ImFont*& monofont, int& font_size)
     {
         ImGuiStyle& style = ImGui::GetStyle();
 
@@ -35,6 +35,7 @@ namespace rs2
         io.IniFilename = nullptr;
 
         const int OVERSAMPLE = config_file::instance().get(configurations::performance::font_oversample);
+        font_size = config_file::instance().get( configurations::window::font_size );
 
         static const ImWchar icons_ranges[] = { 0xf000, 0xf999, 0 }; // will not be copied by AddFont* so keep in scope.
 
@@ -42,13 +43,15 @@ namespace rs2
             ImFontConfig config_words;
             config_words.OversampleV = OVERSAMPLE;
             config_words.OversampleH = OVERSAMPLE;
-            font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 16.f);
+            font_dynamic = io.Fonts->AddFontFromMemoryCompressedTTF( karla_regular_compressed_data,
+                                                                karla_regular_compressed_size,
+                                                                (float)font_size );
 
             ImFontConfig config_glyphs;
             config_glyphs.MergeMode = true;
             config_glyphs.OversampleV = OVERSAMPLE;
             config_glyphs.OversampleH = OVERSAMPLE;
-            font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
+            font_dynamic = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
                 font_awesome_compressed_size, 14.f, &config_glyphs, icons_ranges);
         }
 
@@ -2701,7 +2704,7 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_FrameBg, sensor_bg);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
                 ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-                ImGui::SetCursorPos({ rc.x + 145, rc.y + 1 });
+                ImGui::SetCursorPos({ rc.x + 9.f * window.get_font_size(), rc.y + 1 });
                 std::string label = rsutils::string::from() << "##" << id << " " << pair.first;
                 ImGui::InputText(label.c_str(),
                     (char*)pair.second.data(),
@@ -2741,13 +2744,16 @@ namespace rs2
                 {
                     bool stop_recording = false;
 
-                    ImGui::SetCursorPos({ windows_width - 35, pos.y + 3 });
+                    ImGui::SetCursorPos({ windows_width - 42, pos.y + 3 });
                     ImGui_ScopePushFont(window.get_font());
 
                     ImGui_ScopePushStyleColor(ImGuiCol_Button, sensor_bg);
                     ImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
                     ImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
 
+                    int font_size = window.get_font_size();
+                    ImVec2 button_size = { font_size * 1.9f, font_size * 1.9f };
+                    
                     if (!sub->streaming)
                     {
                         std::string label = rsutils::string::from()
@@ -2790,7 +2796,7 @@ namespace rs2
                         }
                         if (can_stream)
                         {
-                            if (ImGui::Button(label.c_str(), { 30,30 }))
+                            if( ImGui::Button( label.c_str(), button_size ) )
                             {
                                 if (profiles.empty()) // profiles might be already filled
                                     profiles = sub->get_selected_profiles();
@@ -2838,7 +2844,7 @@ namespace rs2
                         ImGui_ScopePushStyleColor(ImGuiCol_Text, light_blue);
                         ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
 
-                        if (ImGui::Button(label.c_str(), { 30,30 }))
+                        if( ImGui::Button( label.c_str(), button_size ) )
                         {
                             sub->stop(viewer.not_model);
                             std::string friendly_name = sub->s->get_info(RS2_CAMERA_INFO_NAME);
@@ -3022,8 +3028,7 @@ namespace rs2
                     const ImVec2 pos = ImGui::GetCursorPos();
 
                     draw_later.push_back([windows_width, &window, sub, pos, &viewer, this]() {
-                        if (!sub->streaming) ImGui::SetCursorPos({ windows_width - 34 , pos.y - 3 });
-                        else ImGui::SetCursorPos({ windows_width - 34, pos.y - 3 });
+                        ImGui::SetCursorPos({ windows_width - 41, pos.y - 3 });
 
                         try
                         {
@@ -3112,9 +3117,7 @@ namespace rs2
                             const ImVec2 pos = ImGui::GetCursorPos();
 
                             draw_later.push_back([windows_width, &window, sub, pos, &viewer, this, pb]() {
-                                if (!sub->streaming || !sub->post_processing_enabled) ImGui::SetCursorPos({ windows_width - 35, pos.y - 3 });
-                                else
-                                    ImGui::SetCursorPos({ windows_width - 35, pos.y - 3 });
+                                ImGui::SetCursorPos({ windows_width - 42, pos.y - 3 });
 
                                 try
                                 {
@@ -3123,6 +3126,8 @@ namespace rs2
                                     ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
                                     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
                                     ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
+                                    int font_size = window.get_font_size();
+                                    const ImVec2 button_size = { font_size * 2.f, font_size * 1.5f };
 
                                     if (!sub->post_processing_enabled)
                                     {
@@ -3135,7 +3140,7 @@ namespace rs2
 
                                             ImGui::PushStyleColor(ImGuiCol_Text, redish);
                                             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
-                                            ImGui::ButtonEx(label.c_str(), { 25,24 }, ImGuiButtonFlags_Disabled);
+                                            ImGui::ButtonEx(label.c_str(), button_size, ImGuiButtonFlags_Disabled);
                                         }
                                         else
                                         {
@@ -3145,7 +3150,7 @@ namespace rs2
                                                              << pb->get_name();
                                             ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                                             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
-                                            ImGui::ButtonEx(label.c_str(), { 25,24 }, ImGuiButtonFlags_Disabled);
+                                            ImGui::ButtonEx(label.c_str(), button_size, ImGuiButtonFlags_Disabled);
                                         }
                                     }
                                     else
@@ -3160,7 +3165,7 @@ namespace rs2
                                             ImGui::PushStyleColor(ImGuiCol_Text, redish);
                                             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
 
-                                            if (ImGui::Button(label.c_str(), { 25,24 }))
+                                            if (ImGui::Button(label.c_str(), button_size))
                                             {
                                                 pb->enable(true);
                                                 pb->save_to_config_file();
@@ -3181,7 +3186,7 @@ namespace rs2
                                             ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                                             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
 
-                                            if (ImGui::Button(label.c_str(), { 25,24 }))
+                                            if (ImGui::Button(label.c_str(), button_size))
                                             {
                                                 pb->enable(false);
                                                 pb->save_to_config_file();

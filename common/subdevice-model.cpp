@@ -998,7 +998,7 @@ namespace rs2
         };
 
         auto col0 = ImGui::GetCursorPosX();
-        auto col1 = 155.f;
+        auto col1 = 9.f * (float)config_file::instance().get( configurations::window::font_size );
 
         if (ui.is_multiple_resolutions && !strcmp(s->get_info(RS2_CAMERA_INFO_NAME), "Stereo Module"))
         {

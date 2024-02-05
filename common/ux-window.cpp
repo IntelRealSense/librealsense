@@ -63,6 +63,7 @@ namespace rs2
         config_file::instance().set_default(configurations::window::is_fullscreen, false);
         config_file::instance().set_default(configurations::window::saved_pos, false);
         config_file::instance().set_default(configurations::window::saved_size, false);
+        config_file::instance().set_default(configurations::window::font_size, 16);
 
         config_file::instance().set_default(configurations::viewer::is_measuring, false);
         config_file::instance().set_default(configurations::viewer::log_to_console, true);
@@ -376,7 +377,7 @@ namespace rs2
             _2d_vis = std::make_shared<visualizer_2d>(std::make_shared<splash_screen_shader>());
 
         // Load fonts to be used with the ImGui - TODO move to RAII
-        imgui_easy_theming(_font_14, _font_18, _monofont);
+        imgui_easy_theming(_font_dynamic, _font_18, _monofont, font_size);
 
         // Register for UI-controller events
         glfwSetWindowUserPointer(_win, this);
@@ -431,7 +432,7 @@ namespace rs2
 
     ux_window::ux_window(const char* title, context &ctx) :
         _win(nullptr), _width(0), _height(0), _output_height(0),
-        _font_14(nullptr), _font_18(nullptr), _monofont(nullptr), _app_ready(false),
+        _font_dynamic(nullptr), _font_18(nullptr), _monofont(nullptr), font_size(16), _app_ready(false),
         _first_frame(true), _query_devices(true), _missing_device(false),
         _hourglass_index(0), _dev_stat_message{}, _keep_alive(true), _title(title), _ctx(ctx)
     {

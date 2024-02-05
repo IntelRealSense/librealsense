@@ -1124,13 +1124,13 @@ void frame_drops_dashboard::draw(ux_window& win, rect r)
     ImGui::Text("%s", "Measurement Metric:"); ImGui::SameLine();
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 3);
 
-    ImGui::SetCursorPosX(200);
+    ImGui::SetCursorPosX( 11.5f * win.get_font_size() );
 
     std::vector<const char*> methods;
     methods.push_back("Viewer Processing Rate");
     methods.push_back("Camera Timestamp Rate");
 
-    ImGui::PushItemWidth(r.w - 207);
+    ImGui::PushItemWidth(-1.f);
     if (ImGui::Combo("##fps_method", &method, methods.data(), (int)(methods.size())))
     {
         clear(false);
