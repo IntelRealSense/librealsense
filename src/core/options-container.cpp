@@ -16,7 +16,7 @@ const option & options_container::get_option( rs2_option id ) const
     if( it == _options.end() )
     {
         throw invalid_value_exception( rsutils::string::from()
-                                       << "Device does not support option " << get_option_name( id ) << "!" );
+                                       << "option '" << get_option_name( id ) << "' not supported" );
     }
     return *it->second;
 }
