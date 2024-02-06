@@ -457,9 +457,12 @@ namespace librealsense
                 if (progress_callback)
                 {
                     if (host_assistance != host_assistance_type::no_assistance)
-                        if (count < 20) progress_callback->on_update_progress(static_cast<float>(80 + count++));
+                    {
+                        if (count < 20)
+                            progress_callback->on_update_progress(static_cast<float>(80 + count++));
                         else
-                            progress_callback->on_update_progress(count++ * (2.f * static_cast<int>(speed))); //curently this number does not reflect the actual progress
+                            progress_callback->on_update_progress(count++ * (2.f * static_cast<int>(speed))); //currently this number does not reflect the actual progress
+                    }
                 }
             }, false);
             // Handle errors from firmware
