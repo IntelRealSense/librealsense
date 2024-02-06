@@ -671,12 +671,15 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
         }
 
         auto top = 0;
-        for(auto&& dash : dashboards)
+        if( is_dashboard_open && dashboard_width == max_dashboard_width )
         {
-            auto h = dash->get_height();
-            auto r = rect{ 0.f, (float)top, get_dashboard_width() - 8.f, (float)h };
-            dash->draw(win, r);
-            top += h;
+            for( auto && dash : dashboards )
+            {
+                auto h = dash->get_height();
+                auto r = rect{ 0.f, (float)top, get_dashboard_width() - 8.f, (float)h };
+                dash->draw( win, r );
+                top += h;
+            }
         }
 
         dashboards.erase(std::remove_if(dashboards.begin(), dashboards.end(),
