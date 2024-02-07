@@ -121,7 +121,7 @@ namespace rs2
             static const char* last_calib_notice{ "viewer_model.last_calib_notice" };
             static const char* is_measuring{ "viewer_model.is_measuring" };
             static const char* output_open{ "viewer_model.output_open" };
-            static const char* dashboard_open{ "viewer_model.dashbord_open" };
+            static const char* dashboard_open{ "viewer_model.dashboard_open" };
             static const char* search_term{ "viewer_model.search_term" };
 
             static const char* log_to_console{ "viewer_model.log_to_console" };
