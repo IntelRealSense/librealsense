@@ -40,7 +40,6 @@ pid_to_min_fw_version = {  # D400 product line:
     '0B3A': d400_fw_min_version_2,  # D435I
     '0B49': d400_fw_min_version_1,  # D416
     '0B4B': d400_fw_min_version_1,  # D430I
-    '0B4D': d400_fw_min_version_2,  # D465
     '0B52': d400_fw_min_version_1,  # D416_RGB
     '0B5B': d400_fw_min_version_3,  # D405
     '0B5C': d400_fw_min_version_4   # D455

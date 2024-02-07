@@ -42,7 +42,7 @@ namespace librealsense
             return results[4] > 0;
         };
 
-        // "Remove IR Pattern" visual preset is available only for D400, D410, D415, D460, D465
+        // "Remove IR Pattern" visual preset is available only for D400, D410, D415, D460
         if (is_enabled())
             register_to_visual_preset_option();
 
@@ -111,7 +111,6 @@ namespace librealsense
             case ds::RS430_PID:
             case ds::RS430I_PID:
             case ds::RS435_RGB_PID:
-            case ds::RS465_PID:
             case ds::RS435I_PID:
                 default_430(p);
                 break;
@@ -179,7 +178,6 @@ namespace librealsense
             case ds::RS400_PID:
             case ds::RS410_PID:
             case ds::RS415_PID:
-            case ds::RS465_PID://TODO: verify
                 d415_remove_ir(p);
                 break;
             case ds::RS460_PID:

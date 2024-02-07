@@ -33,7 +33,6 @@ namespace librealsense
         const uint16_t RS435I_PID = 0x0b3a; // D435i
         const uint16_t RS416_PID = 0x0b49; // F416
         const uint16_t RS430I_PID = 0x0b4b; // D430i
-        const uint16_t RS465_PID = 0x0b4d; // D465
         const uint16_t RS416_RGB_PID = 0x0B52; // F416 RGB
         const uint16_t RS405_PID = 0x0B5B; // D405
         const uint16_t RS455_PID = 0x0B5C; // D455
@@ -59,7 +58,6 @@ namespace librealsense
             ds::RS435I_PID,
             ds::RS416_RGB_PID,
             ds::RS430I_PID,
-            ds::RS465_PID,
             ds::RS416_PID,
             ds::RS405_PID,
             ds::RS455_PID,
@@ -75,7 +73,6 @@ namespace librealsense
             ds::RS430_MM_RGB_PID,
             ds::RS435_RGB_PID,
             ds::RS435I_PID,
-            ds::RS465_PID,
             ds::RS455_PID,
             ds::RS457_PID
         };
@@ -83,7 +80,6 @@ namespace librealsense
         static const std::set<std::uint16_t> d400_hid_sensors_pid = {
             ds::RS435I_PID,
             ds::RS430I_PID,
-            ds::RS465_PID,
             ds::RS455_PID
         };
 
@@ -93,9 +89,7 @@ namespace librealsense
             ds::RS455_PID
         };
 
-        static const std::set<std::uint16_t> d400_hid_bmi_085_pid = {
-            RS465_PID
-        };
+        static const std::set<std::uint16_t> d400_hid_bmi_085_pid = { };
 
         static const std::set<std::uint16_t> d400_fisheye_pid = {
             ds::RS400_MM_PID,
@@ -126,7 +120,6 @@ namespace librealsense
             { RS435I_PID,           "Intel RealSense D435I" },
             { RS416_PID,            "Intel RealSense F416"},
             { RS430I_PID,           "Intel RealSense D430I"},
-            { RS465_PID,            "Intel RealSense D465" },
             { RS416_RGB_PID,        "Intel RealSense F416 with RGB Module"},
             { RS405_PID,            "Intel RealSense D405" },
             { RS455_PID,            "Intel RealSense D455" },
@@ -154,7 +147,6 @@ namespace librealsense
             {RS435I_PID, "5.12.7.100" },
             {RS416_PID, "5.8.15.0" },
             {RS430I_PID, "5.8.15.0" },
-            {RS465_PID, "5.12.7.100" },
             {RS416_RGB_PID, "5.8.15.0" },
             {RS405_PID, "5.12.11.8" },
             {RS455_PID, "5.13.0.50" },
