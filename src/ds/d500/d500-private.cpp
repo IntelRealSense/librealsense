@@ -29,11 +29,13 @@ namespace librealsense
                         break;
                     }*/
 
+                    /*
                     if (found)
                     {
                         devices.erase(it);
                         return true;
                     }
+                    */
                 }
             }
             return false;
