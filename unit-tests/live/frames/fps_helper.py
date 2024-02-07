@@ -47,13 +47,8 @@ def get_time_est_string(profiles_array):
 
 
 def get_tested_profiles_string(sensor_profiles_dict):
-    tested_profile_string = ""
-    for sensor, profiles in sensor_profiles_dict.items():
-        for profile in profiles:
-            tested_profile_string += f"{sensor.name} / {profile.stream_name()} + "
-
-    # Remove the last " + "
-    tested_profile_string = tested_profile_string[:-3]
+    tested_profile_string = ' + '.join(f"{sensor.name} / {profile.stream_name()}" for sensor, profiles
+                                       in sensor_profiles_dict.items() for profile in profiles)
     return tested_profile_string
 
 
@@ -159,7 +154,6 @@ def perform_fps_test(sensor_profiles_arr, streams_combinations):
             log.d(get_test_details_str(partial_dict))
             fps_dict = measure_fps(partial_dict)
             test.check(check_fps_dict(fps_dict, expected_fps_dict))
-    test.print_results_and_exit()
 
 
 def get_profile(sensor, stream, resolution=None, fps=None):
