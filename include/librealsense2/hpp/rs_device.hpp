@@ -883,10 +883,7 @@ namespace rs2
             {
                 _callback( status );
             }
-            catch( const std::exception & e )
-            {
-                LOG_DEBUG( "Error from callback: " << e.what() );
-            }
+            catch( ... ) { }
         }
         void release() override { delete this; }
     };
