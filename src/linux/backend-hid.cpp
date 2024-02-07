@@ -687,6 +687,9 @@ namespace librealsense
             auto raw_data_size = channel_size*hid_buf_len;
 
             std::vector<uint8_t> raw_data(raw_data_size);
+            
+            if( _fd < 0 )
+                throw invalid_value_exception( "_id can't be negative value" );
 
             auto read_size = read(_fd, raw_data.data(), raw_data_size);
             while(read_size > 0)
