@@ -113,6 +113,37 @@ namespace rs2
         int method = 0;
     };
 
+    class accel_dashboard : public stream_dashboard
+    {
+    public:
+        // Constructor
+        accel_dashboard( std::string name )
+            : stream_dashboard( name, 30)
+        {
+            x = y = z = accel = 0;
+            clear( true );
+        }
+
+        // Functions
+        void process_frame( rs2::frame f ) override;
+        // Draw graph line
+        void draw( ux_window & window, rect rectangle ) override;
+        int get_height() const override;
+
+        void clear( bool full ) override;
+
+    private:
+        float x;
+        float y;
+        float z;
+        float accel;
+
+        std::deque< int > x_history;
+        std::deque< int > y_history;
+        std::deque< int > z_history;
+        std::deque< int > accel_history;
+    };
+
     class output_model
     {
     public:
