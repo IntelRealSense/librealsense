@@ -1040,8 +1040,8 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
                 { pos.x + r.w, pos.y + get_height() }, ImColor(dark_sensor_bg));
 
     auto size = ImGui::CalcTextSize(name.c_str());
-    auto collapse_buton_h = 28 + 3;
-    ImGui::SetCursorPos(ImVec2( r.w / 2 - size.x / 2, 5.f + collapse_buton_h));
+    float collapse_buton_h = 28.f + 3.f;  // Dashboard button size plus some spacing
+    ImGui::SetCursorPos(ImVec2( r.w / 2 - size.x / 2, 5 + collapse_buton_h));
     ImGui::Text("%s", name.c_str());
     ImGui::SameLine();
 
