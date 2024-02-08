@@ -114,6 +114,9 @@ output_model::output_model() : fw_logger([this](){ thread_loop(); }) , incoming_
             configurations::viewer::output_open, false);
     search_line = config_file::instance().get_or_default(
             configurations::viewer::search_term, std::string(""));
+    is_dashboard_open = config_file::instance().get_or_default(
+        configurations::viewer::dashboard_open, true );
+    
     if (search_line != "") search_open = true;
 
     available_dashboards["Frame Drops per Second"] = [&](std::string name){
@@ -375,11 +378,11 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0,0));
         ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, dark_sensor_bg);
 
-        ImGui::BeginChild("##LogArea",
-            ImVec2(0.7f * w - 4, h - 38 - ImGui::GetTextLineHeightWithSpacing() - 1), true,
-            ImGuiWindowFlags_AlwaysVerticalScrollbar);
+        const float log_area_width = w - get_dashboard_width() - 2;
 
-        const auto log_area_width = 0.7f * w - 4;
+        ImGui::BeginChild("##LogArea",
+            ImVec2(log_area_width, h - 38 - ImGui::GetTextLineHeightWithSpacing() - 1), true,
+            ImGuiWindowFlags_AlwaysVerticalScrollbar);
 
         bool copy_all = false;
         bool save_all = false;
@@ -524,7 +527,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
 
         ImGui::PushFont(win.get_monofont());
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
-        ImGui::PushItemWidth(0.7f * w - 32);
+        ImGui::PushItemWidth( w - get_dashboard_width() - 30 );
 
         bool force_refresh = false;
         if (ImGui::IsWindowFocused() && (ImGui::IsKeyPressed(GLFW_KEY_UP) || ImGui::IsKeyPressed(GLFW_KEY_DOWN)))
@@ -611,16 +614,72 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             command_line = "";
         }
 
-        ImGui::SetCursorPos(ImVec2(0.7f * w - 2, 35));
-        ImGui::BeginChild("##StatsArea",ImVec2(0.3f * w - 2, h - 38), true);
+        float child_height = 0;
+        for( auto && dash : dashboards )
+        {
+            child_height += dash->get_height();
+        }
+        float new_dashboard_button_height = 40.f;
+        child_height == 0 ? child_height = new_dashboard_button_height : child_height += 5;
+        
+        auto dashboard_width = get_dashboard_width();
+        ImGui::SetCursorPos( ImVec2( w - dashboard_width, 35 ) );
+
+        ImGui::BeginChild( "##StatsArea", ImVec2( dashboard_width - 3.f, h - 38 ), true );
+
+        const ImVec2 collapse_dashboard_button_size = { 28, 28 };
+        const int max_dashboard_width = (int)( ( 0.3f * w ) );
+        const int min_dashboard_width = static_cast<int>(collapse_dashboard_button_size.x) + 2;
+
+        if( is_dashboard_open )
+        {
+            if( ImGui::Button( u8"\uf138", collapse_dashboard_button_size ) )  // close dashboard
+            {
+                is_dashboard_open = false;
+                config_file::instance().set( configurations::viewer::dashboard_open, is_dashboard_open );
+                default_dashboard_w = min_dashboard_width;
+            }
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::SetTooltip( "Collapse dashboard" );
+            }
+
+            // Animation of opening dashboard panel
+            if( default_dashboard_w.value() != max_dashboard_width )
+                default_dashboard_w = max_dashboard_width;
+        }
+        else
+        {
+            float cursor_pos_x = ImGui::GetCursorPosX();
+            ImGui::SetCursorPosX( 0 );
+
+            if( ImGui::Button( u8"\uf137", collapse_dashboard_button_size ) )  // open dashboard
+            {
+                is_dashboard_open = true;
+                config_file::instance().set( configurations::viewer::dashboard_open, is_dashboard_open );
+                default_dashboard_w = max_dashboard_width;
+            }
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::SetTooltip( "Open dashboard" );
+            }
+            ImGui::SetCursorPosX( cursor_pos_x );
+
+            // Animation of closing dashboard panel
+            if( default_dashboard_w.value() != min_dashboard_width )
+                default_dashboard_w = min_dashboard_width;
+        }
 
         auto top = 0;
-        for(auto&& dash : dashboards)
+        if( is_dashboard_open && dashboard_width == max_dashboard_width )
         {
-            auto h = dash->get_height();
-            auto r = rect { 0.f, (float)top, 0.3f * w - 2, (float)h };
-            dash->draw(win, r);
-            top += h;
+            for( auto && dash : dashboards )
+            {
+                auto h = dash->get_height();
+                auto r = rect{ 0.f, (float)top, get_dashboard_width() - 8.f, (float)h };
+                dash->draw( win, r );
+                top += h;
+            }
         }
 
         dashboards.erase(std::remove_if(dashboards.begin(), dashboards.end(),
@@ -642,7 +701,8 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
         if (can_add)
         {
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-            const auto new_dashboard_name = "new_dashaborad";
+            const auto new_dashboard_name = "new_dashboard";
+            ImGui::SameLine();
             if (ImGui::Button(u8"\uF0D0 Add Dashboard", ImVec2(-1, 25)))
             {
                 ImGui::OpenPopup(new_dashboard_name);
@@ -688,7 +748,6 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
 
 
         ImGui::EndChild();
-
 
         ImGui::PopStyleColor();
     }
@@ -981,13 +1040,14 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
                 { pos.x + r.w, pos.y + get_height() }, ImColor(dark_sensor_bg));
 
     auto size = ImGui::CalcTextSize(name.c_str());
-    ImGui::SetCursorPos(ImVec2( r.w / 2 - size.x / 2, 5 ));
+    float collapse_buton_h = 28.f + 3.f;  // Dashboard button size plus some spacing
+    ImGui::SetCursorPos(ImVec2( r.w / 2 - size.x / 2, 5 + collapse_buton_h));
     ImGui::Text("%s", name.c_str());
     ImGui::SameLine();
 
     ImGui::PushStyleColor(ImGuiCol_Text, grey);
     ImGui::SetCursorPosX(r.w - 25);
-    ImGui::SetCursorPosY(3);
+    ImGui::SetCursorPosY( 3.f + collapse_buton_h );
     std::string id = rsutils::string::from() << u8"\uF00D##Close_" << name;
     if (ImGui::Button(id.c_str(),ImVec2(22,22)))
     {
@@ -1009,7 +1069,7 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
         auto y = max_y - i * (gap_y / ticks_y);
         std::string y_label = rsutils::string::from() << std::fixed << std::setprecision(2) << y;
         auto y_pixel = ImGui::GetTextLineHeight() + i * (height_y / ticks_y);
-        ImGui::SetCursorPos(ImVec2( 10, y_pixel ));
+        ImGui::SetCursorPos(ImVec2( 10, y_pixel + collapse_buton_h));
         ImGui::Text("%s", y_label.c_str());
 
         ImGui::GetWindowDrawList()->AddLine({ pos.x + max_y_label_width + 15.f, pos.y + y_pixel + 5.f },
@@ -1039,7 +1099,7 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
     {
         auto x = min_x + i * (gap_x / ticks_x);
         std::string x_label = rsutils::string::from() << std::fixed << std::setprecision(2) << x;
-        ImGui::SetCursorPos(ImVec2( 15 + max_y_label_width+ i * (graph_width / ticks_x), r.h - ImGui::GetTextLineHeight() ));
+        ImGui::SetCursorPos(ImVec2( 15 + max_y_label_width+ i * (graph_width / ticks_x), r.h - ImGui::GetTextLineHeight() + collapse_buton_h));
         ImGui::Text("%s", x_label.c_str());
 
         ImGui::GetWindowDrawList()->AddLine({ pos.x + 15 + max_y_label_width + i * (graph_width / ticks_x), pos.y + ImGui::GetTextLineHeight() + 5 },
@@ -1117,7 +1177,9 @@ void frame_drops_dashboard::draw(ux_window& win, rect r)
         add_point((float)i, (float)hist[i]);
     }
     r.h -= ImGui::GetTextLineHeightWithSpacing() + 10;
-    draw_dashboard(win, r);
+
+    if( config_file::instance().get( configurations::viewer::dashboard_open) )
+        draw_dashboard(win, r);
 
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 40);
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 3);
