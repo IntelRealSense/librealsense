@@ -99,9 +99,10 @@ with test.remote.fork( nested_indent=None ) as remote:
             server_sequence += 1
             expect_notifications( n )
             reply = device.send_control( json, True )  # Wait for reply
-            test.check_equal( reply['id'], json['id'] )
             if test.check( reply.get('control') is not None ):
                 test.check_equal( reply['control']['id'], json['id'] )
+            else:
+                test.check_equal( reply['id'], json['id'] )
             test.check_equal( reply['sequence'], server_sequence )
             test.check_equal( reply['sample'][0], str(device.guid()) )
             notifications.wait( 3 )  # We may get the reply before the other notifications are received

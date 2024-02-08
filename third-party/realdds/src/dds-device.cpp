@@ -1,10 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include <realdds/dds-device.h>
 #include <realdds/dds-participant.h>
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-topic-writer.h>
+#include <realdds/topics/dds-topic-names.h>
 #include "dds-device-impl.h"
 
 #include <rsutils/time/timer.h>
@@ -242,32 +243,29 @@ rsutils::subscription dds_device::on_notification( on_notification_callback && c
 }
 
 
-static std::string const status_key( "status", 6 );
-static std::string const status_ok( "ok", 2 );
-static std::string const explanation_key( "explanation", 11 );
-static std::string const id_key( "id", 2 );
-
-
 bool dds_device::check_reply( rsutils::json const & reply, std::string * p_explanation )
 {
-    auto status_j = reply.nested( status_key );
+    auto status_j = reply.nested( topics::reply::key::status );
     if( ! status_j )
-        return true;
+        return true;  // no status == ok
     std::ostringstream os;
     if( ! status_j.is_string() )
         os << "bad status " << status_j;
-    else if( status_j.string_ref() == status_ok )
+    else if( status_j.string_ref() == topics::reply::status::ok )
         return true;
     else
     {
         os << "[";
-        if( auto id = reply.nested( id_key ) )
+        // An 'id' is mandatory, but if it's a response to a control it's contained there
+        auto const control = reply.nested( topics::reply::key::control );
+        auto const control_sample = control ? reply.nested( topics::reply::key::sample ) : rsutils::json_ref( rsutils::missing_json );
+        if( auto id = ( control_sample ? control.get_json() : reply ).nested( topics::reply::key::id ) )
         {
             if( id.is_string() )
                 os << "\"" << id.string_ref() << "\" ";
         }
         os << status_j.string_ref() << "]";
-        if( auto explanation_j = reply.nested( explanation_key ) )
+        if( auto explanation_j = reply.nested( topics::reply::key::explanation ) )
         {
             os << ' ';
             if( explanation_j.string_ref_or_empty().empty() )

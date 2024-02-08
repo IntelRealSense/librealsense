@@ -22,37 +22,18 @@
 
 #include <cassert>
 
-
-static std::string const id_key( "id", 2 );
-static std::string const id_set_option( "set-option", 10 );
-static std::string const id_query_option( "query-option", 12 );
-static std::string const id_open_streams( "open-streams", 12 );
-static std::string const id_device_header( "device-header", 13 );
-static std::string const id_device_options( "device-options", 14 );
-static std::string const id_stream_header( "stream-header", 13 );
-static std::string const id_stream_options( "stream-options", 14 );
-static std::string const value_key( "value", 5 );
-static std::string const option_values_key( "option-values", 13 );
-static std::string const sample_key( "sample", 6 );
-static std::string const option_name_key( "option-name", 11 );
-static std::string const stream_name_key( "stream-name", 11 );
-static std::string const control_key( "control", 7 );
-
-static std::string const id_log( "log", 3 );
-static std::string const entries_key( "entries", 7 );
-
-static std::string const id_hwm( "hwm", 3 );
+using rsutils::json;
 
 
 namespace {
 
 
-rsutils::json device_settings( std::shared_ptr< realdds::dds_participant > const & participant )
+json device_settings( std::shared_ptr< realdds::dds_participant > const & participant )
 {
     auto settings = participant->settings().nested( "device" );
     if( ! settings )
         // Nothing there: default is empty object
-        return rsutils::json::object();
+        return json::object();
     if( ! settings.is_object() )
         // Device settings, if they exist, must be an object!
         DDS_THROW( runtime_error, "participant 'device' settings must be an object: " << settings );
@@ -95,19 +76,6 @@ void dds_device::impl::set_state( state_t new_state )
 
     _state = new_state;
 }
-
-
-/*static*/ dds_device::impl::notification_handlers const dds_device::impl::_notification_handlers{
-    { id_set_option, &dds_device::impl::on_option_value },
-    { id_query_option, &dds_device::impl::on_option_value },
-    { id_device_header, &dds_device::impl::on_device_header },
-    { id_device_options, &dds_device::impl::on_device_options },
-    { id_stream_header, &dds_device::impl::on_stream_header },
-    { id_stream_options, &dds_device::impl::on_stream_options },
-    { id_open_streams, &dds_device::impl::on_known_notification },
-    { id_log, &dds_device::impl::on_log },
-    { id_hwm, &dds_device::impl::on_known_notification },
-};
 
 
 dds_device::impl::impl( std::shared_ptr< dds_participant > const & participant,
@@ -155,16 +123,34 @@ std::string dds_device::impl::debug_name() const
 }
 
 
-void dds_device::impl::handle_notification( rsutils::json const & j,
-                                            eprosima::fastdds::dds::SampleInfo const & sample )
+void dds_device::impl::on_notification( json && j, eprosima::fastdds::dds::SampleInfo const & notification_sample )
 {
+    typedef std::map< std::string,
+                      void ( dds_device::impl::* )( json const &,
+                                                    eprosima::fastdds::dds::SampleInfo const & ) >
+        notification_handlers;
+    static notification_handlers const _notification_handlers{
+        { topics::reply::set_option::id, &dds_device::impl::on_set_option },
+        { topics::reply::query_option::id, &dds_device::impl::on_set_option },  // Same handling as on_set_option
+        { topics::reply::query_options::id, &dds_device::impl::on_query_options },
+        { topics::notification::device_header::id, &dds_device::impl::on_device_header },
+        { topics::notification::device_options::id, &dds_device::impl::on_device_options },
+        { topics::notification::stream_header::id, &dds_device::impl::on_stream_header },
+        { topics::notification::stream_options::id, &dds_device::impl::on_stream_options },
+        { topics::notification::log::id, &dds_device::impl::on_log },
+    };
+
+    auto const control = j.nested( topics::reply::key::control );
+    auto const control_sample = control ? j.nested( topics::reply::key::sample ) : rsutils::json_ref( rsutils::missing_json );
+
     try
     {
         // First handle the notification
-        auto id = j.at( id_key ).get< std::string >();
+        // An 'id' is mandatory, but if it's a response to a control it can be contained there
+        auto id = ( control_sample ? control.get_json() : j ).nested( topics::notification::key::id ).string_ref();
         auto it = _notification_handlers.find( id );
         if( it != _notification_handlers.end() )
-            ( this->*( it->second ) )( j, sample );
+            ( this->*( it->second ) )( j, notification_sample );
         _on_notification.raise( id, j );
     }
     catch( std::exception const & e )
@@ -179,17 +165,17 @@ void dds_device::impl::handle_notification( rsutils::json const & j,
     try
     {
         // Check if this is a reply - maybe someone's waiting on it...
-        if( auto sample = j.nested( sample_key ) )
+        if( control_sample )
         {
             // ["<prefix>.<entity>", <sequence-number>]
-            if( sample.size() == 2 && sample.is_array() )
+            if( control_sample.size() == 2 && control_sample.is_array() )
             {
                 // We have to be the ones who sent the control!
-                auto const reply_guid = guid_from_string( sample[0].get< std::string >() );
+                auto const reply_guid = guid_from_string( control_sample[0].get< std::string >() );
                 auto const control_guid = _control_writer->guid();
                 if( reply_guid == control_guid )
                 {
-                    auto const sequence_number = sample[1].get< uint64_t >();
+                    auto const sequence_number = control_sample[1].get< uint64_t >();
                     std::unique_lock< std::mutex > lock( _replies_mutex );
                     auto replyit = _replies.find( sequence_number );
                     if( replyit != _replies.end() )
@@ -217,7 +203,7 @@ void dds_device::impl::handle_notification( rsutils::json const & j,
 }
 
 
-void dds_device::impl::on_option_value( rsutils::json const & j, eprosima::fastdds::dds::SampleInfo const & )
+void dds_device::impl::on_set_option( json const & j, eprosima::fastdds::dds::SampleInfo const & )
 {
     if( ! is_ready() )
         return;
@@ -225,17 +211,17 @@ void dds_device::impl::on_option_value( rsutils::json const & j, eprosima::fastd
     // This is the notification for "set-option" or "query-option", meaning someone sent a control request to set/get an
     // option value. In either case a value will be sent; we want to update ours accordingly to reflect the latest:
 
-    // Ignore errors
-    dds_device::check_reply( j );
+    dds_device::check_reply( j );  // throws
 
     // We need the original control request as part of the reply, otherwise we can't know what option this is for
-    auto control = j.nested( control_key );
+    auto control = j.nested( topics::reply::key::control );
     if( ! control.is_object() )
         throw std::runtime_error( "missing control object" );
 
     // Find the relevant (stream) options to update
     dds_options const * options = &_options;
-    std::string const & stream_name = control.nested( stream_name_key ).string_ref_or_empty();  // default = empty = device option
+    std::string const & stream_name =  // default = empty = device option
+        control.nested( topics::control::set_option::key::stream_name ).string_ref_or_empty();
     if( ! stream_name.empty() )
     {
         auto stream_it = _streams.find( stream_name );
@@ -244,59 +230,13 @@ void dds_device::impl::on_option_value( rsutils::json const & j, eprosima::fastd
         options = &stream_it->second->options();
     }
 
-    // This little function is used in all use-cases below:
-    auto update_option = [&]( std::string const & option_name, float const new_value )
-    {
-        // Find the option and set its value
-        for( auto & option : *options )
-        {
-            if( option->get_name() == option_name )
-            {
-                option->set_value( new_value );
-                return;
-            }
-        }
-        LOG_DEBUG( "[" << debug_name() << "] option '" << option_name << "': not found" );
-    };
-
-    auto value_j = j.nested( value_key );
+    auto value_j = j.nested( topics::reply::set_option::key::value );
     if( ! value_j.exists() )
-    {
-        // Use case:
-        //      Bulk query without ANY option names supplied, { "option-name": [] }
-        // There is no 'value' key; instead, the server returns option-value pairs in 'option-values':
-        auto option_values = j.nested( option_values_key );
-        if( ! option_values.is_object() )
-            throw std::runtime_error( "missing value or option-values" );
-        for( auto it = option_values.begin(); it != option_values.end(); ++it )
-            update_option( it.key(), it.value().get< float >() );
-        return;
-    }
+        throw std::runtime_error( "missing value" );
 
-    auto option_name_j = control.nested( option_name_key );
+    auto option_name_j = control.nested( topics::control::set_option::key::option_name );
     if( ! option_name_j.exists() )
         throw std::runtime_error( "missing option-name" );
-
-    if( value_j.is_array() )
-    {
-        // Use case:
-        //      Bulk query, but specific option names were given, { "option-name": ["opt1", ...] }
-        // The 'option-name' should be an array of options for which values are returned
-        // The 'value' should be a similarly-sized array
-        if( ! option_name_j.is_array() )
-            throw std::runtime_error( "'option-name' does not match 'value' array type" );
-        if( value_j.size() != option_name_j.size() )
-            throw std::runtime_error( "'option-name' does not match 'value' array size" );
-
-        auto size = value_j.size();
-        for( auto x = 0; x < size; ++x )
-        {
-            auto const & option_name = option_name_j[x].string_ref();
-            auto const new_value = value_j[x].get< float >();
-            update_option( option_name, new_value );
-        }
-        return;
-    }
 
     // Use case:
     //      Simple single-option value update, { "option-name": "opt1" }
@@ -305,21 +245,95 @@ void dds_device::impl::on_option_value( rsutils::json const & j, eprosima::fastd
     if( ! option_name_j.is_string() )
         throw std::runtime_error( "option-name is not a string" );
     auto & option_name = option_name_j.string_ref();
-    update_option( option_name, value_j.get< float >() );
+    for( auto & option : *options )
+    {
+        if( option->get_name() == option_name )
+        {
+            option->set_value( value_j.get< float >() );
+            return;
+        }
+    }
+    LOG_DEBUG( "[" << debug_name() << "] option '" << option_name << "': not found" );
 }
 
 
-void dds_device::impl::on_known_notification( rsutils::json const & j, eprosima::fastdds::dds::SampleInfo const & )
+void dds_device::impl::on_query_options( json const & j, eprosima::fastdds::dds::SampleInfo const & )
+{
+    if( ! is_ready() )
+        return;
+
+    // This is the notification for "query-options", which can get sent as a reply to a control or independently by the
+    // device. It takes the same form & handling either way.
+    // 
+    // E.g.:
+    //   {
+    //     "id": "query-options",
+    //     "option-values" : {
+    //       "IP address": "1.2.3.4",  // device-level
+    //       "Color": {
+    //         "Exposure": 8.0,
+    //       },
+    //       "Depth" : {
+    //         "Exposure": 20.0
+    //       }
+    //     }
+    //   }
+
+    dds_device::check_reply( j );  // throws
+
+    // This little function is used either for device or stream options
+    auto update_option = [this]( dds_options const & options, std::string const & option_name, json const & new_value )
+    {
+        // Find the option and set its value
+        for( auto & option : options )
+        {
+            if( option->get_name() == option_name )
+            {
+                option->set_value( new_value.get< float >() );
+                return;
+            }
+        }
+        //LOG_DEBUG( "[" << debug_name() << "] option '" << option_name << "': not found" );
+        throw std::runtime_error( "option '" + option_name + "' not found" );
+    };
+
+    auto option_values = j.nested( topics::reply::query_options::key::option_values );
+    if( ! option_values.is_object() )
+        throw std::runtime_error( "missing option-values" );
+
+    for( auto it = option_values.begin(); it != option_values.end(); ++it )
+    {
+        if( it->is_object() )
+        {
+            // Stream name
+            auto & stream_name = it.key();
+            auto stream_it = _streams.find( stream_name );
+            if( stream_it == _streams.end() )
+                throw std::runtime_error( "stream '" + stream_name + "' not found" );
+            auto & option_names = it.value();
+            for( auto option_it = option_names.begin(); option_it != option_names.end(); ++option_it )
+                update_option( stream_it->second->options(), option_it.key(), option_it.value() );
+        }
+        else
+        {
+            // Device-level option name
+            update_option( _options, it.key(), it.value() );
+        }
+    }
+}
+
+
+void dds_device::impl::on_known_notification( json const & j, eprosima::fastdds::dds::SampleInfo const & )
 {
     // This is a known notification, but we don't want to do anything for it
 }
 
 
-void dds_device::impl::on_log( rsutils::json const & j, eprosima::fastdds::dds::SampleInfo const & )
+void dds_device::impl::on_log( json const & j, eprosima::fastdds::dds::SampleInfo const & )
 {
     // This is the notification for "log"  (see docs/notifications.md#Logging)
     //     - `entries` is an array containing 1 or more log entries
-    auto entries = j.nested( entries_key );
+    auto entries = j.nested( topics::notification::log::key::entries );
     if( ! entries )
         throw std::runtime_error( "log entries not found" );
     if( ! entries.is_array() )
@@ -364,7 +378,7 @@ void dds_device::impl::open( const dds_stream_profiles & profiles )
     if( profiles.empty() )
         DDS_THROW( runtime_error, "must provide at least one profile" );
 
-    rsutils::json stream_profiles;
+    json stream_profiles;
     for( auto & profile : profiles )
     {
         auto stream = profile->stream();
@@ -376,12 +390,12 @@ void dds_device::impl::open( const dds_stream_profiles & profiles )
         stream_profiles[stream->name()] = profile->to_json();
     }
 
-    rsutils::json j = {
-        { id_key, id_open_streams },
-        { "stream-profiles", stream_profiles },
+    json j = {
+        { topics::control::key::id, topics::control::open_streams::id },
+        { topics::control::open_streams::key::stream_profiles, std::move( stream_profiles ) },
     };
 
-    rsutils::json reply;
+    json reply;
     write_control_message( j, &reply );
 }
 
@@ -391,15 +405,15 @@ void dds_device::impl::set_option_value( const std::shared_ptr< dds_option > & o
     if( ! option )
         DDS_THROW( runtime_error, "must provide an option to set" );
 
-    rsutils::json j = rsutils::json::object({
-        { id_key, id_set_option },
-        { option_name_key, option->get_name() },
-        { value_key, new_value }
+    json j = json::object({
+        { topics::control::key::id, topics::control::set_option::id },
+        { topics::control::set_option::key::option_name, option->get_name() },
+        { topics::control::set_option::key::value, new_value }
     });
     if( auto stream = option->stream() )
-        j[stream_name_key] = stream->name();
+        j[topics::control::set_option::key::stream_name] = stream->name();
 
-    rsutils::json reply;
+    json reply;
     write_control_message( j, &reply );
     // the reply will contain the new value (which may be different) and will update the cached one
 }
@@ -410,21 +424,21 @@ float dds_device::impl::query_option_value( const std::shared_ptr< dds_option > 
     if( ! option )
         DDS_THROW( runtime_error, "must provide an option to query" );
 
-    rsutils::json j = rsutils::json::object({
-        { id_key, id_query_option },
-        { option_name_key, option->get_name() }
+    json j = json::object({
+        { topics::control::key::id, topics::control::query_option::id },
+        { topics::control::query_option::key::option_name, option->get_name() }
     });
     if( auto stream = option->stream() )
-        j[stream_name_key] = stream->name();
+        j[topics::control::query_option::key::stream_name] = stream->name();
 
-    rsutils::json reply;
+    json reply;
     write_control_message( j, &reply );
 
-    return reply.at( value_key ).get< float >();
+    return reply.at( topics::reply::query_option::key::value ).get< float >();
 }
 
 
-void dds_device::impl::write_control_message( topics::flexible_msg && msg, rsutils::json * reply )
+void dds_device::impl::write_control_message( topics::flexible_msg && msg, json * reply )
 {
     assert( _control_writer != nullptr );
     auto this_sequence_number = std::move( msg ).write_to( *_control_writer );
@@ -483,11 +497,11 @@ void dds_device::impl::create_notifications_reader()
                 if( j.is_array() )
                 {
                     for( unsigned x = 0; x < j.size(); ++x )
-                        handle_notification( j[x], sample );
+                        on_notification( std::move( j[x] ), sample );
                 }
                 else
                 {
-                    handle_notification( j, sample );
+                    on_notification( std::move( j ), sample );
                 }
             }
         } );
@@ -512,7 +526,7 @@ void dds_device::impl::create_metadata_reader()
                 {
                     try
                     {
-                        auto sptr = std::make_shared< const rsutils::json >( message.json_data() );
+                        auto sptr = std::make_shared< const json >( message.json_data() );
                         _on_metadata_available.raise( sptr );
                     }
                     catch( std::exception const & e )
@@ -540,7 +554,7 @@ void dds_device::impl::create_control_writer()
 }
 
 
-void dds_device::impl::on_device_header( rsutils::json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
+void dds_device::impl::on_device_header( json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
 {
     if( _state != state_t::ONLINE )
         return;
@@ -552,10 +566,10 @@ void dds_device::impl::on_device_header( rsutils::json const & j, eprosima::fast
     // with a server.
     eprosima::fastrtps::rtps::iHandle2GUID( _server_guid, sample.publication_handle );
 
-    _n_streams_expected = j.at( "n-streams" ).get< size_t >();
-    LOG_DEBUG( "[" << debug_name() << "] ... " << id_device_header << ": " << _n_streams_expected << " streams expected" );
+    _n_streams_expected = j.at( topics::notification::device_header::key::n_streams ).get< size_t >();
+    LOG_DEBUG( "[" << debug_name() << "] ... " << topics::notification::device_header::id << ": " << _n_streams_expected << " streams expected" );
 
-    if( auto extrinsics_j = j.nested( "extrinsics" ) )
+    if( auto extrinsics_j = j.nested( topics::notification::device_header::key::extrinsics ) )
     {
         for( auto & ex : extrinsics_j )
         {
@@ -571,14 +585,14 @@ void dds_device::impl::on_device_header( rsutils::json const & j, eprosima::fast
 }
 
 
-void dds_device::impl::on_device_options( rsutils::json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
+void dds_device::impl::on_device_options( json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
 {
     if( _state != state_t::WAIT_FOR_DEVICE_OPTIONS )
         return;
 
-    if( auto options_j = j.nested( "options" ) )
+    if( auto options_j = j.nested( topics::notification::device_options::key::options ) )
     {
-        LOG_DEBUG( "[" << debug_name() << "] ... " << id_device_options << ": " << options_j.size() << " options received" );
+        LOG_DEBUG( "[" << debug_name() << "] ... " << topics::notification::device_options::id << ": " << options_j.size() << " options received" );
 
         for( auto & option_json : options_j )
         {
@@ -594,28 +608,28 @@ void dds_device::impl::on_device_options( rsutils::json const & j, eprosima::fas
 }
 
 
-void dds_device::impl::on_stream_header( rsutils::json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
+void dds_device::impl::on_stream_header( json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
 {
     if( _state != state_t::WAIT_FOR_STREAM_HEADER )
         return;
 
     if( _streams.size() >= _n_streams_expected )
         DDS_THROW( runtime_error, "more streams than expected (" << _n_streams_expected << ") received" );
-    auto & stream_type = j.at( "type" ).string_ref();
-    auto & stream_name = j.at( "name" ).string_ref();
+    auto & stream_type = j.at( topics::notification::stream_header::key::type ).string_ref();
+    auto & stream_name = j.at( topics::notification::stream_header::key::name ).string_ref();
 
     auto & stream = _streams[stream_name];
     if( stream )
         DDS_THROW( runtime_error, "stream '" << stream_name << "' already exists" );
 
-    auto & sensor_name = j.at( "sensor-name" ).string_ref();
+    auto & sensor_name = j.at( topics::notification::stream_header::key::sensor_name ).string_ref();
     size_t default_profile_index = j.at( "default-profile-index" ).get< size_t >();
     dds_stream_profiles profiles;
 
 #define TYPE2STREAM( S, P )                                                                                            \
     if( stream_type == #S )                                                                                            \
     {                                                                                                                  \
-        for( auto & profile : j["profiles"] )                                                                          \
+        for( auto & profile : j[topics::notification::stream_header::key::profiles] )                                  \
             profiles.push_back( dds_stream_profile::from_json< dds_##P##_stream_profile >( profile ) );                \
         stream = std::make_shared< dds_##S##_stream >( stream_name, sensor_name );                                     \
     }                                                                                                                  \
@@ -630,7 +644,7 @@ void dds_device::impl::on_stream_header( rsutils::json const & j, eprosima::fast
 
 #undef TYPE2STREAM
 
-    if( j.at( "metadata-enabled" ).get< bool >() )
+    if( j.at( topics::notification::stream_header::key::metadata_enabled ).get< bool >() )
     {
         create_metadata_reader();
         stream->enable_metadata();  // Call before init_profiles
@@ -655,29 +669,31 @@ void dds_device::impl::on_stream_header( rsutils::json const & j, eprosima::fast
 }
 
 
-void dds_device::impl::on_stream_options( rsutils::json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
+void dds_device::impl::on_stream_options( json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
 {
     if( _state != state_t::WAIT_FOR_STREAM_OPTIONS )
         return;
 
-    auto & stream_name = j.at( "stream-name" ).string_ref();
+    auto & stream_name = j.at( topics::notification::stream_options::key::stream_name ).string_ref();
     auto stream_it = _streams.find( stream_name );
     if( stream_it == _streams.end() )
         DDS_THROW( runtime_error,
                    "Received stream options for stream '" << stream_name << "' whose header was not received yet" );
 
-    if( auto options_j = j.nested( "options" ) )
+    if( auto options_j = j.nested( topics::notification::stream_options::key::options ) )
     {
         dds_options options;
-        for( auto & option : options_j )
+        for( auto & option_j : options_j )
         {
-            options.push_back( dds_option::from_json( option ) );
+            LOG_DEBUG( "[" << debug_name() << "]     ... " << option_j );
+            auto option = dds_option::from_json( option_j );
+            options.push_back( option );
         }
 
         stream_it->second->init_options( options );
     }
 
-    if( auto j_int = j.nested( "intrinsics" ) )
+    if( auto j_int = j.nested( topics::notification::stream_options::key::intrinsics ) )
     {
         if( auto video_stream = std::dynamic_pointer_cast< dds_video_stream >( stream_it->second ) )
         {
@@ -688,12 +704,14 @@ void dds_device::impl::on_stream_options( rsutils::json const & j, eprosima::fas
         }
         else if( auto motion_stream = std::dynamic_pointer_cast< dds_motion_stream >( stream_it->second ) )
         {
-            motion_stream->set_accel_intrinsics( motion_intrinsics::from_json( j_int.at( "accel" ) ) );
-            motion_stream->set_gyro_intrinsics( motion_intrinsics::from_json( j_int.at( "gyro" ) ) );
+            motion_stream->set_accel_intrinsics( motion_intrinsics::from_json(
+                j_int.at( topics::notification::stream_options::intrinsics::key::accel ) ) );
+            motion_stream->set_gyro_intrinsics( motion_intrinsics::from_json(
+                j_int.at( topics::notification::stream_options::intrinsics::key::gyro ) ) );
         }
     }
 
-    if( auto filters_j = j.nested( "recommended-filters" ) )
+    if( auto filters_j = j.nested( topics::notification::stream_options::key::recommended_filters ) )
     {
         std::vector< std::string > filter_names;
         for( auto & filter : filters_j )

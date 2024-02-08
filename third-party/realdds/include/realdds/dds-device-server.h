@@ -102,14 +102,16 @@ public:
     void on_control( control_callback callback ) { _control_callback = std::move( callback ); }
 
 private:
-    void on_control_message_received();
-    void handle_control_message( std::string const & id,
-                                 rsutils::json const & control_message,
-                                 rsutils::json & reply );
+    struct control_sample;
 
-    void handle_set_option( const rsutils::json & msg, rsutils::json & reply );
-    void handle_query_option( const rsutils::json & msg, rsutils::json & reply );
+    void on_control_message_received();
+    void on_set_option( control_sample const &, rsutils::json & reply );
+    void on_query_option( control_sample const &, rsutils::json & reply );
+    void on_query_options( control_sample const &, rsutils::json & reply );
+
     std::shared_ptr< dds_option > find_option( const std::string & option_name, const std::string & stream_name ) const;
+    std::shared_ptr< dds_option > get_option( const std::string & option_name, const std::string & stream_name ) const;
+    float query_option( std::shared_ptr< dds_option > const & ) const;
 
     std::shared_ptr< dds_publisher > _publisher;
     std::shared_ptr< dds_subscriber > _subscriber;
