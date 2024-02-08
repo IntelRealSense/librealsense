@@ -59,11 +59,11 @@ def append_testing_profiles(dev) -> None:
                 testing_profiles[p] = s
 
 
-def is_metadata_values_different(metadata_type_1, metadata_type_2, number_frames_to_test=50) -> bool:
+def are_metadata_values_different(metadata_type_1, metadata_type_2, number_frames_to_test=50) -> bool:
     """
-    Check that the given 2 metadata types value is different, it is handy when we expect different timetags / counters and such
-    :param metadata_type_1: first valuse that we need to check
-    :param metadata_type_2: second valuse that we need to check
+    Check that the given 2 metadata types values are different, it is handy when we expect different timetags / counters and such
+    :param metadata_type_1: first values that we need to check
+    :param metadata_type_2: second values that we need to check
     :param number_frames_to_test: amount frames that we want to test
     :return: true if values are always different
     """
@@ -97,6 +97,7 @@ def is_value_keep_increasing(metadata_value, number_frames_to_test=50) -> bool:
         if prev_metadata_value >= current_value:
             return False
 
+        prev_metadata_value = current_value
         number_frames_to_test -= 1
 
     return True
@@ -129,7 +130,7 @@ for profile, sensor in testing_profiles.items():
         test.check(is_value_keep_increasing(rs.frame_metadata_value.frame_timestamp))
         test.finish()
 
-    # Test #3 Increasing frame timestamp
+    # Test #3 Increasing sensor timestamp
     if is_frame_support_metadata(frame_queue.wait_for_frame(), rs.frame_metadata_value.sensor_timestamp):
         test.start('Verifying increasing sensor timestamp for profile ', profile)
         test.check(is_value_keep_increasing(rs.frame_metadata_value.sensor_timestamp))
@@ -139,7 +140,7 @@ for profile, sensor in testing_profiles.items():
         camera_name = device.get_info(rs.camera_info.name)
         if 'D457' not in camera_name:
             test.start('Verifying sensor timestamp is different than frame timestamp for profile ', profile)
-            test.check(is_metadata_values_different(rs.frame_metadata_value.frame_timestamp, rs.frame_metadata_value.sensor_timestamp))
+            test.check(are_metadata_values_different(rs.frame_metadata_value.frame_timestamp, rs.frame_metadata_value.sensor_timestamp))
             test.finish()
 
     close_resources(sensor)
