@@ -4,7 +4,7 @@
 #include "rs-dds-sensor-proxy.h"
 #include "rs-dds-option.h"
 
-#include <src/device.h>
+#include <src/software-device.h>
 
 #include <realdds/dds-device.h>
 #include <realdds/dds-time.h>
@@ -35,6 +35,12 @@ dds_sensor_proxy::dds_sensor_proxy( std::string const & sensor_name,
     , _name( sensor_name )
     , _md_enabled( dev->supports_metadata() )
 {
+    rsutils::json const & settings = owner->get_context()->get_settings();
+    if( auto interval_j = settings.nested( std::string( "options-update-interval", 23 ) ) )
+    {
+        auto interval = interval_j.get< uint32_t >();  // NOTE: can throw!
+        _options_watcher.set_update_interval( std::chrono::milliseconds( interval ) );
+    }
 }
 
 
@@ -153,6 +159,12 @@ void dds_sensor_proxy::register_basic_converters()
 
     // Confidence
     _formats_converter.register_converter( processing_block_factory::create_id_pbf( RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE ) );
+}
+
+
+rsutils::subscription dds_sensor_proxy::register_options_changed_callback( options_watcher::callback && cb )
+{
+    return _options_watcher.subscribe( std::move( cb ) );
 }
 
 
@@ -536,6 +548,7 @@ void dds_sensor_proxy::add_option( std::shared_ptr< realdds::dds_option > option
         [=]( const std::string & name, float value ) { _dev->set_option_value( option, value ); },
         [=]( const std::string & name ) -> float { return _dev->query_option_value( option ); } );
     register_option( option_id, opt );
+    _options_watcher.register_option( option_id, opt );
 }
 
 

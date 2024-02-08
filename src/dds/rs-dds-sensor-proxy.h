@@ -1,13 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
-
 #pragma once
-
 
 #include "sid_index.h"
 #include <src/frame.h>
 #include <src/software-sensor.h>
 #include <src/proc/formats-converter.h>
+#include <src/core/options-watcher.h>
 
 #include <realdds/dds-metadata-syncer.h>
 
@@ -42,6 +41,7 @@ class dds_sensor_proxy : public software_sensor
     std::shared_ptr< realdds::dds_device > const _dev;
     std::string const _name;
     bool const _md_enabled;
+    options_watcher _options_watcher;
 
     typedef realdds::dds_metadata_syncer syncer_type;
     static void frame_releaser( syncer_type::frame_type * f ) { static_cast< frame * >( f )->release(); }
@@ -79,6 +79,10 @@ public:
     void add_processing_block( std::string const & filter_name );
 
     const std::map< sid_index, std::shared_ptr< realdds::dds_stream > > & streams() const { return _streams; }
+
+    // sensor_interface
+public:
+    rsutils::subscription register_options_changed_callback( options_watcher::callback && ) override;
 
 protected:
     void register_basic_converters();
