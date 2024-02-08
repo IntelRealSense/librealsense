@@ -1226,7 +1226,7 @@ void frame_drops_dashboard::clear(bool full)
 }
 
 void accel_dashboard::draw(ux_window& win, rect r) {
-    auto accel_hist = read_shared_data< std::deque< int > >( [&]() { return accel_history; } );
+    auto accel_hist = read_shared_data< std::deque< float > >( [&]() { return x_history; } );
     for( int i = 0; i < accel_hist.size(); i++ )
     {
         add_point( (float)i, (float)accel_hist[i] );
@@ -1236,13 +1236,19 @@ void accel_dashboard::draw(ux_window& win, rect r) {
 
     ImGui::SetCursorPosX( ImGui::GetCursorPosX() + 40 );
     ImGui::SetCursorPosY( ImGui::GetCursorPosY() + 3 );
-    ImGui::Text( "%s", "Measurement Metric:" );
-    ImGui::SameLine();
-    ImGui::SetCursorPosY( ImGui::GetCursorPosY() - 3 );
+    //ImGui::Text( "%s", "Measurement Metric:" );
+    //ImGui::SameLine();
+    //ImGui::SetCursorPosY( ImGui::GetCursorPosY() - 3 );
 
-    ImGui::SetCursorPosX( 11.5f * win.get_font_size() );
+    //ImGui::SetCursorPosX( 11.5f * win.get_font_size() );
+
+    draw_x_line();
+    
+    
+    // TODO add 3-4 check boxes
 }
 
+// Done
 int accel_dashboard::get_height() const {
     return (int)( 160 + ImGui::GetTextLineHeightWithSpacing() );
 }
@@ -1253,14 +1259,52 @@ void accel_dashboard::clear( bool full ) {
         {
             if( full )
             {
-                accel_history.clear();
+                x_history.clear();
 
                 for( int i = 0; i < 100; i++ ) // What it do?
-                    accel_history.push_back( 0 );
+                    x_history.push_back( 0 );
             }
         } );
 }
 
 void accel_dashboard::process_frame( rs2::frame f ) {
+    write_shared_data(
+        [&]() {
+            double ts = glfwGetTime();
+            auto it = x_to_time.find( f.get_profile().unique_id() );
 
+            if( f.is< rs2::motion_frame >() )
+            {
+                // X data
+                if( it != x_to_time.end() )
+                {
+                    auto last = x_to_time[f.get_profile().unique_id()];
+
+                    rs2::motion_frame accel_frame = f.as< rs2::motion_frame >();
+                    rs2_vector accel_data = accel_frame.get_motion_data();
+                    x_value = accel_data.x;
+                    //counter++ Why I need counter?
+
+
+                }
+
+                if( ts - last_time > 1.f )
+                {
+                    if( x_history.size() > 100 )
+                        x_history.pop_front();
+
+                    x_history.push_back( x_value );
+                    last_time = ts;
+
+                }
+
+                x_to_time[f.get_profile().unique_id()] = ts;
+            }
+
+        } );
+}
+
+bool accel_dashboard::draw_x_line() {
+    ImGui::Checkbox( "Show X line", &show_x_line );
+    return show_x_line;
 }

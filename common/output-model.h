@@ -118,30 +118,39 @@ namespace rs2
     public:
         // Constructor
         accel_dashboard( std::string name )
-            : stream_dashboard( name, 30)
+            : stream_dashboard( name, 30), last_time( glfwGetTime() )
+            , x_value( 0 )
         {
-            x = y = z = accel = 0;
             clear( true );
         }
 
         // Functions
         void process_frame( rs2::frame f ) override;
-        // Draw graph line
+
+        // Draw Accelerate dashboard and choose graph's lines
         void draw( ux_window & window, rect rectangle ) override;
         int get_height() const override;
 
+        bool draw_x_line();
         void clear( bool full ) override;
-
     private:
-        float x;
+        float x_value;
         float y;
         float z;
-        float accel;
+        //float accel_value;
 
-        std::deque< int > x_history;
-        std::deque< int > y_history;
-        std::deque< int > z_history;
-        std::deque< int > accel_history;
+        double last_time;
+
+        bool show_x_line = true;
+        //bool show_accel_line = true;
+
+        std::deque< float > x_history;
+        std::map< float, double > x_to_time;
+        //std::deque< int > y_history;
+        //std::deque< int > z_history;
+
+        //std::deque< int > accel_history;
+        //std::map< int, double > accel_to_time;
     };
 
     class output_model
