@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 ######################################
 # This set of tests is valid for any device that supports the HDR feature #
@@ -239,9 +239,11 @@ def check_hdr_frame_counter(pipe, num_of_frames, merging_filter):
             log.e("Frame metadata not supported")
             return False
 
-        depth_seq_id = depth_frame.get_frame_metadata(rs.frame_metadata_value.sequence_id)
         depth_counter = depth_frame.get_frame_metadata(rs.frame_metadata_value.frame_counter)
-        depth_ts = depth_frame.get_frame_metadata(rs.frame_metadata_value.frame_timestamp)
+
+        if depth_counter < min_counter:  # in case of frame counter reset during stream this might happen
+            log.e("Frame counter reset!")
+            min_counter_set = False
 
         if not min_counter_set:
             min_counter = int(depth_counter)
@@ -257,9 +259,9 @@ def check_hdr_frame_counter(pipe, num_of_frames, merging_filter):
 
         hdr_counter = merged_frame.get_frame_metadata(rs.frame_metadata_value.frame_counter)
         hdr_ts = merged_frame.get_frame_metadata(rs.frame_metadata_value.frame_timestamp)
-        test.check(hdr_counter >= min_counter)
         if min_counter > hdr_counter:
-            log.e("min:",min_counter, "hdr:",hdr_counter)
+            log.e("min:", min_counter, "hdr:", hdr_counter)
+        test.check(hdr_counter >= min_counter)
     return True
 
 
@@ -329,29 +331,35 @@ with test.closure("HDR Streaming - checking sequence id", "[hdr][live][using_pip
                 test.check(depth_sensor.get_option(rs.option.hdr_enabled) == 1)
 
                 sequence_id = -1
-                iterations_for_preparation = 6
-                for iteration in range(1, 50):  # Application still alive?
+                iterations_for_preparation = 30
+                prev_frame_counter = -1
+                checks_ok = 0
+                while checks_ok < 50:
                     data = pipe.wait_for_frames()
-
-                    if iteration < iterations_for_preparation:
+                    iterations_for_preparation -= 1
+                    if iterations_for_preparation > 0:
                         continue
 
                     depth_frame = data.get_depth_frame()
+                    frame_counter = depth_frame.get_frame_metadata(rs.frame_metadata_value.frame_counter)
                     if depth_frame.supports_frame_metadata(rs.frame_metadata_value.sequence_id):
                         depth_seq_id = depth_frame.get_frame_metadata(rs.frame_metadata_value.sequence_id)
                         ir_frame = data.get_infrared_frame(1)
                         ir_seq_id = ir_frame.get_frame_metadata(rs.frame_metadata_value.sequence_id)
-                        if iteration == iterations_for_preparation:
-                            test.check(depth_seq_id == ir_seq_id)
+                        if frame_counter != prev_frame_counter + 1:  # can only compare sequential frames
                             sequence_id = int(depth_seq_id)
                         else:
                             sequence_id = 1 if sequence_id == 0 else 0
                             if sequence_id != depth_seq_id:
                                 log.e("sequence_id != depth_seq_id")
-                                log.e(f"iteration = {iteration}, iterations_for_preparation = {iterations_for_preparation}")
-
+                                log.e(f"sequence_id = {sequence_id}, depth_seq_id = {depth_seq_id}")
+                                log.e(f"frame_counter = {frame_counter}, prev_frame_counter = {prev_frame_counter}")
+                            else:
+                                checks_ok += 1
                             test.check(sequence_id == depth_seq_id)
                             test.check(sequence_id == ir_seq_id)
+
+                    prev_frame_counter = frame_counter
                 pipe.stop()
                 depth_sensor.set_option(rs.option.hdr_enabled, 0)  # disable hdr before next tests
         else:
@@ -382,26 +390,36 @@ with test.closure("Emitter on/off - checking sequence id", "[hdr][live][using_pi
 
                 # emitter on/off works with PWM (pulse with modulation) in the hardware
                 # this takes some time to configure it
-                iterations_for_preparation = 10
-                for iteration in range(1, 50):  # Application still alive?
+                iterations_for_preparation = 30
+                prev_frame_counter = -1
+                checks_ok = 0
+                while checks_ok < 50:  # Application still alive?
                     data = pipe.wait_for_frames()
-
-                    if iteration < iterations_for_preparation:
+                    iterations_for_preparation -= 1
+                    if iterations_for_preparation > 0:
                         continue
 
                     depth_frame = data.get_depth_frame()
+                    frame_counter = depth_frame.get_frame_metadata(rs.frame_metadata_value.frame_counter)
                     if depth_frame.supports_frame_metadata(rs.frame_metadata_value.sequence_id):
                         depth_seq_id = depth_frame.get_frame_metadata(rs.frame_metadata_value.sequence_id)
                         ir_frame = data.get_infrared_frame(1)
                         ir_seq_id = ir_frame.get_frame_metadata(rs.frame_metadata_value.sequence_id)
 
-                        if iteration == iterations_for_preparation:
-                            test.check(depth_seq_id == ir_seq_id)
+                        if frame_counter != prev_frame_counter + 1:  # can only compare sequential frames
                             sequence_id = int(depth_seq_id)
                         else:
                             sequence_id = 1 if sequence_id == 0 else 0
+                            if sequence_id != depth_seq_id:
+                                log.e("sequence_id != depth_seq_id")
+                                log.e(f"sequence_id = {sequence_id}, depth_seq_id = {depth_seq_id}")
+                                log.e(f"frame_counter = {frame_counter}, prev_frame_counter = {prev_frame_counter}")
+                            else:
+                                checks_ok += 1
                             test.check(sequence_id == depth_seq_id)
                             test.check(sequence_id == ir_seq_id)
+
+                    prev_frame_counter = frame_counter
                 pipe.stop()
                 depth_sensor.set_option(rs.option.emitter_on_off, 0)
         else:
