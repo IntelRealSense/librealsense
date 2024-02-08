@@ -337,7 +337,7 @@ extrinsics_map get_extrinsics_map( const rs2::device & dev )
 }
 
 
-std::shared_ptr< dds_stream_profile > create_dds_stream_profile( std::string const & type_string, rsutils::json const & j )
+std::shared_ptr< dds_stream_profile > create_dds_stream_profile( std::string const & type_string, json const & j )
 {
     if( "motion" == type_string )
         return dds_stream_profile::from_json< dds_motion_stream_profile >( j );
@@ -503,7 +503,7 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
         return query_option( option );
     } );
     _dds_device_server->on_control(
-        [this]( std::string const & id, rsutils::json const & control, rsutils::json & reply )
+        [this]( std::string const & id, json const & control, json & reply )
         { return on_control( id, control, reply ); } );
 
     _device_sn = _rs_dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
@@ -599,7 +599,7 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
     _bridge.on_error(
         [this]( std::string const & error_string )
         {
-            rsutils::json j = rsutils::json::object( {
+            json j = json::object( {
                 { "id", "error" },
                 { "error", error_string },
             } );
@@ -622,7 +622,7 @@ lrs_device_controller::~lrs_device_controller()
 }
 
 
-bool lrs_device_controller::on_open_streams( rsutils::json const & control, rsutils::json & reply )
+bool lrs_device_controller::on_open_streams( json const & control, json & reply )
 {
     // Note that this function is called "start-streaming" but it's really a response to "open-streams" so does not
     // actually start streaming. It simply sets and locks in which streams should be open when streaming starts.
@@ -666,7 +666,7 @@ void lrs_device_controller::publish_frame_metadata( const rs2::frame & f, realdd
     if( ! _dds_device_server->has_metadata_readers() )
         return;
 
-    rsutils::json md_header = rsutils::json::object( {
+    json md_header = json::object( {
         { "frame-number", f.get_frame_number() },               // communicated; up to client to pick up
         { "timestamp", timestamp.to_ns() },                     // syncer key: needs to match the image timestamp, bit-for-bit!
         { "timestamp-domain", f.get_frame_timestamp_domain() }  // needed if we're dealing with different domains!
@@ -674,7 +674,7 @@ void lrs_device_controller::publish_frame_metadata( const rs2::frame & f, realdd
     if( f.is< rs2::depth_frame >() )
         md_header["depth-units"] = f.as< rs2::depth_frame >().get_units();
 
-    rsutils::json metadata = rsutils::json::object();
+    json metadata = json::object();
     for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
     {
         rs2_frame_metadata_value val = static_cast< rs2_frame_metadata_value >( i );
@@ -682,7 +682,7 @@ void lrs_device_controller::publish_frame_metadata( const rs2::frame & f, realdd
             metadata[rs2_frame_metadata_to_string( val )] = f.get_frame_metadata( val );
     }
 
-    rsutils::json md_msg = rsutils::json::object( {
+    json md_msg = json::object( {
         { "stream-name", stream_name_from_rs2( f.get_profile() ) },
         { "header", std::move( md_header ) },
         { "metadata", std::move( metadata ) },
@@ -838,9 +838,9 @@ size_t lrs_device_controller::get_index_of_profile( const realdds::dds_stream_pr
 }
 
 
-bool lrs_device_controller::on_control( std::string const & id, rsutils::json const & control, rsutils::json & reply )
+bool lrs_device_controller::on_control( std::string const & id, json const & control, json & reply )
 {
-    static std::map< std::string, bool ( lrs_device_controller::* )(rsutils::json const &, rsutils::json & ) > const
+    static std::map< std::string, bool ( lrs_device_controller::* )( json const &, json & ) > const
         control_handlers{
             { "hw-reset", &lrs_device_controller::on_hardware_reset },
             { "open-streams", &lrs_device_controller::on_open_streams },
@@ -854,14 +854,14 @@ bool lrs_device_controller::on_control( std::string const & id, rsutils::json co
 }
 
 
-bool lrs_device_controller::on_hardware_reset( rsutils::json const & control, rsutils::json & reply )
+bool lrs_device_controller::on_hardware_reset( json const & control, json & reply )
 {
     _rs_dev.hardware_reset();
     return true;
 }
 
 
-bool lrs_device_controller::on_hwm( rsutils::json const & control, rsutils::json & reply )
+bool lrs_device_controller::on_hwm( json const & control, json & reply )
 {
     rs2::debug_protocol dp( _rs_dev );
     if( ! dp )

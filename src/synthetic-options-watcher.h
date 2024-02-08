@@ -17,7 +17,7 @@ public:
     synthetic_options_watcher( const std::shared_ptr< raw_sensor_base > & raw_sensor );
 
 protected:
-    std::map< rs2_option, std::shared_ptr< option > > update_options() override;
+    options_and_values update_options() override;
 
     std::weak_ptr< raw_sensor_base > _raw_sensor;
 };

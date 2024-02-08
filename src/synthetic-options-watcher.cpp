@@ -14,9 +14,9 @@ synthetic_options_watcher::synthetic_options_watcher( const std::shared_ptr< raw
 {
 }
 
-std::map< rs2_option, std::shared_ptr< option > > synthetic_options_watcher::update_options()
+synthetic_options_watcher::options_and_values synthetic_options_watcher::update_options()
 {
-    std::map< rs2_option, std::shared_ptr< option > > updated_options;
+    options_and_values updated_options;
 
     std::shared_ptr< raw_sensor_base > strong = _raw_sensor.lock();
     if( ! strong )

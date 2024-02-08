@@ -7,22 +7,62 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 void init_options(py::module &m) {
     /** rs_options.hpp **/
 
-    py::class_< rs2::options_list > options_list( m, "options_list" );  // No docstring in C++
-    options_list.def( py::init<>() )
+    // Expose option values as a custom struct rather than 'rs2_option_value*'
+    struct option_value
+    {
+        rs2_option id;
+        py::object value;
+
+        option_value( rs2::option_value const & value_ )
+            : id( value_->id )
+        {
+            if( RS2_OPTION_TYPE_FLOAT == value_->type )
+                value = py::float_( value_->as_float );
+            else if( RS2_OPTION_TYPE_STRING == value_->type )
+                value = py::str( value_->as_string );
+            else if( RS2_OPTION_TYPE_NUMBER == value_->type )
+                value = py::int_( value_->as_number_signed );
+            else
+                value = py::cast< py::none >( Py_None );
+        }
+    };
+    py::class_< option_value >( m, "option_value" )
+        .def_readwrite( "id", &option_value::id )
+        .def_readwrite( "value", &option_value::value )  // None if no value available
+        .def( "__repr__",
+              []( option_value const & self )
+              {
+                  std::ostringstream os;
+                  os << '<' << rs2_option_to_string( self.id );
+                  os << ' ' << py::str( self.value );
+                  os << '>';
+                  return os.str();
+              } );
+    // given an iterator, return an option_value
+    struct option_value_from_iterator
+    {
+        option_value operator()( rs2::options_list::iterator const & it ) { return option_value( *it ); }
+    };
+    py::class_< rs2::options_list >( m, "options_list" )
         .def( "__getitem__",
               []( const rs2::options_list & self, size_t i )
               {
                   if( i >= self.size() )
                       throw py::index_error();
-                  return self[size_t( i )];
+                  return option_value( self[i] );
               } )
         .def( "__len__", &rs2::options_list::size )
-        .def( "size", &rs2::options_list::size )  // No docstring in C++
         .def( "__iter__",
-            []( const rs2::options_list & self ) { return py::make_iterator( self.begin(), self.end() ); },
-            py::keep_alive< 0, 1 >() )
-        .def( "front", &rs2::options_list::front )  // No docstring in C++
-        .def( "back", &rs2::options_list::back );   // No docstring in C++
+              []( const rs2::options_list & self )
+              {
+                  return py::detail::make_iterator_impl< option_value_from_iterator,   // how to access value from iterator
+                                                         py::return_value_policy::reference_internal,  // pybind default
+                                                         rs2::options_list::iterator,  // iterator type
+                                                         rs2::options_list::iterator,  // sentinel (end) type
+                                                         option_value                  // value type
+                                                         >( self.begin(), self.end() );
+              },
+              py::keep_alive< 0, 1 >() );
 
     py::class_<rs2::options> options(m, "options", "Base class for options interface. Should be used via sensor or processing_block."); // No docstring in C++
     options.def("is_option_read_only", &rs2::options::is_option_read_only, "Check if particular option "
