@@ -1271,6 +1271,10 @@ void accel_dashboard::process_frame( rs2::frame f ) {
     write_shared_data(
         [&]() {
             double ts = glfwGetTime();
+
+            if( ! f || ! show_x_line )
+                return;
+
             auto it = x_to_time.find( f.get_profile().unique_id() );
 
             if( f.is< rs2::motion_frame >() )
@@ -1281,11 +1285,7 @@ void accel_dashboard::process_frame( rs2::frame f ) {
                     auto last = x_to_time[f.get_profile().unique_id()];
 
                     rs2::motion_frame accel_frame = f.as< rs2::motion_frame >();
-                    rs2_vector accel_data = accel_frame.get_motion_data();
-                    x_value = accel_data.x;
-                    //counter++ Why I need counter?
-
-
+                    x_value = accel_frame.get_motion_data().x;
                 }
 
                 if( ts - last_time > 1.f )
@@ -1295,12 +1295,10 @@ void accel_dashboard::process_frame( rs2::frame f ) {
 
                     x_history.push_back( x_value );
                     last_time = ts;
-
                 }
 
                 x_to_time[f.get_profile().unique_id()] = ts;
             }
-
         } );
 }
 
