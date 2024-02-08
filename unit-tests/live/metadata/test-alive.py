@@ -135,9 +135,12 @@ for profile, sensor in testing_profiles.items():
         test.check(is_value_keep_increasing(rs.frame_metadata_value.sensor_timestamp))
         test.finish()
 
-        test.start('Verifying sensor timestamp is different than frame timestamp for profile ', profile)
-        test.check(is_metadata_values_different(rs.frame_metadata_value.frame_timestamp, rs.frame_metadata_value.sensor_timestamp))
-        test.finish()
+        # On D457, sensor timestamp == frame timestamp, so we ignore it
+        camera_name = device.get_info(rs.camera_info.name)
+        if 'D457' not in camera_name:
+            test.start('Verifying sensor timestamp is different than frame timestamp for profile ', profile)
+            test.check(is_metadata_values_different(rs.frame_metadata_value.frame_timestamp, rs.frame_metadata_value.sensor_timestamp))
+            test.finish()
 
     close_resources(sensor)
     time.sleep(0.3)  # better sleep before stopping/starting streaming, so we can let the device recover properly.
