@@ -133,6 +133,7 @@ namespace librealsense
                         << rsutils::string::hexdump( device_pid ) << ")" );
                     break;
                 }
+                break;
             case ds::RS405U_PID:
                 default_405u(p);
                 break;

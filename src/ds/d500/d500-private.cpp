@@ -27,13 +27,14 @@ namespace librealsense
                         throw not_implemented_exception(rsutils::string::from() << "USB device "
                             << std::hex << info.pid << ":" << info.vid << std::dec << " is not supported.");
                         break;
-                    }*/
+                    }
 
                     if (found)
                     {
                         devices.erase(it);
                         return true;
                     }
+                    */
                 }
             }
             return false;
