@@ -17,89 +17,87 @@ namespace librealsense
             uint32_t get_timestamp() const;
         };
 
-        rs2_log_severity fw_logs_severity_to_log_severity(int32_t severity);
+        rs2_log_severity d400_fw_logs_severity_to_log_severity(int32_t severity);
 
         static const int BINARY_DATA_SIZE = 20;
 
-        typedef union
+        enum class param_type : uint8_t
         {
-            uint32_t value;
-            struct
-            {
-                uint32_t magic_number : 8;
-                uint32_t severity : 5;
-                uint32_t thread_id : 3;
-                uint32_t file_id : 11;
-                uint32_t group_id : 5;
-            } bits;
-        } fw_log_header_dword1;
-
-        typedef union
-        {
-            uint32_t value;
-            struct
-            {
-                uint32_t event_id : 16;
-                uint32_t line_id : 12;
-                uint32_t seq_id : 4;
-            } bits;
-        } fw_log_header_dword2;
-
-        struct fw_log_header_dword3
-        {
-            uint16_t p1;
-            uint16_t p2;
+            STRING = 1,
+            UINT8 = 2,
+            SINT8 = 3,
+            UINT16 = 4,
+            SINT16 = 5,
+            SINT32 = 6,
+            UINT32 = 7,
+            SINT64 = 8,
+            UINT64 = 9,
+            FLOAT = 10,
+            DOUBLE = 11
         };
 
-        struct fw_log_header_dword4
+        struct param_info
         {
-            uint32_t p3;
-        };
-
-        struct fw_log_header_dword5
-        {
-            uint32_t timestamp;
+            uint16_t offset;  // Offset in the params blob, starting from 0
+            param_type type;  // Built in type, enumerated
+            uint8_t size;
         };
 
         struct fw_log_binary
         {
-            fw_log_header_dword1 dword1;
-            fw_log_header_dword2 dword2;
-            fw_log_header_dword3 dword3;
-            fw_log_header_dword4 dword4;
-            fw_log_header_dword5 dword5;
+            uint32_t magic_number : 8;
+            uint32_t severity : 5;
+            uint32_t source_id : 3;  // SoC ID in D500, thread ID in D400
+            uint32_t file_id : 11;
+            uint32_t module_id : 5;
+            uint32_t event_id : 16;
+            uint32_t line_id : 12;
+            uint32_t seq_id : 4;  // Rolling counter 0-15 per module
         };
 
+        struct legacy_fw_log_binary : public fw_log_binary
+        {
+            uint16_t p1;
+            uint16_t p2;
+            uint32_t p3;
+            uint32_t timestamp;
+        };
+
+        struct extended_fw_log_binary : public fw_log_binary
+        {
+            uint16_t number_of_params;         // Max 32 params
+            uint16_t total_params_size_bytes;  // Max 848 bytes
+            uint64_t soc_timestamp;
+            uint64_t hkr_timestamp;
+            param_info * info;  // param_info array size namber_of_params
+            // uint8_t * params_blob; // Concatenated blob with params data, zero padded.
+        };
+
+        class fw_logs_parser;
 
         class fw_log_data
         {
-        public:
-            uint32_t _magic_number = 0;
-            uint32_t _severity = 0;
-            uint32_t _file_id = 0;
-            uint32_t _group_id = 0;
-            uint32_t _event_id = 0;
+            friend class fw_logs_parser;
+
+            rs2_log_severity _severity = RS2_LOG_SEVERITY_NONE;
             uint32_t _line = 0;
             uint32_t _sequence = 0;
-            uint32_t _p1 = 0;
-            uint32_t _p2 = 0;
-            uint32_t _p3 = 0;
             uint64_t _timestamp = 0;
-            double _delta = 0.0;
-
-            uint32_t _thread_id = 0;
 
             std::string _message = "";
             std::string _file_name = "";
-            std::string _thread_name = "";
+            std::string _source_name = "";
+            std::string _module_name = "";
 
+        public:
             rs2_log_severity get_severity() const;
-            const std::string& get_message() const;
-            const std::string& get_file_name() const;
-            const std::string& get_thread_name() const;
             uint32_t get_line() const;
-            uint32_t get_timestamp() const;
             uint32_t get_sequence_id() const;
+            uint64_t get_timestamp() const;
+            const std::string & get_message() const;
+            const std::string & get_file_name() const;
+            const std::string & get_source_name() const;
+            const std::string & get_module_name() const;
         };
     }
 }

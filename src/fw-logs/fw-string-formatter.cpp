@@ -3,6 +3,8 @@
 
 #include "fw-string-formatter.h"
 #include "fw-logs-formating-options.h"
+
+#include <rsutils/string/from.h>
 #include <rsutils/easylogging/easyloggingpp.h>
 
 #include <regex>
@@ -17,34 +19,35 @@ namespace librealsense
 {
     namespace fw_logs
     {
-        fw_string_formatter::fw_string_formatter(std::unordered_map<std::string, std::vector<kvp>> enums)
+        fw_string_formatter::fw_string_formatter( std::unordered_map< std::string, std::vector< kvp > > enums )
             :_enums(enums)
         {
         }
 
-
-        fw_string_formatter::~fw_string_formatter(void)
-        {
-        }
-
-        bool fw_string_formatter::generate_message(const string& source, size_t num_of_params, const uint32_t* params, string* dest)
+        bool fw_string_formatter::generate_message( const string & source,
+                                                    const std::vector< param_info > & params_info,
+                                                    const std::vector< uint8_t > & params_blob,
+                                                    string * dest )
         {
             map<string, string> exp_replace_map;
             map<string, int> enum_replace_map;
 
-            if (params == nullptr && num_of_params > 0) return false;
+            if( params_info.size() > 0 && params_blob.empty() )
+                return false;
 
-            for (size_t i = 0; i < num_of_params; i++)
+            for( size_t i = 0; i < params_info.size(); i++ )
             {
                 string regular_exp[4];
                 string replacement[4];
                 stringstream st_regular_exp[4];
                 stringstream st_replacement[4];
+                string param_as_string = convert_param_to_string( params_info[i],
+                                                                  params_blob.data() + params_info[i].offset );
 
                 st_regular_exp[0] << "\\{\\b(" << i << ")\\}";
                 regular_exp[0] = st_regular_exp[0].str();
 
-                st_replacement[0] << params[i];
+                st_replacement[0] << param_as_string;
                 replacement[0] = st_replacement[0].str();
 
                 exp_replace_map[regular_exp[0]] = replacement[0];
@@ -53,7 +56,7 @@ namespace librealsense
                 st_regular_exp[1] << "\\{\\b(" << i << "):x\\}";
                 regular_exp[1] = st_regular_exp[1].str();
 
-                st_replacement[1] << hex << setw(2) << setfill('0') << params[i];
+                st_replacement[1] << hex << setw( 2 ) << setfill( '0' ) << param_as_string;
                 replacement[1] = st_replacement[1].str();
 
                 exp_replace_map[regular_exp[1]] = replacement[1];
@@ -76,13 +79,16 @@ namespace librealsense
                 st_regular_exp[3] << "\\{\\b(" << i << "),[a-zA-Z]+\\}";
                 regular_exp[3] = st_regular_exp[3].str();
 
-                enum_replace_map[regular_exp[3]] = params[i];
+                enum_replace_map[regular_exp[3]] = std::stoi( param_as_string ); // enum values are maped by int (kvp)
             }
 
             return replace_params(source, exp_replace_map, enum_replace_map, dest);
         }
 
-        bool fw_string_formatter::replace_params(const string& source, const map<string, string>& exp_replace_map, const map<string, int>& enum_replace_map, string* dest)
+        bool fw_string_formatter::replace_params( const string & source,
+                                                  const map< string, string > & exp_replace_map,
+                                                  const map< string, int > & enum_replace_map,
+                                                  string * dest )
         {
             string source_temp(source);
 
@@ -145,6 +151,39 @@ namespace librealsense
 
             *dest = source_temp;
             return true;
+        }
+
+        std::string fw_string_formatter::convert_param_to_string( const param_info & info, const uint8_t * param_start ) const
+        {
+            switch( info.type )
+            {
+            case param_type::STRING:
+                return std::string( reinterpret_cast< const char * >( param_start ), info.size );
+            case param_type::UINT8:
+                return rsutils::string::from() << *reinterpret_cast< const uint8_t * >( param_start );
+            case param_type::SINT8:
+                return rsutils::string::from() << *reinterpret_cast< const int8_t * >( param_start );
+            case param_type::UINT16:
+                return rsutils::string::from() << *reinterpret_cast< const uint16_t * >( param_start );
+            case param_type::SINT16:
+                return rsutils::string::from() << *reinterpret_cast< const int16_t * >( param_start );
+            case param_type::SINT32:
+                return rsutils::string::from() << *reinterpret_cast< const int32_t * >( param_start );
+            case param_type::UINT32:
+                return rsutils::string::from() << *reinterpret_cast< const uint32_t * >( param_start );
+            case param_type::SINT64:
+                return rsutils::string::from() << *reinterpret_cast< const int64_t * >( param_start );
+            case param_type::UINT64:
+                return rsutils::string::from() << *reinterpret_cast< const uint64_t * >( param_start );
+            case param_type::FLOAT:
+                return rsutils::string::from() << *reinterpret_cast< const float * >( param_start );
+            case param_type::DOUBLE:
+                return rsutils::string::from() << *reinterpret_cast< const double * >( param_start );
+            default:
+                throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                             << "Unsupported parameter type "
+                                                             << static_cast< uint8_t >( info.type ) );
+            }
         }
     }
 }

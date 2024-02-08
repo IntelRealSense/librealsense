@@ -17,7 +17,7 @@ namespace librealsense
     {
         rs2_log_severity fw_log_data::get_severity() const
         {
-            return fw_logs_severity_to_log_severity(_severity);
+            return _severity;
         }
 
         const std::string& fw_log_data::get_message() const
@@ -30,9 +30,14 @@ namespace librealsense
             return _file_name;
         }
 
-        const std::string& fw_log_data::get_thread_name() const
+        const std::string& fw_log_data::get_source_name() const
         {
-            return _thread_name;
+            return _source_name;
+        }
+
+        const std::string & fw_log_data::get_module_name() const
+        {
+            return _module_name;
         }
 
         uint32_t fw_log_data::get_line() const
@@ -40,9 +45,9 @@ namespace librealsense
             return _line;
         }
 
-        uint32_t fw_log_data::get_timestamp() const
+        uint64_t fw_log_data::get_timestamp() const
         {
-            return (uint32_t)_timestamp;
+            return _timestamp;
         }
 
         uint32_t fw_log_data::get_sequence_id() const
@@ -52,17 +57,17 @@ namespace librealsense
 
         rs2_log_severity fw_logs_binary_data::get_severity() const
         {
-            const fw_log_binary* log_binary = reinterpret_cast<const fw_log_binary*>(logs_buffer.data());
-            return fw_logs_severity_to_log_severity(static_cast<int32_t>(log_binary->dword1.bits.severity));
+            const legacy_fw_log_binary * log_binary = reinterpret_cast< const legacy_fw_log_binary * >( logs_buffer.data() );
+            return d400_fw_logs_severity_to_log_severity( static_cast<int32_t>( log_binary->severity ) );
         }
 
         uint32_t fw_logs_binary_data::get_timestamp() const
         {
-            const fw_log_binary* log_binary = reinterpret_cast<const fw_log_binary*>(logs_buffer.data());
-            return static_cast<uint32_t>(log_binary->dword5.timestamp);
+            const legacy_fw_log_binary * log_binary = reinterpret_cast< const legacy_fw_log_binary * >( logs_buffer.data() );
+            return log_binary->timestamp;
         }
 
-        rs2_log_severity fw_logs_severity_to_log_severity(int32_t severity)
+        rs2_log_severity d400_fw_logs_severity_to_log_severity(int32_t severity)
         {
             rs2_log_severity result = RS2_LOG_SEVERITY_NONE;
             switch (severity)

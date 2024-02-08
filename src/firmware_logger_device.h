@@ -58,7 +58,7 @@ namespace librealsense
 
         bool _flash_logs_initialized;
 
-        fw_logs::fw_logs_parser* _parser;
+        std::unique_ptr< fw_logs::fw_logs_parser > _parser;
         uint16_t _device_pid;
 
     };
