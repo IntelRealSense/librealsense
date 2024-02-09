@@ -137,23 +137,6 @@ public:
 };
 
 
-class dds_unsigned_option : public dds_option
-{
-    using super = dds_option;
-
-public:
-    using type = rsutils::json::number_unsigned_t;
-
-    type get_unsigned() const { return get_value().get< type >(); }
-    type get_default_unsigned() const { return super::get_default_value().get< type >(); }
-
-    char const * value_type() const override { return "unsigned"; }
-
-    void check_type( rsutils::json const & ) const override;
-    static type check_unsigned( rsutils::json const & );
-};
-
-
 class dds_string_option : public dds_option
 {
     using super = dds_option;

@@ -19,11 +19,11 @@ with test.closure( 'read-only options' ):
 
 with test.closure( 'r/o options are still settable' ):
     # NOTE: the DDS options do not enforce logic post initialization; they serve only to COMMUNICATE any state and limits
-    test.check_equal( dds.option.from_json( ['1', 0, 'desc'] ).value_type(), "unsigned" )
-    dds.option.from_json( ['1', 0, 'desc'] ).set_value( 20. )  # OK because 20.0 can be expressed as unsigned
+    test.check_equal( dds.option.from_json( ['1', 0, 'desc'] ).value_type(), 'int' )
+    dds.option.from_json( ['1', 0, 'desc'] ).set_value( 20. )  # OK because 20.0 can be expressed as int
     test.check_throws( lambda:
         dds.option.from_json( ['1', 0, 'desc'] ).set_value( 20.5 ),
-        RuntimeError, 'not convertible to an unsigned integer: 20.5' )
+        RuntimeError, 'not convertible to a signed integer: 20.5' )
 
 with test.closure( 'optional (default) value' ):
     test.check_false( dds.option.from_json( ['1', 0, 'desc'] ).is_optional() )
@@ -32,21 +32,21 @@ with test.closure( 'optional (default) value' ):
     dds.option.from_json( ['5', None, 'default-string-value', 'desc', ['optional']] )
 
 with test.closure( 'mixed types' ):
-    test.check_equal( dds.option.from_json( ['i', 0, 'desc'] ).value_type(), 'unsigned' )
-    test.check_equal( dds.option.from_json( ['i', 0, 'desc', ['float']] ).value_type(), 'float' )
+    test.check_equal( dds.option.from_json( ['i', 0, 'desc'] ).value_type(), 'int' )
+    test.check_equal( dds.option.from_json( ['f', 0, 'desc', ['float']] ).value_type(), 'float' )
     test.check_equal( dds.option.from_json( ['1', 0., 0, 1, 1, 0, 'desc'] ).value_type(), 'float' )
     test.check_equal( dds.option.from_json( ['2', 0, 0., 1, 1, 0, 'desc'] ).value_type(), 'float' )
-    test.check_equal( dds.option.from_json( ['3', 0, -1, 4, 1, 0, 'desc'] ).value_type(), 'int' )
-    test.check_throws( lambda:
-        dds.option.from_json( ['3u', 0, -1, 4, 1, 0, 'desc', ['unsigned']] ),
-        RuntimeError, 'not convertible to an unsigned integer: -1' )
-    test.check_equal( dds.option.from_json( ['3f', 3, 1, 5, 1, 2., ''] ).value_type(), 'float' )
-    test.check_equal( dds.option.from_json( ['3f', 3, 1, 5, 1, 2., '', ['int']] ).value_type(), 'int' )
-    test.check_throws( lambda:
+    test.check_equal( dds.option.from_json( ['3', 0, 0, 1., 1, 0, 'desc'] ).value_type(), 'float' )
+    test.check_equal( dds.option.from_json( ['4', 0, 0, 1, 1., 0, 'desc'] ).value_type(), 'float' )
+    test.check_equal( dds.option.from_json( ['5', 0, 0, 1, 1, 0., 'desc'] ).value_type(), 'float' )
+    test.check_equal( dds.option.from_json( ['-1', 0, -1, 4, 1, 0, 'desc'] ).value_type(), 'int' )
+    test.check_equal(           # float, but forced to an int
+        dds.option.from_json( ['3f', 3, 1, 5, 1, 2., '', ['int']] ).value_type(), 'int' )
+    test.check_throws( lambda:  # same, but with an actual float
         dds.option.from_json( ['3f', 3, 1, 5, 1, 2.2, '', ['int']] ),
         RuntimeError, 'not convertible to a signed integer: 2.2' )
 
-    test.check_equal( dds.option.from_json( ["Brightness",0,-64,64,1,0,"UVC image brightness"] ).value_type(), 'int' )
+    test.check_equal( dds.option.from_json( ['Brightness',0,-64,64,1,0,'UVC image brightness'] ).value_type(), 'int' )
 
 with test.closure( 'range' ):
     test.check_throws( lambda:

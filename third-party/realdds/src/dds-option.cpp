@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include <realdds/dds-option.h>
 #include <realdds/dds-exceptions.h>
@@ -183,49 +183,6 @@ static dds_option::option_properties parse_option_properties( json const & j )
 }
 
 
-bool type_from_value( json const & j, std::string & type )
-{
-    switch( j.type() )
-    {
-    case json::value_t::number_float:
-        if( type.length() == 5 && type == "float" )
-            return true;
-        if( type.empty() || type == "int" || type == "unsigned" )
-            return type.assign( "float", 5 ), true;  // float trumps other number typs
-        break;
-    case json::value_t::string:
-        if( type.length() == 6 && type == "string" )
-            return true;
-        if( type.empty() )
-            return type.assign( "string", 6 ), true;
-        break;
-    case json::value_t::number_unsigned:
-        if( type.length() == 8 && type == "unsigned" )
-            return true;
-        if( type.empty() || type == "int" )
-            return type.assign( "unsigned", 8 ), true;  // unsigned trumps integer
-        if( type == "float" )
-            return true;
-        break;
-    case json::value_t::number_integer:
-        if( type.length() == 3 && type == "int" )
-            return true;
-        if( type.empty() )
-            return type.assign( "int", 3 ), true;
-        else if( type == "float" || type == "unsigned" )
-            return true;
-        break;
-    case json::value_t::boolean:
-        if( type.length() == 7 && type == "boolean" )
-            return true;
-        if( type.empty() )
-            return type.assign( "boolean", 7 ), true;
-        break;
-    }
-    return false;
-}
-
-
 template< typename... Rest >
 bool type_from_value( std::string & type, json const & j )
 {
@@ -234,8 +191,8 @@ bool type_from_value( std::string & type, json const & j )
     case json::value_t::number_float:
         if( type.length() == 5 && type == "float" )
             return true;
-        if( type.empty() || type == "int" || type == "unsigned" )
-            return type.assign( "float", 5 ), true;  // float trumps other number typs
+        if( type.empty() || type == "int" )
+            return type.assign( "float", 5 ), true;  // float > int
         break;
 
     case json::value_t::string:
@@ -246,22 +203,11 @@ bool type_from_value( std::string & type, json const & j )
         break;
 
     case json::value_t::number_unsigned:
-        // Numbers are UNSIGNED by default: only if a sign is used will it go to 'integer'.
-        // I.e., 0 is unsigned, -0 is signed.
-        // Float > Integer > Unsigned
-        if( type.length() == 8 && type == "unsigned" )
-            return true;
-        if( type.empty() )
-            return type.assign( "unsigned", 8 ), true;  // unsigned trumps integer
-        if( type == "float" || type == "int" )
-            return true;  // float & integer trump unsigned
-        break;
-
     case json::value_t::number_integer:
-        // Float > Integer > Unsigned
+        // Float > Integer/Unsigned
         if( type.length() == 3 && type == "int" )
             return true;
-        if( type.empty() || type == "unsigned" )
+        if( type.empty() )
             return type.assign( "int", 3 ), true;
         if( type == "float" )
             return true;  // float trumps integer
@@ -313,10 +259,6 @@ static std::string parse_type( json const & j, size_t size, dds_option::option_p
             if( p == "boolean" )
                 return props.erase( p ), p;
             break;
-        case 8:
-            if( p == "unsigned" )
-                return props.erase( p ), p;
-            break;
         case 4:
             if( p == "IPv4" )
                 return props.erase( p ), p;
@@ -343,7 +285,7 @@ static std::string parse_type( json const & j, size_t size, dds_option::option_p
         break;
 
     default:
-        DDS_THROW( runtime_error, "unexected size " << size << " of unsigned option json" );
+        DDS_THROW( runtime_error, "unexected size " << size << " of option json" );
     }
     DDS_THROW( runtime_error, "cannot deduce value type: " << j );
 }
@@ -357,8 +299,6 @@ static std::string parse_type( json const & j, size_t size, dds_option::option_p
         return std::make_shared< dds_string_option >();
     if( type == "int" )
         return std::make_shared< dds_integer_option >();
-    if( type == "unsigned" )
-        return std::make_shared< dds_unsigned_option >();
     //if( type == "boolean" )
     //    return std::make_shared< dds_boolean_option >();
     if( type == "IPv4" )
@@ -509,33 +449,6 @@ void dds_float_option::check_type( json const & value ) const
 void dds_integer_option::check_type( json const & value ) const
 {
     check_integer( value );
-}
-
-
-/*static*/ dds_unsigned_option::type dds_unsigned_option::check_unsigned( json const & value )
-{
-    switch( value.type() )
-    {
-    case json::value_t::number_unsigned:
-        return value.get< type >();
-
-    case json::value_t::number_integer:
-        if( value.get< json::number_integer_t >() < 0 )
-            break;
-        return value.get< type >();
-
-    case json::value_t::number_float:
-        if( value.get< type >() != value.get< json::number_float_t >() )
-            break;
-        return value.get< type >();
-    }
-    DDS_THROW( runtime_error, "not convertible to an unsigned integer: " << value );
-}
-
-
-void dds_unsigned_option::check_type( json const & value ) const
-{
-    check_unsigned( value );
 }
 
 
