@@ -2493,7 +2493,7 @@ namespace rs2
         const float left_space = 3.f;
         const float upper_space = 3.f;
 
-        bool update_read_only_options = _update_readonly_options_timer;
+        bool update_read_only_options = false; // _update_readonly_options_timer;
 
         const ImVec2 initial_screen_pos = ImGui::GetCursorScreenPos();
         //Upper Space
