@@ -56,7 +56,7 @@ namespace librealsense
 
                 st_regular_exp[2] << "\\{\\b(" << i << "):f\\}";
                 regular_exp[2] = st_regular_exp[2].str();
-                st_replacement[2] << params[i];
+                st_replacement[2] << *reinterpret_cast< const float * >( &params[i] ); // Parse as 4 raw bytes of float
                 replacement[2] = st_replacement[2].str();
                 exp_replace_map[regular_exp[2]] = replacement[2];
 
