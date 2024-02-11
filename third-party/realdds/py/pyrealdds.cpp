@@ -659,31 +659,6 @@ PYBIND11_MODULE(NAME, m) {
                   return os.str();
               } );
 
-    // TODO remove
-    struct json_w
-    {
-        json j;
-    };
-    py::class_< json_w >( m, "json" )
-        .def( py::init<>() )
-        .def( py::init< json const & >() )
-        .def_static( "parse",
-                     []( std::string const & s ) {  //
-                         return json_w{ json::parse( s ) };
-                     } )
-        .def_readwrite( "j", &json_w::j )
-        .def( "type", []( json_w const & self ) { return (int) self.j.type(); } )
-        .def( "type_name", []( json_w const & self ) { return self.j.type_name(); } )
-        .def( "size", []( json_w const & self ) { return self.j.size(); } )
-        .def( "empty", []( json_w const & self ) { return self.j.empty(); } )
-        .def( "__repr__",
-              []( json_w const & self )
-              {
-                  std::ostringstream os;
-                  os << self.j;
-                  return os.str();
-              } );
-
     using realdds::dds_video_encoding;
     py::class_< dds_video_encoding > video_encoding( m, "video_encoding" );
     video_encoding  //

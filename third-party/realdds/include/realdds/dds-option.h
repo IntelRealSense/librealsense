@@ -17,18 +17,19 @@ namespace realdds {
 class dds_stream_base;
 
 
-// Abstract base class for all option types
+// Abstract base class for all options.
+// Derivations specialize the TYPE of the option value: float, int, string, etc...
 // 
 // Options values can be:
-//      - Read-only: No default value or range
+//      - Read-only: No default value or range (implicit if no default is present)
 //      - Optional: A 'null' value is accepted, meaning no value is set
 // 
 // An option is meant to be expressed in JSON, and can be created from it:
-//      - R/O options    [name, value,                    description, [properties]]
-//      - Simple options [name, value,           default, description, [properties]]
-//      - Ranged options [name, value, range..., default, description, [properties]]
+//      - R/O options    [name, value,                    description, [properties...]]
+//      - Simple options [name, value,           default, description, [properties...]]
+//      - Ranged options [name, value, range..., default, description, [properties...]]
 // Where range... is one or more parameters that describe the range.
-// The value (and default) must adhere to the range (if not null).
+// The value and default value must adhere to the range (if not null). A range requires a default value.
 //
 class dds_option
 {
@@ -43,8 +44,8 @@ protected:
     std::string _description;
     unsigned _flags;  // from the properties
 
-    rsutils::json _j;
-    rsutils::json _default_j;
+    rsutils::json _value;
+    rsutils::json _default_value;
 
     rsutils::json _minimum_value;
     rsutils::json _maximum_value;
@@ -60,12 +61,12 @@ public:
 
     dds_option();
 
-    // These init functions must happen before the first set_value()
-    void init( std::string name, std::string description );
-    void init_default_value( rsutils::json );  
-    void init_range( rsutils::json const & min, rsutils::json const & max, rsutils::json const & step );
-    void init_properties( option_properties && );
-    void init_value( rsutils::json );
+    // These init functions must happen before the first set_value(), and should be called in order:
+    virtual void init( std::string name, std::string description );
+    virtual void init_properties( option_properties && );
+    virtual void init_default_value( rsutils::json );
+    virtual void init_range( rsutils::json const & min, rsutils::json const & max, rsutils::json const & step );
+    virtual void init_value( rsutils::json );
 
     bool is_read_only() const { return _flags & flag::read_only; }
     bool is_optional() const { return _flags & flag::optional; }
@@ -77,7 +78,7 @@ public:
 
     std::shared_ptr< dds_stream_base > stream() const { return _stream.lock(); }
 
-    rsutils::json const & get_value() const { return _j; }
+    rsutils::json const & get_value() const { return _value; }
     bool is_valid() const { return ! get_value().is_null(); }
 
     rsutils::json const & get_minimum_value() const { return _minimum_value; }
@@ -88,7 +89,7 @@ public:
     virtual void check_value( rsutils::json & ) const;
     virtual void check_type( rsutils::json const & ) const = 0;
 
-    rsutils::json const & get_default_value() const { return _default_j; }
+    rsutils::json const & get_default_value() const { return _default_value; }
     bool is_default_valid() const { return ! get_default_value().is_null(); }
 
     virtual rsutils::json to_json() const;

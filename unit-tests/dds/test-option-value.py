@@ -16,6 +16,9 @@ with test.closure( 'read-only options' ):
     test.check_equal_lists( dds.option.from_json(  # default==min==max, step==0 -> read-only!
         ['Stereo Baseline',50.20994567871094,50.20994567871094,50.20994567871094,0.0,50.20994567871094,'...',['read-only']] ).to_json(),
         ['Stereo Baseline',50.20994567871094,'...'] )
+    test.check_equal(  # 1.1 => 1.10000002 as float, => 1.1000000000000001 as double
+        dds.option.from_json( ['a', 1.1, 'desc'] ).get_value(),
+        1.1 )
 
 with test.closure( 'r/o options are still settable' ):
     # NOTE: the DDS options do not enforce logic post initialization; they serve only to COMMUNICATE any state and limits
@@ -29,7 +32,11 @@ with test.closure( 'optional (default) value' ):
     test.check_false( dds.option.from_json( ['1', 0, 'desc'] ).is_optional() )
     test.check( dds.option.from_json( ['Asic Temperature',None,-40.0,125.0,0.0,0.0,'Current Asic Temperature (degree celsius)',['optional','read-only']] ).is_optional() )
     dds.option.from_json( ['4', 'string-value', None, 'desc', ['optional']] )
-    dds.option.from_json( ['5', None, 'default-string-value', 'desc', ['optional']] )
+    dds.option.from_json( ['5', None, 'default-string-value', 'desc', ['optional']] )  # string type is deduced
+    test.check_throws( lambda:
+        dds.option.from_json( ['a', None, 'desc', ['optional']] ),
+        RuntimeError, 'cannot deduce value type: ["a",null,"desc",["optional"]]' )
+
 
 with test.closure( 'mixed types' ):
     test.check_equal( dds.option.from_json( ['i', 0, 'desc'] ).value_type(), 'int' )
@@ -46,6 +53,13 @@ with test.closure( 'mixed types' ):
         dds.option.from_json( ['3f', 3, 1, 5, 1, 2.2, '', ['int']] ),
         RuntimeError, 'not convertible to a signed integer: 2.2' )
 
+    dds.option.from_json( ['a', 9223372036854775807, 'desc'] )       # max int64
+    test.check_throws( lambda:
+        dds.option.from_json( ['a', 9223372036854775808, 'desc'] ),  # uint64
+        RuntimeError, 'not convertible to a signed integer: 9223372036854775808' )
+    dds.option.from_json( ['a', -9223372036854775808, 'desc'] )    # min int64
+    # -9223372036854775809 cannot be converted to json
+
     test.check_equal( dds.option.from_json( ['Brightness',0,-64,64,1,0,'UVC image brightness'] ).value_type(), 'int' )
 
 with test.closure( 'range' ):
@@ -61,6 +75,42 @@ with test.closure( 'range' ):
     dds.option.from_json( ['3', -1, -2, 2, 1, 0, ''] )
     dds.option.from_json( ['Backlight Compensation', 0, 0, 1, 1, 0, 'Backlight custom description'] )
     dds.option.from_json( ['Custom Option', 5., -10, 10, 1, -5., 'Description'] )
+
+with test.closure( 'IP address' ):
+    dds.option.from_json( ['ip', None, 'desc', ['IPv4', 'optional']] )
+    test.check_throws( lambda:
+        dds.option.from_json( ['ip', '', 'desc', ['IPv4']] ),
+        RuntimeError, 'not an IP address: ""' )
+    dds.option.from_json( ['ip', '0.0.0.0', 'desc', ['IPv4']] )
+    dds.option.from_json( ['ip', '255.255.255.255', 'desc', ['IPv4']] )
+    test.check_throws( lambda:
+        dds.option.from_json( ['ip', '255.255.255.256', 'desc', ['IPv4']] ),
+        RuntimeError, 'not an IP address: "255.255.255.256"' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['ip', '255.255.256.255', 'desc', ['IPv4']] ),
+        RuntimeError, 'not an IP address: "255.255.256.255"' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['ip', '255.256.255.255', 'desc', ['IPv4']] ),
+        RuntimeError, 'not an IP address: "255.256.255.255"' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['ip', '256.255.255.255', 'desc', ['IPv4']] ),
+        RuntimeError, 'not an IP address: "256.255.255.255"' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['ip', '1.2.3.4a', 'desc', ['IPv4']] ),
+        RuntimeError, 'not an IP address: "1.2.3.4a"' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['ip', '1.2.3.4.', 'desc', ['IPv4']] ),
+        RuntimeError, 'not an IP address: "1.2.3.4."' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['ip', '1.2..4', 'desc', ['IPv4']] ),
+        RuntimeError, 'not an IP address: "1.2..4"' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['ip', '1.2.3.', 'desc', ['IPv4']] ),
+        RuntimeError, 'not an IP address: "1.2.3."' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['ip', '1.2.3', 'desc', ['IPv4']] ),
+        RuntimeError, 'not an IP address: "1.2.3"' )
+
 
 #############################################################################################
 test.print_results()

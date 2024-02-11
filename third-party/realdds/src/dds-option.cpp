@@ -13,8 +13,8 @@ namespace realdds {
 
 dds_option::dds_option()
     : _flags( 0 )
-    , _j( rsutils::missing_json )
-    , _default_j( rsutils::missing_json )
+    , _value( rsutils::missing_json )
+    , _default_value( rsutils::missing_json )
     , _minimum_value( rsutils::null_json )
     , _maximum_value( rsutils::null_json )
     , _stepping( rsutils::null_json )
@@ -24,7 +24,7 @@ dds_option::dds_option()
 
 void dds_option::verify_uninitialized() const
 {
-    if( _j.exists() )
+    if( _value.exists() )
         DDS_THROW( runtime_error, "option is already initialized" );
 }
 
@@ -52,7 +52,7 @@ void dds_option::init_properties( option_properties && props )
     if( props.erase( "optional" ) )
         _flags |= flag::optional;
 
-    if( !props.empty() )
+    if( ! props.empty() )
         DDS_THROW( runtime_error, "invalid option properties" );
 }
 
@@ -62,7 +62,7 @@ void dds_option::init_default_value( json value )
     verify_uninitialized();
 
     check_value( value );
-    _default_j = std::move( value );
+    _default_value = std::move( value );
 }
 
 
@@ -81,7 +81,7 @@ void dds_option::init_range( rsutils::json const & minimum_value,
     {
         // This is read-only...!
         _flags |= flag::read_only;
-        _default_j = rsutils::missing_json;
+        _default_value = rsutils::missing_json;
         return;
     }
 
@@ -130,7 +130,7 @@ void dds_option::init_value( json value )
     if( ! get_default_value().exists() )
         _flags |= (unsigned) flag::read_only;
 
-    _j = std::move( value );
+    _value = std::move( value );
 }
 
 
@@ -148,7 +148,7 @@ void dds_option::init_stream( std::shared_ptr< dds_stream_base > const & stream 
 void dds_option::set_value( rsutils::json value )
 {
     check_value( value );
-    _j = std::move( value );
+    _value = std::move( value );
 }
 
 
@@ -410,12 +410,15 @@ json dds_option::props_to_json() const
 {
     try
     {
+        // 1.1 is expressed as 1.10000002 as float but 1.1000000000000001 in double...
+        // Really hard to check that we don't lose precision unless we convert back to string which will be rounded
+        // anyway.
         return value.get< type >();
     }
     catch( ... )
     {
-        DDS_THROW( runtime_error, "not convertible to a float: " << value );
     }
+    DDS_THROW( runtime_error, "not convertible to a float: " << value );
 }
 
 
@@ -433,7 +436,7 @@ void dds_float_option::check_type( json const & value ) const
         return value.get< type >();
 
     case json::value_t::number_unsigned:
-        if( value.get< type >() != value.get< json::number_unsigned_t >() )
+        if( value.get< json::number_unsigned_t >() > (uint64_t)std::numeric_limits< type >::max() )
             break;
         return value.get< type >();
 
@@ -470,8 +473,7 @@ void dds_string_option::check_type( json const & value ) const
 
 void dds_ip_option::check_type( json const & value ) const
 {
-    if( ! ip_address( value.string_ref() ).is_valid() )
-        DDS_THROW( runtime_error, "not an IP address: " << value );
+    check_ip( value );
 }
 
 
