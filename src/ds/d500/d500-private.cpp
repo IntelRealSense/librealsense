@@ -36,7 +36,6 @@ namespace librealsense
                         devices.erase(it);
                         return true;
                     }
-                    */
                 }
             }
             return false;
