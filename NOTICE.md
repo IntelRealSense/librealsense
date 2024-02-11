@@ -902,7 +902,7 @@ For more information, please refer to <http://unlicense.org>
 
 | Component | Home Page | License| Copyright |
 | ------- | ------- | ------- | ------- |
-| curl | https://github.com/curl/cur | Curl License | Copyright (c) 1996 - 2024, Daniel Stenberg, <daniel@haxx.se> |
+| curl | https://github.com/curl/curl | Curl License | Copyright (c) 1996 - 2024, Daniel Stenberg, <daniel@haxx.se> |
 
 ###### Curl License  
 COPYRIGHT AND PERMISSION NOTICE
