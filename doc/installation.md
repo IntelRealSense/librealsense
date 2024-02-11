@@ -78,7 +78,7 @@ if not the SDK will use a timer polling approach which is less sensitive for dev
    Notice: You can always remove permissions by running: `./scripts/setup_udev_rules.sh --uninstall`
 
 3. Build and apply patched kernel modules for:
-    * Ubuntu 20/22 (focal/jammy) with LTS kernel 5.13, 5.15, 5.19, 6.2 \
+    * Ubuntu 20/22 (focal/jammy) with LTS kernel 5.13, 5.15, 5.19, 6.2, 6.5 \
       `./scripts/patch-realsense-ubuntu-lts-hwe.sh`
     * Ubuntu 18/20 with LTS kernel (< 5.13) \
      `./scripts/patch-realsense-ubuntu-lts.sh`
