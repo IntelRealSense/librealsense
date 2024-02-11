@@ -86,9 +86,39 @@ struct rs2_device_list
     std::vector< std::shared_ptr< librealsense::device_info > > list;
 };
 
+struct rs2_option_value_wrapper : rs2_option_value
+{
+    // Keep the original json value, so we can refer to it (e.g., with as_string)
+    std::shared_ptr< const rsutils::json > p_json;
+
+    // Add a reference count to control lifetime
+    mutable std::atomic< int > ref_count;
+
+    rs2_option_value_wrapper( rs2_option option_id, std::shared_ptr< const rsutils::json > const & p_json_value )
+        : ref_count( 1 )
+        , p_json( p_json_value )
+    {
+        id = option_id;
+        type = RS2_OPTION_TYPE_COUNT;
+        if( p_json )
+        {
+            if( p_json->is_number_float() )
+            {
+                type = RS2_OPTION_TYPE_FLOAT;
+                as_float = p_json->get< float >();
+            }
+            else if( p_json->is_string() )
+            {
+                type = RS2_OPTION_TYPE_STRING;
+                as_string = p_json->string_ref().c_str();
+            }
+        }
+    }
+};
+
 struct rs2_options_list
 {
-    std::vector< rs2_option > list;
+    std::vector< rs2_option_value_wrapper const * > list;
 };
 
 struct rs2_sensor : public rs2_options
@@ -663,15 +693,35 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, options, option)
 float rs2_get_option(const rs2_options* options, rs2_option option, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    VALIDATE_OPTION(options, option);
+    VALIDATE_OPTION_ENABLED(options, option);
     return options->options->get_option(option).query();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0.0f, options, option)
 
+rs2_option_value const * rs2_get_option_value( const rs2_options * options, rs2_option option_id, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( options );
+    VALIDATE_OPTION_ENABLED( options, option_id );
+    auto wrapper = new rs2_option_value_wrapper(
+        option_id,
+        std::make_shared< const rsutils::json >( options->options->get_option( option_id ).query() ) );
+    return wrapper;
+}
+HANDLE_EXCEPTIONS_AND_RETURN( nullptr, options, option_id )
+
+void rs2_delete_option_value( rs2_option_value const * p_value ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( p_value );
+    auto wrapper = static_cast< rs2_option_value_wrapper const * >( p_value );
+    if( wrapper && ! --wrapper->ref_count )
+        delete wrapper;
+}
+NOEXCEPT_RETURN( , p_value )
+
 void rs2_set_option(const rs2_options* options, rs2_option option, float value, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    VALIDATE_OPTION(options, option);
+    VALIDATE_OPTION_ENABLED(options, option);
     auto& option_ref = options->options->get_option(option);
     auto range = option_ref.get_range();
     VALIDATE_RANGE(value, range.min, range.max);
@@ -682,7 +732,15 @@ HANDLE_EXCEPTIONS_AND_RETURN(, options, option, value)
 rs2_options_list* rs2_get_options_list(const rs2_options* options, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    return new rs2_options_list{ options->options->get_supported_options() };
+    auto rs2_list = new rs2_options_list;
+    auto option_ids = options->options->get_supported_options();
+    rs2_list->list.reserve( option_ids.size() );
+    for( auto option_id : option_ids )
+    {
+        auto wrapper = new rs2_option_value_wrapper( option_id, {} );  // empty json
+        rs2_list->list.push_back( wrapper );
+    }
+    return rs2_list;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options)
 
@@ -703,13 +761,24 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, options)
 rs2_option rs2_get_option_from_list(const rs2_options_list* options, int i, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    return options->list[i];
+    return options->list.at( i )->id;
 }
-HANDLE_EXCEPTIONS_AND_RETURN(RS2_OPTION_COUNT, options)
+HANDLE_EXCEPTIONS_AND_RETURN(RS2_OPTION_COUNT, options, i)
+
+rs2_option_value const * rs2_get_option_value_from_list( const rs2_options_list * options, int i, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( options );
+    auto const p_option_value = options->list.at( i );
+    ++p_option_value->ref_count;
+    return p_option_value;
+}
+HANDLE_EXCEPTIONS_AND_RETURN( nullptr, options, i )
 
 void rs2_delete_options_list(rs2_options_list* list) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(list);
+    for( auto wrapper : list->list )
+        rs2_delete_option_value( wrapper );
     delete list;
 }
 NOEXCEPT_RETURN(, list)
@@ -725,7 +794,6 @@ void rs2_get_option_range(const rs2_options* options, rs2_option option,
     float* min, float* max, float* step, float* def, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    VALIDATE_OPTION(options, option);
     VALIDATE_NOT_NULL(min);
     VALIDATE_NOT_NULL(max);
     VALIDATE_NOT_NULL(step);
@@ -1191,7 +1259,6 @@ NOEXCEPT_RETURN(, frame)
 const char* rs2_get_option_description(const rs2_options* options, rs2_option option, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    VALIDATE_OPTION(options, option);
     return options->options->get_option(option).get_description();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options, option)
@@ -1206,10 +1273,20 @@ HANDLE_EXCEPTIONS_AND_RETURN(, frame)
 const char* rs2_get_option_value_description(const rs2_options* options, rs2_option option, float value, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    VALIDATE_OPTION(options, option);
     return options->options->get_option(option).get_value_description(value);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options, option, value)
+
+static void populate_options_list( rs2_options_list * updated_options_list,
+                                   options_watcher::options_and_values const & updated_options )
+{
+    for( auto id_value : updated_options )
+    {
+        options_watcher::option_and_value const & option_and_value = id_value.second;
+        updated_options_list->list.push_back(
+            new rs2_option_value_wrapper( id_value.first, option_and_value.p_last_known_value ) );
+    }
+}
 
 void rs2_set_options_changed_callback( rs2_options * options,
                                        rs2_options_changed_callback_ptr callback,
@@ -1220,11 +1297,10 @@ void rs2_set_options_changed_callback( rs2_options * options,
     auto sens = dynamic_cast< rs2_sensor * >( options );
     VALIDATE_NOT_NULL( sens );
     sens->subscription = sens->sensor->register_options_changed_callback(
-        [callback]( const std::map< rs2_option, std::shared_ptr< option > > & updated_options )
+        [callback]( options_watcher::options_and_values const & updated_options )
         {
             rs2_options_list * updated_options_list = new rs2_options_list(); // Should be on heap if user will choose to save for later use.
-            for( auto option : updated_options )
-                updated_options_list->list.push_back( option.first );
+            populate_options_list( updated_options_list, updated_options );
             callback( updated_options_list );
         } );
 }
@@ -1245,11 +1321,10 @@ void rs2_set_options_changed_callback_cpp( rs2_options * options,
     auto sens = dynamic_cast< rs2_sensor * >( options );
     VALIDATE_NOT_NULL( sens );
     sens->subscription = sens->sensor->register_options_changed_callback(
-        [cb]( const std::map< rs2_option, std::shared_ptr< option > > & updated_options )
+        [cb]( options_watcher::options_and_values const & updated_options )
         {
             rs2_options_list * updated_options_list = new rs2_options_list(); // Should be on heap if user will choose to save for later use.
-            for( auto option : updated_options )
-                updated_options_list->list.push_back( option.first );
+            populate_options_list( updated_options_list, updated_options );
             cb->on_value_changed( updated_options_list );
         } );
 }

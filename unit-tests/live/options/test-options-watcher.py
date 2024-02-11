@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 # test:device D400*
 
@@ -15,10 +15,10 @@ changed_options = 0
 
 def notification_callback( opt_list ):
     global changed_options
-    log.d( "notification_callback called with {} options".format( len( opt_list ) ) )
+    log.d( f"notification_callback called with {len(opt_list)} options" )
     for opt in opt_list:
-        log.d( "    Changed option {}".format( opt ) )
-        if not depth_sensor.is_option_read_only( opt ): # Ignore accidental temperature changes
+        log.d( f"    {opt.id} -> {opt.value}" )
+        if not depth_sensor.is_option_read_only( opt.id ): # Ignore accidental temperature changes
             changed_options = changed_options + 1
 
 depth_sensor.on_options_changed( notification_callback )

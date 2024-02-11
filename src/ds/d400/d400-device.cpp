@@ -322,7 +322,6 @@ namespace librealsense
             case ds::RS400_PID:
             case ds::RS410_PID:
             case ds::RS415_PID:
-            case ds::RS465_PID:
             case ds::RS460_PID:
                 preset_max_value = static_cast<float>(RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN);
                 break;

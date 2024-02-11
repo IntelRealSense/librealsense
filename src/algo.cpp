@@ -543,7 +543,7 @@ void auto_exposure_algorithm::histogram_score(std::vector<int>& h, const int tot
         for (int i = 0; i <= 255; ++i)
         {
             m1 += h[i] * i;
-            m2 += h[i] * sqr(i);
+            m2 += static_cast< int64_t >( h[i] ) * sqr( i );
         }
     }
     else
@@ -551,7 +551,7 @@ void auto_exposure_algorithm::histogram_score(std::vector<int>& h, const int tot
         for (int i = under_exposure_limit + 1; i < over_exposure_limit; ++i)
         {
             m1 += h[i] * i;
-            m2 += h[i] * sqr(i);
+            m2 += static_cast< int64_t >( h[i] ) * sqr( i );
         }
     }
     score.main_mean = (float)((double)m1 / nn);

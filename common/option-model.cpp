@@ -229,7 +229,8 @@ bool option_model::draw_combobox( notifications_model & model,
     std::string txt = rsutils::string::from()
                    << ( use_option_name ? endpoint->get_option_name( opt ) : description ) << ":";
 
-    auto pos_x = ImGui::GetCursorPosX();
+    float text_length = ImGui::CalcTextSize( txt.c_str() ).x;
+    float combo_position_x = ImGui::GetCursorPosX() + text_length + 5;
 
     ImGui::Text( "%s", txt.c_str() );
     if( ImGui::IsItemHovered() && description )
@@ -239,7 +240,7 @@ bool option_model::draw_combobox( notifications_model & model,
 
     ImGui::SameLine();
     if( new_line )
-        ImGui::SetCursorPosX( pos_x + 140 );
+        ImGui::SetCursorPosX( combo_position_x );
 
     ImGui::PushItemWidth( new_line ? -1.f : 100.f );
 
@@ -259,7 +260,7 @@ bool option_model::draw_combobox( notifications_model & model,
     {
         int tmp_selected = selected;
         float tmp_value = value;
-        ImGui::PushItemWidth( 105.f );
+
         if( ImGui::Combo( id.c_str(),
                           &tmp_selected,
                           labels.data(),

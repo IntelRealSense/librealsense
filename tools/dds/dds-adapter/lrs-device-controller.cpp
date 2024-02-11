@@ -14,6 +14,7 @@ using rsutils::string::hexarray;
 #include <realdds/topics/imu-msg.h>
 #include <realdds/topics/ros2/ros2vector3.h>
 #include <realdds/topics/flexible-msg.h>
+#include <realdds/topics/dds-topic-names.h>
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
 
@@ -107,6 +108,21 @@ static std::string stream_name_from_rs2( const rs2::stream_profile & profile )
         break;
     }
     return stream_name;
+}
+
+
+static std::string stream_name_from_rs2( rs2::sensor const & sensor )
+{
+    static std::map< std::string, std::string > sensor_stream_name{
+        { "Stereo Module", rs2_stream_to_string( RS2_STREAM_DEPTH ) },
+        { "RGB Camera", rs2_stream_to_string( RS2_STREAM_COLOR ) },
+        { "Motion Module", "Motion" },
+    };
+
+    auto it = sensor_stream_name.find( sensor.get_info( RS2_CAMERA_INFO_NAME ) );
+    if( it == sensor_stream_name.end() )
+        return {};
+    return it->second;
 }
 
 
@@ -337,7 +353,7 @@ extrinsics_map get_extrinsics_map( const rs2::device & dev )
 }
 
 
-std::shared_ptr< dds_stream_profile > create_dds_stream_profile( std::string const & type_string, rsutils::json const & j )
+std::shared_ptr< dds_stream_profile > create_dds_stream_profile( std::string const & type_string, json const & j )
 {
     if( "motion" == type_string )
         return dds_stream_profile::from_json< dds_motion_stream_profile >( j );
@@ -503,7 +519,7 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
         return query_option( option );
     } );
     _dds_device_server->on_control(
-        [this]( std::string const & id, rsutils::json const & control, rsutils::json & reply )
+        [this]( std::string const & id, json const & control, json & reply )
         { return on_control( id, control, reply ); } );
 
     _device_sn = _rs_dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
@@ -599,7 +615,7 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
     _bridge.on_error(
         [this]( std::string const & error_string )
         {
-            rsutils::json j = rsutils::json::object( {
+            json j = json::object( {
                 { "id", "error" },
                 { "error", error_string },
             } );
@@ -613,6 +629,70 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
 
     // Initialize the DDS device server with the supported streams
     _dds_device_server->init( supported_streams, options, extrinsics );
+
+    for( auto & name_sensor : _rs_sensors )
+    {
+        auto & sensor = name_sensor.second;
+        sensor.on_options_changed(
+            [this, weak_sensor = std::weak_ptr< rs2_sensor >( sensor.get() )]( rs2::options_list const & options )
+            {
+                if( auto strong_sensor = weak_sensor.lock() )
+                {
+                    rs2::sensor sensor( strong_sensor );
+                    json option_values = json::object();
+                    for( auto changed_option : options )
+                    {
+                        std::string const option_name = sensor.get_option_name( changed_option->id );
+                        std::string const stream_name = stream_name_from_rs2( sensor );
+                        if( stream_name.empty() )
+                        {
+                            LOG_ERROR( "Unknown option '" << option_name
+                                                          << "' stream: " << sensor.get_info( RS2_CAMERA_INFO_NAME ) );
+                            continue;
+                        }
+                        auto dds_option = _dds_device_server->find_option( option_name, stream_name );
+                        if( ! dds_option )
+                        {
+                            LOG_ERROR( "Missing option '" << option_name
+                                                          << "' stream: " << sensor.get_info( RS2_CAMERA_INFO_NAME ) );
+                            continue;
+                        }
+                        json value;
+                        switch( changed_option->type )
+                        {
+                        case RS2_OPTION_TYPE_FLOAT:
+                            value = changed_option->as_float;
+                            break;
+                        case RS2_OPTION_TYPE_STRING:
+                            value = changed_option->as_string;
+                            break;
+                        case RS2_OPTION_TYPE_NUMBER:
+                            value = changed_option->as_number_signed;
+                            break;
+                        case RS2_OPTION_TYPE_COUNT:
+                            // No value available
+                            value = rsutils::null_json;
+                            break;
+                        default:
+                            LOG_ERROR( "Unknown option '" << option_name << "' type: "
+                                                          << rs2_option_type_to_string( changed_option->type ) );
+                            continue;
+                        }
+                        dds_option->set_value( std::move( value ) );
+                        option_values[stream_name][option_name] = dds_option->get_value();
+                    }
+                    if( option_values.size() )
+                    {
+                        json j = json::object( {
+                            { realdds::topics::notification::key::id, realdds::topics::reply::query_options::id },
+                            { realdds::topics::reply::query_options::key::option_values, std::move( option_values ) },
+                        } );
+                        LOG_DEBUG( "[" << _dds_device_server->debug_name() << "] options changed: " << j.dump( 4 ) );
+                        _dds_device_server->publish_notification( std::move( j ) );
+                    }
+                }
+            } );
+    }
 }
 
 
@@ -622,7 +702,7 @@ lrs_device_controller::~lrs_device_controller()
 }
 
 
-bool lrs_device_controller::on_open_streams( rsutils::json const & control, rsutils::json & reply )
+bool lrs_device_controller::on_open_streams( json const & control, json & reply )
 {
     // Note that this function is called "start-streaming" but it's really a response to "open-streams" so does not
     // actually start streaming. It simply sets and locks in which streams should be open when streaming starts.
@@ -630,10 +710,10 @@ bool lrs_device_controller::on_open_streams( rsutils::json const & control, rsut
     // out, a sensor is reset back to its default state using implicit stream selection.
     // (For example, the 'Stereo Module' sensor controls Depth, IR1, IR2: but turning on all 3 has performance
     // implications and may not be desirable. So you can open only Depth and IR1/2 will stay inactive...)
-    if( control.nested( "reset" ).default_value( true ) )
+    if( control.nested( topics::control::open_streams::key::reset ).default_value( true ) )
         _bridge.reset();
 
-    auto const & msg_profiles = control["stream-profiles"];
+    auto const & msg_profiles = control[topics::control::open_streams::key::stream_profiles];
     for( auto const & name2profile : msg_profiles.items() )
     {
         std::string const & stream_name = name2profile.key();
@@ -653,7 +733,7 @@ bool lrs_device_controller::on_open_streams( rsutils::json const & control, rsut
     }
 
     // We're here so all the profiles were acceptable; lock them in -- with no implicit profiles!
-    if( control.nested( "commit" ).default_value( true ) )
+    if( control.nested( topics::control::open_streams::key::commit ).default_value( true ) )
         _bridge.commit();
 
     // We don't touch the reply - it's already filled in for us
@@ -666,15 +746,15 @@ void lrs_device_controller::publish_frame_metadata( const rs2::frame & f, realdd
     if( ! _dds_device_server->has_metadata_readers() )
         return;
 
-    rsutils::json md_header = rsutils::json::object( {
-        { "frame-number", f.get_frame_number() },               // communicated; up to client to pick up
-        { "timestamp", timestamp.to_ns() },                     // syncer key: needs to match the image timestamp, bit-for-bit!
-        { "timestamp-domain", f.get_frame_timestamp_domain() }  // needed if we're dealing with different domains!
+    json md_header = json::object( {
+        { topics::metadata::header::key::frame_number, f.get_frame_number() },               // communicated; up to client to pick up
+        { topics::metadata::header::key::timestamp, timestamp.to_ns() },                     // syncer key: needs to match the image timestamp, bit-for-bit!
+        { topics::metadata::header::key::timestamp_domain, f.get_frame_timestamp_domain() }  // needed if we're dealing with different domains!
     } );
     if( f.is< rs2::depth_frame >() )
-        md_header["depth-units"] = f.as< rs2::depth_frame >().get_units();
+        md_header[topics::metadata::header::key::depth_units] = f.as< rs2::depth_frame >().get_units();
 
-    rsutils::json metadata = rsutils::json::object();
+    json metadata = json::object();
     for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
     {
         rs2_frame_metadata_value val = static_cast< rs2_frame_metadata_value >( i );
@@ -682,10 +762,10 @@ void lrs_device_controller::publish_frame_metadata( const rs2::frame & f, realdd
             metadata[rs2_frame_metadata_to_string( val )] = f.get_frame_metadata( val );
     }
 
-    rsutils::json md_msg = rsutils::json::object( {
-        { "stream-name", stream_name_from_rs2( f.get_profile() ) },
-        { "header", std::move( md_header ) },
-        { "metadata", std::move( metadata ) },
+    json md_msg = json::object( {
+        { topics::metadata::key::stream_name, stream_name_from_rs2( f.get_profile() ) },
+        { topics::metadata::key::header, std::move( md_header ) },
+        { topics::metadata::key::metadata, std::move( metadata ) },
     } );
     _dds_device_server->publish_metadata( std::move( md_msg ) );
 }
@@ -838,14 +918,13 @@ size_t lrs_device_controller::get_index_of_profile( const realdds::dds_stream_pr
 }
 
 
-bool lrs_device_controller::on_control( std::string const & id, rsutils::json const & control, rsutils::json & reply )
+bool lrs_device_controller::on_control( std::string const & id, json const & control, json & reply )
 {
-    static std::map< std::string, bool ( lrs_device_controller::* )(rsutils::json const &, rsutils::json & ) > const
-        control_handlers{
-            { "hw-reset", &lrs_device_controller::on_hardware_reset },
-            { "open-streams", &lrs_device_controller::on_open_streams },
-            { "hwm", &lrs_device_controller::on_hwm },
-        };
+    static std::map< std::string, bool ( lrs_device_controller::* )( json const &, json & ) > const control_handlers{
+        { realdds::topics::control::hw_reset::id, &lrs_device_controller::on_hardware_reset },
+        { realdds::topics::control::open_streams::id, &lrs_device_controller::on_open_streams },
+        { realdds::topics::control::hwm::id, &lrs_device_controller::on_hwm },
+    };
     auto it = control_handlers.find( id );
     if( it == control_handlers.end() )
         return false;
@@ -854,14 +933,14 @@ bool lrs_device_controller::on_control( std::string const & id, rsutils::json co
 }
 
 
-bool lrs_device_controller::on_hardware_reset( rsutils::json const & control, rsutils::json & reply )
+bool lrs_device_controller::on_hardware_reset( json const & control, json & reply )
 {
     _rs_dev.hardware_reset();
     return true;
 }
 
 
-bool lrs_device_controller::on_hwm( rsutils::json const & control, rsutils::json & reply )
+bool lrs_device_controller::on_hwm( json const & control, json & reply )
 {
     rs2::debug_protocol dp( _rs_dev );
     if( ! dp )
@@ -870,35 +949,35 @@ bool lrs_device_controller::on_hwm( rsutils::json const & control, rsutils::json
     rsutils::string::hexarray data;
 
     uint32_t opcode;
-    if( control.nested( "opcode" ).get_ex( opcode ) )
+    if( control.nested( topics::control::hwm::key::opcode ).get_ex( opcode ) )
     {
         // In the presence of 'opcode', we're asked to build the command using optional parameters
         uint32_t param1 = 0, param2 = 0, param3 = 0, param4 = 0;
-        control.nested( "param1" ).get_ex( param1 );
-        control.nested( "param2" ).get_ex( param2 );
-        control.nested( "param3" ).get_ex( param3 );
-        control.nested( "param4" ).get_ex( param4 );
+        control.nested( topics::control::hwm::key::param1 ).get_ex( param1 );
+        control.nested( topics::control::hwm::key::param2 ).get_ex( param2 );
+        control.nested( topics::control::hwm::key::param3 ).get_ex( param3 );
+        control.nested( topics::control::hwm::key::param4 ).get_ex( param4 );
 
-        control.nested( "data" ).get_ex( data );  // optional
+        control.nested( topics::control::hwm::key::data ).get_ex( data );  // optional
 
         // Build the HWM command
         data = dp.build_command( opcode, param1, param2, param3, param4, data.get_bytes() );
 
         // And, if told to not actually run it, we return the HWM command
-        if( control.nested( "build-command" ).default_value( false ) )
+        if( control.nested( topics::control::hwm::key::build_command ).default_value( false ) )
         {
-            reply["data"] = data;
+            reply[topics::reply::hwm::key::data] = data;
             return true;
         }
     }
     else
     {
-        if( ! control.nested( "data" ).get_ex( data ) )
+        if( ! control.nested( topics::control::hwm::key::data ).get_ex( data ) )
             throw std::runtime_error( "no 'data' in HWM control" );
     }
 
     data = dp.send_and_receive_raw_data( data.get_bytes() );
-    reply["data"] = data;
+    reply[topics::reply::hwm::key::data] = data;
     return true;
 }
 
