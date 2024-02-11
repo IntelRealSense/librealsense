@@ -691,7 +691,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, options, option)
 float rs2_get_option(const rs2_options* options, rs2_option option, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    VALIDATE_OPTION(options, option);
+    VALIDATE_OPTION_ENABLED(options, option);
     return options->options->get_option(option).query();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0.0f, options, option)
@@ -699,7 +699,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0.0f, options, option)
 rs2_option_value const * rs2_get_option_value( const rs2_options * options, rs2_option option_id, rs2_error ** error ) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL( options );
-    VALIDATE_OPTION( options, option_id );
+    VALIDATE_OPTION_ENABLED( options, option_id );
     auto wrapper = new rs2_option_value_wrapper(
         option_id,
         std::make_shared< const rsutils::json >( options->options->get_option( option_id ).query() ) );
@@ -719,7 +719,7 @@ NOEXCEPT_RETURN( , p_value )
 void rs2_set_option(const rs2_options* options, rs2_option option, float value, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    VALIDATE_OPTION(options, option);
+    VALIDATE_OPTION_ENABLED(options, option);
     auto& option_ref = options->options->get_option(option);
     auto range = option_ref.get_range();
     VALIDATE_RANGE(value, range.min, range.max);
@@ -792,7 +792,6 @@ void rs2_get_option_range(const rs2_options* options, rs2_option option,
     float* min, float* max, float* step, float* def, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    VALIDATE_OPTION(options, option);
     VALIDATE_NOT_NULL(min);
     VALIDATE_NOT_NULL(max);
     VALIDATE_NOT_NULL(step);
@@ -1258,7 +1257,6 @@ NOEXCEPT_RETURN(, frame)
 const char* rs2_get_option_description(const rs2_options* options, rs2_option option, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    VALIDATE_OPTION(options, option);
     return options->options->get_option(option).get_description();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options, option)
@@ -1273,7 +1271,6 @@ HANDLE_EXCEPTIONS_AND_RETURN(, frame)
 const char* rs2_get_option_value_description(const rs2_options* options, rs2_option option, float value, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    VALIDATE_OPTION(options, option);
     return options->options->get_option(option).get_value_description(value);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options, option, value)

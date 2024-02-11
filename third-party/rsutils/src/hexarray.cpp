@@ -48,7 +48,7 @@ void from_json( rsutils::json const & j, hexarray & hexa )
                         } );
     }
     else if( j.is_string() )
-        hexa = hexarray::from_string( j.get< std::string >() );
+        hexa = hexarray::from_string( j.string_ref() );
     else
         throw rsutils::json::type_error::create( 317, "hexarray should be a string", &j );
 }

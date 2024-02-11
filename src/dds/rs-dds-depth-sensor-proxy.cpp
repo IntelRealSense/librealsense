@@ -1,18 +1,16 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include "rs-dds-depth-sensor-proxy.h"
 #include "rs-dds-option.h"
+
+#include <realdds/topics/dds-topic-names.h>
 
 #include <src/librealsense-exception.h>
 #include <rsutils/json.h>
 
 
 namespace librealsense {
-
-
-static const std::string metadata_header_key( "header", 6 );
-static const std::string depth_units_key( "depth-units", 11 );
 
 
 float dds_depth_sensor_proxy::get_depth_scale() const
@@ -40,7 +38,7 @@ void dds_depth_sensor_proxy::add_no_metadata( frame * const f, streaming_impl & 
 
 void dds_depth_sensor_proxy::add_frame_metadata( frame * const f, rsutils::json const & dds_md, streaming_impl & streaming )
 {
-    if( auto du = dds_md.nested( metadata_header_key, depth_units_key ) )
+    if( auto du = dds_md.nested( realdds::topics::metadata::key::header, realdds::topics::metadata::header::key::depth_units ) )
     {
         try
         {

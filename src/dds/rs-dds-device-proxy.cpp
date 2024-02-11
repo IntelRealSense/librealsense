@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include "rs-dds-device-proxy.h"
 #include "rs-dds-color-sensor-proxy.h"
@@ -13,6 +13,7 @@
 
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/flexible-msg.h>
+#include <realdds/topics/dds-topic-names.h>
 
 #include <src/stream.h>
 #include <src/environment.h>
@@ -23,10 +24,6 @@
 
 
 namespace librealsense {
-
-
-// Constants for Json lookups
-static const std::string stream_name_key( "stream-name", 11 );
 
 
 static rs2_stream to_rs2_stream_type( std::string const & type_string )
@@ -299,7 +296,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
         _metadata_subscription = _dds_dev->on_metadata_available(
             [this]( std::shared_ptr< const rsutils::json > const & dds_md )
             {
-                std::string const & stream_name = dds_md->nested( stream_name_key ).string_ref();
+                auto & stream_name = dds_md->nested( realdds::topics::metadata::key::stream_name ).string_ref();
                 auto it = _stream_name_to_owning_sensor.find( stream_name );
                 if( it != _stream_name_to_owning_sensor.end() )
                     it->second->handle_new_metadata( stream_name, dds_md );
