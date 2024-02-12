@@ -103,9 +103,9 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #### LGPL-2.1 license 
 
-| Component | Home Page | License| Copyright |
-| ------- | ------- | ------- | ------- |
-| libusb | https://github.com/ocornut/imgui | LGPL-2.1 license  | Copyright (c) 2014-2024 Omar Cornut |
+| Component | Home Page                        | License          | Copyright                    |
+|-----------|----------------------------------|------------------|------------------------------|
+| libusb    | https://github.com/libusb/libusb | LGPL-2.1 license | Copyright © 2012-2024 libusb |
 
 ###### LGPL-2.1 license 
 		  GNU LESSER GENERAL PUBLIC LICENSE
@@ -902,7 +902,7 @@ For more information, please refer to <http://unlicense.org>
 
 | Component | Home Page | License| Copyright |
 | ------- | ------- | ------- | ------- |
-| curl | https://github.com/curl/cur | Curl License | Copyright (c) 1996 - 2024, Daniel Stenberg, <daniel@haxx.se> |
+| curl | https://github.com/curl/curl | Curl License | Copyright (c) 1996 - 2024, Daniel Stenberg, <daniel@haxx.se> |
 
 ###### Curl License  
 COPYRIGHT AND PERMISSION NOTICE

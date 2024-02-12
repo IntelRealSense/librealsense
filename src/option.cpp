@@ -108,7 +108,7 @@ void gated_by_value_option::set( float requested_option_value )
         auto wanted_gate_value = std::get< 1 >( gate );
         auto current_gate_value = gating_option->query();
         if( current_gate_value != wanted_gate_value )
-            throw std::runtime_error( std::get< 2 >( gate ) );
+            throw librealsense::invalid_value_exception( std::get< 2 >( gate ) );
     }
 
     _proxy->set( requested_option_value );
