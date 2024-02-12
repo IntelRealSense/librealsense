@@ -116,6 +116,7 @@ output_model::output_model() : fw_logger([this](){ thread_loop(); }) , incoming_
             configurations::viewer::search_term, std::string(""));
     is_dashboard_open = config_file::instance().get_or_default(
         configurations::viewer::dashboard_open, true );
+    std::string last_opened_dashboard = config_file::instance().get( configurations::viewer::last_opened_dashboard );
     
     if (search_line != "") search_open = true;
 
@@ -127,7 +128,10 @@ output_model::output_model() : fw_logger([this](){ thread_loop(); }) , incoming_
         return std::make_shared< accel_dashboard >( name );
     };
 
-    auto front = available_dashboards.begin();
+    if( last_opened_dashboard.empty() )
+        last_opened_dashboard = "Frame Drops per Second";
+
+    auto front = available_dashboards.find( last_opened_dashboard );
     dashboards.push_back(front->second(front->first));
 }
 
@@ -707,7 +711,9 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
             const auto new_dashboard_name = "new_dashboard";
             ImGui::SameLine();
-            if (ImGui::Button(u8"\uF0D0 Add Dashboard", ImVec2(-1, 25)))
+
+            std::string last_opened_dashboard = config_file::instance().get( configurations::viewer::last_opened_dashboard );
+            if( last_opened_dashboard.empty() && ImGui::Button( u8"\uF0D0 Add Dashboard", ImVec2( -1, 25 ) ) )
             {
                 ImGui::OpenPopup(new_dashboard_name);
             }
@@ -738,6 +744,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
                         bool selected = false;
                         if (ImGui::Selectable(name.c_str(), &selected))
                         {
+                            config_file::instance().set( configurations::viewer::last_opened_dashboard, kvp.first );
                             dashboards.push_back(kvp.second(kvp.first));
                         }
                     }
@@ -1056,6 +1063,7 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
     if (ImGui::Button(id.c_str(),ImVec2(22,22)))
     {
         close();
+        config_file::instance().set( configurations::viewer::last_opened_dashboard, "" );
     }
     if (ImGui::IsItemHovered())
     {
@@ -1226,29 +1234,51 @@ void frame_drops_dashboard::clear(bool full)
 }
 
 void accel_dashboard::draw(ux_window& win, rect r) {
-    auto accel_hist = read_shared_data< std::deque< float > >( [&]() { return x_history; } );
-    for( int i = 0; i < accel_hist.size(); i++ )
+    if( accel_params[curr_accel_param_position] == "X" )
     {
-        add_point( (float)i, (float)accel_hist[i] );
+        auto x_hist = read_shared_data< std::deque< float > >( [&]() { return x_history; } );
+        for( int i = 0; i < x_hist.size(); i++ )
+        {
+            add_point( (float)i, (float)x_hist[i] );
+        }
     }
+
+    if( accel_params[curr_accel_param_position] == "Y" )
+    {
+        auto y_hist = read_shared_data< std::deque< float > >( [&]() { return y_history; } );
+        for( int i = 0; i < y_hist.size(); i++ )
+        {
+            add_point( (float)i, (float)y_hist[i] );
+        }
+    }
+
+    if( accel_params[curr_accel_param_position] == "Z" )
+    {
+        auto z_hist = read_shared_data< std::deque< float > >( [&]() { return z_history; } );
+        for( int i = 0; i < z_hist.size(); i++ )
+        {
+            add_point( (float)i, (float)z_hist[i] );
+        }
+    }
+
+    if( accel_params[curr_accel_param_position] == "N" )
+    {
+        auto n_hist = read_shared_data< std::deque< float > >( [&]() { return n_history; } );
+        for( int i = 0; i < n_hist.size(); i++ )
+        {
+            add_point( (float)i, (float)n_hist[i] );
+        }
+    }
+
     r.h -= ImGui::GetTextLineHeightWithSpacing() + 10;
     draw_dashboard( win, r );
 
     ImGui::SetCursorPosX( ImGui::GetCursorPosX() + 40 );
     ImGui::SetCursorPosY( ImGui::GetCursorPosY() + 3 );
-    //ImGui::Text( "%s", "Measurement Metric:" );
-    //ImGui::SameLine();
-    //ImGui::SetCursorPosY( ImGui::GetCursorPosY() - 3 );
 
-    //ImGui::SetCursorPosX( 11.5f * win.get_font_size() );
-
-    draw_x_line();
-    
-    
-    // TODO add 3-4 check boxes
+    show_radiobuttons();
 }
 
-// Done
 int accel_dashboard::get_height() const {
     return (int)( 160 + ImGui::GetTextLineHeightWithSpacing() );
 }
@@ -1259,10 +1289,22 @@ void accel_dashboard::clear( bool full ) {
         {
             if( full )
             {
+                const int DEQUE_SIZE = 100;
                 x_history.clear();
-
-                for( int i = 0; i < 100; i++ ) // What it do?
+                for( int i = 0; i < DEQUE_SIZE; i++ )
                     x_history.push_back( 0 );
+
+                y_history.clear();
+                for( int i = 0; i < DEQUE_SIZE; i++ )
+                    y_history.push_back( 0 );
+
+                z_history.clear();
+                for( int i = 0; i < DEQUE_SIZE; i++ )
+                    z_history.push_back( 0 );
+
+                n_history.clear();
+                for( int i = 0; i < DEQUE_SIZE; i++ )
+                    n_history.push_back( 0 );
             }
         } );
 }
@@ -1270,39 +1312,60 @@ void accel_dashboard::clear( bool full ) {
 void accel_dashboard::process_frame( rs2::frame f ) {
     write_shared_data(
         [&]() {
-            double ts = glfwGetTime();
-
-            if( ! f || ! show_x_line )
-                return;
-
-            auto it = x_to_time.find( f.get_profile().unique_id() );
-
-            if( f.is< rs2::motion_frame >() )
+            if( f && f.is< rs2::motion_frame >() )
             {
-                // X data
-                if( it != x_to_time.end() )
-                {
-                    auto last = x_to_time[f.get_profile().unique_id()];
+                double ts = glfwGetTime();
+                auto it = frame_to_time.find( f.get_profile().unique_id() );
 
+                if( ts - last_time > 0.1f && it != frame_to_time.end() )
+                {
                     rs2::motion_frame accel_frame = f.as< rs2::motion_frame >();
-                    x_value = accel_frame.get_motion_data().x;
-                }
 
-                if( ts - last_time > 1.f )
-                {
-                    if( x_history.size() > 100 )
+                    x_value = accel_frame.get_motion_data().x;
+                    y_value = accel_frame.get_motion_data().y;
+                    z_value = accel_frame.get_motion_data().z;
+                    n_value = std::sqrt( ( x_value * x_value ) + ( y_value * y_value ) + ( z_value * z_value ) );
+
+                    const int MAX_DEQUE_SIZE = 100;
+                    if( x_history.size() > MAX_DEQUE_SIZE )
                         x_history.pop_front();
+                    if( y_history.size() > MAX_DEQUE_SIZE )
+                        y_history.pop_front();
+                    if( z_history.size() > MAX_DEQUE_SIZE )
+                        z_history.pop_front();
+                    if( n_history.size() > MAX_DEQUE_SIZE )
+                        n_history.pop_front();
 
                     x_history.push_back( x_value );
+                    y_history.push_back( y_value );
+                    z_history.push_back( z_value );
+                    n_history.push_back( n_value );
+
                     last_time = ts;
                 }
 
-                x_to_time[f.get_profile().unique_id()] = ts;
+                frame_to_time[f.get_profile().unique_id()] = ts;
             }
         } );
 }
 
-bool accel_dashboard::draw_x_line() {
-    ImGui::Checkbox( "Show X line", &show_x_line );
-    return show_x_line;
+void accel_dashboard::show_radiobuttons() {
+    ImGui::PushStyleColor( ImGuiCol_Text, from_rgba( 233, 0, 0, 255, true ) );  
+    ImGui::RadioButton( "X", &curr_accel_param_position, 0 );
+    ImGui::PopStyleColor();
+    ImGui::SameLine();
+
+    ImGui::PushStyleColor( ImGuiCol_Text, from_rgba( 0, 255, 0, 255, true ) );
+    ImGui::RadioButton( "Y", &curr_accel_param_position, 1 );
+    ImGui::PopStyleColor();
+    ImGui::SameLine();
+
+    ImGui::PushStyleColor( ImGuiCol_Text, from_rgba( 85, 89, 245, 255, true ) );
+    ImGui::RadioButton( "Z", &curr_accel_param_position, 2 );
+    ImGui::PopStyleColor();
+    ImGui::SameLine();
+
+    ImGui::PushStyleColor( ImGuiCol_Text, from_rgba( 255, 255, 255, 255, true ) );
+    ImGui::RadioButton( "N", &curr_accel_param_position, 3 );
+    ImGui::PopStyleColor();
 }

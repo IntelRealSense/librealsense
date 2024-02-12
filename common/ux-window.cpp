@@ -72,6 +72,7 @@ namespace rs2
         config_file::instance().set_default(configurations::viewer::metric_system, true);
         config_file::instance().set_default(configurations::viewer::ground_truth_r, 2500);
         config_file::instance().set_default(configurations::viewer::dashboard_open, true);
+        config_file::instance().set_default(configurations::viewer::last_opened_dashboard, "Frame Drops per Second" );
 
         config_file::instance().set_default(configurations::record::compression_mode, 2); // Let the device decide
         config_file::instance().set_default(configurations::record::file_save_mode, 0); // Auto-select name

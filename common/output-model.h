@@ -120,6 +120,9 @@ namespace rs2
         accel_dashboard( std::string name )
             : stream_dashboard( name, 30), last_time( glfwGetTime() )
             , x_value( 0 )
+            , y_value( 0 )
+            , z_value( 0 )
+            , n_value( 0 )
         {
             clear( true );
         }
@@ -130,27 +133,27 @@ namespace rs2
         // Draw Accelerate dashboard and choose graph's lines
         void draw( ux_window & window, rect rectangle ) override;
         int get_height() const override;
-
-        bool draw_x_line();
         void clear( bool full ) override;
+
+        // Show radio buttons for X, Y, Z and N lines
+        void show_radiobuttons();
+
     private:
         float x_value;
-        float y;
-        float z;
-        //float accel_value;
+        float y_value;
+        float z_value;
+        float n_value;  // Norm ||V|| = SQRT(X^2 + Y^2 + Z^2)
 
         double last_time;
+        std::map< float, double > frame_to_time;
 
-        bool show_x_line = true;
-        //bool show_accel_line = true;
+        std::vector< std::string > accel_params = { "X", "Y", "Z", "N" };
+        int curr_accel_param_position = 0;
 
         std::deque< float > x_history;
-        std::map< float, double > x_to_time;
-        //std::deque< int > y_history;
-        //std::deque< int > z_history;
-
-        //std::deque< int > accel_history;
-        //std::map< int, double > accel_to_time;
+        std::deque< float > y_history;
+        std::deque< float > z_history;
+        std::deque< float > n_history;
     };
 
     class output_model
