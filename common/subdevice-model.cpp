@@ -82,12 +82,13 @@ namespace rs2
             {
                 s->on_options_changed( [this]( const options_list & list )
                 {
-                    for( auto opt_id : list )
+                    for( auto changed_option : list )
                     {
-                        auto it = options_metadata.find( opt_id );
+                        auto it = options_metadata.find( changed_option->id );
                         if( it != options_metadata.end() && ! _destructing ) // Callback runs in different context, check options_metadata still valid
                         {
-                            it->second.value = it->second.endpoint->get_option( opt_id );
+                            if( RS2_OPTION_TYPE_FLOAT == changed_option->type )
+                                it->second.value = changed_option->as_float;
                         }
                     }
                 } );
@@ -1027,7 +1028,7 @@ namespace rs2
         };
 
         auto col0 = ImGui::GetCursorPosX();
-        auto col1 = 155.f;
+        auto col1 = 9.f * (float)config_file::instance().get( configurations::window::font_size );
 
         if (ui.is_multiple_resolutions && !strcmp(s->get_info(RS2_CAMERA_INFO_NAME), "Stereo Module"))
         {

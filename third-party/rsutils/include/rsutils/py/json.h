@@ -58,6 +58,17 @@ inline rsutils::json py_to_json( const py::handle & obj )
     
     if( py::isinstance< py::int_ >( obj ) )
     {
+        // NOTE: JSON RFC 8259 section 6 describes number formats, without 'signed' vs 'unsigned' distinctions:
+        //     https://json.nlohmann.me/features/types/number_handling/
+        // When parsing text, Nlohmann's JSON chooses 'unsigned' by default! See lexer.hpp (scan_number()).
+        // So we match here (and diverge from the default pybind11_json handling!):
+        try
+        {
+            rsutils::json::number_unsigned_t u = obj.cast< rsutils::json::number_unsigned_t >();
+            if( py::int_( u ).equal( obj ) )
+                return u;
+        }
+        catch( ... ) {}
         try
         {
             rsutils::json::number_integer_t s = obj.cast< rsutils::json::number_integer_t >();
@@ -65,13 +76,6 @@ inline rsutils::json py_to_json( const py::handle & obj )
                 return s;
         }
         catch( ... ) {}
-        try
-        {
-            rsutils::json::number_unsigned_t u = obj.cast< rsutils::json::number_unsigned_t >();
-            if( py::int_( u ).equal( obj ) )
-                return u;
-        }
-        catch( ... ) { }
         throw std::runtime_error( "py_to_json received out-of-range for both number_integer_t and number_unsigned_t: "
                                   + py::repr( obj ).cast< std::string >() );
     }

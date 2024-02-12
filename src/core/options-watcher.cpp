@@ -1,9 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
-
 #include <src/core/options-watcher.h>
 #include <proc/synthetic-stream.h>
+#include <rsutils/json.h>
+
+using rsutils::json;
 
 
 namespace librealsense {
@@ -23,11 +25,9 @@ options_watcher::~options_watcher()
 
 void options_watcher::register_option( rs2_option id, std::shared_ptr< option > option )
 {
-    registered_option opt = { option, 0.0f }; //Option actual value will be queried in start if needed.
-
     {
         std::lock_guard< std::mutex > lock( _mutex );
-        _options[id] = std::move( opt );
+        _options[id] = { option };
     }
 
     if( should_start() )
@@ -106,7 +106,7 @@ void options_watcher::thread_loop()
         if( should_stop() )
             break;
 
-        std::map< rs2_option, std::shared_ptr< option > > updated_options = update_options();
+        auto updated_options = update_options();
 
         // Checking stop conditions after update, if stop requested no need to notify.
         if( should_stop() )
@@ -116,9 +116,9 @@ void options_watcher::thread_loop()
     }
 }
 
-std::map< rs2_option, std::shared_ptr< option > > options_watcher::update_options()
+options_watcher::options_and_values options_watcher::update_options()
 {
-    std::map< rs2_option, std::shared_ptr< option > > updated_options;
+    options_and_values updated_options;
 
     std::lock_guard< std::mutex > lock( _mutex );
 
@@ -129,12 +129,12 @@ std::map< rs2_option, std::shared_ptr< option > > options_watcher::update_option
     {
         try
         {
-            auto curr_val = opt.second.sptr->query();
+            json curr_val = opt.second.sptr->query();
 
-            if( opt.second.last_known_value != curr_val )
+            if( ! opt.second.p_last_known_value || *opt.second.p_last_known_value != curr_val )
             {
-                opt.second.last_known_value = curr_val;
-                updated_options[opt.first] = opt.second.sptr;
+                opt.second.p_last_known_value = std::make_shared< const json >( std::move( curr_val ) );
+                updated_options[opt.first] = opt.second;
             }
         }
         catch( ... )
@@ -150,7 +150,7 @@ std::map< rs2_option, std::shared_ptr< option > > options_watcher::update_option
     return updated_options;
 }
 
-void options_watcher::notify( const std::map< rs2_option, std::shared_ptr< option > > & updated_options )
+void options_watcher::notify( options_and_values const & updated_options )
 {
     if( ! updated_options.empty() )
         _on_values_changed.raise( updated_options );

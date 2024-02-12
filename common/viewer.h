@@ -70,6 +70,7 @@ namespace rs2
         const float panel_y = 50.f;
 
         float get_output_height() const { return (float)(not_model->output.get_output_height()); }
+        float get_dashboard_width() const { return (float)(not_model->output.get_dashboard_width()); }
 
         rs2::frame handle_ready_frames(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message);
 

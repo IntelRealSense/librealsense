@@ -120,7 +120,8 @@ private:
     void create_control_writer();
 
     // notification handlers
-    void on_option_value( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
+    void on_set_option( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
+    void on_query_options( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
     void on_known_notification( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
     void on_log( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
     void on_device_header( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
@@ -128,12 +129,7 @@ private:
     void on_stream_header( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
     void on_stream_options( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
 
-    typedef std::map< std::string,
-                      void ( dds_device::impl::* )( rsutils::json const &,
-                                                    eprosima::fastdds::dds::SampleInfo const & ) >
-        notification_handlers;
-    static notification_handlers const _notification_handlers;
-    void handle_notification( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
+    void on_notification( rsutils::json &&, eprosima::fastdds::dds::SampleInfo const & );
 
     on_metadata_available_signal _on_metadata_available;
     on_device_log_signal _on_device_log;

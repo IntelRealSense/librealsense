@@ -10,7 +10,8 @@ All control messages need to be re-broadcast with a result, for other clients to
 
 When a control is sent, some way to identify a reply to that specific control must exist:
 
-- Replies will have the same `id` as the original control. This means **controls and notifications must have separate identifiers**.
+- Replies will have the same `id` as the original control. This means **controls and notifications must have separate identifiers**
+- The `id` may be retrieved from the attached `control` (see below) if available with `sample`
 
 Additionally, when the server gets a control message, the DDS sample will contain a "publication handle". This is the `GUID` of the writer (including the participant) to identify the control source. A unique sequence number for each control sample is available from the `sample-identity`. Without these, it is impossible to identify the origin of the control and therefore, whether we're waiting on it or not.
 
@@ -36,12 +37,11 @@ An error is a reply where the `status` is not OK:
 
 ```JSON
 {
-    "id": "query-option",
-    "sample": ["010f9a5f64d95fd300000000.403", 1],
     "control": {
         "id": "query-option",
         "option-name": "opt16"
         },
+    "sample": ["010f9a5f64d95fd300000000.403", 1],
     "status": "error",
     "explanation": "Test Device does not support option opt16"
 }
@@ -55,57 +55,110 @@ Unlike [notifications](notifications.md), this is not possible.
 
 ## Control Messages
 
+
 ### `query-option` & `set-option`
 
-Returns or sets the current `value` of an option within a device.
+Returns or sets the `value` of a single option within the device.
 
 - `id` is `query-option` or `set-option`
-- `option-name` is the unique option name within its owner
-    - Usually this is a single string value, but can also be an array of names for bulk queries: `["option1", "option2", ...]`
-- `stream-name` is the unique name of the stream it's in within the device
-    - for a device option, this may be omitted
-- for `set-option`, `value` is the new value (float)
+- `option-name` is the option name, a string value
+- `stream-name` is the name of the stream the option is in
+    - For device options, this should be omitted
+- for `set-option`, a `value` supplies the value to set
+    - Note: the reply may provide a different value that was actually set
 
+E.g.:
 ```JSON
 {
     "id": "query-option",
-    "option-name": "opt-name"
+    "option-name": "IP address"
 }
 ```
 
-The reply should include the original control, plus:
-
-- `value` will include the current or new value
-    - In the case of bulk queries, this will be an array of values, in the same size and ordering as the control's `option-name` array: `[<value-of-option1>, <value-of-option2>, ...]`
-    - If the `option-name` array is empty, all option values will be returned in a `option-values` key, instead (see below)
-
+The reply should include the original control plus a `value`:
 ```JSON
 {
-    "id": "query-option",
     "sample": ["010f9a5f64d95fd300000000.403", 1],
-    "value": 0.5,
+    "value": "1.2.3.4",
     "control": {
         "id": "query-option",
-        "option-name": "opt-name"
-        }
-}
-```
-
-Both querying and setting options involve a very similar reply that can be handled in the same manner.
-
-A new option value should conform to the specific option's value range as communicated when the device was [initialized](initialization.md).
-
-Option values that are changed *by the server* (without a control message) are expected to send `set-option` notifications with no `control` or `sample` fields and an `option-values` array:
-
-```JSON
-{
-    "id": "set-option",
-    "option-values": {
-        "option1": 5,
-        "option2": "Stacy"
+        "option-name": "IP address"
     }
 }
 ```
+
+The same exact behavior for `set-option` except a `value` is provided in the control:
+```JSON
+{
+    "sample": ["010f9a5f64d95fd300000000.403", 1],
+    "value": 10.0,
+    "control": {
+        "id": "set-option",
+        "stream-name": "Color",
+        "option-name": "Exposure",
+        "value": 10.5
+    }
+}
+```
+New option values should conform to each specific option's value range as communicated when the device was [initialized](initialization.md).
+
+
+### `query-options`: bulk queries
+
+Like `query-option`, but asking for all option values at once, based on either stream, sensor, or device.
+
+- For stream-specific options, use `stream-name`
+    - For device-specific options, use `"stream-name": ""`
+- For sensor-specific options, use `sensor-name`
+- To globally get ALL options for all streams including device options, use neither
+
+E.g.:
+```JSON
+{
+    "id": "query-options",
+    "stream-name": "Color"
+}
+```
+
+A stream-name-to-option-name-to-value mapping called `option-values` is returned:
+```JSON
+{
+    "sample": ["010f9a5f64d95fd300000000.403", 1],
+    "option-values": {
+        "IP address": "1.2.3.4",
+        "Color": {
+            "Exposure": 10.0,
+            "Gain": 5
+        },
+        "Depth": {
+            "Exposure": 15.0
+        }
+    },
+    "control": {
+        "id": "query-options"
+    }
+}
+```
+Device options are directly embedded in `option-values`; stream options are in hierarchies of their own.
+
+#### periodic updates
+
+Option values that are changed *by the server* (without a control message) are expected to send `query-options` notifications with no `control` or `sample` fields:
+```JSON
+{
+    "id": "query-options",
+    "option-values": {
+        "Color": {
+            "Exposure": 8.0,
+        },
+        "Depth": {
+            "Exposure": 20.0
+        }
+    }
+}
+```
+
+It is recommended this happens at least periodically (based on possible configuration setting?) to avoid the clients all having to query the device repeatedly.
 
 
 ### `hw-reset`
@@ -147,7 +200,6 @@ A reply can be expected. Attaching the control is recommended so it's clear what
 
 ```JSON
 {
-    "id": "hwm",
     "sample": ["010f9a5f64d95fd300000000.403", 1],
     "control": {
         "id": "hwm",

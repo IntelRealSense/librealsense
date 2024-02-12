@@ -1,13 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 #pragma once
-
 
 #include <librealsense2/h/rs_option.h>
 #include <src/core/option-interface.h>
 
 #include <rsutils/signal.h>
 #include <rsutils/concurrency/concurrency.h>
+#include <rsutils/json-fwd.h>
 
 #include <map>
 #include <chrono>
@@ -27,8 +27,16 @@ namespace librealsense {
 class options_watcher
 {
 public:
-    using callback = std::function< void( const std::map< rs2_option, std::shared_ptr< option > > & ) >;
+    struct option_and_value
+    {
+        std::shared_ptr< option > sptr;
+        std::shared_ptr< const rsutils::json > p_last_known_value;
+    };
 
+    using options_and_values = std::map< rs2_option, option_and_value >;
+    using callback = std::function< void( options_and_values const & ) >;
+
+public:
     options_watcher( std::chrono::milliseconds update_interval = std::chrono::milliseconds( 1000 ) );
     ~options_watcher();
 
@@ -45,16 +53,11 @@ protected:
     void start();
     void stop();
     void thread_loop();
-    virtual std::map< rs2_option, std::shared_ptr< option > > update_options();
-    void notify( const std::map< rs2_option, std::shared_ptr< option > > & updated_options );
+    virtual options_and_values update_options();
+    void notify( options_and_values const & updated_options );
 
-    struct registered_option
-    {
-        std::shared_ptr< option > sptr;
-        float last_known_value = 0.0f;
-    };
-    std::map< rs2_option, registered_option > _options;
-    rsutils::signal< const std::map< rs2_option, std::shared_ptr< option > > & > _on_values_changed;
+    options_and_values _options;
+    rsutils::signal< options_and_values const & > _on_values_changed;
     std::chrono::milliseconds _update_interval;
     std::thread _updater;
     std::mutex _mutex;

@@ -1,10 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include "rs-dds-sensor-proxy.h"
 #include "rs-dds-option.h"
 
-#include <src/device.h>
+#include <src/software-device.h>
 
 #include <realdds/dds-device.h>
 #include <realdds/dds-time.h>
@@ -12,6 +12,7 @@
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/image-msg.h>
 #include <realdds/topics/imu-msg.h>
+#include <realdds/topics/dds-topic-names.h>
 
 #include <src/core/options-registry.h>
 #include <src/core/frame-callback.h>
@@ -20,17 +21,10 @@
 #include <src/proc/color-formats-converter.h>
 
 #include <rsutils/json.h>
+using rsutils::json;
 
 
 namespace librealsense {
-
-
-// Constants for Json lookups
-static const std::string frame_number_key( "frame-number", 12 );
-static const std::string metadata_key( "metadata", 8 );
-static const std::string timestamp_key( "timestamp", 9 );
-static const std::string timestamp_domain_key( "timestamp-domain", 16 );
-static const std::string metadata_header_key( "header", 6 );
 
 
 dds_sensor_proxy::dds_sensor_proxy( std::string const & sensor_name,
@@ -41,6 +35,12 @@ dds_sensor_proxy::dds_sensor_proxy( std::string const & sensor_name,
     , _name( sensor_name )
     , _md_enabled( dev->supports_metadata() )
 {
+    rsutils::json const & settings = owner->get_context()->get_settings();
+    if( auto interval_j = settings.nested( std::string( "options-update-interval", 23 ) ) )
+    {
+        auto interval = interval_j.get< uint32_t >();  // NOTE: can throw!
+        _options_watcher.set_update_interval( std::chrono::milliseconds( interval ) );
+    }
 }
 
 
@@ -159,6 +159,12 @@ void dds_sensor_proxy::register_basic_converters()
 
     // Confidence
     _formats_converter.register_converter( processing_block_factory::create_id_pbf( RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE ) );
+}
+
+
+rsutils::subscription dds_sensor_proxy::register_options_changed_callback( options_watcher::callback && cb )
+{
+    return _options_watcher.subscribe( std::move( cb ) );
 }
 
 
@@ -338,7 +344,7 @@ void dds_sensor_proxy::handle_motion_data( realdds::topics::imu_msg && imu,
 
 
 void dds_sensor_proxy::handle_new_metadata( std::string const & stream_name,
-                                            std::shared_ptr< const rsutils::json > const & dds_md )
+                                            std::shared_ptr< const json > const & dds_md )
 {
     if( ! _md_enabled )
         return;
@@ -346,7 +352,8 @@ void dds_sensor_proxy::handle_new_metadata( std::string const & stream_name,
     auto it = _streaming_by_name.find( stream_name );
     if( it != _streaming_by_name.end() )
     {
-        if( auto timestamp = dds_md->nested( metadata_header_key, timestamp_key ) )
+        if( auto timestamp = dds_md->nested( realdds::topics::metadata::key::header,
+                                             realdds::topics::metadata::header::key::timestamp ) )
             it->second.syncer.enqueue_metadata( timestamp.get< realdds::dds_nsec >(), dds_md );
         else
             throw std::runtime_error( "missing metadata header/timestamp" );
@@ -366,17 +373,18 @@ void dds_sensor_proxy::add_no_metadata( frame * const f, streaming_impl & stream
 
 
 void dds_sensor_proxy::add_frame_metadata( frame * const f,
-                                           rsutils::json const & dds_md,
+                                           json const & dds_md,
                                            streaming_impl & streaming )
 {
-    auto md_header = dds_md.nested( metadata_header_key );
-    auto md = dds_md.nested( metadata_key );
+    auto md_header = dds_md.nested( realdds::topics::metadata::key::header );
+    auto md = dds_md.nested( realdds::topics::metadata::key::metadata );
 
     // A frame number is "optional". If the server supplies it, we try to use it for the simple fact that,
     // otherwise, we have no way of detecting drops without some advanced heuristic tracking the FPS and
     // timestamps. If not supplied, we use an increasing counter.
     // Note that if we have no metadata, we have no frame-numbers! So we need a way of generating them
-    if( md_header.nested( frame_number_key ).get_ex( f->additional_data.frame_number ) )
+    if( md_header.nested( realdds::topics::metadata::header::key::frame_number )
+            .get_ex( f->additional_data.frame_number ) )
     {
         f->additional_data.last_frame_number = streaming.last_frame_number.exchange( f->additional_data.frame_number );
         if( f->additional_data.frame_number != f->additional_data.last_frame_number + 1
@@ -396,7 +404,8 @@ void dds_sensor_proxy::add_frame_metadata( frame * const f,
     // purposes, so we ignore here. The domain is optional, and really only rs-dds-adapter communicates it
     // because the source is librealsense...
     f->additional_data.timestamp;
-    md_header.nested( timestamp_domain_key ).get_ex( f->additional_data.timestamp_domain );
+    md_header.nested( realdds::topics::metadata::header::key::timestamp_domain )
+        .get_ex( f->additional_data.timestamp_domain );
 
     if( ! md.empty() )
     {
@@ -408,10 +417,10 @@ void dds_sensor_proxy::add_frame_metadata( frame * const f,
             std::string const & keystr = librealsense::get_string( key );
             try
             {
-                if( auto value_j = md.nested( keystr, &rsutils::json::is_number_integer ) )
+                if( auto value_j = md.nested( keystr, &json::is_number_integer ) )
                     metadata[key] = { true, value_j.get< rs2_metadata_type >() };
             }
-            catch( rsutils::json::exception const & )
+            catch( json::exception const & )
             {
                 // The metadata key doesn't exist or the value isn't the right type... we ignore it!
                 // (all metadata is not there when we create the frame, so no need to erase)
@@ -437,7 +446,7 @@ void dds_sensor_proxy::start( rs2_frame_callback_sptr callback )
         auto & streaming = _streaming_by_name[dds_stream->name()];
         streaming.syncer.on_frame_release( frame_releaser );
         streaming.syncer.on_frame_ready(
-            [this, &streaming]( syncer_type::frame_holder && fh, std::shared_ptr< const rsutils::json > const & md )
+            [this, &streaming]( syncer_type::frame_holder && fh, std::shared_ptr< const json > const & md )
             {
                 if( _is_streaming ) // stop was not called
                 {
@@ -539,6 +548,7 @@ void dds_sensor_proxy::add_option( std::shared_ptr< realdds::dds_option > option
         [=]( const std::string & name, float value ) { _dev->set_option_value( option, value ); },
         [=]( const std::string & name ) -> float { return _dev->query_option_value( option ); } );
     register_option( option_id, opt );
+    _options_watcher.register_option( option_id, opt );
 }
 
 
