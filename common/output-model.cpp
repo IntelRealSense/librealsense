@@ -713,15 +713,18 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             ImGui::SameLine();
 
             std::string last_opened_dashboard = config_file::instance().get( configurations::viewer::last_opened_dashboard );
-            if( last_opened_dashboard.empty() && ImGui::Button( u8"\uF0D0 Add Dashboard", ImVec2( -1, 25 ) ) )
+            if( last_opened_dashboard.empty() )
             {
-                ImGui::OpenPopup(new_dashboard_name);
-            }
+                if( ImGui::Button( u8"\uF0D0 Add Dashboard", ImVec2( -1, 25 ) ) )
+                {
+                    ImGui::OpenPopup( new_dashboard_name );
+                }
 
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Add one of the available stream dashboards to view");
-                win.link_hovered();
+                if( ImGui::IsItemHovered() )
+                {
+                    ImGui::SetTooltip( "Add one of the available stream dashboards to view" );
+                    win.link_hovered();
+                }
             }
 
             ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
@@ -1277,6 +1280,10 @@ void accel_dashboard::draw(ux_window& win, rect r) {
     ImGui::SetCursorPosY( ImGui::GetCursorPosY() + 3 );
 
     show_radiobuttons();
+
+    ImGui::SameLine();
+
+    show_data_rate_slider();
 }
 
 int accel_dashboard::get_height() const {
@@ -1289,7 +1296,6 @@ void accel_dashboard::clear( bool full ) {
         {
             if( full )
             {
-                const int DEQUE_SIZE = 100;
                 x_history.clear();
                 for( int i = 0; i < DEQUE_SIZE; i++ )
                     x_history.push_back( 0 );
@@ -1317,7 +1323,7 @@ void accel_dashboard::process_frame( rs2::frame f ) {
                 double ts = glfwGetTime();
                 auto it = frame_to_time.find( f.get_profile().unique_id() );
 
-                if( ts - last_time > 0.1f && it != frame_to_time.end() )
+                if( ts - last_time > frame_rate && it != frame_to_time.end() )
                 {
                     rs2::motion_frame accel_frame = f.as< rs2::motion_frame >();
 
@@ -1326,14 +1332,13 @@ void accel_dashboard::process_frame( rs2::frame f ) {
                     z_value = accel_frame.get_motion_data().z;
                     n_value = std::sqrt( ( x_value * x_value ) + ( y_value * y_value ) + ( z_value * z_value ) );
 
-                    const int MAX_DEQUE_SIZE = 100;
-                    if( x_history.size() > MAX_DEQUE_SIZE )
+                    if( x_history.size() > DEQUE_SIZE )
                         x_history.pop_front();
-                    if( y_history.size() > MAX_DEQUE_SIZE )
+                    if( y_history.size() > DEQUE_SIZE )
                         y_history.pop_front();
-                    if( z_history.size() > MAX_DEQUE_SIZE )
+                    if( z_history.size() > DEQUE_SIZE )
                         z_history.pop_front();
-                    if( n_history.size() > MAX_DEQUE_SIZE )
+                    if( n_history.size() > DEQUE_SIZE )
                         n_history.pop_front();
 
                     x_history.push_back( x_value );
@@ -1352,20 +1357,48 @@ void accel_dashboard::process_frame( rs2::frame f ) {
 void accel_dashboard::show_radiobuttons() {
     ImGui::PushStyleColor( ImGuiCol_Text, from_rgba( 233, 0, 0, 255, true ) );  
     ImGui::RadioButton( "X", &curr_accel_param_position, 0 );
+    if( ImGui::IsItemHovered() )
+        ImGui::SetTooltip( "%s", "Show accel X" );
     ImGui::PopStyleColor();
     ImGui::SameLine();
 
     ImGui::PushStyleColor( ImGuiCol_Text, from_rgba( 0, 255, 0, 255, true ) );
     ImGui::RadioButton( "Y", &curr_accel_param_position, 1 );
+    if( ImGui::IsItemHovered() )
+        ImGui::SetTooltip( "%s", "Show accel Y" );
     ImGui::PopStyleColor();
     ImGui::SameLine();
 
     ImGui::PushStyleColor( ImGuiCol_Text, from_rgba( 85, 89, 245, 255, true ) );
     ImGui::RadioButton( "Z", &curr_accel_param_position, 2 );
+    if( ImGui::IsItemHovered() )
+        ImGui::SetTooltip( "%s", "Show accel Z" );
     ImGui::PopStyleColor();
     ImGui::SameLine();
 
     ImGui::PushStyleColor( ImGuiCol_Text, from_rgba( 255, 255, 255, 255, true ) );
     ImGui::RadioButton( "N", &curr_accel_param_position, 3 );
+    if( ImGui::IsItemHovered() )
+        ImGui::SetTooltip( "%s", "Show Normal" );
     ImGui::PopStyleColor();
+}
+
+void accel_dashboard::show_data_rate_slider()
+{
+    const float min_frame_rate = 0.01f;
+    const float max_frame_rate = 0.1f;
+
+    ImGui::PushItemWidth( 100 );
+    ImGui::SliderFloat( "##rate", &frame_rate, min_frame_rate, max_frame_rate, "%.2f" );
+    ImGui::GetWindowWidth();
+
+    if(ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip( "%s",
+                           std::string( rsutils::string::from()
+                               << "Update graph every "
+                               << std::to_string( frame_rate ).substr(0, 4)
+                               << " secs" )
+                               .c_str() );
+    }
 }

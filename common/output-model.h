@@ -123,6 +123,7 @@ namespace rs2
             , y_value( 0 )
             , z_value( 0 )
             , n_value( 0 )
+            , frame_rate( 0.1f )
         {
             clear( true );
         }
@@ -137,6 +138,8 @@ namespace rs2
 
         // Show radio buttons for X, Y, Z and N lines
         void show_radiobuttons();
+        // Show slider that change pause between acceleration values that we saving.
+        void show_data_rate_slider();
 
     private:
         float x_value;
@@ -144,12 +147,14 @@ namespace rs2
         float z_value;
         float n_value;  // Norm ||V|| = SQRT(X^2 + Y^2 + Z^2)
 
+        float  frame_rate;
         double last_time;
         std::map< float, double > frame_to_time;
 
         std::vector< std::string > accel_params = { "X", "Y", "Z", "N" };
         int curr_accel_param_position = 0;
 
+        const int DEQUE_SIZE = 200;
         std::deque< float > x_history;
         std::deque< float > y_history;
         std::deque< float > z_history;
