@@ -129,7 +129,10 @@ output_model::output_model() : fw_logger([this](){ thread_loop(); }) , incoming_
     };
 
     if( last_opened_dashboard.empty() )
+    {
         last_opened_dashboard = "Frame Drops per Second";
+        config_file::instance().set(configurations::viewer::last_opened_dashboard, last_opened_dashboard);
+    }
 
     auto front = available_dashboards.find( last_opened_dashboard );
     dashboards.push_back(front->second(front->first));
@@ -709,31 +712,16 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
         if (can_add)
         {
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-            const auto new_dashboard_name = "new_dashboard";
-            ImGui::SameLine();
 
             std::string last_opened_dashboard = config_file::instance().get( configurations::viewer::last_opened_dashboard );
             if( last_opened_dashboard.empty() )
             {
-                if( ImGui::Button( u8"\uF0D0 Add Dashboard", ImVec2( -1, 25 ) ) )
-                {
-                    ImGui::OpenPopup( new_dashboard_name );
-                }
+                ImGui::SameLine();
+                ImGui::Button( u8"\uF0D0 Dashboards", ImVec2( -1, collapse_dashboard_button_size.y ) );
 
-                if( ImGui::IsItemHovered() )
-                {
-                    ImGui::SetTooltip( "Add one of the available stream dashboards to view" );
-                    win.link_hovered();
-                }
-            }
+                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, light_blue);
 
-            ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
-            ImGui::PushStyleColor(ImGuiCol_Text, black);
-            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, light_blue);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5,5));
-            if (ImGui::BeginPopup(new_dashboard_name))
-            {
                 for (auto&& kvp : available_dashboards)
                 {
                     auto name = kvp.first;
@@ -745,21 +733,18 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
                     {
                         name = name + "##New";
                         bool selected = false;
+
+                        ImGui::SetCursorPosX( ImGui::GetCursorPosX() + collapse_dashboard_button_size.x );
                         if (ImGui::Selectable(name.c_str(), &selected))
                         {
                             config_file::instance().set( configurations::viewer::last_opened_dashboard, kvp.first );
                             dashboards.push_back(kvp.second(kvp.first));
                         }
                     }
-                }
-
-                ImGui::EndPopup();
-            }
-
-            ImGui::PopStyleColor(4);
-            ImGui::PopStyleVar();
+                }   
+                ImGui::PopStyleColor( 2 );
+            }            
         }
-
 
         ImGui::EndChild();
 
@@ -1396,9 +1381,10 @@ void accel_dashboard::show_data_rate_slider()
     {
         ImGui::SetTooltip( "%s",
                            std::string( rsutils::string::from()
-                               << "Update graph every "
-                               << std::to_string( frame_rate ).substr(0, 4)
-                               << " secs" )
+                               << "Frame rate " 
+                               << std::fixed << std::setprecision( 1 )
+                               << frame_rate * 1000
+                               << " mSec" )
                                .c_str() );
     }
 }
