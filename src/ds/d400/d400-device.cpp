@@ -41,6 +41,9 @@
 #include <regex>
 #include <iterator>
 
+#include <src/ds/features/auto-exposure-limit-feature.h>
+#include <src/ds/features/gain-limit-feature.h>
+
 #ifdef HWM_OVER_XU
 constexpr bool hw_mon_over_xu = true;
 #else
@@ -965,6 +968,13 @@ namespace librealsense
             register_feature( std::make_shared< remove_ir_pattern_feature >() );
 
         register_feature( std::make_shared< auto_exposure_roi_feature >( get_depth_sensor(), _hw_monitor ) );
+
+        if( pid != ds::RS457_PID && pid != ds::RS415_PID && fw_ver >= firmware_version( 5, 12, 10, 11 ) )
+        {
+            register_feature(
+                std::make_shared< auto_exposure_limit_feature >( get_depth_sensor(), d400_device::_hw_monitor ) );
+            register_feature( std::make_shared< gain_limit_feature >( get_depth_sensor(), d400_device::_hw_monitor ) );
+        }
     }
 
     void d400_device::register_metadata(const synthetic_sensor &depth_sensor, const firmware_version& hdr_firmware_version) const
