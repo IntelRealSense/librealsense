@@ -9,7 +9,7 @@ from rspy import test, log
 import time
 
 # Run multiple start stop of all streams and verify we get a frame for each once
-ITERATIONS_COUNT = 2
+ITERATIONS_COUNT = 20
 
 dev = test.find_first_device_or_exit()
 
