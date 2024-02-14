@@ -24,6 +24,7 @@
 #include "proc/processing-blocks-factory.h"
 #include "proc/colorizer.h"
 #include "proc/pointcloud.h"
+#include "proc/align.h"
 #include "proc/threshold.h"
 #include "proc/units-transform.h"
 #include "proc/disparity-transform.h"
@@ -2536,7 +2537,7 @@ rs2_processing_block* rs2_create_align(rs2_stream align_to, rs2_error** error) B
 {
     VALIDATE_ENUM(align_to);
 
-    auto block = create_align(align_to);
+    auto block = align::create_align(align_to);
 
     return new rs2_processing_block{ block };
 }

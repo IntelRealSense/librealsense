@@ -11,9 +11,26 @@
 #include "align.h"
 #include "stream.h"
 
+#if defined(RS2_USE_CUDA)
+#include "proc/cuda/cuda-align.h"
+#elif defined(__SSSE3__)
+#include "proc/sse/sse-align.h"
+#endif
+
 namespace librealsense
 {
     template<int N> struct bytes { uint8_t b[N]; };
+
+    std::shared_ptr<align> align::create_align(rs2_stream align_to)
+    {
+        #if defined(RS2_USE_CUDA)
+            return std::make_shared<librealsense::align_cuda>(align_to);
+        #elif defined(__SSSE3__)
+            return std::make_shared<librealsense::align_sse>(align_to);
+        #else
+            return std::make_shared<librealsense::align>(align_to);
+        #endif
+    }
 
     template<class GET_DEPTH, class TRANSFER_PIXEL>
     void align_images(const rs2_intrinsics& depth_intrin, const rs2_extrinsics& depth_to_other,
