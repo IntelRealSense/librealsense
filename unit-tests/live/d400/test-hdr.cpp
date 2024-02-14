@@ -9,6 +9,9 @@
 
 //#test:device D400* !D457
 
+// Stability issues should be resolved as part of LRS-1000
+//#test:retries 2
+
 #include "../../catch.h"
 #include "../../unit-tests-common.h"
 
