@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include <realdds/dds-device-server.h>
 
@@ -34,7 +34,6 @@ using namespace eprosima::fastdds::dds;
 namespace realdds {
 
 
-
 dds_device_server::dds_device_server( std::shared_ptr< dds_participant > const & participant,
                                       const std::string & topic_root )
     : _publisher( std::make_shared< dds_publisher >( participant ) )
@@ -50,6 +49,12 @@ dds_device_server::dds_device_server( std::shared_ptr< dds_participant > const &
 dds_guid const & dds_device_server::guid() const
 {
     return _notification_server ? _notification_server->guid() : unknown_guid;
+}
+
+
+std::shared_ptr< dds_participant > dds_device_server::participant() const
+{
+    return _publisher->get_participant();
 }
 
 
@@ -85,7 +90,7 @@ static void on_discovery_device_header( size_t const n_streams,
     //LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( device_header.json_data() ).size() );
     notifications.add_discovery_notification( std::move( device_header ) );
 
-    auto device_options = rsutils::json::array();
+    auto device_options = json::array();
     for( auto & opt : options )
         device_options.push_back( std::move( opt->to_json() ) );
     topics::flexible_msg device_options_message( json {
@@ -102,7 +107,7 @@ static void on_discovery_device_header( size_t const n_streams,
 static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > const & stream,
                                         dds_notification_server & notifications )
 {
-    auto profiles = rsutils::json::array();
+    auto profiles = json::array();
     for( auto & sp : stream->profiles() )
         profiles.push_back( std::move( sp->to_json() ) );
     topics::flexible_msg stream_header_message( json{
@@ -119,20 +124,20 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
     //LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( stream_header_message.json_data() ).size() );
     notifications.add_discovery_notification( std::move( stream_header_message ) );
 
-    auto stream_options = rsutils::json::array();
+    auto stream_options = json::array();
     for( auto & opt : stream->options() )
         stream_options.push_back( std::move( opt->to_json() ) );
 
-    rsutils::json intrinsics;
+    json intrinsics;
     if( auto video_stream = std::dynamic_pointer_cast< dds_video_stream_server >( stream ) )
     {
-        intrinsics = rsutils::json::array();
+        intrinsics = json::array();
         for( auto & intr : video_stream->get_intrinsics() )
             intrinsics.push_back( intr.to_json() );
     }
     else if( auto motion_stream = std::dynamic_pointer_cast< dds_motion_stream_server >( stream ) )
     {
-        intrinsics = rsutils::json::object( {
+        intrinsics = json::object( {
             { topics::notification::stream_options::intrinsics::key::accel,
                     motion_stream->get_accel_intrinsics().to_json() },
             { topics::notification::stream_options::intrinsics::key::gyro,
@@ -140,7 +145,7 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
         } );
     }
 
-    auto stream_filters = rsutils::json::array();
+    auto stream_filters = json::array();
     for( auto & filter : stream->recommended_filters() )
         stream_filters.push_back( filter );
     topics::flexible_msg stream_options_message( json::object( {
@@ -210,14 +215,16 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
         _notification_server->run();
 
         // Create a control reader and set callback
-        auto topic = topics::flexible_msg::create_topic( _subscriber->get_participant(), _topic_root + topics::CONTROL_TOPIC_NAME );
-        _control_reader = std::make_shared< dds_topic_reader >( topic, _subscriber );
+        if( auto topic = topics::flexible_msg::create_topic( _subscriber->get_participant(), _topic_root + topics::CONTROL_TOPIC_NAME ) )
+        {
+            _control_reader = std::make_shared< dds_topic_reader >( topic, _subscriber );
 
-        _control_reader->on_data_available( [&]() { on_control_message_received(); } );
+            _control_reader->on_data_available( [&]() { on_control_message_received(); } );
 
-        dds_topic_reader::qos rqos( RELIABLE_RELIABILITY_QOS );
-        rqos.override_from_json( _subscriber->get_participant()->settings().nested( "device", "control" ) );
-        _control_reader->run( rqos );
+            dds_topic_reader::qos rqos( RELIABLE_RELIABILITY_QOS );
+            rqos.override_from_json( _subscriber->get_participant()->settings().nested( "device", "control" ) );
+            _control_reader->run( rqos );
+        }
     }
     catch( std::exception const & )
     {
@@ -250,13 +257,15 @@ void dds_device_server::broadcast( topics::device_info const & device_info )
 }
 
 
-void dds_device_server::broadcast_disconnect( dds_time ack_timeout )
+bool dds_device_server::broadcast_disconnect( dds_time ack_timeout )
 {
+    bool got_acks = false;
     if( _broadcaster )
     {
-        _broadcaster->broadcast_disconnect( ack_timeout );
+        got_acks = _broadcaster->broadcast_disconnect( ack_timeout );
         _broadcaster.reset();
     }
+    return got_acks;
 }
 
 
@@ -266,7 +275,7 @@ void dds_device_server::publish_notification( topics::flexible_msg && notificati
 }
 
 
-void dds_device_server::publish_metadata( rsutils::json && md )
+void dds_device_server::publish_metadata( json && md )
 {
     if( ! _metadata_writer )
         DDS_THROW( runtime_error, "device '" + _topic_root + "' has no stream with enabled metadata" );
@@ -292,11 +301,9 @@ struct dds_device_server::control_sample
 };
 
 
-
-
 void dds_device_server::on_control_message_received()
 {
-    typedef std::map< std::string, void ( dds_device_server::* )( control_sample const &, rsutils::json & ) >
+    typedef std::map< std::string, void ( dds_device_server::* )( control_sample const &, json & ) >
         control_handlers;
     static control_handlers const _control_handlers{
         { topics::control::set_option::id, &dds_device_server::on_set_option },
@@ -357,7 +364,7 @@ void dds_device_server::on_control_message_received()
 }
 
 
-void dds_device_server::on_set_option( control_sample const & control, rsutils::json & reply )
+void dds_device_server::on_set_option( control_sample const & control, json & reply )
 {
     auto & option_name  // mandatory; throws
         = control.json.at( topics::control::set_option::key::option_name ).string_ref();
@@ -389,10 +396,10 @@ json dds_device_server::query_option( std::shared_ptr< dds_option > const & opti
         value = option->get_value();
     }
     return value;
-};
+}
 
 
-void dds_device_server::on_query_option( control_sample const & control, rsutils::json & reply )
+void dds_device_server::on_query_option( control_sample const & control, json & reply )
 {
     std::string const & stream_name  // optional; empty = device option
         = control.json.nested( topics::control::query_option::key::stream_name ).string_ref_or_empty();
