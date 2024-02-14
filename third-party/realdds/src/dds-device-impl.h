@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include <realdds/dds-device.h>
@@ -87,8 +87,8 @@ public:
 
     void write_control_message( topics::flexible_msg &&, rsutils::json * reply = nullptr );
 
-    void set_option_value( const std::shared_ptr< dds_option > & option, float new_value );
-    float query_option_value( const std::shared_ptr< dds_option > & option );
+    void set_option_value( const std::shared_ptr< dds_option > & option, rsutils::json new_value );
+    rsutils::json query_option_value( const std::shared_ptr< dds_option > & option );
 
     using on_metadata_available_signal = rsutils::signal< std::shared_ptr< const rsutils::json > const & >;
     using on_metadata_available_callback = on_metadata_available_signal::callback;

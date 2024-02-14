@@ -139,7 +139,13 @@ options_watcher::options_and_values options_watcher::update_options()
         }
         catch( ... )
         {
-            // Some options cannot be queried all the time (i.e. streaming only)
+            // Some options cannot be queried all the time (i.e. streaming only) - so if we HAD a value, it needs to be
+            // removed!
+            if( opt.second.p_last_known_value && ! opt.second.p_last_known_value->is_null() )
+            {
+                opt.second.p_last_known_value = std::make_shared< const json >();
+                updated_options[opt.first] = opt.second;
+            }
         }
 
         // Checking stop conditions after each query to ensure stop when requested.

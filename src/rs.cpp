@@ -1,5 +1,5 @@
 // License: Apache 2.0 See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include <functional>   // For function
 
@@ -104,7 +104,12 @@ struct rs2_option_value_wrapper : rs2_option_value
             if( p_json->is_number_float() )
             {
                 type = RS2_OPTION_TYPE_FLOAT;
-                as_float = p_json->get< float >();
+                p_json->get_to( as_float );
+            }
+            if( p_json->is_number_integer() )
+            {
+                type = RS2_OPTION_TYPE_INTEGER;
+                p_json->get_to( as_integer );
             }
             else if( p_json->is_string() )
             {
@@ -205,7 +210,7 @@ struct rs2_error
 
 rs2_error *rs2_create_error(const char* what, const char* name, const char* args, rs2_exception_type type) BEGIN_API_CALL
 {
-    LOG_ERROR( "[" << name << "][" << rs2_exception_type_to_string( type ) << "] " << what << ": " << args );
+    LOG_ERROR( "[" << name << "( " << args << " ) " << rs2_exception_type_to_string( type ) << "] " << what );
     return new rs2_error{ what, name, args, type };
 }
 NOEXCEPT_RETURN(nullptr, what, name, args, type)

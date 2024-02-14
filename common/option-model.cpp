@@ -32,12 +32,12 @@ namespace rs2
         option.value = 0;
 
         option.supported = options->supports(opt);
+        option.range = options->get_option_range( opt );
+        option.read_only = options->is_option_read_only( opt );
         if (option.supported)
         {
             try
             {
-                option.range = options->get_option_range(opt);
-                option.read_only = options->is_option_read_only(opt);
                 option.value = options->get_option(opt);
             }
             catch (const error& e)

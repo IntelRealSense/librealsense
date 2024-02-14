@@ -42,16 +42,6 @@ using tools::lrs_device_controller;
     }                                                                                                                  \
     break
 
-realdds::dds_option_range to_realdds( const rs2::option_range & range )
-{
-    realdds::dds_option_range ret_val;
-    ret_val.max = range.max;
-    ret_val.min = range.min;
-    ret_val.step = range.step;
-    ret_val.default_value = range.def;
-
-    return ret_val;
-}
 
 realdds::video_intrinsics to_realdds( const rs2_intrinsics & intr )
 {
@@ -262,9 +252,6 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
             if( sensors_handled.emplace( sensor_name ).second )
             {
                 auto supported_options = sensor.get_supported_options();
-                // Hack - some options can be queried only if streaming so start sensor and close after query
-                // sensor.open( sensor.get_stream_profiles()[0] );
-                // sensor.start( []( rs2::frame f ) {} );
                 for( auto option_id : supported_options )
                 {
                     // Certain options are automatically added by librealsense and shouldn't actually be shared
@@ -274,11 +261,35 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
                     std::string option_name = sensor.get_option_name( option_id );
                     try
                     {
-                        auto dds_opt = std::make_shared< realdds::dds_option >(
-                            option_name,
-                            to_realdds( sensor.get_option_range( option_id ) ),
-                            sensor.get_option_description( option_id ) );
-                        dds_opt->set_value( sensor.get_option( option_id ) );
+                        json j = json::array();
+                        json props = json::array();
+                        j += option_name;
+                        json option_value;  // null - no value
+                        try
+                        {
+                            option_value = sensor.get_option( option_id );
+                        }
+                        catch( ... )
+                        {
+                            // Some options can be queried only if certain conditions exist skip them for now
+                            props += "optional";
+                        }
+                        j += option_value;
+                        {
+                            // Even read-only options have ranges in librealsense
+                            auto const range = sensor.get_option_range( option_id );
+                            j += range.min;
+                            j += range.max;
+                            j += range.step;
+                            j += range.def;
+                        }
+                        j += sensor.get_option_description( option_id );
+                        if( sensor.is_option_read_only( option_id ) )
+                            props += "read-only";
+                        if( ! props.empty() )
+                            j += props;
+                        auto dds_opt = realdds::dds_option::from_json( j );
+                        LOG_DEBUG( "... option -> " << j << " -> " << dds_opt->to_json() );
                         stream_options.push_back( dds_opt );  // TODO - filter options relevant for stream type
                     }
                     catch( ... )
@@ -287,8 +298,6 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
                         // Some options can be queried only if certain conditions exist skip them for now
                     }
                 }
-                // sensor.stop();
-                // sensor.close();
 
                 auto recommended_filters = sensor.get_recommended_filters();
                 for( auto const & filter : recommended_filters )
@@ -515,7 +524,7 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
     _dds_device_server->on_set_option( [&]( const std::shared_ptr< realdds::dds_option > & option, float value ) {
         set_option( option, value );
     } );
-    _dds_device_server->on_query_option( [&]( const std::shared_ptr< realdds::dds_option > & option ) -> float {
+    _dds_device_server->on_query_option( [&]( const std::shared_ptr< realdds::dds_option > & option ) -> json {
         return query_option( option );
     } );
     _dds_device_server->on_control(
@@ -666,8 +675,8 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                         case RS2_OPTION_TYPE_STRING:
                             value = changed_option->as_string;
                             break;
-                        case RS2_OPTION_TYPE_NUMBER:
-                            value = changed_option->as_number_signed;
+                        case RS2_OPTION_TYPE_INTEGER:
+                            value = changed_option->as_integer;
                             break;
                         case RS2_OPTION_TYPE_COUNT:
                             // No value available
@@ -831,7 +840,7 @@ void lrs_device_controller::set_option( const std::shared_ptr< realdds::dds_opti
 }
 
 
-float lrs_device_controller::query_option( const std::shared_ptr< realdds::dds_option > & option )
+json lrs_device_controller::query_option( const std::shared_ptr< realdds::dds_option > & option )
 {
     auto stream = option->stream();
     if( ! stream )
@@ -842,7 +851,17 @@ float lrs_device_controller::query_option( const std::shared_ptr< realdds::dds_o
         throw std::runtime_error( "no stream '" + stream->name() + "' in device" );
     auto server = it->second;
     auto & sensor = _rs_sensors[server->sensor_name()];
-    return sensor.get_option( option_name_to_id( option->get_name() ) );
+    try
+    {
+        return sensor.get_option( option_name_to_id( option->get_name() ) );
+    }
+    catch( rs2::invalid_value_error const & )
+    {
+        // It's possible for an option to no longer be supported (temperates do this) because we stopped streaming...
+        if( option->is_optional() )
+            return rsutils::null_json;
+        throw;
+    }
 }
 
 

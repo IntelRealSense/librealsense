@@ -33,7 +33,7 @@ public:
     ~lrs_device_controller();
 
     void set_option( const std::shared_ptr< realdds::dds_option > & option, float new_value );
-    float query_option( const std::shared_ptr< realdds::dds_option > & option );
+    rsutils::json query_option( const std::shared_ptr< realdds::dds_option > & option );
 
 private:
     std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_streams();
