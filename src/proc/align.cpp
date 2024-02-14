@@ -11,10 +11,9 @@
 #include "align.h"
 #include "stream.h"
 
-#ifdef RS2_USE_CUDA
+#if defined(RS2_USE_CUDA)
 #include "proc/cuda/cuda-align.h"
-#endif
-#ifdef __SSSE3__
+#elif defined(__SSSE3__)
 #include "proc/sse/sse-align.h"
 #endif
 
@@ -24,14 +23,12 @@ namespace librealsense
 
     std::shared_ptr<align> align::create_align(rs2_stream align_to)
     {
-        #ifdef RS2_USE_CUDA
+        #if defined(RS2_USE_CUDA)
             return std::make_shared<librealsense::align_cuda>(align_to);
-        #else
-        #ifdef __SSSE3__
+        #elif defined(__SSSE3__)
             return std::make_shared<librealsense::align_sse>(align_to);
         #else
             return std::make_shared<librealsense::align>(align_to);
-        #endif
         #endif
     }
 
