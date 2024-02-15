@@ -116,25 +116,21 @@ output_model::output_model() : fw_logger([this](){ thread_loop(); }) , incoming_
             configurations::viewer::search_term, std::string(""));
     is_dashboard_open = config_file::instance().get_or_default(
         configurations::viewer::dashboard_open, true );
-    std::string last_opened_dashboard = config_file::instance().get( configurations::viewer::last_opened_dashboard );
+    opened_dashboard_index = config_file::instance().get( configurations::viewer::last_opened_dashboard );
     
     if (search_line != "") search_open = true;
 
-    available_dashboards["Frame Drops per Second"] = [&](std::string name){
+    available_dashboards[dashboard_names[1]] = [&]( std::string name )
+    {
         return std::make_shared<frame_drops_dashboard>(name, &number_of_drops, &total_frames);
     };
 
-    available_dashboards["Acceleration"] = [&]( std::string name ){
+    available_dashboards[dashboard_names[0]] = [&]( std::string name )
+    {
         return std::make_shared< accel_dashboard >( name );
     };
 
-    if( last_opened_dashboard.empty() )
-    {
-        last_opened_dashboard = "Frame Drops per Second";
-        config_file::instance().set(configurations::viewer::last_opened_dashboard, last_opened_dashboard);
-    }
-
-    auto front = available_dashboards.find( last_opened_dashboard );
+    auto front = available_dashboards.find( dashboard_names[opened_dashboard_index] );
     dashboards.push_back(front->second(front->first));
 }
 
@@ -681,23 +677,6 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
                 default_dashboard_w = min_dashboard_width;
         }
 
-        auto top = 0;
-        if( is_dashboard_open && dashboard_width == max_dashboard_width )
-        {
-            for( auto && dash : dashboards )
-            {
-                auto h = dash->get_height();
-                auto r = rect{ 0.f, (float)top, get_dashboard_width() - 8.f, (float)h };
-                dash->draw( win, r );
-                top += h;
-            }
-        }
-
-        dashboards.erase(std::remove_if(dashboards.begin(), dashboards.end(),
-        [](std::shared_ptr<stream_dashboard> p){
-            return p->closing();
-        }), dashboards.end());
-
         bool can_add = false;
         for (auto&& kvp : available_dashboards)
         {
@@ -709,41 +688,51 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             if (it == dashboards.end()) can_add = true;
         }
 
-        if (can_add)
+        if( can_add && is_dashboard_open )
         {
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
-            std::string last_opened_dashboard = config_file::instance().get( configurations::viewer::last_opened_dashboard );
-            if( last_opened_dashboard.empty() )
+            ImGui::SameLine();
+            ImGui::Button( u8"\uF0D0 Dashboards", ImVec2( -1, collapse_dashboard_button_size.y ) );
+
+            ImGui::PushStyleColor( ImGuiCol_Text, white );
+            ImGui::PushStyleColor( ImGuiCol_HeaderHovered, light_blue );
+
+            int radio_button_choice = 0;
+            for( auto && kvp : available_dashboards )
             {
-                ImGui::SameLine();
-                ImGui::Button( u8"\uF0D0 Dashboards", ImVec2( -1, collapse_dashboard_button_size.y ) );
+                auto name = kvp.first;
+                auto it = std::find_if( dashboards.begin(),
+                                    dashboards.end(),
+                                    [name]( std::shared_ptr< stream_dashboard > p ) { return p->get_name() == name; } );
 
-                ImGui::PushStyleColor(ImGuiCol_Text, white);
-                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, light_blue);
+                ImGui::SetCursorPosX( ImGui::GetCursorPosX() + collapse_dashboard_button_size.x );
 
-                for (auto&& kvp : available_dashboards)
+                // Show dashboards to user
+                if( ImGui::RadioButton( name.c_str(), &opened_dashboard_index, radio_button_choice++ ) )
                 {
-                    auto name = kvp.first;
-                    auto it = std::find_if(dashboards.begin(), dashboards.end(),
-                    [name](std::shared_ptr<stream_dashboard> p){
-                        return p->get_name() == name;
-                    });
-                    if (it == dashboards.end())
-                    {
-                        name = name + "##New";
-                        bool selected = false;
+                    for( auto & d : dashboards )
+                        d->close();
+                    dashboards.clear();
 
-                        ImGui::SetCursorPosX( ImGui::GetCursorPosX() + collapse_dashboard_button_size.x );
-                        if (ImGui::Selectable(name.c_str(), &selected))
-                        {
-                            config_file::instance().set( configurations::viewer::last_opened_dashboard, kvp.first );
-                            dashboards.push_back(kvp.second(kvp.first));
-                        }
-                    }
-                }   
-                ImGui::PopStyleColor( 2 );
-            }            
+                    config_file::instance().set( configurations::viewer::last_opened_dashboard, opened_dashboard_index);
+                    dashboards.push_back( kvp.second( kvp.first ) );
+                }
+            }
+            ImGui::PopStyleColor( 2 );
+
+            // Draw dashboard background
+            auto top = 0;
+            if( dashboard_width == max_dashboard_width )
+            {
+                for( auto && dash : dashboards )
+                {
+                    auto h = dash->get_height();
+                    auto r = rect{ 0.f, (float)top, get_dashboard_width() - 8.f, (float)h };
+                    dash->draw( win, r );
+                    top += h;
+                }
+            }
         }
 
         ImGui::EndChild();
@@ -1030,6 +1019,7 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
     }
 
     auto pos = ImGui::GetCursorScreenPos();
+    pos.y += ImGui::GetCursorPosY();
 
     ImGui::PushStyleColor(ImGuiCol_Text, white);
 
@@ -1039,25 +1029,16 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
                 { pos.x + r.w, pos.y + get_height() }, ImColor(dark_sensor_bg));
 
     auto size = ImGui::CalcTextSize(name.c_str());
-    float collapse_buton_h = 28.f + 3.f;  // Dashboard button size plus some spacing
-    ImGui::SetCursorPos(ImVec2( r.w / 2 - size.x / 2, 5 + collapse_buton_h));
+    float padding_top = ImGui::GetCursorPosY() + 85.f;  // Padding from top for scale digits. Add 85 for background and scale digits synchronizing.
+    ImGui::SetCursorPos(ImVec2( r.w / 2 - size.x / 2, 5 + padding_top));
     ImGui::Text("%s", name.c_str());
     ImGui::SameLine();
 
     ImGui::PushStyleColor(ImGuiCol_Text, grey);
     ImGui::SetCursorPosX(r.w - 25);
-    ImGui::SetCursorPosY( 3.f + collapse_buton_h );
+    ImGui::SetCursorPosY( 3.f + padding_top );
     std::string id = rsutils::string::from() << u8"\uF00D##Close_" << name;
-    if (ImGui::Button(id.c_str(),ImVec2(22,22)))
-    {
-        close();
-        config_file::instance().set( configurations::viewer::last_opened_dashboard, "" );
-    }
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip("Remove Dashboard from View");
-        win.link_hovered();
-    }
+
     ImGui::PopStyleColor();
 
     ImGui::GetWindowDrawList()->AddRectFilled({ pos.x + max_y_label_width + 15, pos.y + ImGui::GetTextLineHeight() + 5 },
@@ -1069,7 +1050,7 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
         auto y = max_y - i * (gap_y / ticks_y);
         std::string y_label = rsutils::string::from() << std::fixed << std::setprecision(2) << y;
         auto y_pixel = ImGui::GetTextLineHeight() + i * (height_y / ticks_y);
-        ImGui::SetCursorPos(ImVec2( 10, y_pixel + collapse_buton_h));
+        ImGui::SetCursorPos(ImVec2( 10, y_pixel + padding_top));
         ImGui::Text("%s", y_label.c_str());
 
         ImGui::GetWindowDrawList()->AddLine({ pos.x + max_y_label_width + 15.f, pos.y + y_pixel + 5.f },
@@ -1099,7 +1080,7 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
     {
         auto x = min_x + i * (gap_x / ticks_x);
         std::string x_label = rsutils::string::from() << std::fixed << std::setprecision(2) << x;
-        ImGui::SetCursorPos(ImVec2( 15 + max_y_label_width+ i * (graph_width / ticks_x), r.h - ImGui::GetTextLineHeight() + collapse_buton_h));
+        ImGui::SetCursorPos(ImVec2( 15 + max_y_label_width+ i * (graph_width / ticks_x), r.h - ImGui::GetTextLineHeight() + padding_top));
         ImGui::Text("%s", x_label.c_str());
 
         ImGui::GetWindowDrawList()->AddLine({ pos.x + 15 + max_y_label_width + i * (graph_width / ticks_x), pos.y + ImGui::GetTextLineHeight() + 5 },
@@ -1262,7 +1243,7 @@ void accel_dashboard::draw(ux_window& win, rect r) {
     draw_dashboard( win, r );
 
     ImGui::SetCursorPosX( ImGui::GetCursorPosX() + 40 );
-    ImGui::SetCursorPosY( ImGui::GetCursorPosY() + 3 );
+    ImGui::SetCursorPosY( ImGui::GetCursorPosY() );
 
     show_radiobuttons();
 

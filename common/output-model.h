@@ -242,6 +242,8 @@ namespace rs2
 
         std::vector<std::shared_ptr<stream_dashboard>> dashboards;
         std::map<std::string, std::function<std::shared_ptr<stream_dashboard>(std::string)>> available_dashboards;
+        const std::vector< std::string > dashboard_names = { "Acceleration", "Frame Drops per Second" };
+        int opened_dashboard_index;
 
         std::atomic<int> to_stop { 0 };
         std::thread fw_logger;
