@@ -184,6 +184,11 @@ namespace librealsense
                 if (get_thread_node(node, id, line))
                     return thread;
             }
+            else if( tag.compare( "Module" ) == 0 )
+            {
+                if( get_module_node( node, id, line ) )
+                    return module;
+            }
             else if (tag.compare("Enums") == 0)
             {
                 return enums;
@@ -227,6 +232,7 @@ namespace librealsense
 
             return true;
         }
+
         bool fw_logs_xml_helper::get_thread_node(xml_node<>* node_file, int* thread_id, string* thread_name)
         {
             for (xml_attribute<>* attribute = node_file->first_attribute(); attribute; attribute = attribute->next_attribute())
@@ -250,6 +256,11 @@ namespace librealsense
             }
 
             return true;
+        }
+
+        bool fw_logs_xml_helper::get_module_node( xml_node<> * node_file, int * module_id, std::string * module_name )
+        {
+            return get_thread_node( node_file, module_id, module_name );  // Currently same node struct
         }
 
         bool fw_logs_xml_helper::get_file_node(xml_node<>* node_file, int* file_id, string* file_name)

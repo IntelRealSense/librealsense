@@ -483,12 +483,22 @@ const char* rs2_get_fw_log_parsed_message(rs2_firmware_log_parsed_message* fw_lo
 const char* rs2_get_fw_log_parsed_file_name(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error);
 
 /**
-* \brief Gets RealSense firmware log parsed message thread name.
+* \brief Gets RealSense firmware log parsed message source (SoC) or thread name.
 * \param[in] fw_log_parsed_msg      firmware log parsed message object
 * \param[out] error                 If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
-* \return                           thread name of the firmware log parsed message
+* \return                           source (SoC) or thread name of the firmware log parsed message
 */
 const char* rs2_get_fw_log_parsed_thread_name(rs2_firmware_log_parsed_message* fw_log_parsed_msg, rs2_error** error);
+
+/**
+ * \brief Gets RealSense firmware log parsed message module name.
+ * \param[in] fw_log_parsed_msg      firmware log parsed message object
+ * \param[out] error                 If non-null, receives any error that occurs during this call, otherwise, errors are
+ * ignored. \return                  module name of the firmware log parsed message
+ */
+const char * rs2_get_fw_log_parsed_module_name( rs2_firmware_log_parsed_message * fw_log_parsed_msg,
+                                                rs2_error ** error );
+
 
 /**
 * \brief Gets RealSense firmware log parsed message severity.

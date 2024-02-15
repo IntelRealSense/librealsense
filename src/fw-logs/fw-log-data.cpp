@@ -15,46 +15,6 @@ namespace librealsense
 {
     namespace fw_logs
     {
-        rs2_log_severity fw_log_data::get_severity() const
-        {
-            return _severity;
-        }
-
-        const std::string& fw_log_data::get_message() const
-        {
-            return _message;
-        }
-
-        const std::string& fw_log_data::get_file_name() const
-        {
-            return _file_name;
-        }
-
-        const std::string& fw_log_data::get_source_name() const
-        {
-            return _source_name;
-        }
-
-        const std::string & fw_log_data::get_module_name() const
-        {
-            return _module_name;
-        }
-
-        uint32_t fw_log_data::get_line() const
-        {
-            return _line;
-        }
-
-        uint64_t fw_log_data::get_timestamp() const
-        {
-            return _timestamp;
-        }
-
-        uint32_t fw_log_data::get_sequence_id() const
-        {
-            return _sequence;
-        }
-
         rs2_log_severity fw_logs_binary_data::get_severity() const
         {
             const legacy_fw_log_binary * log_binary = reinterpret_cast< const legacy_fw_log_binary * >( logs_buffer.data() );

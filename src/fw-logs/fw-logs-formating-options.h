@@ -37,7 +37,8 @@ namespace librealsense
 
             bool get_event_data(int id, fw_log_event* log_event_data) const;
             bool get_file_name(int id, std::string* file_name) const;
-            bool get_thread_name(uint32_t thread_id, std::string* thread_name) const;
+            bool get_thread_name( uint32_t thread_id, std::string * thread_name ) const;
+            bool get_module_name( uint32_t module_id, std::string * module_name ) const;
             std::unordered_map<std::string, std::vector<kvp>> get_enums() const;
             bool initialize_from_xml();
 
@@ -46,6 +47,7 @@ namespace librealsense
             std::unordered_map<int, fw_log_event> _fw_logs_event_list;
             std::unordered_map<int, std::string> _fw_logs_file_names_list;
             std::unordered_map<int, std::string> _fw_logs_thread_names_list;
+            std::unordered_map<int, std::string> _fw_logs_module_names_list;
             std::unordered_map<std::string, std::vector<std::pair<int, std::string>>> _fw_logs_enum_names_list;
 
             std::string _xml_content;

@@ -2,38 +2,42 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "firmware_logger_device.h"
-#include <string>
 
 namespace librealsense
 {
     firmware_logger_device::firmware_logger_device( std::shared_ptr< const device_info > const & dev_info,
-        std::shared_ptr<hw_monitor> hardware_monitor,
-        const command& fw_logs_command, const command& flash_logs_command) :
-        device(dev_info),
-        _hw_monitor(hardware_monitor),
-        _fw_logs(),
-        _flash_logs(),
-        _flash_logs_initialized(false),
-        _parser(nullptr),
-        _fw_logs_command(fw_logs_command),
-        _flash_logs_command(flash_logs_command) { }
+                                                    std::shared_ptr< hw_monitor > hardware_monitor,
+                                                    const command & fw_logs_command,
+                                                    const command & flash_logs_command,
+                                                    const std::map< int, std::string > & source_id_to_name )
+        : device( dev_info )
+        , _fw_logs_command( fw_logs_command )
+        , _flash_logs_command( flash_logs_command )
+        , _hw_monitor( hardware_monitor )
+        , _fw_logs()
+        , _flash_logs()
+        , _flash_logs_initialized( false )
+        , _parser( nullptr )
+        , _parser_source_id_to_name( source_id_to_name )
+    {
+    }
 
-    bool firmware_logger_device::get_fw_log(fw_logs::fw_logs_binary_data& binary_data)
+    bool firmware_logger_device::get_fw_log( fw_logs::fw_logs_binary_data & binary_data )
     {
         bool result = false;
-        if (_fw_logs.empty())
+
+        if( _fw_logs.empty() )
         {
             get_fw_logs_from_hw_monitor();
         }
 
-        if (!_fw_logs.empty())
+        if( ! _fw_logs.empty() )
         {
-            fw_logs::fw_logs_binary_data data;
-            data = _fw_logs.front();
+            binary_data = std::move( _fw_logs.front() );
             _fw_logs.pop();
-            binary_data = data;
             result = true;
         }
+
         return result;
     }
 
@@ -44,92 +48,99 @@ namespace librealsense
 
     void firmware_logger_device::get_fw_logs_from_hw_monitor()
     {
-        auto res = _hw_monitor->send(_fw_logs_command);
-        if (res.empty())
+        if( ! _parser )
+            throw librealsense::wrong_api_call_sequence_exception( "FW log parser in not initialized" );
+
+        auto res = _hw_monitor->send( _fw_logs_command );
+        if( res.empty() )
         {
             return;
         }
 
-        auto beginOfLogIterator = res.begin();
-        // convert bytes to fw_logs_binary_data
-        for (int i = 0; i < res.size() / fw_logs::BINARY_DATA_SIZE; ++i)
+        // Convert bytes to fw_logs_binary_data
+        auto beginOfLogIterator = res.data();
+        size_t size_left = res.size();
+        while( size_left > 0 )
         {
-            auto endOfLogIterator = beginOfLogIterator + fw_logs::BINARY_DATA_SIZE;
-            std::vector<uint8_t> resultsForOneLog;
-            resultsForOneLog.insert(resultsForOneLog.begin(), beginOfLogIterator, endOfLogIterator);
-            fw_logs::fw_logs_binary_data binary_data{ resultsForOneLog };
-            _fw_logs.push(binary_data);
+            size_t log_size = _parser->get_log_size( beginOfLogIterator );
+            if( log_size > size_left )
+                throw librealsense::invalid_value_exception( "Received an incomplete FW log" );
+            auto endOfLogIterator = beginOfLogIterator + log_size;
+            fw_logs::fw_logs_binary_data binary_data;
+            binary_data.logs_buffer.insert( binary_data.logs_buffer.begin(), beginOfLogIterator, endOfLogIterator );
+            _fw_logs.push( std::move( binary_data ) );
             beginOfLogIterator = endOfLogIterator;
+            size_left -= log_size;
         }
     }
 
     void firmware_logger_device::get_flash_logs_from_hw_monitor()
     {
-        auto res = _hw_monitor->send(_flash_logs_command);
+        auto res = _hw_monitor->send( _flash_logs_command );
 
-        if (res.empty())
+        if( res.empty() )
         {
-            LOG_INFO("Getting Flash logs failed!");
+            LOG_INFO( "Getting Flash logs failed!" );
             return;
         }
 
-        //erasing header
+        // Erasing header
         int size_of_flash_logs_header = 27;
-        res.erase(res.begin(), res.begin() + size_of_flash_logs_header);
+        res.erase( res.begin(), res.begin() + size_of_flash_logs_header );
 
+        // Convert bytes to flash_logs_binary_data. Flash logs are supported only for legacy devices.
         auto beginOfLogIterator = res.begin();
-        // convert bytes to flash_logs_binary_data
-        for (int i = 0; i < res.size() / fw_logs::BINARY_DATA_SIZE && *beginOfLogIterator == 160; ++i)
+        for( int i = 0; i < res.size() / sizeof( fw_logs::legacy_fw_log_binary ) && *beginOfLogIterator == 160; ++i )
         {
-            auto endOfLogIterator = beginOfLogIterator + fw_logs::BINARY_DATA_SIZE;
-            std::vector<uint8_t> resultsForOneLog;
-            resultsForOneLog.insert(resultsForOneLog.begin(), beginOfLogIterator, endOfLogIterator);
+            auto endOfLogIterator = beginOfLogIterator + sizeof( fw_logs::legacy_fw_log_binary );
+            std::vector< uint8_t > resultsForOneLog;
+            resultsForOneLog.insert( resultsForOneLog.begin(), beginOfLogIterator, endOfLogIterator );
             fw_logs::fw_logs_binary_data binary_data{ resultsForOneLog };
-            _flash_logs.push(binary_data);
+            _flash_logs.push( binary_data );
             beginOfLogIterator = endOfLogIterator;
         }
 
         _flash_logs_initialized = true;
     }
 
-    bool firmware_logger_device::get_flash_log(fw_logs::fw_logs_binary_data& binary_data)
+    bool firmware_logger_device::get_flash_log( fw_logs::fw_logs_binary_data & binary_data )
     {
         bool result = false;
-        if (!_flash_logs_initialized)
+
+        if( ! _flash_logs_initialized )
         {
             get_flash_logs_from_hw_monitor();
         }
 
-        if (!_flash_logs.empty())
+        if( ! _flash_logs.empty() )
         {
-            fw_logs::fw_logs_binary_data data;
-            data = _flash_logs.front();
+            binary_data = std::move( _flash_logs.front() );
             _flash_logs.pop();
-            binary_data = data;
             result = true;
         }
+
         return result;
     }
 
-    bool firmware_logger_device::init_parser(std::string xml_content)
+    bool firmware_logger_device::init_parser( std::string xml_content )
     {
         bool is_d400 = std::string( get_info( RS2_CAMERA_INFO_PRODUCT_LINE ) ) == "D400";
-        
-        if( is_d400 )
-            _parser = std::make_unique< fw_logs::legacy_fw_logs_parser >( xml_content );
-        else
-            _parser = std::make_unique< fw_logs::fw_logs_parser >( xml_content );
 
-        return (_parser != nullptr);
+        if( is_d400 )
+            _parser = std::make_unique< fw_logs::legacy_fw_logs_parser >( xml_content, _parser_source_id_to_name );
+        else
+            _parser = std::make_unique< fw_logs::fw_logs_parser >( xml_content, _parser_source_id_to_name );
+
+        return ( _parser != nullptr );
     }
 
-    bool firmware_logger_device::parse_log(const fw_logs::fw_logs_binary_data* fw_log_msg,
-        fw_logs::fw_log_data* parsed_msg)
+    bool firmware_logger_device::parse_log( const fw_logs::fw_logs_binary_data * fw_log_msg,
+                                            fw_logs::fw_log_data * parsed_msg )
     {
         bool result = false;
-        if (_parser && parsed_msg && fw_log_msg)
+        if( _parser && parsed_msg && fw_log_msg )
         {
-            *parsed_msg = _parser->parse_fw_log(fw_log_msg);
+            *parsed_msg = _parser->parse_fw_log( fw_log_msg );
             result = true;
         }
 

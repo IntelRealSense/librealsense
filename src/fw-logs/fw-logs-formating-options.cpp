@@ -80,6 +80,21 @@ namespace librealsense
             }
         }
 
+        bool fw_logs_formating_options::get_module_name( uint32_t module_id, string * module_name ) const
+        {
+            auto file_it = _fw_logs_module_names_list.find( module_id );
+            if( file_it != _fw_logs_module_names_list.end() )
+            {
+                *module_name = file_it->second;
+                return true;
+            }
+            else
+            {
+                *module_name = "Unknown";
+                return false;
+            }
+        }
+
         std::unordered_map<string, std::vector<kvp>> fw_logs_formating_options::get_enums() const
         {
             return _fw_logs_enum_names_list;

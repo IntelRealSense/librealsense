@@ -14,10 +14,12 @@ namespace librealsense
         class fw_logs_parser : public std::enable_shared_from_this<fw_logs_parser>
         {
         public:
-            explicit fw_logs_parser( const std::string & xml_content);
+            explicit fw_logs_parser( const std::string & xml_content,
+                                     const std::map< int, std::string > & source_id_to_name );
             virtual ~fw_logs_parser() = default;
 
-            fw_log_data parse_fw_log(const fw_logs_binary_data* fw_log_msg);
+            fw_log_data parse_fw_log( const fw_logs_binary_data * fw_log_msg );
+            virtual size_t get_log_size( const uint8_t * log ) const;
 
         protected:
             struct structured_binary_data // Common format for legacy and extended binary data formats
@@ -41,15 +43,20 @@ namespace librealsense
             virtual void structure_params( const fw_logs_binary_data * raw,
                                            size_t num_of_params,
                                            structured_binary_data * structured ) const;
+            virtual void parse_source_name( const structured_binary_data * structured,
+                                            fw_log_data * parsed_data ) const;
 
-        private:
             fw_logs_formating_options _fw_logs_formating_options;
+            std::map< int, std::string > _source_id_to_name;
         };
 
         class legacy_fw_logs_parser : public fw_logs_parser
         {
         public:
-            explicit legacy_fw_logs_parser( const std::string & xml_content );
+            explicit legacy_fw_logs_parser( const std::string & xml_content,
+                                            const std::map< int, std::string > & source_id_to_name );
+
+            size_t get_log_size( const uint8_t * log ) const override;
 
         protected:
             void structure_timestamp( const fw_logs_binary_data * raw,
@@ -57,6 +64,8 @@ namespace librealsense
             void structure_params( const fw_logs_binary_data * raw,
                                    size_t num_of_params,
                                    structured_binary_data * structured ) const override;
+            void parse_source_name( const structured_binary_data * structured,
+                                    fw_log_data * parsed_data ) const override;
         };
     }
 }

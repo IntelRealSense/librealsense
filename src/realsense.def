@@ -412,6 +412,7 @@ EXPORTS
     rs2_get_fw_log_parsed_message
     rs2_get_fw_log_parsed_file_name
     rs2_get_fw_log_parsed_thread_name
+    rs2_get_fw_log_parsed_module_name
     rs2_get_fw_log_parsed_severity
     rs2_get_fw_log_parsed_line
     rs2_get_fw_log_parsed_timestamp

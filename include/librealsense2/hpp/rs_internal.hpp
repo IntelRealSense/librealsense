@@ -396,9 +396,16 @@ namespace rs2
         std::string thread_name() const
         {
             rs2_error* e = nullptr;
-            std::string thread_name(rs2_get_fw_log_parsed_thread_name(_parsed_fw_log.get(), &e));
+            std::string name(rs2_get_fw_log_parsed_thread_name(_parsed_fw_log.get(), &e));
             error::handle(e);
-            return thread_name;
+            return name;
+        }
+        std::string module_name() const
+        {
+            rs2_error * e = nullptr;
+            std::string name( rs2_get_fw_log_parsed_module_name( _parsed_fw_log.get(), &e ) );
+            error::handle( e );
+            return name;
         }
         std::string severity() const
         {

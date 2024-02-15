@@ -5,7 +5,6 @@
 #include "fw-logs-formating-options.h"
 
 #include <rsutils/string/from.h>
-#include <rsutils/easylogging/easyloggingpp.h>
 
 #include <regex>
 #include <sstream>
@@ -37,49 +36,39 @@ namespace librealsense
 
             for( size_t i = 0; i < params_info.size(); i++ )
             {
-                string regular_exp[4];
-                string replacement[4];
-                stringstream st_regular_exp[4];
-                stringstream st_replacement[4];
+                // Parsing 4 expression types - {0} / {1:x} / {2:f} / {3,Enum}
+                stringstream ss_regular_exp[4];
+                stringstream ss_replacement[4];
                 string param_as_string = convert_param_to_string( params_info[i],
                                                                   params_blob.data() + params_info[i].offset );
 
-                st_regular_exp[0] << "\\{\\b(" << i << ")\\}";
-                regular_exp[0] = st_regular_exp[0].str();
+                ss_regular_exp[0] << "\\{\\b(" << i << ")\\}";
+                exp_replace_map[ss_regular_exp[0].str()] = param_as_string;
 
-                st_replacement[0] << param_as_string;
-                replacement[0] = st_replacement[0].str();
+                // Print as hexadecimal number, assumes parameter was an integer number.
+                ss_regular_exp[1] << "\\{\\b(" << i << "):x\\}";
+                ss_replacement[1] << hex << setw( 2 ) << setfill( '0' ) << std::stoull( param_as_string );
+                exp_replace_map[ss_regular_exp[1].str()] = ss_replacement[1].str();
 
-                exp_replace_map[regular_exp[0]] = replacement[0];
-
-
-                st_regular_exp[1] << "\\{\\b(" << i << "):x\\}";
-                regular_exp[1] = st_regular_exp[1].str();
-
-                st_replacement[1] << hex << setw( 2 ) << setfill( '0' ) << param_as_string;
-                replacement[1] = st_replacement[1].str();
-
-                exp_replace_map[regular_exp[1]] = replacement[1];
-
-                st_regular_exp[2] << "\\{\\b(" << i << "):f\\}";
-                regular_exp[2] = st_regular_exp[2].str();
-                // Parse int32_t as 4 raw bytes of float
-                float tmp = *reinterpret_cast< const float * >( &params[i] );
-                if( std::isfinite( tmp ) )
-                    st_replacement[2] << tmp;
+                // Legacy format - parse parameter as 4 raw bytes of float. Parameter can be uint16_t or uint32_t.
+                ss_regular_exp[2] << "\\{\\b(" << i << "):f\\}";
+                uint32_t as_int32 = 0;
+                memcpy( &as_int32, params_blob.data() + params_info[i].offset, params_info[i].size );
+                float as_float = *reinterpret_cast< const float * >( &as_int32 );
+                if( std::isfinite( as_float ) )
+                    ss_replacement[2] << as_float;
                 else
                 {
-                    LOG_ERROR( "Expecting a number, received infinite or NaN" );
-                    st_replacement[2] << "0x" << hex << setw( 2 ) << setfill( '0' ) << params[i];
+                    // Values for other regular expresions can be NaN when converted to float.
+                    // Prepare replacement as hex value (will probably not be used because format is not with :f).
+                    ss_replacement[2] << "0x" << hex << setw( 2 ) << setfill( '0' ) << as_int32;
                 }
-                replacement[2] = st_replacement[2].str();
-                exp_replace_map[regular_exp[2]] = replacement[2];
+                exp_replace_map[ss_regular_exp[2].str()] = ss_replacement[2].str();
 
-
-                st_regular_exp[3] << "\\{\\b(" << i << "),[a-zA-Z]+\\}";
-                regular_exp[3] = st_regular_exp[3].str();
-
-                enum_replace_map[regular_exp[3]] = std::stoi( param_as_string ); // enum values are maped by int (kvp)
+                // enum values are mapped by int (kvp) but we don't know if this parameter is related to enum, using
+                // unsigned long long because unrelated arguments can overflow int
+                ss_regular_exp[3] << "\\{\\b(" << i << "),[a-zA-Z]+\\}";
+                enum_replace_map[ss_regular_exp[3].str()] = std::stoull( param_as_string );
             }
 
             return replace_params(source, exp_replace_map, enum_replace_map, dest);
