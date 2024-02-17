@@ -282,7 +282,7 @@ void rscuda::unpack_yuy2_cuda_helper(const uint8_t* h_src, uint8_t* h_dst, int n
     result = cudaGetLastError();
     assert(result == cudaSuccess);
 
-    cudaDeviceSynchronize();
+    cudaStreamSynchronize(0);
 
     result = cudaMemcpy(h_dst, d_dst.get(), n * sizeof(uint8_t) * size, cudaMemcpyDeviceToHost);
     assert(result == cudaSuccess);
@@ -325,7 +325,7 @@ void rscuda::y8_y8_from_y8i_cuda_helper(uint8_t* const dest[], int count, const 
     assert(result == cudaSuccess);
 
     kernel_split_frame_y8_y8_from_y8i_cuda << <numBlocks, RS2_CUDA_THREADS_PER_BLOCK >> > (d_dst_0.get(), d_dst_1.get(), count, d_src.get());
-    cudaDeviceSynchronize();
+    cudaStreamSynchronize(0);
 
     result = cudaGetLastError();
     assert(result == cudaSuccess);
@@ -377,7 +377,7 @@ void rscuda::y16_y16_from_y12i_10_cuda_helper(uint8_t* const dest[], int count, 
     assert(result == cudaSuccess);
 
     kernel_split_frame_y16_y16_from_y12i_cuda <<<numBlocks, RS2_CUDA_THREADS_PER_BLOCK>>> (d_dst_0.get(), d_dst_1.get(), count, d_src.get());
-    cudaDeviceSynchronize();
+    cudaStreamSynchronize(0);
 
     result = cudaGetLastError();
     assert(result == cudaSuccess);
@@ -423,7 +423,7 @@ void rscuda::unpack_z16_y8_from_sr300_inzi_cuda(uint8_t * const dest, const uint
     assert(result == cudaSuccess);
 
     kernel_z16_y8_from_sr300_inzi_cuda <<<numBlocks, RS2_CUDA_THREADS_PER_BLOCK >>> (d_src.get(), d_dst.get(), count);
-    cudaDeviceSynchronize();
+    cudaStreamSynchronize(0);
 
     result = cudaMemcpy(dest, d_dst.get(), count * sizeof(uint8_t), cudaMemcpyDeviceToHost);
     assert(result == cudaSuccess);
@@ -461,7 +461,7 @@ void rscuda::unpack_z16_y16_from_sr300_inzi_cuda(uint16_t * const dest, const ui
     assert(result == cudaSuccess);
 
     kernel_z16_y16_from_sr300_inzi_cuda << <numBlocks, RS2_CUDA_THREADS_PER_BLOCK >> > (d_src.get(), d_dst.get(), count);
-    cudaDeviceSynchronize();
+    cudaStreamSynchronize(0);
 
     result = cudaMemcpy(dest, d_dst.get(), count * sizeof(uint16_t), cudaMemcpyDeviceToHost);
     assert(result == cudaSuccess);
