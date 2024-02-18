@@ -94,7 +94,7 @@ public:
     bool has_metadata_readers() const;
 
     typedef std::function< void( const std::shared_ptr< realdds::dds_option > & option, float value ) > set_option_callback;
-    typedef std::function< float( const std::shared_ptr< realdds::dds_option > & option ) > query_option_callback;
+    typedef std::function< rsutils::json( const std::shared_ptr< realdds::dds_option > & option ) > query_option_callback;
     void on_set_option( set_option_callback callback ) { _set_option_callback = std::move( callback ); }
     void on_query_option( query_option_callback callback ) { _query_option_callback = std::move( callback ); }
 
@@ -114,7 +114,7 @@ private:
     void on_query_option( control_sample const &, rsutils::json & reply );
     void on_query_options( control_sample const &, rsutils::json & reply );
 
-    float query_option( std::shared_ptr< dds_option > const & ) const;
+    rsutils::json query_option( std::shared_ptr< dds_option > const & ) const;
 
     std::shared_ptr< dds_publisher > _publisher;
     std::shared_ptr< dds_subscriber > _subscriber;

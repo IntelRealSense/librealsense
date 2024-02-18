@@ -164,7 +164,7 @@ rs2_processing_block* rs2_gl_create_align(int api_version, rs2_stream to, rs2_er
 {
     verify_version_compatibility(api_version);
     auto block = std::make_shared<librealsense::gl::align_gl>(to);
-    auto backup = std::make_shared<librealsense::align>(to);
+    auto backup = align::create_align(to);
     auto dual = std::make_shared<librealsense::gl::dual_processing_block>();
     dual->add(block);
     dual->add(backup);

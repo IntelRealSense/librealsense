@@ -1,5 +1,5 @@
-/* License: Apache 2.0. See LICENSE file in root directory.
-Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include "pyrealsense2.h"
 #include <librealsense2/hpp/rs_options.hpp>
@@ -20,8 +20,8 @@ void init_options(py::module &m) {
                 value = py::float_( value_->as_float );
             else if( RS2_OPTION_TYPE_STRING == value_->type )
                 value = py::str( value_->as_string );
-            else if( RS2_OPTION_TYPE_NUMBER == value_->type )
-                value = py::int_( value_->as_number_signed );
+            else if( RS2_OPTION_TYPE_INTEGER == value_->type )
+                value = py::int_( value_->as_integer );
             else
                 value = py::cast< py::none >( Py_None );
         }

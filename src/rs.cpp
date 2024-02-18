@@ -1,5 +1,5 @@
 // License: Apache 2.0 See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include <functional>   // For function
 
@@ -24,6 +24,7 @@
 #include "proc/processing-blocks-factory.h"
 #include "proc/colorizer.h"
 #include "proc/pointcloud.h"
+#include "proc/align.h"
 #include "proc/threshold.h"
 #include "proc/units-transform.h"
 #include "proc/disparity-transform.h"
@@ -105,7 +106,12 @@ struct rs2_option_value_wrapper : rs2_option_value
             if( p_json->is_number_float() )
             {
                 type = RS2_OPTION_TYPE_FLOAT;
-                as_float = p_json->get< float >();
+                p_json->get_to( as_float );
+            }
+            if( p_json->is_number_integer() )
+            {
+                type = RS2_OPTION_TYPE_INTEGER;
+                p_json->get_to( as_integer );
             }
             else if( p_json->is_string() )
             {
@@ -206,7 +212,7 @@ struct rs2_error
 
 rs2_error *rs2_create_error(const char* what, const char* name, const char* args, rs2_exception_type type) BEGIN_API_CALL
 {
-    LOG_ERROR( "[" << name << "][" << rs2_exception_type_to_string( type ) << "] " << what << ": " << args );
+    LOG_ERROR( "[" << name << "( " << args << " ) " << rs2_exception_type_to_string( type ) << "] " << what );
     return new rs2_error{ what, name, args, type };
 }
 NOEXCEPT_RETURN(nullptr, what, name, args, type)
@@ -2597,7 +2603,7 @@ rs2_processing_block* rs2_create_align(rs2_stream align_to, rs2_error** error) B
 {
     VALIDATE_ENUM(align_to);
 
-    auto block = create_align(align_to);
+    auto block = align::create_align(align_to);
 
     return new rs2_processing_block{ block };
 }

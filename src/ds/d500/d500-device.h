@@ -18,7 +18,6 @@
 
 namespace librealsense
 {
-    class hdr_config;
     class d400_thermal_monitor;
     class ds_devices_common;
     class d500_info;

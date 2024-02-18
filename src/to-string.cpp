@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include "core/options-registry.h"
 #include "core/enum-helpers.h"
@@ -897,7 +897,7 @@ std::string const & get_string( rs2_option_type value )
 #define CASE( X ) STRARR( arr, OPTION_TYPE, X );
         CASE( FLOAT )
         CASE( STRING )
-        CASE( NUMBER )
+        CASE( INTEGER )
 #undef CASE
             return arr;
     }();

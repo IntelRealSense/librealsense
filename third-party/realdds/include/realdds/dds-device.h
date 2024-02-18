@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include "dds-defines.h"
@@ -78,8 +78,8 @@ public:
 
     void open( const dds_stream_profiles & profiles );
 
-    void set_option_value( const std::shared_ptr< dds_option > & option, float new_value );
-    float query_option_value( const std::shared_ptr< dds_option > & option );
+    void set_option_value( const std::shared_ptr< dds_option > & option, rsutils::json new_value );
+    rsutils::json query_option_value( const std::shared_ptr< dds_option > & option );
 
     void send_control( topics::flexible_msg &&, rsutils::json * reply = nullptr );
 

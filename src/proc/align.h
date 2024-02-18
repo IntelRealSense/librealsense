@@ -15,6 +15,7 @@ namespace librealsense
     {
     public:
         align(rs2_stream to_stream);
+        static std::shared_ptr<align> create_align(rs2_stream align_to);
 
     protected:
         align(rs2_stream to_stream, const char* name)

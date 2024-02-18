@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
 #test:retries:gha 2
@@ -30,8 +30,8 @@ with test.remote.fork( nested_indent='  S' ) as remote:
             s1 = dds.color_stream_server( 's1', 'sensor' )
             s1.init_profiles( s1profiles, 0 )
             s1.init_options( [
-                dds.option( 'Backlight Compensation', dds.option_range( 0, 1, 1, 0 ), 'Backlight custom description' ),
-                dds.option( 'Custom Option', dds.option_range( 0, 10, 1, 5 ), 'Description' )
+                dds.option.from_json( ['Backlight Compensation', 0, 0, 1, 1, 0, 'Backlight custom description'] ),
+                dds.option.from_json( ['Custom Option', 5., -10, 10, 1, -5., 'Description'] )
                 ] )
             server = dds.device_server( participant, root )
             server.init( [s1], [], {} )
@@ -43,7 +43,7 @@ with test.remote.fork( nested_indent='  S' ) as remote:
             s1 = dds.color_stream_server( 's2', 'sensor2' )
             s1.init_profiles( s1profiles, 0 )
             s1.init_options( [
-                dds.option( 'Another Option', dds.option_range( 5, 15, 2, 7 ), 'Another Option' )
+                dds.option.from_json( ['Another Option', 7., 5, 15, 2, 7., 'Another Option'] )
                 ] )
             server = dds.device_server( participant, root )
             server.init( [s1], [], {} )

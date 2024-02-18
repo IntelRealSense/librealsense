@@ -4,6 +4,9 @@
 # test:device each(D400*)
 # test:device each(D500*)
 
+# See FW stability issue RSDSO-18908
+# test:retries 2
+
 import pyrealsense2 as rs
 from rspy import test
 from rspy import log

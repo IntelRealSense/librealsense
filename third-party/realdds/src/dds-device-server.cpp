@@ -375,9 +375,9 @@ void dds_device_server::on_set_option( control_sample const & control, rsutils::
 }
 
 
-float dds_device_server::query_option( std::shared_ptr< dds_option > const & option ) const
+json dds_device_server::query_option( std::shared_ptr< dds_option > const & option ) const
 {
-    float value;
+    json value;
     if( _query_option_callback )
     {
         value = _query_option_callback( option );
