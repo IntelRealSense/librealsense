@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-topic.h>
@@ -142,10 +142,17 @@ void dds_topic_reader::on_data_available( eprosima::fastdds::dds::DataReader * )
     // Called when a new Data Message is received
     if( _on_data_available )
     {
-        rsutils::time::stopwatch stopwatch;
-        _on_data_available();
-        if( stopwatch.get_elapsed() > std::chrono::milliseconds( 500 ) )
-            LOG_WARNING( "<---- '" << _topic->get()->get_name() << "' callback took too long!" );
+        try
+        {
+            rsutils::time::stopwatch stopwatch;
+            _on_data_available();
+            if( stopwatch.get_elapsed() > std::chrono::milliseconds( 500 ) )
+                LOG_WARNING( _topic->get()->get_name() << "' callback took too long!" );
+        }
+        catch( std::exception const & e )
+        {
+            LOG_ERROR( "[" << _topic->get()->get_name() << "] exception: " << e.what() );
+        }
     }
 }
 
