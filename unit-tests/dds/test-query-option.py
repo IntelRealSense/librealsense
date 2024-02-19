@@ -11,6 +11,7 @@ dds.debug( log.is_debug_on() )
 device_info = dds.message.device_info()
 device_info.topic_root = 'server/device'
 
+
 with test.remote.fork( nested_indent=None ) as remote:
     if remote is None:  # we're the fork
 
@@ -25,20 +26,20 @@ with test.remote.fork( nested_indent=None ) as remote:
                 dds.video_stream_profile( 9, dds.video_encoding.rgb, 10, 10 )
                 ], 0 )
             s1.init_options( [
-                dds.option( 'Backlight Compensation', dds.option_range( 0, 1, 1, 0 ), 'Backlight custom description' ),
-                dds.option( 'Custom Option', dds.option_range( 0, 1, 0.1, 0.5 ), 'Something' ),
-                dds.option( 'Option 3', dds.option_range( 0, 50, 1, 25 ), 'Something Else' )
+                dds.option.from_json( ['Backlight Compensation', 0, 0, 1, 1, 0, 'Backlight custom description'] ),
+                dds.option.from_json( ['Custom Option', 0.5, 0, 1, 0.1, 0.5, 'Something'] ),
+                dds.option.from_json( ['Option 3', 25., 0, 50, 1, 25, 'Something Else'] )
                 ] )
             s2 = dds.depth_stream_server( 's2', 'sensor' )
             s2.init_profiles( [
                 dds.video_stream_profile( 27, dds.video_encoding.z16, 100, 100 )
                 ], 0 )
             s2.init_options( [
-                dds.option( 's2 option', dds.option_range( 123, 123, 0, 123 ), 'constant' )
+                dds.option.from_json( ['s2 option', 123, 'read-only integer'] )
                 ] )
             server = dds.device_server( participant, device_info.topic_root )
             server.init( [s1, s2], [
-                dds.option( 'IP Address', dds.option_range( 1234, 1234, 0, 1234 ), 'IP' )
+                dds.option.from_json( ['IP Address', '1.2.3.4', None, 'IP', ['optional', 'IPv4']] )
                 ], {} )
 
         raise StopIteration()  # exit the 'with' statement

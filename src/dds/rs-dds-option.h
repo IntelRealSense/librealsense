@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #pragma once
 
@@ -41,7 +41,8 @@ public:
 
     float query() const override;
 
-    bool is_enabled() const override { return true; }
+    bool is_read_only() const override;
+    bool is_enabled() const override;
     const char * get_description() const override;
 };
 

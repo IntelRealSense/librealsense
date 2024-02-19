@@ -11,6 +11,8 @@
 #include <rsutils/time/timer.h>
 #include <rsutils/json.h>
 
+using rsutils::json;
+
 
 namespace realdds {
 
@@ -189,19 +191,19 @@ void dds_device::open( const dds_stream_profiles & profiles )
     _impl->open( profiles );
 }
 
-void dds_device::set_option_value( const std::shared_ptr< dds_option > & option, float new_value )
+void dds_device::set_option_value( const std::shared_ptr< dds_option > & option, json new_value )
 {
     wait_until_ready( 0 );  // throw if not
-    _impl->set_option_value( option, new_value );
+    _impl->set_option_value( option, std::move( new_value ) );
 }
 
-float dds_device::query_option_value( const std::shared_ptr< dds_option > & option )
+json dds_device::query_option_value( const std::shared_ptr< dds_option > & option )
 {
     wait_until_ready( 0 );  // throw if not
     return _impl->query_option_value( option );
 }
 
-void dds_device::send_control( topics::flexible_msg && msg, rsutils::json * reply )
+void dds_device::send_control( topics::flexible_msg && msg, json * reply )
 {
     wait_until_ready( 0 );  // throw if not
     _impl->write_control_message( std::move( msg ), reply );
@@ -243,7 +245,7 @@ rsutils::subscription dds_device::on_notification( on_notification_callback && c
 }
 
 
-bool dds_device::check_reply( rsutils::json const & reply, std::string * p_explanation )
+bool dds_device::check_reply( json const & reply, std::string * p_explanation )
 {
     auto status_j = reply.nested( topics::reply::key::status );
     if( ! status_j )

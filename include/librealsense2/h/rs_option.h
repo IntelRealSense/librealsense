@@ -151,7 +151,7 @@ extern "C" {
     */
     typedef enum rs2_option_type
     {
-        RS2_OPTION_TYPE_NUMBER, /**< 64-bit integer value, either as_number_signed or as_number_unsigned */
+        RS2_OPTION_TYPE_INTEGER, /**< 64-bit signed integer value */
         RS2_OPTION_TYPE_FLOAT,
         RS2_OPTION_TYPE_STRING,
 
@@ -174,8 +174,7 @@ extern "C" {
         union {
             char const * as_string;       /**< valid only while rs2_option_value is alive! */
             float as_float;
-            int64_t as_number_signed;
-            uint64_t as_number_unsigned;
+            int64_t as_integer;
         };
     } rs2_option_value;
 

@@ -143,11 +143,6 @@ namespace librealsense
                                  std::string( "Option can be set only in safety service mode" ) ) };
 
         gate_depth_option( RS2_OPTION_ENABLE_AUTO_EXPOSURE, ds, options_and_reasons );
-        gate_depth_option( RS2_OPTION_SEQUENCE_NAME, ds, options_and_reasons );
-        gate_depth_option( RS2_OPTION_SEQUENCE_SIZE, ds, options_and_reasons );
-        gate_depth_option( RS2_OPTION_SEQUENCE_ID, ds, options_and_reasons );
-        gate_depth_option( RS2_OPTION_HDR_ENABLED, ds, options_and_reasons );
-        gate_depth_option( RS2_OPTION_ENABLE_AUTO_EXPOSURE, ds, options_and_reasons );
         gate_depth_option( RS2_OPTION_EXPOSURE, ds, options_and_reasons );
         gate_depth_option( RS2_OPTION_GAIN, ds, options_and_reasons );
         gate_depth_option( RS2_OPTION_EMITTER_ALWAYS_ON, ds, options_and_reasons );

@@ -8,14 +8,12 @@
 
 #include <vector>
 
-#include "align.h"
 #include "../types.h"
 
 #include "identity-processing-block.h"
 
 namespace librealsense
 {
-    std::shared_ptr<librealsense::align> create_align(rs2_stream align_to);
 
     class processing_block_factory
     {

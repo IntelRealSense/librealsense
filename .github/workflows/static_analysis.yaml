@@ -119,6 +119,7 @@ jobs:
           git checkout 687dc56e1cf52c865cebf6ac94ad67906d6e1369
           
           echo "Install LibRealSense pre-installed packages requirements"
+          sudo apt-get update 
           sudo apt-get install libglfw3-dev libgl1-mesa-dev libglu1-mesa-dev at
           
           python3 -mvenv venv
