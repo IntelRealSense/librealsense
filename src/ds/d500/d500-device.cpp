@@ -473,10 +473,6 @@ namespace librealsense
 
             _is_locked = _ds_device_common->is_locked( gvd_buff.data(), is_camera_locked_offset );
 
-            depth_sensor.register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
-                std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_EXT_TRIGGER,
-                    "Generate trigger from the camera to external device once per frame"));
-
 
             //EXPOSURE AND GAIN - preparing uvc options
             auto exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(raw_depth_sensor,
