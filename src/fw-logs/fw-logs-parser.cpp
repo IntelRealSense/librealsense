@@ -1,59 +1,74 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
-#include "fw-logs-parser.h"
-#include "fw-string-formatter.h"
+#include <src/fw-logs/fw-logs-parser.h>
+#include <src/fw-logs/fw-string-formatter.h>
+#include <src/fw-logs/fw-logs-xml-helper.h>
+
 #include <rsutils/string/from.h>
 
 #include <regex>
-#include <sstream>
-#include <stdint.h>
+#include <fstream>
+#include <iterator>
 
-using namespace std;
 
 namespace librealsense
 {
     namespace fw_logs
     {
-        fw_logs_parser::fw_logs_parser( const string & xml_content,
+        fw_logs_parser::fw_logs_parser( const std::string & definitions_xml,
                                         const std::map< int, std::string > & source_id_to_name )
-            : _fw_logs_formating_options( xml_content )
+            : _source_to_formatting_options()
             , _source_id_to_name( source_id_to_name )
         {
-            _fw_logs_formating_options.initialize_from_xml();
+            fw_logs_xml_helper helper;
+            for( auto & source : _source_id_to_name )
+            {
+                std::string path = helper.get_source_parser_file_path( source.first, definitions_xml );
+                std::ifstream f( path.c_str() );
+                if( f.good() )
+                {
+                    std::string xml_contents;
+                    xml_contents.append( std::istreambuf_iterator< char >( f ), std::istreambuf_iterator< char >() );
+                    fw_logs_formatting_options format_options( std::move( xml_contents ) );
+                    _source_to_formatting_options[source.first] = format_options;
+                }
+                else
+                    throw librealsense::invalid_value_exception( rsutils::string::from() << "Can't open file " << path );
+            }
         }
 
         fw_log_data fw_logs_parser::parse_fw_log( const fw_logs_binary_data * fw_log_msg ) 
         {
-            fw_log_data log_data = fw_log_data();
+            fw_log_data parsed_data = fw_log_data();
 
-            if (!fw_log_msg || fw_log_msg->logs_buffer.size() == 0)
-                return log_data;
+            if( ! fw_log_msg || fw_log_msg->logs_buffer.size() == 0 )
+                return parsed_data;
 
+            // Struct data in a common format
             structured_binary_data structured = structure_common_data( fw_log_msg );
-
-            fw_log_event log_event_data;
-            _fw_logs_formating_options.get_event_data( structured.event_id, &log_event_data );
-
             structure_timestamp( fw_log_msg, &structured );
-            structure_params( fw_log_msg, log_event_data.num_of_params, &structured );
 
-            fw_string_formatter reg_exp( _fw_logs_formating_options.get_enums() );
-            reg_exp.generate_message( log_event_data.line,
-                                      structured.params_info,
-                                      structured.params_blob,
-                                      &log_data.message );
+            const fw_logs_formatting_options & formatting = get_format_options_ref( structured.source_id );
+
+            kvp event_data = formatting.get_event_data( structured.event_id );
+            structure_params( fw_log_msg, event_data.first, &structured );
+
+            // Parse data
+            fw_string_formatter reg_exp( formatting.get_enums() );
+            parsed_data.message = reg_exp.generate_message( event_data.second,
+                                                            structured.params_info,
+                                                            structured.params_blob );
             
-            log_data.severity = fw_log_msg->get_severity(); // TODO - get severity according to underlying struct
-            log_data.line = structured.line;
-            log_data.sequence = structured.sequence;
-            log_data.timestamp = structured.timestamp;
+            parsed_data.line = structured.line;
+            parsed_data.sequence = structured.sequence;
+            parsed_data.timestamp = structured.timestamp;
+            //parsed_data.severity = structured.severity;  // TODO - get severity according to underlying struct
+            parsed_data.source_name = get_source_name( structured.source_id );
+            parsed_data.file_name = formatting.get_file_name( structured.file_id );
+            parsed_data.module_name = formatting.get_module_name( structured.module_id );
 
-            _fw_logs_formating_options.get_file_name( structured.file_id, &log_data.file_name );
-            _fw_logs_formating_options.get_module_name( structured.module_id, &log_data.module_name );
-            parse_source_name( &structured, &log_data );
-
-            return log_data;
+            return parsed_data;
         }
 
         size_t fw_logs_parser::get_log_size( const uint8_t * log ) const
@@ -66,19 +81,19 @@ namespace librealsense
         fw_logs_parser::structured_binary_data
         fw_logs_parser::structure_common_data( const fw_logs_binary_data * fw_log_msg ) const
         {
-            structured_binary_data log_data;
+            structured_binary_data structured_data;
 
             auto * log_binary = reinterpret_cast< const fw_log_binary * >( fw_log_msg->logs_buffer.data() );
 
-            log_data.severity = static_cast< uint32_t >( log_binary->severity );
-            log_data.source_id = static_cast< uint32_t >( log_binary->source_id );
-            log_data.file_id = static_cast< uint32_t >( log_binary->file_id );
-            log_data.module_id = static_cast< uint32_t >( log_binary->module_id );
-            log_data.event_id = static_cast< uint32_t >( log_binary->event_id );
-            log_data.line = static_cast< uint32_t >( log_binary->line_id );
-            log_data.sequence = static_cast< uint32_t >( log_binary->seq_id );
+            structured_data.severity = static_cast< uint32_t >( log_binary->severity );
+            structured_data.source_id = static_cast< uint32_t >( log_binary->source_id );
+            structured_data.file_id = static_cast< uint32_t >( log_binary->file_id );
+            structured_data.module_id = static_cast< uint32_t >( log_binary->module_id );
+            structured_data.event_id = static_cast< uint32_t >( log_binary->event_id );
+            structured_data.line = static_cast< uint32_t >( log_binary->line_id );
+            structured_data.sequence = static_cast< uint32_t >( log_binary->seq_id );
 
-            return log_data;
+            return structured_data;
         }
 
         void fw_logs_parser::structure_timestamp( const fw_logs_binary_data * raw,
@@ -106,18 +121,35 @@ namespace librealsense
                                             blob_start + actual_struct->total_params_size_bytes );
         }
 
-        void fw_logs_parser::parse_source_name( const structured_binary_data * structured,
-                                                fw_log_data * parsed_data ) const
+        const fw_logs_formatting_options & fw_logs_parser::get_format_options_ref( int source_id ) const
         {
-            auto iter = _source_id_to_name.find( structured->source_id );
+            auto iter = _source_to_formatting_options.find( source_id );
+            if( iter != _source_to_formatting_options.end() )
+                return iter->second;
+
+            throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                         << "Invalid source ID received " << source_id );
+        }
+
+        std::string fw_logs_parser::get_source_name( int source_id ) const
+        {
+            auto iter = _source_id_to_name.find( source_id );
             if( iter != _source_id_to_name.end() )
-                parsed_data->source_name = iter->second;
+                return iter->second;
+
+            throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                         << "Invalid source ID received " << source_id );
         }
 
         legacy_fw_logs_parser::legacy_fw_logs_parser( const std::string & xml_content,
                                                       const std::map< int, std::string > & source_id_to_name )
             : fw_logs_parser( xml_content, source_id_to_name )
         {
+            // Check expected size here, no need to check repeatedly in parse functions
+            if( _source_to_formatting_options.size() != 1 )
+                throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                             << "Legacy parser expect one formating options, have "
+                                                             << _source_to_formatting_options.size() );
         }
 
         size_t legacy_fw_logs_parser::get_log_size( const uint8_t * ) const
@@ -161,10 +193,15 @@ namespace librealsense
             structured->params_blob.insert( structured->params_blob.end(), blob_start, blob_start + params_size_bytes );
         }
 
-        void legacy_fw_logs_parser::parse_source_name( const structured_binary_data * structured,
-                                                       fw_log_data * parsed_data ) const
+        const fw_logs_formatting_options & legacy_fw_logs_parser::get_format_options_ref( int source_id ) const
         {
-            _fw_logs_formating_options.get_thread_name( structured->source_id, &parsed_data->source_name );
+            return _source_to_formatting_options.begin()->second;
+        }
+
+        std::string legacy_fw_logs_parser::get_source_name( int source_id ) const
+        {
+            // Legacy FW logs had threads, not source
+            return _source_to_formatting_options.begin()->second.get_thread_name( source_id );
         }
     }
 }

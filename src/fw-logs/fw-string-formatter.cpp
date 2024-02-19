@@ -2,14 +2,12 @@
 // Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include "fw-string-formatter.h"
-#include "fw-logs-formating-options.h"
+#include "fw-logs-formatting-options.h"
 
 #include <rsutils/string/from.h>
+#include <rsutils/easylogging/easyloggingpp.h>
 
 #include <regex>
-#include <sstream>
-#include <iomanip>
-#include <iostream>
 #include <cmath>
 
 using namespace std;
@@ -19,20 +17,19 @@ namespace librealsense
     namespace fw_logs
     {
         fw_string_formatter::fw_string_formatter( std::unordered_map< std::string, std::vector< kvp > > enums )
-            :_enums(enums)
+            : _enums(enums)
         {
         }
 
-        bool fw_string_formatter::generate_message( const string & source,
-                                                    const std::vector< param_info > & params_info,
-                                                    const std::vector< uint8_t > & params_blob,
-                                                    string * dest )
+        std::string fw_string_formatter::generate_message( const string & source,
+                                                           const std::vector< param_info > & params_info,
+                                                           const std::vector< uint8_t > & params_blob )
         {
-            map<string, string> exp_replace_map;
-            map<string, int> enum_replace_map;
+            map< string, string > exp_replace_map;
+            map< string, int > enum_replace_map;
 
             if( params_info.size() > 0 && params_blob.empty() )
-                return false;
+                return source;
 
             for( size_t i = 0; i < params_info.size(); i++ )
             {
@@ -68,18 +65,17 @@ namespace librealsense
                 // enum values are mapped by int (kvp) but we don't know if this parameter is related to enum, using
                 // unsigned long long because unrelated arguments can overflow int
                 ss_regular_exp[3] << "\\{\\b(" << i << "),[a-zA-Z]+\\}";
-                enum_replace_map[ss_regular_exp[3].str()] = std::stoull( param_as_string );
+                enum_replace_map[ss_regular_exp[3].str()] = static_cast< int >( std::stoull( param_as_string ) );
             }
 
-            return replace_params(source, exp_replace_map, enum_replace_map, dest);
+            return replace_params( source, exp_replace_map, enum_replace_map );
         }
 
-        bool fw_string_formatter::replace_params( const string & source,
-                                                  const map< string, string > & exp_replace_map,
-                                                  const map< string, int > & enum_replace_map,
-                                                  string * dest )
+        std::string fw_string_formatter::replace_params( const string & source,
+                                                         const map< string, string > & exp_replace_map,
+                                                         const map< string, int > & enum_replace_map )
         {
-            string source_temp(source);
+            string source_temp( source );
 
             for (auto exp_replace_it = exp_replace_map.begin(); exp_replace_it != exp_replace_map.end(); exp_replace_it++)
             {
@@ -96,8 +92,6 @@ namespace librealsense
                 std::smatch m;
                 std::regex_search(source_temp, m, std::regex(e));
 
-                string enum_name;
-
                 string st_regular_exp = "[a-zA-Z]+";
                 regex e1(st_regular_exp);
 
@@ -112,7 +106,7 @@ namespace librealsense
 
                     for (size_t exp = 0; exp < m1.size(); exp++)
                     {
-                        enum_name = m1[exp];
+                        string enum_name = m1[exp];
                         if (_enums.size() > 0 && _enums.find(enum_name) != _enums.end())
                         {
                             auto vec = _enums[enum_name];
@@ -130,7 +124,7 @@ namespace librealsense
                                 s << "Protocol Error recognized!\nImproper log message received: " << source_temp
                                     << ", invalid parameter: " << exp_replace_it->second << ".\n The range of supported values is \n";
                                 for_each(vec.begin(), vec.end(), [&s](kvp& entry) { s << entry.first << ":" << entry.second << " ,"; });
-                                std::cout << s.str().c_str() << std::endl;;
+                                LOG_WARNING( s.str() );
                             }
                             source_temp = destTemp;
                         }
@@ -138,8 +132,7 @@ namespace librealsense
                 }
             }
 
-            *dest = source_temp;
-            return true;
+            return source_temp;
         }
 
         std::string fw_string_formatter::convert_param_to_string( const param_info & info, const uint8_t * param_start ) const

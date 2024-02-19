@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "fw-logs-formating-options.h"
+#include "fw-logs-formatting-options.h"
 #include "fw-log-data.h"
 
 namespace librealsense
@@ -14,7 +14,7 @@ namespace librealsense
         class fw_logs_parser : public std::enable_shared_from_this<fw_logs_parser>
         {
         public:
-            explicit fw_logs_parser( const std::string & xml_content,
+            explicit fw_logs_parser( const std::string & definitions_xml,
                                      const std::map< int, std::string > & source_id_to_name );
             virtual ~fw_logs_parser() = default;
 
@@ -43,10 +43,11 @@ namespace librealsense
             virtual void structure_params( const fw_logs_binary_data * raw,
                                            size_t num_of_params,
                                            structured_binary_data * structured ) const;
-            virtual void parse_source_name( const structured_binary_data * structured,
-                                            fw_log_data * parsed_data ) const;
 
-            fw_logs_formating_options _fw_logs_formating_options;
+            virtual const fw_logs_formatting_options & get_format_options_ref( int source_id ) const;
+            virtual std::string get_source_name( int source_id ) const;
+
+            std::map< int, fw_logs_formatting_options > _source_to_formatting_options;
             std::map< int, std::string > _source_id_to_name;
         };
 
@@ -64,8 +65,9 @@ namespace librealsense
             void structure_params( const fw_logs_binary_data * raw,
                                    size_t num_of_params,
                                    structured_binary_data * structured ) const override;
-            void parse_source_name( const structured_binary_data * structured,
-                                    fw_log_data * parsed_data ) const override;
+
+            const fw_logs_formatting_options & get_format_options_ref( int source_id ) const override;
+            std::string get_source_name( int source_id ) const override;
         };
     }
 }

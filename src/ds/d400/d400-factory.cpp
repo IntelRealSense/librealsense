@@ -48,7 +48,7 @@ namespace librealsense
             , d400_nonmonochrome( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command(), { { 0, "DS5" } } )
         {
         }
 
@@ -85,9 +85,10 @@ namespace librealsense
             backend_device( dev_info, register_device_notifications ),
             ds5u_device(dev_info),
             ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(dev_info, d400_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command()) {}
+            firmware_logger_device(
+                dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command(), { { 0, "DS5" } })
+        {
+        }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -139,7 +140,7 @@ namespace librealsense
             , d400_active( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command(), { { 0, "DS5" } } )
         {
         }
 
@@ -179,7 +180,7 @@ namespace librealsense
             , d400_color( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command(), { { 0, "DS5" } } )
         {
         }
 
@@ -219,7 +220,7 @@ namespace librealsense
             , d400_active( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command(), { { 0, "DS5" } } )
         {
         }
 
@@ -274,7 +275,7 @@ namespace librealsense
             , d400_color( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command(), { { 0, "DS5" } } )
         {
         }
 
@@ -326,7 +327,7 @@ namespace librealsense
             , d400_motion( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command(), { { 0, "DS5" } } )
         {
         }
 
@@ -373,7 +374,7 @@ namespace librealsense
             , d400_device( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command(), { { 0, "DS5" } } )
         {
         }
 
@@ -412,7 +413,7 @@ namespace librealsense
             , d400_active( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command(), { { 0, "DS5" } } )
         {
         }
 
@@ -452,7 +453,7 @@ namespace librealsense
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , d400_motion( dev_info )
             , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command(), { { 0, "DS5" } } )
         {
         }
 
@@ -496,7 +497,7 @@ namespace librealsense
             , d400_motion( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command(), { { 0, "DS5" } } )
         {
         }
 
@@ -547,7 +548,7 @@ namespace librealsense
             , d400_color( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command(), { { 0, "DS5" } } )
         {
         }
 
@@ -590,7 +591,7 @@ namespace librealsense
             , d400_motion_uvc( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command(), { { 0, "DS5" } } )
         {
         }
 
@@ -624,7 +625,7 @@ namespace librealsense
             , d400_motion( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command(), { { 0, "DS5" } } )
         {
         }
 
@@ -667,7 +668,7 @@ namespace librealsense
             , d400_motion( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command(), { { 0, "DS5" } } )
         {
             check_and_restore_rgb_stream_extrinsic();
         }
@@ -881,7 +882,7 @@ namespace librealsense
             , d400_motion( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command(), { { 0, "DS5" } } )
         {
         }
 
@@ -912,7 +913,7 @@ namespace librealsense
             , d400_nonmonochrome( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command(), { { 0, "DS5" } } )
         {
         }
 
@@ -1001,7 +1002,7 @@ namespace librealsense
             , d400_motion( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command(), { { 0, "DS5" } } )
             , d400_thermal_tracking( d400_device::_thermal_monitor )
         {
         }

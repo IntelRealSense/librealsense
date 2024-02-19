@@ -49,7 +49,7 @@ namespace librealsense
     void firmware_logger_device::get_fw_logs_from_hw_monitor()
     {
         if( ! _parser )
-            throw librealsense::wrong_api_call_sequence_exception( "FW log parser in not initialized" );
+            throw librealsense::wrong_api_call_sequence_exception( "FW log parser is not initialized" );
 
         auto res = _hw_monitor->send( _fw_logs_command );
         if( res.empty() )

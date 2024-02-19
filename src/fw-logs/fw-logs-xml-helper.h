@@ -1,10 +1,12 @@
 /* License: Apache 2.0. See LICENSE file in root directory. */
-/* Copyright(c) 2019 Intel Corporation. All Rights Reserved. */
-#pragma once
-#include "../../third-party/rapidxml/rapidxml_utils.hpp"
-#include "fw-logs-formating-options.h"
+/* Copyright(c) 2024 Intel Corporation. All Rights Reserved. */
 
-using namespace rapidxml;
+#pragma once
+
+#include <string>
+#include <vector>
+#include <unordered_map>
+
 
 namespace librealsense
 {
@@ -13,38 +15,22 @@ namespace librealsense
         class fw_logs_xml_helper
         {
         public:
-            enum node_type
-            {
-                event,
-                file,
-                thread,
-                module,
-                enums,
-                none
-            };
+            std::string get_source_parser_file_path( int source_id, const std::string & definitions_xml ) const;
 
-            fw_logs_xml_helper(std::string xml_content);
-            ~fw_logs_xml_helper(void);
+            // Return a mapping of source module IDs to their requested verbosity level.
+            std::unordered_map< int, int > get_source_module_verbosity( int source_id, const std::string & definitions_xml ) const;
 
-            bool build_log_meta_data(fw_logs_formating_options* logs_formating_options);
+            // Return a mapping of event IDs to their number of arguments and format pairs.
+            std::unordered_map< int, std::pair< int, std::string > > get_events( const std::string & parser_contents ) const;
 
-        private:
-            bool init();
-            bool build_meta_data_structure(xml_node<>* xml_node_list_of_events, fw_logs_formating_options* logs_formating_options);
-            node_type get_next_node(xml_node<>* xml_node_list_of_events, int* id, int* num_of_params, std::string* line);
-            bool get_thread_node( xml_node<> * node_file, int * thread_id, std::string * thread_name );
-            bool get_module_node( xml_node<> * node_file, int * module_id, std::string * module_name );
-            bool get_event_node(xml_node<>* node_event, int* event_id, int* num_of_params, std::string* line);
-            bool get_enum_name_node(xml_node<>* node_file, int* thread_id, std::string* thread_name);
-            bool get_enum_value_node(xml_node<>* node_file, int* thread_id, std::string* enum_name);
-            bool get_file_node(xml_node<>* node_file, int* file_id, std::string* file_name);
-            bool get_root_node(xml_node<>** node);
-            bool try_load_external_xml();
+            // The following functions return a mapping of element IDs to their names
+            std::unordered_map< int, std::string > get_files( const std::string & parser_contents ) const;
+            std::unordered_map< int, std::string > get_modules( const std::string & parser_contents ) const;
+            std::unordered_map< int, std::string > get_threads( const std::string & parser_contents ) const;
 
-            bool _init_done;
-            std::string _xml_content;
-            xml_document<> _xml_doc;
-            std::vector<char> _document_buffer;
+            // Return a mapping of enum names to the enum litterals value and meaning
+            std::unordered_map< std::string, std::vector< std::pair< int, std::string > > >
+            get_enums( const std::string & parser_contents ) const;
         };
     }
 }

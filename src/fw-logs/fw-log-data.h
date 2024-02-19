@@ -79,8 +79,8 @@ namespace librealsense
             uint64_t timestamp = 0;
 
             std::string message = "";
-            std::string file_name = "";
             std::string source_name = "";
+            std::string file_name = "";
             std::string module_name = "";
         };
     }
