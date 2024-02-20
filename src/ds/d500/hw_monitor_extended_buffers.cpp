@@ -67,8 +67,8 @@ namespace librealsense
 
         if (recv_msg_length > HW_MONITOR_BUFFER_SIZE)
         {
-            // currently we assume HKR send only the table size when sending 0/0 chanks command above.
-            // in the future the FW should send chunk 1 in 0/0 command and than we can use it here.
+            // currently we assume HKR sends only the table size when sending 0/0 chunks command above.
+            // in the future the FW should send chunk 1 in 0/0 command and then we can use it here.
             // meaning remove the 'clear' and start the loop from 1
 
             recv_msg.clear();
