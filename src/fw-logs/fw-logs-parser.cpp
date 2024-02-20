@@ -63,7 +63,7 @@ namespace librealsense
             parsed_data.line = structured.line;
             parsed_data.sequence = structured.sequence;
             parsed_data.timestamp = structured.timestamp;
-            //parsed_data.severity = structured.severity;  // TODO - get severity according to underlying struct
+            parsed_data.severity = parse_severity( structured.severity );
             parsed_data.source_name = get_source_name( structured.source_id );
             parsed_data.file_name = formatting.get_file_name( structured.file_id );
             parsed_data.module_name = formatting.get_module_name( structured.module_id );
@@ -141,6 +141,11 @@ namespace librealsense
                                                          << "Invalid source ID received " << source_id );
         }
 
+        rs2_log_severity fw_logs_parser::parse_severity( uint32_t severity ) const
+        {
+            return fw_logs::fw_logs_severity_to_rs2_log_severity( severity );
+        }
+
         legacy_fw_logs_parser::legacy_fw_logs_parser( const std::string & xml_content,
                                                       const std::map< int, std::string > & source_id_to_name )
             : fw_logs_parser( xml_content, source_id_to_name )
@@ -202,6 +207,11 @@ namespace librealsense
         {
             // Legacy FW logs had threads, not source
             return _source_to_formatting_options.begin()->second.get_thread_name( source_id );
+        }
+
+        rs2_log_severity legacy_fw_logs_parser::parse_severity( uint32_t severity ) const
+        {
+            return fw_logs::legacy_fw_logs_severity_to_rs2_log_severity( severity );
         }
     }
 }

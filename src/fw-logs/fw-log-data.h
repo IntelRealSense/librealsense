@@ -17,7 +17,8 @@ namespace librealsense
             uint32_t get_timestamp() const;
         };
 
-        rs2_log_severity d400_fw_logs_severity_to_log_severity(int32_t severity);
+        rs2_log_severity fw_logs_severity_to_rs2_log_severity( int32_t severity );
+        rs2_log_severity legacy_fw_logs_severity_to_rs2_log_severity( int32_t severity );
 
         enum class param_type : uint8_t
         {
