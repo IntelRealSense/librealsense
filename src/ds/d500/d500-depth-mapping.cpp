@@ -151,6 +151,7 @@ namespace librealsense
         register_point_cloud_metadata(raw_mapping_ep);
     }
 
+
     void d500_depth_mapping::register_occupancy_metadata(std::shared_ptr<uvc_sensor> raw_mapping_ep)
     {
         // attributes of md_occupancy
@@ -173,9 +174,9 @@ namespace librealsense
             make_attribute_parser(&md_occupancy::floor_detection,
                 md_occupancy_attributes::floor_detection_attribute, md_prop_offset));
 
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_CLIFF_DETECTION,
-            make_attribute_parser(&md_occupancy::cliff_detection,
-                md_occupancy_attributes::cliff_detection_attribute, md_prop_offset));
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_FILL_RATE,
+            make_attribute_parser(&md_occupancy::diagnostic_zone_fill_rate,
+                md_occupancy_attributes::diagnostic_zone_fill_rate_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DEPTH_FILL_RATE,
             make_attribute_parser(&md_occupancy::depth_fill_rate,
@@ -189,17 +190,125 @@ namespace librealsense
             make_attribute_parser(&md_occupancy::sensor_pitch_angle,
                 md_occupancy_attributes::sensor_pitch_angle_attribute, md_prop_offset));
 
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_MEDIAN_HEIGHT,
-            make_attribute_parser(&md_occupancy::floor_median_height,
-                md_occupancy_attributes::floor_median_height_attribute, md_prop_offset));
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_MEDIAN_HEIGHT,
+            make_attribute_parser(&md_occupancy::diagnostic_zone_median_height,
+                md_occupancy_attributes::diagnostic_zone_median_height_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DEPTH_STDEV,
             make_attribute_parser(&md_occupancy::depth_stdev,
-                md_occupancy_attributes::depth_stdev_mm_attribute, md_prop_offset));
+                md_occupancy_attributes::depth_stdev_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_PRESET_ID,
             make_attribute_parser(&md_occupancy::safety_preset_id,
-                md_occupancy_attributes::safety_preset_id_attribute, md_prop_offset));
+                md_occupancy_attributes::safety_preset_info, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_PRESET_ERROR_TYPE,
+            make_attribute_parser(&md_occupancy::safety_preset_error_type,
+                md_occupancy_attributes::safety_preset_info, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_PRESET_ERROR_PARAM_1,
+            make_attribute_parser(&md_occupancy::safety_preset_error_param_1,
+                md_occupancy_attributes::safety_preset_info, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_PRESET_ERROR_PARAM_2,
+            make_attribute_parser(&md_occupancy::safety_preset_error_param_2,
+                md_occupancy_attributes::safety_preset_info, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DANGER_ZONE_POINT_0_X_CORD,
+           make_attribute_parser(&md_occupancy::danger_zone_point_0_x_cord,
+               md_occupancy_attributes::danger_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DANGER_ZONE_POINT_0_Y_CORD,
+           make_attribute_parser(&md_occupancy::danger_zone_point_0_y_cord,
+               md_occupancy_attributes::danger_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DANGER_ZONE_POINT_1_X_CORD,
+           make_attribute_parser(&md_occupancy::danger_zone_point_1_x_cord,
+               md_occupancy_attributes::danger_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DANGER_ZONE_POINT_1_Y_CORD,
+           make_attribute_parser(&md_occupancy::danger_zone_point_1_y_cord,
+               md_occupancy_attributes::danger_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DANGER_ZONE_POINT_2_X_CORD,
+           make_attribute_parser(&md_occupancy::danger_zone_point_2_x_cord,
+               md_occupancy_attributes::danger_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DANGER_ZONE_POINT_2_Y_CORD,
+           make_attribute_parser(&md_occupancy::danger_zone_point_2_y_cord,
+               md_occupancy_attributes::danger_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DANGER_ZONE_POINT_3_X_CORD,
+           make_attribute_parser(&md_occupancy::danger_zone_point_3_x_cord,
+               md_occupancy_attributes::danger_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DANGER_ZONE_POINT_3_Y_CORD,
+           make_attribute_parser(&md_occupancy::danger_zone_point_3_y_cord,
+               md_occupancy_attributes::danger_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_WARNING_ZONE_POINT_0_X_CORD,
+           make_attribute_parser(&md_occupancy::warning_zone_point_0_x_cord,
+               md_occupancy_attributes::warning_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_WARNING_ZONE_POINT_0_Y_CORD,
+           make_attribute_parser(&md_occupancy::warning_zone_point_0_y_cord,
+               md_occupancy_attributes::warning_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_WARNING_ZONE_POINT_1_X_CORD,
+           make_attribute_parser(&md_occupancy::warning_zone_point_1_x_cord,
+               md_occupancy_attributes::warning_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_WARNING_ZONE_POINT_1_Y_CORD,
+           make_attribute_parser(&md_occupancy::warning_zone_point_1_y_cord,
+               md_occupancy_attributes::warning_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_WARNING_ZONE_POINT_2_X_CORD,
+           make_attribute_parser(&md_occupancy::warning_zone_point_2_x_cord,
+               md_occupancy_attributes::warning_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_WARNING_ZONE_POINT_2_Y_CORD,
+           make_attribute_parser(&md_occupancy::warning_zone_point_2_y_cord,
+               md_occupancy_attributes::warning_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_WARNING_ZONE_POINT_3_X_CORD,
+           make_attribute_parser(&md_occupancy::warning_zone_point_3_x_cord,
+               md_occupancy_attributes::warning_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_WARNING_ZONE_POINT_3_Y_CORD,
+           make_attribute_parser(&md_occupancy::warning_zone_point_3_y_cord,
+               md_occupancy_attributes::warning_zone, md_prop_offset));  
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_0_X_CORD,
+           make_attribute_parser(&md_occupancy::diagnostic_zone_point_0_x_cord,
+               md_occupancy_attributes::diagnostic_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_0_Y_CORD,
+           make_attribute_parser(&md_occupancy::diagnostic_zone_point_0_y_cord,
+               md_occupancy_attributes::diagnostic_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_1_X_CORD,
+           make_attribute_parser(&md_occupancy::diagnostic_zone_point_1_x_cord,
+               md_occupancy_attributes::diagnostic_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_1_Y_CORD,
+           make_attribute_parser(&md_occupancy::diagnostic_zone_point_1_y_cord,
+               md_occupancy_attributes::diagnostic_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_2_X_CORD,
+           make_attribute_parser(&md_occupancy::diagnostic_zone_point_2_x_cord,
+               md_occupancy_attributes::diagnostic_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_2_Y_CORD,
+           make_attribute_parser(&md_occupancy::diagnostic_zone_point_2_y_cord,
+               md_occupancy_attributes::diagnostic_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_3_X_CORD,
+           make_attribute_parser(&md_occupancy::diagnostic_zone_point_3_x_cord,
+               md_occupancy_attributes::diagnostic_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_3_Y_CORD,
+           make_attribute_parser(&md_occupancy::diagnostic_zone_point_3_y_cord,
+               md_occupancy_attributes::diagnostic_zone, md_prop_offset));  
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS,
             make_attribute_parser(&md_occupancy::grid_rows,
@@ -240,9 +349,9 @@ namespace librealsense
             make_attribute_parser(&md_point_cloud::floor_detection,
                 md_point_cloud_attributes::floor_detection_attribute, md_prop_offset));
 
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_CLIFF_DETECTION,
-            make_attribute_parser(&md_point_cloud::cliff_detection,
-                md_point_cloud_attributes::cliff_detection_attribute, md_prop_offset));
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_FILL_RATE,
+            make_attribute_parser(&md_point_cloud::diagnostic_zone_fill_rate,
+                md_point_cloud_attributes::diagnostic_zone_fill_rate, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DEPTH_FILL_RATE,
             make_attribute_parser(&md_point_cloud::depth_fill_rate,
@@ -256,17 +365,125 @@ namespace librealsense
             make_attribute_parser(&md_point_cloud::sensor_pitch_angle,
                 md_point_cloud_attributes::sensor_pitch_angle_attribute, md_prop_offset));
 
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_MEDIAN_HEIGHT,
-            make_attribute_parser(&md_point_cloud::floor_median_height,
-                md_point_cloud_attributes::floor_median_height_attribute, md_prop_offset));
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_MEDIAN_HEIGHT,
+            make_attribute_parser(&md_point_cloud::diagnostic_zone_median_height,
+                md_point_cloud_attributes::diagnostic_zone_median_height_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DEPTH_STDEV,
             make_attribute_parser(&md_point_cloud::depth_stdev,
-                md_point_cloud_attributes::depth_stdev_mm_attribute, md_prop_offset));
+                md_point_cloud_attributes::depth_stdev_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_PRESET_ID,
             make_attribute_parser(&md_point_cloud::safety_preset_id,
-                md_point_cloud_attributes::safety_preset_id_attribute, md_prop_offset));
+                md_point_cloud_attributes::safety_preset_info, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_PRESET_ERROR_TYPE,
+            make_attribute_parser(&md_point_cloud::safety_preset_error_type,
+                md_point_cloud_attributes::safety_preset_info, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_PRESET_ERROR_PARAM_1,
+            make_attribute_parser(&md_point_cloud::safety_preset_error_param_1,
+                md_point_cloud_attributes::safety_preset_info, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_PRESET_ERROR_PARAM_2,
+            make_attribute_parser(&md_point_cloud::safety_preset_error_param_2,
+                md_point_cloud_attributes::safety_preset_info, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DANGER_ZONE_POINT_0_X_CORD,
+           make_attribute_parser(&md_point_cloud::danger_zone_point_0_x_cord,
+               md_point_cloud_attributes::danger_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DANGER_ZONE_POINT_0_Y_CORD,
+           make_attribute_parser(&md_point_cloud::danger_zone_point_0_y_cord,
+               md_point_cloud_attributes::danger_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DANGER_ZONE_POINT_1_X_CORD,
+           make_attribute_parser(&md_point_cloud::danger_zone_point_1_x_cord,
+               md_point_cloud_attributes::danger_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DANGER_ZONE_POINT_1_Y_CORD,
+           make_attribute_parser(&md_point_cloud::danger_zone_point_1_y_cord,
+               md_point_cloud_attributes::danger_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DANGER_ZONE_POINT_2_X_CORD,
+           make_attribute_parser(&md_point_cloud::danger_zone_point_2_x_cord,
+               md_point_cloud_attributes::danger_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DANGER_ZONE_POINT_2_Y_CORD,
+           make_attribute_parser(&md_point_cloud::danger_zone_point_2_y_cord,
+               md_point_cloud_attributes::danger_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DANGER_ZONE_POINT_3_X_CORD,
+           make_attribute_parser(&md_point_cloud::danger_zone_point_3_x_cord,
+               md_point_cloud_attributes::danger_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DANGER_ZONE_POINT_3_Y_CORD,
+           make_attribute_parser(&md_point_cloud::danger_zone_point_3_y_cord,
+               md_point_cloud_attributes::danger_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_WARNING_ZONE_POINT_0_X_CORD,
+           make_attribute_parser(&md_point_cloud::warning_zone_point_0_x_cord,
+               md_point_cloud_attributes::warning_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_WARNING_ZONE_POINT_0_Y_CORD,
+           make_attribute_parser(&md_point_cloud::warning_zone_point_0_y_cord,
+               md_point_cloud_attributes::warning_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_WARNING_ZONE_POINT_1_X_CORD,
+           make_attribute_parser(&md_point_cloud::warning_zone_point_1_x_cord,
+               md_point_cloud_attributes::warning_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_WARNING_ZONE_POINT_1_Y_CORD,
+           make_attribute_parser(&md_point_cloud::warning_zone_point_1_y_cord,
+               md_point_cloud_attributes::warning_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_WARNING_ZONE_POINT_2_X_CORD,
+           make_attribute_parser(&md_point_cloud::warning_zone_point_2_x_cord,
+               md_point_cloud_attributes::warning_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_WARNING_ZONE_POINT_2_Y_CORD,
+           make_attribute_parser(&md_point_cloud::warning_zone_point_2_y_cord,
+               md_point_cloud_attributes::warning_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_WARNING_ZONE_POINT_3_X_CORD,
+           make_attribute_parser(&md_point_cloud::warning_zone_point_3_x_cord,
+               md_point_cloud_attributes::warning_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_WARNING_ZONE_POINT_3_Y_CORD,
+           make_attribute_parser(&md_point_cloud::warning_zone_point_3_y_cord,
+               md_point_cloud_attributes::warning_zone, md_prop_offset));  
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_0_X_CORD,
+           make_attribute_parser(&md_point_cloud::diagnostic_zone_point_0_x_cord,
+               md_point_cloud_attributes::diagnostic_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_0_Y_CORD,
+           make_attribute_parser(&md_point_cloud::diagnostic_zone_point_0_y_cord,
+               md_point_cloud_attributes::diagnostic_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_1_X_CORD,
+           make_attribute_parser(&md_point_cloud::diagnostic_zone_point_1_x_cord,
+               md_point_cloud_attributes::diagnostic_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_1_Y_CORD,
+           make_attribute_parser(&md_point_cloud::diagnostic_zone_point_1_y_cord,
+               md_point_cloud_attributes::diagnostic_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_2_X_CORD,
+           make_attribute_parser(&md_point_cloud::diagnostic_zone_point_2_x_cord,
+               md_point_cloud_attributes::diagnostic_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_2_Y_CORD,
+           make_attribute_parser(&md_point_cloud::diagnostic_zone_point_2_y_cord,
+               md_point_cloud_attributes::diagnostic_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_3_X_CORD,
+           make_attribute_parser(&md_point_cloud::diagnostic_zone_point_3_x_cord,
+               md_point_cloud_attributes::diagnostic_zone, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_3_Y_CORD,
+           make_attribute_parser(&md_point_cloud::diagnostic_zone_point_3_y_cord,
+               md_point_cloud_attributes::diagnostic_zone, md_prop_offset));  
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_NUMBER_OF_3D_VERTICES,
             make_attribute_parser(&md_point_cloud::number_of_3d_vertices,
