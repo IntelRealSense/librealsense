@@ -84,23 +84,6 @@ namespace librealsense
             max_id = -1
         };
 
-        const std::map<ds::d500_calibration_table_id, uint32_t> d500_calibration_tables_size =
-        {
-            {d500_calibration_table_id::depth_eeprom_toc_id, 640},
-            {d500_calibration_table_id::module_info_id, 512},
-            {d500_calibration_table_id::rgb_lens_shading_id, 1088},
-            {d500_calibration_table_id::left_lens_shading_id, 576},
-            {d500_calibration_table_id::right_lens_shading_id, 512},
-            {d500_calibration_table_id::depth_calibration_id, 512},
-            {d500_calibration_table_id::left_x_lut_id, 4160},
-            {d500_calibration_table_id::left_y_lut_id, 4160},
-            {d500_calibration_table_id::right_x_lut_id, 4160},
-            {d500_calibration_table_id::right_y_lut_id, 4160},
-            {d500_calibration_table_id::rgb_calibration_id, 256},
-            {d500_calibration_table_id::rgb_lut_id, 8256},
-            {d500_calibration_table_id::imu_calibration_id, 192}
-        };
-
         struct d500_undist_configuration
         {
             uint32_t     fx;
