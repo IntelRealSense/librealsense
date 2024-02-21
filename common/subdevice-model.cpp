@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include "post-processing-filters-list.h"
 #include "post-processing-block-model.h"
@@ -89,7 +89,10 @@ namespace rs2
                     if( it != options_metadata.end() && ! _destructing ) // Callback runs in different context, check options_metadata still valid
                     {
                         if( RS2_OPTION_TYPE_FLOAT == changed_option->type )
-                            it->second.value = changed_option->as_float;
+                        {
+                            if( changed_option->is_valid )
+                                it->second.value = changed_option->as_float;
+                        }
                     }
                 }
             } );

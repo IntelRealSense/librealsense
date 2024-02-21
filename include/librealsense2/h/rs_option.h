@@ -163,7 +163,8 @@ extern "C" {
     typedef struct rs2_option_value
     {
         rs2_option id;
-        rs2_option_type type;             /**< RS2_OPTION_TYPE_COUNT if no value is available */
+        int is_valid;                     /**< 0 if no value available; 1 otherwise */
+        rs2_option_type type;
         union {
             char const * as_string;       /**< valid only while rs2_option_value is alive! */
             float as_float;

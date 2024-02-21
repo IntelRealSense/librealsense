@@ -68,6 +68,7 @@
 ////////////////////////
 
 using namespace librealsense;
+using rsutils::json;
 
 struct rs2_stream_profile_list
 {
@@ -88,34 +89,53 @@ struct rs2_device_list
 struct rs2_option_value_wrapper : rs2_option_value
 {
     // Keep the original json value, so we can refer to it (e.g., with as_string)
-    std::shared_ptr< const rsutils::json > p_json;
+    std::shared_ptr< const json > p_json;
 
     // Add a reference count to control lifetime
     mutable std::atomic< int > ref_count;
 
-    rs2_option_value_wrapper( rs2_option option_id, std::shared_ptr< const rsutils::json > const & p_json_value )
+    rs2_option_value_wrapper( rs2_option option_id,
+                              rs2_option_type option_type,
+                              std::shared_ptr< const json > const & p_json_value )
         : ref_count( 1 )
         , p_json( p_json_value )
     {
         id = option_id;
-        type = RS2_OPTION_TYPE_COUNT;
-        if( p_json )
+        type = option_type;
+        if( ! p_json || p_json->is_null() )
         {
-            if( p_json->is_number_float() )
+            is_valid = false;
+        }
+        else
+        {
+            switch( type )
             {
-                type = RS2_OPTION_TYPE_FLOAT;
+            case RS2_OPTION_TYPE_FLOAT:
+                if( ! p_json->is_number() )
+                    throw invalid_value_exception( get_string( option_id )
+                                                   + " value is not a float: " + p_json->dump() );
                 p_json->get_to( as_float );
-            }
-            if( p_json->is_number_integer() )
-            {
-                type = RS2_OPTION_TYPE_INTEGER;
+                break;
+
+            case RS2_OPTION_TYPE_INTEGER:
+                if( ! p_json->is_number_integer() )
+                    throw invalid_value_exception( get_string( option_id )
+                                                   + " value is not an integer: " + p_json->dump() );
                 p_json->get_to( as_integer );
-            }
-            else if( p_json->is_string() )
-            {
-                type = RS2_OPTION_TYPE_STRING;
+                break;
+
+            case RS2_OPTION_TYPE_STRING:
+                if( ! p_json->is_string() )
+                    throw invalid_value_exception( get_string( option_id )
+                                                   + " value is not a string: " + p_json->dump() );
                 as_string = p_json->string_ref().c_str();
+                break;
+
+            default:
+                throw invalid_value_exception( "invalid " + get_string( option_id ) + " type "
+                                               + get_string( option_type ) );
             }
+            is_valid = true;
         }
     }
 };
@@ -229,7 +249,7 @@ rs2_context* rs2_create_context(int api_version, rs2_error** error) BEGIN_API_CA
 {
     verify_version_compatibility(api_version);
 
-    rsutils::json settings;
+    json settings;
     return new rs2_context{ context::make( settings ) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
@@ -705,10 +725,11 @@ HANDLE_EXCEPTIONS_AND_RETURN(0.0f, options, option)
 rs2_option_value const * rs2_get_option_value( const rs2_options * options, rs2_option option_id, rs2_error ** error ) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL( options );
-    VALIDATE_OPTION_ENABLED( options, option_id );
-    auto wrapper = new rs2_option_value_wrapper(
-        option_id,
-        std::make_shared< const rsutils::json >( options->options->get_option( option_id ).query() ) );
+    auto & option = options->options->get_option( option_id );  // throws
+    std::shared_ptr< const json > value;
+    if( option.is_enabled() )
+        value = std::make_shared< const json >( option.query() );
+    auto wrapper = new rs2_option_value_wrapper( option_id, option.get_value_type(), value );
     return wrapper;
 }
 HANDLE_EXCEPTIONS_AND_RETURN( nullptr, options, option_id )
@@ -741,7 +762,9 @@ rs2_options_list* rs2_get_options_list(const rs2_options* options, rs2_error** e
     rs2_list->list.reserve( option_ids.size() );
     for( auto option_id : option_ids )
     {
-        auto wrapper = new rs2_option_value_wrapper( option_id, {} );  // empty json
+        auto & option = options->options->get_option( option_id );
+        auto wrapper
+            = new rs2_option_value_wrapper( option_id, option.get_value_type(), {} );  // empty json = not valid
         rs2_list->list.push_back( wrapper );
     }
     return rs2_list;
@@ -1288,7 +1311,9 @@ static void populate_options_list( rs2_options_list * updated_options_list,
     {
         options_watcher::option_and_value const & option_and_value = id_value.second;
         updated_options_list->list.push_back(
-            new rs2_option_value_wrapper( id_value.first, option_and_value.p_last_known_value ) );
+            new rs2_option_value_wrapper( id_value.first,
+                                          option_and_value.sptr->get_value_type(),
+                                          option_and_value.p_last_known_value ) );
     }
 }
 
@@ -2782,7 +2807,7 @@ NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0)
 rs2_device* rs2_create_software_device(rs2_error** error) BEGIN_API_CALL
 {
     // We're not given a context...
-    auto ctx = context::make( rsutils::json::object( { { "dds", false } } ) );
+    auto ctx = context::make( json::object( { { "dds", false } } ) );
     auto dev_info = std::make_shared< software_device_info >( ctx );
     auto dev = std::make_shared< software_device >( dev_info );
     dev_info->set_device( dev );
