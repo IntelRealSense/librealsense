@@ -829,7 +829,7 @@ namespace librealsense
             {
                 bool is_fw_version_using_id = (_fw_version >= firmware_version("5.12.8.100"));
                 auto alternating_emitter_opt = std::make_shared<alternating_emitter_option>(*_hw_monitor, is_fw_version_using_id);
-                auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>( *_hw_monitor );
+                auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>( _hw_monitor, ds::LASERONCONST, ds::LASERONCONST );
 
                 if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & ds_caps::CAP_GLOBAL_SHUTTER) == ds_caps::CAP_GLOBAL_SHUTTER))
                 {
