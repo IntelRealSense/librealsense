@@ -2,7 +2,7 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 
-#include "d500-options.h"
+#include "d500-options.h" 
 
 namespace librealsense
 {

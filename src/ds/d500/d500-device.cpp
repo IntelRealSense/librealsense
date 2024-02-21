@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include "metadata-parser.h"
+#include <metadata-parser.h>
 #include "metadata.h"
 #include <src/backend.h>
 #include <src/platform/platform-utils.h>
