@@ -295,30 +295,30 @@ namespace librealsense
         // to allow them to modify context later on
         auto ctx = t->shared_from_this();
 
-        // if (mask & RS2_PRODUCT_LINE_D400)
-        // {
-        //     auto d400_devices = d400_info::pick_d400_devices(ctx, devices);
-        //     std::copy(begin(d400_devices), end(d400_devices), std::back_inserter(list));
-        // }
+        if (mask & RS2_PRODUCT_LINE_D400)
+        {
+            auto d400_devices = d400_info::pick_d400_devices(ctx, devices);
+            std::copy(begin(d400_devices), end(d400_devices), std::back_inserter(list));
+        }
 
-        // if( mask & RS2_PRODUCT_LINE_L500 )
-        // {
-        //     auto l500_devices = l500_info::pick_l500_devices(ctx, devices);
-        //     std::copy(begin(l500_devices), end(l500_devices), std::back_inserter(list));
-        // }
+        if( mask & RS2_PRODUCT_LINE_L500 )
+        {
+            auto l500_devices = l500_info::pick_l500_devices(ctx, devices);
+            std::copy(begin(l500_devices), end(l500_devices), std::back_inserter(list));
+        }
 
-        // if (mask & RS2_PRODUCT_LINE_SR300)
-        // {
-        //     auto sr300_devices = sr300_info::pick_sr300_devices(ctx, devices.uvc_devices, devices.usb_devices);
-        //     std::copy(begin(sr300_devices), end(sr300_devices), std::back_inserter(list));
-        // }
+        if (mask & RS2_PRODUCT_LINE_SR300)
+        {
+            auto sr300_devices = sr300_info::pick_sr300_devices(ctx, devices.uvc_devices, devices.usb_devices);
+            std::copy(begin(sr300_devices), end(sr300_devices), std::back_inserter(list));
+        }
 
-        // // Supported recovery devices
-        // if (mask & RS2_PRODUCT_LINE_D400 || mask & RS2_PRODUCT_LINE_SR300 || mask & RS2_PRODUCT_LINE_L500) 
-        // {
-        //     auto recovery_devices = fw_update_info::pick_recovery_devices(ctx, devices.usb_devices, mask);
-        //     std::copy(begin(recovery_devices), end(recovery_devices), std::back_inserter(list));
-        // }
+        // Supported recovery devices
+        if (mask & RS2_PRODUCT_LINE_D400 || mask & RS2_PRODUCT_LINE_SR300 || mask & RS2_PRODUCT_LINE_L500) 
+        {
+            auto recovery_devices = fw_update_info::pick_recovery_devices(ctx, devices.usb_devices, mask);
+            std::copy(begin(recovery_devices), end(recovery_devices), std::back_inserter(list));
+        }
 
         // if (mask & RS2_PRODUCT_LINE_NON_INTEL)
         // {
