@@ -45,16 +45,19 @@ namespace librealsense
         depth_frame_counter_attribute = (1u << 1),
         frame_timestamp_attribute = (1u << 2),
         floor_detection_attribute = (1u << 3),
-        cliff_detection_attribute = (1u << 4),
+        diagnostic_zone_fill_rate_attribute = (1u << 4),
         depth_fill_rate_attribute = (1u << 5),
         sensor_roll_angle_attribute = (1u << 6),
         sensor_pitch_angle_attribute = (1u << 7),
-        floor_median_height_attribute = (1u << 8),
-        depth_stdev_mm_attribute = (1u << 9),
-        safety_preset_id_attribute = (1u << 10),
+        diagnostic_zone_median_height_attribute = (1u << 8),
+        depth_stdev_attribute = (1u << 9), /* Only a placeholder. Not used by HKR. */
+        safety_preset_info = (1u << 10),
         grid_rows_attribute = (1u << 11),
         grid_columns_attribute = (1u << 12),
         cell_size_attribute = (1u << 13),
+        danger_zone = (1u << 14),
+        warning_zone = (1u << 15),
+        diagnostic_zone = (1u << 16),
         payload_crc32_attribute = (1u << 31)
     };
 
@@ -66,14 +69,17 @@ namespace librealsense
         depth_frame_counter_attribute = (1u << 1),
         frame_timestamp_attribute = (1u << 2),
         floor_detection_attribute = (1u << 3),
-        cliff_detection_attribute = (1u << 4),
+        diagnostic_zone_fill_rate = (1u << 4),
         depth_fill_rate_attribute = (1u << 5),
         sensor_roll_angle_attribute = (1u << 6),
         sensor_pitch_angle_attribute = (1u << 7),
-        floor_median_height_attribute = (1u << 8),
-        depth_stdev_mm_attribute = (1u << 9),
-        safety_preset_id_attribute = (1u << 10),
+        diagnostic_zone_median_height_attribute = (1u << 8),
+        depth_stdev_attribute = (1u << 9), /* Only a placeholder. Not used by HKR. */
+        safety_preset_info = (1u << 10),
         number_of_3d_vertices_attribute = (1u << 11),
+        danger_zone = (1u << 12),
+        warning_zone = (1u << 13),
+        diagnostic_zone = (1u << 14),
         payload_crc32_attribute = (1u << 31)
     };
 
@@ -203,25 +209,57 @@ namespace librealsense
         uint32_t    version;
         uint32_t    flags;
         uint32_t    frame_counter;
-        uint32_t    depth_frame_counter;             // counter of the depth frame upon which it was calculated 
+        uint32_t    depth_frame_counter;             // counter of the depth frame upon which it was calculated
         uint64_t    frame_timestamp;                 // HW Timestamp for Occupancy map, calculated in lower level algo
         uint8_t     floor_detection;                 // Percentage
-        uint8_t     cliff_detection;                 // Percentage
-        uint8_t     depth_fill_rate;                 // signed value in range of [0..100]. Use [x = 101] if not applicable
-        int32_t     sensor_roll_angle;               // In millidegrees. Relative to X (forward) axis. Positive value is CCW
-        int32_t     sensor_pitch_angle;              // In millidegrees. Relative to Y (left) axis. Positive value is CCW 
-        int32_t     floor_median_height;             // In millimeters. Relative to the “leveled pointcloud” CS 
+        uint8_t     diagnostic_zone_fill_rate;       // Percentage
+        uint8_t     depth_fill_rate;                 // Unsigned value in range of [0..100]. Use [x = 0xFF] if not applicable
+        float       sensor_roll_angle;               // In millidegrees. Relative to X (forward) axis. Positive value is CCW
+        float       sensor_pitch_angle;              // In millidegrees. Relative to Y (left) axis. Positive value is CCW
+        int32_t     diagnostic_zone_median_height;   // In millimeters. Relative to the "leveled pointcloud" CS 
         uint16_t    depth_stdev;                     // Spatial accuracy in millimetric units: 
                                                      // [0..1023] - valid range
                                                      // [1024] - attribute was not calculated / not applicable
                                                      // [1025 - 0xFFFF] undefined / invalid range
+                                                     // Only a placeholder. Not used by HKR.
         uint8_t     safety_preset_id;                // Designates the Safety Zone index in [0..63] range used in algo pipe
-        uint8_t     reserved[14];                    // Zero-ed
-        uint16_t    grid_rows;                       // Number of rows in the grid. Max value is 250 (corresponding to 5M width with 2cm tile) 
-        uint16_t    grid_columns;                    // Number of columns in the grid. Max value is 320 (corresponding to ~6.5M depth with 2cm tile) 
-        uint8_t     cell_size;                       // Edge size of each tile, measured in cm 
+        uint16_t    safety_preset_error_type;        // Safety Preset Error bitmask
+        uint8_t     safety_preset_error_param_1;     // Preset Error Param. Enumerated
+        uint8_t     safety_preset_error_param_2;     // Preset Error Param. Enumerated
+
+        int16_t     danger_zone_point_0_x_cord;      // Danger zone point #0, X coord in mm
+        int16_t     danger_zone_point_0_y_cord;      // Danger zone point #0, Y coord in mm
+        int16_t     danger_zone_point_1_x_cord;      // Danger zone point #1, X coord in mm
+        int16_t     danger_zone_point_1_y_cord;      // Danger zone point #1, Y coord in mm
+        int16_t     danger_zone_point_2_x_cord;      // Danger zone point #2, X coord in mm
+        int16_t     danger_zone_point_2_y_cord;      // Danger zone point #2, Y coord in mm
+        int16_t     danger_zone_point_3_x_cord;      // Danger zone point #3, X coord in mm
+        int16_t     danger_zone_point_3_y_cord;      // Danger zone point #3, Y coord in mm
+
+        int16_t     warning_zone_point_0_x_cord;     // Warning zone point #0, X coord in mm
+        int16_t     warning_zone_point_0_y_cord;     // Warning zone point #0, Y coord in mm
+        int16_t     warning_zone_point_1_x_cord;     // Warning zone point #1, X coord in mm
+        int16_t     warning_zone_point_1_y_cord;     // Warning zone point #1, Y coord in mm
+        int16_t     warning_zone_point_2_x_cord;     // Warning zone point #2, X coord in mm
+        int16_t     warning_zone_point_2_y_cord;     // Warning zone point #2, Y coord in mm
+        int16_t     warning_zone_point_3_x_cord;     // Warning zone point #3, X coord in mm
+        int16_t     warning_zone_point_3_y_cord;     // Warning zone point #3, Y coord in mm
+
+        int16_t     diagnostic_zone_point_0_x_cord;  // Diagnostic zone point #0, X coord in mm
+        int16_t     diagnostic_zone_point_0_y_cord;  // Diagnostic zone point #0, Y coord in mm
+        int16_t     diagnostic_zone_point_1_x_cord;  // Diagnostic zone point #1, X coord in mm
+        int16_t     diagnostic_zone_point_1_y_cord;  // Diagnostic zone point #1, Y coord in mm
+        int16_t     diagnostic_zone_point_2_x_cord;  // Diagnostic zone point #2, X coord in mm
+        int16_t     diagnostic_zone_point_2_y_cord;  // Diagnostic zone point #2, Y coord in mm
+        int16_t     diagnostic_zone_point_3_x_cord;  // Diagnostic zone point #3, X coord in mm
+        int16_t     diagnostic_zone_point_3_y_cord;  // Diagnostic zone point #3, Y coord in mm
+
+        uint8_t     reserved[10];                    // Zero-ed
+        uint16_t    grid_rows;                       // Number of rows in the grid. Max value is 250 (corresponding to 5M width with 2cm tile)
+        uint16_t    grid_columns;                    // Number of columns in the grid. Max value is 320 (corresponding to ~6.5M depth with 2cm tile)
+        uint8_t     cell_size;                       // Edge size of each tile, measured in cm
         uint8_t     reserved2[15];                    // Zero-ed
-        uint32_t    payload_crc32;                   // Crc32 for the occupancy grid payload data only, not including the metadata header. 
+        uint32_t    payload_crc32;                   // Crc32 for the occupancy grid payload data only, not including the metadata header.
     };// Safety Preset at the time of Occupancy grid generation 
     REGISTER_MD_TYPE(md_occupancy, md_type::META_DATA_INTEL_OCCUPANCY_ID)
 
@@ -233,22 +271,54 @@ namespace librealsense
         uint32_t    version;
         uint32_t    flags;
         uint32_t    frame_counter;
-        uint32_t    depth_frame_counter;             // counter of the depth frame upon which it was calculated 
+        uint32_t    depth_frame_counter;             // counter of the depth frame upon which it was calculated
         uint64_t    frame_timestamp;                 // HW Timestamp for Occupancy map, calculated in lower level algo
         uint8_t     floor_detection;                 // Percentage
-        uint8_t     cliff_detection;                 // Percentage
-        uint8_t     depth_fill_rate;                 // signed value in range of [0..100]. Use [x = 101] if not applicable
-        int32_t     sensor_roll_angle;               // In millidegrees. Relative to X (forward) axis. Positive value is CCW
-        int32_t     sensor_pitch_angle;              // In millidegrees. Relative to Y (left) axis. Positive value is CCW 
-        int32_t     floor_median_height;             // In millimeters. Relative to the “leveled pointcloud” CS 
+        uint8_t     diagnostic_zone_fill_rate;       // Percentage
+        uint8_t     depth_fill_rate;                 // Unsigned value in range of [0..100]. Use [x = 0xFF] if not applicable
+        float       sensor_roll_angle;               // In millidegrees. Relative to X (forward) axis. Positive value is CCW
+        float       sensor_pitch_angle;              // In millidegrees. Relative to Y (left) axis. Positive value is CCW
+        int32_t     diagnostic_zone_median_height;   // In millimeters. Relative to the "leveled pointcloud" CS 
         uint16_t    depth_stdev;                     // Spatial accuracy in millimetric units: 
                                                      // [0..1023] - valid range
                                                      // [1024] - attribute was not calculated / not applicable
                                                      // [1025 - 0xFFFF] undefined / invalid range
+                                                     // Only a placeholder. Not used by HKR.
         uint8_t     safety_preset_id;                // Designates the Safety Zone index in [0..63] range used in algo pipe
-        uint8_t     reserved[14];                    // Zero-ed
-        uint16_t    number_of_3d_vertices;           // The max number of points is 320X240 
-        uint8_t     reserved2[18];                   // Zero-ed
+        uint16_t    safety_preset_error_type;        // Safety Preset Error bitmask
+        uint8_t     safety_preset_error_param_1;     // Preset Error Param. Enumerated
+        uint8_t     safety_preset_error_param_2;     // Preset Error Param. Enumerated
+
+        int16_t     danger_zone_point_0_x_cord;      // Danger zone point #0, X coord in mm
+        int16_t     danger_zone_point_0_y_cord;      // Danger zone point #0, Y coord in mm
+        int16_t     danger_zone_point_1_x_cord;      // Danger zone point #1, X coord in mm
+        int16_t     danger_zone_point_1_y_cord;      // Danger zone point #1, Y coord in mm
+        int16_t     danger_zone_point_2_x_cord;      // Danger zone point #2, X coord in mm
+        int16_t     danger_zone_point_2_y_cord;      // Danger zone point #2, Y coord in mm
+        int16_t     danger_zone_point_3_x_cord;      // Danger zone point #3, X coord in mm
+        int16_t     danger_zone_point_3_y_cord;      // Danger zone point #3, Y coord in mm
+
+        int16_t     warning_zone_point_0_x_cord;     // Warning zone point #0, X coord in mm
+        int16_t     warning_zone_point_0_y_cord;     // Warning zone point #0, Y coord in mm
+        int16_t     warning_zone_point_1_x_cord;     // Warning zone point #1, X coord in mm
+        int16_t     warning_zone_point_1_y_cord;     // Warning zone point #1, Y coord in mm
+        int16_t     warning_zone_point_2_x_cord;     // Warning zone point #2, X coord in mm
+        int16_t     warning_zone_point_2_y_cord;     // Warning zone point #2, Y coord in mm
+        int16_t     warning_zone_point_3_x_cord;     // Warning zone point #3, X coord in mm
+        int16_t     warning_zone_point_3_y_cord;     // Warning zone point #3, Y coord in mm
+
+        int16_t     diagnostic_zone_point_0_x_cord;  // Diagnostic zone point #0, X coord in mm
+        int16_t     diagnostic_zone_point_0_y_cord;  // Diagnostic zone point #0, Y coord in mm
+        int16_t     diagnostic_zone_point_1_x_cord;  // Diagnostic zone point #1, X coord in mm
+        int16_t     diagnostic_zone_point_1_y_cord;  // Diagnostic zone point #1, Y coord in mm
+        int16_t     diagnostic_zone_point_2_x_cord;  // Diagnostic zone point #2, X coord in mm
+        int16_t     diagnostic_zone_point_2_y_cord;  // Diagnostic zone point #2, Y coord in mm
+        int16_t     diagnostic_zone_point_3_x_cord;  // Diagnostic zone point #3, X coord in mm
+        int16_t     diagnostic_zone_point_3_y_cord;  // Diagnostic zone point #3, Y coord in mm
+
+        uint8_t     reserved[10];                    // Zero-ed
+        uint32_t    number_of_3d_vertices;           // The max number of points is 320X240
+        uint8_t     reserved2[16];                   // Zero-ed
         uint32_t    payload_crc32;                   // Crc32 for the occupancy grid payload data only, not including the metadata header.
     };
     REGISTER_MD_TYPE(md_point_cloud, md_type::META_DATA_INTEL_POINT_CLOUD_ID)

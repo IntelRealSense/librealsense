@@ -1098,17 +1098,24 @@ namespace rs2
         descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_ID] = "Designates the Safety Zone index in [0..63] range used in algo pipe";
         descriptions[RS2_FRAME_METADATA_SENSOR_ANGLE_ROLL] = "In millidegrees. Relative to X (forward) axis. Positive value is CCW";
         descriptions[RS2_FRAME_METADATA_SENSOR_ANGLE_PITCH] = "In millidegrees. Relative to Y (left) axis. Positive value is CCW";
-        descriptions[RS2_FRAME_METADATA_FLOOR_MEDIAN_HEIGHT] = "In millimeters. Relative to the leveled pointcloud CS";
+        descriptions[RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_MEDIAN_HEIGHT] = "In millimeters. Relative to the leveled pointcloud CS";
         descriptions[RS2_FRAME_METADATA_FLOOR_DETECTION] = "Percentage";
-        descriptions[RS2_FRAME_METADATA_CLIFF_DETECTION] = "Percentage";
-        descriptions[RS2_FRAME_METADATA_DEPTH_FILL_RATE] = "Signed value in range of [0..100]. Use [x = 101] if not applicable";
+        descriptions[RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_FILL_RATE] = "Percentage";
+        descriptions[RS2_FRAME_METADATA_DEPTH_FILL_RATE] = "Unsigned value in range of [0..100]. Use [x = 0xFF] if not applicable";
         descriptions[RS2_FRAME_METADATA_DEPTH_STDEV] = "Spatial accuracy in millimetric units";
         descriptions[RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS] = "Number of rows in the grid. Max value is 250 (corresponding to 5M width with 2cm tile)";
         descriptions[RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS] = "Number of columns in the grid. Max value is 320 (corresponding to ~6.5M depth with 2cm tile)";
         descriptions[RS2_FRAME_METADATA_OCCUPANCY_CELL_SIZE] = "Edge size of each tile, measured in cm";
         descriptions[RS2_FRAME_METADATA_NUMBER_OF_3D_VERTICES] = "The max number of points is 640*360";
+        meanings =
+        {
+            "ERROR_UNKNOWN", "ERROR_GRID_CELL_SIZE_OUT_OF_RANGE", "ERROR_DANGER_ZONE_OUT_OF_FOV", "ERROR_DANGER_ZONE_INVALID_GEOMETRY",
+            "ERROR_WARNING_ZONE_OUT_OF_FOV", "ERROR_WARNING_ZONE_INVALID_GEOMETRY", "ERROR_DIAGNOSTIC_ZONE_OUT_OF_FOV",
+            "ERROR_DIAGNOSTIC_ZONE_INVALID_GEOMETRY", "ERROR_MASK_INVALID_GEOMETRY", "ERROR_MASK_MIN_DISTANCE_OUT_OF_RANGE", "ERROR_MASK_OUT_OF_FOV",
+            "ERROR_ROBOT_HEIGHT_OUT_OF_RANGE", "ERROR_SURFACE_HEIGHT_OUT_OF_RANGE", "ERROR_SURFACE_STEEPNESS_OUT_OF_RANGE", "ERROR_TRANSFORMATION_INVALID"
+        };
+        descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_ERROR_TYPE] = "Safety Preset Error Types:" + get_meaning(RS2_FRAME_METADATA_SAFETY_PRESET_ERROR_TYPE, meanings, "OK");
     }
-
     // every bit is represented by its own meaning - first bit by first meaning second by second meaning etc.
     // if the value is 0, meaning_for_zero will be used instead
     std::string stream_model::get_meaning(const rs2_frame_metadata_value& md_val, const std::vector<std::string>& bits_meanings, const std::string& meaning_for_zero) const

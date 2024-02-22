@@ -74,9 +74,9 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_CRC                                  , /**< CRC checksum of the Metadata */
     RS2_FRAME_METADATA_SAFETY_DEPTH_FRAME_COUNTER           , /**< Counter of the depth frame upon which the stream was calculated*/
     RS2_FRAME_METADATA_SAFETY_LEVEL1                        , /**< Designates the Yellow zone status: 0x1 - High, 0x0 - Low*/
-    RS2_FRAME_METADATA_SAFETY_LEVEL1_ORIGIN                 , /**< When l1 is low - equals to frame_counter in safety_header - For l1=0x1 : hold the Frame id on last transition to “High” state */
-    RS2_FRAME_METADATA_SAFETY_LEVEL2                        , /**< Designates the “Red” zone status: 0x1 – High, 0x0 - Low */
-    RS2_FRAME_METADATA_SAFETY_LEVEL2_ORIGIN                 , /**< When l2 is low - equals to frame_counter in safety_header - For l2=0x1 : hold the Frame id on last transition to “High” state */
+    RS2_FRAME_METADATA_SAFETY_LEVEL1_ORIGIN                 , /**< When l1 is low - equals to frame_counter in safety_header - For l1=0x1 : hold the Frame id on last transition to "High" state */
+    RS2_FRAME_METADATA_SAFETY_LEVEL2                        , /**< Designates the "Red" zone status: 0x1 - High, 0x0 - Low */
+    RS2_FRAME_METADATA_SAFETY_LEVEL2_ORIGIN                 , /**< When l2 is low - equals to frame_counter in safety_header - For l2=0x1 : hold the Frame id on last transition to "High" state */
     RS2_FRAME_METADATA_SAFETY_LEVEL1_VERDICT                , /**< Current verdict for l1 Safety Signal - May differ from l1_signal due to additional logics applied */
     RS2_FRAME_METADATA_SAFETY_LEVEL2_VERDICT                , /**< Current verdict for l2 Safety Signal - May differ from l2_signal due to additional logics applied */
     RS2_FRAME_METADATA_SAFETY_OPERATIONAL_MODE              , /**< Reflects the SC operational mode (XU control) */
@@ -95,16 +95,43 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_SAFETY_SMCU_STATE                    , /**< Bitmask, enumerated */
     RS2_FRAME_METADATA_SAFETY_PRESET_ID                     , /**< Designates the Safety Zone index in [0..63] range used in algo pipe */
     RS2_FRAME_METADATA_SENSOR_ANGLE_ROLL                    , /**< In millidegrees. Relative to X (forward) axis. Positive value is CCW */
-    RS2_FRAME_METADATA_SENSOR_ANGLE_PITCH                   , /**< In millidegrees. Relative to Y (left) axis. Positive value is CCW  */
-    RS2_FRAME_METADATA_FLOOR_MEDIAN_HEIGHT                  , /**< In millimeters. Relative to the “leveled pointcloud” CS  */
+    RS2_FRAME_METADATA_SENSOR_ANGLE_PITCH                   , /**< In millidegrees. Relative to Y (left) axis. Positive value is CCW */
+    RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_MEDIAN_HEIGHT        , /**< In millimeters. Relative to the "leveled pointcloud" CS  */
     RS2_FRAME_METADATA_FLOOR_DETECTION                      , /**< Percentage */
-    RS2_FRAME_METADATA_CLIFF_DETECTION                      , /**< Percentage */
-    RS2_FRAME_METADATA_DEPTH_FILL_RATE                      , /**< Signed value in range of [0..100]. Use [x = 101] if not applicable */
+    RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_FILL_RATE            , /**< Percentage */
+    RS2_FRAME_METADATA_DEPTH_FILL_RATE                      , /**< Unsigned value in range of [0..100]. Use [x = 0xFF] if not applicable */
     RS2_FRAME_METADATA_DEPTH_STDEV                          , /**< Spatial accuracy in millimetric units */
     RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS                  , /**< Number of rows in the grid. Max value is 250 (corresponding to 5M width with 2cm tile) */
     RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS               , /**< Number of columns in the grid. Max value is 320 (corresponding to ~6.5M depth with 2cm tile) */
-    RS2_FRAME_METADATA_OCCUPANCY_CELL_SIZE                  , /**< Edge size of each tile, measured in cm  */
+    RS2_FRAME_METADATA_OCCUPANCY_CELL_SIZE                  , /**< Edge size of each tile, measured in cm */
     RS2_FRAME_METADATA_NUMBER_OF_3D_VERTICES                , /**< The max number of points is 640x360 */
+    RS2_FRAME_METADATA_SAFETY_PRESET_ERROR_TYPE             , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_PRESET_ERROR_PARAM_1          , /**< Preset Error Param. Enumerated*/
+    RS2_FRAME_METADATA_SAFETY_PRESET_ERROR_PARAM_2          , /**< Preset Error Param. Enumerated*/
+    RS2_FRAME_METADATA_DANGER_ZONE_POINT_0_X_CORD           , /**< Danger Zone point #0, X coord in mm*/
+    RS2_FRAME_METADATA_DANGER_ZONE_POINT_0_Y_CORD           , /**< Danger Zone point #0, Y coord in mm*/
+    RS2_FRAME_METADATA_DANGER_ZONE_POINT_1_X_CORD           , /**< Danger Zone point #1, X coord in mm*/
+    RS2_FRAME_METADATA_DANGER_ZONE_POINT_1_Y_CORD           , /**< Danger Zone point #1, Y coord in mm*/
+    RS2_FRAME_METADATA_DANGER_ZONE_POINT_2_X_CORD           , /**< Danger Zone point #2, X coord in mm*/
+    RS2_FRAME_METADATA_DANGER_ZONE_POINT_2_Y_CORD           , /**< Danger Zone point #2, Y coord in mm*/
+    RS2_FRAME_METADATA_DANGER_ZONE_POINT_3_X_CORD           , /**< Danger Zone point #3, X coord in mm*/
+    RS2_FRAME_METADATA_DANGER_ZONE_POINT_3_Y_CORD           , /**< Danger Zone point #3, Y coord in mm*/
+    RS2_FRAME_METADATA_WARNING_ZONE_POINT_0_X_CORD          , /**< Warning Zone point #0, X coord in mm*/
+    RS2_FRAME_METADATA_WARNING_ZONE_POINT_0_Y_CORD          , /**< Warning Zone point #0, Y coord in mm*/
+    RS2_FRAME_METADATA_WARNING_ZONE_POINT_1_X_CORD          , /**< Warning Zone point #1, X coord in mm*/
+    RS2_FRAME_METADATA_WARNING_ZONE_POINT_1_Y_CORD          , /**< Warning Zone point #1, Y coord in mm*/
+    RS2_FRAME_METADATA_WARNING_ZONE_POINT_2_X_CORD          , /**< Warning Zone point #2, X coord in mm*/
+    RS2_FRAME_METADATA_WARNING_ZONE_POINT_2_Y_CORD          , /**< Warning Zone point #2, Y coord in mm*/
+    RS2_FRAME_METADATA_WARNING_ZONE_POINT_3_X_CORD          , /**< Warning Zone point #3, X coord in mm*/
+    RS2_FRAME_METADATA_WARNING_ZONE_POINT_3_Y_CORD          , /**< Warning Zone point #3, Y coord in mm*/
+    RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_0_X_CORD       , /**< Diagnostic Zone point #0, X coord in mm*/
+    RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_0_Y_CORD       , /**< Diagnostic Zone point #0, Y coord in mm*/
+    RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_1_X_CORD       , /**< Diagnostic Zone point #1, X coord in mm*/
+    RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_1_Y_CORD       , /**< Diagnostic Zone point #1, Y coord in mm*/
+    RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_2_X_CORD       , /**< Diagnostic Zone point #2, X coord in mm*/
+    RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_2_Y_CORD       , /**< Diagnostic Zone point #2, Y coord in mm*/
+    RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_3_X_CORD       , /**< Diagnostic Zone point #3, X coord in mm*/
+    RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_3_Y_CORD       , /**< Diagnostic Zone point #3, Y coord in mm*/
     RS2_FRAME_METADATA_COUNT
 } rs2_frame_metadata_value;
 const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata);
