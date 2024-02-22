@@ -326,11 +326,11 @@ namespace librealsense
         //     std::copy(begin(uvc_devices), end(uvc_devices), std::back_inserter(list));
         // }
 
-        // for (auto&& item : playback_devices)
-        // {
-        //     if (auto dev = item.second.lock())
-        //         list.push_back(dev);
-        // }
+        for (auto&& item : playback_devices)
+        {
+            if (auto dev = item.second.lock())
+                list.push_back(dev);
+        }
 
         if (list.size())
             LOG_INFO( "Found " << list.size() << " RealSense devices (mask 0x" << std::hex << mask << ")" );
