@@ -320,11 +320,11 @@ namespace librealsense
             std::copy(begin(recovery_devices), end(recovery_devices), std::back_inserter(list));
         }
 
-        // if (mask & RS2_PRODUCT_LINE_NON_INTEL)
-        // {
-        //     auto uvc_devices = platform_camera_info::pick_uvc_devices(ctx, devices.uvc_devices);
-        //     std::copy(begin(uvc_devices), end(uvc_devices), std::back_inserter(list));
-        // }
+        if (mask & RS2_PRODUCT_LINE_NON_INTEL)
+        {
+            auto uvc_devices = platform_camera_info::pick_uvc_devices(ctx, devices.uvc_devices);
+            std::copy(begin(uvc_devices), end(uvc_devices), std::back_inserter(list));
+        }
 
         for (auto&& item : playback_devices)
         {
