@@ -295,11 +295,11 @@ namespace librealsense
         // to allow them to modify context later on
         auto ctx = t->shared_from_this();
 
-        // if (mask & RS2_PRODUCT_LINE_D400)
-        // {
-        //     auto d400_devices = d400_info::pick_d400_devices(ctx, devices);
-        //     std::copy(begin(d400_devices), end(d400_devices), std::back_inserter(list));
-        // }
+        if (mask & RS2_PRODUCT_LINE_D400)
+        {
+            auto d400_devices = d400_info::pick_d400_devices(ctx, devices);
+            std::copy(begin(d400_devices), end(d400_devices), std::back_inserter(list));
+        }
 
         if( mask & RS2_PRODUCT_LINE_L500 )
         {
