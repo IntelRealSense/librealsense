@@ -307,11 +307,11 @@ namespace librealsense
         //     std::copy(begin(l500_devices), end(l500_devices), std::back_inserter(list));
         // }
 
-        // if (mask & RS2_PRODUCT_LINE_SR300)
-        // {
-        //     auto sr300_devices = sr300_info::pick_sr300_devices(ctx, devices.uvc_devices, devices.usb_devices);
-        //     std::copy(begin(sr300_devices), end(sr300_devices), std::back_inserter(list));
-        // }
+        if (mask & RS2_PRODUCT_LINE_SR300)
+        {
+            auto sr300_devices = sr300_info::pick_sr300_devices(ctx, devices.uvc_devices, devices.usb_devices);
+            std::copy(begin(sr300_devices), end(sr300_devices), std::back_inserter(list));
+        }
 
         // Supported recovery devices
         if (mask & RS2_PRODUCT_LINE_D400 || mask & RS2_PRODUCT_LINE_SR300 || mask & RS2_PRODUCT_LINE_L500) 
