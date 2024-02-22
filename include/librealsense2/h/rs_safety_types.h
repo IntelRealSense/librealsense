@@ -79,14 +79,14 @@ typedef struct rs2_safety_environment
     float payload_weight;   // a typical mass of the carriage payload in kg
 
     // Environmetal properties
-    float   surface_inclination;                       // Expected floor min/max inclination angle, degrees
-    float   surface_height;                            // Min height above surface to be used for obstacle avoidance (meter)
+    float   surface_inclination;                      // Expected floor min/max inclination angle, degrees
+    float   surface_height;                           // Min height above surface to be used for obstacle avoidance (meter)
     uint8_t diagnostic_zone_fill_rate_threshold;      // Min pixel fill rate required in the diagnostic area for Safety Algo processing [0...100%]
-    uint8_t floor_fill_threshold;                      // Depth fill rate threshold for the floor area [0...100%]
-    uint8_t depth_fill_threshold;                      // Depth Fill rate threshold for the full image [0...100%]
+    uint8_t floor_fill_threshold;                     // Depth fill rate threshold for the floor area [0...100%]
+    uint8_t depth_fill_threshold;                     // Depth Fill rate threshold for the full image [0...100%]
     uint8_t diagnostic_zone_height_median_threshold;  // Diagnostic Zone height median in [ 0..255 ] millimeter range. Absolute
-    uint8_t vision_hara_persistency;                   // Represents the number of consecutive frames with alarming Vision HaRa parameters to raise safety signal [1..5]. Default = 1
-    uint8_t crypto_signature[32];                      // SHA2 or similar
+    uint8_t vision_hara_persistency;                  // Represents the number of consecutive frames with alarming Vision HaRa parameters to raise safety signal [1..5]. Default = 1
+    uint8_t crypto_signature[32];                     // SHA2 or similar
 
     uint8_t reserved[3];                              // Can be modified by changing the table minor version, without breaking back-compat
 } rs2_safety_environment;
@@ -109,23 +109,29 @@ typedef struct rs2_safety_preset_with_header
 
 typedef struct rs2_safety_occupancy_grid_params
 {
-    uint16_t grid_cell_seed;     // Grid cell (quadratic) edge size in mm
-    uint8_t close_range_quorum;
-    uint8_t mid_range_quorum;    
-    uint8_t long_range_quorum; 
+    uint16_t grid_cell_seed;      // Grid cell (quadratic) edge size in mm
+
+    // This comment is effective for the next 3 range quorum members
+    // Each range represnt the number of Depth pixels found in a specific cell to mark it as "occupied"
+    // The Zone dymanic range is defined as: (min_range <= Z << max_range)
+    // The difference between these 3 memebrs, is the range they can define.
+    uint8_t  close_range_quorum;  // Occupancy grid close-range [0…1000) mm
+    uint8_t  mid_range_quorum;    // Occupancy grid Mid-range [1000…2000) mm
+    uint8_t  long_range_quorum;   // Occupancy grid Mid-range [2000…3000) mm
+
 } rs2_safety_occupancy_grid_params;
 
 typedef struct rs2_safety_smcu_arbitration_params
 {
-    uint16_t l_0_total_threshold;     
-    uint8_t l_0_sustained_rate_threshold;
-    uint16_t l_1_total_threshold;
-    uint8_t l_1_sustained_rate_threshold;
-    uint8_t l_4_total_threshold;
-    uint8_t hkr_stl_timeout;
-    uint8_t mcu_stl_timeout;
-    uint8_t sustained_aicv_frame_drops;
-    uint8_t generic_threshold_1;
+    uint16_t l_0_total_threshold;             // In [ 0..2^16-1] range. Default = 100
+    uint8_t l_0_sustained_rate_threshold;     // Notifications per FDTI. In [ 1..255] range. Default = 10
+    uint16_t l_1_total_threshold;             // In [ 0..2^16-1] range. Default = 100
+    uint8_t l_1_sustained_rate_threshold;     // Notifications per FDTI. In [ 1..255] range. Default = 10
+    uint8_t l_4_total_threshold;              // Number of HKR reset before switching to "Locked" state. [ 1..255] range. Default = 10
+    uint8_t hkr_stl_timeout;                  // In ms
+    uint8_t mcu_stl_timeout;                  // Application Specific
+    uint8_t sustained_aicv_frame_drops;       // [0..100] % of frames required to arrive within the last 10 frames.
+    uint8_t generic_threshold_1;              // Application Specific
 } rs2_safety_smcu_arbitration_params;
 
 typedef struct rs2_safety_interface_config_header
@@ -200,12 +206,12 @@ typedef struct rs2_safety_interface_config
     rs2_safety_interface_config_pin preset2_a;
     rs2_safety_interface_config_pin preset4_b;
     rs2_safety_interface_config_pin ground;
-    uint8_t gpio_stabilization_interval;
-    rs2_safety_extrinsics_table camera_position;  // Sensor->System Rigid-body Transformation (System CS is ""Leveled World"" assumed)
+    uint8_t gpio_stabilization_interval; // Time for GPIOs to stabilize before accepting the new Selection Zone index. In Millisec[15 - 150]
+    rs2_safety_extrinsics_table camera_position; // Sensor->System Rigid-body Transformation (System CS is "Leveled World" assumed)
     rs2_safety_occupancy_grid_params occupancy_grid_params;
     rs2_safety_smcu_arbitration_params smcu_arbitration_params;
-    uint8_t crypto_signature[32];
-    uint8_t reserved[17];
+    uint8_t crypto_signature[32]; // SHA2 or similar
+    uint8_t reserved[17]; // Zeroed. Can be modified by changing the table minor version, without breaking back-compat
 } rs2_safety_interface_config;
 
 typedef struct rs2_safety_interface_config_with_header
