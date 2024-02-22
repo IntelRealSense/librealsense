@@ -26,6 +26,8 @@ void init_options(py::module &m) {
                 value = py::str( value_->as_string );
             else if( RS2_OPTION_TYPE_INTEGER == value_->type )
                 value = py::int_( value_->as_integer );
+            else if( RS2_OPTION_TYPE_BOOLEAN == value_->type )
+                value = py::bool_( value_->as_integer );
             else
                 value = py::cast< py::none >( Py_None );
         }

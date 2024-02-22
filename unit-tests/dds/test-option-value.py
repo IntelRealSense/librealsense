@@ -20,6 +20,24 @@ with test.closure( 'read-only options' ):
         dds.option.from_json( ['a', 1.1, 'desc'] ).get_value(),
         1.1 )
 
+with test.closure( 'boolean' ):
+    test.check_equal( dds.option.from_json( ['b', True, 'bool'] ).value_type(), 'boolean' )
+    test.check_equal( dds.option.from_json( ['b', False, 'bool'] ).value_type(), 'boolean' )
+    test.check_equal( dds.option.from_json( ['b', 0, 'bool', ['boolean']] ).value_type(), 'boolean' )
+    test.check_equal( dds.option.from_json( ['b', 0, 'bool', ['boolean']] ).get_value(), False )
+    test.check_equal( dds.option.from_json( ['b', 1, 'bool', ['boolean']] ).get_value(), True )
+    test.check_equal_lists(
+        dds.option.from_json( ['b', 1, 'bool', ['boolean']] ).to_json(),
+        ['b', True, 'bool'] )
+    test.check_throws( lambda:
+        dds.option.from_json( ['b', 1., 'bool', ['boolean']] ),
+        RuntimeError, 'not convertible to a boolean: 1.0' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['b', 2, 'bool', ['boolean']] ),
+        RuntimeError, 'not convertible to a boolean: 2' )
+    test.check_equal( dds.option.from_json( ['b', False, True, 'bool'] ).value_type(), 'boolean' )
+    test.check_equal( dds.option.from_json( ['b', False, None, 'bool', ['optional']] ).value_type(), 'boolean' )
+
 with test.closure( 'r/o options are still settable' ):
     # NOTE: the DDS options do not enforce logic post initialization; they serve only to COMMUNICATE any state and limits
     test.check_equal( dds.option.from_json( ['1', 0, 'desc'] ).value_type(), 'int' )

@@ -124,6 +124,13 @@ struct rs2_option_value_wrapper : rs2_option_value
                 p_json->get_to( as_integer );
                 break;
 
+            case RS2_OPTION_TYPE_BOOLEAN:
+                if( ! p_json->is_boolean() )
+                    throw invalid_value_exception( get_string( option_id )
+                                                   + " value is not a boolean: " + p_json->dump() );
+                as_integer = p_json->get< bool >();
+                break;
+
             case RS2_OPTION_TYPE_STRING:
                 if( ! p_json->is_string() )
                     throw invalid_value_exception( get_string( option_id )

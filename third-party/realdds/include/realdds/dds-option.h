@@ -65,7 +65,7 @@ public:
     virtual void init( std::string name, std::string description );
     virtual void init_properties( option_properties && );
     virtual void init_default_value( rsutils::json );
-    virtual void init_range( rsutils::json const & min, rsutils::json const & max, rsutils::json const & step );
+    virtual void init_range( rsutils::json min, rsutils::json max, rsutils::json step );
     virtual void init_value( rsutils::json );
 
     bool is_read_only() const { return _flags & flag::read_only; }
@@ -87,7 +87,7 @@ public:
 
     void set_value( rsutils::json );
     virtual void check_value( rsutils::json & ) const;
-    virtual void check_type( rsutils::json const & ) const = 0;
+    virtual void check_type( rsutils::json & ) const = 0;
 
     rsutils::json const & get_default_value() const { return _default_value; }
     bool is_default_valid() const { return ! get_default_value().is_null(); }
@@ -116,7 +116,7 @@ public:
 
     char const * value_type() const override { return "float"; }
 
-    void check_type( rsutils::json const & value ) const override;
+    void check_type( rsutils::json & value ) const override;
     static type check_float( rsutils::json const & );
 };
 
@@ -133,8 +133,25 @@ public:
 
     char const * value_type() const override { return "int"; }
 
-    void check_type( rsutils::json const & ) const override;
+    void check_type( rsutils::json & ) const override;
     static type check_integer( rsutils::json const & );
+};
+
+
+class dds_boolean_option : public dds_integer_option
+{
+    using super = dds_integer_option;
+
+public:
+    using type = rsutils::json::boolean_t;
+
+    char const * value_type() const override { return "boolean"; }
+
+    void init_range( rsutils::json, rsutils::json, rsutils::json ) override;
+    void check_type( rsutils::json & ) const override;
+    static type check_boolean( rsutils::json const & );
+
+    type get_boolean() const { return get_value().get< type >(); }
 };
 
 
@@ -145,7 +162,7 @@ class dds_string_option : public dds_option
 public:
     char const * value_type() const override { return "string"; }
 
-    void check_type( rsutils::json const & ) const override;
+    void check_type( rsutils::json & ) const override;
 
     std::string get_string() const { return get_value().get< std::string >(); }
 };
@@ -160,7 +177,7 @@ public:
 
     char const * value_type() const override { return "ip-address"; }
 
-    void check_type( rsutils::json const & ) const override;
+    void check_type( rsutils::json & ) const override;
     static ip_address check_ip( rsutils::json const & );
 
     ip_address get_ip() const { return ip_address( get_value().string_ref() ); }

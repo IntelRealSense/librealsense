@@ -703,6 +703,9 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                             case RS2_OPTION_TYPE_INTEGER:
                                 value = changed_option->as_integer;
                                 break;
+                            case RS2_OPTION_TYPE_BOOLEAN:
+                                value = (bool)changed_option->as_integer;
+                                break;
                             default:
                                 LOG_ERROR( "Unknown option '" << option_name << "' type: "
                                                               << rs2_option_type_to_string( changed_option->type ) );

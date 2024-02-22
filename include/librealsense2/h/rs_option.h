@@ -147,6 +147,7 @@ extern "C" {
         RS2_OPTION_TYPE_INTEGER, /**< 64-bit signed integer value */
         RS2_OPTION_TYPE_FLOAT,
         RS2_OPTION_TYPE_STRING,
+        RS2_OPTION_TYPE_BOOLEAN,
 
         RS2_OPTION_TYPE_COUNT
 
@@ -168,7 +169,7 @@ extern "C" {
         union {
             char const * as_string;       /**< valid only while rs2_option_value is alive! */
             float as_float;
-            int64_t as_integer;
+            int64_t as_integer;           /**< including boolean value */
         };
     } rs2_option_value;
 
