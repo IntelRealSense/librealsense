@@ -241,8 +241,36 @@ namespace librealsense
             make_attribute_parser(&md_safety_info::soc_fusa_action, 
                 md_safety_info_attributes::soc_fusa_action_attribute, md_prop_offset));
 
-        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_STATUS,
-            make_attribute_parser(&md_safety_info::soc_status,
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_L0_COUNTER,
+            make_attribute_parser(&md_safety_info::soc_l_0_counter,
+                md_safety_info_attributes::soc_status_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_L0_RATE,
+            make_attribute_parser(&md_safety_info::soc_l_0_rate,
+                md_safety_info_attributes::soc_status_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_L1_COUNTER,
+            make_attribute_parser(&md_safety_info::soc_l_1_counter,
+                md_safety_info_attributes::soc_status_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_L1_RATE,
+            make_attribute_parser(&md_safety_info::soc_l_1_rate,
+                md_safety_info_attributes::soc_status_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_GMT_STATUS,
+            make_attribute_parser(&md_safety_info::soc_gmt_status,
+                md_safety_info_attributes::soc_status_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_HKR_CRITICAL_ERROR_GPIO,
+            make_attribute_parser(&md_safety_info::soc_hkr_critical_error_gpio,
+                md_safety_info_attributes::soc_status_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_MONITOR_L2_ERROR_TYPE,
+            make_attribute_parser(&md_safety_info::soc_monitor_l2_error_type,
+                md_safety_info_attributes::soc_status_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_MONITOR_L3_ERROR_TYPE,
+            make_attribute_parser(&md_safety_info::soc_monitor_l3_error_type,
                 md_safety_info_attributes::soc_status_attribute, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT,
@@ -264,6 +292,22 @@ namespace librealsense
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SMCU_STATE,
             make_attribute_parser(&md_safety_info::smcu_state,
                 md_safety_info_attributes::smcu_state_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO,
+            make_attribute_parser(&md_safety_info::non_fusa_gpio,
+                md_safety_info_attributes::non_fusa_gpio_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_STATUS_BITMASK,
+            make_attribute_parser(&md_safety_info::smcu_status_bitmask,
+                md_safety_info_attributes::smcu_debug_info_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_INFO_INTERNAL_STATE,
+            make_attribute_parser(&md_safety_info::smcu_internal_state,
+                md_safety_info_attributes::smcu_debug_info_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_INFO_BIST_STATUS,
+            make_attribute_parser(&md_safety_info::smcu_bist_status,
+                md_safety_info_attributes::smcu_debug_info_attribute, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_CRC,
             make_attribute_parser_with_crc(&md_safety_info::crc32,

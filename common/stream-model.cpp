@@ -1065,21 +1065,36 @@ namespace rs2
         descriptions[RS2_FRAME_METADATA_SAFETY_LEVEL2_VERDICT] = "Current verdict for l2 Safety Signal - May differ from l2_signal due to additional logics applied";
         descriptions[RS2_FRAME_METADATA_SAFETY_OPERATIONAL_MODE] = "Reflects the SC operational mode (XU control)";
 
-        meanings = { "Not Safe", "Collison(s) in Red zone", "Collision(s) in Yellow zone" };
+        meanings = { "Not Safe", "Collison(s) in danger zone", "Collision(s) in warning zone" };
         descriptions[RS2_FRAME_METADATA_SAFETY_VISION_VERDICT] = "Depth Visual Safety Verdict:" + get_meaning(RS2_FRAME_METADATA_SAFETY_VISION_VERDICT, meanings, "Safe");
         
-        meanings = { "HaRa triggers identified", "Collison(s) in Red zone", "Collision(s) in Yellow zone","Depth Fill Rate in the Diagnostic Zone is lower than the require confidence level","Depth Fill Rate in the Floor Area is lower than the require confidence level",
-        "Cliff detection was triggered","Depth noise standard deviation  is higher than permitted level","Camera Posture/Floor position critical deviation is detected", "Safety Preset error","Image Depth Fill Rate is lower than the require confidence level","Frame drops/insufficient data"};
+        meanings = { 
+            "HaRa triggers identified",
+            "Collison(s) in danger zone",
+            "Collision(s) in warning zone",
+            "Depth fill rate in the diagnostic zone is lower than the require confidence level",
+            "Depth fill rate in the floor area is lower than the require confidence level",
+            "Cliff detection was triggered",
+            "Depth noise standard deviation is higher than permitted level",
+            "Camera posture/floor position critical deviation is detected",
+            "Safety preset error",
+            "Image depth fill Rate is lower than the require confidence level",
+            "Contious frame drops",
+            "Sustained frame drops",
+            "Frozen depth image (CRC recurrence)",
+            "FTTI miss (data latency)"
+        };
         descriptions[RS2_FRAME_METADATA_SAFETY_HARA_EVENTS] = "HaRa events:" + get_meaning(RS2_FRAME_METADATA_SAFETY_HARA_EVENTS, meanings, "No HaRa events identified");
         
-        meanings = { "Preset inconsistency identified", "Preset CRC check invalid", "Discrepancy between actual and expected Preset Id","Preset Selection with GPIO is invalidated."};
+        meanings = { "Preset inconsistency identified", "Preset CRC check invalid", "Discrepancy between actual and expected Preset Id", "Preset Selection with GPIO is invalidated."};
         descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_INTEGRITY] = "Preset integrity:" + get_meaning(RS2_FRAME_METADATA_SAFETY_PRESET_INTEGRITY, meanings, "Preset integrity identified");
         
         descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_ID_SELECTED] = "Safety Preset index set via Adaptive Field selection GPIO";
         descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_ID_USED] = "Safety Preset index used in the latest Vision Safety algo processing";
-        descriptions[RS2_FRAME_METADATA_SAFETY_SOC_FUSA_EVENTS] = "Bitmask, enumerated";
-        descriptions[RS2_FRAME_METADATA_SAFETY_SOC_FUSA_ACTION] = "Bitmask, enumerated";
-        descriptions[RS2_FRAME_METADATA_SAFETY_SOC_STATUS] = "Bitmask, enumerated";
+        descriptions[RS2_FRAME_METADATA_SAFETY_SOC_FUSA_EVENTS] = "SOC critical notification: L2/L3 that requires handling/troubleshooting in S.MCU 32-bit value, as supplied by STL mechanism";
+
+        meanings = { "HKR Reset", "HKR Shutdown"};
+        descriptions[RS2_FRAME_METADATA_SAFETY_SOC_FUSA_ACTION] = "Bitmask, enumerated:" + get_meaning(RS2_FRAME_METADATA_SAFETY_SOC_FUSA_ACTION, meanings, "No action taken");
 
         meanings = { "Not safe", "ADC1 over-voltage", "ADC1 under-voltage", "ADC2 over-voltage", "ADC2 under-voltage", "ADC3 over-voltage", 
             "ADC3 under-voltage", "ADC4 over-voltage", "ADC4 under-voltage", "ADC5 over-voltage", "ADC5 under-voltage", "ADC6 over-voltage", 
@@ -1091,6 +1106,10 @@ namespace rs2
             "Projector R under-voltage", "APM PRIN L over-voltage", "APM PRIN L under-voltage", "APM PRIN R over-voltage", "APM PRIN R under-voltage", 
             "Thermal over-voltage", "Thermal under-voltage", "Humidity over-voltage", "Humidity under-voltage", "SMCU temprature over-voltage", "SMCU temprature under-voltage" };
         descriptions[RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT] = "MB Fusa events:" + get_meaning(RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT, meanings, "Safe");
+
+        meanings = { "GMT Clock is outside safe threshold", "GMT Clock is not avaialble"};
+        descriptions[RS2_FRAME_METADATA_SAFETY_SOC_GMT_STATUS] = "MB Fusa events:" + get_meaning(RS2_FRAME_METADATA_SAFETY_SOC_GMT_STATUS, meanings, "GMT Clock Ok");
+
         descriptions[RS2_FRAME_METADATA_SAFETY_MB_FUSA_ACTION] = "Bitmask, enumerated";
         descriptions[RS2_FRAME_METADATA_SAFETY_MB_STATUS] = "Provision for future enhancements";
         descriptions[RS2_FRAME_METADATA_SAFETY_SMCU_STATUS] = "Bitmask, enumerated";
@@ -1107,6 +1126,7 @@ namespace rs2
         descriptions[RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS] = "Number of columns in the grid. Max value is 320 (corresponding to ~6.5M depth with 2cm tile)";
         descriptions[RS2_FRAME_METADATA_OCCUPANCY_CELL_SIZE] = "Edge size of each tile, measured in cm";
         descriptions[RS2_FRAME_METADATA_NUMBER_OF_3D_VERTICES] = "The max number of points is 640*360";
+
         meanings =
         {
             "ERROR_UNKNOWN", "ERROR_GRID_CELL_SIZE_OUT_OF_RANGE", "ERROR_DANGER_ZONE_OUT_OF_FOV", "ERROR_DANGER_ZONE_INVALID_GEOMETRY",
@@ -1115,6 +1135,19 @@ namespace rs2
             "ERROR_ROBOT_HEIGHT_OUT_OF_RANGE", "ERROR_SURFACE_HEIGHT_OUT_OF_RANGE", "ERROR_SURFACE_STEEPNESS_OUT_OF_RANGE", "ERROR_TRANSFORMATION_INVALID"
         };
         descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_ERROR_TYPE] = "Safety Preset Error Types:" + get_meaning(RS2_FRAME_METADATA_SAFETY_PRESET_ERROR_TYPE, meanings, "OK");
+
+        meanings =
+        {
+            "OSSD2_A_present",
+            "OSSD2_A status : Raised / Idle",
+            "OSSD2_B_present",
+            "OSSD2_B status : Raised / Idle"
+            "Device_Ready_present",
+            "Device_Ready on / off",
+            "Error signal present",
+            "Error signal on / off",
+        };
+        descriptions[RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO] = "Non-FuSa GPIO:" + get_meaning(RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO, meanings, "OK");
     }
     // every bit is represented by its own meaning - first bit by first meaning second by second meaning etc.
     // if the value is 0, meaning_for_zero will be used instead
@@ -1152,10 +1185,20 @@ namespace rs2
     bool stream_model::should_show_in_hex(rs2_frame_metadata_value& md_val) const
     {
         // place in the SET metadata types you wish to display in HEX format
-        static std::unordered_set< int > show_in_hex( { RS2_FRAME_METADATA_SAFETY_VISION_VERDICT,
+        static std::unordered_set< int > show_in_hex(
+            {
+                RS2_FRAME_METADATA_SAFETY_VISION_VERDICT,
                 RS2_FRAME_METADATA_SAFETY_HARA_EVENTS,
                 RS2_FRAME_METADATA_SAFETY_PRESET_INTEGRITY,
-                RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT });
+                RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT,
+                RS2_FRAME_METADATA_SAFETY_SOC_FUSA_ACTION,
+                RS2_FRAME_METADATA_SAFETY_SMCU_STATUS,
+                RS2_FRAME_METADATA_SAFETY_SMCU_STATE,
+                RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_STATUS_BITMASK,
+                RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_INFO_INTERNAL_STATE,
+                RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_INFO_BIST_STATUS,
+                RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO
+            });
 
         if (show_in_hex.find(md_val) != show_in_hex.end())
             return true;
