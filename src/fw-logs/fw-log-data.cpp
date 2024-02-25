@@ -5,13 +5,22 @@
 
 #include <rsutils/string/from.h>
 
+#include <algorithm>
 
 namespace librealsense
 {
     namespace fw_logs
     {
+        constexpr const size_t min_binary_size = std::min( sizeof( legacy_fw_log_binary ),
+                                                           sizeof( extended_fw_log_binary ) - sizeof( param_info * ) ); // Info field is optional
+
         rs2_log_severity fw_logs_binary_data::get_severity() const
         {
+            if( logs_buffer.size() < min_binary_size )
+                throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                             << "FW log data size is too small "
+                                                             << logs_buffer.size() );
+
             const fw_log_binary * log_binary = reinterpret_cast< const fw_log_binary * >( logs_buffer.data() );
             if( log_binary->magic_number == 0xA5)
                 return fw_logs_severity_to_rs2_log_severity( log_binary->severity );
@@ -25,8 +34,23 @@ namespace librealsense
 
         uint32_t fw_logs_binary_data::get_timestamp() const
         {
-            const legacy_fw_log_binary * log_binary = reinterpret_cast< const legacy_fw_log_binary * >( logs_buffer.data() );
-            return log_binary->timestamp;
+            if( logs_buffer.size() < min_binary_size )
+                throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                             << "FW log data size is too small "
+                                                             << logs_buffer.size() );
+
+            const fw_log_binary * log_binary = reinterpret_cast< const fw_log_binary * >( logs_buffer.data() );
+            if( log_binary->magic_number == 0xA5 )
+            {
+                auto timestamp = reinterpret_cast< const extended_fw_log_binary * >( this )->soc_timestamp;
+                return static_cast< uint32_t >( timestamp );
+            }
+            if( log_binary->magic_number == 0xA0 )
+                return reinterpret_cast< const legacy_fw_log_binary * >( this )->timestamp;
+
+            throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                         << "Received unfamiliar FW log 'magic number' "
+                                                         << log_binary->magic_number );
         }
 
         rs2_log_severity fw_logs_severity_to_rs2_log_severity( int32_t severity )

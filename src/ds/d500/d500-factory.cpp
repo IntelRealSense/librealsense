@@ -55,8 +55,7 @@ public:
         , firmware_logger_device( dev_info,
                                   d500_device::_hw_monitor,
                                   get_firmware_logs_command(),
-                                  get_flash_logs_command(),
-                                  { { 0, "HKR" } } )
+                                  get_flash_logs_command() )
     {
     }
 

@@ -118,6 +118,28 @@ std::string get_file_path( const xml_node<> * source_node )
     return {};
 }
 
+std::map< int, std::string > fw_logs_xml_helper::get_listed_sources( const std::string & definitions_xml ) const
+{
+    std::map< int, std::string > source_ids_to_names;
+
+    std::vector< char > buffer = string_to_char_buffer( definitions_xml );
+    xml_document<> document;
+    load_external_xml( &document, buffer );
+
+    // Loop through all elements to find 'Source' nodes, when found look for id attribure and compare to requested id.
+    for( xml_node<> * node = get_first_node( &document ); node; node = node->next_sibling() )
+    {
+        std::string tag( node->name(), node->name() + node->name_size() );
+        if( tag.compare( "Source" ) == 0 )
+        {
+            source_ids_to_names.insert( { get_id_attribute( node ), get_name_attribute( node ) } );
+        }
+    }
+
+    return source_ids_to_names;
+}
+
+
 std::string fw_logs_xml_helper::get_source_parser_file_path( int source_id, const std::string & definitions_xml ) const
 {
     std::vector< char > buffer = string_to_char_buffer( definitions_xml );
@@ -175,6 +197,7 @@ std::pair< int, std::string > get_event_data( xml_node<> * node )
 {
     int num_of_args = -1;
     std::string format;
+    bool format_found = false;
     for( xml_attribute<> * attribute = node->first_attribute(); attribute; attribute = attribute->next_attribute() )
     {
         std::string attr( attribute->name(), attribute->name() + attribute->name_size() );
@@ -186,12 +209,13 @@ std::pair< int, std::string > get_event_data( xml_node<> * node )
         }
         else if( attr.compare( "format" ) == 0 )
         {
+            format_found = true; // Some users prefer an empty format, so can't check based on empty string, using flag
             format.append( attribute->value(), attribute->value() + attribute->value_size() );
             continue;
         }
     }
 
-    if( num_of_args < 0 || format.empty() )
+    if( num_of_args < 0 || !format_found )
         throw librealsense::invalid_value_exception( rsutils::string::from()
                                                      << "Can't find event 'numberOfArguments' or 'format'" );
 

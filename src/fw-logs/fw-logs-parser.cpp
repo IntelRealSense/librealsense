@@ -16,13 +16,14 @@ namespace librealsense
 {
     namespace fw_logs
     {
-        fw_logs_parser::fw_logs_parser( const std::string & definitions_xml,
-                                        const std::map< int, std::string > & source_id_to_name )
+        fw_logs_parser::fw_logs_parser( const std::string & definitions_xml )
             : _source_to_formatting_options()
-            , _source_id_to_name( source_id_to_name )
         {
+            // The definitions XML should contain entries for all log sources.
+            // For each source it lists parser options file path and (optional) module verbosity level.
             fw_logs_xml_helper helper;
-            for( auto & source : _source_id_to_name )
+            _source_id_to_name = helper.get_listed_sources( definitions_xml );
+            for( const auto & source : _source_id_to_name )
             {
                 std::string path = helper.get_source_parser_file_path( source.first, definitions_xml );
                 std::ifstream f( path.c_str() );
@@ -146,9 +147,8 @@ namespace librealsense
             return fw_logs::fw_logs_severity_to_rs2_log_severity( severity );
         }
 
-        legacy_fw_logs_parser::legacy_fw_logs_parser( const std::string & xml_content,
-                                                      const std::map< int, std::string > & source_id_to_name )
-            : fw_logs_parser( xml_content, source_id_to_name )
+        legacy_fw_logs_parser::legacy_fw_logs_parser( const std::string & xml_content )
+            : fw_logs_parser( xml_content )
         {
             // Check expected size here, no need to check repeatedly in parse functions
             if( _source_to_formatting_options.size() != 1 )

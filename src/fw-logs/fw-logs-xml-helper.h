@@ -6,15 +6,23 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <map>
 
 
 namespace librealsense
 {
     namespace fw_logs
     {
+        // This class hides
+        // 1. The XML file structure
+        // 2. The actual XML parsing implementation (currently uses rapidxml)
         class fw_logs_xml_helper
         {
         public:
+            // Return a list of all sources in the definitions file, mapped by id to name.
+            std::map< int, std::string > get_listed_sources( const std::string & definitions_xml ) const;
+
+            // Return parser options file path of the requested source
             std::string get_source_parser_file_path( int source_id, const std::string & definitions_xml ) const;
 
             // Return a mapping of source module IDs to their requested verbosity level.

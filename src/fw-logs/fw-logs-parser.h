@@ -14,8 +14,7 @@ namespace librealsense
         class fw_logs_parser : public std::enable_shared_from_this<fw_logs_parser>
         {
         public:
-            explicit fw_logs_parser( const std::string & definitions_xml,
-                                     const std::map< int, std::string > & source_id_to_name );
+            explicit fw_logs_parser( const std::string & definitions_xml );
             virtual ~fw_logs_parser() = default;
 
             fw_log_data parse_fw_log( const fw_logs_binary_data * fw_log_msg );
@@ -55,8 +54,7 @@ namespace librealsense
         class legacy_fw_logs_parser : public fw_logs_parser
         {
         public:
-            explicit legacy_fw_logs_parser( const std::string & xml_content,
-                                            const std::map< int, std::string > & source_id_to_name );
+            explicit legacy_fw_logs_parser( const std::string & xml_content );
 
             size_t get_log_size( const uint8_t * log ) const override;
 

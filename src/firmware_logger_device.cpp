@@ -127,9 +127,9 @@ namespace librealsense
         bool is_d400 = std::string( get_info( RS2_CAMERA_INFO_PRODUCT_LINE ) ) == "D400";
 
         if( is_d400 )
-            _parser = std::make_unique< fw_logs::legacy_fw_logs_parser >( xml_content, _parser_source_id_to_name );
+            _parser = std::make_unique< fw_logs::legacy_fw_logs_parser >( xml_content );
         else
-            _parser = std::make_unique< fw_logs::fw_logs_parser >( xml_content, _parser_source_id_to_name );
+            _parser = std::make_unique< fw_logs::fw_logs_parser >( xml_content );
 
         return ( _parser != nullptr );
     }
