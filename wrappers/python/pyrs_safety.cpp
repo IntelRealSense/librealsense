@@ -43,6 +43,26 @@ void init_safety(py::module &m) {
         .def_readwrite("rotation", &rs2_safety_extrinsics_table::rotation, "Rotation Value")
         .def_readwrite("translation", &rs2_safety_extrinsics_table::translation, "Translation Value");
 
+    py::class_<rs2_safety_smcu_arbitration_params> safety_mcu_arbitration_params(m, "safety_mcu_arbitration_params"); // No docstring in C++
+    safety_mcu_arbitration_params.def(py::init<>())
+        .def_readwrite("l_0_total_threshold", &rs2_safety_smcu_arbitration_params::l_0_total_threshold, "l_0_total_threshold")
+        .def_readwrite("l_0_sustained_rate_threshold", &rs2_safety_smcu_arbitration_params::l_0_sustained_rate_threshold, "l_0_sustained_rate_threshold")
+        .def_readwrite("l_1_total_threshold", &rs2_safety_smcu_arbitration_params::l_1_total_threshold, "l_1_total_threshold")
+        .def_readwrite("l_1_sustained_rate_threshold", &rs2_safety_smcu_arbitration_params::l_1_sustained_rate_threshold, "l_1_sustained_rate_threshold")
+        .def_readwrite("l_4_total_threshold", &rs2_safety_smcu_arbitration_params::l_4_total_threshold, "l_4_total_threshold")
+        .def_readwrite("hkr_stl_timeout", &rs2_safety_smcu_arbitration_params::hkr_stl_timeout, "hkr_stl_timeout")
+        .def_readwrite("mcu_stl_timeout", &rs2_safety_smcu_arbitration_params::mcu_stl_timeout, "mcu_stl_timeout")
+        .def_readwrite("sustained_aicv_frame_drops", &rs2_safety_smcu_arbitration_params::sustained_aicv_frame_drops, "sustained_aicv_frame_drops")
+        .def_readwrite("generic_threshold_1", &rs2_safety_smcu_arbitration_params::generic_threshold_1, "generic_threshold_1");
+
+
+    py::class_<rs2_safety_occupancy_grid_params> safety_occupancy_grid_params(m, "safety_occupancy_grid_params"); // No docstring in C++
+    safety_occupancy_grid_params.def(py::init<>())
+        .def_readwrite("grid_cell_seed", &rs2_safety_occupancy_grid_params::grid_cell_seed, "grid_cell_seed")
+        .def_readwrite("close_range_quorum", &rs2_safety_occupancy_grid_params::close_range_quorum, "close_range_quorum")
+        .def_readwrite("mid_range_quorum", &rs2_safety_occupancy_grid_params::mid_range_quorum, "mid_range_quorum")
+        .def_readwrite("long_range_quorum", &rs2_safety_occupancy_grid_params::long_range_quorum, "long_range_quorum");
+
     py::class_<rs2_safety_preset_header> safety_preset_header(m, "safety_preset_header"); // No docstring in C++
     safety_preset_header.def(py::init<>())
         .def_readwrite("version", &rs2_safety_preset_header::version, "Version")
@@ -54,7 +74,6 @@ void init_safety(py::module &m) {
     safety_platform.def(py::init<>())
         .def_readwrite("transformation_link", &rs2_safety_platform::transformation_link, "Transformation Link")
         .def_readwrite("robot_height", &rs2_safety_platform::robot_height, "Robot Height")
-        .def_readwrite("robot_mass", &rs2_safety_platform::robot_mass, "Robot Mass")
         .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_safety_platform, reserved, uint8_t, sizeof(rs2_safety_platform::reserved)), "Reserved");
 
     py::class_<rs2_safety_zone> safety_zone(m, "safety_zone"); // No docstring in C++
@@ -72,8 +91,6 @@ void init_safety(py::module &m) {
             },
             "Zone Polygon")
         .def_readwrite("safety_trigger_confidence", &rs2_safety_zone::safety_trigger_confidence, "Safety Trigger Confidence")
-        .def_readwrite("minimum_object_size", &rs2_safety_zone::minimum_object_size, "Minimum Object Size")
-        .def_readwrite("mos_target_type", &rs2_safety_zone::mos_target_type, "MOS Target Type")
         .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_safety_zone, reserved, uint8_t, sizeof(rs2_safety_zone::reserved)), "Reserved");
 
     py::class_<rs2_safety_2d_masking_zone> masking_zone(m, "masking_zone"); // No docstring in C++
@@ -95,18 +112,18 @@ void init_safety(py::module &m) {
 
     py::class_<rs2_safety_environment> safety_environment(m, "safety_environment"); // No docstring in C++
     safety_environment.def(py::init<>())
-        .def_readwrite( "grid_cell_size", &rs2_safety_environment::grid_cell_size, "Grid Cell Size" )
         .def_readwrite( "safety_trigger_duration", &rs2_safety_environment::safety_trigger_duration, "Safety Trigger Duration" )
         .def_readwrite( "linear_velocity", &rs2_safety_environment::linear_velocity, "Linear Velocity" )
         .def_readwrite( "angular_velocity", &rs2_safety_environment::angular_velocity, "Angular Velocity" )
         .def_readwrite( "payload_weight", &rs2_safety_environment::payload_weight, "Payload Weight" )
         .def_readwrite( "surface_inclination", &rs2_safety_environment::surface_inclination, "Surface Inclination" )
         .def_readwrite( "surface_height", &rs2_safety_environment::surface_height, "Surface Height" )
-        .def_readwrite( "surface_confidence", &rs2_safety_environment::surface_confidence, "Surface Confidence" )
+        .def_readwrite( "diagnostic_zone_fill_rate_threshold", &rs2_safety_environment::diagnostic_zone_fill_rate_threshold, "Diagnostic Zone Fill Rate Threshold" )
         .def_readwrite( "floor_fill_threshold", &rs2_safety_environment::floor_fill_threshold, "Floor fill threshold" )
         .def_readwrite( "depth_fill_threshold", &rs2_safety_environment::depth_fill_threshold, "Depth fill threshold" )
-        .def_readwrite( "surface_height_threshold", &rs2_safety_environment::surface_height_threshold, "Surface height threshold" )
+        .def_readwrite( "diagnostic_zone_height_median_threshold", &rs2_safety_environment::diagnostic_zone_height_median_threshold, "Diagnostic Zone Height Median Threshold" )
         .def_readwrite( "vision_hara_persistency", &rs2_safety_environment::vision_hara_persistency, "Vision HaRa persistency" )
+        .def_property( BIND_RAW_ARRAY_PROPERTY(rs2_safety_environment, crypto_signature, uint8_t, sizeof(rs2_safety_environment::crypto_signature)), "Crypto Signature")
         .def_property( BIND_RAW_ARRAY_PROPERTY( rs2_safety_environment, reserved, uint8_t, sizeof( rs2_safety_environment::reserved ) ), "Reserved" );
 
     py::class_<rs2_safety_preset> safety_preset(m, "safety_preset"); // No docstring in C++
@@ -161,7 +178,7 @@ void init_safety(py::module &m) {
 
         py::class_<rs2_safety_interface_config_pin> safety_interface_config_pin(m, "safety_interface_config_pin"); // No docstring in C++
         safety_interface_config_pin.def(py::init<>())
-            .def(py::init<rs2_safety_pin_direction, rs2_safety_pin_functionality>(), "direction"_a, "functionality"_a)
+            .def(py::init<uint8_t, uint8_t>(), "direction"_a, "functionality"_a)
             .def_readwrite("direction", &rs2_safety_interface_config_pin::direction, "Direction")
             .def_readwrite("functionality", &rs2_safety_interface_config_pin::functionality, "Functionality");
 
@@ -185,8 +202,11 @@ void init_safety(py::module &m) {
             .def_readwrite("preset4_b", &rs2_safety_interface_config::preset4_b, "preset4_b")
             .def_readwrite("ground", &rs2_safety_interface_config::ground, "ground")
             .def_readwrite("gpio_stabilization_interval", &rs2_safety_interface_config::gpio_stabilization_interval, "gpio_stabilization_interval")
-            .def_readwrite("safety_zone_selection_overlap_time_period", 
-                &rs2_safety_interface_config::safety_zone_selection_overlap_time_period, 
-                "safety_zone_selection_overlap_time_period");
+            .def_readwrite("camera_position", &rs2_safety_interface_config::camera_position, "camera_position")
+            .def_readwrite("occupancy_grid_params", &rs2_safety_interface_config::occupancy_grid_params, "occupancy_grid_params")
+            .def_readwrite("smcu_arbitration_params", &rs2_safety_interface_config::smcu_arbitration_params, "smcu_arbitration_params")
+            .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_safety_interface_config, crypto_signature, uint8_t, sizeof(rs2_safety_interface_config::crypto_signature)), "crypto_signature")
+            .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_safety_interface_config, reserved, uint8_t, sizeof(rs2_safety_interface_config::reserved)), "reserved");
+
     /** end rs_safety_types.h **/
 }

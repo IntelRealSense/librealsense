@@ -7,6 +7,7 @@ import time
 
 import pyrealsense2 as rs
 from rspy import test, log, devices
+import random
 
 def generate_valid_table():
     cfg = rs.safety_interface_config()
@@ -28,7 +29,34 @@ def generate_valid_table():
     cfg.preset4_b = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.preset_select4_b)
     cfg.ground = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.gnd)
     cfg.gpio_stabilization_interval = 150 # [ms] - SMCU only accept 150 for now
-    cfg.safety_zone_selection_overlap_time_period = 0 # SMCU only accept 0 for now
+
+    # rotation matrix [-2..2] (no units)
+    rx = rs.float3(random.uniform(-2, 2), random.uniform(-2, 2), random.uniform(-2, 2))
+    ry = rs.float3(random.uniform(-2, 2), random.uniform(-2, 2), random.uniform(-2, 2))
+    rz = rs.float3(random.uniform(-2, 2), random.uniform(-2, 2), random.uniform(-2, 2))
+    rotation = rs.float3x3(rx, ry, rz)
+
+    # translation vector [m]
+    translation = rs.float3(random.uniform(0, 100), random.uniform(0, 100), random.uniform(0, 100))
+
+    # init safety extrinsics table (transformation link) from rotation matrix and translation vector
+    cfg.camera_position = rs.safety_extrinsics_table(rotation, translation)
+
+    cfg.occupancy_grid_params.grid_cell_seed = random.randint(1,4)
+    cfg.occupancy_grid_params.close_range_quorum = random.randint(0, 255)
+    cfg.occupancy_grid_params.mid_range_quorum = random.randint(0, 255)
+    cfg.occupancy_grid_params.long_range_quorum = random.randint(0, 255)
+    cfg.smcu_arbitration_params.l_0_total_threshold = random.ranint(0, pow(2,16)-1)
+    cfg.smcu_arbitration_params.l_0_sustained_rate_threshold = random.ranint(1, 255)
+    cfg.smcu_arbitration_params.l_1_total_threshold = random.ranint(0, pow(2,16)-1)
+    cfg.smcu_arbitration_params.l_1_sustained_rate_threshold = random.ranint(1, 255)
+    cfg.smcu_arbitration_params.l_4_total_threshold = random.ranint(1, 255)
+    cfg.smcu_arbitration_params.hkr_stl_timeout = random.ranint(1, 100)
+    cfg.smcu_arbitration_params.mcu_stl_timeout = 1  # application specific
+    cfg.smcu_arbitration_params.sustained_aicv_frame_drops = random.ranint(0, 100)
+    cfg.smcu_arbitration_params.generic_threshold_1 = 1  # application specific
+    cfg.crypto_signature = [0] * 32
+    cfg.reserved = [0] * 17
     return cfg
  
 
@@ -72,8 +100,6 @@ def print_config(config):
     log.d("config.preset4_b: " + repr(config.preset4_b.direction) + ", " + repr(config.preset4_b.functionality))
     log.d("config.ground: " + repr(config.ground.direction) + ", " + repr(config.ground.functionality))
     log.d("config.gpio_stabilization_interval: " + repr(config.gpio_stabilization_interval))
-    log.d("config.safety_zone_selection_overlap_time_period: " + repr(config.safety_zone_selection_overlap_time_period))
-
 
 def check_pin_equal(first_pin, second_pin):
     test.check_equal(first_pin.direction, second_pin.direction)
@@ -97,8 +123,6 @@ def check_configurations_equal(first_config, second_config) :
     check_pin_equal(first_config.preset4_b, second_config.preset4_b)
     check_pin_equal(first_config.ground, second_config.ground)
     test.check_equal(first_config.gpio_stabilization_interval, second_config.gpio_stabilization_interval)
-    test.check_equal(first_config.safety_zone_selection_overlap_time_period, second_config.safety_zone_selection_overlap_time_period)
-
 
 #############################################################################################
 # Tests
