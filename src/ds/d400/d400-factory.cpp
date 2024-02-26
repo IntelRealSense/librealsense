@@ -1174,6 +1174,15 @@ namespace librealsense
 
             if (!devices.empty() && all_sensors_present)
             {
+                auto it = devices.begin();
+                while (it != devices.end()) {
+                    // Check if unique_id contains "bcm2835-codec"
+                    if (it->unique_id.find("bcm2835-codec") != std::string::npos) {
+                        it = devices.erase(it);
+                    } else {
+                        ++it;
+                    }
+                }
                 platform::usb_device_info hwm;
 
                 std::vector<platform::usb_device_info> hwm_devices;
