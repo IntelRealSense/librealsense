@@ -1,8 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
-
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 #pragma once
 
+#include <src/core/device-interface.h>
 #include "fw-update-device-interface.h"
 #include "usb/usb-device.h"
 
@@ -94,7 +94,9 @@ namespace librealsense
         uint8_t spare2[42];
     };
 
-    class update_device : public update_device_interface
+    class update_device
+        : public device_interface
+        , public update_device_interface
     {
     public:
         update_device( std::shared_ptr< const device_info > const &,
@@ -145,9 +147,10 @@ namespace librealsense
         void detach(std::shared_ptr<platform::usb_messenger> messenger) const;
         bool wait_for_state(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, size_t timeout = 1000) const;
         void read_device_info(std::shared_ptr<platform::usb_messenger> messenger);
-        virtual const std::string& get_name() const override { return _name; }
-        virtual const std::string& get_product_line() const override { return _product_line; }
-        virtual const std::string& get_serial_number() const override { return _serial_number; }
+
+        const std::string & get_name() const { return _name; }
+        const std::string & get_product_line() const { return _product_line; }
+        const std::string & get_serial_number() const { return _serial_number; }
 
 
         const std::shared_ptr< const device_info > _dev_info;

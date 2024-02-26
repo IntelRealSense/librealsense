@@ -1,8 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include <src/core/device-interface.h>
+#include <src/core/extension.h>
 #include <librealsense2/hpp/rs_types.hpp>
 #include <cstdint>
 #include <vector>
@@ -17,7 +17,7 @@ namespace librealsense
     };
 
     // Regular devices inherit to enable entering DFU state or implementing unsigned FW update.
-    class updatable : public firmware_check_interface
+    class updatable : public virtual firmware_check_interface
     {
     public:
         // Places the device in DFU (recovery) mode, where the DFU process can continue with update_device_interface.
@@ -37,16 +37,11 @@ namespace librealsense
     MAP_EXTENSION( RS2_EXTENSION_UPDATABLE, updatable );
 
     // Recovery devices implement this to perform DFU with signed FW.
-    class update_device_interface : public device_interface, public firmware_check_interface 
+    class update_device_interface : public virtual firmware_check_interface
     {
     public:
         // Signed FW update
         virtual void update( const void * fw_image, int fw_image_size, rs2_update_progress_callback_sptr = nullptr ) const = 0;
-
-    protected:
-        virtual const std::string& get_name() const = 0;
-        virtual const std::string& get_product_line() const = 0;
-        virtual const std::string& get_serial_number() const = 0;
     };
 
     MAP_EXTENSION(RS2_EXTENSION_UPDATE_DEVICE, update_device_interface);

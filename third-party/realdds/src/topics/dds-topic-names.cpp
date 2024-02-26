@@ -63,6 +63,17 @@ namespace notification {
             std::string const option_values( "option-values", 13 );
         }
     }
+    namespace dfu_ready {
+        std::string const id( "dfu-ready", 9 );
+        namespace key {
+        }
+    }
+    namespace dfu_apply {
+        std::string const id( "dfu-apply", 9 );
+        namespace key {
+            std::string const progress( "progress", 8 );
+        }
+    }
 }
 
 namespace control {
@@ -116,6 +127,15 @@ namespace control {
     namespace hw_reset {
         std::string const id( "hw-reset", 8 );
     }
+    namespace dfu_start {
+        std::string const id( "dfu-start", 9 );
+    }
+    namespace dfu_apply {
+        //using notification::dfu_apply::id;
+        namespace key {
+            std::string const cancel( "cancel", 6 );
+        }
+    }
 }
 
 namespace reply {
@@ -157,6 +177,16 @@ namespace reply {
         //using control::hwm::id;
         namespace key {
             //using control::hwm::key::data;
+        }
+    }
+    namespace dfu_start {
+        //using control::dfu_start::id;
+        namespace key {
+        }
+    }
+    namespace dfu_apply {
+        //using control::dfu_apply::id;
+        namespace key {
         }
     }
 }

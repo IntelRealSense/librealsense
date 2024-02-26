@@ -3377,8 +3377,8 @@ int rs2_check_firmware_compatibility(const rs2_device* device, const void* fw_im
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(fw_image);
 
-    auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
-    if (!fwud)
+    auto fwud = std::dynamic_pointer_cast< firmware_check_interface >( device->device );
+    if( ! fwud )
         throw std::runtime_error("This device does not support update protocol!");
 
     std::vector<uint8_t> buffer((uint8_t*)fw_image, (uint8_t*)fw_image + fw_image_size);

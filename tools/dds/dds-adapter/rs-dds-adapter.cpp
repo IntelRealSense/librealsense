@@ -37,11 +37,14 @@ std::string get_topic_root( std::string const & name, std::string const & serial
     constexpr size_t DEVICE_NAME_PREFIX_CCH = 16;
     // We don't need the prefix in the path
     std::string model_name = name;
-    if ( model_name.length() > DEVICE_NAME_PREFIX_CCH
-       && 0 == strncmp( model_name.data(), DEVICE_NAME_PREFIX, DEVICE_NAME_PREFIX_CCH ) )
+    if( model_name.length() > DEVICE_NAME_PREFIX_CCH
+        && 0 == strncmp( model_name.data(), DEVICE_NAME_PREFIX, DEVICE_NAME_PREFIX_CCH ) )
     {
         model_name.erase( 0, DEVICE_NAME_PREFIX_CCH );
     }
+    for( auto it = model_name.begin(); it != model_name.end(); ++it )
+        if( *it == ' ' )
+            *it = '_';  // e.g., 'D4xx Recovery'
     constexpr char const * RS_ROOT = "realsense/";
     return RS_ROOT + model_name + '_' + serial_number;
 }
@@ -53,10 +56,10 @@ topics::device_info rs2_device_to_info( rs2::device const & dev )
 
     // Name is mandatory
     std::string const name = dev.get_info( RS2_CAMERA_INFO_NAME );
-    j["name"] = name;
+    j[realdds::topics::device_info::key::name] = name;
 
     if( dev.supports( RS2_CAMERA_INFO_SERIAL_NUMBER ) )
-        j["serial"] = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
+        j[realdds::topics::device_info::key::serial] = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
     if( dev.supports( RS2_CAMERA_INFO_PRODUCT_LINE ) )
         j["product-line"] = dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
     if( dev.supports( RS2_CAMERA_INFO_CAMERA_LOCKED ) )
@@ -66,10 +69,18 @@ topics::device_info rs2_device_to_info( rs2::device const & dev )
     std::string const serial_number = dev.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
     j["fw-update-id"] = serial_number;
     if( auto update_device = rs2::update_device( dev ) )
-        j["recovery"] = true;
+    {
+        j[realdds::topics::device_info::key::recovery] = true;
+        if( dev.supports( RS2_CAMERA_INFO_PRODUCT_ID ) )
+            // Append the ID so we have it
+            j[realdds::topics::device_info::key::name] = name + " [" + dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID ) + "]";
+    }
+
+    if( dev.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) )
+        j["fw-version"] = dev.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION );
 
     // Build device topic root path
-    j["topic-root"] = get_topic_root( name, serial_number );
+    j[realdds::topics::device_info::key::topic_root] = get_topic_root( name, serial_number );
 
     return topics::device_info::from_json( j );
 }
