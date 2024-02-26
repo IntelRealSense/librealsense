@@ -23,7 +23,6 @@
 #include "proc/y8i-to-y8y8.h"
 #include "proc/y16i-to-y10msby10msb.h"
 
-#include "hdr-config.h"
 #include <src/fourcc.h>
 
 #include <rsutils/string/hexdump.h>
@@ -499,12 +498,6 @@ namespace librealsense
                 std::make_shared<auto_disabling_control>(
                     gain_option,
                     enable_auto_exposure));
-
-            if ((_device_capabilities & ds_caps::CAP_GLOBAL_SHUTTER) == ds_caps::CAP_GLOBAL_SHUTTER)
-            {
-                auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>( *_hw_monitor );
-                depth_sensor.register_option(RS2_OPTION_EMITTER_ALWAYS_ON,emitter_always_on_opt);
-            }
 
             if ((_device_capabilities & ds_caps::CAP_INTERCAM_HW_SYNC) == ds_caps::CAP_INTERCAM_HW_SYNC)
             {

@@ -55,6 +55,8 @@ public:
         , firmware_logger_device(
               dev_info, d500_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
     {
+        auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>( d500_device::_hw_monitor, ds::LASERONCONST, ds::LASERONCONST);
+        get_depth_sensor().register_option(RS2_OPTION_EMITTER_ALWAYS_ON,emitter_always_on_opt);
     }
 
     std::shared_ptr< matcher > create_matcher( const frame_holder & frame ) const override

@@ -42,6 +42,7 @@ namespace librealsense
             return extended_receive(cmd, p_response, locked_transfer);
         case  hwm_buffer_type::extended_send:
             extended_send(cmd, p_response, locked_transfer);
+            break;
         default:
             return std::vector<uint8_t>();
         }
