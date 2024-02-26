@@ -300,45 +300,47 @@ namespace librealsense
             auto d400_devices = d400_info::pick_d400_devices(ctx, devices);
             std::copy(begin(d400_devices), end(d400_devices), std::back_inserter(list));
             std::cout << "found d400 devices. printing each uvc_device_info" << std::endl;
+            int i = 0;
             for (const auto& item : list) {
                 auto uvc_devices = item->get_device_data().uvc_devices;
-                std::cout << "NEW INFO:" << std::endl;
+                std::cout << "Device info at index " << i << std::endl;
                 for (const auto& uvc_device : uvc_devices) {
                     std::cout << static_cast<std::string>(uvc_device) << std::endl;
                 }
+                i++;
             }
         }
 
-        if( mask & RS2_PRODUCT_LINE_L500 )
-        {
-            auto l500_devices = l500_info::pick_l500_devices(ctx, devices);
-            std::copy(begin(l500_devices), end(l500_devices), std::back_inserter(list));
-        }
+        // if( mask & RS2_PRODUCT_LINE_L500 )
+        // {
+        //     auto l500_devices = l500_info::pick_l500_devices(ctx, devices);
+        //     std::copy(begin(l500_devices), end(l500_devices), std::back_inserter(list));
+        // }
 
-        if (mask & RS2_PRODUCT_LINE_SR300)
-        {
-            auto sr300_devices = sr300_info::pick_sr300_devices(ctx, devices.uvc_devices, devices.usb_devices);
-            std::copy(begin(sr300_devices), end(sr300_devices), std::back_inserter(list));
-        }
+        // if (mask & RS2_PRODUCT_LINE_SR300)
+        // {
+        //     auto sr300_devices = sr300_info::pick_sr300_devices(ctx, devices.uvc_devices, devices.usb_devices);
+        //     std::copy(begin(sr300_devices), end(sr300_devices), std::back_inserter(list));
+        // }
 
-        // Supported recovery devices
-        if (mask & RS2_PRODUCT_LINE_D400 || mask & RS2_PRODUCT_LINE_SR300 || mask & RS2_PRODUCT_LINE_L500) 
-        {
-            auto recovery_devices = fw_update_info::pick_recovery_devices(ctx, devices.usb_devices, mask);
-            std::copy(begin(recovery_devices), end(recovery_devices), std::back_inserter(list));
-        }
+        // // Supported recovery devices
+        // if (mask & RS2_PRODUCT_LINE_D400 || mask & RS2_PRODUCT_LINE_SR300 || mask & RS2_PRODUCT_LINE_L500) 
+        // {
+        //     auto recovery_devices = fw_update_info::pick_recovery_devices(ctx, devices.usb_devices, mask);
+        //     std::copy(begin(recovery_devices), end(recovery_devices), std::back_inserter(list));
+        // }
 
-        if (mask & RS2_PRODUCT_LINE_NON_INTEL)
-        {
-            auto uvc_devices = platform_camera_info::pick_uvc_devices(ctx, devices.uvc_devices);
-            std::copy(begin(uvc_devices), end(uvc_devices), std::back_inserter(list));
-        }
+        // if (mask & RS2_PRODUCT_LINE_NON_INTEL)
+        // {
+        //     auto uvc_devices = platform_camera_info::pick_uvc_devices(ctx, devices.uvc_devices);
+        //     std::copy(begin(uvc_devices), end(uvc_devices), std::back_inserter(list));
+        // }
 
-        for (auto&& item : playback_devices)
-        {
-            if (auto dev = item.second.lock())
-                list.push_back(dev);
-        }
+        // for (auto&& item : playback_devices)
+        // {
+        //     if (auto dev = item.second.lock())
+        //         list.push_back(dev);
+        // }
 
         if (list.size())
             LOG_INFO( "Found " << list.size() << " RealSense devices (mask 0x" << std::hex << mask << ")" );
