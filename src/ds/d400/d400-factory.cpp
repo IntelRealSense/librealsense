@@ -1188,8 +1188,10 @@ namespace librealsense
 
                 auto info = std::make_shared<d400_info>(ctx, devices, hwm_devices, hids);
                 chosen.insert(chosen.end(), devices.begin(), devices.end());
-                std::cout << "about to print out info (uvc devices list size)" << std::endl;
+                std::cout << "in the order uvc, usb devices, and playback devices list sizes)" << std::endl;
                 std::cout << info->get_device_data().uvc_devices.size() << std::endl;
+                std::cout << info->get_device_data().usb_devices.size() << std::endl;
+                std::cout << info->get_device_data().playback_devices.size() << std::endl;
                 results.push_back(info);
 
             }
