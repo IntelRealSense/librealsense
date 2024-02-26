@@ -160,7 +160,7 @@ void dds_option::check_value( json & value ) const
     if( value.is_null() )
     {
         if( ! is_optional() )
-            DDS_THROW( runtime_error, "option '" << _name << "' is not optional" );
+            DDS_THROW( runtime_error, "value is not optional" );
     }
     else
     {
@@ -262,6 +262,8 @@ static std::string parse_type( json const & j, size_t size, dds_option::option_p
         case 4:
             if( p == "IPv4" )
                 return props.erase( p ), p;
+            if( 5 == size && p == "enum" )
+                return props.erase( p ), p;
             break;
         }
     }
@@ -284,6 +286,11 @@ static std::string parse_type( json const & j, size_t size, dds_option::option_p
             return type;
         break;
 
+    case 5:  // [name,value,[choices],default,description]
+        if( type_from_value( type, j[1], j[3] ) && type != "string" )
+            DDS_THROW( runtime_error, "non-string enum values" );
+        return "enum";
+
     default:
         DDS_THROW( runtime_error, "unexected size " << size << " of option json" );
     }
@@ -303,6 +310,8 @@ static std::string parse_type( json const & j, size_t size, dds_option::option_p
         return std::make_shared< dds_boolean_option >();
     if( type == "IPv4" )
         return std::make_shared< dds_ip_option >();
+    if( type == "enum" )
+        return std::make_shared< dds_enum_option >();
     return {};
 }
 
@@ -359,9 +368,13 @@ static std::string parse_type( json const & j, size_t size, dds_option::option_p
         option->init_range( j[2], j[3], j[4] );
         break;
 
-    case 5:  // [name,value,[choices],default,description] -> TODO
+    case 5:  // [name,value,[choices],default,description]
+        std::dynamic_pointer_cast< dds_enum_option >( option )->init_choices( j[2] );
+        option->init_default_value( j[3] );
+        break;
+
     default:
-        DDS_THROW( runtime_error, "unexected option json size " << size );
+        DDS_THROW( runtime_error, "unexpected option json size " << size );
     }
 
     // Finally, set the actual value
@@ -497,6 +510,54 @@ void dds_string_option::check_type( json & value ) const
 {
     if( ! value.is_string() )
         DDS_THROW( runtime_error, "not a string: " << value );
+}
+
+
+void dds_enum_option::init_choices( rsutils::json choices )
+{
+    verify_uninitialized();
+
+    if( ! choices.is_array() )
+        DDS_THROW( runtime_error, "enum option requires a choices array" );
+    if( ! _minimum_value.is_null() || ! _maximum_value.is_null() || ! _stepping.is_null() )
+        DDS_THROW( runtime_error, "enum options cannot have a range" );
+
+    _choices.clear();
+    for( auto const & choice : choices )
+    {
+        if( ! choice.is_string() )
+            DDS_THROW( runtime_error, "enum choices must be strings" );
+        _choices.push_back( choice.string_ref() );
+    }
+}
+
+
+int dds_enum_option::get_value_index( std::string const & value ) const
+{
+    for( int i = 0; i < _choices.size(); ++i )
+        if( _choices[i] == value )
+            return i;
+    return -1;
+}
+
+
+void dds_enum_option::check_value( json & value ) const
+{
+    super::check_value( value );
+
+    if( ! value.is_null() )
+    {
+        if( get_value_index( value ) < 0 )
+            DDS_THROW( runtime_error, "invalid enum value: " << value );
+    }
+}
+
+
+json dds_enum_option::to_json() const
+{
+    auto j = super::to_json();
+    j.insert( j.begin() + 2, get_choices() );
+    return j;
 }
 
 

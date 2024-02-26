@@ -38,6 +38,35 @@ with test.closure( 'boolean' ):
     test.check_equal( dds.option.from_json( ['b', False, True, 'bool'] ).value_type(), 'boolean' )
     test.check_equal( dds.option.from_json( ['b', False, None, 'bool', ['optional']] ).value_type(), 'boolean' )
 
+with test.closure( 'enum' ):
+    test.check_equal( dds.option.from_json( ['e1', 'a', ['a','b','c'], 'c', 'enum'] ).value_type(), 'enum' )
+    test.check_equal( dds.option.from_json( ['e1', 'a', ['a','a','c'], 'c', 'enum'] ).value_type(), 'enum' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['e1', 'd', [], 'c', 'enum'] ),
+        RuntimeError, 'invalid enum value: "c"' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['e1', 'a', None, 'c', 'enum'] ),
+        RuntimeError, 'enum option requires a choices array' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['e1', 'd', ['a','b','c'], 'c', 'enum'] ),
+        RuntimeError, 'invalid enum value: "d"' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['e1', 'a', ['a','b','c'], 'd', 'enum'] ),
+        RuntimeError, 'invalid enum value: "d"' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['e1', 'a', [None,'b','c'], 'd', 'enum'] ),
+        RuntimeError, 'enum choices must be strings' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['e1', 1, [1,2,3], 3, 'enum'] ),
+        RuntimeError, 'non-string enum values' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['e1', None, ['a','b','c'], 'c', 'enum'] ),
+        RuntimeError, 'value is not optional' )
+    test.check_equal( dds.option.from_json( ['e1', None, ['a','b','c'], 'c', 'enum', ['optional']] ).value_type(), 'enum' )
+    test.check_equal_lists(
+        dds.option.from_json( ['e1', None, ['a','b','c'], 'c', 'enum', ['optional']] ).to_json(),
+        ['e1', None, ['a','b','c'], 'c', 'enum', ['optional']] )
+
 with test.closure( 'r/o options are still settable' ):
     # NOTE: the DDS options do not enforce logic post initialization; they serve only to COMMUNICATE any state and limits
     test.check_equal( dds.option.from_json( ['1', 0, 'desc'] ).value_type(), 'int' )

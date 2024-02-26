@@ -24,7 +24,8 @@ with test.remote.fork( nested_indent=None ) as remote:
             s1.init_profiles( s1profiles, 0 )
             s1.init_options( [
                 dds.option.from_json( ['Backlight Compensation', 0, 0, 1, 1, 0, 'Backlight custom description'] ),
-                dds.option.from_json( ['Custom Option', 0, 0, 1, 1, 0, 'Something'] )
+                dds.option.from_json( ['Boolean Option', False, False, 'Something'] ),
+                dds.option.from_json( ['Enum Option', 'First', ['First','Last','Everything'], 'Last', 'My'] )
                 ] )
             server = dds.device_server( participant, device_info.topic_root )
             server.init( [s1], [], {} )
@@ -52,7 +53,29 @@ with test.remote.fork( nested_indent=None ) as remote:
         for s in dev.query_sensors():
             break
         options = test.info( "supported options", s.get_supported_options() )
-        test.check_equal( len(options), 3 )  # 'Frames Queue Size' gets added to all sensors!!?!?!
+        test.check_equal( len(options), 4 )  # 'Frames Queue Size' gets added to all sensors!!?!?!
+
+    with test.closure( 'Play with boolean option' ):
+        bo = next( o for o in options if str(o) == 'Boolean Option' )
+        bv = s.get_option_value( bo )
+        test.check_equal( bv.type, rs.option_type.boolean )
+        test.check_equal( bv.value, False )
+        test.check_equal( s.get_option( bo ), 0. )
+
+    with test.closure( 'Play with enum option' ):
+        eo = next( o for o in options if str(o) == 'Enum Option' )
+        ev = s.get_option_value( eo )
+        test.check_equal( ev.type, rs.option_type.string )
+        test.check_equal( ev.value, 'First' )
+        er = s.get_option_range( ev.id )
+        test.check_equal( er.min, 0. )
+        test.check_equal( er.max, 2. )
+        test.check_equal( er.default, 1. )
+        test.check_equal( er.step, 1. )
+        test.check_equal( s.get_option_value_description( eo, 0. ), 'First' )
+        test.check_equal( s.get_option_value_description( eo, 1. ), 'Last' )
+        test.check_equal( s.get_option_value_description( eo, 2. ), 'Everything' )
+        test.check_equal( s.get_option( eo ), 0. )
 
     dev = None
     context = None

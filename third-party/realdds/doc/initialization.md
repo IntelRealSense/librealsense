@@ -94,7 +94,7 @@ This is optional: not all devices have options. See [device](device.md).
                 * Booleans can be expressed as a range with `minimum=0`, `maximum=1`, `stepping=1`
             * Free string options would likewise have no range, e.g. `["Name", "Bob", "", "The customer's name"]`
                 * `"IPv4"` is a string option that conforms to `W.X.Y.Z` (IP address) format
-            * Choice options are strings with an array of choices, e.g. `["Preset", "Maximum Quality", ["Maximum Range", "Maximum Quality", "Maximum Speed"], "Maximum Speed", "Standard preset combination of options"]`
+            * Enum options are strings with an array of choices, e.g. `["Preset", "Maximum Quality", ["Maximum Range", "Maximum Quality", "Maximum Speed"], "Maximum Speed", "Standard preset combination of options"]`
         * A `default-value` which also adheres to the range
             * If this and the range are missing, the option is read-only
         * A user-friendly description that describes the option, to be shown in any tooltip
@@ -102,7 +102,8 @@ This is optional: not all devices have options. See [device](device.md).
             * `"optional"` to note that it's possible for it to not have a value; lack of a value is denoted as `null` in the JSON
                 * If optional, a type must be deducible or present in the properties
                 * E.g., `["name", null, "description", ["optional", "string"]]` is an optional read-only string value that's currently unset
-            * `"string"`, `"int"`, `"boolean"`, `"float"`, `"IPv4"` can (and sometime must) indicate the value type
+                * Enums cannot be optional
+            * `"string"`, `"int"`, `"boolean"`, `"float"`, `"IPv4"`, `"enum"` can (and sometime must) indicate the value type
                 * If missing, the type will be deduced, if possible, from the values
             * `"read-only"` options are not settable
                 * `set-option` will fail for these, though their value may change on the server side

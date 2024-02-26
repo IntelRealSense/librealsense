@@ -721,13 +721,40 @@ int rs2_is_option_read_only(const rs2_options* options, rs2_option option, rs2_e
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, options, option)
 
-float rs2_get_option(const rs2_options* options, rs2_option option, rs2_error** error) BEGIN_API_CALL
+float rs2_get_option(const rs2_options* options, rs2_option option_id, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    VALIDATE_OPTION_ENABLED(options, option);
-    return options->options->get_option(option).query();
+    VALIDATE_OPTION_ENABLED(options, option_id);
+    auto & option = options->options->get_option( option_id );
+    switch( option.get_value_type() )
+    {
+    case RS2_OPTION_TYPE_FLOAT:
+    case RS2_OPTION_TYPE_INTEGER:
+        return option.query();
+
+    case RS2_OPTION_TYPE_BOOLEAN:
+        return (float)option.get_value().get< bool >();
+
+    case RS2_OPTION_TYPE_STRING:
+        // We can convert "enum" options to a float value
+        auto r = option.get_range();
+        if( r.min == 0.f && r.step == 1.f )
+        {
+            json value = option.get_value();
+            for( auto i = 0.f; i < r.max; i += r.step )
+            {
+                auto desc = option.get_value_description( 0.f );
+                if( ! desc )
+                    break;
+                if( value == desc )
+                    return i;
+            }
+        }
+        throw not_implemented_exception( "use rs2_get_option_value to get string values" );
+    }
+    return option.query();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0.0f, options, option)
+HANDLE_EXCEPTIONS_AND_RETURN(0.f, options, option_id)
 
 rs2_option_value const * rs2_get_option_value( const rs2_options * options, rs2_option option_id, rs2_error ** error ) BEGIN_API_CALL
 {
@@ -735,7 +762,7 @@ rs2_option_value const * rs2_get_option_value( const rs2_options * options, rs2_
     auto & option = options->options->get_option( option_id );  // throws
     std::shared_ptr< const json > value;
     if( option.is_enabled() )
-        value = std::make_shared< const json >( option.query() );
+        value = std::make_shared< const json >( option.get_value() );
     auto wrapper = new rs2_option_value_wrapper( option_id, option.get_value_type(), value );
     return wrapper;
 }

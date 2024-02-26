@@ -168,6 +168,26 @@ public:
 };
 
 
+class dds_enum_option : public dds_string_option
+{
+    using super = dds_string_option;
+
+    std::vector< std::string > _choices;
+
+public:
+    virtual void init_choices( rsutils::json );
+
+    char const * value_type() const override { return "enum"; }
+
+    void check_value( rsutils::json & ) const override;
+    int get_value_index( std::string const & ) const;
+
+    std::vector< std::string > const & get_choices() const { return _choices; }
+
+    rsutils::json to_json() const override;
+};
+
+
 class dds_ip_option : public dds_string_option
 {
     using super = dds_string_option;
