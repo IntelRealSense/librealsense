@@ -26,7 +26,7 @@ namespace librealsense
             std::string get_source_parser_file_path( int source_id, const std::string & definitions_xml ) const;
 
             // Return a mapping of source module IDs to their requested verbosity level.
-            std::unordered_map< int, int > get_source_module_verbosity( int source_id, const std::string & definitions_xml ) const;
+            std::map< int, int > get_source_module_verbosity( int source_id, const std::string & definitions_xml ) const;
 
             // Return a mapping of event IDs to their number of arguments and format pairs.
             std::unordered_map< int, std::pair< int, std::string > > get_events( const std::string & parser_contents ) const;

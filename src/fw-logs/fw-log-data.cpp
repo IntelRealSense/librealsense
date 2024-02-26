@@ -56,10 +56,10 @@ namespace librealsense
         rs2_log_severity fw_logs_severity_to_rs2_log_severity( int32_t severity )
         {
             rs2_log_severity result = RS2_LOG_SEVERITY_NONE;
+
             switch( severity )
             {
-            case 1:
-                // Verbose level. Fall through, debug is LibRS most verbose level
+            case 1: // Verbose level. Fall through, debug is LibRS most verbose level
             case 2:
                 result = RS2_LOG_SEVERITY_DEBUG;
                 break;
@@ -75,15 +75,18 @@ namespace librealsense
             case 32:
                 result = RS2_LOG_SEVERITY_FATAL;
                 break;
+            case 0: // No logging. Fall through to keep level None set above.
             default:
                 break;
             }
+
             return result;
         }
 
         rs2_log_severity legacy_fw_logs_severity_to_rs2_log_severity(int32_t severity)
         {
             rs2_log_severity result = RS2_LOG_SEVERITY_NONE;
+
             switch (severity)
             {
             case 1:
@@ -101,6 +104,7 @@ namespace librealsense
             default:
                 break;
             }
+
             return result;
         }
     } // namespace fw_logs

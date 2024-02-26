@@ -84,5 +84,16 @@ namespace librealsense
             std::string file_name = "";
             std::string module_name = "";
         };
+
+        constexpr const size_t max_sources = 3;
+        constexpr const size_t max_modules = 32;
+
+        struct extended_log_request
+        {
+            uint32_t opcode = 0;
+            uint32_t update = 0; // Indication if FW log settings need to be updated. Ignore the following fields if 0.
+            uint32_t module_filter[max_sources] = {};  // Bits mapped to source modules. 1 should log, 0 should not.
+            uint8_t severity_level[max_sources][max_modules] = {}; // Maps to modules. Zero disables module logging.
+        };
     }
 }

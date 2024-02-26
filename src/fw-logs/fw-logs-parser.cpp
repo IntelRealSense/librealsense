@@ -25,6 +25,12 @@ namespace librealsense
             _source_id_to_name = helper.get_listed_sources( definitions_xml );
             for( const auto & source : _source_id_to_name )
             {
+                if( source.first >= fw_logs::max_sources )
+                    throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                                 << "Supporting source id 0 to " << fw_logs::max_sources
+                                                                 << ". Found source (" << source.first << ", "
+                                                                 << source.second << ")" );
+
                 std::string path = helper.get_source_parser_file_path( source.first, definitions_xml );
                 std::ifstream f( path.c_str() );
                 if( f.good() )
@@ -36,6 +42,23 @@ namespace librealsense
                 }
                 else
                     throw librealsense::invalid_value_exception( rsutils::string::from() << "Can't open file " << path );
+
+                auto verbosity = helper.get_source_module_verbosity( source.first, definitions_xml );
+                if( !verbosity.empty() && verbosity.rbegin()->first >= fw_logs::max_modules )
+                    throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                                 << "Supporting module id 0 to " << fw_logs::max_modules
+                                                                 << ". Found module " << verbosity.rbegin()->first
+                                                                 << " in source (" << source.first << ", "
+                                                                 << source.second << ")" );
+
+                _verbosity_settings.module_filter[source.first] = 0;
+                for( const auto & module : verbosity )
+                {
+                    // Each bit maps to one module. If the bit is 1 logs from this module shall be collected.
+                    _verbosity_settings.module_filter[source.first] |= module.second ? 1 << module.first : 0;
+                    // Each item maps to one SW module. Only logs of that severity level will be collected.
+                    _verbosity_settings.severity_level[source.first][module.first] = module.second;
+                }
             }
         }
 
@@ -77,6 +100,33 @@ namespace librealsense
             const auto extended = reinterpret_cast< const extended_fw_log_binary * >( log );
             // If there are parameters total_params_size_bytes includes the information
             return sizeof( extended_fw_log_binary ) - sizeof( extended->info ) + extended->total_params_size_bytes;
+        }
+
+        command fw_logs_parser::get_start_command() const
+        {
+            command activate_command( 0 ); // Opcode would be overriden by the device
+            memcpy( &activate_command, &_verbosity_settings, sizeof( fw_logs::extended_log_request ) );
+            activate_command.param1 = 1; // Update settings field
+
+            return activate_command;
+        }
+
+        command fw_logs_parser::get_update_command() const
+        {
+            command update_command( 0 );  // Opcode would be overriden by the device
+            memcpy( &update_command, &_verbosity_settings, sizeof( fw_logs::extended_log_request ) );
+            update_command.param1 = 0;  // Update settings field
+
+            return update_command;
+        }
+
+        command fw_logs_parser::get_stop_command() const
+        {
+            command stop_command( 0 );  // Opcode would be overriden by the device
+            stop_command.param1 = 1;  // Update settings field
+            // All other fields should remain 0 to clear logging settings
+
+            return stop_command;
         }
 
         fw_logs_parser::structured_binary_data

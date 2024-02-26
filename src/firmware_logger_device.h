@@ -17,6 +17,8 @@ namespace librealsense
     class firmware_logger_extensions
     {
     public:
+        virtual void start() = 0;
+        virtual void stop() = 0;
         virtual bool get_fw_log( fw_logs::fw_logs_binary_data & binary_data ) = 0;
         virtual bool get_flash_log( fw_logs::fw_logs_binary_data & binary_data ) = 0;
         virtual unsigned int get_number_of_fw_logs() const = 0;
@@ -31,36 +33,49 @@ namespace librealsense
     public:
         firmware_logger_device( std::shared_ptr< const device_info > const & dev_info,
                                 std::shared_ptr< hw_monitor > hardware_monitor,
-                                const command & fw_logs_command,
-                                const command & flash_logs_command,
-                                const std::map< int, std::string > & source_id_to_name = {} );
+                                const command & fw_logs_command );
+
+        void start() override;
+        void stop() override;
 
         bool get_fw_log( fw_logs::fw_logs_binary_data & binary_data ) override;
-        bool get_flash_log( fw_logs::fw_logs_binary_data & binary_data ) override;
+        bool get_flash_log( fw_logs::fw_logs_binary_data & binary_data ) override { return false; } // Not supported
 
         unsigned int get_number_of_fw_logs() const override;
 
         bool init_parser( std::string xml_content ) override;
         bool parse_log( const fw_logs::fw_logs_binary_data * fw_log_msg, fw_logs::fw_log_data * parsed_msg ) override;
 
-        // Temporal solution for HW_Monitor injection
-        void assign_hw_monitor( std::shared_ptr< hw_monitor > hardware_monitor ) { _hw_monitor = hardware_monitor; }
-
-    private:
+    protected:
         void get_fw_logs_from_hw_monitor();
-        void get_flash_logs_from_hw_monitor();
 
         command _fw_logs_command;
-        command _flash_logs_command;
-
         std::shared_ptr< hw_monitor > _hw_monitor;
-
         std::queue< fw_logs::fw_logs_binary_data > _fw_logs;
-        std::queue< fw_logs::fw_logs_binary_data > _flash_logs;
-
-        bool _flash_logs_initialized;
-
         std::unique_ptr< fw_logs::fw_logs_parser > _parser;
-        std::map< int, std::string > _parser_source_id_to_name;
+    };
+
+    class legacy_firmware_logger_device : public firmware_logger_device
+    {
+    public:
+        legacy_firmware_logger_device( std::shared_ptr< const device_info > const & dev_info,
+                                       std::shared_ptr< hw_monitor > hardware_monitor,
+                                       const command & fw_logs_command,
+                                       const command & flash_logs_command );
+
+        // Legacy devices always collecting, no need to start/stop
+        void start() override { return; }
+        void stop() override { return; }
+
+        bool get_flash_log( fw_logs::fw_logs_binary_data & binary_data ) override;
+
+        bool init_parser( std::string xml_content ) override;
+
+    private:
+        void get_flash_logs_from_hw_monitor();
+
+        command _flash_logs_command;
+        std::queue< fw_logs::fw_logs_binary_data > _flash_logs;
+        bool _flash_logs_initialized;
     };
 }

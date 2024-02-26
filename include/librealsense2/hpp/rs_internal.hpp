@@ -457,6 +457,20 @@ namespace rs2
             error::handle(e);
         }
 
+        void start_collecting()
+        {
+            rs2_error * e = nullptr;
+            rs2_start_collecting_fw_logs( _dev.get(), &e );
+            error::handle( e );
+        }
+
+        void stop_collecting()
+        {
+            rs2_error * e = nullptr;
+            rs2_start_collecting_fw_logs( _dev.get(), &e );
+            error::handle( e );
+        }
+
         rs2::firmware_log_message create_message()
         {
             rs2_error* e = nullptr;

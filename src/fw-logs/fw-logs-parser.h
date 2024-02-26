@@ -1,11 +1,16 @@
 /* License: Apache 2.0. See LICENSE file in root directory. */
-/* Copyright(c) 2019 Intel Corporation. All Rights Reserved. */
+/* Copyright(c) 2024 Intel Corporation. All Rights Reserved. */
+
 #pragma once
+
+#include <src/fw-logs/fw-log-data.h>
+#include <src/fw-logs/fw-logs-formatting-options.h>
+
+#include <src/hw-monitor.h>
+
 #include <string>
 #include <vector>
 #include <memory>
-#include "fw-logs-formatting-options.h"
-#include "fw-log-data.h"
 
 namespace librealsense
 {
@@ -19,6 +24,10 @@ namespace librealsense
 
             fw_log_data parse_fw_log( const fw_logs_binary_data * fw_log_msg );
             virtual size_t get_log_size( const uint8_t * log ) const;
+
+            virtual command get_start_command() const;
+            virtual command get_update_command() const;
+            virtual command get_stop_command() const;
 
         protected:
             struct structured_binary_data // Common format for legacy and extended binary data formats
@@ -49,6 +58,8 @@ namespace librealsense
 
             std::map< int, fw_logs_formatting_options > _source_to_formatting_options;
             std::map< int, std::string > _source_id_to_name;
+
+            fw_logs::extended_log_request _verbosity_settings;
         };
 
         class legacy_fw_logs_parser : public fw_logs_parser

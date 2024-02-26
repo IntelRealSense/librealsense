@@ -172,7 +172,7 @@ int get_verbosity_attribute( const xml_node<> * node )
                                                  << "Can't find attribute 'verbosity' in node " << tag );
 }
 
-std::unordered_map< int, int >
+std::map< int, int >
 fw_logs_xml_helper::get_source_module_verbosity( int source_id, const std::string & definitions_xml ) const
 {
     std::vector< char > buffer = string_to_char_buffer( definitions_xml );
@@ -180,7 +180,7 @@ fw_logs_xml_helper::get_source_module_verbosity( int source_id, const std::strin
     load_external_xml( &document, buffer );
     xml_node<> * source_node = get_source_node( source_id, &document );
 
-    std::unordered_map< int, int > module_id_verbosity;
+    std::map< int, int > module_id_verbosity;
     for( xml_node<> * node = source_node->first_node(); node; node = node->next_sibling() )
     {
         std::string tag( node->name(), node->name() + node->name_size() );

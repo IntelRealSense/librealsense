@@ -3564,6 +3564,24 @@ void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_s
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, json_content, content_size)
 
+void rs2_start_collecting_fw_logs( rs2_device * dev, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( dev );
+    auto fw_logger = VALIDATE_INTERFACE( dev->device, librealsense::firmware_logger_extensions );
+
+    fw_logger->start();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, dev )
+
+void rs2_stop_collecting_fw_logs( rs2_device * dev, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( dev );
+    auto fw_logger = VALIDATE_INTERFACE( dev->device, librealsense::firmware_logger_extensions );
+
+    fw_logger->stop();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, dev )
+
 rs2_firmware_log_message* rs2_create_fw_log_message(rs2_device* dev, rs2_error** error)BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
