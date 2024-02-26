@@ -298,6 +298,7 @@ namespace librealsense
         if (mask & RS2_PRODUCT_LINE_D400)
         {
             auto d400_devices = d400_info::pick_d400_devices(ctx, devices);
+            std::copy(begin(d400_devices), end(d400_devices), std::back_inserter(list));
             for (const auto& item : list) {
                 auto uvc_devices = item->get_device_data().uvc_devices;
                 std::cout << "printing device paths for connected uvc_devices" << std::endl;
@@ -305,7 +306,6 @@ namespace librealsense
                     std::cout << uvc_device.device_path << std::endl;
                 }
             }
-            std::copy(begin(d400_devices), end(d400_devices), std::back_inserter(list));
         }
 
         if( mask & RS2_PRODUCT_LINE_L500 )
