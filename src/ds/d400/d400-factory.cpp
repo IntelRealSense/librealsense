@@ -1124,7 +1124,6 @@ namespace librealsense
         std::shared_ptr<context> ctx,
         platform::backend_device_group& group)
     {
-        std::cout << "does this work" << std::endl;
         std::vector<platform::uvc_device_info> chosen;
         std::vector<std::shared_ptr<device_info>> results;
 
@@ -1189,6 +1188,8 @@ namespace librealsense
 
                 auto info = std::make_shared<d400_info>(ctx, devices, hwm_devices, hids);
                 chosen.insert(chosen.end(), devices.begin(), devices.end());
+                std::cout << "about to print out info (uvc devices list size)" << std::endl;
+                std::cout << info->get_device_data().uvc_devices.size() << std::endl;
                 results.push_back(info);
 
             }
