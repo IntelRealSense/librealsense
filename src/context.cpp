@@ -309,15 +309,15 @@ namespace librealsense
                 }
                 i++;
             }
-            i = 0;
-            for (const auto& item : list) {
-                auto usb_devices = item->get_device_data().usb_devices;
-                std::cout << "USB device info at index " << i << std::endl;
-                for (const auto& usb_device : usb_devices) {
-                    std::cout << static_cast<std::string>(usb_device) << std::endl;
-                }
-                i++;
-            }
+            // i = 0;
+            // for (const auto& item : list) {
+            //     auto usb_devices = item->get_device_data().usb_devices;
+            //     std::cout << "USB device info at index " << i << std::endl;
+            //     for (const auto& usb_device : usb_devices) {
+            //         std::cout << static_cast<std::string>(usb_device) << std::endl;
+            //     }
+            //     i++;
+            // }
         }
 
         // if( mask & RS2_PRODUCT_LINE_L500 )
