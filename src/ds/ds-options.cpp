@@ -601,9 +601,11 @@ namespace librealsense
     void emitter_always_on_option::set(float value)
     {
         command cmd( _hmc_set_opcode );
-        // reverse logic legacy <> new opcode as we query `LASERONCONST` vs 'APM_STROBE_ON' and return 'EMITTER_ALWAYES_ON'
+        // New FW opcode is different than the legacy opcode and has a reverse logic.
+        // On legacy we query: `LASERONCONST` and in the new opcode we query 'APM_STROBE_ON'
+        // Both return 'EMITTER_ALWAYES_ON' so they are handled differently
         bool always_on = _is_legacy ? value : ( value != 1.0f );
-        cmd.param1 = static_cast<int>(always_on);
+        cmd.param1 = static_cast<uint32_t>(always_on);
 
         auto strong_hwm = _hwm.lock();
         if ( !strong_hwm )
