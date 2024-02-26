@@ -299,9 +299,10 @@ namespace librealsense
         {
             auto d400_devices = d400_info::pick_d400_devices(ctx, devices);
             std::copy(begin(d400_devices), end(d400_devices), std::back_inserter(list));
+            std::cout << "found d400 devices. printing each uvc_device_info" << std::endl;
             for (const auto& item : list) {
                 auto uvc_devices = item->get_device_data().uvc_devices;
-                std::cout << "printing connected uvc_devices info" << std::endl;
+                std::cout << "NEW INFO:" << std::endl;
                 for (const auto& uvc_device : uvc_devices) {
                     std::cout << static_cast<std::string>(uvc_device) << std::endl;
                 }
