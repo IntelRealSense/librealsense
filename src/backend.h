@@ -198,7 +198,7 @@ namespace librealsense
             bool has_metadata_node = false;
             std::string metadata_node_id = "";
 
-            operator std::string()
+            operator std::string() const
             {
                 std::stringstream s;
                 s << "id- " << id <<

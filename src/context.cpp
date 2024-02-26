@@ -301,9 +301,9 @@ namespace librealsense
             std::copy(begin(d400_devices), end(d400_devices), std::back_inserter(list));
             for (const auto& item : list) {
                 auto uvc_devices = item->get_device_data().uvc_devices;
-                std::cout << "printing device paths for connected uvc_devices" << std::endl;
+                std::cout << "printing connected uvc_devices info" << std::endl;
                 for (const auto& uvc_device : uvc_devices) {
-                    std::cout << uvc_device.device_path << std::endl;
+                    std::cout << static_cast<std::string>(uvc_device) << std::endl;
                 }
             }
         }
