@@ -8,14 +8,14 @@
 
 namespace rs2
 {
-    class accel_dashboard : public stream_dashboard
+    class motion_dashboard : public stream_dashboard
     {
     public:
 
-        accel_dashboard( std::string name );
+        motion_dashboard( std::string name );
 
         // Extract X, Y, Z and calculate N values from a frame
-        void process_frame( rs2::frame f ) override;
+        //void process_frame( rs2::frame f ) override;
 
         // Draw Accelerate dashboard and choose graph's lines
         void draw( ux_window & window, rect rectangle ) override;
@@ -27,7 +27,7 @@ namespace rs2
         // Show slider that change pause between acceleration values that we saving.
         void show_data_rate_slider();
 
-    private:
+    protected:
         float x_value;
         float y_value;
         float z_value;
@@ -48,5 +48,23 @@ namespace rs2
         std::deque< float > y_history;
         std::deque< float > z_history;
         std::deque< float > n_history;
+    };
+
+    class accel_dashboard : public motion_dashboard
+    {
+    public:
+        accel_dashboard( std::string name );
+
+        // Extract X, Y, Z and calculate N values from a frame
+        void process_frame( rs2::frame f ) override;
+    };
+
+    class gyro_dashboard : public motion_dashboard
+    {
+    public:
+        gyro_dashboard( std::string name );
+
+        // Extract X, Y, Z and calculate N values from a frame
+        void process_frame( rs2::frame f ) override;
     };
 }

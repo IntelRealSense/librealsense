@@ -6,18 +6,18 @@
 using namespace rs2;
 using namespace rsutils::string;
 
-accel_dashboard::accel_dashboard( std::string name )
+gyro_dashboard::gyro_dashboard( std::string name )
     : motion_dashboard( name )
 {
 }
 
-void accel_dashboard::process_frame( rs2::frame f )
+void gyro_dashboard::process_frame( rs2::frame f )
 {
     write_shared_data(
         [&]()
         {
             if( f && f.is< rs2::motion_frame >()
-                && ( f.as< rs2::motion_frame >() ).get_profile().stream_type() == RS2_STREAM_ACCEL )
+                && ( f.as< rs2::motion_frame >() ).get_profile().stream_type() == RS2_STREAM_GYRO )
             {
                 double ts = glfwGetTime();
                 auto it = frame_to_time.find( f.get_profile().unique_id() );

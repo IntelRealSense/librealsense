@@ -11,7 +11,7 @@
 #include <imgui_internal.h>
 #include <librealsense2/hpp/rs_internal.hpp>
 
-#include "accel-dashboard.h"
+#include "motion-dashboard.h"
 #include "frame-drops-dashboard.h"
 
 #include <fstream>
@@ -131,6 +131,11 @@ output_model::output_model() : fw_logger([this](){ thread_loop(); }) , incoming_
     available_dashboards[dashboard_names[0]] = [&]( std::string name )
     {
         return std::make_shared< accel_dashboard >( name );
+    };
+
+    available_dashboards[dashboard_names[2]] = [&]( std::string name )
+    {
+        return std::make_shared< gyro_dashboard >( name );
     };
 
     auto front = available_dashboards.find( dashboard_names[opened_dashboard_index] );
@@ -1022,7 +1027,7 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
     }
 
     auto pos = ImGui::GetCursorScreenPos();
-    pos.y += ImGui::GetCursorPosY();
+    pos.y += 5;
 
     ImGui::PushStyleColor(ImGuiCol_Text, white);
 
@@ -1032,7 +1037,7 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
                 { pos.x + r.w, pos.y + get_height() }, ImColor(dark_sensor_bg));
 
     auto size = ImGui::CalcTextSize(name.c_str());
-    float padding_top = ImGui::GetCursorPosY() + 85.f;  // Padding from top for scale digits. Add 85 for background and scale digits synchronizing.
+    float padding_top = ImGui::GetCursorPosY();  // Padding from top for scale digits.
     ImGui::SetCursorPos(ImVec2( r.w / 2 - size.x / 2, 5 + padding_top));
     ImGui::Text("%s", name.c_str());
     ImGui::SameLine();
