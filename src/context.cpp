@@ -303,7 +303,12 @@ namespace librealsense
             int i = 0;
             for (const auto& item : list) {
                 auto uvc_devices = item->get_device_data().uvc_devices;
-                std::cout << "Device info at index " << i << std::endl;
+                std::cout << "UVC device info at index " << i << std::endl;
+                for (const auto& uvc_device : uvc_devices) {
+                    std::cout << static_cast<std::string>(uvc_device) << std::endl;
+                }
+                auto usb_devices = item->get_device_data().usb_devices;
+                std::cout << "USB device info at index " << i << std::endl;
                 for (const auto& uvc_device : uvc_devices) {
                     std::cout << static_cast<std::string>(uvc_device) << std::endl;
                 }
