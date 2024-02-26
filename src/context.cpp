@@ -299,7 +299,7 @@ namespace librealsense
         {
             auto d400_devices = d400_info::pick_d400_devices(ctx, devices);
             std::copy(begin(d400_devices), end(d400_devices), std::back_inserter(list));
-            std::cout << "found d400 devices. printing each uvc_device_info" << std::endl;
+            std::cout << "Found d400 devices. Printing each uvc and usb device info." << std::endl;
             int i = 0;
             for (const auto& item : list) {
                 auto uvc_devices = item->get_device_data().uvc_devices;
@@ -307,10 +307,14 @@ namespace librealsense
                 for (const auto& uvc_device : uvc_devices) {
                     std::cout << static_cast<std::string>(uvc_device) << std::endl;
                 }
+                i++;
+            }
+            i = 0;
+            for (const auto& item : list) {
                 auto usb_devices = item->get_device_data().usb_devices;
                 std::cout << "USB device info at index " << i << std::endl;
-                for (const auto& uvc_device : uvc_devices) {
-                    std::cout << static_cast<std::string>(uvc_device) << std::endl;
+                for (const auto& usb_device : usb_devices) {
+                    std::cout << static_cast<std::string>(usb_device) << std::endl;
                 }
                 i++;
             }

@@ -145,7 +145,7 @@ namespace librealsense
             usb_spec conn_spec;
             usb_class cls;
 
-            operator std::string()
+            operator std::string() const
             {
                 std::stringstream s;
 
