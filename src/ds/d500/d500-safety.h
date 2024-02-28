@@ -26,6 +26,7 @@ namespace librealsense
         }
 
         void set_advanced_mode_device( ds_advanced_mode_base * advanced_mode );
+        void gate_depth_options();
 
     private:
 

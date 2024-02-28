@@ -81,8 +81,8 @@ void print_device_info(rs2::device d)
 
     std::cout << d.get_description() <<
         ", update serial number: " << camera_info[RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID] <<
-        ", firmware version: " << camera_info[RS2_CAMERA_INFO_FIRMWARE_VERSION] << std::endl;
-        ", SMCU firmware version: " << camera_info[RS2_CAMERA_INFO_SMCU_FW_VERSION] <<
+        ", firmware version: " << camera_info[RS2_CAMERA_INFO_FIRMWARE_VERSION] <<
+        ", SMCU firmware version: " << camera_info[RS2_CAMERA_INFO_SMCU_FW_VERSION] << std::endl;
 }
 
 std::vector<uint8_t> read_firmware_data(bool is_set, const std::string& file_path)
