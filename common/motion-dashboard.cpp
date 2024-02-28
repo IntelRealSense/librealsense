@@ -55,11 +55,10 @@ void motion_dashboard::draw( ux_window & win, rect r )
             add_point( (float)i, (float)n_hist[i] );
         }
     }
-
     r.h -= ImGui::GetTextLineHeightWithSpacing() + 10;
     draw_dashboard( win, r );
 
-    ImGui::SetCursorPosX( ImGui::GetCursorPosX() + 40 );
+    ImGui::SetCursorPosX( ImGui::GetCursorPosX() + ImGui::GetTextLineHeightWithSpacing() * 2 );
     show_radiobuttons();
 
     ImGui::SameLine();
@@ -69,7 +68,7 @@ void motion_dashboard::draw( ux_window & win, rect r )
 
 int motion_dashboard::get_height() const
 {
-    return (int)( 160 + ImGui::GetTextLineHeightWithSpacing() );
+    return (int)( 10 * ImGui::GetTextLineHeight() + ImGui::GetTextLineHeightWithSpacing() );
 }
 
 void motion_dashboard::clear( bool full )
@@ -97,49 +96,6 @@ void motion_dashboard::clear( bool full )
             }
         } );
 }
-
-/*
-void accel_dashboard::process_frame( rs2::frame f )
-{
-    write_shared_data(
-        [&]()
-        {
-            if( f && f.is< rs2::motion_frame >() )
-            {
-                double ts = glfwGetTime();
-                auto it = frame_to_time.find( f.get_profile().unique_id() );
-
-                if( ts - last_time > frame_rate && it != frame_to_time.end() )
-                {
-                    rs2::motion_frame accel_frame = f.as< rs2::motion_frame >();
-
-                    x_value = accel_frame.get_motion_data().x;
-                    y_value = accel_frame.get_motion_data().y;
-                    z_value = accel_frame.get_motion_data().z;
-                    n_value = std::sqrt( ( x_value * x_value ) + ( y_value * y_value ) + ( z_value * z_value ) );
-
-                    if( x_history.size() > DEQUE_SIZE )
-                        x_history.pop_front();
-                    if( y_history.size() > DEQUE_SIZE )
-                        y_history.pop_front();
-                    if( z_history.size() > DEQUE_SIZE )
-                        z_history.pop_front();
-                    if( n_history.size() > DEQUE_SIZE )
-                        n_history.pop_front();
-
-                    x_history.push_back( x_value );
-                    y_history.push_back( y_value );
-                    z_history.push_back( z_value );
-                    n_history.push_back( n_value );
-
-                    last_time = ts;
-                }
-
-                frame_to_time[f.get_profile().unique_id()] = ts;
-            }
-        } );
-}
-*/
 
 void motion_dashboard::show_radiobuttons()
 {

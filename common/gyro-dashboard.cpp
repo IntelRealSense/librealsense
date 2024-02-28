@@ -20,7 +20,7 @@ void gyro_dashboard::process_frame( rs2::frame f )
                 && ( f.as< rs2::motion_frame >() ).get_profile().stream_type() == RS2_STREAM_GYRO )
             {
                 double ts = glfwGetTime();
-                auto it = frame_to_time.find( f.get_profile().unique_id() );
+                auto it = frame_to_time.find( static_cast<float>( f.get_profile().unique_id() ) );
 
                 if( ts - last_time > frame_rate && it != frame_to_time.end() )
                 {
@@ -48,7 +48,7 @@ void gyro_dashboard::process_frame( rs2::frame f )
                     last_time = ts;
                 }
 
-                frame_to_time[f.get_profile().unique_id()] = ts;
+                frame_to_time[static_cast<float>( f.get_profile().unique_id() )] = ts;
             }
         } );
 }

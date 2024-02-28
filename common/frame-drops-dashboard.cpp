@@ -57,10 +57,9 @@ void frame_drops_dashboard::draw( ux_window & win, rect r )
     }
     r.h -= ImGui::GetTextLineHeightWithSpacing() + 10;
 
-    if( config_file::instance().get( configurations::viewer::dashboard_open ) )
-        draw_dashboard( win, r );
+    draw_dashboard( win, r );
 
-    ImGui::SetCursorPosX( ImGui::GetCursorPosX() + 40 );
+    ImGui::SetCursorPosX( ImGui::GetCursorPosX() + ImGui::GetTextLineHeightWithSpacing() * 2 );
     ImGui::SetCursorPosY( ImGui::GetCursorPosY() + 3 );
     ImGui::Text( "%s", "Measurement Metric:" );
     ImGui::SameLine();
@@ -82,7 +81,7 @@ void frame_drops_dashboard::draw( ux_window & win, rect r )
 
 int frame_drops_dashboard::get_height() const
 {
-    return (int)( 160 + ImGui::GetTextLineHeightWithSpacing() );
+    return (int)( 10 * ImGui::GetTextLineHeight() + ImGui::GetTextLineHeightWithSpacing() );
 }
 
 void frame_drops_dashboard::clear( bool full )

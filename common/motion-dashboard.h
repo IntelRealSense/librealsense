@@ -14,10 +14,7 @@ namespace rs2
 
         motion_dashboard( std::string name );
 
-        // Extract X, Y, Z and calculate N values from a frame
-        //void process_frame( rs2::frame f ) override;
-
-        // Draw Accelerate dashboard and choose graph's lines
+        // Draw Accelerate dashboard and graph's lines
         void draw( ux_window & window, rect rectangle ) override;
         int get_height() const override;
         void clear( bool full ) override;
