@@ -83,6 +83,7 @@ private:
 private:
     bool check_fw_compatibility( const std::vector< uint8_t > & image ) const override;
     void enter_update_state() const override {}
+    void enter_update_safety_mcu_state() const override {}
     std::vector< uint8_t > backup_flash( rs2_update_progress_callback_sptr ) override { return {}; }
     void update_flash( std::vector< uint8_t > const & image, rs2_update_progress_callback_sptr, int update_mode ) override;
 
