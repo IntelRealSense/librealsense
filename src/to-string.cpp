@@ -441,6 +441,7 @@ std::string const & get_string_( rs2_option value )
         arr[RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE] = "Auto Exposure Mode";
         CASE( OHM_TEMPERATURE )
         CASE( SOC_PVT_TEMPERATURE )
+        CASE( GYRO_SENSITIVITY )
 #undef CASE
         return arr;
     }();

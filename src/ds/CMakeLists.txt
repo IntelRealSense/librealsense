@@ -39,4 +39,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/features/auto-exposure-limit-feature.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/features/gain-limit-feature.h"
         "${CMAKE_CURRENT_LIST_DIR}/features/gain-limit-feature.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/features/imu-sensitivity-feature.h"
+        "${CMAKE_CURRENT_LIST_DIR}/features/imu-sensitivity-feature.cpp"
 )

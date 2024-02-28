@@ -20,6 +20,12 @@ static const std::map< rs2_stream, uint32_t > stream_and_fourcc
         { RS2_STREAM_ACCEL, rs_fourcc( 'A', 'C', 'C', 'L' ) },
         { RS2_STREAM_GPIO,  rs_fourcc( 'G', 'P', 'I', 'O' ) } };
 
+static const std::map< float, float > imu_sensitivity_convert
+    = { { 0,  0},
+        { 1.0, 0.1},
+        { 2.0,  0.2},
+        { 3.0, 0.3},
+        { 4.0, 0.4} };
 
     // in sensor.cpp
 void log_callback_end( uint32_t fps,
@@ -113,7 +119,8 @@ void hid_sensor::open( const stream_profiles & requests )
         _is_configured_stream[request->get_stream_type()] = true;
         configured_hid_profiles.push_back( platform::hid_profile{
             sensor_name,
-            fps_to_sampling_frequency( request->get_stream_type(), request->get_framerate() ) } );
+                                   fps_to_sampling_frequency( request->get_stream_type(), request->get_framerate() ),
+                                   get_imu_sensitivity_resolution_converted( request->get_stream_type() ) } );
     }
     _hid_device->open( configured_hid_profiles );
     if( Is< librealsense::global_time_interface >( _owner ) )
@@ -338,6 +345,31 @@ uint32_t hid_sensor::fps_to_sampling_frequency( rs2_stream stream, uint32_t fps 
         return fps_mapping->second;
     else
         return fps;
+}
+void hid_sensor::set_imu_sensitivity_resolution( rs2_stream stream,float value ) 
+{
+//is there checks needed?
+    _imu_sensitivity_per_rs2_stream[stream] = value;
+}
+
+float hid_sensor::get_imu_sensitivity_resolution(rs2_stream stream)
+{
+    if( _imu_sensitivity_per_rs2_stream.find( stream ) != _imu_sensitivity_per_rs2_stream.end() )
+    {
+        return _imu_sensitivity_per_rs2_stream[stream];
+     }
+     else 
+        return 30.5;
+}
+
+float hid_sensor::get_imu_sensitivity_resolution_converted( rs2_stream stream )
+{
+    if( _imu_sensitivity_per_rs2_stream.find( stream ) != _imu_sensitivity_per_rs2_stream.end() )
+    {
+        return imu_sensitivity_convert.at( _imu_sensitivity_per_rs2_stream[stream] );
+    }
+    else
+        return 0.1;
 }
 
 iio_hid_timestamp_reader::iio_hid_timestamp_reader()

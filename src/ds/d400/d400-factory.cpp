@@ -33,6 +33,8 @@
 
 #include <src/ds/features/auto-exposure-limit-feature.h>
 #include <src/ds/features/gain-limit-feature.h>
+#include <src/ds/features/imu-sensitivity-feature.h>
+#include <src/hid-sensor.h>
 namespace librealsense
 {
     // PSR
@@ -656,6 +658,7 @@ namespace librealsense
                                 public d400_motion,
                                 public ds_advanced_mode_base,
                                 public firmware_logger_device
+
     {
     public:
         rs435i_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
@@ -670,6 +673,8 @@ namespace librealsense
                   dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
             check_and_restore_rgb_stream_extrinsic();
+            if( _fw_version >= firmware_version( 5, 12, 10, 11 ) )
+                register_feature( std::make_shared< imu_sensitivity_feature >(get_raw_motion_sensor(), get_motion_sensor()) );
         }
 
 
@@ -1004,6 +1009,9 @@ namespace librealsense
                   dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
             , d400_thermal_tracking( d400_device::_thermal_monitor )
         {
+            if( _fw_version >= firmware_version( 5, 12, 10, 11 ) )
+                register_feature(
+                    std::make_shared< imu_sensitivity_feature >( get_raw_motion_sensor(), get_motion_sensor() ) );
         }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;

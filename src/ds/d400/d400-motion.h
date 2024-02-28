@@ -47,6 +47,8 @@ namespace librealsense
         std::shared_ptr<synthetic_sensor> create_hid_device(std::shared_ptr<context> ctx,
             const std::vector<platform::hid_device_info>& all_hid_infos,
             const firmware_version& camera_fw_version);
+        ds_motion_sensor & get_motion_sensor();
+        std::shared_ptr<hid_sensor > get_raw_motion_sensor();
 
     protected:
         friend class ds_motion_common;

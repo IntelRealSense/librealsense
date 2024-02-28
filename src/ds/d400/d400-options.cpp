@@ -466,4 +466,67 @@ namespace librealsense
     {
         snapshot = std::make_shared<const_value_option>(get_description(), 0.f);
     }
-}
+
+    void imu_sensitivity_option::set(float value) 
+    {
+        if( auto strong = _sensor.lock() )
+        {
+            strong->set_imu_sensitivity_resolution( RS2_STREAM_GYRO, value );
+        }
+    }
+
+    float imu_sensitivity_option::query() const
+    {
+        /* if( ret < get_range().min || ret > get_range().max )
+        {
+            if( auto toggle = _exposure_limit_toggle.lock() )
+                return toggle->get_cached_limit();
+        }*/
+        if( auto strong = _sensor.lock() )
+        {
+            return strong->get_imu_sensitivity_resolution( RS2_STREAM_GYRO );
+        }
+        else
+            return -1;
+    }
+
+    
+    const char * librealsense::imu_sensitivity_option::get_value_description( float val ) const
+    {
+        switch( static_cast< int >( val ) )
+        {
+            case 0: {
+                return "61.0";
+            }
+            case 1: {
+                return "30.5";
+            }
+            case 2: {
+                return "15.3";
+            }
+            case 3: {
+                return "7.6";
+            }
+            case 4: {
+                return "3.8";
+            }
+            default:
+                throw invalid_value_exception( "value not found" );
+        }
+    }
+
+    const char * librealsense::imu_sensitivity_option::get_description() const
+    {
+        return "imu sensitivity resolutions";
+    }
+
+    bool librealsense::imu_sensitivity_option::is_read_only() const
+    {
+        if( auto strong = _sensor.lock() )
+            return strong->is_opened();
+        return false;
+    }
+
+
+ }
+ 
