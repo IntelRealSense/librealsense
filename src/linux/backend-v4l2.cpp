@@ -997,7 +997,12 @@ namespace librealsense
                     }
                     else if(mipi_rs_enum_nodes.empty()) //video4linux devices that are not USB devices and not previously enumerated by rs links
                     {
+                        // filter out all posible codecs, work only with compatible driver
+                        static const std::regex rs_mipi_compatible("[.]vi:|ipu6");
                         info = get_info_from_mipi_device_path(video_path, name);
+                        if (!regex_search(info.unique_id, rs_mipi_compatible)) {
+                            continue;
+                        }
                     }
                     else // continue as we already have mipi nodes enumerated by rs links in uvc_nodes
                     {

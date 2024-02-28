@@ -78,26 +78,26 @@ namespace rs2
             auto opt = static_cast<rs2_option>(i);
 
             options_metadata[opt] = create_option_model(opt, opt_base_label, this, s, options_invalidated, error_message);
-            try
+        }
+        try
+        {
+            s->on_options_changed( [this]( const options_list & list )
             {
-                s->on_options_changed( [this]( const options_list & list )
+                for( auto changed_option : list )
                 {
-                    for( auto changed_option : list )
+                    auto it = options_metadata.find( changed_option->id );
+                    if( it != options_metadata.end() && ! _destructing ) // Callback runs in different context, check options_metadata still valid
                     {
-                        auto it = options_metadata.find( changed_option->id );
-                        if( it != options_metadata.end() && ! _destructing ) // Callback runs in different context, check options_metadata still valid
-                        {
-                            if( RS2_OPTION_TYPE_FLOAT == changed_option->type )
-                                it->second.value = changed_option->as_float;
-                        }
+                        if( RS2_OPTION_TYPE_FLOAT == changed_option->type )
+                            it->second.value = changed_option->as_float;
                     }
-                } );
-            }
-            catch( const std::exception & e )
-            {
-                if( viewer.not_model )
-                    viewer.not_model->add_log( e.what(), RS2_LOG_SEVERITY_WARN );
-            }
+                }
+            } );
+        }
+        catch( const std::exception & e )
+        {
+            if( viewer.not_model )
+                viewer.not_model->add_log( e.what(), RS2_LOG_SEVERITY_WARN );
         }
     }
 

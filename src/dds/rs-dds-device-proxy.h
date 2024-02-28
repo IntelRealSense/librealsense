@@ -1,9 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
-
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include <src/software-device.h>
+#include <src/fw-update/fw-update-device-interface.h>
 #include <src/core/debug.h>
 #include "sid_index.h"
 
@@ -38,6 +38,8 @@ class stream_profile_interface;
 class dds_device_proxy
     : public software_device
     , public debug_interface
+    , public updatable                // unsigned, non-recovery-mode
+    , public update_device_interface  // signed, recovery-mode
 {
     std::shared_ptr< realdds::dds_device > _dds_dev;
     std::map< std::string, std::vector< std::shared_ptr< stream_profile_interface > > > _stream_name_to_profiles;
@@ -76,7 +78,20 @@ private:
                                           uint32_t param4 = 0,
                                           uint8_t const * data = nullptr,
                                           size_t dataLength = 0 ) const override;
+
+    // updatable: unsigned, non-recovery-mode
+private:
+    bool check_fw_compatibility( const std::vector< uint8_t > & image ) const override;
+    void enter_update_state() const override {}
+    std::vector< uint8_t > backup_flash( rs2_update_progress_callback_sptr ) override { return {}; }
+    void update_flash( std::vector< uint8_t > const & image, rs2_update_progress_callback_sptr, int update_mode ) override;
+
+    // update_device_interface: signed, recovery-mode
+private:
+    void update( const void * image, int image_size, rs2_update_progress_callback_sptr = nullptr ) const override;
+
 };
+
 
 
 }  // namespace librealsense

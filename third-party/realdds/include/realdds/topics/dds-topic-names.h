@@ -23,6 +23,7 @@ constexpr char const * DEVICE_INFO_TOPIC_NAME = "realsense/device-info";
 constexpr char const * NOTIFICATION_TOPIC_NAME = "/notification";
 constexpr char const * CONTROL_TOPIC_NAME = "/control";
 constexpr char const * METADATA_TOPIC_NAME = "/metadata";
+constexpr char const * DFU_TOPIC_NAME = "/dfu";
 
 
 namespace notification {
@@ -80,6 +81,17 @@ namespace notification {
             extern std::string const option_values;
         }
     }
+    namespace dfu_ready {
+        extern std::string const id;
+        namespace key {
+        }
+    }
+    namespace dfu_apply {
+        extern std::string const id;
+        namespace key {
+            extern std::string const progress;
+        }
+    }
 }
 
 namespace control {
@@ -132,6 +144,15 @@ namespace control {
     namespace hw_reset {
         extern std::string const id;
     }
+    namespace dfu_start {
+        extern std::string const id;
+    }
+    namespace dfu_apply {
+        using notification::dfu_apply::id;
+        namespace key {
+            extern std::string const cancel;
+        }
+    }
 }
 
 namespace reply {
@@ -173,6 +194,16 @@ namespace reply {
         using control::hwm::id;
         namespace key {
             using control::hwm::key::data;
+        }
+    }
+    namespace dfu_start {
+        using control::dfu_start::id;
+        namespace key {
+        }
+    }
+    namespace dfu_apply {
+        using control::dfu_apply::id;
+        namespace key {
         }
     }
 }

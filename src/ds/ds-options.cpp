@@ -586,9 +586,12 @@ namespace librealsense
         }
     }
 
-    emitter_always_on_option::emitter_always_on_option( hw_monitor & hwm )
-        : _hwm(hwm)
+    emitter_always_on_option::emitter_always_on_option( std::shared_ptr<hw_monitor> hwm, ds::fw_cmd _hmc_get_opcode, ds::fw_cmd _hmc_set_opcode )
+        : _hwm(hwm), _hmc_get_opcode(_hmc_get_opcode), _hmc_set_opcode(_hmc_set_opcode)
     {
+        // On d400 option, We use the same opcode both for set and get.
+        _is_legacy = (_hmc_get_opcode == _hmc_set_opcode);
+
         _range = [this]()
         {
             return option_range{ 0, 1, 1, 0 };
@@ -597,23 +600,61 @@ namespace librealsense
 
     void emitter_always_on_option::set(float value)
     {
-        command cmd(ds::LASERONCONST);
-        cmd.param1 = static_cast<int>(value);
+        command cmd( _hmc_set_opcode );
+        // New FW opcode is different than the legacy opcode and has a reverse logic.
+        // On legacy we query: `LASERONCONST` and in the new opcode we query 'APM_STROBE_ON'
+        // Both return 'EMITTER_ALWAYES_ON' so they are handled differently
+        bool always_on = _is_legacy ? value : ( value != 1.0f );
+        cmd.param1 = static_cast<uint32_t>(always_on);
 
-        _hwm.send(cmd);
+        auto strong_hwm = _hwm.lock();
+        if ( !strong_hwm )
+            throw camera_disconnected_exception("emitter alwayes on cannot communicate with the camera");
+
+        strong_hwm->send(cmd);
         _record_action(*this);
     }
 
+
     float emitter_always_on_option::query() const
     {
-        command cmd(ds::LASERONCONST);
-        cmd.param1 = 2;
+        if( _is_legacy )
+            return legacy_query();
+        else
+            return new_query();
+    }
 
-        auto res = _hwm.send(cmd);
+    float emitter_always_on_option::legacy_query() const
+    {
+       command cmd( _hmc_get_opcode );
+            cmd.param1 = 2;
+        
+        auto strong_hwm = _hwm.lock();
+        if ( !strong_hwm )
+            throw camera_disconnected_exception("emitter alwayes on cannot communicate with the camera");
+
+        auto res = strong_hwm->send(cmd);
         if (res.empty())
             throw invalid_value_exception("emitter_always_on_option::query result is empty!");
 
-        return (res.front());
+        return ( res.front() );
+    }
+
+    float emitter_always_on_option::new_query() const
+    {
+       command cmd( _hmc_get_opcode );
+
+        auto strong_hwm = _hwm.lock();
+        if ( !strong_hwm )
+            throw camera_disconnected_exception("emitter alwayes on cannot communicate with the camera");
+
+        auto res = strong_hwm->send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("emitter_always_on_option::query result is empty!");
+
+        // reverse logic as we query 'APM_STROBE_ON' and return 'EMITTER_ALWAYS_ON'
+        bool always_on = res.front() != 1;
+        return ( always_on );
     }
 
     option_range emitter_always_on_option::get_range() const

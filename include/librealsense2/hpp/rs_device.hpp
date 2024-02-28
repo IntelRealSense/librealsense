@@ -163,9 +163,10 @@ namespace rs2
         }
         bool operator<( device const & other ) const
         {
-            return (
-                std::strcmp( get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ), other.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) )
-                < 0 );
+            // All RealSense cameras have an update-ID but not always a serial number
+            return std::strcmp( get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID ),
+                          other.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID ) )
+                 < 0;
         }
 
         bool is_connected() const

@@ -35,7 +35,7 @@ The DDS topic type is:
 
 ## Quality of Service
 
-All flexible topics are usually reliable (as opposed to data streams that are best-effort), unless otherwise stated.
+All flexible topics are usually reliable (as opposed to data streams that are best-effort), unless otherwise stated. One notable exception is [metadata](../../../../doc/metadata.md).
 
 - Reliability: `RELIABLE`
 - Durability: `VOLATILE`

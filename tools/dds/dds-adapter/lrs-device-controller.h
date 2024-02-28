@@ -7,7 +7,7 @@
 #include <realdds/dds-stream-profile.h>
 
 #include <rsutils/json-fwd.h>
-#include <unordered_map>
+#include <map>
 #include <vector>
 
 namespace rs2 {
@@ -26,7 +26,7 @@ class dds_option;
 namespace tools {
 
 // This class is in charge of handling a RS device: streaming, control..
-class lrs_device_controller
+class lrs_device_controller : public std::enable_shared_from_this< lrs_device_controller >
 {
 public:
     lrs_device_controller( rs2::device dev, std::shared_ptr< realdds::dds_device_server > dds_device_server );
@@ -34,6 +34,8 @@ public:
 
     void set_option( const std::shared_ptr< realdds::dds_option > & option, float new_value );
     rsutils::json query_option( const std::shared_ptr< realdds::dds_option > & option );
+
+    bool is_recovery() const;
 
 private:
     std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_streams();
@@ -43,6 +45,8 @@ private:
     bool on_control( std::string const & id, rsutils::json const & control, rsutils::json & reply );
     bool on_hardware_reset( rsutils::json const &, rsutils::json & );
     bool on_hwm( rsutils::json const &, rsutils::json & );
+    bool on_dfu_start( rsutils::json const &, rsutils::json & );
+    bool on_dfu_apply( rsutils::json const &, rsutils::json & );
     bool on_open_streams( rsutils::json const &, rsutils::json & );
 
     void override_default_profiles( const std::map< std::string, realdds::dds_stream_profiles > & stream_name_to_profiles,
@@ -60,6 +64,9 @@ private:
     std::map< std::string, rs2::sensor > _rs_sensors;
     std::string _device_sn;
     realdds::dds_stream_sensor_bridge _bridge;
+
+    struct dfu_support;
+    std::shared_ptr< dfu_support > _dfu;
 
     std::map< std::string, std::shared_ptr< realdds::dds_stream_server > > _stream_name_to_server;
 
