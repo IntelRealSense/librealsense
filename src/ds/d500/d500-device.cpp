@@ -527,17 +527,45 @@ namespace librealsense
                         rsutils::lazy< float >( [default_depth_units]() { return default_depth_units; } ) ) );
             }
 
-            depth_sensor.register_option(RS2_OPTION_SOC_PVT_TEMPERATURE,
-                std::make_shared<temperature_option>(_hw_monitor,
-                    temperature_option::temperature_component::HKR_PVT, "Temperature reading for SOC PVT"));
+            bool use_hmc = false;
+            if (use_hmc)
+            {
+                depth_sensor.register_option(RS2_OPTION_SOC_PVT_TEMPERATURE,
+                    std::make_shared<temperature_option>(_hw_monitor,
+                        temperature_option::temperature_component::HKR_PVT, "Temperature reading for SOC PVT"));
 
-            depth_sensor.register_option(RS2_OPTION_OHM_TEMPERATURE,
-                std::make_shared<temperature_option>(_hw_monitor,
-                    temperature_option::temperature_component::LEFT_IR, "Temperature reading for Left Infrared Sensor"));
+                depth_sensor.register_option(RS2_OPTION_OHM_TEMPERATURE,
+                    std::make_shared<temperature_option>(_hw_monitor,
+                        temperature_option::temperature_component::LEFT_IR, "Temperature reading for Left Infrared Sensor"));
 
-            depth_sensor.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                std::make_shared<temperature_option>(_hw_monitor,
-                    temperature_option::temperature_component::LEFT_PROJ, "Temperature reading for Left Projector"));
+                depth_sensor.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
+                    std::make_shared<temperature_option>(_hw_monitor,
+                        temperature_option::temperature_component::LEFT_PROJ, "Temperature reading for Left Projector"));
+            }
+            else
+            {
+                // defining the temperature options
+                auto pvt_temperature = std::make_shared< uvc_xu_option< int32_t > >( raw_depth_sensor,
+                                                                               depth_xu,
+                                                                               DS5_HKR_PVT_TEMPERATURE,
+                                                                               "PVT Temperature" );
+
+                auto proj_temperature = std::make_shared< uvc_xu_option< int32_t > >(raw_depth_sensor,
+                    depth_xu,
+                    DS5_HKR_PROJECTOR_TEMPERATURE,
+                    "Projector Temperature");
+
+                auto ohm_temperature = std::make_shared< uvc_xu_option< int32_t > >(raw_depth_sensor,
+                    depth_xu,
+                    DS5_HKR_OHM_TEMPERATURE,
+                    "OHM Temperature");
+
+                // registering the temperature options
+                depth_sensor.register_option(RS2_OPTION_SOC_PVT_TEMPERATURE, pvt_temperature);
+                depth_sensor.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE, proj_temperature);
+                depth_sensor.register_option(RS2_OPTION_OHM_TEMPERATURE, ohm_temperature);
+            }
+            
 
             auto error_control = std::make_shared< uvc_xu_option< uint8_t > >( raw_depth_sensor,
                                                                                depth_xu,
