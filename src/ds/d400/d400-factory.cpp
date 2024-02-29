@@ -658,7 +658,6 @@ namespace librealsense
                                 public d400_motion,
                                 public ds_advanced_mode_base,
                                 public firmware_logger_device
-
     {
     public:
         rs435i_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )

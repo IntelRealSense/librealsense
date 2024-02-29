@@ -1060,7 +1060,7 @@ namespace librealsense
                             }
                         }
 
-                        if(frequency == 0)
+                        if (frequency == 0)
                             continue;
 
                         auto device = std::unique_ptr<iio_hid_sensor>(new iio_hid_sensor(device_info.device_path, frequency, sensitivity));

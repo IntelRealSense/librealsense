@@ -24,8 +24,6 @@
 #include <src/stream.h>
 #include <src/fourcc.h>
 #include <src/metadata-parser.h>
-#include <src/hid-sensor.h>
-#include <src/core/features-container.h>
 #include <cstddef>
 
 namespace librealsense
@@ -492,7 +490,6 @@ namespace librealsense
         auto hid_ep = std::make_shared<ds_motion_sensor>("Motion Module", raw_hid_ep, _owner);
 
         hid_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
-
 
         // register pre-processing
         std::shared_ptr<enable_motion_correction> mm_correct_opt = nullptr;

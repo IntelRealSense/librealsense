@@ -271,27 +271,27 @@ namespace librealsense
         {
             try
             {
-                for( auto & profile_to_open : iio_profiles )
+                for (auto& profile_to_open : iio_profiles)
                 {
-                    for( auto & connected_sensor : _connected_sensors )
+                    for (auto& connected_sensor : _connected_sensors)
                     {
-                        if( profile_to_open.sensor_name == connected_sensor->get_sensor_name() )
+                        if (profile_to_open.sensor_name == connected_sensor->get_sensor_name())
                         {
                             /* Set SENSOR_PROPERTY_CURRENT_REPORT_INTERVAL sensor property to profile */
                             HRESULT hr = S_OK;
-                            IPortableDeviceValues * pPropsToSet = NULL;   // Input
-                            IPortableDeviceValues * pPropsReturn = NULL;  // Output
+                            IPortableDeviceValues* pPropsToSet = NULL;  // Input
+                            IPortableDeviceValues* pPropsReturn = NULL; // Output
 
                             /* Create the input object */
-                            CHECK_HR( CoCreateInstance( __uuidof(PortableDeviceValues), NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pPropsToSet)));
+                            CHECK_HR(CoCreateInstance(__uuidof(PortableDeviceValues), NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pPropsToSet)));
 
                             /* Add the current report interval property */
                             hr = pPropsToSet->SetUnsignedIntegerValue(SENSOR_PROPERTY_CURRENT_REPORT_INTERVAL, profile_to_open.frequency);
-                            if(SUCCEEDED(hr))
+                            if (SUCCEEDED(hr))
                             {
                                 // Setting a single property
                                 hr = connected_sensor->get_sensor()->SetProperties(pPropsToSet, &pPropsReturn);
-                                if(SUCCEEDED(hr))
+                                if (SUCCEEDED(hr))
                                 {
                                     _opened_sensors.push_back(connected_sensor);
                                     pPropsReturn->Release();
@@ -350,7 +350,6 @@ namespace librealsense
                     }
                 }
             }
-
             catch (...)
             {
                 for (auto& connected_sensor : _connected_sensors)
