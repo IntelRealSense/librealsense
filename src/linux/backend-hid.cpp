@@ -1049,7 +1049,7 @@ namespace librealsense
                     else
                     {
                         uint32_t frequency = 0;
-                        float sensitivity = 0.1;
+                        float sensitivity = 0;
                         for (auto& profile : hid_profiles)
                         {
                             if (profile.sensor_name == device_info.id)
@@ -1060,7 +1060,7 @@ namespace librealsense
                             }
                         }
 
-                        if( frequency == 0)
+                        if(frequency == 0)
                             continue;
 
                         auto device = std::unique_ptr<iio_hid_sensor>(new iio_hid_sensor(device_info.device_path, frequency, sensitivity));

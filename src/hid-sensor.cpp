@@ -20,12 +20,17 @@ static const std::map< rs2_stream, uint32_t > stream_and_fourcc
         { RS2_STREAM_ACCEL, rs_fourcc( 'A', 'C', 'C', 'L' ) },
         { RS2_STREAM_GPIO,  rs_fourcc( 'G', 'P', 'I', 'O' ) } };
 
-static const std::map< float, float > imu_sensitivity_convert
-    = { { 0,  0},
-        { 1.0, 0.1},
-        { 2.0,  0.2},
-        { 3.0, 0.3},
-        { 4.0, 0.4} };
+/*For gyro sensitivity - FW gets 0 for 61 milligegree/s/LSB resolution
+ 0.1 for 30.5 milligegree/s/LSB 
+ 0.2 for 15.3 milligegree/s/LSB 
+ 0.3 for 7.6 milligegree/s/LSB 
+ 0.4 for milligegree/s/LSB */
+static const std::map< float, double > gyro_sensitivity_convert
+    = { { 0.0f,  0},
+        { 1.0f, 0.1},
+        { 2.0f,  0.2},
+        { 3.0f, 0.3},
+        { 4.0f, 0.4} };
 
     // in sensor.cpp
 void log_callback_end( uint32_t fps,
@@ -120,7 +125,7 @@ void hid_sensor::open( const stream_profiles & requests )
         configured_hid_profiles.push_back( platform::hid_profile{
             sensor_name,
                                    fps_to_sampling_frequency( request->get_stream_type(), request->get_framerate() ),
-                                   get_imu_sensitivity_resolution_converted( request->get_stream_type() ) } );
+                                   get_imu_sensitivity_converted( request->get_stream_type() ) } );
     }
     _hid_device->open( configured_hid_profiles );
     if( Is< librealsense::global_time_interface >( _owner ) )
@@ -346,30 +351,33 @@ uint32_t hid_sensor::fps_to_sampling_frequency( rs2_stream stream, uint32_t fps 
     else
         return fps;
 }
-void hid_sensor::set_imu_sensitivity_resolution( rs2_stream stream,float value ) 
+void hid_sensor::set_imu_sensitivity( rs2_stream stream, float value ) 
 {
-//is there checks needed?
     _imu_sensitivity_per_rs2_stream[stream] = value;
 }
 
-float hid_sensor::get_imu_sensitivity_resolution(rs2_stream stream)
+float hid_sensor::get_imu_sensitivity(rs2_stream stream)
 {
     if( _imu_sensitivity_per_rs2_stream.find( stream ) != _imu_sensitivity_per_rs2_stream.end() )
     {
         return _imu_sensitivity_per_rs2_stream[stream];
      }
      else 
-        return 30.5;
+        // gyro sensitivity default value is +-1000 therefore returning 30.5 resolution
+        // accel sensitivity default value is +-4g therefore returning 1.95 resolution
+        return stream == RS2_STREAM_GYRO ? 30.5f : 1.95f;
 }
 
-float hid_sensor::get_imu_sensitivity_resolution_converted( rs2_stream stream )
+double hid_sensor::get_imu_sensitivity_converted( rs2_stream stream )
 {
     if( _imu_sensitivity_per_rs2_stream.find( stream ) != _imu_sensitivity_per_rs2_stream.end() )
     {
-        return imu_sensitivity_convert.at( _imu_sensitivity_per_rs2_stream[stream] );
+        return gyro_sensitivity_convert.at( _imu_sensitivity_per_rs2_stream[stream] );
     }
     else
-        return 0.1;
+        //gyro sensitivity default value is +-1000 therefore sending 0.1 
+        //accel sensitivity default value is +-4g therefore sensong 0.001
+        return stream == RS2_STREAM_GYRO ? 0.1f : 0.001f;
 }
 
 iio_hid_timestamp_reader::iio_hid_timestamp_reader()

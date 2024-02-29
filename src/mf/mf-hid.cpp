@@ -283,97 +283,67 @@ namespace librealsense
                             IPortableDeviceValues * pPropsReturn = NULL;  // Output
 
                             /* Create the input object */
-                            CHECK_HR( CoCreateInstance( __uuidof( PortableDeviceValues ),
-                                                        NULL,
-                                                        CLSCTX_INPROC_SERVER,
-                                                        IID_PPV_ARGS( &pPropsToSet ) ) );
+                            CHECK_HR( CoCreateInstance( __uuidof(PortableDeviceValues), NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pPropsToSet)));
 
                             /* Add the current report interval property */
-                            hr = pPropsToSet->SetUnsignedIntegerValue( SENSOR_PROPERTY_CURRENT_REPORT_INTERVAL,
-                                                                       profile_to_open.frequency );
-
-                            // bool imu_sensitivity_succeeded = true;
-                            // if( profile_to_open.sensor_name == "HID Sensor Class Device: Gyroscope" )
-                            //{
-                            // HRESULT hr1 = S_OK;
-                            //  hr1 = pPropsToSet->SetFloatValue( SENSOR_PROPERTY_CHANGE_SENSITIVITY,
-                                                                  //profile_to_open.sensitivity );
-                                                                  //   imu_sensitivity_succeeded = SUCCEEDED( hr1 );
-                                                                  //}
-                            if( SUCCEEDED( hr ) )
+                            hr = pPropsToSet->SetUnsignedIntegerValue(SENSOR_PROPERTY_CURRENT_REPORT_INTERVAL, profile_to_open.frequency);
+                            if(SUCCEEDED(hr))
                             {
                                 // Setting a single property
-                                hr = connected_sensor->get_sensor()
-                                        ->SetProperties( pPropsToSet,
-                                                        &pPropsReturn );
-                                if( SUCCEEDED( hr ) )
+                                hr = connected_sensor->get_sensor()->SetProperties(pPropsToSet, &pPropsReturn);
+                                if(SUCCEEDED(hr))
                                 {
-                                    //DWORD dwCount = 0;
-                                    //hr = pPropsReturn->GetCount( &dwCount );
-                                    _opened_sensors.push_back( connected_sensor );
+                                    _opened_sensors.push_back(connected_sensor);
                                     pPropsReturn->Release();
                                 }
                             }
 
-
                             pPropsToSet->Release();
+
+                            //currently implemented only for Gyro sensitivity
                             if( profile_to_open.sensor_name == "HID Sensor Class Device: Gyroscope" )
                             {
-                                // Configure sensitivity
-                                // create an IPortableDeviceValues container for
-                                // holding the <Data Field, Sensitivity> tuples.
+                                // creating IPortableDeviceValues container for <Data Field, Sensitivity> tuples
                                 IPortableDeviceValues * pInSensitivityValues;
-                                hr = ::CoCreateInstance( CLSID_PortableDeviceValues,
+                                CHECK_HR( CoCreateInstance( CLSID_PortableDeviceValues,
                                                          NULL,
                                                          CLSCTX_INPROC_SERVER,
-                                                         IID_PPV_ARGS( &pInSensitivityValues ) );
+                                                         IID_PPV_ARGS( &pInSensitivityValues ) ));
 
+                                PROPVARIANT pv;
+                                PropVariantInit( &pv );
+                                // COM type for double
+                                pv.vt = VT_R8;  
+                                //pv.vt = VT_R4; 
+                                pv.dblVal = (double)profile_to_open.sensitivity;
+                                pInSensitivityValues->SetValue(
+                                    SENSOR_DATA_TYPE_ANGULAR_VELOCITY_X_DEGREES_PER_SECOND,
+                                    &pv );
+                                pInSensitivityValues->SetValue(
+                                    SENSOR_DATA_TYPE_ANGULAR_VELOCITY_Y_DEGREES_PER_SECOND,
+                                    &pv );
+                                pInSensitivityValues->SetValue(
+                                    SENSOR_DATA_TYPE_ANGULAR_VELOCITY_Z_DEGREES_PER_SECOND,
+                                    &pv );
+                                // creating IPortableDeviceValues container holding <SENSOR_PROPERTY_CHANGE_SENSITIVITY,
+                                // pInSensitivityValues> tuple
+                                IPortableDeviceValues * pInValues = NULL; //Input
+                                CHECK_HR(CoCreateInstance( CLSID_PortableDeviceValues,
+                                                            NULL,
+                                                            CLSCTX_INPROC_SERVER,
+                                                            IID_PPV_ARGS( &pInValues ) ));
+
+                                pInValues->SetIPortableDeviceValuesValue( SENSOR_PROPERTY_CHANGE_SENSITIVITY,
+                                                                            pInSensitivityValues );
+                                
+                                IPortableDeviceValues * pOutValues = NULL; //Output
+                                // set sensitivity
+                                hr = connected_sensor->get_sensor()->SetProperties( pInValues, &pOutValues );
                                 if( SUCCEEDED( hr ) )
-                                {
-                                    // fill in IPortableDeviceValues container
-                                    // contents here: 0.1 G sensitivity in each of X,
-                                    // Y, and Z axes.
-                                    PROPVARIANT pv;
-                                    PropVariantInit( &pv );
-                                    pv.vt = VT_R8;  // COM type for (double)
-                                    pv.dblVal = (double)profile_to_open.sensitivity;
-                                    pInSensitivityValues->SetValue(
-                                        SENSOR_DATA_TYPE_ANGULAR_VELOCITY_X_DEGREES_PER_SECOND,
-                                        &pv );
-                                    pInSensitivityValues->SetValue(
-                                        SENSOR_DATA_TYPE_ANGULAR_VELOCITY_Y_DEGREES_PER_SECOND,
-                                        &pv );
-                                    pInSensitivityValues->SetValue(
-                                        SENSOR_DATA_TYPE_ANGULAR_VELOCITY_Z_DEGREES_PER_SECOND,
-                                        &pv );
-                                    // create an IPortableDeviceValues container for
-                                    // holding the
-                                    // <SENSOR_PROPERTY_CHANGE_SENSITIVITY,
-                                    // pInSensitivityValues> tuple.
-                                    IPortableDeviceValues * pInValues = NULL;
-                                    hr = ::CoCreateInstance( CLSID_PortableDeviceValues,
-                                                             NULL,
-                                                             CLSCTX_INPROC_SERVER,
-                                                             IID_PPV_ARGS( &pInValues ) );
-                                    if( SUCCEEDED( hr ) )
-                                    {
-                                        // fill it in
-                                        pInValues->SetIPortableDeviceValuesValue( SENSOR_PROPERTY_CHANGE_SENSITIVITY,
-                                                                                  pInSensitivityValues );
-                                        // now actually set the sensitivity
-                                        IPortableDeviceValues * pOutValues = NULL;
-                                        hr = connected_sensor->get_sensor()->SetProperties( pInValues, &pOutValues );
-                                        if( SUCCEEDED( hr ) )
-                                        {
-                                            // check to see if any of the setting
-                                            // requests failed
-                                            //DWORD dwCount = 0;
-                                            //hr = pOutValues->GetCount( &dwCount );
-                                            PropVariantClear( &pv );
-                                        }
-                                    }
-                                    pInValues->Release();
-                                }
+                                    PropVariantClear( &pv );
+
+                                pInValues->Release();
+
                             }
                             
                         }

@@ -467,31 +467,36 @@ namespace librealsense
         snapshot = std::make_shared<const_value_option>(get_description(), 0.f);
     }
 
-    void imu_sensitivity_option::set(float value) 
+    void librealsense::gyro_sensitivity_option::set( float value ) 
     {
+        auto strong = _sensor.lock();
+        if( ! strong )
+            throw invalid_value_exception( "Hid sensor is not alive for setting" );
+
+        if( strong->is_streaming() )
+            throw invalid_value_exception( "setting this option during streaming is not allowed!" );
+
+        if(!is_valid(value))
+            throw invalid_value_exception( "set(gyro_sensitivity) failed! Invalid Gyro sensitivity resolution request "
+                                           + std::to_string( value ) );
+
         if( auto strong = _sensor.lock() )
         {
-            strong->set_imu_sensitivity_resolution( RS2_STREAM_GYRO, value );
+            strong->set_imu_sensitivity( RS2_STREAM_GYRO, value );
         }
     }
 
-    float imu_sensitivity_option::query() const
+    float librealsense::gyro_sensitivity_option::query() const
     {
-        /* if( ret < get_range().min || ret > get_range().max )
-        {
-            if( auto toggle = _exposure_limit_toggle.lock() )
-                return toggle->get_cached_limit();
-        }*/
         if( auto strong = _sensor.lock() )
-        {
-            return strong->get_imu_sensitivity_resolution( RS2_STREAM_GYRO );
-        }
+            return strong->get_imu_sensitivity( RS2_STREAM_GYRO );
         else
             return -1;
+        
     }
 
     
-    const char * librealsense::imu_sensitivity_option::get_value_description( float val ) const
+    const char * librealsense::gyro_sensitivity_option::get_value_description( float val ) const
     {
         switch( static_cast< int >( val ) )
         {
@@ -515,12 +520,12 @@ namespace librealsense
         }
     }
 
-    const char * librealsense::imu_sensitivity_option::get_description() const
+    const char * librealsense::gyro_sensitivity_option::get_description() const
     {
-        return "imu sensitivity resolutions";
+        return "gyro sensitivity resolutions";
     }
 
-    bool librealsense::imu_sensitivity_option::is_read_only() const
+    bool librealsense::gyro_sensitivity_option::is_read_only() const
     {
         if( auto strong = _sensor.lock() )
             return strong->is_opened();

@@ -20,7 +20,7 @@ struct hid_profile
 {
     std::string sensor_name;
     uint32_t frequency;
-    float sensitivity;
+    double sensitivity;
 };
 
 

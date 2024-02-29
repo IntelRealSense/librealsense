@@ -24,7 +24,6 @@
 #include <src/stream.h>
 #include <src/fourcc.h>
 #include <src/metadata-parser.h>
-#include <src/ds/features/imu-sensitivity-feature.h>
 #include <src/hid-sensor.h>
 #include <src/core/features-container.h>
 #include <cstddef>

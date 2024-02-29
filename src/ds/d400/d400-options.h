@@ -191,13 +191,13 @@ namespace librealsense
 
 
     class hid_sensor;
-    class imu_sensitivity_option: public option_base
+    class gyro_sensitivity_option: public option_base
     {
     public:
-        imu_sensitivity_option( const std::weak_ptr< hid_sensor > & sensor, const option_range & opt_range )
+        gyro_sensitivity_option( const std::weak_ptr< hid_sensor > & sensor, const option_range & opt_range )
             : option_base( opt_range )
             , _sensor( sensor ){};
-        virtual ~imu_sensitivity_option() = default;
+        virtual ~gyro_sensitivity_option() = default;
         virtual void set( float value ) override;
         virtual float query() const override;
         virtual bool is_enabled() const override { return true; }

@@ -21,7 +21,6 @@
 #include "proc/auto-exposure-processor.h"
 #include <src/fourcc.h>
 #include <src/metadata-parser.h>
-#include <src/ds/features/imu-sensitivity-feature.h>
 
 using namespace librealsense;
 namespace librealsense
@@ -130,22 +129,17 @@ namespace librealsense
             // HID metadata attributes
             hid_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&hid_header::timestamp));
         }
-        //synthetic_sensor & check = *hid_ep;
-        //register_feature( std::make_shared< imu_sensitivity_feature >( check ) );
     }
 
     ds_motion_sensor & d400_motion::get_motion_sensor()
     {
         return dynamic_cast< ds_motion_sensor & >( get_sensor( _motion_module_device_idx.value() ) );
-            //return std::dynamic_pointer_cast< hid_sensor >( motion_sensor.get_raw_sensor() );
-
     }
 
     std::shared_ptr<hid_sensor> d400_motion::get_raw_motion_sensor()
     {
         auto check = get_motion_sensor().get_raw_sensor();
         return std::dynamic_pointer_cast< hid_sensor >( check );
-        // return std::dynamic_pointer_cast< hid_sensor >( motion_sensor.get_raw_sensor() );
     }
 
     d400_motion_uvc::d400_motion_uvc( std::shared_ptr< const d400_info > const & dev_info )

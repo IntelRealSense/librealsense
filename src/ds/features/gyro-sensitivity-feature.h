@@ -12,15 +12,14 @@
 
 namespace librealsense {
 
-class synthetic_sensor;
 
-class imu_sensitivity_feature : public feature_interface
+class gyro_sensitivity_feature : public feature_interface
 {
 
 public:
     static const feature_id ID;
 
-    imu_sensitivity_feature( std::shared_ptr< hid_sensor > motion_sensor, ds_motion_sensor & motion );
+    gyro_sensitivity_feature( std::shared_ptr< hid_sensor > motion_sensor, ds_motion_sensor & motion );
 
     feature_id get_id() const override;
 
