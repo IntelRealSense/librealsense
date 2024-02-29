@@ -53,6 +53,7 @@ void output_model::thread_loop()
                                          rsutils::string::from()
                                              << "Invalid Hardware Logger XML at '" << hwlogger_xml << "': " << ex.what()
                                              << "\nEither configure valid XML or remove it" );
+                                continue; // Don't try to get log entries for this device
                             }
                         }
 

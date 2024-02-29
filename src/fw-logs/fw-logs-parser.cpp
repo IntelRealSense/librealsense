@@ -20,8 +20,7 @@ namespace librealsense
         {
             // The definitions XML should contain entries for all log sources.
             // For each source it lists parser options file path and (optional) module verbosity level.
-            fw_logs_xml_helper helper;
-            _source_id_to_name = helper.get_listed_sources( definitions_xml );
+            _source_id_to_name = fw_logs_xml_helper::get_listed_sources( definitions_xml );
             for( const auto & source : _source_id_to_name )
             {
                 if( source.first >= fw_logs::max_sources )
@@ -30,34 +29,55 @@ namespace librealsense
                                                                  << ". Found source (" << source.first << ", "
                                                                  << source.second << ")" );
 
-                std::string path = helper.get_source_parser_file_path( source.first, definitions_xml );
-                std::ifstream f( path.c_str() );
-                if( f.good() )
-                {
-                    std::string xml_contents;
-                    xml_contents.append( std::istreambuf_iterator< char >( f ), std::istreambuf_iterator< char >() );
-                    fw_logs_formatting_options format_options( std::move( xml_contents ) );
-                    _source_to_formatting_options[source.first] = format_options;
-                }
-                else
-                    throw librealsense::invalid_value_exception( rsutils::string::from() << "Can't open file " << path );
+               initialize_source_formatting_options( source, definitions_xml );
+               initialize_source_verbosity_settings( source, definitions_xml );
+            }
 
-                auto verbosity = helper.get_source_module_verbosity( source.first, definitions_xml );
-                if( !verbosity.empty() && verbosity.rbegin()->first >= fw_logs::max_modules )
-                    throw librealsense::invalid_value_exception( rsutils::string::from()
-                                                                 << "Supporting module id 0 to " << fw_logs::max_modules
-                                                                 << ". Found module " << verbosity.rbegin()->first
-                                                                 << " in source (" << source.first << ", "
-                                                                 << source.second << ")" );
+            // HACK - legacy format did not have multiple sources and did not use definitions XML to define them.
+            // If no sources found in definitions XML, assume it is legacy format and use the passed data to
+            // initialize formatting options. It also had no vebosity settings.
+            if( _source_id_to_name.empty() )
+            {
+               _source_id_to_name[0] = "";
+                std::string xml_contents( definitions_xml );
+                fw_logs_formatting_options format_options( std::move( xml_contents ) );
+                _source_to_formatting_options[0] = format_options;
+            }
+        }
 
-                _verbosity_settings.module_filter[source.first] = 0;
-                for( const auto & module : verbosity )
-                {
-                    // Each bit maps to one module. If the bit is 1 logs from this module shall be collected.
-                    _verbosity_settings.module_filter[source.first] |= module.second ? 1 << module.first : 0;
-                    // Each item maps to one SW module. Only logs of that severity level will be collected.
-                    _verbosity_settings.severity_level[source.first][module.first] = module.second;
-                }
+        void fw_logs_parser::initialize_source_formatting_options( const std::pair< const int, std::string > & source,
+                                                                   const std::string & definitions_xml )
+        {
+            std::string path = fw_logs_xml_helper::get_source_parser_file_path( source.first, definitions_xml );
+            std::ifstream f( path.c_str() );
+            if( f.good() )
+            {
+                std::string xml_contents;
+                xml_contents.append( std::istreambuf_iterator< char >( f ), std::istreambuf_iterator< char >() );
+                fw_logs_formatting_options format_options( std::move( xml_contents ) );
+                _source_to_formatting_options[source.first] = format_options;
+            }
+            else
+                throw librealsense::invalid_value_exception( rsutils::string::from() << "Can't open file " << path );
+        }
+
+        void fw_logs_parser::initialize_source_verbosity_settings( const std::pair< const int, std::string > & source,
+                                                      const std::string & definitions_xml )
+        {
+            auto verbosity = fw_logs_xml_helper::get_source_module_verbosity( source.first, definitions_xml );
+            if( ! verbosity.empty() && verbosity.rbegin()->first >= fw_logs::max_modules )
+                throw librealsense::invalid_value_exception( rsutils::string::from() << "Supporting module id 0 to "
+                                                             << fw_logs::max_modules << ". Found module " 
+                                                             << verbosity.rbegin()->first << " in source (" 
+                                                             << source.first << ", " << source.second << ")" );
+
+            _verbosity_settings.module_filter[source.first] = 0;
+            for( const auto & module : verbosity )
+            {
+                // Each bit maps to one module. If the bit is 1 logs from this module shall be collected.
+                _verbosity_settings.module_filter[source.first] |= module.second ? 1 << module.first : 0;
+                // Each item maps to one SW module. Only logs of that severity level will be collected.
+                _verbosity_settings.severity_level[source.first][module.first] = module.second;
             }
         }
 
@@ -98,7 +118,10 @@ namespace librealsense
         {
             const auto extended = reinterpret_cast< const extended_fw_log_binary * >( log );
             // If there are parameters total_params_size_bytes includes the information
+
             //return sizeof( extended_fw_log_binary ) + extended->total_params_size_bytes;
+            // TODO - HACK - The right size should be the commented line above, but currently there is a bug in HKR FW
+            // that they don't include the parameters info in total_params_size_bytes.
             return sizeof( extended_fw_log_binary ) + extended->total_params_size_bytes +
                                                       extended->number_of_params * sizeof( fw_logs::param_info );
         }

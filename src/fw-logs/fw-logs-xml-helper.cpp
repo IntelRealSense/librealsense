@@ -118,7 +118,7 @@ std::string get_file_path( const xml_node<> * source_node )
     return {};
 }
 
-std::map< int, std::string > fw_logs_xml_helper::get_listed_sources( const std::string & definitions_xml ) const
+std::map< int, std::string > fw_logs_xml_helper::get_listed_sources( const std::string & definitions_xml )
 {
     std::map< int, std::string > source_ids_to_names;
 
@@ -140,7 +140,7 @@ std::map< int, std::string > fw_logs_xml_helper::get_listed_sources( const std::
 }
 
 
-std::string fw_logs_xml_helper::get_source_parser_file_path( int source_id, const std::string & definitions_xml ) const
+std::string fw_logs_xml_helper::get_source_parser_file_path( int source_id, const std::string & definitions_xml )
 {
     std::vector< char > buffer = string_to_char_buffer( definitions_xml );
     xml_document<> document;
@@ -173,7 +173,7 @@ int get_verbosity_attribute( const xml_node<> * node )
 }
 
 std::map< int, int >
-fw_logs_xml_helper::get_source_module_verbosity( int source_id, const std::string & definitions_xml ) const
+fw_logs_xml_helper::get_source_module_verbosity( int source_id, const std::string & definitions_xml )
 {
     std::vector< char > buffer = string_to_char_buffer( definitions_xml );
     xml_document<> document;
@@ -223,7 +223,7 @@ std::pair< int, std::string > get_event_data( xml_node<> * node )
 }
 
 std::unordered_map< int, std::pair< int, std::string > >
-fw_logs_xml_helper::get_events( const std::string & parser_contents ) const
+fw_logs_xml_helper::get_events( const std::string & parser_contents )
 {
     std::vector< char > buffer = string_to_char_buffer( parser_contents );
     xml_document<> document;
@@ -259,17 +259,17 @@ std::unordered_map< int, std::string > get_id_to_names( const std::string & pars
     return ids_to_names;
 }
 
-std::unordered_map< int, std::string > fw_logs_xml_helper::get_files( const std::string & parser_contents ) const
+std::unordered_map< int, std::string > fw_logs_xml_helper::get_files( const std::string & parser_contents )
 {
     return get_id_to_names( parser_contents, "File" );
 }
 
-std::unordered_map< int, std::string > fw_logs_xml_helper::get_modules( const std::string & parser_contents ) const
+std::unordered_map< int, std::string > fw_logs_xml_helper::get_modules( const std::string & parser_contents )
 {
     return get_id_to_names( parser_contents, "Module" );
 }
 
-std::unordered_map< int, std::string > fw_logs_xml_helper::get_threads( const std::string & parser_contents ) const
+std::unordered_map< int, std::string > fw_logs_xml_helper::get_threads( const std::string & parser_contents )
 {
     return get_id_to_names( parser_contents, "Thread" );
 }
@@ -311,7 +311,7 @@ std::vector< std::pair< int, std::string > > get_enum_values( xml_node<> * enum_
 }
 
 std::unordered_map< std::string, std::vector< std::pair< int, std::string > > >
-fw_logs_xml_helper::get_enums( const std::string & parser_contents ) const
+fw_logs_xml_helper::get_enums( const std::string & parser_contents )
 {
     std::vector< char > buffer = string_to_char_buffer( parser_contents );
     xml_document<> document;

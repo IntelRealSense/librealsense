@@ -31,6 +31,11 @@ namespace librealsense
             virtual command get_stop_command() const;
 
         protected:
+            void initialize_source_formatting_options( const std::pair< const int, std::string > & source,
+                                                       const std::string & definitions_xml );
+            void initialize_source_verbosity_settings( const std::pair< const int, std::string > & source,
+                                                       const std::string & definitions_xml );
+
             struct structured_binary_data // Common format for legacy and extended binary data formats
             {
                 uint32_t severity = 0;

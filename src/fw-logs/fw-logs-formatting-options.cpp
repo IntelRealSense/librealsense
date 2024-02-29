@@ -68,12 +68,11 @@ namespace librealsense
             if( _xml_content.empty() )
                 throw librealsense::invalid_value_exception( "Trying to initialize from empty xml content" );
 
-            fw_logs_xml_helper helper;
-            _fw_logs_event_list = helper.get_events( _xml_content );
-            _fw_logs_file_names_list = helper.get_files( _xml_content );
-            _fw_logs_thread_names_list = helper.get_threads( _xml_content );
-            _fw_logs_module_names_list = helper.get_modules( _xml_content );
-            _fw_logs_enums_list = helper.get_enums( _xml_content );
+            _fw_logs_event_list = fw_logs_xml_helper::get_events( _xml_content );
+            _fw_logs_file_names_list = fw_logs_xml_helper::get_files( _xml_content );
+            _fw_logs_thread_names_list = fw_logs_xml_helper::get_threads( _xml_content );
+            _fw_logs_module_names_list = fw_logs_xml_helper::get_modules( _xml_content );
+            _fw_logs_enums_list = fw_logs_xml_helper::get_enums( _xml_content );
         }
     }  // namespace fw_logs
 }  // namespace librealsense
