@@ -42,6 +42,7 @@ namespace librealsense
             return extended_receive(cmd, p_response, locked_transfer);
         case  hwm_buffer_type::extended_send:
             extended_send(cmd, p_response, locked_transfer);
+            break;
         default:
             return std::vector<uint8_t>();
         }
@@ -52,9 +53,9 @@ namespace librealsense
     {
         std::vector< uint8_t > recv_msg;
 
-        // send first command with 0/0 on param4, as we don't know the table size
-        // actual size will be returned as part for the response header and will be used
-        // to calculate the extended loop range
+        // send first command with 0/0 on param4, this should get the first chunk withoud knowing
+        // the actual table size, actual size will be returned as part for the response header and
+        // will be used to calculate the extended loop range
         auto ans = hw_monitor::send(cmd, p_response, locked_transfer);
         recv_msg.insert(recv_msg.end(), ans.begin(), ans.end());
 
@@ -67,13 +68,10 @@ namespace librealsense
 
         if (recv_msg_length > HW_MONITOR_BUFFER_SIZE)
         {
-            // currently we assume HKR sends only the table size when sending 0/0 chunks command above.
-            // in the future the FW should send chunk 1 in 0/0 command and then we can use it here.
-            // meaning remove the 'clear' and start the loop from 1
-
-            recv_msg.clear();
             uint16_t overall_chunks = get_number_of_chunks( recv_msg_length );
-            for( int i = 0; i < overall_chunks; ++i )
+
+            // Since we already have the first chunk we start the loop from index 1
+            for( int i = 1; i < overall_chunks; ++i )
             {
                 // chunk number is in param4
                 cmd.param4 = compute_chunks_param( overall_chunks, i );

@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include <realdds/dds-device-broadcaster.h>
 
@@ -17,8 +17,10 @@
 
 #include <rsutils/shared-ptr-singleton.h>
 #include <rsutils/string/slice.h>
-using rsutils::string::slice;
 #include <rsutils/json.h>
+
+using rsutils::string::slice;
+using rsutils::json;
 
 
 namespace realdds {
@@ -153,7 +155,7 @@ void dds_device_broadcaster::broadcast() const
     try
     {
         topics::flexible_msg msg( _device_info.to_json() );
-        LOG_DEBUG( "[" << _device_info.debug_name() << "] broadcasting device-info " << _device_info.to_json() );
+        LOG_DEBUG( "[" << _device_info.debug_name() << "] broadcasting device-info " << _device_info.to_json().dump(4) );
         std::move( msg ).write_to( *_writer );
 
         // If a broadcast callback is asked for, we wait for acks and call it on the first broadcast (and never again)
@@ -190,8 +192,8 @@ bool dds_device_broadcaster::broadcast_disconnect( dds_time ack_timeout ) const
     try
     {
         // Let subscribers on device-info know we're about to drop
-        topics::flexible_msg msg(
-            nlohmann::json::object( { { "topic-root", _device_info.topic_root() }, { "stopping", true } } ) );
+        topics::flexible_msg msg( json::object( { { topics::device_info::key::topic_root, _device_info.topic_root() },
+                                                  { topics::device_info::key::stopping, true } } ) );
         LOG_DEBUG( "[" << _device_info.debug_name() << "] sending disconnect message "
                        << slice( msg.custom_data< char const >(), msg._data.size() ) );
         std::move( msg ).write_to( *_writer );

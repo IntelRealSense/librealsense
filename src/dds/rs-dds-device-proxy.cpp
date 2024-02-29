@@ -10,9 +10,11 @@
 #include <realdds/dds-stream.h>
 #include <realdds/dds-trinsics.h>
 #include <realdds/dds-participant.h>
+#include <realdds/dds-topic-writer.h>
 
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/flexible-msg.h>
+#include <realdds/topics/blob-msg.h>
 #include <realdds/topics/dds-topic-names.h>
 
 #include <src/stream.h>
@@ -21,6 +23,8 @@
 #include <rsutils/json.h>
 #include <rsutils/string/hexarray.h>
 #include <rsutils/string/from.h>
+
+using rsutils::json;
 
 
 namespace librealsense {
@@ -294,7 +298,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
     if( _dds_dev->supports_metadata() )
     {
         _metadata_subscription = _dds_dev->on_metadata_available(
-            [this]( std::shared_ptr< const rsutils::json > const & dds_md )
+            [this]( std::shared_ptr< const json > const & dds_md )
             {
                 auto & stream_name = dds_md->nested( realdds::topics::metadata::key::stream_name ).string_ref();
                 auto it = _stream_name_to_owning_sensor.find( stream_name );
@@ -504,8 +508,8 @@ void dds_device_proxy::tag_profiles( stream_profiles profiles ) const
 
 void dds_device_proxy::hardware_reset()
 {
-    rsutils::json control = rsutils::json::object( { { "id", "hw-reset" } } );
-    rsutils::json reply;
+    json control = json::object( { { realdds::topics::control::key::id, realdds::topics::control::hw_reset::id } } );
+    json reply;
     _dds_dev->send_control( control, &reply );
 }
 
@@ -514,11 +518,12 @@ std::vector< uint8_t > dds_device_proxy::send_receive_raw_data( const std::vecto
 {
     // debug_interface function
     auto hexdata = rsutils::string::hexarray::to_string( input );
-    rsutils::json control = rsutils::json::object( { { "id", "hwm" }, { "data", hexdata } } );
-    rsutils::json reply;
+    json control = json::object( { { realdds::topics::control::key::id, realdds::topics::control::hwm::id },
+                                   { realdds::topics::control::hwm::key::data, hexdata } } );
+    json reply;
     _dds_dev->send_control( control, &reply );
     rsutils::string::hexarray data;
-    if( ! reply.nested( "data" ).get_ex( data ) )
+    if( ! reply.nested( realdds::topics::reply::hwm::key::data ).get_ex( data ) )
         throw std::runtime_error( "Failed HWM: missing 'data' in reply" );
     return data.detach();
 }
@@ -534,19 +539,114 @@ std::vector< uint8_t > dds_device_proxy::build_command( uint32_t opcode,
 {
     // debug_interface function
     rsutils::string::hexarray hexdata( std::vector< uint8_t >( data, data + dataLength ) );
-    rsutils::json control = rsutils::json::object( { { "id", "hwm" },
-                                                     { "data", hexdata },
-                                                     { "opcode", opcode },
-                                                     { "param1", param1 },
-                                                     { "param2", param2 },
-                                                     { "param3", param3 },
-                                                     { "param4", param4 },
-                                                     { "build-command", true } } );
-    rsutils::json reply;
+    json control = rsutils::json::object( { { realdds::topics::control::key::id, realdds::topics::control::hwm::id },
+                                            { realdds::topics::control::hwm::key::data, hexdata },
+                                            { realdds::topics::control::hwm::key::opcode, opcode },
+                                            { realdds::topics::control::hwm::key::param1, param1 },
+                                            { realdds::topics::control::hwm::key::param2, param2 },
+                                            { realdds::topics::control::hwm::key::param3, param3 },
+                                            { realdds::topics::control::hwm::key::param4, param4 },
+                                            { realdds::topics::control::hwm::key::build_command, true } } );
+    json reply;
     _dds_dev->send_control( control, &reply );
-    if( ! reply.nested( "data" ).get_ex( hexdata ) )
+    if( ! reply.nested( realdds::topics::reply::hwm::key::data ).get_ex( hexdata ) )
         throw std::runtime_error( "Failed HWM: missing 'data' in reply" );
     return hexdata.detach();
+}
+
+
+bool dds_device_proxy::check_fw_compatibility( const std::vector< uint8_t > & image ) const
+{
+    try
+    {
+        // Start DFU
+        json reply;
+        _dds_dev->send_control(
+            json::object( { { realdds::topics::control::key::id, realdds::topics::control::dfu_start::id } } ),
+            &reply );
+
+        // Set up a reply handler that will get the "dfu-ready" message
+        std::mutex mutex;
+        std::condition_variable cv;
+        json dfu_ready;
+        auto subscription = _dds_dev->on_notification(
+            [&]( std::string const & id, json const & notification )
+            {
+                if( id != realdds::topics::notification::dfu_ready::id )
+                    return;
+                std::unique_lock< std::mutex > lock( mutex );
+                dfu_ready = notification;
+                cv.notify_all();
+            } );
+
+        // Upload the image; this will check its compatibility
+        auto topic = realdds::topics::blob_msg::create_topic( _dds_dev->participant(),
+                                                              _dds_dev->device_info().topic_root()
+                                                                  + realdds::topics::DFU_TOPIC_NAME );
+        auto writer = std::make_shared< realdds::dds_topic_writer >( topic );
+        writer->run( realdds::dds_topic_writer::qos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS ) );
+        if( ! writer->wait_for_readers( { 3, 0 } ) )
+            throw std::runtime_error( "timeout waiting for DFU subscriber" );
+        auto blob = realdds::topics::blob_msg( std::vector< uint8_t >( image ) );
+        blob.write_to( *writer );
+        if( ! writer->wait_for_acks( { 3, 0 } ) )
+            throw std::runtime_error( "timeout waiting for DFU image ack" );
+
+        // Wait for a reply
+        {
+            std::unique_lock< std::mutex > lock( mutex );
+            if( ! cv.wait_for( lock, std::chrono::seconds( 5 ), [&]() { return ! dfu_ready.is_null(); } ) )
+                throw std::runtime_error( "timeout waiting for dfu-ready" );
+            subscription.cancel();
+        }
+        LOG_DEBUG( dfu_ready );
+        realdds::dds_device::check_reply( dfu_ready );  // throws if not OK
+    }
+    catch( std::exception const & e )
+    {
+        //LOG_ERROR( "DFU start failed: " << e.what() );
+        throw std::runtime_error( rsutils::string::from() << "failed to check image compatibility: " << e.what() );
+    }
+
+    return true;
+}
+
+
+void dds_device_proxy::update_flash( std::vector< uint8_t > const & image, rs2_update_progress_callback_sptr, int update_mode )
+{
+    throw not_implemented_exception( "update_flash not yet implemented" );
+}
+
+
+void dds_device_proxy::update( const void * /*image*/, int /*image_size*/, rs2_update_progress_callback_sptr callback ) const
+{
+    // Set up a reply handler that will get the "dfu-apply" messages and progress notifications
+    // NOTE: this depends on the implementation! If the device goes offline (as the DDS adapter device will), we won't
+    // get anything...
+    auto subscription = _dds_dev->on_notification(
+        [callback]( std::string const & id, json const & notification )
+        {
+            if( id != realdds::topics::notification::dfu_apply::id )
+                return;
+            if( auto progress
+                = notification.nested( realdds::topics::notification::dfu_apply::key::progress, &json::is_number ) )
+            {
+                auto fraction = progress.get< float >();
+                LOG_DEBUG( "... DFU progress: " << ( fraction * 100 ) );
+                if( callback )
+                    callback->on_update_progress( fraction );
+            }
+        } );
+
+    // Will throw if an error is returned
+    json reply;
+    _dds_dev->send_control(
+        json::object( { { realdds::topics::control::key::id, realdds::topics::control::dfu_apply::id } } ),
+        &reply );
+
+    // The device will take time to do its thing. We want to return only when it's done, but we cannot know when it's
+    // done if it goes down. It should go down right before restarting, so that's what we wait for:
+    _dds_dev->wait_until_offline( 5 * 60 * 1000 );  // ms -> 5 minutes
 }
 
 

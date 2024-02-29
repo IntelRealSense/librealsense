@@ -127,6 +127,8 @@ namespace librealsense
             SETAELIMITS = 0x8A,   //Auto Exp/Gain Limit command FW version >= 5.13.0.200
             SAFETY_PRESET_READ = 0x94,  // Read safety preset from given index
             SAFETY_PRESET_WRITE = 0x95,   // Write safety preset to given index
+            APM_STROBE_SET = 0x96,        // Control if Laser on constantly or pulse
+            APM_STROBE_GET = 0x99,        // Query if Laser on constantly or pulse
             SET_HKR_CONFIG_TABLE = 0xA6, // HKR Set Internal sub calibration table
             GET_HKR_CONFIG_TABLE = 0xA7, // HKR Get Internal sub calibration table
             CALIBRESTOREEPROM = 0xA8, // HKR Store EEPROM Calibration
