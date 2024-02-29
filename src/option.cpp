@@ -52,6 +52,12 @@ rs2_option_type option::get_value_type() const noexcept
 }
 
 
+void option::set_value( json value )
+{
+    set( value );
+}
+
+
 void option::create_snapshot(std::shared_ptr<option>& snapshot) const
 {
     snapshot = std::make_shared<const_value_option>(get_description(), query());

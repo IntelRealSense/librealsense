@@ -171,9 +171,9 @@ void dds_device::impl::on_notification( json && j, eprosima::fastdds::dds::Sampl
             if( control_sample.size() == 2 && control_sample.is_array() )
             {
                 // We have to be the ones who sent the control!
-                auto const reply_guid = guid_from_string( control_sample[0].get< std::string >() );
+                auto const origin_guid = guid_from_string( control_sample[0].get< std::string >() );
                 auto const control_guid = _control_writer->guid();
-                if( reply_guid == control_guid )
+                if( origin_guid == control_guid )
                 {
                     auto const sequence_number = control_sample[1].get< uint64_t >();
                     std::unique_lock< std::mutex > lock( _replies_mutex );
@@ -208,10 +208,12 @@ void dds_device::impl::on_set_option( json const & j, eprosima::fastdds::dds::Sa
     if( ! is_ready() )
         return;
 
-    // This is the notification for "set-option" or "query-option", meaning someone sent a control request to set/get an
-    // option value. In either case a value will be sent; we want to update ours accordingly to reflect the latest:
+    // This is the handler for "set-option" or "query-option", meaning someone sent a control request to set/get an
+    // option value. In either case a value will be returned; we want to update our local copy to reflect it:
 
-    dds_device::check_reply( j );  // throws
+    std::string explanation;
+    if( ! dds_device::check_reply( j, &explanation ) )
+        return;  // we don't care about errors
 
     // We need the original control request as part of the reply, otherwise we can't know what option this is for
     auto control = j.nested( topics::reply::key::control );
@@ -235,25 +237,18 @@ void dds_device::impl::on_set_option( json const & j, eprosima::fastdds::dds::Sa
         throw std::runtime_error( "missing value" );
 
     auto option_name_j = control.nested( topics::control::set_option::key::option_name );
-    if( ! option_name_j.exists() )
-        throw std::runtime_error( "missing option-name" );
-
-    // Use case:
-    //      Simple single-option value update, { "option-name": "opt1" }
-    // 'option-name' should be a string
-    // A single 'value' is returned
     if( ! option_name_j.is_string() )
-        throw std::runtime_error( "option-name is not a string" );
+        throw std::runtime_error( "missing option-name" );
     auto & option_name = option_name_j.string_ref();
     for( auto & option : *options )
     {
         if( option->get_name() == option_name )
         {
-            option->set_value( value_j );
+            option->set_value( value_j );  // throws!
             return;
         }
     }
-    LOG_DEBUG( "[" << debug_name() << "] option '" << option_name << "': not found" );
+    throw std::runtime_error( "option '" + option_name + "' not found" );
 }
 
 

@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include "lrs-device-controller.h"
 
@@ -531,7 +531,7 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
     if( ! _dds_device_server )
         throw std::runtime_error( "Empty dds_device_server" );
 
-    _dds_device_server->on_set_option( [&]( const std::shared_ptr< realdds::dds_option > & option, float value ) {
+    _dds_device_server->on_set_option( [&]( const std::shared_ptr< realdds::dds_option > & option, json & value ) {
         set_option( option, value );
     } );
     _dds_device_server->on_query_option( [&]( const std::shared_ptr< realdds::dds_option > & option ) -> json {

@@ -32,6 +32,10 @@ public:
     // Return the type of the option value
     virtual rs2_option_type get_value_type() const noexcept;
 
+    // Set the value, or throw an error
+    // By default, this does a set() with a float
+    virtual void set_value( rsutils::json );
+
     virtual option_range get_range() const = 0;
     virtual bool is_enabled() const = 0;
     virtual bool is_read_only() const { return false; }

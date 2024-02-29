@@ -23,8 +23,8 @@ class rs_dds_option : public option_base
     rs2_option_type const _rs_type;
 
 public:
-    typedef std::function< void( const std::string & name, float value ) > set_option_callback;
-    typedef std::function< float( const std::string & name ) > query_option_callback;
+    typedef std::function< void( rsutils::json value ) > set_option_callback;
+    typedef std::function< rsutils::json() > query_option_callback;
 
 private:
     set_option_callback _set_opt_cb;
@@ -37,6 +37,7 @@ public:
 
     rsutils::json get_value() const noexcept override;
     rs2_option_type get_value_type() const noexcept override { return _rs_type; }
+    void set_value( rsutils::json ) override;
 
     void set( float value ) override;
 

@@ -76,9 +76,8 @@ void init_options(py::module &m) {
                 "is read only.", "option"_a)
         .def("get_option", &rs2::options::get_option, "Read option value from the device.", "option"_a, py::call_guard<py::gil_scoped_release>())
         .def( "get_option_value",
-            []( rs2::options const & self, rs2_option option_id ) -> option_value
-                { return self.get_option_value( option_id ); },
-            py::call_guard< py::gil_scoped_release >() )
+              []( rs2::options const & self, rs2_option option_id ) -> option_value
+                  { return self.get_option_value( option_id ); } )
         .def("get_option_range", &rs2::options::get_option_range, "Retrieve the available range of values "
              "of a supported option", "option"_a, py::call_guard<py::gil_scoped_release>())
         .def("set_option", &rs2::options::set_option, "Write new value to device option", "option"_a, "value"_a, py::call_guard<py::gil_scoped_release>())

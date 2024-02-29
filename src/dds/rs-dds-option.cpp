@@ -44,7 +44,7 @@ static rs2_option_type rs_type_from_dds_option( std::shared_ptr< realdds::dds_op
         return RS2_OPTION_TYPE_BOOLEAN;
     if( std::dynamic_pointer_cast< realdds::dds_integer_option >( dds_opt ) )
         return RS2_OPTION_TYPE_INTEGER;
-    return RS2_OPTION_TYPE_COUNT;
+    throw not_implemented_exception( "unknown DDS option type" );
 }
 
 
@@ -65,7 +65,7 @@ void rs_dds_option::set( float value )
     if( ! _set_opt_cb )
         throw std::runtime_error( "Set option callback is not set for option " + _dds_opt->get_name() );
 
-    _set_opt_cb( _dds_opt->get_name(), value );
+    _set_opt_cb( value );
 }
 
 
@@ -74,13 +74,30 @@ float rs_dds_option::query() const
     if( ! _query_opt_cb )
         throw std::runtime_error( "Query option callback is not set for option " + _dds_opt->get_name() );
 
-    return _query_opt_cb( _dds_opt->get_name() );
+    auto const value = _query_opt_cb();
+    try
+    {
+        return value;  // try to convert to float
+    }
+    catch( std::exception const & )
+    {
+        throw invalid_value_exception( rsutils::string::from() << "option '" << _dds_opt->get_name() << "' value (" << value << ") is not a float" );
+    }
 }
 
 
 json rs_dds_option::get_value() const noexcept
 {
     return _dds_opt->get_value();
+}
+
+
+void rs_dds_option::set_value( json value )
+{
+    if( ! _set_opt_cb )
+        throw std::runtime_error( "Set option callback is not set for option " + _dds_opt->get_name() );
+
+    _set_opt_cb( std::move( value ) );
 }
 
 
@@ -110,8 +127,8 @@ const char * rs_dds_option::get_value_description( float v ) const
     if( v < 0.f )
         return nullptr;
     auto & choices = e->get_choices();
-    auto i = size_t( v + 0.005 );
-    if( fabs( v - i ) > 0.01f )
+    auto i = size_t( v + 0.005 );  // round to nearest integer value
+    if( fabs( v - i ) > 0.01f )    // verify we're approx equal to it, since float == is not reliable
         return nullptr;
     if( i >= choices.size() )
         return nullptr;

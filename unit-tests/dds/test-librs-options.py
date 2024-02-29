@@ -25,6 +25,7 @@ with test.remote.fork( nested_indent=None ) as remote:
             s1.init_options( [
                 dds.option.from_json( ['Backlight Compensation', 0, 0, 1, 1, 0, 'Backlight custom description'] ),
                 dds.option.from_json( ['Boolean Option', False, False, 'Something'] ),
+                dds.option.from_json( ['Integer Option', 1, None, 'Something', ['optional']] ),
                 dds.option.from_json( ['Enum Option', 'First', ['First','Last','Everything'], 'Last', 'My'] )
                 ] )
             server = dds.device_server( participant, device_info.topic_root )
@@ -53,7 +54,16 @@ with test.remote.fork( nested_indent=None ) as remote:
         for s in dev.query_sensors():
             break
         options = test.info( "supported options", s.get_supported_options() )
-        test.check_equal( len(options), 4 )  # 'Frames Queue Size' gets added to all sensors!!?!?!
+        test.check_equal( len(options), 5 )  # 'Frames Queue Size' gets added to all sensors!!?!?!
+
+    with test.closure( 'Play with integer option' ):
+        io = next( o for o in options if str(o) == 'Integer Option' )
+        iv = s.get_option_value( io )
+        test.check_equal( iv.type, rs.option_type.integer )
+        test.check_equal( iv.value, 1 )
+        test.check_equal( s.get_option( io ), 1. )
+        s.set_option( io, 5 )
+        test.check_equal( s.get_option( io ), 5. )
 
     with test.closure( 'Play with boolean option' ):
         bo = next( o for o in options if str(o) == 'Boolean Option' )
@@ -61,6 +71,10 @@ with test.remote.fork( nested_indent=None ) as remote:
         test.check_equal( bv.type, rs.option_type.boolean )
         test.check_equal( bv.value, False )
         test.check_equal( s.get_option( bo ), 0. )
+        s.set_option( bo, 1. )
+        test.check_equal( s.get_option( bo ), 1. )
+        test.check_throws( lambda: s.set_option( bo, 2. ), RuntimeError, 'not a boolean: 2' )
+        test.check_throws( lambda: s.set_option( bo, 1.01 ), RuntimeError, 'not a boolean: 1.01' )
 
     with test.closure( 'Play with enum option' ):
         eo = next( o for o in options if str(o) == 'Enum Option' )
@@ -76,8 +90,11 @@ with test.remote.fork( nested_indent=None ) as remote:
         test.check_equal( s.get_option_value_description( eo, 1. ), 'Last' )
         test.check_equal( s.get_option_value_description( eo, 2. ), 'Everything' )
         test.check_equal( s.get_option( eo ), 0. )
+        s.set_option( eo, 2. )
+        test.check_equal( s.get_option_value( eo ).value, 'Everything' )
 
-    dev = None
-    context = None
+    with test.closure( 'All done' ):
+        dev = None
+        context = None
 
 test.print_results()

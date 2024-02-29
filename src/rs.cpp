@@ -743,7 +743,7 @@ float rs2_get_option(const rs2_options* options, rs2_option option_id, rs2_error
             json value = option.get_value();
             for( auto i = 0.f; i < r.max; i += r.step )
             {
-                auto desc = option.get_value_description( 0.f );
+                auto desc = option.get_value_description( i );
                 if( ! desc )
                     break;
                 if( value == desc )
@@ -783,8 +783,44 @@ void rs2_set_option(const rs2_options* options, rs2_option option, float value, 
     VALIDATE_OPTION_ENABLED(options, option);
     auto& option_ref = options->options->get_option(option);
     auto range = option_ref.get_range();
-    VALIDATE_RANGE(value, range.min, range.max);
-    option_ref.set(value);
+    switch( option_ref.get_value_type() )
+    {
+    case RS2_OPTION_TYPE_FLOAT:
+        if( range.min != range.max && range.step )
+            VALIDATE_RANGE( value, range.min, range.max );
+        option_ref.set( value );
+        break;
+
+    case RS2_OPTION_TYPE_INTEGER:
+        if( range.min != range.max && range.step )
+            VALIDATE_RANGE( value, range.min, range.max );
+        if( (int)value != value )
+            throw invalid_value_exception( rsutils::string::from() << "not an integer: " << value );
+        option_ref.set( value );
+        break;
+
+    case RS2_OPTION_TYPE_BOOLEAN:
+        if( value == 0.f )
+            option_ref.set_value( false );
+        else if( value == 1.f )
+            option_ref.set_value( true );
+        else
+            throw invalid_value_exception( rsutils::string::from() << "not a boolean: " << value );
+        break;
+
+    case RS2_OPTION_TYPE_STRING:
+        // We can convert "enum" options to a float value
+        if( (int)value == value && range.min == 0.f && range.step == 1.f )
+        {
+            auto desc = option_ref.get_value_description( value );
+            if( desc )
+            {
+                option_ref.set_value( desc );
+                break;
+            }
+        }
+        throw not_implemented_exception( "use rs2_set_option_value to set string values" );
+    }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, options, option, value)
 
