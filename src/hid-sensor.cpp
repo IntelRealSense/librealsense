@@ -124,7 +124,7 @@ void hid_sensor::open( const stream_profiles & requests )
         _is_configured_stream[request->get_stream_type()] = true;
         configured_hid_profiles.push_back( platform::hid_profile{
             sensor_name,
-            fps_to_sampling_frequency( request->get_stream_type(), request->get_framerate() ),
+            fps_to_sampling_frequency(request->get_stream_type(), request->get_framerate()),
             get_imu_sensitivity_converted( request->get_stream_type() ) } );
     }
     _hid_device->open( configured_hid_profiles );

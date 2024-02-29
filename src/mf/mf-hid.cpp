@@ -279,7 +279,7 @@ namespace librealsense
                         {
                             /* Set SENSOR_PROPERTY_CURRENT_REPORT_INTERVAL sensor property to profile */
                             HRESULT hr = S_OK;
-                            IPortableDeviceValues* pPropsToSet = NULL;  // Input
+                            IPortableDeviceValues* pPropsToSet = NULL; // Input
                             IPortableDeviceValues* pPropsReturn = NULL; // Output
 
                             /* Create the input object */
