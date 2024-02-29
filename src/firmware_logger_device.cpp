@@ -66,10 +66,11 @@ namespace librealsense
 
     void firmware_logger_device::get_fw_logs_from_hw_monitor()
     {
-        if( ! _parser )
-            throw librealsense::wrong_api_call_sequence_exception( "FW log parser is not initialized" );
+        command update_command = get_update_command();
+        if( update_command.cmd == 0 )
+            return;
 
-        auto res = _hw_monitor->send( _fw_logs_command );
+        auto res = _hw_monitor->send( update_command );
         if( res.empty() )
         {
             return;
@@ -82,14 +83,28 @@ namespace librealsense
         {
             size_t log_size = _parser->get_log_size( beginOfLogIterator );
             if( log_size > size_left )
-                throw librealsense::invalid_value_exception( "Received an incomplete FW log" );
+            {
+                LOG_WARNING( "Received an incomplete FW log" ); // TODO - remove after debugging, or decrease to debug level.
+                break;
+            }
             auto endOfLogIterator = beginOfLogIterator + log_size;
             fw_logs::fw_logs_binary_data binary_data;
-            binary_data.logs_buffer.insert( binary_data.logs_buffer.begin(), beginOfLogIterator, endOfLogIterator );
+            binary_data.logs_buffer.assign( beginOfLogIterator, endOfLogIterator );
             _fw_logs.push( std::move( binary_data ) );
             beginOfLogIterator = endOfLogIterator;
             size_left -= log_size;
         }
+    }
+
+    command firmware_logger_device::get_update_command()
+    {
+        if( ! _parser )
+            throw librealsense::wrong_api_call_sequence_exception( "FW log parser is not initialized" );
+
+        command update_command = _parser->get_update_command();
+        update_command.cmd = _fw_logs_command.cmd; // Opcode comes from the device, may be different between devices
+
+        return update_command;
     }
 
     bool firmware_logger_device::init_parser( std::string xml_content )
@@ -128,6 +143,11 @@ namespace librealsense
         _parser = std::make_unique< fw_logs::legacy_fw_logs_parser >( xml_content );
 
         return ( _parser != nullptr );
+    }
+
+    command legacy_firmware_logger_device::get_update_command()
+    {
+        return _fw_logs_command;
     }
     
     bool legacy_firmware_logger_device::get_flash_log( fw_logs::fw_logs_binary_data & binary_data )

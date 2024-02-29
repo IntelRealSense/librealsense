@@ -11,8 +11,7 @@ namespace librealsense
 {
     namespace fw_logs
     {
-        constexpr const size_t min_binary_size = std::min( sizeof( legacy_fw_log_binary ),
-                                                           sizeof( extended_fw_log_binary ) - sizeof( param_info * ) ); // Info field is optional
+        constexpr const size_t min_binary_size = std::min( sizeof( legacy_fw_log_binary ), sizeof( extended_fw_log_binary ) );
 
         rs2_log_severity fw_logs_binary_data::get_severity() const
         {

@@ -42,30 +42,33 @@ namespace librealsense
                 ss_regular_exp[0] << "\\{\\b(" << i << ")\\}";
                 exp_replace_map[ss_regular_exp[0].str()] = param_as_string;
 
-                // Print as hexadecimal number, assumes parameter was an integer number.
-                ss_regular_exp[1] << "\\{\\b(" << i << "):x\\}";
-                ss_replacement[1] << hex << setw( 2 ) << setfill( '0' ) << std::stoull( param_as_string );
-                exp_replace_map[ss_regular_exp[1].str()] = ss_replacement[1].str();
-
-                // Legacy format - parse parameter as 4 raw bytes of float. Parameter can be uint16_t or uint32_t.
-                ss_regular_exp[2] << "\\{\\b(" << i << "):f\\}";
-                uint32_t as_int32 = 0;
-                memcpy( &as_int32, params_blob.data() + params_info[i].offset, params_info[i].size );
-                float as_float = *reinterpret_cast< const float * >( &as_int32 );
-                if( std::isfinite( as_float ) )
-                    ss_replacement[2] << as_float;
-                else
+                if( is_integral( params_info[i] ) )
                 {
-                    // Values for other regular expresions can be NaN when converted to float.
-                    // Prepare replacement as hex value (will probably not be used because format is not with :f).
-                    ss_replacement[2] << "0x" << hex << setw( 2 ) << setfill( '0' ) << as_int32;
-                }
-                exp_replace_map[ss_regular_exp[2].str()] = ss_replacement[2].str();
+                    // Print as hexadecimal number, assumes parameter was an integer number.
+                    ss_regular_exp[1] << "\\{\\b(" << i << "):x\\}";
+                    ss_replacement[1] << hex << setw( 2 ) << setfill( '0' ) << std::stoull( param_as_string );
+                    exp_replace_map[ss_regular_exp[1].str()] = ss_replacement[1].str();
 
-                // enum values are mapped by int (kvp) but we don't know if this parameter is related to enum, using
-                // unsigned long long because unrelated arguments can overflow int
-                ss_regular_exp[3] << "\\{\\b(" << i << "),[a-zA-Z]+\\}";
-                enum_replace_map[ss_regular_exp[3].str()] = static_cast< int >( std::stoull( param_as_string ) );
+                    // Legacy format - parse parameter as 4 raw bytes of float. Parameter can be uint16_t or uint32_t.
+                    ss_regular_exp[2] << "\\{\\b(" << i << "):f\\}";
+                    uint32_t as_int32 = 0;
+                    memcpy( &as_int32, params_blob.data() + params_info[i].offset, params_info[i].size );
+                    float as_float = *reinterpret_cast< const float * >( &as_int32 );
+                    if( std::isfinite( as_float ) )
+                        ss_replacement[2] << as_float;
+                    else
+                    {
+                        // Values for other regular expresions can be NaN when converted to float.
+                        // Prepare replacement as hex value (will probably not be used because format is not with :f).
+                        ss_replacement[2] << "0x" << hex << setw( 2 ) << setfill( '0' ) << as_int32;
+                    }
+                    exp_replace_map[ss_regular_exp[2].str()] = ss_replacement[2].str();
+
+                    // enum values are mapped by int (kvp) but we don't know if this parameter is related to enum, using
+                    // unsigned long long because unrelated arguments can overflow int
+                    ss_regular_exp[3] << "\\{\\b(" << i << "),[a-zA-Z]+\\}";
+                    enum_replace_map[ss_regular_exp[3].str()] = static_cast< int >( std::stoull( param_as_string ) );
+                }
             }
 
             return replace_params( source, exp_replace_map, enum_replace_map );
@@ -167,5 +170,14 @@ namespace librealsense
                                                              << static_cast< uint8_t >( info.type ) );
             }
         }
+
+        bool fw_string_formatter::is_integral( const param_info & info ) const
+        {
+            if( info.type == param_type::STRING || info.type == param_type::FLOAT || info.type == param_type::DOUBLE )
+                return false;
+
+            return true;
+        }
+
     }
 }

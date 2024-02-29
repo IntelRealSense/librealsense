@@ -4,6 +4,7 @@
 #pragma once
 
 #include <src/fw-logs/fw-log-data.h>
+#include <src/fw-logs/fw-string-formatter.h>
 #include <src/fw-logs/fw-logs-formatting-options.h>
 
 #include <src/hw-monitor.h>
@@ -41,7 +42,7 @@ namespace librealsense
                 uint32_t sequence = 0;
                 uint64_t timestamp = 0;
 
-                std::vector< param_info > params_info;
+                std::vector< fw_logs::param_info > params_info;
                 std::vector< uint8_t > params_blob;
             };
 

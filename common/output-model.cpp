@@ -56,6 +56,7 @@ void output_model::thread_loop()
                             }
                         }
 
+                        fwlogger.start_collecting();
                         auto message = fwlogger.create_message();
                         while (fwlogger.get_firmware_log(message))
                         {
@@ -83,8 +84,11 @@ void output_model::thread_loop()
                                     ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem) << " ";
                                 add_log(message.get_severity(), __FILE__, 0, ss.str());
                             }
-                            if (!enable_firmware_logs && fwlogger.get_number_of_fw_logs() == 0)
+                            if( ! enable_firmware_logs && fwlogger.get_number_of_fw_logs() == 0 )
+                            {
+                                fwlogger.stop_collecting();
                                 break;
+                            }
                         }
                     }
                 }

@@ -2,7 +2,6 @@
 // Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include <src/fw-logs/fw-logs-parser.h>
-#include <src/fw-logs/fw-string-formatter.h>
 #include <src/fw-logs/fw-logs-xml-helper.h>
 
 #include <rsutils/string/from.h>
@@ -99,14 +98,21 @@ namespace librealsense
         {
             const auto extended = reinterpret_cast< const extended_fw_log_binary * >( log );
             // If there are parameters total_params_size_bytes includes the information
-            return sizeof( extended_fw_log_binary ) - sizeof( extended->info ) + extended->total_params_size_bytes;
+            //return sizeof( extended_fw_log_binary ) + extended->total_params_size_bytes;
+            return sizeof( extended_fw_log_binary ) + extended->total_params_size_bytes +
+                                                      extended->number_of_params * sizeof( fw_logs::param_info );
         }
 
         command fw_logs_parser::get_start_command() const
         {
             command activate_command( 0 ); // Opcode would be overriden by the device
-            memcpy( &activate_command, &_verbosity_settings, sizeof( fw_logs::extended_log_request ) );
-            activate_command.param1 = 1; // Update settings field
+            activate_command.param1 = 1; // Update settings field - 1 for update settings
+            // extended_log_request struct was designed to match the HWM command struct, copy remaining data
+            activate_command.param2 = _verbosity_settings.module_filter[0];
+            activate_command.param3 = _verbosity_settings.module_filter[1];
+            activate_command.param4 = _verbosity_settings.module_filter[2];
+            activate_command.data.assign( &_verbosity_settings.severity_level[0][0],
+                                          &_verbosity_settings.severity_level[max_sources][0] );
 
             return activate_command;
         }
@@ -114,8 +120,8 @@ namespace librealsense
         command fw_logs_parser::get_update_command() const
         {
             command update_command( 0 );  // Opcode would be overriden by the device
-            memcpy( &update_command, &_verbosity_settings, sizeof( fw_logs::extended_log_request ) );
-            update_command.param1 = 0;  // Update settings field
+            update_command.param1 = 0;  // Update settings field - 0 for no update needed (just getting logs)
+            // All other fields are ignored
 
             return update_command;
         }
@@ -123,8 +129,8 @@ namespace librealsense
         command fw_logs_parser::get_stop_command() const
         {
             command stop_command( 0 );  // Opcode would be overriden by the device
-            stop_command.param1 = 1;  // Update settings field
-            // All other fields should remain 0 to clear logging settings
+            stop_command.param1 = 1;  // Update settings field - 1 for update settings
+            // All other fields should remain 0 to clear settings
 
             return stop_command;
         }
@@ -163,13 +169,32 @@ namespace librealsense
                 throw librealsense::invalid_value_exception( rsutils::string::from() << "Expecting " << num_of_params
                                                              << " parameters, received " << actual_struct->number_of_params );
 
-            const uint8_t * blob_start = reinterpret_cast< const uint8_t * >( actual_struct->info + actual_struct->number_of_params );
-            structured->params_info.insert( structured->params_info.end(),
-                                            actual_struct->info,
-                                            actual_struct->info + actual_struct->number_of_params );
-            structured->params_blob.insert( structured->params_blob.end(),
-                                            blob_start,
-                                            blob_start + actual_struct->total_params_size_bytes );
+            if( num_of_params > 0 )
+            {
+                struct extended_fw_log_params_binary : public extended_fw_log_binary
+                {
+                    // param_info array size namber_of_params, 1 is just a placeholder. Need to use an array not a
+                    // pointer because pointer can be 8 bytes of size and than we won't parse the data correctly
+                    param_info info[1];
+                };
+
+                const auto with_params = reinterpret_cast< const extended_fw_log_params_binary * >( raw->logs_buffer.data() );
+                const uint8_t * blob_start = reinterpret_cast< const uint8_t * >( with_params->info +
+                                                                                  actual_struct->number_of_params );
+                //size_t blob_size = actual_struct->total_params_size_bytes - num_of_params * sizeof( fw_logs::param_info );
+                size_t blob_size = actual_struct->total_params_size_bytes;
+
+                for( size_t i = 0; i < num_of_params; ++i )
+                {
+                    // Raw message offset is start of message, structured data offset is start of blob
+                    size_t blob_offset = blob_start - raw->logs_buffer.data();
+                    param_info adjusted_info = { static_cast< uint16_t >( with_params->info[i].offset - blob_offset ),
+                                                 with_params->info[i].type,
+                                                 with_params->info[i].size };
+                    structured->params_info.push_back( adjusted_info );
+                }
+                structured->params_blob.assign( blob_start, blob_start + blob_size );
+            }
         }
 
         const fw_logs_formatting_options & fw_logs_parser::get_format_options_ref( int source_id ) const

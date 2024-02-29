@@ -20,28 +20,6 @@ namespace librealsense
         rs2_log_severity fw_logs_severity_to_rs2_log_severity( int32_t severity );
         rs2_log_severity legacy_fw_logs_severity_to_rs2_log_severity( int32_t severity );
 
-        enum class param_type : uint8_t
-        {
-            STRING = 1,
-            UINT8 = 2,
-            SINT8 = 3,
-            UINT16 = 4,
-            SINT16 = 5,
-            SINT32 = 6,
-            UINT32 = 7,
-            SINT64 = 8,
-            UINT64 = 9,
-            FLOAT = 10,
-            DOUBLE = 11
-        };
-
-        struct param_info
-        {
-            uint16_t offset;  // Offset in the params blob, starting from 0
-            param_type type;  // Built in type, enumerated
-            uint8_t size;
-        };
-
         struct fw_log_binary
         {
             uint32_t magic_number : 8;
@@ -68,8 +46,8 @@ namespace librealsense
             uint16_t total_params_size_bytes;  // Max 848 bytes, number of bytes after hkr_timestamp field
             uint64_t soc_timestamp;
             uint64_t hkr_timestamp;
-            param_info * info;  // param_info array size namber_of_params
-            // uint8_t * params_blob; // Concatenated blob with params data, zero padded.
+
+            // Also additinal parameters data, but size differs based on number and type of params so not defined here.
         };
 
         struct fw_log_data
