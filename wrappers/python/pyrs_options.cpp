@@ -4,6 +4,9 @@
 #include "pyrealsense2.h"
 #include <librealsense2/hpp/rs_options.hpp>
 
+using rsutils::json;
+
+
 void init_options(py::module &m) {
     /** rs_options.hpp **/
 
@@ -78,6 +81,38 @@ void init_options(py::module &m) {
         .def( "get_option_value",
               []( rs2::options const & self, rs2_option option_id ) -> option_value
                   { return self.get_option_value( option_id ); } )
+        .def( "set_option_value",
+              []( rs2::options const & self, rs2_option option_id, json value )
+              {
+                  rs2::option_value rs2_value;
+                  switch( value.type() )
+                  {
+                  case json::value_t::null:
+                      rs2_value = rs2::option_value( option_id, rs2::option_value::invalid );
+                      break;
+
+                  case json::value_t::string:
+                      rs2_value = rs2::option_value( option_id, value.string_ref().c_str() );
+                      break;
+
+                  case json::value_t::number_float:
+                      rs2_value = rs2::option_value( option_id, value.get< float >() );
+                      break;
+
+                  case json::value_t::number_unsigned:
+                  case json::value_t::number_integer:
+                      rs2_value = rs2::option_value( option_id, value.get< int64_t >() );
+                      break;
+
+                  case json::value_t::boolean:
+                      rs2_value = rs2::option_value( option_id, value.get< bool >() );
+                      break;
+
+                  default:
+                      throw std::runtime_error( "invalid value type: " + value.dump() );
+                  }
+                  self.set_option_value( rs2_value );
+              } )
         .def("get_option_range", &rs2::options::get_option_range, "Retrieve the available range of values "
              "of a supported option", "option"_a, py::call_guard<py::gil_scoped_release>())
         .def("set_option", &rs2::options::set_option, "Write new value to device option", "option"_a, "value"_a, py::call_guard<py::gil_scoped_release>())

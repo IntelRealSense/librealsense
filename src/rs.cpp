@@ -824,6 +824,47 @@ void rs2_set_option(const rs2_options* options, rs2_option option, float value, 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, options, option, value)
 
+void rs2_set_option_value( rs2_options const * options, rs2_option_value const * option_value, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( options );
+    VALIDATE_NOT_NULL( option_value );
+    auto & option = options->options->get_option( option_value->id );  // throws
+    if( ! option_value->is_valid )
+    {
+        option.set_value( rsutils::null_json );
+        return;
+    }
+    rs2_option_type const option_type = option.get_value_type();
+    if( option_value->type != option_type )
+        throw invalid_value_exception( "expected " + get_string( option_type ) + " type" );
+    auto range = option.get_range();
+    switch( option_type )
+    {
+    case RS2_OPTION_TYPE_FLOAT:
+        VALIDATE_RANGE( option_value->as_float, range.min, range.max );
+        option.set_value( option_value->as_float );
+        break;
+
+    case RS2_OPTION_TYPE_INTEGER:
+        VALIDATE_RANGE( option_value->as_integer, range.min, range.max );
+        option.set_value( option_value->as_integer );
+        break;
+
+    case RS2_OPTION_TYPE_BOOLEAN:
+        VALIDATE_RANGE( option_value->as_integer, range.min, range.max );
+        option.set_value( (bool)option_value->as_integer );
+        break;
+
+    case RS2_OPTION_TYPE_STRING:
+        option.set_value( option_value->as_string );
+        break;
+
+    default:
+        throw not_implemented_exception( "unexpected option type " + get_string( option_type ) );
+    }
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , options, option_value )
+
 rs2_options_list* rs2_get_options_list(const rs2_options* options, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);

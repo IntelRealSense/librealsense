@@ -17,7 +17,7 @@ namespace rs2
         std::shared_ptr< const rs2_option_value > _value;
 
     public:
-        option_value( rs2_option_value const * handle )
+        explicit option_value( rs2_option_value const * handle )
             : _value( handle, rs2_delete_option_value )
         {
         }
@@ -25,7 +25,36 @@ namespace rs2
         option_value( option_value && ) = default;
         option_value() = default;
 
+        enum invalid_t { invalid };
+        option_value( rs2_option option_id, invalid_t )
+            : _value( new rs2_option_value{ option_id, false, RS2_OPTION_TYPE_COUNT } ) {}
+
+        option_value( rs2_option option_id, int64_t as_integer )
+            : _value( new rs2_option_value{ option_id, true, RS2_OPTION_TYPE_INTEGER } )
+        {
+            const_cast< rs2_option_value * >( _value.get() )->as_integer = as_integer;
+        }
+        option_value( rs2_option option_id, float as_float )
+            : _value( new rs2_option_value{ option_id, true, RS2_OPTION_TYPE_FLOAT } )
+        {
+            const_cast< rs2_option_value * >( _value.get() )->as_float = as_float;
+        }
+        option_value( rs2_option option_id, char const * as_string )
+            : _value( new rs2_option_value{ option_id, true, RS2_OPTION_TYPE_STRING } )
+        {
+            const_cast< rs2_option_value * >( _value.get() )->as_string = as_string;
+        }
+        option_value( rs2_option option_id, bool as_boolean )
+            : _value( new rs2_option_value{ option_id, true, RS2_OPTION_TYPE_BOOLEAN } )
+        {
+            const_cast<rs2_option_value *>(_value.get())->as_integer = as_boolean;
+        }
+
+        option_value & operator=( option_value const & ) = default;
+        option_value & operator=( option_value && ) = default;
+
         rs2_option_value const * operator->() const { return _value.get(); }
+        operator rs2_option_value const *() const { return _value.get(); }
     };
 
     class options_list
@@ -53,7 +82,7 @@ namespace rs2
             rs2_error * e = nullptr;
             auto value = rs2_get_option_value_from_list( _list.get(), static_cast< int >( index ), &e );
             error::handle( e );
-            return value;
+            return option_value( value );
         }
 
         size_t size() const { return _size; }
@@ -202,7 +231,7 @@ namespace rs2
             rs2_error * e = nullptr;
             auto value = rs2_get_option_value( _options, option_id, &e );
             error::handle( e );
-            return value;
+            return option_value( value );
         }
 
         /**
@@ -229,6 +258,18 @@ namespace rs2
             rs2_error* e = nullptr;
             rs2_set_option(_options, option, value, &e);
             error::handle(e);
+        }
+
+        /**
+        * write new value to the option
+        * \param[in] option     option id to be queried
+        * \param[in] value      option (id,type,is_valid,new value)
+        */
+        void set_option_value( option_value const & value ) const
+        {
+            rs2_error * e = nullptr;
+            rs2_set_option_value( _options, value, &e );
+            error::handle( e );
         }
 
         /**

@@ -92,6 +92,8 @@ with test.remote.fork( nested_indent=None ) as remote:
         test.check_equal( s.get_option( eo ), 0. )
         s.set_option( eo, 2. )
         test.check_equal( s.get_option_value( eo ).value, 'Everything' )
+        s.set_option_value( eo, 'Last' )
+        test.check_equal( s.get_option( eo ), 1. )
 
     with test.closure( 'All done' ):
         dev = None

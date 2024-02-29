@@ -310,6 +310,14 @@ extern "C" {
     */
     void rs2_set_option(const rs2_options* options, rs2_option option, float value, rs2_error** error);
 
+    /**
+    * write new value to sensor option
+    * \param[in] options       the options container
+    * \param[in] option_value  option id, type, and value to be set
+    * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    */
+    void rs2_set_option_value( rs2_options const * options, rs2_option_value const * option_value, rs2_error ** error );
+
    /**
    * get the list of supported options of options container
    * \param[in] options    the options container
