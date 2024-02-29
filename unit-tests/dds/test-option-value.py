@@ -83,7 +83,9 @@ with test.closure( 'optional (default) value' ):
     test.check_throws( lambda:
         dds.option.from_json( ['a', None, 'desc', ['optional']] ),
         RuntimeError, 'cannot deduce value type: ["a",null,"desc",["optional"]]' )
-
+    test.check_equal_lists(
+        dds.option.from_json( ['Integer Option', None, None, 'Something', ['optional', 'int']] ).to_json(),
+        ['Integer Option', None, None, 'Something', ['optional', 'int']] )
 
 with test.closure( 'mixed types' ):
     test.check_equal( dds.option.from_json( ['i', 0, 'desc'] ).value_type(), 'int' )

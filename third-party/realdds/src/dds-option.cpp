@@ -412,7 +412,11 @@ json dds_option::props_to_json() const
 {
     json props = json::array();
     if( is_optional() )
+    {
         props += "optional";
+        if( get_value().is_null() && ( ! get_default_value().exists() || get_default_value().is_null() ) )
+            props += value_type();
+    }
     if( is_read_only() && get_default_value().exists() )
         props += "read-only";
     return props;

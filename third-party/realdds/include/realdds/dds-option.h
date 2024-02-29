@@ -71,7 +71,8 @@ public:
     bool is_read_only() const { return _flags & flag::read_only; }
     bool is_optional() const { return _flags & flag::optional; }
 
-    virtual char const * value_type() const = 0;  // just for introspection; affects no logic
+    // Returns the type name as it would appear in the property array in the json representation
+    virtual char const * value_type() const = 0;
 
     const std::string & get_name() const { return _name; }
     const std::string & get_description() const { return _description; }
