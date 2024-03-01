@@ -78,7 +78,7 @@ This is optional: not all devices have options. See [device](device.md).
     "id": "device-options",
     "options": [
         ["Domain",0,0,232,1,0,"The DDS domain (0-232) in which this device will be discovered"],
-        ["IP Address","1.2.3.4",[],"","Which IP address to assign to the device; if empty, DHCP will be used"]
+        ["IP Address","1.2.3.4",null,"Which IP address to assign to the device; if empty, DHCP will be used", ["optional","IPv4"]]
     ]
 }
 ```
