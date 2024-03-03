@@ -1173,10 +1173,32 @@ namespace rs2
         return meanings_str;
     }
 
+    std::string stream_model::smcu_internal_state_to_string(rs2_metadata_type& attribute_val) const
+    {
+        switch(attribute_val)
+        {
+            case 0: return "INIT_STATE";
+            case 1: return "TRANSITION_STATE";
+            case 2: return "RUN_SAFE_STATE";
+            case 3: return "SERVICE_STATE";
+            case 4: return "TESTER_STATE";
+            case 5: return "DFU_HKR_STATE";
+            case 6: return "PAUSE_STATE";
+            case 7: return "WARNING_STATE";
+            case 8: return "DANGER_STATE";
+            case 9: return "NON_CRITICAL_ERROR_STATE";
+            case 10: return "IRRECOVERABLE_LOCK_ERROR_STATE";
+            case 11: return "INTERLOCK_DANGER_STATE";
+        }
+        return "UNDEFINED_STATE";
+    }
+
     std::string stream_model::format_value(rs2_frame_metadata_value& md_val, rs2_metadata_type& attribute_val) const
     {
         if (md_val == RS2_FRAME_METADATA_SAFETY_OPERATIONAL_MODE)
             return rs2_safety_mode_to_string((rs2_safety_mode)attribute_val);
+        if (md_val == RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_INFO_INTERNAL_STATE)
+            return smcu_internal_state_to_string(attribute_val);
         if (should_show_in_hex(md_val))
             return rsutils::string::from() << "0x" << std::hex << attribute_val; // return value as hex
         return rsutils::string::from() << attribute_val;
@@ -1191,13 +1213,16 @@ namespace rs2
                 RS2_FRAME_METADATA_SAFETY_HARA_EVENTS,
                 RS2_FRAME_METADATA_SAFETY_PRESET_INTEGRITY,
                 RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT,
+                RS2_FRAME_METADATA_SAFETY_MB_FUSA_ACTION,
                 RS2_FRAME_METADATA_SAFETY_SOC_FUSA_ACTION,
+                RS2_FRAME_METADATA_SAFETY_SOC_MONITOR_L2_ERROR_TYPE,
+                RS2_FRAME_METADATA_SAFETY_SOC_MONITOR_L3_ERROR_TYPE,
+                RS2_FRAME_METADATA_SAFETY_SOC_FUSA_EVENTS,
                 RS2_FRAME_METADATA_SAFETY_SMCU_STATUS,
                 RS2_FRAME_METADATA_SAFETY_SMCU_STATE,
                 RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_STATUS_BITMASK,
-                RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_INFO_INTERNAL_STATE,
                 RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_INFO_BIST_STATUS,
-                RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO
+                RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO,
             });
 
         if (show_in_hex.find(md_val) != show_in_hex.end())

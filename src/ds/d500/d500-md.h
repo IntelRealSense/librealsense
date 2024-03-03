@@ -186,7 +186,6 @@ namespace librealsense
                                                 0x1 << 0  - HKR Reset
                                                 0x1 << 1  - HKR ShutDown
 
-
     uint8_t     non_fusa_gpio;                  Bitmask.
                                                 0x1 << 0 - OSSD2_A_present
                                                 0x1 << 1 - OSSD2_A status: Raised/Idle
@@ -196,6 +195,21 @@ namespace librealsense
                                                 0x1 << 5 -Device_Ready on/off
                                                 0x1 << 6 -Error signal present
                                                 0x1 << 7 -Error signal on/off"
+
+    uint8_t     smcu_internal_state;            "Enumerated: derived from S.MCU FSM : 
+                                                0 = INIT_STATE
+                                                1 = TRANSITION_STATE
+                                                2 = RUN_SAFE_STATE
+                                                3 = SERVICE_STATE
+                                                4 = TESTER_STATE
+                                                5 = DFU_HKR_STATE
+                                                6 = PAUSE_STATE
+                                                7 = WARNING_STATE
+                                                8 = DANGER_STATE
+                                                9 = NON_CRITICAL_ERROR_STATE
+                                                10 = IRRECONVERABLE_LOCK_ERROR_STATE
+                                                11 = INTERLOCK_DANGER_STATE
+                                                12 = DFU_MCU_STATE"
 
     *
     *
@@ -252,7 +266,7 @@ namespace librealsense
 
         // SMCU DEBUG Info
         uint32_t    smcu_status_bitmask;            // Bitmask: The values are state-specific and non-FuSa related. Shall be presented as HEX string
-        uint8_t     smcu_internal_state;            // Enumerated: according to S.MCU FSM
+        uint8_t     smcu_internal_state;            // Enumerated: according to S.MCU FSM, see details above the struct
         uint8_t     smcu_bist_status;               // Bitmask. To be presented as HEX value
 
         // OUT
