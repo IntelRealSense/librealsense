@@ -301,12 +301,23 @@ namespace rs2
             std::vector<rs2_option> res;
             rs2_error* e = nullptr;
             std::shared_ptr< rs2_options_list > options_list( rs2_get_options_list(_options, &e), rs2_delete_options_list);
+            error::handle( e );
 
             for (auto opt = 0; opt < rs2_get_options_list_size(options_list.get(), &e);opt++)
             {
                 res.push_back(rs2_get_option_from_list(options_list.get(), opt, &e));
             }
             return res;
+        };
+
+        options_list get_supported_option_values()
+        {
+            rs2_error * e = nullptr;
+            std::shared_ptr< rs2_options_list > sptr(
+                rs2_get_options_list( _options, &e ),
+                rs2_delete_options_list );
+            error::handle( e );
+            return options_list( sptr );
         };
 
         options& operator=(const options& other)
