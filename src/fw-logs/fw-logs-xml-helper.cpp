@@ -162,8 +162,52 @@ int get_verbosity_attribute( const xml_node<> * node )
         std::string attr( attribute->name(), attribute->name() + attribute->name_size() );
         if( attr.compare( "verbosity" ) == 0 )
         {
-            std::string id_as_str( attribute->value(), attribute->value() + attribute->value_size() );
-            return stoi( id_as_str );
+            std::string as_str( attribute->value(), attribute->value() + attribute->value_size() );
+            if( as_str.empty() )
+                throw librealsense::invalid_value_exception( "Verbosity level cannot be empty" );
+
+            if( std::isdigit( as_str[0] ) )
+            {
+                size_t converted_chars = 0;
+                int as_int = stoi( as_str, &converted_chars );
+                if( converted_chars == as_str.size() )  // String was a number and converted successfully
+                    return as_int;
+                else
+                    throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                                 << "Bad verbosity level " << as_str );
+            }
+
+            // Convert verbosity string tokens to number
+            // Verbosity level, treated as a bitmask: 0-NONE, 1-VERBOSE, 2-DEBUG, 4-INFO, 8-WARNING, 16-ERROR, 32-FATAL
+            // To request INFO + WARNING + ERROR type messages the user shall request the following INFO|WARNING|ERROR
+            int i = 0;
+            size_t sub_start = 0;
+            size_t delim_pos = 0; 
+            while( delim_pos != std::string::npos )
+            {
+                delim_pos = as_str.find( "|", sub_start );
+                std::string sub = as_str.substr( sub_start, delim_pos - sub_start );
+                if( sub == "NONE" )
+                    i |= 0;
+                else if( sub == "VERBOSE" )
+                    i |= 1;
+                else if( sub == "DEBUG" )
+                    i |= 2;
+                else if( sub == "INFO" )
+                    i |= 4;
+                else if( sub == "WARNING" )
+                    i |= 8;
+                else if( sub == "ERROR" )
+                    i |= 16;
+                else if( sub == "FATAL" )
+                    i |= 32;
+                else 
+                    throw librealsense::invalid_value_exception( rsutils::string::from() << "Illegal verbosity " << sub
+                                                                 << ". Expecting NONE, VERBOSE, DEBUG, INFO, WARNING, ERROR or FATAL" );
+                sub_start = delim_pos + 1;
+            }
+
+            return i;
         }
     }
 
