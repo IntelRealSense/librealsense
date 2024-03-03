@@ -102,11 +102,8 @@ struct rs2_option_value_wrapper : rs2_option_value
     {
         id = option_id;
         type = option_type;
-        if( ! p_json || p_json->is_null() )
-        {
-            is_valid = false;
-        }
-        else
+        is_valid = false;
+        if( p_json && ! p_json->is_null() )
         {
             switch( type )
             {
@@ -874,8 +871,17 @@ rs2_options_list* rs2_get_options_list(const rs2_options* options, rs2_error** e
     for( auto option_id : option_ids )
     {
         auto & option = options->options->get_option( option_id );
-        auto wrapper
-            = new rs2_option_value_wrapper( option_id, option.get_value_type(), {} );  // empty json = not valid
+        std::shared_ptr< const json > value;
+        try
+        {
+            if( option.is_enabled() )
+                value = std::make_shared< const json >( option.get_value() );
+        }
+        catch( ... )
+        {
+            // Sometimes option values may not be available, meaning the value stays null (is_valid=false)
+        }
+        auto wrapper = new rs2_option_value_wrapper( option_id, option.get_value_type(), value );
         rs2_list->list.push_back( wrapper );
     }
     return rs2_list;
