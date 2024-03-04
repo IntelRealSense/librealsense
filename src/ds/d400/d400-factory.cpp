@@ -1176,7 +1176,7 @@ namespace librealsense
             {
                 auto it = devices.begin();
                 while (it != devices.end()) {
-                    // Check if unique_id contains "bcm2835-codec"
+                    // Skip codecs
                     if (it->unique_id.find("bcm2835-codec") != std::string::npos) {
                         it = devices.erase(it);
                     } else {
@@ -1201,6 +1201,11 @@ namespace librealsense
                 std::cout << info->get_device_data().uvc_devices.size() << std::endl;
                 std::cout << info->get_device_data().usb_devices.size() << std::endl;
                 std::cout << info->get_device_data().playback_devices.size() << std::endl;
+                if (info->get_device_data().uvc_devices.size() == 0 &&
+                    info->get_device_data().usb_devices.size() == 0 &&
+                    info->get_device_data().playback_devices.size() == 0) {
+                    continue;
+                }
                 results.push_back(info);
 
             }
