@@ -545,17 +545,17 @@ namespace librealsense
             else
             {
                 // defining the temperature options
-                auto pvt_temperature = std::make_shared< uvc_xu_option< int32_t > >( raw_depth_sensor,
-                                                                               depth_xu,
-                                                                               DS5_HKR_PVT_TEMPERATURE,
-                                                                               "PVT Temperature" );
+                auto pvt_temperature = std::make_shared< temperature_xu_option >(raw_depth_sensor,
+                    depth_xu,
+                    DS5_HKR_PVT_TEMPERATURE,
+                    "PVT Temperature");
 
-                auto proj_temperature = std::make_shared< uvc_xu_option< int32_t > >(raw_depth_sensor,
+                auto proj_temperature = std::make_shared< temperature_xu_option >(raw_depth_sensor,
                     depth_xu,
                     DS5_HKR_PROJECTOR_TEMPERATURE,
                     "Projector Temperature");
 
-                auto ohm_temperature = std::make_shared< uvc_xu_option< int32_t > >(raw_depth_sensor,
+                auto ohm_temperature = std::make_shared< temperature_xu_option >(raw_depth_sensor,
                     depth_xu,
                     DS5_HKR_OHM_TEMPERATURE,
                     "OHM Temperature");
