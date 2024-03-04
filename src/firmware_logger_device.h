@@ -49,6 +49,7 @@ namespace librealsense
     protected:
         void get_fw_logs_from_hw_monitor();
         virtual command get_update_command();
+        virtual size_t get_log_size( uint8_t * buff ) const;
 
         command _fw_logs_command;
         std::shared_ptr< hw_monitor > _hw_monitor;
@@ -75,6 +76,7 @@ namespace librealsense
     private:
         void get_flash_logs_from_hw_monitor();
         command get_update_command() override;
+        size_t get_log_size( uint8_t * buff ) const override;
 
         command _flash_logs_command;
         std::queue< fw_logs::fw_logs_binary_data > _flash_logs;

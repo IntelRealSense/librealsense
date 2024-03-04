@@ -81,7 +81,7 @@ namespace librealsense
         size_t size_left = res.size();
         while( size_left > 0 )
         {
-            size_t log_size = _parser->get_log_size( beginOfLogIterator );
+            size_t log_size = get_log_size( beginOfLogIterator );
             if( log_size > size_left )
             {
                 LOG_WARNING( "Received an incomplete FW log" ); // TODO - remove after debugging, or decrease to debug level.
@@ -95,6 +95,16 @@ namespace librealsense
             size_left -= log_size;
         }
     }
+
+    size_t firmware_logger_device::get_log_size( uint8_t * buff ) const
+    {
+        // Log size is dynamic. Parser must be initialized to examine log buffer.
+        if( ! _parser )
+            throw librealsense::wrong_api_call_sequence_exception( "FW log parser is not initialized" );
+
+        return _parser->get_log_size( buff );
+    }
+
 
     command firmware_logger_device::get_update_command()
     {
@@ -143,6 +153,12 @@ namespace librealsense
         _parser = std::make_unique< fw_logs::legacy_fw_logs_parser >( xml_content );
 
         return ( _parser != nullptr );
+    }
+
+    size_t legacy_firmware_logger_device::get_log_size( uint8_t * buff ) const
+    {
+        // Log size constant, no need to call parser like firmware_logger_device::get_log_size.
+        return sizeof( fw_logs::legacy_fw_log_binary );
     }
 
     command legacy_firmware_logger_device::get_update_command()
