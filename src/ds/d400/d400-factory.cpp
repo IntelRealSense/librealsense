@@ -1203,7 +1203,8 @@ namespace librealsense
                 std::cout << info->get_device_data().playback_devices.size() << std::endl;
                 if (info->get_device_data().uvc_devices.size() == 0 &&
                     info->get_device_data().usb_devices.size() == 0 &&
-                    info->get_device_data().playback_devices.size() == 0) {
+                    info->get_device_data().playback_devices.size() == 0 &&
+                    info->get_device_data().hid_devices.size() == 0) {
                     continue;
                 }
                 results.push_back(info);
