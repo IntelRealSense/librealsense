@@ -138,6 +138,12 @@ namespace librealsense
 
         _ds_color_common->register_color_options();
 
+        color_ep.register_option(RS2_OPTION_POWER_LINE_FREQUENCY,
+            std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_POWER_LINE_FREQUENCY,
+                std::map<float, std::string>{ { 0.f, "Disabled"},
+                { 1.f, "50Hz" },
+                { 2.f, "60Hz" } }));
+
         color_ep.register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
 
         _ds_color_common->register_standard_options();

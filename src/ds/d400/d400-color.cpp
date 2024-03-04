@@ -138,6 +138,7 @@ namespace librealsense
 
         register_color_features();
         register_options();
+
         if (_pid != ds::RS457_PID)
         {
             register_metadata(color_ep);
@@ -152,6 +153,14 @@ namespace librealsense
     void d400_color::register_options()
     {
         auto& color_ep = get_color_sensor();
+        auto raw_color_ep = get_raw_color_sensor();
+
+        color_ep.register_option(RS2_OPTION_POWER_LINE_FREQUENCY,
+            std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_POWER_LINE_FREQUENCY,
+                std::map<float, std::string>{ { 0.f, "Disabled"},
+                { 1.f, "50Hz" },
+                { 2.f, "60Hz" },
+                { 3.f, "Auto" }, }));
 
         if (!val_in_range(_pid, { ds::RS457_PID }))
         {
