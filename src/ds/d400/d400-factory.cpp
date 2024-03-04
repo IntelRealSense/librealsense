@@ -34,7 +34,7 @@
 #include <src/ds/features/auto-exposure-limit-feature.h>
 #include <src/ds/features/gain-limit-feature.h>
 #include <src/ds/features/gyro-sensitivity-feature.h>
-#include <src/hid-sensor.h>
+
 namespace librealsense
 {
     // PSR

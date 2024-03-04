@@ -917,6 +917,8 @@ namespace librealsense
             return sampling_frequency_name;
         }
 
+        /*The sensitivity value we need to transfer to FW is stored in a file named with "hysteresis" in its title.
+        Therefore, we are searching for a file that includes "hysteresis" in its name.*/
         std::string iio_hid_sensor::get_sensitivity_name() const
         {
             std::string sensitivity_name = "";

@@ -314,7 +314,6 @@ namespace librealsense
                                 PropVariantInit( &pv );
                                 // COM type for double
                                 pv.vt = VT_R8;  
-                                //pv.vt = VT_R4; 
                                 pv.dblVal = (double)profile_to_open.sensitivity;
                                 pInSensitivityValues->SetValue(
                                     SENSOR_DATA_TYPE_ANGULAR_VELOCITY_X_DEGREES_PER_SECOND,
@@ -325,8 +324,7 @@ namespace librealsense
                                 pInSensitivityValues->SetValue(
                                     SENSOR_DATA_TYPE_ANGULAR_VELOCITY_Z_DEGREES_PER_SECOND,
                                     &pv );
-                                // creating IPortableDeviceValues container holding <SENSOR_PROPERTY_CHANGE_SENSITIVITY,
-                                // pInSensitivityValues> tuple
+                                // creating IPortableDeviceValues container holding <SENSOR_PROPERTY_CHANGE_SENSITIVITY,pInSensitivityValues> tuple
                                 IPortableDeviceValues * pInValues = NULL; //Input
                                 CHECK_HR(CoCreateInstance( CLSID_PortableDeviceValues,
                                                             NULL,

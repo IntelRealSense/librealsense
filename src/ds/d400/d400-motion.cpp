@@ -138,8 +138,8 @@ namespace librealsense
 
     std::shared_ptr<hid_sensor> d400_motion::get_raw_motion_sensor()
     {
-        auto check = get_motion_sensor().get_raw_sensor();
-        return std::dynamic_pointer_cast< hid_sensor >( check );
+        auto raw_sensor = get_motion_sensor().get_raw_sensor();
+        return std::dynamic_pointer_cast< hid_sensor >( raw_sensor );
     }
 
     d400_motion_uvc::d400_motion_uvc( std::shared_ptr< const d400_info > const & dev_info )

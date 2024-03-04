@@ -52,8 +52,8 @@ public:
     void start( rs2_frame_callback_sptr callback ) override;
     void stop() override;
     void set_imu_sensitivity( rs2_stream stream, float value );
-    float get_imu_sensitivity( rs2_stream stream );
-    double get_imu_sensitivity_converted( rs2_stream stream );
+    float get_imu_sensitivity_raw_values( rs2_stream stream );
+    double get_imu_sensitivity_values( rs2_stream stream );
     std::vector< uint8_t > get_custom_report_data( const std::string & custom_sensor_name,
                                                    const std::string & report_name,
                                                    platform::custom_sensor_report_field report_field ) const;

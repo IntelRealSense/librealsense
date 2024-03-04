@@ -123,8 +123,7 @@ extern "C" {
         RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE, /**< Select depth sensor auto exposure mode see rs2_depth_auto_exposure_mode for values  */
         RS2_OPTION_OHM_TEMPERATURE, /**< Temperature of the Optical Head Sensor */
         RS2_OPTION_SOC_PVT_TEMPERATURE, /**< Temperature of PVT SOC */
-        RS2_OPTION_GYRO_SENSITIVITY,/**< imu sensitivity */
-        RS2_OPTION_ACCEL_SENSITIVITY,/**< imu sensitivity  */
+        RS2_OPTION_GYRO_SENSITIVITY,/**< Control of the gyro sensitivity level */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
