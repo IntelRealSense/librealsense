@@ -2,6 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "hdr-merge.h"
+#include <src/core/depth-frame.h>
 
 namespace librealsense
 {
@@ -88,7 +89,7 @@ namespace librealsense
         }
 
         // discard merged frame if not relevant
-        discard_depth_merged_frame_if_needed(f);
+        discard_depth_merged_frame_if_needed(depth_frame);
 
         // 3. check if size of this vector is at least 2 (if not - return latest merge frame)
         if (_framesets.size() >= 2)
@@ -188,7 +189,12 @@ namespace librealsense
         if (new_f)
         {
             auto ptr = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)new_f.get());
+            if (!ptr)
+                throw std::runtime_error("Frame interface is not depth frame");
+
             auto orig = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)first_depth.get());
+            if (!orig)
+                throw std::runtime_error("Frame interface is not depth frame");
 
             auto d0 = (uint16_t*)first_depth.get_data();
             auto d1 = (uint16_t*)second_depth.get_data();
@@ -258,7 +264,7 @@ namespace librealsense
         // checking frame counter of first depth and ir are the same
         if (use_ir)
         {
-            // on devices that do not support meta data on IR frames (like D457), do not use IR for hdr merging
+            // on devices that does not support meta data on IR frames, do not use IR for hdr merging
             if (!first_ir.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER)  ||
                 !second_ir.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER) ||
                 !first_ir.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID)    ||

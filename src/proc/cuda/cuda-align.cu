@@ -179,7 +179,7 @@ void align_cuda_helper::align_other_to_depth(unsigned char* h_aligned_out, const
     case 4: kernel_other_to_depth<4> <<<depth_blocks,threads>>> (_d_aligned_out.get(), _d_other_in.get(), _d_pixel_map.get(), _d_depth_intrinsics.get(), _d_other_intrinsics.get()); break;
     }
 
-    cudaDeviceSynchronize();
+    cudaStreamSynchronize(0);
 
     cudaMemcpy(h_aligned_out, _d_aligned_out.get(), aligned_size, cudaMemcpyDeviceToHost);
 }
@@ -222,7 +222,7 @@ void align_cuda_helper::align_depth_to_other(unsigned char* h_aligned_out, const
 
     kernel_replace_to_zero <<<other_blocks, threads>>> ((uint16_t*)_d_aligned_out.get(), _d_other_intrinsics.get());
 
-    cudaDeviceSynchronize();
+    cudaStreamSynchronize(0);
 
     cudaMemcpy(h_aligned_out, _d_aligned_out.get(), aligned_pixel_count * 2, cudaMemcpyDeviceToHost);
 }

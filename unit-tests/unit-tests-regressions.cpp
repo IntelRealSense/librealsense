@@ -23,8 +23,8 @@ TEST_CASE("DSO-14512", "[live]")
     {
         rs2::log_to_file(RS2_LOG_SEVERITY_DEBUG,"lrs_log.txt");
         //rs2::log_to_console(RS2_LOG_SEVERITY_DEBUG);
-        rs2::context ctx;
-        if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+        rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
+        if( ctx )
         {
             for (size_t iter = 0; iter < 10; iter++)
             {
@@ -131,11 +131,11 @@ TEST_CASE("DSO-14512", "[live]")
 
 TEST_CASE("Frame Drops", "[live]"){
     {
-        rs2::context ctx;
+        rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
         std::condition_variable cv;
         std::mutex m;
 
-        if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+        if( ctx )
         {
             //rs2::log_to_console(RS2_LOG_SEVERITY_DEBUG);
             rs2::log_to_file(RS2_LOG_SEVERITY_DEBUG,"lrs_frame_drops_repro.txt");
@@ -147,12 +147,6 @@ TEST_CASE("Frame Drops", "[live]"){
                 REQUIRE(list.size());
 
                 auto dev = list[0];
-                bool is_l500_device = false;
-                if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) &&
-                    std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "L500")
-                {
-                    is_l500_device = true;
-                }
 
                 CAPTURE(dev.get_info(RS2_CAMERA_INFO_NAME));
                 disable_sensitive_options_for(dev);
@@ -161,8 +155,6 @@ TEST_CASE("Frame Drops", "[live]"){
                 size_t drops_count=0;
                 bool all_streams = true;
                 int fps = is_usb3(dev) ? 60 : 15; // In USB2 Mode the devices will switch to lower FPS rates
-                if (is_l500_device)
-                    fps = 30;
                 float interval_msec = 1000.f / fps;
 
                 for (auto i = 0; i < 200; i++)
@@ -174,10 +166,9 @@ TEST_CASE("Frame Drops", "[live]"){
                     std::vector<std::string> drop_descriptions;
                     bool iter_finished  =false;
 
-                    int width = is_l500_device ? 640 : 848;
+                    int width = 848;
                     int height = 480;
                     auto profiles = configure_all_supported_streams(dev, width, height, fps);
-                    //for l500 - auto profiles = configure_all_supported_streams(dev, 640, 480, fps);
                     drops_count=0;
 
                     auto start_time = std::chrono::high_resolution_clock::now();
@@ -339,8 +330,7 @@ TEST_CASE("Frame Drops", "[live]"){
                 }
                 else
                 {
-                    if(!is_l500_device)
-                        FAIL("Device doesn't support AdvancedMode API");
+                    FAIL("Device doesn't support AdvancedMode API");
                 }
             }
         }
@@ -353,8 +343,8 @@ TEST_CASE("DSO-15050", "[live]")
     {
         rs2::log_to_file(RS2_LOG_SEVERITY_DEBUG, "lrs_log.txt");
         //rs2::log_to_console(RS2_LOG_SEVERITY_DEBUG);
-        rs2::context ctx;
-        if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+        rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
+        if( ctx )
         {
             for (size_t iter = 0; iter < 10000; iter++)
             {

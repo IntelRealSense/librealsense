@@ -5,6 +5,9 @@
 #pragma once
 
 #include "types.h"
+#include "platform/hid-device.h"
+#include "platform/uvc-device.h"
+
 
 #define REGISTER_MD_TYPE(A,B)\
     template<>\
@@ -278,85 +281,6 @@ namespace librealsense
     };
 
 #pragma pack(push, 1)
-    // SR300 Metadata definitions
-    struct md_sr300_rgb
-    {
-        uint32_t        uvc_timestamp;      // Modify spec to align with UVC protocol
-        //******* General *****************
-        uint8_t         version;
-        uint8_t         image_info_bits;
-        uint32_t        frame_counter;
-        uint8_t         reserved0[2];
-        //******* Configuration ***********
-        uint8_t         format;
-        uint16_t        height;
-        uint16_t        width;
-        uint16_t        fps;
-        uint8_t         reserved1[1];
-        //******* Controls ****************
-        int8_t          brightness;
-        uint8_t         contrast;
-        uint8_t         saturation;
-        uint8_t         sharpness;
-        uint8_t         auto_exp_mode;
-        uint8_t         auto_wb_temp;
-        uint8_t         gain;
-        uint8_t         backlightComp;
-        uint16_t        gamma;
-        int16_t         hue;
-        uint16_t        manual_exp;
-        uint16_t        manual_wb;
-        uint8_t         power_line_frequency;
-        uint8_t         reserved2[7];
-        //******* Capture Info ************
-        uint16_t        actual_fps;
-        uint16_t        actual_trigger_fps;
-        uint16_t        actual_exposure;
-        uint16_t        color_temperature;
-        uint16_t        frame_latency;
-        uint8_t         reserved3[78];
-    };
-
-    struct md_sr300_depth
-    {
-        uint32_t        uvc_timestamp;      // Modify spec to align with UVC protocol
-        //******* General ***************** [0:7]
-        uint8_t         version;
-        uint8_t         image_info_bits;
-        uint32_t        frame_counter;
-        uint8_t         reserved0[2];
-        //******* Configuration *********** [8:15]
-        uint8_t         format;
-        uint16_t        height;
-        uint16_t        width;
-        uint16_t        fps;
-        uint8_t         reserved1[1];
-        //******* External Trigger ******** [16:23]
-        uint8_t         external_triggerenable;
-        uint8_t         external_trigger_delay_ms;
-        uint8_t         reserved2[6];
-        //******* Controls **************** [24:31]
-        uint8_t         laser_power;
-        uint8_t         accuracy;
-        uint8_t         motion_vs_range;
-        uint8_t         filter;
-        uint8_t         confidence;
-        uint8_t         reserved3[3];
-        //******* Capture Info ************ [32:47]
-        uint16_t        actual_exposure;
-        uint16_t        frame_latency;
-        uint8_t         actual_laser_power;
-        int16_t         sync_delta;
-        uint16_t        actual_fps;
-        uint8_t         reserved4[7];
-        //******* Debug Info ************  [48:127]
-        uint8_t         thermal_loop_enable;
-        int32_t         oac_voltage;
-        int8_t          oac_stability;
-        int8_t          ir_temperature;
-        uint8_t         reserved5[73];
-    };
-
     /**\brief md_header - metadata header is a integral part of all rs4XX metadata objects */
     struct md_header
     {
@@ -775,8 +699,6 @@ namespace librealsense
         md_depth_mode           depth_mode;
         md_fisheye_mode         fisheye_mode;
         md_rgb_mode             rgb_mode;
-        md_sr300_depth          sr300_depth_mode;
-        md_sr300_rgb            sr300_rgb_mode;
     };
 
     /**\brief metadata_raw - metadata structure
@@ -786,6 +708,7 @@ namespace librealsense
         platform::uvc_header    header;
         md_modes                mode;
     };
+    constexpr int metadata_raw_mode_offset = sizeof(metadata_raw::header);
 
     /**\brief metadata_mipi_raw - metadata structure
      *  layout as transmitted and received by backend */
@@ -867,12 +790,23 @@ namespace librealsense
         md_custom_tmp_report    temperature_report;
     };
 
+#pragma pack( push, 1 )
+    struct hid_header
+    {
+        uint8_t length;       // HID report total size. Limited to 255
+        uint8_t report_type;  // Curently supported: IMU/Custom Temperature
+        uint64_t timestamp;   // Driver-produced/FW-based timestamp. Note that currently only the lower 32bit are used
+    };
+#pragma pack( pop )
+
+    constexpr uint8_t hid_header_size = sizeof( hid_header );
+
     /**\brief metadata_hid_raw - HID metadata structure
  *  layout populated by backend */
     struct metadata_hid_raw
     {
-        platform::hid_header   header;
-        md_hid_report          report_type;
+        hid_header header;
+        md_hid_report report_type;
     };
 
     constexpr uint8_t metadata_hid_raw_size = sizeof(metadata_hid_raw);

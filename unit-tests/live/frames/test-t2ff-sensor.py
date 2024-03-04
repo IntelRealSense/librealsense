@@ -1,8 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-# test:device L500*
-# test:device D400*
+# test:device each(D400*)
 
 import pyrealsense2 as rs
 from rspy.stopwatch import Stopwatch
@@ -54,7 +53,7 @@ test.start("Testing device creation time on " + platform.system() + " OS")
 device_creation_stopwatch = Stopwatch()
 dev = test.find_first_device_or_exit()
 device_creation_time = device_creation_stopwatch.get_elapsed()
-max_time_for_device_creation = 1.5
+max_time_for_device_creation = 1
 print("Device creation time is: {:.3f} [sec] max allowed is: {:.1f} [sec] ".format(device_creation_time, max_time_for_device_creation))
 test.check(device_creation_time < max_time_for_device_creation)
 test.finish()
@@ -63,15 +62,12 @@ test.finish()
 # Set maximum delay for first frame according to product line
 product_line = dev.get_info(rs.camera_info.product_line)
 if product_line == "D400":
-    max_delay_for_depth_frame = 1.5
-    max_delay_for_color_frame = 1.5
-elif product_line == "L500":
-    max_delay_for_depth_frame = 2.5 # L515 depth frame has a 1.5 seconds built in delay at the FW side + 1.0 second for LRS
-    max_delay_for_color_frame = 1.5
+    max_delay_for_depth_frame = 1
+    max_delay_for_color_frame = 1
 else:
-    log.f( "This test support only D400 + L515 devices" )
+    log.f( "This test support only D400 devices" )
 
-    
+
 ds = dev.first_depth_sensor()
 cs = dev.first_color_sensor()
 

@@ -6,7 +6,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "unit-tests-common.h"
 #include "unit-tests-post-processing.h"
-#include "../include/librealsense2/rs_advanced_mode.hpp"
+#include <librealsense2/rs_advanced_mode.hpp>
 #include <librealsense2/hpp/rs_frame.hpp>
 #include <cmath>
 #include <iostream>
@@ -195,9 +195,8 @@ const std::vector< std::pair<std::string, std::string>> ppf_test_cases = {
 // that preserves an internal state. The test utilizes rosbag recordings
 TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post-processing-filters]")
 {
-    rs2::context ctx;
-
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
+    if( ctx )
     {
         ppf_test_config test_cfg;
 
@@ -274,9 +273,8 @@ TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post
 
 TEST_CASE("Post-Processing Filters metadata validation", "[software-device][post-processing-filters]")
 {
-    rs2::context ctx;
-
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
+    if( ctx )
     {
         ppf_test_config test_cfg;
         for (auto& ppf_test : ppf_test_cases)
@@ -389,9 +387,8 @@ bool is_equal(rs2::frameset org, rs2::frameset processed)
 
 TEST_CASE("Post-Processing expected output", "[post-processing-filters]")
 {
-    rs2::context ctx;
-
-    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
+    if (!ctx)
         return;
 
     rs2::temporal_filter temporal;
@@ -508,9 +505,8 @@ TEST_CASE("Post-Processing expected output", "[post-processing-filters]")
 
 TEST_CASE("Post-Processing processing pipe", "[post-processing-filters]")
 {
-    rs2::context ctx;
-
-    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
+    if( ! ctx )
         return;
 
     rs2::temporal_filter temporal;
@@ -574,9 +570,8 @@ TEST_CASE("Post-Processing processing pipe", "[post-processing-filters]")
 }
 
 TEST_CASE("Align Processing Block", "[live][pipeline][post-processing-filters][!mayfail]") {
-    rs2::context ctx;
-
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.20.0"))
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
+    if( ctx )
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());

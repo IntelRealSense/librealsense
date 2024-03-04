@@ -31,8 +31,7 @@ namespace librealsense
         _type = stream;
     }
 
-    stream_profile_base::stream_profile_base(platform::stream_profile sp)
-        : backend_stream_profile(std::move(sp))
+    stream_profile_base::stream_profile_base()
     {
         _c_ptr = &_c_wrapper;
         _c_wrapper.profile = this;
@@ -87,14 +86,6 @@ namespace librealsense
     void stream_profile_base::tag_profile(int tag)
     {
         _tag = tag;
-    }
-
-    std::shared_ptr<stream_profile_interface> stream_profile_base::clone() const
-    {
-        auto res = std::make_shared<stream_profile_base>(get_backend_profile());
-        res->set_unique_id(environment::get_instance().generate_stream_id());
-        res->set_framerate(get_framerate());
-        return res;
     }
 
     rs2_stream_profile* stream_profile_base::get_c_wrapper() const

@@ -1,6 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
+//#cmake:dependencies rsutils
+
 #include "common.h"
 #include <rsutils/string/string-utilities.h>
 #include <ostream>
@@ -42,7 +44,7 @@ void check_tests(std::vector<string_checker<T>>& tests)
                 CHECK(value == test.value);
             else // floating-point
             {
-                CHECK(value == Approx(test.value));
+                CHECK(value == Catch::Approx(test.value));
             }
         }
     }

@@ -7,8 +7,8 @@ project(RealsenseToolsDataCollect)
 
 add_executable(rs-data-collect rs-data-collect.h rs-data-collect.cpp)
 set_property(TARGET rs-data-collect PROPERTY CXX_STANDARD 11)
-target_link_libraries(rs-data-collect ${DEPENDENCIES})
-include_directories(../../common ../../third-party/tclap/include)
+target_link_libraries( rs-data-collect ${DEPENDENCIES} tclap )
+include_directories(../../common)
 set_target_properties (rs-data-collect PROPERTIES
     FOLDER "Tools"
 )

@@ -21,6 +21,13 @@ namespace rs2
         std::array<std::pair<bool, rs2_metadata_type>, RS2_FRAME_METADATA_COUNT> md_attributes{};
     };
 
+    struct attribute
+    {
+        std::string name;
+        std::string value;
+        std::string description;
+    };
+
     bool draw_combo_box(const std::string& id, const std::vector<std::string>& device_names, int& new_index);
 
     class stream_model
@@ -41,6 +48,21 @@ namespace rs2
             rs2_stream stream_type, bool fullScreen, float y_offset, viewer_model& viewer);
 
         void snapshot_frame(const char* filename,viewer_model& viewer) const;
+
+        void draw_stream_metadata( const double timestamp,
+                                  const rs2_timestamp_domain timestamp_domain,
+                                  const unsigned long long frame_number,
+                                  stream_profile profile,
+                                  rs2::float2 original_size,
+                                  const rect& stream_rect );
+
+        // This function fill details with data
+        void create_stream_details( std::vector< attribute >& stream_details,
+                                    const double timestamp,
+                                    const rs2_timestamp_domain timestamp_domain,
+                                    unsigned long long frame_number,
+                                    stream_profile profile,
+                                    rs2::float2 original_size );
 
         void begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p, const viewer_model& viewer);
         bool draw_reflectivity(int x, int y, rs2::depth_sensor ds, const std::map<int, stream_model> &streams, std::stringstream &ss, bool same_line = false);
@@ -84,6 +106,8 @@ namespace rs2
         std::unique_ptr< reflectivity > _reflectivity;
         rsutils::number::stabilized_value<float> _stabilized_reflectivity;
 
+        std::string format_value(rs2_frame_metadata_value& md_val, rs2_metadata_type& attribute_val) const;
+        bool should_show_in_hex(rs2_frame_metadata_value& md_val) const;
     };
 
     

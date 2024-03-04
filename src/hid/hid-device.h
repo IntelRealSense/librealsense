@@ -4,6 +4,7 @@
 #pragma once
 #include "../backend.h"
 #include "hid-types.h"
+#include "../platform/hid-device.h"
 #include "../usb/usb-messenger.h"
 #include "../usb/usb-enumerator.h"
 #include <rsutils/concurrency/concurrency.h>

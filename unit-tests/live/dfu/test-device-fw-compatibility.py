@@ -1,9 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-# test:device L500*
 # test:device D400*
-# test:device SR300*
 
 # Note, this test depends on files deployed on LibCI machines (Windows + Linux)!
 
@@ -21,14 +19,6 @@ d400_fw_min_version_2_prev = 'Signed_Image_UVC_5_12_6_0.bin'
 d400_fw_min_version_3_prev = 'Signed_Image_UVC_5_12_11_0.bin'
 d400_fw_min_version_4_prev = 'Signed_Image_UVC_5_12_15_150.bin'
 
-l500_fw_min_version_valid = 'Signed_Image_UVC_1_5_1_3.bin'
-l500_fw_min_version_invalid = 'Signed_Image_UVC_1_4_1_0.bin'
-
-sr300_fw_min_version_1 = 'Signed_Image_UVC_3_21_0_0.bin'
-sr300_fw_min_version_2 = 'Signed_Image_UVC_3_27_0_0.bin'
-sr300_fw_min_version_3 = 'Signed_Image_UVC_3_28_3_0.bin'
-sr300_fw_min_version_2_prev = 'Signed_Image_UVC_3_26_3_0.bin'
-sr300_fw_min_version_3_prev = 'Signed_Image_UVC_3_27_3_0.bin'
 pid_to_min_fw_version = {  # D400 product line:
     '0AD1': d400_fw_min_version_1,  # D400
     '0AD2': d400_fw_min_version_1,  # D410
@@ -50,41 +40,22 @@ pid_to_min_fw_version = {  # D400 product line:
     '0B3A': d400_fw_min_version_2,  # D435I
     '0B49': d400_fw_min_version_1,  # D416
     '0B4B': d400_fw_min_version_1,  # D430I
-    '0B4D': d400_fw_min_version_2,  # D465
     '0B52': d400_fw_min_version_1,  # D416_RGB
     '0B5B': d400_fw_min_version_3,  # D405
-    '0B5C': d400_fw_min_version_4,  # D455
-    # L500 product line:
-    '0B55': l500_fw_min_version_valid,  # L500_RECOVERY
-    '0ADC': l500_fw_min_version_valid,  # L500_USB2_RECOVERY_OLD
-    '0B0D': l500_fw_min_version_valid,  # L500
-    '0B3D': l500_fw_min_version_valid,  # L515_PRE_PRQ
-    '0B64': l500_fw_min_version_valid,  # L515
-    # SR300 product line:
-    '0AA5': sr300_fw_min_version_1,  # SR300
-    '0AB3': sr300_fw_min_version_1,  # SR300_RECOVERY
-    '0B48': sr300_fw_min_version_2,  # SR305 (SR300v2)
-    '0AA2': sr300_fw_min_version_3,  # SR306
-    '0AA3': sr300_fw_min_version_3   # SR306_DEBUG
+    '0B5C': d400_fw_min_version_4   # D455
 }
 
-sr300_fw_max_version_1 = 'Signed_Image_UVC_3_26_3_0.bin'
-sr300_fw_max_version_1_next = 'Signed_Image_UVC_3_27_0_0.bin'
-
-pid_to_max_fw_version = {  # SR300 product line:
-    '0AA5': sr300_fw_max_version_1,  # SR300
+pid_to_max_fw_version = {
 }
 
 fw_previous_version = {d400_fw_min_version_1: d400_fw_min_version_1_prev,
                        d400_fw_min_version_2: d400_fw_min_version_2_prev,
                        d400_fw_min_version_3: d400_fw_min_version_3_prev,
-                       l500_fw_min_version_valid: l500_fw_min_version_invalid,
-                       # sr300_fw_min_version_1:sr300_fw_min_version_1_prev, no version before exists
-                       sr300_fw_min_version_2: sr300_fw_min_version_2_prev,
-                       sr300_fw_min_version_3: sr300_fw_min_version_3_prev
+                       d400_fw_min_version_4: d400_fw_min_version_4_prev
                        }
 
-fw_next_version = {sr300_fw_max_version_1 : sr300_fw_max_version_1_next}
+fw_next_version = {
+}
 
 def check_firmware_not_compatible(updatable_device, fw_image):
     test.check(not updatable_device.check_firmware_compatibility(fw_image))
@@ -106,7 +77,7 @@ test.start("checking firmware compatibility with device")
 # test scenario:
 # get min fw for device, check compatibility, check one before is not compatible
 # get max fw for device, check compatibility, check one after is not compatible
-# skip any case that is not applicable (for example, max version to check is only for SR300)
+# skip any case that is not applicable
 pid = dev.get_info(rs.camera_info.product_id)
 print(dev.get_info(rs.camera_info.name) + " found")
 

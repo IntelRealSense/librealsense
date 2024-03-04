@@ -188,11 +188,13 @@ namespace Intel.RealSense
 
                             depthData = depthData ?? new ushort[depthFrame.Width * depthFrame.Height];
                             depthFrame.CopyTo(depthData);
+                            // Construct SW depth frame for SW depth sensor and initialize Depth Unit
                             depth_sensor.AddVideoFrame(depthData, depthFrame.Stride, depthFrame.BitsPerPixel / 8, depthFrame.Timestamp,
-                                depthFrame.TimestampDomain, (int)depthFrame.Number, depth_profile);
+                                depthFrame.TimestampDomain, (int)depthFrame.Number, depth_profile, realDepthSensor.DepthScale);
 
                             colorData = colorData ?? new byte[colorFrame.Stride * colorFrame.Height];
                             colorFrame.CopyTo(colorData);
+                            // Construct SW color frame for SW color sensor
                             color_sensor.AddVideoFrame(colorData, colorFrame.Stride, colorFrame.BitsPerPixel / 8, colorFrame.Timestamp,
                                 colorFrame.TimestampDomain, (int)colorFrame.Number, color_profile);
                         }

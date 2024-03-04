@@ -7,6 +7,7 @@
 #include "rs_types.hpp"
 #include "rs_sensor.hpp"
 #include <array>
+#include <cstring>
 
 namespace rs2
 {
@@ -46,6 +47,48 @@ namespace rs2
             }
 
             return results;
+        }
+
+        /**
+         * \return   the type of device: USB/GMSL/DDS, etc.
+         */
+        std::string get_type() const
+        {
+            if( supports( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
+                return "USB";
+            if( supports( RS2_CAMERA_INFO_PRODUCT_ID ) )
+            {
+                std::string pid = get_info( RS2_CAMERA_INFO_PRODUCT_ID );
+                if( pid == "ABCD" ) // Specific for D457
+                    return "GMSL";
+                return pid;  // for DDS devices, this will be "DDS"
+            }
+            return {};
+        }
+
+        /**
+         * \return   the one-line description: "[<type>] <name> s/n <#>"
+         */
+        std::string get_description() const
+        {
+            std::ostringstream os;
+            auto type = get_type();
+            if( supports( RS2_CAMERA_INFO_NAME ) )
+            {
+                if( ! type.empty() )
+                    os << "[" << type << "] ";
+                os << get_info( RS2_CAMERA_INFO_NAME );
+            }
+            else
+            {
+                if( ! type.empty() )
+                    os << type << " device";
+                else
+                    os << "unknown device";
+            }
+            if( supports( RS2_CAMERA_INFO_SERIAL_NUMBER ) )
+                os << " s/n " << get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
+            return os.str();
         }
 
         template<class T>
@@ -90,7 +133,6 @@ namespace rs2
         void hardware_reset()
         {
             rs2_error* e = nullptr;
-
             rs2_hardware_reset(_dev.get(), &e);
             error::handle(e);
         }
@@ -109,6 +151,8 @@ namespace rs2
         }
         device() : _dev(nullptr) {}
 
+        // Note: this checks the validity of rs2::device (i.e., if it's connected to a realsense device), and does
+        // NOT reflect the current condition (connected/disconnected). Use is_connected() for that.
         operator bool() const
         {
             return _dev != nullptr;
@@ -116,6 +160,21 @@ namespace rs2
         const std::shared_ptr<rs2_device>& get() const
         {
             return _dev;
+        }
+        bool operator<( device const & other ) const
+        {
+            // All RealSense cameras have an update-ID but not always a serial number
+            return std::strcmp( get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID ),
+                          other.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID ) )
+                 < 0;
+        }
+
+        bool is_connected() const
+        {
+            rs2_error * e = nullptr;
+            bool connected = rs2_device_is_connected( _dev.get(), &e );
+            error::handle( e );
+            return connected;
         }
 
         template<class T>
@@ -821,7 +880,11 @@ namespace rs2
 
         void on_calibration_change( rs2_calibration_status status ) noexcept override
         {
-            _callback( status );
+            try
+            {
+                _callback( status );
+            }
+            catch( ... ) { }
         }
         void release() override { delete this; }
     };

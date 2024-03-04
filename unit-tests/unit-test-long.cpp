@@ -15,6 +15,7 @@ using namespace std::chrono;
 #include <sys/wait.h>
 #include <semaphore.h>
 #include <fcntl.h>
+#include <unistd.h>  // getpid()
 
 bool stream(std::string serial_number, sem_t* sem2, bool do_query)
 {
@@ -130,8 +131,8 @@ void multiple_stream(std::string serial_number, sem_t* sem, bool do_query)
 TEST_CASE("multicam_streaming", "[live][multicam]")
 {
     // Test will start and stop streaming on 2 devices simultaneously for 10 times, thus testing the named_mutex mechnism.
-    rs2::context ctx;
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
+    if( ctx )
     {
         std::vector<std::string> serials_numbers;
         for (auto&& dev : ctx.query_devices())
@@ -333,8 +334,8 @@ TEST_CASE("global-time-start", "[live]") {
     // It then checks that the maximal difference found between system time and frame time is about the same 
     // for runs with global time stamp on and runs with global time stamp off.
 
-    rs2::context ctx;
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
+    if( ctx )
     {
         std::vector<sensor> list;
         REQUIRE_NOTHROW(list = ctx.query_all_sensors());
@@ -489,8 +490,8 @@ TEST_CASE("test-depth-only", "[live]") {
     //Require at least one device to be plugged in
     // This test checks if once depth is the only profile we ask, it's the only type of frames we get.
 
-    rs2::context ctx;
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
+    if( ctx )
     {
         std::vector<rs2::device> list;
         REQUIRE_NOTHROW(list = ctx.query_devices());

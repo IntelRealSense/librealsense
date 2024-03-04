@@ -1,6 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
+//#cmake:dependencies rsutils
+
 #include "common.h"
 #include <rsutils/string/trim-newlines.h>
 

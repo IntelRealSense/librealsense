@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.intel.realsense.stream_pipeline_callback">
 
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-permission android:name="android.permission.CAMERA"/>
 
     <application
@@ -13,7 +14,8 @@
         android:theme="@style/AppTheme">
         <activity
             android:name="com.intel.realsense.stream_pipeline_callback.MainActivity"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:theme="@style/AppTheme.NoActionBar"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

@@ -12,6 +12,7 @@
 #include "sensor.h"
 #include "types.h"
 #include "stream.h"
+#include <src/core/device-interface.h>
 
 namespace librealsense
 {

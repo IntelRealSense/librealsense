@@ -8,7 +8,6 @@
 #include "../occlusion-filter.h"
 #include "sse-pointcloud.h"
 #include "../../option.h"
-#include "../../context.h"
 
 #include <iostream>
 

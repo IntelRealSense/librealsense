@@ -6,6 +6,7 @@
 #include "sync.h"
 #include "proc/synthetic-stream.h"
 #include "proc/syncer-processing-block.h"
+#include <src/core/frame-processor-callback.h>
 
 
 namespace librealsense
@@ -14,10 +15,10 @@ namespace librealsense
         : processing_block("syncer"), _matcher((new composite_identity_matcher({})))
         , _enable_opts(enable_opts.begin(), enable_opts.end())
     {
-        _matcher->set_callback( [this]( frame_holder f, syncronization_environment env ) {
+        _matcher->set_callback( []( frame_holder f, syncronization_environment const & env ) {
             if( env.log )
             {
-                LOG_DEBUG( "<-- queueing " << frame_holder_to_string( f ) );
+                LOG_DEBUG( "<-- queueing " << f );
             }
 
             // We get here from within a dispatch() call, already protected by a mutex -- so only
@@ -29,7 +30,7 @@ namespace librealsense
         // call the matchers with the frame and eventually call the next callback in the list using frame_ready().
         // This callback can get called from multiple threads, one thread per stream -- but always in the correct
         // frame order per stream.
-        auto f = [&, log](frame_holder frame, synthetic_source_interface* source)
+        auto f = [&, log](frame_holder && frame, synthetic_source_interface* source)
         {
             // if the syncer is disabled passthrough the frame
             bool enabled = false;
@@ -52,7 +53,7 @@ namespace librealsense
                 get_source().frame_ready(std::move(frame));
                 return;
             }
-            LOG_DEBUG( "--> syncing " << frame_holder_to_string( frame ));
+            LOG_DEBUG( "--> syncing " << frame );
             {
                 std::lock_guard<std::mutex> lock(_mutex);
                 if( ! _matcher->get_active() )
@@ -80,8 +81,7 @@ namespace librealsense
 
         };
 
-        set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
-            new internal_frame_processor_callback<decltype(f)>(f)));
+        set_processing_callback( make_frame_processor_callback( std::move( f ) ) );
     }
 
     // Stopping the syncer means no more frames will be enqueued, and any existing frames

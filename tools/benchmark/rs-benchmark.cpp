@@ -222,7 +222,7 @@ int main(int argc, char** argv) try
         return EXIT_SUCCESS;
     }
 
-    CmdLine cmd("librealsense rs-benchmark tool", ' ', RS2_API_VERSION_STR);
+    CmdLine cmd("librealsense rs-benchmark tool", ' ', RS2_API_FULL_VERSION_STR);
     cmd.parse(argc, argv);
 
     glfwInit();

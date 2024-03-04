@@ -4,21 +4,26 @@
 #include "ds-motion-common.h"
 
 #include "algo.h"
-#include "context.h"
-#include "sensor.h"
+#include "hid-sensor.h"
 #include "environment.h"
+#include "metadata.h"
+#include "backend.h"
+#include "platform/platform-utils.h"
 
 #include "global_timestamp_reader.h"
 #include "proc/auto-exposure-processor.h"
 #include "core/roi.h"
 
 #include "d400/d400-motion.h"
+#include "d500/d500-motion.h"
 #include "proc/motion-transform.h"
 
 #include "ds-timestamp.h"
 #include "ds-options.h"
 #include "ds-private.h"
 #include <src/stream.h>
+#include <src/fourcc.h>
+#include <src/metadata-parser.h>
 
 #include <cstddef>
 
@@ -46,7 +51,7 @@ namespace librealsense
         return _roi;
     }
 
-    ds_fisheye_sensor::ds_fisheye_sensor(std::shared_ptr<sensor_base> sensor, device* owner)
+    ds_fisheye_sensor::ds_fisheye_sensor( std::shared_ptr< raw_sensor_base > const & sensor, device * owner )
         : synthetic_sensor("Wide FOV Camera", sensor, owner, fisheye_fourcc_to_rs2_format, fisheye_fourcc_to_rs2_stream),
         _owner(owner)
     {}
@@ -57,6 +62,8 @@ namespace librealsense
             return dev->_ds_motion_common->get_fisheye_calibration_table();
         if (auto dev = dynamic_cast<const d400_motion_uvc*>(_owner))
             return dev->_ds_motion_common->get_fisheye_calibration_table();
+        if( auto dev = dynamic_cast< const d500_motion * >( _owner ) )
+            return dev->_ds_motion_common->get_fisheye_calibration_table();
         throw std::runtime_error("device not referenced in the product line");
     }
 
@@ -65,6 +72,8 @@ namespace librealsense
         if (auto dev = dynamic_cast<const d400_motion*>(_owner))
             return dev->_ds_motion_common->get_fisheye_stream();
         if (auto dev = dynamic_cast<const d400_motion_uvc*>(_owner))
+            return dev->_ds_motion_common->get_fisheye_stream();
+        if( auto dev = dynamic_cast< const d500_motion * >( _owner ) )
             return dev->_ds_motion_common->get_fisheye_stream();
         throw std::runtime_error("device not referenced in the product line");
     }
@@ -93,6 +102,8 @@ namespace librealsense
                 assign_stream(fisheye_stream, p);
 
             auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+            if (!video)
+                throw std::runtime_error("Stream profile interface is not video stream profile interface");
 
             auto profile = to_profile(p.get());
             std::weak_ptr<ds_fisheye_sensor> wp =
@@ -116,21 +127,23 @@ namespace librealsense
         return uvc_raw_sensor;
     }
     
-    ds_motion_sensor::ds_motion_sensor(std::string name,
-        std::shared_ptr<sensor_base> sensor, device* owner)
-        : synthetic_sensor(name, sensor, owner),
-        _owner(owner)
-    {}
+    ds_motion_sensor::ds_motion_sensor( std::string const & name,
+                                        std::shared_ptr< raw_sensor_base > const & sensor,
+                                        device * owner )
+        : synthetic_sensor( name, sensor, owner )
+        , _owner( owner )
+    {
+    }
 
-    ds_motion_sensor::ds_motion_sensor(std::string name,
-        std::shared_ptr<sensor_base> sensor, device* owner,
-        const std::map<uint32_t, rs2_format>& motion_fourcc_to_rs2_format,
-        const std::map<uint32_t, rs2_stream>& motion_fourcc_to_rs2_stream)
-        : synthetic_sensor(name, sensor, owner,
-                           motion_fourcc_to_rs2_format,
-                           motion_fourcc_to_rs2_stream),
-        _owner(owner)
-    {}
+    ds_motion_sensor::ds_motion_sensor( std::string const & name,
+                                        std::shared_ptr< raw_sensor_base > const & sensor,
+                                        device * owner,
+                                        const std::map< uint32_t, rs2_format > & motion_fourcc_to_rs2_format,
+                                        const std::map< uint32_t, rs2_stream > & motion_fourcc_to_rs2_stream )
+        : synthetic_sensor( name, sensor, owner, motion_fourcc_to_rs2_format, motion_fourcc_to_rs2_stream )
+        , _owner( owner )
+    {
+    }
 
     rs2_motion_device_intrinsic ds_motion_sensor::get_motion_intrinsics(rs2_stream stream) const
     {
@@ -138,6 +151,8 @@ namespace librealsense
             return dev->get_motion_intrinsics(stream);
         if (auto dev = dynamic_cast<const d400_motion_uvc*>(_owner))
             return dev->get_motion_intrinsics(stream);
+        if( auto dev = dynamic_cast< const d500_motion * >( _owner ) )
+            return dev->get_motion_intrinsics( stream );
         throw std::runtime_error("device not referenced in the product line");
     }
 
@@ -161,7 +176,9 @@ namespace librealsense
             if (p->get_stream_type() == RS2_STREAM_ACCEL || p->get_stream_type() == RS2_STREAM_GYRO)
             {
                 auto motion = dynamic_cast<motion_stream_profile_interface*>(p.get());
-                assert(motion);
+                if (!motion)
+                    throw std::runtime_error("Stream profile is not motion stream profile");
+
                 auto st = p->get_stream_type();
                 motion->set_intrinsics([this, st]() { return get_motion_intrinsics(st); });
             }
@@ -176,6 +193,8 @@ namespace librealsense
             return dev->_ds_motion_common->get_accel_stream();
         if (auto dev = dynamic_cast<const d400_motion_uvc*>(_owner))
             return dev->_ds_motion_common->get_accel_stream();
+        if( auto dev = dynamic_cast< const d500_motion * >( _owner ) )
+            return dev->_ds_motion_common->get_accel_stream();
         throw std::runtime_error("device not referenced in the product line");
     }
 
@@ -185,15 +204,17 @@ namespace librealsense
             return dev->_ds_motion_common->get_gyro_stream();
         if (auto dev = dynamic_cast<const d400_motion_uvc*>(_owner))
             return dev->_ds_motion_common->get_gyro_stream();
+        if( auto dev = dynamic_cast< const d500_motion * >( _owner ) )
+            return dev->_ds_motion_common->get_gyro_stream();
         throw std::runtime_error("device not referenced in the product line");
     }
 
     std::shared_ptr<auto_exposure_mechanism> ds_motion_common::register_auto_exposure_options(synthetic_sensor* ep, const platform::extension_unit* fisheye_xu)
     {
         auto uvc_raw_sensor = As<uvc_sensor, sensor_base>(ep->get_raw_sensor());
-        auto gain_option = std::make_shared<uvc_pu_option>(*uvc_raw_sensor, RS2_OPTION_GAIN);
+        auto gain_option = std::make_shared<uvc_pu_option>(uvc_raw_sensor, RS2_OPTION_GAIN);
 
-        auto exposure_option = std::make_shared<uvc_xu_option<uint16_t>>(*uvc_raw_sensor,
+        auto exposure_option = std::make_shared<uvc_xu_option<uint16_t>>(uvc_raw_sensor,
             *fisheye_xu,
             librealsense::ds::FISHEYE_EXPOSURE, "Exposure time of Fisheye camera");
 
@@ -245,7 +266,7 @@ namespace librealsense
         return auto_exposure;
     }
 
-    ds_motion_common::ds_motion_common(device* owner,
+    ds_motion_common::ds_motion_common( backend_device * owner,
         firmware_version fw_version,
         const ds::ds_caps& device_capabilities,
         std::shared_ptr<hw_monitor> hwm) :
@@ -266,7 +287,7 @@ namespace librealsense
                                  { unsigned(odr::IMU_FPS_400),  hid_fps_translation.at(odr::IMU_FPS_400)}}} };
 
         // motion correction
-        _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _owner->_pid);
+        _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _owner->get_pid());
     }
 
     rs2_motion_device_intrinsic ds_motion_common::get_motion_intrinsics(rs2_stream stream) const
@@ -287,6 +308,8 @@ namespace librealsense
             return filter_d400_device_by_capability(devices, ds::ds_caps::CAP_FISHEYE_SENSOR);
         if (auto dev = dynamic_cast<const d400_motion_uvc*>(_owner))
             return filter_d400_device_by_capability(devices, ds::ds_caps::CAP_FISHEYE_SENSOR);
+        if( auto dev = dynamic_cast< const d500_motion * >( _owner ) )
+            return std::vector< platform::uvc_device_info >();
         throw std::runtime_error("device not referenced in the product line");
     }
 
@@ -350,6 +373,11 @@ namespace librealsense
             dev->register_stream_to_extrinsic_group(*_gyro_stream, 0);
             dev->register_stream_to_extrinsic_group(*_accel_stream, 0);
         }
+        else if( auto dev = dynamic_cast< d500_motion * >( _owner ) )
+        {
+            dev->register_stream_to_extrinsic_group( *_gyro_stream, 0 );
+            dev->register_stream_to_extrinsic_group( *_accel_stream, 0 );
+        }
         else
             throw std::runtime_error("device not referenced in the product line");
     }
@@ -366,10 +394,10 @@ namespace librealsense
         else
         {
             _fisheye_ep->register_option(RS2_OPTION_GAIN,
-                std::make_shared<uvc_pu_option>(*_raw_fisheye_ep.get(),
+                std::make_shared<uvc_pu_option>(_raw_fisheye_ep,
                     RS2_OPTION_GAIN));
             _fisheye_ep->register_option(RS2_OPTION_EXPOSURE,
-                std::make_shared<uvc_xu_option<uint16_t>>(*_raw_fisheye_ep.get(),
+                std::make_shared<uvc_xu_option<uint16_t>>(_raw_fisheye_ep,
                     ds::fisheye_xu,
                     librealsense::ds::FISHEYE_EXPOSURE,
                     "Exposure time of Fisheye camera"));
@@ -383,7 +411,7 @@ namespace librealsense
         _raw_fisheye_ep->register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE, make_additional_data_parser(&frame_additional_data::fisheye_ae_mode));
 
         // attributes of md_capture_timing
-        auto md_prop_offset = offsetof(metadata_raw, mode) +
+        auto md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_fisheye_mode, fisheye_mode) +
             offsetof(md_fisheye_normal_mode, intel_capture_timing);
 
@@ -392,12 +420,12 @@ namespace librealsense
             make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
 
         // attributes of md_capture_stats
-        md_prop_offset = offsetof(metadata_raw, mode) +
+        md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_fisheye_mode, fisheye_mode) +
             offsetof(md_fisheye_normal_mode, intel_capture_stats);
 
         // attributes of md_capture_stats
-        md_prop_offset = offsetof(metadata_raw, mode) +
+        md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_fisheye_mode, fisheye_mode) +
             offsetof(md_fisheye_normal_mode, intel_configuration);
 
@@ -408,7 +436,7 @@ namespace librealsense
         _raw_fisheye_ep->register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_HEIGHT, make_attribute_parser(&md_configuration::height, md_configuration_attributes::height_attribute, md_prop_offset));
 
         // attributes of md_fisheye_control
-        md_prop_offset = offsetof(metadata_raw, mode) +
+        md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_fisheye_mode, fisheye_mode) +
             offsetof(md_fisheye_normal_mode, intel_fisheye_control);
 
@@ -449,12 +477,16 @@ namespace librealsense
         }
         _fps_and_sampling_frequency_per_rs2_stream[RS2_STREAM_ACCEL] = fps_and_frequency_map;
 
-        auto raw_hid_ep = std::make_shared<hid_sensor>(ctx->get_backend().create_hid_device(all_hid_infos.front()),
-            std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(iio_hid_ts_reader), tf_keeper, enable_global_time_option)),
-            std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(custom_hid_ts_reader), tf_keeper, enable_global_time_option)),
+        auto raw_hid_ep = std::make_shared< hid_sensor >(
+            _owner->get_backend()->create_hid_device( all_hid_infos.front() ),
+            std::unique_ptr< frame_timestamp_reader >(
+                new global_timestamp_reader( std::move( iio_hid_ts_reader ), tf_keeper, enable_global_time_option ) ),
+            std::unique_ptr< frame_timestamp_reader >( new global_timestamp_reader( std::move( custom_hid_ts_reader ),
+                                                                                    tf_keeper,
+                                                                                    enable_global_time_option ) ),
             _fps_and_sampling_frequency_per_rs2_stream,
             _sensor_name_and_hid_profiles,
-            _owner);
+            _owner );
 
         auto hid_ep = std::make_shared<ds_motion_sensor>("Motion Module", raw_hid_ep, _owner);
 
@@ -478,13 +510,15 @@ namespace librealsense
         hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
-            [&, mm_correct_opt]() { return std::make_shared<acceleration_transform>(_mm_calib, mm_correct_opt);
+            [&, mm_correct_opt]() { return std::make_shared< acceleration_transform >( _mm_calib, mm_correct_opt );
             });
 
+        bool high_sensitivity = _owner->is_gyro_high_sensitivity();
         hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
-            [&, mm_correct_opt]() { return std::make_shared<gyroscope_transform>(_mm_calib, mm_correct_opt);
+            [&, mm_correct_opt, high_sensitivity]() {
+                return std::make_shared< gyroscope_transform >( _mm_calib, mm_correct_opt, high_sensitivity );
             });
 
         return hid_ep;
@@ -495,13 +529,16 @@ namespace librealsense
         if (!is_infos_empty)
         {
             // motion correction
-            _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _owner->_pid);
+            _mm_calib = std::make_shared< mm_calib_handler >( _hw_monitor, _owner->get_pid() );
 
-            _accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
-            _gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
+            _accel_intrinsic = std::make_shared< rsutils::lazy< ds::imu_intrinsic > >(
+                [this]() { return _mm_calib->get_intrinsic( RS2_STREAM_ACCEL ); } );
+            _gyro_intrinsic = std::make_shared< rsutils::lazy< ds::imu_intrinsic > >(
+                [this]() { return _mm_calib->get_intrinsic( RS2_STREAM_GYRO ); } );
 
             // use predefined extrinsics
-            _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
+            _depth_to_imu = std::make_shared< rsutils::lazy< rs2_extrinsics > >(
+                [this]() { return _mm_calib->get_extrinsic( RS2_STREAM_ACCEL ); } );
         }
 
         // Make sure all MM streams are positioned with the same extrinsics

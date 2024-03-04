@@ -48,8 +48,8 @@ void init_processing(py::module &m) {
 
     py::class_<rs2::processing_block, rs2::options> processing_block(m, "processing_block", "Define the processing block workflow, inherit this class to "
                                                                      "generate your own processing_block.");
-    processing_block.def(py::init([](std::function<void(rs2::frame, rs2::frame_source&)> processing_function) {
-            return new rs2::processing_block(processing_function);
+    processing_block.def(py::init([](std::function<void(rs2::frame, rs2::frame_source*)> processing_function) {
+        return new rs2::processing_block([=](rs2::frame f, rs2::frame_source& fs) {processing_function(f, &fs); });
         }), "processing_function"_a)
         .def("start", [](rs2::processing_block& self, std::function<void(rs2::frame)> f) {
             self.start(f);
@@ -70,7 +70,6 @@ void init_processing(py::module &m) {
         .def(BIND_DOWNCAST(filter, spatial_filter))
         .def(BIND_DOWNCAST(filter, temporal_filter))
         .def(BIND_DOWNCAST(filter, threshold_filter))
-        .def(BIND_DOWNCAST(filter, zero_order_invalidation))
         .def(BIND_DOWNCAST(filter, hdr_merge))
         .def(BIND_DOWNCAST(filter, sequence_id_filter))
         .def("__nonzero__", &rs2::filter::operator bool) // Called to implement truth value testing in Python 2
@@ -182,9 +181,6 @@ void init_processing(py::module &m) {
     py::class_<rs2::disparity_transform, rs2::filter> disparity_transform(m, "disparity_transform", "Converts from depth representation "
                                                                           "to disparity representation and vice - versa in depth frames");
     disparity_transform.def(py::init<bool>(), "transform_to_disparity"_a = true);
-
-    py::class_<rs2::zero_order_invalidation, rs2::filter> zero_order_invalidation(m, "zero_order_invalidation", "Fixes the zero order artifact");
-    zero_order_invalidation.def(py::init<>());
 
     py::class_<rs2::hole_filling_filter, rs2::filter> hole_filling_filter(m, "hole_filling_filter", "The processing performed depends on the selected hole filling mode.");
     hole_filling_filter.def(py::init<>())

@@ -6,10 +6,13 @@
 #include "synthetic-stream.h"
 #include "motion-transform.h"
 #include "stream.h"
+#include <src/platform/hid-data.h>
+#include <src/core/frame-processor-callback.h>
+
 
 namespace librealsense
 {
-    template<rs2_format FORMAT> void copy_hid_axes(byte * const dest[], const byte * source, double factor, bool is_mipi)
+    template<rs2_format FORMAT> void copy_hid_axes( uint8_t * const dest[], const uint8_t * source, double factor, bool is_mipi)
     {
         using namespace librealsense;
 
@@ -26,12 +29,12 @@ namespace librealsense
             res = float3{ float(hid->x), float(hid->y), float(hid->z) } *float(factor);
         }
 
-        librealsense::copy(dest[0], &res, sizeof(float3));
+        std::memcpy( dest[0], &res, sizeof( float3 ) );
     }
 
     // The Accelerometer input format: signed int 16bit. data units 1LSB=0.001g;
     // Librealsense output format: floating point 32bit. units m/s^2,
-    template<rs2_format FORMAT> void unpack_accel_axes(byte * const dest[], const byte * source, int width, int height, int output_size, bool is_mipi = false)
+    template<rs2_format FORMAT> void unpack_accel_axes( uint8_t * const dest[], const uint8_t * source, int width, int height, int output_size, bool is_mipi = false)
     {
         static constexpr float gravity = 9.80665f;          // Standard Gravitation Acceleration
         static constexpr double accelerator_transform_factor = 0.001*gravity;
@@ -39,11 +42,15 @@ namespace librealsense
         copy_hid_axes<FORMAT>(dest, source, accelerator_transform_factor, is_mipi);
     }
 
-    // The Gyro input format: signed int 16bit. data units 1LSB=0.1deg/sec;
+    // The Gyro input format: signed int 16bit. data units depends on set sensitivity;
     // Librealsense output format: floating point 32bit. units rad/sec,
-    template<rs2_format FORMAT> void unpack_gyro_axes(byte * const dest[], const byte * source, int width, int height, int output_size, bool is_mipi = false)
+    template< rs2_format FORMAT >
+    void unpack_gyro_axes( uint8_t * const dest[], const uint8_t * source, int width, int height, int output_size,
+                           bool high_sensitivity = false, bool is_mipi = false )
     {
-        static const double gyro_transform_factor = deg2rad(0.1);
+        // Default sensitivity is +-2000 deg/sec at 16.384 LSB/Deg/Sec (LSB is 0.1220703125 deg/sec, historically rounded to 0.1).
+        // High sensitivity is +-125 deg/sec at 262.144 LSB/Deg/Sec (LSB is 0.003814697265625 deg/sec).
+        const double gyro_transform_factor = deg2rad( high_sensitivity ? 0.003814697265625 : 0.1 );
 
         copy_hid_axes<FORMAT>(dest, source, gyro_transform_factor, is_mipi);
     }
@@ -116,12 +123,18 @@ namespace librealsense
         correct_motion_helper(xyz, _accel_gyro_target_profile->get_stream_type());
     }
 
-    motion_to_accel_gyro::motion_to_accel_gyro(std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt)
-        : motion_to_accel_gyro("Accel_Gyro Transform", mm_calib, mm_correct_opt)
+    motion_to_accel_gyro::motion_to_accel_gyro( std::shared_ptr< mm_calib_handler > mm_calib,
+                                                std::shared_ptr< enable_motion_correction > mm_correct_opt,
+                                                bool high_sensitivity )
+        : motion_to_accel_gyro( "Accel_Gyro Transform", mm_calib, mm_correct_opt, high_sensitivity )
     {}
 
-    motion_to_accel_gyro::motion_to_accel_gyro(const char * name, std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt)
+    motion_to_accel_gyro::motion_to_accel_gyro( const char * name,
+                                                std::shared_ptr< mm_calib_handler > mm_calib,
+                                                std::shared_ptr< enable_motion_correction > mm_correct_opt,
+                                                bool high_sensitivity )
         : motion_transform(name, RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ANY, mm_calib, mm_correct_opt)
+        , _high_sensitivity( high_sensitivity )
     {
         configure_processing_callback();
     }
@@ -129,7 +142,7 @@ namespace librealsense
     void motion_to_accel_gyro::configure_processing_callback()
     {
         // define and set the frame processing callback
-        auto process_callback = [&](frame_holder frame, synthetic_source_interface* source)
+        auto process_callback = [&](frame_holder && frame, synthetic_source_interface* source)
         {
             auto profile = As<motion_stream_profile, stream_profile_interface>(frame.frame->get_stream());
             if (!profile)
@@ -165,9 +178,9 @@ namespace librealsense
             agf = source->allocate_motion_frame(_accel_gyro_target_profile, frame);
 
             // process the frame
-            byte* frame_data[1];
-            frame_data[0] = (byte*)agf.frame->get_frame_data();
-            process_function(frame_data, (const byte*)frame->get_frame_data(), 0, 0, 0, 0);
+            uint8_t * frame_data[1];
+            frame_data[0] = (uint8_t *)agf.frame->get_frame_data();
+            process_function(frame_data, (const uint8_t *)frame->get_frame_data(), 0, 0, 0, 0);
 
             // correct the axes values according to the device's data
             correct_motion((float3*)(frame_data[0]));
@@ -175,11 +188,10 @@ namespace librealsense
             source->frame_ready(std::move(agf));
         };
 
-        set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
-            new internal_frame_processor_callback<decltype(process_callback)>(process_callback)));
+        set_processing_callback( make_frame_processor_callback( std::move( process_callback ) ) );
     }
 
-    void motion_to_accel_gyro::process_function(byte * const dest[], const byte * source, int width, int height, int output_size, int actual_size)
+    void motion_to_accel_gyro::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int output_size, int actual_size)
     {
         if (source[0] == 1)
         {
@@ -189,7 +201,8 @@ namespace librealsense
         else if (source[0] == 2)
         {
             _target_stream = RS2_STREAM_GYRO;
-            unpack_gyro_axes<RS2_FORMAT_MOTION_XYZ32F>(dest, source, width, height, actual_size, true);
+            unpack_gyro_axes<RS2_FORMAT_MOTION_XYZ32F>( dest, source, width, height, actual_size,
+                                                        _high_sensitivity, true );
         }
         else
         {
@@ -205,22 +218,28 @@ namespace librealsense
         : motion_transform(name, RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL, mm_calib, mm_correct_opt)
     {}
 
-    void acceleration_transform::process_function(byte * const dest[], const byte * source, int width, int height, int output_size, int actual_size)
+    void acceleration_transform::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int output_size, int actual_size )
     {
         unpack_accel_axes<RS2_FORMAT_MOTION_XYZ32F>(dest, source, width, height, actual_size);
     }
 
-    gyroscope_transform::gyroscope_transform(std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt)
-        : gyroscope_transform("Gyroscope Transform", mm_calib, mm_correct_opt)
+    gyroscope_transform::gyroscope_transform( std::shared_ptr< mm_calib_handler > mm_calib,
+                                              std::shared_ptr< enable_motion_correction > mm_correct_opt,
+                                              bool high_sensitivity )
+        : gyroscope_transform( "Gyroscope Transform", mm_calib, mm_correct_opt, high_sensitivity )
     {}
 
-    gyroscope_transform::gyroscope_transform(const char * name, std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt)
+    gyroscope_transform::gyroscope_transform( const char * name,
+                                              std::shared_ptr< mm_calib_handler > mm_calib,
+                                              std::shared_ptr< enable_motion_correction > mm_correct_opt,
+                                              bool high_sensitivity )
         : motion_transform(name, RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO, mm_calib, mm_correct_opt)
+        , _high_sensitivity( high_sensitivity )
     {}
 
-    void gyroscope_transform::process_function(byte * const dest[], const byte * source, int width, int height, int output_size, int actual_size)
+    void gyroscope_transform::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int output_size, int actual_size )
     {
-        unpack_gyro_axes<RS2_FORMAT_MOTION_XYZ32F>(dest, source, width, height, actual_size);
+        unpack_gyro_axes< RS2_FORMAT_MOTION_XYZ32F >( dest, source, width, height, actual_size, _high_sensitivity );
     }
 }
 

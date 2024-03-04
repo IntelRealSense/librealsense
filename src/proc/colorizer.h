@@ -1,6 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
 #include <map>
@@ -36,7 +35,7 @@ namespace librealsense {
         {
             if (_max == _min) return *_data;
             auto t = (value - _min) / (_max - _min);
-            t = clamp_val(t, 0.f, 1.f);
+            t = std::max( 0.f, std::min( t, 1.f ) );
             return _data[(int)(t * (_size - 1))];
         }
 

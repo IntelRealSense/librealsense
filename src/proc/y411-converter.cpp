@@ -12,7 +12,7 @@
 
 namespace librealsense 
 {
-    void convert_yuv_to_rgb(const byte yuv[3], byte * rgb)
+    void convert_yuv_to_rgb(const uint8_t yuv[3], uint8_t * rgb)
     {
         int32_t c = yuv[0] - 16;
         int32_t d = yuv[1] - 128;
@@ -45,7 +45,7 @@ namespace librealsense
     //
 
 #if defined __SSSE3__ && ! defined ANDROID
-    void unpack_y411_sse(byte * const dest, const byte * const s, int w, int h, int actual_size)
+    void unpack_y411_sse( uint8_t * const dest, const uint8_t * const s, int w, int h, int actual_size)
     {
         auto n = w * h;
         // working each iteration on 8 y411 pixels, and extract 4 rgb pixels from each one
@@ -260,7 +260,7 @@ namespace librealsense
     }
 #endif
 
-    void unpack_y411_native(byte * const dest, const byte * const s, int w, int h, int actual_size)
+    void unpack_y411_native( uint8_t * const dest, const uint8_t * const s, int w, int h, int actual_size)
     {
         auto index_source = 0;
         for (auto i = 0; i < h; i += 2)
@@ -276,16 +276,16 @@ namespace librealsense
                 auto l1_y0 = y411_pix[4];
                 auto l1_y1 = y411_pix[5];
 
-                byte yuv0_0[3] = { l0_y0, u, v };
+                uint8_t yuv0_0[3] = { l0_y0, u, v };
                 convert_yuv_to_rgb(yuv0_0, &dest[i * w * 3 + j * 3]);
 
-                byte yuv0_1[3] = { l0_y1, u, v };
+                uint8_t yuv0_1[3] = { l0_y1, u, v };
                 convert_yuv_to_rgb(yuv0_1, &dest[i * w * 3 + j * 3 + 3]);
 
-                byte yuv1_0[3] = { l1_y0, u, v };
+                uint8_t yuv1_0[3] = { l1_y0, u, v };
                 convert_yuv_to_rgb(yuv1_0, &dest[(i + 1) * w * 3 + j * 3]);
 
-                byte yuv1_1[3] = { l1_y1, u, v };
+                uint8_t yuv1_1[3] = { l1_y1, u, v };
                 convert_yuv_to_rgb(yuv1_1, &dest[(i + 1) * w * 3 + j * 3 + 3]);
 
                 index_source += 6;
@@ -295,7 +295,7 @@ namespace librealsense
 
     // This function unpacks Y411 format into RGB8 using SSE if defined
     // The size of the frame must be bigger than 4 pixels and product of 32
-    void unpack_y411( byte * const dest[], const byte * const s, int w, int h, int actual_size )
+    void unpack_y411( uint8_t * const dest[], const uint8_t * const s, int w, int h, int actual_size )
     {
 #if defined __SSSE3__ && ! defined ANDROID
         unpack_y411_sse(dest[0], s, w, h, actual_size);
@@ -304,8 +304,8 @@ namespace librealsense
 #endif
     }
 
-    void y411_converter::process_function(byte * const dest[],
-        const byte * source,
+    void y411_converter::process_function( uint8_t * const dest[],
+        const uint8_t * source,
         int width,
         int height,
         int actual_size,

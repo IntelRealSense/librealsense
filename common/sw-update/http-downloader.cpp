@@ -9,12 +9,13 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
+#include <fstream>
 #include <curl/curl.h>
 #include <curl/easy.h>
-#include "types.h"
 #endif // CHECK_FOR_UPDATES
 
 #include "http-downloader.h"
+#include <rsutils/easylogging/easyloggingpp.h>
 
 
 namespace rs2

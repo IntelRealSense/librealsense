@@ -56,7 +56,14 @@ namespace librealsense
 
         hid_input::~hid_input()
         {
-            enable(false);
+            try
+            {
+                enable( false );
+            }
+            catch(...)
+            {
+                LOG_DEBUG( "Error while disabling a hid device" );
+            }
         }
 
         // enable scan input. doing so cause the input to be part of the data provided in the polling.
@@ -954,12 +961,26 @@ namespace librealsense
         {
             for (auto& elem : _streaming_iio_sensors)
             {
-                elem->stop_capture();
+                try
+                {
+                    elem->stop_capture();
+                }
+                catch(...)
+                {
+                    LOG_DEBUG( "Error while stopping capture sensor" );
+                }
             }
 
             for (auto& elem : _streaming_custom_sensors)
             {
-                elem->stop_capture();
+                try
+                {
+                    elem->stop_capture();
+                }
+                catch(...)
+                {
+                    LOG_DEBUG( "Error while stopping capture sensor" );
+                }
             }
         }
 

@@ -240,15 +240,6 @@ namespace rs2
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
-
-            _sub->stream_enabled.clear();
-            _sub->ui.selected_format_id.clear();
-            if (_sub_color)
-            {
-                _sub_color->stream_enabled.clear();
-                _sub_color->ui.selected_format_id.clear();
-            }
-            _viewer.streams.clear();
         }
         catch (...) {}
     }

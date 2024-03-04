@@ -1,9 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
+//#cmake:dependencies rsutils
+
 #include <thread>
 #include <chrono>
-#include "../../../test.h"
+#include <unit-tests/test.h>
 #include <rsutils/number/stabilized-value.h>
 
 using namespace rsutils::number;

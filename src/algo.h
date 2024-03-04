@@ -2,7 +2,9 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include "sensor.h"
+#include "core/frame-holder.h"
+#include "core/roi.h"
+#include "core/options-container.h"
 #include "types.h"
 
 #include <stdint.h>

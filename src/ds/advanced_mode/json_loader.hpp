@@ -12,7 +12,7 @@
 #include <string>
 #include <iomanip>
 
-#include "../../../third-party/json.hpp"
+#include <rsutils/json.h>
 #include <librealsense2/h/rs_advanced_mode_command.h>
 #include "types.h"
 #include "presets.h"
@@ -23,7 +23,7 @@
 
 namespace librealsense
 {
-    using json = nlohmann::json;
+    using json = rsutils::json;
 
     template<class T>
     struct param_group
@@ -498,7 +498,7 @@ namespace librealsense
             {
                 try
                 {
-                    if (value.type() != nlohmann::basic_json<>::value_t::string)
+                    if( ! value.is_string() )
                     {
                         float val = value;
                         std::stringstream ss;

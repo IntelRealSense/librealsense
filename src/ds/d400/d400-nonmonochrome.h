@@ -10,7 +10,6 @@ namespace librealsense
     class d400_nonmonochrome : public virtual d400_device
     {
     public:
-        d400_nonmonochrome(std::shared_ptr<context> ctx,
-                          const platform::backend_device_group& group);
+        d400_nonmonochrome( std::shared_ptr< const d400_info > const & );
     };
 }

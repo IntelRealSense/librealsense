@@ -4,9 +4,13 @@
 #include "core/advanced_mode.h"
 #include "json_loader.hpp"
 #include "ds/d400/d400-color.h"
+#include "ds/d500/d500-color.h"
+
+#include <src/ds/features/amplitude-factor-feature.h>
+#include <src/ds/features/remove-ir-pattern-feature.h>
 
 #include <rsutils/string/from.h>
-
+#include <rsutils/string/hexdump.h>
 
 namespace librealsense
 {
@@ -38,29 +42,29 @@ namespace librealsense
             return results[4] > 0;
         };
 
-        // "Remove IR Pattern" visual preset is available only for D400, D410, D415, D460, D465
+        // "Remove IR Pattern" visual preset is available only for D400, D410, D415, D460
         if (is_enabled())
             register_to_visual_preset_option();
 
-        _color_sensor = [this]() {
-            auto& dev = _depth_sensor.get_device();
-            for (size_t i = 0; i < dev.get_sensors_count(); ++i)
+        _color_sensor = [this]() -> synthetic_sensor *
+        {
+            auto & dev = _depth_sensor.get_device();
+            for( size_t i = 0; i < dev.get_sensors_count(); ++i )
             {
-                if (auto s = dynamic_cast<const d400_color_sensor*>(&(dev.get_sensor(i))))
+                if( auto s = dynamic_cast< const d400_color_sensor * >( &( dev.get_sensor( i ) ) ) )
                 {
-                    return const_cast<d400_color_sensor*>(s);
+                    return const_cast< d400_color_sensor * >( s );
+                }
+                if( auto s = dynamic_cast< const d500_color_sensor * >( &( dev.get_sensor( i ) ) ) )
+                {
+                    return const_cast< d500_color_sensor * >( s );
                 }
             }
-            return (d400_color_sensor*)nullptr;
+            return nullptr;
         };
-        
+
         _amplitude_factor_support = [this]() {
-            auto fw_ver = firmware_version(_depth_sensor.get_device().get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION));
-            return (fw_ver >= firmware_version("5.11.9.0"));
-        };
-        _rgb_exposure_gain_bind = [this]() {
-            auto fw_ver = firmware_version(_depth_sensor.get_device().get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION));
-            return (fw_ver >= firmware_version("5.11.9.0"));
+            return _depth_sensor.get_device().supports_feature( amplitude_factor_feature::ID );
         };
     }
 
@@ -107,7 +111,6 @@ namespace librealsense
             case ds::RS430_PID:
             case ds::RS430I_PID:
             case ds::RS435_RGB_PID:
-            case ds::RS465_PID:
             case ds::RS435I_PID:
                 default_430(p);
                 break;
@@ -124,10 +127,13 @@ namespace librealsense
                     default_450_high_res(p);
                     break;
                 default:
-                    throw invalid_value_exception( rsutils::string::from() << "apply_preset(...) failed! Given device doesn't support Default Preset (pid=0x" <<
-                        std::hex << device_pid << ")");
+                    throw invalid_value_exception(
+                        rsutils::string::from()
+                        << "apply_preset(...) failed! Given device doesn't support Default Preset (pid=0x"
+                        << rsutils::string::hexdump( device_pid ) << ")" );
                     break;
                 }
+                break;
             case ds::RS405U_PID:
                 default_405u(p);
                 break;
@@ -143,8 +149,8 @@ namespace librealsense
             default:
                 throw invalid_value_exception(
                     rsutils::string::from()
-                    << "apply_preset(...) failed! Given device doesn't support Default Preset (pid=0x" << std::hex
-                    << device_pid << ")" );
+                    << "apply_preset(...) failed! Given device doesn't support Default Preset (pid=0x"
+                    << rsutils::string::hexdump( device_pid ) << ")" );
                 break;
             }
             break;
@@ -165,19 +171,14 @@ namespace librealsense
             break;
         case RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN:
         {
-            static const firmware_version remove_ir_pattern_fw_ver{ "5.9.10.0" };
-            if (fw_version < remove_ir_pattern_fw_ver)
-                throw invalid_value_exception(
-                    rsutils::string::from()
-                    << "apply_preset(...) failed! FW version doesn't support Remove IR Pattern Preset (curr_fw_ver="
-                    << fw_version << " ; required_fw_ver=" << remove_ir_pattern_fw_ver << ")" );
+            if( ! _depth_sensor.get_device().supports_feature( remove_ir_pattern_feature::ID ) )
+                throw invalid_value_exception( "apply_preset(...) failed! The device does not support remove IR pattern feature" );
 
             switch (device_pid)
             {
             case ds::RS400_PID:
             case ds::RS410_PID:
             case ds::RS415_PID:
-            case ds::RS465_PID://TODO: verify
                 d415_remove_ir(p);
                 break;
             case ds::RS460_PID:
@@ -693,6 +694,18 @@ namespace librealsense
             (*_color_sensor)->get_option(RS2_OPTION_POWER_LINE_FREQUENCY).set((float)val.power_line_frequency);
     }
 
+    void ds_advanced_mode_base::block( const std::string & exception_message )
+    {
+        _blocked = true;
+        _block_message = exception_message;
+    }
+
+    void ds_advanced_mode_base::unblock()
+    {
+        _blocked = false;
+        _block_message.clear();
+    }
+
     std::vector<uint8_t> ds_advanced_mode_base::serialize_json() const
     {
         if (!is_enabled())
@@ -753,15 +766,18 @@ namespace librealsense
         return p;
     }
 
-    void ds_advanced_mode_base::set_all(const preset& p)
+    void ds_advanced_mode_base::set_all( const preset & p )
+    {
+        set_all_depth( p );
+        if( should_set_rgb_preset() )
+            set_all_rgb( p );
+    }
+
+    void ds_advanced_mode_base::set_all_depth(const preset& p)
     {
         set(p.depth_controls, advanced_mode_traits<STDepthControlGroup>::group);
         set(p.rsm           , advanced_mode_traits<STRsm>::group);
         set(p.rsvc          , advanced_mode_traits<STRauSupportVectorControl>::group);
-        set(p.color_control , advanced_mode_traits<STColorControl>::group);
-        set(p.rctc          , advanced_mode_traits<STRauColorThresholdsControl>::group);
-        set(p.sctc          , advanced_mode_traits<STSloColorThresholdsControl>::group);
-        set(p.spc           , advanced_mode_traits<STSloPenaltyControl>::group);
         set(p.hdad          , advanced_mode_traits<STHdad>::group);
 
         // Setting auto-white-balance control before colorCorrection parameters
@@ -785,6 +801,15 @@ namespace librealsense
             set_depth_exposure(p.depth_exposure);
         }
 
+        // Depth sensor related even though they have color in the name. Probably color from left IR imager.
+        set( p.color_control, advanced_mode_traits< STColorControl >::group );
+        set( p.rctc         , advanced_mode_traits< STRauColorThresholdsControl >::group );
+        set( p.sctc         , advanced_mode_traits< STSloColorThresholdsControl >::group );
+        set( p.spc          , advanced_mode_traits< STSloPenaltyControl >::group );
+    }
+
+    void ds_advanced_mode_base::set_all_rgb( const preset & p )
+    {
         set_color_auto_exposure(p.color_auto_exposure);
         if (p.color_auto_exposure.was_set && p.color_auto_exposure.auto_exposure == 0)
         {
@@ -806,6 +831,13 @@ namespace librealsense
 
         // TODO: W/O due to a FW bug of power_line_frequency control on Windows OS
         //set_color_power_line_frequency(p.color_power_line_frequency);
+    }
+
+    bool ds_advanced_mode_base::should_set_rgb_preset() const
+    {
+        auto product_line = _depth_sensor.get_device().get_info( rs2_camera_info::RS2_CAMERA_INFO_PRODUCT_LINE );
+
+        return product_line != "D500";
     }
 
     std::vector<uint8_t> ds_advanced_mode_base::send_receive(const std::vector<uint8_t>& input) const

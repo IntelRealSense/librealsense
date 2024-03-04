@@ -3,8 +3,11 @@
 
 #pragma once
 
+#ifdef LIBCI_DEPENDENCY_realsense2
 #include <librealsense2/rs.hpp>
+#endif
 #include "catch.h"
+#include <sstream>
 
 
 namespace test {

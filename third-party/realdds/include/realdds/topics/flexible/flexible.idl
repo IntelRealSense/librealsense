@@ -1,0 +1,24 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+
+module realdds
+{
+    module topics
+    {
+        module raw
+        {
+            enum flexible_data_format
+            {
+                FLEXIBLE_DATA_JSON,
+                FLEXIBLE_DATA_CBOR,
+                FLEXIBLE_DATA_CUSTOM
+            };
+            struct flexible
+            {
+                flexible_data_format data_format;
+                octet version[4];  // in decreasing importance, so version[0] is highest
+                sequence<octet,4096> data;  // bound to 4K
+            };
+        };
+    };
+};
