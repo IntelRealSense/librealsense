@@ -1173,6 +1173,15 @@ namespace librealsense
 
             if (!devices.empty() && all_sensors_present)
             {
+                auto it = devices.begin();
+                while (it != devices.end()) {
+                    // Skip codecs
+                    if (it->unique_id.find("bcm2835-codec") != std::string::npos) {
+                        it = devices.erase(it);
+                    } else {
+                        ++it;
+                    }
+                }
                 platform::usb_device_info hwm;
 
                 std::vector<platform::usb_device_info> hwm_devices;
@@ -1187,6 +1196,12 @@ namespace librealsense
 
                 auto info = std::make_shared<d400_info>(ctx, devices, hwm_devices, hids);
                 chosen.insert(chosen.end(), devices.begin(), devices.end());
+                if (info->get_device_data().uvc_devices.size() == 0 &&
+                    info->get_device_data().usb_devices.size() == 0 &&
+                    info->get_device_data().playback_devices.size() == 0 &&
+                    info->get_device_data().hid_devices.size() == 0) {
+                    continue;
+                }
                 results.push_back(info);
 
             }
