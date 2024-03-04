@@ -30,17 +30,11 @@ def generate_valid_table():
     cfg.ground = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.gnd)
     cfg.gpio_stabilization_interval = 150 # [ms] - SMCU only accept 150 for now
 
-    # rotation matrix [-2..2] (no units)
-    rx = rs.float3(random.uniform(-2, 2), random.uniform(-2, 2), random.uniform(-2, 2))
-    ry = rs.float3(random.uniform(-2, 2), random.uniform(-2, 2), random.uniform(-2, 2))
-    rz = rs.float3(random.uniform(-2, 2), random.uniform(-2, 2), random.uniform(-2, 2))
-    rotation = rs.float3x3(rx, ry, rz)
-
-    # translation vector [m]
-    translation = rs.float3(random.uniform(0, 100), random.uniform(0, 100), random.uniform(0, 100))
-
-    # init safety extrinsics table (transformation link) from rotation matrix and translation vector
-    cfg.camera_position = rs.safety_extrinsics_table(rotation, translation)
+    # get rotation and translation from safety preset at index 0
+    # and set them into the camera position (extrinsics part) of the safety config table
+    safety_preset_at_0 = safety_sensor.get_safety_preset(0)
+    cfg.camera_position = rs.safety_extrinsics_table(safety_preset_at_0.platform_config.transformation_link.rotation,
+                                                     safety_preset_at_0.platform_config.transformation_link.translation)
 
     cfg.occupancy_grid_params.grid_cell_seed = random.randint(1,4)
     cfg.occupancy_grid_params.close_range_quorum = random.randint(0, 255)
