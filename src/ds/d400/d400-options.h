@@ -11,7 +11,7 @@
 #include "../../hdr-config.h"
 
 #include <rsutils/lazy.h>
-#include <src/hid-sensor.h>
+
 
 namespace librealsense
 {

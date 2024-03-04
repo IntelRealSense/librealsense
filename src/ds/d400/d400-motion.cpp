@@ -21,7 +21,7 @@
 #include "proc/auto-exposure-processor.h"
 #include <src/fourcc.h>
 #include <src/metadata-parser.h>
-
+#include <src/hid-sensor.h>
 using namespace librealsense;
 namespace librealsense
 {
