@@ -1165,10 +1165,9 @@ namespace librealsense
 
                 auto info = std::make_shared<d400_info>( ctx, std::move( devices ), std::move( hwm_devices ), std::move( hids ) );
                 chosen.insert(chosen.end(), devices.begin(), devices.end());
-                if (info->get_device_data().uvc_devices.size() == 0 &&
-                    info->get_device_data().usb_devices.size() == 0 &&
-                    info->get_device_data().playback_devices.size() == 0 &&
-                    info->get_device_data().hid_devices.size() == 0) {
+                if (info->get_group().uvc_devices.size() == 0 &&
+                    info->get_group().usb_devices.size() == 0 &&
+                    info->get_group().hid_devices.size() == 0) {
                     continue;
                 }
                 results.push_back(info);
