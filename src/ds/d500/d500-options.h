@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <src/platform/uvc-option.h>
 #include "ds/ds-private.h"
 #include "ds/ds-options.h"
 #include "core/options-container.h"
@@ -74,6 +75,25 @@ namespace librealsense
         std::shared_ptr<hw_monitor> _hwm;
         temperature_component _component;
         const char* _description;
+    };
+
+    class temperature_xu_option : public uvc_xu_option<uint16_t>, 
+        public readonly_option
+    {
+    public:
+
+        explicit temperature_xu_option(const std::weak_ptr< uvc_sensor >& ep,
+            platform::extension_unit xu,
+            uint8_t id,
+            std::string description,
+            bool allow_set_while_streaming = true)
+            : uvc_xu_option<uint16_t>(ep, xu, id, description, allow_set_while_streaming) {}
+
+        virtual float query() const override;
+        virtual void set(float value) override;
+        inline bool is_enabled() const override { return true; }
+        virtual void enable_recording(std::function<void(const option&)> record_action) override 
+        { uvc_xu_option<uint16_t>::enable_recording(record_action); }
     };
 
     class d500_external_sync_mode : public option
