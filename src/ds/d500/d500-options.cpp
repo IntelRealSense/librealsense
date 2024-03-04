@@ -50,6 +50,36 @@ namespace librealsense
 
         return temperature;
     }
+	
+	float temperature_xu_option::query() const
+    {
+        float temperature = -1;
+        try {
+            auto res = uvc_xu_option<uint16_t>::query();
+            auto res_bytes = reinterpret_cast<uint8_t*>(&res);
+
+            // parsing the temperature result: 0xABCD:
+            // whole number = 0xCD - int8_t, 
+            // decimal part = 0xAB - uint8_t
+            int8_t whole_number_part = static_cast<int8_t>(res_bytes[0]);
+            uint8_t decimal_part = static_cast<uint8_t>(res_bytes[1]);
+
+            if (whole_number_part == 0xFF && decimal_part == 0xFF)
+                temperature = 0.f;
+            else
+                temperature = static_cast<float>(whole_number_part) + decimal_part / 256.f;
+        }
+        catch (...)
+        {
+            throw wrong_api_call_sequence_exception("XU command for reading temperature failed");
+        }
+        return temperature;
+    }
+
+    void temperature_xu_option::set(float value)
+    {
+        readonly_option::set(value);
+    }
 
     power_line_freq_option::power_line_freq_option(const std::weak_ptr< uvc_sensor >& ep, rs2_option id,
         const std::map< float, std::string >& description_per_value) :

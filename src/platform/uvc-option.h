@@ -49,7 +49,7 @@ public:
 
 // XU control with exclusing access to setter/getters
 template< typename T >
-class uvc_xu_option : public option
+class uvc_xu_option : virtual public option
 {
 public:
     void set( float value ) override
