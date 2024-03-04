@@ -147,6 +147,7 @@ extern "C" {
         RS2_OPTION_TYPE_INTEGER, /**< 64-bit signed integer value */
         RS2_OPTION_TYPE_FLOAT,
         RS2_OPTION_TYPE_STRING,
+        RS2_OPTION_TYPE_BOOLEAN,
 
         RS2_OPTION_TYPE_COUNT
 
@@ -163,11 +164,12 @@ extern "C" {
     typedef struct rs2_option_value
     {
         rs2_option id;
-        rs2_option_type type;             /**< RS2_OPTION_TYPE_COUNT if no value is available */
+        int is_valid;                     /**< 0 if no value available; 1 otherwise */
+        rs2_option_type type;
         union {
             char const * as_string;       /**< valid only while rs2_option_value is alive! */
             float as_float;
-            int64_t as_integer;
+            int64_t as_integer;           /**< including boolean value */
         };
     } rs2_option_value;
 
@@ -307,6 +309,14 @@ extern "C" {
     * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     */
     void rs2_set_option(const rs2_options* options, rs2_option option, float value, rs2_error** error);
+
+    /**
+    * write new value to sensor option
+    * \param[in] options       the options container
+    * \param[in] option_value  option id, type, and value to be set
+    * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    */
+    void rs2_set_option_value( rs2_options const * options, rs2_option_value const * option_value, rs2_error ** error );
 
    /**
    * get the list of supported options of options container

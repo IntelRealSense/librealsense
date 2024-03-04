@@ -68,6 +68,7 @@
 ////////////////////////
 
 using namespace librealsense;
+using rsutils::json;
 
 struct rs2_stream_profile_list
 {
@@ -88,34 +89,57 @@ struct rs2_device_list
 struct rs2_option_value_wrapper : rs2_option_value
 {
     // Keep the original json value, so we can refer to it (e.g., with as_string)
-    std::shared_ptr< const rsutils::json > p_json;
+    std::shared_ptr< const json > p_json;
 
     // Add a reference count to control lifetime
     mutable std::atomic< int > ref_count;
 
-    rs2_option_value_wrapper( rs2_option option_id, std::shared_ptr< const rsutils::json > const & p_json_value )
+    rs2_option_value_wrapper( rs2_option option_id,
+                              rs2_option_type option_type,
+                              std::shared_ptr< const json > const & p_json_value )
         : ref_count( 1 )
         , p_json( p_json_value )
     {
         id = option_id;
-        type = RS2_OPTION_TYPE_COUNT;
-        if( p_json )
+        type = option_type;
+        is_valid = false;
+        if( p_json && ! p_json->is_null() )
         {
-            if( p_json->is_number_float() )
+            switch( type )
             {
-                type = RS2_OPTION_TYPE_FLOAT;
+            case RS2_OPTION_TYPE_FLOAT:
+                if( ! p_json->is_number() )
+                    throw invalid_value_exception( get_string( option_id )
+                                                   + " value is not a float: " + p_json->dump() );
                 p_json->get_to( as_float );
-            }
-            if( p_json->is_number_integer() )
-            {
-                type = RS2_OPTION_TYPE_INTEGER;
+                break;
+
+            case RS2_OPTION_TYPE_INTEGER:
+                if( ! p_json->is_number_integer() )
+                    throw invalid_value_exception( get_string( option_id )
+                                                   + " value is not an integer: " + p_json->dump() );
                 p_json->get_to( as_integer );
-            }
-            else if( p_json->is_string() )
-            {
-                type = RS2_OPTION_TYPE_STRING;
+                break;
+
+            case RS2_OPTION_TYPE_BOOLEAN:
+                if( ! p_json->is_boolean() )
+                    throw invalid_value_exception( get_string( option_id )
+                                                   + " value is not a boolean: " + p_json->dump() );
+                as_integer = p_json->get< bool >();
+                break;
+
+            case RS2_OPTION_TYPE_STRING:
+                if( ! p_json->is_string() )
+                    throw invalid_value_exception( get_string( option_id )
+                                                   + " value is not a string: " + p_json->dump() );
                 as_string = p_json->string_ref().c_str();
+                break;
+
+            default:
+                throw invalid_value_exception( "invalid " + get_string( option_id ) + " type "
+                                               + get_string( option_type ) );
             }
+            is_valid = true;
         }
     }
 };
@@ -229,7 +253,7 @@ rs2_context* rs2_create_context(int api_version, rs2_error** error) BEGIN_API_CA
 {
     verify_version_compatibility(api_version);
 
-    rsutils::json settings;
+    json settings;
     return new rs2_context{ context::make( settings ) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
@@ -694,21 +718,49 @@ int rs2_is_option_read_only(const rs2_options* options, rs2_option option, rs2_e
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, options, option)
 
-float rs2_get_option(const rs2_options* options, rs2_option option, rs2_error** error) BEGIN_API_CALL
+float rs2_get_option(const rs2_options* options, rs2_option option_id, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    VALIDATE_OPTION_ENABLED(options, option);
-    return options->options->get_option(option).query();
+    VALIDATE_OPTION_ENABLED(options, option_id);
+    auto & option = options->options->get_option( option_id );
+    switch( option.get_value_type() )
+    {
+    case RS2_OPTION_TYPE_FLOAT:
+    case RS2_OPTION_TYPE_INTEGER:
+        return option.query();
+
+    case RS2_OPTION_TYPE_BOOLEAN:
+        return (float)option.get_value().get< bool >();
+
+    case RS2_OPTION_TYPE_STRING:
+        // We can convert "enum" options to a float value
+        auto r = option.get_range();
+        if( r.min == 0.f && r.step == 1.f )
+        {
+            json value = option.get_value();
+            for( auto i = 0.f; i < r.max; i += r.step )
+            {
+                auto desc = option.get_value_description( i );
+                if( ! desc )
+                    break;
+                if( value == desc )
+                    return i;
+            }
+        }
+        throw not_implemented_exception( "use rs2_get_option_value to get string values" );
+    }
+    return option.query();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0.0f, options, option)
+HANDLE_EXCEPTIONS_AND_RETURN(0.f, options, option_id)
 
 rs2_option_value const * rs2_get_option_value( const rs2_options * options, rs2_option option_id, rs2_error ** error ) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL( options );
-    VALIDATE_OPTION_ENABLED( options, option_id );
-    auto wrapper = new rs2_option_value_wrapper(
-        option_id,
-        std::make_shared< const rsutils::json >( options->options->get_option( option_id ).query() ) );
+    auto & option = options->options->get_option( option_id );  // throws
+    std::shared_ptr< const json > value;
+    if( option.is_enabled() )
+        value = std::make_shared< const json >( option.get_value() );
+    auto wrapper = new rs2_option_value_wrapper( option_id, option.get_value_type(), value );
     return wrapper;
 }
 HANDLE_EXCEPTIONS_AND_RETURN( nullptr, options, option_id )
@@ -728,10 +780,87 @@ void rs2_set_option(const rs2_options* options, rs2_option option, float value, 
     VALIDATE_OPTION_ENABLED(options, option);
     auto& option_ref = options->options->get_option(option);
     auto range = option_ref.get_range();
-    VALIDATE_RANGE(value, range.min, range.max);
-    option_ref.set(value);
+    switch( option_ref.get_value_type() )
+    {
+    case RS2_OPTION_TYPE_FLOAT:
+        if( range.min != range.max && range.step )
+            VALIDATE_RANGE( value, range.min, range.max );
+        option_ref.set( value );
+        break;
+
+    case RS2_OPTION_TYPE_INTEGER:
+        if( range.min != range.max && range.step )
+            VALIDATE_RANGE( value, range.min, range.max );
+        if( (int)value != value )
+            throw invalid_value_exception( rsutils::string::from() << "not an integer: " << value );
+        option_ref.set( value );
+        break;
+
+    case RS2_OPTION_TYPE_BOOLEAN:
+        if( value == 0.f )
+            option_ref.set_value( false );
+        else if( value == 1.f )
+            option_ref.set_value( true );
+        else
+            throw invalid_value_exception( rsutils::string::from() << "not a boolean: " << value );
+        break;
+
+    case RS2_OPTION_TYPE_STRING:
+        // We can convert "enum" options to a float value
+        if( (int)value == value && range.min == 0.f && range.step == 1.f )
+        {
+            auto desc = option_ref.get_value_description( value );
+            if( desc )
+            {
+                option_ref.set_value( desc );
+                break;
+            }
+        }
+        throw not_implemented_exception( "use rs2_set_option_value to set string values" );
+    }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, options, option, value)
+
+void rs2_set_option_value( rs2_options const * options, rs2_option_value const * option_value, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( options );
+    VALIDATE_NOT_NULL( option_value );
+    auto & option = options->options->get_option( option_value->id );  // throws
+    if( ! option_value->is_valid )
+    {
+        option.set_value( rsutils::null_json );
+        return;
+    }
+    rs2_option_type const option_type = option.get_value_type();
+    if( option_value->type != option_type )
+        throw invalid_value_exception( "expected " + get_string( option_type ) + " type" );
+    auto range = option.get_range();
+    switch( option_type )
+    {
+    case RS2_OPTION_TYPE_FLOAT:
+        VALIDATE_RANGE( option_value->as_float, range.min, range.max );
+        option.set_value( option_value->as_float );
+        break;
+
+    case RS2_OPTION_TYPE_INTEGER:
+        VALIDATE_RANGE( option_value->as_integer, range.min, range.max );
+        option.set_value( option_value->as_integer );
+        break;
+
+    case RS2_OPTION_TYPE_BOOLEAN:
+        VALIDATE_RANGE( option_value->as_integer, range.min, range.max );
+        option.set_value( (bool)option_value->as_integer );
+        break;
+
+    case RS2_OPTION_TYPE_STRING:
+        option.set_value( option_value->as_string );
+        break;
+
+    default:
+        throw not_implemented_exception( "unexpected option type " + get_string( option_type ) );
+    }
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , options, option_value )
 
 rs2_options_list* rs2_get_options_list(const rs2_options* options, rs2_error** error) BEGIN_API_CALL
 {
@@ -741,7 +870,18 @@ rs2_options_list* rs2_get_options_list(const rs2_options* options, rs2_error** e
     rs2_list->list.reserve( option_ids.size() );
     for( auto option_id : option_ids )
     {
-        auto wrapper = new rs2_option_value_wrapper( option_id, {} );  // empty json
+        auto & option = options->options->get_option( option_id );
+        std::shared_ptr< const json > value;
+        try
+        {
+            if( option.is_enabled() )
+                value = std::make_shared< const json >( option.get_value() );
+        }
+        catch( ... )
+        {
+            // Sometimes option values may not be available, meaning the value stays null (is_valid=false)
+        }
+        auto wrapper = new rs2_option_value_wrapper( option_id, option.get_value_type(), value );
         rs2_list->list.push_back( wrapper );
     }
     return rs2_list;
@@ -1288,7 +1428,9 @@ static void populate_options_list( rs2_options_list * updated_options_list,
     {
         options_watcher::option_and_value const & option_and_value = id_value.second;
         updated_options_list->list.push_back(
-            new rs2_option_value_wrapper( id_value.first, option_and_value.p_last_known_value ) );
+            new rs2_option_value_wrapper( id_value.first,
+                                          option_and_value.sptr->get_value_type(),
+                                          option_and_value.p_last_known_value ) );
     }
 }
 
@@ -2782,7 +2924,7 @@ NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0)
 rs2_device* rs2_create_software_device(rs2_error** error) BEGIN_API_CALL
 {
     // We're not given a context...
-    auto ctx = context::make( rsutils::json::object( { { "dds", false } } ) );
+    auto ctx = context::make( json::object( { { "dds", false } } ) );
     auto dev_info = std::make_shared< software_device_info >( ctx );
     auto dev = std::make_shared< software_device >( dev_info );
     dev_info->set_device( dev );

@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include "post-processing-filters-list.h"
 #include "post-processing-block-model.h"
@@ -73,11 +73,10 @@ namespace rs2
                                             bool * options_invalidated,
                                             std::string & error_message )
     {
-        for (auto&& i : s->get_supported_options())
+        for (rs2::option_value option : s->get_supported_option_values())
         {
-            auto opt = static_cast<rs2_option>(i);
-
-            options_metadata[opt] = create_option_model(opt, opt_base_label, this, s, options_invalidated, error_message);
+            options_metadata[option->id]
+                = create_option_model( option, opt_base_label, this, s, options_invalidated, error_message );
         }
         try
         {
@@ -88,8 +87,7 @@ namespace rs2
                     auto it = options_metadata.find( changed_option->id );
                     if( it != options_metadata.end() && ! _destructing ) // Callback runs in different context, check options_metadata still valid
                     {
-                        if( RS2_OPTION_TYPE_FLOAT == changed_option->type )
-                            it->second.value = changed_option->as_float;
+                        it->second.value = changed_option;
                     }
                 }
             } );
@@ -1688,7 +1686,7 @@ namespace rs2
                 if (next == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
                 {
                     auto old_ae_enabled = auto_exposure_enabled;
-                    auto_exposure_enabled = opt_md.value > 0;
+                    auto_exposure_enabled = opt_md.value->as_float > 0;
 
                     if (!old_ae_enabled && auto_exposure_enabled)
                     {
@@ -1712,11 +1710,11 @@ namespace rs2
 
                 if (next == RS2_OPTION_DEPTH_UNITS)
                 {
-                    opt_md.dev->depth_units = opt_md.value;
+                    opt_md.dev->depth_units = opt_md.value->as_float;
                 }
 
                 if (next == RS2_OPTION_STEREO_BASELINE)
-                    opt_md.dev->stereo_baseline = opt_md.value;
+                    opt_md.dev->stereo_baseline = opt_md.value->as_float;
             }
 
             next_option++;

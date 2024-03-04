@@ -66,9 +66,9 @@ void dds_option::init_default_value( json value )
 }
 
 
-void dds_option::init_range( rsutils::json const & minimum_value,
-                             rsutils::json const & maximum_value,
-                             rsutils::json const & stepping )
+void dds_option::init_range( rsutils::json minimum_value,
+                             rsutils::json maximum_value,
+                             rsutils::json stepping )
 {
     verify_uninitialized();
 
@@ -90,20 +90,20 @@ void dds_option::init_range( rsutils::json const & minimum_value,
         check_type( minimum_value );
         if( ! get_default_value().is_null() && get_default_value() < minimum_value )
             DDS_THROW( runtime_error, "default value " << get_default_value() << " < " << minimum_value << " minimum" );
-        _minimum_value = minimum_value;
+        _minimum_value = std::move( minimum_value );
     }
     if( ! maximum_value.is_null() )
     {
         check_type( maximum_value );
         if( ! get_default_value().is_null() && get_default_value() > maximum_value )
             DDS_THROW( runtime_error, "default value " << get_default_value() << " > " << maximum_value << " maximum" );
-        _maximum_value = maximum_value;
+        _maximum_value = std::move( maximum_value );
     }
     if( ! stepping.is_null() )
     {
         check_type( stepping );
         // TODO check default against stepping?
-        _stepping = stepping;
+        _stepping = std::move( stepping );
     }
 }
 
@@ -160,7 +160,7 @@ void dds_option::check_value( json & value ) const
     if( value.is_null() )
     {
         if( ! is_optional() )
-            DDS_THROW( runtime_error, "option '" << _name << "' is not optional" );
+            DDS_THROW( runtime_error, "value is not optional" );
     }
     else
     {
@@ -262,6 +262,8 @@ static std::string parse_type( json const & j, size_t size, dds_option::option_p
         case 4:
             if( p == "IPv4" )
                 return props.erase( p ), p;
+            if( 5 == size && p == "enum" )
+                return props.erase( p ), p;
             break;
         }
     }
@@ -284,6 +286,11 @@ static std::string parse_type( json const & j, size_t size, dds_option::option_p
             return type;
         break;
 
+    case 5:  // [name,value,[choices],default,description]
+        if( type_from_value( type, j[1], j[3] ) && type != "string" )
+            DDS_THROW( runtime_error, "non-string enum values" );
+        return "enum";
+
     default:
         DDS_THROW( runtime_error, "unexected size " << size << " of option json" );
     }
@@ -299,10 +306,12 @@ static std::string parse_type( json const & j, size_t size, dds_option::option_p
         return std::make_shared< dds_string_option >();
     if( type == "int" )
         return std::make_shared< dds_integer_option >();
-    //if( type == "boolean" )
-    //    return std::make_shared< dds_boolean_option >();
+    if( type == "boolean" )
+        return std::make_shared< dds_boolean_option >();
     if( type == "IPv4" )
         return std::make_shared< dds_ip_option >();
+    if( type == "enum" )
+        return std::make_shared< dds_enum_option >();
     return {};
 }
 
@@ -359,9 +368,13 @@ static std::string parse_type( json const & j, size_t size, dds_option::option_p
         option->init_range( j[2], j[3], j[4] );
         break;
 
-    case 5:  // [name,value,[choices],default,description] -> TODO
+    case 5:  // [name,value,[choices],default,description]
+        std::dynamic_pointer_cast< dds_enum_option >( option )->init_choices( j[2] );
+        option->init_default_value( j[3] );
+        break;
+
     default:
-        DDS_THROW( runtime_error, "unexected option json size " << size );
+        DDS_THROW( runtime_error, "unexpected option json size " << size );
     }
 
     // Finally, set the actual value
@@ -399,7 +412,11 @@ json dds_option::props_to_json() const
 {
     json props = json::array();
     if( is_optional() )
+    {
         props += "optional";
+        if( get_value().is_null() && ( ! get_default_value().exists() || get_default_value().is_null() ) )
+            props += value_type();
+    }
     if( is_read_only() && get_default_value().exists() )
         props += "read-only";
     return props;
@@ -422,8 +439,9 @@ json dds_option::props_to_json() const
 }
 
 
-void dds_float_option::check_type( json const & value ) const
+void dds_float_option::check_type( json & value ) const
 {
+    // We do not reset the value: "1.1" will become 1.100000023841858
     check_float( value );
 }
 
@@ -449,16 +467,101 @@ void dds_float_option::check_type( json const & value ) const
 }
 
 
-void dds_integer_option::check_type( json const & value ) const
+void dds_integer_option::check_type( json & value ) const
 {
-    check_integer( value );
+    value = check_integer( value );
 }
 
 
-void dds_string_option::check_type( json const & value ) const
+void dds_boolean_option::init_range( rsutils::json minimum_value,
+                                     rsutils::json maximum_value,
+                                     rsutils::json stepping )
+{
+    if( ! minimum_value.is_null() || ! maximum_value.is_null() || ! stepping.is_null() )
+        DDS_THROW( runtime_error, "boolean options cannot have a range" );
+    super::init_range( std::move( minimum_value ), std::move( maximum_value ), std::move( stepping ) );
+}
+
+
+/*static*/ dds_boolean_option::type dds_boolean_option::check_boolean( json const & value )
+{
+    switch( value.type() )
+    {
+    case json::value_t::boolean:
+        return value.get< type >();
+
+    case json::value_t::number_integer:
+    case json::value_t::number_unsigned:
+        switch( auto i = value.get< super::type >() )
+        {
+        case 0:
+        case 1:
+            return i != 0;
+        }
+        break;
+    }
+    DDS_THROW( runtime_error, "not convertible to a boolean: " << value );
+}
+
+
+void dds_boolean_option::check_type( json & value ) const
+{
+    value = check_boolean( value );
+}
+
+
+void dds_string_option::check_type( json & value ) const
 {
     if( ! value.is_string() )
         DDS_THROW( runtime_error, "not a string: " << value );
+}
+
+
+void dds_enum_option::init_choices( rsutils::json choices )
+{
+    verify_uninitialized();
+
+    if( ! choices.is_array() )
+        DDS_THROW( runtime_error, "enum option requires a choices array" );
+    if( ! _minimum_value.is_null() || ! _maximum_value.is_null() || ! _stepping.is_null() )
+        DDS_THROW( runtime_error, "enum options cannot have a range" );
+
+    _choices.clear();
+    for( auto const & choice : choices )
+    {
+        if( ! choice.is_string() )
+            DDS_THROW( runtime_error, "enum choices must be strings" );
+        _choices.push_back( choice.string_ref() );
+    }
+}
+
+
+int dds_enum_option::get_value_index( std::string const & value ) const
+{
+    for( int i = 0; i < _choices.size(); ++i )
+        if( _choices[i] == value )
+            return i;
+    return -1;
+}
+
+
+void dds_enum_option::check_value( json & value ) const
+{
+    super::check_value( value );
+
+    if( ! value.is_null() )
+    {
+        if( get_value_index( value ) < 0 )
+            DDS_THROW( runtime_error, "invalid enum value: " << value );
+    }
+}
+
+
+json dds_enum_option::to_json() const
+{
+    auto j = super::to_json();
+    j.insert( j.begin() + 2, get_choices() );
+    return j;
 }
 
 
@@ -471,7 +574,7 @@ void dds_string_option::check_type( json const & value ) const
 }
 
 
-void dds_ip_option::check_type( json const & value ) const
+void dds_ip_option::check_type( json & value ) const
 {
     check_ip( value );
 }

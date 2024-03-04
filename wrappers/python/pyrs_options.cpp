@@ -4,6 +4,9 @@
 #include "pyrealsense2.h"
 #include <librealsense2/hpp/rs_options.hpp>
 
+using rsutils::json;
+
+
 void init_options(py::module &m) {
     /** rs_options.hpp **/
 
@@ -11,17 +14,23 @@ void init_options(py::module &m) {
     struct option_value
     {
         rs2_option id;
+        rs2_option_type type;
         py::object value;
 
         option_value( rs2::option_value const & value_ )
             : id( value_->id )
+            , type( value_->type )
         {
-            if( RS2_OPTION_TYPE_FLOAT == value_->type )
+            if( ! value_->is_valid )
+                value = py::cast< py::none >( Py_None );
+            else if( RS2_OPTION_TYPE_FLOAT == value_->type )
                 value = py::float_( value_->as_float );
             else if( RS2_OPTION_TYPE_STRING == value_->type )
                 value = py::str( value_->as_string );
             else if( RS2_OPTION_TYPE_INTEGER == value_->type )
                 value = py::int_( value_->as_integer );
+            else if( RS2_OPTION_TYPE_BOOLEAN == value_->type )
+                value = py::bool_( value_->as_integer );
             else
                 value = py::cast< py::none >( Py_None );
         }
@@ -29,6 +38,7 @@ void init_options(py::module &m) {
     py::class_< option_value >( m, "option_value" )
         .def_readwrite( "id", &option_value::id )
         .def_readwrite( "value", &option_value::value )  // None if no value available
+        .def_readwrite( "type", &option_value::type )
         .def( "__repr__",
               []( option_value const & self )
               {
@@ -68,6 +78,41 @@ void init_options(py::module &m) {
     options.def("is_option_read_only", &rs2::options::is_option_read_only, "Check if particular option "
                 "is read only.", "option"_a)
         .def("get_option", &rs2::options::get_option, "Read option value from the device.", "option"_a, py::call_guard<py::gil_scoped_release>())
+        .def( "get_option_value",
+              []( rs2::options const & self, rs2_option option_id ) -> option_value
+                  { return self.get_option_value( option_id ); } )
+        .def( "set_option_value",
+              []( rs2::options const & self, rs2_option option_id, json value )
+              {
+                  rs2::option_value rs2_value;
+                  switch( value.type() )
+                  {
+                  case json::value_t::null:
+                      rs2_value = rs2::option_value( option_id, rs2::option_value::invalid );
+                      break;
+
+                  case json::value_t::string:
+                      rs2_value = rs2::option_value( option_id, value.string_ref().c_str() );
+                      break;
+
+                  case json::value_t::number_float:
+                      rs2_value = rs2::option_value( option_id, value.get< float >() );
+                      break;
+
+                  case json::value_t::number_unsigned:
+                  case json::value_t::number_integer:
+                      rs2_value = rs2::option_value( option_id, value.get< int64_t >() );
+                      break;
+
+                  case json::value_t::boolean:
+                      rs2_value = rs2::option_value( option_id, value.get< bool >() );
+                      break;
+
+                  default:
+                      throw std::runtime_error( "invalid value type: " + value.dump() );
+                  }
+                  self.set_option_value( rs2_value );
+              } )
         .def("get_option_range", &rs2::options::get_option_range, "Retrieve the available range of values "
              "of a supported option", "option"_a, py::call_guard<py::gil_scoped_release>())
         .def("set_option", &rs2::options::set_option, "Write new value to device option", "option"_a, "value"_a, py::call_guard<py::gil_scoped_release>())

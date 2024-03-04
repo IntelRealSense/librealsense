@@ -733,6 +733,7 @@ std::string const & get_string( rs2_option_type value )
         CASE( FLOAT )
         CASE( STRING )
         CASE( INTEGER )
+        CASE( BOOLEAN )
 #undef CASE
             return arr;
     }();

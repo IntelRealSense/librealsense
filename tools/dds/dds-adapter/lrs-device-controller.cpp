@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include "lrs-device-controller.h"
 
@@ -531,7 +531,7 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
     if( ! _dds_device_server )
         throw std::runtime_error( "Empty dds_device_server" );
 
-    _dds_device_server->on_set_option( [&]( const std::shared_ptr< realdds::dds_option > & option, float value ) {
+    _dds_device_server->on_set_option( [&]( const std::shared_ptr< realdds::dds_option > & option, json & value ) {
         set_option( option, value );
     } );
     _dds_device_server->on_query_option( [&]( const std::shared_ptr< realdds::dds_option > & option ) -> json {
@@ -690,25 +690,32 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                             continue;
                         }
                         json value;
-                        switch( changed_option->type )
+                        if( changed_option->is_valid )
                         {
-                        case RS2_OPTION_TYPE_FLOAT:
-                            value = changed_option->as_float;
-                            break;
-                        case RS2_OPTION_TYPE_STRING:
-                            value = changed_option->as_string;
-                            break;
-                        case RS2_OPTION_TYPE_INTEGER:
-                            value = changed_option->as_integer;
-                            break;
-                        case RS2_OPTION_TYPE_COUNT:
+                            switch( changed_option->type )
+                            {
+                            case RS2_OPTION_TYPE_FLOAT:
+                                value = changed_option->as_float;
+                                break;
+                            case RS2_OPTION_TYPE_STRING:
+                                value = changed_option->as_string;
+                                break;
+                            case RS2_OPTION_TYPE_INTEGER:
+                                value = changed_option->as_integer;
+                                break;
+                            case RS2_OPTION_TYPE_BOOLEAN:
+                                value = (bool)changed_option->as_integer;
+                                break;
+                            default:
+                                LOG_ERROR( "Unknown option '" << option_name << "' type: "
+                                                              << rs2_option_type_to_string( changed_option->type ) );
+                                continue;
+                            }
+                        }
+                        else
+                        {
                             // No value available
                             value = rsutils::null_json;
-                            break;
-                        default:
-                            LOG_ERROR( "Unknown option '" << option_name << "' type: "
-                                                          << rs2_option_type_to_string( changed_option->type ) );
-                            continue;
                         }
                         dds_option->set_value( std::move( value ) );
                         option_values[stream_name][option_name] = dds_option->get_value();

@@ -546,25 +546,21 @@ void dds_sensor_proxy::add_option( std::shared_ptr< realdds::dds_option > option
     LOG_DEBUG( "... option -> " << option->get_name() );
     auto opt = std::make_shared< rs_dds_option >(
         option,
-        [=]( const std::string & name, float value ) { _dev->set_option_value( option, value ); },
-        [=]( const std::string & name ) -> float
+        [=]( json value )
+        {
+            // Send the new value to the remote device; the local value gets cached automatically as part of the reply
+            _dev->set_option_value( option, std::move( value ) );
+        },
+        [=]() -> json
         {
             // We don't have to constantly query the option: we expect to get new values automatically, so can return
             // the "last-known" value:
-            json value = option->get_value();
+            return option->get_value();
             // If the value is null, we shouldn't get here (is_enabled() should return false) from the user but it's
             // still possible from internal mechanisms (like the options-watcher).
-            // If we actually query for the current value:
-            //    value = _dev->query_option_value( option );
+            // If we query for the actual current value:
+            //    return _dev->query_option_value( option );
             // Then we may have get a null even when is_enabled() returned true!
-            try
-            {
-                return value;  // try to convert to float
-            }
-            catch( std::exception const & )
-            {
-                throw invalid_value_exception( rsutils::string::from() << "option '" << name << "' value (" << value << ") is not a float" );
-            }
         } );
     register_option( option_id, opt );
     _options_watcher.register_option( option_id, opt );
