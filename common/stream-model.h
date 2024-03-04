@@ -106,6 +106,7 @@ namespace rs2
         std::unique_ptr< reflectivity > _reflectivity;
         rsutils::number::stabilized_value<float> _stabilized_reflectivity;
 
+        std::string smcu_internal_state_to_string(rs2_metadata_type& attribute_val) const;
         std::string format_value(rs2_frame_metadata_value& md_val, rs2_metadata_type& attribute_val) const;
         bool should_show_in_hex(rs2_frame_metadata_value& md_val) const;
         void show_metadata_by_default(const rs2::stream_profile& p);
