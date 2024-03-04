@@ -1,18 +1,16 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
-#pragma once
-
-#include "output-model.h"
-#include "device-model.h"
 
 namespace rs2
 {
+    class stream_dashboard;
+
     class motion_dashboard : public stream_dashboard
     {
     public:
 
-        motion_dashboard( std::string name );
+        motion_dashboard( std::string name, enum rs2_stream stream);
 
         // Draw Accelerate dashboard and graph's lines
         void draw( ux_window & window, rect rectangle ) override;
@@ -24,19 +22,28 @@ namespace rs2
         // Show slider that change pause between acceleration values that we saving.
         void show_data_rate_slider();
 
+        // Extract X, Y, Z and calculate N values from a frame
+        void process_frame( rs2::frame f ) override;
+
     protected:
         float x_value;
         float y_value;
         float z_value;
         float n_value;  // Norm ||V|| = SQRT(X^2 + Y^2 + Z^2)
 
-        float frame_rate;
+        float dashboard_update_rate;
         double last_time;
-        std::map< float, double > frame_to_time;
+        std::map< int, double > frame_to_time;
 
-        std::vector< std::string > accel_params = { "X", "Y", "Z", "N" };
-        int curr_accel_param_position = 0;
+        const char * x_axes_name = "X";
+        const char * y_axes_name = "Y";
+        const char * z_axes_name = "Z";
+        const char * n_axes_name = "N";
 
+        std::vector< std::string > plots = { x_axes_name, y_axes_name, z_axes_name, n_axes_name };
+        int plot_index = 0;
+
+        enum rs2_stream stream_type;
         const float MIN_FRAME_RATE = 0.01f;
         const float MAX_FRAME_RATE = 0.1f;
 
@@ -45,23 +52,5 @@ namespace rs2
         std::deque< float > y_history;
         std::deque< float > z_history;
         std::deque< float > n_history;
-    };
-
-    class accel_dashboard : public motion_dashboard
-    {
-    public:
-        accel_dashboard( std::string name );
-
-        // Extract X, Y, Z and calculate N values from a frame
-        void process_frame( rs2::frame f ) override;
-    };
-
-    class gyro_dashboard : public motion_dashboard
-    {
-    public:
-        gyro_dashboard( std::string name );
-
-        // Extract X, Y, Z and calculate N values from a frame
-        void process_frame( rs2::frame f ) override;
     };
 }

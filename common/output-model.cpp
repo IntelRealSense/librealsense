@@ -119,27 +119,27 @@ output_model::output_model() : fw_logger([this](){ thread_loop(); }) , incoming_
             configurations::viewer::search_term, std::string(""));
     is_dashboard_open = config_file::instance().get_or_default(
         configurations::viewer::dashboard_open, true );
-    opened_dashboard_index = config_file::instance().get( configurations::viewer::last_opened_dashboard );
+    current_dashboard_index = config_file::instance().get( configurations::viewer::last_opened_dashboard );
     
     if (search_line != "") search_open = true;
 
-    available_dashboards[dashboard_names[1]] = [&]( std::string name )
-    {
-        return std::make_shared<frame_drops_dashboard>(name, &number_of_drops, &total_frames);
-    };
+    available_dashboards.push_back( std::make_pair( dashboard_names[0],
+                                                    [&]( std::string name )
+        { return std::make_shared< frame_drops_dashboard >( name, &number_of_drops, &total_frames ); } ) );
 
-    available_dashboards[dashboard_names[0]] = [&]( std::string name )
-    {
-        return std::make_shared< accel_dashboard >( name );
-    };
+    available_dashboards.push_back( std::make_pair( dashboard_names[1],
+                                                    [&]( std::string name )
+                                                    { return std::make_shared< motion_dashboard >( name, RS2_STREAM_ACCEL ); } ) );
 
-    available_dashboards[dashboard_names[2]] = [&]( std::string name )
-    {
-        return std::make_shared< gyro_dashboard >( name );
-    };
+    available_dashboards.push_back( std::make_pair( dashboard_names[2],
+                                                    [&]( std::string name )
+                                                    { return std::make_shared< motion_dashboard >( name, RS2_STREAM_GYRO ); } ) );
 
-    auto front = available_dashboards.find( dashboard_names[opened_dashboard_index] );
-    dashboards.push_back(front->second(front->first));
+    for(const auto& dashboard: available_dashboards)
+    {
+        if( dashboard.first == dashboard_names[current_dashboard_index] )
+            dashboards.push_back( dashboard.second( dashboard.first ) );
+    }
 }
 
 bool output_model::round_indicator(ux_window& win, std::string icon,
@@ -716,14 +716,14 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
 
                 ImGui::SetCursorPosX( ImGui::GetCursorPosX() + collapse_dashboard_button_size.x );
 
-                // Show dashboards to user
-                if( ImGui::RadioButton( name.c_str(), &opened_dashboard_index, radio_button_choice++ ) )
+                // Show dashboard radio button to user
+                if( ImGui::RadioButton( name.c_str(), &current_dashboard_index, radio_button_choice++ ) )
                 {
                     for( auto & d : dashboards )
                         d->close();
                     dashboards.clear();
 
-                    config_file::instance().set( configurations::viewer::last_opened_dashboard, opened_dashboard_index);
+                    config_file::instance().set( configurations::viewer::last_opened_dashboard, current_dashboard_index);
                     dashboards.push_back( kvp.second( kvp.first ) );
                 }
             }

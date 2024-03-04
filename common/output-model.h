@@ -83,7 +83,7 @@ namespace rs2
         std::mutex m;
         std::atomic<int> stop { false };
         std::thread t;
-        std::vector<std::pair<float, float>> xy;
+        std::deque<std::pair<float, float>> xy;
         bool to_close = false;
     };
 
@@ -167,9 +167,10 @@ namespace rs2
         bool command_focus = true;
 
         std::vector<std::shared_ptr<stream_dashboard>> dashboards;
-        std::map<std::string, std::function<std::shared_ptr<stream_dashboard>(std::string)>> available_dashboards;
-        const std::vector< std::string > dashboard_names = { "Acceleration", "Frame Drops per Second", "Gyro" };
-        int opened_dashboard_index;
+        std::vector<std::pair<std::string, std::function<std::shared_ptr<stream_dashboard>(std::string)>>> available_dashboards;
+        const std::vector< std::string > dashboard_names = { "Frame Drops per Second", "Acceleration", "Gyro" };
+
+        int current_dashboard_index;
 
         std::atomic<int> to_stop { 0 };
         std::thread fw_logger;
