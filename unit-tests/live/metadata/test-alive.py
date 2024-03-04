@@ -131,14 +131,12 @@ for profile, sensor in testing_profiles.items():
         is_value_keep_increasing(rs.frame_metadata_value.sensor_timestamp)
         test.finish()
 
-        # activate once D585S FW in LibCI machines support this feature
-        if False:
-            # On D457, sensor timestamp == frame timestamp, so we ignore it
-            camera_name = device.get_info(rs.camera_info.name)
-            if 'D457' not in camera_name:
-                test.start('Verifying sensor timestamp is different than frame timestamp for profile ', profile)
-                are_metadata_values_different(rs.frame_metadata_value.frame_timestamp, rs.frame_metadata_value.sensor_timestamp)
-                test.finish()
+        # On D457, sensor timestamp == frame timestamp, so we ignore it
+        camera_name = device.get_info(rs.camera_info.name)
+        if 'D457' not in camera_name:
+            test.start('Verifying sensor timestamp is different than frame timestamp for profile ', profile)
+            are_metadata_values_different(rs.frame_metadata_value.frame_timestamp, rs.frame_metadata_value.sensor_timestamp)
+            test.finish()
 
     close_resources(sensor)
     time.sleep( 1 )  # better sleep before stopping/starting streaming, so we can let the device recover properly.
