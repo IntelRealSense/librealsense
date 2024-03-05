@@ -44,14 +44,6 @@ namespace librealsense
             std::make_shared<auto_disabling_control>(
                 white_balance_option,
                 auto_white_balance_option));
-
-
-        _color_ep.register_option(RS2_OPTION_POWER_LINE_FREQUENCY,
-            std::make_shared<uvc_pu_option>(_raw_color_ep, RS2_OPTION_POWER_LINE_FREQUENCY,
-                std::map<float, std::string>{ { 0.f, "Disabled"},
-                { 1.f, "50Hz" },
-                { 2.f, "60Hz" },
-                { 3.f, "Auto" }, }));
     }
 
     void ds_color_common::register_standard_options()
