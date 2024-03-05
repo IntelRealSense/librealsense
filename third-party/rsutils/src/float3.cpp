@@ -1,12 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
-#include "float3.h"
+#include <rsutils/number/float3.h>
 
 #include <ostream>
 
 
-namespace librealsense {
+namespace rsutils {
+namespace number {
 
 
 std::ostream & operator<<( std::ostream & stream, const float3 & elem )
@@ -27,4 +28,5 @@ std::ostream & operator<<( std::ostream & stream, const float3x3 & elem )
 }
 
 
-}  // namespace librealsense
+}  // namespace number
+}  // namespace rsutils

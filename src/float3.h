@@ -2,116 +2,17 @@
 // Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include <iosfwd>
-#include <cassert>
+#include <rsutils/number/float3.h>
 
 
 namespace librealsense {
 
 
-////////////////////////////////////////////
-// World's tiniest linear algebra library //
-////////////////////////////////////////////
-
-
-#pragma pack( push, 1 )
-struct int2
-{
-    int x, y;
-};
-struct float2
-{
-    float x, y;
-    float & operator[]( int i )
-    {
-        assert( i >= 0 );
-        assert( i < 2 );
-        return *( &x + i );
-    }
-};
-struct float3
-{
-    float x, y, z;
-    float & operator[]( int i )
-    {
-        assert( i >= 0 );
-        assert( i < 3 );
-        return ( *( &x + i ) );
-    }
-};
-struct float4
-{
-    float x, y, z, w;
-    float & operator[]( int i )
-    {
-        assert( i >= 0 );
-        assert( i < 4 );
-        return ( *( &x + i ) );
-    }
-};
-struct float3x3
-{
-    float3 x, y, z;
-    float & operator()( int i, int j )
-    {
-        assert( i >= 0 );
-        assert( i < 3 );
-        assert( j >= 0 );
-        assert( j < 3 );
-        return ( *( &x[0] + j * sizeof( float3 ) / sizeof( float ) + i ) );
-    }
-};  // column-major
-#pragma pack( pop )
-
-inline bool operator==( const float3 & a, const float3 & b )
-{
-    return a.x == b.x && a.y == b.y && a.z == b.z;
-}
-inline float3 operator+( const float3 & a, const float3 & b )
-{
-    return { a.x + b.x, a.y + b.y, a.z + b.z };
-}
-inline float3 operator-( const float3 & a, const float3 & b )
-{
-    return { a.x - b.x, a.y - b.y, a.z - b.z };
-}
-inline float3 operator*( const float3 & a, float b )
-{
-    return { a.x * b, a.y * b, a.z * b };
-}
-inline bool operator==( const float4 & a, const float4 & b )
-{
-    return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
-}
-inline float4 operator+( const float4 & a, const float4 & b )
-{
-    return { a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w };
-}
-inline float4 operator-( const float4 & a, const float4 & b )
-{
-    return { a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w };
-}
-inline bool operator==( const float3x3 & a, const float3x3 & b )
-{
-    return a.x == b.x && a.y == b.y && a.z == b.z;
-}
-inline float3 operator*( const float3x3 & a, const float3 & b )
-{
-    return a.x * b.x + a.y * b.y + a.z * b.z;
-}
-inline float3x3 operator*( const float3x3 & a, const float3x3 & b )
-{
-    return { a * b.x, a * b.y, a * b.z };
-}
-inline float3x3 transpose( const float3x3 & a )
-{
-    return { { a.x.x, a.y.x, a.z.x }, { a.x.y, a.y.y, a.z.y }, { a.x.z, a.y.z, a.z.z } };
-}
-
-
-std::ostream & operator<<( std::ostream &, const float3 & );
-std::ostream & operator<<( std::ostream &, const float4 & );
-std::ostream & operator<<( std::ostream &, const float3x3 & );
+using rsutils::number::int2;
+using rsutils::number::float2;
+using rsutils::number::float3;
+using rsutils::number::float4;
+using rsutils::number::float3x3;
 
 
 }  // namespace librealsense

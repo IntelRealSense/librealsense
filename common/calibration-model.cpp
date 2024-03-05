@@ -38,8 +38,8 @@ void calibration_model::draw_float(std::string name, float& x, const float& orig
     ImGui::PopStyleColor();
 }
 
-void calibration_model::draw_float4x4(std::string name, librealsense::float3x3& feild,
-                                      const librealsense::float3x3& original, bool& changed)
+void calibration_model::draw_float4x4(std::string name, float3x3& feild,
+                                      const float3x3& original, bool& changed)
 {
     ImGui::SetCursorPosX(10);
     ImGui::Text("%s:", name.c_str()); ImGui::SameLine();

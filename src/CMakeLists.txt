@@ -133,7 +133,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/environment.h"
         "${CMAKE_CURRENT_LIST_DIR}/firmware-version.h"
         "${CMAKE_CURRENT_LIST_DIR}/float3.h"
-        "${CMAKE_CURRENT_LIST_DIR}/float3.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/fourcc.h"
         "${CMAKE_CURRENT_LIST_DIR}/log.h"
         "${CMAKE_CURRENT_LIST_DIR}/error-handling.h"
