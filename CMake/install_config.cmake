@@ -48,4 +48,13 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/config/realsense2.pc"
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
 )
 
+if("${CMAKE_SYSTEM}" MATCHES "Linux")
+  if(EXISTS "/etc/udev/rules.d/")
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/config/99-realsense-libusb.rules"
+      DESTINATION "/etc/udev/rules.d/" COMPONENT Runtime)
+  else()
+    message(WARNING "Could not find udev rules directory (/lib/udev/rules.d/), skipping installation of udev rules.")
+  endif()
+endif()
+
 install(CODE "execute_process(COMMAND ldconfig)")
