@@ -64,10 +64,15 @@ namespace rs2
             return res;
         }
 
-        void add_point(float x, float y) { xy.push_back(std::make_pair(x, y)); }
+        void add_point_x_axis( float x, float y ) { xy_x_axis.push_back( std::make_pair( x, y ) ); }
+        void add_point_y_axis( float x, float y ) { xy_y_axis.push_back( std::make_pair( x, y ) ); }
+        void add_point_z_axis( float x, float y ) { xy_z_axis.push_back( std::make_pair( x, y ) ); }
+        void add_point_n_vector( float x, float y ) { xy_n_vector.push_back( std::make_pair( x, y ) ); }
 
         void draw_dashboard(ux_window& win, rect& r);
 
+        // Scanning all axes data structures and found optimal dashboard size to show them. 
+        void set_dashboard_size( float & min_x, float & max_x, float & min_y, float & max_y );
     private:
         void thread_function()
         {
@@ -83,7 +88,12 @@ namespace rs2
         std::mutex m;
         std::atomic<int> stop { false };
         std::thread t;
-        std::deque<std::pair<float, float>> xy;
+
+        std::deque< std::pair< float, float > > xy_x_axis;
+        std::deque< std::pair< float, float > > xy_y_axis;
+        std::deque< std::pair< float, float > > xy_z_axis;
+        std::deque< std::pair< float, float > > xy_n_vector;
+
         bool to_close = false;
     };
 

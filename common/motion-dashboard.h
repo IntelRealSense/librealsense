@@ -34,13 +34,10 @@ namespace rs2
         float dashboard_update_rate;
         double last_time;
 
-        const char * x_axes_name = "X";
-        const char * y_axes_name = "Y";
-        const char * z_axes_name = "Z";
-        const char * n_axes_name = "N";
-
-        std::vector< std::string > plots = { x_axes_name, y_axes_name, z_axes_name, n_axes_name };
-        int plot_index = 0;
+        const char * x_axis_name = "X";
+        const char * y_axis_name = "Y";
+        const char * z_axis_name = "Z";
+        const char * n_vector_name = "N";
 
         enum rs2_stream stream_type;
         const float MIN_FRAME_RATE = 0.01f;
@@ -48,8 +45,15 @@ namespace rs2
 
         const int DEQUE_SIZE = 200;
         std::deque< float > x_history;
+        bool show_x_graph = true;
+
         std::deque< float > y_history;
+        bool show_y_graph = false;
+
         std::deque< float > z_history;
+        bool show_z_graph = false;
+
         std::deque< float > n_history;
+        bool show_n_graph = false;
     };
 }
