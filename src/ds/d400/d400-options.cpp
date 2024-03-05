@@ -498,19 +498,19 @@ namespace librealsense
     {
         switch( static_cast< int >( val ) )
         {
-            case 0: {
+            case RS2_OPTION_GYRO_SENSITIVITY_61_0_MILLI_DEG_SEC: {
                 return "61.0";
             }
-            case 1: {
+            case RS2_OPTION_GYRO_SENSITIVITY_30_5_MILLI_DEG_SEC: {
                 return "30.5";
             }
-            case 2: {
+            case RS2_OPTION_GYRO_SENSITIVITY_15_3_MILLI_DEG_SEC: {
                 return "15.3";
             }
-            case 3: {
+            case RS2_OPTION_GYRO_SENSITIVITY_7_6_MILLI_DEG_SEC: {
                 return "7.6";
             }
-            case 4: {
+            case RS2_OPTION_GYRO_SENSITIVITY_3_8_MILLI_DEG_SEC: {
                 return "3.8";
             }
             default:

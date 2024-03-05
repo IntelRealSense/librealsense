@@ -263,6 +263,7 @@ EXPORTS
     rs2_serialize_json
     rs2_emitter_frequency_mode_to_string
     rs2_depth_auto_exposure_mode_to_string
+    rs2_gyro_sensitivity_to_string
 
     rs2_create_record_device
     rs2_create_record_device_ex

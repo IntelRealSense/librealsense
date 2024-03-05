@@ -123,7 +123,7 @@ extern "C" {
         RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE, /**< Select depth sensor auto exposure mode see rs2_depth_auto_exposure_mode for values  */
         RS2_OPTION_OHM_TEMPERATURE, /**< Temperature of the Optical Head Sensor */
         RS2_OPTION_SOC_PVT_TEMPERATURE, /**< Temperature of PVT SOC */
-        RS2_OPTION_GYRO_SENSITIVITY,/**< Control of the gyro sensitivity level */
+        RS2_OPTION_GYRO_SENSITIVITY,/**< Control of the gyro sensitivity level, see rs2_gyro_sensitivity for values */ 
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
@@ -272,6 +272,18 @@ extern "C" {
         RS2_DEPTH_AUTO_EXPOSURE_COUNT        /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_depth_auto_exposure_mode;
     const char* rs2_depth_auto_exposure_mode_to_string( rs2_depth_auto_exposure_mode mode );
+
+      /** \brief values for RS2_OPTION_GYRO_SENSITIVITY option. */
+    typedef enum rs2_gyro_sensitivity
+    {
+        RS2_OPTION_GYRO_SENSITIVITY_61_0_MILLI_DEG_SEC = 0,
+        RS2_OPTION_GYRO_SENSITIVITY_30_5_MILLI_DEG_SEC = 1,
+        RS2_OPTION_GYRO_SENSITIVITY_15_3_MILLI_DEG_SEC = 2,
+        RS2_OPTION_GYRO_SENSITIVITY_7_6_MILLI_DEG_SEC = 3,
+        RS2_OPTION_GYRO_SENSITIVITY_3_8_MILLI_DEG_SEC = 4,
+        RS2_OPTION_GYRO_SENSITIVITY_COUNT
+    } rs2_gyro_sensitivity;
+    const char * rs2_gyro_sensitivity_to_string( rs2_gyro_sensitivity mode );
 
     /**
     * check if an option is read-only
