@@ -29,9 +29,8 @@ void motion_dashboard::process_frame( rs2::frame f )
                 && ( f.as< rs2::motion_frame >() ).get_profile().stream_type() == stream_type )
             {
                 double ts = glfwGetTime();
-                auto it = frame_to_time.find( f.get_profile().unique_id() );
 
-                if( ts - last_time > dashboard_update_rate && it != frame_to_time.end() )
+                if( ts - last_time > dashboard_update_rate )
                 {
                     rs2::motion_frame frame = f.as< rs2::motion_frame >();
 
@@ -56,8 +55,6 @@ void motion_dashboard::process_frame( rs2::frame f )
 
                     last_time = ts;
                 }
-
-                frame_to_time[f.get_profile().unique_id()] = ts;
             }
         } );
 }
@@ -173,7 +170,11 @@ void motion_dashboard::show_radiobuttons()
 
 void motion_dashboard::show_data_rate_slider()
 {
-    ImGui::PushItemWidth( 100 );
+    if( ( ImGui::GetContentRegionMax().x - ImGui::GetCursorPosX() - 10.f ) < 100 )
+        ImGui::PushItemWidth( ImGui::GetContentRegionMax().x - ImGui::GetCursorPosX() - 10.f );
+    else
+        ImGui::PushItemWidth( 100 );
+
     ImGui::SliderFloat( "##rate", &dashboard_update_rate, MIN_FRAME_RATE, MAX_FRAME_RATE, "%.2f" );
     ImGui::GetWindowWidth();
 

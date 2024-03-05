@@ -33,7 +33,6 @@ namespace rs2
 
         float dashboard_update_rate;
         double last_time;
-        std::map< int, double > frame_to_time;
 
         const char * x_axes_name = "X";
         const char * y_axes_name = "Y";
