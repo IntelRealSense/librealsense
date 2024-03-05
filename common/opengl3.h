@@ -1,6 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
-
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include "matrix4.h"
@@ -129,10 +128,6 @@ namespace rs2
         uint32_t _size = 0;
         vbo_type _type;
     };
-
-    struct float3;
-    struct float2;
-    struct int3;
 
     struct obj_mesh;
 

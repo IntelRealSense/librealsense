@@ -29,6 +29,8 @@ struct float2
         assert( i < 2 );
         return *( &x + i );
     }
+    float length() const;
+    float2 normalized() const;
 };
 struct float3
 {
@@ -39,6 +41,8 @@ struct float3
         assert( i < 3 );
         return ( *( &x + i ) );
     }
+    float length() const;
+    float3 normalized() const;
 };
 struct float4
 {
@@ -64,6 +68,13 @@ struct float3x3
 };  // column-major
 #pragma pack( pop )
 
+
+inline float dot( const float2 & a, const float2 & b )
+{
+    return a.x * b.x + a.y * b.y;
+}
+
+
 inline bool operator==( const float3 & a, const float3 & b )
 {
     return a.x == b.x && a.y == b.y && a.z == b.z;
@@ -80,6 +91,20 @@ inline float3 operator*( const float3 & a, float b )
 {
     return { a.x * b, a.y * b, a.z * b };
 }
+inline float3 operator/( const float3 & a, float t )
+{
+    return { a.x / t, a.y / t, a.z / t };
+}
+inline float operator*( const float3 & a, const float3 & b )
+{
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+inline float3 cross( const float3 & a, const float3 & b )
+{
+    return { a.y * b.z - b.y * a.z, a.x * b.z - b.x * a.z, a.x * b.y - a.y * b.x };
+}
+
+
 inline bool operator==( const float4 & a, const float4 & b )
 {
     return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
@@ -92,6 +117,8 @@ inline float4 operator-( const float4 & a, const float4 & b )
 {
     return { a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w };
 }
+
+
 inline bool operator==( const float3x3 & a, const float3x3 & b )
 {
     return a.x == b.x && a.y == b.y && a.z == b.z;
