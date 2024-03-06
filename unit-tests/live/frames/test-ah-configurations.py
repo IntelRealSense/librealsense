@@ -3,9 +3,10 @@
 
 # test:device D585S
 
-from rspy import test, log
+from rspy import test, log, tests_wrapper
 import pyrealsense2 as rs
 import fps_helper
+
 
 VGA_RESOLUTION = (640, 360)
 HD_RESOLUTION = (1280, 720)
@@ -15,20 +16,18 @@ def get_sensors_and_profiles(device):
     """
     Returns an array of pairs of a (sensor, profile) for each of its profiles
     """
-    # when we will be able to stream in service mode:
-    # uncomment the lines about auto exposure and use tests_wrapper before and after the test
     sensor_profiles_arr = []
     for sensor in device.query_sensors():
         profile = None
         if sensor.is_depth_sensor():
-            # if sensor.supports(rs.option.enable_auto_exposure):
-            #     sensor.set_option(rs.option.enable_auto_exposure, 1)
+            if sensor.supports(rs.option.enable_auto_exposure):
+                sensor.set_option(rs.option.enable_auto_exposure, 1)
             profile = fps_helper.get_profile(sensor, rs.stream.depth, VGA_RESOLUTION, 30)
         elif sensor.is_color_sensor():
-            # if sensor.supports(rs.option.enable_auto_exposure):
-            #     sensor.set_option(rs.option.enable_auto_exposure, 1)
-            # if sensor.supports(rs.option.auto_exposure_priority):
-            #     sensor.set_option(rs.option.auto_exposure_priority, 0)  # AE priority should be 0 for constant FPS
+            if sensor.supports(rs.option.enable_auto_exposure):
+                sensor.set_option(rs.option.enable_auto_exposure, 1)
+            if sensor.supports(rs.option.auto_exposure_priority):
+                sensor.set_option(rs.option.auto_exposure_priority, 0)  # AE priority should be 0 for constant FPS
             profile = fps_helper.get_profile(sensor, rs.stream.color, HD_RESOLUTION, 30)
         elif sensor.is_motion_sensor():
             sensor_profiles_arr.append((sensor, fps_helper.get_profile(sensor, rs.stream.accel)))
@@ -45,6 +44,8 @@ def get_sensors_and_profiles(device):
 
 
 dev = test.find_first_device_or_exit()
+tests_wrapper.start_wrapper(dev)
+
 sensor_profiles_array = get_sensors_and_profiles(dev)
 
 permutations_to_run = [["Depth", "Color"],
@@ -53,5 +54,6 @@ permutations_to_run = [["Depth", "Color"],
                        ["Depth", "Color", "Safety", "Labeled Point Cloud"],
                        ["Depth", "Color", "Accel", "Gyro"]]
 fps_helper.perform_fps_test(sensor_profiles_array, permutations_to_run)
+tests_wrapper.stop_wrapper(dev)
 
 test.print_results_and_exit()
