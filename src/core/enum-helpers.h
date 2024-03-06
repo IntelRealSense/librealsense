@@ -78,7 +78,7 @@ RS2_ENUM_HELPERS_CUSTOMIZED( rs2_digital_gain, RS2_DIGITAL_GAIN_HIGH, RS2_DIGITA
 RS2_ENUM_HELPERS( rs2_host_perf_mode, HOST_PERF )
 RS2_ENUM_HELPERS( rs2_emitter_frequency_mode, EMITTER_FREQUENCY )
 RS2_ENUM_HELPERS( rs2_depth_auto_exposure_mode, DEPTH_AUTO_EXPOSURE )
-RS2_ENUM_HELPERS( rs2_gyro_sensitivity, OPTION_GYRO_SENSITIVITY )
+RS2_ENUM_HELPERS( rs2_gyro_sensitivity, GYRO_SENSITIVITY )
 
 
 }  // namespace librealsense

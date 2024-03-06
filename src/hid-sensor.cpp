@@ -20,11 +20,11 @@ static const std::map< rs2_stream, uint32_t > stream_and_fourcc
         { RS2_STREAM_ACCEL, rs_fourcc( 'A', 'C', 'C', 'L' ) },
         { RS2_STREAM_GPIO,  rs_fourcc( 'G', 'P', 'I', 'O' ) } };
 
-/*For gyro sensitivity - FW gets 0 for 61 milligegree/s/LSB resolution
- 0.1 for 30.5 milligegree/s/LSB 
- 0.2 for 15.3 milligegree/s/LSB 
- 0.3 for 7.6 milligegree/s/LSB 
- 0.4 for 3.8 milligegree/s/LSB 
+/*For gyro sensitivity - FW gets 0 for 61 millidegree/s/LSB resolution
+ 0.1 for 30.5 millidegree/s/LSB 
+ 0.2 for 15.3 millidegree/s/LSB 
+ 0.3 for 7.6 millidegree/s/LSB 
+ 0.4 for 3.8 millidegree/s/LSB 
  Currently it is intended for D400 devices, when this feature will be added to D500 the convert needs to be checked*/
 static const std::map< float, double > gyro_sensitivity_convert
     = { { 0.0f, 0 }, { 1.0f, 0.1 }, { 2.0f, 0.2 }, { 3.0f, 0.3 }, { 4.0f, 0.4 } };

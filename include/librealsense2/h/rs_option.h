@@ -276,12 +276,12 @@ extern "C" {
       /** \brief values for RS2_OPTION_GYRO_SENSITIVITY option. */
     typedef enum rs2_gyro_sensitivity
     {
-        RS2_OPTION_GYRO_SENSITIVITY_61_0_MILLI_DEG_SEC = 0,
-        RS2_OPTION_GYRO_SENSITIVITY_30_5_MILLI_DEG_SEC = 1,
-        RS2_OPTION_GYRO_SENSITIVITY_15_3_MILLI_DEG_SEC = 2,
-        RS2_OPTION_GYRO_SENSITIVITY_7_6_MILLI_DEG_SEC = 3,
-        RS2_OPTION_GYRO_SENSITIVITY_3_8_MILLI_DEG_SEC = 4,
-        RS2_OPTION_GYRO_SENSITIVITY_COUNT
+        RS2_GYRO_SENSITIVITY_61_0_MILLI_DEG_SEC = 0,
+        RS2_GYRO_SENSITIVITY_30_5_MILLI_DEG_SEC = 1,
+        RS2_GYRO_SENSITIVITY_15_3_MILLI_DEG_SEC = 2,
+        RS2_GYRO_SENSITIVITY_7_6_MILLI_DEG_SEC = 3,
+        RS2_GYRO_SENSITIVITY_3_8_MILLI_DEG_SEC = 4,
+        RS2_GYRO_SENSITIVITY_COUNT
     } rs2_gyro_sensitivity;
     const char * rs2_gyro_sensitivity_to_string( rs2_gyro_sensitivity mode );
 

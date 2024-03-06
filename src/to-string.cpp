@@ -237,7 +237,7 @@ const char * get_string( rs2_depth_auto_exposure_mode mode )
 
 const char * get_string( rs2_gyro_sensitivity value )
 {
-#define CASE( X ) STRCASE( OPTION_GYRO_SENSITIVITY, X )
+#define CASE( X ) STRCASE( GYRO_SENSITIVITY, X )
     switch( value )
     {
         CASE( 61_0_MILLI_DEG_SEC )
