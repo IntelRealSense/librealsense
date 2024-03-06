@@ -289,7 +289,7 @@ def check_sequence_id_on_frame(frame, prev_frame_counter, old_sequence_id):
     frame_counter = frame.get_frame_metadata(rs.frame_metadata_value.frame_counter)
     frame_seq_id = frame.get_frame_metadata(rs.frame_metadata_value.sequence_id)
     if frame_counter != prev_frame_counter + 1:  # can only compare sequential frames
-        sequence_id = int(frame_seq_id)
+        sequence_id = frame_seq_id
     else:
         sequence_id = 1 if old_sequence_id == 0 else 0
 
