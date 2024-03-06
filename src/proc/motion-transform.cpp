@@ -48,8 +48,8 @@ namespace librealsense
     void unpack_gyro_axes( uint8_t * const dest[], const uint8_t * source, int width, int height, int output_size,
                            bool high_sensitivity = false, bool is_mipi = false )
     {
-        // Default sensitivity is +-2000 deg/sec at 16.384 LSB/Deg/Sec (LSB is 0.1220703125 deg/sec, historically rounded to 0.1).
-        // High sensitivity is +-125 deg/sec at 262.144 LSB/Deg/Sec (LSB is 0.003814697265625 deg/sec).
+        // Default sensitivity in HKR is +-2000 deg/sec at 16.384 LSB/Deg/Sec.
+        // High sensitivity is +-125 deg/sec at 262.144 LSB/Deg/Sec (LSB is 0.003814697265625 deg/sec), in legacy the calculations happen in FW and we need scalefactor 0.1.
         const double gyro_transform_factor = deg2rad( high_sensitivity ? 0.003814697265625 : 0.1 );
 
         copy_hid_axes<FORMAT>(dest, source, gyro_transform_factor, is_mipi);
