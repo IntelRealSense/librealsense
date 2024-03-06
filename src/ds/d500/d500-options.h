@@ -86,8 +86,7 @@ namespace librealsense
             platform::extension_unit xu,
             uint8_t id,
             std::string description,
-            bool allow_set_while_streaming = true)
-            : uvc_xu_option<uint16_t>(ep, xu, id, description, allow_set_while_streaming) {}
+            bool allow_set_while_streaming = true);
 
         virtual float query() const override;
         virtual void set(float value) override;

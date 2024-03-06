@@ -87,6 +87,8 @@ public:
                     throw invalid_value_exception( rsutils::string::from()
                                                    << "get_xu(id=" << std::to_string( _id ) << ") failed!"
                                                    << " Last Error: " << strerror( errno ) );
+                if (_parsing_modifier)
+                    return _parsing_modifier(reinterpret_cast<uint8_t*>(&t));
 
                 return static_cast< float >( t );
             } ) );
@@ -165,6 +167,7 @@ protected:
     };
     const std::map< float, std::string > _description_per_value;
     bool _allow_set_while_streaming;
+    std::function< float(const uint8_t* param) > _parsing_modifier = nullptr;
 };
 
 

@@ -94,13 +94,14 @@ namespace librealsense
         return temperature;
     }
 
-    float temperature_xu_option::query() const
+    temperature_xu_option::temperature_xu_option(const std::weak_ptr<uvc_sensor>& ep, 
+        platform::extension_unit xu, uint8_t id, 
+        std::string description, bool allow_set_while_streaming)
+        : uvc_xu_option<uint16_t>(ep, xu, id, description, allow_set_while_streaming)
     {
-        float temperature = -1;
-        try {
-            auto res = uvc_xu_option<uint16_t>::query();
-            auto res_bytes = reinterpret_cast<uint8_t*>(&res);
-
+        // defining the parsing modifier, to be used on the calls for query method
+        _parsing_modifier = [](const uint8_t* res_bytes) {
+            float temperature = -1;
             // parsing the temperature result: 0xABCD:
             // whole number = 0xCD - int8_t, 
             // decimal part = 0xAB - uint8_t
@@ -111,6 +112,16 @@ namespace librealsense
                 temperature = 0.f;
             else
                 temperature = static_cast<float>(whole_number_part) + decimal_part / 256.f;
+            return temperature;
+        };
+    }
+
+    float temperature_xu_option::query() const
+    {
+        float temperature = -1;
+        try 
+        {
+            temperature = uvc_xu_option<uint16_t>::query();
         }
         catch (...)
         {
