@@ -992,7 +992,7 @@ void output_model::update_dashboards(rs2::frame f)
 void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
 {
     auto min_x = 0.f;
-    auto max_x = 0.f;
+    auto max_x = 1.f;
     auto min_y = 0.f;
     auto max_y = 0.f;
 
