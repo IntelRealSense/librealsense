@@ -3,7 +3,8 @@
 import time
 
 #test:device D585S
-
+# we initialize the SIC table , before all other safety tests will run
+#test:priority 10
 
 import pyrealsense2 as rs
 from rspy import test, log, devices
@@ -30,11 +31,27 @@ def generate_valid_table():
     cfg.ground = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.gnd)
     cfg.gpio_stabilization_interval = 150 # [ms] - SMCU only accept 150 for now
 
-    # get rotation and translation from safety preset at index 0
-    # and set them into the camera position (extrinsics part) of the safety config table
-    safety_preset_at_0 = safety_sensor.get_safety_preset(0)
-    cfg.camera_position = rs.safety_extrinsics_table(safety_preset_at_0.platform_config.transformation_link.rotation,
-                                                     safety_preset_at_0.platform_config.transformation_link.translation)
+    # convert from RS camera cordination system to Robot cordination system
+    # We use hard coded valid values as HKR compare and expect a match between safety interface extrinsic with the current safety preset extrinsic
+    # rotation matrix 
+    
+    # Currently as we have a BUG in HKR side, we will zero those fields until this is fixed.
+    # Once FW is fixed this test will failed and we will unlock the hard coded params
+    #rx = rs.float3(0.0, 0.0, 1.0)
+    #ry = rs.float3(-1.0, 0.0, 0.0)
+    #rz = rs.float3(0.0, -1.0, 0.0)
+    #rotation = rs.float3x3(rx, ry, rz)
+    #
+    ## translation vector [m] 
+    #translation = rs.float3(0.0, 0.0, 0.27)
+    
+    rx = rs.float3(0.0, 0.0, 0.0)
+    ry = rs.float3(0.0, 0.0, 0.0)
+    rz = rs.float3(0.0, 0.0, 0.0)
+    rotation = rs.float3x3(rx, ry, rz)
+    translation = rs.float3(0.0, 0.0, 0.0)
+    
+    cfg.camera_position = rs.safety_extrinsics_table(rotation, translation)
 
     cfg.occupancy_grid_params.grid_cell_seed = random.randint(1,4)
     cfg.occupancy_grid_params.close_range_quorum = random.randint(0, 255)
@@ -135,19 +152,12 @@ test.finish()
 #############################################################################################
 test.start("Valid get/set scenario")
 
-# The aim of the following try statement is:
-# For devices that had never had Safety Interface Configuration (SIC) set it and fail the test so the user will know and exit with failure
-try:
-    # getting safety config
-    initial_config = safety_sensor.get_safety_interface_config(rs.calib_location.ram)
-except:
-    log.w("Safety Interface Configuration was not available in this device, writing a valid table now, rerun the test to verify it pass")
-    safety_sensor.set_safety_interface_config(generate_valid_table())
-    test.abort()
+valid_table = generate_valid_table()
+safety_sensor.set_safety_interface_config(valid_table)
    
 # We read the table from the device, modify it and write it back
 # This way we are sure that the write process worked ()   
-config_we_write = change_config(initial_config)
+config_we_write = change_config(valid_table)
 # write changed config to the device
 safety_sensor.set_safety_interface_config(config_we_write)
 
@@ -226,9 +236,7 @@ test.finish()
 # test.finish()
 #############################################################################################
 
-test.start("Restoring original table + safety mode")
-# write initial config back to the device
-safety_sensor.set_safety_interface_config(config_we_write)
+test.start("Restoring safety mode")
 safety_sensor.set_option(rs.option.safety_mode, original_mode)
 test.check_equal( safety_sensor.get_option(rs.option.safety_mode), original_mode)
 test.finish()

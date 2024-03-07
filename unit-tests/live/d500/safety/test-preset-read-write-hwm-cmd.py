@@ -1,7 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#test:donotrun:!nightly
 #test:device D585S
 
 import pyrealsense2 as rs
@@ -41,9 +40,9 @@ test.finish()
 
 #############################################################################################
 
-test.start("Valid read and write from index 0")
-safety_preset_at_zero = safety_sensor.get_safety_preset(0)
-safety_sensor.set_safety_preset(1, safety_preset_at_zero)
+test.start("Valid read and write from index 1 to 2")
+safety_preset_at_zero = safety_sensor.get_safety_preset(1)
+safety_sensor.set_safety_preset(2, safety_preset_at_zero)
 test.finish()
 
 #############################################################################################

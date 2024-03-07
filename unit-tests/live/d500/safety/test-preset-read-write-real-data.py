@@ -2,8 +2,8 @@
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #test:device D585S
-# we initialize all safety zone , this to start all safety tests with a known table which is 0 (hard coded in FW)
-#test:priority 1
+# we initialize all safety zones , before all other safety tests will run
+#test:priority 10
 
 import pyrealsense2 as rs
 import random
@@ -21,14 +21,16 @@ SERVICE_MODE = 2 # RS2_SAFETY_MODE_SERVICE (MAINTENANCE)
 
 def get_random_preset():
 
-    # rotation matrix [-2..2] (no units)
-    rx = rs.float3(random.uniform(-2, 2), random.uniform(-2, 2), random.uniform(-2, 2))
-    ry = rs.float3(random.uniform(-2, 2), random.uniform(-2, 2), random.uniform(-2, 2))
-    rz = rs.float3(random.uniform(-2, 2), random.uniform(-2, 2), random.uniform(-2, 2))
+    # convert from RS camera cordination system to Robot cordination system
+    # We use hard coded valid values as HKR compare and expect a match between safety interface extrinsic with the current safety preset extrinsic
+    # rotation matrix 
+    rx = rs.float3(0.0, 0.0, 1.0)
+    ry = rs.float3(-1.0, 0.0, 0.0)
+    rz = rs.float3(0.0, -1.0, 0.0)
     rotation = rs.float3x3(rx, ry, rz)
 
-    # translation vector [m]
-    translation = rs.float3(random.uniform(0, 100), random.uniform(0, 100), random.uniform(0, 100))
+    # translation vector [m] 
+    translation = rs.float3(0.0, 0.0, 0.27)
 
     # init safety extrinsics table (transformation link) from rotation matrix and translation vector
     transformation_link = rs.safety_extrinsics_table(rotation, translation)
@@ -105,9 +107,10 @@ test.finish()
 #############################################################################################
 
 test.start("Init all safety zones")
-zone_0 = safety_sensor.get_safety_preset(0)
+random_safety_preset = get_random_preset()
 for x in range(63):
-    safety_sensor.set_safety_preset(x + 1, zone_0)
+    log.d("Init preset ID =", x + 1)
+    safety_sensor.set_safety_preset(x + 1, random_safety_preset)
 test.finish()
 
 #############################################################################################
