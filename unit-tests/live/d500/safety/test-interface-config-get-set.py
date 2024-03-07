@@ -31,13 +31,13 @@ def generate_valid_table():
     cfg.ground = rs.safety_interface_config_pin(rs.safety_pin_direction.input, rs.safety_pin_functionality.gnd)
     cfg.gpio_stabilization_interval = 150 # [ms] - SMCU only accept 150 for now
 
-    # convert from RS camera cordination system to Robot cordination system
+    # Convert from RS camera cordination system to Robot cordination system
     # We use hard coded valid values as HKR compare and expect a match between safety interface extrinsic with the current safety preset extrinsic
     # rotation matrix 
     
     # Currently since we have a BUG in HKR side, we need a diff between camera position in SIC and camera position in safety preset,
-    # Otherwise the safety preset cannot be changed.
-    # Once FW is fixed We should revet the translation Z to 0.27
+    # otherwise the safety preset cannot be changed.
+    # Once FW is fixed we should revert the translation Z to 0.27
     rx = rs.float3(0.0, 0.0, 1.0)
     ry = rs.float3(-1.0, 0.0, 0.0)
     rz = rs.float3(0.0, -1.0, 0.0)
