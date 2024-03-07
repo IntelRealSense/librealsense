@@ -75,8 +75,8 @@ namespace librealsense
         temperature_component _component;
         const char* _description;
     };
-	
-	class temperature_xu_option : public uvc_xu_option<uint16_t>, 
+
+    class temperature_xu_option : public uvc_xu_option<int16_t>, 
         public readonly_option
     {
     public:
@@ -91,7 +91,7 @@ namespace librealsense
         virtual void set(float value) override;
         inline bool is_enabled() const override { return true; }
         virtual void enable_recording(std::function<void(const option&)> record_action) override 
-        { uvc_xu_option<uint16_t>::enable_recording(record_action); }
+        { uvc_xu_option<int16_t>::enable_recording(record_action); }
     };
 
     class power_line_freq_option : public uvc_pu_option
