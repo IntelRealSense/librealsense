@@ -35,25 +35,22 @@ def generate_valid_table():
     # We use hard coded valid values as HKR compare and expect a match between safety interface extrinsic with the current safety preset extrinsic
     # rotation matrix 
     
-    # Currently as we have a BUG in HKR side, we will zero those fields until this is fixed.
-    # Once FW is fixed this test will failed and we will unlock the hard coded params
-    #rx = rs.float3(0.0, 0.0, 1.0)
-    #ry = rs.float3(-1.0, 0.0, 0.0)
-    #rz = rs.float3(0.0, -1.0, 0.0)
-    #rotation = rs.float3x3(rx, ry, rz)
-    #
-    ## translation vector [m] 
-    #translation = rs.float3(0.0, 0.0, 0.27)
-    
-    rx = rs.float3(0.0, 0.0, 0.0)
-    ry = rs.float3(0.0, 0.0, 0.0)
-    rz = rs.float3(0.0, 0.0, 0.0)
+    # Currently since we have a BUG in HKR side, we need a diff between camera position in SIC and camera position in safety preset,
+    # Otherwise the safety preset cannot be changed.
+    # Once FW is fixed We should revet the translation Z to 0.27
+    rx = rs.float3(0.0, 0.0, 1.0)
+    ry = rs.float3(-1.0, 0.0, 0.0)
+    rz = rs.float3(0.0, -1.0, 0.0)
     rotation = rs.float3x3(rx, ry, rz)
-    translation = rs.float3(0.0, 0.0, 0.0)
+    
+    # translation vector [m] 
+    #translation = rs.float3(0.0, 0.0, 0.27)
+    translation = rs.float3(0.0, 0.0, 0.2699)
+
     
     cfg.camera_position = rs.safety_extrinsics_table(rotation, translation)
 
-    cfg.occupancy_grid_params.grid_cell_seed = random.randint(1,4)
+    cfg.occupancy_grid_params.grid_cell_seed = random.randint(10,200) # mm
     cfg.occupancy_grid_params.close_range_quorum = random.randint(0, 255)
     cfg.occupancy_grid_params.mid_range_quorum = random.randint(0, 255)
     cfg.occupancy_grid_params.long_range_quorum = random.randint(0, 255)
