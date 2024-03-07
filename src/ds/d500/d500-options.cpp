@@ -56,19 +56,8 @@ namespace librealsense
         : uvc_xu_option<int16_t>(ep, xu, id, description, allow_set_while_streaming)
     {
         // defining the parsing modifier, to be used on the calls for query method
-        _parsing_modifier = [](const uint8_t* res_bytes) {
-            float temperature = -1;
-            // parsing the temperature result: 0xABCD:
-            // whole number = 0xCD - int8_t, 
-            // decimal part = 0xAB - uint8_t
-            int8_t whole_number_part = static_cast<int8_t>(res_bytes[0]);
-            uint8_t decimal_part = static_cast<uint8_t>(res_bytes[1]);
-
-            if (whole_number_part == 0xFF && decimal_part == 0xFF)
-                temperature = 0.f;
-            else
-                temperature = static_cast<float>(whole_number_part) + decimal_part / 256.f;
-            return temperature;
+        _parsing_modifier = [](const int16_t read_value) {
+            return static_cast<float>(read_value) / 10.f;
         };
     }
 
