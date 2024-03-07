@@ -17,10 +17,11 @@ namespace librealsense
             uint32_t get_timestamp() const;
         };
 
+        rs2_log_severity extended_fw_logs_severity_to_rs2_log_severity( int32_t severity );
         rs2_log_severity fw_logs_severity_to_rs2_log_severity( int32_t severity );
-        rs2_log_severity legacy_fw_logs_severity_to_rs2_log_severity( int32_t severity );
 
-        struct fw_log_binary
+#pragma pack( push, 1 )
+        struct fw_log_binary_common
         {
             uint32_t magic_number : 8;
             uint32_t severity : 5;
@@ -32,7 +33,7 @@ namespace librealsense
             uint32_t seq_id : 4;  // Rolling counter 0-15 per module
         };
 
-        struct legacy_fw_log_binary : public fw_log_binary
+        struct fw_log_binary : public fw_log_binary_common
         {
             uint16_t p1;
             uint16_t p2;
@@ -40,7 +41,7 @@ namespace librealsense
             uint32_t timestamp;
         };
 
-        struct extended_fw_log_binary : public fw_log_binary
+        struct extended_fw_log_binary : public fw_log_binary_common
         {
             uint16_t number_of_params;         // Max 32 params
             uint16_t total_params_size_bytes;  // Max 848 bytes, number of bytes after hkr_timestamp field
@@ -49,6 +50,7 @@ namespace librealsense
 
             // Also additinal parameters data, but size differs based on number and type of params so not defined here.
         };
+#pragma pack( pop )
 
         struct fw_log_data
         {

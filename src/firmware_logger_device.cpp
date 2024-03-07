@@ -7,37 +7,19 @@ namespace librealsense
 {
     firmware_logger_device::firmware_logger_device( std::shared_ptr< const device_info > const & dev_info,
                                                     std::shared_ptr< hw_monitor > hardware_monitor,
-                                                    const command & fw_logs_command )
+                                                    const command & fw_logs_command,
+                                                    const command & flash_logs_command )
         : device( dev_info )
         , _fw_logs_command( fw_logs_command )
         , _hw_monitor( hardware_monitor )
         , _fw_logs()
         , _parser( nullptr )
+        , _flash_logs_command( flash_logs_command )
+        , _flash_logs()
+        , _flash_logs_initialized( false )
     {
         if( ! _hw_monitor )
             throw librealsense::invalid_value_exception( "HW monitor is empty" );
-    }
-
-    void firmware_logger_device::start()
-    {
-        if( ! _parser )
-            throw librealsense::wrong_api_call_sequence_exception( "FW log parser is not initialized" );
-
-        command start_command = _parser->get_start_command();
-        start_command.cmd = _fw_logs_command.cmd; // Opcode comes from the device, may be different between devices
-        if( start_command.cmd != 0 )
-            _hw_monitor->send( start_command );
-    }
-
-    void firmware_logger_device::stop()
-    {
-        if( ! _parser )
-            throw librealsense::wrong_api_call_sequence_exception( "FW log parser is not initialized" );
-
-        command stop_command = _parser->get_stop_command();
-        stop_command.cmd = _fw_logs_command.cmd; // Opcode comes from the device, may be different between devices
-        if( stop_command.cmd != 0 )
-            _hw_monitor->send( stop_command );
     }
 
     bool firmware_logger_device::get_fw_log( fw_logs::fw_logs_binary_data & binary_data )
@@ -57,11 +39,6 @@ namespace librealsense
         }
 
         return result;
-    }
-
-    unsigned int firmware_logger_device::get_number_of_fw_logs() const
-    {
-        return (unsigned int)_fw_logs.size();
     }
 
     void firmware_logger_device::get_fw_logs_from_hw_monitor()
@@ -84,7 +61,7 @@ namespace librealsense
             size_t log_size = get_log_size( beginOfLogIterator );
             if( log_size > size_left )
             {
-                LOG_WARNING( "Received an incomplete FW log" ); // TODO - remove after debugging, or decrease to debug level.
+                LOG_WARNING( "Received an incomplete FW log" );  // TODO - remove after debugging, or decrease to debug level.
                 break;
             }
             auto endOfLogIterator = beginOfLogIterator + log_size;
@@ -96,28 +73,74 @@ namespace librealsense
         }
     }
 
-    size_t firmware_logger_device::get_log_size( uint8_t * buff ) const
-    {
-        // Log size is dynamic. Parser must be initialized to examine log buffer.
-        if( ! _parser )
-            throw librealsense::wrong_api_call_sequence_exception( "FW log parser is not initialized" );
-
-        return _parser->get_log_size( buff );
-    }
-
-
     command firmware_logger_device::get_update_command()
     {
-        if( ! _parser )
-            throw librealsense::wrong_api_call_sequence_exception( "FW log parser is not initialized" );
-
-        command update_command = _parser->get_update_command();
-        update_command.cmd = _fw_logs_command.cmd; // Opcode comes from the device, may be different between devices
-
-        return update_command;
+        return _fw_logs_command;
     }
 
-    bool firmware_logger_device::init_parser( std::string xml_content )
+    unsigned int firmware_logger_device::get_number_of_fw_logs() const
+    {
+        return (unsigned int)_fw_logs.size();
+    }
+
+    size_t firmware_logger_device::get_log_size( const uint8_t * buff ) const
+    {
+        // Log size constant, no need to call parser like firmware_logger_device::get_log_size.
+        return sizeof( fw_logs::fw_log_binary );
+    }
+
+    bool firmware_logger_device::get_flash_log( fw_logs::fw_logs_binary_data & binary_data )
+    {
+        bool result = false;
+
+        if( ! _flash_logs_initialized )
+        {
+            get_flash_logs_from_hw_monitor();
+        }
+
+        if( ! _flash_logs.empty() )
+        {
+            binary_data = std::move( _flash_logs.front() );
+            _flash_logs.pop();
+            result = true;
+        }
+
+        return result;
+    }
+
+    void firmware_logger_device::get_flash_logs_from_hw_monitor()
+    {
+        auto res = _hw_monitor->send( _flash_logs_command );
+
+        if( res.empty() )
+        {
+            LOG_INFO( "Getting Flash logs failed!" );
+            return;
+        }
+
+        // Erasing header
+        constexpr const uint8_t size_of_flash_logs_header = 27;
+        res.erase( res.begin(), res.begin() + size_of_flash_logs_header );
+
+        // Convert bytes to fw_logs_binary_data.
+        constexpr const uint8_t flash_logs_magic_number = 0xA0;
+        auto beginOfLogIterator = res.begin();
+        for( int i = 0;
+             i < res.size() / sizeof( fw_logs::fw_log_binary ) && *beginOfLogIterator == flash_logs_magic_number;
+             ++i )
+        {
+            auto endOfLogIterator = beginOfLogIterator + sizeof( fw_logs::fw_log_binary );
+            std::vector< uint8_t > resultsForOneLog;
+            resultsForOneLog.insert( resultsForOneLog.begin(), beginOfLogIterator, endOfLogIterator );
+            fw_logs::fw_logs_binary_data binary_data{ resultsForOneLog };
+            _flash_logs.push( binary_data );
+            beginOfLogIterator = endOfLogIterator;
+        }
+
+        _flash_logs_initialized = true;
+    }
+
+    bool firmware_logger_device::init_parser( const std::string & xml_content )
     {
         _parser = std::make_unique< fw_logs::fw_logs_parser >( xml_content );
 
@@ -137,80 +160,63 @@ namespace librealsense
         return result;
     }
 
-    legacy_firmware_logger_device::legacy_firmware_logger_device( std::shared_ptr< const device_info > const & dev_info,
-                                                                  std::shared_ptr< hw_monitor > hardware_monitor,
-                                                                  const command & fw_logs_command,
-                                                                  const command & flash_logs_command )
-        : firmware_logger_device( dev_info, hardware_monitor, fw_logs_command )
-        , _flash_logs_command( flash_logs_command )
-        , _flash_logs()
-        , _flash_logs_initialized( false )
+    extended_firmware_logger_device::extended_firmware_logger_device( std::shared_ptr< const device_info > const & dev_info,
+                                                                      std::shared_ptr< hw_monitor > hardware_monitor,
+                                                                      const command & fw_logs_command )
+        : firmware_logger_device( dev_info, hardware_monitor, fw_logs_command, command( 0 ) )
     {
     }
 
-    bool legacy_firmware_logger_device::init_parser( std::string xml_content )
+    void extended_firmware_logger_device::start()
     {
-        _parser = std::make_unique< fw_logs::legacy_fw_logs_parser >( xml_content );
+        fw_logs::extended_fw_logs_parser * parser;
+        if( ! _parser || !( parser = dynamic_cast< fw_logs::extended_fw_logs_parser * >( _parser.get() ) ) )
+            throw librealsense::wrong_api_call_sequence_exception( "FW log parser is not initialized" );
+
+        command start_command = parser->get_start_command();
+        start_command.cmd = _fw_logs_command.cmd; // Opcode comes from the device, may be different between devices
+        if( start_command.cmd != 0 )
+            _hw_monitor->send( start_command );
+    }
+
+    void extended_firmware_logger_device::stop()
+    {
+        fw_logs::extended_fw_logs_parser * parser;
+        if( ! _parser || ! ( parser = dynamic_cast< fw_logs::extended_fw_logs_parser * >( _parser.get() ) ) )
+            throw librealsense::wrong_api_call_sequence_exception( "FW log parser is not initialized" );
+
+        command stop_command = parser->get_stop_command();
+        stop_command.cmd = _fw_logs_command.cmd; // Opcode comes from the device, may be different between devices
+        if( stop_command.cmd != 0 )
+            _hw_monitor->send( stop_command );
+    }
+
+    size_t extended_firmware_logger_device::get_log_size( const uint8_t * buff ) const
+    {
+        // Log size is dynamic. Parser must be initialized to examine log buffer.
+        if( ! _parser )
+            throw librealsense::wrong_api_call_sequence_exception( "FW log parser is not initialized" );
+
+        return _parser->get_log_size( buff );
+    }
+
+
+    command extended_firmware_logger_device::get_update_command()
+    {
+        fw_logs::extended_fw_logs_parser * parser;
+        if( ! _parser || ! ( parser = dynamic_cast< fw_logs::extended_fw_logs_parser * >( _parser.get() ) ) )
+            throw librealsense::wrong_api_call_sequence_exception( "FW log parser is not initialized" );
+
+        command update_command = parser->get_update_command();
+        update_command.cmd = _fw_logs_command.cmd; // Opcode comes from the device, may be different between devices
+
+        return update_command;
+    }
+
+    bool extended_firmware_logger_device::init_parser( const std::string & xml_content )
+    {
+        _parser = std::make_unique< fw_logs::extended_fw_logs_parser >( xml_content );
 
         return ( _parser != nullptr );
-    }
-
-    size_t legacy_firmware_logger_device::get_log_size( uint8_t * buff ) const
-    {
-        // Log size constant, no need to call parser like firmware_logger_device::get_log_size.
-        return sizeof( fw_logs::legacy_fw_log_binary );
-    }
-
-    command legacy_firmware_logger_device::get_update_command()
-    {
-        return _fw_logs_command;
-    }
-    
-    bool legacy_firmware_logger_device::get_flash_log( fw_logs::fw_logs_binary_data & binary_data )
-    {
-        bool result = false;
-
-        if( ! _flash_logs_initialized )
-        {
-            get_flash_logs_from_hw_monitor();
-        }
-
-        if( ! _flash_logs.empty() )
-        {
-            binary_data = std::move( _flash_logs.front() );
-            _flash_logs.pop();
-            result = true;
-        }
-
-        return result;
-    }
-    
-    void legacy_firmware_logger_device::get_flash_logs_from_hw_monitor()
-    {
-        auto res = _hw_monitor->send( _flash_logs_command );
-
-        if( res.empty() )
-        {
-            LOG_INFO( "Getting Flash logs failed!" );
-            return;
-        }
-
-        // Erasing header
-        int size_of_flash_logs_header = 27;
-        res.erase( res.begin(), res.begin() + size_of_flash_logs_header );
-
-        // Convert bytes to flash_logs_binary_data. Flash logs are supported only for legacy devices.
-        auto beginOfLogIterator = res.begin();
-        for( int i = 0; i < res.size() / sizeof( fw_logs::legacy_fw_log_binary ) && *beginOfLogIterator == 160; ++i )
-        {
-            auto endOfLogIterator = beginOfLogIterator + sizeof( fw_logs::legacy_fw_log_binary );
-            std::vector< uint8_t > resultsForOneLog;
-            resultsForOneLog.insert( resultsForOneLog.begin(), beginOfLogIterator, endOfLogIterator );
-            fw_logs::fw_logs_binary_data binary_data{ resultsForOneLog };
-            _flash_logs.push( binary_data );
-            beginOfLogIterator = endOfLogIterator;
-        }
-
-        _flash_logs_initialized = true;
     }
 }

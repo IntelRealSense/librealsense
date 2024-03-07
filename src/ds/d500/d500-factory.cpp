@@ -41,7 +41,7 @@ class d555e_device
     , public d500_color
     , public d500_motion
     , public ds_advanced_mode_base
-    , public firmware_logger_device
+    , public extended_firmware_logger_device
 {
 public:
     d555e_device( std::shared_ptr< const d500_info > dev_info )
@@ -52,9 +52,9 @@ public:
         , d500_color( dev_info, RS2_FORMAT_YUYV )
         , d500_motion( dev_info )
         , ds_advanced_mode_base( d500_device::_hw_monitor, get_depth_sensor() )
-        , firmware_logger_device( dev_info,
-                                  d500_device::_hw_monitor,
-                                  get_firmware_logs_command() )
+        , extended_firmware_logger_device( dev_info,
+                                           d500_device::_hw_monitor,
+                                           get_firmware_logs_command() )
     {
     }
 

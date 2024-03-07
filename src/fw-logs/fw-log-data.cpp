@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019-2024 Intel Corporation. All Rights Reserved.
 
 #include "fw-log-data.h"
 
@@ -11,7 +11,9 @@ namespace librealsense
 {
     namespace fw_logs
     {
-        constexpr const size_t min_binary_size = std::min( sizeof( legacy_fw_log_binary ), sizeof( extended_fw_log_binary ) );
+        constexpr const size_t min_binary_size = std::min( sizeof( fw_log_binary ), sizeof( extended_fw_log_binary ) );
+        constexpr const uint8_t fw_logs_magic_number = 0xA0;
+        constexpr const uint8_t extended_fw_logs_magic_number = 0xA5;
 
         rs2_log_severity fw_logs_binary_data::get_severity() const
         {
@@ -20,11 +22,11 @@ namespace librealsense
                                                              << "FW log data size is too small "
                                                              << logs_buffer.size() );
 
-            const fw_log_binary * log_binary = reinterpret_cast< const fw_log_binary * >( logs_buffer.data() );
-            if( log_binary->magic_number == 0xA5)
+            const auto log_binary = reinterpret_cast< const fw_log_binary_common * >( logs_buffer.data() );
+            if( log_binary->magic_number == extended_fw_logs_magic_number )
+                return extended_fw_logs_severity_to_rs2_log_severity( log_binary->severity );
+            if( log_binary->magic_number == fw_logs_magic_number )
                 return fw_logs_severity_to_rs2_log_severity( log_binary->severity );
-            if( log_binary->magic_number == 0xA0 )
-                return legacy_fw_logs_severity_to_rs2_log_severity( log_binary->severity );
 
             throw librealsense::invalid_value_exception( rsutils::string::from()
                                                          << "Received unfamiliar FW log 'magic number' "
@@ -38,21 +40,21 @@ namespace librealsense
                                                              << "FW log data size is too small "
                                                              << logs_buffer.size() );
 
-            const fw_log_binary * log_binary = reinterpret_cast< const fw_log_binary * >( logs_buffer.data() );
-            if( log_binary->magic_number == 0xA5 )
+            const auto log_binary = reinterpret_cast< const fw_log_binary_common * >( logs_buffer.data() );
+            if( log_binary->magic_number == extended_fw_logs_magic_number )
             {
                 auto timestamp = reinterpret_cast< const extended_fw_log_binary * >( this )->soc_timestamp;
                 return static_cast< uint32_t >( timestamp );
             }
-            if( log_binary->magic_number == 0xA0 )
-                return reinterpret_cast< const legacy_fw_log_binary * >( this )->timestamp;
+            if( log_binary->magic_number == fw_logs_magic_number )
+                return reinterpret_cast< const fw_log_binary * >( this )->timestamp;
 
             throw librealsense::invalid_value_exception( rsutils::string::from()
                                                          << "Received unfamiliar FW log 'magic number' "
                                                          << log_binary->magic_number );
         }
 
-        rs2_log_severity fw_logs_severity_to_rs2_log_severity( int32_t severity )
+        rs2_log_severity extended_fw_logs_severity_to_rs2_log_severity( int32_t severity )
         {
             rs2_log_severity result = RS2_LOG_SEVERITY_NONE;
 
@@ -82,7 +84,7 @@ namespace librealsense
             return result;
         }
 
-        rs2_log_severity legacy_fw_logs_severity_to_rs2_log_severity(int32_t severity)
+        rs2_log_severity fw_logs_severity_to_rs2_log_severity(int32_t severity)
         {
             rs2_log_severity result = RS2_LOG_SEVERITY_NONE;
 

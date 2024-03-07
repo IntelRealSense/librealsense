@@ -15,6 +15,7 @@ namespace librealsense
 {
     namespace fw_logs
     {
+    
         fw_logs_parser::fw_logs_parser( const std::string & definitions_xml )
             : _source_to_formatting_options()
         {
@@ -24,13 +25,11 @@ namespace librealsense
             for( const auto & source : _source_id_to_name )
             {
                 if( source.first >= fw_logs::max_sources )
-                    throw librealsense::invalid_value_exception( rsutils::string::from()
-                                                                 << "Supporting source id 0 to " << fw_logs::max_sources
-                                                                 << ". Found source (" << source.first << ", "
-                                                                 << source.second << ")" );
+                    throw librealsense::invalid_value_exception( rsutils::string::from() << "Supporting source id 0 to "
+                                                                 << fw_logs::max_sources << ". Found source ("
+                                                                 << source.first << ", " << source.second << ")" );
 
-               initialize_source_formatting_options( source, definitions_xml );
-               initialize_source_verbosity_settings( source, definitions_xml );
+                initialize_source_formatting_options( source, definitions_xml );
             }
 
             // HACK - legacy format did not have multiple sources and did not use definitions XML to define them.
@@ -38,7 +37,7 @@ namespace librealsense
             // initialize formatting options. It also had no vebosity settings.
             if( _source_id_to_name.empty() )
             {
-               _source_id_to_name[0] = "";
+                _source_id_to_name[0] = "";
                 std::string xml_contents( definitions_xml );
                 fw_logs_formatting_options format_options( std::move( xml_contents ) );
                 _source_to_formatting_options[0] = format_options;
@@ -61,27 +60,7 @@ namespace librealsense
                 throw librealsense::invalid_value_exception( rsutils::string::from() << "Can't open file " << path );
         }
 
-        void fw_logs_parser::initialize_source_verbosity_settings( const std::pair< const int, std::string > & source,
-                                                      const std::string & definitions_xml )
-        {
-            auto verbosity = fw_logs_xml_helper::get_source_module_verbosity( source.first, definitions_xml );
-            if( ! verbosity.empty() && verbosity.rbegin()->first >= fw_logs::max_modules )
-                throw librealsense::invalid_value_exception( rsutils::string::from() << "Supporting module id 0 to "
-                                                             << fw_logs::max_modules << ". Found module " 
-                                                             << verbosity.rbegin()->first << " in source (" 
-                                                             << source.first << ", " << source.second << ")" );
-
-            _verbosity_settings.module_filter[source.first] = 0;
-            for( const auto & module : verbosity )
-            {
-                // Each bit maps to one module. If the bit is 1 logs from this module shall be collected.
-                _verbosity_settings.module_filter[source.first] |= module.second ? 1 << module.first : 0;
-                // Each item maps to one SW module. Only logs of that severity level will be collected.
-                _verbosity_settings.severity_level[source.first][module.first] = module.second;
-            }
-        }
-
-        fw_log_data fw_logs_parser::parse_fw_log( const fw_logs_binary_data * fw_log_msg ) 
+        fw_log_data fw_logs_parser::parse_fw_log( const fw_logs_binary_data * fw_log_msg )
         {
             fw_log_data parsed_data = fw_log_data();
 
@@ -102,7 +81,7 @@ namespace librealsense
             parsed_data.message = reg_exp.generate_message( event_data.second,
                                                             structured.params_info,
                                                             structured.params_blob );
-            
+
             parsed_data.line = structured.line;
             parsed_data.sequence = structured.sequence;
             parsed_data.timestamp = structured.timestamp;
@@ -114,48 +93,9 @@ namespace librealsense
             return parsed_data;
         }
 
-        size_t fw_logs_parser::get_log_size( const uint8_t * log ) const
+        size_t fw_logs_parser::get_log_size( const uint8_t * ) const
         {
-            const auto extended = reinterpret_cast< const extended_fw_log_binary * >( log );
-            // If there are parameters total_params_size_bytes includes the information
-
-            //return sizeof( extended_fw_log_binary ) + extended->total_params_size_bytes;
-            // TODO - HACK - The right size should be the commented line above, but currently there is a bug in HKR FW
-            // that they don't include the parameters info in total_params_size_bytes.
-            return sizeof( extended_fw_log_binary ) + extended->total_params_size_bytes +
-                                                      extended->number_of_params * sizeof( fw_logs::param_info );
-        }
-
-        command fw_logs_parser::get_start_command() const
-        {
-            command activate_command( 0 ); // Opcode would be overriden by the device
-            activate_command.param1 = 1; // Update settings field - 1 for update settings
-            // extended_log_request struct was designed to match the HWM command struct, copy remaining data
-            activate_command.param2 = _verbosity_settings.module_filter[0];
-            activate_command.param3 = _verbosity_settings.module_filter[1];
-            activate_command.param4 = _verbosity_settings.module_filter[2];
-            activate_command.data.assign( &_verbosity_settings.severity_level[0][0],
-                                          &_verbosity_settings.severity_level[max_sources][0] );
-
-            return activate_command;
-        }
-
-        command fw_logs_parser::get_update_command() const
-        {
-            command update_command( 0 );  // Opcode would be overriden by the device
-            update_command.param1 = 0;  // Update settings field - 0 for no update needed (just getting logs)
-            // All other fields are ignored
-
-            return update_command;
-        }
-
-        command fw_logs_parser::get_stop_command() const
-        {
-            command stop_command( 0 );  // Opcode would be overriden by the device
-            stop_command.param1 = 1;  // Update settings field - 1 for update settings
-            // All other fields should remain 0 to clear settings
-
-            return stop_command;
+            return sizeof( fw_log_binary );
         }
 
         fw_logs_parser::structured_binary_data
@@ -163,7 +103,7 @@ namespace librealsense
         {
             structured_binary_data structured_data;
 
-            auto * log_binary = reinterpret_cast< const fw_log_binary * >( fw_log_msg->logs_buffer.data() );
+            auto log_binary = reinterpret_cast< const fw_log_binary_common * >( fw_log_msg->logs_buffer.data() );
 
             structured_data.severity = static_cast< uint32_t >( log_binary->severity );
             structured_data.source_id = static_cast< uint32_t >( log_binary->source_id );
@@ -179,99 +119,15 @@ namespace librealsense
         void fw_logs_parser::structure_timestamp( const fw_logs_binary_data * raw,
                                                   structured_binary_data * structured ) const
         {
-            const auto actual_struct = reinterpret_cast< const extended_fw_log_binary * >( raw->logs_buffer.data() );
-            structured->timestamp = actual_struct->soc_timestamp;
+            const auto actual_struct = reinterpret_cast< const fw_log_binary * >( raw->logs_buffer.data() );
+            structured->timestamp = actual_struct->timestamp;
         }
 
         void fw_logs_parser::structure_params( const fw_logs_binary_data * raw,
                                                size_t num_of_params,
                                                structured_binary_data * structured ) const
         {
-            const auto actual_struct = reinterpret_cast< const extended_fw_log_binary * >( raw->logs_buffer.data() );
-            if( num_of_params != actual_struct->number_of_params )
-                throw librealsense::invalid_value_exception( rsutils::string::from() << "Expecting " << num_of_params
-                                                             << " parameters, received " << actual_struct->number_of_params );
-
-            if( num_of_params > 0 )
-            {
-                struct extended_fw_log_params_binary : public extended_fw_log_binary
-                {
-                    // param_info array size namber_of_params, 1 is just a placeholder. Need to use an array not a
-                    // pointer because pointer can be 8 bytes of size and than we won't parse the data correctly
-                    param_info info[1];
-                };
-
-                const auto with_params = reinterpret_cast< const extended_fw_log_params_binary * >( raw->logs_buffer.data() );
-                const uint8_t * blob_start = reinterpret_cast< const uint8_t * >( with_params->info +
-                                                                                  actual_struct->number_of_params );
-                //size_t blob_size = actual_struct->total_params_size_bytes - num_of_params * sizeof( fw_logs::param_info );
-                size_t blob_size = actual_struct->total_params_size_bytes;
-
-                for( size_t i = 0; i < num_of_params; ++i )
-                {
-                    // Raw message offset is start of message, structured data offset is start of blob
-                    size_t blob_offset = blob_start - raw->logs_buffer.data();
-                    param_info adjusted_info = { static_cast< uint16_t >( with_params->info[i].offset - blob_offset ),
-                                                 with_params->info[i].type,
-                                                 with_params->info[i].size };
-                    structured->params_info.push_back( adjusted_info );
-                }
-                structured->params_blob.assign( blob_start, blob_start + blob_size );
-            }
-        }
-
-        const fw_logs_formatting_options & fw_logs_parser::get_format_options_ref( int source_id ) const
-        {
-            auto iter = _source_to_formatting_options.find( source_id );
-            if( iter != _source_to_formatting_options.end() )
-                return iter->second;
-
-            throw librealsense::invalid_value_exception( rsutils::string::from()
-                                                         << "Invalid source ID received " << source_id );
-        }
-
-        std::string fw_logs_parser::get_source_name( int source_id ) const
-        {
-            auto iter = _source_id_to_name.find( source_id );
-            if( iter != _source_id_to_name.end() )
-                return iter->second;
-
-            throw librealsense::invalid_value_exception( rsutils::string::from()
-                                                         << "Invalid source ID received " << source_id );
-        }
-
-        rs2_log_severity fw_logs_parser::parse_severity( uint32_t severity ) const
-        {
-            return fw_logs::fw_logs_severity_to_rs2_log_severity( severity );
-        }
-
-        legacy_fw_logs_parser::legacy_fw_logs_parser( const std::string & xml_content )
-            : fw_logs_parser( xml_content )
-        {
-            // Check expected size here, no need to check repeatedly in parse functions
-            if( _source_to_formatting_options.size() != 1 )
-                throw librealsense::invalid_value_exception( rsutils::string::from()
-                                                             << "Legacy parser expect one formating options, have "
-                                                             << _source_to_formatting_options.size() );
-        }
-
-        size_t legacy_fw_logs_parser::get_log_size( const uint8_t * ) const
-        {
-            return sizeof( legacy_fw_log_binary );
-        }
-
-        void legacy_fw_logs_parser::structure_timestamp( const fw_logs_binary_data * raw,
-                                                         structured_binary_data * structured ) const
-        {
-            const auto actual_struct = reinterpret_cast< const legacy_fw_log_binary * >( raw->logs_buffer.data() );
-            structured->timestamp = actual_struct->timestamp;
-        }
-
-        void legacy_fw_logs_parser::structure_params( const fw_logs_binary_data * raw,
-                                                      size_t num_of_params,
-                                                      structured_binary_data * structured ) const
-        {
-            const auto actual_struct = reinterpret_cast< const legacy_fw_log_binary * >( raw->logs_buffer.data() );
+            const auto actual_struct = reinterpret_cast< const fw_log_binary * >( raw->logs_buffer.data() );
             uint16_t params_size_bytes = 0;
             if( num_of_params > 0 )
             {
@@ -296,20 +152,176 @@ namespace librealsense
             structured->params_blob.insert( structured->params_blob.end(), blob_start, blob_start + params_size_bytes );
         }
 
-        const fw_logs_formatting_options & legacy_fw_logs_parser::get_format_options_ref( int source_id ) const
+        const fw_logs_formatting_options & fw_logs_parser::get_format_options_ref( int source_id ) const
         {
+            if( _source_to_formatting_options.size() != 1 )
+                throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                             << "FW logs parser expect one formating options, have "
+                                                             << _source_to_formatting_options.size() );
             return _source_to_formatting_options.begin()->second;
         }
 
-        std::string legacy_fw_logs_parser::get_source_name( int source_id ) const
+        std::string fw_logs_parser::get_source_name( int source_id ) const
         {
-            // Legacy FW logs had threads, not source
+            if( _source_to_formatting_options.size() != 1 )
+                throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                             << "FW logs parser expect one formating options, have "
+                                                             << _source_to_formatting_options.size() );
+            // FW logs had threads, only extended format have source
             return _source_to_formatting_options.begin()->second.get_thread_name( source_id );
         }
 
-        rs2_log_severity legacy_fw_logs_parser::parse_severity( uint32_t severity ) const
+        rs2_log_severity fw_logs_parser::parse_severity( uint32_t severity ) const
         {
-            return fw_logs::legacy_fw_logs_severity_to_rs2_log_severity( severity );
+            return fw_logs::fw_logs_severity_to_rs2_log_severity( severity );
         }
+
+        extended_fw_logs_parser::extended_fw_logs_parser( const std::string & definitions_xml )
+            : fw_logs_parser( definitions_xml )
+        {
+            for( const auto & source : _source_id_to_name )
+            {
+               initialize_source_verbosity_settings( source, definitions_xml );
+            }
+        }
+
+        void extended_fw_logs_parser::initialize_source_verbosity_settings( const std::pair< const int, std::string > & source,
+                                                                            const std::string & definitions_xml )
+        {
+            auto verbosity = fw_logs_xml_helper::get_source_module_verbosity( source.first, definitions_xml );
+            if( ! verbosity.empty() && verbosity.rbegin()->first >= fw_logs::max_modules )
+                throw librealsense::invalid_value_exception( rsutils::string::from() << "Supporting module id 0 to "
+                                                             << fw_logs::max_modules << ". Found module " 
+                                                             << verbosity.rbegin()->first << " in source (" 
+                                                             << source.first << ", " << source.second << ")" );
+
+            _verbosity_settings.module_filter[source.first] = 0;
+            for( const auto & module : verbosity )
+            {
+                // Each bit maps to one module. If the bit is 1 logs from this module shall be collected.
+                _verbosity_settings.module_filter[source.first] |= module.second ? 1 << module.first : 0;
+                // Each item maps to one SW module. Only logs of that severity level will be collected.
+                _verbosity_settings.severity_level[source.first][module.first] = module.second;
+            }
+        }
+
+        size_t extended_fw_logs_parser::get_log_size( const uint8_t * log ) const
+        {
+            const auto extended = reinterpret_cast< const extended_fw_log_binary * >( log );
+            // If there are parameters total_params_size_bytes includes the information
+
+            //return sizeof( extended_fw_log_binary ) + extended->total_params_size_bytes;
+            // TODO - HACK - The right size should be the commented line above, but currently there is a bug in HKR FW
+            // that they don't pack the parameter info and blob to the main struct. There are 4 padding bytes.
+            return sizeof( extended_fw_log_binary ) + extended->total_params_size_bytes + 4;
+        }
+
+        constexpr const uint32_t keep_settings = 0;
+        constexpr const uint32_t update_settings = 1;
+
+        command extended_fw_logs_parser::get_start_command() const
+        {
+            command activate_command( 0 ); // Opcode would be overriden by the device
+            activate_command.param1 = update_settings;
+            // extended_log_request struct was designed to match the HWM command struct, copy remaining data
+            activate_command.param2 = _verbosity_settings.module_filter[0];
+            activate_command.param3 = _verbosity_settings.module_filter[1];
+            activate_command.param4 = _verbosity_settings.module_filter[2];
+            activate_command.data.assign( &_verbosity_settings.severity_level[0][0],
+                                          &_verbosity_settings.severity_level[max_sources][0] );
+
+            return activate_command;
+        }
+
+        command extended_fw_logs_parser::get_update_command() const
+        {
+            command update_command( 0 );  // Opcode would be overriden by the device
+            update_command.param1 = keep_settings;
+            // All other fields are ignored
+
+            return update_command;
+        }
+
+        command extended_fw_logs_parser::get_stop_command() const
+        {
+            command stop_command( 0 );  // Opcode would be overriden by the device
+            stop_command.param1 = update_settings;
+            // All other fields should remain 0 to clear settings
+
+            return stop_command;
+        }
+
+        void extended_fw_logs_parser::structure_timestamp( const fw_logs_binary_data * raw,
+                                                           structured_binary_data * structured ) const
+        {
+            const auto actual_struct = reinterpret_cast< const extended_fw_log_binary * >( raw->logs_buffer.data() );
+            structured->timestamp = actual_struct->soc_timestamp;
+        }
+
+        void extended_fw_logs_parser::structure_params( const fw_logs_binary_data * raw,
+                                                        size_t num_of_params,
+                                                        structured_binary_data * structured ) const
+        {
+            const auto actual_struct = reinterpret_cast< const extended_fw_log_binary * >( raw->logs_buffer.data() );
+            if( num_of_params != actual_struct->number_of_params )
+                throw librealsense::invalid_value_exception( rsutils::string::from() << "Expecting " << num_of_params
+                                                             << " parameters, received " << actual_struct->number_of_params );
+
+            if( num_of_params > 0 )
+            {
+#pragma pack( push, 1 )
+                struct extended_fw_log_params_binary : public extended_fw_log_binary
+                {
+                    // TODO - HACK - This uint32_t field should be deleted, but currently there is a bug in HKR FW
+                    // that they don't pack the parameter info and blob to the main struct. There are 4 padding bytes.
+                    uint32_t padding;
+                    // param_info array size namber_of_params, 1 is just a placeholder. Need to use an array not a
+                    // pointer because pointer can be 8 bytes of size and than we won't parse the data correctly
+                    param_info info[1];
+                };
+#pragma pack( pop )
+
+                const auto with_params = reinterpret_cast< const extended_fw_log_params_binary * >( raw->logs_buffer.data() );
+                const uint8_t * blob_start = reinterpret_cast< const uint8_t * >( with_params->info +
+                                                                                  actual_struct->number_of_params );
+                size_t blob_size = actual_struct->total_params_size_bytes - num_of_params * sizeof( fw_logs::param_info );
+                for( size_t i = 0; i < num_of_params; ++i )
+                {
+                    // Raw message offset is start of message, structured data offset is start of blob
+                    size_t blob_offset = blob_start - raw->logs_buffer.data();
+                    param_info adjusted_info = { static_cast< uint16_t >( with_params->info[i].offset - blob_offset ),
+                                                 with_params->info[i].type,
+                                                 with_params->info[i].size };
+                    structured->params_info.push_back( adjusted_info );
+                }
+                structured->params_blob.assign( blob_start, blob_start + blob_size );
+            }
+        }
+
+        const fw_logs_formatting_options & extended_fw_logs_parser::get_format_options_ref( int source_id ) const
+        {
+            auto iter = _source_to_formatting_options.find( source_id );
+            if( iter != _source_to_formatting_options.end() )
+                return iter->second;
+
+            throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                         << "Invalid source ID received " << source_id );
+        }
+
+        std::string extended_fw_logs_parser::get_source_name( int source_id ) const
+        {
+            auto iter = _source_id_to_name.find( source_id );
+            if( iter != _source_id_to_name.end() )
+                return iter->second;
+
+            throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                         << "Invalid source ID received " << source_id );
+        }
+
+        rs2_log_severity extended_fw_logs_parser::parse_severity( uint32_t severity ) const
+        {
+            return fw_logs::extended_fw_logs_severity_to_rs2_log_severity( severity );
+        }
+
     }
 }
