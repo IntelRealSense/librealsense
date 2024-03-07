@@ -88,7 +88,7 @@ public:
                                                    << "get_xu(id=" << std::to_string( _id ) << ") failed!"
                                                    << " Last Error: " << strerror( errno ) );
                 if (_parsing_modifier)
-                    return _parsing_modifier(reinterpret_cast<uint8_t*>(&t));
+                    return _parsing_modifier(t);
 
                 return static_cast< float >( t );
             } ) );
@@ -110,6 +110,14 @@ public:
         auto max = *( reinterpret_cast< T* >( uvc_range.max.data() ) );
         auto step = *( reinterpret_cast< T* >( uvc_range.step.data() ) );
         auto def = *( reinterpret_cast< T* >( uvc_range.def.data() ) );
+
+        if (_parsing_modifier)
+        {
+            return option_range{ _parsing_modifier( min ),
+                                 _parsing_modifier( max ),
+                                 _parsing_modifier( step ),
+                                 _parsing_modifier( def ) };
+        }
         return option_range{ static_cast< float >( min ),
                              static_cast< float >( max ),
                              static_cast< float >( step ),
@@ -167,7 +175,7 @@ protected:
     };
     const std::map< float, std::string > _description_per_value;
     bool _allow_set_while_streaming;
-    std::function< float(const uint8_t* param) > _parsing_modifier = nullptr;
+    std::function< float(const T param) > _parsing_modifier = nullptr;
 };
 
 
