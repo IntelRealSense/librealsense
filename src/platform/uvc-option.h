@@ -103,13 +103,13 @@ public:
             uvc_range = ep->invoke_powered( [this]( platform::uvc_device & dev )
                                              { return dev.get_xu_range( _xu, _id, sizeof( T ) ); } );
 
-        if( uvc_range.min.size() < sizeof( int32_t ) )
+        if( uvc_range.min.size() < sizeof( T ) )
             return option_range{ 0, 0, 1, 0 };
 
-        auto min = *( reinterpret_cast< int32_t * >( uvc_range.min.data() ) );
-        auto max = *( reinterpret_cast< int32_t * >( uvc_range.max.data() ) );
-        auto step = *( reinterpret_cast< int32_t * >( uvc_range.step.data() ) );
-        auto def = *( reinterpret_cast< int32_t * >( uvc_range.def.data() ) );
+        auto min = *( reinterpret_cast< T* >( uvc_range.min.data() ) );
+        auto max = *( reinterpret_cast< T* >( uvc_range.max.data() ) );
+        auto step = *( reinterpret_cast< T* >( uvc_range.step.data() ) );
+        auto def = *( reinterpret_cast< T* >( uvc_range.def.data() ) );
         return option_range{ static_cast< float >( min ),
                              static_cast< float >( max ),
                              static_cast< float >( step ),

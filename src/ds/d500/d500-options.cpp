@@ -97,7 +97,7 @@ namespace librealsense
     temperature_xu_option::temperature_xu_option(const std::weak_ptr<uvc_sensor>& ep, 
         platform::extension_unit xu, uint8_t id, 
         std::string description, bool allow_set_while_streaming)
-        : uvc_xu_option<uint16_t>(ep, xu, id, description, allow_set_while_streaming)
+        : uvc_xu_option<int16_t>(ep, xu, id, description, allow_set_while_streaming)
     {
         // defining the parsing modifier, to be used on the calls for query method
         _parsing_modifier = [](const uint8_t* res_bytes) {
@@ -121,7 +121,7 @@ namespace librealsense
         float temperature = -1;
         try 
         {
-            temperature = uvc_xu_option<uint16_t>::query();
+            temperature = uvc_xu_option<int16_t>::query();
         }
         catch (...)
         {
