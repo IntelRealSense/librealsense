@@ -20,6 +20,53 @@ with test.closure( 'read-only options' ):
         dds.option.from_json( ['a', 1.1, 'desc'] ).get_value(),
         1.1 )
 
+with test.closure( 'boolean' ):
+    test.check_equal( dds.option.from_json( ['b', True, 'bool'] ).value_type(), 'boolean' )
+    test.check_equal( dds.option.from_json( ['b', False, 'bool'] ).value_type(), 'boolean' )
+    test.check_equal( dds.option.from_json( ['b', 0, 'bool', ['boolean']] ).value_type(), 'boolean' )
+    test.check_equal( dds.option.from_json( ['b', 0, 'bool', ['boolean']] ).get_value(), False )
+    test.check_equal( dds.option.from_json( ['b', 1, 'bool', ['boolean']] ).get_value(), True )
+    test.check_equal_lists(
+        dds.option.from_json( ['b', 1, 'bool', ['boolean']] ).to_json(),
+        ['b', True, 'bool'] )
+    test.check_throws( lambda:
+        dds.option.from_json( ['b', 1., 'bool', ['boolean']] ),
+        RuntimeError, 'not convertible to a boolean: 1.0' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['b', 2, 'bool', ['boolean']] ),
+        RuntimeError, 'not convertible to a boolean: 2' )
+    test.check_equal( dds.option.from_json( ['b', False, True, 'bool'] ).value_type(), 'boolean' )
+    test.check_equal( dds.option.from_json( ['b', False, None, 'bool', ['optional']] ).value_type(), 'boolean' )
+
+with test.closure( 'enum' ):
+    test.check_equal( dds.option.from_json( ['e1', 'a', ['a','b','c'], 'c', 'enum'] ).value_type(), 'enum' )
+    test.check_equal( dds.option.from_json( ['e1', 'a', ['a','a','c'], 'c', 'enum'] ).value_type(), 'enum' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['e1', 'd', [], 'c', 'enum'] ),
+        RuntimeError, 'invalid enum value: "c"' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['e1', 'a', None, 'c', 'enum'] ),
+        RuntimeError, 'enum option requires a choices array' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['e1', 'd', ['a','b','c'], 'c', 'enum'] ),
+        RuntimeError, 'invalid enum value: "d"' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['e1', 'a', ['a','b','c'], 'd', 'enum'] ),
+        RuntimeError, 'invalid enum value: "d"' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['e1', 'a', [None,'b','c'], 'd', 'enum'] ),
+        RuntimeError, 'enum choices must be strings' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['e1', 1, [1,2,3], 3, 'enum'] ),
+        RuntimeError, 'non-string enum values' )
+    test.check_throws( lambda:
+        dds.option.from_json( ['e1', None, ['a','b','c'], 'c', 'enum'] ),
+        RuntimeError, 'value is not optional' )
+    test.check_equal( dds.option.from_json( ['e1', None, ['a','b','c'], 'c', 'enum', ['optional']] ).value_type(), 'enum' )
+    test.check_equal_lists(
+        dds.option.from_json( ['e1', None, ['a','b','c'], 'c', 'enum', ['optional']] ).to_json(),
+        ['e1', None, ['a','b','c'], 'c', 'enum', ['optional']] )
+
 with test.closure( 'r/o options are still settable' ):
     # NOTE: the DDS options do not enforce logic post initialization; they serve only to COMMUNICATE any state and limits
     test.check_equal( dds.option.from_json( ['1', 0, 'desc'] ).value_type(), 'int' )
@@ -36,7 +83,9 @@ with test.closure( 'optional (default) value' ):
     test.check_throws( lambda:
         dds.option.from_json( ['a', None, 'desc', ['optional']] ),
         RuntimeError, 'cannot deduce value type: ["a",null,"desc",["optional"]]' )
-
+    test.check_equal_lists(
+        dds.option.from_json( ['Integer Option', None, None, 'Something', ['optional', 'int']] ).to_json(),
+        ['Integer Option', None, None, 'Something', ['optional', 'int']] )
 
 with test.closure( 'mixed types' ):
     test.check_equal( dds.option.from_json( ['i', 0, 'desc'] ).value_type(), 'int' )

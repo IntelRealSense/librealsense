@@ -13,6 +13,7 @@ void init_types(py::module &m) {
         any_intel = RS2_PRODUCT_LINE_ANY_INTEL,
         non_intel = RS2_PRODUCT_LINE_NON_INTEL,
         D400 = RS2_PRODUCT_LINE_D400,
+        D500 = RS2_PRODUCT_LINE_D500,
         SR300 = RS2_PRODUCT_LINE_SR300,
         L500 = RS2_PRODUCT_LINE_L500,
         T200 = RS2_PRODUCT_LINE_T200,
@@ -27,6 +28,7 @@ void init_types(py::module &m) {
         .value( "non_intel", product_line::non_intel )
         .value( "sw_only", product_line::sw_only )
         .value( "D400", product_line::D400 )
+        .value( "D500", product_line::D500 )
         .value( "SR300", product_line::SR300 )
         .value( "L500", product_line::L500 )
         .value( "T200", product_line::T200 )

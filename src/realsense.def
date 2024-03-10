@@ -95,6 +95,7 @@ EXPORTS
     rs2_get_option_value
     rs2_delete_option_value
     rs2_set_option
+    rs2_set_option_value
     rs2_supports_option
     rs2_get_option_range
     rs2_get_option_description

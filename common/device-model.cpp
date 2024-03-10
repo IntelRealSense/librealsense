@@ -2310,21 +2310,11 @@ namespace rs2
 
                         ///////////////////////////////////////////
                         //TODO: make this a member function
-                        std::vector<const char*> labels;
+                        int selected;
+                        std::vector< const char * > labels = opt_model.get_combo_labels( &selected );
                         std::vector< float > counters;
-                        auto selected = 0, counter = 0;
                         for (auto i = opt_model.range.min; i <= opt_model.range.max; i += opt_model.range.step)
-                        {
-                            std::string product = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-
-                            if (std::fabs(i - opt_model.value) < 0.001f)
-                            {
-                                selected = counter;
-                            }
-                            labels.push_back(opt_model.endpoint->get_option_value_description(opt_model.opt, i));
                             counters.push_back(i);
-                            counter++;
-                        }
                         ///////////////////////////////////////////
 
                         ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, white);
@@ -3051,27 +3041,10 @@ namespace rs2
                         label = rsutils::string::from() << pb->get_name() << "##" << id;
                         if (ImGui::TreeNode(label.c_str()))
                         {
-                            if (!viewer.is_option_skipped(RS2_OPTION_MIN_DISTANCE)) 
-                            {
-                                pb->get_option(RS2_OPTION_MIN_DISTANCE).update_all_fields(error_message, *viewer.not_model);
-                            }
-                            if (!viewer.is_option_skipped(RS2_OPTION_MAX_DISTANCE))
-                            {
-                                pb->get_option(RS2_OPTION_MAX_DISTANCE).update_all_fields(error_message, *viewer.not_model);
-                            }
-                            if (!viewer.is_option_skipped(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED))
-                            {
-                                pb->get_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED).update_all_fields(error_message, *viewer.not_model);
-                            }
-
-                            for (auto i = 0; i < RS2_OPTION_COUNT; i++)
-                            {
-                                auto opt = static_cast<rs2_option>(i);
-                                if (viewer.is_option_skipped(opt)) continue;
-                                pb->get_option(opt).draw_option(
-                                    dev.is<playback>() || update_read_only_options,
-                                    false, error_message, *viewer.not_model);
-                            }
+                            pb->draw_options( viewer,
+                                              dev.is< playback >() || update_read_only_options,
+                                              false,
+                                              error_message );
 
                             ImGui::TreePop();
                         }
@@ -3271,22 +3244,10 @@ namespace rs2
                             label = rsutils::string::from() << pb->get_name() << "##" << id;
                             if (ImGui::TreeNode(label.c_str()))
                             {
-                                for (auto&& opt : pb->get_option_list())
-                                {
-                                    if (viewer.is_option_skipped(opt)) continue;
-                                    pb->get_option(opt).draw_option(
-                                        dev.is<playback>() || update_read_only_options,
-                                        false, error_message, *viewer.not_model);
-
-                                    if (opt == RS2_OPTION_MIN_DISTANCE)
-                                    {
-                                        pb->get_option(RS2_OPTION_MAX_DISTANCE).update_all_fields(error_message, *viewer.not_model);
-                                    }
-                                    else if (opt == RS2_OPTION_MAX_DISTANCE)
-                                    {
-                                        pb->get_option(RS2_OPTION_MIN_DISTANCE).update_all_fields(error_message, *viewer.not_model);
-                                    }
-                                }
+                                pb->draw_options( viewer,
+                                                  dev.is< playback >() || update_read_only_options,
+                                                  false,
+                                                  error_message );
 
                                 ImGui::TreePop();
                             }
