@@ -16,13 +16,8 @@ namespace librealsense {
 float dds_depth_sensor_proxy::get_depth_scale() const
 {
     if( auto opt = get_option_handler( RS2_OPTION_DEPTH_UNITS ) )
-    {
-        // We don't want to do a long control-reply cycle on a value that gets updated automatically
-        if( auto dds_option = std::dynamic_pointer_cast< rs_dds_option >( opt ) )
-            return dds_option->get_last_known_value();
-        else
-            return opt->query();
-    }
+        return opt->get_value();
+
     // Rather than throwing an exception, we try to be a little more helpful: without depth units, the depth image will
     // show black, prompting bug reports. The D400 units min/max are taken from the HW, but the default is set to:
     return 0.001f;

@@ -126,6 +126,7 @@ namespace librealsense
             // criteria for discarding saved merged_depth_frame:
             // 1 - frame counter for merged depth is greater than the input frame
             // 2 - resolution change
+            // 3 - delta between input frame counter and merged depth counter >= SEQUENTIAL_FRAMES_THRESHOLD
             auto depth_merged_frame_counter = _depth_merged_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
             auto input_frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
 

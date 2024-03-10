@@ -1,7 +1,8 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 import sys, os, re, platform
+from time import perf_counter as timestamp
 
 
 def usage():
@@ -217,8 +218,9 @@ def query( monitor_changes=True, hub_reset=False, recycle_ports=True ):
     if hub:
         if not hub.is_connected():
             hub.connect(hub_reset)
-        hub.disable_ports( sleep_on_change = 5 )
-        hub.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
+        if recycle_ports:
+            hub.disable_ports( sleep_on_change = 5 )
+            hub.enable_ports( sleep_on_change = MAX_ENUMERATION_TIME )
     #
     # Get all devices, and store by serial-number
     global _device_by_sn, _context, _port_to_sn
@@ -745,7 +747,7 @@ if __name__ == '__main__':
                 usage()
         #
         if action == 'list':
-            query( monitor_changes=False, recycle_ports=False )
+            query( monitor_changes=False, recycle_ports=False, hub_reset=False )
             for sn in all():
                 device = get( sn )
                 print( '{port} {name:30} {sn:20} {handle}'.format(

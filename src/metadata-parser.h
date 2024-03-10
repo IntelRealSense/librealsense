@@ -333,10 +333,11 @@ namespace librealsense
     class md_attribute_parser_with_crc : public md_attribute_parser<S, Attribute, Flag>
     {
     public: 
-        md_attribute_parser_with_crc(Attribute S::* attribute_name, Flag flag, unsigned long long offset, attrib_modifyer mod, unsigned long long crc_offset)
-            : md_attribute_parser<S, Attribute, Flag>(attribute_name, flag, offset, mod), _crc_offset(crc_offset) {}
+        md_attribute_parser_with_crc(Attribute S::* attribute_name, Flag flag, unsigned long long offset, attrib_modifyer mod, unsigned long long start_offset, unsigned long long crc_offset)
+            : md_attribute_parser<S, Attribute, Flag>(attribute_name, flag, offset, mod), _start_offset(start_offset), _crc_offset(crc_offset) {}
 
     protected:
+        unsigned long long _start_offset; // offset of the first field that is relevant for CRC calculation
         unsigned long long _crc_offset; // offset of the crc inside the S class
         bool is_attribute_valid(const S* s) const override
         {
@@ -358,9 +359,11 @@ namespace librealsense
 
         bool is_crc_valid(const S* md_info) const
         {
-            Attribute crc = *(Attribute*)(reinterpret_cast<const uint8_t*>(md_info) + _crc_offset); //Attribute = CRC's type (ex. uint32_t)
-            auto computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<const uint8_t*>(md_info),
-                sizeof(S) - sizeof(crc));
+            // calculation of CRC32 for the MD payload, starting from "start_offset" till the end of struct, not including the CRC itself.
+            // assuming the CRC field is the last field of the struct
+            Attribute crc = *(Attribute*)(reinterpret_cast<const uint8_t*>(md_info) + _crc_offset);   //Attribute = CRC's type (ex. uint32_t)
+            auto computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<const uint8_t*>(md_info) + _start_offset,
+                sizeof(S) - _start_offset - sizeof(crc));
             return (crc == computed_crc32);
         }
     };
@@ -369,9 +372,9 @@ namespace librealsense
      *  **Note that this class is assuming that the CRC is the last variable in the struct**
      *  Return it as a pointer to a base-class*/
     template<class S, class Attribute, typename Flag>
-    std::shared_ptr<md_attribute_parser_base> make_attribute_parser_with_crc(Attribute S::* attribute, Flag flag, unsigned long long offset, unsigned long long crc_offset, attrib_modifyer mod = nullptr)
+    std::shared_ptr<md_attribute_parser_base> make_attribute_parser_with_crc(Attribute S::* attribute, Flag flag, unsigned long long offset, unsigned long long start_offset, unsigned long long crc_offset, attrib_modifyer mod = nullptr)
     {
-        std::shared_ptr<md_attribute_parser<S, Attribute, Flag>> parser(new md_attribute_parser_with_crc<S, Attribute, Flag>(attribute, flag, offset, mod, crc_offset));
+        std::shared_ptr<md_attribute_parser<S, Attribute, Flag>> parser(new md_attribute_parser_with_crc<S, Attribute, Flag>(attribute, flag, offset, mod, start_offset, crc_offset));
         return parser;
     }
 

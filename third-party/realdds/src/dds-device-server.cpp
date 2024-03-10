@@ -373,12 +373,12 @@ void dds_device_server::on_set_option( control_sample const & control, json & re
 
     std::shared_ptr< dds_option > option = get_option( option_name, stream_name );
 
-    float value = control.json.at( topics::control::set_option::key::value ).get< float >();  // mandatory; throws
+    json value = control.json.at( topics::control::set_option::key::value );  // mandatory; throws
     if( _set_option_callback )
         _set_option_callback( option, value );  // Let our owner have final say
     // Ensure realdds option is up to date with actual value from callback
-    option->set_value( value );
-    reply[topics::reply::set_option::key::value] = value;
+    option->set_value( std::move( value ) );
+    reply[topics::reply::set_option::key::value] = option->get_value();
 }
 
 

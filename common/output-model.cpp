@@ -11,6 +11,9 @@
 #include <imgui_internal.h>
 #include <librealsense2/hpp/rs_internal.hpp>
 
+#include "motion-dashboard.h"
+#include "frame-drops-dashboard.h"
+
 #include <fstream>
 #include <iterator>
 
@@ -116,15 +119,27 @@ output_model::output_model() : fw_logger([this](){ thread_loop(); }) , incoming_
             configurations::viewer::search_term, std::string(""));
     is_dashboard_open = config_file::instance().get_or_default(
         configurations::viewer::dashboard_open, true );
+    current_dashboard_index = config_file::instance().get( configurations::viewer::last_opened_dashboard );
     
     if (search_line != "") search_open = true;
 
-    available_dashboards["Frame Drops per Second"] = [&](std::string name){
-        return std::make_shared<frame_drops_dashboard>(name, &number_of_drops, &total_frames);
-    };
+    available_dashboards.push_back( std::make_pair( dashboard_names[0],
+                                                    [&]( std::string name )
+        { return std::make_shared< frame_drops_dashboard >( name, &number_of_drops, &total_frames ); } ) );
 
-    auto front = available_dashboards.begin();
-    dashboards.push_back(front->second(front->first));
+    available_dashboards.push_back( std::make_pair( dashboard_names[1],
+                                                    [&]( std::string name )
+                                                    { return std::make_shared< motion_dashboard >( name, RS2_STREAM_ACCEL ); } ) );
+
+    available_dashboards.push_back( std::make_pair( dashboard_names[2],
+                                                    [&]( std::string name )
+                                                    { return std::make_shared< motion_dashboard >( name, RS2_STREAM_GYRO ); } ) );
+
+    for(const auto& dashboard: available_dashboards)
+    {
+        if( dashboard.first == dashboard_names[current_dashboard_index] )
+            dashboards.push_back( dashboard.second( dashboard.first ) );
+    }
 }
 
 bool output_model::round_indicator(ux_window& win, std::string icon,
@@ -670,23 +685,6 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
                 default_dashboard_w = min_dashboard_width;
         }
 
-        auto top = 0;
-        if( is_dashboard_open && dashboard_width == max_dashboard_width )
-        {
-            for( auto && dash : dashboards )
-            {
-                auto h = dash->get_height();
-                auto r = rect{ 0.f, (float)top, get_dashboard_width() - 8.f, (float)h };
-                dash->draw( win, r );
-                top += h;
-            }
-        }
-
-        dashboards.erase(std::remove_if(dashboards.begin(), dashboards.end(),
-        [](std::shared_ptr<stream_dashboard> p){
-            return p->closing();
-        }), dashboards.end());
-
         bool can_add = false;
         for (auto&& kvp : available_dashboards)
         {
@@ -698,54 +696,52 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             if (it == dashboards.end()) can_add = true;
         }
 
-        if (can_add)
+        if( can_add && is_dashboard_open )
         {
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-            const auto new_dashboard_name = "new_dashboard";
+
             ImGui::SameLine();
-            if (ImGui::Button(u8"\uF0D0 Add Dashboard", ImVec2(-1, 25)))
-            {
-                ImGui::OpenPopup(new_dashboard_name);
-            }
+            ImGui::Button( u8"\uF0D0 Dashboards", ImVec2( -1, collapse_dashboard_button_size.y ) );
 
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Add one of the available stream dashboards to view");
-                win.link_hovered();
-            }
+            ImGui::PushStyleColor( ImGuiCol_Text, white );
+            ImGui::PushStyleColor( ImGuiCol_HeaderHovered, light_blue );
 
-            ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
-            ImGui::PushStyleColor(ImGuiCol_Text, black);
-            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, light_blue);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5,5));
-            if (ImGui::BeginPopup(new_dashboard_name))
+            int radio_button_choice = 0;
+            for( auto && kvp : available_dashboards )
             {
-                for (auto&& kvp : available_dashboards)
+                auto name = kvp.first;
+                auto it = std::find_if( dashboards.begin(),
+                                    dashboards.end(),
+                                    [name]( std::shared_ptr< stream_dashboard > p ) { return p->get_name() == name; } );
+
+                ImGui::SetCursorPosX( ImGui::GetCursorPosX() + collapse_dashboard_button_size.x );
+
+                // Show dashboard radio button to user
+                if( ImGui::RadioButton( name.c_str(), &current_dashboard_index, radio_button_choice++ ) )
                 {
-                    auto name = kvp.first;
-                    auto it = std::find_if(dashboards.begin(), dashboards.end(),
-                    [name](std::shared_ptr<stream_dashboard> p){
-                        return p->get_name() == name;
-                    });
-                    if (it == dashboards.end())
-                    {
-                        name = name + "##New";
-                        bool selected = false;
-                        if (ImGui::Selectable(name.c_str(), &selected))
-                        {
-                            dashboards.push_back(kvp.second(kvp.first));
-                        }
-                    }
+                    for( auto & d : dashboards )
+                        d->close();
+                    dashboards.clear();
+
+                    config_file::instance().set( configurations::viewer::last_opened_dashboard, current_dashboard_index);
+                    dashboards.push_back( kvp.second( kvp.first ) );
                 }
-
-                ImGui::EndPopup();
             }
+            ImGui::PopStyleColor( 2 );
 
-            ImGui::PopStyleColor(4);
-            ImGui::PopStyleVar();
+            // Draw dashboard background
+            auto top = 0;
+            if( dashboard_width == max_dashboard_width )
+            {
+                for( auto && dash : dashboards )
+                {
+                    auto h = dash->get_height();
+                    auto r = rect{ 0.f, (float)top, get_dashboard_width() - 8.f, (float)h };
+                    dash->draw( win, r );
+                    top += h;
+                }
+            }
         }
-
 
         ImGui::EndChild();
 
@@ -1031,6 +1027,7 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
     }
 
     auto pos = ImGui::GetCursorScreenPos();
+    pos.y += 5;
 
     ImGui::PushStyleColor(ImGuiCol_Text, white);
 
@@ -1040,24 +1037,16 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
                 { pos.x + r.w, pos.y + get_height() }, ImColor(dark_sensor_bg));
 
     auto size = ImGui::CalcTextSize(name.c_str());
-    float collapse_buton_h = 28.f + 3.f;  // Dashboard button size plus some spacing
-    ImGui::SetCursorPos(ImVec2( r.w / 2 - size.x / 2, 5 + collapse_buton_h));
+    float padding_top = ImGui::GetCursorPosY();  // Padding from top for scale digits.
+    ImGui::SetCursorPos(ImVec2( r.w / 2 - size.x / 2, 5 + padding_top));
     ImGui::Text("%s", name.c_str());
     ImGui::SameLine();
 
     ImGui::PushStyleColor(ImGuiCol_Text, grey);
     ImGui::SetCursorPosX(r.w - 25);
-    ImGui::SetCursorPosY( 3.f + collapse_buton_h );
+    ImGui::SetCursorPosY( 3.f + padding_top );
     std::string id = rsutils::string::from() << u8"\uF00D##Close_" << name;
-    if (ImGui::Button(id.c_str(),ImVec2(22,22)))
-    {
-        close();
-    }
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip("Remove Dashboard from View");
-        win.link_hovered();
-    }
+
     ImGui::PopStyleColor();
 
     ImGui::GetWindowDrawList()->AddRectFilled({ pos.x + max_y_label_width + 15, pos.y + ImGui::GetTextLineHeight() + 5 },
@@ -1069,7 +1058,7 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
         auto y = max_y - i * (gap_y / ticks_y);
         std::string y_label = rsutils::string::from() << std::fixed << std::setprecision(2) << y;
         auto y_pixel = ImGui::GetTextLineHeight() + i * (height_y / ticks_y);
-        ImGui::SetCursorPos(ImVec2( 10, y_pixel + collapse_buton_h));
+        ImGui::SetCursorPos(ImVec2( 10, y_pixel + padding_top));
         ImGui::Text("%s", y_label.c_str());
 
         ImGui::GetWindowDrawList()->AddLine({ pos.x + max_y_label_width + 15.f, pos.y + y_pixel + 5.f },
@@ -1099,7 +1088,7 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
     {
         auto x = min_x + i * (gap_x / ticks_x);
         std::string x_label = rsutils::string::from() << std::fixed << std::setprecision(2) << x;
-        ImGui::SetCursorPos(ImVec2( 15 + max_y_label_width+ i * (graph_width / ticks_x), r.h - ImGui::GetTextLineHeight() + collapse_buton_h));
+        ImGui::SetCursorPos(ImVec2( 15 + max_y_label_width+ i * (graph_width / ticks_x), r.h - ImGui::GetTextLineHeight() + padding_top));
         ImGui::Text("%s", x_label.c_str());
 
         ImGui::GetWindowDrawList()->AddLine({ pos.x + 15 + max_y_label_width + i * (graph_width / ticks_x), pos.y + ImGui::GetTextLineHeight() + 5 },
@@ -1130,93 +1119,4 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
     ImGui::PopStyleColor();
 
     xy.clear();
-}
-
-void frame_drops_dashboard::process_frame(rs2::frame f)
-{
-    write_shared_data([&](){
-        double ts = glfwGetTime();
-        if (method == 1) ts = f.get_timestamp() / 1000.f;
-        auto it = stream_to_time.find(f.get_profile().unique_id());
-        if (it != stream_to_time.end())
-        {
-            auto last = stream_to_time[f.get_profile().unique_id()];
-
-            double fps = (double)f.get_profile().fps();
-
-            if( f.supports_frame_metadata( RS2_FRAME_METADATA_ACTUAL_FPS ) )
-                fps = f.get_frame_metadata( RS2_FRAME_METADATA_ACTUAL_FPS ) / 1000.;
-
-            if (1000. * (ts - last) > 1.5 * (1000. / fps)) {
-                drops++;
-            }
-        }
-
-        counter++;
-
-        if (ts - last_time > 1.f)
-        {
-            if (drops_history.size() > 100) drops_history.pop_front();
-            drops_history.push_back(drops);
-            *total = counter;
-            *frame_drop_count = drops;
-            drops = 0;
-            last_time = ts;
-            counter = 0;
-        }
-
-        stream_to_time[f.get_profile().unique_id()] = ts;
-    });
-}
-
-void frame_drops_dashboard::draw(ux_window& win, rect r)
-{
-    auto hist = read_shared_data<std::deque<int>>([&](){ return drops_history; });
-    for (int i = 0; i < hist.size(); i++)
-    {
-        add_point((float)i, (float)hist[i]);
-    }
-    r.h -= ImGui::GetTextLineHeightWithSpacing() + 10;
-
-    if( config_file::instance().get( configurations::viewer::dashboard_open) )
-        draw_dashboard(win, r);
-
-    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 40);
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 3);
-    ImGui::Text("%s", "Measurement Metric:"); ImGui::SameLine();
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 3);
-
-    ImGui::SetCursorPosX( 11.5f * win.get_font_size() );
-
-    std::vector<const char*> methods;
-    methods.push_back("Viewer Processing Rate");
-    methods.push_back("Camera Timestamp Rate");
-
-    ImGui::PushItemWidth(-1.f);
-    if (ImGui::Combo("##fps_method", &method, methods.data(), (int)(methods.size())))
-    {
-        clear(false);
-    }
-    ImGui::PopItemWidth();
-}
-
-int frame_drops_dashboard::get_height() const
-{
-    return (int)(160 + ImGui::GetTextLineHeightWithSpacing());
-}
-
-void frame_drops_dashboard::clear(bool full)
-{
-    write_shared_data([&](){
-        stream_to_time.clear();
-        last_time = 0;
-        *total = 0;
-        *frame_drop_count = 0;
-        if (full)
-        {
-            drops_history.clear();
-            for (int i = 0; i < 100; i++)
-                drops_history.push_back(0);
-        }
-    });
 }

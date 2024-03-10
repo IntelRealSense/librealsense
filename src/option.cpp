@@ -5,6 +5,9 @@
 #include "sensor.h"
 
 #include <rsutils/string/from.h>
+#include <rsutils/json.h>
+
+using rsutils::json;
 
 
 namespace librealsense {
@@ -35,6 +38,25 @@ void option_base::enable_recording(std::function<void(const option&)> recording_
 {
     _recording_function = recording_action;
 }
+
+json option::get_value() const noexcept
+{
+    return query();
+}
+
+
+rs2_option_type option::get_value_type() const noexcept
+{
+    // By default, all options are floats
+    return RS2_OPTION_TYPE_FLOAT;
+}
+
+
+void option::set_value( json value )
+{
+    set( value );
+}
+
 
 void option::create_snapshot(std::shared_ptr<option>& snapshot) const
 {
