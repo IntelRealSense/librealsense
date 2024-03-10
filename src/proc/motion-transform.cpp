@@ -50,7 +50,7 @@ namespace librealsense
     {
         // Default sensitivity in HKR is +-2000 deg/sec at 16.384 LSB/Deg/Sec.
         // High sensitivity is +-125 deg/sec at 262.144 LSB/Deg/Sec (LSB is 0.003814697265625 deg/sec), in legacy the calculations happen in FW and we need scalefactor 0.1.
-        const double gyro_transform_factor = deg2rad( high_sensitivity ? 0.003814697265625 : 0.1 );
+        const double gyro_transform_factor = deg2rad( high_sensitivity ? 0.003814697265625 : 0.0001 );
 
         copy_hid_axes<FORMAT>(dest, source, gyro_transform_factor, is_mipi);
     }

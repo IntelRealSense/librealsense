@@ -167,7 +167,7 @@ namespace librealsense
                     CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_ANGULAR_VELOCITY_Z_DEGREES_PER_SECOND, &var));
                     rawZ = var.dblVal;
 
-                    static constexpr double gyro_transform_factor = 10.0;
+                    static constexpr double gyro_transform_factor = 10000.0;
 
                     rawX *= gyro_transform_factor;
                     rawY *= gyro_transform_factor;
