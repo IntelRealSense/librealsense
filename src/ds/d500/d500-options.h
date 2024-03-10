@@ -4,6 +4,7 @@
 #pragma once
 
 #include "ds/ds-private.h"
+#include "ds/ds-options.h"
 #include "core/options-container.h"
 #include "option.h"
 
