@@ -126,16 +126,20 @@ public:
 
     bool is_enabled() const override { return true; }
 
+    typedef std::function< float(const T param) > parsing_modifier;
+
     uvc_xu_option( const std::weak_ptr< uvc_sensor > & ep,
                    platform::extension_unit xu,
                    uint8_t id,
                    std::string description,
-                   bool allow_set_while_streaming = true )
+                   bool allow_set_while_streaming = true,
+                   parsing_modifier modifier = nullptr)
         : _ep( ep )
         , _xu( xu )
         , _id( id )
         , _desciption( std::move( description ) )
         , _allow_set_while_streaming( allow_set_while_streaming )
+        , _parsing_modifier(modifier)
     {
     }
 
@@ -144,13 +148,15 @@ public:
                    uint8_t id,
                    std::string description,
                    const std::map< float, std::string > & description_per_value,
-                   bool allow_set_while_streaming = true )
+                   bool allow_set_while_streaming = true,
+                   parsing_modifier modifier = nullptr)
         : _ep( ep )
         , _xu( xu )
         , _id( id )
         , _desciption( std::move( description ) )
         , _description_per_value( description_per_value )
         , _allow_set_while_streaming( allow_set_while_streaming )
+        , _parsing_modifier(modifier)
     {
     }
 
@@ -175,7 +181,7 @@ protected:
     };
     const std::map< float, std::string > _description_per_value;
     bool _allow_set_while_streaming;
-    std::function< float(const T param) > _parsing_modifier = nullptr;
+    parsing_modifier _parsing_modifier = nullptr;
 };
 
 
