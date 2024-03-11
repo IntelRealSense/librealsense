@@ -198,9 +198,9 @@ namespace librealsense
                 meta_data.report_type.imu_report.imu_counter = imu_count;
                 meta_data.report_type.imu_report.usb_counter = usb_count;
 
-                data.x = static_cast<int16_t>(rawX);
-                data.y = static_cast<int16_t>(rawY);
-                data.z = static_cast<int16_t>(rawZ);
+                data.x = static_cast<int32_t>(rawX);
+                data.y = static_cast<int32_t>(rawY);
+                data.z = static_cast<int32_t>(rawZ);
                 data.ts_low = customTimestampLow;
                 data.ts_high = customTimestampHigh;
 

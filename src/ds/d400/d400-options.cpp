@@ -480,17 +480,13 @@ namespace librealsense
             throw invalid_value_exception( "set(gyro_sensitivity) failed! Invalid Gyro sensitivity resolution request "
                                            + std::to_string( value ) );
 
-
+        _value = value;
         strong->set_imu_sensitivity( RS2_STREAM_GYRO, value );
-
     }
 
     float librealsense::gyro_sensitivity_option::query() const
     {
-        if( auto strong = _sensor.lock() )
-            return strong->get_imu_sensitivity_raw_values( RS2_STREAM_GYRO );
-        else
-            throw invalid_value_exception( "gyro_sensitivity_option::query result is empty!" );    
+        return _value;
     }
 
     

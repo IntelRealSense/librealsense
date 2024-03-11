@@ -11,12 +11,12 @@ namespace librealsense {
 #pragma pack( push, 1 )
 struct hid_data
 {
-    short x;
-    uint8_t reserved1[2];
-    short y;
-    uint8_t reserved2[2];
-    short z;
-    uint8_t reserved3[2];
+    int32_t x;
+    //uint16_t reserved1[2];
+    int32_t y;
+    //uint16_t reserved2[2];
+    int32_t z;
+    //uint16_t reserved3[2];
 };
 
 

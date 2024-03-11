@@ -353,18 +353,8 @@ void hid_sensor::set_imu_sensitivity( rs2_stream stream, float value )
     _imu_sensitivity_per_rs2_stream[stream] = value;
 }
 
-float hid_sensor::get_imu_sensitivity_raw_values( rs2_stream stream )
-{
-    if( _imu_sensitivity_per_rs2_stream.find( stream ) != _imu_sensitivity_per_rs2_stream.end() )
-        return _imu_sensitivity_per_rs2_stream[stream];
-     else 
-        // gyro sensitivity default value is +-1000 therefore returning 30.5 resolution
-         // accel sensitivity default value is +-4g therefore returning 1.95 resolution
-         return stream == RS2_STREAM_GYRO ? 30.5f : 1.95f;
-}
-
 /*For gyro sensitivity - FW expects 0/0.1/0.2/0.3/0.4 we convert the values from the enum 0/1/2/3/4
-the user choose to the values FW expects using gyro_sensitivity_convert*/
+the user chooses to the values FW expects using gyro_sensitivity_convert*/
 double hid_sensor::get_imu_sensitivity_values( rs2_stream stream )
 {
     if( _imu_sensitivity_per_rs2_stream.find( stream ) != _imu_sensitivity_per_rs2_stream.end() )

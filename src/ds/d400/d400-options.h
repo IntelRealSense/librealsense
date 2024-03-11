@@ -196,7 +196,11 @@ namespace librealsense
     public:
         gyro_sensitivity_option( const std::weak_ptr< hid_sensor > & sensor, const option_range & opt_range )
             : option_base( opt_range )
-            , _sensor( sensor ){};
+            , _value( opt_range.def )
+            , _sensor( sensor )
+        {
+            set( _value );
+        }
         virtual ~gyro_sensitivity_option() = default;
         virtual void set( float value ) override;
         virtual float query() const override;
@@ -210,6 +214,7 @@ namespace librealsense
         virtual bool is_read_only() const override;
 
     private:
+        float _value;
         std::weak_ptr< hid_sensor > _sensor;
         std::function< void( const option & ) > _record_action = []( const option & ) {};
 
