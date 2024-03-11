@@ -32,7 +32,18 @@ def get_temperatures_from_xu():
 
 
 def parse_temperature_from_hwm(hwm_answer):
-    temperature = -10.0
+    """
+    The returned value from gtemp hwmc is a list of uint8_t, with:
+          - the 4 first values are the opcode of the request - 2a 0 0 0 in our case
+          - the remaining values are temperatures of several components, each represented
+            by 2 values: the first is the decimal part, and the second one is the whole value part
+            e.g.: if the 2 values are 90 28 (in hex):
+            * the whole value part is 0x28 = 40
+            * the decimal value part is 0x91 = 144. 144/256 = 0.5625
+            So in this example, the resulting temperature is 40.5625 deg.
+    This function parses the hwmc returned list to a list of temperatures, parsed as explained above.
+    """
+    # stepping over the 4 first values (opcode of the request, see above explanation)
     relevant_data = hwm_answer[4:]
     temperatures_list = []
 
@@ -52,10 +63,6 @@ def parse_temperature_from_hwm(hwm_answer):
 
 
 def get_temperatures_from_hwm():
-    pvt_temp = -10
-    ohm_temp = -10
-    proj_temp = -10
-
     gtemp_opcode = 0x2a
 
     # getting all the available temperatures
