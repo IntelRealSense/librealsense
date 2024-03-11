@@ -274,7 +274,7 @@ void dds_sensor_proxy::handle_video_data( realdds::topics::image_msg && dds_fram
 {
     frame_additional_data data;  // with NO metadata by default!
     data.timestamp               // in ms
-        = static_cast< rs2_time_t >( realdds::time_to_double( dds_frame.timestamp ) * 1e3 );
+        = static_cast< rs2_time_t >( realdds::time_to_double( dds_frame.timestamp ) * 1e6 );
     data.timestamp_domain;  // from metadata, or leave default (hardware domain)
     data.depth_units;       // from metadata
     data.frame_number;      // filled in only once metadata is known
@@ -313,7 +313,7 @@ void dds_sensor_proxy::handle_motion_data( realdds::topics::imu_msg && imu,
 {
     frame_additional_data data;  // with NO metadata by default!
     data.timestamp               // in ms
-        = static_cast< rs2_time_t >( realdds::time_to_double( imu.timestamp() ) * 1e3 );
+        = static_cast< rs2_time_t >( realdds::time_to_double( imu.timestamp() ) * 1e6 );
     data.timestamp_domain;  // leave default (hardware domain)
     data.last_frame_number = streaming.last_frame_number.fetch_add( 1 );
     data.frame_number = data.last_frame_number + 1;
