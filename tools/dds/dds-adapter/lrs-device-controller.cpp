@@ -133,7 +133,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
     std::map< std::string, std::set< realdds::video_intrinsics > > stream_name_to_video_intrinsics;
 
     // Iterate over all profiles of all sensors and build appropriate dds_stream_servers
-    for( auto sensor : _rs_dev.query_sensors() )
+    for( auto & sensor : _rs_dev.query_sensors() )
     {
         std::string const sensor_name = sensor.get_info( RS2_CAMERA_INFO_NAME );
         // We keep a copy of the sensors throughout the run time:
@@ -249,9 +249,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
         server->init_profiles( profiles, default_profile_index );
 
         // Get supported options and recommended filters for this stream
-        realdds::dds_options stream_options;
-        std::vector< std::string > filter_names;
-        for( auto sensor : _rs_dev.query_sensors() )
+        for( auto & sensor : _rs_dev.query_sensors() )
         {
             std::string const sensor_name = sensor.get_info( RS2_CAMERA_INFO_NAME );
             if( server->sensor_name().compare( sensor_name ) != 0 )
@@ -261,6 +259,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
             // only need to do this once per sensor!
             if( sensors_handled.emplace( sensor_name ).second )
             {
+                realdds::dds_options stream_options;
                 auto supported_options = sensor.get_supported_options();
                 for( auto option_id : supported_options )
                 {
@@ -310,6 +309,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
                 }
 
                 auto recommended_filters = sensor.get_recommended_filters();
+                std::vector< std::string > filter_names;
                 for( auto const & filter : recommended_filters )
                     filter_names.push_back( filter.get_info( RS2_CAMERA_INFO_NAME ) );
 
@@ -332,7 +332,7 @@ extrinsics_map get_extrinsics_map( const rs2::device & dev )
     std::map< std::string, rs2::stream_profile > stream_name_to_rs2_stream_profile;
 
     // Iterate over profiles of all sensors and split to streams
-    for( auto sensor : dev.query_sensors() )
+    for( auto & sensor : dev.query_sensors() )
     {
         auto stream_profiles = sensor.get_stream_profiles();
         std::for_each( stream_profiles.begin(),
