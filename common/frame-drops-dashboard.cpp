@@ -53,7 +53,7 @@ void frame_drops_dashboard::draw( ux_window & win, rect r )
     auto hist = read_shared_data< std::deque< int > >( [&]() { return drops_history; } );
     for( int i = 0; i < hist.size(); i++ )
     {
-        add_point( (float)i, (float)hist[i] );
+        add_point_n_vector( (float)i, (float)hist[i] );
     }
     r.h -= ImGui::GetTextLineHeightWithSpacing() + 10;
 

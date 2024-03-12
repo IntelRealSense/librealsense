@@ -994,22 +994,9 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
     auto min_x = 0.f;
     auto max_x = 1.f;
     auto min_y = 0.f;
-    auto max_y = 1.f;
+    auto max_y = 0.f;
 
-    if (xy.size())
-    {
-        min_x = xy[0].first;
-        max_x = xy[0].first;
-        min_y = xy[0].second;
-        max_y = xy[0].second;
-        for (auto&& p : xy)
-        {
-            min_x = std::min(min_x, p.first);
-            min_y = std::min(min_y, p.second);
-            max_x = std::max(max_x, p.first);
-            max_y = std::max(max_y, p.second);
-        }
-    }
+    set_dashboard_size( min_x, max_x, min_y, max_y );
 
     auto gap_y = max_y - min_y;
     auto gap_x = max_x - min_x;
@@ -1095,15 +1082,18 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
                  { pos.x + max_y_label_width + 15 + i * (graph_width / ticks_x), pos.y + ImGui::GetTextLineHeight() + 5 + height_y }, ImColor(light_grey));
     }
 
-    std::sort(xy.begin(), xy.end(), [](const std::pair<float, float>& a, const std::pair<float, float>& b) { return a.first < b.first; });
+    std::sort(xy_x_axis.begin(), xy_x_axis.end(), [](const std::pair<float, float>& a, const std::pair<float, float>& b) { return a.first < b.first; });
+    std::sort(xy_y_axis.begin(), xy_y_axis.end(), [](const std::pair<float, float>& a, const std::pair<float, float>& b) { return a.first < b.first; });
+    std::sort(xy_z_axis.begin(), xy_z_axis.end(), [](const std::pair<float, float>& a, const std::pair<float, float>& b) { return a.first < b.first; });
+    std::sort(xy_n_vector.begin(), xy_n_vector.end(), [](const std::pair<float, float>& a, const std::pair<float, float>& b) { return a.first < b.first; });
 
-    for (int i = 0; i + 1 < xy.size(); i++)
+    for( auto i = 0; i + 1 < xy_x_axis.size(); i++ )
     {
-        auto x0 = xy[i].first;
-        auto y0 = xy[i].second;
+        auto x0 = xy_x_axis[i].first;
+        auto y0 = xy_x_axis[i].second;
 
-        auto x1 = xy[i+1].first;
-        auto y1 = xy[i+1].second;
+        auto x1 = xy_x_axis[i + 1].first;
+        auto y1 = xy_x_axis[i + 1].second;
 
         x0 = (x0 - min_x) / (max_x - min_x);
         x1 = (x1 - min_x) / (max_x - min_x);
@@ -1111,12 +1101,135 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
         y0 = (y0 - min_y) / (max_y - min_y);
         y1 = (y1 - min_y) / (max_y - min_y);
 
-        ImGui::GetWindowDrawList()->AddLine({ pos.x + 15 + max_y_label_width + x0 * graph_width, pos.y + ImGui::GetTextLineHeight() + 5 + height_y * (1.f - y0) },
-                 { pos.x + 15 + max_y_label_width + x1 * graph_width, pos.y + ImGui::GetTextLineHeight() + 5 + height_y * (1.f - y1) }, ImColor(black));
+        // Draw X graph line
+        ImGui::GetWindowDrawList()->AddLine( { pos.x + 15 + max_y_label_width + x0 * graph_width,
+                                               pos.y + ImGui::GetTextLineHeight() + 5 + height_y * ( 1.f - y0 ) },
+                                             { pos.x + 15 + max_y_label_width + x1 * graph_width,
+                                               pos.y + ImGui::GetTextLineHeight() + 5 + height_y * ( 1.f - y1 ) },
+                                             ImColor( red ) );
     }
 
+    for( int i = 0; i+1 < xy_y_axis.size(); i++ )
+    {
+        auto x0 = xy_y_axis[i].first;
+        auto y0 = xy_y_axis[i].second;
+
+        auto x1 = xy_y_axis[i + 1].first;
+        auto y1 = xy_y_axis[i + 1].second;
+
+        x0 = ( x0 - min_x ) / ( max_x - min_x );
+        x1 = ( x1 - min_x ) / ( max_x - min_x );
+
+        y0 = ( y0 - min_y ) / ( max_y - min_y );
+        y1 = ( y1 - min_y ) / ( max_y - min_y );
+
+        // Draw Y graph line
+        ImGui::GetWindowDrawList()->AddLine( { pos.x + 15 + max_y_label_width + x0 * graph_width,
+                                               pos.y + ImGui::GetTextLineHeight() + 5 + height_y * ( 1.f - y0 ) },
+                                             { pos.x + 15 + max_y_label_width + x1 * graph_width,
+                                               pos.y + ImGui::GetTextLineHeight() + 5 + height_y * ( 1.f - y1 ) },
+                                             ImColor( green ) );
+    }
+
+    for( int i = 0; i + 1 < xy_z_axis.size(); i++ )
+    {
+        auto x0 = xy_z_axis[i].first;
+        auto y0 = xy_z_axis[i].second;
+
+        auto x1 = xy_z_axis[i + 1].first;
+        auto y1 = xy_z_axis[i + 1].second;
+
+        x0 = ( x0 - min_x ) / ( max_x - min_x );
+        x1 = ( x1 - min_x ) / ( max_x - min_x );
+
+        y0 = ( y0 - min_y ) / ( max_y - min_y );
+        y1 = ( y1 - min_y ) / ( max_y - min_y );
+
+        // Draw Z graph line
+        ImGui::GetWindowDrawList()->AddLine( { pos.x + 15 + max_y_label_width + x0 * graph_width,
+                                               pos.y + ImGui::GetTextLineHeight() + 5 + height_y * ( 1.f - y0 ) },
+                                             { pos.x + 15 + max_y_label_width + x1 * graph_width,
+                                               pos.y + ImGui::GetTextLineHeight() + 5 + height_y * ( 1.f - y1 ) },
+                                             ImColor( light_blue ) );
+    }
+
+    for( int i = 0; i + 1 < xy_n_vector.size(); i++ )
+    {
+        auto x0 = xy_n_vector[i].first;
+        auto y0 = xy_n_vector[i].second;
+
+        auto x1 = xy_n_vector[i + 1].first;
+        auto y1 = xy_n_vector[i + 1].second;
+
+        x0 = ( x0 - min_x ) / ( max_x - min_x );
+        x1 = ( x1 - min_x ) / ( max_x - min_x );
+
+        y0 = ( y0 - min_y ) / ( max_y - min_y );
+        y1 = ( y1 - min_y ) / ( max_y - min_y );
+
+        // Draw N vector line
+        ImGui::GetWindowDrawList()->AddLine( { pos.x + 15 + max_y_label_width + x0 * graph_width,
+                                               pos.y + ImGui::GetTextLineHeight() + 5 + height_y * ( 1.f - y0 ) },
+                                             { pos.x + 15 + max_y_label_width + x1 * graph_width,
+                                               pos.y + ImGui::GetTextLineHeight() + 5 + height_y * ( 1.f - y1 ) },
+                                             ImColor( black ) );
+    }
     //ImGui::PopFont();
     ImGui::PopStyleColor();
 
-    xy.clear();
+    xy_x_axis.clear();
+    xy_y_axis.clear();
+    xy_z_axis.clear();
+    xy_n_vector.clear();
+}
+
+void stream_dashboard::set_dashboard_size( float& min_x, float& max_x, float& min_y, float& max_y )
+{
+    if( xy_x_axis.size() )
+    {   
+        for( auto && p : xy_x_axis )
+        {
+            min_x = std::min( min_x, p.first );
+            min_y = std::min( min_y, p.second );
+            max_x = std::max( max_x, p.first );
+            max_y = std::max( max_y, p.second );
+        }
+    }
+
+    if( xy_y_axis.size() )
+    {
+        for( auto && p : xy_y_axis )
+        {
+            min_x = std::min( min_x, p.first );
+            min_y = std::min( min_y, p.second );
+            max_x = std::max( max_x, p.first );
+            max_y = std::max( max_y, p.second );
+        }
+    }
+
+    if( xy_z_axis.size() )
+    {
+        for( auto && p : xy_z_axis )
+        {
+            min_x = std::min( min_x, p.first );
+            min_y = std::min( min_y, p.second );
+            max_x = std::max( max_x, p.first );
+            max_y = std::max( max_y, p.second );
+        }
+    }
+
+    if( xy_n_vector.size() )
+    {
+        for( auto && p : xy_n_vector )
+        {
+            min_x = std::min( min_x, p.first );
+            min_y = std::min( min_y, p.second );
+            max_x = std::max( max_x, p.first );
+            max_y = std::max( max_y, p.second );
+        }
+    }
+
+    // Increase dashboard size (white area) from top and bottom to prevent a graph from being so close to borders.
+    min_y -= .5f;
+    max_y += .5f;
 }

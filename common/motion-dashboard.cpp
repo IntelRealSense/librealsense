@@ -61,42 +61,44 @@ void motion_dashboard::process_frame( rs2::frame f )
 
 void motion_dashboard::draw( ux_window & win, rect r )
 {
-    if( plots[plot_index] == x_axes_name )
+    r.h -= ImGui::GetTextLineHeightWithSpacing() + 10;
+
+    if( show_x_graph )
     {
         auto x_hist = read_shared_data< std::deque< float > >( [&]() { return x_history; } );
         for( int i = 0; i < x_hist.size(); i++ )
         {
-            add_point( (float)i, x_hist[i] );
+            add_point_x_axis( (float)i, x_hist[i] );
         }
     }
 
-    if( plots[plot_index] == y_axes_name )
+    if( show_y_graph )
     {
         auto y_hist = read_shared_data< std::deque< float > >( [&]() { return y_history; } );
         for( int i = 0; i < y_hist.size(); i++ )
         {
-            add_point( (float)i, y_hist[i] );
+            add_point_y_axis( (float)i, y_hist[i] );
         }
     }
 
-    if( plots[plot_index] == z_axes_name )
+    if( show_z_graph )
     {
         auto z_hist = read_shared_data< std::deque< float > >( [&]() { return z_history; } );
         for( int i = 0; i < z_hist.size(); i++ )
         {
-            add_point( (float)i, z_hist[i] );
+            add_point_z_axis( (float)i, z_hist[i] );
         }
     }
 
-    if( plots[plot_index] == n_axes_name )
+    if( show_n_graph )
     {
         auto n_hist = read_shared_data< std::deque< float > >( [&]() { return n_history; } );
         for( int i = 0; i < n_hist.size(); i++ )
         {
-            add_point( (float)i, n_hist[i] );
+            add_point_n_vector( (float)i, n_hist[i] );
         }
     }
-    r.h -= ImGui::GetTextLineHeightWithSpacing() + 10;
+   
     draw_dashboard( win, r );
 
     ImGui::SetCursorPosX( ImGui::GetCursorPosX() + ImGui::GetTextLineHeightWithSpacing() * 2 );
@@ -141,28 +143,28 @@ void motion_dashboard::clear( bool full )
 void motion_dashboard::show_radiobuttons()
 {
     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.0f, 0.0f, 0.0f, 1.0f ) );  // -> Red
-    ImGui::RadioButton( "X", &plot_index, 0 );
+    ImGui::Checkbox( x_axis_name, &show_x_graph );
     if( ImGui::IsItemHovered() )
-        ImGui::SetTooltip( "%s", std::string( rsutils::string::from() << "Show " << x_axes_name ).c_str() );
+        ImGui::SetTooltip( "%s", std::string( rsutils::string::from() << "Show " << x_axis_name ).c_str() );
     ImGui::PopStyleColor();
     ImGui::SameLine();
 
     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.00f, 1.00f, 0.00f, 1.00f ) ); // -> Green
-    ImGui::RadioButton( "Y", &plot_index, 1 );
+    ImGui::Checkbox( y_axis_name, &show_y_graph );
     if( ImGui::IsItemHovered() )
-        ImGui::SetTooltip( "%s", std::string( rsutils::string::from() << "Show " << y_axes_name ).c_str() );
+        ImGui::SetTooltip( "%s", std::string( rsutils::string::from() << "Show " << y_axis_name ).c_str() );
     ImGui::PopStyleColor();
     ImGui::SameLine();
 
     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.00f, 0.00f, 1.00f, 1.00f ) );  // -> Blue
-    ImGui::RadioButton( "Z", &plot_index, 2 );
+    ImGui::Checkbox( z_axis_name, &show_z_graph );
     if( ImGui::IsItemHovered() )
-        ImGui::SetTooltip( "%s", std::string( rsutils::string::from() << "Show " << z_axes_name ).c_str() );
+        ImGui::SetTooltip( "%s", std::string( rsutils::string::from() << "Show " << z_axis_name ).c_str() );
     ImGui::PopStyleColor();
     ImGui::SameLine();
 
     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.00f, 1.00f, 1.00f, 1.00f ) );  // -> White
-    ImGui::RadioButton( "N", &plot_index, 3 );
+    ImGui::Checkbox( n_vector_name, &show_n_graph );
     if( ImGui::IsItemHovered() )
         ImGui::SetTooltip( "%s", "Show Normal - sqrt(x^2 + y^2 + z^2)" );
     ImGui::PopStyleColor();
