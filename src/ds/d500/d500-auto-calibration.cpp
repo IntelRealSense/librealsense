@@ -252,6 +252,7 @@ namespace librealsense
         return ans;
     }
 
+
     std::vector<uint8_t> d500_auto_calibrated::run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* const health, rs2_update_progress_callback_sptr progress_callback)
     {
         throw std::runtime_error(rsutils::string::from() << "Tare Calibration not applicable for this device");
