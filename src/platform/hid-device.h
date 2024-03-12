@@ -86,6 +86,7 @@ public:
                                                            const std::string & report_name,
                                                            custom_sensor_report_field report_field )
         = 0;
+    virtual void set_gyro_scale_factor( double scale_factor ) = 0;
 };
 
 

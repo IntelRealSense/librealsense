@@ -41,7 +41,7 @@ namespace librealsense
         public:
             virtual ~sensor_events() = default;
 
-            explicit sensor_events(hid_callback callback) : m_cRef(0), _callback(callback) {}
+            explicit sensor_events(hid_callback callback, double gyro_scale_factor = 10.0) : m_cRef(0), _callback(callback), _gyro_scale_factor(gyro_scale_factor) {}
 
             STDMETHODIMP QueryInterface(REFIID iid, void** ppv)
             {
@@ -167,11 +167,9 @@ namespace librealsense
                     CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_ANGULAR_VELOCITY_Z_DEGREES_PER_SECOND, &var));
                     rawZ = var.dblVal;
 
-                    static constexpr double gyro_transform_factor = 10000.0;
-
-                    rawX *= gyro_transform_factor;
-                    rawY *= gyro_transform_factor;
-                    rawZ *= gyro_transform_factor;
+                    rawX *= _gyro_scale_factor;
+                    rawY *= _gyro_scale_factor;
+                    rawZ *= _gyro_scale_factor;
                 }
                 else
                 {
@@ -265,6 +263,7 @@ namespace librealsense
         private:
             long m_cRef;
             hid_callback _callback;
+            double _gyro_scale_factor = 10.0;
         };
 
         void wmf_hid_device::open(const std::vector<hid_profile>&iio_profiles)
@@ -372,7 +371,7 @@ namespace librealsense
         void wmf_hid_device::start_capture(hid_callback callback)
         {
             // Hack, start default profile
-            _cb = new sensor_events(callback);
+            _cb = new sensor_events(callback, _gyro_scale_factor);
             ISensorEvents* sensorEvents = nullptr;
             CHECK_HR(_cb->QueryInterface(IID_PPV_ARGS(&sensorEvents)));
 
@@ -404,6 +403,11 @@ namespace librealsense
         std::vector<uint8_t> wmf_hid_device::get_custom_report_data(const std::string & custom_sensor_name, const std::string & report_name, custom_sensor_report_field report_field)
         {
             return std::vector<uint8_t>();
+        }
+
+        void wmf_hid_device::set_gyro_scale_factor(double scale_factor) 
+        {
+            _gyro_scale_factor = scale_factor;
         }
 
         void wmf_hid_device::foreach_hid_device(std::function<void(hid_device_info, CComPtr<ISensor>)> action)

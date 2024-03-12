@@ -67,6 +67,7 @@ namespace librealsense
             void start_capture(hid_callback callback) override;
             std::vector<hid_sensor> get_sensors() override; // Get opened sensors
             std::vector<uint8_t> get_custom_report_data(const std::string& custom_sensor_name, const std::string& report_name, custom_sensor_report_field report_field) override;
+            void set_gyro_scale_factor( double scale_factor ) override;
 
         private:
             // Don't move the position of wmf_backend member. This object must be destroyed only after COM objects.
@@ -78,6 +79,7 @@ namespace librealsense
 
             CComPtr<ISensorEvents> _cb;
             std::vector<hid_profile> _hid_profiles;
+            double _gyro_scale_factor = 10.0;
         };
     }
 }

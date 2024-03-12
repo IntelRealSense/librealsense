@@ -18,6 +18,7 @@ gyro_sensitivity_feature::gyro_sensitivity_feature( std::shared_ptr< hid_sensor 
     option_range enable_range = { 0.f /*min*/, 4.f /*max*/, 1.f /*step*/, 1.f /*default*/ };
     auto imu_sensitivity_control = std::make_shared< gyro_sensitivity_option >( motion_sensor, enable_range );
     motion.register_option( RS2_OPTION_GYRO_SENSITIVITY, imu_sensitivity_control );
+    motion_sensor->set_gyro_scale_factor( 10000.0 );
 }
 
 

@@ -514,11 +514,12 @@ namespace librealsense
             });
 
         bool high_sensitivity = _owner->is_gyro_high_sensitivity();
+        double gyro_scale_factor = high_sensitivity ? 0.003814697265625 : ( _fw_version >= firmware_version( 5, 15, 1, 224 ) ? 0.0001: 0.1 );    
         hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
-            [&, mm_correct_opt, high_sensitivity]() {
-                return std::make_shared< gyroscope_transform >( _mm_calib, mm_correct_opt, high_sensitivity );
+                                           [&, mm_correct_opt, gyro_scale_factor]() {
+                                               return std::make_shared< gyroscope_transform >( _mm_calib, mm_correct_opt, gyro_scale_factor );
             });
 
         return hid_ep;
