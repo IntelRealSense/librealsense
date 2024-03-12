@@ -30,7 +30,11 @@ namespace rs2
     protected:
         void processing_block_enable_disable( bool actual ) override
         {
-            dynamic_cast<post_processing_filter *>(_block.get())->on_processing_block_enable( actual );
+            auto ppf = dynamic_cast< post_processing_filter * >( _block.get() );
+            if( ! ppf )
+                throw std::runtime_error( "filter is not of type post_processing_filter!" );
+
+            ppf->on_processing_block_enable( actual );
         }
     };
 }

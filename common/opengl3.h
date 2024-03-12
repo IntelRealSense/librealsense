@@ -158,7 +158,7 @@ namespace rs2
         vao(const vao& other) = delete;
 
         uint32_t _id;
-        int _vertex_count;
+        int _vertex_count = 0;
         vbo _vertexes, _normals, _indexes, _uvs, _tangents;
     };
 
