@@ -124,6 +124,8 @@ public:
         return _dev.front()->get_custom_report_data( custom_sensor_name, report_name, report_field );
     }
 
+    void set_gyro_scale_factor( double scale_factor ) override {};
+
 private:
     std::vector< std::shared_ptr< hid_device > > _dev;
     std::vector< hid_profile > _hid_profiles;
