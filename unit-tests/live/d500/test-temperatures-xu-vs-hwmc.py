@@ -39,7 +39,7 @@ def parse_temperature_from_hwm(hwm_answer):
             by 2 values: the first is the decimal part, and the second one is the whole value part
             e.g.: if the 2 values are 90 28 (in hex):
             * the whole value part is 0x28 = 40
-            * the decimal value part is 0x91 = 144. 144/256 = 0.5625
+            * the decimal value part is 0x90 = 144. 144/256 = 0.5625
             So in this example, the resulting temperature is 40.5625 deg.
     This function parses the hwmc returned list to a list of temperatures, parsed as explained above.
     """
