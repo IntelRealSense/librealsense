@@ -25,7 +25,7 @@ string datetime_string()
     return string(buffer);
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char* argv[]) try
 {
     int default_polling_interval_ms = 100;
     CmdLine cmd("librealsense rs-fw-logger example tool", ' ', RS2_API_FULL_VERSION_STR);
@@ -190,4 +190,19 @@ int main(int argc, char* argv[])
     }
 
     return EXIT_SUCCESS;
+}
+catch( const rs2::error & e )
+{
+    cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
+    return EXIT_FAILURE;
+}
+catch( const exception & e )
+{
+    cerr << e.what() << endl;
+    return EXIT_FAILURE;
+}
+catch( ... )
+{
+    cerr << "some error" << endl;
+    return EXIT_FAILURE;
 }
