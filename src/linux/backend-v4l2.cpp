@@ -886,7 +886,17 @@ namespace librealsense
             // assign unique id for mipi by appending camera id to bus_info (bus_info is same for each mipi port)
             // Note - jetson can use only bus_info, as card is different for each sensor and metadata node.
             info.unique_id = bus_info + "-" + std::to_string(cam_id); // use bus_info as per camera unique id for mipi
-            info.dfu_device_path = "/dev/d4xx-dfu504"; // Use legacy DFU device node used in firmware_update_manager
+            // Get DFU node for MIPI camera
+            std::array<std::string, 2> dfu_device_paths = {"/dev/d4xx-dfu504", "/dev/d4xx-dfu-30-0010"};
+            for (const auto& dfu_device_path: dfu_device_paths) {
+                int vfd = open(dfu_device_path.c_str(), O_RDONLY | O_NONBLOCK);
+                if (vfd >= 0) {
+                    // Use legacy DFU device node used in firmware_update_manager
+                    info.dfu_device_path = dfu_device_path;
+                    ::close(vfd); // file exists, close file and continue to assign it
+                    break;
+                }
+            }
             info.conn_spec = usb_specification;
             info.uvc_capabilities = get_dev_capabilities(dev_name).device_caps;
 
