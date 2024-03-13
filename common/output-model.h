@@ -83,8 +83,34 @@ namespace rs2
         std::mutex m;
         std::atomic<int> stop { false };
         std::thread t;
-        std::deque<std::pair<float, float>> xy;
+        std::vector<std::pair<float, float>> xy;
         bool to_close = false;
+    };
+
+    class frame_drops_dashboard : public stream_dashboard
+    {
+    public:
+        frame_drops_dashboard(std::string name, int* frame_drop_count, int* total)
+            : stream_dashboard(name, 30),
+              last_time(glfwGetTime()), frame_drop_count(frame_drop_count), total(total)
+        {
+            clear(true);
+        }
+
+        void process_frame(rs2::frame f) override;
+        void draw(ux_window& win, rect r) override;
+        int get_height() const override;
+
+        void clear(bool full) override;
+
+    private:
+        std::map<int, double> stream_to_time;
+        int drops = 0;
+        double last_time;
+        std::deque<int> drops_history;
+        int *frame_drop_count, *total;
+        int counter = 0;
+        int method = 0;
     };
 
     class output_model
@@ -167,10 +193,7 @@ namespace rs2
         bool command_focus = true;
 
         std::vector<std::shared_ptr<stream_dashboard>> dashboards;
-        std::vector<std::pair<std::string, std::function<std::shared_ptr<stream_dashboard>(std::string)>>> available_dashboards;
-        const std::vector< std::string > dashboard_names = { "Frame Drops per Second", "Acceleration", "Gyro" };
-
-        int current_dashboard_index;
+        std::map<std::string, std::function<std::shared_ptr<stream_dashboard>(std::string)>> available_dashboards;
 
         std::atomic<int> to_stop { 0 };
         std::thread fw_logger;
