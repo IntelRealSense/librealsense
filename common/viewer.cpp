@@ -729,7 +729,7 @@ namespace rs2
                     "Show/hide Safety Zones"))
                 {
                     show_safety_zones = false;
-                    config_file::instance().set(configurations::viewer::show_safety_zones, static_cast<int>(show_safety_zones));
+                    config_file::instance().set(configurations::viewer::show_safety_zones, show_safety_zones);
                 }
             }
             else
@@ -740,7 +740,7 @@ namespace rs2
                     "Show/hide Safety Zones"))
                 {
                     show_safety_zones = true;
-                    config_file::instance().set(configurations::viewer::show_safety_zones, static_cast<int>(show_safety_zones));
+                    config_file::instance().set(configurations::viewer::show_safety_zones, show_safety_zones);
                 }
             }
         }
@@ -3542,7 +3542,7 @@ namespace rs2
 
     void viewer_model::draw_zone(Zone zone, rs2::labeled_points labeled_points)
     {
-        glLineWidth(2.0f);
+        glLineWidth(4.0f);
         glBegin(GL_LINE_LOOP);
 
         // based on zone, find value to start from, and choose polygon color
@@ -3550,15 +3550,15 @@ namespace rs2
         switch (zone) {
         case Zone::Danger:
             first_x_cord = RS2_FRAME_METADATA_DANGER_ZONE_POINT_0_X_CORD;
-            glColor3f(1.0f, 0.0f, 0.0f); // red color for danger zone
+            glColor3f(red.x, red.y, red.z); // red color for danger zone
             break;
         case Zone::Warning:
             first_x_cord = RS2_FRAME_METADATA_WARNING_ZONE_POINT_0_X_CORD;
-            glColor3f(1.0f, 1.0f, 0.0f); // yellow color for warning zone
+            glColor3f(yellow.x, yellow.y, yellow.z); // yellow color for warning zone
             break;
         case Zone::Diagnostic:
             first_x_cord = RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_0_X_CORD;
-            glColor3f(0.0f, 0.0f, 1.0f); // blue color for diagnostic zone
+            glColor3f(regular_blue.x, regular_blue.y, regular_blue.z); // blue color for diagnostic zone
             break;
         default:
             glEnd();
