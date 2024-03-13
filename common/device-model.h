@@ -142,6 +142,9 @@ namespace rs2
             static const char* hwlogger_xml{ "viewer_model.hwlogger_xml" };
 
             static const char* last_ip{ "viewer_model.last_ip" };
+
+            static const char* lpc_point_size{ "viewer_model.lpc_point_size" };
+            static const char* show_safety_zones{ "viewer_model.show_safety_zones" };
         }
         namespace window
         {

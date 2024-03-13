@@ -191,7 +191,7 @@ namespace rs2
             lpc_large
         };
         lpc_points_size selected_lpc_points_size = lpc_points_size::lpc_small;
-        bool show_lpc_zones = true;
+        bool show_safety_zones = true;
 
         float dim_level = 1.f;
 

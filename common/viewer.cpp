@@ -712,6 +712,7 @@ namespace rs2
                 {
                     if (selected) selected_lpc_points_size = lpc_points_size::lpc_large;
                 }
+                config_file::instance().set(configurations::viewer::lpc_point_size, static_cast<int>(selected_lpc_points_size));
                 ImGui::EndPopup();
             }
             else
@@ -720,14 +721,15 @@ namespace rs2
             }
             left += 80;
 
-            if (show_lpc_zones)
+            if (show_safety_zones)
             {
                 bool active = true;
                 if (big_button(&active, win, left, 0, textual_icons::polygon,
                     "S. Zones", false, true,
                     "Show/hide Safety Zones"))
                 {
-                    show_lpc_zones = false;
+                    show_safety_zones = false;
+                    config_file::instance().set(configurations::viewer::show_safety_zones, static_cast<int>(show_safety_zones));
                 }
             }
             else
@@ -737,7 +739,8 @@ namespace rs2
                     "S. Zones", false, true,
                     "Show/hide Safety Zones"))
                 {
-                    show_lpc_zones = true;
+                    show_safety_zones = true;
+                    config_file::instance().set(configurations::viewer::show_safety_zones, static_cast<int>(show_safety_zones));
                 }
             }
         }
@@ -938,6 +941,14 @@ namespace rs2
 
         show_skybox = config_file::instance().get_or_default(
             configurations::performance::show_skybox, true);
+
+        selected_lpc_points_size = static_cast<lpc_points_size>(config_file::instance().get_or_default(
+            configurations::viewer::lpc_point_size, static_cast<int>(lpc_points_size::lpc_small)
+        ));
+
+        show_safety_zones = config_file::instance().get_or_default(
+            configurations::viewer::show_safety_zones, true
+        );
     }
 
 
@@ -3531,7 +3542,7 @@ namespace rs2
 
     void viewer_model::draw_zone(Zone zone, rs2::labeled_points labeled_points)
     {
-        glLineWidth(5.0f);
+        glLineWidth(2.0f);
         glBegin(GL_LINE_LOOP);
 
         // based on zone, find value to start from, and choose polygon color
@@ -3608,7 +3619,7 @@ namespace rs2
         // getting inverse of the translation, in depth coordinates, as this is the one needed by OpenGL
         glTranslatef(-lpc_to_depth.translation[0], -lpc_to_depth.translation[1], -lpc_to_depth.translation[2]);
         
-        if (show_lpc_zones)
+        if (show_safety_zones)
         {
             draw_zone(Zone::Danger, labeled_points);
             draw_zone(Zone::Warning, labeled_points);
