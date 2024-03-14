@@ -3562,7 +3562,7 @@ namespace rs2
             glColor3f(regular_blue.x, regular_blue.y, regular_blue.z); // blue color for diagnostic zone
             break;
         default:
-            LOG_ERROR("Invalid zone");
+            LOG_ERROR("Invalid zone, got: " << static_cast<int>(zone));
             break;
         }
         
