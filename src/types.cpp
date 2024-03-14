@@ -1,18 +1,43 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "types.h"
-
+#include "core/enum-helpers.h"
 #include "core/notification.h"
+#include "librealsense-exception.h"
 #include <librealsense2/hpp/rs_processing.hpp>
+#include <ostream>
 
-#include <algorithm>
-#include <iomanip>
-#include <numeric>
-#include <fstream>
-#include <cmath>
 
-const double SQRT_DBL_EPSILON = sqrt(std::numeric_limits<double>::epsilon());
+std::ostream & operator<<( std::ostream & out, rs2_extrinsics const & e )
+{
+    return out << "[ r[" << e.rotation[0] << "," << e.rotation[1] << "," << e.rotation[2] << "," << e.rotation[3] << ","
+        << e.rotation[4] << "," << e.rotation[5] << "," << e.rotation[6] << "," << e.rotation[7] << ","
+        << e.rotation[8] << "]  t[" << e.translation[0] << "," << e.translation[1] << "," << e.translation[2]
+        << "] ]";
+}
+
+
+std::ostream & operator<<( std::ostream & out, rs2_intrinsics const & i )
+{
+    return out << "[ " << i.width << "x" << i.height << "  p[" << i.ppx << " " << i.ppy << "]"
+        << "  f[" << i.fx << " " << i.fy << "]"
+        << "  " << librealsense::get_string( i.model ) << " [" << i.coeffs[0] << " " << i.coeffs[1] << " "
+        << i.coeffs[2] << " " << i.coeffs[3] << " " << i.coeffs[4] << "] ]";
+}
+
+
+LRS_EXTENSION_API bool operator==( const rs2_extrinsics & a, const rs2_extrinsics & b )
+{
+    for( int i = 0; i < 3; i++ )
+        if( a.translation[i] != b.translation[i] )
+            return false;
+    for( int j = 0; j < 3; j++ )
+        for( int i = 0; i < 3; i++ )
+            if( std::fabs( a.rotation[j * 3 + i] - b.rotation[j * 3 + i] ) > std::numeric_limits< float >::epsilon() )
+                return false;
+    return true;
+}
+
 
 namespace librealsense
 {

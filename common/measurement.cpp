@@ -184,7 +184,7 @@ float measurement::calculate_area(std::vector<float3> poly)
     auto a = poly[1] - poly[0];
     auto b = poly[2] - poly[0];
     auto n = cross(a, b);
-    return std::abs( total * n.normalize() ) / 2;
+    return std::abs( total * n.normalized() ) / 2;
 }
 
 void draw_sphere(const float3& pos, float r, int lats, int longs)
@@ -461,10 +461,10 @@ void measurement::draw(ux_window& win)
 
         auto axis1 = cross(vec3d{ _normal.x, _normal.y, _normal.z }, vec3d{ 0.f, 1.f, 0.f });
         auto faxis1 = float3 { axis1.x, axis1.y, axis1.z };
-        faxis1.normalize();
+        faxis1.normalized();
         auto axis2 = cross(vec3d{ _normal.x, _normal.y, _normal.z }, axis1);
         auto faxis2 = float3 { axis2.x, axis2.y, axis2.z };
-        faxis2.normalize();
+        faxis2.normalized();
 
         matrix4 basis = matrix4::identity();
         basis(0, 0) = faxis1.x;

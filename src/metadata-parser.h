@@ -1,8 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
-// Metadata attributes provided by RS4xx Depth Cameras
-
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 #pragma once
+
+// Metadata attributes provided by RS4xx Depth Cameras
 
 #include "frame.h"
 #include "metadata.h"
@@ -10,6 +10,7 @@
 #include <cmath>
 #include <rsutils/number/crc32.h>
 #include <rsutils/string/from.h>
+#include <rsutils/easylogging/easyloggingpp.h>
 
 
 namespace librealsense

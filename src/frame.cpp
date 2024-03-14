@@ -6,6 +6,7 @@
 #include "core/stream-profile-interface.h"
 #include "archive.h"
 #include "metadata-parser.h"
+#include "core/enum-helpers.h"
 
 #include <rsutils/string/from.h>
 

@@ -1414,7 +1414,7 @@ namespace rs2
         // up = cross(cross(look, world_up), look)
         {
             float3 look = { target.x - pos.x, target.y - pos.y, target.z - pos.z };
-            look = look.normalize();
+            look = look.normalized();
 
             float world_up[3] = { 0.0f, 1.0f, 0.0f };
 
