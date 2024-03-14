@@ -24,6 +24,7 @@
 #include <common/utilities/imgui/wrap.h>
 #include <common/labeled-point-cloud-utilities.h>
 
+#include <rsutils/easylogging/easyloggingpp.h>
 #include <regex>
 
 namespace rs2
@@ -673,7 +674,7 @@ namespace rs2
         left += button_width;
 
         //-----------------------------
-        // -------------------- LPC Points Size ----------------
+        // -------------------- LPC Settings ----------------
         if (last_labeled_points)
         {
             ImGui::GetWindowDrawList()->AddLine({ cursor.x + left - 1, cursor.y + 5 },
@@ -681,8 +682,9 @@ namespace rs2
 
             left += 10;
 
+            // -------------------- LPC Points Size ----------------
             const auto lpc_popup = "LPC Draw";
-            if (big_button(&select_lpc_settings, win, left, 0, textual_icons::grid_6,
+            if (big_button(&select_lpc_point_size, win, left, 0, textual_icons::grid_6,
                 "Point Size", true, true,
                 "Labeled Point Cloud"))
             {
@@ -692,7 +694,7 @@ namespace rs2
             ImGui::SetNextWindowPos({ cursor.x + left + 5, cursor.y + 60 });
             if (ImGui::BeginPopup(lpc_popup))
             {
-                select_lpc_settings = true;
+                select_lpc_point_size = true;
 
                 bool selected = selected_lpc_points_size == lpc_points_size::lpc_small;
                 if (ImGui::MenuItem("Small", nullptr, &selected))
@@ -711,14 +713,37 @@ namespace rs2
                 {
                     if (selected) selected_lpc_points_size = lpc_points_size::lpc_large;
                 }
+                config_file::instance().set(configurations::viewer::lpc_point_size, static_cast<int>(selected_lpc_points_size));
                 ImGui::EndPopup();
             }
             else
             {
-                select_lpc_settings = false;
+                select_lpc_point_size = false;
             }
             left += 80;
 
+            if (show_safety_zones)
+            {
+                bool active = true;
+                if (big_button(&active, win, left, 0, textual_icons::polygon,
+                    "S. Zones", false, true,
+                    "Show/hide Safety Zones"))
+                {
+                    show_safety_zones = false;
+                    config_file::instance().set(configurations::viewer::show_safety_zones, show_safety_zones);
+                }
+            }
+            else
+            {
+                bool active = false;
+                if (big_button(&active, win, left, 0, textual_icons::polygon,
+                    "S. Zones", false, true,
+                    "Show/hide Safety Zones"))
+                {
+                    show_safety_zones = true;
+                    config_file::instance().set(configurations::viewer::show_safety_zones, show_safety_zones);
+                }
+            }
         }
 
 
@@ -917,6 +942,14 @@ namespace rs2
 
         show_skybox = config_file::instance().get_or_default(
             configurations::performance::show_skybox, true);
+
+        selected_lpc_points_size = static_cast<lpc_points_size>(config_file::instance().get_or_default(
+            configurations::viewer::lpc_point_size, static_cast<int>(lpc_points_size::lpc_small)
+        ));
+
+        show_safety_zones = config_file::instance().get_or_default(
+            configurations::viewer::show_safety_zones, true
+        );
     }
 
 
@@ -3508,6 +3541,54 @@ namespace rs2
         }
     }
 
+    void viewer_model::draw_zone(Zone zone, rs2::labeled_points labeled_points)
+    {
+        glLineWidth(4.0f);
+        glBegin(GL_LINE_LOOP);
+
+        // based on zone, find value to start from, and choose polygon color
+        rs2_frame_metadata_value first_x_cord = RS2_FRAME_METADATA_COUNT;
+        switch (zone) {
+        case Zone::Danger:
+            first_x_cord = RS2_FRAME_METADATA_DANGER_ZONE_POINT_0_X_CORD;
+            glColor3f(red.x, red.y, red.z); // red color for danger zone
+            break;
+        case Zone::Warning:
+            first_x_cord = RS2_FRAME_METADATA_WARNING_ZONE_POINT_0_X_CORD;
+            glColor3f(yellow.x, yellow.y, yellow.z); // yellow color for warning zone
+            break;
+        case Zone::Diagnostic:
+            first_x_cord = RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_0_X_CORD;
+            glColor3f(regular_blue.x, regular_blue.y, regular_blue.z); // blue color for diagnostic zone
+            break;
+        default:
+            LOG_ERROR("Invalid zone, got: " << static_cast<int>(zone));
+            break;
+        }
+        
+        if (first_x_cord != RS2_FRAME_METADATA_COUNT)
+        {
+            // get points from metadata
+            const auto NUM_VERTICES = 4;
+            const auto MM_TO_METER_SCALE = 0.001f; // coords are in mm, converts to meters
+            for (int i = 0; i < NUM_VERTICES; i++)
+            {
+                rs2_frame_metadata_value curr_point_x_md = static_cast<rs2_frame_metadata_value>(first_x_cord + i * 2);
+                rs2_frame_metadata_value curr_point_y_md = static_cast<rs2_frame_metadata_value>(curr_point_x_md + 1);
+
+                vertex vertex_i;
+                vertex_i.x = labeled_points.get_frame_metadata(curr_point_x_md) * MM_TO_METER_SCALE;
+                vertex_i.y = labeled_points.get_frame_metadata(curr_point_y_md) * MM_TO_METER_SCALE;
+                vertex_i.z = 0; // we transform LPC to depth - 0 in LPC will be transformed to depth sensor (=camera) height
+
+                glVertex3f(vertex_i.x, vertex_i.y, vertex_i.z); // drawn after the matrix rotation & translation
+            }
+        }
+
+        glEnd();
+        glLineWidth(1.0f);
+    }
+
     void viewer_model::draw_3d_labeled_points(const rect& viewer_rect, rs2::labeled_points labeled_points)
     {
         auto labeled_points_profile = last_labeled_points.get_profile().as<video_stream_profile>();
@@ -3537,6 +3618,13 @@ namespace rs2
 
         // getting inverse of the translation, in depth coordinates, as this is the one needed by OpenGL
         glTranslatef(-lpc_to_depth.translation[0], -lpc_to_depth.translation[1], -lpc_to_depth.translation[2]);
+        
+        if (show_safety_zones)
+        {
+            draw_zone(Zone::Danger, labeled_points);
+            draw_zone(Zone::Warning, labeled_points);
+            draw_zone(Zone::Diagnostic, labeled_points);
+        }
 
         glBegin(GL_POINTS);
         {
