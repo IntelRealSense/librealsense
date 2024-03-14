@@ -53,6 +53,7 @@ public:
                 }
             }
         color_frame.frame = std::move(pixels_color);
+        stbi_image_free( realsense_logo );
     }
 
     synthetic_frame& get_synthetic_texture()
