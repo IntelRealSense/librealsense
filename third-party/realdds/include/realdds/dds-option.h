@@ -79,8 +79,8 @@ public:
 
     std::shared_ptr< dds_stream_base > stream() const { return _stream.lock(); }
 
-    rsutils::json const & get_value() const { return _value; }
-    bool is_valid() const { return ! get_value().is_null(); }
+    rsutils::json const & get_value() const noexcept { return _value; }
+    bool is_valid() const noexcept { return ! get_value().is_null(); }
 
     rsutils::json const & get_minimum_value() const { return _minimum_value; }
     rsutils::json const & get_maximum_value() const { return _maximum_value; }
