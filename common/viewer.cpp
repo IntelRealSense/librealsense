@@ -24,6 +24,7 @@
 #include <common/utilities/imgui/wrap.h>
 #include <common/labeled-point-cloud-utilities.h>
 
+#include <rsutils/easylogging/easyloggingpp.h>
 #include <regex>
 
 namespace rs2
@@ -3546,7 +3547,7 @@ namespace rs2
         glBegin(GL_LINE_LOOP);
 
         // based on zone, find value to start from, and choose polygon color
-        rs2_frame_metadata_value first_x_cord;
+        rs2_frame_metadata_value first_x_cord = RS2_FRAME_METADATA_COUNT;
         switch (zone) {
         case Zone::Danger:
             first_x_cord = RS2_FRAME_METADATA_DANGER_ZONE_POINT_0_X_CORD;
@@ -3561,30 +3562,29 @@ namespace rs2
             glColor3f(regular_blue.x, regular_blue.y, regular_blue.z); // blue color for diagnostic zone
             break;
         default:
-            glEnd();
-            glLineWidth(1.0f);
-            return; // not supposed to reach here
+            LOG_ERROR("Invalid zone");
+            break;
         }
         
-        // get points from metadata
-        auto NUM_VERTCIES = 4;
-        float mm_to_meters = 1000.0f; // coords are in mm, converts to meters
-        std::vector<rs2::vertex> vertices(NUM_VERTCIES);
-        for (int i = 0; i < vertices.size(); i++)
+        if (first_x_cord != RS2_FRAME_METADATA_COUNT)
         {
-            rs2_frame_metadata_value curr_point_x_md = (rs2_frame_metadata_value)(first_x_cord + i * 2);
-            rs2_frame_metadata_value curr_point_y_md = (rs2_frame_metadata_value)(curr_point_x_md + 1);
-            
-            vertices[i].x = labeled_points.get_frame_metadata(curr_point_x_md) / mm_to_meters;
-            vertices[i].y = labeled_points.get_frame_metadata(curr_point_y_md) / mm_to_meters;
-            vertices[i].z = 0; // we transform LPC to depth - 0 in LPC will be transformed to depth sensor (=camera) height
+            // get points from metadata
+            const auto NUM_VERTICES = 4;
+            const auto MM_TO_METER_SCALE = 0.001f; // coords are in mm, converts to meters
+            for (int i = 0; i < NUM_VERTICES; i++)
+            {
+                rs2_frame_metadata_value curr_point_x_md = static_cast<rs2_frame_metadata_value>(first_x_cord + i * 2);
+                rs2_frame_metadata_value curr_point_y_md = static_cast<rs2_frame_metadata_value>(curr_point_x_md + 1);
+
+                vertex vertex_i;
+                vertex_i.x = labeled_points.get_frame_metadata(curr_point_x_md) * MM_TO_METER_SCALE;
+                vertex_i.y = labeled_points.get_frame_metadata(curr_point_y_md) * MM_TO_METER_SCALE;
+                vertex_i.z = 0; // we transform LPC to depth - 0 in LPC will be transformed to depth sensor (=camera) height
+
+                glVertex3f(vertex_i.x, vertex_i.y, vertex_i.z); // drawn after the matrix rotation & translation
+            }
         }
 
-        // draw points
-        for (int i = 0; i < vertices.size(); i++)
-        {
-            glVertex3f(vertices[i].x, vertices[i].y, vertices[i].z); // drawn after the matrix rotation & translation
-        }
         glEnd();
         glLineWidth(1.0f);
     }
