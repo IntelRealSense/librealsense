@@ -2,8 +2,9 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "environment.h"
-#include "types.h"
+#include "pose.h"
 #include "core/stream-interface.h"
+#include <rsutils/easylogging/easyloggingpp.h>
 
 
 namespace librealsense

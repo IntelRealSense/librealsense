@@ -1,9 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+
 #include "points.h"
 #include "core/video.h"
 #include "core/video-frame.h"
 #include "core/frame-holder.h"
+#include "core/frame-holder.h"
+#include "librealsense-exception.h"
 #include <rsutils/string/from.h>
 #include <fstream>
 

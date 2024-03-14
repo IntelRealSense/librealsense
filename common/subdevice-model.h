@@ -146,7 +146,7 @@ namespace rs2
         device dev;
         std::shared_ptr< atomic_objects_in_frame > detected_objects;
 
-        std::map<int, option_model> options_metadata;
+        std::map< rs2_option, option_model > options_metadata;
         std::vector<std::string> resolutions;
         std::map<int, std::vector<std::string>> fpses_per_stream;
         std::vector<std::string> shared_fpses;

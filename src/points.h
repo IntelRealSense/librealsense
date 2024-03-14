@@ -4,7 +4,8 @@
 
 #include "frame.h"
 #include "core/extension.h"
-#include "types.h"
+#include "float3.h"
+
 #include <string>
 
 
