@@ -282,11 +282,14 @@ const char* get_string(rs2_point_cloud_label label)
         CASE(INVALID)
         CASE(GROUND)
         CASE(NEAR_GROUND)
-        CASE(OBSTACLE)
         CASE(OVERHEAD)
         CASE(ABOVE_CEILING_HEIGHT)
         CASE(GAP)
         CASE(MASKED)
+        CASE(CLIFF)
+        CASE(OBSTACLE)
+        CASE(OBSTACLE_DANGER)
+        CASE(OBSTACLE_WARNING)
     default:
         assert(!is_valid(label));
         return UNKNOWN_VALUE;

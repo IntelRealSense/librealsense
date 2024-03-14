@@ -231,13 +231,15 @@ typedef enum rs2_point_cloud_label
     RS2_POINT_CLOUD_LABEL_INVALID,                  // This point is discarded, i.e. outside of vertical FOV or too close
     RS2_POINT_CLOUD_LABEL_GROUND,                   // This point belongs to ground plane
     RS2_POINT_CLOUD_LABEL_NEAR_GROUND,              // This point is not on ground plane, but yet not part of a true obstacle
-    RS2_POINT_CLOUD_LABEL_OBSTACLE,                 // This point belongs to a potential obstacle within ground plane and robot height
     RS2_POINT_CLOUD_LABEL_OVERHEAD,                 // This point belongs to something above robot's height, but below the ceiling height, 
                                                     // and not part of a true obstacle
     RS2_POINT_CLOUD_LABEL_ABOVE_CEILING_HEIGHT,     // This point belongs to something above the ceiling height
     RS2_POINT_CLOUD_LABEL_GAP,                      // This point belongs to a Gap Region
     RS2_POINT_CLOUD_LABEL_MASKED,                   // This point belongs to a Masked Region
-    RS2_POINT_CLOUD_LABEL_CROPPED,                  // This point belongs to a Cropped Region
+    RS2_POINT_CLOUD_LABEL_CLIFF,                    // This point is part of a possible cliff
+    RS2_POINT_CLOUD_LABEL_OBSTACLE,                 // This point is a potential obstacle
+    RS2_POINT_CLOUD_LABEL_OBSTACLE_DANGER,          // This point is an actual obstacle inside the danger zone
+    RS2_POINT_CLOUD_LABEL_OBSTACLE_WARNING,         // This point is an actual obstacle inside the warning zone
     RS2_POINT_CLOUD_LABEL_COUNT
 } rs2_point_cloud_label;
 const char* rs2_point_cloud_label_to_string(rs2_point_cloud_label label);
