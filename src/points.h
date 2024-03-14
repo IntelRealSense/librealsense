@@ -8,12 +8,9 @@
 
 #include <string>
 
-
 namespace librealsense {
 
-
 class frame_holder;
-
 
 class points : public frame
 {
@@ -25,20 +22,5 @@ public:
 
 };
 MAP_EXTENSION( RS2_EXTENSION_POINTS, librealsense::points );
-
-class labeled_points : public frame
-{
-public:
-    float3* get_vertices();
-    size_t get_vertex_count() const;
-    const uint8_t* get_labels() const;
-    unsigned int get_width() const;
-    unsigned int get_height() const;
-    size_t get_bpp() const; // bits per pixel
- 
-private:    
-
-};
-MAP_EXTENSION( RS2_EXTENSION_LABELED_POINTS, librealsense::labeled_points );
 
 }  // namespace librealsense

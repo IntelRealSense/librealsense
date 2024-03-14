@@ -61,6 +61,7 @@
 #include "depth-mapping-sensor.h"
 #include "composite-frame.h"
 #include "points.h"
+#include "labeled-points.h"
 
 #include <src/core/time-service.h>
 #include <rsutils/string/from.h>
