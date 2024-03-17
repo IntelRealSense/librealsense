@@ -40,20 +40,20 @@ namespace librealsense
     public:
         motion_to_accel_gyro( std::shared_ptr< mm_calib_handler > mm_calib = nullptr,
                               std::shared_ptr< enable_motion_correction > mm_correct_opt = nullptr,
-                              bool high_sensitivity = false );
+                              double gyro_scale_factor = 0.1 );
 
     protected:
         motion_to_accel_gyro( const char * name,
                               std::shared_ptr< mm_calib_handler > mm_calib,
                               std::shared_ptr< enable_motion_correction > mm_correct_opt,
-                              bool high_sensitivity = false );
+                              double gyro_scale_factor );
         void configure_processing_callback();
         void process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size ) override;
         void correct_motion(float3* xyz) const;
 
         std::shared_ptr<stream_profile_interface> _source_stream_profile;
         std::shared_ptr<stream_profile_interface> _accel_gyro_target_profile;
-        bool _high_sensitivity = false;
+        double _gyro_scale_factor = 0.1;
     };
 
     class acceleration_transform : public motion_transform
@@ -72,16 +72,16 @@ namespace librealsense
     public:
         gyroscope_transform( std::shared_ptr< mm_calib_handler > mm_calib = nullptr,
                              std::shared_ptr< enable_motion_correction > mm_correct_opt = nullptr,
-                             bool high_sensitivity = false );
+                             double gyro_scale_factor = 0.1 );
 
     protected:
         gyroscope_transform( const char * name,
                              std::shared_ptr< mm_calib_handler > mm_calib,
                              std::shared_ptr< enable_motion_correction > mm_correct_opt,
-                             bool high_sensitivity = false );
+                             double gyro_scale_factor );
                              
         void process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size ) override;
 
-        bool _high_sensitivity = false;
+        double  _gyro_scale_factor = 0.1;
     };
 }

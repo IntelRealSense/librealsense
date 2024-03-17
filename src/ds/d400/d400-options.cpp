@@ -6,7 +6,7 @@
 #include "d400-options.h"
 
 #include <rsutils/string/from.h>
-
+#include <src/hid-sensor.h>
 
 namespace librealsense
 {
@@ -466,4 +466,66 @@ namespace librealsense
     {
         snapshot = std::make_shared<const_value_option>(get_description(), 0.f);
     }
-}
+
+    void librealsense::gyro_sensitivity_option::set( float value ) 
+    {
+        auto strong = _sensor.lock();
+        if( ! strong )
+            throw invalid_value_exception( "Hid sensor is not alive for setting" );
+
+        if( strong->is_streaming() )
+            throw invalid_value_exception( "setting this option during streaming is not allowed!" );
+
+        if(!is_valid(value))
+            throw invalid_value_exception( "set(gyro_sensitivity) failed! Invalid Gyro sensitivity resolution request "
+                                           + std::to_string( value ) );
+
+        _value = value;
+        strong->set_imu_sensitivity( RS2_STREAM_GYRO, value );
+    }
+
+    float librealsense::gyro_sensitivity_option::query() const
+    {
+        return _value;
+    }
+
+    
+    const char * librealsense::gyro_sensitivity_option::get_value_description( float val ) const
+    {
+        switch( static_cast< int >( val ) )
+        {
+            case RS2_GYRO_SENSITIVITY_61_0_MILLI_DEG_SEC: {
+                return "61.0 mDeg/Sec";
+            }
+            case RS2_GYRO_SENSITIVITY_30_5_MILLI_DEG_SEC: {
+                return "30.5 mDeg/Sec";
+            }
+            case RS2_GYRO_SENSITIVITY_15_3_MILLI_DEG_SEC: {
+                return "15.3 mDeg/Sec";
+            }
+            case RS2_GYRO_SENSITIVITY_7_6_MILLI_DEG_SEC: {
+                return "7.6 mDeg/Sec";
+            }
+            case RS2_GYRO_SENSITIVITY_3_8_MILLI_DEG_SEC: {
+                return "3.8 mDeg/Sec";
+            }
+            default:
+                throw invalid_value_exception( "value not found" );
+        }
+    }
+
+    const char * librealsense::gyro_sensitivity_option::get_description() const
+    {
+        return "gyro sensitivity resolutions, lowers the dynamic range for a more accurate readings";
+    }
+
+    bool librealsense::gyro_sensitivity_option::is_read_only() const
+    {
+        if( auto strong = _sensor.lock() )
+            return strong->is_opened();
+        return false;
+    }
+
+
+ }
+ 
