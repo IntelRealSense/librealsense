@@ -647,8 +647,14 @@ namespace rs2
 
         end_frame();
 
-        rs2::gl::shutdown_rendering();
-        if (_use_glsl_proc) rs2::gl::shutdown_processing();
+        try
+        {
+            rs2::gl::shutdown_rendering();
+            if (_use_glsl_proc) rs2::gl::shutdown_processing();
+        }
+        catch( ... )
+        {
+        }
 
         ImGui::GetIO().Fonts->ClearFonts();  // To be refactored into Viewer theme object
         ImGui_ImplGlfw_Shutdown();
