@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
-#include <rsutils/byte-manipulation.h>
+#include <rsutils/number/byte-manipulation.h>
 
 namespace rsutils
 {
@@ -21,8 +21,8 @@ namespace rsutils
             return b;
         }
 
-        // A helper function that takes a byte rray of a given size,
-        // and reverses the bits order of for each byte of this array
+        // A helper function that takes a byte array of a given size,
+        // and reverses the bits order of for each byte in this array
         // e.g. intput: byteArray = {byte0=00110101, byte1=11110000}, size = 2
         // output: byteArray [ byte0=10101100, byte1=00001111]
         void reverse_byte_array_bits(uint8_t* byte_array, int size) {
