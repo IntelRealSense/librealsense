@@ -367,8 +367,8 @@ double hid_sensor::get_imu_sensitivity_values( rs2_stream stream )
         return gyro_sensitivity_convert.at( _imu_sensitivity_per_rs2_stream[stream] );
     }
     else
-        //gyro sensitivity default value is +-1000 therefore sending 0.1 
-        //accel sensitivity default value is +-4g therefore sending 0.001
+        //FW recieve 0.1 and adjusts the gyro's sensitivity to its default setting of ±1000.
+        //FW recieve 0.001 and adjusts the accel's sensitivity to its default setting of ±4g.
         return stream == RS2_STREAM_GYRO ? 0.1f : 0.001f;
 }
 

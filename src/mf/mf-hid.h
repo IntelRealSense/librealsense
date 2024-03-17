@@ -79,6 +79,7 @@ namespace librealsense
 
             CComPtr<ISensorEvents> _cb;
             std::vector<hid_profile> _hid_profiles;
+            //10.0 was used for D400 before FW support to gyro sensitivity control
             double _gyro_scale_factor = 10.0;
         };
     }

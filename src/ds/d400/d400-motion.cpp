@@ -80,10 +80,12 @@ namespace librealsense
         }
         catch (...) {}
 
+        double gyro_scale_factor = _fw_version >= firmware_version( 5, 15, 1, 224 ) ? 0.0001 : 0.1 ;
+
         motion_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL}, {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
-            [&, mm_correct_opt]() { return std::make_shared<motion_to_accel_gyro>(_mm_calib, mm_correct_opt, false);
+            [&, mm_correct_opt]() { return std::make_shared<motion_to_accel_gyro>(_mm_calib, mm_correct_opt, gyro_scale_factor);
         });
 
         return motion_ep;
@@ -129,7 +131,12 @@ namespace librealsense
             // HID metadata attributes
             hid_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&hid_header::timestamp));
         }
+        //for FW >=5.16 the scale factor changes to 1000.0 since FW sends 32bit
+        if (_fw_version >= firmware_version( 5, 15, 1, 224))
+            get_raw_motion_sensor()->set_gyro_scale_factor( 10000.0 );
+
     }
+
 
     ds_motion_sensor & d400_motion::get_motion_sensor()
     {

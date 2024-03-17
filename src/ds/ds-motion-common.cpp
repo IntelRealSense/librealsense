@@ -513,6 +513,7 @@ namespace librealsense
             [&, mm_correct_opt]() { return std::make_shared< acceleration_transform >( _mm_calib, mm_correct_opt );
             });
 
+        //TODO this FW version is relevant for d400 devices. Need to change for propre d500 devices support.
         bool high_sensitivity = _owner->is_gyro_high_sensitivity();
         double gyro_scale_factor = high_sensitivity ? 0.003814697265625 : ( _fw_version >= firmware_version( 5, 15, 1, 224 ) ? 0.0001: 0.1 );    
         hid_ep->register_processing_block(

@@ -167,6 +167,7 @@ namespace librealsense
                     CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_ANGULAR_VELOCITY_Z_DEGREES_PER_SECOND, &var));
                     rawZ = var.dblVal;
 
+                    //TODO: get scale factor from HID descriptor,then setting it from the feature will not be needed.
                     rawX *= _gyro_scale_factor;
                     rawY *= _gyro_scale_factor;
                     rawZ *= _gyro_scale_factor;

@@ -45,11 +45,8 @@ struct sensor_data
 struct hid_sensor_data
 {
     int32_t x;
-    //char reserved1[2];
     int32_t y;
-    //char reserved2[2];
     int32_t z;
-    //char reserved3[2];
     uint32_t ts_low;
     uint32_t ts_high;
 };
