@@ -67,6 +67,8 @@ namespace rs2
             RS2_CALIB_ACTION_FL_CALIB,              // Focal length calibration
             RS2_CALIB_ACTION_UVMAPPING_CALIB,       // UVMapping calibration
             RS2_CALIB_ACTION_FL_PLUS_CALIB,     // Focal length plus calibration
+            RS2_CALIB_ACTION_ON_CHIP_CALIB_DRY_RUN,
+            RS2_CALIB_ACTION_ON_CHIP_CALIB_ABORT
         };
 
         auto_calib_action action = RS2_CALIB_ACTION_ON_CHIP_CALIB;
@@ -102,6 +104,8 @@ namespace rs2
         const std::string Z16_FORMAT = "Z16";
         const std::string RGB8_FORMAT = "RGB8";
         std::string device_name_string;
+
+        bool _is_tac = false;
 
         void calibrate();
         void calibrate_fl();
@@ -197,6 +201,8 @@ namespace rs2
             RS2_CALIB_STATE_FL_INPUT,        // Collect input parameters for focal length calib
             RS2_CALIB_STATE_UVMAPPING_INPUT, // Collect input parameters for UVMapping calibration with specific target
             RS2_CALIB_STATE_FL_PLUS_INPUT,        // Collect input parameters for focal length plus calib
+            RS2_CALIB_STATE_SELF_INPUT_DRY_RUN,
+            RS2_CALIB_STATE_SELF_INPUT_ABORT
         };
 
         autocalib_notification_model(std::string name, std::shared_ptr<on_chip_calib_manager> manager, bool expaned);
