@@ -10,6 +10,7 @@
 #include "option.h"
 #include "environment.h"
 #include "stream.h"
+#include <src/pose.h>
 
 #include <iostream>
 #include <chrono>

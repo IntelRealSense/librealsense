@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "types.h"
+#include <src/pose.h>
 #include "fw-update/fw-update-unsigned.h"
 #include <src/firmware-version.h>
 #include <rsutils/string/from.h>

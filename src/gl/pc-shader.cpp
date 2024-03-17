@@ -636,7 +636,7 @@ namespace librealsense
 
                                         auto right_left = lerp(pos - left, right - pos, 0.5f);
                                         auto down_up = lerp(pos - up, down - pos, 0.5f) * (-1.f);
-                                        *normal = cross(right_left, down_up).normalize();
+                                        *normal = cross(right_left, down_up).normalized();
                                         *xyz = pos;
                                     }
                                 }

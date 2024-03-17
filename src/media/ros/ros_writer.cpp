@@ -15,6 +15,7 @@
 #include <src/core/sensor-interface.h>
 #include <src/core/device-interface.h>
 #include <src/points.h>
+#include <src/labeled-points.h>
 
 #include <rsutils/string/from.h>
 

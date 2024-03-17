@@ -1,14 +1,15 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
-
-
 #pragma once
-#include "types.h"  // notification
+
 #include "core/extension.h"
 #include "device.h"
 #include <rsutils/string/from.h>
 #include <rsutils/subscription.h>
+#include "pose.h"
+#include "librealsense-exception.h"
 
+#include <librealsense2/rs.h>
 #include <type_traits>
 #include <iostream>
 

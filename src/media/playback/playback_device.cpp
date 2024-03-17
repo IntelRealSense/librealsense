@@ -11,6 +11,7 @@
 #include "sync.h"
 #include <src/depth-sensor.h>
 #include <src/color-sensor.h>
+#include <src/pose.h>
 #include <src/safety-sensor.h>
 #include <src/depth-mapping-sensor.h>
 

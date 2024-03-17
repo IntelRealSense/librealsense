@@ -1,17 +1,17 @@
 ﻿// License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
-// Metadata attributes provided by RS4xx Depth Cameras
-
 #pragma once
 
-#include "types.h"
+#include "float3.h"
 #include "platform/hid-device.h"
 #include "platform/uvc-device.h"
 
 
+// Metadata attributes provided by RS Depth Cameras
+
+
 // md_type_trait<S>::type returns for each metadata info (md_X_info) S its fitting md_type (an enum) value,
-// ex:  md_type_trait< md_safety_info >::type == md_type::META_DATA_INTEL_SAFETY_ID
-//      md_type_trait< md_occupancy >::type == md_type::META_DATA_INTEL_OCCUPANCY_ID
+// ex:  md_type_trait< md_depth_control >::type == md_type::META_DATA_INTEL_DEPTH_CONTROL_ID
 // the macro below bind them into the struct md_type_trait
 // in short, md_type_trait<S>::type returns the value A specified if the line REGISTER_MD_TYPE(S,A) was done
 #define REGISTER_MD_TYPE(A,B)\

@@ -408,6 +408,9 @@ namespace rs2
         ImGui::GetWindowDrawList()->AddRectFilled({ stream_rect.x, stream_rect.y - top_bar_height },
             { stream_rect.x + stream_rect.w, stream_rect.y }, ImColor(sensor_bg));
 
+        if( ! dev )
+            throw std::runtime_error( "device is not set for the stream" );
+
         int offset = 5;
         if (dev->_is_being_recorded) offset += 23;
         auto p = dev->dev.as<playback>();
@@ -416,7 +419,7 @@ namespace rs2
         ImGui::SetCursorScreenPos({ stream_rect.x + 4 + offset, stream_rect.y - top_bar_height + 7 });
 
         std::string tooltip;
-        if (dev && dev->dev.supports(RS2_CAMERA_INFO_NAME) &&
+        if (dev->dev.supports(RS2_CAMERA_INFO_NAME) &&
             dev->dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) &&
             dev->s->supports(RS2_CAMERA_INFO_NAME))
         {
@@ -1809,31 +1812,32 @@ namespace rs2
 
         _mid_click = is_middle_clicked;
 
-        _normalized_zoom = get_normalized_zoom(stream_rect,
-            g, is_middle_clicked,
-            zoom_val);
-        texture->show(stream_rect, 1.f, _normalized_zoom);
-
-        if (dev && dev->show_algo_roi)
+        if( dev )
         {
-            rect r{ float(dev->algo_roi.min_x), float(dev->algo_roi.min_y),
-                    float(dev->algo_roi.max_x - dev->algo_roi.min_x),
-                    float(dev->algo_roi.max_y - dev->algo_roi.min_y) };
+            _normalized_zoom = get_normalized_zoom( stream_rect, g, is_middle_clicked, zoom_val );
+            texture->show(stream_rect, 1.f, _normalized_zoom);
 
-            r = r.normalize(_normalized_zoom.unnormalize(get_original_stream_bounds())).unnormalize(stream_rect).cut_by(stream_rect);
-            glColor3f(yellow.x, yellow.y, yellow.z);
-            draw_rect(r, 2, true);
+            if( dev->show_algo_roi )
+            {
+                rect r{ float(dev->algo_roi.min_x), float(dev->algo_roi.min_y),
+                        float(dev->algo_roi.max_x - dev->algo_roi.min_x),
+                        float(dev->algo_roi.max_y - dev->algo_roi.min_y) };
 
-            std::string message = "Metrics Region of Interest";
-            auto msg_width = stb_easy_font_width((char*)message.c_str());
-            if (msg_width < r.w)
-                draw_text(static_cast<int>(r.x + r.w / 2 - msg_width / 2), static_cast<int>(r.y + 10), message.c_str());
+                r = r.normalize(_normalized_zoom.unnormalize(get_original_stream_bounds())).unnormalize(stream_rect).cut_by(stream_rect);
+                glColor3f(yellow.x, yellow.y, yellow.z);
+                draw_rect(r, 2, true);
 
-            glColor3f(1.f, 1.f, 1.f);
-            roi_percentage = dev->roi_percentage;
+                std::string message = "Metrics Region of Interest";
+                auto msg_width = stb_easy_font_width((char*)message.c_str());
+                if (msg_width < r.w)
+                    draw_text(static_cast<int>(r.x + r.w / 2 - msg_width / 2), static_cast<int>(r.y + 10), message.c_str());
+
+                glColor3f(1.f, 1.f, 1.f);
+                roi_percentage = dev->roi_percentage;
+            }
+
+            update_ae_roi_rect(stream_rect, g, error_message);
         }
-
-        update_ae_roi_rect(stream_rect, g, error_message);
         texture->show_preview(stream_rect, _normalized_zoom);
 
         if (is_middle_clicked)

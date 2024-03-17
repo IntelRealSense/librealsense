@@ -41,7 +41,16 @@ void option_base::enable_recording(std::function<void(const option&)> recording_
 
 json option::get_value() const noexcept
 {
-    return query();
+    json value;
+    try
+    {
+        value = query();
+    }
+    catch( ... )
+    {
+        // Sometimes option values may not be available, meaning the value stays null
+    }
+    return value;
 }
 
 

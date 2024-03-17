@@ -163,7 +163,7 @@ rs2::device wait_for_device(const rs2::device_hub& hub, bool print_info = true)
     return dev;
 }
 
-int main(int argc, char** argv)
+int main(int argc, char** argv) try
 {
     CmdLine cmd("librealsense rs-terminal tool", ' ', RS2_API_FULL_VERSION_STR);
     SwitchArg debug_arg( "", "debug", "Turn on LibRS debug logs" );
@@ -469,4 +469,19 @@ int main(int argc, char** argv)
         }
 
     }
+}
+catch( const rs2::error & e )
+{
+    cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
+    return EXIT_FAILURE;
+}
+catch( const exception & e )
+{
+    cerr << e.what() << endl;
+    return EXIT_FAILURE;
+}
+catch( ... )
+{
+    cerr << "some error" << endl;
+    return EXIT_FAILURE;
 }

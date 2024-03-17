@@ -534,20 +534,12 @@ namespace rs2
             if (fps_group.empty())
                 continue;
 
-            for (auto& fps1 : first_fps_group)
-            {
-                auto it = std::find_if(std::begin(fps_group),
-                    std::end(fps_group),
-                    [&](const int& fps2)
-                    {
-                        return fps2 == fps1;
-                    });
-                if (it != std::end(fps_group))
-                {
-                    break;
-                }
+            auto fps1 = first_fps_group[0];
+            auto it = std::find_if( std::begin( fps_group ),
+                                    std::end( fps_group ),
+                                    [&]( const int & fps2 ) { return fps2 == fps1; } );
+            if( it == std::end( fps_group ) )
                 return false;
-            }
         }
         return true;
     }

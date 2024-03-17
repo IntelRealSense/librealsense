@@ -2974,7 +2974,7 @@ namespace rs2
                     label = rsutils::string::from() << "Controls ##" << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << id;
                     if (ImGui::TreeNode(label.c_str()))
                     {
-                        std::vector<rs2_option> supported_options = sub->s->get_supported_options();
+                        auto const & supported_options = sub->options_metadata;
 
                         // moving the color dedicated options to the end of the vector
                         std::vector<rs2_option> color_options = {
@@ -2991,23 +2991,26 @@ namespace rs2
 
                         std::vector<rs2_option> so_ordered;
 
-                        for (auto&& i : supported_options)
+                        for (auto const & id_model : supported_options)
                         {
-                            auto it = find(color_options.begin(), color_options.end(), i);
+                            auto it = find( color_options.begin(), color_options.end(), id_model.first );
                             if (it == color_options.end())
-                                so_ordered.push_back(i);
+                                so_ordered.push_back( id_model.first );
                         }
 
-                        std::for_each(color_options.begin(), color_options.end(), [&](rs2_option opt) {
-                            auto it = std::find(supported_options.begin(), supported_options.end(), opt);
-                            if (it != supported_options.end())
-                                so_ordered.push_back(opt);
-                            });
+                        std::for_each( color_options.begin(),
+                                       color_options.end(),
+                                       [&]( rs2_option opt )
+                                       {
+                                           if( viewer.is_option_skipped( opt ) )
+                                               return;
+                                           auto it = supported_options.find( opt );
+                                           if( it != supported_options.end() )
+                                               so_ordered.push_back( opt );
+                                       } );
 
-                        for (auto&& i : so_ordered)
+                        for (auto opt : so_ordered)
                         {
-                            auto opt = static_cast<rs2_option>(i);
-                            if (viewer.is_option_skipped(opt)) continue;
                             if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
                             {
                                 if (serialize && opt == RS2_OPTION_VISUAL_PRESET)

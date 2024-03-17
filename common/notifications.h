@@ -71,7 +71,7 @@ namespace rs2
         double timestamp = 0.0;
         rs2_log_severity severity = RS2_LOG_SEVERITY_NONE;
         std::chrono::system_clock::time_point created_time;
-        rs2_notification_category category;
+        rs2_notification_category category = RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR;
         bool to_close = false; // true when user clicks on close notification
 
         int width = 320;

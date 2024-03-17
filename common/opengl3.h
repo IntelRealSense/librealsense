@@ -1,6 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
-
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include "matrix4.h"
@@ -130,10 +129,6 @@ namespace rs2
         vbo_type _type;
     };
 
-    struct float3;
-    struct float2;
-    struct int3;
-
     struct obj_mesh;
 
     class vao
@@ -158,7 +153,7 @@ namespace rs2
         vao(const vao& other) = delete;
 
         uint32_t _id;
-        int _vertex_count;
+        int _vertex_count = 0;
         vbo _vertexes, _normals, _indexes, _uvs, _tangents;
     };
 

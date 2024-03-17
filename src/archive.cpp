@@ -10,6 +10,7 @@
 #include <src/core/disparity-frame.h>
 #include <src/composite-frame.h>
 #include <src/points.h>
+#include <src/labeled-points.h>
 
 
 namespace librealsense

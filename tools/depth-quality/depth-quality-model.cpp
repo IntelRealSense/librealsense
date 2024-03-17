@@ -654,37 +654,34 @@ namespace rs2
 
                         try
                         {
-                            if (_depth_sensor_model)
+                            auto && ds = _depth_sensor_model->dev.first< depth_sensor >();
+                            if (ds.supports(RS2_OPTION_ENABLE_IR_REFLECTIVITY))
                             {
-                                auto && ds = _depth_sensor_model->dev.first< depth_sensor >();
-                                if (ds.supports(RS2_OPTION_ENABLE_IR_REFLECTIVITY))
+                                ImGui::SetCursorPosX(col0);
+                                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+
+                                bool current_ir_reflectivity_opt
+                                    = ds.get_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY);
+
+                                if (ImGui::Checkbox("IR Reflectivity",
+                                    &current_ir_reflectivity_opt))
                                 {
-                                    ImGui::SetCursorPosX(col0);
-                                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+                                    // Deny enabling IR Reflectivity on ROI != 20% [RS5-8358]
+                                    if (0.2f == _roi_percent)
+                                        ds.set_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY,
+                                            current_ir_reflectivity_opt);
+                                    else
+                                        _error_message
+                                        = "Please set 'VGA' resolution, 'Max Range' preset and "
+                                        "20% ROI before enabling IR Reflectivity";
+                                }
 
-                                    bool current_ir_reflectivity_opt
-                                        = ds.get_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY);
-
-                                    if (ImGui::Checkbox("IR Reflectivity",
-                                        &current_ir_reflectivity_opt))
-                                    {
-                                        // Deny enabling IR Reflectivity on ROI != 20% [RS5-8358]
-                                        if (0.2f == _roi_percent)
-                                            ds.set_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY,
-                                                current_ir_reflectivity_opt);
-                                        else
-                                            _error_message
-                                            = "Please set 'VGA' resolution, 'Max Range' preset and "
-                                            "20% ROI before enabling IR Reflectivity";
-                                    }
-
-                                    if (ImGui::IsItemHovered())
-                                    {
-                                        ImGui::SetTooltip(
-                                            "%s",
-                                            ds.get_option_description(
-                                                RS2_OPTION_ENABLE_IR_REFLECTIVITY ) );
-                                    }
+                                if (ImGui::IsItemHovered())
+                                {
+                                    ImGui::SetTooltip(
+                                        "%s",
+                                        ds.get_option_description(
+                                            RS2_OPTION_ENABLE_IR_REFLECTIVITY ) );
                                 }
                             }
                         }
@@ -1086,8 +1083,14 @@ namespace rs2
         metrics_model::~metrics_model()
         {
             _active = false;
-            _worker_thread.join();
-            reset();
+            try
+            {
+                _worker_thread.join();
+                reset();
+            }
+            catch(...)
+            { //Do nothing, just don't throw from destructor.
+            }
         }
 
         std::shared_ptr<metric_plot> tool_model::make_metric(

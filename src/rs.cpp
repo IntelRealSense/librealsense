@@ -61,6 +61,7 @@
 #include "depth-mapping-sensor.h"
 #include "composite-frame.h"
 #include "points.h"
+#include "labeled-points.h"
 
 #include <src/core/time-service.h>
 #include <rsutils/string/from.h>
@@ -874,15 +875,8 @@ rs2_options_list* rs2_get_options_list(const rs2_options* options, rs2_error** e
     {
         auto & option = options->options->get_option( option_id );
         std::shared_ptr< const json > value;
-        try
-        {
-            if( option.is_enabled() )
-                value = std::make_shared< const json >( option.get_value() );
-        }
-        catch( ... )
-        {
-            // Sometimes option values may not be available, meaning the value stays null (is_valid=false)
-        }
+        if( option.is_enabled() )
+            value = std::make_shared< const json >( option.get_value() );
         auto wrapper = new rs2_option_value_wrapper( option_id, option.get_value_type(), value );
         rs2_list->list.push_back( wrapper );
     }

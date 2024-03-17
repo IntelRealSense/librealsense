@@ -628,7 +628,7 @@ namespace rs2
                 {
                     std::string clip = "";
                     auto lines = split_string(selected->message, '\n');
-                    for (auto line : lines)
+                    for (auto & line : lines)
                     {
                         if (line.size() && line[0] == '$') clip += line.substr(2) + "\n";
                     }
