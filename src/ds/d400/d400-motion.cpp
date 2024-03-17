@@ -80,7 +80,8 @@ namespace librealsense
         }
         catch (...) {}
 
-        double gyro_scale_factor = _fw_version >= firmware_version( 5, 15, 1, 224 ) ? 0.0001 : 0.1 ;
+        // For FW >=5.16 the scale factor changed to 0.0001 to support higher resolution (diff between two adjacent samples)
+        double gyro_scale_factor = _fw_version >= firmware_version( 5, 16, 0, 0 ) ? 0.0001 : 0.1 ;
 
         motion_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F} },
