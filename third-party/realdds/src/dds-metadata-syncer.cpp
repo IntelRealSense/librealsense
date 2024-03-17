@@ -12,8 +12,9 @@ const size_t dds_metadata_syncer::max_md_queue_size = 8;
 const size_t dds_metadata_syncer::max_frame_queue_size = 2;
 
 
-dds_metadata_syncer::dds_metadata_syncer() :
-    _is_alive( std::make_shared< bool >( true ) )
+dds_metadata_syncer::dds_metadata_syncer()
+    : _is_alive( std::make_shared< bool >( true ) )
+    , _on_frame_release( nullptr )
 {
 }
 

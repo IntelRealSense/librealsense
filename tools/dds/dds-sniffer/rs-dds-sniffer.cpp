@@ -472,7 +472,7 @@ uint32_t dds_sniffer::calc_max_indentation() const
     uint32_t indentation = 0;
     uint32_t max_indentation = 0;
 
-    for( auto topic : _topics_info_by_name )  //_dds_entities_lock locked by print_topics()
+    for( auto & topic : _topics_info_by_name )  //_dds_entities_lock locked by print_topics()
     {
         if( filter_topic( topic.first, _root ) )
             continue;
@@ -548,17 +548,17 @@ void dds_sniffer::print_topics_machine_readable() const
 {
     std::lock_guard< std::mutex > lock( _dds_entities_lock );
 
-    for( auto topic : _topics_info_by_name )
+    for( auto & topic : _topics_info_by_name )
     {
         if( filter_topic( topic.first, _root ) )
             continue;
 
-        for( auto writer : topic.second.writers )
+        for( auto & writer : topic.second.writers )
         {
             std::cout << topic.first << ",";
             print_topic_writer( writer );
         }
-        for( auto reader : topic.second.readers )
+        for( auto & reader : topic.second.readers )
         {
             std::cout << topic.first << ",";
             print_topic_reader( reader );
@@ -575,7 +575,7 @@ void dds_sniffer::print_topics() const
 
     uint32_t max_indentation( calc_max_indentation() );
 
-    for( auto topic : _topics_info_by_name )
+    for( auto & topic : _topics_info_by_name )
     {
         if( filter_topic( topic.first, _root ) )
             continue;
@@ -612,11 +612,11 @@ void dds_sniffer::print_topics() const
             ++indentation;
         }
 
-        for( auto writer : topic.second.writers )
+        for( auto & writer : topic.second.writers )
         {
             print_topic_writer( writer, max_indentation );
         }
-        for( auto reader : topic.second.readers )
+        for( auto & reader : topic.second.readers )
         {
             print_topic_reader( reader, max_indentation );
         }

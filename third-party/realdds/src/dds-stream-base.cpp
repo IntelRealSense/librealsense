@@ -67,7 +67,7 @@ void dds_stream_base::set_recommended_filters( std::vector< std::string > && rec
     if( !_recommended_filters.empty() )
         DDS_THROW( runtime_error, "stream '" + _name + "' recommended filters are already set" );
 
-    _recommended_filters = recommended_filters;
+    _recommended_filters = std::move( recommended_filters );
 }
 
 

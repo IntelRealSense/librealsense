@@ -40,7 +40,7 @@ void lrs_device_watcher::run( std::function< void( rs2::device ) > add_device_cb
                     }
                 }
 
-                for( auto device_to_remove : devices_to_remove )
+                for( auto & device_to_remove : devices_to_remove )
                 {
                     try
                     {
