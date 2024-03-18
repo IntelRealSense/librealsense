@@ -8,12 +8,15 @@
 
 ### 1. Prerequisites
 
-* Nvidia® **Jetson Nano™**, **Jetson TX2™** and **Jetson AGX Xavier™** board (may also work on other Jetson devices)
+* Nvidia® **Jetson Nano™**, **Jetson TX2™**, **Jetson AGX Xavier™** and **Jetson Orin™** board (may also work on other Jetson devices)
 * RealSense **D415**, **D435**, **D435i**, **D455** and **L515** Camera devices.
 
 ### 2. Establish Developer's Environment
 
-Follow [official instructions](https://developer.nvidia.com/embedded/learn/getting-started-jetson) to get your board ready. This guide will assume you are using **Nvidia® L4T Ubuntu 16.04/18.04/20.04** image with kernels 4.9/5.10. Note that in most cases it is necessary to install a toll named "SDK Manager" to flash and install **Jetson** boards with both the L4T (Linux for Tegra) and Nvidia-specific software packages (CUDA, Tensor Flow, AI, etc.)
+Follow [official instructions](https://developer.nvidia.com/embedded/learn/getting-started-jetson) to get your board ready. This guide will assume you are using **Nvidia® L4T Ubuntu 16.04/18.04/20.04/22.04** image with kernels 4.9/5.10/5.15. Note that in most cases it is necessary to install a toll named "SDK Manager" to flash and install **Jetson** boards with both the L4T (Linux for Tegra) and Nvidia-specific software packages (CUDA, Tensor Flow, AI, etc.)
+
+For **Jetson Orin™** with JetPack 6.0 you will need to follow build for MIPI driver as Nvidia released Kernel 5.15 default configuration with disabled HID: [Intel® RealSense™ camera driver for GMSL* interface](https://github.com/IntelRealSense/realsense_mipi_platform_driver)
+
 For **Jetson Nano™** we strongly recommend enabling the Barrel Jack connector for extra power (See [jetsonhacks.com/jetson-nano-use-more-power/](https://www.jetsonhacks.com/2019/04/10/jetson-nano-use-more-power/) to learn how)
 
 ![Jetson Nano](./img/jetson.jpg)
@@ -93,6 +96,8 @@ You can also double-TAB after typing `rs-` to see the full list of SDK examples.
 The method was verified with **Jetson AGX** boards with JetPack **4.2.3**[L4T 32.2.1,32.2.3], **4.3**[L4T 32.3.1], **4.4**[L4T 32.4.3], **4.5.1**[L4T 32.5.1] and **5.0.2**[L4T 35.1.0].
 
 The method has not yet been verified on the **Jetson Nano** board.
+
+This method incompatible for board **Jetson Orin™** with JetPack 6.0, checkout [Intel® RealSense™ camera driver for GMSL* interface](https://github.com/IntelRealSense/realsense_mipi_platform_driver)
 
 * **Prerequisite**
 
