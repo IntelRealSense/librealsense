@@ -97,7 +97,7 @@ The method was verified with **Jetson AGX** boards with JetPack **4.2.3**[L4T 32
 
 The method has not yet been verified on the **Jetson Nano** board.
 
-This method incompatible for board **Jetson Orin™** with JetPack 6.0, checkout [Intel® RealSense™ camera driver for GMSL* interface](https://github.com/IntelRealSense/realsense_mipi_platform_driver)
+This method is incompatible for board **Jetson Orin™** with JetPack 6.0, checkout [Intel® RealSense™ camera driver for GMSL* interface](https://github.com/IntelRealSense/realsense_mipi_platform_driver)
 
 * **Prerequisite**
 
