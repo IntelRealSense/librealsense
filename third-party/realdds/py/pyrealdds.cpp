@@ -794,6 +794,7 @@ PYBIND11_MODULE(NAME, m) {
         video_stream_server_base( m, "video_stream_server", stream_server_base );
     video_stream_server_base
         .def( "set_intrinsics", &dds_video_stream_server::set_intrinsics )
+        .def( "get_intrinsics", &dds_video_stream_server::get_intrinsics )
         .def( "start_streaming",
               []( dds_video_stream_server & self, dds_video_encoding encoding, int width, int height ) {
                   self.start_streaming( { encoding, height, width } );
