@@ -188,4 +188,35 @@ namespace librealsense
 
         std::function<void(const option&)> _recording_function = [](const option&) {};
     };
+
+
+    class hid_sensor;
+    class gyro_sensitivity_option: public option_base
+    {
+    public:
+        gyro_sensitivity_option( const std::weak_ptr< hid_sensor > & sensor, const option_range & opt_range )
+            : option_base( opt_range )
+            , _value( opt_range.def )
+            , _sensor( sensor )
+        {
+            set( _value );
+        }
+        virtual ~gyro_sensitivity_option() = default;
+        virtual void set( float value ) override;
+        virtual float query() const override;
+        virtual bool is_enabled() const override { return true; }
+        virtual const char * get_description() const override;
+        const char * get_value_description( float value ) const override;
+        virtual void enable_recording( std::function< void( const option & ) > record_action ) override
+        {
+            _record_action = record_action;
+        }
+        virtual bool is_read_only() const override;
+
+    private:
+        float _value;
+        std::weak_ptr< hid_sensor > _sensor;
+        std::function< void( const option & ) > _record_action = []( const option & ) {};
+
+    };
 }

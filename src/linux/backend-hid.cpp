@@ -453,7 +453,7 @@ namespace librealsense
             }
         }
 
-        iio_hid_sensor::iio_hid_sensor(const std::string& device_path, uint32_t frequency)
+        iio_hid_sensor::iio_hid_sensor(const std::string& device_path, uint32_t frequency, float sensitivity)
             : _stop_pipe_fd{},
               _fd(0),
               _iio_device_number(0),
@@ -464,7 +464,7 @@ namespace librealsense
               _is_capturing(false),
               _pm_dispatcher(16)    // queue for async power management commands
         {
-            init(frequency);
+            init(frequency, sensitivity);
         }
 
         iio_hid_sensor::~iio_hid_sensor()
@@ -709,6 +709,21 @@ namespace librealsense
             iio_device_file.close();
         }
 
+        void iio_hid_sensor::set_sensitivity( float sensitivity ) 
+        {
+            auto sensitivity_path = _iio_device_path + "/" + _sensitivity_name;
+            std::ofstream iio_device_file( sensitivity_path );
+
+            if( ! iio_device_file.is_open() )
+            {
+                throw linux_backend_exception( rsutils::string::from()
+                                               << "Failed to set sensitivity " << sensitivity
+                                                                       << ". device path: " << sensitivity_path );
+            }
+            iio_device_file << sensitivity;
+            iio_device_file.close();
+        }
+
         // Asynchronous power management
         void iio_hid_sensor::set_power(bool on)
         {
@@ -763,7 +778,7 @@ namespace librealsense
         }
 
         // initialize the device sensor. reading its name and all of its inputs.
-        void iio_hid_sensor::init(uint32_t frequency)
+        void iio_hid_sensor::init(uint32_t frequency, float sensitivity)
         {
             std::ifstream iio_device_file(_iio_device_path + "/name");
 
@@ -822,10 +837,14 @@ namespace librealsense
             // get the specific name of sampling_frequency
             _sampling_frequency_name = get_sampling_frequency_name();
 
+            // get the specific name of sensitivity
+            _sensitivity_name = get_sensitivity_name();
+            
             for (auto& input : _inputs)
                 input->enable(true);
 
             set_frequency(frequency);
+            set_sensitivity( sensitivity );
             write_fs_attribute(_iio_device_path + "/buffer/length", hid_buf_len);
         }
 
@@ -896,6 +915,38 @@ namespace librealsense
             }
             closedir(dir);
             return sampling_frequency_name;
+        }
+
+        /*The sensitivity value we need to transfer to FW is stored in a file named with "hysteresis" in its title.
+        Therefore, we are searching for a file that includes "hysteresis" in its name.*/
+        std::string iio_hid_sensor::get_sensitivity_name() const
+        {
+            std::string sensitivity_name = "";
+            DIR * dir = nullptr;
+            struct dirent * dir_ent = nullptr;
+
+            // start enumerate the scan elemnts dir.
+            dir = opendir( _iio_device_path.c_str() );
+            if( dir == nullptr )
+            {
+                throw linux_backend_exception( rsutils::string::from()
+                                               << "Failed to open scan_element " << _iio_device_path );
+            }
+
+            // verify file format. should include in_ (input) and _en (enable).
+            while( ( dir_ent = readdir( dir ) ) != nullptr )
+            {
+                if( dir_ent->d_type != DT_DIR )
+                {
+                    std::string file( dir_ent->d_name );
+                    if( file.find( "hysteresis" ) != std::string::npos )
+                    {
+                        sensitivity_name = file;
+                    }
+                }
+            }
+            closedir( dir );
+            return sensitivity_name;
         }
 
 
@@ -1000,11 +1051,13 @@ namespace librealsense
                     else
                     {
                         uint32_t frequency = 0;
+                        float sensitivity = 0;
                         for (auto& profile : hid_profiles)
                         {
                             if (profile.sensor_name == device_info.id)
                             {
                                 frequency = profile.frequency;
+                                sensitivity = profile.sensitivity;
                                 break;
                             }
                         }
@@ -1012,7 +1065,7 @@ namespace librealsense
                         if (frequency == 0)
                             continue;
 
-                        auto device = std::unique_ptr<iio_hid_sensor>(new iio_hid_sensor(device_info.device_path, frequency));
+                        auto device = std::unique_ptr<iio_hid_sensor>(new iio_hid_sensor(device_info.device_path, frequency, sensitivity));
                         _iio_hid_sensors.push_back(std::move(device));
                     }
                 }

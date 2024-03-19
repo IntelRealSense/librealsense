@@ -360,6 +360,23 @@ const char* get_string(rs2_safety_pin_functionality functionality)
 #undef CASE
 }
 
+const char * get_string( rs2_gyro_sensitivity value )
+{
+#define CASE( X ) STRCASE( GYRO_SENSITIVITY, X )
+    switch( value )
+    {
+        CASE( 61_0_MILLI_DEG_SEC )
+        CASE( 30_5_MILLI_DEG_SEC )
+        CASE( 15_3_MILLI_DEG_SEC )
+        CASE( 7_6_MILLI_DEG_SEC )
+        CASE( 3_8_MILLI_DEG_SEC )
+    default:
+        assert( ! is_valid( value ) );
+        return UNKNOWN_VALUE;
+    }
+#undef CASE
+}
+
 const char * get_string( rs2_extension value )
 {
 #define CASE( X ) STRCASE( EXTENSION, X )
@@ -569,6 +586,7 @@ std::string const & get_string_( rs2_option value )
         arr[RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE] = "Auto Exposure Mode";
         CASE( OHM_TEMPERATURE )
         CASE( SOC_PVT_TEMPERATURE )
+        CASE( GYRO_SENSITIVITY )
         CASE( SAFETY_PRESET_ACTIVE_INDEX )
         CASE( SAFETY_MODE )
         CASE( RGB_TNR_ENABLED )
@@ -995,3 +1013,4 @@ const char * rs2_calib_location_to_string(rs2_calib_location calib_location) { r
 const char * rs2_safety_pin_direction_to_string(rs2_safety_pin_direction direction) { return librealsense::get_string(direction); }
 const char * rs2_safety_pin_functionality_to_string(rs2_safety_pin_functionality functionality) { return librealsense::get_string(functionality); }
 
+const char * rs2_gyro_sensitivity_to_string( rs2_gyro_sensitivity mode ){return librealsense::get_string( mode );}

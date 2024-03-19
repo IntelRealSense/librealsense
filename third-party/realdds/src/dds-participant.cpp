@@ -319,7 +319,7 @@ std::string dds_participant::print( dds_guid const & guid_to_print ) const
 
 void dds_participant::on_writer_added( dds_guid guid, char const * topic_name )
 {
-    for( auto wl : _listeners )
+    for( auto & wl : _listeners )
     {
         if( auto l = wl.lock() )
         {
@@ -332,7 +332,7 @@ void dds_participant::on_writer_added( dds_guid guid, char const * topic_name )
 
 void dds_participant::on_writer_removed( dds_guid guid, char const * topic_name )
 {
-    for( auto wl : _listeners )
+    for( auto & wl : _listeners )
     {
         if( auto l = wl.lock() )
         {
@@ -345,7 +345,7 @@ void dds_participant::on_writer_removed( dds_guid guid, char const * topic_name 
 
 void dds_participant::on_reader_added( dds_guid guid, char const * topic_name )
 {
-    for( auto wl : _listeners )
+    for( auto & wl : _listeners )
     {
         if( auto l = wl.lock() )
         {
@@ -358,7 +358,7 @@ void dds_participant::on_reader_added( dds_guid guid, char const * topic_name )
 
 void dds_participant::on_reader_removed( dds_guid guid, char const * topic_name )
 {
-    for( auto wl : _listeners )
+    for( auto & wl : _listeners )
     {
         if( auto l = wl.lock() )
         {
@@ -371,7 +371,7 @@ void dds_participant::on_reader_removed( dds_guid guid, char const * topic_name 
 
 void dds_participant::on_participant_added( dds_guid guid, char const * participant_name )
 {
-    for( auto wl : _listeners )
+    for( auto & wl : _listeners )
     {
         if( auto l = wl.lock() )
         {
@@ -384,7 +384,7 @@ void dds_participant::on_participant_added( dds_guid guid, char const * particip
 
 void dds_participant::on_participant_removed( dds_guid guid, char const * participant_name )
 {
-    for( auto wl : _listeners )
+    for( auto & wl : _listeners )
     {
         if( auto l = wl.lock() )
         {
@@ -397,7 +397,7 @@ void dds_participant::on_participant_removed( dds_guid guid, char const * partic
 
 void dds_participant::on_type_discovery( char const * topic_name, eprosima::fastrtps::types::DynamicType_ptr dyn_type )
 {
-    for( auto wl : _listeners )
+    for( auto & wl : _listeners )
     {
         if( auto l = wl.lock() )
         {

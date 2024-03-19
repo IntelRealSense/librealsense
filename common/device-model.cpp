@@ -3002,8 +3002,6 @@ namespace rs2
                                        color_options.end(),
                                        [&]( rs2_option opt )
                                        {
-                                           if( viewer.is_option_skipped( opt ) )
-                                               return;
                                            auto it = supported_options.find( opt );
                                            if( it != supported_options.end() )
                                                so_ordered.push_back( opt );
@@ -3011,6 +3009,8 @@ namespace rs2
 
                         for (auto opt : so_ordered)
                         {
+                            if( viewer.is_option_skipped( opt ) )
+                                continue;
                             if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
                             {
                                 if (serialize && opt == RS2_OPTION_VISUAL_PRESET)

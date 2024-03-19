@@ -153,8 +153,9 @@ int main(int argc, char** argv) try
         // compress szSource into pchCompressed
         auto rawDataSize = (int)data.size();
         auto compressBufSize = LZ4_compressBound(rawDataSize);
-        char* pchCompressed = new char[compressBufSize];
-        memset(pchCompressed, 0, compressBufSize);
+        auto four_byte_mul_size = compressBufSize + ( 4 - compressBufSize % 4 );
+        char * pchCompressed = new char[four_byte_mul_size];
+        memset( pchCompressed, 0, four_byte_mul_size );
         int nCompressedSize = LZ4_compress_default((const char*)data.data(), pchCompressed, rawDataSize, compressBufSize);
 
   
@@ -169,7 +170,7 @@ int main(int argc, char** argv) try
 
         auto nAllignedCompressedSize = nCompressedSize;
         auto leftover = nCompressedSize % 4;
-        if (leftover % 4 != 0) nAllignedCompressedSize += (4 - leftover);
+        nAllignedCompressedSize += (4 - leftover);
 
         for (int i = 0; i < nAllignedCompressedSize; i += 4)
         {
@@ -186,7 +187,7 @@ int main(int argc, char** argv) try
         myfile << "inline void uncompress_" << name << "_obj(std::vector<float3>& vertex_data, std::vector<float3>& normals, std::vector<short3>& index_data)\n";
         myfile << "{\n";
         myfile << "    std::vector<char> uncompressed(0x" << std::hex << rawDataSize << ", 0);\n";
-        myfile << "    LZ4_decompress_safe((const char*)" << name << "_obj_data, uncompressed.data(), 0x" << std::hex << nCompressedSize << ", 0x" << std::hex << rawDataSize << ");\n";
+        myfile << "    (void)LZ4_decompress_safe((const char*)" << name << "_obj_data, uncompressed.data(), 0x" << std::hex << nCompressedSize << ", 0x" << std::hex << rawDataSize << ");\n";
         myfile << "    const int vertex_size = 0x" << std::hex << vertex_data.size() << " * sizeof(float3);\n";
         myfile << "    const int index_size = 0x" << std::hex << index_data.size() << " * sizeof(short3);\n";
         myfile << "    vertex_data.resize(0x" << std::hex << vertex_data.size() << ");\n";
