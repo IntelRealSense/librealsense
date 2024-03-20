@@ -441,10 +441,15 @@ def test_wrapper( test, configuration=None, repetition=1, sns=None ):
     global n_tests
     n_tests += 1
     for retry in range( test.config.retries + 1 ):
-        if test_wrapper_( test, configuration, repetition, retry, sns ):
+        if test_wrapper_( test, configuration, repetition, retry, sns ) and log.n_errors() == 0:
             return True
         log._n_errors -= 1
-        time.sleep( 1 )  # small pause between tries
+        if no_reset:
+            time.sleep(1)  # small pause between tries
+        elif retry < test.config.retries:
+            log.d("retry", retry + 1, "out of", test.config.retries)
+            devices.enable_only(serial_numbers, recycle=True)
+
     log._n_errors += 1
     return False
 
@@ -555,6 +560,8 @@ try:
                 test_ok = True
                 for repetition in range(repeat):
                     test_ok = test_wrapper( test, repetition = repetition ) and test_ok
+                    if repetition + 1 < repeat:
+                        log.d("repeating #", repetition + 1)
                 if not test_ok:
                     failed_tests.append( test )
                 continue
@@ -578,6 +585,8 @@ try:
                         log.w( log.red + test.name + log.reset + ': ' + str( e ) )
                     else:
                         test_ok = test_wrapper( test, configuration, repetition, sns=serial_numbers ) and test_ok
+                        if repetition + 1 < repeat:
+                            log.d("repeating #", repetition + 1)
                     finally:
                         log.debug_unindent()
             if not test_ok:
