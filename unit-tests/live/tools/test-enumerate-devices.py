@@ -17,12 +17,13 @@ if rs_enumerate_devices:
     import subprocess
     run_time_stopwatch = Stopwatch()
     run_time_threshold = 2
-    subprocess.run( [rs_enumerate_devices],
+    p = subprocess.run( [rs_enumerate_devices],
                     stdout=None,
                     stderr=subprocess.STDOUT,
                     universal_newlines=True,
                     timeout=10,
                     check=False )  # don't fail on errors
+    test.check(p != 0) # verify success return code
     run_time_seconds = run_time_stopwatch.get_elapsed()
     if run_time_seconds > run_time_threshold:
         log.e('Time elapsed too high!', run_time_seconds, ' > ', run_time_threshold)
