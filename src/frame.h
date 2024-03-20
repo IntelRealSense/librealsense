@@ -10,6 +10,7 @@
 #include <atomic>
 #include <vector>
 #include <memory>
+#include "archive.h"
 
 
 namespace librealsense {
@@ -31,10 +32,34 @@ public:
     {
     }
     frame( const frame & r ) = delete;
-    frame( frame && r );
+    frame(frame&& r)
+        : ref_count(r.ref_count.exchange(0))
+        , owner(r.owner)
+        , on_release()
+        , _kept(r._kept.exchange(false))
+    {
+        *this = std::move(r);
+        if (owner)
+            metadata_parsers = owner->get_md_parsers();
+    }
+
+    frame& operator=(frame&& r)
+    {
+        data = std::move(r.data);
+        owner = r.owner;
+        ref_count = r.ref_count.exchange(0);
+        _kept = r._kept.exchange(false);
+        on_release = std::move(r.on_release);
+        additional_data = std::move(r.additional_data);
+        r.owner.reset();
+        if (owner)
+            metadata_parsers = owner->get_md_parsers();
+        if (r.metadata_parsers)
+            metadata_parsers = std::move(r.metadata_parsers);
+        return *this;
+    }
 
     frame & operator=( const frame & r ) = delete;
-    frame & operator=( frame && r );
 
     virtual ~frame() { on_release.reset(); }
     frame_header const & get_header() const override { return additional_data; }
