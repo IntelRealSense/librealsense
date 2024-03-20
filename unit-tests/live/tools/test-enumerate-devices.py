@@ -1,13 +1,16 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
+#test:device each(D400*)
+#test:device each(D500*)
+
 import pyrealsense2 as rs
 from rspy import log, repo, test
 from rspy.stopwatch import Stopwatch
 
 #############################################################################################
 #
-test.start( "Init" )
+test.start( "Run enumerate-devices runtime test" )
 rs_enumerate_devices = repo.find_built_exe( 'tools/enumerate-devices', 'rs-enumerate-devices' )
 test.check(rs_enumerate_devices)
 if rs_enumerate_devices:
