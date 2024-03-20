@@ -1,6 +1,4 @@
-# ubuntu 12.04 LTS cmake version 2.8.7
-# ubuntu 14.04 LTS cmake version 2.8.12.2
-# ubuntu 16.04 LTS cmake version 3.5.1	
+# our current cmake version is 3.8
 cmake_minimum_required(VERSION 3.8)
 
 project(usb)
