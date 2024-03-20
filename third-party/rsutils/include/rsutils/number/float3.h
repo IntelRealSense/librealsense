@@ -2,6 +2,8 @@
 // Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 #pragma once
 
+#include <rsutils/json-fwd.h>
+
 #include <iosfwd>
 #include <cassert>
 
@@ -140,6 +142,15 @@ inline float3x3 transpose( const float3x3 & a )
 std::ostream & operator<<( std::ostream &, const float3 & );
 std::ostream & operator<<( std::ostream &, const float4 & );
 std::ostream & operator<<( std::ostream &, const float3x3 & );
+
+
+// Allow j["key"] = hexarray( bytes );
+void to_json( json &, float2 const & );
+void to_json( json &, float3 const & );
+// Allow j.get< hexarray >();
+void from_json( json const &, float2 & );
+void from_json( json const &, float3 & );
+// See https://github.com/nlohmann/json#arbitrary-types-conversions
 
 
 }  // namespace number
