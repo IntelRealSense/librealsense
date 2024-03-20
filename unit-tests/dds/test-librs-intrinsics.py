@@ -1,36 +1,72 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
 #test:retries:gha 2
 
 from rspy import log, test
-log.nested = 'C  '
 
-import dds
-import pyrealsense2 as rs
-if log.is_debug_on():
-    rs.log_to_console( rs.log_severity.debug )
-from time import sleep
+with test.remote.fork( nested_indent=None ) as remote:
+    if remote is None:  # we're the fork
 
-context = rs.context( { 'dds': { 'enabled': True, 'domain': 123 }} )
-only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
+        import pyrealdds as dds
+        import d435i
+        import d405
+        import d455
 
-import os.path
-cwd = os.path.dirname(os.path.realpath(__file__))
-remote_script = os.path.join( cwd, 'device-broadcaster.py' )
-with test.remote( remote_script, nested_indent="  S" ) as remote:
-    remote.wait_until_ready()
+        dds.debug( log.is_debug_on(), log.nested )
+
+        participant = dds.participant()
+        participant.init( 123, "intrinsics-server" )
+
+        # These are the servers currently broadcast
+        servers = dict()
+
+        def broadcast_device( camera, device_info ):
+            """
+            E.g.:
+                instance = broadcast_device( d435i, d435i.device_info )
+            """
+            global servers
+            instance = device_info.serial
+            if not instance:
+                raise RuntimeError( "serial-number must be filled out" )
+            server = camera.build( participant )
+            servers[instance] = {
+                'info' : device_info,
+                'server' : server
+                }
+            server.broadcast( device_info )
+            return instance
+
+        def close_server( instance ):
+            """
+            Close the instance returned by broadcast_device()
+            """
+            global servers
+            del servers[instance]  # throws if does not exist
+
+        raise StopIteration()  # the remote is now interactive
+
+
+    ###############################################################################################################
+    # The client is LibRS
     #
+
+    log.nested = 'C  '
+
+    import librs as rs
+    if log.is_debug_on():
+        rs.log_to_console( rs.log_severity.debug )
+
+    context = rs.context( { 'dds': { 'enabled': True, 'domain': 123 }} )
+
     #############################################################################################
     #
-    test.start( "D435i intrinsics" )
-    try:
+    with test.closure( "D435i intrinsics" ):
+
         remote.run( 'instance = broadcast_device( d435i, d435i.device_info )' )
-        n_devs = 0
-        for dev in dds.wait_for_devices( context, only_sw_devices ):
-            n_devs += 1
-        test.check_equal( n_devs, 1 )
+        dev = rs.wait_for_devices( context, rs.only_sw_devices, n=1. )
 
         sensors = {sensor.get_info( rs.camera_info.name ) : sensor for sensor in dev.query_sensors()}
 
@@ -81,8 +117,8 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
                     test.check_equal( ir2_profile.get_intrinsics().fy, 236.7535858154297 )
 
         sensor = sensors['RGB Camera']
-        for profile in sensor.get_stream_profiles() :
-            if profile.stream_type() == rs.stream.color :
+        for profile in sensor.get_stream_profiles():
+            if profile.stream_type() == rs.stream.color:
                 color_profile = profile.as_video_stream_profile()
                 if color_profile.width() == 320 and color_profile.height() == 180 :
                     test.check_equal( color_profile.get_intrinsics().ppx, 161.7417755126953 )
@@ -114,12 +150,9 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
                 # There's currently no way to get the accelerometer intrinsics (which are set the same anyway)
 
         remote.run( 'close_server( instance )' )
-    except:
-        test.unexpected_exception()
-    dev = None
-    test.finish()
+        dev = None
     #
     #############################################################################################
 
 context = None
-test.print_results_and_exit()
+test.print_results()
