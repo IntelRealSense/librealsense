@@ -11,8 +11,6 @@ with test.remote.fork( nested_indent=None ) as remote:
 
         import pyrealdds as dds
         import d435i
-        import d405
-        import d455
 
         dds.debug( log.is_debug_on(), log.nested )
 
@@ -22,22 +20,38 @@ with test.remote.fork( nested_indent=None ) as remote:
         # These are the servers currently broadcast
         servers = dict()
 
-        def broadcast_device( camera, device_info ):
-            """
-            E.g.:
-                instance = broadcast_device( d435i, d435i.device_info )
-            """
+        def broadcast_device( server, device_info ):
             global servers
             instance = device_info.serial
             if not instance:
                 raise RuntimeError( "serial-number must be filled out" )
-            server = camera.build( participant )
             servers[instance] = {
                 'info' : device_info,
                 'server' : server
                 }
             server.broadcast( device_info )
             return instance
+
+        def build_scaled_intrinsics_server():
+            color = dds.color_stream_server( 'Color', 'RGB Camera' )
+            color.init_profiles( d435i.color_stream_profiles(), 8 )
+            color.init_options( [] )
+
+            # Add only a single set of intrinsics for 1920x1080, from which we expect to scale to all resolutions:
+            i = dds.video_intrinsics();
+            i.width = 1920
+            i.height = 1080
+            i.principal_point.x = 970.4506225585938
+            i.principal_point.y = 542.8473510742188
+            i.focal_length.x = 1362.133056640625
+            i.focal_length.y = 1362.629638671875
+            i.distortion.model = dds.distortion_model.inverse_brown
+            i.distortion.coeffs = [0.0,0.0,0.0,0.0,0.0]
+            color.set_intrinsics( set( [i] ) )
+
+            dev = dds.device_server( participant, d435i.device_info.topic_root )
+            dev.init( [color], [], {} )
+            return dev
 
         def close_server( instance ):
             """
@@ -65,7 +79,7 @@ with test.remote.fork( nested_indent=None ) as remote:
     #
     with test.closure( "D435i intrinsics" ):
 
-        remote.run( 'instance = broadcast_device( d435i, d435i.device_info )' )
+        remote.run( 'instance = broadcast_device( d435i.build( participant ), d435i.device_info )' )
         dev = rs.wait_for_devices( context, rs.only_sw_devices, n=1. )
 
         sensors = {sensor.get_info( rs.camera_info.name ) : sensor for sensor in dev.query_sensors()}
@@ -151,8 +165,30 @@ with test.remote.fork( nested_indent=None ) as remote:
 
         remote.run( 'close_server( instance )' )
         dev = None
-    #
-    #############################################################################################
+
+    with test.closure( 'Scaled intrinsics' ):
+        remote.run( 'instance = broadcast_device( build_scaled_intrinsics_server(), d435i.device_info )' )
+        dev = rs.wait_for_devices( context, rs.only_sw_devices, n=1. )
+        sensors = dev.query_sensors()
+        test.check_equal( len(sensors), 1 )
+        color = sensors[0]
+        profiles = color.profiles
+        resolutions = set()
+        for p in profiles:
+            vp = p.as_video_stream_profile()
+            if not vp:
+                continue
+            if vp.fps() != 30:
+                continue
+            if vp.format() != rs.format.yuyv:
+                continue
+            res = ( vp.width(), vp.height() )
+            if res not in resolutions:
+                log.out( f'resolution: {res} -> {vp.get_intrinsics()}' )  # throws if there's no intrinsics
+                resolutions.add( res )
+        test.check( len(resolutions) > 5 )
+
+        remote.run( 'close_server( instance )' )
 
 context = None
 test.print_results()
