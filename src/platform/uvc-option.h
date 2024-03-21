@@ -49,7 +49,7 @@ public:
 
 // XU control with exclusing access to setter/getters
 template< typename T >
-class uvc_xu_option : public option
+class uvc_xu_option : virtual public option
 {
 public:
     void set( float value ) override
@@ -87,6 +87,8 @@ public:
                     throw invalid_value_exception( rsutils::string::from()
                                                    << "get_xu(id=" << std::to_string( _id ) << ") failed!"
                                                    << " Last Error: " << strerror( errno ) );
+                if (_parsing_modifier)
+                    return _parsing_modifier(t);
 
                 return static_cast< float >( t );
             } ) );
@@ -101,13 +103,21 @@ public:
             uvc_range = ep->invoke_powered( [this]( platform::uvc_device & dev )
                                              { return dev.get_xu_range( _xu, _id, sizeof( T ) ); } );
 
-        if( uvc_range.min.size() < sizeof( int32_t ) )
+        if( uvc_range.min.size() < sizeof( T ) )
             return option_range{ 0, 0, 1, 0 };
 
-        auto min = *( reinterpret_cast< int32_t * >( uvc_range.min.data() ) );
-        auto max = *( reinterpret_cast< int32_t * >( uvc_range.max.data() ) );
-        auto step = *( reinterpret_cast< int32_t * >( uvc_range.step.data() ) );
-        auto def = *( reinterpret_cast< int32_t * >( uvc_range.def.data() ) );
+        auto min = *( reinterpret_cast< T* >( uvc_range.min.data() ) );
+        auto max = *( reinterpret_cast< T* >( uvc_range.max.data() ) );
+        auto step = *( reinterpret_cast< T* >( uvc_range.step.data() ) );
+        auto def = *( reinterpret_cast< T* >( uvc_range.def.data() ) );
+
+        if (_parsing_modifier)
+        {
+            return option_range{ _parsing_modifier( min ),
+                                 _parsing_modifier( max ),
+                                 _parsing_modifier( step ),
+                                 _parsing_modifier( def ) };
+        }
         return option_range{ static_cast< float >( min ),
                              static_cast< float >( max ),
                              static_cast< float >( step ),
@@ -116,16 +126,20 @@ public:
 
     bool is_enabled() const override { return true; }
 
+    typedef std::function< float(const T param) > parsing_modifier;
+
     uvc_xu_option( const std::weak_ptr< uvc_sensor > & ep,
                    platform::extension_unit xu,
                    uint8_t id,
                    std::string description,
-                   bool allow_set_while_streaming = true )
+                   bool allow_set_while_streaming = true,
+                   parsing_modifier modifier = nullptr)
         : _ep( ep )
         , _xu( xu )
         , _id( id )
         , _desciption( std::move( description ) )
         , _allow_set_while_streaming( allow_set_while_streaming )
+        , _parsing_modifier(modifier)
     {
     }
 
@@ -134,13 +148,15 @@ public:
                    uint8_t id,
                    std::string description,
                    const std::map< float, std::string > & description_per_value,
-                   bool allow_set_while_streaming = true )
+                   bool allow_set_while_streaming = true,
+                   parsing_modifier modifier = nullptr)
         : _ep( ep )
         , _xu( xu )
         , _id( id )
         , _desciption( std::move( description ) )
         , _description_per_value( description_per_value )
         , _allow_set_while_streaming( allow_set_while_streaming )
+        , _parsing_modifier(modifier)
     {
     }
 
@@ -165,6 +181,7 @@ protected:
     };
     const std::map< float, std::string > _description_per_value;
     bool _allow_set_while_streaming;
+    parsing_modifier _parsing_modifier = nullptr;
 };
 
 
