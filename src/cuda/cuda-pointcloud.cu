@@ -107,7 +107,7 @@ void rscuda::deproject_depth_cuda(float * points, const rs2_intrinsics & intrin,
      result = cudaMemcpy(points, dev_points, count * sizeof(float) * 3, cudaMemcpyDeviceToHost);
      assert(result == cudaSuccess);
 
-     (void *) result; // suppress warning about "variable "result" was set but never used"
+     if (result); // suppress warning about "variable "result" was set but never used"
 
     cudaFree(dev_points);
     cudaFree(dev_depth);
