@@ -20,7 +20,7 @@ test.start("Get ds5 standard buffer")
 gvd_opcode = 0x10
 gvd_opcode_size = 4 # bytes
 gvd_header_size = 8
-gvd_expected_full_size = 600
+gvd_expected_full_size = 602
 gvd_expected_payload_size = gvd_expected_full_size - gvd_header_size
 gvd_payload_size_offset = 2
 gvd_payload_size_element_size = 2
