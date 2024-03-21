@@ -51,7 +51,9 @@ public:
     void close() override;
     void start( rs2_frame_callback_sptr callback ) override;
     void stop() override;
-
+    void set_imu_sensitivity( rs2_stream stream, float value );
+    double get_imu_sensitivity_values( rs2_stream stream );
+    void set_gyro_scale_factor(double scale_factor);
     std::vector< uint8_t > get_custom_report_data( const std::string & custom_sensor_name,
                                                    const std::string & report_name,
                                                    platform::custom_sensor_report_field report_field ) const;
@@ -69,6 +71,8 @@ private:
     std::vector< platform::hid_sensor > _hid_sensors;
     std::unique_ptr< frame_timestamp_reader > _hid_iio_timestamp_reader;
     std::unique_ptr< frame_timestamp_reader > _custom_hid_timestamp_reader;
+    //Keeps set sensitivity values for gyro and accel
+    std::map< rs2_stream, float > _imu_sensitivity_per_rs2_stream;
 
     stream_profiles get_sensor_profiles( std::string sensor_name ) const;
 

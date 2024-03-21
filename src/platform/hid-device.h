@@ -20,6 +20,7 @@ struct hid_profile
 {
     std::string sensor_name;
     uint32_t frequency;
+    double sensitivity;
 };
 
 
@@ -43,12 +44,9 @@ struct sensor_data
 #pragma pack( push, 1 )
 struct hid_sensor_data
 {
-    short x;
-    char reserved1[2];
-    short y;
-    char reserved2[2];
-    short z;
-    char reserved3[2];
+    int32_t x;
+    int32_t y;
+    int32_t z;
     uint32_t ts_low;
     uint32_t ts_high;
 };
@@ -85,6 +83,7 @@ public:
                                                            const std::string & report_name,
                                                            custom_sensor_report_field report_field )
         = 0;
+    virtual void set_gyro_scale_factor( double scale_factor ) = 0;
 };
 
 
@@ -121,6 +120,8 @@ public:
     {
         return _dev.front()->get_custom_report_data( custom_sensor_name, report_name, report_field );
     }
+
+    void set_gyro_scale_factor( double scale_factor ) override {};
 
 private:
     std::vector< std::shared_ptr< hid_device > > _dev;

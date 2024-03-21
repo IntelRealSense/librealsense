@@ -1420,7 +1420,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options, option, value)
 static void populate_options_list( rs2_options_list * updated_options_list,
                                    options_watcher::options_and_values const & updated_options )
 {
-    for( auto id_value : updated_options )
+    for( auto & id_value : updated_options )
     {
         options_watcher::option_and_value const & option_and_value = id_value.second;
         updated_options_list->list.push_back(

@@ -239,33 +239,38 @@ bool type_from_value( std::string & type, json const & j, json const & j2, Rest.
 
 static std::string parse_type( json const & j, size_t size, dds_option::option_properties & props )
 {
-    for( auto p : props )
+    for( auto it = props.begin(); it != props.end(); ++it )
     {
-        switch( p.length() )
+        switch( it->length() )
         {
         case 5:
-            if( p == "float" )
-                return props.erase( p ), p;
-            break;
+            if( 0 == it->compare( "float" ) )
+                break;
+            continue;
         case 6:
-            if( p == "string" )
-                return props.erase( p ), p;
-            break;
+            if( 0 == it->compare( "string" ) )
+                break;
+            continue;
         case 3:
-            if( p == "int" )
-                return props.erase( p ), p;
-            break;
+            if( 0 == it->compare( "int" ) )
+                break;
+            continue;
         case 7:
-            if( p == "boolean" )
-                return props.erase( p ), p;
-            break;
+            if( 0 == it->compare( "boolean" ) )
+                break;
+            continue;
         case 4:
-            if( p == "IPv4" )
-                return props.erase( p ), p;
-            if( 5 == size && p == "enum" )
-                return props.erase( p ), p;
-            break;
+            if( 0 == it->compare( "IPv4" ) )
+                break;
+            if( 5 == size && 0 == it->compare( "enum" ) )
+                break;
+            continue;
+        default:
+            continue;
         }
+        std::string property = *it;
+        props.erase( it );
+        return property;
     }
     // If not from the properties, try from the value at index 1:
     std::string type;
