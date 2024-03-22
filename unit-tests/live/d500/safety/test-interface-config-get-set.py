@@ -35,17 +35,13 @@ def generate_valid_table():
     # We use hard coded valid values as HKR compare and expect a match between safety interface extrinsic with the current safety preset extrinsic
     # rotation matrix 
     
-    # Currently since we have a BUG in HKR side, we need a diff between camera position in SIC and camera position in safety preset,
-    # otherwise the safety preset cannot be changed.
-    # Once FW is fixed we should revert the translation Z to 0.27
     rx = rs.float3(0.0, 0.0, 1.0)
     ry = rs.float3(-1.0, 0.0, 0.0)
     rz = rs.float3(0.0, -1.0, 0.0)
     rotation = rs.float3x3(rx, ry, rz)
     
     # translation vector [m] 
-    #translation = rs.float3(0.0, 0.0, 0.27)
-    translation = rs.float3(0.0, 0.0, 0.2699)
+    translation = rs.float3(0.0, 0.0, 0.27)
 
     
     cfg.camera_position = rs.safety_extrinsics_table(rotation, translation)
