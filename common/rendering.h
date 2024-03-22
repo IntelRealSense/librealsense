@@ -11,6 +11,7 @@
 #include <librealsense2-gl/rs_processing_gl.hpp>
 #include <rsutils/time/stopwatch.h>
 #include <rsutils/string/from.h>
+#include <rsutils/number/byte-manipulation.h>
 
 #include "matrix4.h"
 #include "float3.h"
@@ -763,9 +764,32 @@ namespace rs2
                 !frame.supports_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS))
                 throw std::runtime_error("Occupancy rows / columns could not be read from frame metadata");
 
-            auto occup_cols = static_cast<int>(frame.get_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS)); // width
-            auto occup_rows = static_cast<int>(frame.get_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS));    // height
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, occup_cols, occup_rows, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+            auto occup_cols = static_cast<int>(frame.get_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS));  // width
+            auto occup_rows = static_cast<int>(frame.get_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS));     // height
+
+            // We want to reverse the data's bit, because AICV algo is packing each 8 cells into one byte, but in an opposite order
+            // than we (and OpenGL) expect. The rightest bit (LSB) inside the packed byte from AICV algo represnts the first bit we want to draw from this byte
+            // e.g. Occupancy Cells: 0 0 1 1 0 0 1 0 ---> AICV packing algo ---> bytes[i] = 01001100. The order is reversed, so we reverse it again.
+            // Worth checking if AICV can improve their solution to support normal order, so we can save time of reversing bytes.
+            // Each byte represents 8 cells (1 bit <==> 1 cell), therefore the size is ==> rows(height) * cols(width) / 8
+            rsutils::number::reverse_byte_array_bits((uint8_t*)data, occup_rows * occup_cols / 8);
+
+            // Set up pixel transfer maps. We want to map our 0's and 1's to white RGBA[0,0,0,0] and black RGBA[1,1,1,1].
+            // The index array used in these functions contains the mapping values. In this case, it contains only two elements: 0.0 and 1.0
+            // This means that when an intensity value is 0.0, it will be mapped to the minimum value for the respective color
+            // component (e.g., 0.0 for red, green, blue, and alpha).
+            // Similarly, an intensity value of 1.0 will be mapped to the maximum value (e.g., 1.0 for red, green, blue, and alpha).
+            float index[] = {0.0, 1.0};
+            glPixelMapfv(GL_PIXEL_MAP_I_TO_R, 2, index);
+            glPixelMapfv(GL_PIXEL_MAP_I_TO_G, 2, index);
+            glPixelMapfv(GL_PIXEL_MAP_I_TO_B, 2, index);
+            glPixelMapfv(GL_PIXEL_MAP_I_TO_A, 2, index);
+
+            // the "4" is internal format, number of color components in the texture. Ref: https://docs.gl/gl2/glTexImage2D
+            // The texture format is specified as GL_COLOR_INDEX, which means the pixel data represents color indices rather than actual RGB values.
+            // GL_BITMAP means that each color index is represented by a single bit (0 or 1)
+            glTexImage2D(GL_TEXTURE_2D, 0, 4, occup_cols, occup_rows, 0, GL_COLOR_INDEX, GL_BITMAP, data);
+
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         }
