@@ -102,7 +102,7 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT                 , /**< Bitmask, enumerated */
     RS2_FRAME_METADATA_SAFETY_MB_FUSA_ACTION                , /**< Bitmask, enumerated */
     RS2_FRAME_METADATA_SAFETY_MB_STATUS                     , /**< Bitmask, enumerated */
-    RS2_FRAME_METADATA_SAFETY_SMCU_STATUS                   , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_SMCU_LIVELINESS               , /**< Bitmask, enumerated */
     RS2_FRAME_METADATA_SAFETY_SMCU_STATE                    , /**< Bitmask, enumerated */
     RS2_FRAME_METADATA_SAFETY_PRESET_ID                     , /**< Designates the Safety Zone index in [0..63] range used in algo pipe */
     RS2_FRAME_METADATA_SENSOR_ANGLE_ROLL                    , /**< In millidegrees. Relative to X (forward) axis. Positive value is CCW */

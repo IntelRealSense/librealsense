@@ -1115,7 +1115,7 @@ namespace rs2
 
         descriptions[RS2_FRAME_METADATA_SAFETY_MB_FUSA_ACTION] = "Bitmask, enumerated";
         descriptions[RS2_FRAME_METADATA_SAFETY_MB_STATUS] = "Provision for future enhancements";
-        descriptions[RS2_FRAME_METADATA_SAFETY_SMCU_STATUS] = "Bitmask, enumerated";
+        descriptions[RS2_FRAME_METADATA_SAFETY_SMCU_LIVELINESS] = "Bitmask, enumerated";
         descriptions[RS2_FRAME_METADATA_SAFETY_SMCU_STATE] = "Bitmask, enumerated";
         descriptions[RS2_FRAME_METADATA_SAFETY_PRESET_ID] = "Designates the Safety Zone index in [0..63] range used in algo pipe";
         descriptions[RS2_FRAME_METADATA_SENSOR_ANGLE_ROLL] = "In millidegrees. Relative to X (forward) axis. Positive value is CCW";
@@ -1221,7 +1221,7 @@ namespace rs2
                 RS2_FRAME_METADATA_SAFETY_SOC_MONITOR_L2_ERROR_TYPE,
                 RS2_FRAME_METADATA_SAFETY_SOC_MONITOR_L3_ERROR_TYPE,
                 RS2_FRAME_METADATA_SAFETY_SOC_FUSA_EVENTS,
-                RS2_FRAME_METADATA_SAFETY_SMCU_STATUS,
+                RS2_FRAME_METADATA_SAFETY_SMCU_LIVELINESS,
                 RS2_FRAME_METADATA_SAFETY_SMCU_STATE,
                 RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_STATUS_BITMASK,
                 RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_INFO_BIST_STATUS,
