@@ -482,8 +482,22 @@ namespace librealsense
         bool advanced_mode = false;
         bool usb_modality = true;
         group_multiple_fw_calls(depth_sensor, [&]() {
+            
+            // D500 device can get enumerated before the whole HW in the camera is ready.
+            // Since GVD gather all information from all the HW, it might need some more time to finish all hand shakes.
+            // on this case it will return HW_NOT_READY error code.
+            // Note: D500 error codes list is different than D400.
+            //       This will need a redactor on hw_monitor class to except the error code list from outside.
+            //       Currently, we hard code the HW not ready error code
 
-            _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), ds::fw_cmd::GVD);
+            const int HW_NOT_READY_ERR_CODE = -3;
+            const std::set< int32_t > gvd_retry_errors{ HW_NOT_READY_ERR_CODE };
+
+            _hw_monitor->get_gvd( gvd_buff.size(),
+                                  gvd_buff.data(),
+                                  ds::fw_cmd::GVD,
+                                  &gvd_retry_errors );
+
             get_gvd_details(gvd_buff, &gvd_parsed_fields);
             
             _device_capabilities = ds_caps::CAP_ACTIVE_PROJECTOR | ds_caps::CAP_RGB_SENSOR | ds_caps::CAP_IMU_SENSOR |
