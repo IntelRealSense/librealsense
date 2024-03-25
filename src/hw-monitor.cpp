@@ -1,10 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+
 #include "hw-monitor.h"
 #include "types.h"
-#include <iomanip>
-#include <limits>
-#include <sstream>
+#include <rsutils/string/from.h>
 
 
 static inline uint32_t pack( uint8_t c0, uint8_t c1, uint8_t c2, uint8_t c3 )
@@ -28,7 +27,7 @@ namespace librealsense
     void hw_monitor::fill_usb_buffer(int opCodeNumber, int p1, int p2, int p3, int p4,
         uint8_t const * data, int dataLength, uint8_t* bufferToSend, int& length)
     {
-        auto preHeaderData = IVCAM_MONITOR_MAGIC_NUMBER;
+        auto preHeaderData = HW_MONITOR_MAGIC_NUMBER;
 
         uint8_t* writePtr = bufferToSend;
         auto header_size = 4;
@@ -205,7 +204,7 @@ namespace librealsense
         int length;
         std::vector<uint8_t> result;
         size_t length_of_command_with_data = dataLength + size_of_command_without_data;
-        auto init_size = (length_of_command_with_data > IVCAM_MONITOR_MAX_BUFFER_SIZE) ? length_of_command_with_data : IVCAM_MONITOR_MAX_BUFFER_SIZE;
+        auto init_size = (length_of_command_with_data > HW_MONITOR_MAX_BUFFER_SIZE) ? length_of_command_with_data : HW_MONITOR_MAX_BUFFER_SIZE;
         result.resize(init_size);
         fill_usb_buffer(opcode, param1, param2, param3, param4, data, static_cast<int>(dataLength), result.data(), length);
         result.resize(length);
@@ -226,10 +225,39 @@ namespace librealsense
     }
 
 
-    void hw_monitor::get_gvd(size_t sz, unsigned char* gvd, uint8_t gvd_cmd) const
+    void hw_monitor::get_gvd( size_t sz,
+                              unsigned char * gvd,
+                              uint8_t gvd_cmd,
+                              const std::set< int32_t > * retry_error_codes ) const
     {
         command command(gvd_cmd);
-        auto data = send(command);
+        hwmon_response p_response = hwmon_response::hwm_Unknown;
+        auto data = send( command, &p_response );
+        if( p_response != hwm_Success )
+        {
+            // If we get an error code that match to the error code defined as require retry,
+            // we will retry the command until it succeed or we reach a timeout
+            bool should_retry = retry_error_codes && ! retry_error_codes->empty()
+                             && retry_error_codes->find( p_response ) != retry_error_codes->end();
+            if( should_retry )
+            {
+                static constexpr size_t RETRIES = 50;
+                for( int i = 0; i < RETRIES; ++i )
+                {
+                    data = send( command, &p_response );
+                    if( p_response == hwm_Success )
+                        break;
+                    // If we failed after 'RETRIES' retries or it is less `RETRIES` and the error
+                    // code is not in the retry list than , raise an exception
+                    if( i >= ( RETRIES - 1 ) || retry_error_codes->find( p_response ) == retry_error_codes->end() )
+                        throw io_exception( rsutils::string::from()
+                                            << "error in querying GVD, error:"
+                                            << hwmon_error2str( p_response ) );
+                    LOG_WARNING( "GVD not ready - retrying GET_GVD command" );
+                    std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+                }
+            }
+        }
         auto minSize = std::min(sz, data.size());
         std::memcpy( gvd, data.data(), minSize );
     }

@@ -435,8 +435,15 @@ namespace librealsense
         bool advanced_mode = false;
         bool usb_modality = true;
         group_multiple_fw_calls(depth_sensor, [&]() {
+            
+            const int HW_NOT_READY_ERR_CODE = -3;
+            const std::set< int32_t > gvd_retry_errors{ HW_NOT_READY_ERR_CODE };
 
-            _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), ds::fw_cmd::GVD);
+            _hw_monitor->get_gvd( gvd_buff.size(),
+                                  gvd_buff.data(),
+                                  ds::fw_cmd::GVD,
+                                  &gvd_retry_errors );
+
             get_gvd_details(gvd_buff, &gvd_parsed_fields);
             
             _device_capabilities = ds_caps::CAP_ACTIVE_PROJECTOR | ds_caps::CAP_RGB_SENSOR | ds_caps::CAP_IMU_SENSOR |

@@ -1,50 +1,27 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #pragma once
 
-#include "uvc-sensor.h"
-#include <mutex>
 #include "platform/command-transfer.h"
+#include "uvc-sensor.h"
 #include <string>
 #include <algorithm>
 #include <vector>
+#include <set>
+#include <mutex>
 
 
 namespace librealsense
 {
-    const uint8_t   IV_COMMAND_FIRMWARE_UPDATE_MODE = 0x01;
-    const uint8_t   IV_COMMAND_GET_CALIBRATION_DATA = 0x02;
-    const uint8_t   IV_COMMAND_LASER_POWER          = 0x03;
-    const uint8_t   IV_COMMAND_DEPTH_ACCURACY       = 0x04;
-    const uint8_t   IV_COMMAND_ZUNIT                = 0x05;
-    const uint8_t   IV_COMMAND_LOW_CONFIDENCE_LEVEL = 0x06;
-    const uint8_t   IV_COMMAND_INTENSITY_IMAGE_TYPE = 0x07;
-    const uint8_t   IV_COMMAND_MOTION_VS_RANGE_TRADE= 0x08;
-    const uint8_t   IV_COMMAND_POWER_GEAR           = 0x09;
-    const uint8_t   IV_COMMAND_FILTER_OPTION        = 0x0A;
-    const uint8_t   IV_COMMAND_VERSION              = 0x0B;
-    const uint8_t   IV_COMMAND_CONFIDENCE_THRESHHOLD= 0x0C;
 
-    const uint8_t   IVCAM_MONITOR_INTERFACE         = 0x4;
-    const uint8_t   IVCAM_MONITOR_ENDPOINT_OUT      = 0x1;
-    const uint8_t   IVCAM_MONITOR_ENDPOINT_IN       = 0x81;
-    const uint8_t   IVCAM_MIN_SUPPORTED_VERSION     = 13;
-    const uint8_t   IVCAM_MONITOR_HEADER_SIZE       = (sizeof(uint32_t) * 6);
-    const uint8_t   NUM_OF_CALIBRATION_PARAMS       = 100;
-    const uint8_t   PARAMETERS2_BUFFER_SIZE          = 50;
-    const uint8_t   SIZE_OF_CALIB_HEADER_BYTES      = 4;
-    const uint8_t   NUM_OF_CALIBRATION_COEFFS       = 64;
-
-    const uint16_t  MAX_SIZE_OF_CALIB_PARAM_BYTES   = 800;
-    const uint16_t  SIZE_OF_CALIB_PARAM_BYTES       = 512;
-    const uint16_t  IVCAM_MONITOR_MAGIC_NUMBER      = 0xcdab;
-    const uint16_t  IVCAM_MONITOR_MAX_BUFFER_SIZE   = 1024;
-    const uint16_t  IVCAM_MONITOR_MUTEX_TIMEOUT     = 3000;
-    const uint16_t  HW_MONITOR_COMMAND_SIZE         = 1000;
-    const uint16_t  HW_MONITOR_BUFFER_SIZE          = 1024;
-    const uint16_t  HW_MONITOR_DATA_SIZE_OFFSET     = 1020;
-    const uint16_t  SIZE_OF_HW_MONITOR_HEADER       = 4;
+    const uint16_t  HW_MONITOR_MAGIC_NUMBER      = 0xcdab;
+    const uint16_t  HW_MONITOR_MAX_BUFFER_SIZE   = 1024;
+    const uint16_t  HW_MONITOR_MUTEX_TIMEOUT     = 3000;
+    const uint16_t  HW_MONITOR_COMMAND_SIZE      = 1000;
+    const uint16_t  HW_MONITOR_BUFFER_SIZE       = 1024;
+    const uint16_t  HW_MONITOR_DATA_SIZE_OFFSET  = 1020;
+    const uint16_t  SIZE_OF_HW_MONITOR_HEADER    = 4;
 
     class uvc_sensor;
 
@@ -318,7 +295,10 @@ namespace librealsense
             uint8_t const * data = nullptr,
             size_t dataLength = 0);
 
-        void get_gvd(size_t sz, unsigned char* gvd, uint8_t gvd_cmd) const;
+        void get_gvd( size_t sz,
+                      unsigned char * gvd,
+                      uint8_t gvd_cmd,
+                      const std::set< int32_t > * retry_error_codes = nullptr ) const;
 
         template<typename T>
         std::string get_firmware_version_string( const std::vector< uint8_t > & buff,
