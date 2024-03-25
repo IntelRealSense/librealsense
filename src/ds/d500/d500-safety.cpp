@@ -289,9 +289,9 @@ namespace librealsense
             make_attribute_parser(&md_safety_info::mb_status,
                 md_safety_info_attributes::mb_status_attribute, md_prop_offset));
 
-        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SMCU_STATUS,
-            make_attribute_parser(&md_safety_info::smcu_status,
-                md_safety_info_attributes::smcu_status_attribute, md_prop_offset));
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SMCU_LIVELINESS,
+            make_attribute_parser(&md_safety_info::smcu_liveliness,
+                md_safety_info_attributes::smcu_liveliness_attribute, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SMCU_STATE,
             make_attribute_parser(&md_safety_info::smcu_state,

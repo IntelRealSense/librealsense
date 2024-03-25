@@ -32,7 +32,7 @@ namespace librealsense
         mb_fusa_event_attribute = (1u << 18),
         mb_fusa_action_attribute = (1u << 19),
         mb_status_attribute = (1u << 20),
-        smcu_status_attribute = (1u << 21),
+        smcu_liveliness_attribute = (1u << 21),
         smcu_state_attribute = (1u << 22),
         non_fusa_gpio_attribute = (1u << 29),
         smcu_debug_info_attribute = (1u << 30),
@@ -261,7 +261,7 @@ namespace librealsense
         uint8_t     mb_reserved[15];                // zeroed
 
         // MCU Monitor
-        uint32_t    smcu_status;                    // Bitmask: TBD
+        uint32_t    smcu_liveliness;                // Bitmask: TBD
         uint8_t     smcu_state;                     // TBD
 
         // SMCU DEBUG Info
