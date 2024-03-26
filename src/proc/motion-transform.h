@@ -69,6 +69,7 @@ namespace librealsense
                                 std::shared_ptr< enable_motion_correction > mm_correct_opt,
                                 bool high_accuracy );
         void process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size) override;
+        //To be refactored and change to accel_scale_factor once we implement sensitivity feature for the accel like the gyro
         bool _high_accuracy = false;
 
     };

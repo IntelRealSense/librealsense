@@ -25,7 +25,7 @@ namespace librealsense
             if( ! high_accuracy )
             {
                 //since D400 FW version 5.16 the hid report struct changed to 32 bit for each paramater.
-                //To support older FW versions we convert the data to int16_t before casting to float.
+                //To support older FW versions we convert the data to int16_t before casting to float as we only get valid data at the lower 16  bits.
                 hid->x = static_cast< int16_t >( hid->x );
                 hid->y = static_cast< int16_t >( hid->y );
                 hid->z = static_cast< int16_t >( hid->z );
@@ -37,7 +37,7 @@ namespace librealsense
         {
             auto hid = (hid_data*)(source);
             //since D400 FW version 5.16 the hid report struct changed to 32 bit for each paramater.
-            //To support older FW versions we convert the data to int16_t before casting to float.
+            //To support older FW versions we convert the data to int16_t before casting to float as we only get valid data at the lower 16  bits.
             if( ! high_accuracy )
             {
                 hid->x = static_cast< int16_t >( hid->x );
@@ -68,6 +68,8 @@ namespace librealsense
                            double gyro_scale_factor = 0.1, bool is_mipi = false )
     {
         const double gyro_transform_factor = deg2rad( gyro_scale_factor );
+        //high_accuracy=true when gyro_scale_factor=0.001 for FW version >=5.16 
+        //high_accuracy=false when gyro_scale_factor=0.01 for FW version <5.16
         double high_accuracy = ( gyro_scale_factor != 0.1 );
         copy_hid_axes< FORMAT >( dest, source, gyro_transform_factor, high_accuracy, is_mipi );
     }

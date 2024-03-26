@@ -507,7 +507,7 @@ namespace librealsense
         }
         catch (...) {}
 
-        bool high_accuracy =  _fw_version >= firmware_version( 5, 16, 0, 0 ) ? true : false ;    
+        bool high_accuracy =  _fw_version >= firmware_version( 5, 16, 0, 0 );    
         hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
