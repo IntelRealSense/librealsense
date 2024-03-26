@@ -22,12 +22,12 @@ namespace librealsense
         {
            if( ! high_accuracy )
             {
-                auto hid = (hid_mipi_data_16 *)( source );
+                auto hid = (hid_mipi_data *)( source );
                 res = float3{ float( hid->x ), float( hid->y ), float( hid->z ) } * float( factor );
             }
             else
             {
-                auto hid = (hid_mipi_data *)( source );
+                auto hid = (hid_mipi_data_32 *)( source );
                 res = float3{ float( hid->x ), float( hid->y ), float( hid->z ) } * float( factor );
             }
         }
