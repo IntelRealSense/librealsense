@@ -753,7 +753,8 @@ namespace librealsense
 
         bool iio_hid_sensor::has_metadata()
         {
-            if(get_output_size() == HID_DATA_ACTUAL_SIZE + HID_METADATA_SIZE)
+            //for FW>=5.16 HID_METADATA_SIZE is 12 
+            if(get_output_size() >= HID_DATA_ACTUAL_SIZE + HID_METADATA_SIZE)
                 return true;
             return false;
         }
