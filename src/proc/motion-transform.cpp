@@ -20,18 +20,16 @@ namespace librealsense
 
         if (is_mipi)
         {
-            auto hid = (hid_mipi_data*)(source);
-
-            if( ! high_accuracy )
+           if( ! high_accuracy )
             {
-                //since D400 FW version 5.16 the hid report struct changed to 32 bit for each paramater.
-                //To support older FW versions we convert the data to int16_t before casting to float as we only get valid data at the lower 16  bits.
-                hid->x = static_cast< int16_t >( hid->x );
-                hid->y = static_cast< int16_t >( hid->y );
-                hid->z = static_cast< int16_t >( hid->z );
+                auto hid = (hid_mipi_data *)( source );
+                res = float3{ float( hid->x ), float( hid->y ), float( hid->z ) } * float( factor );
             }
-
-            res = float3{ float( hid->x ), float( hid->y ), float( hid->z ) } * float( factor );
+            else
+            {
+                auto hid = (hid_mipi_data_32 *)( source );
+                res = float3{ float( hid->x ), float( hid->y ), float( hid->z ) } * float( factor );
+            }
         }
         else
         {
