@@ -24,7 +24,8 @@ namespace librealsense
 
             if( ! high_accuracy )
             {
-                //since FW version 5.16 the hid report struct changed to 32 bit for each paramater. To support older FW versions we convert the data to int16_t before casting to float.
+                //since D400 FW version 5.16 the hid report struct changed to 32 bit for each paramater.
+                //To support older FW versions we convert the data to int16_t before casting to float.
                 hid->x = static_cast< int16_t >( hid->x );
                 hid->y = static_cast< int16_t >( hid->y );
                 hid->z = static_cast< int16_t >( hid->z );
@@ -35,7 +36,8 @@ namespace librealsense
         else
         {
             auto hid = (hid_data*)(source);
-            //since FW version 5.16 the hid report struct changed to 32 bit for each paramater. To support older FW versions we convert the data to int16_t before casting to float.
+            //since D400 FW version 5.16 the hid report struct changed to 32 bit for each paramater.
+            //To support older FW versions we convert the data to int16_t before casting to float.
             if( ! high_accuracy )
             {
                 hid->x = static_cast< int16_t >( hid->x );
