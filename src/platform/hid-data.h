@@ -22,6 +22,19 @@ struct hid_mipi_data
     uint8_t typeID;
     uint8_t skip1;
     uint64_t hwTs;
+    int16_t x;
+    int16_t y;
+    int16_t z;
+    uint64_t hwTs2;
+    uint64_t skip2;
+};
+
+
+struct hid_mipi_data_32
+{
+    uint8_t typeID;
+    uint8_t skip1;
+    uint64_t hwTs;
     int32_t x;
     int32_t y;
     int32_t z;

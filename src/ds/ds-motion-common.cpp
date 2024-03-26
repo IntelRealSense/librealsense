@@ -507,10 +507,12 @@ namespace librealsense
         }
         catch (...) {}
 
+        bool high_accuracy =  _fw_version >= firmware_version( 5, 16, 0, 0 );    
         hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
-            [&, mm_correct_opt]() { return std::make_shared< acceleration_transform >( _mm_calib, mm_correct_opt );
+            [&, mm_correct_opt, high_accuracy]()
+            { return std::make_shared< acceleration_transform >( _mm_calib, mm_correct_opt, high_accuracy );
             });
 
         //TODO this FW version is relevant for d400 devices. Need to change for propre d500 devices support.
