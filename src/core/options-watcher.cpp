@@ -131,7 +131,7 @@ options_watcher::options_and_values options_watcher::update_options()
         {
             json curr_val;
             if( opt.second.sptr->is_enabled() )
-                curr_val = opt.second.sptr->query();
+                curr_val = opt.second.sptr->get_value();
 
             if( ! opt.second.p_last_known_value || *opt.second.p_last_known_value != curr_val )
             {
