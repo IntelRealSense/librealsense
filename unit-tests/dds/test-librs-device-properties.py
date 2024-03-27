@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
 #test:retries:gha 2
@@ -10,15 +10,13 @@ log.nested = 'C  '
 import d435i
 import d405
 import d455
-import dds
+import librs as rs
 
-import pyrealsense2 as rs
 if log.is_debug_on():
     rs.log_to_console( rs.log_severity.debug )
 from time import sleep
 
 context = rs.context( { 'dds': { 'enabled': True, 'domain': 123, 'participant': 'device-properties-client' }} )
-only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
 
 
 import os.path
@@ -31,7 +29,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     with test.closure( "Test D435i" ):
         remote.run( 'instance = broadcast_device( d435i, d435i.device_info )' )
-        dev = dds.wait_for_devices( context, only_sw_devices, n=1. )
+        dev = rs.wait_for_devices( context, rs.only_sw_devices, n=1. )
         test.check_equal( dev.get_info( rs.camera_info.name ), d435i.device_info.name )
         test.check_equal( dev.get_info( rs.camera_info.serial_number ), d435i.device_info.serial )
         test.check_equal( dev.get_info( rs.camera_info.physical_port ), d435i.device_info.topic_root )
@@ -62,7 +60,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     with test.closure( "Test D405" ):
         remote.run( 'instance = broadcast_device( d405, d405.device_info )' )
-        dev = dds.wait_for_devices( context, only_sw_devices, n=1. )
+        dev = rs.wait_for_devices( context, rs.only_sw_devices, n=1. )
         test.check_equal( dev.get_info( rs.camera_info.name ), d405.device_info.name )
         test.check_equal( dev.get_info( rs.camera_info.serial_number ), d405.device_info.serial )
         test.check_equal( dev.get_info( rs.camera_info.physical_port ), d405.device_info.topic_root )
@@ -80,7 +78,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     with test.closure( "Test D455" ):
         remote.run( 'instance = broadcast_device( d455, d455.device_info )' )
-        dev = dds.wait_for_devices( context, only_sw_devices, n=1. )
+        dev = rs.wait_for_devices( context, rs.only_sw_devices, n=1. )
         test.check_equal( dev.get_info( rs.camera_info.name ), d455.device_info.name )
         test.check_equal( dev.get_info( rs.camera_info.serial_number ), d455.device_info.serial )
         test.check_equal( dev.get_info( rs.camera_info.physical_port ), d455.device_info.topic_root )

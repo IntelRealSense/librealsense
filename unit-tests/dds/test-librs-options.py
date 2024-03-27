@@ -40,17 +40,15 @@ with test.remote.fork( nested_indent=None ) as remote:
     ###############################################################################################################
     # The client is LibRS
     #
-    import pyrealsense2 as rs
+    import librs as rs
     if log.is_debug_on():
         rs.log_to_console( rs.log_severity.debug )
-    from dds import wait_for_devices
 
     with test.closure( 'Initialize librealsense context', on_fail=test.ABORT ):
         context = rs.context( { 'dds': { 'enabled': True, 'domain': 123, 'participant': 'client' }} )
-        only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any)
 
     with test.closure( 'Find the server', on_fail=test.ABORT ):
-        dev = wait_for_devices( context, only_sw_devices, n=1. )
+        dev = rs.wait_for_devices( context, rs.only_sw_devices, n=1. )
         for s in dev.query_sensors():
             break
         options = test.info( "supported options", s.get_supported_options() )

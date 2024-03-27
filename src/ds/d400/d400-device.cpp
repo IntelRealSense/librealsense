@@ -1203,6 +1203,13 @@ namespace librealsense
     }
 
 
+    rs2_format d400_device::get_ir_format() const
+    {
+        auto const format_conversion = get_format_conversion();
+        return ( format_conversion == format_conversion::raw ) ? RS2_FORMAT_Y8I : RS2_FORMAT_Y8;
+    }
+
+
     double d400_device::get_device_time_ms()
     {
         //// TODO: Refactor the following query with an extension.

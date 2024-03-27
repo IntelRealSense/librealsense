@@ -673,8 +673,8 @@ void dds_device::impl::on_stream_options( json const & j, eprosima::fastdds::dds
     auto & stream_name = j.at( topics::notification::stream_options::key::stream_name ).string_ref();
     auto stream_it = _streams.find( stream_name );
     if( stream_it == _streams.end() )
-        DDS_THROW( runtime_error,
-                   "Received stream options for stream '" << stream_name << "' whose header was not received yet" );
+        DDS_THROW( runtime_error, "stream '" << stream_name << "' options received out of order" );
+    auto stream = stream_it->second;
 
     if( auto options_j = j.nested( topics::notification::stream_options::key::options ) )
     {
@@ -686,19 +686,28 @@ void dds_device::impl::on_stream_options( json const & j, eprosima::fastdds::dds
             options.push_back( option );
         }
 
-        stream_it->second->init_options( options );
+        stream->init_options( options );
     }
 
     if( auto j_int = j.nested( topics::notification::stream_options::key::intrinsics ) )
     {
-        if( auto video_stream = std::dynamic_pointer_cast< dds_video_stream >( stream_it->second ) )
+        if( auto video_stream = std::dynamic_pointer_cast< dds_video_stream >( stream ) )
         {
             std::set< video_intrinsics > intrinsics;
-            for( auto & intr : j_int )
-                intrinsics.insert( video_intrinsics::from_json( intr ) );
-            video_stream->set_intrinsics( std::move( intrinsics ) );
+            if( j_int.is_array() )
+            {
+                // Multiple resolutions are provided, likely from legacy devices from the adapter
+                for( auto & intr : j_int )
+                    intrinsics.insert( video_intrinsics::from_json( intr ) );
+            }
+            else
+            {
+                // Single intrinsics that will get scaled
+                intrinsics.insert( video_intrinsics::from_json( j_int ) );
+            }
+            video_stream->set_intrinsics( intrinsics );
         }
-        else if( auto motion_stream = std::dynamic_pointer_cast< dds_motion_stream >( stream_it->second ) )
+        else if( auto motion_stream = std::dynamic_pointer_cast< dds_motion_stream >( stream ) )
         {
             motion_stream->set_accel_intrinsics( motion_intrinsics::from_json(
                 j_int.at( topics::notification::stream_options::intrinsics::key::accel ) ) );
@@ -715,7 +724,7 @@ void dds_device::impl::on_stream_options( json const & j, eprosima::fastdds::dds
             filter_names.push_back( filter );
         }
 
-        stream_it->second->set_recommended_filters( std::move( filter_names ) );
+        stream->set_recommended_filters( std::move( filter_names ) );
     }
 
     if( _streams.size() >= _n_streams_expected )

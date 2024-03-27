@@ -53,18 +53,40 @@ using tools::lrs_device_controller;
     break
 
 
+realdds::distortion_model to_realdds( rs2_distortion model )
+{
+    switch( model )
+    {
+    case RS2_DISTORTION_BROWN_CONRADY: return realdds::distortion_model::brown;
+    case RS2_DISTORTION_NONE: return realdds::distortion_model::none;
+    case RS2_DISTORTION_INVERSE_BROWN_CONRADY: return realdds::distortion_model::inverse_brown;
+    case RS2_DISTORTION_MODIFIED_BROWN_CONRADY: return realdds::distortion_model::modified_brown;
+
+    default:
+        throw std::runtime_error( "unexpected rs2 distortion model: " + std::string( rs2_distortion_to_string( model ) ) );
+    }
+}
+
 realdds::video_intrinsics to_realdds( const rs2_intrinsics & intr )
 {
     realdds::video_intrinsics ret;
 
     ret.width = intr.width;
     ret.height = intr.height;
-    ret.principal_point_x = intr.ppx;
-    ret.principal_point_y = intr.ppy;
-    ret.focal_lenght_x = intr.fx;
-    ret.focal_lenght_y = intr.fy;
-    ret.distortion_model = intr.model;
-    memcpy( ret.distortion_coeffs.data(), intr.coeffs, sizeof( ret.distortion_coeffs ) );
+    ret.principal_point.x = intr.ppx;
+    ret.principal_point.y = intr.ppy;
+    ret.focal_length.x = intr.fx;
+    ret.focal_length.y = intr.fy;
+    ret.distortion.model = realdds::distortion_model::none;
+    for( auto coeff : intr.coeffs )
+    {
+        if( coeff != 0.f )
+        {
+            ret.distortion.model = to_realdds( intr.model );
+            memcpy( ret.distortion.coeffs.data(), intr.coeffs, sizeof( ret.distortion.coeffs ) );
+            break;
+        }
+    }
 
     return ret;
 }

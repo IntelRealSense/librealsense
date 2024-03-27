@@ -256,17 +256,47 @@ PYBIND11_MODULE(NAME, m) {
     topics.attr( "device_metadata" ) = realdds::topics::METADATA_TOPIC_NAME;
     topics.attr( "device_dfu" ) = realdds::topics::DFU_TOPIC_NAME;
 
+    using realdds::distortion_model;
+    py::enum_< distortion_model >( m, "distortion_model" )
+        .value( "none", distortion_model::none )
+        .value( "brown", distortion_model::brown )
+        .value( "inverse_brown", distortion_model::inverse_brown )
+        .value( "modified_brown", distortion_model::modified_brown );
+
+    using realdds::distortion_parameters;
+    py::class_< distortion_parameters >( m, "distortion_parameters" )
+        .def( py::init<>() )
+        .def_readwrite( "model", &distortion_parameters::model )
+        .def_readwrite( "coeffs", &distortion_parameters::coeffs )
+        .def( "__repr__",
+              []( distortion_parameters const & self ) -> std::string
+              { return rsutils::string::from() << "<" SNAME ".distortion_parameters " << self << ">"; } );
+
+    py::class_< rsutils::number::float2 >( m, "float2" )
+        .def( py::init<>() )
+        .def( py::init< float, float >() )
+        .def_readwrite( "x", &rsutils::number::float2::x )
+        .def_readwrite( "y", &rsutils::number::float2::y )
+        .def( "length", &rsutils::number::float2::length )
+        .def( "normalized", &rsutils::number::float2::normalized )
+        .def( "__repr__",
+              []( rsutils::number::float2 const & self ) -> std::string
+              { return rsutils::string::from() << self.x << ',' << self.y; } );
+
     using realdds::video_intrinsics;
     py::class_< video_intrinsics, std::shared_ptr< video_intrinsics > >( m, "video_intrinsics" )
         .def( py::init<>() )
         .def_readwrite( "width", &video_intrinsics::width )
         .def_readwrite( "height", &video_intrinsics::height )
-        .def_readwrite( "principal_point_x", &video_intrinsics::principal_point_x )
-        .def_readwrite( "principal_point_y", &video_intrinsics::principal_point_y )
-        .def_readwrite( "focal_lenght_x", &video_intrinsics::focal_lenght_x )
-        .def_readwrite( "focal_lenght_y", &video_intrinsics::focal_lenght_y )
-        .def_readwrite( "distortion_model", &video_intrinsics::distortion_model )
-        .def_readwrite( "distortion_coeffs", &video_intrinsics::distortion_coeffs );
+        .def_readwrite( "principal_point", &video_intrinsics::principal_point )
+        .def_readwrite( "focal_length", &video_intrinsics::focal_length )
+        .def_readwrite( "distortion", &video_intrinsics::distortion )
+        .def( "__repr__",
+              []( video_intrinsics const & self ) -> std::string
+              { return rsutils::string::from() << "<" SNAME ".video_intrinsics " << self << ">"; } )
+        .def( "to_json", &video_intrinsics::to_json )
+        .def( "scaled_to", &video_intrinsics::scaled_to )
+        .def( "is_valid", &video_intrinsics::is_valid );
 
     using realdds::motion_intrinsics;
     py::class_< motion_intrinsics, std::shared_ptr< motion_intrinsics > >( m, "motion_intrinsics" )
@@ -794,6 +824,7 @@ PYBIND11_MODULE(NAME, m) {
         video_stream_server_base( m, "video_stream_server", stream_server_base );
     video_stream_server_base
         .def( "set_intrinsics", &dds_video_stream_server::set_intrinsics )
+        .def( "get_intrinsics", &dds_video_stream_server::get_intrinsics )
         .def( "start_streaming",
               []( dds_video_stream_server & self, dds_video_encoding encoding, int width, int height ) {
                   self.start_streaming( { encoding, height, width } );

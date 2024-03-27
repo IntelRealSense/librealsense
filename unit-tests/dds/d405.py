@@ -271,67 +271,67 @@ def color_stream_intrinsics():
     intr = dds.video_intrinsics();
     intr.width = 424
     intr.height = 240
-    intr.principal_point_x = 210.73512268066406
-    intr.principal_point_y = 118.6335678100586
-    intr.focal_lenght_x = 215.58554077148438
-    intr.focal_lenght_y = 214.98973083496094
-    intr.distortion_model = 2
-    intr.distortion_coeffs = [-0.05454780161380768,0.056755296885967255,0.0010132350726053119,0.0003381881397217512,-0.01852494664490223]
+    intr.principal_point.x = 210.73512268066406
+    intr.principal_point.y = 118.6335678100586
+    intr.focal_length.x = 215.58554077148438
+    intr.focal_length.y = 214.98973083496094
+    intr.distortion.model = dds.distortion_model.inverse_brown
+    intr.distortion.coeffs = [-0.05454780161380768,0.056755296885967255,0.0010132350726053119,0.0003381881397217512,-0.01852494664490223]
     intrinsics.append( intr )
 
     intr = dds.video_intrinsics();
     intr.width = 480
     intr.height = 270
-    intr.principal_point_x = 238.57701110839844
-    intr.principal_point_y = 133.4627685546875
-    intr.focal_lenght_x = 242.53375244140625
-    intr.focal_lenght_y = 241.86343383789063
-    intr.distortion_model = 2
-    intr.distortion_coeffs = [-0.05454780161380768,0.056755296885967255,0.0010132350726053119,0.0003381881397217512,-0.01852494664490223]
+    intr.principal_point.x = 238.57701110839844
+    intr.principal_point.y = 133.4627685546875
+    intr.focal_length.x = 242.53375244140625
+    intr.focal_length.y = 241.86343383789063
+    intr.distortion.model = dds.distortion_model.inverse_brown
+    intr.distortion.coeffs = [-0.05454780161380768,0.056755296885967255,0.0010132350726053119,0.0003381881397217512,-0.01852494664490223]
     intrinsics.append( intr )
 
     intr = dds.video_intrinsics();
     intr.width = 640
     intr.height = 480
-    intr.principal_point_x = 318.1026916503906
-    intr.principal_point_y = 177.95034790039063
-    intr.focal_lenght_x = 323.3783264160156
-    intr.focal_lenght_y = 322.4845886230469
-    intr.distortion_model = 2
-    intr.distortion_coeffs = [-0.05454780161380768,0.056755296885967255,0.0010132350726053119,0.0003381881397217512,-0.01852494664490223]
+    intr.principal_point.x = 318.1026916503906
+    intr.principal_point.y = 177.95034790039063
+    intr.focal_length.x = 323.3783264160156
+    intr.focal_length.y = 322.4845886230469
+    intr.distortion.model = dds.distortion_model.inverse_brown
+    intr.distortion.coeffs = [-0.05454780161380768,0.056755296885967255,0.0010132350726053119,0.0003381881397217512,-0.01852494664490223]
     intrinsics.append( intr )
 
     intr = dds.video_intrinsics();
     intr.width = 640
     intr.height = 480
-    intr.principal_point_x = 317.4702453613281
-    intr.principal_point_y = 237.2671356201172
-    intr.focal_lenght_x = 431.1711120605469
-    intr.focal_lenght_y = 429.9794616699219
-    intr.distortion_model = 2
-    intr.distortion_coeffs = [-0.05454780161380768,0.056755296885967255,0.0010132350726053119,0.0003381881397217512,-0.01852494664490223]
+    intr.principal_point.x = 317.4702453613281
+    intr.principal_point.y = 237.2671356201172
+    intr.focal_length.x = 431.1711120605469
+    intr.focal_length.y = 429.9794616699219
+    intr.distortion.model = dds.distortion_model.inverse_brown
+    intr.distortion.coeffs = [-0.05454780161380768,0.056755296885967255,0.0010132350726053119,0.0003381881397217512,-0.01852494664490223]
     intrinsics.append( intr )
 
     intr = dds.video_intrinsics();
     intr.width = 848
     intr.height = 480
-    intr.principal_point_x = 421.4702453613281
-    intr.principal_point_y = 237.2671356201172
-    intr.focal_lenght_x = 431.17108154296875
-    intr.focal_lenght_y = 429.9794616699219
-    intr.distortion_model = 2
-    intr.distortion_coeffs = [-0.05454780161380768,0.056755296885967255,0.0010132350726053119,0.0003381881397217512,-0.01852494664490223]
+    intr.principal_point.x = 421.4702453613281
+    intr.principal_point.y = 237.2671356201172
+    intr.focal_length.x = 431.17108154296875
+    intr.focal_length.y = 429.9794616699219
+    intr.distortion.model = dds.distortion_model.inverse_brown
+    intr.distortion.coeffs = [-0.05454780161380768,0.056755296885967255,0.0010132350726053119,0.0003381881397217512,-0.01852494664490223]
     intrinsics.append( intr )
 
     intr = dds.video_intrinsics();
     intr.width = 1280
     intr.height = 720
-    intr.principal_point_x = 636.2053833007813
-    intr.principal_point_y = 355.90069580078125
-    intr.focal_lenght_x = 646.7566528320313
-    intr.focal_lenght_y = 644.9691772460938
-    intr.distortion_model = 2
-    intr.distortion_coeffs = [-0.05454780161380768,0.056755296885967255,0.0010132350726053119,0.0003381881397217512,-0.01852494664490223]
+    intr.principal_point.x = 636.2053833007813
+    intr.principal_point.y = 355.90069580078125
+    intr.focal_length.x = 646.7566528320313
+    intr.focal_length.y = 644.9691772460938
+    intr.distortion.model = dds.distortion_model.inverse_brown
+    intr.distortion.coeffs = [-0.05454780161380768,0.056755296885967255,0.0010132350726053119,0.0003381881397217512,-0.01852494664490223]
     intrinsics.append( intr )
 
     return set( intrinsics )
@@ -343,67 +343,67 @@ def depth_ir_common_intrinsics():
     intr = dds.video_intrinsics();
     intr.width = 424
     intr.height = 240
-    intr.principal_point_x = 214.33639526367188
-    intr.principal_point_y = 119.0371322631836
-    intr.focal_lenght_x = 210.80271911621094
-    intr.focal_lenght_y = 210.80271911621094
-    intr.distortion_model = 4
-    intr.distortion_coeffs = [0.0,0.0,0.0,0.0,0.0]
+    intr.principal_point.x = 214.33639526367188
+    intr.principal_point.y = 119.0371322631836
+    intr.focal_length.x = 210.80271911621094
+    intr.focal_length.y = 210.80271911621094
+    intr.distortion.model = dds.distortion_model.brown
+    intr.distortion.coeffs = [0.0,0.0,0.0,0.0,0.0]
     intrinsics.append( intr )
 
     intr = dds.video_intrinsics();
     intr.width = 480
     intr.height = 270
-    intr.principal_point_x = 242.6449737548828
-    intr.principal_point_y = 133.9099578857422
-    intr.focal_lenght_x = 238.64459228515625
-    intr.focal_lenght_y = 238.64459228515625
-    intr.distortion_model = 4
-    intr.distortion_coeffs = [0.0,0.0,0.0,0.0,0.0]
+    intr.principal_point.x = 242.6449737548828
+    intr.principal_point.y = 133.9099578857422
+    intr.focal_length.x = 238.64459228515625
+    intr.focal_length.y = 238.64459228515625
+    intr.distortion.model = dds.distortion_model.brown
+    intr.distortion.coeffs = [0.0,0.0,0.0,0.0,0.0]
     intrinsics.append( intr )
 
     intr = dds.video_intrinsics();
     intr.width = 640
     intr.height = 360
-    intr.principal_point_x = 323.5266418457031
-    intr.principal_point_y = 178.54661560058594
-    intr.focal_lenght_x = 318.1927795410156
-    intr.focal_lenght_y = 318.1927795410156
-    intr.distortion_model = 4
-    intr.distortion_coeffs = [0.0,0.0,0.0,0.0,0.0]
+    intr.principal_point.x = 323.5266418457031
+    intr.principal_point.y = 178.54661560058594
+    intr.focal_length.x = 318.1927795410156
+    intr.focal_length.y = 318.1927795410156
+    intr.distortion.model = dds.distortion_model.brown
+    intr.distortion.coeffs = [0.0,0.0,0.0,0.0,0.0]
     intrinsics.append( intr )
 
     intr = dds.video_intrinsics();
     intr.width = 640
     intr.height = 480
-    intr.principal_point_x = 324.21624755859375
-    intr.principal_point_y = 238.26242065429688
-    intr.focal_lenght_x = 380.41363525390625
-    intr.focal_lenght_y = 380.41363525390625
-    intr.distortion_model = 4
-    intr.distortion_coeffs = [0.0,0.0,0.0,0.0,0.0]
+    intr.principal_point.x = 324.21624755859375
+    intr.principal_point.y = 238.26242065429688
+    intr.focal_length.x = 380.41363525390625
+    intr.focal_length.y = 380.41363525390625
+    intr.distortion.model = dds.distortion_model.brown
+    intr.distortion.coeffs = [0.0,0.0,0.0,0.0,0.0]
     intrinsics.append( intr )
 
     intr = dds.video_intrinsics();
     intr.width = 848
     intr.height = 480
-    intr.principal_point_x = 428.67279052734375
-    intr.principal_point_y = 238.0742645263672
-    intr.focal_lenght_x = 421.6054382324219
-    intr.focal_lenght_y = 421.6054382324219
-    intr.distortion_model = 4
-    intr.distortion_coeffs = [0.0,0.0,0.0,0.0,0.0]
+    intr.principal_point.x = 428.67279052734375
+    intr.principal_point.y = 238.0742645263672
+    intr.focal_length.x = 421.6054382324219
+    intr.focal_length.y = 421.6054382324219
+    intr.distortion.model = dds.distortion_model.brown
+    intr.distortion.coeffs = [0.0,0.0,0.0,0.0,0.0]
     intrinsics.append( intr )
 
     intr = dds.video_intrinsics();
     intr.width = 1280
     intr.height = 720
-    intr.principal_point_x = 647.0532836914063
-    intr.principal_point_y = 357.0932312011719
-    intr.focal_lenght_x = 636.3855590820313
-    intr.focal_lenght_y = 636.3855590820313
-    intr.distortion_model = 4
-    intr.distortion_coeffs = [0.0,0.0,0.0,0.0,0.0]
+    intr.principal_point.x = 647.0532836914063
+    intr.principal_point.y = 357.0932312011719
+    intr.focal_length.x = 636.3855590820313
+    intr.focal_length.y = 636.3855590820313
+    intr.distortion.model = dds.distortion_model.brown
+    intr.distortion.coeffs = [0.0,0.0,0.0,0.0,0.0]
     intrinsics.append( intr )
 
     return intrinsics
@@ -415,12 +415,12 @@ def depth_stream_intrinsics():
     intr = dds.video_intrinsics();
     intr.width = 256
     intr.height = 144
-    intr.principal_point_x = 135.05328369140625
-    intr.principal_point_y = 69.09323120117188
-    intr.focal_lenght_x = 636.3855590820313
-    intr.focal_lenght_y = 636.3855590820313
-    intr.distortion_model = 4
-    intr.distortion_coeffs = [0.0,0.0,0.0,0.0,0.0]
+    intr.principal_point.x = 135.05328369140625
+    intr.principal_point.y = 69.09323120117188
+    intr.focal_length.x = 636.3855590820313
+    intr.focal_length.y = 636.3855590820313
+    intr.distortion.model = dds.distortion_model.brown
+    intr.distortion.coeffs = [0.0,0.0,0.0,0.0,0.0]
     intrinsics.append( intr )
 
     intrinsics.extend( depth_ir_common_intrinsics() )

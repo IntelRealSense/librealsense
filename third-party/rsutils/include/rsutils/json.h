@@ -63,6 +63,7 @@ public:
 
     bool empty() const noexcept { return _j.empty(); }
     json::size_type size() const noexcept { return _j.size(); }
+    json::value_t type() const noexcept { return _j.type(); }
     json::const_iterator begin() const noexcept { return _j.begin(); }
     json::const_iterator end() const noexcept { return _j.end(); }
 

@@ -129,6 +129,14 @@ namespace librealsense
             register_feature( std::make_shared< auto_exposure_roi_feature >( get_color_sensor(), _hw_monitor, true ) );
     }
 
+    rs2_format d400_color::get_color_format() const
+    {
+        auto const format_conversion = get_format_conversion();
+        rs2_format const color_format
+            = (format_conversion == format_conversion::full) ? RS2_FORMAT_RGB8 : RS2_FORMAT_YUYV;
+        return color_format;
+    }
+
     void d400_color::init()
     {
         auto& color_ep = get_color_sensor();

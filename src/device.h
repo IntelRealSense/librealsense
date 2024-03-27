@@ -86,6 +86,7 @@ private:
     std::shared_ptr< std::atomic< bool > > _is_alive;
     rsutils::subscription _device_change_subscription;
     rsutils::lazy< std::vector< tagged_profile > > _profiles_tags;
+    rsutils::lazy< format_conversion > _format_conversion;
 };
 
 
