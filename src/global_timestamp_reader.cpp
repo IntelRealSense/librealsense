@@ -145,7 +145,7 @@ namespace librealsense
             sample._x -= base_x;
         }
         _prev_time -= base_x;
-        _base_sample._y += a * base_x;
+        _base_sample._x -= base_x;
         return true;
     }
 
