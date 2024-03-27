@@ -50,4 +50,22 @@ namespace librealsense
 
         return temperature;
     }
+    temperature_xu_option::temperature_xu_option(const std::weak_ptr<uvc_sensor>& ep, 
+        platform::extension_unit xu, uint8_t id, 
+        std::string description, bool allow_set_while_streaming)
+        : uvc_xu_option<int16_t>(ep, xu, id, description, allow_set_while_streaming,
+            // defining the parsing modifier, to be used on the calls for query and get_range methods
+            [](const int16_t read_value) {
+                return static_cast<float>(read_value) / 10.f;
+            }) {}
+
+    float temperature_xu_option::query() const
+    {
+        return uvc_xu_option<int16_t>::query();
+    }
+
+    void temperature_xu_option::set(float value)
+    {
+        readonly_option::set(value);
+    }
 }

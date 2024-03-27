@@ -37,7 +37,7 @@ namespace librealsense
         std::vector<std::function<void(float)>> _callbacks;
     };
 
-    class readonly_option : public option
+    class readonly_option : virtual public option
     {
     public:
         bool is_read_only() const override { return true; }
