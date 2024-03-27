@@ -38,6 +38,8 @@ protected:
     dds_stream( std::string const & stream_name, std::string const & sensor_name );
 
 public:
+    ~dds_stream();
+
     bool is_open() const override { return !! _reader; }
     virtual void open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & ) = 0;
     virtual void close();

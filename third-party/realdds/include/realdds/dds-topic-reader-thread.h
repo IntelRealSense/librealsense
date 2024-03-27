@@ -1,12 +1,19 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
-
+// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include "dds-topic-reader.h"
 
-#include <fastdds/dds/core/condition/GuardCondition.hpp>
 #include <thread>
+
+
+namespace eprosima {
+namespace fastdds {
+namespace dds {
+class GuardCondition;
+}  // namespace dds
+}  // namespace fastdds
+}  // namespace eprosima
 
 
 namespace realdds {
@@ -31,7 +38,7 @@ class dds_topic_reader_thread : public dds_topic_reader
 {
     typedef dds_topic_reader super;
 
-    eprosima::fastdds::dds::GuardCondition _stopped;
+    std::shared_ptr< eprosima::fastdds::dds::GuardCondition > _stopped;
     std::thread _th;
 
 public:

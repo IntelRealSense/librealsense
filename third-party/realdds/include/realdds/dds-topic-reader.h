@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include <fastdds/dds/subscriber/DataReaderListener.hpp>
@@ -31,11 +31,13 @@ class dds_subscriber;
 // You may choose to create one via a 'subscriber' that manages the activities of several readers.
 // on_data_available callback will be called when a sample is received.
 //
-class dds_topic_reader : public eprosima::fastdds::dds::DataReaderListener
+class dds_topic_reader
+    : public eprosima::fastdds::dds::DataReaderListener
+    , public std::enable_shared_from_this< dds_topic_reader >
 {
 protected:
     std::shared_ptr< dds_topic > const _topic;
-    std::shared_ptr < dds_subscriber > const _subscriber;
+    std::shared_ptr< dds_subscriber > const _subscriber;
 
     eprosima::fastdds::dds::DataReader * _reader = nullptr;
 

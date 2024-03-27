@@ -23,6 +23,7 @@
 #include <rsutils/json.h>
 #include <rsutils/string/hexarray.h>
 #include <rsutils/string/from.h>
+#include <rsutils/number/crc32.h>
 
 using rsutils::json;
 
@@ -560,10 +561,14 @@ bool dds_device_proxy::check_fw_compatibility( const std::vector< uint8_t > & im
     try
     {
         // Start DFU
+        auto const crc = rsutils::number::calc_crc32( image.data(), image.size() );
+        json dfu_start{
+            { realdds::topics::control::key::id, realdds::topics::control::dfu_start::id },
+            { realdds::topics::control::dfu_start::key::size, image.size() },
+            { realdds::topics::control::dfu_start::key::crc, crc },
+        };
         json reply;
-        _dds_dev->send_control(
-            json::object( { { realdds::topics::control::key::id, realdds::topics::control::dfu_start::id } } ),
-            &reply );
+        _dds_dev->send_control( dfu_start, &reply );
 
         // Set up a reply handler that will get the "dfu-ready" message
         std::mutex mutex;

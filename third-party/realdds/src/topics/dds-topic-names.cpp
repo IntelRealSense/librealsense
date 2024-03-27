@@ -129,6 +129,10 @@ namespace control {
     }
     namespace dfu_start {
         std::string const id( "dfu-start", 9 );
+        namespace key {
+            std::string const crc( "crc", 3 );
+            std::string const size( "size", 4 );
+        }
     }
     namespace dfu_apply {
         //using notification::dfu_apply::id;

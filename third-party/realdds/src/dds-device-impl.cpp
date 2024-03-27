@@ -92,6 +92,15 @@ dds_device::impl::impl( std::shared_ptr< dds_participant > const & participant,
 }
 
 
+dds_device::impl::~impl()
+{
+    if( _notifications_reader )
+        _notifications_reader->stop();
+    if( _metadata_reader )
+        _metadata_reader->stop();
+}
+
+
 void dds_device::impl::reset()
 {
     // _info should already be up-to-date
@@ -107,6 +116,8 @@ void dds_device::impl::reset()
     _streams.clear();
     _options.clear();
     _extrinsics_map.clear();
+    if( _metadata_reader )
+        _metadata_reader->stop();
     _metadata_reader.reset();
 }
 
