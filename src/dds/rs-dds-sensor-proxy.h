@@ -32,6 +32,7 @@ namespace librealsense {
 
 
 class dds_device_proxy;
+class roi_sensor_interface;
 
 
 class dds_sensor_proxy : public software_sensor
@@ -45,6 +46,8 @@ class dds_sensor_proxy : public software_sensor
 
     typedef realdds::dds_metadata_syncer syncer_type;
     static void frame_releaser( syncer_type::frame_type * f ) { static_cast< frame * >( f )->release(); }
+
+    std::shared_ptr< roi_sensor_interface > _roi_support;
 
 protected:
     struct streaming_impl
@@ -63,6 +66,8 @@ public:
     dds_sensor_proxy( std::string const & sensor_name,
                       software_device * owner,
                       std::shared_ptr< realdds::dds_device > const & dev );
+
+    bool extend_to( rs2_extension, void ** ptr ) override;  // extendable_interface
 
     const std::string & get_name() const { return _name; }
 

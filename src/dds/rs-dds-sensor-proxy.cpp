@@ -16,6 +16,7 @@
 
 #include <src/core/options-registry.h>
 #include <src/core/frame-callback.h>
+#include <src/core/roi.h>
 #include <src/stream.h>
 
 #include <src/proc/color-formats-converter.h>
@@ -41,6 +42,22 @@ dds_sensor_proxy::dds_sensor_proxy( std::string const & sensor_name,
         auto interval = interval_j.get< uint32_t >();  // NOTE: can throw!
         _options_watcher.set_update_interval( std::chrono::milliseconds( interval ) );
     }
+}
+
+
+bool dds_sensor_proxy::extend_to( rs2_extension extension_type, void ** ptr )
+{
+    if( extension_type == RS2_EXTENSION_ROI )
+    {
+        // We do not extend roi_sensor_interface, as our support is enabled only if there's an option with the specific
+        // type! Instead, we expose through extend_to() only if such an option is found. See add_option().
+        if( _roi_support )
+        {
+            *ptr = _roi_support.get();
+            return true;
+        }
+    }
+    return super::extend_to( extension_type, ptr );
 }
 
 
@@ -564,6 +581,41 @@ void dds_sensor_proxy::add_option( std::shared_ptr< realdds::dds_option > option
         } );
     register_option( option_id, opt );
     _options_watcher.register_option( option_id, opt );
+
+    if( std::dynamic_pointer_cast< realdds::dds_rect_option >( option ) && option->get_name() == "Region of Interest" )
+    {
+        if( _roi_support )
+            throw std::runtime_error( "more than one ROI option in stream" );
+
+        class dds_option_roi_method : public region_of_interest_method
+        {
+            std::shared_ptr< rs_dds_option > _rs_option;
+
+        public:
+            dds_option_roi_method( std::shared_ptr< rs_dds_option > const & rs_option )
+                : _rs_option( rs_option )
+            {
+            }
+
+            void set( const region_of_interest & roi ) override
+            {
+                _rs_option->set_value( json::array( { roi.min_x, roi.min_y, roi.max_x, roi.max_y } ) );
+            }
+
+            region_of_interest get() const override
+            {
+                auto j = _rs_option->get_value();
+                if( ! j.is_array() )
+                    throw std::runtime_error( "no ROI available" );
+                region_of_interest roi{ j[0], j[1], j[2], j[3] };
+                return roi;
+            }
+        };
+
+        auto roi = std::make_shared< roi_sensor_base >();
+        roi->set_roi_method( std::make_shared< dds_option_roi_method >( opt ) );
+        _roi_support = roi;
+    }
 }
 
 
