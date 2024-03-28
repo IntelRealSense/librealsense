@@ -233,29 +233,26 @@ namespace librealsense
         command command(gvd_cmd);
         hwmon_response p_response = hwmon_response::hwm_Unknown;
         auto data = send( command, &p_response );
-        if( p_response != hwm_Success )
+        // If we get an error code that match to the error code defined as require retry,
+        // we will retry the command until it succeed or we reach a timeout
+        bool should_retry = retry_error_codes && retry_error_codes->find( p_response ) != retry_error_codes->end();
+        if( should_retry )
         {
-            // If we get an error code that match to the error code defined as require retry,
-            // we will retry the command until it succeed or we reach a timeout
-            bool should_retry = retry_error_codes && ! retry_error_codes->empty()
-                             && retry_error_codes->find( p_response ) != retry_error_codes->end();
-            if( should_retry )
+            constexpr size_t RETRIES = 50;
+            for( int i = 0; i < RETRIES; ++i )
             {
-                static constexpr size_t RETRIES = 50;
-                for( int i = 0; i < RETRIES; ++i )
-                {
-                    data = send( command, &p_response );
-                    if( p_response == hwm_Success )
-                        break;
-                    // If we failed after 'RETRIES' retries or it is less `RETRIES` and the error
-                    // code is not in the retry list than , raise an exception
-                    if( i >= ( RETRIES - 1 ) || retry_error_codes->find( p_response ) == retry_error_codes->end() )
-                        throw io_exception( rsutils::string::from()
-                                            << "error in querying GVD, error:"
-                                            << hwmon_error2str( p_response ) );
-                    LOG_WARNING( "GVD not ready - retrying GET_GVD command" );
-                    std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
-                }
+                LOG_WARNING( "GVD not ready - retrying GET_GVD command" );
+                std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+                data = send( command, &p_response );
+                if( p_response == hwm_Success )
+                    break;
+                // If we failed after 'RETRIES' retries or it is less `RETRIES` and the error
+                // code is not in the retry list than , raise an exception
+                if( i >= ( RETRIES - 1 ) || retry_error_codes->find( p_response ) == retry_error_codes->end() )
+                    throw io_exception( rsutils::string::from()
+                                        << "error in querying GVD, error:"
+                                        << hwmon_error2str( p_response ) );
+                
             }
         }
         auto minSize = std::min(sz, data.size());
