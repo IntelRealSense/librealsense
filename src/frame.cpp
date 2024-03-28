@@ -4,7 +4,7 @@
 #include "core/depth-frame.h"
 #include "composite-frame.h"
 #include "core/stream-profile-interface.h"
-#include "archive.h"
+
 #include "metadata-parser.h"
 #include "core/enum-helpers.h"
 
@@ -60,32 +60,7 @@ std::ostream & operator<<( std::ostream & os, frame_holder const & f )
 }
 
 
-frame::frame( frame && r )
-    : ref_count( r.ref_count.exchange( 0 ) )
-    , owner( r.owner )
-    , on_release()
-    , _kept( r._kept.exchange( false ) )
-{
-    *this = std::move( r );
-    if( owner )
-        metadata_parsers = owner->get_md_parsers();
-}
 
-frame & frame::operator=( frame && r )
-{
-    data = std::move( r.data );
-    owner = r.owner;
-    ref_count = r.ref_count.exchange( 0 );
-    _kept = r._kept.exchange( false );
-    on_release = std::move( r.on_release );
-    additional_data = std::move( r.additional_data );
-    r.owner.reset();
-    if( owner )
-        metadata_parsers = owner->get_md_parsers();
-    if( r.metadata_parsers )
-        metadata_parsers = std::move( r.metadata_parsers );
-    return *this;
-}
 archive_interface * frame::get_owner() const
 {
     return owner.get();
