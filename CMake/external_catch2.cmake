@@ -15,7 +15,7 @@ function(get_catch2)
     # So instead, we invoke a new CMake project just to download it:
     configure_file( CMake/catch2-download.cmake.in
                     ${CMAKE_BINARY_DIR}/external-projects/catch2-download/CMakeLists.txt )
-    execute_process( COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
+    execute_process( COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" . "--no-warn-unused-cli"
                      -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
                      -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
                      -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}

@@ -1002,7 +1002,7 @@ namespace rs2
 
         return res;
     }
-
+    // The function returns true if one of the configuration parameters changed
     bool subdevice_model::draw_stream_selection(std::string& error_message)
     {
         bool res = false;
@@ -1024,7 +1024,7 @@ namespace rs2
         {
             if (draw_fps_selector)
             {
-                res &= draw_fps(error_message, label, streaming_tooltip, col0, col1);
+                res |= draw_fps(error_message, label, streaming_tooltip, col0, col1);
             }
 
             if (draw_streams_selector)
@@ -1034,21 +1034,21 @@ namespace rs2
                     ImGui::Text("Available Streams:");
                 }
 
-                res &= draw_res_stream_formats(error_message, label, streaming_tooltip, col0, col1);
+                res |= draw_res_stream_formats(error_message, label, streaming_tooltip, col0, col1);
             }
         }
         else
         {
-            res &= draw_resolutions(error_message, label, streaming_tooltip, col0, col1);
+            res |= draw_resolutions(error_message, label, streaming_tooltip, col0, col1);
 
             if (draw_fps_selector)
             {
-                res &= draw_fps(error_message, label, streaming_tooltip, col0, col1);
+                res |= draw_fps(error_message, label, streaming_tooltip, col0, col1);
             }
 
             if (draw_streams_selector)
             {
-                res &= draw_streams_and_formats(error_message, label, streaming_tooltip, col0, col1);
+                res |= draw_streams_and_formats(error_message, label, streaming_tooltip, col0, col1);
             }
         }
 

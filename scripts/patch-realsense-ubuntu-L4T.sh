@@ -140,7 +140,7 @@ if [ "4.4" = "$PATCHES_REV" ]; then
 	sed -i '/CONFIG_HID_SENSOR_GYRO_3D/c\CONFIG_HID_SENSOR_GYRO_3D=m' .config
 	sed -i '/CONFIG_HID_SENSOR_IIO_COMMON/c\CONFIG_HID_SENSOR_IIO_COMMON=m\nCONFIG_HID_SENSOR_IIO_TRIGGER=m' .config
 fi
-make ARCH=arm64 prepare modules_prepare  -j$(($(nproc)-1))
+make ARCH=arm64 prepare modules_prepare LOCALVERSION='' -j$(($(nproc)-1))
 
 #Remove previously applied patches
 git reset --hard

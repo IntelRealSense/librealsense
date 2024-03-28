@@ -180,6 +180,8 @@ namespace rs2
 
         animated<int> search_width { 0, std::chrono::milliseconds(400) };
         bool search_open = false;
+        bool set_number_open = false;
+        size_t max_notifications_kept = 1000;
 
         std::deque<std::string> autocomplete;
 

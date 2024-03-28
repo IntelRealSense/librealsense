@@ -228,6 +228,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             config_file::instance().set(configurations::viewer::output_open, false);
             default_log_h = 36;
             search_open = false;
+            set_number_open = false;
         }
         if (ImGui::IsItemHovered())
         {
@@ -267,7 +268,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
     }
     ImGui::SameLine();
 
-    if (!is_output_open || search_open)
+    if( ! is_output_open || search_open || set_number_open )
     {
         ImGui::PushStyleColor(ImGuiCol_Text, header_color);
     }
@@ -280,12 +281,25 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
     {
         focus_search = true;
         search_open = true;
+        set_number_open = false;  // Only one text box can be open at a time
         open(win);
     }
     if (ImGui::IsItemHovered())
     {
         win.link_hovered();
         ImGui::SetTooltip("%s", "Search through logs");
+    }
+    ImGui::SameLine();
+
+    if( ImGui::Button( u8"\u0023", ImVec2( 28, 28 ) ) )
+    {
+        search_open = false; // Only one text box can be open at a time
+        set_number_open = true;
+        open( win );
+    }
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::SetTooltip( "%s", "Set maximum number of log entries kept" );
     }
     ImGui::PopStyleColor(1);
     ImGui::SameLine();
@@ -302,8 +316,6 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
     auto size = ImGui::CalcTextSize(ss.str().c_str());
 
     char buff[1024];
-    memcpy(buff, search_line.c_str(), search_line.size());
-    buff[search_line.size()] = 0;
 
     auto actual_search_width = w - size.x - 100 - curr_x;
     if (focus_search) search_width = (int)(actual_search_width);
@@ -316,16 +328,38 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
     //     search_open = true;
     // }
 
-    if (search_open)
+    if( search_open || set_number_open )
     {
         ImGui::PushFont(win.get_monofont());
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 4);
         ImGui::PushItemWidth(static_cast<float>(search_width));
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
+
+        if( search_open )
+        {
+            memcpy( buff, search_line.c_str(), search_line.size() );
+            buff[search_line.size()] = 0;
+        }
+        else if( set_number_open )
+        {
+            std::string tmp = std::to_string( max_notifications_kept );
+            memcpy( buff, tmp.c_str(), tmp.size() );
+            buff[tmp.size()] = 0;
+        }
+
         if (ImGui::InputText("##SearchInLogs",buff, 1023))
         {
-            search_line = buff;
-            config_file::instance().set(configurations::viewer::search_term, search_line);
+            if( search_open )
+            {
+                search_line = buff;
+                config_file::instance().set(configurations::viewer::search_term, search_line);
+            }
+            else if( set_number_open )
+            {
+                int tmp = std::atoi( buff );
+                if( tmp > 0 )
+                    max_notifications_kept = tmp;
+            }
         }
         if (focus_search) ImGui::SetKeyboardFocusHere();
         ImGui::PopItemWidth();
@@ -786,7 +820,7 @@ void output_model::foreach_log(std::function<void(log_entry& line)> action)
     }
 
     // Limit the notification window
-    while (notification_logs.size() > 1000)
+    while( notification_logs.size() > max_notifications_kept )
     {
         auto&& le = notification_logs.front();
         if (le.severity >= RS2_LOG_SEVERITY_ERROR) number_of_errors--;
