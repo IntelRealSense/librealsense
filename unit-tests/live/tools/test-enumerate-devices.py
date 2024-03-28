@@ -23,7 +23,7 @@ if rs_enumerate_devices:
                     universal_newlines=True,
                     timeout=10,
                     check=False )  # don't fail on errors
-    test.check(p != 0) # verify success return code
+    test.check(p.returncode == 0) # verify success return code
     run_time_seconds = run_time_stopwatch.get_elapsed()
     if run_time_seconds > run_time_threshold:
         log.e('Time elapsed too high!', run_time_seconds, ' > ', run_time_threshold)
