@@ -641,7 +641,7 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, gvd_parsed_fields.optical_module_sn);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, gvd_parsed_fields.fw_version);
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, group.uvc_devices.front().device_path);
-        register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
+        register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GET_FW_LOGS)));
         register_info(RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode) ? "YES" : "NO"));
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "D500");
@@ -702,12 +702,7 @@ namespace librealsense
 
     command d500_device::get_firmware_logs_command() const
     {
-        return command{ ds::GLD, 0x1f4 };
-    }
-
-    command d500_device::get_flash_logs_command() const
-    {
-        return command{ ds::FRB, 0x17a000, 0x3f8 };
+        return command{ ds::GET_FW_LOGS };
     }
 
     bool d500_device::check_symmetrization_enabled() const
