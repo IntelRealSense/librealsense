@@ -208,12 +208,9 @@ namespace librealsense
         size_t extended_fw_logs_parser::get_log_size( const uint8_t * log ) const
         {
             const auto extended = reinterpret_cast< const extended_fw_log_binary * >( log );
-            // If there are parameters total_params_size_bytes includes the information
 
-            //return sizeof( extended_fw_log_binary ) + extended->total_params_size_bytes;
-            // TODO - HACK - The right size should be the commented line above, but currently there is a bug in HKR FW
-            // that they don't pack the parameter info and blob to the main struct. There are 4 padding bytes.
-            return sizeof( extended_fw_log_binary ) + extended->total_params_size_bytes + 4;
+            // If there are parameters total_params_size_bytes includes the information
+            return sizeof( extended_fw_log_binary ) + extended->total_params_size_bytes;
         }
 
         constexpr const uint32_t keep_settings = 0;
@@ -272,9 +269,6 @@ namespace librealsense
 #pragma pack( push, 1 )
                 struct extended_fw_log_params_binary : public extended_fw_log_binary
                 {
-                    // TODO - HACK - This uint32_t field should be deleted, but currently there is a bug in HKR FW
-                    // that they don't pack the parameter info and blob to the main struct. There are 4 padding bytes.
-                    uint32_t padding;
                     // param_info array size namber_of_params, 1 is just a placeholder. Need to use an array not a
                     // pointer because pointer can be 8 bytes of size and than we won't parse the data correctly
                     param_info info[1];
@@ -290,8 +284,8 @@ namespace librealsense
                     // Raw message offset is start of message, structured data offset is start of blob
                     size_t blob_offset = blob_start - raw->logs_buffer.data();
                     param_info adjusted_info = { static_cast< uint16_t >( with_params->info[i].offset - blob_offset ),
-                                                 with_params->info[i].type,
-                                                 with_params->info[i].size };
+                                                                          with_params->info[i].type,
+                                                                          with_params->info[i].size };
                     structured->params_info.push_back( adjusted_info );
                 }
                 structured->params_blob.assign( blob_start, blob_start + blob_size );

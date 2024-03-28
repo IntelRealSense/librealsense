@@ -50,19 +50,22 @@ namespace librealsense
                     exp_replace_map[ss_regular_exp[1].str()] = ss_replacement[1].str();
 
                     // Legacy format - parse parameter as 4 raw bytes of float. Parameter can be uint16_t or uint32_t.
-                    ss_regular_exp[2] << "\\{\\b(" << i << "):f\\}";
-                    uint32_t as_int32 = 0;
-                    memcpy( &as_int32, params_blob.data() + params_info[i].offset, params_info[i].size );
-                    float as_float = *reinterpret_cast< const float * >( &as_int32 );
-                    if( std::isfinite( as_float ) )
-                        ss_replacement[2] << as_float;
-                    else
+                    if( params_info[i].size <= sizeof( uint32_t ) )
                     {
-                        // Values for other regular expresions can be NaN when converted to float.
-                        // Prepare replacement as hex value (will probably not be used because format is not with :f).
-                        ss_replacement[2] << "0x" << hex << setw( 2 ) << setfill( '0' ) << as_int32;
+                        ss_regular_exp[2] << "\\{\\b(" << i << "):f\\}";
+                        uint32_t as_int32 = 0;
+                        memcpy( &as_int32, params_blob.data() + params_info[i].offset, params_info[i].size );
+                        float as_float = *reinterpret_cast< const float * >( &as_int32 );
+                        if( std::isfinite( as_float ) )
+                            ss_replacement[2] << as_float;
+                        else
+                        {
+                            // Values for other regular expresions can be NaN when converted to float.
+                            // Prepare replacement as hex value (will probably not be used because format is not with :f).
+                            ss_replacement[2] << "0x" << hex << setw( 2 ) << setfill( '0' ) << as_int32;
+                        }
+                        exp_replace_map[ss_regular_exp[2].str()] = ss_replacement[2].str();
                     }
-                    exp_replace_map[ss_regular_exp[2].str()] = ss_replacement[2].str();
 
                     // enum values are mapped by int (kvp) but we don't know if this parameter is related to enum, using
                     // unsigned long long because unrelated arguments can overflow int
@@ -143,27 +146,33 @@ namespace librealsense
             switch( info.type )
             {
             case param_type::STRING:
-                return std::string( reinterpret_cast< const char * >( param_start ), info.size );
+            {
+                // Using stringstream to remove the terminating null character. We use this as regex replacement string,
+                // and having '\0' here will cause a terminating character in the middle of the result string.
+                stringstream str;
+                str << param_start;
+                return str.str();
+            }
             case param_type::UINT8:
-                return rsutils::string::from() << *reinterpret_cast< const uint8_t * >( param_start );
+                return std::to_string( *reinterpret_cast< const uint8_t * >( param_start ) );
             case param_type::SINT8:
-                return rsutils::string::from() << *reinterpret_cast< const int8_t * >( param_start );
+                return std::to_string( *reinterpret_cast< const int8_t * >( param_start ) );
             case param_type::UINT16:
-                return rsutils::string::from() << *reinterpret_cast< const uint16_t * >( param_start );
+                return std::to_string( *reinterpret_cast< const uint16_t * >( param_start ) );
             case param_type::SINT16:
-                return rsutils::string::from() << *reinterpret_cast< const int16_t * >( param_start );
+                return std::to_string( *reinterpret_cast< const int16_t * >( param_start ) );
             case param_type::SINT32:
-                return rsutils::string::from() << *reinterpret_cast< const int32_t * >( param_start );
+                return std::to_string( *reinterpret_cast< const int32_t * >( param_start ) );
             case param_type::UINT32:
-                return rsutils::string::from() << *reinterpret_cast< const uint32_t * >( param_start );
+                return std::to_string( *reinterpret_cast< const uint32_t * >( param_start ) );
             case param_type::SINT64:
-                return rsutils::string::from() << *reinterpret_cast< const int64_t * >( param_start );
+                return std::to_string( *reinterpret_cast< const int64_t * >( param_start ) );
             case param_type::UINT64:
-                return rsutils::string::from() << *reinterpret_cast< const uint64_t * >( param_start );
+                return std::to_string( *reinterpret_cast< const uint64_t * >( param_start ) );
             case param_type::FLOAT:
-                return rsutils::string::from() << *reinterpret_cast< const float * >( param_start );
+                return std::to_string( *reinterpret_cast< const float * >( param_start ) );
             case param_type::DOUBLE:
-                return rsutils::string::from() << *reinterpret_cast< const double * >( param_start );
+                return std::to_string( *reinterpret_cast< const double * >( param_start ) );
             default:
                 throw librealsense::invalid_value_exception( rsutils::string::from()
                                                              << "Unsupported parameter type "

@@ -70,11 +70,15 @@ void output_model::thread_loop()
                                 {
                                     parsed_ok = true;
 
+                                    std::string module_print = "[" + parsed.module_name() + "]";
+                                    if( module_print == "[Unknown]" )
+                                        module_print.clear(); // Some devices don't support FW log modules
+
                                     add_log( message.get_severity(),
                                              parsed.file_name(),
                                              parsed.line(),
-                                             rsutils::string::from()
-                                                 << "FW-LOG [" << parsed.thread_name() << "] " << parsed.message() );
+                                             rsutils::string::from() << "FW-LOG [" << parsed.thread_name() << "]"
+                                                                     << module_print << parsed.message() );
                                 }
                             }
 

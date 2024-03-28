@@ -5,6 +5,7 @@
 #include <src/fw-logs/fw-logs-xml-helper.h>
 
 #include <src/librealsense-exception.h>
+#include <rsutils/string/from.h>
 
 #include <sstream>
 
@@ -26,9 +27,7 @@ namespace librealsense
                 return event_it->second;
             }
 
-            std::stringstream ss;
-            ss << "*** Unrecognized Log Id: " << id << "! P1 = 0x{0:x}, P2 = 0x{1:x}, P3 = 0x{2:x}";
-            return { 3, ss.str() };  // Default to legacy format - 3 params
+            throw librealsense::invalid_value_exception( rsutils::string::from() << "Unrecognized Log Id:  " << id );
         }
 
         std::string fw_logs_formatting_options::get_file_name( int id ) const
