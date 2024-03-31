@@ -102,6 +102,8 @@ The same exact behavior for `set-option` except a `value` is provided in the con
 ```
 New option values should conform to each specific option's value range as communicated when the device was [initialized](initialization.md).
 
+The device server has final say whether an option value is valid or not, and should return an error if `set-option` specifies an unsupported or invalid value based on context.
+
 
 ### `query-options`: bulk queries
 
