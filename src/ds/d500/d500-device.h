@@ -83,9 +83,8 @@ namespace librealsense
         void get_gvd_details(const std::vector<uint8_t>& gvd_buff, ds::d500_gvd_parsed_fields* parsed_fields) const;
 
         bool check_symmetrization_enabled() const;
-        //TODO - add these to device class as pure virtual methods
+
         command get_firmware_logs_command() const;
-        command get_flash_logs_command() const;
 
         void init(std::shared_ptr<context> ctx, const platform::backend_device_group& group);
         void register_features();

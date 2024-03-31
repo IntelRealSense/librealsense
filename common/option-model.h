@@ -24,6 +24,8 @@ namespace rs2
             std::string& error_message, notifications_model& model );
 
         std::vector< const char * > get_combo_labels( int * p_selected = nullptr ) const;
+        std::string value_as_string() const;
+        float value_as_float() const;
 
         rs2_option opt;
         option_range range;

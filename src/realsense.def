@@ -406,6 +406,8 @@ EXPORTS
     rs2_get_calibration_table
     rs2_set_calibration_table
 
+    rs2_start_collecting_fw_logs
+    rs2_stop_collecting_fw_logs
     rs2_create_fw_log_message
     rs2_delete_fw_log_message
     rs2_get_number_of_fw_logs
@@ -422,6 +424,7 @@ EXPORTS
     rs2_get_fw_log_parsed_message
     rs2_get_fw_log_parsed_file_name
     rs2_get_fw_log_parsed_thread_name
+    rs2_get_fw_log_parsed_module_name
     rs2_get_fw_log_parsed_severity
     rs2_get_fw_log_parsed_line
     rs2_get_fw_log_parsed_timestamp
