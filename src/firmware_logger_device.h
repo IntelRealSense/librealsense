@@ -77,8 +77,15 @@ namespace librealsense
 
         bool init_parser( const std::string & xml_content ) override;
 
+        void set_expected_source_versions( std::map< int, std::string > && expected_versions )
+        {
+            _source_to_expected_version = std::move( expected_versions );
+        }
+
     protected:
         command get_update_command() override;
         size_t get_log_size( const uint8_t * buff ) const override;
+
+        std::map< int, std::string > _source_to_expected_version;
     };
 }

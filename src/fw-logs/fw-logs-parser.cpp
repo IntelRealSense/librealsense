@@ -176,13 +176,15 @@ namespace librealsense
             return fw_logs::fw_logs_severity_to_rs2_log_severity( severity );
         }
 
-        extended_fw_logs_parser::extended_fw_logs_parser( const std::string & definitions_xml )
+        extended_fw_logs_parser::extended_fw_logs_parser( const std::string & definitions_xml,
+                                                          const std::map< int, std::string > & expected_versions )
             : fw_logs_parser( definitions_xml )
         {
             for( const auto & source : _source_id_to_name )
-            {
                initialize_source_verbosity_settings( source, definitions_xml );
-            }
+
+            for( const auto & expected : expected_versions )
+               validate_source_version( expected.first, expected.second, definitions_xml );
         }
 
         void extended_fw_logs_parser::initialize_source_verbosity_settings( const std::pair< const int, std::string > & source,
@@ -317,5 +319,25 @@ namespace librealsense
             return fw_logs::extended_fw_logs_severity_to_rs2_log_severity( severity );
         }
 
+        void extended_fw_logs_parser::validate_source_version( int source_id,
+                                                               const std::string & expected_version,
+                                                               const std::string & definitions_xml )
+        {
+            std::string path = fw_logs_xml_helper::get_source_parser_file_path( source_id, definitions_xml );
+            std::ifstream f( path.c_str() );
+            if( f.good() )
+            {
+                std::string xml_contents;
+                xml_contents.append( std::istreambuf_iterator< char >( f ), std::istreambuf_iterator< char >() );
+                std::string file_version = fw_logs_xml_helper::get_file_version( xml_contents );
+                if( expected_version != file_version )
+                    throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                                 << "Source " << _source_id_to_name[source_id]
+                                                                 << " expected version " << expected_version
+                                                                 << " but xml file version is " << file_version );
+            }
+            else
+                throw librealsense::invalid_value_exception( rsutils::string::from() << "Can't open file " << path );
+        }
     }
 }

@@ -215,7 +215,7 @@ namespace librealsense
 
     bool extended_firmware_logger_device::init_parser( const std::string & xml_content )
     {
-        _parser = std::make_unique< fw_logs::extended_fw_logs_parser >( xml_content );
+        _parser = std::make_unique< fw_logs::extended_fw_logs_parser >( xml_content, _source_to_expected_version );
 
         return ( _parser != nullptr );
     }

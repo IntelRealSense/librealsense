@@ -387,5 +387,25 @@ fw_logs_xml_helper::get_enums( const std::string & parser_contents )
     return enum_names_to_literals;
 }
 
+std::string fw_logs_xml_helper::get_file_version( const std::string & xml_file_contents )
+{
+    std::vector< char > buffer = string_to_char_buffer( xml_file_contents );
+    xml_document<> document;
+    load_external_xml( &document, buffer );
+    xml_node<> * root = document.first_node();
+
+    for( xml_attribute<> * attribute = root->first_attribute(); attribute; attribute = attribute->next_attribute() )
+    {
+        std::string attr( attribute->name(), attribute->name() + attribute->name_size() );
+        if( attr.compare( "version" ) == 0 )
+        {
+            std::string file_version( attribute->value(), attribute->value() + attribute->value_size() );
+            return file_version;
+        }
+    }
+
+    throw librealsense::invalid_value_exception( "Can't find file 'version' attribute" );
+}
+
 }  // namespace fw_logs
 }  // namespace librealsense

@@ -39,6 +39,9 @@ namespace librealsense
             // Returns a mapping of enum names to the enum litterals value and meaning
             static std::unordered_map< std::string, std::vector< std::pair< int, std::string > > >
             get_enums( const std::string & parser_contents );
+
+            // Returns the XML file version.
+            static std::string get_file_version( const std::string & xml_file_contents );
         };
     }
 }

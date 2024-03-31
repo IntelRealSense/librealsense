@@ -64,7 +64,8 @@ namespace librealsense
         class extended_fw_logs_parser: public fw_logs_parser
         {
         public:
-            explicit extended_fw_logs_parser( const std::string & definitions_xml );
+            explicit extended_fw_logs_parser( const std::string & definitions_xml,
+                                              const std::map< int, std::string > & expected_versions = {} );
 
             size_t get_log_size( const uint8_t * log ) const override;
 
@@ -75,6 +76,9 @@ namespace librealsense
         protected:
             void initialize_source_verbosity_settings( const std::pair< const int, std::string > & source,
                                                        const std::string & definitions_xml );
+            void validate_source_version( int source_id,
+                                          const std::string & expected_version, // Throws if not as expected
+                                          const std::string & definitions_xml );
 
             void structure_timestamp( const fw_logs_binary_data * raw,
                                       structured_binary_data * structured ) const override;
