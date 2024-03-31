@@ -2828,7 +2828,7 @@ namespace rs2
                     }
 
                     {
-                        ImGui::Text("HWLoggerEvents.xml Path:");
+                        ImGui::Text("FW logs XML file:");
                         ImGui::SameLine();
                         static char logpath[256];
                         memset(logpath, 0, 256);
@@ -2839,6 +2839,19 @@ namespace rs2
                         {
                             path_str = logpath;
                             temp_cfg.set(configurations::viewer::hwlogger_xml, path_str);
+                        }
+
+                        ImGui::SameLine();
+                        if( ImGui::Button( "FW logs XML" ) )
+                        {
+                            auto ret = file_dialog_open(open_file, "XML file\0*.xml\0", NULL, NULL);
+                            if( ret )
+                            {
+                                memset( logpath, 0, 256 );
+                                memcpy( logpath, ret, std::min( 255, static_cast< int >( strlen( ret ) ) ) );
+                                path_str = logpath;
+                                temp_cfg.set( configurations::viewer::hwlogger_xml, path_str );
+                            }
                         }
                     }
 

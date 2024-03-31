@@ -93,7 +93,7 @@ namespace librealsense
             FEF = 0x0c,     // Erase flash full <Parameter1 Name="0xACE">
             FSRU = 0x0d,     // Flash status register unlock
             FPLOCK = 0x0e,     // Permanent lock on lower Quarter region of the flash
-            GLD = 0x0f,     // FW logs
+            GLD = 0x0f,     // Legacy get FW logs command
             GVD = 0x10,     // camera details
             GETINTCAL = 0x15,     // Read calibration table
             SETINTCAL = 0x16,     // Set Internal sub calibration table
@@ -136,7 +136,8 @@ namespace librealsense
             SET_HKR_CONFIG_TABLE = 0xA6, // HKR Set Internal sub calibration table
             GET_HKR_CONFIG_TABLE = 0xA7, // HKR Get Internal sub calibration table
             CALIBRESTOREEPROM = 0xA8, // HKR Store EEPROM Calibration
-            RGB_TNR = 0xAA      // RGB Temporal Noise Reduction
+            RGB_TNR = 0xAA,      // RGB Temporal Noise Reduction
+            GET_FW_LOGS = 0xB4 // Get FW logs extended format
         };
 
 #define TOSTRING(arg) #arg
@@ -168,6 +169,7 @@ namespace librealsense
                 ENUM2STR(SETSUBPRESET);
                 ENUM2STR(GETSUBPRESET);
                 ENUM2STR(GETSUBPRESETID);
+                ENUM2STR(GET_FW_LOGS);
             default:
               return ( rsutils::string::from() << "Unrecognized FW command " << state );
             }
