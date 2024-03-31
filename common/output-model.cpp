@@ -53,9 +53,11 @@ void output_model::thread_loop()
                                          rsutils::string::from()
                                              << "Invalid Hardware Logger XML at '" << hwlogger_xml << "': " << ex.what()
                                              << "\nEither configure valid XML or remove it" );
+                                continue; // Don't try to get log entries for this device
                             }
                         }
 
+                        fwlogger.start_collecting();
                         auto message = fwlogger.create_message();
                         while (fwlogger.get_firmware_log(message))
                         {
@@ -68,11 +70,15 @@ void output_model::thread_loop()
                                 {
                                     parsed_ok = true;
 
+                                    std::string module_print = "[" + parsed.module_name() + "]";
+                                    if( module_print == "[Unknown]" )
+                                        module_print.clear(); // Some devices don't support FW log modules
+
                                     add_log( message.get_severity(),
                                              parsed.file_name(),
                                              parsed.line(),
-                                             rsutils::string::from()
-                                                 << "FW-LOG [" << parsed.thread_name() << "] " << parsed.message() );
+                                             rsutils::string::from() << "FW-LOG [" << parsed.thread_name() << "]"
+                                                                     << module_print << parsed.message() );
                                 }
                             }
 
@@ -83,8 +89,11 @@ void output_model::thread_loop()
                                     ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem) << " ";
                                 add_log(message.get_severity(), __FILE__, 0, ss.str());
                             }
-                            if (!enable_firmware_logs && fwlogger.get_number_of_fw_logs() == 0)
+                            if( ! enable_firmware_logs && fwlogger.get_number_of_fw_logs() == 0 )
+                            {
+                                fwlogger.stop_collecting();
                                 break;
+                            }
                         }
                     }
                 }
