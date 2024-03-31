@@ -112,6 +112,11 @@ namespace librealsense
         {
             set_advanced_mode_device( this );
 
+            std::map< int, std::string > versions;
+            versions[0] = get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION );
+            versions[1] = get_info( RS2_CAMERA_INFO_SMCU_FW_VERSION );
+            set_expected_source_versions( std::move( versions ) );
+
             auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>(d500_device::_hw_monitor, ds::APM_STROBE_GET, ds::APM_STROBE_SET);
             get_depth_sensor().register_option(RS2_OPTION_EMITTER_ALWAYS_ON, emitter_always_on_opt);
 
