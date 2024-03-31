@@ -135,6 +135,24 @@ struct rs2_option_value_wrapper : rs2_option_value
                 as_string = p_json->string_ref().c_str();
                 break;
 
+            case RS2_OPTION_TYPE_RECT:
+                if( ! p_json->is_array() || 4 != p_json->size() )
+                    throw invalid_value_exception( get_string( option_id )
+                                                   + " value is not a rect: " + p_json->dump() );
+                try
+                {
+                    p_json->at( 0 ).get_to( as_rect.x1 );
+                    p_json->at( 1 ).get_to( as_rect.y1 );
+                    p_json->at( 2 ).get_to( as_rect.x2 );
+                    p_json->at( 3 ).get_to( as_rect.y2 );
+                }
+                catch( json::exception const & e )
+                {
+                    throw invalid_value_exception( get_string( option_id )
+                                                   + " value is not a rect: " + e.what() );
+                }
+                break;
+
             default:
                 throw invalid_value_exception( "invalid " + get_string( option_id ) + " type "
                                                + get_string( option_type ) );
@@ -732,7 +750,7 @@ float rs2_get_option(const rs2_options* options, rs2_option option_id, rs2_error
     case RS2_OPTION_TYPE_BOOLEAN:
         return (float)option.get_value().get< bool >();
 
-    case RS2_OPTION_TYPE_STRING:
+    case RS2_OPTION_TYPE_STRING: {
         // We can convert "enum" options to a float value
         auto r = option.get_range();
         if( r.min == 0.f && r.step == 1.f )
@@ -748,6 +766,10 @@ float rs2_get_option(const rs2_options* options, rs2_option option_id, rs2_error
             }
         }
         throw not_implemented_exception( "use rs2_get_option_value to get string values" );
+    }
+
+    case RS2_OPTION_TYPE_RECT:
+        throw not_implemented_exception( "use rs2_get_option_value to get rect values" );
     }
     return option.query();
 }
@@ -817,6 +839,9 @@ void rs2_set_option(const rs2_options* options, rs2_option option, float value, 
             }
         }
         throw not_implemented_exception( "use rs2_set_option_value to set string values" );
+
+    case RS2_OPTION_TYPE_RECT:
+        throw not_implemented_exception( "use rs2_set_option_value to set rect values" );
     }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, options, option, value)
@@ -854,6 +879,13 @@ void rs2_set_option_value( rs2_options const * options, rs2_option_value const *
 
     case RS2_OPTION_TYPE_STRING:
         option.set_value( option_value->as_string );
+        break;
+
+    case RS2_OPTION_TYPE_RECT:
+        option.set_value( json::array( { option_value->as_rect.x1,
+                                         option_value->as_rect.y1,
+                                         option_value->as_rect.x2,
+                                         option_value->as_rect.y2 } ) );
         break;
 
     default:

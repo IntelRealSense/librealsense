@@ -126,6 +126,19 @@ static std::string stream_name_from_rs2( rs2::sensor const & sensor )
 }
 
 
+static json json_from_roi( rs2::region_of_interest const & roi )
+{
+    return realdds::dds_rect_option::type{ roi.min_x, roi.min_y, roi.max_x, roi.max_y }.to_json();
+}
+
+
+static rs2::region_of_interest roi_from_json( json const & j )
+{
+    auto roi = realdds::dds_rect_option::type::from_json( j );
+    return { roi.x1, roi.y1, roi.x2, roi.y2 };
+}
+
+
 std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controller::get_supported_streams()
 {
     std::map< std::string, realdds::dds_stream_profiles > stream_name_to_profiles;
@@ -306,6 +319,29 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
                         LOG_ERROR( "Cannot query details of option " << option_id );
                         // Some options can be queried only if certain conditions exist skip them for now
                     }
+                }
+
+                if( auto roi_sensor = rs2::roi_sensor( sensor ) )
+                {
+                    // AE ROI is exposed as an interface in the librealsense API and through a "Region of Interest"
+                    // rectangle option in DDS
+                    json j = json::array();
+                    j += "Region of Interest";
+                    json option_value;  // null - no value
+                    try
+                    {
+                        option_value = json_from_roi( roi_sensor.get_region_of_interest() );
+                    }
+                    catch( ... )
+                    {
+                        // May be available only during streaming
+                    }
+                    j += option_value;
+                    j += nullptr;                                 // No default value
+                    j += "Region of Interest for Auto Exposure";  // Description
+                    j += json::array( { "optional" } );           // Properties
+                    auto dds_opt = realdds::dds_option::from_json( j );
+                    stream_options.push_back( dds_opt );
                 }
 
                 auto recommended_filters = sensor.get_recommended_filters();
@@ -862,7 +898,7 @@ lrs_device_controller::get_rs2_profiles( realdds::dds_stream_profiles const & dd
 }
 
 
-void lrs_device_controller::set_option( const std::shared_ptr< realdds::dds_option > & option, float new_value )
+void lrs_device_controller::set_option( const std::shared_ptr< realdds::dds_option > & option, json const & new_value )
 {
     auto stream = option->stream();
     if( ! stream )
@@ -873,7 +909,18 @@ void lrs_device_controller::set_option( const std::shared_ptr< realdds::dds_opti
         throw std::runtime_error( "no stream '" + stream->name() + "' in device" );
     auto server = it->second;
     auto & sensor = _rs_sensors[server->sensor_name()];
-    sensor.set_option( option_name_to_id( option->get_name() ), new_value );
+    if( auto roi_option = std::dynamic_pointer_cast< realdds::dds_rect_option >( option ) )
+    {
+        // ROI has its own API in librealsense
+        if( auto roi_sensor = rs2::roi_sensor( sensor ) )
+            roi_sensor.set_region_of_interest( roi_from_json( roi_option->get_value() ) );
+        else
+            throw std::runtime_error( "rect option in sensor that has no ROI" );
+    }
+    else
+    {
+        sensor.set_option( option_name_to_id( option->get_name() ), new_value );
+    }
 }
 
 
@@ -890,6 +937,13 @@ json lrs_device_controller::query_option( const std::shared_ptr< realdds::dds_op
     auto & sensor = _rs_sensors[server->sensor_name()];
     try
     {
+        if( auto roi_option = std::dynamic_pointer_cast< realdds::dds_rect_option >( option ) )
+        {
+            if( auto roi_sensor = rs2::roi_sensor( sensor ) )
+                return json_from_roi( roi_sensor.get_region_of_interest() );
+            else
+                throw std::runtime_error( "rect option in sensor that has no ROI" );
+        }
         return sensor.get_option( option_name_to_id( option->get_name() ) );
     }
     catch( rs2::invalid_value_error const & )

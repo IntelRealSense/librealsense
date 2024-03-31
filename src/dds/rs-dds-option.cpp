@@ -44,6 +44,8 @@ static rs2_option_type rs_type_from_dds_option( std::shared_ptr< realdds::dds_op
         return RS2_OPTION_TYPE_BOOLEAN;
     if( std::dynamic_pointer_cast< realdds::dds_integer_option >( dds_opt ) )
         return RS2_OPTION_TYPE_INTEGER;
+    if( std::dynamic_pointer_cast< realdds::dds_rect_option >( dds_opt ) )
+        return RS2_OPTION_TYPE_RECT;
     throw not_implemented_exception( "unknown DDS option type" );
 }
 

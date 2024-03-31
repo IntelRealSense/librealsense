@@ -791,6 +791,7 @@ namespace rs2
         _hidden_options.emplace(RS2_OPTION_FRAMES_QUEUE_SIZE);
         _hidden_options.emplace(RS2_OPTION_SENSOR_MODE);
         _hidden_options.emplace(RS2_OPTION_NOISE_ESTIMATION);
+        _hidden_options.emplace(RS2_OPTION_REGION_OF_INTEREST);
     }
 
     void viewer_model::update_configuration()
