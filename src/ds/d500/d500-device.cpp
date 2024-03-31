@@ -487,7 +487,7 @@ namespace librealsense
             // Since GVD gather all information from all the HW, it might need some more time to finish all hand shakes.
             // on this case it will return HW_NOT_READY error code.
             // Note: D500 error codes list is different than D400.
-            //       This will need a redactor on hw_monitor class to except the error code list from outside.
+            //       This will need a refactor on hw_monitor class to except the error code list from outside.
             //       Currently, we hard code the HW not ready error code
 
             const int HW_NOT_READY_ERR_CODE = -3;
