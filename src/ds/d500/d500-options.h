@@ -84,9 +84,11 @@ namespace librealsense
 
         virtual option_range get_range() const override
         {
-            // this range had to be harcoded to avoid collisions with linux patches 
-            // which have been upstreamed for d400 devices
-            return { 0.f /*min*/, 2.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
+            // this hardcoded max range has been done because 
+            // some d500 devices do not support the "AUTO" value
+            auto range = uvc_pu_option::get_range();
+            range.max = 2.f;
+            return range;
         }
     };
 }
