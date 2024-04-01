@@ -6,6 +6,7 @@
 #include "ds/ds-private.h"
 #include "core/options-container.h"
 #include "option.h"
+#include "platform/uvc-option.h"
 
 #include <rsutils/lazy.h>
 
@@ -73,5 +74,19 @@ namespace librealsense
         std::shared_ptr<hw_monitor> _hwm;
         temperature_component _component;
         const char* _description;
+    };
+
+    class power_line_freq_option : public uvc_pu_option
+    {
+    public:
+        explicit power_line_freq_option(const std::weak_ptr< uvc_sensor >& ep, rs2_option id,
+            const std::map< float, std::string >& description_per_value);
+
+        virtual option_range get_range() const override
+        {
+            // this range had to be harcoded to avoid collisions with linux patches 
+            // which have been upstreamed for d400 devices
+            return { 0.f /*min*/, 2.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
+        }
     };
 }
