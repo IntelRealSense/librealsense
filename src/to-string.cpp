@@ -350,7 +350,7 @@ const char* get_string(rs2_safety_pin_functionality functionality)
         CASE(PRESET_SELECT6_A)
         CASE(PRESET_SELECT6_B)
         CASE(DEVICE_READY)
-        CASE(MAINTENANCE)
+        CASE(ERROR)
         CASE(RESET)
         CASE(RESTART_INTERLOCK)
     default:
