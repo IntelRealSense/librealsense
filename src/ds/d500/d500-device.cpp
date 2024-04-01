@@ -533,11 +533,6 @@ namespace librealsense
                 DS5_HKR_PVT_TEMPERATURE,
                 "PVT Temperature");
 
-            auto proj_temperature = std::make_shared< temperature_xu_option >(raw_depth_sensor,
-                depth_xu,
-                DS5_HKR_PROJECTOR_TEMPERATURE,
-                "Projector Temperature");
-
             auto ohm_temperature = std::make_shared< temperature_xu_option >(raw_depth_sensor,
                 depth_xu,
                 DS5_HKR_OHM_TEMPERATURE,
@@ -545,7 +540,6 @@ namespace librealsense
 
             // registering the temperature options
             depth_sensor.register_option(RS2_OPTION_SOC_PVT_TEMPERATURE, pvt_temperature);
-            depth_sensor.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE, proj_temperature);
             depth_sensor.register_option(RS2_OPTION_OHM_TEMPERATURE, ohm_temperature);
 
             auto error_control = std::make_shared< uvc_xu_option< uint8_t > >( raw_depth_sensor,

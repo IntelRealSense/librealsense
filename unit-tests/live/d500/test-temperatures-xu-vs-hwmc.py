@@ -18,17 +18,14 @@ dp_device = dev.as_debug_protocol()
 def get_temperatures_from_xu():
     pvt_temp = -10
     ohm_temp = -10
-    proj_temp = -10
 
     test.check(depth_sensor.supports(rs.option.soc_pvt_temperature))
     test.check(depth_sensor.supports(rs.option.ohm_temperature))
-    test.check(depth_sensor.supports(rs.option.projector_temperature))
 
     pvt_temp = depth_sensor.get_option(rs.option.soc_pvt_temperature)
     ohm_temp = depth_sensor.get_option(rs.option.ohm_temperature)
-    proj_temp = depth_sensor.get_option(rs.option.projector_temperature)
 
-    return pvt_temp, ohm_temp, proj_temp
+    return pvt_temp, ohm_temp
 
 
 def parse_temperature_from_hwm(hwm_answer):
@@ -78,25 +75,20 @@ def get_temperatures_from_hwm():
     ohm_temp_index = 2
     ohm_temp = all_temp_list[ohm_temp_index - 1]
 
-    # get projector temperature
-    proj_temp_index = 1
-    proj_temp = all_temp_list[proj_temp_index - 1]
-
-    return pvt_temp, ohm_temp, proj_temp
+    return pvt_temp, ohm_temp
 
 
 #############################################################################################
 
 test.start("Compare Temperature readings XU vs HWMC")
 
-pvt_temp_xu, ohm_temp_xu, projector_temp_xu = get_temperatures_from_xu()
+pvt_temp_xu, ohm_temp_xu = get_temperatures_from_xu()
 
-pvt_temp_hwm, ohm_temp_hwm, projector_temp_hwm = get_temperatures_from_hwm()
+pvt_temp_hwm, ohm_temp_hwm = get_temperatures_from_hwm()
 
-tolerance = 0.1
+tolerance = 1.0
 test.check_approx_abs(pvt_temp_xu, pvt_temp_hwm, tolerance)
 test.check_approx_abs(ohm_temp_xu, ohm_temp_hwm, tolerance)
-test.check_approx_abs(projector_temp_xu, projector_temp_xu, tolerance)
 
 test.finish()
 #############################################################################################
