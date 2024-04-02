@@ -67,7 +67,7 @@ namespace librealsense
     {
         const double gyro_transform_factor = deg2rad( gyro_scale_factor );
         //high_accuracy=true when gyro_scale_factor=0.0001 for FW version >=5.16 
-        //high_accuracy=false when gyro_scale_factor=0.1 or 0.003814697265625 for HKR, for FW version <5.16
+        //high_accuracy=false when gyro_scale_factor=0.1 for FW version <5.16 or 0.003814697265625 for HKR
         bool high_accuracy = ( gyro_scale_factor == 0.0001 );
         copy_hid_axes< FORMAT >( dest, source, gyro_transform_factor, high_accuracy, is_mipi );
     }
