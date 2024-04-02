@@ -800,49 +800,7 @@ void rs2_set_option(const rs2_options* options, rs2_option option, float value, 
 {
     VALIDATE_NOT_NULL(options);
     VALIDATE_OPTION_ENABLED(options, option);
-    auto& option_ref = options->options->get_option(option);
-    auto range = option_ref.get_range();
-    switch( option_ref.get_value_type() )
-    {
-    case RS2_OPTION_TYPE_FLOAT:
-        if( range.min != range.max && range.step )
-            VALIDATE_RANGE( value, range.min, range.max );
-        option_ref.set( value );
-        break;
-
-    case RS2_OPTION_TYPE_INTEGER:
-        if( range.min != range.max && range.step )
-            VALIDATE_RANGE( value, range.min, range.max );
-        if( (int)value != value )
-            throw invalid_value_exception( rsutils::string::from() << "not an integer: " << value );
-        option_ref.set( value );
-        break;
-
-    case RS2_OPTION_TYPE_BOOLEAN:
-        if( value == 0.f )
-            option_ref.set_value( false );
-        else if( value == 1.f )
-            option_ref.set_value( true );
-        else
-            throw invalid_value_exception( rsutils::string::from() << "not a boolean: " << value );
-        break;
-
-    case RS2_OPTION_TYPE_STRING:
-        // We can convert "enum" options to a float value
-        if( (int)value == value && range.min == 0.f && range.step == 1.f )
-        {
-            auto desc = option_ref.get_value_description( value );
-            if( desc )
-            {
-                option_ref.set_value( desc );
-                break;
-            }
-        }
-        throw not_implemented_exception( "use rs2_set_option_value to set string values" );
-
-    case RS2_OPTION_TYPE_RECT:
-        throw not_implemented_exception( "use rs2_set_option_value to set rect values" );
-    }
+    options->options->get_option(option).set( value );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, options, option, value)
 
@@ -1472,7 +1430,14 @@ void rs2_set_options_changed_callback( rs2_options * options,
         {
             rs2_options_list * updated_options_list = new rs2_options_list(); // Should be on heap if user will choose to save for later use.
             populate_options_list( updated_options_list, updated_options );
-            callback( updated_options_list );
+            try
+            {
+                callback( updated_options_list );
+            }
+            catch( ... )
+            {
+                LOG_ERROR( "Caught exception from options-changed callback" );
+            }
         } );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , options, callback )
@@ -1496,7 +1461,14 @@ void rs2_set_options_changed_callback_cpp( rs2_options * options,
         {
             rs2_options_list * updated_options_list = new rs2_options_list(); // Should be on heap if user will choose to save for later use.
             populate_options_list( updated_options_list, updated_options );
-            cb->on_value_changed( updated_options_list );
+            try
+            {
+                cb->on_value_changed( updated_options_list );
+            }
+            catch( ... )
+            {
+                LOG_ERROR( "Caught exception from options-changed callback" );
+            }
         } );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , options, callback )
