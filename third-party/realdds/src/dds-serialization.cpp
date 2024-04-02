@@ -360,6 +360,7 @@ static void override_udp_settings( eprosima::fastdds::rtps::UDPTransportDescript
 {
     j.nested( "send-buffer-size" ).get_ex( udp.sendBufferSize );
     j.nested( "receive-buffer-size" ).get_ex( udp.receiveBufferSize );
+    j.nested( "max-message-size" ).get_ex( udp.maxMessageSize );
     if( ! parse_ip_list( j, "whitelist", &udp.interfaceWhiteList ) )
         LOG_WARNING( "invalid UDP whitelist in settings" );
 }
