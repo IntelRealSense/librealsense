@@ -109,7 +109,27 @@ json video_intrinsics::to_json() const
         ret.principal_point.y = j[index++].get< float >();
         ret.focal_length.x = j[index++].get< float >();
         ret.focal_length.y = j[index++].get< float >();
-        ret.distortion.model = (distortion_model)j[index++].get< int >();
+        switch( j[index++].get< int >() )
+        {
+        case 0:  // RS2_DISTORTION_NONE
+            ret.distortion.model = distortion_model::none;
+            break;
+
+        case 1:  // RS2_DISTORTION_MODIFIED_BROWN_CONRADY
+            ret.distortion.model = distortion_model::modified_brown;
+            break;
+
+        case 2:  // RS2_DISTORTION_INVERSE_BROWN_CONRADY
+            ret.distortion.model = distortion_model::inverse_brown;
+            break;
+
+        case 4:  // RS2_DISTORTION_BROWN_CONRADY
+            ret.distortion.model = distortion_model::brown;
+            break;
+
+        default:
+            DDS_THROW( runtime_error, "invalid legacy distortion model: " << j[index-1] );
+        }
         ret.distortion.coeffs[0] = j[index++].get< float >();
         ret.distortion.coeffs[1] = j[index++].get< float >();
         ret.distortion.coeffs[2] = j[index++].get< float >();
