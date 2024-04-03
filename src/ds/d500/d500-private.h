@@ -17,9 +17,10 @@ namespace librealsense
         const uint16_t D555E_PID = 0x0B56;
         const uint16_t D555E_RECOVERY_PID = 0x0ADE;
 
-        namespace xu_id
-        {
-        }
+        // DS500 depth XU identifiers
+        const uint8_t DS5_HKR_PVT_TEMPERATURE = 0x15;
+        const uint8_t DS5_HKR_PROJECTOR_TEMPERATURE = 0x16;
+        const uint8_t DS5_HKR_OHM_TEMPERATURE = 0x17;
 
         // d500 Devices supported by the current version
         static const std::set<std::uint16_t> rs500_sku_pid = {
