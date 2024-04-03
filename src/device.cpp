@@ -37,6 +37,23 @@ device::device( std::shared_ptr< const device_info > const & dev_info,
     : _dev_info( dev_info )
     , _is_alive( std::make_shared< std::atomic< bool > >( true ) )
     , _profiles_tags( [this]() { return get_profiles_tags(); } )
+    , _format_conversion(
+          [this]
+          {
+              auto context = get_context();
+              if( ! context )
+                  return format_conversion::full;
+              std::string const format_conversion( "format-conversion", 17 );
+              std::string const full( "full", 4 );
+              auto const value = context->get_settings().nested( format_conversion ).default_value( full );
+              if( value == full )
+                  return format_conversion::full;
+              if( value == "basic" )
+                  return format_conversion::basic;
+              if( value == "raw" )
+                  return format_conversion::raw;
+              throw invalid_value_exception( "invalid " + format_conversion + " value '" + value + "'" );
+          } )
 {
     if( device_changed_notifications )
     {
@@ -199,19 +216,7 @@ std::vector<rs2_format> device::map_supported_color_formats(rs2_format source_fo
 
 format_conversion device::get_format_conversion() const
 {
-    auto context = get_context();
-    if( ! context )
-        return format_conversion::full;
-    std::string const format_conversion( "format-conversion", 17 );
-    std::string const full( "full", 4 );
-    auto const value = context->get_settings().nested( format_conversion ).default_value( full );
-    if( value == full )
-        return format_conversion::full;
-    if( value == "basic" )
-        return format_conversion::basic;
-    if( value == "raw" )
-        return format_conversion::raw;
-    throw invalid_value_exception( "invalid " + format_conversion + " value '" + value + "'" );
+    return *_format_conversion;
 }
 
 void device::tag_profiles(stream_profiles profiles) const

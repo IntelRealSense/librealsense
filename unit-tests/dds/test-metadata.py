@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
 #test:retries:gha 2
@@ -137,13 +137,11 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #############################################################################################
     #
     with test.closure( "Initialize librs device", on_fail=test.ABORT ):
-        import pyrealsense2 as rs
+        import librs as rs
         if log.is_debug_on():
             rs.log_to_console( rs.log_severity.debug )
-        from dds import wait_for_devices
         context = rs.context( { 'dds': { 'enabled': True, 'domain': 123, 'participant': 'librs' }} )
-        only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
-        device = wait_for_devices( context, only_sw_devices, n=1. )
+        device = rs.wait_for_devices( context, rs.only_sw_devices, n=1. )
         sensors = device.sensors
         test.check_equal( len(sensors), 1, on_fail=test.RAISE )
         sensor = sensors[0]
