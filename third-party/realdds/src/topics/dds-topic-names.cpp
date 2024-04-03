@@ -154,7 +154,7 @@ namespace reply {
         std::string const explanation( "explanation", 11 );
     }
     namespace status {
-        std::string const ok( "ok", 2 );
+        std::string const ok( "OK", 2 );
     }
     namespace set_option {
         //using control::set_option::id;
