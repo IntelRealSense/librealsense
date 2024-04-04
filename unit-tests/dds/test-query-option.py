@@ -48,7 +48,6 @@ with test.remote.fork( nested_indent=None ) as remote:
     ###############################################################################################################
     # The client is a device from which we send controls
     #
-    from dds import wait_for_devices
 
     with test.closure( 'Start the client participant' ):
         participant = dds.participant()

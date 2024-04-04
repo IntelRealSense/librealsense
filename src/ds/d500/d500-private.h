@@ -20,7 +20,10 @@ namespace librealsense
         const uint16_t D585_PID = 0x0B6A; // D585, D for depth
         const uint16_t D585S_PID = 0x0B6B; // D585S, S for safety
         
-
+        // DS500 depth XU identifiers
+        const uint8_t DS5_HKR_PVT_TEMPERATURE = 0x15;
+        const uint8_t DS5_HKR_PROJECTOR_TEMPERATURE = 0x16;
+        const uint8_t DS5_HKR_OHM_TEMPERATURE = 0x17;
 
         // d500 Devices supported by the current version
         static const std::set<std::uint16_t> rs500_sku_pid = {
@@ -131,12 +134,20 @@ namespace librealsense
             float       fy;             /**< Focal length of the image plane, as a multiple of pixel height */
         };
 
+        // These are the possible values for the calibration table 'distortion_model' field
+        enum class d500_calibration_distortion
+        {
+            none = 0,
+            brown = 1,
+            brown_and_fisheye = 2
+        };
+
         struct single_sensor_coef_table
         {
             mini_intrinsics           base_instrinsics;
             uint32_t                  distortion_non_parametric;
-            rs2_distortion            distortion_model;          /**< Distortion model of the image */
-            float                     distortion_coeffs[13];     /**< Distortion coefficients. Order for Brown-Conrady: [k1, k2, p1, p2, k3]. Order for F-Theta Fish-eye: [k1, k2, k3, k4, 0]. Other models are subject to their own interpretations */
+            d500_calibration_distortion distortion_model;
+            float distortion_coeffs[13];  // [k1,k2,p1,p2,k3] for Brown, followed by [k1,k2,k3,k4] with fisheye
             uint8_t                   reserved[4];
             float                     radial_distortion_lut_range_degs;
             float                     radial_distortion_lut_focal_length;

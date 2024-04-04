@@ -66,6 +66,13 @@ namespace notification {
             namespace key {
                 extern std::string const accel;
                 extern std::string const gyro;
+                extern std::string const width;
+                extern std::string const height;
+                extern std::string const principal_point;
+                extern std::string const focal_length;
+                extern std::string const model;
+                extern std::string const coefficients;
+                extern std::string const force_symmetry;
             }
         }
     }
