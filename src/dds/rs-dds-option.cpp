@@ -76,6 +76,7 @@ void rs_dds_option::set( float value )
     {
         if( range.min != range.max && range.step )
         {
+            if( value < range.min )
             {
                 throw librealsense::invalid_value_exception(
                     rsutils::string::from() << "value (" << value << ") less than minimum (" << range.min << ")" );
