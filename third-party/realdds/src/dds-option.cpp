@@ -627,7 +627,6 @@ rsutils::json dds_rect_option::type::to_json() const
 
 void dds_rect_option::check_type( json & value ) const
 {
-    // We do not reset the value: "1.1" will become 1.100000023841858
     check_rect( value );
 }
 
