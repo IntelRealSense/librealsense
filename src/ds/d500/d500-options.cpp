@@ -115,12 +115,6 @@ namespace librealsense
     power_line_freq_option::power_line_freq_option(const std::weak_ptr< uvc_sensor >& ep, rs2_option id,
         const std::map< float, std::string >& description_per_value) :
         uvc_pu_option(ep, id, description_per_value) {}
-    }
-
-    void temperature_xu_option::set(float value)
-    {
-        readonly_option::set(value);
-    }
     
     d500_external_sync_mode::d500_external_sync_mode( hw_monitor & hwm, const std::weak_ptr< sensor_base > & ep,
                                                       const std::map< float, std::string > & description_per_value )

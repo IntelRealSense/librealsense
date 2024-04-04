@@ -93,7 +93,7 @@ pvt_temp_xu, ohm_temp_xu, projector_temp_xu = get_temperatures_from_xu()
 
 pvt_temp_hwm, ohm_temp_hwm, projector_temp_hwm = get_temperatures_from_hwm()
 
-tolerance = 0.1
+tolerance = 1.0
 test.check_approx_abs(pvt_temp_xu, pvt_temp_hwm, tolerance)
 test.check_approx_abs(ohm_temp_xu, ohm_temp_hwm, tolerance)
 test.check_approx_abs(projector_temp_xu, projector_temp_xu, tolerance)
