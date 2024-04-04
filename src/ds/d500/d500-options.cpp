@@ -52,8 +52,8 @@ namespace librealsense
     }
     temperature_xu_option::temperature_xu_option(const std::weak_ptr<uvc_sensor>& ep, 
         platform::extension_unit xu, uint8_t id, 
-        std::string description, bool allow_set_while_streaming)
-        : uvc_xu_option<int16_t>(ep, xu, id, description, allow_set_while_streaming,
+        std::string description)
+        : uvc_xu_option<int16_t>(ep, xu, id, description, false,
             // defining the parsing modifier, to be used on the calls for query and get_range methods
             [](const int16_t read_value) {
                 return static_cast<float>(read_value) / 10.f;

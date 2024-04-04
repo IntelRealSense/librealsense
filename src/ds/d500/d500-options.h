@@ -84,8 +84,7 @@ namespace librealsense
         explicit temperature_xu_option(const std::weak_ptr< uvc_sensor >& ep,
             platform::extension_unit xu,
             uint8_t id,
-            std::string description,
-            bool allow_set_while_streaming = true);
+            std::string description);
 
         virtual float query() const override;
         virtual void set(float value) override;
