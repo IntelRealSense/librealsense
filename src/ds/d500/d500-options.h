@@ -126,8 +126,8 @@ namespace librealsense
         hw_monitor & _hwm;
         std::weak_ptr< sensor_base > _sensor;
     };
-	
-	class power_line_freq_option : public uvc_pu_option
+    
+    class power_line_freq_option : public uvc_pu_option
     {
     public:
         explicit power_line_freq_option(const std::weak_ptr< uvc_sensor >& ep, rs2_option id,
