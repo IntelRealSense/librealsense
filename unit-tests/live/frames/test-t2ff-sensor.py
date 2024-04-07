@@ -59,13 +59,8 @@ test.check(device_creation_time < max_time_for_device_creation)
 test.finish()
 
 
-# Set maximum delay for first frame according to product line
-product_line = dev.get_info(rs.camera_info.product_line)
-if product_line == "D400":
-    max_delay_for_depth_frame = 1
-    max_delay_for_color_frame = 1
-else:
-    log.f( "This test support only D400 devices" )
+max_delay_for_depth_frame = 1
+max_delay_for_color_frame = 1
 
 
 ds = dev.first_depth_sensor()
@@ -74,12 +69,14 @@ cs = dev.first_color_sensor()
 dp = next(p for p in
           ds.profiles if p.fps() == 30
           and p.stream_type() == rs.stream.depth
-          and p.format() == rs.format.z16)
+          and p.format() == rs.format.z16
+          and p.is_default())
 
 cp = next(p for p in
           cs.profiles if p.fps() == 30
           and p.stream_type() == rs.stream.color
-          and p.format() == rs.format.rgb8)
+          and p.format() == rs.format.rgb8
+          and p.is_default())
 
 
 #####################################################################################################
