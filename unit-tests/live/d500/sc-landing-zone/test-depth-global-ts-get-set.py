@@ -55,7 +55,7 @@ global_ts_value = int(depth_sensor.get_option(rs.option.global_time_enabled))
 test.check_equal(global_ts_value, gt_value_to_set)
 
 # Start streaming
-depth_profile = next(p for p in depth_sensor.profiles if p.stream_type() == rs.stream.depth)
+depth_profile = next(p for p in depth_sensor.profiles if p.stream_type() == rs.stream.depth and p.is_default())
 depth_sensor.open(depth_profile)
 depth_sensor.start(callback)
 
