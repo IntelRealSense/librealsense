@@ -85,8 +85,7 @@ namespace librealsense
         explicit temperature_xu_option(const std::weak_ptr< uvc_sensor >& ep,
             platform::extension_unit xu,
             uint8_t id,
-            std::string description,
-            bool allow_set_while_streaming = true);
+            std::string description);
 
         virtual float query() const override;
         virtual void set(float value) override;
@@ -126,6 +125,22 @@ namespace librealsense
         const std::map< float, std::string > _description_per_value;
         hw_monitor & _hwm;
         std::weak_ptr< sensor_base > _sensor;
+    };
+    
+    class power_line_freq_option : public uvc_pu_option
+    {
+    public:
+        explicit power_line_freq_option(const std::weak_ptr< uvc_sensor >& ep, rs2_option id,
+            const std::map< float, std::string >& description_per_value);
+
+        virtual option_range get_range() const override
+        {
+            // this hardcoded max range has been done because 
+            // some d500 devices do not support the "AUTO" value
+            auto range = uvc_pu_option::get_range();
+            range.max = 2.f;
+            return range;
+        }
     };
 
 } // namespace librealsense

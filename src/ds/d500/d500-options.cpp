@@ -93,11 +93,10 @@ namespace librealsense
 
         return temperature;
     }
-
     temperature_xu_option::temperature_xu_option(const std::weak_ptr<uvc_sensor>& ep, 
         platform::extension_unit xu, uint8_t id, 
-        std::string description, bool allow_set_while_streaming)
-        : uvc_xu_option<int16_t>(ep, xu, id, description, allow_set_while_streaming,
+        std::string description)
+        : uvc_xu_option<int16_t>(ep, xu, id, description, false,
             // defining the parsing modifier, to be used on the calls for query and get_range methods
             [](const int16_t read_value) {
                 return static_cast<float>(read_value) / 10.f;
@@ -112,6 +111,10 @@ namespace librealsense
     {
         readonly_option::set(value);
     }
+
+    power_line_freq_option::power_line_freq_option(const std::weak_ptr< uvc_sensor >& ep, rs2_option id,
+        const std::map< float, std::string >& description_per_value) :
+        uvc_pu_option(ep, id, description_per_value) {}
     
     d500_external_sync_mode::d500_external_sync_mode( hw_monitor & hwm, const std::weak_ptr< sensor_base > & ep,
                                                       const std::map< float, std::string > & description_per_value )

@@ -47,12 +47,41 @@ static rs2_stream to_rs2_stream_type( std::string const & type_string )
 }
 
 
+rs2_distortion to_rs2_distortion( realdds::distortion_model model )
+{
+    switch( model )
+    {
+    case realdds::distortion_model::none: return RS2_DISTORTION_NONE;
+    case realdds::distortion_model::brown: return RS2_DISTORTION_BROWN_CONRADY;
+    case realdds::distortion_model::inverse_brown: return RS2_DISTORTION_INVERSE_BROWN_CONRADY;
+    case realdds::distortion_model::modified_brown: return RS2_DISTORTION_MODIFIED_BROWN_CONRADY;
+    default:
+        throw invalid_value_exception( "unexpected realdds distortion model: " + std::to_string( (int)model ) );
+    }
+}
+
+
+rs2_intrinsics to_rs2_intrinsics( const realdds::video_intrinsics & intrinsics )
+{
+    rs2_intrinsics intr;
+    intr.width = intrinsics.width;
+    intr.height = intrinsics.height;
+    intr.ppx = intrinsics.principal_point.x;
+    intr.ppy = intrinsics.principal_point.y;
+    intr.fx = intrinsics.focal_length.x;
+    intr.fy = intrinsics.focal_length.y;
+    intr.model = to_rs2_distortion( intrinsics.distortion.model );
+    memcpy( intr.coeffs, intrinsics.distortion.coeffs.data(), sizeof( intr.coeffs ) );
+    return intr;
+}
+
+
 static rs2_video_stream to_rs2_video_stream( rs2_stream const stream_type,
                                              sid_index const & sidx,
                                              std::shared_ptr< realdds::dds_video_stream_profile > const & profile,
                                              const std::set< realdds::video_intrinsics > & intrinsics )
 {
-    rs2_video_stream prof = {};
+    rs2_video_stream prof;
     prof.type = stream_type;
     prof.index = sidx.index;
     prof.uid = sidx.sid;
@@ -68,14 +97,7 @@ static rs2_video_stream to_rs2_video_stream( rs2_stream const stream_type,
                               { return profile->width() == intr.width && profile->height() == intr.height; } );
     if( intr != intrinsics.end() )  // Some profiles don't have intrinsics
     {
-        prof.intrinsics.width = intr->width;
-        prof.intrinsics.height = intr->height;
-        prof.intrinsics.ppx = intr->principal_point_x;
-        prof.intrinsics.ppy = intr->principal_point_y;
-        prof.intrinsics.fx = intr->focal_lenght_x;
-        prof.intrinsics.fy = intr->focal_lenght_y;
-        prof.intrinsics.model = static_cast< rs2_distortion >( intr->distortion_model );
-        memcpy( prof.intrinsics.coeffs, intr->distortion_coeffs.data(), sizeof( prof.intrinsics.coeffs ) );
+        prof.intrinsics = to_rs2_intrinsics( *intr );
     }
 
     return prof;
@@ -398,25 +420,29 @@ void dds_device_proxy::set_video_profile_intrinsics( std::shared_ptr< stream_pro
                                                      std::shared_ptr< realdds::dds_video_stream > stream ) const
 {
     auto vsp = std::dynamic_pointer_cast< video_stream_profile >( profile );
-    auto & stream_intrinsics = stream->get_intrinsics();
-    auto it = std::find_if( stream_intrinsics.begin(),
-                            stream_intrinsics.end(),
-                            [vsp]( const realdds::video_intrinsics & intr )
-                            { return vsp->get_width() == intr.width && vsp->get_height() == intr.height; } );
+    int const w = vsp->get_width();
+    int const h = vsp->get_height();
 
-    if( it != stream_intrinsics.end() )  // Some profiles don't have intrinsics
+    auto & stream_intrinsics = stream->get_intrinsics();
+    if( 1 == stream_intrinsics.size() )
     {
-        rs2_intrinsics intr;
-        intr.width = it->width;
-        intr.height = it->height;
-        intr.ppx = it->principal_point_x;
-        intr.ppy = it->principal_point_y;
-        intr.fx = it->focal_lenght_x;
-        intr.fy = it->focal_lenght_y;
-        intr.model = static_cast< rs2_distortion >( it->distortion_model );
-        memcpy( intr.coeffs, it->distortion_coeffs.data(), sizeof( intr.coeffs ) );
-        vsp->set_intrinsics( [intr]() { return intr; } );
+        // A single set of intrinsics will get scaled to any profile resolution
+        vsp->set_intrinsics( [intrinsics = *stream_intrinsics.begin(), w, h]()
+                             { return to_rs2_intrinsics( intrinsics.scaled_to( w, h ) ); } );
     }
+    else
+    {
+        // When we have multiple sets of intrinsics (one per resolution), we're limited to these
+        auto it = std::find_if( stream_intrinsics.begin(),
+                                stream_intrinsics.end(),
+                                [w, h]( const realdds::video_intrinsics & intr )
+                                { return intr.width == w && intr.height == h; } );
+        if( it != stream_intrinsics.end() )  // Some profiles don't have intrinsics
+        {
+            vsp->set_intrinsics( [intr = to_rs2_intrinsics( *it )]() { return intr; } );
+        }
+    }
+
 }
 
 

@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
 #test:retries:gha 2
@@ -44,7 +44,6 @@ with test.remote.fork( nested_indent=None ) as remote:
     ###############################################################################################################
     # The client is a device from which we send controls
     #
-    from dds import wait_for_devices
 
     with test.closure( 'Start the client participant' ):
         participant = dds.participant()

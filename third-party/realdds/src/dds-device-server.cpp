@@ -80,26 +80,22 @@ static void on_discovery_device_header( size_t const n_streams,
     for( auto & ex : extr )
         extrinsics_json.push_back( json::array( { ex.first.first, ex.first.second, ex.second->to_json() } ) );
 
-    topics::flexible_msg device_header( json{
+    json j_device_header{
         { topics::notification::key::id, topics::notification::device_header::id },
         { topics::notification::device_header::key::n_streams, n_streams },
         { topics::notification::device_header::key::extrinsics, std::move( extrinsics_json ) }
-    } );
-    auto json_string = slice( device_header.custom_data< char const >(), device_header._data.size() );
-    LOG_DEBUG( "-----> JSON = " << shorten_json_string( json_string, 300 ) << " size " << json_string.length() );
-    //LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( device_header.json_data() ).size() );
+    };
+    topics::flexible_msg device_header( j_device_header );
+    LOG_DEBUG( "device-header " << std::setw( 4 ) << j_device_header << " size " << device_header._data.size() );
     notifications.add_discovery_notification( std::move( device_header ) );
 
     auto device_options = json::array();
     for( auto & opt : options )
         device_options.push_back( std::move( opt->to_json() ) );
-    topics::flexible_msg device_options_message( json {
-        { topics::notification::key::id, topics::notification::device_options::id },
-        { topics::notification::device_options::key::options, std::move( device_options ) }
-    } );
-    json_string = slice( device_options_message.custom_data< char const >(), device_options_message._data.size() );
-    LOG_DEBUG( "-----> JSON = " << shorten_json_string( json_string, 300 ) << " size " << json_string.length() );
-    //LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( device_options_message.json_data() ).size() );
+    json j_device_options{ { topics::notification::key::id, topics::notification::device_options::id },
+                           { topics::notification::device_options::key::options, std::move( device_options ) } };
+    topics::flexible_msg device_options_message( j_device_options );
+    LOG_DEBUG( "device-options " << std::setw( 4 ) << j_device_options << " size " << device_options_message._data.size() );
     notifications.add_discovery_notification( std::move( device_options_message ) );
 }
 
@@ -110,7 +106,7 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
     auto profiles = json::array();
     for( auto & sp : stream->profiles() )
         profiles.push_back( std::move( sp->to_json() ) );
-    topics::flexible_msg stream_header_message( json{
+    json j_stream_header{
         { topics::notification::key::id, topics::notification::stream_header::id },
         { topics::notification::stream_header::key::type, stream->type_string() },
         { topics::notification::stream_header::key::name, stream->name() },
@@ -118,26 +114,49 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
         { topics::notification::stream_header::key::profiles, std::move( profiles ) },
         { topics::notification::stream_header::key::default_profile_index, stream->default_profile_index() },
         { topics::notification::stream_header::key::metadata_enabled, stream->metadata_enabled() },
-    } );
-    auto json_string = slice( stream_header_message.custom_data< char const >(), stream_header_message._data.size() );
-    LOG_DEBUG( "-----> JSON = " << shorten_json_string( json_string, 300 ) << " size " << json_string.length() );
-    //LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( stream_header_message.json_data() ).size() );
+    };
+    topics::flexible_msg stream_header_message( j_stream_header );
+    LOG_DEBUG( stream->name() << " stream-header " << std::setw( 4 ) << j_stream_header << " size "
+                              << stream_header_message._data.size() );
     notifications.add_discovery_notification( std::move( stream_header_message ) );
 
-    auto stream_options = json::array();
-    for( auto & opt : stream->options() )
-        stream_options.push_back( std::move( opt->to_json() ) );
+    json j_stream_options = json::object( {
+        { topics::notification::key::id, topics::notification::stream_options::id },
+        { topics::notification::stream_options::key::stream_name, stream->name() },
+    } );
 
-    json intrinsics;
+    auto & j_options = j_stream_options[topics::notification::stream_options::key::options] = json::array();
+    for( auto & opt : stream->options() )
+        j_options.push_back( std::move( opt->to_json() ) );
+
     if( auto video_stream = std::dynamic_pointer_cast< dds_video_stream_server >( stream ) )
     {
-        intrinsics = json::array();
-        for( auto & intr : video_stream->get_intrinsics() )
-            intrinsics.push_back( intr.to_json() );
+        auto & intrinsics = video_stream->get_intrinsics();
+        if( intrinsics.empty() )
+        {
+            // No intrinsics...
+        }
+        else
+        {
+            auto & j_intrinsics = j_stream_options[topics::notification::stream_options::key::intrinsics];
+            if( 1 == intrinsics.size() )
+            {
+                // Use an object with a single intrinsic
+                j_intrinsics = intrinsics.begin()->to_json();
+            }
+            else
+            {
+                // Multiple intrinsics are available
+                j_intrinsics = json::array();
+                for( auto & i : intrinsics )
+                    j_intrinsics.push_back( i.to_json() );
+            }
+        }
     }
     else if( auto motion_stream = std::dynamic_pointer_cast< dds_motion_stream_server >( stream ) )
     {
-        intrinsics = json::object( {
+        auto & j_intrinsics = j_stream_options[topics::notification::stream_options::key::intrinsics];
+        j_intrinsics = json::object( {
             { topics::notification::stream_options::intrinsics::key::accel,
                     motion_stream->get_accel_intrinsics().to_json() },
             { topics::notification::stream_options::intrinsics::key::gyro,
@@ -145,19 +164,13 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
         } );
     }
 
-    auto stream_filters = json::array();
+    auto & j_filters = j_stream_options[topics::notification::stream_options::key::recommended_filters] = json::array();
     for( auto & filter : stream->recommended_filters() )
-        stream_filters.push_back( filter );
-    topics::flexible_msg stream_options_message( json::object( {
-        { topics::notification::key::id, topics::notification::stream_options::id },
-        { topics::notification::stream_options::key::stream_name, stream->name() },
-        { topics::notification::stream_options::key::options, std::move( stream_options ) },
-        { topics::notification::stream_options::key::intrinsics, std::move( intrinsics ) },
-        { topics::notification::stream_options::key::recommended_filters, std::move( stream_filters ) },
-    } ) );
-    json_string = slice( stream_options_message.custom_data< char const >(), stream_options_message._data.size() );
-    LOG_DEBUG( "-----> JSON = " << shorten_json_string( json_string, 300 ) << " size " << json_string.length() );
-    //LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( stream_options_message.json_data() ).size() );
+        j_filters.push_back( filter );
+
+    topics::flexible_msg stream_options_message( j_stream_options );
+    LOG_DEBUG( stream->name() << " stream-options " << std::setw( 4 ) << j_stream_options << " size "
+                              << stream_options_message._data.size() );
     notifications.add_discovery_notification( std::move( stream_options_message ) );
 }
 

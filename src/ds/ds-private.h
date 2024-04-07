@@ -61,9 +61,6 @@ namespace librealsense
         const uint8_t DS5_EMITTER_FREQUENCY                 = 0x10;
         const uint8_t DS5_DEPTH_AUTO_EXPOSURE_MODE          = 0x11;
 
-        const uint8_t DS5_HKR_PVT_TEMPERATURE               = 0x15;
-        const uint8_t DS5_HKR_PROJECTOR_TEMPERATURE         = 0x16;
-        const uint8_t DS5_HKR_OHM_TEMPERATURE               = 0x17;
         // DS5 fisheye XU identifiers
         const uint8_t FISHEYE_EXPOSURE                      = 1;
 

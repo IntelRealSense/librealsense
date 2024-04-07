@@ -80,6 +80,8 @@ namespace librealsense
 
         ds::ds_caps parse_device_capabilities( const std::vector<uint8_t> &gvd_buf ) const;
 
+        rs2_format get_ir_format() const;
+
         //TODO - add these to device class as pure virtual methods
         command get_firmware_logs_command() const;
         command get_flash_logs_command() const;

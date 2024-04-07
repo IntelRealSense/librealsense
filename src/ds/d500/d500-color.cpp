@@ -143,13 +143,8 @@ namespace librealsense
             { 1.f, "50Hz" },
             { 2.f, "60Hz" } };
 
-        if (val_in_range(_pid, { ds::D555E_PID }))
-        {
-            description_per_value.insert(std::make_pair(3.f, "AUTO"));
-        }
-
         color_ep.register_option(RS2_OPTION_POWER_LINE_FREQUENCY,
-            std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_POWER_LINE_FREQUENCY,
+            std::make_shared<power_line_freq_option>(raw_color_ep, RS2_OPTION_POWER_LINE_FREQUENCY,
                 description_per_value));
 
         color_ep.register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
