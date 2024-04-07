@@ -123,6 +123,9 @@ namespace rs2
 
     void d500_autocalib_notification_model::draw_content(ux_window& win, int x, int y, float t, std::string& error_message)
     {
+        using namespace std;
+        using namespace chrono;
+
         const auto bar_width = width - 115;
         ImGui::SetCursorScreenPos({ float(x + 9), float(y + 4) });
 

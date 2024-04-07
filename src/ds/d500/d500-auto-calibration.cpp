@@ -149,6 +149,8 @@ namespace librealsense
 
             throw std::runtime_error(rsutils::string::from() << error_message_prefix + "Could not be triggered");
         }
+        auto table = *reinterpret_cast<ds::d500_coefficients_table*>(res.data() + 3);
+        int a = 1;
         return res;
     }
 
