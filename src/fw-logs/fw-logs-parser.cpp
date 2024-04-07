@@ -26,7 +26,7 @@ namespace librealsense
             {
                 if( source.first >= fw_logs::max_sources )
                     throw librealsense::invalid_value_exception( rsutils::string::from() << "Supporting source id 0 to "
-                                                                 << fw_logs::max_sources << ". Found source ("
+                                                                 << fw_logs::max_sources - 1 << ". Found source ("
                                                                  << source.first << ", " << source.second << ")" );
 
                 initialize_source_formatting_options( source, definitions_xml );
@@ -193,7 +193,7 @@ namespace librealsense
             auto verbosity = fw_logs_xml_helper::get_source_module_verbosity( source.first, definitions_xml );
             if( ! verbosity.empty() && verbosity.rbegin()->first >= fw_logs::max_modules )
                 throw librealsense::invalid_value_exception( rsutils::string::from() << "Supporting module id 0 to "
-                                                             << fw_logs::max_modules << ". Found module " 
+                                                             << fw_logs::max_modules - 1 << ". Found module " 
                                                              << verbosity.rbegin()->first << " in source (" 
                                                              << source.first << ", " << source.second << ")" );
 
