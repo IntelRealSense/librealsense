@@ -36,6 +36,8 @@ void load_external_xml( xml_document<> * document, std::vector< char > & buffer 
 xml_node<> * get_first_node( const xml_document<> * document )
 {
     xml_node<> * root = document->first_node();
+    if( !root )
+        throw librealsense::invalid_value_exception( "Cannot find XML root" );
 
     std::string root_name( root->name(), root->name() + root->name_size() );
     if( root_name.compare( "Format" ) != 0 )
@@ -150,7 +152,7 @@ std::string fw_logs_xml_helper::get_source_parser_file_path( int source_id, cons
     std::string path = get_file_path( source_node );
     if( path.empty() )
         throw librealsense::invalid_value_exception( rsutils::string::from()
-                                                     << "Did not find 'File' attribute for source " << source_id );
+                                                     << "Did not find File 'Path' attribute for source " << source_id );
 
     return path;
 }

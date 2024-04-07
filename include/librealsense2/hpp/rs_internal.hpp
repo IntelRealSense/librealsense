@@ -467,7 +467,7 @@ namespace rs2
         void stop_collecting()
         {
             rs2_error * e = nullptr;
-            rs2_start_collecting_fw_logs( _dev.get(), &e );
+            rs2_stop_collecting_fw_logs( _dev.get(), &e );
             error::handle( e );
         }
 
