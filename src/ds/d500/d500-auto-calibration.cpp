@@ -149,8 +149,10 @@ namespace librealsense
 
             throw std::runtime_error(rsutils::string::from() << error_message_prefix + "Could not be triggered");
         }
+
+        // TO REMOVE!!!
         auto table = *reinterpret_cast<ds::d500_coefficients_table*>(res.data() + 3);
-        int a = 1;
+
         return res;
     }
 
@@ -222,7 +224,10 @@ namespace librealsense
         return res;
     }
 
-    std::vector<uint8_t> d500_auto_calibrated::update_abort_status()
+    std::vector<uint8_t> d500_auto_calibrated::update_abort_status(int timeout_ms, 
+        rs2_update_progress_callback_sptr progress_callback)
+    {
+            now = std::chrono::high_resolution_clock::now();
     {
         std::vector<uint8_t> ans;
         auto res = _hw_monitor->send(command{ ds::GET_CALIB_STATUS });
@@ -232,28 +237,28 @@ namespace librealsense
         d500_calibration_answer calib_answer = *reinterpret_cast<d500_calibration_answer*>(res.data());
         if (calib_answer.calibration_state == static_cast<uint8_t>(d500_calibration_state::RS2_D500_CALIBRATION_STATE_PROCESS))
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        } while (now - start < std::chrono::milliseconds(timeout_ms) && !done);
             res = _hw_monitor->send(command{ ds::GET_CALIB_STATUS });
             if (!check_buffer_size_from_get_calib_status(res))
                 throw std::runtime_error("GET_CALIB_STATUS returned struct with wrong size");
 
             calib_answer = *reinterpret_cast<d500_calibration_answer*>(res.data());
-        }
-        if (calib_answer.calibration_state == static_cast<uint8_t>(d500_calibration_state::RS2_D500_CALIBRATION_STATE_IDLE))
-        {
+
+        // If we exit due to timeout, report timeout
+        if (!done)
             LOG_INFO("Depth Calibration Successfully Aborted");
             // returning success
             ans.push_back(1);
         }
         else
         {
-            LOG_INFO("Depth Calibration Could not be Aborted");
+            throw std::runtime_error("Operation timed-out!\n"
+                "Calibration state did not converge on time");
             // returning failure
             ans.push_back(0);
         }
-        return ans;
+        return state;
     }
-
 
     std::vector<uint8_t> d500_auto_calibrated::run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* const health, rs2_update_progress_callback_sptr progress_callback)
     {

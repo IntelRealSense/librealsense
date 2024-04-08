@@ -3502,8 +3502,6 @@ namespace rs2
                         << "Dry Run On-Chip Calibration"
                         << (streaming ? " (Disabled while streaming)" : "");
                     ImGui::SetTooltip("%s", tooltip.c_str());
-                }
-
                 has_autocalib = true;
                 continue;
             }
