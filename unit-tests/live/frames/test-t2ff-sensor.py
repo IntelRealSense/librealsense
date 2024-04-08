@@ -58,7 +58,7 @@ print("Device creation time is: {:.3f} [sec] max allowed is: {:.1f} [sec] ".form
 test.check(device_creation_time < max_time_for_device_creation)
 test.finish()
 
-
+product_line = dev.get_info(rs.camera_info.product_line)
 max_delay_for_depth_frame = 1
 max_delay_for_color_frame = 1
 
