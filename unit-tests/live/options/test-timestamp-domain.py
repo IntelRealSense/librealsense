@@ -50,7 +50,7 @@ device = test.find_first_device_or_exit()
 depth_frame_queue = rs.frame_queue(queue_capacity, keep_frames=False)
 
 depth_sensor = device.first_depth_sensor()
-depth_profile = next(p for p in depth_sensor.profiles if p.stream_type() == rs.stream.depth)
+depth_profile = next(p for p in depth_sensor.profiles if p.stream_type() == rs.stream.depth and p.is_default())
 depth_sensor.open(depth_profile)
 depth_sensor.start(depth_frame_queue)
 
@@ -70,7 +70,7 @@ close_resources(depth_sensor)
 color_frame_queue = rs.frame_queue(queue_capacity, keep_frames=False)
 
 color_sensor = device.first_color_sensor()
-color_profile = next(p for p in color_sensor.profiles if p.stream_type() == rs.stream.color)
+color_profile = next(p for p in color_sensor.profiles if p.stream_type() == rs.stream.color and p.is_default())
 color_sensor.open(color_profile)
 color_sensor.start(color_frame_queue)
 
