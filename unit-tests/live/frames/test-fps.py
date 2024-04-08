@@ -63,12 +63,13 @@ def measure_fps(sensor, profile, seconds_to_count_frames = 10):
 
 
 delta_Hz = 1
-tested_fps = [6, 15, 30, 60, 90]
-time_to_test_fps = [20, 13, 10, 5, 4]
+tested_fps = [5, 6, 15, 30, 60, 90]
+time_to_test_fps = [25, 20, 13, 10, 5, 4]
 test.check_equal( len(tested_fps), len(time_to_test_fps) )
 
 dev = test.find_first_device_or_exit()
 product_line = dev.get_info(rs.camera_info.product_line)
+camera_name = dev.get_info(rs.camera_info.name)
 
 #####################################################################################################
 test.start("Testing depth fps " + product_line + " device - "+ platform.system() + " OS")
@@ -85,7 +86,11 @@ for i in range(len(tested_fps)):
         dp = next(p for p in ds.profiles
                   if p.fps() == requested_fps
                   and p.stream_type() == rs.stream.depth
-                  and p.format() == rs.format.z16)
+                  and p.format() == rs.format.z16
+                  # On D585S the operational depth resolution is 1280x720
+                  # 1280x960 is also available but only allowed in service mode
+                  and (("D585S" in camera_name and p.as_video_stream_profile().height() == 720)  or (product_line == "D400")))
+                  
     except StopIteration:
         log.i("Requested fps: {:.1f} [Hz], not supported".format(requested_fps))
     else:
@@ -114,6 +119,7 @@ for i in range(len(tested_fps)):
                   if p.fps() == requested_fps
                   and p.stream_type() == rs.stream.color
                   and p.format() == rs.format.rgb8)
+                 
     except StopIteration:
         log.i("Requested fps: {:.1f} [Hz], not supported".format(requested_fps))
     else:
