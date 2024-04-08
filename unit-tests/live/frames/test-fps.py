@@ -87,10 +87,10 @@ for i in range(len(tested_fps)):
                   and p.stream_type() == rs.stream.depth
                   and p.format() == rs.format.z16)
     except StopIteration:
-        print("Requested fps: {:.1f} [Hz], not supported".format(requested_fps))
+        log.i("Requested fps: {:.1f} [Hz], not supported".format(requested_fps))
     else:
         fps = measure_fps(ds, dp, time_to_test_fps[i])
-        print("Requested fps: {:.1f} [Hz], actual fps: {:.1f} [Hz]. Time to first frame {:.6f}".format(requested_fps, fps, first_frame_seconds))
+        log.i("Requested fps: {:.1f} [Hz], actual fps: {:.1f} [Hz]. Time to first frame {:.6f}".format(requested_fps, fps, first_frame_seconds))
         delta_Hz = requested_fps * 0.05 # Validation KPI is 5%
         test.check(fps <= (requested_fps + delta_Hz) and fps >= (requested_fps - delta_Hz))
 test.finish()
@@ -115,10 +115,10 @@ for i in range(len(tested_fps)):
                   and p.stream_type() == rs.stream.color
                   and p.format() == rs.format.rgb8)
     except StopIteration:
-        print("Requested fps: {:.1f} [Hz], not supported".format(requested_fps))
+        log.i("Requested fps: {:.1f} [Hz], not supported".format(requested_fps))
     else:
         fps = measure_fps(cs, cp, time_to_test_fps[i])
-        print("Requested fps: {:.1f} [Hz], actual fps: {:.1f} [Hz]. Time to first frame {:.6f}".format(requested_fps, fps, first_frame_seconds))
+        log.i("Requested fps: {:.1f} [Hz], actual fps: {:.1f} [Hz]. Time to first frame {:.6f}".format(requested_fps, fps, first_frame_seconds))
         delta_Hz = requested_fps * 0.05 # Validation KPI is 5%
         test.check(fps <= (requested_fps + delta_Hz) and fps >= (requested_fps - delta_Hz))
 
