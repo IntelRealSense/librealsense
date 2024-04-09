@@ -156,6 +156,34 @@ namespace librealsense
         return res;
     }
 
+    std::ostream& operator<< (std::ostream& stream, const d500_auto_calibrated::d500_calibration_state& state)
+    {
+        switch (state)
+        {
+        case d500_auto_calibrated::d500_calibration_state::RS2_D500_CALIBRATION_STATE_IDLE:
+            stream << "Idle";
+            break;
+        case d500_auto_calibrated::d500_calibration_state::RS2_D500_CALIBRATION_STATE_PROCESS:
+            stream << "In Process";
+            break;
+        case d500_auto_calibrated::d500_calibration_state::RS2_D500_CALIBRATION_STATE_DONE_SUCCESS:
+            stream << "Success";
+            break;
+        case d500_auto_calibrated::d500_calibration_state::RS2_D500_CALIBRATION_STATE_DONE_FAILURE:
+            stream << "Failure";
+            break;
+        case d500_auto_calibrated::d500_calibration_state::RS2_D500_CALIBRATION_STATE_FLASH_UPDATE:
+            stream << "Flash Update";
+            break;
+        case d500_auto_calibrated::d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE:
+            stream << "Complete";
+            break;
+        default:
+            stream << ";";
+        }
+        return stream;
+    }
+
     std::vector<uint8_t> d500_auto_calibrated::update_calibration_status(int timeout_ms,
         rs2_update_progress_callback_sptr progress_callback)
     {

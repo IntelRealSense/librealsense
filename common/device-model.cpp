@@ -3442,7 +3442,7 @@ namespace rs2
                 {
                     try
                     {
-                        auto manager = std::make_shared<d500_on_chip_calib_manager>(viewer, sub, *this, dev);
+                        auto manager = std::make_shared<d500_on_chip_calib_manager>(viewer, sub, *this, dev, sub_safety);
                         auto n = std::make_shared<d500_autocalib_notification_model>("", manager, false);
                         viewer.not_model->add_notification(n);
                         n->forced = true;
@@ -3475,7 +3475,7 @@ namespace rs2
                 {
                     try
                     {
-                        auto manager = std::make_shared<d500_on_chip_calib_manager>(viewer, sub, *this, dev);
+                        auto manager = std::make_shared<d500_on_chip_calib_manager>(viewer, sub, *this, dev, sub_safety);
                         auto n = std::make_shared<d500_autocalib_notification_model>("", manager, false);
                         viewer.not_model->add_notification(n);
                         n->forced = true;

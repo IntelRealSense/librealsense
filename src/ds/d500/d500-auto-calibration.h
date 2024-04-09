@@ -16,14 +16,6 @@ namespace librealsense
 
     class d500_auto_calibrated : public auto_calibrated_interface
     {
-        //enum class auto_calib_action
-        //{
-        //    RS2_OCC_ACTION_ON_CHIP_CALIB,         // On-Chip calibration
-        //    RS2_OCC_ACTION_TARE_CALIB            // Tare calibration
-        //};
-
-        
-
     public:
         d500_auto_calibrated();
         void write_calibration() const override;
@@ -41,7 +33,6 @@ namespace librealsense
             float target_width, float target_height, rs2_update_progress_callback_sptr progress_callback) override;
         void set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm);
 
-    private:
         enum class d500_calibration_state
         {
             RS2_D500_CALIBRATION_STATE_IDLE = 0,
