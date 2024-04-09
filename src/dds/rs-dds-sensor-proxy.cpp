@@ -546,6 +546,32 @@ void dds_sensor_proxy::stop()
 }
 
 
+class dds_option_roi_method : public region_of_interest_method
+{
+    std::shared_ptr< rs_dds_option > _rs_option;
+
+public:
+    dds_option_roi_method( std::shared_ptr< rs_dds_option > const & rs_option )
+        : _rs_option( rs_option )
+    {
+    }
+
+    void set( const region_of_interest & roi ) override
+    {
+        _rs_option->set_value( json::array( { roi.min_x, roi.min_y, roi.max_x, roi.max_y } ) );
+    }
+
+    region_of_interest get() const override
+    {
+        auto j = _rs_option->get_value();
+        if( ! j.is_array() )
+            throw std::runtime_error( "no ROI available" );
+        region_of_interest roi{ j[0], j[1], j[2], j[3] };
+        return roi;
+    }
+};
+
+
 void dds_sensor_proxy::add_option( std::shared_ptr< realdds::dds_option > option )
 {
     bool const ok_if_there = true;
@@ -586,31 +612,6 @@ void dds_sensor_proxy::add_option( std::shared_ptr< realdds::dds_option > option
     {
         if( _roi_support )
             throw std::runtime_error( "more than one ROI option in stream" );
-
-        class dds_option_roi_method : public region_of_interest_method
-        {
-            std::shared_ptr< rs_dds_option > _rs_option;
-
-        public:
-            dds_option_roi_method( std::shared_ptr< rs_dds_option > const & rs_option )
-                : _rs_option( rs_option )
-            {
-            }
-
-            void set( const region_of_interest & roi ) override
-            {
-                _rs_option->set_value( json::array( { roi.min_x, roi.min_y, roi.max_x, roi.max_y } ) );
-            }
-
-            region_of_interest get() const override
-            {
-                auto j = _rs_option->get_value();
-                if( ! j.is_array() )
-                    throw std::runtime_error( "no ROI available" );
-                region_of_interest roi{ j[0], j[1], j[2], j[3] };
-                return roi;
-            }
-        };
 
         auto roi = std::make_shared< roi_sensor_base >();
         roi->set_roi_method( std::make_shared< dds_option_roi_method >( opt ) );
