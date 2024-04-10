@@ -149,6 +149,11 @@ namespace librealsense
 
             throw std::runtime_error(rsutils::string::from() << error_message_prefix + "Could not be triggered");
         }
+
+        // printing new calibration to log
+        auto depth_calib = *reinterpret_cast<ds::d500_coefficients_table*>(res.data() + 3);
+        LOG_INFO("Depth new Calibration = \n" + depth_calib.to_string());
+        
         return std::vector<uint8_t>(res.begin() + 3, res.end());
     }
 

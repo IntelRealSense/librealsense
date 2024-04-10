@@ -67,8 +67,6 @@ namespace librealsense
         std::vector<uint8_t> update_abort_status();
         void get_mode_from_json(const std::string& json);
         std::shared_ptr<hw_monitor> _hw_monitor;
-        bool _is_dry_run = false;
-        bool _is_abort = false;
         d500_calibration_mode _mode;
         d500_calibration_state _state;
         d500_calibration_result _result;
