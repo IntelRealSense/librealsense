@@ -28,19 +28,14 @@ namespace rs2
         device_name_string = "Unknown";
         if (dev.supports(RS2_CAMERA_INFO_PRODUCT_ID))
         {
-            device_name_string = _dev.get_info(RS2_CAMERA_INFO_NAME);
-            if (val_in_range(device_name_string, { std::string("Intel RealSense D415") }))
+            device_name_string = _dev.get_info( RS2_CAMERA_INFO_NAME );
+            if( val_in_range( device_name_string, { std::string( "Intel RealSense D415" ) } ) )
                 speed = 4;
         }
         if (dev.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION))
         {
             std::string fw_version = dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
             tare_health = is_upgradeable("05.12.14.100", fw_version);
-        }
-
-        if (!strcmp(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "0B6B"))
-        {
-            _is_tac = true;
         }
     }
 
@@ -996,14 +991,6 @@ namespace rs2
                   ",\n \"scan only\":" << (host_assistance ? 1 : 0) <<
                   ",\n \"interactive scan\":" << 0 << "}";
         }
-        else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB_DRY_RUN)
-        {
-            ss << "{\n \"calib dry run }";
-        }
-        else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB_ABORT)
-        {
-            ss << "{\n \"calib abort }";
-        }
         else
         {
             ss << "{\n \"calib type\":" << 2 <<
@@ -1032,8 +1019,7 @@ namespace rs2
         auto calib_dev = _dev.as<auto_calibrated_device>();
         if (action == RS2_CALIB_ACTION_TARE_CALIB)
             _new_calib = calib_dev.run_tare_calibration(ground_truth, json, health, [&](const float progress) {_progress = progress; }, 5000);
-        else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB
-             || action == RS2_CALIB_ACTION_ON_CHIP_CALIB_DRY_RUN || action == RS2_CALIB_ACTION_ON_CHIP_CALIB_ABORT)
+        else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
             _new_calib = calib_dev.run_on_chip_calibration(json, health, [&](const float progress) {_progress = progress; }, occ_timeout_ms);
 
         auto invoke = [](std::function<void()>) {};
@@ -1434,11 +1420,7 @@ namespace rs2
         _viewer.is_3d_view = (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH ? false : true);
 
         auto calib_dev = _dev.as<auto_calibrated_device>();
-
-        if (!_is_tac)
-        {
-            _old_calib = calib_dev.get_calibration_table();
-        }
+        _old_calib = calib_dev.get_calibration_table();
 
         _was_streaming = _sub->streaming;
         _synchronized = _viewer.synchronization_enable.load();
@@ -1731,8 +1713,7 @@ namespace rs2
                 ImGui::Text("%s", "UV-Mapping Calibration");
             else if (update_state == RS2_CALIB_STATE_CALIB_IN_PROCESS ||
                      update_state == RS2_CALIB_STATE_CALIB_COMPLETE ||
-                     update_state == RS2_CALIB_STATE_SELF_INPUT ||
-                     update_state == RS2_CALIB_STATE_SELF_INPUT_DRY_RUN)
+                     update_state == RS2_CALIB_STATE_SELF_INPUT)
             {
                if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
                    ImGui::Text("%s", "On-Chip Calibration Extended");
@@ -2133,9 +2114,7 @@ namespace rs2
                     ImGui::SetTooltip("%s", "Begin Tare Calibration");
                 }
             }
-            else if (update_state == RS2_CALIB_STATE_SELF_INPUT || 
-                update_state == RS2_CALIB_STATE_SELF_INPUT_DRY_RUN ||
-                update_state == RS2_CALIB_STATE_SELF_INPUT_ABORT)
+            else if (update_state == RS2_CALIB_STATE_SELF_INPUT)
             {
                 // Disabled according to the decision on v2.50
                 /*
@@ -2201,23 +2180,15 @@ namespace rs2
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 31) });
                 get_manager().host_assistance = (get_manager().device_name_string ==  std::string("Intel RealSense D457") ); // To be used for MIPI SKU only
                 bool assistance = (get_manager().host_assistance != 0);
-                if (!get_manager()._is_tac)
-                {
-                    ImGui::Checkbox("Host Assistance", &assistance);
-                    if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("%s", "check = host assitance for statistics data, uncheck = no host assistance");
-                }
+                ImGui::Checkbox("Host Assistance", &assistance);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "check = host assitance for statistics data, uncheck = no host assistance");
 
                 auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
                 ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
 
-                std::string activation_cal_str = "Calibrate";
-                if (update_state == RS2_CALIB_STATE_SELF_INPUT_DRY_RUN)
-                    activation_cal_str = "Calibrate Dry Run";
-                else if (update_state == RS2_CALIB_STATE_SELF_INPUT_ABORT)
-                    activation_cal_str = "Abort Calibration";
-                std::string button_name = rsutils::string::from() << activation_cal_str << "##self" << index;
+                std::string button_name = rsutils::string::from() << "Calibrate" << "##self" << index;
 
                 ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 28) });
                 if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
@@ -2225,14 +2196,6 @@ namespace rs2
                     get_manager().restore_workspace([this](std::function<void()> a) { a(); });
                     get_manager().reset();
                     get_manager().retry_times = 0;
-                    if (update_state == RS2_CALIB_STATE_SELF_INPUT_DRY_RUN)
-                    {
-                        get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB_DRY_RUN;
-                    }
-                    else if (update_state == RS2_CALIB_STATE_SELF_INPUT_ABORT)
-                    {
-                        get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB_ABORT;
-                    }
                     auto _this = shared_from_this();
                     auto invoke = [_this](std::function<void()> action) {_this->invoke(action);};
                     get_manager().start(invoke);

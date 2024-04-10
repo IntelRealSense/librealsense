@@ -150,11 +150,63 @@ namespace librealsense
             throw std::runtime_error(rsutils::string::from() << error_message_prefix + "Could not be triggered");
         }
 
-        // printing new calibration to log
-        auto depth_calib = *reinterpret_cast<ds::d500_coefficients_table*>(res.data() + 3);
-        LOG_INFO("Depth new Calibration = \n" + depth_calib.to_string());
-        
         return std::vector<uint8_t>(res.begin() + 3, res.end());
+    }
+
+    std::vector<uint8_t> d500_auto_calibrated::update_calibration_status(int timeout_ms,
+        rs2_update_progress_callback_sptr progress_callback)
+    {
+        auto start_time = std::chrono::high_resolution_clock::now();
+        std::vector<uint8_t> res;
+        do
+        {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            if (progress_callback)
+            {
+                res = _hw_monitor->send(command{ ds::GET_CALIB_STATUS });
+
+                d500_calibration_answer calib_answer = *reinterpret_cast<d500_calibration_answer*>(res.data());
+                progress_callback->on_update_progress(calib_answer.calibration_progress);
+                _state = static_cast<d500_calibration_state>(calib_answer.calibration_state);
+                _result = static_cast<d500_calibration_result>(calib_answer.calibration_result);
+                LOG_INFO("Calibration in progress - State = " << _state 
+                    << ", progress = " << int(calib_answer.calibration_progress)
+                    << ", result = " << _result);
+            }
+            bool is_timed_out(std::chrono::high_resolution_clock::now() - start_time > std::chrono::milliseconds(timeout_ms));
+            if (is_timed_out)
+            {
+                throw std::runtime_error("OCC Calibration Timeout");
+            }
+        } while (_state != d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE);
+
+        // printing new calibration to log
+        if (_result == d500_calibration_result::RS2_D500_CALIBRATION_RESULT_SUCCESS)
+        {
+            auto depth_calib = *reinterpret_cast<ds::d500_coefficients_table*>(res.data() + 3);
+            LOG_INFO("Depth new Calibration = \n" + depth_calib.to_string());
+        }
+
+        return res;
+    }
+
+    std::vector<uint8_t> d500_auto_calibrated::update_abort_status(int timeout_ms, 
+        rs2_update_progress_callback_sptr progress_callback)
+    {
+        auto start_time = std::chrono::high_resolution_clock::now();
+
+        std::vector<uint8_t> res = _hw_monitor->send(command{ ds::GET_CALIB_STATUS });
+
+        auto curr_time = std::chrono::high_resolution_clock::now();
+        bool is_timed_out(std::chrono::high_resolution_clock::now() - start_time > std::chrono::milliseconds(timeout_ms));
+        if (is_timed_out)
+        {
+            throw std::runtime_error("OCC Calibration Abort Timeout");
+        }
+
+        LOG_INFO("Depth Calibration Aborted");
+
+        return res;
     }
 
     std::ostream& operator<< (std::ostream& stream, const d500_auto_calibrated::d500_calibration_state& state)

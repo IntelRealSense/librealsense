@@ -5,7 +5,6 @@
 #include <viewer.h>
 #include "d500-on-chip-calib.h"
 
-
 namespace rs2
 {
     d500_on_chip_calib_manager::d500_on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub,
