@@ -149,11 +149,7 @@ namespace librealsense
 
             throw std::runtime_error(rsutils::string::from() << error_message_prefix + "Could not be triggered");
         }
-
-        // TO REMOVE!!!
-        auto table = *reinterpret_cast<ds::d500_coefficients_table*>(res.data() + 3);
-
-        return res;
+        return std::vector<uint8_t>(res.begin() + 3, res.end());
     }
 
     std::ostream& operator<< (std::ostream& stream, const d500_auto_calibrated::d500_calibration_state& state)

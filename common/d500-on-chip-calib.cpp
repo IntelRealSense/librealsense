@@ -180,6 +180,12 @@ namespace rs2
         else
         {
             update_ui_on_calibration_complete(win, x, y);
+            if (!reset_called && 
+                get_manager().action != d500_on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB_ABORT)
+            {
+                get_manager().reset_device();
+                reset_called = true;
+            }
         }
 
         ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
