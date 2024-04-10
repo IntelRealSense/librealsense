@@ -123,7 +123,8 @@ extern "C" {
         RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE, /**< Select depth sensor auto exposure mode see rs2_depth_auto_exposure_mode for values  */
         RS2_OPTION_OHM_TEMPERATURE, /**< Temperature of the Optical Head Sensor */
         RS2_OPTION_SOC_PVT_TEMPERATURE, /**< Temperature of PVT SOC */
-        RS2_OPTION_GYRO_SENSITIVITY,/**< Control of the gyro sensitivity level, see rs2_gyro_sensitivity for values */ 
+        RS2_OPTION_GYRO_SENSITIVITY,/**< Control of the gyro sensitivity level, see rs2_gyro_sensitivity for values */
+        RS2_OPTION_REGION_OF_INTEREST,/**< The rectangular area used from the streaming profile */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
@@ -149,6 +150,7 @@ extern "C" {
         RS2_OPTION_TYPE_FLOAT,
         RS2_OPTION_TYPE_STRING,
         RS2_OPTION_TYPE_BOOLEAN,
+        RS2_OPTION_TYPE_RECT,
 
         RS2_OPTION_TYPE_COUNT
 
@@ -160,6 +162,16 @@ extern "C" {
     */
     const char * rs2_option_type_to_string( rs2_option_type type );
 
+    /**
+    * A rectangle expressed in 64 bits, used with rs2_option_value::as_rect.
+    * Same semantics as rs2_set_region_of_interest.
+    */
+    typedef struct rs2_option_rect
+    {
+        int16_t x1, y1;
+        int16_t x2, y2;
+    } rs2_option_rect;
+
     /** \brief The value of an option, in a known option type.
     */
     typedef struct rs2_option_value
@@ -167,11 +179,15 @@ extern "C" {
         rs2_option id;
         int is_valid;                     /**< 0 if no value available; 1 otherwise */
         rs2_option_type type;
-        union {
+#pragma pack(push,1)
+        union
+        {
             char const * as_string;       /**< valid only while rs2_option_value is alive! */
             float as_float;
             int64_t as_integer;           /**< including boolean value */
+            rs2_option_rect as_rect;
         };
+#pragma pack(pop)
     } rs2_option_value;
 
     /** \brief For SR300 devices: provides optimized settings (presets) for specific types of usage. */

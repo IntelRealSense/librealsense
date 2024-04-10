@@ -135,6 +135,24 @@ struct rs2_option_value_wrapper : rs2_option_value
                 as_string = p_json->string_ref().c_str();
                 break;
 
+            case RS2_OPTION_TYPE_RECT:
+                if( ! p_json->is_array() || 4 != p_json->size() )
+                    throw invalid_value_exception( get_string( option_id )
+                                                   + " value is not a rect: " + p_json->dump() );
+                try
+                {
+                    p_json->at( 0 ).get_to( as_rect.x1 );
+                    p_json->at( 1 ).get_to( as_rect.y1 );
+                    p_json->at( 2 ).get_to( as_rect.x2 );
+                    p_json->at( 3 ).get_to( as_rect.y2 );
+                }
+                catch( json::exception const & e )
+                {
+                    throw invalid_value_exception( get_string( option_id )
+                                                   + " value is not a rect: " + e.what() );
+                }
+                break;
+
             default:
                 throw invalid_value_exception( "invalid " + get_string( option_id ) + " type "
                                                + get_string( option_type ) );
@@ -732,7 +750,7 @@ float rs2_get_option(const rs2_options* options, rs2_option option_id, rs2_error
     case RS2_OPTION_TYPE_BOOLEAN:
         return (float)option.get_value().get< bool >();
 
-    case RS2_OPTION_TYPE_STRING:
+    case RS2_OPTION_TYPE_STRING: {
         // We can convert "enum" options to a float value
         auto r = option.get_range();
         if( r.min == 0.f && r.step == 1.f )
@@ -748,6 +766,10 @@ float rs2_get_option(const rs2_options* options, rs2_option option_id, rs2_error
             }
         }
         throw not_implemented_exception( "use rs2_get_option_value to get string values" );
+    }
+
+    case RS2_OPTION_TYPE_RECT:
+        throw not_implemented_exception( "use rs2_get_option_value to get rect values" );
     }
     return option.query();
 }
@@ -778,46 +800,7 @@ void rs2_set_option(const rs2_options* options, rs2_option option, float value, 
 {
     VALIDATE_NOT_NULL(options);
     VALIDATE_OPTION_ENABLED(options, option);
-    auto& option_ref = options->options->get_option(option);
-    auto range = option_ref.get_range();
-    switch( option_ref.get_value_type() )
-    {
-    case RS2_OPTION_TYPE_FLOAT:
-        if( range.min != range.max && range.step )
-            VALIDATE_RANGE( value, range.min, range.max );
-        option_ref.set( value );
-        break;
-
-    case RS2_OPTION_TYPE_INTEGER:
-        if( range.min != range.max && range.step )
-            VALIDATE_RANGE( value, range.min, range.max );
-        if( (int)value != value )
-            throw invalid_value_exception( rsutils::string::from() << "not an integer: " << value );
-        option_ref.set( value );
-        break;
-
-    case RS2_OPTION_TYPE_BOOLEAN:
-        if( value == 0.f )
-            option_ref.set_value( false );
-        else if( value == 1.f )
-            option_ref.set_value( true );
-        else
-            throw invalid_value_exception( rsutils::string::from() << "not a boolean: " << value );
-        break;
-
-    case RS2_OPTION_TYPE_STRING:
-        // We can convert "enum" options to a float value
-        if( (int)value == value && range.min == 0.f && range.step == 1.f )
-        {
-            auto desc = option_ref.get_value_description( value );
-            if( desc )
-            {
-                option_ref.set_value( desc );
-                break;
-            }
-        }
-        throw not_implemented_exception( "use rs2_set_option_value to set string values" );
-    }
+    options->options->get_option(option).set( value );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, options, option, value)
 
@@ -854,6 +837,13 @@ void rs2_set_option_value( rs2_options const * options, rs2_option_value const *
 
     case RS2_OPTION_TYPE_STRING:
         option.set_value( option_value->as_string );
+        break;
+
+    case RS2_OPTION_TYPE_RECT:
+        option.set_value( json::array( { option_value->as_rect.x1,
+                                         option_value->as_rect.y1,
+                                         option_value->as_rect.x2,
+                                         option_value->as_rect.y2 } ) );
         break;
 
     default:
@@ -1440,7 +1430,14 @@ void rs2_set_options_changed_callback( rs2_options * options,
         {
             rs2_options_list * updated_options_list = new rs2_options_list(); // Should be on heap if user will choose to save for later use.
             populate_options_list( updated_options_list, updated_options );
-            callback( updated_options_list );
+            try
+            {
+                callback( updated_options_list );
+            }
+            catch( ... )
+            {
+                LOG_ERROR( "Caught exception from options-changed callback" );
+            }
         } );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , options, callback )
@@ -1464,7 +1461,14 @@ void rs2_set_options_changed_callback_cpp( rs2_options * options,
         {
             rs2_options_list * updated_options_list = new rs2_options_list(); // Should be on heap if user will choose to save for later use.
             populate_options_list( updated_options_list, updated_options );
-            cb->on_value_changed( updated_options_list );
+            try
+            {
+                cb->on_value_changed( updated_options_list );
+            }
+            catch( ... )
+            {
+                LOG_ERROR( "Caught exception from options-changed callback" );
+            }
         } );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , options, callback )

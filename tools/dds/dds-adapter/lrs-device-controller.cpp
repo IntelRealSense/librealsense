@@ -148,6 +148,53 @@ static std::string stream_name_from_rs2( rs2::sensor const & sensor )
 }
 
 
+std::vector< char const * > get_option_enum_values( rs2::sensor const & sensor,
+                                                    rs2_option const opt,
+                                                    rs2::option_range const & range,
+                                                    float const current_value,
+                                                    size_t * p_current_index,
+                                                    size_t * p_default_index )
+{
+    // Same logic as in Viewer's option-model...
+    if( range.step < 0.9f )
+        return {};
+
+    size_t current_index = 0, default_index = 0;
+    std::vector< const char * > labels;
+    for( auto i = range.min; i <= range.max; i += range.step )
+    {
+        auto label = sensor.get_option_value_description( opt, i );
+        if( ! label )
+            return {};  // Missing value - not an enum
+
+        if( std::fabs( i - current_value ) < 0.001f )
+            current_index = labels.size();
+        if( std::fabs( i - range.def ) < 0.001f )
+            default_index = labels.size();
+
+        labels.push_back( label );
+    }
+    if( p_current_index )
+        *p_current_index = current_index;
+    if( p_default_index )
+        *p_default_index = default_index;
+    return labels;
+}
+
+
+static json json_from_roi( rs2::region_of_interest const & roi )
+{
+    return realdds::dds_rect_option::type{ roi.min_x, roi.min_y, roi.max_x, roi.max_y }.to_json();
+}
+
+
+static rs2::region_of_interest roi_from_json( json const & j )
+{
+    auto roi = realdds::dds_rect_option::type::from_json( j );
+    return { roi.x1, roi.y1, roi.x2, roi.y2 };
+}
+
+
 std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controller::get_supported_streams()
 {
     std::map< std::string, realdds::dds_stream_profiles > stream_name_to_profiles;
@@ -295,20 +342,35 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
                         json j = json::array();
                         json props = json::array();
                         j += option_name;
-                        json option_value;  // null - no value
+                        // Even read-only options have ranges in librealsense
+                        auto const range = sensor.get_option_range( option_id );
                         try
                         {
-                            option_value = sensor.get_option( option_id );
+                            // For now, assume (legacy) librealsense options are all floats
+                            float option_value = sensor.get_option( option_id );  // may throw
+                            size_t current_index, default_index;
+                            auto const values = get_option_enum_values( sensor, option_id, range, option_value, &current_index, &default_index );
+                            if( ! values.empty() )
+                            {
+                                // Translate to enum
+                                j += values[current_index];
+                                j += values;
+                                j += values[default_index];
+                            }
+                            else
+                            {
+                                j += option_value;
+                                j += range.min;
+                                j += range.max;
+                                j += range.step;
+                                j += range.def;
+                            }
                         }
                         catch( ... )
                         {
                             // Some options can be queried only if certain conditions exist skip them for now
                             props += "optional";
-                        }
-                        j += option_value;
-                        {
-                            // Even read-only options have ranges in librealsense
-                            auto const range = sensor.get_option_range( option_id );
+                            j += rsutils::null_json;
                             j += range.min;
                             j += range.max;
                             j += range.step;
@@ -328,6 +390,29 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
                         LOG_ERROR( "Cannot query details of option " << option_id );
                         // Some options can be queried only if certain conditions exist skip them for now
                     }
+                }
+
+                if( auto roi_sensor = rs2::roi_sensor( sensor ) )
+                {
+                    // AE ROI is exposed as an interface in the librealsense API and through a "Region of Interest"
+                    // rectangle option in DDS
+                    json j = json::array();
+                    j += rs2_option_to_string( RS2_OPTION_REGION_OF_INTEREST );
+                    json option_value;  // null - no value
+                    try
+                    {
+                        option_value = json_from_roi( roi_sensor.get_region_of_interest() );
+                    }
+                    catch( ... )
+                    {
+                        // May be available only during streaming
+                    }
+                    j += option_value;
+                    j += nullptr;                                 // No default value
+                    j += "Region of Interest for Auto Exposure";  // Description
+                    j += json::array( { "optional" } );           // Properties
+                    auto dds_opt = realdds::dds_option::from_json( j );
+                    stream_options.push_back( dds_opt );
                 }
 
                 auto recommended_filters = sensor.get_recommended_filters();
@@ -717,7 +802,10 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                             switch( changed_option->type )
                             {
                             case RS2_OPTION_TYPE_FLOAT:
-                                value = changed_option->as_float;
+                                if( auto e = std::dynamic_pointer_cast< realdds::dds_enum_option >( dds_option ) )
+                                    value = e->get_choices().at( int( changed_option->as_float ) );
+                                else
+                                    value = changed_option->as_float;
                                 break;
                             case RS2_OPTION_TYPE_STRING:
                                 value = changed_option->as_string;
@@ -884,7 +972,7 @@ lrs_device_controller::get_rs2_profiles( realdds::dds_stream_profiles const & dd
 }
 
 
-void lrs_device_controller::set_option( const std::shared_ptr< realdds::dds_option > & option, float new_value )
+void lrs_device_controller::set_option( const std::shared_ptr< realdds::dds_option > & option, json const & new_value )
 {
     auto stream = option->stream();
     if( ! stream )
@@ -895,7 +983,48 @@ void lrs_device_controller::set_option( const std::shared_ptr< realdds::dds_opti
         throw std::runtime_error( "no stream '" + stream->name() + "' in device" );
     auto server = it->second;
     auto & sensor = _rs_sensors[server->sensor_name()];
-    sensor.set_option( option_name_to_id( option->get_name() ), new_value );
+    if( auto roi_option = std::dynamic_pointer_cast< realdds::dds_rect_option >( option ) )
+    {
+        // ROI has its own API in librealsense
+        if( auto roi_sensor = rs2::roi_sensor( sensor ) )
+            roi_sensor.set_region_of_interest( roi_from_json( roi_option->get_value() ) );
+        else
+            throw std::runtime_error( "rect option in sensor that has no ROI" );
+    }
+    else
+    {
+        // The librealsense API uses floats, so we need to convert from non-floats
+        float float_value;
+        switch( new_value.type() )
+        {
+        case json::value_t::number_float:
+        case json::value_t::number_integer:
+        case json::value_t::number_unsigned:
+            float_value = new_value;
+            break;
+        
+        case json::value_t::boolean:
+            float_value = new_value.get< bool >();
+            break;
+
+        case json::value_t::string:
+            // Only way is for this to be an enum...
+            if( auto e = std::dynamic_pointer_cast< realdds::dds_enum_option >( option ) )
+            {
+                auto const & choices = e->get_choices();
+                auto it = std::find( choices.begin(), choices.end(), new_value.string_ref() );
+                if( it == choices.end() )
+                    throw std::runtime_error( rsutils::string::from() << "not a valid enum value: " << new_value );
+                float_value = float( it - choices.begin() );
+                break;
+            }
+            // fall thru
+        default:
+            throw std::runtime_error( rsutils::string::from() << "unsupported value: " << new_value );
+        }
+
+        sensor.set_option( option_name_to_id( option->get_name() ), float_value );
+    }
 }
 
 
@@ -912,6 +1041,13 @@ json lrs_device_controller::query_option( const std::shared_ptr< realdds::dds_op
     auto & sensor = _rs_sensors[server->sensor_name()];
     try
     {
+        if( auto roi_option = std::dynamic_pointer_cast< realdds::dds_rect_option >( option ) )
+        {
+            if( auto roi_sensor = rs2::roi_sensor( sensor ) )
+                return json_from_roi( roi_sensor.get_region_of_interest() );
+            else
+                throw std::runtime_error( "rect option in sensor that has no ROI" );
+        }
         return sensor.get_option( option_name_to_id( option->get_name() ) );
     }
     catch( rs2::invalid_value_error const & )
