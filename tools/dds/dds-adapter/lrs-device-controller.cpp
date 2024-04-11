@@ -24,6 +24,7 @@
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/json.h>
 #include <rsutils/string/hexarray.h>
+#include <rsutils/string/hexdump.h>
 #include <rsutils/time/timer.h>
 #include <rsutils/string/from.h>
 
@@ -1205,15 +1206,30 @@ struct lrs_device_controller::dfu_support
     std::string uid;
     std::weak_ptr< dds_device_server > server;
     std::weak_ptr< lrs_device_controller > controller;
-    std::shared_ptr< realdds::dds_topic_reader > reader;
+    std::shared_ptr< realdds::dds_topic_reader_thread > reader;
     std::shared_ptr< realdds::topics::blob_msg > image;
     realdds::dds_guid_prefix initiator;
+    size_t image_size;
+    uint32_t image_crc;
 
     std::string debug_name() const
     {
         if( auto dev = server.lock() )
             return rsutils::string::from() << "[" << dev->debug_name() << "] ";
         return {};
+    }
+
+    // reset to a non-DFU state
+    void reset( char const * error = nullptr )
+    {
+        if( reader )
+            reader->stop();
+        if( auto c = controller.lock() )
+        {
+            if( error )
+                LOG_ERROR( debug_name() << "DFU " << error );
+            c->_dfu.reset();  // no longer in DFU state
+        }
     }
 };
 
@@ -1239,6 +1255,8 @@ bool lrs_device_controller::on_dfu_start( rsutils::json const & control, rsutils
     _dfu->initiator
         = realdds::guid_from_string( reply[realdds::topics::reply::key::sample][0].string_ref() ).guidPrefix;
     _dfu->uid = _rs_dev.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
+    control.at( realdds::topics::control::dfu_start::key::size ).get_to( _dfu->image_size );  // throws
+    control.at( realdds::topics::control::dfu_start::key::crc ).get_to( _dfu->image_crc );  // throws
 
     // Open a DFU topic and wait for the image on another thread
     auto topic = topics::blob_msg::create_topic( _dds_device_server->participant(),
@@ -1269,19 +1287,29 @@ bool lrs_device_controller::on_dfu_start( rsutils::json const & control, rsutils
                 }
                 else
                 {
-                    size_t const n_bytes = blob.data().size();
-                    auto const crc = rsutils::number::calc_crc32( blob.data().data(), blob.data().size() );
-                    LOG_INFO( dfu->debug_name() << "DFU image received, " << n_bytes << " bytes, crc " << crc );
+                    LOG_INFO( dfu->debug_name() << "DFU image received" );
 
                     // Build a reply
                     rsutils::json j = rsutils::json::object( {
                         { realdds::topics::notification::key::id, realdds::topics::notification::dfu_ready::id },
-                        { "size", n_bytes },
-                        { "crc", crc } } );
+                    } );
 
                     try
                     {
                         // Check the image
+                        size_t const n_bytes = blob.data().size();
+                        if( n_bytes != dfu->image_size )
+                            throw std::runtime_error( rsutils::string::from()
+                                                      << "image size (" << n_bytes << ") does not match expected ("
+                                                      << dfu->image_size << ")" );
+
+                        auto const crc = rsutils::number::calc_crc32( blob.data().data(), blob.data().size() );
+                        if( crc != dfu->image_crc )
+                            throw std::runtime_error( rsutils::string::from()
+                                                      << "image CRC (" << rsutils::string::hexdump( crc )
+                                                      << ") does not match expected ("
+                                                      << rsutils::string::hexdump( dfu->image_crc ) << ")" );
+
                         rs2_error * e = nullptr;
                         bool is_compatible = rs2_check_firmware_compatibility( dfu->rsdev.get().get(),
                                                                                blob.data().data(),
@@ -1300,8 +1328,7 @@ bool lrs_device_controller::on_dfu_start( rsutils::json const & control, rsutils
                         j[realdds::topics::reply::key::status] = "check-fw-compat";
                         j[realdds::topics::reply::key::explanation] = e.what();
                         LOG_ERROR( dfu->debug_name() << "DFU image check failed: " << e.what() << "; exiting DFU state" );
-                        if( auto controller = dfu->controller.lock() )
-                            controller->_dfu.reset();  // no longer in DFU state
+                        dfu->reset();
                     }
 
                     if( auto server = dfu->server.lock() )
@@ -1323,11 +1350,7 @@ bool lrs_device_controller::on_dfu_start( rsutils::json const & control, rsutils
             {
                 if( ! dfu->image )
                 {
-                    if( auto controller = dfu->controller.lock() )
-                    {
-                        LOG_ERROR( dfu->debug_name() << "DFU timed out waiting for image; resetting" );
-                        controller->_dfu.reset();  // no longer in DFU state
-                    }
+                    dfu->reset( "timed out waiting for image; resetting" );
                     if( auto server = dfu->server.lock() )
                     {
                         rsutils::json j = rsutils::json::object(
@@ -1347,11 +1370,7 @@ bool lrs_device_controller::on_dfu_start( rsutils::json const & control, rsutils
             std::this_thread::sleep_for( std::chrono::seconds( 10 ) );
             if( auto dfu = weak_dfu.lock() )
             {
-                if( auto controller = dfu->controller.lock() )
-                {
-                    LOG_ERROR( dfu->debug_name() << "DFU timed out waiting for apply; resetting" );
-                    controller->_dfu.reset();  // no longer in DFU state
-                }
+                dfu->reset( "timed out waiting for apply; resetting" );
                 if( auto server = dfu->server.lock() )
                 {
                     rsutils::json j = rsutils::json::object(
@@ -1510,8 +1529,7 @@ bool lrs_device_controller::on_dfu_apply( rsutils::json const & control, rsutils
             }
 
             // Whether successful or not, we're done with the DFU
-            if( auto controller = dfu->controller.lock() )
-                controller->_dfu.reset();
+            dfu->reset();
         } )
         .detach();
 
