@@ -179,8 +179,7 @@ namespace rs2
         else
         {
             update_ui_on_calibration_complete(win, x, y);
-            if (_dev.supports(RS2_CAMERA_INFO_PRODUCT_ID) &&
-                !strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "0B6B"))
+            if (get_manager().get_device_pid() == "0B6B")
             {
                 if (!reset_called &&
                     get_manager().action != d500_on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB_ABORT)
