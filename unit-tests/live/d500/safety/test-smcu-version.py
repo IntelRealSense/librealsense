@@ -48,15 +48,8 @@ with test.closure("Test to read SMCU Version from rsutils FW version, HWMC Comma
     ########################## FW version using rs-fw-update  ###########################
 
     # Get the firmware version using rs-fw-update
-    if sys.platform.startswith('linux'):
-        fw_update_tool = "rs-fw-update"
-    elif sys.platform.startswith('win32'):
-        fw_update_tool = "rs-fw-update.exe"
-    else :
-        log.d("Other platforms are not supported ")
-        test.abort()
-    rs_fw_update_tool_path = os.path.join(os.getcwd(), "..", "build", "Release", fw_update_tool)
-    #log.d ("rs-fw-update path in the directory :",rs_fw_update_tool_path)
+    rs_fw_update_tool_path = repo.find_built_exe( 'tools/fw-update', 'rs-fw-update' )
+    log.d ("rs-fw-update path in the directory :",rs_fw_update_tool_path)
 
     version = subprocess.check_output(rs_fw_update_tool_path).decode("utf-8")
 
