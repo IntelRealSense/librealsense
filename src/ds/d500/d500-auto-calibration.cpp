@@ -169,9 +169,9 @@ namespace librealsense
                 progress_callback->on_update_progress(calib_answer.calibration_progress);
                 _state = static_cast<d500_calibration_state>(calib_answer.calibration_state);
                 _result = static_cast<d500_calibration_result>(calib_answer.calibration_result);
-                LOG_INFO("Calibration in progress - State = " << _state 
-                    << ", progress = " << int(calib_answer.calibration_progress)
-                    << ", result = " << _result);
+                LOG_INFO("Calibration in progress - State = " << d500_calibration_state_strings[static_cast<int>(_state)]
+                    << ", progress = " << static_cast<int>(calib_answer.calibration_progress)
+                    << ", result = " << d500_calibration_result_strings[static_cast<int>(_result)]);
             }
             bool is_timed_out(std::chrono::high_resolution_clock::now() - start_time > std::chrono::milliseconds(timeout_ms));
             if (is_timed_out)
