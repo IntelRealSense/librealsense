@@ -1,9 +1,16 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+
+# test:device D585S
+
+
 import os, sys
 import subprocess
 import re
 import pyrealsense2 as rs
 import pyrsutils as rsutils
 from rspy import test, log, repo
+
 
 with test.closure("Test to read SMCU Version from rsutils FW version, HWMC Commands and rs-fw-update tool, "
                     "Compare against 0.0.0.0 and check if all the methods provide same result"):
@@ -18,7 +25,7 @@ with test.closure("Test to read SMCU Version from rsutils FW version, HWMC Comma
     fw_version = rsutils.version(device.get_info(rs.camera_info.smcu_fw_version))
 
     # Print the firmware version
-    log.d("\n Firmware Version Using rs_camera_info: \n", fw_version)
+    log.d("SMCU Version Using rs_camera_info: ", fw_version)
     versions_dict["smcu_version_rsutils_fw_version"] = str(fw_version)
 
     ########################  FW version using rs camera info  #######################
@@ -28,12 +35,12 @@ with test.closure("Test to read SMCU Version from rsutils FW version, HWMC Comma
 
     # Get the firmware version using GVD cmd
     dp_device = device.as_debug_protocol()
-    Data = dp_device.send_and_receive_raw_data(dp_device.build_command(0x10))
-    #log.d ("HMC Command GVD " + str(Data))
-    substring = Data[275:279]
-    SMCU_Version_HMC = ".".join(str(char) for char in substring)
-    log.d("\n Smcu Version Using HMC: \n", SMCU_Version_HMC)
-    versions_dict["smcu_version_HMC"] = str(SMCU_Version_HMC)
+    gvd_data = dp_device.send_and_receive_raw_data(dp_device.build_command(0x10))
+    #log.d ("HMC Command GVD " + str(gvd_data))
+    substring = gvd_data[275:279]
+    hmc_smcu_version = ".".join(str(char) for char in substring)
+    log.d("SMCU Version Using HMC: ", hmc_smcu_version)
+    versions_dict["smcu_version_hmc"] = str(hmc_smcu_version)
 
     ############################  FW version using HMC  ################################
 
@@ -46,49 +53,30 @@ with test.closure("Test to read SMCU Version from rsutils FW version, HWMC Comma
     elif sys.platform.startswith('win32'):
         fw_update_tool = "rs-fw-update.exe"
     else :
-        log.d("\n Other platforms are not supported \n")
+        log.d("Other platforms are not supported ")
         test.abort()
     rs_fw_update_tool_path = os.path.join(os.getcwd(), "..", "build", "Release", fw_update_tool)
-    #log.d ("rs-fw-Update path in the directory :",rs_fw_update_tool_path)
-    Updated_version = subprocess.check_output(rs_fw_update_tool_path)
-    log.d("\n fw-update info : \n", Updated_version)
+    #log.d ("rs-fw-update path in the directory :",rs_fw_update_tool_path)
 
     version = subprocess.check_output(rs_fw_update_tool_path).decode("utf-8")
 
-    Output_version = re.search('SMCU firmware version: ([\d.]+)',version)
-    if Output_version:
-        Smcu_version= Output_version.group(1)
-        log.d("\n  SMCU firmware version using rs-fw-update: \n", Smcu_version)
-        versions_dict["smcu_version_rs_fw_update"] = str(Smcu_version)
+    rs_fw_update_smcu_version = re.search('SMCU firmware version: ([\d.]+)',version)
+    if rs_fw_update_smcu_version:
+        smcu_version_rs_fw_update_tool= rs_fw_update_smcu_version.group(1)
+        log.d("SMCU version using rs-fw-update: ", smcu_version_rs_fw_update_tool)
+        versions_dict["smcu_version_rs_fw_update"] = str(smcu_version_rs_fw_update_tool)
 
     ########################## FW version using rs-fw-update  ###########################
+    log.d ("Actual Dictonary is " + str(versions_dict.values()))
 
-
-    # check the output is not zero for all instances
-    result = True
-    for key, value in versions_dict.items():
-        if value != "0.0.0.0":
-            log.d("\nValid version :",key)
-        else:
-            result = False
-            log.d("\nInvalid version :",key)
-            break
-    test.check_equal(result, True)
-
-    # Check all the versions are equal
-    log.d ("\n Actual Dictonary is " + str(versions_dict.values()))
-
-    test_val = list(versions_dict.values())[0]
+    # Consider SMCU Versions fetched from one of the methods as reference
+    test_val = versions_dict["smcu_version_rsutils_fw_version"]
     log.d ("SMCU Version From one of the method = " + str(test_val))
-
-    result = True
-    for element in versions_dict:
-        log.d ("SMCU Version = " + str(versions_dict[element]) + " for the key = " + str(element))
-        if versions_dict[element] != test_val:
-            log.d ("Version Mismatch for the key =" + str(element))
-            result = False
-            break
-    test.check_equal(result, True)
-    log.d ("Are all values similar = " + str(result))
+    for key, value in versions_dict.items():
+        test.info(key, value)
+        # check the smcu version is not zero
+        test.check(value != "0.0.0.0", "SMCU Version is 0.0.0.0!", test.LOG)
+        # Check the smcu version is same across multiple methods
+        test.check(value == test_val, "SMCU Version is different than expected!", test.LOG)
 
 test.print_results_and_exit()
