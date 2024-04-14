@@ -157,12 +157,15 @@ namespace librealsense
     {
         auto start_time = std::chrono::high_resolution_clock::now();
         std::vector<uint8_t> res;
+        d500_calibration_answer calib_answer;
         do
         {
             std::this_thread::sleep_for(std::chrono::seconds(1));
             res = _hw_monitor->send(command{ ds::GET_CALIB_STATUS });
+            if (!check_buffer_size_from_get_calib_status(res))
+                throw std::runtime_error("GET_CALIB_STATUS returned struct with wrong size");
 
-            d500_calibration_answer calib_answer = *reinterpret_cast<d500_calibration_answer*>(res.data());
+            calib_answer = *reinterpret_cast<d500_calibration_answer*>(res.data());
             _state = static_cast<d500_calibration_state>(calib_answer.calibration_state);
             _result = static_cast<d500_calibration_result>(calib_answer.calibration_result);
             LOG_INFO("Calibration in progress - State = " << d500_calibration_state_strings[static_cast<int>(_state)]
@@ -182,8 +185,13 @@ namespace librealsense
         // printing new calibration to log
         if (_result == d500_calibration_result::RS2_D500_CALIBRATION_RESULT_SUCCESS)
         {
-            auto depth_calib = *reinterpret_cast<ds::d500_coefficients_table*>(res.data() + 3);
+            auto depth_calib = *reinterpret_cast<ds::d500_coefficients_table*>(&calib_answer.depth_calibration);
             LOG_INFO("Depth new Calibration = \n" + depth_calib.to_string());
+        }
+        else
+        {
+            LOG_ERROR("Calibration completed but algorithm failed");
+            throw std::runtime_error("Calibration completed but algorithm failed");
         }
 
         return res;
@@ -191,23 +199,34 @@ namespace librealsense
 
     std::vector<uint8_t> d500_auto_calibrated::update_abort_status()
     {
-        std::vector<uint8_t> res = _hw_monitor->send(command{ ds::GET_CALIB_STATUS });
+        std::vector<uint8_t> ans;
+        auto res = _hw_monitor->send(command{ ds::GET_CALIB_STATUS });
+        if (!check_buffer_size_from_get_calib_status(res))
+            throw std::runtime_error("GET_CALIB_STATUS returned struct with wrong size");
+
         d500_calibration_answer calib_answer = *reinterpret_cast<d500_calibration_answer*>(res.data());
         if (calib_answer.calibration_state == static_cast<uint8_t>(d500_calibration_state::RS2_D500_CALIBRATION_STATE_PROCESS))
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
             res = _hw_monitor->send(command{ ds::GET_CALIB_STATUS });
+            if (!check_buffer_size_from_get_calib_status(res))
+                throw std::runtime_error("GET_CALIB_STATUS returned struct with wrong size");
+
             calib_answer = *reinterpret_cast<d500_calibration_answer*>(res.data());
         }
         if (calib_answer.calibration_state == static_cast<uint8_t>(d500_calibration_state::RS2_D500_CALIBRATION_STATE_IDLE))
         {
             LOG_INFO("Depth Calibration Successfully Aborted");
+            // returning success
+            ans.push_back(1);
         }
         else
         {
             LOG_INFO("Depth Calibration Could not be Aborted");
+            // returning failure
+            ans.push_back(0);
         }
-        return res;
+        return ans;
     }
 
     std::ostream& operator<< (std::ostream& stream, const d500_auto_calibrated::d500_calibration_state& state)
