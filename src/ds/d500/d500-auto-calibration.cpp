@@ -149,8 +149,7 @@ namespace librealsense
 
             throw std::runtime_error(rsutils::string::from() << error_message_prefix + "Could not be triggered");
         }
-
-        return std::vector<uint8_t>(res.begin() + 3, res.end());
+        return res;
     }
 
     std::vector<uint8_t> d500_auto_calibrated::update_calibration_status(int timeout_ms,
@@ -190,22 +189,24 @@ namespace librealsense
         return res;
     }
 
-    std::vector<uint8_t> d500_auto_calibrated::update_abort_status(int timeout_ms, 
-        rs2_update_progress_callback_sptr progress_callback)
+    std::vector<uint8_t> d500_auto_calibrated::update_abort_status()
     {
-        auto start_time = std::chrono::high_resolution_clock::now();
-
         std::vector<uint8_t> res = _hw_monitor->send(command{ ds::GET_CALIB_STATUS });
-
-        auto curr_time = std::chrono::high_resolution_clock::now();
-        bool is_timed_out(std::chrono::high_resolution_clock::now() - start_time > std::chrono::milliseconds(timeout_ms));
-        if (is_timed_out)
+        d500_calibration_answer calib_answer = *reinterpret_cast<d500_calibration_answer*>(res.data());
+        if (calib_answer.calibration_state == static_cast<uint8_t>(d500_calibration_state::RS2_D500_CALIBRATION_STATE_PROCESS))
         {
-            throw std::runtime_error("OCC Calibration Abort Timeout");
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            res = _hw_monitor->send(command{ ds::GET_CALIB_STATUS });
+            calib_answer = *reinterpret_cast<d500_calibration_answer*>(res.data());
         }
-
-        LOG_INFO("Depth Calibration Aborted");
-
+        if (calib_answer.calibration_state == static_cast<uint8_t>(d500_calibration_state::RS2_D500_CALIBRATION_STATE_IDLE))
+        {
+            LOG_INFO("Depth Calibration Successfully Aborted");
+        }
+        else
+        {
+            LOG_INFO("Depth Calibration Could not be Aborted");
+        }
         return res;
     }
 
