@@ -43,13 +43,13 @@ namespace librealsense
             virtual std::vector<uint8_t> get_custom_report_data(const std::string& custom_sensor_name,
                                                                 const std::string& report_name,
                                                                 custom_sensor_report_field report_field) override { return {}; }
-            void set_gyro_scale_factor( double scale_factor ) override{};
+            void set_gyro_scale_factor( double scale_factor ) override;
 
         private:
             void handle_interrupt();
             rs_usb_endpoint get_hid_endpoint();
             rs_usb_interface get_hid_interface();
-            usb_status set_feature_report(unsigned char power, int report_id, int fps = 0);
+            usb_status set_feature_report( unsigned char power, int report_id, int fps = 0, double sensitivity = 1 );
 #ifdef __APPLE__
            int hidapi_PowerDevice(unsigned char reportId);
 #endif
@@ -73,6 +73,8 @@ namespace librealsense
             std::vector<hid_profile> _configured_profiles;
             single_consumer_queue<REALSENSE_HID_REPORT> _queue;
             std::shared_ptr<active_object<>> _handle_interrupts_thread;
+            int _realsense_hid_report_actual_size = 32; // for FW version >=5.16 the struct changed to 38 bit
+            double _gyro_scale_factor = 10.0;
         };
     }
 }

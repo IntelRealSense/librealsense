@@ -50,16 +50,16 @@ namespace librealsense
       unsigned char power;
       unsigned char minReport;
       unsigned short report;
-      unsigned short unknown;
+      unsigned short sensitivity;
     };
 
     struct REALSENSE_HID_REPORT {
       unsigned char reportId;
       unsigned char unknown;
       unsigned long long timeStamp;
-      short x;
-      short y;
-      short z;
+      int32_t x;
+      int32_t y;
+      int32_t z;
       unsigned int customValue1;
       unsigned int customValue2;
       unsigned short customValue3;
@@ -70,7 +70,7 @@ namespace librealsense
     };
 #pragma pack(pop)
 
-    static_assert(sizeof(REALSENSE_HID_REPORT) == SIZE_OF_HID_IMU_FRAME, "HID IMU Frame struct expected size is 32 bytes");
+    //static_assert(sizeof(REALSENSE_HID_REPORT) == SIZE_OF_HID_IMU_FRAME, "HID IMU Frame struct expected size is 32 bytes");
 
 #pragma pack(push, 1)
     struct FEATURE_REPORT
@@ -81,7 +81,7 @@ namespace librealsense
       unsigned char power;
       unsigned char minReport;
       unsigned short report;
-      unsigned short unknown;
+      unsigned short sensitivity;
     };
 #pragma pack(pop)
     }

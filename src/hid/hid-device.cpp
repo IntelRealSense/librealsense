@@ -100,7 +100,7 @@ namespace librealsense
         {
             for(auto&& p : hid_profiles)
             {
-                set_feature_report(DEVICE_POWER_D0, _sensor_to_id[p.sensor_name], p.frequency);
+                set_feature_report( DEVICE_POWER_D0, _sensor_to_id[p.sensor_name], p.frequency, p.sensitivity );
             }
             _configured_profiles = hid_profiles;
         }
@@ -161,10 +161,30 @@ namespace librealsense
                         {
                             if(!_running)
                                 return;
-                            if(r->get_actual_length() == sizeof(REALSENSE_HID_REPORT))
+                            
+                            if( r->get_actual_length() == _realsense_hid_report_actual_size )
                             {
                                 REALSENSE_HID_REPORT report;
-                                memcpy(&report, r->get_buffer().data(), r->get_actual_length());
+                                if( _realsense_hid_report_actual_size != sizeof( REALSENSE_HID_REPORT ) )
+                                {
+                                    //for FX version<5.16 the actual struct is 32 bit, so we can not use memcpy for the whole struct
+                                    //for FX version<5.16 x,y,x are all short with the x variable located at offset 10, y at offset 12, and z at offset 14 within the structure.
+                                    memcpy( &report, r->get_buffer().data(), 10 );
+                                    const int16_t * x
+                                        = reinterpret_cast< const int16_t * >( r->get_buffer().data() + 10 );
+                                    const int16_t * y
+                                        = reinterpret_cast< const int16_t * >( r->get_buffer().data() + 12 );
+                                    const int16_t * z
+                                        = reinterpret_cast< const int16_t * >( r->get_buffer().data() + 14 );
+                                    report.x = *x;
+                                    report.y = *y;
+                                    report.z = *z;
+                                    memcpy( &report + 22, r->get_buffer().data() + 16, 16 );
+                                }
+                                else
+                                {
+                                    memcpy( &report, r->get_buffer().data(), r->get_actual_length() );
+                                }
                                 _queue.enqueue(std::move(report));
                             }
                             auto sts = _messenger->submit_request(r);
@@ -195,7 +215,27 @@ namespace librealsense
         {
             REALSENSE_HID_REPORT report;
 #ifdef __APPLE__
-            hid_read(_hidapi_device, reinterpret_cast<unsigned char*>(&report), sizeof(REALSENSE_HID_REPORT));
+            unsigned char tmp_buffer[100] = { 0 };
+            hid_read( _hidapi_device, &tmp_buffer, _realsense_hid_report_actual_size );
+            if( _realsense_hid_report_actual_size != sizeof( REALSENSE_HID_REPORT ) )
+            {
+                // for FX version<5.16 the actual struct is 32 bit, so we can not use memcpy for the whole struct
+                // for FX version<5.16 x,y,x are all short with the x variable located at offset 10, y at offset 12, and
+                // z at offset 14 within the structure.
+                memcpy( &report, tmp_buffer, 10 );
+                const int16_t * x = reinterpret_cast< const int16_t * >( tmp_buffer + 10 );
+                const int16_t * y = reinterpret_cast< const int16_t * >( tmp_buffer + 12 );
+                const int16_t * z = reinterpret_cast< const int16_t * >( tmp_buffer + 14 );
+                report.x = *x;
+                report.y = *y;
+                report.z = *z;
+                memcpy( &report + 22, tmp_buffer + 16, 16 );
+            }
+            else
+            {
+                memcpy( &report, tmp_buffer, sizeof( REALSENSE_HID_REPORT ) );
+            }
+
             sensor_data data{};
             data.sensor = { _id_to_sensor[report.reportId] };
 
@@ -238,7 +278,7 @@ namespace librealsense
 #endif
         }
 
-        usb_status rs_hid_device::set_feature_report(unsigned char power, int report_id, int fps)
+        usb_status rs_hid_device::set_feature_report( unsigned char power, int report_id, int fps, double sensitivity)
         {
             uint32_t transferred;
 
@@ -272,6 +312,12 @@ namespace librealsense
 
             if(fps > 0)
                 featureReport.report = (1000 / fps);
+
+            //we want to change the sensitivity values only in gyro, for FW version>=5.16
+            if( (int)featureReport.reportId == REPORT_ID_GYROMETER_3D
+                && _realsense_hid_report_actual_size == sizeof( FEATURE_REPORT ) )
+                featureReport.sensitivity = sensitivity;
+
 
             res = dev->control_transfer(USB_REQUEST_CODE_SET,
                 HID_REQUEST_SET_REPORT,
@@ -383,6 +429,13 @@ namespace librealsense
                 throw std::runtime_error("can't find HID endpoint of device: " + _usb_device->get_info().id);
 
             return ep;
+        }
+
+        void rs_hid_device::set_gyro_scale_factor(double scale_factor) 
+        {
+            _gyro_scale_factor = scale_factor;
+            if( scale_factor == 10000.0 )
+                _realsense_hid_report_actual_size = 38;
         }
     }
 }
