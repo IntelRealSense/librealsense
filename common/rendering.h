@@ -385,7 +385,10 @@ namespace rs2
         GLuint texture;
         rs2::frame_queue last_queue[2];
         mutable rs2::frame last[2];
-        rect danger_zone = { 0,0,0,0 }, warning_zone = { 0,0,0,0 }, diagnostic_zone = { 0,0,0,0 };
+        rect danger_zone = { 0,0,0,0 };
+        rect warning_zone = { 0,0,0,0 };
+        rect diagnostic_zone = { 0,0,0,0 };
+        typedef enum class Zone { Danger, Warning, Diagnostic } Zone;
     public:
         std::shared_ptr<colorizer> colorize;
         std::shared_ptr<yuy_decoder> yuy2rgb;
@@ -759,40 +762,69 @@ namespace rs2
             }
         }
 
-        static void draw_rectangle(rect r, float line_width, float red=1, float green=1, float blue=1, float alpha=1)
+        void draw_zone(Zone zone, const rect& draw_within, float line_width = 3.f)
         {
-            glLineWidth(line_width);
-            glBegin(GL_LINE_STRIP);
-            glColor4f(red, green, blue, alpha);
-            glVertex2f(r.x, r.y);
-            glVertex2f(r.x + r.w, r.y);
-            glVertex2f(r.x + r.w, r.y + r.h);
-            glVertex2f(r.x, r.y + r.h);
-            glVertex2f(r.x, r.y);
-            glEnd();
+            constexpr GLfloat width = 512; // range of Y values for polygons - -2.56 - +2.56 meters
+            constexpr GLfloat height = 640; // range of X values for polygons - 0-6.4 meters
+            rect safety_regions_rect = { -256, 0, width, height };  //-256 is the minimum Y value, 0 is the minimum X value, all zones are within this area
+            rect zone_to_draw;
+            std::vector<float> zone_color;
+            switch (zone)
+            {
+            case Zone::Danger:
+                zone_to_draw = { 0 - danger_zone.x, height - (danger_zone.y + danger_zone.h), -danger_zone.w, danger_zone.h };
+                zone_color = { 1,0,0 };
+                break;
+            case Zone::Warning:
+                zone_to_draw = { 0 - warning_zone.x, height - (warning_zone.y + warning_zone.h), -warning_zone.w, warning_zone.h };
+                zone_color = { 1,1,0 };
+                break;
+            case Zone::Diagnostic:
+                zone_to_draw = { 0 - diagnostic_zone.x, height - (diagnostic_zone.y + diagnostic_zone.h), -diagnostic_zone.w, diagnostic_zone.h };
+                zone_color = { 0,0,1 };
+                break;
+            default:
+                return;
+            }
+
+            // to draw properly, we adjust our values to be inside the frame's rectangle
+            // the values are within the limits of safety_regions_rect, and we convert them to be within the rectangle we want to draw in
+            zone_to_draw = zone_to_draw.normalize(safety_regions_rect).unnormalize(draw_within);
+            zone_to_draw.draw(line_width, zone_color[0], zone_color[1], zone_color[2]);
+        }
+
+        static rect init_zone(Zone zone, const rs2::frame& frame)
+        {
+            rs2_frame_metadata_value md_value;
+            switch (zone)
+            {
+            case Zone::Danger:
+                md_value = RS2_FRAME_METADATA_DANGER_ZONE_POINT_1_X_CORD;
+                break;
+            case Zone::Warning:
+                md_value = RS2_FRAME_METADATA_WARNING_ZONE_POINT_1_X_CORD;
+                break;
+            case Zone::Diagnostic:
+                md_value = RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_1_X_CORD;
+                break;
+            default:
+                return { 0,0,0,0 };
+            }
+
+            // we divide by 10 to convert all units from mm to cm
+            vertex x1 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value))) / 10,
+                            static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 1))) / 10, 0 };
+            vertex x3 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 4))) / 10,
+                            static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 5))) / 10, 0 };
+
+            return { x3.y, x3.x, x1.y - x3.y, x1.x - x3.x };
         }
 
         void upload_occupancy_frame(const rs2::frame& frame, const void* data)
         {
-            // we divide by 10 to convert all units from mm to cm
-            vertex danger_x1 = { static_cast<float>(frame.get_frame_metadata(RS2_FRAME_METADATA_DANGER_ZONE_POINT_1_X_CORD)) / 10,
-                            static_cast<float>(frame.get_frame_metadata(RS2_FRAME_METADATA_DANGER_ZONE_POINT_1_Y_CORD)) / 10, 0 };
-            vertex danger_x3 = { static_cast<float>(frame.get_frame_metadata(RS2_FRAME_METADATA_DANGER_ZONE_POINT_3_X_CORD)) / 10,
-                            static_cast<float>(frame.get_frame_metadata(RS2_FRAME_METADATA_DANGER_ZONE_POINT_3_Y_CORD)) / 10, 0 };
-
-            vertex warning_x1 = { static_cast<float>(frame.get_frame_metadata(RS2_FRAME_METADATA_WARNING_ZONE_POINT_1_X_CORD)) / 10,
-                            static_cast<float>(frame.get_frame_metadata(RS2_FRAME_METADATA_WARNING_ZONE_POINT_1_Y_CORD)) / 10, 0 };
-            vertex warning_x3 = { static_cast<float>(frame.get_frame_metadata(RS2_FRAME_METADATA_WARNING_ZONE_POINT_3_X_CORD)) / 10,
-                            static_cast<float>(frame.get_frame_metadata(RS2_FRAME_METADATA_WARNING_ZONE_POINT_3_Y_CORD)) / 10, 0 };
-
-            vertex diagnostic_x1 = { static_cast<float>(frame.get_frame_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_1_X_CORD)) / 10,
-                            static_cast<float>(frame.get_frame_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_1_Y_CORD)) / 10, 0 };
-            vertex diagnostic_x3 = { static_cast<float>(frame.get_frame_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_3_X_CORD)) / 10,
-                            static_cast<float>(frame.get_frame_metadata(RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_3_Y_CORD)) / 10, 0 };
-
-            danger_zone = { danger_x3.y, danger_x3.x, danger_x1.y - danger_x3.y, danger_x1.x - danger_x3.x };            
-            warning_zone = { warning_x3.y, warning_x3.x, warning_x1.y - warning_x3.y, warning_x1.x - warning_x3.x };
-            diagnostic_zone = { diagnostic_x3.y, diagnostic_x3.x, diagnostic_x1.y - diagnostic_x3.y, diagnostic_x1.x - diagnostic_x3.x };
+            danger_zone = init_zone(Zone::Danger, frame);
+            warning_zone = init_zone(Zone::Warning, frame);
+            diagnostic_zone = init_zone(Zone::Diagnostic, frame);
 
             if (!frame.supports_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS) ||
                 !frame.supports_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS))
@@ -1216,24 +1248,9 @@ namespace rs2
             }
             else if (danger_zone) // if zoomed in, polygons won't show right at the moment...
             {
-                GLint width = 512; // range of Y values for polygons - -2.56 - +2.56 meters
-                GLint height = 640; // range of X values for polygons - 0-6.4 meters
-                rect safety_regions_rect = { -256, 0, (float)width, (float)height };  //-256 is the minimum Y value, 0 is the minimum X value, all zones are within this area
-
-                // draw red zone
-                rect zone_to_draw = { 0 - danger_zone.x, height - (danger_zone.y + danger_zone.h), - danger_zone.w, danger_zone.h };
-                zone_to_draw = zone_to_draw.normalize(safety_regions_rect).unnormalize(r);
-                draw_rectangle(zone_to_draw, 3, 1, 0, 0);
-
-                // draw yellow zone
-                zone_to_draw = { 0 - warning_zone.x, height - (warning_zone.y + warning_zone.h), - warning_zone.w, warning_zone.h };
-                zone_to_draw = zone_to_draw.normalize(safety_regions_rect).unnormalize(r);
-                draw_rectangle(zone_to_draw, 3, 1, 1, 0);
-
-                // draw blue zone
-                zone_to_draw = { 0 - diagnostic_zone.x, height - (diagnostic_zone.y + diagnostic_zone.h), - diagnostic_zone.w, diagnostic_zone.h };
-                zone_to_draw = zone_to_draw.normalize(safety_regions_rect).unnormalize(r);
-                draw_rectangle(zone_to_draw, 3, 0, 0, 1);
+                draw_zone(Zone::Danger, r);
+                draw_zone(Zone::Warning, r);
+                draw_zone(Zone::Diagnostic, r);
             }
         }
     };
