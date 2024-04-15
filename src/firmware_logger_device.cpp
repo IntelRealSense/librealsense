@@ -44,15 +44,16 @@ namespace librealsense
     void firmware_logger_device::get_fw_logs_from_hw_monitor()
     {
         command update_command = get_update_command();
-        if( update_command.cmd == 0 )
-            return;
-
-        auto res = _hw_monitor->send( update_command );
-        if( res.empty() )
+        if( update_command.cmd != 0 )
         {
-            return;
+            auto res = _hw_monitor->send( update_command );
+            if( ! res.empty() )
+                HandleReceivedData( res );
         }
+    }
 
+    void firmware_logger_device::HandleReceivedData( std::vector< uint8_t > & res )
+    {
         // Convert bytes to fw_logs_binary_data
         auto beginOfLogIterator = res.data();
         size_t size_left = res.size();
@@ -61,7 +62,7 @@ namespace librealsense
             size_t log_size = get_log_size( beginOfLogIterator );
             if( log_size > size_left )
             {
-                LOG_WARNING( "Received an incomplete FW log" );  // TODO - remove after debugging, or decrease to debug level.
+                LOG_WARNING( "Received an incomplete FW log" );
                 break;
             }
             auto endOfLogIterator = beginOfLogIterator + log_size;
@@ -176,7 +177,11 @@ namespace librealsense
         command start_command = parser->get_start_command();
         start_command.cmd = _fw_logs_command.cmd; // Opcode comes from the device, may be different between devices
         if( start_command.cmd != 0 )
-            _hw_monitor->send( start_command );
+        {
+            auto res = _hw_monitor->send( start_command );
+            if( !res.empty() )
+                HandleReceivedData( res );
+        }
     }
 
     void extended_firmware_logger_device::stop()
@@ -188,7 +193,11 @@ namespace librealsense
         command stop_command = parser->get_stop_command();
         stop_command.cmd = _fw_logs_command.cmd; // Opcode comes from the device, may be different between devices
         if( stop_command.cmd != 0 )
-            _hw_monitor->send( stop_command );
+        {
+            auto res = _hw_monitor->send( stop_command );
+            if( !res.empty() )
+                HandleReceivedData( res );
+        }
     }
 
     size_t extended_firmware_logger_device::get_log_size( const uint8_t * buff ) const
