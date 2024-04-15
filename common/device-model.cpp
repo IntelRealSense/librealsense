@@ -22,7 +22,6 @@
 #include "subdevice-model.h"
 #include "device-model.h"
 #include "smcu-update-helper.h"
-#include "calibration-model.h"
 
 using namespace rs400;
 using rsutils::json;
