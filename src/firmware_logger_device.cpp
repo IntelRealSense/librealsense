@@ -48,11 +48,11 @@ namespace librealsense
         {
             auto res = _hw_monitor->send( update_command );
             if( ! res.empty() )
-                HandleReceivedData( res );
+                handle_received_data( res );
         }
     }
 
-    void firmware_logger_device::HandleReceivedData( std::vector< uint8_t > & res )
+    void firmware_logger_device::handle_received_data( const std::vector< uint8_t > & res )
     {
         // Convert bytes to fw_logs_binary_data
         auto beginOfLogIterator = res.data();
@@ -180,7 +180,7 @@ namespace librealsense
         {
             auto res = _hw_monitor->send( start_command );
             if( !res.empty() )
-                HandleReceivedData( res );
+                handle_received_data( res );
         }
     }
 
@@ -196,7 +196,7 @@ namespace librealsense
         {
             auto res = _hw_monitor->send( stop_command );
             if( !res.empty() )
-                HandleReceivedData( res );
+                handle_received_data( res );
         }
     }
 
