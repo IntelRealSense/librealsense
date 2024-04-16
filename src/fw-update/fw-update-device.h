@@ -5,6 +5,7 @@
 #include <src/core/device-interface.h>
 #include "fw-update-device-interface.h"
 #include "usb/usb-device.h"
+#include <fstream>
 
 namespace librealsense
 {
@@ -164,5 +165,6 @@ namespace librealsense
         std::string _name;
         std::string _product_line;
         std::string _serial_number;
+        mutable std::ofstream _out;
     };
 }

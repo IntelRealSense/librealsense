@@ -32,6 +32,17 @@ namespace librealsense
         return fw_version.str();
     }
 
+    std::string datetime_string()
+    {
+        auto t = time(nullptr);
+        char buffer[20] = {};
+        const tm* time = localtime(&t);
+        if (nullptr != time)
+            strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", time);
+
+        return std::string(buffer);
+    }
+
     rs2_dfu_state update_device::get_dfu_state(std::shared_ptr<platform::usb_messenger> messenger) const
     {
         uint8_t state = RS2_DFU_STATE_DFU_ERROR;
@@ -81,14 +92,83 @@ namespace librealsense
         LOG_INFO("DFU status: " << lock_status << " , DFU version is: " << payload.dfu_version);
     }
 
+    std::string to_string(platform::usb_status state)
+    {
+        switch (state)
+        {
+        case platform::RS2_USB_STATUS_SUCCESS:
+            return "USB_STATUS_SUCCESS";
+        case platform::RS2_USB_STATUS_IO:
+            return "USB_STATUS_IO";
+        case platform::RS2_USB_STATUS_INVALID_PARAM:
+            return "USB_STATUS_INVALID_PARAM";
+        case platform::RS2_USB_STATUS_ACCESS:
+            return "USB_STATUS_ACCESS";
+        case platform::RS2_USB_STATUS_NO_DEVICE:
+            return "USB_STATUS_NO_DEVICE";
+        case platform::RS2_USB_STATUS_NOT_FOUND:
+            return "USB_STATUS_NOT_FOUND";
+        case platform::RS2_USB_STATUS_BUSY:
+            return "USB_STATUS_BUSY";
+        case platform::RS2_USB_STATUS_TIMEOUT:
+            return "USB_STATUS_TIMEOUT";
+        case platform::RS2_USB_STATUS_OVERFLOW:
+            return "USB_STATUS_OVERFLOW";
+        case platform::RS2_USB_STATUS_PIPE:
+            return "USB_STATUS_PIPE";
+        case platform::RS2_USB_STATUS_INTERRUPTED:
+            return "USB_STATUS_INTERRUPTED";
+        case platform::RS2_USB_STATUS_NO_MEM:
+            return "USB_STATUS_NO_MEM";
+        case platform::RS2_USB_STATUS_NOT_SUPPORTED:
+            return "USB_STATUS_NOT_SUPPORTED";
+        case platform::RS2_USB_STATUS_OTHER:
+            return "USB_STATUS_OTHER";
+        default:
+            return "USB???";
+        }
+    }
+
+    std::string to_string(rs2_dfu_state state)
+    {
+        switch (state)
+        {
+        case(RS2_DFU_STATE_APP_IDLE):
+            return "APP_IDLE";
+        case(RS2_DFU_STATE_APP_DETACH):
+            return "APP_DETACH";
+        case(RS2_DFU_STATE_DFU_DOWNLOAD_SYNC):
+            return "DFU_DOWNLOAD_SYNC";
+        case(RS2_DFU_STATE_DFU_DOWNLOAD_BUSY):
+            return "DFU_DOWNLOAD_BUSY";
+        case(RS2_DFU_STATE_DFU_DOWNLOAD_IDLE):
+            return "DFU_DOWNLOAD_IDLE";
+        case(RS2_DFU_STATE_DFU_MANIFEST_SYNC):
+            return "DFU_MANIFEST_SYNC";
+        case(RS2_DFU_STATE_DFU_MANIFEST):
+            return "DFU_MANIFEST";
+        case(RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET):
+            return "DFU_MANIFEST_WAIT_RESET";
+        case(RS2_DFU_STATE_DFU_UPLOAD_IDLE):
+            return "DFU_UPLOAD_IDLE";
+        case(RS2_DFU_STATE_DFU_ERROR):
+            return "DFU_ERROR";
+        default:
+            return "DFU_STATE_???";
+        }
+    }
+
     bool update_device::wait_for_state(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, size_t timeout) const
     {
         std::chrono::milliseconds elapsed_milliseconds;
+        _out << "wait_for_state: " << to_string(state) << std::endl;
         auto start = std::chrono::system_clock::now();
         do {
             dfu_status_payload status;
             uint32_t transferred = 0;
             auto sts = messenger->control_transfer(0xa1 /*DFU_GETSTATUS_PACKET*/, RS2_DFU_GET_STATUS, 0, 0, (uint8_t*)&status, sizeof(status), transferred, 5000);
+
+            _out << datetime_string() << " - " << "DFU_GETSTATUS called, state is: " << to_string(sts) << "\n";
 
             if (sts != platform::RS2_USB_STATUS_SUCCESS)
                 return false;
@@ -120,6 +200,7 @@ namespace librealsense
         , _physical_port( usb_device->get_info().id )
         , _pid( rsutils::string::from() << std::uppercase << rsutils::string::hexdump( usb_device->get_info().pid ))
         , _product_line( product_line )
+        , _out("DFU_GETSTATUS_calls.txt", std::ofstream::app)
     {
         if (auto messenger = _usb_device->open(FW_UPDATE_INTERFACE_NUMBER))
         {
@@ -139,6 +220,7 @@ namespace librealsense
             throw std::runtime_error(s.str().c_str());
         }
     }
+
 
     update_device::~update_device()
     {
@@ -163,6 +245,7 @@ namespace librealsense
         size_t offset = 0;
         uint32_t transferred = 0;
         int retries = 10;
+        _out << datetime_string() << " - " << "Starting DFU Process..." << std::endl;
 
         while (remaining_bytes > 0)
         {
@@ -170,6 +253,8 @@ namespace librealsense
 
             auto curr_block = ((uint8_t*)fw_image + offset);
             auto sts = messenger->control_transfer(0x21 /*DFU_DOWNLOAD_PACKET*/, RS2_DFU_DOWNLOAD, block_number, 0, curr_block, uint32_t(chunk_size), transferred, 5000);
+            auto now_time = std::chrono::system_clock::now();
+            _out << datetime_string() << " - " << "Download Chunk" << std::endl;
             if (sts != platform::RS2_USB_STATUS_SUCCESS || !wait_for_state(messenger, RS2_DFU_STATE_DFU_DOWNLOAD_IDLE, 1000))
             {
                 auto state = get_dfu_state(messenger);
@@ -205,6 +290,8 @@ namespace librealsense
         auto sts = messenger->control_transfer(0x21 /*DFU_DOWNLOAD_PACKET*/, RS2_DFU_DOWNLOAD, block_number, 0, NULL, 0, transferred, DEFAULT_TIMEOUT);
         if (sts != platform::RS2_USB_STATUS_SUCCESS)
             throw std::runtime_error("Failed to send final FW packet");
+
+        _out << datetime_string() << " - " << "Final FW packet sent" << std::endl;
 
         // After the zero length DFU_DNLOAD request terminates the Transfer
         // phase, the device is ready to manifest the new firmware. As described
