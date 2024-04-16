@@ -167,8 +167,8 @@ namespace librealsense
                                 REALSENSE_HID_REPORT report;
                                 if( _realsense_hid_report_actual_size != sizeof( REALSENSE_HID_REPORT ) )
                                 {
-                                    //for FX version<5.16 the actual struct is 32 bit, so we can not use memcpy for the whole struct
-                                    //for FX version<5.16 x,y,x are all short with the x variable located at offset 10, y at offset 12, and z at offset 14 within the structure.
+                                    //for FX version < 5.16 the actual struct is 32 bit, so we can not use memcpy for the whole struct
+                                    //for FW version < 5.16 x,y,x are all short with the x variable located at offset 10, y at offset 12, and z at offset 14 within the structure.
                                     memcpy( &report, r->get_buffer().data(), 10 );
                                     const int16_t * x
                                         = reinterpret_cast< const int16_t * >( r->get_buffer().data() + 10 );
@@ -315,7 +315,7 @@ namespace librealsense
 
             //we want to change the sensitivity values only in gyro, for FW version>=5.16
             if( (int)featureReport.reportId == REPORT_ID_GYROMETER_3D
-                && _realsense_hid_report_actual_size == sizeof( FEATURE_REPORT ) )
+                && _realsense_hid_report_actual_size == sizeof( REALSENSE_HID_REPORT ) )
                 featureReport.sensitivity = sensitivity;
 
 
