@@ -229,9 +229,7 @@ namespace rs2
         ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 28) });
         if (ImGui::Button(calibrate_button_name.c_str(), { float(bar_width), 20.f }))
         {
-            //get_manager().restore_workspace([this](std::function<void()> a) { a(); });
             get_manager().reset();
-            //get_manager().retry_times = 0;
             if (update_state == RS2_CALIB_STATE_INIT_DRY_RUN)
             {
                 get_manager().action = d500_on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB_DRY_RUN;
