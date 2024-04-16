@@ -434,6 +434,7 @@ namespace librealsense
         void rs_hid_device::set_gyro_scale_factor(double scale_factor) 
         {
             _gyro_scale_factor = scale_factor;
+            // for FW >=5.16 the scale factor changes to 1000.0 since FW sends 32bit
             if( scale_factor == 10000.0 )
                 _realsense_hid_report_actual_size = 38;
         }
