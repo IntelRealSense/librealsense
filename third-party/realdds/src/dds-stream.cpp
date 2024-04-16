@@ -25,6 +25,13 @@ dds_stream::dds_stream( std::string const & stream_name, std::string const & sen
 }
 
 
+dds_stream::~dds_stream()
+{
+    if( _reader )
+        _reader->stop();
+}
+
+
 void dds_video_stream::open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & subscriber )
 {
     if( is_open() )
@@ -63,6 +70,8 @@ void dds_motion_stream::open( std::string const & topic_name, std::shared_ptr< d
 
 void dds_stream::close()
 {
+    if( _reader )
+        _reader->stop();
     _reader.reset();
 }
 

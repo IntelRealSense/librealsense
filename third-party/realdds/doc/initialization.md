@@ -71,7 +71,7 @@ With those 3, one can compute IR2 to RGB, for example.
 
 ### `device-options`
 
-This is optional: not all devices have options. See [device](device.md).
+This is optional: not all devices have options. Device options will not be shown in the Viewer. See [device](device.md).
 
 ```JSON
 {
@@ -83,33 +83,37 @@ This is optional: not all devices have options. See [device](device.md).
 }
 ```
 
-* `"options"` is an array of options
-    * Each option is an array of `[name, value, range..., default-value, description, [properties...]]`:
-        * The `name` is what will be displayed to the user
-        * The current `value`
-        * An optional `range` of valid values
-            * Numeric options (`float`, `int`), defined by a `minimum`, `maximum`, and `stepping`
-                * I.e., is-valid = one-of( `minimum`, `minimum+1*stepping`, `minimum+2*stepping`, ..., `maximum` )
-            * Booleans can remove the range, e.g. `["Enabled", true, true, "Description"]`
-                * Booleans can be expressed as a range with `minimum=0`, `maximum=1`, `stepping=1`
-            * Free string options would likewise have no range, e.g. `["Name", "Bob", "", "The customer's name"]`
-                * `"IPv4"` is a string option that conforms to `W.X.Y.Z` (IP address) format
-            * Enum options are strings with an array of choices, e.g. `["Preset", "Maximum Quality", ["Maximum Range", "Maximum Quality", "Maximum Speed"], "Maximum Speed", "Standard preset combination of options"]`
-        * A `default-value` which also adheres to the range
-            * If this and the range are missing, the option is read-only
-        * A user-friendly description that describes the option, to be shown in any tooltip
-        * Additional `properties` describing behavior or nature, as an array of (case-sensitive) strings
-            * `"optional"` to note that it's possible for it to not have a value; lack of a value is denoted as `null` in the JSON
-                * If optional, a type must be deducible or present in the properties
-                * E.g., `["name", null, "description", ["optional", "string"]]` is an optional read-only string value that's currently unset
-                * Enums cannot be optional
-            * `"string"`, `"int"`, `"boolean"`, `"float"`, `"IPv4"`, `"enum"` can (and sometime must) indicate the value type
-                * If missing, the type will be deduced, if possible, from the values
-            * `"read-only"` options are not settable
-                * `set-option` will fail for these, though their value may change on the server side
-    * The device server has final say whether an option value is valid or not, and return an error if `set-option` specifies an unsupported or invalid value based on context
+* `"options"` is an array of options:
 
-Device options will not be shown in the Viewer.
+#### Options
+
+Options are defined with a JSON array: `[name, value, range..., default-value, description, [properties...]]`:
+* The `name` is what will be displayed to the user
+* The current `value`
+* An optional `range` of valid values
+    * Numeric options (`float`, `int`), defined by a `minimum`, `maximum`, and `stepping`
+        * I.e., is-valid = one-of( `minimum`, `minimum+1*stepping`, `minimum+2*stepping`, ..., `maximum` )
+    * Booleans can remove the range, e.g. `["Enabled", true, true, "Description"]`
+        * Booleans can be expressed as a range with `minimum=0`, `maximum=1`, `stepping=1`
+    * Free string options would likewise have no range, e.g. `["Name", "Bob", "", "The customer's name"]`
+        * `"IPv4"` is a string option that conforms to `W.X.Y.Z` (IP address) format
+    * Enum options are strings with an array of choices, e.g. `["Preset", "Maximum Quality", ["Maximum Range", "Maximum Quality", "Maximum Speed"], "Maximum Speed", "Standard preset combination of options"]`
+    * Rectangles are defined with values that arrays themselves: `[x1, y1, x2, y2]`
+        * All four should be integers
+        * No range should be used
+        * E.g., `["name", [1,2,3,4], null, "description", ["optional"]]`
+* A `default-value` which also adheres to the range
+    * If this and the range are missing, the option is read-only
+* A user-friendly description that describes the option, to be shown in any tooltip
+* Additional `properties` describing behavior or nature, as an array of (case-sensitive) strings
+    * `"optional"` to note that it's possible for it to not have a value; lack of a value is denoted as `null` in the JSON
+        * If optional, a type must be deducible or present in the properties
+        * E.g., `["name", null, "description", ["optional", "string"]]` is an optional read-only string value that's currently unset
+        * Enums cannot be optional
+    * `"string"`, `"int"`, `"boolean"`, `"float"`, `"IPv4"`, `"enum"`, `"rect"` can (and sometime must) indicate the value type
+        * If missing, the type will be deduced, if possible, from the values
+    * `"read-only"` options are not settable
+        * `set-option` will fail for these, though their value may change on the server side
 
 
 ### `stream-header`

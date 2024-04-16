@@ -49,6 +49,7 @@ namespace librealsense
 
     protected:
         void get_fw_logs_from_hw_monitor();
+        void handle_received_data( const std::vector< uint8_t > & res );
         void get_flash_logs_from_hw_monitor();
         virtual command get_update_command();
         virtual size_t get_log_size( const uint8_t * buff ) const;
