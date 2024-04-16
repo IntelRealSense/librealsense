@@ -21,58 +21,70 @@ void output_model::thread_loop()
 {
     while (!to_stop)
     {
-        std::vector<rs2::device> dev_copy;
+        if( enable_firmware_logs )
         {
-            std::lock_guard<std::mutex> lock(devices_mutex);
-            dev_copy = devices;
-        }
-        if (enable_firmware_logs)
-            for (auto&& dev : dev_copy)
+            // User activated FW logs. Parse XML file and start collecting logs.
+            std::vector<rs2::device> dev_copy;
             {
-                try
+                std::lock_guard<std::mutex> lock(devices_mutex);
+                dev_copy = devices;
+            }
+            std::vector< std::pair< rs2::firmware_logger, bool > > loggers; // Logger and is initialized successfully (can parse logs)
+            for( auto & dev : dev_copy )
+            {
+                if( auto logger = dev.as< rs2::firmware_logger >() )
                 {
-                    if (auto fwlogger = dev.as<rs2::firmware_logger>())
+                    bool can_parse = false;
+                    std::string hwlogger_xml = config_file::instance().get( configurations::viewer::hwlogger_xml );
+                    std::ifstream f( hwlogger_xml.c_str() );
+                    if( f.good() )
                     {
-                        bool has_parser = false;
-                        std::string hwlogger_xml = config_file::instance().get(configurations::viewer::hwlogger_xml);
-                        std::ifstream f(hwlogger_xml.c_str());
-                        if (f.good())
+                        try
                         {
-                            try
-                            {
-                                std::string str((std::istreambuf_iterator<char>(f)),
-                                    std::istreambuf_iterator<char>());
-                                fwlogger.init_parser(str);
-                                has_parser = true;
-                            }
-                            catch (const std::exception& ex)
-                            {
-                                add_log( RS2_LOG_SEVERITY_WARN,
-                                         __FILE__,
-                                         __LINE__,
-                                         rsutils::string::from()
-                                             << "Invalid Hardware Logger XML at '" << hwlogger_xml << "': " << ex.what()
-                                             << "\nEither configure valid XML or remove it" );
-                                continue; // Don't try to get log entries for this device
-                            }
+                            std::string str( ( std::istreambuf_iterator< char >( f ) ),
+                                             std::istreambuf_iterator< char >() );
+                            can_parse = logger.init_parser( str );
                         }
+                        catch( const std::exception & ex )
+                        {
+                            add_log( RS2_LOG_SEVERITY_WARN,
+                                     __FILE__,
+                                     __LINE__,
+                                     rsutils::string::from()
+                                         << "Invalid Hardware Logger XML at '" << hwlogger_xml << "': " << ex.what()
+                                         << "\nEither configure valid XML or remove it" );
+                            continue;  // Don't try to get log entries for this device
+                        }
+                    }
 
-                        fwlogger.start_collecting();
+                    logger.start_collecting();
+                    loggers.push_back( { logger, can_parse } );
+                }
+            }
+
+            while( enable_firmware_logs )
+            {
+                for( auto & it : loggers )
+                {
+                    auto & fwlogger = it.first;
+                    bool can_parse = it.second;
+                    try
+                    {
                         auto message = fwlogger.create_message();
-                        while (fwlogger.get_firmware_log(message))
+                        while( fwlogger.get_firmware_log( message ) )
                         {
                             auto parsed = fwlogger.create_parsed_message();
                             auto parsed_ok = false;
 
-                            if (has_parser)
+                            if( can_parse )
                             {
-                                if (fwlogger.parse_log(message, parsed))
+                                if( fwlogger.parse_log( message, parsed ) )
                                 {
                                     parsed_ok = true;
 
                                     std::string module_print = "[" + parsed.module_name() + "]";
                                     if( module_print == "[Unknown]" )
-                                        module_print.clear(); // Some devices don't support FW log modules
+                                        module_print.clear();  // Some devices don't support FW log modules
 
                                     add_log( message.get_severity(),
                                              parsed.file_name(),
@@ -82,32 +94,39 @@ void output_model::thread_loop()
                                 }
                             }
 
-                            if (!parsed_ok)
+                            if( ! parsed_ok )
                             {
                                 std::stringstream ss;
-                                for (auto& elem : message.data())
-                                    ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem) << " ";
-                                add_log(message.get_severity(), __FILE__, 0, ss.str());
+                                for( auto & elem : message.data() )
+                                    ss << std::setfill( '0' ) << std::setw( 2 ) << std::hex
+                                       << static_cast< int >( elem ) << " ";
+                                add_log( message.get_severity(), __FILE__, 0, ss.str() );
                             }
-                            if( ! enable_firmware_logs && fwlogger.get_number_of_fw_logs() == 0 )
-                            {
-                                fwlogger.stop_collecting();
+
+                            if( !enable_firmware_logs && fwlogger.get_number_of_fw_logs() == 0 )
                                 break;
-                            }
                         }
                     }
+                    catch( const std::exception & ex )
+                    {
+                        add_log( RS2_LOG_SEVERITY_WARN,
+                                 __FILE__,
+                                 __LINE__,
+                                 rsutils::string::from() << "Failed to fetch firmware logs: " << ex.what() );
+                    }
                 }
-                catch(const std::exception& ex)
-                {
-                    add_log( RS2_LOG_SEVERITY_WARN,
-                             __FILE__,
-                             __LINE__,
-                             rsutils::string::from() << "Failed to fetch firmware logs: " << ex.what() );
-                }
+                                    
+                // FW define the logs polling intervals to be no less than 100msec to cope with limited resources.
+                // At the same time 100 msec should guarantee no log drops
+                std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
             }
-        // FW define the logs polling intervals to be no less than 100msec to cope with limited resources.
-        // At the same time 100 msec should guarantee no log drops
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+            // User dectivated FW logs. Stop collecting logs.
+            for( auto & fwlogger : loggers )
+                fwlogger.first.stop_collecting();
+        }
+
+        std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     }
 }
 

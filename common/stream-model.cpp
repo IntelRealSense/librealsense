@@ -296,69 +296,67 @@ namespace rs2
                 // x,y remain the same, only update the width,height with new mouse position relative to starting mouse position
                 roi_display_rect.w = mouse.cursor.x - roi_display_rect.x;
                 roi_display_rect.h = mouse.cursor.y - roi_display_rect.y;
-            }
-            // Case 3: We are in middle of dragging (capturing) and mouse was released
-            if (!mouse.mouse_down[0] && capturing_roi && stream_rect.contains(mouse.cursor))
-            {
-                // Update width,height one last time
-                roi_display_rect.w = mouse.cursor.x - roi_display_rect.x;
-                roi_display_rect.h = mouse.cursor.y - roi_display_rect.y;
-                capturing_roi = false; // Mark that we are no longer dragging
 
-                if (roi_display_rect) // If the rect is not empty?
+                // Case 3: We are in middle of dragging (capturing) and mouse was released
+                if( ! mouse.mouse_down[0] )
                 {
-                    // Convert from local (pixel) coordinate system to device coordinate system
-                    auto r = roi_display_rect;
-                    r = r.normalize(stream_rect).unnormalize(_normalized_zoom.unnormalize(get_original_stream_bounds()));
-                    dev->roi_rect = r; // Store new rect in device coordinates into the subdevice object
+                    capturing_roi = false; // Mark that we are no longer dragging
 
-                    // Send it to firmware:
-                    // Step 1: get rid of negative width / height
-                    region_of_interest roi{};
-                    roi.min_x = static_cast<int>(std::min(r.x, r.x + r.w));
-                    roi.max_x = static_cast<int>(std::max(r.x, r.x + r.w));
-                    roi.min_y = static_cast<int>(std::min(r.y, r.y + r.h));
-                    roi.max_y = static_cast<int>(std::max(r.y, r.y + r.h));
-
-                    try
+                    if (roi_display_rect) // If the rect is not empty?
                     {
-                        // Step 2: send it to firmware
-                        if (sensor->is<roi_sensor>())
+                        // Convert from local (pixel) coordinate system to device coordinate system
+                        auto r = roi_display_rect;
+                        r = r.normalize(stream_rect).unnormalize(_normalized_zoom.unnormalize(get_original_stream_bounds()));
+                        dev->roi_rect = r; // Store new rect in device coordinates into the subdevice object
+
+                        // Send it to firmware:
+                        // Step 1: get rid of negative width / height
+                        region_of_interest roi{};
+                        roi.min_x = static_cast<int>(std::min(r.x, r.x + r.w));
+                        roi.max_x = static_cast<int>(std::max(r.x, r.x + r.w));
+                        roi.min_y = static_cast<int>(std::min(r.y, r.y + r.h));
+                        roi.max_y = static_cast<int>(std::max(r.y, r.y + r.h));
+
+                        try
                         {
-                            sensor->as<roi_sensor>().set_region_of_interest(roi);
+                            // Step 2: send it to firmware
+                            if (sensor->is<roi_sensor>())
+                            {
+                                sensor->as<roi_sensor>().set_region_of_interest(roi);
+                            }
+                        }
+                        catch (const error& e)
+                        {
+                            error_message = error_to_string(e);
                         }
                     }
-                    catch (const error& e)
+                    else // If the rect is empty
                     {
-                        error_message = error_to_string(e);
-                    }
-                }
-                else // If the rect is empty
-                {
-                    try
-                    {
-                        // To reset ROI, just set ROI to the entire frame
-                        auto x_margin = (int)size.x / 8;
-                        auto y_margin = (int)size.y / 8;
-
-                        // Default ROI behavior is center 3/4 of the screen:
-                        if (sensor->is<roi_sensor>())
+                        try
                         {
-                            sensor->as<roi_sensor>().set_region_of_interest({ x_margin, y_margin,
-                                                                             (int)size.x - x_margin - 1,
-                                                                             (int)size.y - y_margin - 1 });
+                            // To reset ROI, just set ROI to the entire frame
+                            auto x_margin = (int)size.x / 8;
+                            auto y_margin = (int)size.y / 8;
+
+                            // Default ROI behavior is center 3/4 of the screen:
+                            if (sensor->is<roi_sensor>())
+                            {
+                                sensor->as<roi_sensor>().set_region_of_interest({ x_margin, y_margin,
+                                                                                 (int)size.x - x_margin - 1,
+                                                                                 (int)size.y - y_margin - 1 });
+                            }
+
+                            roi_display_rect = { 0, 0, 0, 0 };
+                            dev->roi_rect = { 0, 0, 0, 0 };
                         }
+                        catch (const error& e)
+                        {
+                            error_message = error_to_string(e);
+                        }
+                    }
 
-                        roi_display_rect = { 0, 0, 0, 0 };
-                        dev->roi_rect = { 0, 0, 0, 0 };
-                    }
-                    catch (const error& e)
-                    {
-                        error_message = error_to_string(e);
-                    }
+                    dev->roi_checked = false;
                 }
-
-                dev->roi_checked = false;
             }
             // If we left stream bounds while capturing, stop capturing
             if (capturing_roi && !stream_rect.contains(mouse.cursor))

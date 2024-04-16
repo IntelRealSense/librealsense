@@ -153,6 +153,10 @@ namespace control {
     }
     namespace dfu_start {
         extern std::string const id;
+        namespace key {
+            extern std::string const crc;
+            extern std::string const size;
+        }
     }
     namespace dfu_apply {
         using notification::dfu_apply::id;

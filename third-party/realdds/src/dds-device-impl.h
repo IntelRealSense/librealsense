@@ -73,6 +73,7 @@ public:
 
     impl( std::shared_ptr< dds_participant > const & participant,
           topics::device_info const & info );
+    ~impl();
 
     void reset();
 
