@@ -18,7 +18,6 @@
 #define REPORT_ID_GYROMETER_3D      2
 #define REPORT_ID_CUSTOM            3
 
-const size_t SIZE_OF_HID_IMU_FRAME = 32;
 
 static std::string gyro = "gyro_3d";
 static std::string accel = "accel_3d";
@@ -70,7 +69,6 @@ namespace librealsense
     };
 #pragma pack(pop)
 
-    //static_assert(sizeof(REALSENSE_HID_REPORT) == SIZE_OF_HID_IMU_FRAME, "HID IMU Frame struct expected size is 32 bytes");
 
 #pragma pack(push, 1)
     struct FEATURE_REPORT
