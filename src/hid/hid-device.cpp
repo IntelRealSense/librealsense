@@ -216,7 +216,7 @@ namespace librealsense
             REALSENSE_HID_REPORT report;
 #ifdef __APPLE__
             unsigned char tmp_buffer[100] = { 0 };
-            hid_read( _hidapi_device, &tmp_buffer, _realsense_hid_report_actual_size );
+            hid_read( _hidapi_device, tmp_buffer, _realsense_hid_report_actual_size );
             if( _realsense_hid_report_actual_size != sizeof( REALSENSE_HID_REPORT ) )
             {
                 // for FX version<5.16 the actual struct is 32 bit, so we can not use memcpy for the whole struct
