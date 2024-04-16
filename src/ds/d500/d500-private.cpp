@@ -272,5 +272,80 @@ namespace librealsense
             return{ rect_rot_mat,trans_vector };
         }
 
+        std::string d500_coefficients_table::to_string() const
+        {
+            std::string res;
+            res += "\n--- header ---\n";
+            res += header.to_string();
+            res += "--- left coeffs ---\n";
+            res += left_coefficients_table.to_string();
+            res += "--- right coeffs ---\n";
+            res += right_coefficients_table.to_string();
+            res += "--- --- ---\n";
+            res += "baseline:\t" + std::to_string(baseline) + "\n";
+            res += "translation_dir:\t" + std::to_string(translation_dir) + "\n";
+            res += "realignement_essential:\t" + std::to_string(realignement_essential) + "\n";
+            res += "vertical_shift:\t" + std::to_string(vertical_shift) + "\n";
+            res += "--- rectified intrinsics ---\n";
+            res += rectified_intrinsics.to_string();
+            return res;
+        }
+
+        std::string single_sensor_coef_table::to_string() const
+        {
+            std::string res;
+            res += "-- base_instrinsics --\n";
+            res += base_instrinsics.to_string();
+            res += "distortion_non_parametric:" + std::to_string(distortion_non_parametric) + "\n";
+            res += "distortion_model:\t\t" + std::to_string(int(distortion_model)) + "\n";
+            for (int i = 0; i < 13; ++i)
+            {
+                res += "distortion_coeffs[" + std::to_string(i) + "]:\t" + std::to_string(distortion_coeffs[i]) + "\n";
+            }
+            res += "radial_distortion_lut_range_degs:\t" + std::to_string(radial_distortion_lut_range_degs) + "\n";
+            res += "radial_distortion_lut_focal_length:\t" + std::to_string(radial_distortion_lut_focal_length) + "\n";
+            res += "-- undist config --\n";
+            res += undist_config.to_string();
+            res += "rotation_matrix[0]:\t" + std::to_string(rotation_matrix.x.x) + "\n";
+            res += "rotation_matrix[1]:\t" + std::to_string(rotation_matrix.x.y) + "\n";
+            res += "rotation_matrix[2]:\t" + std::to_string(rotation_matrix.x.z) + "\n";
+            res += "rotation_matrix[3]:\t" + std::to_string(rotation_matrix.y.x) + "\n";
+            res += "rotation_matrix[4]:\t" + std::to_string(rotation_matrix.y.y) + "\n";
+            res += "rotation_matrix[5]:\t" + std::to_string(rotation_matrix.y.z) + "\n";
+            res += "rotation_matrix[6]:\t" + std::to_string(rotation_matrix.z.x) + "\n";
+            res += "rotation_matrix[7]:\t" + std::to_string(rotation_matrix.z.y) + "\n";
+            res += "rotation_matrix[8]:\t" + std::to_string(rotation_matrix.z.z) + "\n";
+            return res;
+        }
+
+        std::string mini_intrinsics::to_string() const
+        {
+            std::string res;
+            res += "image_width:\t" + std::to_string(image_width) + "\n";
+            res += "image_height:\t" + std::to_string(image_height) + "\n";
+            res += "ppx:\t" + std::to_string(ppx) + "\n";
+            res += "ppy:\t" + std::to_string(ppy) + "\n";
+            res += "fx:\t" + std::to_string(fx) + "\n";
+            res += "fy:\t" + std::to_string(fy) + "\n";
+
+            return res;
+
+        }
+
+        std::string d500_undist_configuration::to_string() const
+        {
+            std::string res;
+            res += "fx:\t" + std::to_string(fx) + "\n";
+            res += "fy:\t" + std::to_string(fy) + "\n";
+            res += "x0:\t" + std::to_string(x0) + "\n";
+            res += "y0:\t" + std::to_string(y0) + "\n";
+            res += "x_shift_in:\t" + std::to_string(x_shift_in) + "\n";
+            res += "y_shift_in:\t" + std::to_string(y_shift_in) + "\n";
+            res += "x_scale_in:\t" + std::to_string(x_scale_in) + "\n";
+            res += "y_scale_in:\t" + std::to_string(y_scale_in) + "\n";
+            
+            return res;
+        }
+
     } // librealsense::ds
 } // namespace librealsense
