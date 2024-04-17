@@ -219,7 +219,7 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
                 _metadata_writer = std::make_shared< dds_topic_writer >( topic, _publisher );
                 dds_topic_writer::qos wqos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS );
                 wqos.history().depth = 10;  // default is 1
-                wqos.override_from_json( _subscriber->get_participant()->settings().nested( "device", "metadata" ) );
+                _metadata_writer->override_qos_from_json( wqos, _subscriber->get_participant()->settings().nested( "device", "metadata" ) );
                 _metadata_writer->run( wqos );
             }
         }
