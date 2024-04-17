@@ -185,9 +185,8 @@ namespace librealsense
                                     report.x = *x;
                                     report.y = *y;
                                     report.z = *z;
-                                    memcpy( &report + offsetof( REALSENSE_HID_REPORT, customValue1 ),
-                                            r->get_buffer().data() + 16,
-                                            16 );
+                                    memcpy( &report.customValue1, r->get_buffer().data() + 16, 16 );
+
                                 }
                                 else
                                 {
@@ -248,7 +247,7 @@ namespace librealsense
                 report.z = *z;
 
                 // the rest of the data in the old struct size (after z element) starts from offset 16 and has 16 bytes till end
-                memcpy( &report + offsetof( REALSENSE_HID_REPORT, customValue1 ), tmp_buffer + 16, 16 );
+                memcpy( &report.customValue1, tmp_buffer + 16, 16 );
             }
             else
             {
