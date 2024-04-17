@@ -68,7 +68,7 @@ if args.blob:
         sys.exit( 1 )
     writer = dds.topic_writer( dds.message.blob.create_topic( participant, topic_path ))
     wqos = dds.topic_writer.qos()  # reliable
-    #writer.override_qos_from_json( wqos, { 'publish-mode': { 'flow-control': 'blob' } } )
+    writer.override_qos_from_json( wqos, { 'publish-mode': { 'flow-control': 'blob' } } )
     writer.run( wqos )
     if not writer.wait_for_readers( dds.time( 2. ) ):
         e( 'Timeout waiting for readers' )

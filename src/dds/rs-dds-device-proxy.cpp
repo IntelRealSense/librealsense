@@ -615,7 +615,11 @@ bool dds_device_proxy::check_fw_compatibility( const std::vector< uint8_t > & im
                                                               _dds_dev->device_info().topic_root()
                                                                   + realdds::topics::DFU_TOPIC_NAME );
         auto writer = std::make_shared< realdds::dds_topic_writer >( topic );
-        writer->run( realdds::dds_topic_writer::qos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS ) );
+        realdds::dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
+        wqos.publish_mode().kind = eprosima::fastdds::dds::ASYNCHRONOUS_PUBLISH_MODE;
+        wqos.publish_mode().flow_controller_name = "dfu";
+        writer->override_qos_from_json( wqos, _dds_dev->participant()->settings().nested( "device", "dfu" ) );
+        writer->run( wqos );
         if( ! writer->wait_for_readers( { 3, 0 } ) )
             throw std::runtime_error( "timeout waiting for DFU subscriber" );
         auto blob = realdds::topics::blob_msg( std::vector< uint8_t >( image ) );
