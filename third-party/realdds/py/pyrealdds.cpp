@@ -97,9 +97,17 @@ json load_rs_settings( json const & local_settings )
 
     // Patch any script-specific settings
     // NOTE: this is also accessed by pyrealsense2, where a "context" hierarchy is still used
-    auto script = script_name();
-    if( auto script_settings = config.nested( script, "context", "dds" ) )
-        settings.override( script_settings, "config-file/" + script + "/context" );
+    try
+    {
+        auto script = script_name();
+        if( auto script_settings = config.nested( script, "context", "dds" ) )
+            settings.override( script_settings, "config-file/" + script + "/context" );
+    }
+    catch( std::exception const & e )
+    {
+        // Expected if we're not in a script
+        LOG_DEBUG( "failed to get script name: " << e.what() );
+    }
 
     // We should always have DDS enabled
     if( settings.is_object() )
@@ -257,19 +265,15 @@ PYBIND11_MODULE(NAME, m) {
               []( dds_participant & self, json const & local_settings, realdds::dds_domain_id domain_id )
                     { self.init( domain_id, script_name(), local_settings ); },
               "local-settings"_a = json::object(), "domain-id"_a = -1 )
-        .def( "init", &dds_participant::init, "domain-id"_a, "participant-name"_a, "local-settings"_a = json::object() )
+        .def( "init",
+              py::overload_cast< realdds::dds_domain_id, std::string const &, json const & >( &dds_participant::init ),
+              "domain-id"_a, "participant-name"_a, "local-settings"_a = json::object() )
         .def( "is_valid", &dds_participant::is_valid )
         .def( "guid", &dds_participant::guid )
         .def( "create_guid", &dds_participant::create_guid )
         .def( "__bool__", &dds_participant::is_valid )
-        .def( "name",
-              []( dds_participant const & self ) {
-                  eprosima::fastdds::dds::DomainParticipantQos qos;
-                  if( ReturnCode_t::RETCODE_OK == self.get()->get_qos( qos ) )
-                      return std::string( qos.name() );
-                  return std::string();
-              } )
-        .def( "name_from_guid", []( dds_guid const & guid ) { return dds_participant::name_from_guid( guid ); } )
+        .def( "name", &dds_participant::name )
+        .def_static( "name_from_guid", []( dds_guid const & guid ) { return dds_participant::name_from_guid( guid ); } )
         .def( "names", []( dds_participant const & self ) { return self.get()->get_participant_names(); } )
         .def( "settings", &dds_participant::settings )
         .def( "__repr__",
@@ -282,9 +286,7 @@ PYBIND11_MODULE(NAME, m) {
                   }
                   else
                   {
-                      eprosima::fastdds::dds::DomainParticipantQos qos;
-                      if( ReturnCode_t::RETCODE_OK == self.get()->get_qos( qos ) )
-                          os << " \"" << qos.name() << "\"";
+                      os << " \"" << self.name() << "\"";
                       os << " " << realdds::print_guid( self.guid() );
                   }
                   os << ">";
@@ -411,9 +413,13 @@ PYBIND11_MODULE(NAME, m) {
 
     using writer_qos = realdds::dds_topic_writer::qos;
     py::class_< writer_qos >( m, "writer_qos" )  //
+        .def_property_readonly( "flow_controller",
+                                []( writer_qos const & self ) -> std::string
+                                { return self.publish_mode().flow_controller_name; } )
         .def( "__repr__", []( writer_qos const & self ) {
             std::ostringstream os;
             os << "<" SNAME ".writer_qos";
+            os << self;
             os << ">";
             return os.str();
         } );
@@ -436,6 +442,7 @@ PYBIND11_MODULE(NAME, m) {
                       ( eprosima::fastdds::dds::PublicationMatchedStatus const & status ),
                       callback( self, status.current_count_change ); ) )
         .def( "topic", &dds_topic_writer::topic )
+        .def( "override_qos_from_json", &dds_topic_writer::override_qos_from_json )
         .def( "run", &dds_topic_writer::run )
         .def( "has_readers", &dds_topic_writer::has_readers )
         .def( "wait_for_readers", &dds_topic_writer::wait_for_readers )
@@ -578,6 +585,7 @@ PYBIND11_MODULE(NAME, m) {
         .def_readwrite( "width", &image_msg::width )
         .def_readwrite( "height", &image_msg::height )
         .def_readwrite( "timestamp", &image_msg::timestamp )
+        .def( "__bool__", &image_msg::is_valid )
         .def( "__repr__",
               []( image_msg const & self )
               {
@@ -627,6 +635,8 @@ PYBIND11_MODULE(NAME, m) {
                                                              std::string const & ) >( &blob_msg::create_topic ) )
         .def( "data", []( blob_msg const & self ) { return self.data(); } )
         .def( "size", []( blob_msg const & self ) { return self.data().size(); } )
+        .def( "crc", []( blob_msg const & self ) { return rsutils::number::calc_crc32( self.data().data(), self.data().size() ); } )
+        .def( "__bool__", &blob_msg::is_valid )
         .def( "__repr__",
               []( blob_msg const & self )
               {
@@ -671,6 +681,7 @@ PYBIND11_MODULE(NAME, m) {
             "timestamp",
             []( imu_msg const & self ) { return self.timestamp(); },
             []( imu_msg & self, dds_time time ) { self.timestamp( time ); } )
+        .def( "__bool__", &imu_msg::is_valid )
         .def( "__repr__",
               []( imu_msg const & self )
               {
