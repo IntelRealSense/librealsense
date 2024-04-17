@@ -8,16 +8,6 @@
 #include <string>
 #include <map>
 
-#define HID_REPORT_TYPE_INPUT       1
-#define HID_REPORT_TYPE_FEATURE     3
-
-#define DEVICE_POWER_D0             2
-#define DEVICE_POWER_D4             6
-
-#define REPORT_ID_ACCELEROMETER_3D  1
-#define REPORT_ID_GYROMETER_3D      2
-#define REPORT_ID_CUSTOM            3
-
 
 static std::string gyro = "gyro_3d";
 static std::string accel = "accel_3d";
@@ -27,6 +17,18 @@ namespace librealsense
 {
     namespace platform
     {
+        constexpr int HID_REPORT_TYPE_INPUT = 1;
+        constexpr int HID_REPORT_TYPE_FEATURE = 3;
+        constexpr int DEVICE_POWER_D0 = 2;
+        constexpr int DEVICE_POWER_D4 = 6;
+
+    enum REPORT_ID
+    {
+        REPORT_ID_ACCELEROMETER_3D = 1,
+        REPORT_ID_GYROMETER_3D = 2,
+        REPORT_ID_CUSTOM = 3
+    };
+
     enum USB_REQUEST_CODE {
       USB_REQUEST_CODE_GET = 0xa1,
       USB_REQUEST_CODE_SET = 0x21
