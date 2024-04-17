@@ -136,9 +136,10 @@ namespace librealsense
 
                 void open()
                 {
-                    for (auto && kvp : _dev_to_profiles) {
-                        auto&& sub = _results.at(kvp.first);
-                        sub->open(kvp.second);
+                    std::map<int, stream_profiles>::reverse_iterator it;
+                    for (it = _dev_to_profiles.rbegin(); it != _dev_to_profiles.rend(); it++) {
+                        auto&& sub = _results.at(it->first);
+                        sub->open(it->second);
                     }
                 }
 
