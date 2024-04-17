@@ -164,11 +164,17 @@ namespace librealsense
                             
                             if( r->get_actual_length() == _realsense_hid_report_actual_size )
                             {
+                                // for FW version < 5.16 the actual struct is 32 bytes (each IMU axis is 16 bit), so we
+                                // can not use memcpy for
+                                // the whole struct as the new struct (size 38) expect 32 bits for each.
+                                // For FW >= 5.16 we can just use memcpy as the structs size match
                                 REALSENSE_HID_REPORT report;
                                 if( _realsense_hid_report_actual_size != sizeof( REALSENSE_HID_REPORT ) )
                                 {
-                                    //for FW version < 5.16 the actual struct is 32 bit, so we can not use memcpy for the whole struct
-                                    //x,y,x are all short with the x variable located at offset 10, y at offset 12, and z at offset 14 within the structure.
+
+                                    // x,y,z are all short with: x at offset 10
+                                    //                           y at offset 12
+                                    //                           z at offset 14
                                     memcpy( &report, r->get_buffer().data(), 10 );
                                     const int16_t * x
                                         = reinterpret_cast< const int16_t * >( r->get_buffer().data() + 10 );
@@ -179,10 +185,14 @@ namespace librealsense
                                     report.x = *x;
                                     report.y = *y;
                                     report.z = *z;
-                                    memcpy( &report + 22, r->get_buffer().data() + 16, 16 );
+                                    memcpy( &report + offsetof( REALSENSE_HID_REPORT, customValue1 ),
+                                            r->get_buffer().data() + 16,
+                                            16 );
                                 }
                                 else
                                 {
+                                    // the rest of the data in the old struct size (after z element) starts from offset
+                                    // 16 and has 16 bytes till end
                                     memcpy( &report, r->get_buffer().data(), r->get_actual_length() );
                                 }
                                 _queue.enqueue(std::move(report));
@@ -214,14 +224,21 @@ namespace librealsense
         void rs_hid_device::handle_interrupt()
         {
             REALSENSE_HID_REPORT report;
+
+            // for FW version < 5.16 the actual struct is 32 bytes (each IMU axis is 16 bit), so we can not use memcpy for
+            // the whole struct as the new struct (size 38) expect 32 bits for each.
+            // For FW >= 5.16 we can just use memcpy as the structs size match
+           
+
 #ifdef __APPLE__
             unsigned char tmp_buffer[100] = { 0 };
             hid_read( _hidapi_device, tmp_buffer, _realsense_hid_report_actual_size );
             if( _realsense_hid_report_actual_size != sizeof( REALSENSE_HID_REPORT ) )
             {
-                // for FW version<5.16 the actual struct is 32 bit, so we can not use memcpy for the whole struct
-                // x,y,x are all short with the x variable located at offset 10, y at offset 12, and
-                // z at offset 14 within the structure.
+               
+                // x,y,z are all short with: x at offset 10
+                //                           y at offset 12
+                //                           z at offset 14
                 memcpy( &report, tmp_buffer, 10 );
                 const int16_t * x = reinterpret_cast< const int16_t * >( tmp_buffer + 10 );
                 const int16_t * y = reinterpret_cast< const int16_t * >( tmp_buffer + 12 );
@@ -229,7 +246,9 @@ namespace librealsense
                 report.x = *x;
                 report.y = *y;
                 report.z = *z;
-                memcpy( &report + 22, tmp_buffer + 16, 16 );
+
+                // the rest of the data in the old struct size (after z element) starts from offset 16 and has 16 bytes till end
+                memcpy( &report + offsetof( REALSENSE_HID_REPORT, customValue1 ), tmp_buffer + 16, 16 );
             }
             else
             {
@@ -313,7 +332,7 @@ namespace librealsense
             if(fps > 0)
                 featureReport.report = (1000 / fps);
 
-            //we want to change the sensitivity values only in gyro, for FW version>=5.16
+            //we want to change the sensitivity values only in gyro, for FW version >= 5.16
             if( (int)featureReport.reportId == REPORT_ID_GYROMETER_3D
                 && _realsense_hid_report_actual_size == sizeof( REALSENSE_HID_REPORT ) )
                 featureReport.sensitivity = sensitivity;
