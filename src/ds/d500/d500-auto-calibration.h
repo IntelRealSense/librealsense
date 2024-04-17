@@ -9,11 +9,6 @@
 
 namespace librealsense
 {
-#pragma pack(push, 1)
-#pragma pack(1)
-    
-#pragma pack(pop)
-
     class d500_auto_calibrated : public auto_calibrated_interface
     {
     public:
