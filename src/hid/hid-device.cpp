@@ -332,7 +332,7 @@ namespace librealsense
                 featureReport.report = (1000 / fps);
 
             //we want to change the sensitivity values only in gyro, for FW version >= 5.16
-            if( (int)featureReport.reportId == REPORT_ID_GYROMETER_3D
+            if( featureReport.reportId == REPORT_ID_GYROMETER_3D
                 && _realsense_hid_report_actual_size == sizeof( REALSENSE_HID_REPORT ) )
                 featureReport.sensitivity = sensitivity;
 
