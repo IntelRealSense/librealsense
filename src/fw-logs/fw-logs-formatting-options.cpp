@@ -8,6 +8,7 @@
 #include <rsutils/string/from.h>
 
 #include <sstream>
+#include <stdint.h>
 
 namespace librealsense
 {
