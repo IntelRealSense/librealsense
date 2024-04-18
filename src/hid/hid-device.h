@@ -49,7 +49,7 @@ namespace librealsense
             void handle_interrupt();
             rs_usb_endpoint get_hid_endpoint();
             rs_usb_interface get_hid_interface();
-            //for gyro sensitivity the default value we set in feature report is 0.1
+            //for gyro sensitivity the default value we set in feature report is 0.1, which is mapped in FW to 30.5 millideg/sec
             usb_status set_feature_report( unsigned char power, int report_id, int fps = 0, double sensitivity = 0.1 );
 #ifdef __APPLE__
            int hidapi_PowerDevice(unsigned char reportId);
