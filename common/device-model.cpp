@@ -18,6 +18,7 @@
 #include <rsutils/os/os.h>
 #include "viewer.h"
 #include "on-chip-calib.h"
+#include "d500-on-chip-calib.h"
 #include "subdevice-model.h"
 #include "device-model.h"
 
@@ -1408,329 +1409,7 @@ namespace rs2
                 }
             }
 
-            bool has_autocalib = false;
-            for (auto&& sub : subdevices)
-            {
-                if (sub->supports_on_chip_calib() && !has_autocalib)
-                {
-                    something_to_show = true;
-
-                    std::string device_pid = sub->s->supports(RS2_CAMERA_INFO_PRODUCT_ID) ? sub->s->get_info(RS2_CAMERA_INFO_PRODUCT_ID) : "unknown";
-                    std::string device_usb_type = sub->s->supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR) ? sub->s->get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR) : "unknown";
-
-                    bool show_disclaimer = val_in_range(device_pid, { std::string("0AD2"), std::string("0AD3") }); // Specific for D410/5
-                    bool disable_fl_cal = (((device_pid == "0B5C") || show_disclaimer) &&
-                                            (!starts_with(device_usb_type, "3."))); // D410/D15/D455@USB2
-
-                    if (ImGui::Selectable("On-Chip Calibration"))
-                    {
-                        try
-                        {
-                            if (show_disclaimer)
-                            {
-                                auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
-                                viewer.not_model->add_notification(disclaimer_notice);
-                            }
-
-                            auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
-                            auto n = std::make_shared<autocalib_notification_model>("", manager, false);
-                            viewer.not_model->add_notification(n);
-                            n->forced = true;
-                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_SELF_INPUT;
-
-                            for (auto&& n : related_notifications)
-                                if (dynamic_cast<autocalib_notification_model*>(n.get()))
-                                    n->dismiss(false);
-
-                            related_notifications.push_back(n);
-                        }
-                        catch (const error& e)
-                        {
-                            error_message = error_to_string(e);
-                        }
-                        catch (const std::exception& e)
-                        {
-                            error_message = e.what();
-                        }
-                    }
-                    if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("This will improve the depth noise.\n"
-                            "Point at a scene that normally would have > 50 %% valid depth pixels,\n"
-                            "then press calibrate."
-                            "The health-check will be calculated.\n"
-                            "If >0.25 we recommend applying the new calibration.\n"
-                            "\"White wall\" mode should only be used when pointing at a flat white wall with projector on");
-
-                    if (ImGui::Selectable("Focal Length Calibration"))
-                    {
-                        try
-                        {
-                            if (disable_fl_cal)
-                            {
-                                auto disable_fl_notice = std::make_shared<fl_cal_limitation_model>();
-                                viewer.not_model->add_notification(disable_fl_notice);
-                            }
-                            else
-                            {
-                                std::shared_ptr< subdevice_model> sub_color;
-                                for (auto&& sub2 : subdevices)
-                                {
-                                    if (sub2->s->is<rs2::color_sensor>())
-                                    {
-                                        sub_color = sub2;
-                                        break;
-                                    }
-                                }
-
-                                if (show_disclaimer)
-                                {
-                                    auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
-                                    viewer.not_model->add_notification(disclaimer_notice);
-                                }
-                                auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub_color);
-                                auto n = std::make_shared<autocalib_notification_model>("", manager, false);
-                                viewer.not_model->add_notification(n);
-                                n->forced = true;
-                                n->update_state = autocalib_notification_model::RS2_CALIB_STATE_FL_INPUT;
-
-                                for (auto&& n : related_notifications)
-                                    if (dynamic_cast<autocalib_notification_model*>(n.get()))
-                                        n->dismiss(false);
-
-                                related_notifications.push_back(n);
-                                manager->start_fl_viewer();
-                            }
-                        }
-                        catch (const error& e)
-                        {
-                            error_message = error_to_string(e);
-                        }
-                        catch (const std::exception& e)
-                        {
-                            error_message = e.what();
-                        }
-                    }
-                    if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Focal length calibration is used to adjust camera focal length with specific target.");
-
-                    if (ImGui::Selectable("Tare Calibration"))
-                    {
-                        try
-                        {
-                            if (show_disclaimer)
-                            {
-                                auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
-                                viewer.not_model->add_notification(disclaimer_notice);
-                            }
-                            auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
-                            auto n = std::make_shared<autocalib_notification_model>("", manager, false);
-                            viewer.not_model->add_notification(n);
-                            n->forced = true;
-                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_TARE_INPUT;
-
-                            for (auto&& n : related_notifications)
-                                if (dynamic_cast<autocalib_notification_model*>(n.get()))
-                                    n->dismiss(false);
-
-                            related_notifications.push_back(n);
-                        }
-                        catch (const error& e)
-                        {
-                            error_message = error_to_string(e);
-                        }
-                        catch (const std::exception& e)
-                        {
-                            error_message = e.what();
-                        }
-                    }
-                    if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Tare calibration is used to adjust camera absolute distance to flat target.\n"
-                            "User needs either to enter the known ground truth or use the get button\n"
-                            "with specific target to get the ground truth.");
-
-//#define UVMAP_CAL
-#ifdef UVMAP_CAL // Disabled due to stability and maturity levels
-                    try
-                    {
-                        for (auto&& sub2 : subdevices)
-                        {
-                            if (sub2->s->is<rs2::color_sensor>())
-                            {
-                                if (ImGui::Selectable("UV-Mapping Calibration"))
-                                {
-                                    if (show_disclaimer)
-                                    {
-                                        auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
-                                        viewer.not_model->add_notification(disclaimer_notice);
-                                    }
-                                    auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub2, sub2->uvmapping_calib_full);
-                                    auto n = std::make_shared<autocalib_notification_model>("", manager, false);
-                                    viewer.not_model->add_notification(n);
-                                    n->forced = true;
-                                    n->update_state = autocalib_notification_model::RS2_CALIB_STATE_UVMAPPING_INPUT;
-
-                                    for (auto&& n : related_notifications)
-                                        if (dynamic_cast<autocalib_notification_model*>(n.get()))
-                                            n->dismiss(false);
-
-                                    related_notifications.push_back(n);
-                                    manager->start_uvmapping_viewer();
-                                }
-
-                                if (ImGui::IsItemHovered())
-                                    ImGui::SetTooltip("UV-Mapping calibration is used to improve UV-Mapping with specific target.");
-                            }
-                        }
-                    }
-                    catch (const error& e)
-                    {
-                        error_message = error_to_string(e);
-                    }
-                    catch (const std::exception& e)
-                    {
-                        error_message = e.what();
-                    }
-#endif //UVMAP_CAL
-
-                    //if (ImGui::Selectable("Focal Length Plus Calibration"))
-                    //{
-                    //    try
-                    //    {
-                    //        std::shared_ptr< subdevice_model> sub_color;
-                    //        for (auto&& sub2 : subdevices)
-                    //        {
-                    //            if (sub2->s->is<rs2::color_sensor>())
-                    //            {
-                    //                sub_color = sub2;
-                    //                break;
-                    //            }
-                    //        }
-
-                    //        auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub_color);
-                    //        auto n = std::make_shared<autocalib_notification_model>("", manager, false);
-
-                    //        viewer.not_model->add_notification(n);
-                    //        n->forced = true;
-                    //        n->update_state = autocalib_notification_model::RS2_CALIB_STATE_FL_PLUS_INPUT;
-
-                    //        for (auto&& n : related_notifications)
-                    //            if (dynamic_cast<autocalib_notification_model*>(n.get()))
-                    //                n->dismiss(false);
-
-                    //        related_notifications.push_back(n);
-                    //        manager->start_fl_plus_viewer();
-                    //    }
-                    //    catch (const error& e)
-                    //    {
-                    //        error_message = error_to_string(e);
-                    //    }
-                    //    catch (const std::exception& e)
-                    //    {
-                    //        error_message = e.what();
-                    //    }
-                    //}
-                    //if (ImGui::IsItemHovered())
-                    //    ImGui::SetTooltip("Focal length plus calibration is used to adjust camera focal length and principal points with specific target.");
-
-                    if (_calib_model.supports())
-                    {
-                        if (ImGui::Selectable("Calibration Data"))
-                        {
-                            _calib_model.open();
-                        }
-                        if (ImGui::IsItemHovered())
-                            ImGui::SetTooltip("Access low level camera calibration parameters");
-                    }
-
-                    if (auto fwlogger = dev.as<rs2::firmware_logger>())
-                    {
-                        if (ImGui::Selectable("Recover Logs from Flash"))
-                        {
-                            try
-                            {
-                                bool has_parser = false;
-                                std::string hwlogger_xml = config_file::instance().get(configurations::viewer::hwlogger_xml);
-                                std::ifstream f(hwlogger_xml.c_str());
-                                if (f.good())
-                                {
-                                    try
-                                    {
-                                        std::string str((std::istreambuf_iterator<char>(f)),
-                                            std::istreambuf_iterator<char>());
-                                        fwlogger.init_parser(str);
-                                        has_parser = true;
-                                    }
-                                    catch (const std::exception& ex)
-                                    {
-                                        viewer.not_model->output.add_log(
-                                            RS2_LOG_SEVERITY_WARN,
-                                            __FILE__,
-                                            __LINE__,
-                                            rsutils::string::from()
-                                                << "Invalid Hardware Logger XML at '" << hwlogger_xml
-                                                << "': " << ex.what() << "\nEither configure valid XML or remove it" );
-                                    }
-                                }
-
-                                auto message = fwlogger.create_message();
-
-                                while (fwlogger.get_flash_log(message))
-                                {
-                                    auto parsed = fwlogger.create_parsed_message();
-                                    auto parsed_ok = false;
-
-                                    if (has_parser)
-                                    {
-                                        if (fwlogger.parse_log(message, parsed))
-                                        {
-                                            parsed_ok = true;
-
-                                            viewer.not_model->output.add_log( message.get_severity(),
-                                                                              parsed.file_name(),
-                                                                              parsed.line(),
-                                                                              rsutils::string::from()
-                                                                                  << "FW-LOG [" << parsed.thread_name()
-                                                                                  << "] " << parsed.message() );
-                                        }
-                                    }
-
-                                    if (!parsed_ok)
-                                    {
-                                        std::stringstream ss;
-                                        for (auto& elem : message.data())
-                                            ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem) << " ";
-                                        viewer.not_model->output.add_log(message.get_severity(), __FILE__, 0, ss.str());
-                                    }
-                                }
-                            }
-                            catch(const std::exception& ex)
-                            {
-                                viewer.not_model->output.add_log(
-                                    RS2_LOG_SEVERITY_WARN,
-                                    __FILE__,
-                                    __LINE__,
-                                    rsutils::string::from() << "Failed to fetch firmware logs: " << ex.what() );
-                            }
-                        }
-                        if (ImGui::IsItemHovered())
-                            ImGui::SetTooltip("Recovers last set of firmware logs prior to camera shutdown / disconnect");
-                    }
-
-                    has_autocalib = true;
-                }
-            }
-            if (!has_autocalib)
-            {
-                bool selected = false;
-                something_to_show = true;
-                ImGui::Selectable("On-Chip Calibration", &selected, ImGuiSelectableFlags_Disabled);
-                ImGui::Selectable("Tare Calibration", &selected, ImGuiSelectableFlags_Disabled);
-            }
-
-            if (!something_to_show)
-            {
-                ImGui::Text("This device has no additional options");
-            }
+            draw_device_panel_auto_calib(viewer, something_to_show, error_message);
 
             ImGui::PopStyleColor();
 
@@ -3306,4 +2985,436 @@ namespace rs2
         _changes.pop();
         return true;
     }
+
+    void device_model::draw_device_panel_auto_calib(viewer_model& viewer, bool& something_to_show,
+        std::string& error_message)
+    {
+        bool has_autocalib = false;
+        bool is_d500 = dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && (std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D500");
+        if (is_d500)
+        {
+            has_autocalib = draw_device_panel_auto_calib_d500(viewer, something_to_show, error_message);
+        }
+        else
+        {
+            has_autocalib = draw_device_panel_auto_calib_d400(viewer, something_to_show, error_message);
+        }
+
+        if (!has_autocalib)
+        {
+            bool selected = false;
+            something_to_show = true;
+            ImGui::Selectable("On-Chip Calibration", &selected, ImGuiSelectableFlags_Disabled);
+            ImGui::Selectable("Tare Calibration", &selected, ImGuiSelectableFlags_Disabled);
+        }
+
+        if (!something_to_show)
+        {
+            ImGui::Text("This device has no additional options");
+        }
+    }
+
+    bool device_model::draw_device_panel_auto_calib_d400(viewer_model& viewer, bool& something_to_show,
+        std::string& error_message)
+    {
+        bool has_autocalib = false;
+        for (auto&& sub : subdevices)
+        {
+            if (sub->supports_on_chip_calib() && !has_autocalib)
+            {
+                something_to_show = true;
+
+                std::string device_pid = sub->s->supports(RS2_CAMERA_INFO_PRODUCT_ID) ? sub->s->get_info(RS2_CAMERA_INFO_PRODUCT_ID) : "unknown";
+                std::string device_usb_type = sub->s->supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR) ? sub->s->get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR) : "unknown";
+
+                bool show_disclaimer = val_in_range(device_pid, { std::string("0AD2"), std::string("0AD3") }); // Specific for D410/5
+                bool disable_fl_cal = (((device_pid == "0B5C") || show_disclaimer) &&
+                    (!starts_with(device_usb_type, "3."))); // D410/D15/D455@USB2
+
+                if (ImGui::Selectable("On-Chip Calibration"))
+                {
+                    try
+                    {
+                        if (show_disclaimer)
+                        {
+                            auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
+                            viewer.not_model->add_notification(disclaimer_notice);
+                        }
+
+
+                        auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
+                        auto n = std::make_shared<autocalib_notification_model>("", manager, false);
+                        viewer.not_model->add_notification(n);
+                        n->forced = true;
+                        n->update_state = autocalib_notification_model::RS2_CALIB_STATE_SELF_INPUT;
+
+                        for (auto&& n : related_notifications)
+                            if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                n->dismiss(false);
+
+                        related_notifications.push_back(n);
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("This will improve the depth noise.\n"
+                        "Point at a scene that normally would have > 50 %% valid depth pixels,\n"
+                        "then press calibrate."
+                        "The health-check will be calculated.\n"
+                        "If >0.25 we recommend applying the new calibration.\n"
+                        "\"White wall\" mode should only be used when pointing at a flat white wall with projector on");
+
+                if (ImGui::Selectable("Focal Length Calibration"))
+                {
+                    try
+                    {
+                        if (disable_fl_cal)
+                        {
+                            auto disable_fl_notice = std::make_shared<fl_cal_limitation_model>();
+                            viewer.not_model->add_notification(disable_fl_notice);
+                        }
+                        else
+                        {
+                            std::shared_ptr< subdevice_model> sub_color;
+                            for (auto&& sub2 : subdevices)
+                            {
+                                if (sub2->s->is<rs2::color_sensor>())
+                                {
+                                    sub_color = sub2;
+                                    break;
+                                }
+                            }
+
+                            if (show_disclaimer)
+                            {
+                                auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
+                                viewer.not_model->add_notification(disclaimer_notice);
+                            }
+                            auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub_color);
+                            auto n = std::make_shared<autocalib_notification_model>("", manager, false);
+                            viewer.not_model->add_notification(n);
+                            n->forced = true;
+                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_FL_INPUT;
+
+                            for (auto&& n : related_notifications)
+                                if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                    n->dismiss(false);
+
+                            related_notifications.push_back(n);
+                            manager->start_fl_viewer();
+                        }
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Focal length calibration is used to adjust camera focal length with specific target.");
+
+                if (ImGui::Selectable("Tare Calibration"))
+                {
+                    try
+                    {
+                        if (show_disclaimer)
+                        {
+                            auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
+                            viewer.not_model->add_notification(disclaimer_notice);
+                        }
+                        auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
+                        auto n = std::make_shared<autocalib_notification_model>("", manager, false);
+                        viewer.not_model->add_notification(n);
+                        n->forced = true;
+                        n->update_state = autocalib_notification_model::RS2_CALIB_STATE_TARE_INPUT;
+
+                        for (auto&& n : related_notifications)
+                            if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                n->dismiss(false);
+
+                        related_notifications.push_back(n);
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Tare calibration is used to adjust camera absolute distance to flat target.\n"
+                        "User needs either to enter the known ground truth or use the get button\n"
+                        "with specific target to get the ground truth.");
+
+                //#define UVMAP_CAL
+#ifdef UVMAP_CAL // Disabled due to stability and maturity levels
+                try
+                {
+                    for (auto&& sub2 : subdevices)
+                    {
+                        if (sub2->s->is<rs2::color_sensor>())
+                        {
+                            if (ImGui::Selectable("UV-Mapping Calibration"))
+                            {
+                                if (show_disclaimer)
+                                {
+                                    auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
+                                    viewer.not_model->add_notification(disclaimer_notice);
+                                }
+                                auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub2, sub2->uvmapping_calib_full);
+                                auto n = std::make_shared<autocalib_notification_model>("", manager, false);
+                                viewer.not_model->add_notification(n);
+                                n->forced = true;
+                                n->update_state = autocalib_notification_model::RS2_CALIB_STATE_UVMAPPING_INPUT;
+
+                                for (auto&& n : related_notifications)
+                                    if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                        n->dismiss(false);
+
+                                related_notifications.push_back(n);
+                                manager->start_uvmapping_viewer();
+                            }
+
+                            if (ImGui::IsItemHovered())
+                                ImGui::SetTooltip("UV-Mapping calibration is used to improve UV-Mapping with specific target.");
+                        }
+                    }
+                }
+                catch (const error& e)
+                {
+                    error_message = error_to_string(e);
+                }
+                catch (const std::exception& e)
+                {
+                    error_message = e.what();
+                }
+#endif //UVMAP_CAL
+
+                //if (ImGui::Selectable("Focal Length Plus Calibration"))
+                //{
+                //    try
+                //    {
+                //        std::shared_ptr< subdevice_model> sub_color;
+                //        for (auto&& sub2 : subdevices)
+                //        {
+                //            if (sub2->s->is<rs2::color_sensor>())
+                //            {
+                //                sub_color = sub2;
+                //                break;
+                //            }
+                //        }
+
+                //        auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub_color);
+                //        auto n = std::make_shared<autocalib_notification_model>("", manager, false);
+
+                //        viewer.not_model->add_notification(n);
+                //        n->forced = true;
+                //        n->update_state = autocalib_notification_model::RS2_CALIB_STATE_FL_PLUS_INPUT;
+
+                //        for (auto&& n : related_notifications)
+                //            if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                //                n->dismiss(false);
+
+                //        related_notifications.push_back(n);
+                //        manager->start_fl_plus_viewer();
+                //    }
+                //    catch (const error& e)
+                //    {
+                //        error_message = error_to_string(e);
+                //    }
+                //    catch (const std::exception& e)
+                //    {
+                //        error_message = e.what();
+                //    }
+                //}
+                //if (ImGui::IsItemHovered())
+                //    ImGui::SetTooltip("Focal length plus calibration is used to adjust camera focal length and principal points with specific target.");
+
+                if (_calib_model.supports())
+                {
+                    if (ImGui::Selectable("Calibration Data"))
+                    {
+                        _calib_model.open();
+                    }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Access low level camera calibration parameters");
+                }
+
+                if (auto fwlogger = dev.as<rs2::firmware_logger>())
+                {
+                    if (ImGui::Selectable("Recover Logs from Flash"))
+                    {
+                        try
+                        {
+                            bool has_parser = false;
+                            std::string hwlogger_xml = config_file::instance().get(configurations::viewer::hwlogger_xml);
+                            std::ifstream f(hwlogger_xml.c_str());
+                            if (f.good())
+                            {
+                                try
+                                {
+                                    std::string str((std::istreambuf_iterator<char>(f)),
+                                        std::istreambuf_iterator<char>());
+                                    fwlogger.init_parser(str);
+                                    has_parser = true;
+                                }
+                                catch (const std::exception& ex)
+                                {
+                                    viewer.not_model->output.add_log(
+                                        RS2_LOG_SEVERITY_WARN,
+                                        __FILE__,
+                                        __LINE__,
+                                        rsutils::string::from()
+                                        << "Invalid Hardware Logger XML at '" << hwlogger_xml
+                                        << "': " << ex.what() << "\nEither configure valid XML or remove it");
+                                }
+                            }
+
+                            auto message = fwlogger.create_message();
+
+                            while (fwlogger.get_flash_log(message))
+                            {
+                                auto parsed = fwlogger.create_parsed_message();
+                                auto parsed_ok = false;
+
+                                if (has_parser)
+                                {
+                                    if (fwlogger.parse_log(message, parsed))
+                                    {
+                                        parsed_ok = true;
+
+                                        viewer.not_model->output.add_log(message.get_severity(),
+                                            parsed.file_name(),
+                                            parsed.line(),
+                                            rsutils::string::from()
+                                            << "FW-LOG [" << parsed.thread_name()
+                                            << "] " << parsed.message());
+                                    }
+                                }
+
+                                if (!parsed_ok)
+                                {
+                                    std::stringstream ss;
+                                    for (auto& elem : message.data())
+                                        ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem) << " ";
+                                    viewer.not_model->output.add_log(message.get_severity(), __FILE__, 0, ss.str());
+                                }
+                            }
+                        }
+                        catch (const std::exception& ex)
+                        {
+                            viewer.not_model->output.add_log(
+                                RS2_LOG_SEVERITY_WARN,
+                                __FILE__,
+                                __LINE__,
+                                rsutils::string::from() << "Failed to fetch firmware logs: " << ex.what());
+                        }
+                    }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Recovers last set of firmware logs prior to camera shutdown / disconnect");
+                }
+
+                has_autocalib = true;
+            }
+        }
+        return has_autocalib;
+    }
+
+    bool device_model::draw_device_panel_auto_calib_d500(viewer_model& viewer, bool& something_to_show,
+        std::string& error_message)
+    {
+        bool has_autocalib = false;
+
+        bool streaming = is_streaming();
+        ImGuiSelectableFlags avoid_selection_flag = (streaming) ? ImGuiSelectableFlags_Disabled : 0;
+
+        for (auto&& sub : subdevices)
+        {
+            if (sub->supports_on_chip_calib() && !has_autocalib)
+            {
+                if (ImGui::Selectable("On-Chip Calibration", false, avoid_selection_flag))
+                {
+                    try
+                    {
+                        auto manager = std::make_shared<d500_on_chip_calib_manager>(viewer, sub, *this, dev);
+                        auto n = std::make_shared<d500_autocalib_notification_model>("", manager, false);
+                        viewer.not_model->add_notification(n);
+                        n->forced = true;
+                        n->update_state = d500_autocalib_notification_model::RS2_CALIB_STATE_INIT_CALIB;
+
+                        for (auto&& n : related_notifications)
+                            if (dynamic_cast<d500_autocalib_notification_model*>(n.get()))
+                                n->dismiss(false);
+
+                        related_notifications.push_back(n);
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    std::string tooltip = rsutils::string::from()
+                        << "On-Chip Calibration"
+                        << (streaming ? " (Disabled while streaming)" : "");
+                    ImGui::SetTooltip("%s", tooltip.c_str());
+                }
+                    
+                if (ImGui::Selectable("Dry Run On-Chip Calibration", false, avoid_selection_flag))
+                {
+                    try
+                    {
+                        auto manager = std::make_shared<d500_on_chip_calib_manager>(viewer, sub, *this, dev);
+                        auto n = std::make_shared<d500_autocalib_notification_model>("", manager, false);
+                        viewer.not_model->add_notification(n);
+                        n->forced = true;
+                        n->update_state = d500_autocalib_notification_model::RS2_CALIB_STATE_INIT_DRY_RUN;
+
+                        for (auto&& n : related_notifications)
+                            if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                n->dismiss(false);
+
+                        related_notifications.push_back(n);
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    std::string tooltip = rsutils::string::from()
+                        << "Dry Run On-Chip Calibration"
+                        << (streaming ? " (Disabled while streaming)" : "");
+                    ImGui::SetTooltip("%s", tooltip.c_str());
+                }
+
+                has_autocalib = true;
+                continue;
+            }
+        }
+        return has_autocalib;
+    }
+
 }
