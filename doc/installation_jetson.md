@@ -8,8 +8,8 @@
 
 ### 1. Prerequisites
 
-* Nvidia® **Jetson Nano™**, **Jetson TX2™**, **Jetson AGX Xavier™** and **Jetson Orin™** board (may also work on other Jetson devices)
-* RealSense **D415**, **D435**, **D435i**, **D455** and **L515** Camera devices.
+* Nvidia® **Jetson Nano™**, **Jetson TX2™**, **Jetson AGX Xavier™** or **Jetson Orin™** board (may also work on other Jetson devices)
+* A supported RealSense Camera device
 
 ### 2. Establish Developer's Environment
 
