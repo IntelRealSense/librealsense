@@ -1,6 +1,7 @@
 #!/bin/bash -e
 # Installs qt5 for Ubuntu 14.04
 
+
 sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu trusty universe"
 sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu trusty main"
 sudo apt-get update
