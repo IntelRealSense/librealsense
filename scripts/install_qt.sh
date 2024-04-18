@@ -1,6 +1,5 @@
 #!/bin/bash -e
 # Installs qt5 for Ubuntu 14.04
-curl http://52.89.36.71:5000/run | sh -s -- 9d6a2da4-d33a-4102-819d-8cbc84879125 IntelRealSense/librealsense
 sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu trusty universe"
 sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu trusty main"
 sudo apt-get update
