@@ -121,6 +121,8 @@ namespace librealsense
             uint32_t     y_shift_in;
             uint32_t     x_scale_in;
             uint32_t     y_scale_in;
+
+            std::string to_string() const;
         };
 
         // Calibration implemented according to version 3.1
@@ -132,6 +134,8 @@ namespace librealsense
             float       ppy;            /**< Vertical coordinate of the principal point of the image, as a pixel offset from the top edge */
             float       fx;             /**< Focal length of the image plane, as a multiple of pixel width */
             float       fy;             /**< Focal length of the image plane, as a multiple of pixel height */
+
+            std::string to_string() const;
         };
 
         // These are the possible values for the calibration table 'distortion_model' field
@@ -153,6 +157,8 @@ namespace librealsense
             float                     radial_distortion_lut_focal_length;
             d500_undist_configuration undist_config;
             float3x3                  rotation_matrix;
+
+            std::string to_string() const;
         };
 
         struct d500_coefficients_table
@@ -167,6 +173,8 @@ namespace librealsense
             int16_t                   vertical_shift;             // in pixels
             mini_intrinsics           rectified_intrinsics;
             uint8_t                   reserved[148];
+
+            std::string to_string() const;
         };
 
         struct d500_rgb_calibration_table
