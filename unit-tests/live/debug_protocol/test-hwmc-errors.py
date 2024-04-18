@@ -46,16 +46,16 @@ test.finish()
 
 #############################################################################################
 
-test.start("WRONGCOMMAND")
+test.start("WRONG COMMAND")
 try:
     hwmc_opcode_as_int = 0xee
     hwmc_opcode_as_string = "ff ff ff ff"  # little endian
 
     raw_command = rs.debug_protocol(dev).build_command(hwmc_opcode_as_int)
-    status, new_scenario_result = send_hardware_monitor_command(dev, raw_command)
+    status, result = send_hardware_monitor_command(dev, raw_command)
 
     # expected status in case of success of "send_hardware_monitor_command" is the same as opcode
-    # we expect erro code instead of opcode
+    # we expect error code instead of opcode
     expected_status = convert_bytes_string_to_decimal_list(hwmc_opcode_as_string)
     test.check_equal_lists(status, expected_status)
 
@@ -65,17 +65,17 @@ test.finish()
 
 #############################################################################################
 
-test.start("GETSUBPRESETID")
+test.start("GETSUBPRESETID - No Data to Return")
 try:
     hwmc_opcode_as_int = 0x7d
     # ERR_NoDataToReturn = -21 = 0xeb
     hwmc_opcode_as_string = "eb ff ff ff"  # little endian
 
     raw_command = rs.debug_protocol(dev).build_command(hwmc_opcode_as_int)
-    status, new_scenario_result = send_hardware_monitor_command(dev, raw_command)
+    status, result = send_hardware_monitor_command(dev, raw_command)
 
     # expected status in case of success of "send_hardware_monitor_command" is the same as opcode
-    # we expect erro code instead of opcode
+    # we expect error code instead of opcode
     expected_status = convert_bytes_string_to_decimal_list(hwmc_opcode_as_string)
     test.check_equal_lists(status, expected_status)
 
@@ -85,7 +85,7 @@ test.finish()
 
 #############################################################################################
 
-test.start("SPWM")
+test.start("Set PWM - Wrong Parameter")
 try:
     hwmc_opcode_as_int = 0x1a
     # ERR_WrongParameter = -6 = 0xfa
@@ -93,10 +93,10 @@ try:
 
     raw_command = rs.debug_protocol(dev).build_command(hwmc_opcode_as_int)
     raw_command[9] = 2
-    status, new_scenario_result = send_hardware_monitor_command(dev, raw_command)
+    status, result = send_hardware_monitor_command(dev, raw_command)
 
     # expected status in case of success of "send_hardware_monitor_command" is the same as opcode
-    # we expect erro code instead of opcode
+    # we expect error code instead of opcode
     expected_status = convert_bytes_string_to_decimal_list(hwmc_opcode_as_string)
     test.check_equal_lists(status, expected_status)
 
