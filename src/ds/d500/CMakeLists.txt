@@ -25,6 +25,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/d500-options.h"
         "${CMAKE_CURRENT_LIST_DIR}/d500-info.h"
         "${CMAKE_CURRENT_LIST_DIR}/d500-fw-update-device.h"
-	"${CMAKE_CURRENT_LIST_DIR}/d500-auto-calibration.h"
+        "${CMAKE_CURRENT_LIST_DIR}/d500-auto-calibration.h"
         "${CMAKE_CURRENT_LIST_DIR}/d500-md.h"
 )
