@@ -55,6 +55,12 @@ rs2_device* rs2_create_device(const rs2_device_list* info_list, int index, rs2_e
 void rs2_delete_device(rs2_device* device);
 
 /**
+* \param[in]  device    Realsense device to query
+* \return               True if device is still present in the system
+*/
+int rs2_device_is_connected( const rs2_device * device, rs2_error ** error );
+
+/**
 * Retrieve camera specific information, like versions of various internal components.
 * \param[in]  device    The RealSense device
 * \param[in]  info      Camera info type to retrieve

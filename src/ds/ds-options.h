@@ -3,11 +3,13 @@
 
 #pragma once
 
+#include <src/platform/uvc-option.h>
 #include "ds-private.h"
 
 #include "algo.h"
 #include "error-handling.h"
 #include "../hdr-config.h"
+#include <rsutils/lazy.h>
 
 namespace librealsense
 {
@@ -15,7 +17,7 @@ namespace librealsense
     {
     public:
         const char* get_value_description(float val) const override;
-        explicit emitter_option(uvc_sensor& ep);
+        explicit emitter_option( const std::weak_ptr< uvc_sensor > & ep );
     };
 
     class asic_and_projector_temperature_options : public readonly_option
@@ -29,12 +31,14 @@ namespace librealsense
 
         const char* get_description() const override;
 
-        explicit asic_and_projector_temperature_options(uvc_sensor& ep, rs2_option opt);
+        explicit asic_and_projector_temperature_options( const std::weak_ptr< uvc_sensor > & ep, rs2_option opt );
 
     private:
-        uvc_sensor&                 _ep;
+        std::weak_ptr<uvc_sensor>   _ep;
         rs2_option                  _option;
     };
+
+    class hid_sensor;
 
     class motion_module_temperature_option : public readonly_option
     {
@@ -182,23 +186,25 @@ namespace librealsense
     private:
         ds::depth_table_control get_depth_table(ds::advanced_query_mode mode) const;
         std::function<void(const option &)> _record_action = [](const option&) {};
-        lazy<option_range> _range;
+        rsutils::lazy< option_range > _range;
         hw_monitor& _hwm;
     };
 
     class external_sync_mode : public option
     {
     public:
-        external_sync_mode(hw_monitor& hwm, sensor_base* depth_ep = nullptr, int ver = 1); // ver = 1, for firmware 5.9.15.1 and later, INTERCAM_SYNC_MAX is 2 with master and slave mode only.
-                                                                                           // ver = 2, for firmware 5.12.4.0 and later, INTERCAM_SYNC_MAX is 258 by adding FULL SLAVE mode and genlock with trigger frequency 1 - 255.
-                                                                                           // ver = 3  for firmware 5.12.12.100 and later, INTERCAM_SYNC_MAX is 260 by adding genlock with laser on-off and Off-On two frames.
+        external_sync_mode( hw_monitor & hwm,
+                            const std::weak_ptr< sensor_base > & depth_ep = std::weak_ptr< sensor_base >(),
+                            int ver = 1 );  // ver = 1, for firmware 5.9.15.1 and later, INTERCAM_SYNC_MAX is 2 with master and slave mode only.
+                                            // ver = 2, for firmware 5.12.4.0 and later, INTERCAM_SYNC_MAX is 258 by adding FULL SLAVE mode and genlock with trigger frequency 1 - 255.
+                                            // ver = 3  for firmware 5.12.12.100 and later, INTERCAM_SYNC_MAX is 260 by adding genlock with laser on-off and Off-On two frames.
 
         virtual ~external_sync_mode() = default;
         virtual void set(float value) override;
         virtual float query() const override;
         virtual option_range get_range() const override;
         virtual bool is_enabled() const override { return true; }
-        virtual bool is_read_only() const { return _sensor && _sensor->is_opened(); }
+        virtual bool is_read_only() const override;
         const char* get_description() const override;
 
         void enable_recording(std::function<void(const option &)> record_action) override
@@ -207,16 +213,16 @@ namespace librealsense
         }
     private:
         std::function<void(const option &)> _record_action = [](const option&) {};
-        lazy<option_range> _range;
+        rsutils::lazy< option_range > _range;
         hw_monitor& _hwm;
-        sensor_base* _sensor;
+        std::weak_ptr< sensor_base > _sensor;
         int _ver;
     };
 
     class emitter_on_and_off_option : public option
     {
     public:
-        emitter_on_and_off_option(hw_monitor& hwm, sensor_base* depth_ep);
+        emitter_on_and_off_option( hw_monitor & hwm, const std::weak_ptr< sensor_base > & depth_ep );
         virtual ~emitter_on_and_off_option() = default;
         virtual void set(float value) override;
         virtual float query() const override;
@@ -230,15 +236,15 @@ namespace librealsense
 
     private:
         std::function<void(const option &)> _record_action = [](const option&) {};
-        lazy<option_range> _range;
+        rsutils::lazy< option_range > _range;
         hw_monitor& _hwm;
-        sensor_base* _sensor;
+        std::weak_ptr< sensor_base > _sensor;
     };
 
     class alternating_emitter_option : public option
     {
     public:
-        alternating_emitter_option(hw_monitor& hwm, sensor_base* depth_ep, bool is_fw_version_using_id);
+        alternating_emitter_option(hw_monitor& hwm, bool is_fw_version_using_id);
         virtual ~alternating_emitter_option() = default;
         virtual void set(float value) override;
         virtual float query() const override;
@@ -252,16 +258,15 @@ namespace librealsense
 
     private:
         std::function<void(const option &)> _record_action = [](const option&) {};
-        lazy<option_range> _range;
+        rsutils::lazy< option_range > _range;
         hw_monitor& _hwm;
-        sensor_base* _sensor;
         bool _is_fw_version_using_id;
     };
 
     class emitter_always_on_option : public option
     {
     public:
-        emitter_always_on_option(hw_monitor& hwm, sensor_base* depth_ep);
+        emitter_always_on_option( std::shared_ptr< hw_monitor > hwm, ds::fw_cmd _hmc_get_opcode, ds::fw_cmd _hmc_set_opcode );
         virtual ~emitter_always_on_option() = default;
         virtual void set(float value) override;
         virtual float query() const override;
@@ -274,10 +279,13 @@ namespace librealsense
         virtual void enable_recording(std::function<void(const option &)> record_action) override { _record_action = record_action; }
 
     private:
+        float legacy_query() const;
+        float new_query() const;
         std::function<void(const option &)> _record_action = [](const option&) {};
-        lazy<option_range> _range;
-        hw_monitor& _hwm;
-        sensor_base* _sensor;
+        rsutils::lazy< option_range > _range;
+        std::weak_ptr<hw_monitor> _hwm;
+        ds::fw_cmd _hmc_get_opcode, _hmc_set_opcode;
+        bool _is_legacy;
     };
 
     class hdr_option : public option

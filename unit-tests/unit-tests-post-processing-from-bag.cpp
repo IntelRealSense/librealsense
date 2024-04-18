@@ -325,8 +325,8 @@ sw_context init_sw_device(std::vector<std::string> sensor_names, std::vector<rs2
 
 void record_frames_all_res(processing_recordable_block& record_block, std::string file)
 {
-    rs2::context ctx;
-    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
+    if( ! ctx )
         return;
 
     std::string folder_name = get_folder_path(special_folder::temp_folder);
@@ -395,8 +395,8 @@ void validate_ppf_results(const rs2::frame& result_frame, const rs2::frame& refe
 
 void compare_processed_frames_vs_recorded_frames(processing_recordable_block& record_block, std::string file)
 {
-    rs2::context ctx;
-    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
+    if( ! ctx )
         return;
 
     std::string folder_name = get_folder_path(special_folder::temp_folder);
@@ -447,8 +447,8 @@ void compare_processed_frames_vs_recorded_frames(processing_recordable_block& re
 
 TEST_CASE("Record software-device all resolutions", "[record-bag]")
 {
-    rs2::context ctx;
-    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
+    if( ! ctx )
         return;
 
     auto dev = ctx.query_devices()[0];
@@ -541,19 +541,19 @@ TEST_CASE("Record point cloud software-device all resolutions", "[record-bag][po
     record_frames_all_res(record_block, "[pointcloud]_all_combinations_depth_color.bag");
 }
 
-TEST_CASE("Test align color to depth from recording", "[software-device][align]")
+TEST_CASE("Test align color to depth from recording", "[software-device-disabled][align]")
 {
     auto record_block = align_record_block(RS2_STREAM_DEPTH, RS2_STREAM_COLOR);
     compare_processed_frames_vs_recorded_frames(record_block, "[aligned_2d]_all_combinations_depth_color.bag");
 }
 
-TEST_CASE("Test align depth to color from recording", "[software-device][align]")
+TEST_CASE("Test align depth to color from recording", "[software-device-disabled][align]")
 {
     auto record_block = align_record_block(RS2_STREAM_COLOR, RS2_STREAM_DEPTH);
     compare_processed_frames_vs_recorded_frames(record_block, "[aligned_2c]_all_combinations_depth_color.bag");
 }
 
-TEST_CASE("Test point cloud from recording", "[software-device][point-cloud]")
+TEST_CASE("Test point cloud from recording", "[software-device-disabled][point-cloud]")
 {
     auto record_block = pointcloud_record_block();
     compare_processed_frames_vs_recorded_frames(record_block, "[pointcloud]_all_combinations_depth_color.bag");

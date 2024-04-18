@@ -25,38 +25,29 @@ from helper_functions import get_boundary_corners_2D
 from measurement_task import calculate_boundingbox_points, calculate_cumulative_pointcloud, visualise_measurements
 
 def run_demo():
-	
-	# Define some constants 
-	L515_resolution_width = 1024 # pixels
-	L515_resolution_height = 768 # pixels
-	L515_frame_rate = 30
 
+	# Define some constants
 	resolution_width = 1280 # pixels
 	resolution_height = 720 # pixels
 	frame_rate = 15  # fps
 
 	dispose_frames_for_stablisation = 30  # frames
-	
+
 	chessboard_width = 6 # squares
 	chessboard_height = 9 	# squares
 	square_size = 0.0253 # meters
 
 	try:
 		# Enable the streams from all the intel realsense devices
-		L515_rs_config = rs.config()
-		L515_rs_config.enable_stream(rs.stream.depth, L515_resolution_width, L515_resolution_height, rs.format.z16, L515_frame_rate)
-		L515_rs_config.enable_stream(rs.stream.infrared, 0, L515_resolution_width, L515_resolution_height, rs.format.y8, L515_frame_rate)
-		L515_rs_config.enable_stream(rs.stream.color, resolution_width, resolution_height, rs.format.bgr8, frame_rate)
-
 		rs_config = rs.config()
 		rs_config.enable_stream(rs.stream.depth, resolution_width, resolution_height, rs.format.z16, frame_rate)
 		rs_config.enable_stream(rs.stream.infrared, 1, resolution_width, resolution_height, rs.format.y8, frame_rate)
 		rs_config.enable_stream(rs.stream.color, resolution_width, resolution_height, rs.format.bgr8, frame_rate)
 
 		# Use the device manager class to enable the devices and get the frames
-		device_manager = DeviceManager(rs.context(), rs_config, L515_rs_config)
+		device_manager = DeviceManager(rs.context(), rs_config)
 		device_manager.enable_all_devices()
-		
+
 		# Allow some frames for the auto-exposure controller to stablise
 		for frame in range(dispose_frames_for_stablisation):
 			frames = device_manager.poll_frames()
@@ -66,14 +57,14 @@ def run_demo():
 		1: Calibration
 		Calibrate all the available devices to the world co-ordinates.
 		For this purpose, a chessboard printout for use with opencv based calibration process is needed.
-		
+
 		"""
-		# Get the intrinsics of the realsense device 
+		# Get the intrinsics of the realsense device
 		intrinsics_devices = device_manager.get_device_intrinsics(frames)
-		
-                # Set the chessboard parameters for calibration 
-		chessboard_params = [chessboard_height, chessboard_width, square_size] 
-		
+
+                # Set the chessboard parameters for calibration
+		chessboard_params = [chessboard_height, chessboard_width, square_size]
+
 		# Estimate the pose of the chessboard in the world coordinate using the Kabsch Method
 		calibrated_device_count = 0
 		while calibrated_device_count < len(device_manager._available_devices):
@@ -145,11 +136,11 @@ def run_demo():
 
 	except KeyboardInterrupt:
 		print("The program was interupted by the user. Closing the program...")
-	
+
 	finally:
 		device_manager.disable_streams()
 		cv2.destroyAllWindows()
-	
-	
+
+
 if __name__ == "__main__":
 	run_demo()

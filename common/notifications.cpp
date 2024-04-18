@@ -628,7 +628,7 @@ namespace rs2
                 {
                     std::string clip = "";
                     auto lines = split_string(selected->message, '\n');
-                    for (auto line : lines)
+                    for (auto & line : lines)
                     {
                         if (line.size() && line[0] == '$') clip += line.substr(2) + "\n";
                     }
@@ -709,7 +709,7 @@ namespace rs2
 
         std::string link = rsutils::string::from() << "https://github.com/IntelRealSense/librealsense/wiki/Release-Notes#release-" << _version;
 
-        ImGui::PushStyleColor(ImGuiCol_Text, alpha(white, 1.f - t));
+        ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_blue, 1.f - t));
         if (ImGui::Button("What's new"))
         {
             open_url(link.c_str());

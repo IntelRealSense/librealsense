@@ -48,6 +48,8 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         FOLDER Tools
     )
 
+    using_easyloggingpp( rs-rosbag-inspector SHARED )
+
     install(
         TARGETS
 

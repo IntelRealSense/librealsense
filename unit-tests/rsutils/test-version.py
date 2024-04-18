@@ -7,48 +7,43 @@ from pyrsutils import version
 
 #############################################################################################
 #
-test.start( "String constructor" )
-try:
-    test.check( not version() )
+with test.closure( "String constructor" ):
+    test.check_false( version() )
 
-    test.check( not version( "" ))
-    test.check( not version( "1" ))
-    test.check( not version( "1." ))
-    test.check( not version( "1.2" ))
-    test.check( not version( "1.2." ))
-    test.check(     version( "1.2.3" ))
-    test.check( not version( "1.2.3." ))
-    test.check(     version( "1.2.3.4" ))
-    test.check( not version( "1.2.3.4." ))
-    test.check( not version( "1 . 2.3.4" ));
-    test.check( not version( ".1.2.3.4" ))
-    test.check( not version( "0.0.0.0" ))
-    test.check(     version( "1.0.0.0" ))
-    test.check(     version( "0.1.0.0" ))
-    test.check(     version( "0.0.1.0" ))
-    test.check(     version( "0.0.0.1" ))
-    test.check( not version( ".2.3.4" ))
-    test.check( not version( "1..2.4" ))
-    test.check( not version( "1.2..4" ))
+    test.check_false( version( "" ))
+    test.check_false( version( "1" ))
+    test.check_false( version( "1." ))
+    test.check_false( version( "1.2" ))
+    test.check_false( version( "1.2." ))
+    test.check  (     version( "1.2.3" ))
+    test.check_false( version( "1.2.3." ))
+    test.check  (     version( "1.2.3.4" ))
+    test.check_false( version( "1.2.3.4." ))
+    test.check_false( version( "1 . 2.3.4" ));
+    test.check_false( version( ".1.2.3.4" ))
+    test.check_false( version( "0.0.0.0" ))
+    test.check  (     version( "1.0.0.0" ))
+    test.check  (     version( "0.1.0.0" ))
+    test.check  (     version( "0.0.1.0" ))
+    test.check  (     version( "0.0.0.1" ))
+    test.check_false( version( ".2.3.4" ))
+    test.check_false( version( "1..2.4" ))
+    test.check_false( version( "1.2..4" ))
 
-    test.check(     version( "255.2.3.4" ))
-    test.check( not version( "256.2.3.4" ))
-    test.check(     version( "1.65535.3.4" ))
-    test.check( not version( "1.65536.3.4" ))
-    test.check(     version( "1.2.255.4" ))
-    test.check( not version( "1.2.256.4" ))
-    test.check(     version( "1.2.3.4294967295" ))
-    test.check( not version( "1.2.3.4294967296" ))
+    test.check  (     version( "65535.2.3.4" ))
+    test.check_false( version( "65536.2.3.4" ))
+    test.check  (     version( "1.65535.3.4" ))
+    test.check_false( version( "1.65536.3.4" ))
+    test.check  (     version( "1.2.65535.4" ))
+    test.check_false( version( "1.2.65536.4" ))
+    test.check  (     version( "1.2.3.65535" ))
+    test.check_false( version( "1.2.3.65536" ))
 
-    test.check( not version( "xxxxxxxxxxx" ))
-except:
-    test.unexpected_exception()
-test.finish()
+    test.check_false( version( "xxxxxxxxxxx" ))
 #
 #############################################################################################
 #
-test.start( "Number constructor" )
-try:
+with test.closure( "Number constructor" ):
     test.check( not version.from_number(0) )
     test.check( version( 1, 2, 3 ))
     test.check( version( 1, 2, 3, 4 ))
@@ -56,27 +51,24 @@ try:
     test.check_throws( lambda: version( 1, -2, 3, 4 ), TypeError )
     test.check_throws( lambda: version( 1, 2, -3, 4 ), TypeError )
     test.check_throws( lambda: version( 1, 2, 3, -4 ), TypeError )
-    test.check( version( 0xFF, 0xFFFF, 0xFF, 0xFFFFFFFF ))
-    test.check( not version( 0x100, 0xFFFF, 0xFF, 0xFFFFFFFF ))
-    test.check( not version( 0xFF, 0x10000, 0xFF, 0xFFFFFFFF ))
-    test.check( not version( 0xFF, 0xFFFF, 0x100, 0xFFFFFFFF ))
-    #test.check( not version( 0xFF, 0xFFFF, 0xFF, 0x100000000 ))  Python throws - type error
+    test.check( version( 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF ))
+    test.check_throws( lambda: version( 0x10000, 0xFFFF, 0xFFFF, 0xFFFF ), TypeError )
+    test.check_throws( lambda: version( 0xFFFF, 0x10000, 0xFFFF, 0xFFFF ), TypeError )
+    test.check_throws( lambda: version( 0xFFFF, 0xFFFF, 0x10000, 0xFFFF ), TypeError )
+    test.check_throws( lambda: version( 0xFFFF, 0xFFFF, 0xFFFF, 0x10000 ), TypeError )
 
     v1234 = version.from_number( version( 1, 2, 3, 1234 ).number )
     test.check_equal( v1234.major(), 1 );
     test.check_equal( v1234.minor(), 2 );
     test.check_equal( v1234.patch(), 3 );
     test.check_equal( v1234.build(), 1234 );
-except:
-    test.unexpected_exception()
-test.finish()
 #
 #############################################################################################
 #
 test.start( "Comparisons" )
 try:
     v0 = version()
-    vN = version.from_number( 72059805946086610 )
+    vN = version.from_number( 281483566843090 )
     v1233 = version( "1.2.3.1233" )
     v1234 = version( "1.2.3.1234" )
     v1235 = version( "1.2.3.1235" )
@@ -88,7 +80,7 @@ try:
     test.check_equal( v0, version( "0.0.0.0" ) )
     test.check_equal( v0, version( "123" ) )
     test.check      ( vN != v0 );
-    
+
     test.check_equal( vN, v1234 );
     test.check      ( v1234 == v1234 );
     test.check_false( v1234 != v1234 );

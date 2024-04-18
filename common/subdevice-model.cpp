@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include "post-processing-filters-list.h"
 #include "post-processing-block-model.h"
@@ -69,18 +69,33 @@ namespace rs2
         return ss.str();
     }
 
-    void subdevice_model::populate_options(std::map<int, option_model>& opt_container,
-        const std::string& opt_base_label,
-        subdevice_model* model,
-        std::shared_ptr<options> options,
-        bool* options_invalidated,
-        std::string& error_message)
+    void subdevice_model::populate_options( const std::string & opt_base_label,
+                                            bool * options_invalidated,
+                                            std::string & error_message )
     {
-        for (auto&& i : options->get_supported_options())
+        for (rs2::option_value option : s->get_supported_option_values())
         {
-            auto opt = static_cast<rs2_option>(i);
-
-            opt_container[opt] = create_option_model(opt, opt_base_label, model, options, options_invalidated, error_message);
+            options_metadata[option->id]
+                = create_option_model( option, opt_base_label, this, s, options_invalidated, error_message );
+        }
+        try
+        {
+            s->on_options_changed( [this]( const options_list & list )
+            {
+                for( auto changed_option : list )
+                {
+                    auto it = options_metadata.find( changed_option->id );
+                    if( it != options_metadata.end() && ! _destructing ) // Callback runs in different context, check options_metadata still valid
+                    {
+                        it->second.value = changed_option;
+                    }
+                }
+            } );
+        }
+        catch( const std::exception & e )
+        {
+            if( viewer.not_model )
+                viewer.not_model->add_log( e.what(), RS2_LOG_SEVERITY_WARN );
         }
     }
 
@@ -131,7 +146,8 @@ namespace rs2
         yuy2rgb(std::make_shared<rs2::gl::yuy_decoder>()),
         y411(std::make_shared<rs2::gl::y411_decoder>()),
         viewer(viewer),
-        detected_objects(device_detected_objects)
+        detected_objects(device_detected_objects),
+        _destructing( false )
     {
         supported_options = s->get_supported_options();
         restore_processing_block("colorizer", depth_colorizer);
@@ -180,32 +196,12 @@ namespace rs2
 
         auto filters = s->get_recommended_filters();
 
-        auto it = std::find_if(filters.begin(), filters.end(), [&](const filter& f)
-            {
-                if (f.is<zero_order_invalidation>())
-                    return true;
-                return false;
-            });
-
-        auto is_zo = it != filters.end();
-
         for (auto&& f : s->get_recommended_filters())
         {
             auto shared_filter = std::make_shared<filter>(f);
             auto model = std::make_shared<processing_block_model>(
                 this, shared_filter->get_info(RS2_CAMERA_INFO_NAME), shared_filter,
                 [=](rs2::frame f) { return shared_filter->process(f); }, error_message);
-
-            if (is_zo)
-            {
-                if (shared_filter->is<zero_order_invalidation>())
-                {
-                    zero_order_artifact_fix = model;
-                    viewer.zo_sensors++;
-                }
-                else
-                    model->enable(false);
-            }
 
             if (shared_filter->is<hole_filling_filter>())
                 model->enable(false);
@@ -485,14 +481,20 @@ namespace rs2
         {
             error_message = error_to_string(e);
         }
-        populate_options(options_metadata, ss.str().c_str(), this, s, &_options_invalidated, error_message);
+        populate_options(ss.str().c_str(), &_options_invalidated, error_message);
 
     }
 
     subdevice_model::~subdevice_model()
     {
-        if (zero_order_artifact_fix)
-            viewer.zo_sensors--;
+        _destructing = true;
+        try
+        {
+            s->on_options_changed( []( const options_list & list ) {} );
+        }
+        catch( ... )
+        {
+        }
     }
 
     void subdevice_model::sort_resolutions(std::vector<std::pair<int, int>>& resolutions) const
@@ -524,20 +526,12 @@ namespace rs2
             if (fps_group.empty())
                 continue;
 
-            for (auto& fps1 : first_fps_group)
-            {
-                auto it = std::find_if(std::begin(fps_group),
-                    std::end(fps_group),
-                    [&](const int& fps2)
-                    {
-                        return fps2 == fps1;
-                    });
-                if (it != std::end(fps_group))
-                {
-                    break;
-                }
+            auto fps1 = first_fps_group[0];
+            auto it = std::find_if( std::begin( fps_group ),
+                                    std::end( fps_group ),
+                                    [&]( const int & fps2 ) { return fps2 == fps1; } );
+            if( it == std::end( fps_group ) )
                 return false;
-            }
         }
         return true;
     }
@@ -979,7 +973,7 @@ namespace rs2
 
         return res;
     }
-
+    // The function returns true if one of the configuration parameters changed
     bool subdevice_model::draw_stream_selection(std::string& error_message)
     {
         bool res = false;
@@ -995,13 +989,13 @@ namespace rs2
         };
 
         auto col0 = ImGui::GetCursorPosX();
-        auto col1 = 155.f;
+        auto col1 = 9.f * (float)config_file::instance().get( configurations::window::font_size );
 
         if (ui.is_multiple_resolutions && !strcmp(s->get_info(RS2_CAMERA_INFO_NAME), "Stereo Module"))
         {
             if (draw_fps_selector)
             {
-                res &= draw_fps(error_message, label, streaming_tooltip, col0, col1);
+                res |= draw_fps(error_message, label, streaming_tooltip, col0, col1);
             }
 
             if (draw_streams_selector)
@@ -1011,21 +1005,21 @@ namespace rs2
                     ImGui::Text("Available Streams:");
                 }
 
-                res &= draw_res_stream_formats(error_message, label, streaming_tooltip, col0, col1);
+                res |= draw_res_stream_formats(error_message, label, streaming_tooltip, col0, col1);
             }
         }
         else
         {
-            res &= draw_resolutions(error_message, label, streaming_tooltip, col0, col1);
+            res |= draw_resolutions(error_message, label, streaming_tooltip, col0, col1);
 
             if (draw_fps_selector)
             {
-                res &= draw_fps(error_message, label, streaming_tooltip, col0, col1);
+                res |= draw_fps(error_message, label, streaming_tooltip, col0, col1);
             }
 
             if (draw_streams_selector)
             {
-                res &= draw_streams_and_formats(error_message, label, streaming_tooltip, col0, col1);
+                res |= draw_streams_and_formats(error_message, label, streaming_tooltip, col0, col1);
             }
         }
 
@@ -1595,28 +1589,9 @@ namespace rs2
         _pause = false;
     }
 
-    bool subdevice_model::can_enable_zero_order()
-    {
-        auto ir = std::find_if(profiles.begin(), profiles.end(), [&](stream_profile p) { return (p.stream_type() == RS2_STREAM_INFRARED); });
-        auto depth = std::find_if(profiles.begin(), profiles.end(), [&](stream_profile p) { return (p.stream_type() == RS2_STREAM_DEPTH); });
-
-        return !(ir == profiles.end() || depth == profiles.end() || !stream_enabled[depth->unique_id()] || !stream_enabled[ir->unique_id()]);
-    }
-
-    void subdevice_model::verify_zero_order_conditions()
-    {
-        if (!can_enable_zero_order())
-            throw std::runtime_error(rsutils::string::from()
-                << "Zero order filter requires both IR and Depth streams turned on.\nPlease "
-                "rectify the configuration and rerun");
-    }
-
     //The function decides if specific frame should be sent to the syncer
     bool subdevice_model::is_synchronized_frame(viewer_model& viewer, const frame& f)
     {
-        if (zero_order_artifact_fix && zero_order_artifact_fix->is_enabled() &&
-            (f.get_profile().stream_type() == RS2_STREAM_DEPTH || f.get_profile().stream_type() == RS2_STREAM_INFRARED || f.get_profile().stream_type() == RS2_STREAM_CONFIDENCE))
-            return true;
         if (!viewer.is_3d_view || viewer.is_3d_depth_source(f) || viewer.is_3d_texture_source(f))
             return true;
 
@@ -1625,11 +1600,6 @@ namespace rs2
 
     void subdevice_model::play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer> syncer)
     {
-        if (post_processing_enabled && zero_order_artifact_fix && zero_order_artifact_fix->is_enabled())
-        {
-            verify_zero_order_conditions();
-        }
-
         std::stringstream ss;
         ss << "Starting streaming of ";
         for (size_t i = 0; i < profiles.size(); i++)
@@ -1708,7 +1678,7 @@ namespace rs2
                 if (next == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
                 {
                     auto old_ae_enabled = auto_exposure_enabled;
-                    auto_exposure_enabled = opt_md.value > 0;
+                    auto_exposure_enabled = opt_md.value->as_float > 0;
 
                     if (!old_ae_enabled && auto_exposure_enabled)
                     {
@@ -1732,11 +1702,11 @@ namespace rs2
 
                 if (next == RS2_OPTION_DEPTH_UNITS)
                 {
-                    opt_md.dev->depth_units = opt_md.value;
+                    opt_md.dev->depth_units = opt_md.value->as_float;
                 }
 
                 if (next == RS2_OPTION_STEREO_BASELINE)
-                    opt_md.dev->stereo_baseline = opt_md.value;
+                    opt_md.dev->stereo_baseline = opt_md.value->as_float;
             }
 
             next_option++;

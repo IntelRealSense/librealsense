@@ -7,12 +7,6 @@
 #include "os.h"
 #include <imgui_internal.h>
 
-struct attribute
-{
-    std::string name;
-    std::string value;
-    std::string description;
-};
 
 namespace rs2
 {
@@ -399,6 +393,9 @@ namespace rs2
         ImGui::GetWindowDrawList()->AddRectFilled({ stream_rect.x, stream_rect.y - top_bar_height },
             { stream_rect.x + stream_rect.w, stream_rect.y }, ImColor(sensor_bg));
 
+        if( ! dev )
+            throw std::runtime_error( "device is not set for the stream" );
+
         int offset = 5;
         if (dev->_is_being_recorded) offset += 23;
         auto p = dev->dev.as<playback>();
@@ -407,7 +404,7 @@ namespace rs2
         ImGui::SetCursorScreenPos({ stream_rect.x + 4 + offset, stream_rect.y - top_bar_height + 7 });
 
         std::string tooltip;
-        if (dev && dev->dev.supports(RS2_CAMERA_INFO_NAME) &&
+        if (dev->dev.supports(RS2_CAMERA_INFO_NAME) &&
             dev->dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) &&
             dev->s->supports(RS2_CAMERA_INFO_NAME))
         {
@@ -793,177 +790,275 @@ namespace rs2
             }
         }
 
-
-
         if (show_metadata)
+            stream_model::draw_stream_metadata(timestamp, timestamp_domain, frame_number, profile, original_size, stream_rect);
+
+        ImGui::PopStyleColor(5);
+    }
+
+    void stream_model::create_stream_details( std::vector< attribute >& stream_details,
+                                              const double timestamp,
+                                              const rs2_timestamp_domain timestamp_domain,
+                                              const unsigned long long frame_number,
+                                              const stream_profile profile,
+                                              const rs2::float2 original_size )
+    {
+        stream_details.push_back( { "Frame Timestamp",
+                                    rsutils::string::from() << std::fixed << std::setprecision( 1 ) << timestamp,
+                                    "Frame Timestamp is normalized represetation of when the frame was taken.\n"
+                                    "It's a property of every frame, so when exact creation time is not provided by "
+                                    "the hardware, an approximation will be used.\n"
+                                    "Clock Domain fields helps to interpret the meaning of timestamp\n"
+                                    "Timestamp is measured in milliseconds, and is allowed to roll-over (reset to "
+                                    "zero) in some situations" } );
+        stream_details.push_back(
+            { "Clock Domain",
+              rsutils::string::from() << rs2_timestamp_domain_to_string( timestamp_domain ),
+              "Clock Domain describes the format of Timestamp field. It can be one of the following:\n"
+              "1. System Time - When no hardware timestamp is available, system time of arrival will be used.\n"
+              "                 System time benefits from being comparable between device, but suffers from not being "
+              "able to approximate latency.\n"
+              "2. Hardware Clock - Hardware timestamp is attached to the frame by the device, and is consistent "
+              "accross device sensors.\n"
+              "                    Hardware timestamp encodes precisely when frame was captured, but cannot be "
+              "compared across devices\n"
+              "3. Global Time - Global time is provided when the device can both offer hardware timestamp and "
+              "implements Global Timestamp Protocol.\n"
+              "                 Global timestamps encode exact time of capture and at the same time are comparable "
+              "accross devices." } );
+        stream_details.push_back(
+            { "Frame Number",
+              rsutils::string::from() << frame_number,
+              "Frame Number is a rolling ID assigned to frames.\n"
+              "Most devices do not guarantee consequitive frames to have conseuquitive frame numbers\n"
+              "But it is true most of the time" } );
+
+        if( profile.as< rs2::video_stream_profile >() )
         {
-            std::vector<attribute> stream_details;
+            stream_details.push_back( { "Hardware Size",
+                                        rsutils::string::from() << original_size.x << " x " << original_size.y,
+                                        "Hardware size is the original frame resolution we got from the sensor, before "
+                                        "applying post processing filters." } );
 
-            if (true) // Always show stream details options
+            stream_details.push_back( { "Display Size",
+                                        rsutils::string::from() << size.x << " x " << size.y,
+                                        "When Post-Processing is enabled, the actual display size of the frame may "
+                                        "differ from original capture size" } );
+        }
+        stream_details.push_back(
+            { "Pixel Format", rsutils::string::from() << rs2_format_to_string( profile.format() ), "" } );
+
+        stream_details.push_back(
+            { "Hardware FPS",
+              rsutils::string::from() << std::setprecision( 2 ) << std::fixed << fps.get_fps(),
+              "Hardware FPS captures the number of frames per second produced by the device.\n"
+              "It is possible and likely that not all of these frames will make it to the application." } );
+
+        stream_details.push_back(
+            { "Viewer FPS",
+              rsutils::string::from() << std::setprecision( 2 ) << std::fixed << view_fps.get_fps(),
+              "Viewer FPS captures how many frames the application manages to render.\n"
+              "Frame drops can occur for variety of reasons." } );
+
+        stream_details.push_back( { "", "", "" } );
+    }
+
+    void stream_model::draw_stream_metadata( const double timestamp,
+                                            const rs2_timestamp_domain timestamp_domain,
+                                            const unsigned long long frame_number,
+                                            stream_profile profile,
+                                            rs2::float2 original_size,
+                                            const rect &stream_rect )
+    {
+        std::vector< attribute > stream_details;
+
+        create_stream_details( stream_details, timestamp, timestamp_domain, frame_number, profile, original_size );
+
+        const std::string no_md = "no md";
+
+        if( timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME )
+        {
+            stream_details.push_back( { no_md, "", ""} );
+        }
+
+        std::map< rs2_frame_metadata_value, std::string > descriptions = {
+            { RS2_FRAME_METADATA_FRAME_COUNTER, "A sequential index managed per-stream. Integer value" },
+            { RS2_FRAME_METADATA_FRAME_TIMESTAMP,
+              "Timestamp set by device clock when data readout and transmit commence. Units are device dependent" },
+            { RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
+              "Timestamp of the middle of sensor's exposure calculated by device. usec" },
+            { RS2_FRAME_METADATA_ACTUAL_EXPOSURE,
+              "Sensor's exposure width. When Auto Exposure (AE) is on the value is controlled by firmware. usec" },
+            { RS2_FRAME_METADATA_GAIN_LEVEL,
+              "A relative value increasing which will increase the Sensor's gain factor.\n"
+              "When AE is set On, the value is controlled by firmware. Integer value" },
+            { RS2_FRAME_METADATA_AUTO_EXPOSURE, "Auto Exposure Mode indicator. Zero corresponds to AE switched off. " },
+            { RS2_FRAME_METADATA_WHITE_BALANCE, "White Balance setting as a color temperature. Kelvin degrees" },
+            { RS2_FRAME_METADATA_TIME_OF_ARRIVAL, "Time of arrival in system clock" },
+            { RS2_FRAME_METADATA_TEMPERATURE,
+              "Temperature of the device, measured at the time of the frame capture. Celsius degrees " },
+            { RS2_FRAME_METADATA_BACKEND_TIMESTAMP, "Timestamp get from uvc driver. usec" },
+            { RS2_FRAME_METADATA_ACTUAL_FPS, "Hardware FPS * 1000 =\n"
+              "1000000 * (frame-number - prev-frame-number) / (timestamp - prev-timestamp)" },
+            { RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE,
+              "Laser power mode. Zero corresponds to Laser power switched off and one for switched on." },
+            { RS2_FRAME_METADATA_EXPOSURE_PRIORITY,
+              "Exposure priority. When enabled Auto-exposure algorithm is allowed to reduce requested FPS to "
+              "sufficiently increase exposure time (an get enough light)" },
+            { RS2_FRAME_METADATA_POWER_LINE_FREQUENCY,
+              "Power Line Frequency for anti-flickering Off/50Hz/60Hz/Auto. " },
+        };
+
+        for( auto i = 0; i < RS2_FRAME_METADATA_COUNT; i++ )
+        {
+            auto && kvp = frame_md.md_attributes[i];
+            if( kvp.first )
             {
-                stream_details.push_back({ "Frame Timestamp",
-                    rsutils::string::from() << std::fixed << std::setprecision(1) << timestamp,
-                    "Frame Timestamp is normalized represetation of when the frame was taken.\n"
-                    "It's a property of every frame, so when exact creation time is not provided by the hardware, an approximation will be used.\n"
-                    "Clock Domain feilds helps to interpret the meaning of timestamp\n"
-                    "Timestamp is measured in milliseconds, and is allowed to roll-over (reset to zero) in some situations" });
-                stream_details.push_back({ "Clock Domain",
-                    rsutils::string::from() << rs2_timestamp_domain_to_string(timestamp_domain),
-                    "Clock Domain describes the format of Timestamp field. It can be one of the following:\n"
-                    "1. System Time - When no hardware timestamp is available, system time of arrival will be used.\n"
-                    "                 System time benefits from being comparable between device, but suffers from not being able to approximate latency.\n"
-                    "2. Hardware Clock - Hardware timestamp is attached to the frame by the device, and is consistent accross device sensors.\n"
-                    "                    Hardware timestamp encodes precisely when frame was captured, but cannot be compared across devices\n"
-                    "3. Global Time - Global time is provided when the device can both offer hardware timestamp and implements Global Timestamp Protocol.\n"
-                    "                 Global timestamps encode exact time of capture and at the same time are comparable accross devices." });
-                stream_details.push_back({ "Frame Number",
-                    rsutils::string::from() << frame_number, "Frame Number is a rolling ID assigned to frames.\n"
-                    "Most devices do not guarantee consequitive frames to have conseuquitive frame numbers\n"
-                    "But it is true most of the time" });
-
-                if (profile.as<rs2::video_stream_profile>())
-                {
-                    stream_details.push_back({ "Hardware Size",
-                        rsutils::string::from() << original_size.x << " x " << original_size.y,
-                        "Hardware size is the original frame resolution we got from the sensor, before applying post processing filters." });
-
-                    stream_details.push_back({ "Display Size",
-                        rsutils::string::from() << size.x << " x " << size.y,
-                        "When Post-Processing is enabled, the actual display size of the frame may differ from original capture size" });
-                }
-                stream_details.push_back({ "Pixel Format",
-                    rsutils::string::from() << rs2_format_to_string(profile.format()), "" });
-
-                stream_details.push_back({ "Hardware FPS",
-                    rsutils::string::from() << std::setprecision(2) << std::fixed << fps.get_fps(),
-                    "Hardware FPS captures the number of frames per second produced by the device.\n"
-                    "It is possible and likely that not all of these frames will make it to the application." });
-
-                stream_details.push_back({ "Viewer FPS",
-                    rsutils::string::from() << std::setprecision(2) << std::fixed << view_fps.get_fps(),
-                    "Viewer FPS captures how many frames the application manages to render.\n"
-                    "Frame drops can occur for variety of reasons." });
-
-                stream_details.push_back({ "", "", "" });
-            }
-
-            const std::string no_md = "no md";
-
-            if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
-            {
-                stream_details.push_back({ no_md, "", "" });
-            }
-
-            std::map<rs2_frame_metadata_value, std::string> descriptions = {
-                { RS2_FRAME_METADATA_FRAME_COUNTER                        , "A sequential index managed per-stream. Integer value" },
-                { RS2_FRAME_METADATA_FRAME_TIMESTAMP                      , "Timestamp set by device clock when data readout and transmit commence. Units are device dependent" },
-                { RS2_FRAME_METADATA_SENSOR_TIMESTAMP                     , "Timestamp of the middle of sensor's exposure calculated by device. usec" },
-                { RS2_FRAME_METADATA_ACTUAL_EXPOSURE                      , "Sensor's exposure width. When Auto Exposure (AE) is on the value is controlled by firmware. usec" },
-                { RS2_FRAME_METADATA_GAIN_LEVEL                           , "A relative value increasing which will increase the Sensor's gain factor.\n"
-                                                                            "When AE is set On, the value is controlled by firmware. Integer value" },
-                { RS2_FRAME_METADATA_AUTO_EXPOSURE                        , "Auto Exposure Mode indicator. Zero corresponds to AE switched off. " },
-                { RS2_FRAME_METADATA_WHITE_BALANCE                        , "White Balance setting as a color temperature. Kelvin degrees" },
-                { RS2_FRAME_METADATA_TIME_OF_ARRIVAL                      , "Time of arrival in system clock " },
-                { RS2_FRAME_METADATA_TEMPERATURE                          , "Temperature of the device, measured at the time of the frame capture. Celsius degrees " },
-                { RS2_FRAME_METADATA_BACKEND_TIMESTAMP                    , "Timestamp get from uvc driver. usec" },
-                { RS2_FRAME_METADATA_ACTUAL_FPS                           , "Actual hardware FPS. May differ from requested due to Auto-Exposure" },
-                { RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE               , "Laser power mode. Zero corresponds to Laser power switched off and one for switched on." },
-                { RS2_FRAME_METADATA_EXPOSURE_PRIORITY                    , "Exposure priority. When enabled Auto-exposure algorithm is allowed to reduce requested FPS to sufficiently increase exposure time (an get enough light)" },
-                { RS2_FRAME_METADATA_POWER_LINE_FREQUENCY                 , "Power Line Frequency for anti-flickering Off/50Hz/60Hz/Auto. " },
-            };
-
-            for (auto i = 0; i < RS2_FRAME_METADATA_COUNT; i++)
-            {
-                auto&& kvp = frame_md.md_attributes[i];
-                if (kvp.first)
-                {
-                    auto val = (rs2_frame_metadata_value)i;
-                    std::string name = rs2_frame_metadata_to_string(val);
-                    std::string desc = "";
-                    if (descriptions.find(val) != descriptions.end()) desc = descriptions[val];
-                    stream_details.push_back({ name, rsutils::string::from() << kvp.second, desc });
-                }
-            }
-
-            float max_text_width = 0.;
-            for (auto&& kvp : stream_details)
-                max_text_width = std::max(max_text_width, ImGui::CalcTextSize(kvp.name.c_str()).x);
-
-            for (auto&& at : stream_details)
-            {
-                if (_info_height.get() > line_y + ImGui::GetTextLineHeight() - curr_info_rect.y)
-                {
-                    ImGui::SetCursorScreenPos({ curr_info_rect.x + 10, line_y });
-
-                    if (at.name == no_md)
-                    {
-                        auto text = "Per-frame metadata is not enabled at the OS level!\nPlease follow the installation guide for the details";
-                        auto size = ImGui::CalcTextSize(text);
-
-                        for (int i = 3; i > 0; i -= 1)
-                            ImGui::GetWindowDrawList()->AddRectFilled({ curr_info_rect.x + 10 - i, line_y - i },
-                                { curr_info_rect.x + 10 + i + size.x, line_y + size.y + i },
-                                ImColor(alpha(sensor_bg, 0.1f)));
-
-                        ImGui::PushStyleColor(ImGuiCol_Text, redish);
-                        ImGui::Text("%s", text);
-                        ImGui::PopStyleColor();
-
-                        line_y += ImGui::GetTextLineHeight() + 3;
-                    }
-                    else
-                    {
-                        std::string text = "";
-                        if (at.name != "") text = rsutils::string::from() << at.name << ":";
-                        auto size = ImGui::CalcTextSize(text.c_str());
-
-                        for (int i = 3; i > 0; i -= 1)
-                            ImGui::GetWindowDrawList()->AddRectFilled({ curr_info_rect.x + 10 - i, line_y - i },
-                                { curr_info_rect.x + 10 + i + size.x, line_y + size.y + i },
-                                ImColor(alpha(sensor_bg, 0.1f)));
-
-                        ImGui::PushStyleColor(ImGuiCol_Text, white);
-                        ImGui::Text("%s", text.c_str()); ImGui::SameLine();
-
-                        if (at.description != "")
-                        {
-                            if (ImGui::IsItemHovered())
-                            {
-                                ImGui::SetTooltip("%s", at.description.c_str());
-                            }
-                        }
-
-                        text = at.value;
-                        size = ImGui::CalcTextSize(text.c_str());
-
-                        for (int i = 3; i > 0; i -= 1)
-                            ImGui::GetWindowDrawList()->AddRectFilled({ curr_info_rect.x + 20 + max_text_width - i, line_y - i },
-                                { curr_info_rect.x + 30 + max_text_width + i + size.x, line_y + size.y + i },
-                                ImColor(alpha(sensor_bg, 0.1f)));
-
-                        ImGui::PopStyleColor();
-
-                        ImGui::SetCursorScreenPos({ curr_info_rect.x + 20 + max_text_width, line_y });
-
-                        std::string id = rsutils::string::from() << "##" << at.name << "-" << profile.unique_id();
-
-                        ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
-                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-
-                        ImGui::InputText(id.c_str(),
-                            (char*)text.c_str(),
-                            text.size() + 1,
-                            ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
-
-                        ImGui::PopStyleColor(2);
-                    }
-
-                    line_y += ImGui::GetTextLineHeight() + 3;
-                }
+                auto val = (rs2_frame_metadata_value)i;
+                std::string name = rs2_frame_metadata_to_string( val );
+                std::string desc;
+                if( descriptions.find( val ) != descriptions.end() )
+                    desc = descriptions[val];
+                stream_details.push_back( { name, format_value(val, kvp.second), desc } );
             }
         }
 
-        ImGui::PopStyleColor(5);
+        float max_text_width = 0.f;
+
+        for (auto&& kvp : stream_details) {
+            max_text_width = std::max(max_text_width, ImGui::CalcTextSize(kvp.name.c_str()).x);
+        }
+
+        // Set cursor to metadata start position
+        ImGui::SetCursorScreenPos( { stream_rect.x, stream_rect.y } );
+
+        // Creating layer for metadata
+        std::string metadata_layer_id = rsutils::string::from() << "##Metadata-" << profile.unique_id();
+        ImGui::BeginChild( metadata_layer_id.c_str(), ImVec2( stream_rect.w + 2, stream_rect.h ) );
+        auto screen_pos = ImGui::GetCursorScreenPos( );
+        const float space_between_columns = 20.f;
+        const float space_between_lines = 4.f;
+        const float space_from_left = 10.f;
+
+        float line_y = ImGui::GetCursorScreenPos().y;
+
+        for( auto && at : stream_details )
+        {
+            ImGui::SetCursorScreenPos( { screen_pos.x + space_from_left, line_y } ); // create space from left for metadata labels column
+
+            ImGui::PushStyleColor( ImGuiCol_FrameBg, transparent );
+            ImGui::PushStyleColor( ImGuiCol_TextSelectedBg, light_blue );
+
+            if ( at.name == "" ) {
+                line_y += ImGui::GetTextLineHeight() + space_between_lines; // Create space separation between stream details and metatada
+            }
+            else if( at.name == no_md )
+            {
+                std::vector<std::string> warning_lines = { "Per-frame metadata is not enabled at the OS level!", "Please follow the installation guide for the details." };
+                ImGui::PushStyleColor( ImGuiCol_Text, redish );
+
+                // This loop print 2 lines of the warning. This is work around solution because InputText can't show text after new line character.
+                for (int i = 0; i < warning_lines.size(); i++) {
+                    auto warning_size = ImGui::CalcTextSize(warning_lines[i].c_str());
+
+                    // Draw a smooth rectangle background for a warning.
+                    for (auto i = 3; i > 0; i--)
+                        ImGui::GetWindowDrawList()->AddRectFilled(
+                            { screen_pos.x + space_from_left - i, line_y - i },
+                            { screen_pos.x + space_from_left + warning_size.x + i + 10, line_y + warning_size.y + i },
+                            ImColor( alpha( sensor_bg, 0.1f ) ) );
+
+                    ImGui::SetCursorScreenPos( { screen_pos.x + space_from_left, line_y } ); // create space from left for metadata labels column.
+                    ImGui::PushItemWidth(warning_size.x + 5);
+
+                    std::string metadata_id = rsutils::string::from() << "##" << at.name << "-" << profile.unique_id();
+                    ImGui::InputText( metadata_id.c_str(),
+                                      (char *)warning_lines[i].c_str(),
+                                      warning_lines[i].size(),
+                                      ImGuiInputTextFlags_ReadOnly );
+
+                    line_y += ImGui::GetTextLineHeight() + space_between_lines; // Move down to the next line
+                }
+
+                ImGui::PopStyleColor(); // remove redish text color.
+            }
+            else
+            {
+                std::string text = rsutils::string::from() << at.name << ":";
+                auto label_size = ImGui::CalcTextSize(text.c_str());
+            
+                // Draw a smooth rectangle background for label
+                // When we draw multiple rectangles with a shorter pixel on w & h is darker the inside rectangle
+                for (auto i = 3; i > 0; i--)
+                    ImGui::GetWindowDrawList()->AddRectFilled(
+                        { screen_pos.x + space_from_left - i, line_y - i },
+                        { screen_pos.x + space_from_left + label_size.x + i + 10, line_y + label_size.y + i },
+                        ImColor( alpha( sensor_bg, 0.1f ) ) );
+
+                ImGui::PushItemWidth(label_size.x + 5);  // Set input text width for label.
+
+                std::string label_id = rsutils::string::from() << "##" << at.name << "-" << profile.unique_id();
+                ImGui::InputText( label_id.c_str(),
+                                  (char *)text.c_str(),
+                                  text.size(),
+                                  ImGuiInputTextFlags_ReadOnly );
+                
+                ImGui::PopItemWidth();
+                
+                if( at.description != "" )
+                {
+                    if( ImGui::IsItemHovered() )
+                    {
+                        ImGui::SetTooltip( "%s", at.description.c_str() );
+                    }
+                }
+
+                text = at.value;
+                auto value_size = ImGui::CalcTextSize(text.c_str());
+                
+                // Draw a smooth rectangle background for label value.
+                for (auto i = 3; i > 0; i--)
+                    ImGui::GetWindowDrawList()->AddRectFilled(
+                        { screen_pos.x + space_from_left + max_text_width + space_between_columns - i, line_y - i },
+                        { screen_pos.x + space_from_left + value_size.x + max_text_width + space_between_columns + i + 10, line_y + value_size.y + i },
+                        ImColor( alpha( sensor_bg, 0.1f ) ) );
+                
+                ImGui::SetCursorScreenPos( { screen_pos.x + space_from_left + max_text_width + space_between_columns, line_y } );
+
+                ImGui::PushItemWidth(value_size.x + 5);  // Set input text width for label value.
+
+                std::string value_id = rsutils::string::from() << "##" << at.name << "-" << at.value << "-" << profile.unique_id();
+                ImGui::InputText( value_id.c_str(),
+                                  (char *)text.c_str(),
+                                  text.size(),
+                                  ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly );
+                
+                ImGui::PopItemWidth();
+
+                line_y += ImGui::GetTextLineHeight() + space_between_lines; // Move down to the next line
+            }
+
+            ImGui::PopStyleColor( 2 ); // pop transparent ImGuiCol_FrameBg, pop light_blue ImGuiCol_TextSelectedBg.
+        }
+
+        ImGui::EndChild();
+    }
+
+    std::string stream_model::format_value(rs2_frame_metadata_value& md_val, rs2_metadata_type& attribute_val) const
+    {
+        if (should_show_in_hex(md_val))
+            return rsutils::string::from() << "0x" << std::hex << attribute_val; // return value as hex
+        return rsutils::string::from() << attribute_val;
+    }
+
+    bool stream_model::should_show_in_hex(rs2_frame_metadata_value& md_val) const
+    {
+        // place in the SET metadata types you wish to display in HEX format
+        static std::unordered_set< int > show_in_hex;
+
+        if (show_in_hex.find(md_val) != show_in_hex.end())
+            return true;
+        return false;
     }
 
     void stream_model::show_stream_footer(ImFont* font, const rect &stream_rect, const mouse_info& mouse, const std::map<int, stream_model> &streams, viewer_model& viewer)
@@ -973,6 +1068,7 @@ namespace rs2
             || (profile.stream_type() == RS2_STREAM_GPIO)
             || (profile.stream_type() == RS2_STREAM_POSE);
 
+        // This scope contains a cursor behavior on visual stream with no metadata on
         if (stream_rect.contains(mouse.cursor) && !non_visual_stream && !show_metadata)
         {
             std::stringstream ss;
@@ -1148,9 +1244,10 @@ namespace rs2
         }
     }
 
+    // This function contains a cursor behavior on IMU stream with no metadata on
     void stream_model::show_stream_imu(ImFont* font, const rect &stream_rect, const  rs2_vector& axis, const mouse_info& mouse)
     {
-        if (stream_rect.contains(mouse.cursor))
+        if (stream_rect.contains(mouse.cursor) && !show_metadata)
         {
             const auto precision = 3;
             rs2_stream stream_type = profile.stream_type();
@@ -1524,7 +1621,8 @@ namespace rs2
     void stream_model::show_frame(const rect& stream_rect, const mouse_info& g, std::string& error_message)
     {
         auto zoom_val = 1.f;
-        if (stream_rect.contains(g.cursor))
+        // Allow mouse scrolling for zoom when not displaying scrollable metadata
+        if (stream_rect.contains(g.cursor) && !show_metadata)
         {
             static const auto wheel_step = 0.1f;
             auto mouse_wheel_value = -g.mouse_wheel * 0.1f;
@@ -1542,31 +1640,32 @@ namespace rs2
 
         _mid_click = is_middle_clicked;
 
-        _normalized_zoom = get_normalized_zoom(stream_rect,
-            g, is_middle_clicked,
-            zoom_val);
-        texture->show(stream_rect, 1.f, _normalized_zoom);
-
-        if (dev && dev->show_algo_roi)
+        if( dev )
         {
-            rect r{ float(dev->algo_roi.min_x), float(dev->algo_roi.min_y),
-                    float(dev->algo_roi.max_x - dev->algo_roi.min_x),
-                    float(dev->algo_roi.max_y - dev->algo_roi.min_y) };
+            _normalized_zoom = get_normalized_zoom( stream_rect, g, is_middle_clicked, zoom_val );
+            texture->show(stream_rect, 1.f, _normalized_zoom);
 
-            r = r.normalize(_normalized_zoom.unnormalize(get_original_stream_bounds())).unnormalize(stream_rect).cut_by(stream_rect);
-            glColor3f(yellow.x, yellow.y, yellow.z);
-            draw_rect(r, 2, true);
+            if( dev->show_algo_roi )
+            {
+                rect r{ float(dev->algo_roi.min_x), float(dev->algo_roi.min_y),
+                        float(dev->algo_roi.max_x - dev->algo_roi.min_x),
+                        float(dev->algo_roi.max_y - dev->algo_roi.min_y) };
 
-            std::string message = "Metrics Region of Interest";
-            auto msg_width = stb_easy_font_width((char*)message.c_str());
-            if (msg_width < r.w)
-                draw_text(static_cast<int>(r.x + r.w / 2 - msg_width / 2), static_cast<int>(r.y + 10), message.c_str());
+                r = r.normalize(_normalized_zoom.unnormalize(get_original_stream_bounds())).unnormalize(stream_rect).cut_by(stream_rect);
+                glColor3f(yellow.x, yellow.y, yellow.z);
+                draw_rect(r, 2, true);
 
-            glColor3f(1.f, 1.f, 1.f);
-            roi_percentage = dev->roi_percentage;
+                std::string message = "Metrics Region of Interest";
+                auto msg_width = stb_easy_font_width((char*)message.c_str());
+                if (msg_width < r.w)
+                    draw_text(static_cast<int>(r.x + r.w / 2 - msg_width / 2), static_cast<int>(r.y + 10), message.c_str());
+
+                glColor3f(1.f, 1.f, 1.f);
+                roi_percentage = dev->roi_percentage;
+            }
+
+            update_ae_roi_rect(stream_rect, g, error_message);
         }
-
-        update_ae_roi_rect(stream_rect, g, error_message);
         texture->show_preview(stream_rect, _normalized_zoom);
 
         if (is_middle_clicked)

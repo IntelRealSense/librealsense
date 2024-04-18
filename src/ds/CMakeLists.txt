@@ -2,6 +2,7 @@
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 include(${_rel_path}/ds/d400/CMakeLists.txt)
+include(${_rel_path}/ds/d500/CMakeLists.txt)
 
 target_sources(${LRS_TARGET}
     PRIVATE
@@ -26,4 +27,18 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/json_loader.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/presets.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds-calib-parsers.h"
+        "${CMAKE_CURRENT_LIST_DIR}/features/amplitude-factor-feature.h"
+        "${CMAKE_CURRENT_LIST_DIR}/features/amplitude-factor-feature.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/features/emitter-frequency-feature.h"
+        "${CMAKE_CURRENT_LIST_DIR}/features/emitter-frequency-feature.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/features/auto-exposure-roi-feature.h"
+        "${CMAKE_CURRENT_LIST_DIR}/features/auto-exposure-roi-feature.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/features/remove-ir-pattern-feature.h"
+        "${CMAKE_CURRENT_LIST_DIR}/features/remove-ir-pattern-feature.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/features/auto-exposure-limit-feature.h"
+        "${CMAKE_CURRENT_LIST_DIR}/features/auto-exposure-limit-feature.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/features/gain-limit-feature.h"
+        "${CMAKE_CURRENT_LIST_DIR}/features/gain-limit-feature.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/features/gyro-sensitivity-feature.h"
+        "${CMAKE_CURRENT_LIST_DIR}/features/gyro-sensitivity-feature.cpp"
 )

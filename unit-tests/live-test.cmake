@@ -1,4 +1,5 @@
 set (unit_tests_sources
+    unit-tests-common.cpp
     unit-tests-live.cpp
     unit-tests-regressions.cpp
     unit-tests-post-processing.cpp
@@ -13,7 +14,7 @@ set (unit_tests_sources
 
 add_executable(live-test ${unit_tests_sources})
 set_property(TARGET live-test PROPERTY CXX_STANDARD 11)
-target_link_libraries(live-test ${DEPENDENCIES} Threads::Threads)
+target_link_libraries(live-test ${DEPENDENCIES} Threads::Threads Catch2WithMain )
 
 set_target_properties (live-test PROPERTIES
     FOLDER "Unit-Tests"

@@ -179,8 +179,14 @@ udev_device_watcher::udev_device_watcher( const platform::backend * backend )
 
 udev_device_watcher::~udev_device_watcher()
 {
-    stop();
-
+    try
+    {
+        stop();
+    }
+    catch(...)
+    {
+        LOG_DEBUG( "Error while stopping udev device watcher" );
+    }
     /* Release the udev monitor */
     if( _udev_monitor )
         udev_monitor_unref( _udev_monitor );

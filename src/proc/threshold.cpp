@@ -1,9 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/hpp/rs_sensor.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
+#include <librealsense2/hpp/rs_sensor.hpp>
+#include <librealsense2/hpp/rs_processing.hpp>
 
+#include <src/core/depth-frame.h>
 #include "proc/synthetic-stream.h"
 #include "context.h"
 #include "environment.h"
@@ -52,7 +53,12 @@ namespace librealsense
         if (new_f)
         {
             auto ptr = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)new_f.get());
+            if (!ptr)
+                throw std::runtime_error("Frame is not depth frame");
+
             auto orig = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)f.get());
+            if (!orig)
+                throw std::runtime_error("Frame is not depth frame");
 
             auto depth_data = (uint16_t*)orig->get_frame_data();
             auto new_data = (uint16_t*)ptr->get_frame_data();

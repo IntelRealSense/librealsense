@@ -13,13 +13,6 @@ import time
 import enum
 import threading
 
-# L515
-READ_TABLE  = 0x43     # READ_TABLE 0x243 0
-WRITE_TABLE = 0x44     # WRITE_TABLE 0 <table>
-
-# L515 minimum firmware version required to support IMU calibration
-L515_FW_VER_REQUIRED = '01.04.01.00'
-
 is_data = None
 get_key = None
 if os.name == 'posix':
@@ -47,7 +40,7 @@ max_uint8 = struct.unpack('B', b'\xff')[0]
 
 g = 9.80665 # SI Gravity page 52 of https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication330e2008.pdf
 
-COLOR_RED   = "\033[1;31m"  
+COLOR_RED   = "\033[1;31m"
 COLOR_BLUE  = "\033[1;34m"
 COLOR_CYAN  = "\033[1;36m"
 COLOR_GREEN = "\033[0;32m"
@@ -170,7 +163,7 @@ class imu_wrapper:
                 sys.stdout.write('\r %15s' % self.status)
                 crnt_dir = np.array(data_np) / np.linalg.norm(data_np)
                 crnt_diff = self.crnt_direction - crnt_dir
-                is_in_norm = np.linalg.norm(data_np - self.crnt_bucket) < self.max_norm               
+                is_in_norm = np.linalg.norm(data_np - self.crnt_bucket) < self.max_norm
 
                 ## Status.rotate
                 if self.status == self.Status.rotate:
@@ -284,7 +277,7 @@ class CHeader:
     def set_crc32(self, crc32):
         self.buffer.dtype=np.uint32
         self.buffer[3] = crc32 % (1<<32)    # convert from signed to unsigned 32 bit
-    
+
     def get_buffer(self):
         self.buffer.dtype=np.uint8
         return self.buffer
@@ -292,7 +285,7 @@ class CHeader:
 
 def bitwise_int_to_float(ival):
     return struct.unpack('f', struct.pack('i', ival))[0]
-    
+
 def bitwise_float_to_int(fval):
     return struct.unpack('i', struct.pack('f', fval))[0]
 
@@ -300,7 +293,7 @@ def parse_buffer(buffer):
     cmd_size = 24
     header_size = 16
 
-    buffer.dtype=np.uint32    
+    buffer.dtype=np.uint32
     tab1_size = buffer[3]
     buffer.dtype=np.uint8
     print('tab1_size (all_data): ', tab1_size)
@@ -330,12 +323,8 @@ def get_IMU_Calib_Table(X, product_line):
     version = ['0x02', '0x01']
     table_type = '0x20'
 
-    if product_line == 'L500':
-        version = ['0x05', '0x01']
-        table_type = '0x243'
-
     header = CHeader(version, table_type)
-    
+
     header_size = header.size()
     data_size = 37*4 + 96
     size_of_buffer = header_size + data_size    # according to table "D435 IMU Calib Table" here: https://user-images.githubusercontent.com/6958867/50902974-20507500-1425-11e9-8ca5-8bd2ac2d0ea1.png
@@ -348,14 +337,14 @@ def get_IMU_Calib_Table(X, product_line):
     data_buffer = np.ones(data_size, dtype=np.uint8) * 255
     data_buffer.dtype = np.float32
 
-    data_buffer[0] = bitwise_int_to_float(np.int32(int(use_intrinsics)) << 8 | 
+    data_buffer[0] = bitwise_int_to_float(np.int32(int(use_intrinsics)) << 8 |
                                           np.int32(int(use_extrinsics)))
 
     intrinsic_vector = np.zeros(24, dtype=np.float32)
     intrinsic_vector[:9] = X[:3,:3].T.flatten()
     intrinsic_vector[9:12] = X[:3,3]
     intrinsic_vector[12:21] = X[3:,:3].flatten()
-    intrinsic_vector[21:24] = X[3:,3]    
+    intrinsic_vector[21:24] = X[3:,3]
 
     data_buffer[13:13+X.size] = intrinsic_vector
     data_buffer.dtype = np.uint8
@@ -404,9 +393,9 @@ def get_eeprom(calibration_table):
 
     header_size = header.size()
     size_of_buffer = DC_MM_EEPROM_SIZE
-    data_size = size_of_buffer - header_size 
+    data_size = size_of_buffer - header_size
     # size_of_buffer = header_size + data_size
-    
+
     assert(size_of_buffer % 4 == 0)
     buffer = np.ones(size_of_buffer, dtype=np.uint8) * 255
 
@@ -576,19 +565,11 @@ def main():
 
         product_line = dev.get_info(rs.camera_info.product_line)
 
-        if product_line == 'L500':
-            print('checking minimum firmware requirement ...')
-            fw_version = dev.get_info(rs.camera_info.firmware_version)
-            if fw_version < L515_FW_VER_REQUIRED:
-                raise Exception('L515 requires firmware ' + L515_FW_VER_REQUIRED + " or later to support IMU calibration. Please upgrade firmware and try again.")
-            else:
-                print('  firmware ' + fw_version + ' passed check.')
-
         buckets = [[0, -g,  0], [ g,  0, 0],
                 [0,  g,  0], [-g,  0, 0],
                 [0,  0, -g], [ 0,  0, g]]
 
-        # all D400 and L500 cameras with IMU equipped with a mounting screw at the bottom of the device
+        # all D400 cameras with IMU equipped with a mounting screw at the bottom of the device
         # when device is in normal use position upright facing out, mount screw is pointing down, aligned with positive Y direction in depth coordinate system
         # IMU output on each of these devices is transformed into the depth coordinate system, i.e.,
         # looking from back of the camera towards front, the positive x-axis points to the right, the positive y-axis points down, and the positive z-axis points forward.
@@ -690,10 +671,7 @@ def main():
 
         calibration = {}
 
-        if product_line == 'L500':
-            calibration["device_type"] = "L515"
-        else:
-            calibration["device_type"] = "D435i"
+        calibration["device_type"] = "D435i"
 
         calibration["imus"] = list()
         calibration["imus"].append({})
@@ -729,12 +707,9 @@ def main():
         if is_write:
             print('Writing calibration to device.')
 
-            if product_line == 'L500':
-                l500_send_command(dev, WRITE_TABLE, 0, 0, 0, 0, imu_calib_table)
-            else:
-                calibration_table = get_calibration_table(imu_calib_table)
-                eeprom = get_eeprom(calibration_table)
-                write_eeprom_to_camera(eeprom, serial_no)
+            calibration_table = get_calibration_table(imu_calib_table)
+            eeprom = get_eeprom(calibration_table)
+            write_eeprom_to_camera(eeprom, serial_no)
 
             print('Done.')
         else:

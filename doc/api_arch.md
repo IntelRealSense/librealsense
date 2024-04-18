@@ -19,7 +19,7 @@ The pipeline API is accompanied by the processing blocks, which provide tools to
 * Future releases will add **computer vision plugins** capabilities to the pipeline, for easy enriching available outputs based on camera streams. The pipeline makes sure all synchronization and alignment requirements of those plugins are met and takes care of threading and resource management.
 
 ## Low-Level Device API
-Intel RealSense™ devices use sensors, some commonplace like a regular RGB camera and some more exotic like the D400 Stereo module or SR300 Structured-Light sensor:
+Intel RealSense™ devices use sensors, some commonplace like a regular RGB camera and some more exotic like the D400 Stereo module Structured-Light sensor:
 <p align="center"><img src="img/sensors_within_device.png" width="400" height="200" /></p>
 
 The Low-Level Device API provides you with the means to take direct control of the individual device sensors.   

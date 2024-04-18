@@ -8,11 +8,12 @@
 #include <cstddef>
 
 #include "device.h"
-#include "context.h"
 #include "image.h"
 #include "metadata-parser.h"
 
-#include "d400-factory.h"
+#include <src/core/matcher-factory.h>
+
+#include "d400-info.h"
 #include "d400-private.h"
 #include "d400-options.h"
 #include "ds/ds-timestamp.h"
@@ -23,11 +24,16 @@
 #include "d400-thermal-monitor.h"
 #include "sync.h"
 
+#include <src/platform/platform-utils.h>
+
 #include "firmware_logger_device.h"
 #include "device-calibration.h"
 
 #include <rsutils/string/from.h>
 
+#include <src/ds/features/auto-exposure-limit-feature.h>
+#include <src/ds/features/gain-limit-feature.h>
+#include <src/ds/features/gyro-sensitivity-feature.h>
 
 namespace librealsense
 {
@@ -37,16 +43,16 @@ namespace librealsense
         public firmware_logger_device
     {
     public:
-        rs400_device(std::shared_ptr<context> ctx,
-                     const platform::backend_device_group& group,
-                     bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-              d400_device(ctx, group),
-              d400_nonmonochrome(ctx, group),
-              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
-                  get_firmware_logs_command(),
-                  get_flash_logs_command()) {}
+        rs400_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
+            : device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
+            , d400_device( dev_info )
+            , d400_nonmonochrome( dev_info )
+            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , firmware_logger_device(
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+        {
+        }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -76,13 +82,12 @@ namespace librealsense
         public firmware_logger_device
     {
     public:
-        rs405u_device(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group,
-            bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-            ds5u_device(ctx, group),
+        rs405u_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
+            : device(dev_info, register_device_notifications),
+            backend_device( dev_info, register_device_notifications ),
+            ds5u_device(dev_info),
             ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(ctx, group, d400_device::_hw_monitor,
+            firmware_logger_device(dev_info, d400_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command()) {}
 
@@ -128,17 +133,17 @@ namespace librealsense
                          public firmware_logger_device
     {
     public:
-        rs410_device(std::shared_ptr<context> ctx,
-                     const platform::backend_device_group& group,
-                     bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-              d400_device(ctx, group),
-              d400_nonmonochrome(ctx, group),
-              d400_active(ctx, group),
-              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(ctx, group, d400_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command()) {}
+        rs410_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
+            : device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
+            , d400_device( dev_info )
+            , d400_nonmonochrome( dev_info )
+            , d400_active( dev_info )
+            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , firmware_logger_device(
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+        {
+        }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -167,18 +172,18 @@ namespace librealsense
                          public firmware_logger_device
     {
     public:
-        rs415_device(std::shared_ptr<context> ctx,
-                     const platform::backend_device_group& group,
-                     bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-              d400_device(ctx, group),
-              d400_nonmonochrome(ctx, group),
-              d400_active(ctx, group),
-              d400_color(ctx, group),
-              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(ctx, group, d400_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command()) {}
+        rs415_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
+            : device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
+            , d400_device( dev_info )
+            , d400_nonmonochrome( dev_info )
+            , d400_active( dev_info )
+            , d400_color( dev_info )
+            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , firmware_logger_device(
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+        {
+        }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -208,17 +213,17 @@ namespace librealsense
         public firmware_logger_device
     {
     public:
-        rs416_device(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group,
-            bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-            d400_device(ctx, group),
-            d400_nonmonochrome(ctx, group),
-            d400_active(ctx, group),
-            ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(ctx, group, d400_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command()) {}
+        rs416_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
+            : device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
+            , d400_device( dev_info )
+            , d400_nonmonochrome( dev_info )
+            , d400_active( dev_info )
+            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , firmware_logger_device(
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+        {
+        }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -262,18 +267,18 @@ namespace librealsense
 
     {
     public:
-        rs416_rgb_device(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group,
-            bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-            d400_device(ctx, group),
-            d400_nonmonochrome(ctx, group),
-            d400_active(ctx, group),
-            d400_color(ctx, group),
-            ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(ctx, group, d400_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command()) {}
+        rs416_rgb_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
+            : device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
+            , d400_device( dev_info )
+            , d400_nonmonochrome( dev_info )
+            , d400_active( dev_info )
+            , d400_color( dev_info )
+            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , firmware_logger_device(
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+        {
+        }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -316,16 +321,16 @@ namespace librealsense
                             public firmware_logger_device
     {
     public:
-        rs420_mm_device(std::shared_ptr<context> ctx,
-                        const platform::backend_device_group group,
-                        bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-              d400_device(ctx, group),
-              d400_motion(ctx, group),
-              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command()) {}
+        rs420_mm_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
+            : device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
+            , d400_device( dev_info )
+            , d400_motion( dev_info )
+            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , firmware_logger_device(
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+        {
+        }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -364,15 +369,15 @@ namespace librealsense
                          public firmware_logger_device
     {
     public:
-        rs420_device(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group,
-                     bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-              d400_device(ctx, group),
-              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command()) {}
+        rs420_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
+            : device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
+            , d400_device( dev_info )
+            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , firmware_logger_device(
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+        {
+        }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -402,16 +407,16 @@ namespace librealsense
                          public firmware_logger_device
     {
     public:
-        rs430_device(std::shared_ptr<context> ctx,
-                     const platform::backend_device_group group,
-                     bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-              d400_device(ctx, group),
-              d400_active(ctx, group),
-              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command()) {}
+        rs430_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
+            : device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
+            , d400_device( dev_info )
+            , d400_active( dev_info )
+            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , firmware_logger_device(
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+        {
+        }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -441,18 +446,17 @@ namespace librealsense
                           public firmware_logger_device
     {
     public:
-        rs430i_device(std::shared_ptr<context> ctx,
-            const platform::backend_device_group group,
-            bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-              d400_device(ctx, group),
-              d400_active(ctx, group),
-              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
-              d400_motion(ctx, group),
-              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command())
-        {}
+        rs430i_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
+            : device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
+            , d400_device( dev_info )
+            , d400_active( dev_info )
+            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , d400_motion( dev_info )
+            , firmware_logger_device(
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+        {
+        }
 
         std::vector<tagged_profile> get_profiles_tags() const override
         {
@@ -486,17 +490,17 @@ namespace librealsense
                             public firmware_logger_device
     {
     public:
-        rs430_mm_device(std::shared_ptr<context> ctx,
-                        const platform::backend_device_group group,
-                        bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-              d400_device(ctx, group),
-              d400_active(ctx, group),
-              d400_motion(ctx, group),
-              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command()) {}
+        rs430_mm_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
+            : device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
+            , d400_device( dev_info )
+            , d400_active( dev_info )
+            , d400_motion( dev_info )
+            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , firmware_logger_device(
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+        {
+        }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -537,17 +541,17 @@ namespace librealsense
                          public firmware_logger_device
     {
     public:
-        rs435_device(std::shared_ptr<context> ctx,
-                     const platform::backend_device_group group,
-                     bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-              d400_device(ctx, group),
-              d400_active(ctx, group),
-              d400_color(ctx,  group),
-              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command()) {}
+        rs435_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
+            : device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
+            , d400_device( dev_info )
+            , d400_active( dev_info )
+            , d400_color( dev_info )
+            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , firmware_logger_device(
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+        {
+        }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -579,18 +583,18 @@ namespace librealsense
                          public firmware_logger_device
     {
     public:
-        rs457_device(std::shared_ptr<context> ctx,
-                     const platform::backend_device_group group,
-                     bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-              d400_device(ctx, group),
-              d400_active(ctx, group),
-              d400_color(ctx,  group),
-              d400_motion_uvc(ctx, group),
-              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command()){}
+        rs457_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
+            : device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
+            , d400_device( dev_info )
+            , d400_active( dev_info )
+            , d400_color( dev_info )
+            , d400_motion_uvc( dev_info )
+            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , firmware_logger_device(
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+        {
+        }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -613,18 +617,18 @@ namespace librealsense
                                 public firmware_logger_device
     {
     public:
-        rs430_rgb_mm_device(std::shared_ptr<context> ctx,
-                            const platform::backend_device_group group,
-                            bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-              d400_device(ctx, group),
-              d400_active(ctx, group),
-              d400_color(ctx,  group),
-              d400_motion(ctx, group),
-              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command()) {}
+        rs430_rgb_mm_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
+            : device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
+            , d400_device( dev_info )
+            , d400_active( dev_info )
+            , d400_color( dev_info )
+            , d400_motion( dev_info )
+            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , firmware_logger_device(
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+        {
+        }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -656,21 +660,23 @@ namespace librealsense
                                 public firmware_logger_device
     {
     public:
-        rs435i_device(std::shared_ptr<context> ctx,
-                    const platform::backend_device_group group,
-                    bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-              d400_device(ctx, group),
-              d400_active(ctx, group),
-              d400_color(ctx,  group),
-              d400_motion(ctx, group),
-              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command())
+        rs435i_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
+            : device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
+            , d400_device( dev_info )
+            , d400_active( dev_info )
+            , d400_color( dev_info )
+            , d400_motion( dev_info )
+            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , firmware_logger_device(
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
             check_and_restore_rgb_stream_extrinsic();
+            if( _fw_version >= firmware_version( 5, 16, 0, 0 ) )
+                register_feature(
+                    std::make_shared< gyro_sensitivity_feature >( get_raw_motion_sensor(), get_motion_sensor() ) );
         }
+
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -701,7 +707,7 @@ namespace librealsense
         {
             for(auto iter = 0, rec =0; iter < 2; iter++, rec++)
             {
-                std::vector<byte> cal;
+                std::vector< uint8_t > cal;
                 try
                 {
                     cal = *_color_calib_table_raw;
@@ -790,7 +796,7 @@ namespace librealsense
             }
         }
 
-        void assign_rgb_stream_extrinsic(const std::vector<byte>& calib)
+        void assign_rgb_stream_extrinsic( const std::vector< uint8_t > & calib )
         {
             //write calibration to preset
             command cmd(ds::fw_cmd::SETINTCALNEW, 0x20, 0x2);
@@ -798,7 +804,7 @@ namespace librealsense
             d400_device::_hw_monitor->send(cmd);
         }
 
-        std::vector<byte> read_sector(const uint32_t address, const uint16_t size) const
+        std::vector< uint8_t > read_sector( const uint32_t address, const uint16_t size ) const
         {
             if (size > ds_advanced_mode_base::HW_MONITOR_COMMAND_SIZE)
                 throw std::runtime_error( rsutils::string::from()
@@ -809,13 +815,13 @@ namespace librealsense
             return d400_device::_hw_monitor->send(cmd);
         }
 
-        std::vector<byte> read_rgb_gold() const
+        std::vector< uint8_t > read_rgb_gold() const
         {
             command cmd(ds::fw_cmd::LOADINTCAL, 0x20, 0x1);
             return d400_device::_hw_monitor->send(cmd);
         }
 
-        std::vector<byte> restore_calib_factory_settings() const
+        std::vector< uint8_t > restore_calib_factory_settings() const
         {
             command cmd(ds::fw_cmd::CAL_RESTORE_DFLT);
             return d400_device::_hw_monitor->send(cmd);
@@ -868,65 +874,21 @@ namespace librealsense
         }
     };
 
-    class rs465_device : public d400_active,
-                         public d400_nonmonochrome,
-                         public d400_color,
-                         public d400_motion,
-                         public ds_advanced_mode_base,
-                         public firmware_logger_device
-    {
-    public:
-        rs465_device(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group,
-            bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-            d400_device(ctx, group),
-            d400_active(ctx, group),
-            d400_color(ctx, group),
-            d400_motion(ctx, group),
-            d400_nonmonochrome(ctx, group),
-            ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(ctx, group, d400_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command()) {}
-
-        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
-
-        std::vector<tagged_profile> get_profiles_tags() const override
-        {
-            std::vector<tagged_profile> tags;
-            auto usb_spec = get_usb_spec();
-            bool usb3mode = (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined);
-
-            int width = usb3mode ? 1280 : 640;
-            int height = usb3mode ? 720 : 480;
-            int fps = usb3mode ? 30 : 15;
-
-            tags.push_back({ RS2_STREAM_COLOR, -1, width, height, RS2_FORMAT_RGB8, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_DEPTH, -1, width, height, RS2_FORMAT_Z16, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_INFRARED, -1, width, height, RS2_FORMAT_Y8, fps, profile_tag::PROFILE_TAG_SUPERSET });
-            tags.push_back({ RS2_STREAM_GYRO, -1, 0, 0, RS2_FORMAT_MOTION_XYZ32F, (int)odr::IMU_FPS_200, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_ACCEL, -1, 0, 0, RS2_FORMAT_MOTION_XYZ32F, (int)odr::IMU_FPS_100, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-
-            return tags;
-        };
-    };
-
     class rs400_imu_device  :      public d400_motion,
                                 public ds_advanced_mode_base,
                                 public firmware_logger_device
     {
     public:
-        rs400_imu_device(std::shared_ptr<context> ctx,
-                    const platform::backend_device_group group,
-                    bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-              d400_device(ctx, group),
-              d400_motion(ctx, group),
-              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command()) {}
+        rs400_imu_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
+            : device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
+            , d400_device( dev_info )
+            , d400_motion( dev_info )
+            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , firmware_logger_device(
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+        {
+        }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -947,17 +909,17 @@ namespace librealsense
                           public firmware_logger_device
     {
     public:
-        rs405_device(std::shared_ptr<context> ctx,
-                    const platform::backend_device_group group,
-                    bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-              d400_device(ctx, group),
-              d400_color(ctx, group),
-              d400_nonmonochrome(ctx, group),
-              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command()) {}
+        rs405_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
+            : device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
+            , d400_device( dev_info )
+            , d400_color( dev_info )
+            , d400_nonmonochrome( dev_info )
+            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , firmware_logger_device(
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+        {
+        }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -973,9 +935,26 @@ namespace librealsense
             int color_height = 480;
             int fps = usb3mode ?  30 : 10;
 
-            tags.push_back({ RS2_STREAM_COLOR, -1, color_width, color_height, RS2_FORMAT_RGB8, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_DEPTH, -1, depth_width, depth_height, RS2_FORMAT_Z16, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_INFRARED, -1, depth_width, depth_height, RS2_FORMAT_Y8, fps, profile_tag::PROFILE_TAG_SUPERSET });
+            auto format_conversion = get_format_conversion();
+
+            tags.push_back( { RS2_STREAM_COLOR,
+                              -1,  // index
+                              color_width, color_height,
+                              ( format_conversion == format_conversion::full ) ? RS2_FORMAT_RGB8 : RS2_FORMAT_YUYV,
+                              fps,
+                              profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT } );
+            tags.push_back( { RS2_STREAM_DEPTH,
+                              -1,  // index
+                              depth_width, depth_height,
+                              RS2_FORMAT_Z16,
+                              fps,
+                              profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT } );
+            tags.push_back( { RS2_STREAM_INFRARED,
+                              -1,  // index
+                              depth_width, depth_height,
+                              ( format_conversion == format_conversion::raw ) ? RS2_FORMAT_Y8I : RS2_FORMAT_Y8,
+                              fps,
+                              profile_tag::PROFILE_TAG_SUPERSET } );
 
             return tags;
         }
@@ -1017,21 +996,23 @@ namespace librealsense
                                public d400_thermal_tracking
     {
     public:
-        rs455_device(std::shared_ptr<context> ctx,
-                    const platform::backend_device_group group,
-                    bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-              d400_device(ctx, group),
-              d400_nonmonochrome(ctx, group),
-              d400_active(ctx, group),
-              d400_color(ctx,  group),
-              d400_motion(ctx, group),
-              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
-                    get_firmware_logs_command(),
-                    get_flash_logs_command()),
-              d400_thermal_tracking(d400_device::_thermal_monitor)
-        {}
+        rs455_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
+            : device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
+            , d400_device( dev_info )
+            , d400_nonmonochrome( dev_info )
+            , d400_active( dev_info )
+            , d400_color( dev_info )
+            , d400_motion( dev_info )
+            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , firmware_logger_device(
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+            , d400_thermal_tracking( d400_device::_thermal_monitor )
+        {
+            if( _fw_version >= firmware_version( 5, 16, 0, 0 ) )
+                register_feature(
+                    std::make_shared< gyro_sensitivity_feature >( get_raw_motion_sensor(), get_motion_sensor() ) );
+        }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -1061,70 +1042,70 @@ namespace librealsense
 
     };
 
-    std::shared_ptr<device_interface> d400_info::create(std::shared_ptr<context> ctx,
-                                                       bool register_device_notifications) const
+    std::shared_ptr< device_interface > d400_info::create_device()
     {
         using namespace ds;
 
-        if (_depth.size() == 0) throw std::runtime_error("Depth Camera not found!");
-        auto pid = _depth.front().pid;
-        platform::backend_device_group group{_depth, _hwm, _hid};
+        if( _group.uvc_devices.empty() )
+            throw std::runtime_error("Depth Camera not found!");
 
+        auto const dev_info = std::dynamic_pointer_cast< const d400_info >( shared_from_this() );
+        bool const register_device_notifications = true;
+
+        auto pid = _group.uvc_devices.front().pid;
         switch(pid)
         {
         case RS400_PID:
-            return std::make_shared<rs400_device>(ctx, group, register_device_notifications);
+            return std::make_shared< rs400_device >( dev_info, register_device_notifications );
         case RS405U_PID:
-            return std::make_shared<rs405u_device>(ctx, group, register_device_notifications);
+            return std::make_shared< rs405u_device >( dev_info, register_device_notifications );
         case RS410_PID:
         case RS460_PID:
-            return std::make_shared<rs410_device>(ctx, group, register_device_notifications);
+            return std::make_shared< rs410_device >( dev_info, register_device_notifications );
         case RS415_PID:
-            return std::make_shared<rs415_device>(ctx, group, register_device_notifications);
+            return std::make_shared< rs415_device >( dev_info, register_device_notifications );
         case RS416_PID:
-            return std::make_shared<rs416_device>(ctx, group, register_device_notifications);
+            return std::make_shared< rs416_device >( dev_info, register_device_notifications );
         case RS416_RGB_PID:
-            return std::make_shared<rs416_rgb_device>(ctx, group, register_device_notifications);
+            return std::make_shared< rs416_rgb_device >( dev_info, register_device_notifications );
         case RS420_PID:
-            return std::make_shared<rs420_device>(ctx, group, register_device_notifications);
+            return std::make_shared< rs420_device >( dev_info, register_device_notifications );
         case RS420_MM_PID:
-            return std::make_shared<rs420_mm_device>(ctx, group, register_device_notifications);
+            return std::make_shared< rs420_mm_device >( dev_info, register_device_notifications );
         case RS430_PID:
-            return std::make_shared<rs430_device>(ctx, group, register_device_notifications);
+            return std::make_shared< rs430_device >( dev_info, register_device_notifications );
         case RS430I_PID:
-            return std::make_shared<rs430i_device>(ctx, group, register_device_notifications);
+            return std::make_shared< rs430i_device >( dev_info, register_device_notifications );
         case RS430_MM_PID:
-            return std::make_shared<rs430_mm_device>(ctx, group, register_device_notifications);
+            return std::make_shared< rs430_mm_device >( dev_info, register_device_notifications );
         case RS430_MM_RGB_PID:
-            return std::make_shared<rs430_rgb_mm_device>(ctx, group, register_device_notifications);
+            return std::make_shared< rs430_rgb_mm_device >( dev_info, register_device_notifications );
         case RS435_RGB_PID:
-            return std::make_shared<rs435_device>(ctx, group, register_device_notifications);
+            return std::make_shared< rs435_device >( dev_info, register_device_notifications );
         case RS435I_PID:
-            return std::make_shared<rs435i_device>(ctx, group, register_device_notifications);
-        case RS465_PID:
-            return std::make_shared<rs465_device>(ctx, group, register_device_notifications);
+            return std::make_shared< rs435i_device >( dev_info, register_device_notifications );
         case RS_USB2_PID:
-            return std::make_shared<rs410_device>(ctx, group, register_device_notifications);
+            return std::make_shared< rs410_device >( dev_info, register_device_notifications );
         case RS400_IMU_PID:
-            return std::make_shared<rs400_imu_device>(ctx, group, register_device_notifications);
+            return std::make_shared< rs400_imu_device >( dev_info, register_device_notifications );
         case RS405_PID:
-            return std::make_shared<rs405_device>(ctx, group, register_device_notifications);
+            return std::make_shared< rs405_device >( dev_info, register_device_notifications );
         case RS455_PID:
-            return std::make_shared<rs455_device>(ctx, group, register_device_notifications);
+            return std::make_shared< rs455_device >( dev_info, register_device_notifications );
         case RS457_PID:
-            return std::make_shared<rs457_device>(ctx, group, register_device_notifications);
+            return std::make_shared< rs457_device >( dev_info, register_device_notifications );
         default:
             throw std::runtime_error( rsutils::string::from() << "Unsupported RS400 model! 0x" << std::hex
                                                               << std::setw( 4 ) << std::setfill( '0' ) << (int)pid );
         }
     }
 
-    std::vector<std::shared_ptr<device_info>> d400_info::pick_d400_devices(
+    std::vector<std::shared_ptr<d400_info>> d400_info::pick_d400_devices(
         std::shared_ptr<context> ctx,
         platform::backend_device_group& group)
     {
         std::vector<platform::uvc_device_info> chosen;
-        std::vector<std::shared_ptr<device_info>> results;
+        std::vector<std::shared_ptr<d400_info>> results;
 
         auto valid_pid = filter_by_product(group.uvc_devices, ds::rs400_sku_pid);
         auto group_devices = group_devices_and_hids_by_unique_id(group_devices_by_unique_id(valid_pid), group.hid_devices);
@@ -1180,19 +1161,11 @@ namespace librealsense
                 {
                     hwm_devices.push_back(hwm);
                 }
-                else
-                {
-                    LOG_DEBUG("d400_try_fetch_usb_device(...) failed.");
-                }
 
-                auto info = std::make_shared<d400_info>(ctx, devices, hwm_devices, hids);
+                auto info = std::make_shared<d400_info>( ctx, std::move( devices ), std::move( hwm_devices ), std::move( hids ) );
                 chosen.insert(chosen.end(), devices.begin(), devices.end());
                 results.push_back(info);
 
-            }
-            else
-            {
-                LOG_WARNING("DS5 group_devices is empty.");
             }
         }
 
@@ -1228,16 +1201,6 @@ namespace librealsense
     std::shared_ptr<matcher> rs415_device::create_matcher(const frame_holder& frame) const
     {
         std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get() };
-        return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
-    }
-
-    std::shared_ptr<matcher> rs465_device::create_matcher(const frame_holder& frame) const
-    {
-        std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get() };
-        // TODO - A proper matcher for High-FPS sensor is required
-        std::vector<stream_interface*> mm_streams = { _ds_motion_common->get_accel_stream().get(),
-                                                      _ds_motion_common->get_gyro_stream().get()};
-        streams.insert(streams.end(), mm_streams.begin(), mm_streams.end());
         return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
 
@@ -1336,7 +1299,7 @@ namespace librealsense
         std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get() };
         std::vector<stream_interface*> mm_streams = { _accel_stream.get(), _gyro_stream.get()};
         streams.insert(streams.end(), mm_streams.begin(), mm_streams.end());
-        if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        if( frame.frame->find_metadata( RS2_FRAME_METADATA_FRAME_COUNTER, nullptr ) )
         {
             return matcher_factory::create(RS2_MATCHER_DLR_C, streams);
         }

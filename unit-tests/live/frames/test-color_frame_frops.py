@@ -2,8 +2,6 @@
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #test:device D400*
-#test:device L500*
-#test:device SR300*
 #test:donotrun
 
 import logging

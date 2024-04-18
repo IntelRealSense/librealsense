@@ -1,6 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
-
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #pragma warning(push)
@@ -26,6 +25,10 @@
 // makes std::function conversions work
 #include <pybind11/functional.h>
 
+// and enable a bridge to/from rsutils::json
+#include "json.h"
+
+
 namespace py = pybind11;
 using namespace pybind11::literals;
 
@@ -49,5 +52,11 @@ using namespace pybind11::literals;
     }
 #define FN_FWD( CLS, FN_NAME, PY_ARGS, FN_ARGS, CODE )                                                                 \
     #FN_NAME, []( CLS & self, std::function < void PY_ARGS > callback ) {                                              \
-        self.FN_NAME( [&self,callback] FN_ARGS { FN_FWD_CALL( CLS, FN_NAME, CODE ); } );                                     \
+        self.FN_NAME( [&self,callback] FN_ARGS { FN_FWD_CALL( CLS, FN_NAME, CODE ) } );                                \
+    }
+#define FN_FWD_R( CLS, FN_NAME, RV, PY_ARGS, FN_ARGS, CODE )                                                           \
+    FN_FWD_R_( CLS, FN_NAME, decltype(RV), RV, PY_ARGS, FN_ARGS, CODE )
+#define FN_FWD_R_( CLS, FN_NAME, RET, RV, PY_ARGS, FN_ARGS, CODE )                                                     \
+    #FN_NAME, []( CLS & self, std::function < RET PY_ARGS > callback ) {                                               \
+        self.FN_NAME( [&self, callback] FN_ARGS { FN_FWD_CALL( CLS, FN_NAME, CODE ) return RV; } );                    \
     }

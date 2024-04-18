@@ -118,10 +118,17 @@ yuy2rgb::yuy2rgb()
 
 yuy2rgb::~yuy2rgb()
 {
-    perform_gl_action([&]()
+    try
     {
-        cleanup_gpu_resources();
-    }, []{});
+        perform_gl_action( [&]()
+        {
+            cleanup_gpu_resources();
+        }, [] {} );
+    }
+    catch(...)
+    {
+        LOG_DEBUG( "Error while cleaning up gpu resources" );
+    }
 }
 
 rs2::frame yuy2rgb::process_frame(const rs2::frame_source& src, const rs2::frame& f)
@@ -155,6 +162,8 @@ rs2::frame yuy2rgb::process_frame(const rs2::frame_source& src, const rs2::frame
         if (!res) return;
         
         auto gf = dynamic_cast<gpu_addon_interface*>((frame_interface*)res.get());
+        if (!gf)
+            throw std::runtime_error("Frame interface is not gpu addon interface");
         
         uint32_t yuy_texture;
         

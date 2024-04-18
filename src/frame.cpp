@@ -1,23 +1,62 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-#include "frame.h"
+#include "core/depth-frame.h"
+#include "composite-frame.h"
+#include "core/stream-profile-interface.h"
 #include "archive.h"
 #include "metadata-parser.h"
-#include "environment.h"
+#include "core/enum-helpers.h"
 
 #include <rsutils/string/from.h>
 
 
 namespace librealsense {
 
+
+std::ostream & operator<<( std::ostream & s, const frame_interface & f )
+{
+    if( !&f )
+    {
+        s << "[null]";
+    }
+    else
+    {
+        auto composite = dynamic_cast<const composite_frame *>(&f);
+        if( composite )
+        {
+            s << "[";
+            for( int i = 0; i < composite->get_embedded_frames_count(); i++ )
+            {
+                s << *composite->get_frame( i );
+            }
+            s << "]";
+        }
+        else
+        {
+            s << "[" << get_abbr_string( f.get_stream()->get_stream_type() );
+            s << f.get_stream()->get_unique_id();
+            s << " " << f.get_header();
+            s << "]";
+        }
+    }
+    return s;
+}
+
+
 std::ostream & operator<<( std::ostream & os, frame_header const & header )
 {
     os << "#" << header.frame_number;
-    os << " @" << ( rsutils::string::from() << std::fixed << std::setprecision( 2 ) << (double)header.timestamp ).str();
+    os << " @" << rsutils::string::from( header.timestamp );
     if( header.timestamp_domain != RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK )
         os << "/" << rs2_timestamp_domain_to_string( header.timestamp_domain );
     return os;
+}
+
+
+std::ostream & operator<<( std::ostream & os, frame_holder const & f )
+{
+    return os << *f.frame;
 }
 
 
@@ -30,8 +69,6 @@ frame::frame( frame && r )
     *this = std::move( r );
     if( owner )
         metadata_parsers = owner->get_md_parsers();
-    if( r.metadata_parsers )
-        metadata_parsers = std::move( r.metadata_parsers );
 }
 
 frame & frame::operator=( frame && r )
@@ -96,62 +133,18 @@ frame_interface * frame::publish( std::shared_ptr< archive_interface > new_owner
     return owner->publish_frame( this );
 }
 
-rs2_metadata_type frame::get_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const
+bool frame::find_metadata( rs2_frame_metadata_value frame_metadata, rs2_metadata_type * p_value ) const
 {
     if( ! metadata_parsers )
-        throw invalid_value_exception( rsutils::string::from()
-                                       << "metadata not available for " << get_string( get_stream()->get_stream_type() )
-                                       << " stream" );
-
-    auto parsers = metadata_parsers->equal_range( frame_metadata );
-    if( parsers.first
-        == metadata_parsers
-               ->end() )  // Possible user error - md attribute is not supported by this frame type
-        throw invalid_value_exception( rsutils::string::from()
-                                       << get_string( frame_metadata ) << " attribute is not applicable for "
-                                       << get_string( get_stream()->get_stream_type() ) << " stream " );
-
-    rs2_metadata_type result = -1;
-    bool value_retrieved = false;
-    std::string exc_str;
-    for( auto it = parsers.first; it != parsers.second; ++it )
-    {
-        try
-        {
-            result = it->second->get( *this );
-            value_retrieved = true;
-            break;
-        }
-        catch( invalid_value_exception & e )
-        {
-            exc_str = e.what();
-        }
-    }
-    if( ! value_retrieved )
-        throw invalid_value_exception( exc_str );
-
-    return result;
-}
-
-bool frame::supports_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const
-{
-    // verify preconditions
-    if( ! metadata_parsers )
-        return false;  // No parsers are available or no metadata was attached
-
-    bool ret = false;
-    auto found = metadata_parsers->equal_range( frame_metadata );
-    if( found.first == metadata_parsers->end() )
         return false;
+    auto parsers = metadata_parsers->equal_range( frame_metadata );
 
-    for( auto it = found.first; it != found.second; ++it )
-        if( it->second->supports( *this ) )
-        {
-            ret = true;
-            break;
-        }
+    bool value_retrieved = false;
+    for( auto it = parsers.first; it != parsers.second; ++it )
+        if( it->second->find( *this, p_value ) )
+            value_retrieved = true;
 
-    return ret;
+    return value_retrieved;
 }
 
 int frame::get_frame_data_size() const
@@ -159,13 +152,13 @@ int frame::get_frame_data_size() const
     return (int)data.size();
 }
 
-const byte * frame::get_frame_data() const
+const uint8_t * frame::get_frame_data() const
 {
-    const byte * frame_data = data.data();
+    const uint8_t * frame_data = data.data();
 
     if( on_release.get_data() )
     {
-        frame_data = static_cast< const byte * >( on_release.get_data() );
+        frame_data = static_cast< const uint8_t * >( on_release.get_data() );
     }
 
     return frame_data;
@@ -184,6 +177,18 @@ rs2_time_t frame::get_frame_timestamp() const
 unsigned long long frame::get_frame_number() const
 {
     return additional_data.frame_number;
+}
+
+double frame::calc_actual_fps() const
+{
+    auto const dt = ( additional_data.timestamp - additional_data.last_timestamp );
+    if( dt > 0. && additional_data.frame_number > additional_data.last_frame_number )
+    {
+        auto const n_frames = additional_data.frame_number - additional_data.last_frame_number;
+        return 1000. * n_frames / dt;
+    }
+
+    return 0.;  // Unknown actual FPS
 }
 
 rs2_time_t frame::get_frame_system_time() const
@@ -220,5 +225,6 @@ float depth_frame::get_distance( int x, int y ) const
 
     return pixel * get_units();
 }
+
 
 }  // namespace librealsense

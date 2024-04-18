@@ -5,8 +5,11 @@
 
 #pragma once
 
-#include "../include/librealsense2/hpp/rs_frame.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
+#include <librealsense2/hpp/rs_frame.hpp>
+#include <librealsense2/hpp/rs_processing.hpp>
+#include <src/core/depth-frame.h>
+#include <src/core/sensor-interface.h>
+#include <src/depth-sensor.h>
 #include "synthetic-stream.h"
 
 namespace librealsense
@@ -30,7 +33,7 @@ namespace librealsense
             auto in = reinterpret_cast<const Tin*>(in_data);
             auto out = reinterpret_cast<Tout*>(out_data);
 
-            bool fp = (std::is_floating_point<Tin>::value);
+            const bool fp = (std::is_floating_point<Tin>::value);
             const float round = fp ? 0.5f : 0.f;
 
             float input{};

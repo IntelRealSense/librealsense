@@ -1,8 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "metadata.h"
 #include "backend-v4l2.h"
+#include <src/platform/command-transfer.h>
+#include <src/platform/hid-data.h>
+#include <src/core/time-service.h>
+#include <src/core/notification.h>
 #include "backend-hid.h"
 #include "backend.h"
 #include "types.h"
@@ -175,7 +178,14 @@ namespace librealsense
 
         named_mutex::~named_mutex()
         {
-            unlock();
+            try
+            {
+                unlock();
+            }
+            catch(...)
+            {
+                LOG_DEBUG( "Error while unlocking mutex" );
+            }
         }
 
         void named_mutex::lock()
@@ -283,22 +293,34 @@ namespace librealsense
             : _type(type), _use_memory_map(use_memory_map), _index(index)
         {
             v4l2_buffer buf = {};
+            struct v4l2_plane planes[VIDEO_MAX_PLANES] = {};
             buf.type = _type;
             buf.memory = use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
             buf.index = index;
+            buf.m.offset = 0;
+            if (type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
+                buf.m.planes = planes;
+                buf.length = VIDEO_MAX_PLANES;
+            }
             if(xioctl(fd, VIDIOC_QUERYBUF, &buf) < 0)
                 throw linux_backend_exception("xioctl(VIDIOC_QUERYBUF) failed");
 
             // Prior to kernel 4.16 metadata payload was attached to the end of the video payload
             uint8_t md_extra = (V4L2_BUF_TYPE_VIDEO_CAPTURE==type) ? MAX_META_DATA_SIZE : 0;
             _original_length = buf.length;
+            _offset = buf.m.offset;
+            if (type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
+                _original_length = buf.m.planes[0].length;
+                _offset = buf.m.planes[0].m.mem_offset;
+                md_extra = 0;
+            }
             _length = _original_length + md_extra;
 
             if (use_memory_map)
             {
                 _start = static_cast<uint8_t*>(mmap(nullptr, _original_length,
                                                     PROT_READ | PROT_WRITE, MAP_SHARED,
-                                                    fd, buf.m.offset));
+                                                    fd, _offset));
                 if(_start == MAP_FAILED)
                     throw linux_backend_exception("mmap failed");
             }
@@ -314,11 +336,15 @@ namespace librealsense
         void buffer::prepare_for_streaming(int fd)
         {
             v4l2_buffer buf = {};
+            struct v4l2_plane planes[VIDEO_MAX_PLANES] = {};
             buf.type = _type;
             buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
             buf.index = _index;
             buf.length = _length;
-
+            if (_type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
+                buf.m.planes = planes;
+                buf.length = 1;
+            }
             if ( !_use_memory_map )
             {
                 buf.m.userptr = reinterpret_cast<unsigned long>(_start);
@@ -364,7 +390,7 @@ namespace librealsense
                 if (!_use_memory_map)
                 {
                     auto metadata_offset = get_full_length() - MAX_META_DATA_SIZE;
-                    memset((byte*)(get_frame_start()) + metadata_offset, 0, MAX_META_DATA_SIZE);
+                    memset((uint8_t *)(get_frame_start()) + metadata_offset, 0, MAX_META_DATA_SIZE);
                 }
 
                 LOG_DEBUG_V4L("Enqueue buf " << std::dec << _buf.index << " for fd " << fd);
@@ -483,20 +509,26 @@ namespace librealsense
             if (realpath(path.c_str(), usb_actual_path) != nullptr)
             {
                 path = std::string(usb_actual_path);
-                std::string val;
-                if(!(std::ifstream(path + "/version") >> val))
+                std::string camera_usb_version;
+                if(!(std::ifstream(path + "/version") >> camera_usb_version))
                     throw linux_backend_exception("Failed to read usb version specification");
 
-                auto kvp = std::find_if(usb_spec_names.begin(),usb_spec_names.end(),
-                     [&val](const std::pair<usb_spec, std::string>& kpv){ return (std::string::npos !=val.find(kpv.second));});
-                        if (kvp != std::end(usb_spec_names))
-                            res = kvp->first;
+                // go through the usb_name_to_spec map to find a usb type where the first element is contained in 'camera_usb_version'
+                // (contained and not strictly equal because of differences like "3.2" vs "3.20")
+                for(const auto usb_type : usb_name_to_spec ) {
+                    std::string usb_name = usb_type.first;
+                    if (std::string::npos != camera_usb_version.find(usb_name))
+                    {
+                         res = usb_type.second;
+                         return res;
+                    }
+                }
             }
             return res;
         }
 
         // Retrieve device video capabilities to discriminate video capturing and metadata nodes
-        static uint32_t get_dev_capabilities(const std::string dev_name)
+        static v4l2_capability get_dev_capabilities(const std::string dev_name)
         {
             // RAII to handle exceptions
             std::unique_ptr<int, std::function<void(int*)> > fd(
@@ -515,7 +547,7 @@ namespace librealsense
                     throw linux_backend_exception(rsutils::string::from() <<__FUNCTION__ << " xioctl(VIDIOC_QUERYCAP) failed");
             }
 
-            return cap.device_caps;
+            return cap;
         }
 
         void stream_ctl_on(int fd, v4l2_buf_type type=V4L2_BUF_TYPE_VIDEO_CAPTURE)
@@ -544,6 +576,64 @@ namespace librealsense
                     //D457 - fails on close (when num = 0)
                     //throw linux_backend_exception("xioctl(VIDIOC_REQBUFS) failed");
             }
+        }
+
+        bool get_devname_from_video_path(const std::string& video_path, std::string& dev_name)
+        {
+            std::ifstream uevent_file(video_path + "/uevent");
+            if (!uevent_file)
+            {
+                LOG_ERROR("Cannot access " + video_path + "/uevent");
+                return false;
+            }
+
+            std::string uevent_line, major_string, minor_string;
+            while (std::getline(uevent_file, uevent_line) && (major_string.empty() || minor_string.empty()))
+            {
+                if (uevent_line.find("MAJOR=") != std::string::npos)
+                {
+                    major_string = uevent_line.substr(uevent_line.find_last_of('=') + 1);
+                }
+                else if (uevent_line.find("MINOR=") != std::string::npos)
+                {
+                    minor_string = uevent_line.substr(uevent_line.find_last_of('=') + 1);
+                }
+            }
+            uevent_file.close();
+
+            if (major_string.empty() || minor_string.empty())
+            {
+                LOG_ERROR("No Major or Minor number found for " + video_path);
+                return false;
+            }
+
+            DIR * dir = opendir("/dev");
+            if (!dir)
+            {
+                LOG_ERROR("Cannot access /dev");
+                return false;
+            }
+            while (dirent * entry = readdir(dir))
+            {
+                std::string name = entry->d_name;
+                std::string path = "/dev/" + name;
+
+                struct stat st = {};
+                if (stat(path.c_str(), &st) < 0)
+                {
+                    continue;
+                }
+
+                if (std::stoi(major_string) == major(st.st_rdev) && std::stoi(minor_string) == minor(st.st_rdev))
+                {
+                    dev_name = path;
+                    closedir(dir);
+                    return true;
+                }
+            }
+            closedir(dir);
+
+            return false;
         }
 
         std::vector<std::string> v4l_uvc_device::get_video_paths()
@@ -577,8 +667,11 @@ namespace librealsense
                         //LOG_INFO("Skipping Video4Linux entry " << real_path << " - not a device");
                         continue;
                     }
+                    if (get_devname_from_video_path(real_path, name))
+                    {
+                        video_paths.push_back(real_path);
+                    }
                 }
-                video_paths.push_back(real_path);
             }
             closedir(dir);
 
@@ -641,8 +734,11 @@ namespace librealsense
 
         uvc_device_info v4l_uvc_device::get_info_from_usb_device_path(const std::string& video_path, const std::string& name)
         {
-            std::string busnum, devnum, devpath;
-            auto dev_name = "/dev/" + name;
+            std::string busnum, devnum, devpath, dev_name;
+            if (!get_devname_from_video_path(video_path, dev_name))
+            {
+                throw linux_backend_exception(rsutils::string::from() << "Unable to find dev_name from video_path: " << video_path);
+            }
 
             if (!is_usb_path_valid(video_path, dev_name, busnum, devnum, devpath))
             {
@@ -687,7 +783,7 @@ namespace librealsense
             info.device_path = video_path;
             info.unique_id = busnum + "-" + devpath + "-" + devnum;
             info.conn_spec = usb_specification;
-            info.uvc_capabilities = get_dev_capabilities(dev_name);
+            info.uvc_capabilities = get_dev_capabilities(dev_name).device_caps;
 
             return info;
         }
@@ -790,8 +886,19 @@ namespace librealsense
             // assign unique id for mipi by appending camera id to bus_info (bus_info is same for each mipi port)
             // Note - jetson can use only bus_info, as card is different for each sensor and metadata node.
             info.unique_id = bus_info + "-" + std::to_string(cam_id); // use bus_info as per camera unique id for mipi
+            // Get DFU node for MIPI camera
+            std::array<std::string, 2> dfu_device_paths = {"/dev/d4xx-dfu504", "/dev/d4xx-dfu-30-0010"};
+            for (const auto& dfu_device_path: dfu_device_paths) {
+                int vfd = open(dfu_device_path.c_str(), O_RDONLY | O_NONBLOCK);
+                if (vfd >= 0) {
+                    // Use legacy DFU device node used in firmware_update_manager
+                    info.dfu_device_path = dfu_device_path;
+                    ::close(vfd); // file exists, close file and continue to assign it
+                    break;
+                }
+            }
             info.conn_spec = usb_specification;
-            info.uvc_capabilities = get_dev_capabilities(dev_name);
+            info.uvc_capabilities = get_dev_capabilities(dev_name).device_caps;
 
             return info;
         }
@@ -821,6 +928,7 @@ namespace librealsense
                     std::string device_md_path = "video-rs-" + vs + "-md-" + std::to_string(i);
                     std::string video_path = "/dev/" + device_path;
                     std::string video_md_path = "/dev/" + device_md_path;
+                    std::string dfu_device_path = "/dev/d4xx-dfu-" + std::to_string(i);
                     uvc_device_info info{};
 
                     // Get Video node
@@ -841,10 +949,18 @@ namespace librealsense
                         continue;
                     }
 
+                    // Get DFU node for MIPI camera
+                    vfd = open(dfu_device_path.c_str(), O_RDONLY | O_NONBLOCK);
+
+                    if (vfd >= 0) {
+                        ::close(vfd); // file exists, close file and continue to assign it
+                        info.dfu_device_path = dfu_device_path;
+                    }
+
                     info.mi = vs.compare("imu") ? 0 : 4;
                     info.unique_id += "-" + std::to_string(i);
+                    info.uvc_capabilities &= ~(V4L2_CAP_META_CAPTURE); // clean caps
                     mipi_rs_enum_nodes.emplace_back(info, video_path);
-
                     // Get metadata node
                     // Check if file on video_md_path is exists
                     vfd = open(video_md_path.c_str(), O_RDONLY | O_NONBLOCK);
@@ -891,14 +1007,23 @@ namespace librealsense
                     }
                     else if(mipi_rs_enum_nodes.empty()) //video4linux devices that are not USB devices and not previously enumerated by rs links
                     {
+                        // filter out all posible codecs, work only with compatible driver
+                        static const std::regex rs_mipi_compatible(".vi:|ipu6");
                         info = get_info_from_mipi_device_path(video_path, name);
+                        if (!regex_search(info.unique_id, rs_mipi_compatible)) {
+                            continue;
+                        }
                     }
                     else // continue as we already have mipi nodes enumerated by rs links in uvc_nodes
                     {
                         continue;
                     }
-                    auto dev_name = "/dev/" + name;
-                    uvc_nodes.emplace_back(info, dev_name);
+
+                    std::string dev_name;
+                    if (get_devname_from_video_path(video_path, dev_name))
+                    {
+                        uvc_nodes.emplace_back(info, dev_name);
+                    }
                 }
                 catch(const std::exception & e)
                 {
@@ -1057,7 +1182,7 @@ namespace librealsense
             if(!_is_capturing && !_callback)
             {
                 v4l2_fmtdesc pixel_format = {};
-                pixel_format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                pixel_format.type = _dev.buf_type;
 
                 while (ioctl(_fd, VIDIOC_ENUM_FMT, &pixel_format) == 0)
                 {
@@ -1107,7 +1232,7 @@ namespace librealsense
                 set_format(profile);
 
                 v4l2_streamparm parm = {};
-                parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                parm.type = _dev.buf_type;
                 if(xioctl(_fd, VIDIOC_G_PARM, &parm) < 0)
                     throw linux_backend_exception("xioctl(VIDIOC_G_PARM) failed");
 
@@ -1202,7 +1327,7 @@ namespace librealsense
         {
             uint32_t device_fourcc = id;
             char fourcc_buff[sizeof(device_fourcc)+1];
-            librealsense::copy(fourcc_buff, &device_fourcc, sizeof(device_fourcc));
+            std::memcpy( fourcc_buff, &device_fourcc, sizeof( device_fourcc ) );
             fourcc_buff[sizeof(device_fourcc)] = 0;
             return fourcc_buff;
         }
@@ -1341,14 +1466,23 @@ namespace librealsense
                         {
                             FD_CLR(_fd,&fds);
                             v4l2_buffer buf = {};
-                            buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                            struct v4l2_plane planes[VIDEO_MAX_PLANES] = {};
+                            buf.type = _dev.buf_type;
                             buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
+                            if (_dev.buf_type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
+                                buf.m.planes = planes;
+                                buf.length = VIDEO_MAX_PLANES;
+                            }
                             if(xioctl(_fd, VIDIOC_DQBUF, &buf) < 0)
                             {
                                 LOG_DEBUG_V4L("Dequeued empty buf for fd " << std::dec << _fd);
                             }
                             LOG_DEBUG_V4L("Dequeued buf " << std::dec << buf.index << " for fd " << _fd << " seq " << buf.sequence);
-
+                            buf.type = _dev.buf_type;
+                            buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
+                            if (_dev.buf_type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
+                                buf.bytesused = buf.m.planes[0].bytesused;
+                            }
                             auto buffer = _buffers[buf.index];
                             buf_mgr.handle_buffer(e_video_buf, _fd, buf, buffer);
 
@@ -1363,6 +1497,11 @@ namespace librealsense
                                 // Drop partial and overflow frames (assumes D4XX metadata only)
                                 bool partial_frame = (!compressed_format && (buf.bytesused < buffer->get_full_length() - MAX_META_DATA_SIZE));
                                 bool overflow_frame = (buf.bytesused ==  buffer->get_length_frame_only() + MAX_META_DATA_SIZE);
+                                if (_dev.buf_type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
+                                    /* metadata size is one line of profile, temporary disable validation */
+                                    partial_frame = false;
+                                    overflow_frame = false;
+                                }
                                 if (partial_frame || overflow_frame)
                                 {
                                     auto percentage = (100 * buf.bytesused) / buffer->get_full_length();
@@ -1599,6 +1738,15 @@ namespace librealsense
             buf_mgr.set_md_attributes(bytesused, md_start);
         }
 
+        bool v4l_mipi_device::is_platform_jetson() const
+        {
+            v4l2_capability cap = get_dev_capabilities(_name);
+
+            std::string driver_str = reinterpret_cast<char*>(cap.driver);
+            // checking if "tegra" is part of the driver string
+            size_t pos = driver_str.find("tegra");
+            return pos != std::string::npos;
+        }
 
         void v4l_uvc_device::acquire_metadata(buffers_mgr& buf_mgr,fd_set &, bool compressed_format)
         {
@@ -1816,7 +1964,7 @@ namespace librealsense
             // Retrieve the caps one by one, first get pixel format, then sizes, then
             // frame rates. See http://linuxtv.org/downloads/v4l-dvb-apis for reference.
             v4l2_fmtdesc pixel_format = {};
-            pixel_format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+            pixel_format.type = _dev.buf_type;
             while (ioctl(_fd, VIDIOC_ENUM_FMT, &pixel_format) == 0)
             {
                 v4l2_frmsizeenum frame_size = {};
@@ -1954,19 +2102,19 @@ namespace librealsense
 
         void v4l_uvc_device::streamon() const
         {
-            stream_ctl_on(_fd);
+            stream_ctl_on(_fd, _dev.buf_type);
         }
 
         void v4l_uvc_device::streamoff() const
         {
-            stream_off(_fd);
+            stream_off(_fd, _dev.buf_type);
         }
 
         void v4l_uvc_device::negotiate_kernel_buffers(size_t num) const
         {
             req_io_buff(_fd, num, _name,
                         _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR,
-                        V4L2_BUF_TYPE_VIDEO_CAPTURE);
+                        _dev.buf_type);
         }
 
         void v4l_uvc_device::allocate_io_buffers(size_t buffers)
@@ -1975,7 +2123,7 @@ namespace librealsense
             {
                 for(size_t i = 0; i < buffers; ++i)
                 {
-                    _buffers.push_back(std::make_shared<buffer>(_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE, _use_memory_map, i));
+                    _buffers.push_back(std::make_shared<buffer>(_fd, _dev.buf_type, _use_memory_map, i));
                 }
             }
             else
@@ -2011,19 +2159,29 @@ namespace librealsense
                 else
                     throw linux_backend_exception("xioctl(VIDIOC_QUERYCAP) failed");
             }
-            if(!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE))
+            if(!(cap.capabilities & (V4L2_CAP_VIDEO_CAPTURE_MPLANE | V4L2_CAP_VIDEO_CAPTURE)))
                 throw linux_backend_exception(_name + " is no video capture device");
 
             if(!(cap.capabilities & V4L2_CAP_STREAMING))
                 throw linux_backend_exception(_name + " does not support streaming I/O");
-
+            _info.uvc_capabilities = cap.capabilities;
+            _dev.cap = cap;
+            /* supporting only one plane for IPU6 */
+            _dev.num_planes = 1;
+            if (cap.capabilities & V4L2_CAP_VIDEO_CAPTURE) {
+                _dev.buf_type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+            } else if (cap.capabilities & V4L2_CAP_VIDEO_CAPTURE_MPLANE) {
+                _dev.buf_type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+            } else {
+                throw linux_backend_exception(_name + " Buffer type is unknown!");
+            }
             // Select video input, video standard and tune here.
             v4l2_cropcap cropcap = {};
-            cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+            cropcap.type = _dev.buf_type;
             if(xioctl(_fd, VIDIOC_CROPCAP, &cropcap) == 0)
             {
                 v4l2_crop crop = {};
-                crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                crop.type = _dev.buf_type;
                 crop.c = cropcap.defrect; // reset to default
                 if(xioctl(_fd, VIDIOC_S_CROP, &crop) < 0)
                 {
@@ -2033,6 +2191,7 @@ namespace librealsense
                     default: break; // Errors ignored
                     }
                 }
+                _dev.cropcap = cropcap;
             } else {} // Errors ignored
         }
 
@@ -2054,11 +2213,25 @@ namespace librealsense
         void v4l_uvc_device::set_format(stream_profile profile)
         {
             v4l2_format fmt = {};
-            fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-            fmt.fmt.pix.width       = profile.width;
-            fmt.fmt.pix.height      = profile.height;
-            fmt.fmt.pix.pixelformat = (const big_endian<int> &)profile.format;
-            fmt.fmt.pix.field       = V4L2_FIELD_NONE;
+            fmt.type = _dev.buf_type;
+            if (_dev.buf_type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
+                fmt.fmt.pix_mp.width       = profile.width;
+                fmt.fmt.pix_mp.height      = profile.height;
+                fmt.fmt.pix_mp.pixelformat = (const big_endian<int> &)profile.format;
+                fmt.fmt.pix_mp.field       = V4L2_FIELD_NONE;
+                fmt.fmt.pix_mp.num_planes = _dev.num_planes;
+                fmt.fmt.pix_mp.flags = 0;
+
+                for (int i = 0; i < fmt.fmt.pix_mp.num_planes; i++) {
+                    fmt.fmt.pix_mp.plane_fmt[i].bytesperline = 0;
+                    fmt.fmt.pix_mp.plane_fmt[i].sizeimage = 0;
+                }
+            } else {
+                fmt.fmt.pix.width       = profile.width;
+                fmt.fmt.pix.height      = profile.height;
+                fmt.fmt.pix.pixelformat = (const big_endian<int> &)profile.format;
+                fmt.fmt.pix.field       = V4L2_FIELD_NONE;
+            }
             if(xioctl(_fd, VIDIOC_S_FMT, &fmt) < 0)
             {
                 throw linux_backend_exception(rsutils::string::from() << "xioctl(VIDIOC_S_FMT) failed, errno=" << errno);
@@ -2127,26 +2300,39 @@ namespace librealsense
 
         void v4l_uvc_meta_device::streamon() const
         {
-            if (_md_fd != -1)
+            bool jetson_platform = is_platform_jetson();
+            if ((_md_fd != -1) && jetson_platform)
             {
                 // D457 development - added for mipi device, for IR because no metadata there
                 // Metadata stream shall be configured first to allow sync with video node
-                stream_ctl_on(_md_fd,LOCAL_V4L2_BUF_TYPE_META_CAPTURE);
+                stream_ctl_on(_md_fd, _md_type);
             }
 
             // Invoke UVC streaming request
             v4l_uvc_device::streamon();
 
+            // Metadata stream configured last for IPU6 and it will be in sync with video node
+            if ((_md_fd != -1) && !jetson_platform)
+            {
+                stream_ctl_on(_md_fd, _md_type);
+            }
+
         }
 
         void v4l_uvc_meta_device::streamoff() const
         {
-            v4l_uvc_device::streamoff();
+            bool jetson_platform = is_platform_jetson();
+            // IPU6 platform should stop md, then video
+            if (jetson_platform)
+                v4l_uvc_device::streamoff();
+
             if (_md_fd != -1)
             {
                 // D457 development - added for mipi device, for IR because no metadata there
-                stream_off(_md_fd,LOCAL_V4L2_BUF_TYPE_META_CAPTURE);
+                stream_off(_md_fd, _md_type);
             }
+            if (!jetson_platform)
+                v4l_uvc_device::streamoff();
         }
 
         void v4l_uvc_meta_device::negotiate_kernel_buffers(size_t num) const
@@ -2160,7 +2346,7 @@ namespace librealsense
             }
             req_io_buff(_md_fd, num, _name,
                         _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR,
-                        LOCAL_V4L2_BUF_TYPE_META_CAPTURE);
+                        _md_type);
         }
 
         void v4l_uvc_meta_device::allocate_io_buffers(size_t buffers)
@@ -2174,7 +2360,7 @@ namespace librealsense
                     // D457 development - added for mipi device, for IR because no metadata there
                     if (_md_fd == -1)
                         continue;
-                    _md_buffers.push_back(std::make_shared<buffer>(_md_fd, LOCAL_V4L2_BUF_TYPE_META_CAPTURE, _use_memory_map, i));
+                    _md_buffers.push_back(std::make_shared<buffer>(_md_fd, _md_type, _use_memory_map, i));
                 }
             }
             else
@@ -2197,9 +2383,7 @@ namespace librealsense
             _md_fd = open(_md_name.c_str(), O_RDWR | O_NONBLOCK, 0);
             if(_md_fd < 0)
             {
-                // D457 development - added for mipi device, for IR because no metadata there
-                return;
-                throw linux_backend_exception(rsutils::string::from() << "Cannot open '" << _md_name);
+                return;  // Does not throw, MIPI device metadata not received through UVC, no metadata here may be valid
             }
 
             //The minimal video/metadata nodes syncer will be implemented by using two blocking calls:
@@ -2223,6 +2407,9 @@ namespace librealsense
 
             if(!(cap.capabilities & V4L2_CAP_STREAMING))
                 throw linux_backend_exception(_md_name + " does not support metadata streaming I/O");
+
+            if(cap.capabilities & V4L2_CAP_META_CAPTURE)
+                _md_type = LOCAL_V4L2_BUF_TYPE_META_CAPTURE;
         }
 
 
@@ -2232,9 +2419,7 @@ namespace librealsense
 
             if(::close(_md_fd) < 0)
             {
-                // D457 development - added for mipi device, for IR because no metadata there
-                return;
-                throw linux_backend_exception("v4l_uvc_meta_device: close(_md_fd) failed");
+                return;  // Does not throw, MIPI device metadata not received through UVC, no metadata here may be valid
             }
 
             _md_fd = 0;
@@ -2247,23 +2432,41 @@ namespace librealsense
 
             // Configure metadata node stream format
             v4l2_format fmt{ };
-            fmt.type = LOCAL_V4L2_BUF_TYPE_META_CAPTURE;
+            fmt.type = _md_type;
 
             if (xioctl(_md_fd, VIDIOC_G_FMT, &fmt))
             {
-                // D457 development - added for mipi device, for IR because no metadata there
-                return;
-                throw linux_backend_exception(_md_name + " ioctl(VIDIOC_G_FMT) for metadata node failed");
+                return;  // Does not throw, MIPI device metadata not received through UVC, no metadata here may be valid
             }
 
-            if (fmt.type != LOCAL_V4L2_BUF_TYPE_META_CAPTURE)
+            if (fmt.type != _md_type)
                 throw linux_backend_exception("ioctl(VIDIOC_G_FMT): " + _md_name + " node is not metadata capture");
 
             bool success = false;
+
             for (const uint32_t& request : { V4L2_META_FMT_D4XX, V4L2_META_FMT_UVC})
             {
                 // Configure metadata format - try d4xx, then fallback to currently retrieve UVC default header of 12 bytes
-                memcpy(fmt.fmt.raw_data,&request,sizeof(request));
+                memcpy(fmt.fmt.raw_data, &request, sizeof(request));
+                // use only for IPU6?
+                if ((_dev.cap.capabilities & V4L2_CAP_VIDEO_CAPTURE_MPLANE) && !is_platform_jetson())
+                {
+                    /* Sakari patch for videodev2.h. This structure will be within kernel > 6.4 */
+                    struct v4l2_meta_format {
+                        uint32_t    dataformat;
+                        uint32_t    buffersize;
+                        uint32_t    width;
+                        uint32_t    height;
+                        uint32_t    bytesperline;
+                    } meta;
+                    // copy fmt from g_fmt ioctl
+                    memcpy(&meta, fmt.fmt.raw_data, sizeof(meta));
+                    // set fmt width, d4xx metadata is only one line
+                    meta.dataformat = request;
+                    meta.width      = profile.width;
+                    meta.height     = 1;
+                    memcpy(fmt.fmt.raw_data, &meta, sizeof(meta));
+                }
 
                 if(xioctl(_md_fd, VIDIOC_S_FMT, &fmt) >= 0)
                 {
@@ -2317,7 +2520,7 @@ namespace librealsense
                 FD_CLR(_md_fd,&fds);
 
                 v4l2_buffer buf{};
-                buf.type = LOCAL_V4L2_BUF_TYPE_META_CAPTURE;
+                buf.type = _md_type;
                 buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
 
                 // W/O multiplexing this will create a blocking call for metadata node
@@ -2601,10 +2804,6 @@ namespace librealsense
                 results.push_back(hid_dev_info);
             });
             return results;
-        }
-        std::shared_ptr<time_service> v4l_backend::create_time_service() const
-        {
-            return std::make_shared<os_time_service>();
         }
 
         std::shared_ptr<device_watcher> v4l_backend::create_device_watcher() const

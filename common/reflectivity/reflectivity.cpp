@@ -1,9 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#include <numeric>
 #include "reflectivity.h"
-#include <types.h>
+#include <vector>
+#include <numeric>
+#include <algorithm>
+#include <stdexcept>
+#include <cmath>
+#include <limits>
 
 using namespace rs2;
 

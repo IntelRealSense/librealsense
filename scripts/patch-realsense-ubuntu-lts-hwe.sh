@@ -16,6 +16,11 @@ build_usbcore_modules=0
 rebuild_ko=0
 debug_uvc=0
 retpoline_retrofit=0
+skip_hid_patch=0
+apply_hid_gyro_patch=0
+skip_plf_patch=0
+build_only=0
+skip_md_patch=0
 
 #Parse input
 while test $# -gt 0; do
@@ -45,6 +50,10 @@ while test $# -gt 0; do
 		rebuild_ko=1; shift ;;
 	uvc_dbg)
 		debug_uvc=1;  shift ;;
+	ubuntu)
+		shift;  ubuntu_codename=$1; build_only=1; shift;;
+	kernel)
+		shift;  LINUX_BRANCH=$1; build_only=1; shift;;
 	*)
 		echo -e "\e[36mUnrecognized flag:  $1\e[0m"; shift;;
 	esac
@@ -59,16 +68,16 @@ fi
 
 #Include usability functions
 source ./scripts/patch-utils-hwe.sh
+LINUX_BRANCH=${LINUX_BRANCH:-$(uname -r)}
 
 # Get the required tools and headers to build the kernel
-sudo apt-get install linux-headers-generic build-essential git bc -y
+sudo apt-get install linux-headers-generic linux-headers-$LINUX_BRANCH build-essential git bc -y
 #Packages to build the patched modules
 require_package libusb-1.0-0-dev
 require_package libssl-dev
 
 #sudo apt-get build-dep linux-image-unsigned-$(uname -r)
 
-LINUX_BRANCH=$(uname -r)
 #Get kernel major.minor
 IFS='.' read -a kernel_version <<< ${LINUX_BRANCH}
 k_maj_min=$((${kernel_version[0]}*100 + ${kernel_version[1]}))
@@ -76,10 +85,19 @@ if [[ ( ${xhci_patch} -eq 1 ) && ( ${k_maj_min} -ne 404 ) ]]; then
 	echo -e "\e[43mThe xhci_patch flag is compatible with LTS branch 4.4 only, currently selected kernel is $(uname -r)\e[0m"
 	exit 1
 fi
+k_tick=$(echo ${kernel_version[2]} | awk -F'-' '{print $2}')
+# For version 5.15.0-72 hid patch already applied
+[ $k_maj_min -gt 515 ] && skip_hid_patch=1
+[ $k_maj_min -eq 515 ] && [ $k_tick -ge 72 ] && skip_hid_patch=1
+# linux-image-generic for focal is 5.4.0.156.152 is same hid as 5.4.232
+[ $k_maj_min -eq 504 ] && [ $k_tick -ge 156 ] && apply_hid_gyro_patch=1 && skip_hid_patch=1
+# For kernel versions 6+ powerline frequency already applied
+[ $k_maj_min -ge 600 ] && skip_plf_patch=1
+[ $k_maj_min -ge 605 ] && skip_md_patch=1
 
 # Construct branch name from distribution codename {xenial,bionic,..} and kernel version
 # ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
-ubuntu_codename=$(lsb_release -c|cut -f2)
+ubuntu_codename=${ubuntu_codename:-$(lsb_release -c|cut -f2)}
 if [ -z "${ubuntu_codename}" ];
 then
 	# Trusty Tahr shall use xenial code base
@@ -160,12 +178,22 @@ then
 		echo -e "\e[32mApplying patches for \e[36m${ubuntu_codename}-${kernel_branch}\e[32m line\e[0m"
 		echo -e "\e[32mApplying realsense-uvc patch\e[0m"
 		patch -p1 < ../scripts/realsense-camera-formats-${ubuntu_codename}-${kernel_branch}.patch || patch -p1 < ../scripts/realsense-camera-formats-${ubuntu_codename}-master.patch
-		echo -e "\e[32mApplying realsense-metadata patch\e[0m"
-		patch -p1 < ../scripts/realsense-metadata-${ubuntu_codename}-${kernel_branch}.patch || patch -p1 < ../scripts/realsense-metadata-${ubuntu_codename}-master.patch
-		echo -e "\e[32mApplying realsense-hid patch\e[0m"
-		patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-${kernel_branch}.patch || patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-master.patch
-		echo -e "\e[32mApplying realsense-powerlinefrequency-fix patch\e[0m"
-		patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix.patch
+		if [ ${skip_md_patch} -eq 0 ]; then
+			echo -e "\e[32mApplying realsense-metadata patch\e[0m"
+			patch -p1 < ../scripts/realsense-metadata-${ubuntu_codename}-${kernel_branch}.patch || patch -p1 < ../scripts/realsense-metadata-${ubuntu_codename}-master.patch
+		fi
+		if [ ${skip_hid_patch} -eq 0 ]; then
+			echo -e "\e[32mApplying realsense-hid patch\e[0m"
+			patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-${kernel_branch}.patch ||  patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-master.patch
+		fi
+		if [ ${apply_hid_gyro_patch} -eq 1 ]; then
+			echo -e "\e[32mApplying realsense-hid gyro patch\e[0m"
+			patch -p1 < ../scripts/realsense-hid-focal-hwe-5.4.232.patch
+		fi
+		if [ ${skip_plf_patch} -eq 0 ]; then
+			echo -e "\e[32mApplying realsense-powerlinefrequency-fix patch\e[0m"
+			patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix.patch || patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix-${ubuntu_codename}.patch
+		fi
 		# Applying 3rd-party patch that affects USB2 behavior
 		# See reference https://patchwork.kernel.org/patch/9907707/
 		if [ ${k_maj_min} -lt 418 ];
@@ -189,8 +217,10 @@ then
 			echo -e "\e[32mApplying 04-xhci-remove-unused-stopped_td-pointer patch\e[0m"
 			patch -p1 < ../scripts/04-xhci-remove-unused-stopped_td-pointer.patch
 		fi
-		echo -e "\e[32mIncrease UVC_URBs in uvcvideo\e[0m"
-		patch -p1 < ../scripts/uvcvideo_increase_UVC_URBS.patch
+		if [ ${skip_md_patch} -eq 0 ]; then
+			echo -e "\e[32mIncrease UVC_URBs in uvcvideo\e[0m"
+			patch -p1 < ../scripts/uvcvideo_increase_UVC_URBS.patch
+		fi
 		if [ $debug_uvc -eq 1 ]; then
 			echo -e "\e[32mApplying uvcvideo and videobuf2 debug patch\e[0m"
 			patch -p1 < ../scripts/uvc_debug.patch
@@ -198,8 +228,8 @@ then
 	fi
 
 	#Copy configuration
-	cp /usr/src/linux-headers-$(uname -r)/.config .
-	cp /usr/src/linux-headers-$(uname -r)/Module.symvers .
+	cp /usr/src/linux-headers-$LINUX_BRANCH/.config .
+	cp /usr/src/linux-headers-$LINUX_BRANCH/Module.symvers .
 
 	# Basic build for kernel modules
 	echo -e "\e[32mPrepare kernel modules configuration\e[0m"
@@ -227,8 +257,10 @@ then
 	if [[ ( $xhci_patch -eq 1 ) && ( $build_usbcore_modules -eq 0 ) ]]; then
 		make -j$(($(nproc)-1))
 		make modules -j$(($(nproc)-1))
-		sudo make modules_install -j$(($(nproc)-1))
-		sudo make install
+		if [ "$build_only" -eq 0 ]; then
+			sudo make modules_install -j$(($(nproc)-1))
+			sudo make install
+		fi
 		echo -e "\e[92m\n\e[1m`sudo make kernelrelease` Kernel has been successfully installed."
 		echo -e "\e[92m\n\e[1mScript has completed. Please reboot and load the newly installed Kernel from GRUB list.\n\e[0m"
 	exit 0
@@ -242,9 +274,14 @@ cp $KBASE/Module.symvers .
 
 echo -e "\e[32mCompiling uvc module\e[0m"
 make -j -C $KBASE M=$KBASE/drivers/media/usb/uvc/ modules
-echo -e "\e[32mCompiling accelerometer and gyro modules\e[0m"
-make -j -C $KBASE M=$KBASE/drivers/iio/accel modules
-make -j -C $KBASE M=$KBASE/drivers/iio/gyro modules
+if [ $k_maj_min -ge 605 ]; then
+	make -j -C $KBASE M=$KBASE/drivers/media/common/ modules
+fi
+if [ $skip_hid_patch -eq 0 ]; then
+	echo -e "\e[32mCompiling accelerometer and gyro modules\e[0m"
+	make -j -C $KBASE M=$KBASE/drivers/iio/accel modules
+	make -j -C $KBASE M=$KBASE/drivers/iio/gyro modules
+fi
 echo -e "\e[32mCompiling v4l2-core modules\e[0m"
 make -j -C $KBASE M=$KBASE/drivers/media/v4l2-core modules
 if [[ ( $xhci_patch -eq 1 ) || ( $debug_uvc -eq 1 ) ]]; then
@@ -254,8 +291,14 @@ fi
 
 # Copy the patched modules to a  location
 cp $KBASE/drivers/media/usb/uvc/uvcvideo.ko ~/$LINUX_BRANCH-uvcvideo.ko
-cp $KBASE/drivers/iio/accel/hid-sensor-accel-3d.ko ~/$LINUX_BRANCH-hid-sensor-accel-3d.ko
-cp $KBASE/drivers/iio/gyro/hid-sensor-gyro-3d.ko ~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko
+if [[ $k_maj_min -ge 605 ]]; then
+	cp $KBASE/drivers/media/common/uvc.ko ~/$LINUX_BRANCH-uvc.ko
+fi
+
+if [ $skip_hid_patch -eq 0 ]; then
+	cp $KBASE/drivers/iio/accel/hid-sensor-accel-3d.ko ~/$LINUX_BRANCH-hid-sensor-accel-3d.ko
+	cp $KBASE/drivers/iio/gyro/hid-sensor-gyro-3d.ko ~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko
+fi
 cp $KBASE/drivers/media/v4l2-core/videodev.ko ~/$LINUX_BRANCH-videodev.ko
 if [[ ( $xhci_patch -eq 1 ) || ( $debug_uvc -eq 1 ) ]]; then
 	cp $KBASE/drivers/media/common/videobuf2/videobuf2-common.ko ~/$LINUX_BRANCH-videobuf2-common.ko
@@ -278,12 +321,15 @@ if [ $build_usbcore_modules -eq 1 ]; then
 fi
 
 echo -e "\e[32mPatched kernels modules were created successfully\n\e[0m"
-
+if [ "$build_only" -eq 1 ]; then
+	exit 0
+fi
 # Load the newly-built modules
 # As a precausion start with unloading the core uvcvideo:
 try_unload_module uvcvideo
 try_unload_module videobuf2_v4l2
 [ ${k_maj_min} -ge 500 ] && try_unload_module videobuf2_common
+[ ${k_maj_min} -ge 605 ] && try_unload_module uvc
 try_unload_module videodev
 
 if [ $build_usbcore_modules -eq 1 ]; then
@@ -311,14 +357,18 @@ if [ $build_usbcore_modules -eq 1 ]; then
 	try_module_insert videobuf2_core ~/$LINUX_BRANCH-videobuf2-core.ko /lib/modules/`uname -r`/kernel/drivers/media/v4l2-core/videobuf2-core.ko
 	try_module_insert videobuf2_v4l2 ~/$LINUX_BRANCH-videobuf2-v4l2.ko /lib/modules/`uname -r`/kernel/drivers/media/v4l2-core/videobuf2-v4l2.ko
 fi
-
+if [ ${k_maj_min} -ge 605 ]; then
+        try_module_insert uvc ~/$LINUX_BRANCH-uvc.ko /lib/modules/`uname -r`/kernel/drivers/media/common/uvc.ko
+fi
 try_module_insert videodev            ~/$LINUX_BRANCH-videodev.ko            /lib/modules/`uname -r`/kernel/drivers/media/v4l2-core/videodev.ko
 if [[ ( ${k_maj_min} -ge 500 ) && ( $debug_uvc -eq 1 ) ]]; then
 	try_module_insert videobuf2-common ~/$LINUX_BRANCH-videobuf2-common.ko /lib/modules/`uname -r`/kernel/drivers/media/common/videobuf2/videobuf2-common.ko
 fi
 try_module_insert uvcvideo            ~/$LINUX_BRANCH-uvcvideo.ko            /lib/modules/`uname -r`/kernel/drivers/media/usb/uvc/uvcvideo.ko
-try_module_insert hid_sensor_accel_3d ~/$LINUX_BRANCH-hid-sensor-accel-3d.ko /lib/modules/`uname -r`/kernel/drivers/iio/accel/hid-sensor-accel-3d.ko
-try_module_insert hid_sensor_gyro_3d  ~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko  /lib/modules/`uname -r`/kernel/drivers/iio/gyro/hid-sensor-gyro-3d.ko
-
+if [ $skip_hid_patch -eq 0 ]; then
+	try_module_insert hid_sensor_accel_3d ~/$LINUX_BRANCH-hid-sensor-accel-3d.ko /lib/modules/`uname -r`/kernel/drivers/iio/accel/hid-sensor-accel-3d.ko
+	try_module_insert hid_sensor_gyro_3d  ~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko  /lib/modules/`uname -r`/kernel/drivers/iio/gyro/hid-sensor-gyro-3d.ko
+fi
 echo -e "\e[92m\n\e[1mScript has completed. Please consult the installation guide for further instruction.\n\e[0m"
+
 

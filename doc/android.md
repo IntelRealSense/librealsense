@@ -10,7 +10,7 @@ The AAR file is responsible to acquire camera access permissions and it also pro
 
 ## Ingredients
 Before jumping to the instructions section please ensure you have all the required accessories. 
-1. Android target device with Android version >= 4.4 that supports OTG feature.
+1. Android target device with Android version >= 6.0 that supports OTG feature.
 2. [Android Studio IDE](https://developer.android.com/studio).
 3. [USB3 OTG](https://en.wikipedia.org/wiki/USB_On-The-Go) cable.
 
@@ -21,19 +21,6 @@ Follow the [Java example](../wrappers/android/examples/java_example/readme.md) o
 You can also [build RealSense AAR from source](../wrappers/android/readme.md) and add the generated AAR as a dependency as described [here](https://developer.android.com/studio/projects/android-library#AddDependency).
 Graphical Java examples such as 'capture', 'recording' and 'playback' are available in the examples folder as part of the Android wrapper project.
 
-Below is an [example](https://play.google.com/store/apps/details?id=com.intel.realsense.camera) of an application with librealsense on the android platform. 
+Below is an example of an application with librealsense on the android platform. 
 
 ![](img/realsense-android.png)
-
-## Releases
-The Releases of the Android Wrapper can be found in the following repository:
-https://egiintel.jfrog.io/ui/repos/tree/General/librealsense
-
-The artifacts that are available in this repository are (to be used as written in the a.m. instructions):
- |File  |Description   |
-|---|---|
-|`camera-<version-number>.apk`|The camera application||
-|`librealsense-<version-number>.aar`|Handles camera permissions and  JNI based RealSense Java API.||
-|`librealsense-<version-number>.pom`|Representation of the Maven project||
-|`librealsense-<version-number>.zip`|Headers of the librealsense2 SDK||
-

@@ -16,11 +16,9 @@ doesn't. You may also want to use '//#test:flag custom-args'.
 See below for each of the custom options...
 */
 
-// We are not using the main from catch2
-#define CATCH_CONFIG_RUNNER
 #include <unit-tests/test.h>
 
-using namespace Catch::clara;
+using namespace Catch::Clara;
 
 int main( int argc, char * argv[] )
 {
@@ -59,8 +57,11 @@ int main( int argc, char * argv[] )
     if( ret )
         return ret;  // >0 == Error code
 
+#ifdef LIBCI_DEPENDENCY_realsense2
+    // rs2::log_to_console() is only available if realsense2 is a dependency of ours
     if( rslog )
         rs2::log_to_console( RS2_LOG_SEVERITY_DEBUG );
+#endif
 
     return session.run();
 }

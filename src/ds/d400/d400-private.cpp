@@ -5,7 +5,6 @@
 
 using namespace std;
 
-#define intrinsics_string(res) #res << "\t" << array2str((float_4&)table->rect_params[res]) << endl
 
 namespace librealsense
 {
@@ -46,7 +45,6 @@ namespace librealsense
                     case RS415_PID:
                     case RS416_RGB_PID:
                     case RS435_RGB_PID:
-                    case RS465_PID:
                         found = (result.mi == 5);
                         break;
                     default:
@@ -87,6 +85,23 @@ namespace librealsense
             return results;
         }
 
+        std::string extract_firmware_version_string( const std::vector< uint8_t > & fw_image )
+        {
+            auto version_offset = offsetof( platform::dfu_header, bcdDevice );
+            if( fw_image.size() < ( version_offset + sizeof( size_t ) ) )
+                throw std::runtime_error( "Firmware binary image might be corrupted - size is only: "
+                                          + std::to_string( fw_image.size() ) );
+
+            auto version = fw_image.data() + version_offset;
+            uint8_t major = *( version + 3 );
+            uint8_t minor = *( version + 2 );
+            uint8_t patch = *( version + 1 );
+            uint8_t build = *( version );
+
+            return std::to_string( major ) + "." + std::to_string( minor ) + "." + std::to_string( patch ) + "."
+                 + std::to_string( build );
+        }
+
         rs2_intrinsics get_d400_intrinsic_by_resolution(const vector<uint8_t>& raw_data, d400_calibration_table_id table_id, uint32_t width, uint32_t height)
         {
             switch (table_id)
@@ -112,6 +127,8 @@ namespace librealsense
         {
             auto table = check_calib<ds::d400_coefficients_table>(raw_data);
 
+#define intrinsics_string(res) #res << "\t" << array2str((float_4&)table->rect_params[res]) << endl
+
             LOG_DEBUG(endl
                 << "baseline = " << table->baseline << " mm" << endl
                 << "Rect params:  \t fX\t\t fY\t\t ppX\t\t ppY \n"
@@ -125,6 +142,8 @@ namespace librealsense
                 << intrinsics_string(res_480_270)
                 << intrinsics_string(res_1280_800)
                 << intrinsics_string(res_960_540));
+
+#undef intrinsics_string
 
             auto resolution = width_height_to_ds_rect_resolutions(width, height);
 
@@ -256,8 +275,8 @@ namespace librealsense
                 intrin(1, 1) * height / 2.f,
                 RS2_DISTORTION_INVERSE_BROWN_CONRADY  // The coefficients shall be use for undistort
             };
-            librealsense::copy(calc_intrinsic.coeffs, table->distortion, sizeof(table->distortion));
-            LOG_DEBUG(endl << array2str((float_4&)(calc_intrinsic.fx, calc_intrinsic.fy, calc_intrinsic.ppx, calc_intrinsic.ppy)) << endl);
+            std::memcpy(calc_intrinsic.coeffs, table->distortion, sizeof(table->distortion));
+            //LOG_DEBUG(endl << array2str((float_4&)(calc_intrinsic.fx, calc_intrinsic.fy, calc_intrinsic.ppx, calc_intrinsic.ppy)) << endl);
 
             static rs2_intrinsics ref{};
             if (memcmp(&calc_intrinsic, &ref, sizeof(rs2_intrinsics)))

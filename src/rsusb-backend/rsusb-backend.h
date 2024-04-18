@@ -4,7 +4,7 @@
 #pragma once
 
 #include "../backend.h"
-#include "../command_transfer.h"
+#include "../platform/command-transfer.h"
 
 namespace librealsense
 {
@@ -27,9 +27,6 @@ namespace librealsense
             // Not supported
             std::shared_ptr<hid_device> create_hid_device(hid_device_info info) const override;
             std::vector<hid_device_info> query_hid_devices() const override;
-
-            // don't change
-            virtual std::shared_ptr<time_service> create_time_service() const override;
         };
     }
 }

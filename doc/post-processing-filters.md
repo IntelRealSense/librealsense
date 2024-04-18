@@ -84,8 +84,7 @@ The filters preserve the original data and always generate a new (filtered) fram
 
 All filters support discreet as well as floating point input data formats.
 The floating point inputs are utilized by D400 stereo-based Depth cameras that support Disparity data representation.
-The discreet version of the filters is primarily used with SR300 camera, but also
-can be applied to D400 devices (though not recommended)
+The discreet version of the filters can be applied to D400 devices, though this is not recommended.
 
 
 ## Using Filters in application code

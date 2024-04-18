@@ -1,11 +1,15 @@
-apply plugin: 'com.android.application'
+plugins {
+    id 'com.android.application'
+}
 
 android {
-    compileSdkVersion 30
+    namespace 'com.intel.realsense.camera'
+    compileSdk defaultCompileSdkVersion
+
     defaultConfig {
         applicationId "com.intel.realsense.camera"
-        minSdkVersion 19
-        targetSdkVersion 30
+        minSdk defaultMinSdkVersion
+        targetSdk defaultTargetSdkVersion
         versionCode 5
         versionName "0.0.5"
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
@@ -39,29 +43,15 @@ task downloadFirmware() {
         println("downloading D4xx fw: " + d4xxFwVersion)
         new URL('https://librealsense.intel.com/Releases/RS4xx/FW/D4XX_FW_Image-' + d4xxFwVersion + '.bin').withInputStream{ i -> d4xxFile.withOutputStream{ it << i }}
     }
-    
-    def l51xFwVersion = getFwVersion('L51X_RECOMMENDED_FIRMWARE_VERSION')
-    def l51xFile = new File("$projectDir/src/main/res/raw/fw_l51x.bin")
-    if (!l51xFile.exists()) {
-        println("downloading L51x fw: " + l51xFwVersion)
-        new URL('https://librealsense.intel.com/Releases/L5xx/FW/L51X_FW_Image-' + l51xFwVersion + '.bin').withInputStream{ i -> l51xFile.withOutputStream{ it << i }}
-    }
-
-    def sr3xxFwVersion = getFwVersion('SR3XX_RECOMMENDED_FIRMWARE_VERSION')
-    def sr3xxFile = new File("$projectDir/src/main/res/raw/fw_sr3xx.bin")
-    if (!sr3xxFile.exists()) {
-        println("downloading SR3xx fw: " + sr3xxFwVersion)
-        new URL('https://librealsense.intel.com/Releases/SR300/FW/SR3XX_FW_Image-' + sr3xxFwVersion + '.bin').withInputStream{ i -> sr3xxFile.withOutputStream{ it << i }}
-    }
 }
 
 dependencies {
-    implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
-    testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
     implementation project(':librealsense')
-    implementation 'com.google.android.material:material:1.2.1'
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$appcompatVersion"
+    implementation "androidx.constraintlayout:constraintlayout:$constraintlayoutVersion"
+    implementation "com.google.android.material:material:$materialVersion"
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidextjunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$espressoCoreVersion"
 }

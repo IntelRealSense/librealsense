@@ -1,7 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-#test:device L500*
 #test:device D400* !D457
 
 import pyrealsense2 as rs, os, time, tempfile, platform, sys
@@ -176,11 +175,23 @@ try:
     depth_sensor.stop()
     depth_sensor.close()
 
+    color_filters = [f.get_info(rs.camera_info.name) for f in color_sensor.get_recommended_filters()]
+    depth_filters = [f.get_info(rs.camera_info.name) for f in depth_sensor.get_recommended_filters()]
+
+    test.check( len(color_filters) > 0 )
+    test.check( len(depth_filters) > 0 )
+
     ctx = rs.context()
     playback = ctx.load_device( file_name )
 
     depth_sensor = playback.first_depth_sensor()
     color_sensor = playback.first_color_sensor()
+
+    playback_color_filters = [f.get_info(rs.camera_info.name) for f in color_sensor.get_recommended_filters()]
+    playback_depth_filters = [f.get_info(rs.camera_info.name) for f in depth_sensor.get_recommended_filters()]
+
+    test.check_equal_lists( playback_color_filters, color_filters )
+    test.check_equal_lists( playback_depth_filters, depth_filters )
 
     restart_profiles()
 

@@ -3,6 +3,11 @@
 
 #include "ds-color-common.h"
 #include "metadata.h"
+#include <src/option.h>
+
+#include <src/platform/uvc-option.h>
+#include <src/ds/features/auto-exposure-roi-feature.h>
+#include <src/metadata-parser.h>
 
 #include <cstddef>
 
@@ -10,15 +15,18 @@ namespace librealsense
 {
     using namespace ds;
 
-    ds_color_common::ds_color_common(uvc_sensor& raw_color_ep,
-        synthetic_sensor& color_ep,
-        firmware_version fw_version,
-        std::shared_ptr<hw_monitor> hw_monitor, device* owner) :
-        _raw_color_ep(raw_color_ep),
-        _color_ep(color_ep),
-        _fw_version(fw_version),
-        _hw_monitor(hw_monitor),
-        _owner(owner) {}
+    ds_color_common::ds_color_common( const std::shared_ptr< uvc_sensor > & raw_color_ep,
+                                      synthetic_sensor & color_ep,
+                                      firmware_version fw_version,
+                                      std::shared_ptr< hw_monitor > hw_monitor,
+                                      device * owner )
+        : _raw_color_ep( raw_color_ep )
+        , _color_ep( color_ep )
+        , _fw_version( fw_version )
+        , _hw_monitor( hw_monitor )
+        , _owner( owner )
+    {
+    }
 
     void ds_color_common::register_color_options()
     {
@@ -27,7 +35,6 @@ namespace librealsense
         _color_ep.register_pu(RS2_OPTION_SATURATION);
         _color_ep.register_pu(RS2_OPTION_GAMMA);
         _color_ep.register_pu(RS2_OPTION_SHARPNESS);
-        _color_ep.register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
 
         auto white_balance_option = std::make_shared<uvc_pu_option>(_raw_color_ep, RS2_OPTION_WHITE_BALANCE);
         _color_ep.register_option(RS2_OPTION_WHITE_BALANCE, white_balance_option);
@@ -37,14 +44,6 @@ namespace librealsense
             std::make_shared<auto_disabling_control>(
                 white_balance_option,
                 auto_white_balance_option));
-
-
-        _color_ep.register_option(RS2_OPTION_POWER_LINE_FREQUENCY,
-            std::make_shared<uvc_pu_option>(_raw_color_ep, RS2_OPTION_POWER_LINE_FREQUENCY,
-                std::map<float, std::string>{ { 0.f, "Disabled"},
-                { 1.f, "50Hz" },
-                { 2.f, "60Hz" },
-                { 3.f, "Auto" }, }));
     }
 
     void ds_color_common::register_standard_options()
@@ -63,24 +62,15 @@ namespace librealsense
             std::make_shared<auto_disabling_control>(
                 gain_option,
                 auto_exposure_option));
-
-        // Starting with firmware 5.10.9, auto-exposure ROI is available for color sensor
-        if (_fw_version >= firmware_version("5.10.9.0"))
-        {
-            roi_sensor_interface* roi_sensor;
-            if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&_color_ep)))
-                roi_sensor->set_roi_method(std::make_shared<ds_auto_exposure_roi_method>(*_hw_monitor, ds::fw_cmd::SETRGBAEROI));
-        }
     }
 
     void ds_color_common::register_metadata()
     {
         _color_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
-        _color_ep.register_metadata(RS2_FRAME_METADATA_ACTUAL_FPS, std::make_shared<ds_md_attribute_actual_fps>(false, [](const rs2_metadata_type& param)
-            {return param * 100; })); //the units of the exposure of the RGB sensor are 100 microseconds so the md_attribute_actual_fps need the lambda to convert it to microseconds
+        _color_ep.register_metadata(RS2_FRAME_METADATA_ACTUAL_FPS, std::make_shared<ds_md_attribute_actual_fps>());
 
         // attributes of md_capture_timing
-        auto md_prop_offset = offsetof(metadata_raw, mode) +
+        auto md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_rgb_mode, rgb_mode) +
             offsetof(md_rgb_normal_mode, intel_capture_timing);
 
@@ -89,7 +79,7 @@ namespace librealsense
             make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
 
         // attributes of md_rgb_control
-        md_prop_offset = offsetof(metadata_raw, mode) +
+        md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_rgb_mode, rgb_mode) +
             offsetof(md_rgb_normal_mode, intel_rgb_control);
 
@@ -97,14 +87,14 @@ namespace librealsense
         _color_ep.register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, make_attribute_parser(&md_rgb_control::manual_exp, md_rgb_control_attributes::manual_exp_attribute, md_prop_offset));
 
         // attributes of md_capture_stats
-        md_prop_offset = offsetof(metadata_raw, mode) +
+        md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_rgb_mode, rgb_mode) +
             offsetof(md_rgb_normal_mode, intel_capture_stats);
 
         _color_ep.register_metadata(RS2_FRAME_METADATA_WHITE_BALANCE, make_attribute_parser(&md_capture_stats::white_balance, md_capture_stat_attributes::white_balance_attribute, md_prop_offset));
 
         // attributes of md_rgb_control
-        md_prop_offset = offsetof(metadata_raw, mode) +
+        md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_rgb_mode, rgb_mode) +
             offsetof(md_rgb_normal_mode, intel_rgb_control);
 
