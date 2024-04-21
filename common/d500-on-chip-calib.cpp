@@ -336,6 +336,7 @@ namespace rs2
 
     void d500_autocalib_notification_model::update_ui_after_abort_called(ux_window& win, int x, int y)
     {
+        ImGui::SetCursorScreenPos({ float(x + 50), float(y + 50) });
         ImGui::Text("%s", "Calibration Aborting");
         ImGui::SetCursorScreenPos({ float(x + 10), float(y + 50) });
         ImGui::PushFont(win.get_large_font());

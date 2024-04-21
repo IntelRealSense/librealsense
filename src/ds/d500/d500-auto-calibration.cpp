@@ -175,6 +175,11 @@ namespace librealsense
             {
                 progress_callback->on_update_progress(calib_answer.calibration_progress);
             }
+			// to be checked after HKR response about this case
+            if (_result == d500_calibration_result::RS2_D500_CALIBRATION_RESULT_FAILED_TO_RUN)
+            {
+                break;
+            }
             bool is_timed_out(std::chrono::high_resolution_clock::now() - start_time > std::chrono::milliseconds(timeout_ms));
             if (is_timed_out)
             {
@@ -183,15 +188,26 @@ namespace librealsense
         } while (_state != d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE);
 
         // printing new calibration to log
-        if (_result == d500_calibration_result::RS2_D500_CALIBRATION_RESULT_SUCCESS)
+        if (_state != d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE)
         {
-            auto depth_calib = *reinterpret_cast<ds::d500_coefficients_table*>(&calib_answer.depth_calibration);
-            LOG_INFO("Depth new Calibration = \n" + depth_calib.to_string());
+            if (_result == d500_calibration_result::RS2_D500_CALIBRATION_RESULT_SUCCESS)
+            {
+                auto depth_calib = *reinterpret_cast<ds::d500_coefficients_table*>(&calib_answer.depth_calibration);
+                LOG_INFO("Depth new Calibration = \n" + depth_calib.to_string());
+            }
+            else if (_result == d500_calibration_result::RS2_D500_CALIBRATION_RESULT_FAILED_TO_CONVERGE)
+            {
+                LOG_ERROR("Calibration completed but algorithm failed");
+                throw std::runtime_error("Calibration completed but algorithm failed");
+            }
         }
         else
         {
-            LOG_ERROR("Calibration completed but algorithm failed");
-            throw std::runtime_error("Calibration completed but algorithm failed");
+            if (_result == d500_calibration_result::RS2_D500_CALIBRATION_RESULT_FAILED_TO_RUN)
+            {
+                LOG_ERROR("Calibration failed to run");
+                throw std::runtime_error("Calibration failed to run");
+            }
         }
 
         return res;
