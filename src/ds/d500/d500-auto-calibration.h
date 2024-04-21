@@ -60,7 +60,6 @@ namespace librealsense
         void get_mode_from_json(const std::string& json);
         std::vector<uint8_t> update_calibration_status(int timeout_ms, rs2_update_progress_callback_sptr progress_callback);
         std::vector<uint8_t> update_abort_status();
-        void get_mode_from_json(const std::string& json);
         std::shared_ptr<hw_monitor> _hw_monitor;
         d500_calibration_mode _mode;
         d500_calibration_state _state;

@@ -8,11 +8,12 @@
 namespace rs2
 {
     d500_on_chip_calib_manager::d500_on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub,
-        device_model& model, device dev)
+        device_model& model, device dev, std::shared_ptr<subdevice_model> sub_safety)
         : process_manager("D500 On-Chip Calibration"),
         _model(model),
         _dev(dev),
-        _sub(sub)
+        _sub(sub),
+        _sub_safety(sub_safety)
     {
         if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) &&
             std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) != "D500")
@@ -80,6 +81,14 @@ namespace rs2
 
     void d500_on_chip_calib_manager::prepare_for_calibration()
     {
+        // safety sensor in service mode - if safety sensor exists
+        if (_sub_safety->s->is<rs2::safety_sensor>())
+        {
+            auto safety_sensor = _sub_safety->s->as<rs2::safety_sensor>();
+            set_option_if_needed<rs2::safety_sensor>(safety_sensor,
+                RS2_OPTION_SAFETY_MODE, RS2_SAFETY_MODE_SERVICE);
+        }
+
         // set depth preset as default preset, turn projector ON and depth AE ON
         if (_sub->s->is <rs2::depth_sensor>())
         {
@@ -274,46 +283,6 @@ namespace rs2
         ImGui::PopStyleColor(2);
     }
 
-
-    void d500_autocalib_notification_model::calibration_button(ux_window& win, int x, int y, int bar_width)
-    {
-        using namespace std;
-        using namespace chrono;
-
-        ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 31) });
-
-        auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
-        ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
-
-        std::string activation_cal_str = "Calibrate";
-        if (update_state == RS2_CALIB_STATE_INIT_DRY_RUN)
-            activation_cal_str = "Calibrate Dry Run";
-
-        std::string calibrate_button_name = rsutils::string::from() << activation_cal_str << "##self" << index;
-
-        ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 28) });
-        if (ImGui::Button(calibrate_button_name.c_str(), { float(bar_width), 20.f }))
-        {
-            //get_manager().restore_workspace([this](std::function<void()> a) { a(); });
-            get_manager().reset();
-            //get_manager().retry_times = 0;
-            if (update_state == RS2_CALIB_STATE_INIT_DRY_RUN)
-            {
-                get_manager().action = d500_on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB_DRY_RUN;
-            }
-
-            get_manager().prepare_for_calibration();
-
-            auto _this = shared_from_this();
-            auto invoke = [_this](std::function<void()> action) {_this->invoke(action); };
-            get_manager().start(invoke);
-            update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
-            enable_dismiss = false;
-        }
-        ImGui::PopStyleColor(2);
-    }
-
     void d500_autocalib_notification_model::draw_abort(ux_window& win, int x, int y)
     {
         ImGui::SetCursorScreenPos({ float(x + width - 105), float(y + height - 25) });
@@ -336,7 +305,7 @@ namespace rs2
 
     void d500_autocalib_notification_model::update_ui_after_abort_called(ux_window& win, int x, int y)
     {
-        ImGui::SetCursorScreenPos({ float(x + 50), float(y + 50) });
+        ImGui::SetCursorScreenPos({ float(x + 10), float(y) });
         ImGui::Text("%s", "Calibration Aborting");
         ImGui::SetCursorScreenPos({ float(x + 10), float(y + 50) });
         ImGui::PushFont(win.get_large_font());

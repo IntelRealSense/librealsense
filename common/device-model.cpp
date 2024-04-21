@@ -3429,6 +3429,15 @@ namespace rs2
         std::string& error_message)
     {
         bool has_autocalib = false;
+        std::shared_ptr< subdevice_model> sub_safety;
+        for (auto&& sub : subdevices)
+        {
+            if (sub->s->is<rs2::safety_sensor>())
+            {
+                sub_safety = sub;
+                break;
+            }
+        }
 
         bool streaming = is_streaming();
         ImGuiSelectableFlags avoid_selection_flag = (streaming) ? ImGuiSelectableFlags_Disabled : 0;
@@ -3501,11 +3510,11 @@ namespace rs2
                         << "Dry Run On-Chip Calibration"
                         << (streaming ? " (Disabled while streaming)" : "");
                     ImGui::SetTooltip("%s", tooltip.c_str());
-                has_autocalib = true;
-                continue;
+                    continue;
+                }
             }
+            has_autocalib = true;
         }
         return has_autocalib;
     }
-
 }
