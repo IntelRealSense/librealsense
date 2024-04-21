@@ -27,16 +27,21 @@ namespace rs2
         std::map<rs2_point_cloud_label, float3> label_to_color3f;
 
         label_to_color3f[RS2_POINT_CLOUD_LABEL_UNKNOWN] = ORANGE_COL;
-        label_to_color3f[RS2_POINT_CLOUD_LABEL_UNDEFINED] = DARK_PURPLE_COL;
-        label_to_color3f[RS2_POINT_CLOUD_LABEL_INVALID] = DARK_PURPLE_COL;
+        label_to_color3f[RS2_POINT_CLOUD_LABEL_UNDEFINED] = ORANGE_COL;
+        label_to_color3f[RS2_POINT_CLOUD_LABEL_INVALID] = ORANGE_COL;
+        label_to_color3f[RS2_POINT_CLOUD_LABEL_GAP] = ORANGE_COL;
+
         label_to_color3f[RS2_POINT_CLOUD_LABEL_GROUND] = WHITE_COL;
         label_to_color3f[RS2_POINT_CLOUD_LABEL_NEAR_GROUND] = GREEN_COL;
-        label_to_color3f[RS2_POINT_CLOUD_LABEL_OBSTACLE] = RED_COL;
         label_to_color3f[RS2_POINT_CLOUD_LABEL_OVERHEAD] = TURQUOISE_COL;
         label_to_color3f[RS2_POINT_CLOUD_LABEL_ABOVE_CEILING_HEIGHT] = BLUE_COL;
-        label_to_color3f[RS2_POINT_CLOUD_LABEL_GAP] = PINK_COL;
         label_to_color3f[RS2_POINT_CLOUD_LABEL_MASKED] = GREY_COL;
-        label_to_color3f[RS2_POINT_CLOUD_LABEL_CROPPED] = YELLOW_COL;
+        label_to_color3f[RS2_POINT_CLOUD_LABEL_CLIFF] = DARK_PURPLE_COL;
+        label_to_color3f[RS2_POINT_CLOUD_LABEL_OBSTACLE] = PINK_COL;
+        label_to_color3f[RS2_POINT_CLOUD_LABEL_OBSTACLE_DANGER] = RED_COL;
+        label_to_color3f[RS2_POINT_CLOUD_LABEL_OBSTACLE_WARNING] = YELLOW_COL;
+
+
 
         return label_to_color3f;
     }
