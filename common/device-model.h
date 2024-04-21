@@ -451,6 +451,10 @@ namespace rs2
             std::shared_ptr< sw_update::dev_updates_profile::update_profile > update_profile,
             bool reset_delay = false );
 
+        void draw_device_panel_auto_calib(viewer_model& viewer, bool& something_to_show, std::string& error_message);
+        bool draw_device_panel_auto_calib_d400(viewer_model& viewer, bool& something_to_show, std::string& error_message);
+        bool draw_device_panel_auto_calib_d500(viewer_model& viewer, bool& something_to_show, std::string& error_message);
+
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
         rsutils::time::periodic_timer      _update_readonly_options_timer;

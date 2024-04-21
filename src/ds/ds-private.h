@@ -134,7 +134,9 @@ namespace librealsense
             GET_HKR_CONFIG_TABLE = 0xA7, // HKR Get Internal sub calibration table
             CALIBRESTOREEPROM = 0xA8, // HKR Store EEPROM Calibration
             RGB_TNR = 0xAA,      // RGB Temporal Noise Reduction
-            GET_FW_LOGS = 0xB4 // Get FW logs extended format
+            GET_FW_LOGS = 0xB4, // Get FW logs extended format
+            SET_CALIB_MODE = 0xB8,      // Set Calibration Mode
+            GET_CALIB_STATUS = 0xB9      // Get Calibration Status
         };
 
 #define TOSTRING(arg) #arg
@@ -267,6 +269,8 @@ namespace librealsense
             uint32_t                table_size;     // full size including: TOC header + TOC + actual tables
             uint32_t                param;          // This field content is defined ny table type
             uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
+
+            std::string to_string() const;
         };
 
         enum ds_rect_resolutions : unsigned short
