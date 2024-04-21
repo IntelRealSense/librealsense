@@ -180,7 +180,7 @@ namespace librealsense
             {
                 progress_callback->on_update_progress(calib_answer.calibration_progress);
             }
-			// to be checked after HKR response about this case
+            // to be checked after HKR response about this case
             if (_result == d500_calibration_result::RS2_D500_CALIBRATION_RESULT_FAILED_TO_RUN)
             {
                 break;
