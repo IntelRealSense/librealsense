@@ -168,9 +168,14 @@ namespace librealsense
             calib_answer = *reinterpret_cast<d500_calibration_answer*>(res.data());
             _state = static_cast<d500_calibration_state>(calib_answer.calibration_state);
             _result = static_cast<d500_calibration_result>(calib_answer.calibration_result);
-            LOG_INFO("Calibration in progress - State = " << d500_calibration_state_strings[static_cast<int>(_state)]
-                << ", progress = " << static_cast<int>(calib_answer.calibration_progress)
-                << ", result = " << d500_calibration_result_strings[static_cast<int>(_result)]);
+            std::stringstream ss;
+            ss << "Calibration in progress - State = " << d500_calibration_state_strings[static_cast<int>(_state)];
+            if (_state == d500_calibration_state::RS2_D500_CALIBRATION_STATE_PROCESS)
+            {
+                ss << ", progress = " << static_cast<int>(calib_answer.calibration_progress);
+                ss << ", result = " << d500_calibration_result_strings[static_cast<int>(_result)];
+            }
+            LOG_INFO(ss.str().c_str());
             if (progress_callback)
             {
                 progress_callback->on_update_progress(calib_answer.calibration_progress);
@@ -185,7 +190,9 @@ namespace librealsense
             {
                 throw std::runtime_error("OCC Calibration Timeout");
             }
-        } while (_state != d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE);
+        } while (_state != d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE &&
+            // if state is back to idle, it means that Abort action has been called
+            _state != d500_calibration_state::RS2_D500_CALIBRATION_STATE_IDLE);
 
         // printing new calibration to log
         if (_state != d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE)
