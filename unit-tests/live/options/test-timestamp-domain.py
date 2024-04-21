@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-# test:device D400*
+# test:device each(D400*)
 
 import time
 import pyrealsense2 as rs
@@ -35,7 +35,7 @@ def set_and_verify_timestamp_domain(sensor, frame_queue, global_time_enabled: bo
     expected_ts_domain = rs.timestamp_domain.global_time if global_time_enabled else \
         rs.timestamp_domain.hardware_clock
 
-    test.check_equal(sensor.get_option(rs.option.global_time_enabled), global_time_enabled)
+    test.check_equal(bool(sensor.get_option(rs.option.global_time_enabled)), global_time_enabled)
 
     test.info(str(frame.get_profile().stream_type()) + " frame", frame)
     test.check_equal(frame.get_frame_timestamp_domain(), expected_ts_domain)

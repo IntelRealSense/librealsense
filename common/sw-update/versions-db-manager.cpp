@@ -1,42 +1,23 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+
+#include "versions-db-manager.h"
+#include <rsutils/json.h>
+#include <rsutils/os/os.h>
+#include <rsutils/easylogging/easyloggingpp.h>
 #include <fstream>
 #include <unordered_map>
 #include <algorithm>
 #include <regex>
 
-#include "json.hpp"
-#include "versions-db-manager.h"
-#include <types.h>
 
 namespace rs2
 {
 
     namespace sw_update
     {
-        using json = nlohmann::json;
+        using json = rsutils::json;
         using namespace http;
-
-        // Get current platform
-        constexpr const char* PLATFORM =
-
-#ifdef _WIN64
-            "Windows amd64";
-#elif _WIN32
-            "Windows x86";
-#elif __linux__
-#ifdef __arm__
-            "Linux arm";
-#else
-            "Linux amd64";
-#endif
-#elif __APPLE__
-            "Mac OS";
-#elif __ANDROID__
-            "Linux arm";
-#else
-            "";
-#endif
 
         query_status_type versions_db_manager::query_versions(const std::string &device_name, component_part_type component, const update_policy_type policy, version& out_version)
         {
@@ -47,7 +28,7 @@ namespace rs2
                 return DB_LOAD_FAILURE;
             }
 
-            std::string platform(PLATFORM);
+            std::string platform = rsutils::os::get_platform_name();
 
             std::string up_str(to_string(policy));
             std::string comp_str(to_string(component));
@@ -77,7 +58,7 @@ namespace rs2
             // Check if server versions are loaded
             if (!_server_versions_loaded) return false;
 
-            std::string platform = PLATFORM;
+            std::string platform = rsutils::os::get_platform_name();
 
             std::string component_str(to_string(component));
 
@@ -110,7 +91,7 @@ namespace rs2
             case FIRMWARE: return "FIRMWARE";
                 break;
             default:
-                LOG_ERROR("Unknown component type: " + component);
+                LOG_ERROR( "Unknown component type: " << component );
                 break;
             }
             return "";
@@ -126,7 +107,7 @@ namespace rs2
             case ESSENTIAL: return "ESSENTIAL";
                 break;
             default:
-                LOG_ERROR("Unknown policy type: " + policy);
+                LOG_ERROR( "Unknown policy type: " << policy );
                 break;
             }
             return "";
@@ -147,7 +128,7 @@ namespace rs2
                 return true;
             }
 
-            LOG_ERROR("Unknown component type: " + component_str);
+            LOG_ERROR( "Unknown component type: " << component_str );
             return false;
         }
         bool from_string(const std::string &policy_str, update_policy_type& policy_val)
@@ -164,7 +145,7 @@ namespace rs2
                 return true;
             }
 
-            LOG_ERROR("Unknown policy type: " + policy_str);
+            LOG_ERROR( "Unknown policy type: " << policy_str );
             return false;
         }
 
@@ -193,7 +174,7 @@ namespace rs2
                  }
                  else
                  {
-                     LOG_ERROR("Cannot open file: " + _dev_info_url);
+                     LOG_ERROR( "Cannot open file: " << _dev_info_url );
                  }
             }
 #endif
@@ -230,14 +211,17 @@ namespace rs2
                                 }
                                 else
                                 {
-                                    std::string error_str("Server versions file parsing error - validation fail on key: " + element_key + " value: " + it.value().get<std::string>() + " \n");
+                                    std::string error_str(
+                                        "Server versions file parsing error - validation fail on key: " + element_key
+                                        + " value: " + it.value().get< std::string >() + " \n" );
                                     LOG_ERROR(error_str);
                                     throw std::runtime_error(error_str);
                                 }
                             }
                             else
                             {
-                                std::string error_str("Server versions file parsing error - " + element_key + " should be represented as a string");
+                                std::string error_str( "Server versions file parsing error - " + element_key
+                                                       + " should be represented as a string" );
                                 LOG_ERROR(error_str);
                                 throw std::runtime_error(error_str);
                             }

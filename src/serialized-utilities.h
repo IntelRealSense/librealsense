@@ -1,11 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
-
+// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 #pragma once
+
 #include <string>
 #include <map>
 #include <types.h>
-#include <../third-party/json.hpp>
+#include <rsutils/json.h>
 
 
 namespace librealsense
@@ -14,7 +14,7 @@ namespace librealsense
 
     namespace serialized_utilities
     {
-        using json = nlohmann::json;
+        using json = rsutils::json;
 
         struct device_info
         {

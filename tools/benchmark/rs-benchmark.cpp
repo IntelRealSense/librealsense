@@ -222,7 +222,7 @@ int main(int argc, char** argv) try
         return EXIT_SUCCESS;
     }
 
-    CmdLine cmd("librealsense rs-benchmark tool", ' ', RS2_API_VERSION_STR);
+    CmdLine cmd("librealsense rs-benchmark tool", ' ', RS2_API_FULL_VERSION_STR);
     cmd.parse(argc, argv);
 
     glfwInit();
@@ -376,5 +376,15 @@ int main(int argc, char** argv) try
 catch (const error & e)
 {
     cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
+    return EXIT_FAILURE;
+}
+catch( const exception & e )
+{
+    cerr << e.what() << endl;
+    return EXIT_FAILURE;
+}
+catch( ... )
+{
+    cerr << "some error" << endl;
     return EXIT_FAILURE;
 }

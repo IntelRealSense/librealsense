@@ -240,15 +240,6 @@ namespace rs2
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
-
-            _sub->stream_enabled.clear();
-            _sub->ui.selected_format_id.clear();
-            if (_sub_color)
-            {
-                _sub_color->stream_enabled.clear();
-                _sub_color->ui.selected_format_id.clear();
-            }
-            _viewer.streams.clear();
         }
         catch (...) {}
     }
@@ -840,7 +831,7 @@ namespace rs2
             // Convert Z values into Depth values by aligning the Fitted plane with the Ground Truth (GT) plane
             // Calculate distance and disparity of Z values to the fitted plane.
             // Use the rotated plane fit to calculate GT errors
-            for (auto point : points_set)
+            for (auto & point : points_set)
             {
                 // Find distance from point to the reconstructed plane
                 auto dist2plane = p.a*point.x + p.b*point.y + p.c*point.z + p.d;

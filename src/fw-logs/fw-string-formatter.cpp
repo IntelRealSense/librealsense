@@ -1,11 +1,15 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
+
 #include "fw-string-formatter.h"
 #include "fw-logs-formating-options.h"
+#include <rsutils/easylogging/easyloggingpp.h>
+
 #include <regex>
 #include <sstream>
 #include <iomanip>
 #include <iostream>
+#include <cmath>
 
 using namespace std;
 
@@ -56,7 +60,15 @@ namespace librealsense
 
                 st_regular_exp[2] << "\\{\\b(" << i << "):f\\}";
                 regular_exp[2] = st_regular_exp[2].str();
-                st_replacement[2] << params[i];
+                // Parse int32_t as 4 raw bytes of float
+                float tmp = *reinterpret_cast< const float * >( &params[i] );
+                if( std::isfinite( tmp ) )
+                    st_replacement[2] << tmp;
+                else
+                {
+                    LOG_ERROR( "Expecting a number, received infinite or NaN" );
+                    st_replacement[2] << "0x" << hex << setw( 2 ) << setfill( '0' ) << params[i];
+                }
                 replacement[2] = st_replacement[2].str();
                 exp_replace_map[regular_exp[2]] = replacement[2];
 

@@ -5,6 +5,7 @@
 #include <librealsense2/rs.hpp>
 #include <condition_variable>
 #include <src/hw-monitor.h>
+#include <src/firmware-version.h>
 
 using namespace rs2;
 
@@ -50,7 +51,7 @@ inline std::string repr( rs2::device_list const & list )
 
 inline rs2::device find_first_device_or_exit()
 {
-    rs2::context ctx;
+    rs2::context ctx( "{\"dds\":false}" );
     rs2::device_list devices_list = ctx.query_devices();
     if( devices_list.size() == 0 )
     {
@@ -64,7 +65,7 @@ inline rs2::device find_first_device_or_exit()
 
 inline rs2::device_list find_devices_by_product_line_or_exit( int product )
 {
-    rs2::context ctx;
+    rs2::context ctx( "{\"dds\":false}" );
     rs2::device_list devices_list = ctx.query_devices( product );
     if( devices_list.size() == 0 )
     {
@@ -94,7 +95,7 @@ inline void exit_if_fw_version_is_under( rs2::device & dev, librealsense::firmwa
 // Can get as input a full device name or short like "L515/D435..."
 inline rs2::device find_first_device_by_name_or_exit( const std::string & dev_name )
 {
-    rs2::context ctx;
+    rs2::context ctx( "{\"dds\":false}" );
     std::vector< rs2::device > devices_list = ctx.query_devices();
 
     auto dev_iter
@@ -204,25 +205,6 @@ inline stream_profile find_confidence_corresponding_to_depth(rs2::depth_sensor d
 
     REQUIRE(confidence_profile != stream_profiles.end());
     return *confidence_profile;
-}
-
-template < class T >
-inline void start_default_l500_depth_profiles( rs2::depth_sensor depth_sens, T callback, bool with_confidence = false )
-{
-    auto depth = find_default_depth_profile( depth_sens );
-    auto ir = find_default_ir_profile( depth_sens );
-
-    if (with_confidence)
-    {
-        auto confidence = find_confidence_corresponding_to_depth( depth_sens, depth );
-        REQUIRE_NOTHROW( depth_sens.open( { depth, ir, confidence } ) );
-    }
-    else
-    {
-        REQUIRE_NOTHROW( depth_sens.open( { depth, ir } ) );
-    }
-
-    REQUIRE_NOTHROW( depth_sens.start( callback ) );
 }
 
 inline stream_profile

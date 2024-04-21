@@ -28,6 +28,7 @@ namespace hresult {
         std::ostringstream ss;                                                                     \
         ss << call << " returned: " << rsutils::hresult::hr_to_string( hr );                       \
         std::string descr = ss.str();                                                              \
+        LOG_DEBUG(descr);                                                                          \
         throw std::runtime_error( descr );                                                         \
     }
 

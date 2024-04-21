@@ -1,56 +1,21 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
-#include "types.h"
-#include "archive.h"
+#include "callback-invocation.h"
+#include "core/frame-holder.h"
 
+#include <librealsense2/h/rs_sensor.h>
+#include <rsutils/concurrency/concurrency.h>
 #include <stdint.h>
 #include <vector>
 #include <mutex>
 #include <memory>
+#include <map>
 
-namespace librealsense
-{
 
-    typedef int stream_id;
+namespace librealsense {
 
-    class sync_lock
-    {
-    public:
-        sync_lock(std::mutex& mutex) : _mutex(mutex)
-        {
-            mutex.lock();
-        }
-
-        void unlock_preemptively()
-        {
-            // NOTE: The Sync_Lock is itself a single-threaded object
-            // It maintains a state, and does not protect its state.
-            // That is acceptable for our use case,
-            // because we use it to communicate within a single thread
-            if (!_is_locked) return;
-            _mutex.unlock();
-            _is_locked = false;
-
-        }
-
-        ~sync_lock()
-        {
-            if (_is_locked)
-            {
-                _mutex.unlock();
-
-            }
-        }
-
-    private:
-        bool _is_locked = true;
-
-        std::mutex& _mutex;
-    };
-    //sync_lock::ref = 0;
 
     class synthetic_source_interface;
 
@@ -65,7 +30,6 @@ namespace librealsense
         {
         }
         synthetic_source_interface * source;
-        // sync_lock& lock_ref;
         single_consumer_frame_queue< frame_holder > & matches;
         bool log = true;
     };
@@ -149,10 +113,22 @@ namespace librealsense
                                            const frame_holder & f )
             = 0;
 
-        std::map<matcher*, single_consumer_frame_queue<frame_holder>> _frames_queue;
+        struct matcher_queue
+        {
+            single_consumer_frame_queue< frame_holder > q;
+
+            matcher_queue();
+        };
+
+        std::map< matcher *, matcher_queue > _frames_queue;
         std::map<stream_id, std::shared_ptr<matcher>> _matchers;
-        std::map<matcher*, double> _next_expected;
-        std::map<matcher*, rs2_timestamp_domain> _next_expected_domain;
+        struct next_expected_t
+        {
+            double value;  // timestamp/frame-number/etc.
+            double fps;
+            rs2_timestamp_domain domain;
+        };
+        std::map< matcher *, next_expected_t > _next_expected;
 
         std::mutex _mutex;
     };
@@ -219,10 +195,10 @@ namespace librealsense
                                    const frame_holder & f ) override;
 
     private:
-        unsigned int get_fps( frame_interface const * f );
-        bool are_equivalent( double a, double b, unsigned int fps );
+        double get_fps( frame_interface const * f );
+        bool are_equivalent( double a, double b, double fps );
         std::map<matcher*, double> _last_arrived;
-        std::map<matcher*, unsigned int> _fps;
-
     };
-}
+
+
+}  // namespace librealsense

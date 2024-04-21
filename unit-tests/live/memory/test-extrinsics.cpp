@@ -1,6 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
+//#cmake:add-file ../../unit-tests-common.cpp
+
 //#cmake: static!
 //#test:donotrun
 //#test:device D435
@@ -16,7 +18,6 @@
 
 
 using namespace librealsense;
-using namespace librealsense::platform;
 
 constexpr int DELAY_INCREMENT_THRESHOLD = 4; //[%]
 constexpr int DELAY_INCREMENT_THRESHOLD_IMU = 8; //[%]
@@ -67,7 +68,7 @@ void data_filter(const std::vector<double>& stream_vec, std::vector<double>& fil
     std::vector<double> diff_y_fit;
     for (auto i = 0; i < stream_vec.size(); i++)
     {
-        double diff = abs(*(y_fit_it + i) - *(stream_vec_it + i));
+        double diff = std::abs(*(y_fit_it + i) - *(stream_vec_it + i));
         diff_y_fit.push_back(diff);
     }
     // calc stdev from fitted linear line
@@ -97,7 +98,7 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
 {
     // Require at least one device to be plugged in
 
-    rs2::context ctx;
+    rs2::context ctx( "{\"dds\":false}" );
     rs2::log_to_file(RS2_LOG_SEVERITY_DEBUG, "lrs_log.txt");
 
     std::cout << "Extrinsic memory leak detection started" << std::endl;
@@ -119,7 +120,6 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
         std::string device_type = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
 
         if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D400") device_type = "D400";
-        if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "SR300") device_type = "SR300";
 
         bool usb3_device = is_usb3(dev);
         int fps = usb3_device ? 30 : 15; // In USB2 Mode the devices will switch to lower FPS rates
@@ -128,11 +128,6 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
         int width = 848;
         int height = 480;
 
-        if (device_type == "L500")
-        {
-            req_fps = 30;
-            width = 640;
-        }
         auto res = configure_all_supported_streams(dev, width, height, fps);
         for (auto& s : res.first)
         {
@@ -347,28 +342,6 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
         delay_thresholds["Gyro"] = 1200; // ms
         delay_thresholds["Infrared 1"] = 1200; // ms
         delay_thresholds["Infrared 2"] = 1200; // ms
-
-        // L500
-        if (device_type == "L500")
-        {
-            delay_thresholds["Accel"] = 2200;  // ms
-            delay_thresholds["Color"] = 2000;  // ms
-            delay_thresholds["Depth"] = 2000;  // ms
-            delay_thresholds["Gyro"] = 2200;   // ms
-            delay_thresholds["Confidence"] = 2000; // ms
-            delay_thresholds["Infrared"] = 2000;   // ms
-        }
-
-        // SR300
-        if (device_type == "SR300")
-        {
-            delay_thresholds["Accel"] = 1200; // ms
-            delay_thresholds["Color"] = 1200; // ms
-            delay_thresholds["Depth"] = 1200; // ms
-            delay_thresholds["Gyro"] = 1200; // ms
-            delay_thresholds["Infrared 1"] = 1200; // ms
-            delay_thresholds["Infrared 2"] = 1200; // ms
-        }
 
         for (const auto& stream_ : streams_delay)
         {

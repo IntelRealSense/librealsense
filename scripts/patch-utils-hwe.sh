@@ -124,11 +124,20 @@ function choose_kernel_branch {
 	then
 		case "${kernel_version[0]}.${kernel_version[1]}" in
 		"5.15")
-			echo master-next
+			echo hwe-5.15
+			;;
+		"5.19")
+			echo hwe-5.19
+			;;
+		"6.2")
+			echo hwe-6.2
+			;;
+		"6.5")
+			echo hwe-6.5
 			;;
 		*)
 			#error message shall be redirected to stderr to be printed properly
-			echo -e "\e[31mUnsupported kernel version $1 . The Focal patches are maintained for Ubuntu LTS with kernel 5.4, 5.8, 5.11 only\e[0m" >&2
+			echo -e "\e[31mUnsupported kernel version $1 . The Jammy patches are maintained for Ubuntu LTS with kernel 5.15, 5.19 only\e[0m" >&2
 			exit 1
 			;;
 		esac

@@ -72,16 +72,19 @@ namespace librealsense
 
                 // Track temperature and update on temperature changes
                 auto ts = (uint64_t)std::chrono::high_resolution_clock::now().time_since_epoch().count();
-                if (auto temp = _temperature_sensor.lock())
+                if( auto temp = _temperature_sensor.lock() )
                 {
-                    auto cur_temp = temp->query();
-
-                    if (fabs(_temp_base - cur_temp) >= _thermal_threshold_deg)
+                    if( temp->is_enabled() )
                     {
-                        LOG_DEBUG_THERMAL_LOOP("Thermal calibration adjustment is triggered on change from "
-                            << std::dec << std::setprecision(1) << _temp_base << " to " << cur_temp << " deg (C)");
+                        auto cur_temp = temp->query();
+                        if( fabs( _temp_base - cur_temp ) >= _thermal_threshold_deg )
+                        {
+                            LOG_DEBUG_THERMAL_LOOP( "Thermal calibration adjustment is triggered on change from "
+                                                    << std::dec << std::setprecision( 1 ) << _temp_base << " to "
+                                                    << cur_temp << " deg (C)" );
 
-                        notify(cur_temp);
+                            notify( cur_temp );
+                        }
                     }
                 }
                 else

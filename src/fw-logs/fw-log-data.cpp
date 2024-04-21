@@ -15,30 +15,6 @@ namespace librealsense
 {
     namespace fw_logs
     {
-        fw_log_data::fw_log_data(void)
-        {
-            _magic_number = 0;
-            _severity = 0;
-            _file_id = 0;
-            _group_id = 0;
-            _event_id = 0;
-            _line = 0;
-            _sequence = 0;
-            _p1 = 0;
-            _p2 = 0;
-            _p3 = 0;
-            _timestamp = 0;
-            _delta = 0;
-            _message = "";
-            _file_name = "";
-        }
-
-
-        fw_log_data::~fw_log_data(void)
-        {
-        }
-
-
         rs2_log_severity fw_log_data::get_severity() const
         {
             return fw_logs_severity_to_log_severity(_severity);

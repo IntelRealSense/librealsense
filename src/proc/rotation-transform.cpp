@@ -13,13 +13,13 @@ namespace librealsense
 {
     //// Unpacking routines ////
     template<size_t SIZE>
-    void rotate_image_optimized(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void rotate_image_optimized( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size)
     {
         auto width_out = height;
         auto height_out = width;
 
         auto out = dest[0];
-        byte buffer[8][8 * SIZE]; // = { 0 };
+        uint8_t buffer[8][8 * SIZE]; // = { 0 };
         for (int i = 0; i <= height - 8; i = i + 8)
         {
             for (int j = 0; j <= width - 8; j = j + 8)
@@ -43,7 +43,7 @@ namespace librealsense
     }
 
     template<size_t SIZE>
-    void rotate_image(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void rotate_image( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size)
     {
         auto width_out = height;
         auto height_out = width;
@@ -55,12 +55,12 @@ namespace librealsense
             for (int j = 0; j < width; ++j)
             {
                 auto out_index = (((height_out - j) * width_out) - i - 1) * SIZE;
-                librealsense::copy((void*)(&out[out_index]), &(source[(row_offset + j) * SIZE]), SIZE);
+                std::memcpy( &out[out_index], &( source[( row_offset + j ) * SIZE] ), SIZE );
             }
         }
     }
 
-    void rotate_confidence(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void rotate_confidence( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size)
     {
 #pragma pack (push, 1)
         struct lsb_msb
@@ -113,7 +113,7 @@ namespace librealsense
         }
     }
 
-    void rotation_transform::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
+    void rotation_transform::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size)
     {
         int rotated_width = height;
         int rotated_height = width;
@@ -138,7 +138,7 @@ namespace librealsense
         : rotation_transform(name, RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE, RS2_EXTENSION_VIDEO_FRAME)
     {}
 
-    void confidence_rotation_transform::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
+    void confidence_rotation_transform::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size)
     {
         int rotated_width = height;
         int rotated_height = width;

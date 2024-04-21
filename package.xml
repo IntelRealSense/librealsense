@@ -2,12 +2,11 @@
 
 <!-- This file is only used to enable the building librealsense2 -->
 <!-- as a debian package for use with ROS 2 (http://ros.org) -->
-<!-- via ament_cmake (which invokes cmake) -->
 
 <package format="2">
   <name>librealsense2</name>
   <!-- The version tag needs to be updated with each new release of librealsense -->
-  <version>2.54.2</version>
+  <version>2.55.1</version>
   <description>
   Library for controlling and capturing data from the Intel(R) RealSense(TM) D400 devices.
   </description>
@@ -20,7 +19,7 @@
 
   <license>Apache License, Version 2.0</license>
 
-  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>cmake</buildtool_depend>
 
   <build_depend>pkg-config</build_depend>
 
@@ -28,9 +27,14 @@
   <build_depend>libssl-dev</build_depend>
   <build_depend>libudev-dev</build_depend>
   <build_depend>dkms</build_depend>
+  <build_depend>git</build_depend>
   <build_depend>udev</build_depend>
 
+  <depend>libx11</depend>
+  <depend>libglfw3-dev</depend>
+  <depend>opengl</depend>
+
   <export>
-    <build_type>ament_cmake</build_type>
+    <build_type>cmake</build_type>
   </export>
 </package>

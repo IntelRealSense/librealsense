@@ -20,12 +20,19 @@ int main(int argc, char * argv[]) try
 {
     // Parse command line arguments
     CmdLine cmd("librealsense rs-record example tool", ' ');
-    ValueArg<int>    time("t", "Time", "Amount of time to record (in seconds)", false, 10, "");
+    SwitchArg debug_arg( "", "debug", "Turn on LibRS debug logs" );
+    ValueArg<double>    time("t", "Time", "Amount of time to record (in seconds)", false, 10., "");
     ValueArg<std::string> out_file("f", "FullFilePath", "the file where the data will be saved to", false, "test.bag", "");
 
+    cmd.add(debug_arg);
     cmd.add(time);
     cmd.add(out_file);
     cmd.parse(argc, argv);
+
+#ifdef BUILD_EASYLOGGINGPP
+    bool const debugging = debug_arg.getValue();
+    rs2::log_to_console( debugging ? RS2_LOG_SEVERITY_DEBUG : RS2_LOG_SEVERITY_ERROR );
+#endif
 
     rs2::pipeline pipe;
     rs2::config cfg;
@@ -49,7 +56,8 @@ int main(int argc, char * argv[]) try
 
     auto t = std::chrono::system_clock::now();
     auto t0 = t;
-    while(t - t0 <= std::chrono::seconds(time.getValue())) {
+    while( t - t0 <= std::chrono::milliseconds( (unsigned)( time.getValue() * 1000 ) ) )
+    {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         t = std::chrono::system_clock::now();
     }

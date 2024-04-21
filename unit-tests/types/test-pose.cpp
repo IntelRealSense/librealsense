@@ -1,20 +1,17 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 //#test:donotrun:jetson
+
+#include <src/pose.h>
 
 #include <rsutils/easylogging/easyloggingpp.h>
 
 #include "../catch.h"
-
 #include "../approx.h"
-
-//#cmake:add-file ../../src/types.h
-#include <src/types.h>
+#include "rot.h"
 
 using namespace librealsense;
-
-#include "rot.h"
 
 
 TEST_CASE( "pose vs extrinsics", "[types]" )

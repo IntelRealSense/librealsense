@@ -4,10 +4,7 @@
 #ifndef RS400_ADVANCED_MODE_H
 #define RS400_ADVANCED_MODE_H
 
-#define RS400_ADVANCED_MODE_HPP
 #include "h/rs_advanced_mode_command.h"
-#undef RS400_ADVANCED_MODE_HPP
-
 #include "h/rs_types.h"
 
 #ifdef __cplusplus

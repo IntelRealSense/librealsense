@@ -27,6 +27,7 @@ The library will be compiled without the metadata support!\n")
 #include "mf-uvc.h"
 #include "../types.h"
 #include "uvc/uvc-types.h"
+#include <src/backend.h>  // monotonic_to_realtime
 
 #include <rsutils/string/from.h>
 
@@ -78,7 +79,7 @@ namespace librealsense
 
             constexpr uint8_t ms_header_size = sizeof(ms_metadata_header);
 
-            bool try_read_metadata(IMFSample *pSample, uint8_t& metadata_size, byte** bytes)
+            bool try_read_metadata(IMFSample *pSample, uint8_t& metadata_size, uint8_t ** bytes)
             {
                 CComPtr<IUnknown>       spUnknown;
                 CComPtr<IMFAttributes>  spSample;
@@ -108,7 +109,7 @@ namespace librealsense
                     // Microsoft converts the standard UVC (12-byte) header into MS proprietary 40-bytes struct
                     // Therefore we revert it to the original structure for uniform handling
                     static const uint8_t md_lenth_max = 0xff;
-                    auto md_raw = reinterpret_cast<byte*>(pMetadata);
+                    auto md_raw = reinterpret_cast<uint8_t *>(pMetadata);
                     ms_metadata_header *ms_hdr = reinterpret_cast<ms_metadata_header*>(md_raw);
                     uvc_header *uvc_hdr = reinterpret_cast<uvc_header*>(md_raw + ms_header_size - uvc_header_size);
                     try
@@ -132,7 +133,7 @@ namespace librealsense
                     uvc_hdr->info = 0x0; // TODO - currently not available
                     metadata_size = static_cast<uint8_t>(uvc_hdr->length + uvc_header_size);
 
-                    *bytes = (byte*)uvc_hdr;
+                    *bytes = (uint8_t *)uvc_hdr;
 
                     return true;
                 }
@@ -196,11 +197,11 @@ namespace librealsense
                     CComPtr<IMFMediaBuffer> buffer = nullptr;
                     if (SUCCEEDED(sample->GetBufferByIndex(0, &buffer)))
                     {
-                        byte* byte_buffer=nullptr;
+                        uint8_t * byte_buffer=nullptr;
                         DWORD max_length{}, current_length{};
                         if (SUCCEEDED(buffer->Lock(&byte_buffer, &max_length, &current_length)))
                         {
-                            byte* metadata = nullptr;
+                            uint8_t * metadata = nullptr;
                             uint8_t metadata_size = 0;
 #ifdef METADATA_SUPPORT
                             try_read_metadata(sample, metadata_size, &metadata);
@@ -361,13 +362,13 @@ namespace librealsense
 
                 auto pStruct = next_struct;
                 cfg.step.resize(option_range_size);
-                librealsense::copy(cfg.step.data(), pStruct, field_width);
+                std::memcpy( cfg.step.data(), pStruct, field_width );
                 pStruct += length;
                 cfg.min.resize(option_range_size);
-                librealsense::copy(cfg.min.data(), pStruct, field_width);
+                std::memcpy( cfg.min.data(), pStruct, field_width );
                 pStruct += length;
                 cfg.max.resize(option_range_size);
-                librealsense::copy(cfg.max.data(), pStruct, field_width);
+                std::memcpy( cfg.max.data(), pStruct, field_width );
                 return;
             }
             case KSPROPERTY_MEMBER_VALUES:
@@ -385,7 +386,7 @@ namespace librealsense
                     }
 
                     cfg.def.resize(option_range_size);
-                    librealsense::copy(cfg.def.data(), next_struct, field_width);
+                    std::memcpy( cfg.def.data(), next_struct, field_width );
                 }
                 return;
             }
@@ -871,7 +872,12 @@ namespace librealsense
             //enable source
             CHECK_HR(MFCreateDeviceSource(_device_attrs, &_source));
             LOG_HR(_source->QueryInterface(__uuidof(IAMCameraControl), reinterpret_cast<void **>(&_camera_control)));
-            LOG_HR(_source->QueryInterface(__uuidof(IAMVideoProcAmp), reinterpret_cast<void **>(&_video_proc)));
+            // The IAMVideoProcAmp interface adjusts the qualities of an incoming video signal, such as brightness,
+            // contrast, hue, saturation, gamma, and sharpness.
+            auto hr = _source->QueryInterface( __uuidof( IAMVideoProcAmp ), reinterpret_cast< void ** >( &_video_proc ) );
+            // E_NOINTERFACE is expected... especially when no video camera
+            if( hr != E_NOINTERFACE )
+                LOG_HR_STR( "QueryInterface(IAMVideoProcAmp)", hr );
 
             //enable reader
             CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));

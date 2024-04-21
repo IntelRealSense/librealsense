@@ -1,23 +1,19 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
-#include "backend.h"
-#include "archive.h"
-#include "hw-monitor.h"
-#include "sensor.h"
-#include "core/streaming.h"
-#include "command_transfer.h"
-#include "error-handling.h"
+#include "core/option-interface.h"
+#include "librealsense-exception.h"
 
 #include <rsutils/string/from.h>
+#include <rsutils/lazy.h>
 
-#include <chrono>
 #include <memory>
 #include <vector>
-#include <cmath>
-#include <type_traits>
+#include <functional>
+#include <map>
+#include <tuple>
+#include <atomic>
 
 namespace librealsense
 {
@@ -60,11 +56,17 @@ namespace librealsense
     class const_value_option : public readonly_option, public extension_snapshot
     {
     public:
-        const_value_option(std::string desc, float val)
-            : _val(lazy<float>([val]() {return val; })), _desc(std::move(desc)) {}
+        const_value_option( std::string const & desc, float val )
+            : _val( [val]() { return val; } )
+            , _desc( desc )
+        {
+        }
 
-        const_value_option(std::string desc, lazy<float> val)
-            : _val(std::move(val)), _desc(std::move(desc)) {}
+        const_value_option( std::string const & desc, rsutils::lazy< float > && val )
+            : _val( std::move( val ) )
+            , _desc( desc )
+        {
+        }
 
         float query() const override { return *_val; }
         option_range get_range() const override { return { *_val, *_val, 0, *_val }; }
@@ -77,12 +79,12 @@ namespace librealsense
             if (auto opt = As<option>(ext))
             {
                 auto new_val = opt->query();
-                _val = lazy<float>([new_val]() {return new_val; });
+                _val = rsutils::lazy< float >( [new_val]() { return new_val; } );
                 _desc = opt->get_description();
             }
         }
     private:
-        lazy<float> _val;
+        rsutils::lazy< float > _val;
         std::string _desc;
     };
 
@@ -285,263 +287,6 @@ namespace librealsense
         using ptr = std::shared_ptr< bool_option >;
     };
 
-    class uvc_pu_option : public option
-    {
-    public:
-        void set(float value) override;
-
-        float query() const override;
-
-        option_range get_range() const override;
-
-        bool is_enabled() const override
-        {
-            return true;
-        }
-
-        uvc_pu_option(uvc_sensor& ep, rs2_option id);
-
-        uvc_pu_option(uvc_sensor& ep, rs2_option id, const std::map<float, std::string>& description_per_value);
-
-        const char* get_description() const override;
-
-        const char* get_value_description(float val) const override
-        {
-            if (_description_per_value.find(val) != _description_per_value.end())
-                return _description_per_value.at(val).c_str();
-            return nullptr;
-        }
-        void enable_recording(std::function<void(const option&)> record_action) override
-        {
-            _record = record_action;
-        }
-    private:
-        uvc_sensor& _ep;
-        rs2_option _id;
-        const std::map<float, std::string> _description_per_value;
-        std::function<void(const option&)> _record = [](const option&) {};
-        lazy<option_range> _range;
-    };
-
-    // XU control with exclusing access to setter/getters
-    template<typename T>
-    class uvc_xu_option : public option
-    {
-    public:
-        void set(float value) override
-        {
-            if ( !_allow_set_while_streaming  && _ep.is_streaming() )
-                throw invalid_value_exception( rsutils::string::from()
-                                                       << "setting this option during streaming is not allowed!");
-
-            _ep.invoke_powered(
-                [this, value](platform::uvc_device& dev)
-                {
-                    T t = static_cast<T>(value);
-                    if (!dev.set_xu(_xu, _id, reinterpret_cast<uint8_t*>(&t), sizeof(T)))
-                        throw invalid_value_exception( rsutils::string::from()
-                                                       << "set_xu(id=" << std::to_string( _id ) << ") failed!"
-                                                       << " Last Error: " << strerror( errno ) );
-                    _recording_function(*this);
-                });
-        }
-
-        float query() const override
-        {
-            return static_cast<float>(_ep.invoke_powered(
-                [this](platform::uvc_device& dev)
-                {
-                    T t;
-                    if (!dev.get_xu(_xu, _id, reinterpret_cast<uint8_t*>(&t), sizeof(T)))
-                        throw invalid_value_exception( rsutils::string::from()
-                                                       << "get_xu(id=" << std::to_string( _id ) << ") failed!"
-                                                       << " Last Error: " << strerror( errno ) );
-
-                    return static_cast<float>(t);
-                }));
-        }
-
-        option_range get_range() const override
-        {
-            auto uvc_range = _ep.invoke_powered(
-                [this](platform::uvc_device& dev)
-                {
-                    return dev.get_xu_range(_xu, _id, sizeof(T));
-                });
-
-            if (uvc_range.min.size() < sizeof(int32_t)) return option_range{ 0,0,1,0 };
-
-            auto min = *(reinterpret_cast<int32_t*>(uvc_range.min.data()));
-            auto max = *(reinterpret_cast<int32_t*>(uvc_range.max.data()));
-            auto step = *(reinterpret_cast<int32_t*>(uvc_range.step.data()));
-            auto def = *(reinterpret_cast<int32_t*>(uvc_range.def.data()));
-            return option_range{ static_cast<float>(min),
-                                static_cast<float>(max),
-                                static_cast<float>(step),
-                                static_cast<float>(def) };
-        }
-
-        bool is_enabled() const override { return true; }
-
-        uvc_xu_option(uvc_sensor& ep, platform::extension_unit xu, uint8_t id, std::string description, bool allow_set_while_streaming = true )
-            : _ep(ep), _xu(xu), _id(id), _desciption(std::move(description)), _allow_set_while_streaming(allow_set_while_streaming)
-        {}
-
-        uvc_xu_option(uvc_sensor& ep, platform::extension_unit xu, uint8_t id, std::string description, const std::map<float, std::string>& description_per_value, bool allow_set_while_streaming = true)
-            : _ep(ep), _xu(xu), _id(id), _desciption(std::move(description)), _description_per_value(description_per_value), _allow_set_while_streaming(allow_set_while_streaming)
-        {}
-
-        const char* get_description() const override
-        {
-            return _desciption.c_str();
-        }
-        void enable_recording(std::function<void(const option&)> record_action) override
-        {
-            _recording_function = record_action;
-        }
-        const char* get_value_description(float val) const override
-        {
-            if (_description_per_value.find(val) != _description_per_value.end())
-                return _description_per_value.at(val).c_str();
-            return nullptr;
-        }
-    protected:
-        uvc_sensor& _ep;
-        platform::extension_unit _xu;
-        uint8_t             _id;
-        std::string         _desciption;
-        std::function<void(const option&)> _recording_function = [](const option&) {};
-        const std::map<float, std::string> _description_per_value;
-        bool _allow_set_while_streaming;
-    };
-
-    template<typename T>
-    class protected_xu_option : public uvc_xu_option<T>
-    {
-    public:
-        protected_xu_option(uvc_sensor& ep, platform::extension_unit xu, uint8_t id, std::string description)
-            : uvc_xu_option<T>(ep, xu, id, description)
-        {}
-
-        protected_xu_option(uvc_sensor& ep, platform::extension_unit xu, uint8_t id, std::string description, const std::map<float, std::string>& description_per_value)
-            : uvc_xu_option<T>( ep, xu, id, description, description_per_value)
-        {}
-
-        void set(float value) override
-        {
-            std::lock_guard<std::mutex> lk(_mtx);
-            uvc_xu_option<T>::set(value);
-        }
-
-        float query() const override
-        {
-            std::lock_guard<std::mutex> lk(_mtx);
-            return uvc_xu_option<T>::query();
-        }
-
-    protected:
-
-        mutable std::mutex _mtx;
-    };
-
-    template<class T, class R, class W, class U>
-    class struct_field_option : public option
-    {
-    public:
-        void set(float value) override
-        {
-            _struct_interface->set(_field, value);
-            _recording_function(*this);
-        }
-        float query() const override
-        {
-            return _struct_interface->get(_field);
-        }
-        option_range get_range() const override
-        {
-            return _range;
-        }
-        bool is_enabled() const override { return true; }
-
-        explicit struct_field_option(std::shared_ptr<struct_interface<T, R, W>> struct_interface,
-            U T::* field, const option_range& range)
-            : _struct_interface(struct_interface), _range(range), _field(field)
-        {
-        }
-
-        const char* get_description() const override
-        {
-            return nullptr;
-        }
-
-        void enable_recording(std::function<void(const option&)> record_action) override
-        {
-            _recording_function = record_action;
-        }
-    private:
-        std::shared_ptr<struct_interface<T, R, W>> _struct_interface;
-        option_range _range;
-        U T::* _field;
-        std::function<void(const option&)> _recording_function = [](const option&) {};
-    };
-
-    template<class T, class R, class W, class U>
-    std::shared_ptr<struct_field_option<T, R, W, U>> make_field_option(
-        std::shared_ptr<struct_interface<T, R, W>> struct_interface,
-        U T::* field, const option_range& range)
-    {
-        return std::make_shared<struct_field_option<T, R, W, U>>
-            (struct_interface, field, range);
-    }
-
-    class command_transfer_over_xu : public platform::command_transfer
-    {
-    public:
-        std::vector<uint8_t> send_receive(const std::vector<uint8_t>& data, int, bool require_response) override;
-
-        command_transfer_over_xu(uvc_sensor& uvc,
-            platform::extension_unit xu, uint8_t ctrl)
-            : _uvc(uvc), _xu(std::move(xu)), _ctrl(ctrl)
-        {}
-
-    private:
-        uvc_sensor& _uvc;
-        platform::extension_unit _xu;
-        uint8_t             _ctrl;
-    };
-
-    class polling_error_handler;
-
-    class polling_errors_disable : public option
-    {
-    public:
-        polling_errors_disable(std::shared_ptr<polling_error_handler> handler)
-            : _polling_error_handler(handler), _value(1)
-        {}
-
-        ~polling_errors_disable();
-
-        void set(float value) override;
-
-        float query() const override;
-
-        option_range get_range() const override;
-
-        bool is_enabled() const override;
-
-
-        const char* get_description() const override;
-
-        const char* get_value_description(float value) const override;
-        void enable_recording(std::function<void(const option&)> record_action) override
-        {
-            _recording_function = record_action;
-        }
-    private:
-        std::weak_ptr<polling_error_handler> _polling_error_handler;
-        float                           _value;
-        std::function<void(const option&)> _recording_function = [](const option&) {};
-    };
 
     /** Wrapper for another option -- forwards all API calls to the proxied option
     *such that specific functionality can be easily overriden */
@@ -606,29 +351,7 @@ namespace librealsense
             , _move_to_manual_values(move_to_manual_values), _manual_value(manual_value)
         {}
 
-        void set(float value) override
-        {
-            auto strong = _affected_control.lock();
-            if (!strong)
-                return;
-
-            auto move_to_manual = false;
-            auto val = strong->query();
-
-            if (std::find(_move_to_manual_values.begin(),
-                _move_to_manual_values.end(), val) != _move_to_manual_values.end())
-            {
-                move_to_manual = true;
-            }
-
-            if (move_to_manual)
-            {
-                LOG_DEBUG("Move option to manual mode in order to set a value");
-                strong->set(_manual_value);
-            }
-            _proxy->set(value);
-            _recording_function(*this);
-        }
+        void set( float value ) override;
 
     private:
         std::weak_ptr<option>   _affected_control;
@@ -651,32 +374,35 @@ namespace librealsense
             }
         }
 
-        void set(float value) override
-        {
-
-            bool gated_set = false;
-            for (auto& gated : _gated_options)
-            {
-                auto strong = gated.first.lock();
-                if (!strong)
-                    continue;  // if gated option is not available, step over it
-                auto val = strong->query();
-                if (val)
-                {
-                    gated_set = true;
-                    LOG_WARNING(gated.second.c_str());
-                }
-            }
-
-            if (!gated_set)
-                _proxy->set(value);
-
-            _recording_function(*this);
-        }
+        void set( float value ) override;
 
     private:
         std::vector < std::pair<std::weak_ptr<option>, std::string> >  _gated_options;
     };
+
+    /** \brief gated_by_value_option class will permit the user to
+     *  perform only read (query) of the read_only option when its affecting_option value is not as needed.
+     *  Receives a tuple of < option, value write is allowed in, explenation string in case of failure to read >*/
+    class gated_by_value_option : public proxy_option
+    {
+    public:
+        explicit gated_by_value_option(
+            std::shared_ptr< option > leading_to_read_only,
+            std::vector< std::tuple< std::shared_ptr< option >, float, std::string > > gating_options )
+            : proxy_option( leading_to_read_only )
+        {
+            for( auto & gate : gating_options )
+            {
+                _gating_options.push_back( gate );
+            }
+        }
+
+        void set( float requested_option_value ) override;
+
+    private:
+        std::vector< std::tuple< std::weak_ptr< option >, float, std::string > > _gating_options;
+    };
+
 
     /** \brief class provided a control
     * that changes min distance value when changing max distance value */
@@ -688,24 +414,7 @@ namespace librealsense
             : proxy_option(max_option), _min_option(min_option)
         {}
 
-        void set( float value ) override
-        {
-            auto strong = _min_option.lock();
-            if( ! strong )
-                return;
-
-            auto min_value = strong->query();
-
-            if( min_value > value )
-            {
-                auto min = strong->get_range().min;
-                strong->set( min );
-            }
-            _proxy->set( value );
-            _recording_function( *this );
-
-            notify( value );
-        }
+        void set( float value ) override;
 
     private:
         std::weak_ptr<option>   _min_option;
@@ -721,28 +430,13 @@ namespace librealsense
             : proxy_option(min_option), _max_option(max_option)
         {}
 
-        void set( float value ) override
-        {
-            auto strong = _max_option.lock();
-            if( ! strong )
-                return;
-
-            auto max_value = strong->query();
-
-            if( max_value < value )
-            {
-                auto max = strong->get_range().max;
-                strong->set( max );
-            }
-            _proxy->set( value );
-            _recording_function( *this );
-
-            notify( value );
-        }
+        void set( float value ) override;
 
     private:
         std::weak_ptr<option>   _max_option;
     };
+
+    class sensor_base;
 
     class enable_motion_correction : public option_base
     {

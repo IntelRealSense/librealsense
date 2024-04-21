@@ -7,8 +7,8 @@ project(RealsenseToolsRecorder)
 
 add_executable(rs-record rs-record.cpp)
 set_property(TARGET rs-record PROPERTY CXX_STANDARD 11)
-target_link_libraries(rs-record ${DEPENDENCIES})
-include_directories(../../common ../../third-party/tclap/include)
+target_link_libraries( rs-record ${DEPENDENCIES} tclap )
+include_directories(../../common)
 set_target_properties (rs-record PROPERTIES
     FOLDER "Tools"
 )

@@ -2,6 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "terminal-parser.h"
+#include <iostream>
 #include <rsutils/string/from.h>
 
 
@@ -31,12 +32,6 @@ namespace librealsense
         file_argument_to_blob(params);
 
         auto raw_data = build_raw_command_data(command, params);
-
-        for (auto b : raw_data)
-        {
-            cout << hex << fixed << setfill('0') << setw(2) << (int)b << " ";
-        }
-        cout << endl;
 
         return raw_data;
     }

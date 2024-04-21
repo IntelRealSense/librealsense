@@ -69,10 +69,9 @@ namespace librealsense
     {
         static const int pins = 2;
         mutable std::vector<int64_t> counter;
-        std::shared_ptr<platform::time_service> _ts;
         mutable std::recursive_mutex _mtx;
     public:
-        ds_timestamp_reader(std::shared_ptr<platform::time_service> ts);
+        ds_timestamp_reader();
 
         void reset() override;
 

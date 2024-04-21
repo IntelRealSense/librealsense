@@ -11,7 +11,7 @@
 
 namespace librealsense
 {
-    void unpack_z16_y8_from_sr300_inzi(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void unpack_z16_y8_from_sr300_inzi( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size)
     {
         auto count = width * height;
         auto in = reinterpret_cast<const uint16_t*>(source);
@@ -22,10 +22,10 @@ namespace librealsense
 #else
         for (int i = 0; i < count; ++i) *out_ir++ = *in++ >> 2;
 #endif
-        librealsense::copy(dest[0], in, count * 2);
+        std::memcpy( dest[0], in, count * 2 );
     }
 
-    void unpack_z16_y16_from_sr300_inzi(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void unpack_z16_y16_from_sr300_inzi( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size)
     {
         auto count = width * height;
         auto in = reinterpret_cast<const uint16_t*>(source);
@@ -36,10 +36,10 @@ namespace librealsense
 #else
         for (int i = 0; i < count; ++i) *out_ir++ = *in++ << 6;
 #endif
-        librealsense::copy(dest[0], in, count * 2);
+        std::memcpy( dest[0], in, count * 2 );
     }
 
-    void unpack_inzi(rs2_format dst_ir_format, byte * const d[], const byte * s, int width, int height, int actual_size)
+    void unpack_inzi(rs2_format dst_ir_format, uint8_t * const d[], const uint8_t * s, int width, int height, int actual_size)
     {
         switch (dst_ir_format)
         {
@@ -55,16 +55,16 @@ namespace librealsense
         }
     }
 
-    template<class SOURCE, class UNPACK> void unpack_pixels(byte * const dest[], int count, const SOURCE * source, UNPACK unpack, int actual_size)
+    template<class SOURCE, class UNPACK> void unpack_pixels( uint8_t * const dest[], int count, const SOURCE * source, UNPACK unpack, int actual_size)
     {
         auto out = reinterpret_cast<decltype(unpack(SOURCE())) *>(dest[0]);
         for (int i = 0; i < count; ++i) *out++ = unpack(*source++);
     }
 
-    void unpack_y16_from_y16_10(byte * const d[], const byte * s, int width, int height, int actual_size) { unpack_pixels(d, width * height, reinterpret_cast<const uint16_t*>(s), [](uint16_t pixel) -> uint16_t { return pixel << 6; }, actual_size); }
-    void unpack_y8_from_y16_10(byte * const d[], const byte * s, int width, int height, int actual_size) { unpack_pixels(d, width * height, reinterpret_cast<const uint16_t*>(s), [](uint16_t pixel) -> uint8_t { return pixel >> 2; }, actual_size); }
+    void unpack_y16_from_y16_10( uint8_t * const d[], const uint8_t * s, int width, int height, int actual_size) { unpack_pixels(d, width * height, reinterpret_cast<const uint16_t*>(s), [](uint16_t pixel) -> uint16_t { return pixel << 6; }, actual_size); }
+    void unpack_y8_from_y16_10( uint8_t * const d[], const uint8_t * s, int width, int height, int actual_size) { unpack_pixels(d, width * height, reinterpret_cast<const uint16_t*>(s), [](uint16_t pixel) -> uint8_t { return pixel >> 2; }, actual_size); }
 
-    void unpack_invi(rs2_format dst_format, byte * const d[], const byte * s, int width, int height, int actual_size)
+    void unpack_invi(rs2_format dst_format, uint8_t * const d[], const uint8_t * s, int width, int height, int actual_size)
     {
         switch (dst_format)
         {
@@ -80,13 +80,13 @@ namespace librealsense
         }
     }
 
-    void copy_raw10(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void copy_raw10( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size)
     {
         auto count = width * height; // num of pixels
-        librealsense::copy(dest[0], source, size_t(5.0 * (count / 4.0)));
+        std::memcpy( dest[0], source, size_t( 5.0 * ( count / 4.0 ) ) );
     }
 
-    void unpack_y10bpack(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void unpack_y10bpack( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size)
     {
         auto count = width * height / 4; // num of pixels
         uint8_t  * from = (uint8_t*)(source);
@@ -102,7 +102,7 @@ namespace librealsense
         }
     }
 
-    void unpack_w10(rs2_format dst_format, byte * const d[], const byte * s, int width, int height, int actual_size)
+    void unpack_w10(rs2_format dst_format, uint8_t * const d[], const uint8_t * s, int width, int height, int actual_size)
     {
         switch (dst_format)
         {
@@ -125,13 +125,13 @@ namespace librealsense
                                                                          target_ir_format, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME, 1)
     {}
 
-    void inzi_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
+    void inzi_converter::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size)
     {
         // convension: right frame is IR and left is Z16
         unpack_inzi(_right_target_format, dest, source, width, height, actual_size);
     }
 
-    void invi_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
+    void invi_converter::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size)
     {
         unpack_invi(_target_format, dest, source, width, height, actual_size);
     }
@@ -139,7 +139,7 @@ namespace librealsense
     w10_converter::w10_converter(const char * name, const rs2_format& target_format) :
         functional_processing_block(name, target_format, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME) {}
 
-    void w10_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
+    void w10_converter::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size)
     {
         unpack_w10(_target_format, dest, source, width, height, actual_size);
     }

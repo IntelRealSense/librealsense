@@ -4,6 +4,7 @@
 #pragma once
 #include "../backend.h"
 #include "hid-types.h"
+#include "../platform/hid-device.h"
 #include "../usb/usb-messenger.h"
 #include "../usb/usb-enumerator.h"
 #include <rsutils/concurrency/concurrency.h>
@@ -42,6 +43,7 @@ namespace librealsense
             virtual std::vector<uint8_t> get_custom_report_data(const std::string& custom_sensor_name,
                                                                 const std::string& report_name,
                                                                 custom_sensor_report_field report_field) override { return {}; }
+            void set_gyro_scale_factor( double scale_factor ) override{};
 
         private:
             void handle_interrupt();

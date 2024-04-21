@@ -2,8 +2,6 @@
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 //#test:device D400*
-//#test:device L500*
-//#test:device SR300*
 
 #include <rsutils/easylogging/easyloggingpp.h>
 
@@ -123,7 +121,19 @@ std::string to_string(const rs2_extrinsics& extrinsics)
     std::stringstream ss;
     ss << extrinsics.rotation[0] << " " << extrinsics.rotation[3] << " " << extrinsics.rotation[6] << std::endl;
     ss << extrinsics.rotation[1] << " " << extrinsics.rotation[4] << " " << extrinsics.rotation[7] << std::endl;
-    ss << extrinsics.rotation[2] << " " << extrinsics.rotation[5] << " " << extrinsics.rotation[8] << std::endl;
+    ss << extrinsics.rotation[2] << " " << extrinsics.rotation[5] << " " << extrinsics.rotation[8] << std::endl << std::endl;
+    ss << extrinsics.translation[0] << " " << extrinsics.translation[1] << " " << extrinsics.translation[2] << std::endl;
+
+    return ss.str();
+}
+
+std::string to_string( const position_and_rotation & mat )
+{
+    std::stringstream ss;
+    ss << mat.pos_and_rot[0][0] << " " << mat.pos_and_rot[0][1] << " " << mat.pos_and_rot[0][2] << " " << mat.pos_and_rot[0][3] << std::endl;
+    ss << mat.pos_and_rot[1][0] << " " << mat.pos_and_rot[1][1] << " " << mat.pos_and_rot[1][2] << " " << mat.pos_and_rot[1][3] << std::endl;
+    ss << mat.pos_and_rot[2][0] << " " << mat.pos_and_rot[2][1] << " " << mat.pos_and_rot[2][2] << " " << mat.pos_and_rot[2][3] << std::endl;
+    ss << mat.pos_and_rot[3][0] << " " << mat.pos_and_rot[3][1] << " " << mat.pos_and_rot[3][2] << " " << mat.pos_and_rot[3][3] << std::endl;
 
     return ss.str();
 }
@@ -248,6 +258,8 @@ TEST_CASE("Extrinsics graph - matrices 4x4", "[live]")
                     std::cout << "extr_j_to_i : " << std::endl;
                     std::cout << to_string(extr_j_to_i) << std::endl;
                     std::cout << std::endl;
+
+                    std::cout << to_string( product ) << std::endl;
                 }
                 REQUIRE(product.is_identity());
 

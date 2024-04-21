@@ -27,6 +27,7 @@ namespace librealsense
         case RS2_FORMAT_DISPARITY32: return 32;
         case RS2_FORMAT_XYZ32F: return 12 * 8;
         case RS2_FORMAT_YUYV:  return 16;
+        case RS2_FORMAT_M420:  return 12; // 16 pixels are represented with 24 bytes (16 of Y and 8 of Cr, Cb) - 24 / 16 * 8 = 12
         case RS2_FORMAT_RGB8: return 24;
         case RS2_FORMAT_BGR8: return 24;
         case RS2_FORMAT_RGBA8: return 32;
@@ -51,21 +52,9 @@ namespace librealsense
         case RS2_FORMAT_Z16H: return 16;
         case RS2_FORMAT_FG: return 16;
         case RS2_FORMAT_Y411: return 12;
+        case RS2_FORMAT_Y16I: return 32;
         default: assert(false); return 0;
         }
-    }
-
-    //////////////////////////////////////
-    // Frame rotation routines //
-    //////////////////////////////////////
-    resolution rotate_resolution(resolution res)
-    {
-        return resolution{ res.height , res.width};
-    }
-
-    resolution l500_confidence_resolution(resolution res)
-    {
-        return resolution{ res.height , res.width * 2 };
     }
 
 }

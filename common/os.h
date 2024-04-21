@@ -50,22 +50,9 @@ namespace rs2
         size_t pixel_width, size_t pixels_height, size_t bytes_per_pixel,
         const void* raster_data, size_t stride_bytes);
 
-    enum special_folder
-    {
-        user_desktop,
-        user_documents,
-        user_pictures,
-        user_videos,
-        temp_folder,
-        app_data
-    };
-
     std::string get_timestamped_file_name();
-    std::string get_folder_path(special_folder f);
 
     std::string url_encode(const std::string &value);
-
-    std::string get_os_name();
 
     bool is_debug();
 }

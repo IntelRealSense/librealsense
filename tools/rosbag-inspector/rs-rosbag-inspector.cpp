@@ -388,7 +388,7 @@ inline void sort(sort_type m_sort_type, const std::string& in, const std::string
     }
 }
 
-int main(int argc, const char** argv)
+int main(int argc, const char** argv) try
 {
     if (!glfwInit())
     {
@@ -436,6 +436,16 @@ int main(int argc, const char** argv)
     ImGui_ImplGlfw_Shutdown();
     glfwTerminate();
     return 0;
+}
+catch( const std::exception & e )
+{
+    std::cerr << e.what() << std::endl;
+    return EXIT_FAILURE;
+}
+catch( ... )
+{
+    std::cerr << "some error" << std::endl;
+    return EXIT_FAILURE;
 }
 
 #ifdef WIN32

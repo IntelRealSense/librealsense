@@ -23,8 +23,8 @@
 #include "geometry_msgs/Accel.h"
 #include "metadata-parser.h"
 #include "option.h"
-#include "l500/l500-depth.h"
 #include "rosbag/structures.h"
+#include "core/serialization.h"
 #include <regex>
 #include "stream.h"
 #include "types.h"
@@ -43,6 +43,15 @@ enum ros_file_versions
 
 namespace librealsense
 {
+    struct stream_descriptor
+    {
+        stream_descriptor() : type( RS2_STREAM_ANY ), index( 0 ) {}
+        stream_descriptor( rs2_stream type, int index = 0 ) : type( type ), index( index ) {}
+
+        rs2_stream type;
+        int index;
+    };
+
     inline void convert(rs2_format source, std::string& target)
     {
         switch (source)
@@ -313,11 +322,6 @@ namespace librealsense
         static std::string post_processing_blocks_topic(const device_serializer::sensor_identifier& sensor_id)
         {
             return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "post_processing" });
-        }
-
-        static std::string l500_data_blocks_topic(const device_serializer::sensor_identifier& sensor_id)
-        {
-            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "l500_data" });
         }
 
         /*version 3 and up*/

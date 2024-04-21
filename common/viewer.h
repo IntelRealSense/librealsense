@@ -59,6 +59,8 @@ namespace rs2
 
     class viewer_model
     {
+        bool _disable_log_to_console = false;
+
     public:
         void reset_camera(float3 pos = { 0.0f, 0.0f, -1.0f });
 
@@ -68,6 +70,7 @@ namespace rs2
         const float panel_y = 50.f;
 
         float get_output_height() const { return (float)(not_model->output.get_output_height()); }
+        float get_dashboard_width() const { return (float)(not_model->output.get_dashboard_width()); }
 
         rs2::frame handle_ready_frames(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message);
 
@@ -162,7 +165,6 @@ namespace rs2
         bool support_non_syncronized_mode = true;
         std::atomic<bool> synchronization_enable;
         std::atomic<bool> synchronization_enable_prev_state;
-        std::atomic<int> zo_sensors;
 
         int selected_depth_source_uid = -1;
         int selected_tex_source_uid = -1;
@@ -191,7 +193,7 @@ namespace rs2
 
         press_button_model grid_object_button{ u8"\uf1cb", u8"\uf1cb",  "Configure Grid", "Configure Grid", false };
 
-        viewer_model(context &ctx_);
+        viewer_model(context &ctx_, bool disable_log_to_console = false );
 
         std::shared_ptr<updates_model> updates;
 
@@ -225,6 +227,7 @@ namespace rs2
         float calculate_ruler_max_distance(const std::vector<float>& distances) const;
 
         void set_export_popup(ImFont* large_font, ImFont* font, rect stream_rect, std::string& error_message, config_file& temp_cfg);
+        void init_depth_uid(int& selected_depth_source, std::vector<std::string>& depth_sources_str, std::vector<int>& depth_sources);
 
         streams_layout _layout;
         streams_layout _old_layout;

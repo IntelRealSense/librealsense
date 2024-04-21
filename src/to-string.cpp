@@ -1,11 +1,24 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
-#include "types.h"
+#include "core/options-registry.h"
+#include "core/enum-helpers.h"
 
-#define STRCASE(T, X) case RS2_##T##_##X: {\
-        static const std::string s##T##_##X##_str = make_less_screamy(#X);\
-        return s##T##_##X##_str.c_str(); }
+#include <rsutils/string/make-less-screamy.h>
+#include <cassert>
+
+
+#define STRX( X ) rsutils::string::make_less_screamy( #X )
+#define STRCASE( T, X )                                                                                                \
+    case RS2_##T##_##X: {                                                                                              \
+        static const std::string s##T##_##X##_str = STRX( X );                                                         \
+        return s##T##_##X##_str.c_str();                                                                               \
+    }
+#define STRARR( ARRAY, T, X ) ARRAY[RS2_##T##_##X] = STRX( X )
+
+
+static std::string const unknown_value_str( librealsense::UNKNOWN_VALUE );
+
 
 namespace librealsense {
 
@@ -45,12 +58,35 @@ const char * get_string( rs2_stream value )
     CASE( GPIO )
     CASE( POSE )
     CASE( CONFIDENCE )
+    CASE( MOTION )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
     }
 #undef CASE
 }
+
+char const * get_abbr_string( rs2_stream value)
+{
+    switch( value )
+    {
+    case RS2_STREAM_ANY: return "Any";
+    case RS2_STREAM_DEPTH: return "D";
+    case RS2_STREAM_COLOR: return "C";
+    case RS2_STREAM_INFRARED: return "IR";
+    case RS2_STREAM_FISHEYE: return "FE";
+    case RS2_STREAM_GYRO: return "G";
+    case RS2_STREAM_ACCEL: return "A";
+    case RS2_STREAM_GPIO: return "GPIO";
+    case RS2_STREAM_POSE: return "P";
+    case RS2_STREAM_CONFIDENCE: return "Conf";
+    case RS2_STREAM_MOTION: return "M";
+    default:
+        assert( !is_valid( value ) );
+        return "?";
+    }
+}
+
 
 const char * get_string( rs2_sr300_visual_preset value )
 {
@@ -199,6 +235,23 @@ const char * get_string( rs2_depth_auto_exposure_mode mode )
 #undef CASE
 }
 
+const char * get_string( rs2_gyro_sensitivity value )
+{
+#define CASE( X ) STRCASE( GYRO_SENSITIVITY, X )
+    switch( value )
+    {
+        CASE( 61_0_MILLI_DEG_SEC )
+        CASE( 30_5_MILLI_DEG_SEC )
+        CASE( 15_3_MILLI_DEG_SEC )
+        CASE( 7_6_MILLI_DEG_SEC )
+        CASE( 3_8_MILLI_DEG_SEC )
+    default:
+        assert( ! is_valid( value ) );
+        return UNKNOWN_VALUE;
+    }
+#undef CASE
+}
+
 const char * get_string( rs2_extension value )
 {
 #define CASE( X ) STRCASE( EXTENSION, X )
@@ -301,113 +354,153 @@ const char * get_string( rs2_log_severity value )
 #undef CASE
 }
 
-const char * get_string( rs2_option value )
+std::string const & get_string_( rs2_option value )
 {
-#define CASE( X ) STRCASE( OPTION, X )
-    switch( value )
+    static auto str_array = []()
     {
-    CASE( BACKLIGHT_COMPENSATION )
-    CASE( BRIGHTNESS )
-    CASE( CONTRAST )
-    CASE( EXPOSURE )
-    CASE( GAIN )
-    CASE( GAMMA )
-    CASE( HUE )
-    CASE( SATURATION )
-    CASE( SHARPNESS )
-    CASE( WHITE_BALANCE )
-    CASE( ENABLE_AUTO_EXPOSURE )
-    CASE( ENABLE_AUTO_WHITE_BALANCE )
-    CASE( LASER_POWER )
-    CASE( ACCURACY )
-    CASE( MOTION_RANGE )
-    CASE( FILTER_OPTION )
-    CASE( CONFIDENCE_THRESHOLD )
-    CASE( FRAMES_QUEUE_SIZE )
-    CASE( VISUAL_PRESET )
-    CASE( TOTAL_FRAME_DROPS )
-    CASE( EMITTER_ENABLED )
-    case RS2_OPTION_AUTO_EXPOSURE_MODE:  return "Fisheye Auto Exposure Mode";
-    CASE( POWER_LINE_FREQUENCY )
-    CASE( ASIC_TEMPERATURE )
-    CASE( ERROR_POLLING_ENABLED )
-    CASE( PROJECTOR_TEMPERATURE )
-    CASE( OUTPUT_TRIGGER_ENABLED )
-    CASE( MOTION_MODULE_TEMPERATURE )
-    CASE( DEPTH_UNITS )
-    CASE( ENABLE_MOTION_CORRECTION )
-    CASE( AUTO_EXPOSURE_PRIORITY )
-    CASE( HISTOGRAM_EQUALIZATION_ENABLED )
-    CASE( MIN_DISTANCE )
-    CASE( MAX_DISTANCE )
-    CASE( COLOR_SCHEME )
-    CASE( TEXTURE_SOURCE )
-    CASE( FILTER_MAGNITUDE )
-    CASE( FILTER_SMOOTH_ALPHA )
-    CASE( FILTER_SMOOTH_DELTA )
-    CASE( STEREO_BASELINE )
-    CASE( HOLES_FILL )
-    CASE( AUTO_EXPOSURE_CONVERGE_STEP )
-    CASE( INTER_CAM_SYNC_MODE )
-    CASE( STREAM_FILTER )
-    CASE( STREAM_FORMAT_FILTER )
-    CASE( STREAM_INDEX_FILTER )
-    CASE( EMITTER_ON_OFF )
-    CASE( ZERO_ORDER_POINT_X )
-    CASE( ZERO_ORDER_POINT_Y )
-    case RS2_OPTION_LLD_TEMPERATURE:        return "LDD temperature";
-    CASE( MC_TEMPERATURE )
-    CASE( MA_TEMPERATURE )
-    CASE( APD_TEMPERATURE )
-    CASE( HARDWARE_PRESET )
-    CASE( GLOBAL_TIME_ENABLED )
-    CASE( ENABLE_MAPPING )
-    CASE( ENABLE_RELOCALIZATION )
-    CASE( ENABLE_POSE_JUMPING )
-    CASE( ENABLE_DYNAMIC_CALIBRATION )
-    CASE( DEPTH_OFFSET )
-    CASE( LED_POWER )
-    CASE( ZERO_ORDER_ENABLED )
-    CASE( ENABLE_MAP_PRESERVATION )
-    CASE( FREEFALL_DETECTION_ENABLED )
-    case RS2_OPTION_AVALANCHE_PHOTO_DIODE:  return "Receiver Gain";
-    CASE( POST_PROCESSING_SHARPENING )
-    CASE( PRE_PROCESSING_SHARPENING )
-    CASE( NOISE_FILTERING )
-    CASE( INVALIDATION_BYPASS )
-    // CASE(AMBIENT_LIGHT) // Deprecated - replaced by "DIGITAL_GAIN" option
-    CASE( DIGITAL_GAIN )
-    CASE( SENSOR_MODE )
-    CASE( EMITTER_ALWAYS_ON )
-    CASE( THERMAL_COMPENSATION )
-    CASE( TRIGGER_CAMERA_ACCURACY_HEALTH )
-    CASE( RESET_CAMERA_ACCURACY_HEALTH )
-    CASE( HOST_PERFORMANCE )
-    CASE( HDR_ENABLED )
-    CASE( SEQUENCE_NAME )
-    CASE( SEQUENCE_SIZE )
-    CASE( SEQUENCE_ID )
-    CASE( HUMIDITY_TEMPERATURE )
-    CASE( ENABLE_MAX_USABLE_RANGE )
-    case RS2_OPTION_ALTERNATE_IR:           return "Alternate IR";
-    CASE( NOISE_ESTIMATION )
-    case RS2_OPTION_ENABLE_IR_REFLECTIVITY: return "Enable IR Reflectivity";
-    CASE( AUTO_EXPOSURE_LIMIT )
-    CASE( AUTO_GAIN_LIMIT )
-    CASE( AUTO_RX_SENSITIVITY )
-    CASE( TRANSMITTER_FREQUENCY )
-    CASE( VERTICAL_BINNING )
-    CASE( RECEIVER_SENSITIVITY )
-    CASE( AUTO_EXPOSURE_LIMIT_TOGGLE )
-    CASE( AUTO_GAIN_LIMIT_TOGGLE )
-    CASE( EMITTER_FREQUENCY )
-    case RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE:  return "Auto Exposure Mode";
-    default:
-        assert( ! is_valid( value ) );
-        return UNKNOWN_VALUE;
-    }
+        std::vector< std::string > arr( RS2_OPTION_COUNT );
+#define CASE( X ) STRARR( arr, OPTION, X );
+        CASE( BACKLIGHT_COMPENSATION )
+        CASE( BRIGHTNESS )
+        CASE( CONTRAST )
+        CASE( EXPOSURE )
+        CASE( GAIN )
+        CASE( GAMMA )
+        CASE( HUE )
+        CASE( SATURATION )
+        CASE( SHARPNESS )
+        CASE( WHITE_BALANCE )
+        CASE( ENABLE_AUTO_EXPOSURE )
+        CASE( ENABLE_AUTO_WHITE_BALANCE )
+        CASE( LASER_POWER )
+        CASE( ACCURACY )
+        CASE( MOTION_RANGE )
+        CASE( FILTER_OPTION )
+        CASE( CONFIDENCE_THRESHOLD )
+        CASE( FRAMES_QUEUE_SIZE )
+        CASE( VISUAL_PRESET )
+        CASE( TOTAL_FRAME_DROPS )
+        CASE( EMITTER_ENABLED )
+        arr[RS2_OPTION_AUTO_EXPOSURE_MODE] = "Fisheye Auto Exposure Mode";
+        CASE( POWER_LINE_FREQUENCY )
+        CASE( ASIC_TEMPERATURE )
+        CASE( ERROR_POLLING_ENABLED )
+        CASE( PROJECTOR_TEMPERATURE )
+        CASE( OUTPUT_TRIGGER_ENABLED )
+        CASE( MOTION_MODULE_TEMPERATURE )
+        CASE( DEPTH_UNITS )
+        CASE( ENABLE_MOTION_CORRECTION )
+        CASE( AUTO_EXPOSURE_PRIORITY )
+        CASE( HISTOGRAM_EQUALIZATION_ENABLED )
+        CASE( MIN_DISTANCE )
+        CASE( MAX_DISTANCE )
+        CASE( COLOR_SCHEME )
+        CASE( TEXTURE_SOURCE )
+        CASE( FILTER_MAGNITUDE )
+        CASE( FILTER_SMOOTH_ALPHA )
+        CASE( FILTER_SMOOTH_DELTA )
+        CASE( STEREO_BASELINE )
+        CASE( HOLES_FILL )
+        CASE( AUTO_EXPOSURE_CONVERGE_STEP )
+        CASE( INTER_CAM_SYNC_MODE )
+        CASE( STREAM_FILTER )
+        CASE( STREAM_FORMAT_FILTER )
+        CASE( STREAM_INDEX_FILTER )
+        CASE( EMITTER_ON_OFF )
+        CASE( ZERO_ORDER_POINT_X )
+        CASE( ZERO_ORDER_POINT_Y )
+        arr[RS2_OPTION_LLD_TEMPERATURE] = "LDD temperature";
+        CASE( MC_TEMPERATURE )
+        CASE( MA_TEMPERATURE )
+        CASE( APD_TEMPERATURE )
+        CASE( HARDWARE_PRESET )
+        CASE( GLOBAL_TIME_ENABLED )
+        CASE( ENABLE_MAPPING )
+        CASE( ENABLE_RELOCALIZATION )
+        CASE( ENABLE_POSE_JUMPING )
+        CASE( ENABLE_DYNAMIC_CALIBRATION )
+        CASE( DEPTH_OFFSET )
+        CASE( LED_POWER )
+        CASE( ZERO_ORDER_ENABLED )
+        CASE( ENABLE_MAP_PRESERVATION )
+        CASE( FREEFALL_DETECTION_ENABLED )
+        arr[RS2_OPTION_AVALANCHE_PHOTO_DIODE] = "Receiver Gain";
+        CASE( POST_PROCESSING_SHARPENING )
+        CASE( PRE_PROCESSING_SHARPENING )
+        CASE( NOISE_FILTERING )
+        CASE( INVALIDATION_BYPASS )
+        // CASE(AMBIENT_LIGHT) // Deprecated - replaced by "DIGITAL_GAIN" option
+        CASE( DIGITAL_GAIN )
+        CASE( SENSOR_MODE )
+        CASE( EMITTER_ALWAYS_ON )
+        CASE( THERMAL_COMPENSATION )
+        CASE( TRIGGER_CAMERA_ACCURACY_HEALTH )
+        CASE( RESET_CAMERA_ACCURACY_HEALTH )
+        CASE( HOST_PERFORMANCE )
+        CASE( HDR_ENABLED )
+        CASE( SEQUENCE_NAME )
+        CASE( SEQUENCE_SIZE )
+        CASE( SEQUENCE_ID )
+        CASE( HUMIDITY_TEMPERATURE )
+        CASE( ENABLE_MAX_USABLE_RANGE )
+        arr[RS2_OPTION_ALTERNATE_IR] = "Alternate IR";
+        CASE( NOISE_ESTIMATION )
+        arr[RS2_OPTION_ENABLE_IR_REFLECTIVITY] = "Enable IR Reflectivity";
+        CASE( AUTO_EXPOSURE_LIMIT )
+        CASE( AUTO_GAIN_LIMIT )
+        CASE( AUTO_RX_SENSITIVITY )
+        CASE( TRANSMITTER_FREQUENCY )
+        CASE( VERTICAL_BINNING )
+        CASE( RECEIVER_SENSITIVITY )
+        CASE( AUTO_EXPOSURE_LIMIT_TOGGLE )
+        CASE( AUTO_GAIN_LIMIT_TOGGLE )
+        CASE( EMITTER_FREQUENCY )
+        arr[RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE] = "Auto Exposure Mode";
+        CASE( OHM_TEMPERATURE )
+        CASE( SOC_PVT_TEMPERATURE )
+        CASE( GYRO_SENSITIVITY )
 #undef CASE
+        return arr;
+    }();
+    if( value >= 0 && value < RS2_OPTION_COUNT )
+        return str_array[value];
+    return unknown_value_str;
 }
+
+std::string const & get_string( rs2_option const option )
+{
+    if( options_registry::is_option_registered( option ) )
+        return options_registry::get_registered_option_name( option );
+    return get_string_( option );
+}
+
+
+bool is_valid( rs2_option option )
+{
+    return options_registry::is_option_registered( option )
+        || option >= 0 && option < RS2_OPTION_COUNT;
+}
+
+
+std::ostream & operator<<( std::ostream & out, rs2_option option )
+{
+    if( options_registry::is_option_registered( option ) )
+        return out << options_registry::get_registered_option_name( option );
+    if( option >= 0 && option < RS2_OPTION_COUNT )
+        return out << get_string_( option );
+    return out << (int)option;
+}
+
+
+bool try_parse( std::string const & option_name, rs2_option & res )
+{
+    auto const option = options_registry::find_option_by_name( option_name );
+    if( RS2_OPTION_COUNT == option )
+        return false;
+    res = option;
+    return true;
+}
+
 
 const char * get_string( rs2_format value )
 {
@@ -434,6 +527,7 @@ const char * get_string( rs2_format value )
     CASE( UYVY )
     CASE( MOTION_RAW )
     CASE( MOTION_XYZ32F )
+    CASE( COMBINED_MOTION )
     CASE( GPIO_RAW )
     CASE( 6DOF )
     CASE( Y10BPACK )
@@ -447,6 +541,8 @@ const char * get_string( rs2_format value )
     CASE( Z16H )
     CASE( FG )
     CASE( Y411 )
+    CASE( Y16I )
+    CASE( M420 )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
@@ -491,6 +587,7 @@ const char * get_string( rs2_camera_info value )
     CASE( ASIC_SERIAL_NUMBER )
     CASE( FIRMWARE_UPDATE_ID )
     CASE( IP_ADDRESS )
+    CASE( DFU_DEVICE_PATH )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
@@ -498,60 +595,61 @@ const char * get_string( rs2_camera_info value )
 #undef CASE
 }
 
-const char * get_string( rs2_frame_metadata_value value )
+std::string const & get_string( rs2_frame_metadata_value value )
 {
-#define CASE( X ) STRCASE( FRAME_METADATA, X )
-    switch( value )
+    static auto str_array = []()
     {
-    CASE( FRAME_COUNTER )
-    CASE( FRAME_TIMESTAMP )
-    CASE( SENSOR_TIMESTAMP )
-    CASE( ACTUAL_EXPOSURE )
-    CASE( GAIN_LEVEL )
-    CASE( AUTO_EXPOSURE )
-    CASE( WHITE_BALANCE )
-    CASE( TIME_OF_ARRIVAL )
-    CASE( TEMPERATURE )
-    CASE( BACKEND_TIMESTAMP )
-    CASE( ACTUAL_FPS )
-    CASE( FRAME_LASER_POWER )
-    CASE( FRAME_LASER_POWER_MODE )
-    CASE( EXPOSURE_PRIORITY )
-    CASE( EXPOSURE_ROI_LEFT )
-    CASE( EXPOSURE_ROI_RIGHT )
-    CASE( EXPOSURE_ROI_TOP )
-    CASE( EXPOSURE_ROI_BOTTOM )
-    CASE( BRIGHTNESS )
-    CASE( CONTRAST )
-    CASE( SATURATION )
-    CASE( SHARPNESS )
-    CASE( AUTO_WHITE_BALANCE_TEMPERATURE )
-    CASE( BACKLIGHT_COMPENSATION )
-    CASE( GAMMA )
-    CASE( HUE )
-    CASE( MANUAL_WHITE_BALANCE )
-    CASE( POWER_LINE_FREQUENCY )
-    CASE( LOW_LIGHT_COMPENSATION )
-    CASE( FRAME_EMITTER_MODE )
-    CASE( FRAME_LED_POWER )
-    CASE( RAW_FRAME_SIZE )
-    CASE( GPIO_INPUT_DATA )
-    CASE( SEQUENCE_NAME )
-    CASE( SEQUENCE_ID )
-    CASE( SEQUENCE_SIZE )
-    CASE( TRIGGER )
-    CASE( PRESET )
-    CASE( INPUT_WIDTH )
-    CASE( INPUT_HEIGHT )
-    CASE( SUB_PRESET_INFO )
-    CASE( CALIB_INFO )
-    CASE( CRC )
-
-    default:
-        assert( ! is_valid( value ) );
-        return UNKNOWN_VALUE;
-    }
+        std::vector< std::string > arr( RS2_FRAME_METADATA_COUNT );
+#define CASE( X ) STRARR( arr, FRAME_METADATA, X );
+        CASE( FRAME_COUNTER )
+        CASE( FRAME_TIMESTAMP )
+        CASE( SENSOR_TIMESTAMP )
+        CASE( ACTUAL_EXPOSURE )
+        CASE( GAIN_LEVEL )
+        CASE( AUTO_EXPOSURE )
+        CASE( WHITE_BALANCE )
+        CASE( TIME_OF_ARRIVAL )
+        CASE( TEMPERATURE )
+        CASE( BACKEND_TIMESTAMP )
+        CASE( ACTUAL_FPS )
+        CASE( FRAME_LASER_POWER )
+        CASE( FRAME_LASER_POWER_MODE )
+        CASE( EXPOSURE_PRIORITY )
+        CASE( EXPOSURE_ROI_LEFT )
+        CASE( EXPOSURE_ROI_RIGHT )
+        CASE( EXPOSURE_ROI_TOP )
+        CASE( EXPOSURE_ROI_BOTTOM )
+        CASE( BRIGHTNESS )
+        CASE( CONTRAST )
+        CASE( SATURATION )
+        CASE( SHARPNESS )
+        CASE( AUTO_WHITE_BALANCE_TEMPERATURE )
+        CASE( BACKLIGHT_COMPENSATION )
+        CASE( GAMMA )
+        CASE( HUE )
+        CASE( MANUAL_WHITE_BALANCE )
+        CASE( POWER_LINE_FREQUENCY )
+        CASE( LOW_LIGHT_COMPENSATION )
+        CASE( FRAME_EMITTER_MODE )
+        CASE( FRAME_LED_POWER )
+        CASE( RAW_FRAME_SIZE )
+        CASE( GPIO_INPUT_DATA )
+        CASE( SEQUENCE_NAME )
+        CASE( SEQUENCE_ID )
+        CASE( SEQUENCE_SIZE )
+        CASE( TRIGGER )
+        CASE( PRESET )
+        CASE( INPUT_WIDTH )
+        CASE( INPUT_HEIGHT )
+        CASE( SUB_PRESET_INFO )
+        CASE( CALIB_INFO )
+        CASE( CRC )
 #undef CASE
+            return arr;
+    }();
+    if( ! is_valid( value ) )
+        return unknown_value_str;
+    return str_array[value];
 }
 
 const char * get_string( rs2_timestamp_domain value )
@@ -644,12 +742,44 @@ const char * get_string( rs2_l500_visual_preset value )
 }
 
 
+std::string const & get_string( rs2_option_type value )
+{
+    static auto str_array = []()
+    {
+        std::vector< std::string > arr( RS2_OPTION_TYPE_COUNT );
+#define CASE( X ) STRARR( arr, OPTION_TYPE, X );
+        CASE( FLOAT )
+        CASE( STRING )
+        CASE( INTEGER )
+        CASE( BOOLEAN )
+#undef CASE
+            return arr;
+    }();
+    if( ! is_valid( value ) )
+        return unknown_value_str;
+    return str_array[value];
+}
+
+
 }  // namespace librealsense
 
 const char * rs2_stream_to_string( rs2_stream stream ) { return librealsense::get_string( stream ); }
 const char * rs2_format_to_string( rs2_format format ) { return librealsense::get_string( format ); }
 const char * rs2_distortion_to_string( rs2_distortion distortion ) { return librealsense::get_string( distortion ); }
-const char * rs2_option_to_string( rs2_option option ) { return librealsense::get_string( option ); }
+
+const char * rs2_option_to_string( rs2_option option )
+{
+    return librealsense::get_string( option ).c_str();
+}
+
+rs2_option rs2_option_from_string( char const * option_name )
+{
+    return option_name
+        ? librealsense::options_registry::find_option_by_name( option_name )
+        : RS2_OPTION_COUNT;
+}
+
+const char * rs2_option_type_to_string( rs2_option_type type ) { return librealsense::get_string( type ).c_str(); }
 const char * rs2_camera_info_to_string( rs2_camera_info info ) { return librealsense::get_string( info ); }
 const char * rs2_timestamp_domain_to_string( rs2_timestamp_domain info ) { return librealsense::get_string( info ); }
 const char * rs2_notification_category_to_string( rs2_notification_category category ) { return librealsense::get_string( category ); }
@@ -660,7 +790,7 @@ const char * rs2_exception_type_to_string( rs2_exception_type type ) { return li
 const char * rs2_playback_status_to_string( rs2_playback_status status ) { return librealsense::get_string( status ); }
 const char * rs2_extension_type_to_string( rs2_extension type ) { return librealsense::get_string( type ); }
 const char * rs2_matchers_to_string( rs2_matchers matcher ) { return librealsense::get_string( matcher ); }
-const char * rs2_frame_metadata_to_string( rs2_frame_metadata_value metadata ) { return librealsense::get_string( metadata ); }
+const char * rs2_frame_metadata_to_string( rs2_frame_metadata_value metadata ) { return librealsense::get_string( metadata ).c_str(); }
 const char * rs2_extension_to_string( rs2_extension type ) { return rs2_extension_type_to_string( type ); }
 const char * rs2_frame_metadata_value_to_string( rs2_frame_metadata_value metadata ) { return rs2_frame_metadata_to_string( metadata ); }
 const char * rs2_l500_visual_preset_to_string( rs2_l500_visual_preset preset ) { return librealsense::get_string( preset ); }
@@ -673,3 +803,4 @@ const char * rs2_calibration_status_to_string( rs2_calibration_status status ) {
 const char * rs2_host_perf_mode_to_string( rs2_host_perf_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_emitter_frequency_mode_to_string( rs2_emitter_frequency_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_depth_auto_exposure_mode_to_string( rs2_depth_auto_exposure_mode mode ) { return librealsense::get_string( mode ); }
+const char * rs2_gyro_sensitivity_to_string( rs2_gyro_sensitivity mode ){return librealsense::get_string( mode );}

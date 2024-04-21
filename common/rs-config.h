@@ -1,7 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
-
 #pragma once
+
+#include <rsutils/json.h>
 
 #include <map>
 #include <string>
@@ -40,7 +41,7 @@ namespace rs2
     {
     public:
         config_file();
-        config_file(std::string filename);
+        config_file( std::string const & filename );
 
         void set_default(const char* key, const char* calculate);
 
@@ -91,8 +92,8 @@ namespace rs2
 
         void save();
 
-        std::map<std::string, std::string> _values;
         std::map<std::string, std::string> _defaults;
         std::string _filename;
+        rsutils::json _j;
     };
 }
