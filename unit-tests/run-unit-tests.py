@@ -52,8 +52,8 @@ def usage():
     print( '        --hub-reset          If a hub is available, reset the hub itself' )
     print( '        --rslog              Enable LibRS logging (LOG_DEBUG etc.) to console in each test' )
     print( '        --skip-disconnected  Skip live test if required device is disconnected (only applies w/o a hub)' )
-    print( '        --xternal_tests <>   External tests dir other than librealsense/unit-tests' )
-    print( '                             <path to external tests> ex: $HOME/my_ws/my_tests' )
+    print( '        --test-dir <>        Path to test dir; default: librealsense/unit-tests' )
+    print( '                             ex: --test-dir $HOME/my_ws/my_tests; logs are stored in the same dir' )
     print( 'Examples:' )
     print( 'Running: python run-unit-tests.py -s' )
     print( '    Runs all tests, but direct their output to the console rather than log files' )
@@ -80,7 +80,7 @@ try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
                                           'list-tests', 'no-exceptions', 'context=', 'repeat=', 'config=', 'no-reset', 'hub-reset',
-                                          'rslog', 'skip-disconnected', 'live', 'not-live', 'device=', 'xternal_tests='] )
+                                          'rslog', 'skip-disconnected', 'live', 'not-live', 'device=', 'test-dir='] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
@@ -100,7 +100,7 @@ skip_disconnected = False
 rslog = False
 only_live = False
 only_not_live = False
-xternal_test_dir = None
+test_dir = None
 for opt, arg in opts:
     if opt in ('-h', '--help'):
         usage()
@@ -153,10 +153,10 @@ for opt, arg in opts:
             log.e( "--live and --not-live are mutually exclusive" )
             usage()
         only_not_live = True
-    elif opt == '--xternal_tests':
-        xternal_test_dir = os.path.abspath(arg)
-        libci.unit_tests_dir = xternal_test_dir
-        log.i(f'External tests path set to: {xternal_test_dir}')
+    elif opt == '--test-dir':
+        test_dir = os.path.abspath(arg)
+        libci.unit_tests_dir = test_dir
+        log.i(f'Tests dir changed from default to: {test_dir}')
 
 def find_build_dir( dir ):
     """
@@ -187,7 +187,6 @@ if len( args ) == 1:
 else:
     build_dir = repo.build    # may not actually contain exes
     #log.d( 'repo.build:', build_dir )
-
 # Python scripts should be able to find the pyrealsense2 .pyd or else they won't work. We don't know
 # if the user (Travis included) has pyrealsense2 installed but even if so, we want to use the one we compiled.
 # we search the librealsense repository for the .pyd file (.so file in linux)
@@ -236,13 +235,13 @@ if not exe_dir and build_dir:
         exe_dir = dir_with_test
 
 if not to_stdout:
-    if not xternal_test_dir:
+    if not test_dir:
         # If no test executables were found, put the logs directly in the build directory
         logdir = os.path.join( exe_dir or build_dir or os.path.join( repo.root, 'build' ), 'unit-tests' )
         os.makedirs( logdir, exist_ok=True )
         libci.logdir = logdir
     else:
-        logdir = os.path.join( xternal_test_dir, 'logs' )
+        logdir = os.path.join( test_dir, 'logs' )
         os.makedirs( logdir, exist_ok=True )
         libci.logdir = logdir
         
@@ -378,8 +377,8 @@ def get_tests():
 
     # Python unit-test scripts are in the same directory as us... we want to consider running them
     # (we may not if they're live and we have no pyrealsense2.pyd):
-    if xternal_test_dir:
-        current_dir = xternal_test_dir
+    if test_dir:
+        current_dir = test_dir
     for py_test in file.find( current_dir, '(^|/)test-.*\.py' ):
         testparent = os.path.dirname( py_test )  # "log/internal" <-  "log/internal/test-all.py"
         if testparent:
