@@ -100,7 +100,8 @@ skip_disconnected = False
 rslog = False
 only_live = False
 only_not_live = False
-test_dir = None
+test_dir = current_dir
+test_dir_log =  False
 for opt, arg in opts:
     if opt in ('-h', '--help'):
         usage()
@@ -157,6 +158,7 @@ for opt, arg in opts:
         test_dir = os.path.abspath(arg)
         libci.unit_tests_dir = test_dir
         log.i(f'Tests dir changed from default to: {test_dir}')
+        test_dir_log = True
 
 def find_build_dir( dir ):
     """
@@ -235,15 +237,13 @@ if not exe_dir and build_dir:
         exe_dir = dir_with_test
 
 if not to_stdout:
-    if not test_dir:
-        # If no test executables were found, put the logs directly in the build directory
+    # If no test executables were found, put the logs directly in the build directory
+    if not test_dir_log:
         logdir = os.path.join( exe_dir or build_dir or os.path.join( repo.root, 'build' ), 'unit-tests' )
-        os.makedirs( logdir, exist_ok=True )
-        libci.logdir = logdir
     else:
         logdir = os.path.join( test_dir, 'logs' )
-        os.makedirs( logdir, exist_ok=True )
-        libci.logdir = logdir
+    os.makedirs( logdir, exist_ok=True )
+    libci.logdir = logdir
         
 n_tests = 0
 
@@ -328,7 +328,7 @@ def check_log_for_fails( path_to_log, testname, configuration=None, repetition=1
 
 
 def get_tests():
-    global regex, build_dir, exe_dir, pyrs, current_dir, linux, context, list_only
+    global regex, build_dir, exe_dir, pyrs, test_dir, linux, context, list_only
     if regex:
         pattern = re.compile( regex )
     # In Linux, the build targets are located elsewhere than on Windows
@@ -362,7 +362,7 @@ def get_tests():
     elif list_only:
         # We want to list all tests, even if they weren't built.
         # So we look for the source files instead of using the manifest
-        for cpp_test in file.find( current_dir, '(^|/)test-.*\.cpp' ):
+        for cpp_test in file.find( test_dir, '(^|/)test-.*\.cpp' ):
             testparent = os.path.dirname( cpp_test )  # "log/internal" <-  "log/internal/test-all.py"
             if testparent:
                 testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename( cpp_test )[
@@ -377,9 +377,7 @@ def get_tests():
 
     # Python unit-test scripts are in the same directory as us... we want to consider running them
     # (we may not if they're live and we have no pyrealsense2.pyd):
-    if test_dir:
-        current_dir = test_dir
-    for py_test in file.find( current_dir, '(^|/)test-.*\.py' ):
+    for py_test in file.find( test_dir, '(^|/)test-.*\.py' ):
         testparent = os.path.dirname( py_test )  # "log/internal" <-  "log/internal/test-all.py"
         if testparent:
             testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename( py_test )[5:-3]  # remove .py
