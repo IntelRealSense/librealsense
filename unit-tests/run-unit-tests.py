@@ -189,6 +189,7 @@ if len( args ) == 1:
 else:
     build_dir = repo.build    # may not actually contain exes
     #log.d( 'repo.build:', build_dir )
+
 # Python scripts should be able to find the pyrealsense2 .pyd or else they won't work. We don't know
 # if the user (Travis included) has pyrealsense2 installed but even if so, we want to use the one we compiled.
 # we search the librealsense repository for the .pyd file (.so file in linux)
