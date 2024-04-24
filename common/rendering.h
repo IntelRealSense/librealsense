@@ -398,24 +398,6 @@ namespace rs2
         rect curr_preview_rect{};
         int texture_id = 0;
 
-        rs2_extrinsics extrinsics;
-        GLfloat rotation_matrix[16];
-        GLfloat translation_matrix[3];
-
-        void set_extrinsics(rs2_extrinsics ext)
-        {
-            extrinsics = ext;
-            rs2_extrinsics occ_to_depth = extrinsics;
-            auto rot = occ_to_depth.rotation;
-            GLfloat rotation_matrix[16] = { rot[0], rot[3], rot[6], 0,
-                                            rot[1], rot[4], rot[7], 0,
-                                            rot[2], rot[5], rot[8], 0,
-                                             0    ,   0,      0,    1 };
-
-            memcpy(translation_matrix, occ_to_depth.translation, 3 * sizeof(GLfloat));
-            memcpy(this->rotation_matrix, rotation_matrix, 16 * sizeof(GLfloat));
-        }
-
         texture_buffer(const texture_buffer& other)
         {
             texture = other.texture;
@@ -782,12 +764,6 @@ namespace rs2
 
         vertex normalize_and_draw_point(vertex v, rect normalize_from, rect unnormalize_to)
         {
-            constexpr GLfloat width = 512; // range of Y values for polygons - -2.56 - +2.56 meters
-            constexpr GLfloat height = 640; // range of X values for polygons - 0-6.4 meters
-
-            v.x = height - v.x;
-            v.y = - v.y;
-
             vertex v2 = { 0,0,0 };
             v2.x = (v.y - normalize_from.x) / normalize_from.w;
             v2.y = (v.x - normalize_from.y) / normalize_from.h;
@@ -809,30 +785,28 @@ namespace rs2
             glLineWidth(3);
             glBegin(GL_LINE_STRIP);
             
-            vertex v_normalized = {0,0,0};
             auto zone_to_draw = danger_zone;
             switch (zone)
             {
             case Zone::Danger:
                 zone_to_draw = danger_zone;
-                glColor4f(1, 0, 0, 1);
+                glColor4f(1, 0, 0, 1); // red color
                 break;
             case Zone::Warning:
                 zone_to_draw = warning_zone;
-                glColor4f(1, 1, 0, 1);
+                glColor4f(1, 1, 0, 1); // yellow color
                 break;
             case Zone::Diagnostic:
                 zone_to_draw = diagnostic_zone;
-                glColor4f(0, 0, 1, 1);
+                glColor4f(0, 0, 1, 1); // blue color
                 break;
             default:
                 return;
             }
 
-            bool first = true;
             for (vertex& v : zone_to_draw)
             {
-                vertex vv_normalized = normalize_and_draw_point(v, safety_regions_rect, draw_within);
+                normalize_and_draw_point(v, safety_regions_rect, draw_within);
             }
             normalize_and_draw_point(zone_to_draw[0], safety_regions_rect, draw_within);
             glEnd();
@@ -857,7 +831,7 @@ namespace rs2
                 return points;
             }
 
-            // we divide by 10 to convert all units from mm to cm
+            // we divide by 10 to convert all units from mm to cm, assuming all md values are subsequent 
             vertex x0 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value))) / 10,
                             static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 1))) / 10, 0 };
             vertex x1 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 2))) / 10,
@@ -1298,14 +1272,20 @@ namespace rs2
             }
             else if (!danger_zone.empty()) // if zoomed in, polygons won't show right at the moment...
             {
-                //glMultMatrixf(rotation_matrix);
+                GLfloat rot[16] = {-1 , 0 , 0  , 0,
+                                   0 , -1 , 0  , 0,
+                                   0 , 0 ,1  , 0,
+                                   0 , 0 , 0  , 1 };
+                glPushMatrix();
+                glTranslatef(r.center().x, r.center().y, 0);
+                glMultMatrixf(rot);
 
-                // getting inverse of the translation, in depth coordinates, as this is the one needed by OpenGL
-                //glTranslatef(-translation_matrix[0], -translation_matrix[1], -translation_matrix[2]);
-
+                glTranslatef(-r.center().x, -r.center().y, 0);
                 draw_zone(Zone::Diagnostic, r);
                 draw_zone(Zone::Warning, r);
                 draw_zone(Zone::Danger, r);
+                
+                glPopMatrix();
             }
         }
     };

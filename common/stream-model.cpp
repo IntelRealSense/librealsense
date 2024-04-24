@@ -55,7 +55,6 @@ namespace rs2
                 frame_md.md_attributes[i].first = false;
         }
 
-        texture->set_extrinsics(dev->get_extrinsics_from_depth());
         texture->upload(f);
         return texture;
     }
