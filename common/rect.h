@@ -6,7 +6,6 @@
 
 #include <algorithm>  // max,min
 #include <cmath>  // floor
-#include <glad/glad.h>
 
 
 namespace rs2 {
@@ -193,19 +192,6 @@ struct rect
     {
         return other.contains( { x, y } ) || other.contains( { x + w, y } ) || other.contains( { x, y + h } )
             || other.contains( { x + w, y + h } ) || contains( { other.x, other.y } );
-    }
-
-    void draw(float line_width = 1.f, float red = 1.f, float green = 1.f, float blue = 1.f, float alpha = 1.f)
-    {
-        glLineWidth(line_width);
-        glBegin(GL_LINE_STRIP);
-        glColor4f(red, green, blue, alpha);
-        glVertex2f(x, y);
-        glVertex2f(x + w, y);
-        glVertex2f(x + w, y + h);
-        glVertex2f(x, y + h);
-        glVertex2f(x, y);
-        glEnd();
     }
 };
 

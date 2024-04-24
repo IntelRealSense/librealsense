@@ -385,9 +385,9 @@ namespace rs2
         GLuint texture;
         rs2::frame_queue last_queue[2];
         mutable rs2::frame last[2];
-        rect danger_zone = { 0,0,0,0 };
-        rect warning_zone = { 0,0,0,0 };
-        rect diagnostic_zone = { 0,0,0,0 };
+        std::vector<vertex> danger_zone;
+        std::vector<vertex> warning_zone;
+        std::vector<vertex> diagnostic_zone;
         typedef enum class Zone { Danger, Warning, Diagnostic } Zone;
     public:
         std::shared_ptr<colorizer> colorize;
@@ -397,6 +397,24 @@ namespace rs2
         bool zoom_preview = false;
         rect curr_preview_rect{};
         int texture_id = 0;
+
+        rs2_extrinsics extrinsics;
+        GLfloat rotation_matrix[16];
+        GLfloat translation_matrix[3];
+
+        void set_extrinsics(rs2_extrinsics ext)
+        {
+            extrinsics = ext;
+            rs2_extrinsics occ_to_depth = extrinsics;
+            auto rot = occ_to_depth.rotation;
+            GLfloat rotation_matrix[16] = { rot[0], rot[3], rot[6], 0,
+                                            rot[1], rot[4], rot[7], 0,
+                                            rot[2], rot[5], rot[8], 0,
+                                             0    ,   0,      0,    1 };
+
+            memcpy(translation_matrix, occ_to_depth.translation, 3 * sizeof(GLfloat));
+            memcpy(this->rotation_matrix, rotation_matrix, 16 * sizeof(GLfloat));
+        }
 
         texture_buffer(const texture_buffer& other)
         {
@@ -762,62 +780,94 @@ namespace rs2
             }
         }
 
+        vertex normalize_and_draw_point(vertex v, rect normalize_from, rect unnormalize_to)
+        {
+            constexpr GLfloat width = 512; // range of Y values for polygons - -2.56 - +2.56 meters
+            constexpr GLfloat height = 640; // range of X values for polygons - 0-6.4 meters
+
+            v.x = height - v.x;
+            v.y = - v.y;
+
+            vertex v2 = { 0,0,0 };
+            v2.x = (v.y - normalize_from.x) / normalize_from.w;
+            v2.y = (v.x - normalize_from.y) / normalize_from.h;
+
+            v2.x = v2.x * unnormalize_to.w + unnormalize_to.x;
+            v2.y = v2.y * unnormalize_to.h + unnormalize_to.y;
+
+            glVertex2f(v2.x, v2.y);
+
+            return v2;
+        }
+
         void draw_zone(Zone zone, const rect& draw_within, float line_width = 3.f)
         {
             constexpr GLfloat width = 512; // range of Y values for polygons - -2.56 - +2.56 meters
             constexpr GLfloat height = 640; // range of X values for polygons - 0-6.4 meters
             rect safety_regions_rect = { -256, 0, width, height };  //-256 is the minimum Y value, 0 is the minimum X value, all zones are within this area
-            rect zone_to_draw;
-            std::vector<float> zone_color;
+            
+            glLineWidth(3);
+            glBegin(GL_LINE_STRIP);
+            
+            vertex v_normalized = {0,0,0};
+            auto zone_to_draw = danger_zone;
             switch (zone)
             {
             case Zone::Danger:
-                zone_to_draw = { 0 - danger_zone.x, height - (danger_zone.y + danger_zone.h), -danger_zone.w, danger_zone.h };
-                zone_color = { 1,0,0 };
+                zone_to_draw = danger_zone;
+                glColor4f(1, 0, 0, 1);
                 break;
             case Zone::Warning:
-                zone_to_draw = { 0 - warning_zone.x, height - (warning_zone.y + warning_zone.h), -warning_zone.w, warning_zone.h };
-                zone_color = { 1,1,0 };
+                zone_to_draw = warning_zone;
+                glColor4f(1, 1, 0, 1);
                 break;
             case Zone::Diagnostic:
-                zone_to_draw = { 0 - diagnostic_zone.x, height - (diagnostic_zone.y + diagnostic_zone.h), -diagnostic_zone.w, diagnostic_zone.h };
-                zone_color = { 0,0,1 };
+                zone_to_draw = diagnostic_zone;
+                glColor4f(0, 0, 1, 1);
                 break;
             default:
                 return;
             }
 
-            // to draw properly, we adjust our values to be inside the frame's rectangle
-            // the values are within the limits of safety_regions_rect, and we convert them to be within the rectangle we want to draw in
-            zone_to_draw = zone_to_draw.normalize(safety_regions_rect).unnormalize(draw_within);
-            zone_to_draw.draw(line_width, zone_color[0], zone_color[1], zone_color[2]);
+            bool first = true;
+            for (vertex& v : zone_to_draw)
+            {
+                vertex vv_normalized = normalize_and_draw_point(v, safety_regions_rect, draw_within);
+            }
+            normalize_and_draw_point(zone_to_draw[0], safety_regions_rect, draw_within);
+            glEnd();
         }
 
-        static rect init_zone(Zone zone, const rs2::frame& frame)
+        static std::vector<vertex> init_zone(Zone zone, const rs2::frame& frame)
         {
+            std::vector<vertex> points;
             rs2_frame_metadata_value md_value;
             switch (zone)
             {
             case Zone::Danger:
-                md_value = RS2_FRAME_METADATA_DANGER_ZONE_POINT_1_X_CORD;
+                md_value = RS2_FRAME_METADATA_DANGER_ZONE_POINT_0_X_CORD;
                 break;
             case Zone::Warning:
-                md_value = RS2_FRAME_METADATA_WARNING_ZONE_POINT_1_X_CORD;
+                md_value = RS2_FRAME_METADATA_WARNING_ZONE_POINT_0_X_CORD;
                 break;
             case Zone::Diagnostic:
-                md_value = RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_1_X_CORD;
+                md_value = RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_0_X_CORD;
                 break;
             default:
-                return { 0,0,0,0 };
+                return points;
             }
 
             // we divide by 10 to convert all units from mm to cm
-            vertex x1 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value))) / 10,
+            vertex x0 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value))) / 10,
                             static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 1))) / 10, 0 };
-            vertex x3 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 4))) / 10,
+            vertex x1 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 2))) / 10,
+                            static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 3))) / 10, 0 };
+            vertex x2 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 4))) / 10,
                             static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 5))) / 10, 0 };
-
-            return { x3.y, x3.x, x1.y - x3.y, x1.x - x3.x };
+            vertex x3 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 6))) / 10,
+                            static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 7))) / 10, 0 };
+            points = {x0, x1, x2, x3};
+            return points;
         }
 
         void upload_occupancy_frame(const rs2::frame& frame, const void* data)
@@ -1246,11 +1296,16 @@ namespace rs2
                 glVertex2f(normalized_thumbnail_roi.x, normalized_thumbnail_roi.y);
                 glEnd();
             }
-            else if (danger_zone) // if zoomed in, polygons won't show right at the moment...
+            else if (!danger_zone.empty()) // if zoomed in, polygons won't show right at the moment...
             {
-                draw_zone(Zone::Danger, r);
-                draw_zone(Zone::Warning, r);
+                //glMultMatrixf(rotation_matrix);
+
+                // getting inverse of the translation, in depth coordinates, as this is the one needed by OpenGL
+                //glTranslatef(-translation_matrix[0], -translation_matrix[1], -translation_matrix[2]);
+
                 draw_zone(Zone::Diagnostic, r);
+                draw_zone(Zone::Warning, r);
+                draw_zone(Zone::Danger, r);
             }
         }
     };
