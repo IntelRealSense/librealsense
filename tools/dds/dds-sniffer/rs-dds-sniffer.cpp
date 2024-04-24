@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #include "rs-dds-sniffer.h"
 
@@ -31,22 +31,6 @@
 using namespace TCLAP;
 using namespace eprosima::fastdds::dds;
 using namespace eprosima::fastrtps::types;
-
-// FastDDS GUID_t: (MSB first, little-endian; see GuidUtils.hpp)
-//     2 bytes  -  vendor ID
-//     2 bytes  -  host
-//     4 bytes  -  process (2 pid, 2 random)
-//     4 bytes  -  participant
-//     4 bytes  -  entity ID (reader/writer)
-// For example:
-//  Participant 1                 - 01.0f.be.05.f0.09.86.b6.01.00.00.00|0.0.1.c1
-//  Writer under participant 1    - 01.0f.be.05.f0.09.86.b6.01.00.00.00|0.0.1.2
-//  Participant 2 of same process - 01.0f.be.05.f0.09.86.b6.02.00.00.00|0.0.1.c1
-//  Reader under participant 2    - 01.0f.be.05.f0.09.86.b6.02.00.00.00|0.0.1.7
-//  Participant 3 other process   - 01.0f.be.05.88.50.ea.4a.01.00.00.00|0.0.1.c1
-// Note same host for all, participant and entity IDs may be repeat for different processes
-// To differentiate entities of different participant with same name we append process GUID values to the name
-constexpr uint8_t GUID_PROCESS_LOCATION = 4;
 
 static eprosima::fastrtps::rtps::GuidPrefix_t std_prefix;
 
@@ -335,7 +319,7 @@ void dds_sniffer::on_type_discovery( char const * topic_name, DynamicType_ptr dy
         // Register type with participant
         TypeSupport type_support( DDS_API_CALL( new DynamicPubSubType( dyn_type ) ) );
         DDS_API_CALL( type_support.register_type( _participant.get() ) );
-        std::cout << "Discovered topic '" << topic_name << "' of type '" << type_support->getName() << "'" << std::endl;
+        std::cout << "+Topic '" << topic_name << "' of type '" << type_support->getName() << "'" << std::endl;
 
         if( _print_topic_samples )
         {
@@ -500,8 +484,8 @@ void dds_sniffer::print_writer_discovered( realdds::dds_guid guid,
     }
     else
     {
-        std::cout << "DataWriter " << print_guid( guid ) << " publishing topic '" << topic_name
-                  << ( discovered ? "' discovered" : "' removed" ) << std::endl;
+        std::cout << ( discovered ? "+" : "-" ) << print_guid( guid ) << " publishing topic '" << topic_name << "'"
+                  << std::endl;
     }
 }
 
@@ -518,8 +502,8 @@ void dds_sniffer::print_reader_discovered( realdds::dds_guid guid,
     }
     else
     {
-        std::cout << "DataReader " << print_guid( guid ) << " reading topic '" << topic_name
-                  << ( discovered ? "' discovered" : "' removed" ) << std::endl;
+        std::cout << ( discovered ? "+" : "-" ) << print_guid( guid ) << " reading topic '" << topic_name << "'"
+                  << std::endl;
     }
 }
 
@@ -535,12 +519,8 @@ void dds_sniffer::print_participant_discovered( realdds::dds_guid guid,
     }
     else
     {
-        //prefix_.value[4] = static_cast<octet>( pid & 0xFF );
-        //prefix_.value[5] = static_cast<octet>( ( pid >> 8 ) & 0xFF );
-        uint16_t pid
-            = guid.guidPrefix.value[GUID_PROCESS_LOCATION] + ( guid.guidPrefix.value[GUID_PROCESS_LOCATION + 1] << 8 );
-        std::cout << "Participant " << print_guid( guid ) << " '" << participant_name << "' (" << std::hex << pid
-                  << std::dec << ") " << ( discovered ? " discovered" : " removed" ) << std::endl;
+        std::cout << ( discovered ? "+" : "-" ) << "Participant '" << participant_name << "' "
+                  << realdds::print_raw_guid( guid ) << std::endl;
     }
 }
 
