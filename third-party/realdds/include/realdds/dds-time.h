@@ -50,6 +50,15 @@ inline long double time_to_double( dds_time const & t )
 }
 
 
+inline long double time_to_double( eprosima::fastrtps::rtps::Time_t const & t )
+{
+    long double sec = t.seconds();
+    long double nsec = t.nanosec();
+    nsec /= 1000000000ULL;
+    return sec + nsec;
+}
+
+
 std::string time_to_string( dds_time const & t );
 
 
