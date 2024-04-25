@@ -89,8 +89,8 @@ with test.remote.fork( nested_indent='  S' ) as remote:
     import threading
     image_received = threading.Event()
     image_content = []
-    def on_image_available( stream, image ):
-        log.d( f'----> image {image}')
+    def on_image_available( stream, image, sample ):
+        log.d( f'----> image {image} {sample}')
         image_content.append( image )
         image_received.set()
 
