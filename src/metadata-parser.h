@@ -69,10 +69,12 @@ namespace librealsense
     class md_array_parser : public md_attribute_parser_base
     {
         rs2_frame_metadata_value _key;
+        std::shared_ptr< md_attribute_parser_base > _fallback;
 
     public:
-        md_array_parser( rs2_frame_metadata_value key )
+        md_array_parser( rs2_frame_metadata_value key, std::shared_ptr< md_attribute_parser_base > fallback = {} )
             : _key( key )
+            , _fallback( std::move( fallback ) )
         {
         }
 
@@ -81,7 +83,7 @@ namespace librealsense
             auto pmd = reinterpret_cast< metadata_array_value const * >( frm.additional_data.metadata_blob.data() );
             metadata_array_value const & value = pmd[_key];
             if( ! value.is_valid )
-                return false;
+                return _fallback ? _fallback->find( frm, p_value ) : false;
             if( p_value )
                 *p_value = value.value;
             return true;
