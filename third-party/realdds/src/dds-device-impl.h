@@ -121,16 +121,16 @@ private:
     void create_control_writer();
 
     // notification handlers
-    void on_set_option( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
-    void on_query_options( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
-    void on_known_notification( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
-    void on_log( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
-    void on_device_header( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
-    void on_device_options( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
-    void on_stream_header( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
-    void on_stream_options( rsutils::json const &, eprosima::fastdds::dds::SampleInfo const & );
+    void on_set_option( rsutils::json const &, dds_sample const & );
+    void on_query_options( rsutils::json const &, dds_sample const & );
+    void on_known_notification( rsutils::json const &, dds_sample const & );
+    void on_log( rsutils::json const &, dds_sample const & );
+    void on_device_header( rsutils::json const &, dds_sample const & );
+    void on_device_options( rsutils::json const &, dds_sample const & );
+    void on_stream_header( rsutils::json const &, dds_sample const & );
+    void on_stream_options( rsutils::json const &, dds_sample const & );
 
-    void on_notification( rsutils::json &&, eprosima::fastdds::dds::SampleInfo const & );
+    void on_notification( rsutils::json &&, dds_sample const & );
 
     on_metadata_available_signal _on_metadata_available;
     on_device_log_signal _on_device_log;
