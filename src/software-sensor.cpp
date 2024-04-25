@@ -29,13 +29,13 @@ static std::shared_ptr< metadata_parser_map > create_software_metadata_parser_ma
         switch( key )
         {
         case RS2_FRAME_METADATA_TIME_OF_ARRIVAL:
-            fallback = std::make_shared< librealsense::md_time_of_arrival_parser >();
+            fallback = make_additional_data_parser_unless( &frame_additional_data::system_time, rs2_time_t( 0 ) );
             break;
         case RS2_FRAME_METADATA_BACKEND_TIMESTAMP:
-            fallback = make_additional_data_parser( &frame_additional_data::backend_timestamp );
+            fallback = make_additional_data_parser_unless( &frame_additional_data::backend_timestamp, rs2_time_t(0) );
             break;
         case RS2_FRAME_METADATA_RAW_FRAME_SIZE:
-            fallback = make_additional_data_parser( &frame_additional_data::raw_size );
+            fallback = make_additional_data_parser_unless( &frame_additional_data::raw_size, uint32_t(0) );
             break;
         case RS2_FRAME_METADATA_ACTUAL_FPS:
             fallback = std::make_shared< ds_md_attribute_actual_fps >();

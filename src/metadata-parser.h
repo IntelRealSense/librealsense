@@ -95,17 +95,6 @@ namespace librealsense
      *  e.g change auto_exposure enum to boolean, change units from nano->ms,etc'*/
     typedef std::function<rs2_metadata_type(const rs2_metadata_type& param)> attrib_modifyer;
 
-    class md_time_of_arrival_parser : public md_attribute_parser_base
-    {
-    public:
-        bool find( const frame & frm, rs2_metadata_type * p_value ) const override
-        {
-            if( p_value )
-                *p_value = (rs2_metadata_type)frm.get_frame_system_time();
-            return true;
-        }
-    };
-
     /**\brief The metadata parser class directly access the metadata attribute in the blob received from HW.
     *   Given the metadata-nested construct, and the c++ lack of pointers
     *   to the inner struct, we pre-calculate and store the attribute offset internally
@@ -275,7 +264,7 @@ namespace librealsense
     {
     public:
         md_additional_parser(Attribute St::* attribute_name) :
-            _md_attribute(attribute_name) {};
+            _md_attribute(attribute_name) {}
 
         bool find( const frame & frm, rs2_metadata_type * p_value ) const override
         {
@@ -297,6 +286,45 @@ namespace librealsense
     {
         std::shared_ptr<md_additional_parser<St, Attribute>> parser(new md_additional_parser<St, Attribute>(attribute));
         return parser;
+    }
+
+    /**
+     * provide attributes generated and stored internally by the library, unless set to a specific (default?)
+     * value
+     */
+    template< class St, class Attribute >
+    class md_additional_parser_unless : public md_additional_parser< St, Attribute >
+    {
+        using super = md_additional_parser< St, Attribute >;
+
+        Attribute _unless;  // value for which we return "not found"
+
+    public:
+        md_additional_parser_unless( Attribute St::*attribute_name, Attribute unless )
+            : super( attribute_name )
+            , _unless( unless )
+        {
+        }
+
+        bool find( const frame & frm, rs2_metadata_type * p_value ) const override
+        {
+            rs2_metadata_type value;
+            if( ! super::find( frm, &value ) )
+                return false;
+            if( value == _unless )
+                return false;
+            if( p_value )
+                *p_value = value;
+            return true;
+        }
+    };
+
+    /**\brief A utility function to create additional_data parser*/
+    template< class St, class Attribute >
+    std::shared_ptr< md_attribute_parser_base > make_additional_data_parser_unless( Attribute St::*attribute,
+                                                                                    Attribute unless )
+    {
+        return std::make_shared< md_additional_parser_unless< St, Attribute > >( attribute, unless );
     }
 
     /**\brief Optical timestamp for RS4xx devices is calculated internally*/
