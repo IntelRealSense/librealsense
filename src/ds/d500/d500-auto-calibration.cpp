@@ -195,7 +195,7 @@ namespace librealsense
             _state != d500_calibration_state::RS2_D500_CALIBRATION_STATE_IDLE);
 
         // printing new calibration to log
-        if (_state != d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE)
+        if (_state == d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE)
         {
             if (_result == d500_calibration_result::RS2_D500_CALIBRATION_RESULT_SUCCESS)
             {
