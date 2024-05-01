@@ -135,6 +135,10 @@ namespace librealsense
                 res = update_abort_status();
             }
         }
+        catch (std::runtime_error&)
+        {
+            throw;
+        }
         catch(...)
         {
             std::string error_message_prefix = "\nRUN OCC ";
@@ -164,30 +168,53 @@ namespace librealsense
             calib_answer = *reinterpret_cast<d500_calibration_answer*>(res.data());
             _state = static_cast<d500_calibration_state>(calib_answer.calibration_state);
             _result = static_cast<d500_calibration_result>(calib_answer.calibration_result);
-            LOG_INFO("Calibration in progress - State = " << d500_calibration_state_strings[static_cast<int>(_state)]
-                << ", progress = " << static_cast<int>(calib_answer.calibration_progress)
-                << ", result = " << d500_calibration_result_strings[static_cast<int>(_result)]);
+            std::stringstream ss;
+            ss << "Calibration in progress - State = " << d500_calibration_state_strings[static_cast<int>(_state)];
+            if (_state == d500_calibration_state::RS2_D500_CALIBRATION_STATE_PROCESS)
+            {
+                ss << ", progress = " << static_cast<int>(calib_answer.calibration_progress);
+                ss << ", result = " << d500_calibration_result_strings[static_cast<int>(_result)];
+            }
+            LOG_INFO(ss.str().c_str());
             if (progress_callback)
             {
                 progress_callback->on_update_progress(calib_answer.calibration_progress);
+            }
+            
+            if (_result == d500_calibration_result::RS2_D500_CALIBRATION_RESULT_FAILED_TO_RUN)
+            {
+                break;
             }
             bool is_timed_out(std::chrono::high_resolution_clock::now() - start_time > std::chrono::milliseconds(timeout_ms));
             if (is_timed_out)
             {
                 throw std::runtime_error("OCC Calibration Timeout");
             }
-        } while (_state != d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE);
+        } while (_state != d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE &&
+            // if state is back to idle, it means that Abort action has been called
+            _state != d500_calibration_state::RS2_D500_CALIBRATION_STATE_IDLE);
 
         // printing new calibration to log
-        if (_result == d500_calibration_result::RS2_D500_CALIBRATION_RESULT_SUCCESS)
+        if (_state == d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE)
         {
-            auto depth_calib = *reinterpret_cast<ds::d500_coefficients_table*>(&calib_answer.depth_calibration);
-            LOG_INFO("Depth new Calibration = \n" + depth_calib.to_string());
+            if (_result == d500_calibration_result::RS2_D500_CALIBRATION_RESULT_SUCCESS)
+            {
+                auto depth_calib = *reinterpret_cast<ds::d500_coefficients_table*>(&calib_answer.depth_calibration);
+                LOG_INFO("Depth new Calibration = \n" + depth_calib.to_string());
+            }
+            else if (_result == d500_calibration_result::RS2_D500_CALIBRATION_RESULT_FAILED_TO_CONVERGE)
+            {
+                LOG_ERROR("Calibration completed but algorithm failed");
+                throw std::runtime_error("Calibration completed but algorithm failed");
+            }
         }
         else
         {
-            LOG_ERROR("Calibration completed but algorithm failed");
-            throw std::runtime_error("Calibration completed but algorithm failed");
+            if (_result == d500_calibration_result::RS2_D500_CALIBRATION_RESULT_FAILED_TO_RUN)
+            {
+                LOG_ERROR("Calibration failed to run");
+                throw std::runtime_error("Calibration failed to run");
+            }
         }
 
         return res;

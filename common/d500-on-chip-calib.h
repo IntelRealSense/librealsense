@@ -94,6 +94,7 @@ namespace rs2
         void draw_abort(ux_window& win, int x, int y);
         void update_ui_after_abort_called(ux_window& win, int x, int y);
         void update_ui_on_calibration_complete(ux_window& win, int x, int y);
+        void update_ui_on_failure(ux_window& win, int x, int y);
         std::string _error_message = "";
         bool reset_called = false;
         bool _has_abort_succeeded = false;
