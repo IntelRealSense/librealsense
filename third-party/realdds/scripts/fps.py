@@ -62,13 +62,13 @@ except:
     sys.exit(1)
 
 n_depth = 0
-def on_depth_image( stream, image ):
+def on_depth_image( stream, image, sample ):
     #d( f'----> depth {image}')
     global n_depth
     n_depth += 1
 
 n_color = 0
-def on_color_image( stream, image ):
+def on_color_image( stream, image, sample ):
     #d( f'----> color {image}')
     global n_color
     n_color += 1
@@ -93,11 +93,12 @@ for stream in device.streams():
     stream.start_streaming()
 
 # Wait until we have at least one frame from each
-tries = 3
+tries = 5
 while tries > 0:
     if n_depth > 0  and  n_color > 0:
         break
     time.sleep( 1 )
+    tries -= 1
 else:
     raise RuntimeError( 'timed out waiting for frames to arrive' )
 n_depth = n_color = 0

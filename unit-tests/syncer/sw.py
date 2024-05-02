@@ -203,6 +203,7 @@ def generate_depth_frame( frame_number, timestamp, next_expected=None ):
         depth_sensor.set_metadata( rs.frame_metadata_value.actual_fps, actual_fps )
         log.d( "-->", depth_frame, "with actual FPS", actual_fps )
     else:
+        depth_sensor.set_metadata( rs.frame_metadata_value.actual_fps, 0 )  # force to not use
         log.d( "-->", depth_frame )
     depth_sensor.on_video_frame( depth_frame )
 
@@ -228,6 +229,7 @@ def generate_color_frame( frame_number, timestamp, next_expected=None ):
         color_sensor.set_metadata( rs.frame_metadata_value.actual_fps, actual_fps )
         log.d( "-->", color_frame, "with actual FPS", actual_fps )
     else:
+        color_sensor.set_metadata( rs.frame_metadata_value.actual_fps, 0 )  # force to not use
         log.d( "-->", color_frame )
     color_sensor.on_video_frame( color_frame )
 

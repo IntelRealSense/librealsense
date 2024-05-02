@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include "blob/blob.h"
@@ -8,15 +8,6 @@
 #include <string>
 #include <memory>
 #include <vector>
-
-
-namespace eprosima {
-namespace fastdds {
-namespace dds {
-struct SampleInfo;
-}
-}  // namespace fastdds
-}  // namespace eprosima
 
 
 namespace udds {
@@ -63,7 +54,7 @@ public:
     //
     static bool take_next( dds_topic_reader &,
                            blob_msg * output,
-                           eprosima::fastdds::dds::SampleInfo * optional_info = nullptr );
+                           dds_sample * optional_sample = nullptr );
 
     // Returns some unique (to the writer) identifier for the sample that was sent, or 0 if unsuccessful
     dds_sequence_number write_to( dds_topic_writer & ) const;

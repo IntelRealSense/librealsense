@@ -8,6 +8,7 @@
 
 #include <realdds/dds-device.h>
 #include <realdds/dds-time.h>
+#include <realdds/dds-sample.h>
 
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/image-msg.h>
@@ -17,6 +18,7 @@
 #include <src/core/options-registry.h>
 #include <src/core/frame-callback.h>
 #include <src/core/roi.h>
+#include <src/core/time-service.h>
 #include <src/stream.h>
 
 #include <src/proc/color-formats-converter.h>
@@ -286,15 +288,21 @@ void dds_sensor_proxy::open( const stream_profiles & profiles )
 
 
 void dds_sensor_proxy::handle_video_data( realdds::topics::image_msg && dds_frame,
+                                          realdds::dds_sample && dds_sample,
                                           const std::shared_ptr< stream_profile_interface > & profile,
                                           streaming_impl & streaming )
 {
     frame_additional_data data;  // with NO metadata by default!
+    data.system_time = time_service::get_time();  // time of arrival in system clock
+    data.backend_timestamp                        // time when the underlying backend (DDS) received it
+        = static_cast<rs2_time_t>(realdds::time_to_double( dds_sample.reception_timestamp ) * 1e3);
     data.timestamp               // in ms
         = static_cast< rs2_time_t >( realdds::time_to_double( dds_frame.timestamp ) * 1e3 );
+    data.last_timestamp = streaming.last_timestamp.exchange( data.timestamp );
     data.timestamp_domain;  // from metadata, or leave default (hardware domain)
     data.depth_units;       // from metadata
     data.frame_number;      // filled in only once metadata is known
+    data.raw_size = static_cast< uint32_t >( dds_frame.raw_data.size() );
 
     auto vid_profile = dynamic_cast< video_stream_profile_interface * >( profile.get() );
     if( ! vid_profile )
@@ -325,15 +333,21 @@ void dds_sensor_proxy::handle_video_data( realdds::topics::image_msg && dds_fram
 
 
 void dds_sensor_proxy::handle_motion_data( realdds::topics::imu_msg && imu,
+                                           realdds::dds_sample && sample,
                                            const std::shared_ptr< stream_profile_interface > & profile,
                                            streaming_impl & streaming )
 {
     frame_additional_data data;  // with NO metadata by default!
+    data.system_time = time_service::get_time();  // time of arrival in system clock
+    data.backend_timestamp                        // time when the underlying backend (DDS) received it
+        = static_cast<rs2_time_t>(realdds::time_to_double( sample.reception_timestamp ) * 1e3);
     data.timestamp               // in ms
         = static_cast< rs2_time_t >( realdds::time_to_double( imu.timestamp() ) * 1e3 );
+    data.last_timestamp = streaming.last_timestamp.exchange( data.timestamp );
     data.timestamp_domain;  // leave default (hardware domain)
     data.last_frame_number = streaming.last_frame_number.fetch_add( 1 );
     data.frame_number = data.last_frame_number + 1;
+    data.raw_size = sizeof( rs2_combined_motion );
 
     auto new_frame_interface = allocate_new_frame( RS2_EXTENSION_MOTION_FRAME, profile.get(), std::move( data ) );
     if( ! new_frame_interface )
@@ -478,19 +492,19 @@ void dds_sensor_proxy::start( rs2_frame_callback_sptr callback )
         if( auto dds_video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( dds_stream ) )
         {
             dds_video_stream->on_data_available(
-                [profile, this, &streaming]( realdds::topics::image_msg && dds_frame )
+                [profile, this, &streaming]( realdds::topics::image_msg && dds_frame, realdds::dds_sample && sample )
                 {
                     if( _is_streaming )
-                        handle_video_data( std::move( dds_frame ), profile, streaming );
+                        handle_video_data( std::move( dds_frame ), std::move( sample ), profile, streaming );
                 } );
         }
         else if( auto dds_motion_stream = std::dynamic_pointer_cast< realdds::dds_motion_stream >( dds_stream ) )
         {
             dds_motion_stream->on_data_available(
-                [profile, this, &streaming]( realdds::topics::imu_msg && imu )
+                [profile, this, &streaming]( realdds::topics::imu_msg && imu, realdds::dds_sample && sample )
                 {
                     if( _is_streaming )
-                        handle_motion_data( std::move( imu ), profile, streaming );
+                        handle_motion_data( std::move( imu ), std::move( sample ), profile, streaming );
                 } );
         }
         else
