@@ -7,7 +7,8 @@ args = ArgumentParser()
 args.add_argument( '--debug', action='store_true', help='enable debug mode' )
 args.add_argument( '--quiet', action='store_true', help='no output' )
 args.add_argument( '--topic', metavar='<path>', help='the topic on which to listen' )
-args.add_argument( '--blob', action='store_true', help='when set, listen for blobs instead of flexible messages' )
+args.add_argument( '--blob', action='store_true', help='when set, listen for blobs' )
+args.add_argument( '--image', action='store_true', help='when set, listen for images' )
 def domain_arg(x):
     t = int(x)
     if t <= 0 or t > 232:
@@ -57,6 +58,24 @@ if args.blob:
                 break
             i( f'-----> {msg}', )
             got_something = True
+    reader.on_data_available( on_data_available )
+    reader.run( dds.topic_reader.qos() )
+
+elif args.image:
+    reader = dds.topic_reader( dds.message.image.create_topic( participant, topic_path ))
+    def on_data_available( reader ):
+        got_something = False
+        while True:
+            sample = dds.message.sample_info()
+            msg = dds.message.image.take_next( reader, sample )
+            if not msg:
+                if not got_something:
+                    raise RuntimeError( "expected message not received!" )
+                break
+            i( f'-----> {msg}', )
+            got_something = True
+    reader.on_data_available( on_data_available )
+    reader.run( dds.topic_reader.qos( dds.reliability.best_effort, dds.durability.volatile ) )
 
 else:
     reader = dds.topic_reader( dds.message.flexible.create_topic( participant, topic_path ))
@@ -72,9 +91,8 @@ else:
                 break
             i( f'-----> {json.dumps( msg.json_data(), indent=4 )}', )
             got_something = True
-
-reader.on_data_available( on_data_available )
-reader.run( dds.topic_reader.qos() )
+    reader.on_data_available( on_data_available )
+    reader.run( dds.topic_reader.qos() )
 
 # Keep waiting until the user breaks...
 import signal
