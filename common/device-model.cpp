@@ -3429,6 +3429,15 @@ namespace rs2
         std::string& error_message)
     {
         bool has_autocalib = false;
+        std::shared_ptr< subdevice_model> sub_safety;
+        for (auto&& sub : subdevices)
+        {
+            if (sub->s->is<rs2::safety_sensor>())
+            {
+                sub_safety = sub;
+                break;
+            }
+        }
 
         bool streaming = is_streaming();
         ImGuiSelectableFlags avoid_selection_flag = (streaming) ? ImGuiSelectableFlags_Disabled : 0;
@@ -3441,7 +3450,7 @@ namespace rs2
                 {
                     try
                     {
-                        auto manager = std::make_shared<d500_on_chip_calib_manager>(viewer, sub, *this, dev);
+                        auto manager = std::make_shared<d500_on_chip_calib_manager>(viewer, sub, *this, dev, sub_safety);
                         auto n = std::make_shared<d500_autocalib_notification_model>("", manager, false);
                         viewer.not_model->add_notification(n);
                         n->forced = true;
@@ -3474,7 +3483,7 @@ namespace rs2
                 {
                     try
                     {
-                        auto manager = std::make_shared<d500_on_chip_calib_manager>(viewer, sub, *this, dev);
+                        auto manager = std::make_shared<d500_on_chip_calib_manager>(viewer, sub, *this, dev, sub_safety);
                         auto n = std::make_shared<d500_autocalib_notification_model>("", manager, false);
                         viewer.not_model->add_notification(n);
                         n->forced = true;
@@ -3501,13 +3510,11 @@ namespace rs2
                         << "Dry Run On-Chip Calibration"
                         << (streaming ? " (Disabled while streaming)" : "");
                     ImGui::SetTooltip("%s", tooltip.c_str());
+                    continue;
                 }
-
-                has_autocalib = true;
-                continue;
             }
+            has_autocalib = true;
         }
         return has_autocalib;
     }
-
 }

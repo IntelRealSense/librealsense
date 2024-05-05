@@ -12,6 +12,7 @@
 
 #include "ds/ds-device-common.h"
 #include "backend-device.h"
+#include "d500-auto-calibration.h"
 
 #include <rsutils/lazy.h>
 
@@ -30,6 +31,7 @@ namespace librealsense
         : public virtual backend_device
         , public debug_interface
         , public global_time_interface
+        , public d500_auto_calibrated
         , public updatable
     {
     public:

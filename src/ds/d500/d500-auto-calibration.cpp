@@ -180,7 +180,6 @@ namespace librealsense
             {
                 progress_callback->on_update_progress(calib_answer.calibration_progress);
             }
-            
             if (_result == d500_calibration_result::RS2_D500_CALIBRATION_RESULT_FAILED_TO_RUN)
             {
                 break;

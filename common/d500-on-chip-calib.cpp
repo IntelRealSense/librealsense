@@ -5,15 +5,15 @@
 #include <viewer.h>
 #include "d500-on-chip-calib.h"
 
-
 namespace rs2
 {
     d500_on_chip_calib_manager::d500_on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub,
-        device_model& model, device dev)
+        device_model& model, device dev, std::shared_ptr<subdevice_model> sub_safety)
         : process_manager("D500 On-Chip Calibration"),
         _model(model),
         _dev(dev),
-        _sub(sub)
+        _sub(sub),
+        _sub_safety(sub_safety)
     {
         if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) &&
             std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) != "D500")
@@ -81,6 +81,14 @@ namespace rs2
 
     void d500_on_chip_calib_manager::prepare_for_calibration()
     {
+        // safety sensor in service mode - if safety sensor exists
+        if (_sub_safety->s->is<rs2::safety_sensor>())
+        {
+            auto safety_sensor = _sub_safety->s->as<rs2::safety_sensor>();
+            set_option_if_needed<rs2::safety_sensor>(safety_sensor,
+                RS2_OPTION_SAFETY_MODE, RS2_SAFETY_MODE_SERVICE);
+        }
+
         // set depth preset as default preset, turn projector ON and depth AE ON
         if (_sub->s->is <rs2::depth_sensor>())
         {
@@ -180,6 +188,15 @@ namespace rs2
         else
         {
             update_ui_on_calibration_complete(win, x, y);
+            if (get_manager().get_device_pid() == "0B6B")
+            {
+                if (!reset_called &&
+                    get_manager().action != d500_on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB_ABORT)
+                {
+                    get_manager().reset_device();
+                    reset_called = true;
+                }
+            }
         }
 
         ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
@@ -288,6 +305,7 @@ namespace rs2
 
     void d500_autocalib_notification_model::update_ui_after_abort_called(ux_window& win, int x, int y)
     {
+        ImGui::SetCursorScreenPos({ float(x + 10), float(y) });
         ImGui::Text("%s", "Calibration Aborting");
         ImGui::SetCursorScreenPos({ float(x + 10), float(y + 50) });
         ImGui::PushFont(win.get_large_font());
