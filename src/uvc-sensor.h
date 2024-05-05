@@ -43,6 +43,20 @@ public:
         return action( *_device );
     }
 
+    
+    void power_for_duration( std::chrono::steady_clock::duration timeout = std::chrono::milliseconds( 500 ) )
+    {
+        acquire_power();
+        std::weak_ptr< uvc_sensor > weak = std::dynamic_pointer_cast< uvc_sensor >( shared_from_this() );
+        std::thread release_power_thread( [weak, timeout]()
+        {
+            std::this_thread::sleep_for( timeout );
+            if( auto strong = weak.lock() )
+                strong->release_power();
+        } );
+        release_power_thread.detach();
+    }
+
 protected:
     stream_profiles init_stream_profiles() override;
     void verify_supported_requests( const stream_profiles & requests ) const;
