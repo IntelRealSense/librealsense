@@ -18,7 +18,6 @@ def check_safety_camera_found(dev):
     device_name = dev.get_info(rs.camera_info.name)
     if device_name != "Intel RealSense D585S":
         print("Safety Camera not connected - please check")
-        exit(1)
     else:
         print("Safety Camera found")
 
@@ -30,7 +29,7 @@ def compute_fill_rate(frame):
     for pixel in frame_array:
         if pixel > 0:
             fill_rate += 1
-    return fill_rate / num_of_pixels
+    return fill_rate / num_of_pixels * 100
 
 
 def stream_and_get_fill_rate():
@@ -56,7 +55,7 @@ def stream_and_get_fill_rate():
         pipe.stop()
     print("frames streamed!")
     fill_rate_mean_value = fill_rate_total / num_of_frames
-    print("fill rate found = " + repr(fill_rate_mean_value))
+    print("fill rate found = " + repr(fill_rate_mean_value) + "%")
     return fill_rate_mean_value
 
 
