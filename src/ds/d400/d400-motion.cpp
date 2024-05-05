@@ -134,7 +134,7 @@ namespace librealsense
             hid_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&hid_header::timestamp));
         }
         //for FW >=5.16 the scale factor changes to 1000.0 since FW sends 32bit
-        if (_fw_version >= firmware_version( 5, 15, 1, 224))
+        if (_fw_version >= firmware_version( 5, 16, 0, 0))
             get_raw_motion_sensor()->set_gyro_scale_factor( 10000.0 );
 
     }

@@ -53,7 +53,17 @@ namespace rs2
         // in order to grep new calibration from answer, use:
         // auto new_calib = std::vector<uint8_t>(ans.begin() + 3, ans.end());
 
-        _done = (_progress == 100.0);
+        if (_progress == 100.0)
+        {
+            _done = true;
+        }
+        else
+        {
+            // exception must have been thrown from run_on_chip_calibration call
+            _failed = true;
+        }
+
+
     }
 
     bool d500_on_chip_calib_manager::abort()
@@ -160,6 +170,10 @@ namespace rs2
             {
                 calibration_button(win, x, y, bar_width);
             }
+            else if (update_state == RS2_CALIB_STATE_FAILED)
+            {
+                update_ui_on_failure(win, x, y);
+            }
 
             ImGui::PopStyleColor();
         }
@@ -177,6 +191,11 @@ namespace rs2
                 if (update_manager->done())
                 {
                     update_state = RS2_CALIB_STATE_COMPLETE;
+                    enable_dismiss = true;
+                }
+                else if (update_manager->failed())
+                {
+                    update_state = RS2_CALIB_STATE_FAILED;
                     enable_dismiss = true;
                 }
 
@@ -203,7 +222,8 @@ namespace rs2
         // adjusting the height of the notification window
         if (update_state == RS2_CALIB_STATE_CALIB_IN_PROCESS ||
             update_state == RS2_CALIB_STATE_COMPLETE ||
-            update_state == RS2_CALIB_STATE_ABORT_CALLED)
+            update_state == RS2_CALIB_STATE_ABORT_CALLED ||
+            update_state == RS2_CALIB_STATE_FAILED)
             return 90;
         return 60;
     }
@@ -284,6 +304,21 @@ namespace rs2
         {
             ImGui::Text("%s", "Camera Calibration Could not be Aborted");
         }
+        enable_dismiss = true;
+    }
+    
+    void d500_autocalib_notification_model::update_ui_on_failure(ux_window& win, int x, int y)
+    {
+        ImGui::SetCursorScreenPos({ float(x + 50), float(y + 50) });
+        ImGui::Text("%s", "Calibration Failed");
+        ImGui::SetCursorScreenPos({ float(x + 10), float(y + 50) });
+        ImGui::PushFont(win.get_large_font());
+        std::string txt = rsutils::string::from() << textual_icons::exclamation_triangle;
+        ImGui::Text("%s", txt.c_str());
+        ImGui::PopFont();
+
+        ImGui::SetCursorScreenPos({ float(x + 40), float(y + 50) });
+        
         enable_dismiss = true;
     }
 
