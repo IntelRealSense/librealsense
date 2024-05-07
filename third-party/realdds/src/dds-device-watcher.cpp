@@ -30,8 +30,8 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
         [this]()
         {
             topics::flexible_msg msg;
-            eprosima::fastdds::dds::SampleInfo info;
-            while( topics::flexible_msg::take_next( *_device_info_topic, &msg, &info ) )
+            dds_sample sample;
+            while( topics::flexible_msg::take_next( *_device_info_topic, &msg, &sample ) )
             {
                 if( ! msg.is_valid() )
                     continue;
@@ -39,7 +39,7 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
                 // NOTE: the GUID we get here is the writer on the device-info, used nowhere again in the system, which
                 // can therefore be confusing. It is not the "server GUID" that's stored in the device!
                 dds_guid guid;
-                eprosima::fastrtps::rtps::iHandle2GUID( guid, info.publication_handle );
+                eprosima::fastrtps::rtps::iHandle2GUID( guid, sample.publication_handle );
 
                 auto const j = msg.json_data();
 

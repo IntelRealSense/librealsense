@@ -1,8 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
-
+// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 #pragma once
-
 
 #include <realdds/dds-defines.h>
 #include <fastdds/rtps/common/Time_t.h>
@@ -13,14 +11,6 @@
 #include <memory>
 #include <vector>
 
-
-namespace eprosima {
-namespace fastdds {
-namespace dds {
-struct SampleInfo;
-}
-}  // namespace fastdds
-}  // namespace eprosima
 
 namespace sensor_msgs {
 namespace msg {
@@ -94,7 +84,7 @@ public:
     // Note - copies the data.
     static bool take_next( dds_topic_reader &,
                            imu_msg * output,
-                           eprosima::fastdds::dds::SampleInfo * optional_info = nullptr );
+                           dds_sample * optional_sample = nullptr );
 
     void write_to( dds_topic_writer & );
 

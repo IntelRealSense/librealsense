@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #pragma once
 
@@ -18,7 +18,13 @@ namespace types {
     class DynamicType_ptr;
 }  // namespace types
 }  // namespace fastrtps
+namespace fastdds {
+namespace dds {
+    struct SampleInfo;
+}  // namespace dds
+}  // namespace fastdds
 }  // namespace eprosima
+
 
 namespace realdds {
 
@@ -30,6 +36,7 @@ using dds_guid_prefix = eprosima::fastrtps::rtps::GuidPrefix_t;
 using dds_entity_id = eprosima::fastrtps::rtps::EntityId_t;
 typedef int dds_domain_id;
 typedef uint64_t dds_sequence_number;  // sample_identity.sequence_number()
+using dds_sample = eprosima::fastdds::dds::SampleInfo;
 
 
 }  // namespace realdds

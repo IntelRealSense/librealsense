@@ -396,10 +396,10 @@ void dds_sniffer::dds_reader_listener::on_data_available( DataReader * reader )
     if( dit != _datas.end() )
     {
         DynamicData_ptr data = dit->second;
-        SampleInfo info;
-        if( DDS_API_CALL( reader->take_next_sample( data.get(), &info ) ) == ReturnCode_t::RETCODE_OK )
+        realdds::dds_sample sample;
+        if( DDS_API_CALL( reader->take_next_sample( data.get(), &sample ) ) == ReturnCode_t::RETCODE_OK )
         {
-            if( info.valid_data )
+            if( sample.valid_data )
             {
                 DynamicDataHelper::print( data );
             }

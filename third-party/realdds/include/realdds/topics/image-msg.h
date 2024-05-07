@@ -1,8 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
-
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 #pragma once
-
 
 #include <realdds/dds-defines.h>
 #include <fastdds/rtps/common/Time_t.h>
@@ -12,20 +10,13 @@
 #include <vector>
 
 
-namespace eprosima {
-namespace fastdds {
-namespace dds {
-struct SampleInfo;
-}
-}  // namespace fastdds
-}  // namespace eprosima
-
 namespace sensor_msgs {
 namespace msg {
 class ImagePubSubType;
 class Image;
 }  // namespace msg
 }  // namespace sensor_msgs
+
 
 namespace realdds {
 
@@ -71,7 +62,7 @@ public:
     //TODO - add an API for a function that loans the data and enables the user to free it later.
     static bool take_next( dds_topic_reader &,
                            image_msg * output,
-                           eprosima::fastdds::dds::SampleInfo * optional_info = nullptr );
+                           dds_sample * optional_sample = nullptr );
 
     std::vector< uint8_t > raw_data;
     int width = -1;

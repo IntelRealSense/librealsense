@@ -73,7 +73,8 @@ void log_callback_end( uint32_t fps,
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
 
-        register_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL, std::make_shared<librealsense::md_time_of_arrival_parser>());
+        register_metadata( RS2_FRAME_METADATA_TIME_OF_ARRIVAL,
+                           make_additional_data_parser_unless( &frame_additional_data::system_time, rs2_time_t( 0 ) ) );
 
         register_info(RS2_CAMERA_INFO_NAME, name);
     }

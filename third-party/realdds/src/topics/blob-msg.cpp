@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 
 #include <realdds/topics/blob-msg.h>
 #include <realdds/topics/blob/blobPubSubTypes.h>
@@ -28,7 +28,7 @@ blob_msg::create_topic( std::shared_ptr< dds_participant > const & participant, 
 
 
 /*static*/ bool
-blob_msg::take_next( dds_topic_reader & reader, blob_msg * output, eprosima::fastdds::dds::SampleInfo * info )
+blob_msg::take_next( dds_topic_reader & reader, blob_msg * output, dds_sample * info )
 {
     eprosima::fastdds::dds::SampleInfo info_;
     if( ! info )
