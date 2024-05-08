@@ -690,20 +690,22 @@ namespace librealsense
     void hdr_conditional_option::set(float value)
     {
         if (_hdr_cfg->is_config_in_process())
+        {
             if( _hdr_cfg->is_enabled() )
             {
                 // Changing exposure while HDR is enabled was requested by customers.It is currently disabled by D400
                 // FW, so we workaround it by disabling HDR,changing exposure and enabling again.Disabling/Enabling
                 // resets the sequence index so we need to keep and restore it.
                 auto _current_hdr_sequence_index = _hdr_cfg->get( RS2_OPTION_SEQUENCE_ID );
-                _hdr_cfg->set( RS2_OPTION_HDR_ENABLED, 0, { 0, 1, 1 } );
-                _hdr_cfg->set( RS2_OPTION_SEQUENCE_ID, _current_hdr_sequence_index, { 0, 1, 1 } );
+                _hdr_cfg->set( RS2_OPTION_HDR_ENABLED, 0, { 0, 1, 1, 0 } );
+                _hdr_cfg->set( RS2_OPTION_SEQUENCE_ID, _current_hdr_sequence_index, { 0, 2, 1, 0 } );
                 _hdr_option->set( value );
-                _hdr_cfg->set( RS2_OPTION_HDR_ENABLED, 1, { 0, 1, 1 } );
-                _hdr_cfg->set( RS2_OPTION_SEQUENCE_ID, _current_hdr_sequence_index, { 0, 1, 1 } );   
+                _hdr_cfg->set( RS2_OPTION_HDR_ENABLED, 1, { 0, 1, 1, 0 } );
+                _hdr_cfg->set( RS2_OPTION_SEQUENCE_ID, _current_hdr_sequence_index, { 0, 2, 1, 0 } );
             }
             else
-            _hdr_option->set(value);
+                _hdr_option->set( value );
+        }    
         else
         {
             if (_hdr_cfg->is_enabled())
