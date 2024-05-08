@@ -690,6 +690,21 @@ namespace librealsense
     void hdr_conditional_option::set(float value)
     {
         if (_hdr_cfg->is_config_in_process())
+            if( _hdr_cfg->is_enabled() )
+            {
+                // keep the index
+                auto _current_hdr_sequence_index = _hdr_cfg->get( RS2_OPTION_SEQUENCE_ID );
+                // In order to enable runtime exposure update in HDR mode we first send disable HDR, then set the value
+                // and at last enable HDR again.
+                _hdr_cfg->set( RS2_OPTION_HDR_ENABLED, 0, { 0, 1, 1 } );
+                // restore hdr_sequence_index
+                _hdr_cfg->set( RS2_OPTION_SEQUENCE_ID, _current_hdr_sequence_index, { 0, 1, 1 } );
+                _hdr_option->set( value );
+                _hdr_cfg->set( RS2_OPTION_HDR_ENABLED, 1, { 0, 1, 1 } );
+                // restore hdr_sequence_index in order to enable again runtime exposure update in HDR
+                _hdr_cfg->set( RS2_OPTION_SEQUENCE_ID, _current_hdr_sequence_index, { 0, 1, 1 } );   
+            }
+            else
             _hdr_option->set(value);
         else
         {
