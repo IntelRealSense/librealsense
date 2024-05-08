@@ -134,11 +134,11 @@ std::string dds_device::impl::debug_name() const
 }
 
 
-void dds_device::impl::on_notification( json && j, eprosima::fastdds::dds::SampleInfo const & notification_sample )
+void dds_device::impl::on_notification( json && j, dds_sample const & notification_sample )
 {
     typedef std::map< std::string,
                       void ( dds_device::impl::* )( json const &,
-                                                    eprosima::fastdds::dds::SampleInfo const & ) >
+                                                    dds_sample const & ) >
         notification_handlers;
     static notification_handlers const _notification_handlers{
         { topics::reply::set_option::id, &dds_device::impl::on_set_option },
@@ -214,7 +214,7 @@ void dds_device::impl::on_notification( json && j, eprosima::fastdds::dds::Sampl
 }
 
 
-void dds_device::impl::on_set_option( json const & j, eprosima::fastdds::dds::SampleInfo const & )
+void dds_device::impl::on_set_option( json const & j, dds_sample const & )
 {
     if( ! is_ready() )
         return;
@@ -263,7 +263,7 @@ void dds_device::impl::on_set_option( json const & j, eprosima::fastdds::dds::Sa
 }
 
 
-void dds_device::impl::on_query_options( json const & j, eprosima::fastdds::dds::SampleInfo const & )
+void dds_device::impl::on_query_options( json const & j, dds_sample const & )
 {
     if( ! is_ready() )
         return;
@@ -330,13 +330,13 @@ void dds_device::impl::on_query_options( json const & j, eprosima::fastdds::dds:
 }
 
 
-void dds_device::impl::on_known_notification( json const & j, eprosima::fastdds::dds::SampleInfo const & )
+void dds_device::impl::on_known_notification( json const & j, dds_sample const & )
 {
     // This is a known notification, but we don't want to do anything for it
 }
 
 
-void dds_device::impl::on_log( json const & j, eprosima::fastdds::dds::SampleInfo const & )
+void dds_device::impl::on_log( json const & j, dds_sample const & )
 {
     // This is the notification for "log"  (see docs/notifications.md#Logging)
     //     - `entries` is an array containing 1 or more log entries
@@ -495,7 +495,7 @@ void dds_device::impl::create_notifications_reader()
         [&]()
         {
             topics::flexible_msg notification;
-            eprosima::fastdds::dds::SampleInfo sample;
+            dds_sample sample;
             while( topics::flexible_msg::take_next( *_notifications_reader, &notification, &sample ) )
             {
                 if( ! notification.is_valid() )
@@ -561,7 +561,7 @@ void dds_device::impl::create_control_writer()
 }
 
 
-void dds_device::impl::on_device_header( json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
+void dds_device::impl::on_device_header( json const & j, dds_sample const & sample )
 {
     if( _state != state_t::ONLINE )
         return;
@@ -592,7 +592,7 @@ void dds_device::impl::on_device_header( json const & j, eprosima::fastdds::dds:
 }
 
 
-void dds_device::impl::on_device_options( json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
+void dds_device::impl::on_device_options( json const & j, dds_sample const & sample )
 {
     if( _state != state_t::WAIT_FOR_DEVICE_OPTIONS )
         return;
@@ -615,7 +615,7 @@ void dds_device::impl::on_device_options( json const & j, eprosima::fastdds::dds
 }
 
 
-void dds_device::impl::on_stream_header( json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
+void dds_device::impl::on_stream_header( json const & j, dds_sample const & sample )
 {
     if( _state != state_t::WAIT_FOR_STREAM_HEADER )
         return;
@@ -676,7 +676,7 @@ void dds_device::impl::on_stream_header( json const & j, eprosima::fastdds::dds:
 }
 
 
-void dds_device::impl::on_stream_options( json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
+void dds_device::impl::on_stream_options( json const & j, dds_sample const & sample )
 {
     if( _state != state_t::WAIT_FOR_STREAM_OPTIONS )
         return;

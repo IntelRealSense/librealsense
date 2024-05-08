@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #include <realdds/topics/flexible-msg.h>
 #include <realdds/topics/flexible/flexiblePubSubTypes.h>
@@ -69,13 +69,13 @@ flexible_msg::create_topic( std::shared_ptr< dds_participant > const & participa
 
 
 /*static*/ bool
-flexible_msg::take_next( dds_topic_reader & reader, flexible_msg * output, eprosima::fastdds::dds::SampleInfo * info )
+flexible_msg::take_next( dds_topic_reader & reader, flexible_msg * output, dds_sample * sample )
 {
     raw::flexible raw_data;
-    eprosima::fastdds::dds::SampleInfo info_;
-    if( ! info )
-        info = &info_;  // use the local copy if the user hasn't provided their own
-    auto status = reader->take_next_sample( &raw_data, info );
+    dds_sample sample_;
+    if( ! sample )
+        sample = &sample_;  // use the local copy if the user hasn't provided their own
+    auto status = reader->take_next_sample( &raw_data, sample );
     if( status == ReturnCode_t::RETCODE_OK )
     {
         // We have data
@@ -84,7 +84,7 @@ flexible_msg::take_next( dds_topic_reader & reader, flexible_msg * output, epros
             // Only samples for which valid_data is true should be accessed
             // valid_data indicates that the instance is still ALIVE and the `take` return an
             // updated sample
-            if( ! info->valid_data )
+            if( ! sample->valid_data )
                 output->invalidate();
             else
                 *output = std::move( raw_data );

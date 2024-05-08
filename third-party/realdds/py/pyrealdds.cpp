@@ -30,6 +30,8 @@
 #include <realdds/dds-log-consumer.h>
 #include <realdds/dds-stream-sensor-bridge.h>
 #include <realdds/dds-metadata-syncer.h>
+#include <realdds/dds-serialization.h>
+#include <realdds/dds-sample.h>
 
 #include <rsutils/os/special-folder.h>
 #include <rsutils/os/executable-name.h>
@@ -42,7 +44,6 @@
 
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
-#include <fastdds/dds/subscriber/SampleInfo.hpp>
 #include <fastrtps/types/DynamicType.h>
 
 #include <rsutils/py/pybind11.h>
@@ -154,7 +155,55 @@ PYBIND11_MODULE(NAME, m) {
 
     using realdds::dds_participant;
     using eprosima::fastrtps::types::ReturnCode_t;
-    
+
+
+    using realdds::dds_time;
+    using realdds::dds_nsec;
+    py::class_< dds_time >( m, "time" )
+        .def( py::init<>() )
+        .def( py::init< int32_t, uint32_t >() )  // sec, nsec
+        .def( py::init< long double >() )        // inexact (1.001 -> 1.000999999)
+        .def( py::init( []( dds_nsec ns ) { return realdds::time_from( ns ); } ) )           // exact
+        .def_readwrite( "seconds", &dds_time::seconds )
+        .def_readwrite( "nanosec", &dds_time::nanosec )
+        .def( "to_ns", &dds_time::to_ns )
+        .def_static( "from_ns", []( dds_nsec ns ) { return realdds::time_from( ns ); } )
+        .def_static( "from_double", []( long double d ) { return realdds::dds_time( d ); } )
+        .def( "to_double", py::overload_cast< dds_time const & >( &realdds::time_to_double ) )
+        .def( "__repr__", &realdds::time_to_string )
+        .def( pybind11::self == pybind11::self )
+        .def( pybind11::self != pybind11::self );
+
+
+    // We need a timestamp function that returns timestamps in the same domain as the sample-info timestamps
+    using realdds::timestr;
+    m.def( "now", []() { return realdds::now(); } );
+
+    py::enum_< timestr::no_suffix_t >( m, "no_suffix_t" );
+    m.attr( "no_suffix" ) = timestr::no_suffix;
+    py::enum_< timestr::rel_t >( m, "rel_t" );
+    m.attr( "rel" ) = timestr::rel;
+    py::enum_< timestr::abs_t >( m, "abs_t" );
+    m.attr( "abs" ) = timestr::abs;
+
+    m.def( "timestr", []( dds_nsec t ) { return timestr( t ).to_string(); } );
+    m.def( "timestr", []( dds_nsec t, timestr::no_suffix_t ) { return timestr( t, timestr::no_suffix ).to_string(); } );
+    m.def( "timestr", []( dds_nsec dt, timestr::rel_t ) { return timestr( dt, timestr::rel ).to_string(); } );
+    m.def( "timestr", []( dds_nsec dt, timestr::rel_t, timestr::no_suffix_t ) { return timestr( dt, timestr::rel, timestr::no_suffix ).to_string(); } );
+    m.def( "timestr", []( dds_nsec t1, dds_nsec t2 ) { return timestr( t1, t2 ).to_string(); } );
+    m.def( "timestr", []( dds_nsec t1, dds_nsec t2, timestr::no_suffix_t ) { return timestr( t1, t2, timestr::no_suffix ).to_string(); } );
+
+    m.def( "timestr", []( dds_time t, dds_time start, timestr::no_suffix_t ) { return timestr( t, start, timestr::no_suffix ).to_string(); } );
+    m.def( "timestr", []( dds_time t, dds_nsec start, timestr::no_suffix_t ) { return timestr( t, start, timestr::no_suffix ).to_string(); } );
+    m.def( "timestr", []( dds_nsec t, dds_time start, timestr::no_suffix_t ) { return timestr( t, start, timestr::no_suffix ).to_string(); } );
+    m.def( "timestr", []( dds_time t, timestr::no_suffix_t ) { return timestr( t, timestr::no_suffix ).to_string(); } );
+
+    m.def( "timestr", []( dds_time t, dds_time start ) { return timestr( t, start ).to_string(); } );
+    m.def( "timestr", []( dds_time t, dds_nsec start ) { return timestr( t, start ).to_string(); } );
+    m.def( "timestr", []( dds_nsec t, dds_time start ) { return timestr( t, start ).to_string(); } );
+    m.def( "timestr", []( dds_time t ) { return timestr( t ).to_string(); } );
+
+
     py::class_< dds_participant::listener,
                 std::shared_ptr< dds_participant::listener >  // handled with a shared_ptr
                 >
@@ -438,59 +487,12 @@ PYBIND11_MODULE(NAME, m) {
                   return os.str();
               } );
 
-    using eprosima::fastdds::dds::SampleInfo;
-    py::class_< SampleInfo >( message, "sample_info" )  //
+    using realdds::dds_sample;
+    py::class_< dds_sample >( message, "sample_info" )  //
         .def( py::init<>() )
-        .def( "identity", []( SampleInfo const & self ) { return self.sample_identity; } )
-        .def( "source_timestamp", []( SampleInfo const & self ) { return self.source_timestamp.to_ns(); } )
-        .def( "reception_timestamp", []( SampleInfo const & self ) { return self.reception_timestamp.to_ns(); } );
-
-
-    using realdds::dds_time;
-    using realdds::dds_nsec;
-    py::class_< dds_time >( m, "time" )
-        .def( py::init<>() )
-        .def( py::init< int32_t, uint32_t >() )  // sec, nsec
-        .def( py::init< long double >() )        // inexact (1.001 -> 1.000999999)
-        .def( py::init( []( dds_nsec ns ) { return realdds::time_from( ns ); } ) )           // exact
-        .def_readwrite( "seconds", &dds_time::seconds )
-        .def_readwrite( "nanosec", &dds_time::nanosec )
-        .def( "to_ns", &dds_time::to_ns )
-        .def_static( "from_ns", []( dds_nsec ns ) { return realdds::time_from( ns ); } )
-        .def_static( "from_double", []( long double d ) { return realdds::dds_time( d ); } )
-        .def( "to_double", &realdds::time_to_double )
-        .def( "__repr__", &realdds::time_to_string )
-        .def( pybind11::self == pybind11::self )
-        .def( pybind11::self != pybind11::self );
-
-
-    // We need a timestamp function that returns timestamps in the same domain as the sample-info timestamps
-    using realdds::timestr;
-    m.def( "now", []() { return realdds::now(); } );
-
-    py::enum_< timestr::no_suffix_t >( m, "no_suffix_t" );
-    m.attr( "no_suffix" ) = timestr::no_suffix;
-    py::enum_< timestr::rel_t >( m, "rel_t" );
-    m.attr( "rel" ) = timestr::rel;
-    py::enum_< timestr::abs_t >( m, "abs_t" );
-    m.attr( "abs" ) = timestr::abs;
-
-    m.def( "timestr", []( dds_nsec t ) { return timestr( t ).to_string(); } );
-    m.def( "timestr", []( dds_nsec t, timestr::no_suffix_t ) { return timestr( t, timestr::no_suffix ).to_string(); } );
-    m.def( "timestr", []( dds_nsec dt, timestr::rel_t ) { return timestr( dt, timestr::rel ).to_string(); } );
-    m.def( "timestr", []( dds_nsec dt, timestr::rel_t, timestr::no_suffix_t ) { return timestr( dt, timestr::rel, timestr::no_suffix ).to_string(); } );
-    m.def( "timestr", []( dds_nsec t1, dds_nsec t2 ) { return timestr( t1, t2 ).to_string(); } );
-    m.def( "timestr", []( dds_nsec t1, dds_nsec t2, timestr::no_suffix_t ) { return timestr( t1, t2, timestr::no_suffix ).to_string(); } );
-
-    m.def( "timestr", []( dds_time t, dds_time start, timestr::no_suffix_t ) { return timestr( t, start, timestr::no_suffix ).to_string(); } );
-    m.def( "timestr", []( dds_time t, dds_nsec start, timestr::no_suffix_t ) { return timestr( t, start, timestr::no_suffix ).to_string(); } );
-    m.def( "timestr", []( dds_nsec t, dds_time start, timestr::no_suffix_t ) { return timestr( t, start, timestr::no_suffix ).to_string(); } );
-    m.def( "timestr", []( dds_time t, timestr::no_suffix_t ) { return timestr( t, timestr::no_suffix ).to_string(); } );
-    
-    m.def( "timestr", []( dds_time t, dds_time start ) { return timestr( t, start ).to_string(); } );
-    m.def( "timestr", []( dds_time t, dds_nsec start ) { return timestr( t, start ).to_string(); } );
-    m.def( "timestr", []( dds_nsec t, dds_time start ) { return timestr( t, start ).to_string(); } );
-    m.def( "timestr", []( dds_time t ) { return timestr( t ).to_string(); } );
+        .def( "identity", []( dds_sample const & self ) { return self.sample_identity; } )
+        .def( "source_timestamp", []( dds_sample const & self ) { return self.source_timestamp.to_ns(); } )
+        .def( "reception_timestamp", []( dds_sample const & self ) { return self.reception_timestamp.to_ns(); } );
 
 
     py::class_< flexible_msg >( message, "flexible" )
@@ -549,7 +551,7 @@ PYBIND11_MODULE(NAME, m) {
               } )
         .def_static(
             "take_next",
-            []( dds_topic_reader & reader, SampleInfo * sample ) {
+            []( dds_topic_reader & reader, dds_sample * sample ) {
                 auto actual_type = reader.topic()->get()->get_type_name();
                 if( actual_type != flexible_msg::type().getName() )
                     throw std::runtime_error( "can't initialize raw::flexible from " + actual_type );
@@ -592,7 +594,7 @@ PYBIND11_MODULE(NAME, m) {
               } )
         .def_static(
             "take_next",
-            []( dds_topic_reader & reader, SampleInfo * sample )
+            []( dds_topic_reader & reader, dds_sample * sample )
             {
                 auto actual_type = reader.topic()->get()->get_type_name();
                 if( actual_type != image_msg::type().getName() )
@@ -637,7 +639,7 @@ PYBIND11_MODULE(NAME, m) {
               } )
         .def_static(
             "take_next",
-            []( dds_topic_reader & reader, SampleInfo * sample )
+            []( dds_topic_reader & reader, dds_sample * sample )
             {
                 auto actual_type = reader.topic()->get()->get_type_name();
                 if( actual_type != blob_msg::type().getName() )
@@ -678,7 +680,7 @@ PYBIND11_MODULE(NAME, m) {
               } )
         .def_static(
             "take_next",
-            []( dds_topic_reader & reader, SampleInfo * sample )
+            []( dds_topic_reader & reader, dds_sample * sample )
             {
                 auto actual_type = reader.topic()->get()->get_type_name();
                 if( actual_type != imu_msg::type().getName() )
@@ -925,9 +927,9 @@ PYBIND11_MODULE(NAME, m) {
         .def( "set_intrinsics", &dds_video_stream::set_intrinsics )
         .def( FN_FWD( dds_video_stream,
                       on_data_available,
-                      ( dds_video_stream &, image_msg && ),
-                      ( image_msg && i ),
-                      callback( self, std::move( i ) ); ) );
+                      ( dds_video_stream &, image_msg &&, dds_sample && ),
+                      ( image_msg && i, dds_sample && sample ),
+                      callback( self, std::move( i ), std::move( sample ) ); ) );
 
     using realdds::dds_depth_stream;
     py::class_< dds_depth_stream, std::shared_ptr< dds_depth_stream > >( m, "depth_stream", video_stream_client_base )

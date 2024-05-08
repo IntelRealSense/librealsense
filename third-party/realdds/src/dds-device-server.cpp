@@ -19,8 +19,7 @@
 #include <realdds/dds-topic-writer.h>
 #include <realdds/dds-option.h>
 #include <realdds/dds-guid.h>
-
-#include <fastdds/dds/subscriber/SampleInfo.hpp>
+#include <realdds/dds-sample.h>
 
 #include <rsutils/string/shorten-json-string.h>
 #include <rsutils/json.h>
@@ -310,7 +309,7 @@ bool dds_device_server::has_metadata_readers() const
 struct dds_device_server::control_sample
 {
     rsutils::json const json;
-    eprosima::fastdds::dds::SampleInfo const sample;
+    dds_sample const sample;
 };
 
 
@@ -326,14 +325,14 @@ void dds_device_server::on_control_message_received()
     };
 
     topics::flexible_msg data;
-    eprosima::fastdds::dds::SampleInfo info;
-    while( topics::flexible_msg::take_next( *_control_reader, &data, &info ) )
+    dds_sample sample;
+    while( topics::flexible_msg::take_next( *_control_reader, &data, &sample ) )
     {
         if( ! data.is_valid() )
             continue;
 
         _control_dispatcher.invoke(
-            [control = control_sample{ data.json_data(), info }, this]( dispatcher::cancellable_timer )
+            [control = control_sample{ data.json_data(), sample }, this]( dispatcher::cancellable_timer )
             {
                 auto sample_j = json::array( {
                     rsutils::string::from( realdds::print_raw_guid( control.sample.sample_identity.writer_guid() ) ),

@@ -17,8 +17,7 @@
 #include <realdds/dds-topic-reader-thread.h>
 #include <realdds/dds-participant.h>
 #include <realdds/dds-guid.h>
-
-#include <fastdds/dds/subscriber/SampleInfo.hpp>
+#include <realdds/dds-sample.h>
 
 #include <rsutils/number/crc32.h>
 #include <rsutils/easylogging/easyloggingpp.h>
@@ -1267,7 +1266,7 @@ bool lrs_device_controller::on_dfu_start( rsutils::json const & control, rsutils
         [weak_dfu = std::weak_ptr< dfu_support >( _dfu )]
         {
             topics::blob_msg blob;
-            eprosima::fastdds::dds::SampleInfo sample;
+            realdds::dds_sample sample;
             while( auto dfu = weak_dfu.lock() )
             {
                 if( ! topics::blob_msg::take_next( *dfu->reader, &blob, &sample ) )

@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include "sid_index.h"
@@ -8,6 +8,7 @@
 #include <src/proc/formats-converter.h>
 #include <src/core/options-watcher.h>
 
+#include <realdds/dds-defines.h>
 #include <realdds/dds-metadata-syncer.h>
 
 #include <rsutils/json-fwd.h>
@@ -54,6 +55,7 @@ protected:
     {
         syncer_type syncer;
         std::atomic< unsigned long long > last_frame_number{ 0 };
+        std::atomic< rs2_time_t > last_timestamp;
     };
 
 private:
@@ -99,10 +101,12 @@ protected:
     std::shared_ptr< realdds::dds_motion_stream_profile >
     find_profile( sid_index sidx, realdds::dds_motion_stream_profile const & profile ) const;
 
-    void handle_video_data( realdds::topics::image_msg && dds_frame,
+    void handle_video_data( realdds::topics::image_msg &&,
+                            realdds::dds_sample &&,
                             const std::shared_ptr< stream_profile_interface > &,
                             streaming_impl & streaming );
     void handle_motion_data( realdds::topics::imu_msg &&,
+                             realdds::dds_sample &&,
                              const std::shared_ptr< stream_profile_interface > &,
                              streaming_impl & );
     void handle_new_metadata( std::string const & stream_name,
