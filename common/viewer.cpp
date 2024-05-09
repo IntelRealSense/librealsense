@@ -1722,7 +1722,26 @@ namespace rs2
         return std::ceil((mean + 1.5f * standard_deviation) / length_jump) * length_jump;
     }
 
-    std::vector<vertex> viewer_model::init_zone(Zone zone, const frame& frame)
+    void viewer_model::set_polygon_color(Zone zone)
+    {
+        switch (zone)
+        {
+        case Zone::Danger:
+            glColor3f(red.x, red.y, red.z);
+            break;
+        case Zone::Warning:
+            glColor3f(yellow.x, yellow.y, yellow.z);
+            break;
+        case Zone::Diagnostic:
+            glColor3f(regular_blue.x, regular_blue.y, regular_blue.z);
+            break;
+        default:
+            LOG_ERROR("Invalid zone, got: " << static_cast<int>(zone));
+            return;
+        }
+    }
+
+    std::vector<vertex> viewer_model::init_zone(Zone zone, const frame& frame, float scale_factor)
     {
         std::vector<vertex> points;
         rs2_frame_metadata_value md_value;
@@ -1738,19 +1757,20 @@ namespace rs2
             md_value = RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_0_X_CORD;
             break;
         default:
+            LOG_ERROR("Invalid zone, got: " << static_cast<int>(zone));
             return points;
         }
 
-        // we divide by 10 to convert all units from mm to cm, assuming all md values are subsequent 
-        vertex x0 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value))) / 10,
-                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 1))) / 10, 0 };
-        vertex x1 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 2))) / 10,
-                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 3))) / 10, 0 };
-        vertex x2 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 4))) / 10,
-                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 5))) / 10, 0 };
-        vertex x3 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 6))) / 10,
-                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 7))) / 10, 0 };
-        points = { x0, x1, x2, x3, x0 }; // x0 again at the end to close the polygon drawn
+        // assuming all md values are subsequent 
+        vertex x0 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value))) * scale_factor,
+                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 1))) * scale_factor, 0 };
+        vertex x1 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 2))) * scale_factor,
+                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 3))) * scale_factor, 0 };
+        vertex x2 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 4))) * scale_factor,
+                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 5))) * scale_factor, 0 };
+        vertex x3 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 6))) * scale_factor,
+                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 7)))* scale_factor, 0 };
+        points = { x0, x1, x2, x3};
         return points;
     }
 
@@ -1777,33 +1797,18 @@ namespace rs2
         return v2;
     }
 
-    void viewer_model::draw_zone(Zone zone, const rect& draw_within, const frame& frame)
+    void viewer_model::draw_zone_2d(Zone zone, const rect& draw_within, const frame& frame)
     {
+        glLineWidth(3.0f);
+        glBegin(GL_LINE_LOOP);
+
+        auto MM_TO_CM_SCALE = 0.1f;  // coords are in mm, converts to cm
+        auto zone_to_draw = init_zone(zone, frame, MM_TO_CM_SCALE);
+        set_polygon_color(zone);
+
         constexpr GLfloat width = 512; // range of Y values for polygons - -2.56 - +2.56 meters
         constexpr GLfloat height = 640; // range of X values for polygons - 0-6.4 meters
         rect safety_regions_rect = { -256, 0, width, height };  //-256 is the minimum Y value, 0 is the minimum X value, all zones are within this area
-
-        glLineWidth(3);
-        glBegin(GL_LINE_STRIP);
-        auto zone_to_draw = std::vector<vertex>();
-        switch (zone)
-        {
-        case Zone::Danger:
-            zone_to_draw = init_zone(Zone::Danger, frame);
-            glColor3f(red.x, red.y, red.z); // red color
-            break;
-        case Zone::Warning:
-            zone_to_draw = init_zone(Zone::Warning, frame);
-            glColor3f(yellow.x, yellow.y, yellow.z); // yellow color
-            break;
-        case Zone::Diagnostic:
-            zone_to_draw = init_zone(Zone::Diagnostic, frame);
-            glColor3f(regular_blue.x, regular_blue.y, regular_blue.z); // blue color
-            break;
-        default:
-            return;
-        }
-
         for (vertex& v : zone_to_draw)
         {
             auto vertex = transform_vertex(v, safety_regions_rect, draw_within);
@@ -1811,6 +1816,7 @@ namespace rs2
         }
 
         glEnd();
+        glLineWidth(1.0f);
     }
 
 
@@ -1918,9 +1924,9 @@ namespace rs2
                         auto frame = streams[stream].texture->get_last_frame();
                         if (frame && frame.get_data()) 
                         {
-                            draw_zone(Zone::Diagnostic, stream_rect, frame);
-                            draw_zone(Zone::Warning, stream_rect, frame);
-                            draw_zone(Zone::Danger, stream_rect, frame);
+                            draw_zone_2d(Zone::Diagnostic, stream_rect, frame);
+                            draw_zone_2d(Zone::Warning, stream_rect, frame);
+                            draw_zone_2d(Zone::Danger, stream_rect, frame);
                         }
                         break;
                 }
@@ -3656,48 +3662,20 @@ namespace rs2
         }
     }
 
-    void viewer_model::draw_zone(Zone zone, rs2::labeled_points labeled_points)
+    void viewer_model::draw_zone_3d(Zone zone, const rs2::labeled_points& frame)
     {
         glLineWidth(4.0f);
         glBegin(GL_LINE_LOOP);
 
-        // based on zone, find value to start from, and choose polygon color
-        rs2_frame_metadata_value first_x_cord = RS2_FRAME_METADATA_COUNT;
-        switch (zone) {
-        case Zone::Danger:
-            first_x_cord = RS2_FRAME_METADATA_DANGER_ZONE_POINT_0_X_CORD;
-            glColor3f(red.x, red.y, red.z); // red color for danger zone
-            break;
-        case Zone::Warning:
-            first_x_cord = RS2_FRAME_METADATA_WARNING_ZONE_POINT_0_X_CORD;
-            glColor3f(yellow.x, yellow.y, yellow.z); // yellow color for warning zone
-            break;
-        case Zone::Diagnostic:
-            first_x_cord = RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_0_X_CORD;
-            glColor3f(regular_blue.x, regular_blue.y, regular_blue.z); // blue color for diagnostic zone
-            break;
-        default:
-            LOG_ERROR("Invalid zone, got: " << static_cast<int>(zone));
-            break;
-        }
-        
-        if (first_x_cord != RS2_FRAME_METADATA_COUNT)
+        const auto MM_TO_METER_SCALE = 0.001f; // coords are in mm, converts to meters
+        auto zone_to_draw = init_zone(zone, frame, MM_TO_METER_SCALE); 
+        set_polygon_color(zone);
+
+        for (vertex& v : zone_to_draw)
         {
-            // get points from metadata
-            const auto NUM_VERTICES = 4;
-            const auto MM_TO_METER_SCALE = 0.001f; // coords are in mm, converts to meters
-            for (int i = 0; i < NUM_VERTICES; i++)
-            {
-                rs2_frame_metadata_value curr_point_x_md = static_cast<rs2_frame_metadata_value>(first_x_cord + i * 2);
-                rs2_frame_metadata_value curr_point_y_md = static_cast<rs2_frame_metadata_value>(curr_point_x_md + 1);
-
-                vertex vertex_i;
-                vertex_i.x = labeled_points.get_frame_metadata(curr_point_x_md) * MM_TO_METER_SCALE;
-                vertex_i.y = labeled_points.get_frame_metadata(curr_point_y_md) * MM_TO_METER_SCALE;
-                vertex_i.z = 0; // we transform LPC to depth - 0 in LPC will be transformed to depth sensor (=camera) height
-
-                glVertex3f(vertex_i.x, vertex_i.y, vertex_i.z); // drawn after the matrix rotation & translation
-            }
+            // we transform LPC to depth - z=0 in LPC will be transformed to depth sensor (=camera) height
+            // - drawn after the matrix rotation & translation
+            glVertex3f(v.x, v.y, 0); 
         }
 
         glEnd();
@@ -3736,9 +3714,9 @@ namespace rs2
         
         if (show_safety_zones)
         {
-            draw_zone(Zone::Danger, labeled_points);
-            draw_zone(Zone::Warning, labeled_points);
-            draw_zone(Zone::Diagnostic, labeled_points);
+            draw_zone_3d(Zone::Danger, labeled_points);
+            draw_zone_3d(Zone::Warning, labeled_points);
+            draw_zone_3d(Zone::Diagnostic, labeled_points);
         }
 
         glBegin(GL_POINTS);
