@@ -5,15 +5,16 @@ include(ExternalProject)
 ExternalProject_Add(
     nlohmann_json
     PREFIX .
-    GIT_REPOSITORY "https://github.com/nlohmann/json.git"
-    GIT_TAG        v3.11.3
-    GIT_CONFIG     advice.detachedHead=false  # otherwise we'll get "You are in 'detached HEAD' state..."
-    SOURCE_DIR     "${CMAKE_BINARY_DIR}/third-party/json"
-    GIT_SHALLOW    1        # No history needed (requires cmake 3.6)
+    
+    # We do not use 'GIT_REPOSITORY' as it doesn't support a shallow clone of a specific commit,
+    # this make the clone step very long, so we clone by ourselves
+    DOWNLOAD_COMMAND   git clone -c advice.detachedHead=false --branch v3.11.3 https://github.com/nlohmann/json.git --depth 1 json
+    DOWNLOAD_DIR       ${CMAKE_BINARY_DIR}/third-party/
+    
     # Override default steps with no action, we just want the clone step.
+    UPDATE_COMMAND ""
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
     INSTALL_COMMAND ""
     )
-
 
