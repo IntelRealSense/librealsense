@@ -285,5 +285,9 @@ namespace rs2
 
         typedef enum class Zone { Danger, Warning, Diagnostic } Zone;
         void draw_zone(Zone zone, rs2::labeled_points labeled_points);
+
+        void draw_zone(Zone zone, const rect& draw_within, const frame& frame); // 2D
+
+        std::vector<vertex> init_zone(Zone zone, const frame& frame);
     };
 }

@@ -385,10 +385,6 @@ namespace rs2
         GLuint texture;
         rs2::frame_queue last_queue[2];
         mutable rs2::frame last[2];
-        std::vector<vertex> danger_zone;
-        std::vector<vertex> warning_zone;
-        std::vector<vertex> diagnostic_zone;
-        typedef enum class Zone { Danger, Warning, Diagnostic } Zone;
     public:
         std::shared_ptr<colorizer> colorize;
         std::shared_ptr<yuy_decoder> yuy2rgb;
@@ -762,94 +758,8 @@ namespace rs2
             }
         }
 
-        vertex normalize_and_draw_point(vertex v, rect normalize_from, rect unnormalize_to)
-        {
-            vertex v2 = { 0,0,0 };
-            v2.x = (v.y - normalize_from.x) / normalize_from.w;
-            v2.y = (v.x - normalize_from.y) / normalize_from.h;
-
-            v2.x = v2.x * unnormalize_to.w + unnormalize_to.x;
-            v2.y = v2.y * unnormalize_to.h + unnormalize_to.y;
-
-            glVertex2f(v2.x, v2.y);
-
-            return v2;
-        }
-
-        void draw_zone(Zone zone, const rect& draw_within, float line_width = 3.f)
-        {
-            constexpr GLfloat width = 512; // range of Y values for polygons - -2.56 - +2.56 meters
-            constexpr GLfloat height = 640; // range of X values for polygons - 0-6.4 meters
-            rect safety_regions_rect = { -256, 0, width, height };  //-256 is the minimum Y value, 0 is the minimum X value, all zones are within this area
-            
-            glLineWidth(3);
-            glBegin(GL_LINE_STRIP);
-            
-            auto zone_to_draw = danger_zone;
-            switch (zone)
-            {
-            case Zone::Danger:
-                zone_to_draw = danger_zone;
-                glColor4f(1, 0, 0, 1); // red color
-                break;
-            case Zone::Warning:
-                zone_to_draw = warning_zone;
-                glColor4f(1, 1, 0, 1); // yellow color
-                break;
-            case Zone::Diagnostic:
-                zone_to_draw = diagnostic_zone;
-                glColor4f(0, 0, 1, 1); // blue color
-                break;
-            default:
-                return;
-            }
-
-            for (vertex& v : zone_to_draw)
-            {
-                normalize_and_draw_point(v, safety_regions_rect, draw_within);
-            }
-            normalize_and_draw_point(zone_to_draw[0], safety_regions_rect, draw_within);
-            glEnd();
-        }
-
-        static std::vector<vertex> init_zone(Zone zone, const rs2::frame& frame)
-        {
-            std::vector<vertex> points;
-            rs2_frame_metadata_value md_value;
-            switch (zone)
-            {
-            case Zone::Danger:
-                md_value = RS2_FRAME_METADATA_DANGER_ZONE_POINT_0_X_CORD;
-                break;
-            case Zone::Warning:
-                md_value = RS2_FRAME_METADATA_WARNING_ZONE_POINT_0_X_CORD;
-                break;
-            case Zone::Diagnostic:
-                md_value = RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_0_X_CORD;
-                break;
-            default:
-                return points;
-            }
-
-            // we divide by 10 to convert all units from mm to cm, assuming all md values are subsequent 
-            vertex x0 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value))) / 10,
-                            static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 1))) / 10, 0 };
-            vertex x1 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 2))) / 10,
-                            static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 3))) / 10, 0 };
-            vertex x2 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 4))) / 10,
-                            static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 5))) / 10, 0 };
-            vertex x3 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 6))) / 10,
-                            static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 7))) / 10, 0 };
-            points = {x0, x1, x2, x3};
-            return points;
-        }
-
         void upload_occupancy_frame(const rs2::frame& frame, const void* data)
         {
-            danger_zone = init_zone(Zone::Danger, frame);
-            warning_zone = init_zone(Zone::Warning, frame);
-            diagnostic_zone = init_zone(Zone::Diagnostic, frame);
-
             if (!frame.supports_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS) ||
                 !frame.supports_frame_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS))
                 throw std::runtime_error("Occupancy rows / columns could not be read from frame metadata");
@@ -1269,23 +1179,6 @@ namespace rs2
                 glVertex2f(normalized_thumbnail_roi.x + normalized_thumbnail_roi.w, normalized_thumbnail_roi.y);
                 glVertex2f(normalized_thumbnail_roi.x, normalized_thumbnail_roi.y);
                 glEnd();
-            }
-            else if (!danger_zone.empty()) // if zoomed in, polygons won't show right at the moment...
-            {
-                GLfloat rot[16] = {-1 , 0 , 0  , 0,
-                                   0 , -1 , 0  , 0,
-                                   0 , 0 ,1  , 0,
-                                   0 , 0 , 0  , 1 };
-                glPushMatrix();
-                glTranslatef(r.center().x, r.center().y, 0);
-                glMultMatrixf(rot);
-
-                glTranslatef(-r.center().x, -r.center().y, 0);
-                draw_zone(Zone::Diagnostic, r);
-                draw_zone(Zone::Warning, r);
-                draw_zone(Zone::Danger, r);
-                
-                glPopMatrix();
             }
         }
     };

@@ -1722,6 +1722,98 @@ namespace rs2
         return std::ceil((mean + 1.5f * standard_deviation) / length_jump) * length_jump;
     }
 
+    std::vector<vertex> viewer_model::init_zone(Zone zone, const frame& frame)
+    {
+        std::vector<vertex> points;
+        rs2_frame_metadata_value md_value;
+        switch (zone)
+        {
+        case Zone::Danger:
+            md_value = RS2_FRAME_METADATA_DANGER_ZONE_POINT_0_X_CORD;
+            break;
+        case Zone::Warning:
+            md_value = RS2_FRAME_METADATA_WARNING_ZONE_POINT_0_X_CORD;
+            break;
+        case Zone::Diagnostic:
+            md_value = RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_0_X_CORD;
+            break;
+        default:
+            return points;
+        }
+
+        // we divide by 10 to convert all units from mm to cm, assuming all md values are subsequent 
+        vertex x0 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value))) / 10,
+                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 1))) / 10, 0 };
+        vertex x1 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 2))) / 10,
+                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 3))) / 10, 0 };
+        vertex x2 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 4))) / 10,
+                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 5))) / 10, 0 };
+        vertex x3 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 6))) / 10,
+                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 7))) / 10, 0 };
+        points = { x0, x1, x2, x3, x0 }; // x0 again at the end to close the polygon drawn
+        return points;
+    }
+
+    // get a vertex in LPC corrdinates, and transform to openGL corrdinates
+    // we can't use the rotation matrix (from the extrinsics) here as this is only a transformation in 2D and not in 3D
+    // the transformation we need is expected to stay the same - mirror the values on X and Y axis
+    vertex transform_vertex(vertex v, const rect& normalize_from, const rect& unnormalize_to)
+    {
+        vertex v2 = { 0,0,0 };
+
+        // normalize each value between 0 and 1, v is expected to be within normalize_from
+        // note v.y -> v2.x and v.x -> v2.y, this is a part of the transformation
+        v2.x = (v.y - normalize_from.x) / normalize_from.w;
+        v2.y = (v.x - normalize_from.y) / normalize_from.h;
+
+        // since x and y are normalized to be between 0 and 1, we can use this to mirror them
+        v2.x = 1 - v2.x;
+        v2.y = 1 - v2.y; 
+
+        // 'unnormalize' the values back, so they fit in the wanted frame, unnormalize_to
+        v2.x = v2.x * unnormalize_to.w + unnormalize_to.x;
+        v2.y = v2.y * unnormalize_to.h + unnormalize_to.y;
+
+        return v2;
+    }
+
+    void viewer_model::draw_zone(Zone zone, const rect& draw_within, const frame& frame)
+    {
+        constexpr GLfloat width = 512; // range of Y values for polygons - -2.56 - +2.56 meters
+        constexpr GLfloat height = 640; // range of X values for polygons - 0-6.4 meters
+        rect safety_regions_rect = { -256, 0, width, height };  //-256 is the minimum Y value, 0 is the minimum X value, all zones are within this area
+
+        glLineWidth(3);
+        glBegin(GL_LINE_STRIP);
+        auto zone_to_draw = std::vector<vertex>();
+        switch (zone)
+        {
+        case Zone::Danger:
+            zone_to_draw = init_zone(Zone::Danger, frame);
+            glColor3f(red.x, red.y, red.z); // red color
+            break;
+        case Zone::Warning:
+            zone_to_draw = init_zone(Zone::Warning, frame);
+            glColor3f(yellow.x, yellow.y, yellow.z); // yellow color
+            break;
+        case Zone::Diagnostic:
+            zone_to_draw = init_zone(Zone::Diagnostic, frame);
+            glColor3f(regular_blue.x, regular_blue.y, regular_blue.z); // blue color
+            break;
+        default:
+            return;
+        }
+
+        for (vertex& v : zone_to_draw)
+        {
+            auto vertex = transform_vertex(v, safety_regions_rect, draw_within);
+            glVertex2f(vertex.x, vertex.y);
+        }
+
+        glEnd();
+    }
+
+
     void viewer_model::render_2d_view(const rect& view_rect,
         ux_window& win, int output_height,
         ImFont *font1, ImFont *font2, size_t dev_model_num,
@@ -1822,6 +1914,15 @@ namespace rs2
 
                         break;
                     }
+                    case RS2_STREAM_OCCUPANCY:
+                        auto frame = streams[stream].texture->get_last_frame();
+                        if (frame && frame.get_data()) 
+                        {
+                            draw_zone(Zone::Diagnostic, stream_rect, frame);
+                            draw_zone(Zone::Warning, stream_rect, frame);
+                            draw_zone(Zone::Danger, stream_rect, frame);
+                        }
+                        break;
                 }
             }
 
