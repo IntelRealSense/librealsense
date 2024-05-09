@@ -408,6 +408,10 @@ PYBIND11_MODULE(NAME, m) {
                       callback( self, status.total_count, status.total_count_change ); ) )
         .def( "topic", &dds_topic_reader::topic )
         .def( "run", &dds_topic_reader::run )
+        .def( "wait_for_writers", &dds_topic_reader::wait_for_writers )
+        .def( "stop", &dds_topic_reader::stop, 
+              // GIL release needed: stop will wait and cause a hang if we're inside a callback
+              py::call_guard< py::gil_scoped_release >() )
         .def( "qos", []() { return reader_qos(); } )
         .def( "qos", []( reliability r, durability d ) { return reader_qos( r, d ); } );
 
