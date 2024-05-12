@@ -7,9 +7,10 @@ ExternalProject_Add(
     PREFIX .
     
     # We do not use 'GIT_REPOSITORY' as it doesn't support a shallow clone of a specific commit,
-    # this make the clone step very long, so we clone by ourselves
+    # this make the clone step very long, so we clone by ourselves (See https://gitlab.kitware.com/cmake/cmake/-/issues/17770).
+    # Adding detachedHead=false to avoid warnings like: "You are in 'detached HEAD' state..."
     DOWNLOAD_COMMAND   git clone -c advice.detachedHead=false --branch v3.11.3 https://github.com/nlohmann/json.git --depth 1 json
-    DOWNLOAD_DIR       ${CMAKE_BINARY_DIR}/third-party/
+    DOWNLOAD_DIR       "${CMAKE_BINARY_DIR}/third-party/"
     
     # Override default steps with no action, we just want the clone step.
     UPDATE_COMMAND ""
