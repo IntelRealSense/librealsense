@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.9...3.20.5)
+cmake_minimum_required(VERSION 3.8)
 
 project(realsense-file)
 
