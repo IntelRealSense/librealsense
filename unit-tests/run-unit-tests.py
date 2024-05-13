@@ -274,7 +274,7 @@ def configuration_str( configuration, repetition=0, retry=0, sns=None, prefix=''
     elif sns is not None:
         s += '[' + serial_numbers_to_string( sns ) + ']'
     if repetition:
-        s += '[' + str(repetition+1) + ']'
+        s += f'[rep {repetition+1}]'
     if retry:
         s += f'[retry {retry}]'
     if s:
@@ -454,10 +454,19 @@ def test_wrapper( test, configuration=None, repetition=1, sns=None ):
     global n_tests
     n_tests += 1
     for retry in range( test.config.retries + 1 ):
+        if retry:
+            if log.is_debug_on():
+                log.debug_unindent()  # just to make it stand out a little more
+                log.d( f'  Failed; retry #{retry}' )
+                log.debug_indent()
+            if no_reset:
+                time.sleep(1)  # small pause between tries
+            else:
+                devices.enable_only( serial_numbers, recycle=True )
         if test_wrapper_( test, configuration, repetition, retry, sns ):
             return True
         log._n_errors -= 1
-        time.sleep( 1 )  # small pause between tries
+
     log._n_errors += 1
     return False
 

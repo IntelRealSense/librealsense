@@ -561,7 +561,6 @@ def finish( on_fail=LOG ):
         log.i("Test passed")
     test_in_progress = None
 
-
 def print_separator():
     """
     For use only in-between test-cases, this will separate them in some visual way so as
