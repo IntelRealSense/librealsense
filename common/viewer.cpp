@@ -722,15 +722,15 @@ namespace rs2
             }
             left += 80;
 
-            if (show_safety_zones)
+            if (show_safety_zones_3d)
             {
                 bool active = true;
                 if (big_button(&active, win, left, 0, textual_icons::polygon,
                     "S. Zones", false, true,
                     "Show/hide Safety Zones"))
                 {
-                    show_safety_zones = false;
-                    config_file::instance().set(configurations::viewer::show_safety_zones, show_safety_zones);
+                    show_safety_zones_3d = false;
+                    config_file::instance().set(configurations::viewer::show_safety_zones_3d, show_safety_zones_3d);
                 }
             }
             else
@@ -740,8 +740,8 @@ namespace rs2
                     "S. Zones", false, true,
                     "Show/hide Safety Zones"))
                 {
-                    show_safety_zones = true;
-                    config_file::instance().set(configurations::viewer::show_safety_zones, show_safety_zones);
+                    show_safety_zones_3d = true;
+                    config_file::instance().set(configurations::viewer::show_safety_zones_3d, show_safety_zones_3d);
                 }
             }
         }
@@ -948,8 +948,8 @@ namespace rs2
             configurations::viewer::lpc_point_size, static_cast<int>(lpc_points_size::lpc_small)
         ));
 
-        show_safety_zones = config_file::instance().get_or_default(
-            configurations::viewer::show_safety_zones, true
+        show_safety_zones_3d = config_file::instance().get_or_default(
+            configurations::viewer::show_safety_zones_3d, true
         );
     }
 
@@ -1922,7 +1922,7 @@ namespace rs2
                     }
                     case RS2_STREAM_OCCUPANCY:
                         auto frame = streams[stream].texture->get_last_frame();
-                        if (frame && frame.get_data()) 
+                        if (frame && frame.get_data() && streams[stream].show_safety_zones_2d)
                         {
                             draw_zone_2d(Zone::Diagnostic, stream_rect, frame);
                             draw_zone_2d(Zone::Warning, stream_rect, frame);
@@ -3712,7 +3712,7 @@ namespace rs2
         // getting inverse of the translation, in depth coordinates, as this is the one needed by OpenGL
         glTranslatef(-lpc_to_depth.translation[0], -lpc_to_depth.translation[1], -lpc_to_depth.translation[2]);
         
-        if (show_safety_zones)
+        if (show_safety_zones_3d)
         {
             draw_zone_3d(Zone::Danger, labeled_points);
             draw_zone_3d(Zone::Warning, labeled_points);

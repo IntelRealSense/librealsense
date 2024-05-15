@@ -25,6 +25,8 @@ namespace rs2
             configurations::viewer::show_map_ruler, true);
         show_stream_details = config_file::instance().get_or_default(
             configurations::viewer::show_stream_details, false);
+        show_safety_zones_2d = config_file::instance().get_or_default(
+            configurations::viewer::show_safety_zones_2d, true);
     }
 
     std::shared_ptr<texture_buffer> stream_model::upload_frame(frame&& f)
@@ -392,6 +394,7 @@ namespace rs2
         if (!viewer.allow_stream_close) --num_of_buttons;
         if (viewer.streams.size() > 1) ++num_of_buttons;
         if (RS2_STREAM_DEPTH == profile.stream_type()) ++num_of_buttons; // Color map ruler button
+        if (RS2_STREAM_OCCUPANCY == profile.stream_type()) ++num_of_buttons; // Safety zones button
 
         ImGui_ScopePushFont(font);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
@@ -531,6 +534,39 @@ namespace rs2
                 if (ImGui::IsItemHovered())
                 {
                     ImGui::SetTooltip("Show color map ruler");
+                }
+            }
+            ImGui::SameLine();
+        }
+
+        if (RS2_STREAM_OCCUPANCY == profile.stream_type())
+        {
+            label = rsutils::string::from() << textual_icons::polygon << "##Safety zones";
+            if (show_safety_zones_2d)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                {
+                    show_safety_zones_2d = false;
+                    config_file::instance().set(configurations::viewer::show_safety_zones_2d, show_safety_zones_2d);
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Hide safety polygons");
+                }
+                ImGui::PopStyleColor(2);
+            }
+            else
+            {
+                if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+                {
+                    show_safety_zones_2d = true;
+                    config_file::instance().set(configurations::viewer::show_safety_zones_2d, show_safety_zones_2d);
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Show safety polygons");
                 }
             }
             ImGui::SameLine();
