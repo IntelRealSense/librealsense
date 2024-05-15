@@ -1722,104 +1722,6 @@ namespace rs2
         return std::ceil((mean + 1.5f * standard_deviation) / length_jump) * length_jump;
     }
 
-    void viewer_model::set_polygon_color(Zone zone)
-    {
-        switch (zone)
-        {
-        case Zone::Danger:
-            glColor3f(red.x, red.y, red.z);
-            break;
-        case Zone::Warning:
-            glColor3f(yellow.x, yellow.y, yellow.z);
-            break;
-        case Zone::Diagnostic:
-            glColor3f(regular_blue.x, regular_blue.y, regular_blue.z);
-            break;
-        default:
-            LOG_ERROR("Invalid zone, got: " << static_cast<int>(zone));
-            return;
-        }
-    }
-
-    std::vector<vertex> viewer_model::init_zone(Zone zone, const frame& frame, float scale_factor)
-    {
-        std::vector<vertex> points;
-        rs2_frame_metadata_value md_value;
-        switch (zone)
-        {
-        case Zone::Danger:
-            md_value = RS2_FRAME_METADATA_DANGER_ZONE_POINT_0_X_CORD;
-            break;
-        case Zone::Warning:
-            md_value = RS2_FRAME_METADATA_WARNING_ZONE_POINT_0_X_CORD;
-            break;
-        case Zone::Diagnostic:
-            md_value = RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_0_X_CORD;
-            break;
-        default:
-            LOG_ERROR("Invalid zone, got: " << static_cast<int>(zone));
-            return points;
-        }
-
-        // assuming all md values are subsequent 
-        vertex x0 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value))) * scale_factor,
-                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 1))) * scale_factor, 0 };
-        vertex x1 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 2))) * scale_factor,
-                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 3))) * scale_factor, 0 };
-        vertex x2 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 4))) * scale_factor,
-                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 5))) * scale_factor, 0 };
-        vertex x3 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 6))) * scale_factor,
-                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 7)))* scale_factor, 0 };
-        points = { x0, x1, x2, x3};
-        return points;
-    }
-
-    // get a vertex in LPC corrdinates, and transform to openGL corrdinates
-    // we can't use the rotation matrix (from the extrinsics) here as this is only a transformation in 2D and not in 3D
-    // the transformation we need is expected to stay the same - mirror the values on X and Y axis
-    vertex transform_vertex(vertex v, const rect& normalize_from, const rect& unnormalize_to)
-    {
-        vertex v2 = { 0,0,0 };
-
-        // normalize each value between 0 and 1, v is expected to be within normalize_from
-        // note v.y -> v2.x and v.x -> v2.y, this is a part of the transformation
-        v2.x = (v.y - normalize_from.x) / normalize_from.w;
-        v2.y = (v.x - normalize_from.y) / normalize_from.h;
-
-        // since x and y are normalized to be between 0 and 1, we can use this to mirror them
-        v2.x = 1 - v2.x;
-        v2.y = 1 - v2.y; 
-
-        // 'unnormalize' the values back, so they fit in the wanted frame, unnormalize_to
-        v2.x = v2.x * unnormalize_to.w + unnormalize_to.x;
-        v2.y = v2.y * unnormalize_to.h + unnormalize_to.y;
-
-        return v2;
-    }
-
-    void viewer_model::draw_zone_2d(Zone zone, const rect& draw_within, const frame& frame)
-    {
-        glLineWidth(3.0f);
-        glBegin(GL_LINE_LOOP);
-
-        auto MM_TO_CM_SCALE = 0.1f;  // coords are in mm, converts to cm
-        auto zone_to_draw = init_zone(zone, frame, MM_TO_CM_SCALE);
-        set_polygon_color(zone);
-
-        constexpr GLfloat width = 512; // range of Y values for polygons - -2.56 - +2.56 meters
-        constexpr GLfloat height = 640; // range of X values for polygons - 0-6.4 meters
-        rect safety_regions_rect = { -256, 0, width, height };  //-256 is the minimum Y value, 0 is the minimum X value, all zones are within this area
-        for (vertex& v : zone_to_draw)
-        {
-            auto vertex = transform_vertex(v, safety_regions_rect, draw_within);
-            glVertex2f(vertex.x, vertex.y);
-        }
-
-        glEnd();
-        glLineWidth(1.0f);
-    }
-
-
     void viewer_model::render_2d_view(const rect& view_rect,
         ux_window& win, int output_height,
         ImFont *font1, ImFont *font2, size_t dev_model_num,
@@ -3752,5 +3654,104 @@ namespace rs2
             ((selected_tex_source_uid == -1 && f.get_profile().format() == RS2_FORMAT_Z16)
                 || (f.get_profile().format() != RS2_FORMAT_ANY && is_3d_texture_source(f))));
     }
+
+    void viewer_model::set_polygon_color(Zone zone)
+    {
+        switch (zone)
+        {
+        case Zone::Danger:
+            glColor3f(red.x, red.y, red.z);
+            break;
+        case Zone::Warning:
+            glColor3f(yellow.x, yellow.y, yellow.z);
+            break;
+        case Zone::Diagnostic:
+            glColor3f(regular_blue.x, regular_blue.y, regular_blue.z);
+            break;
+        default:
+            LOG_ERROR("Invalid zone, got: " << static_cast<int>(zone));
+            return;
+        }
+    }
+
+    std::vector<vertex> viewer_model::init_zone(Zone zone, const frame& frame, float scale_factor)
+    {
+        std::vector<vertex> points;
+        rs2_frame_metadata_value md_value;
+        switch (zone)
+        {
+        case Zone::Danger:
+            md_value = RS2_FRAME_METADATA_DANGER_ZONE_POINT_0_X_CORD;
+            break;
+        case Zone::Warning:
+            md_value = RS2_FRAME_METADATA_WARNING_ZONE_POINT_0_X_CORD;
+            break;
+        case Zone::Diagnostic:
+            md_value = RS2_FRAME_METADATA_DIAGNOSTIC_ZONE_POINT_0_X_CORD;
+            break;
+        default:
+            LOG_ERROR("Invalid zone, got: " << static_cast<int>(zone));
+            return points;
+        }
+
+        // assuming all md values are subsequent 
+        vertex x0 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value))) * scale_factor,
+                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 1))) * scale_factor, 0 };
+        vertex x1 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 2))) * scale_factor,
+                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 3))) * scale_factor, 0 };
+        vertex x2 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 4))) * scale_factor,
+                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 5))) * scale_factor, 0 };
+        vertex x3 = { static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 6))) * scale_factor,
+                        static_cast<float>(frame.get_frame_metadata(static_cast<rs2_frame_metadata_value>(md_value + 7))) * scale_factor, 0 };
+        points = { x0, x1, x2, x3 };
+        return points;
+    }
+
+    // get a vertex in LPC corrdinates, and transform to openGL corrdinates
+    // we can't use the rotation matrix (from the extrinsics) here as this is only a transformation in 2D and not in 3D
+    // the transformation we need is expected to stay the same - mirror the values on X and Y axis
+    vertex viewer_model::transform_vertex(vertex v, const rect& normalize_from, const rect& unnormalize_to)
+    {
+        vertex v2 = { 0,0,0 };
+
+        // normalize each value between 0 and 1, v is expected to be within normalize_from
+        // note v.y -> v2.x and v.x -> v2.y, this is a part of the transformation
+        v2.x = (v.y - normalize_from.x) / normalize_from.w;
+        v2.y = (v.x - normalize_from.y) / normalize_from.h;
+
+        // since x and y are normalized to be between 0 and 1, we can use this to mirror them
+        v2.x = 1 - v2.x;
+        v2.y = 1 - v2.y;
+
+        // 'unnormalize' the values back, so they fit in the wanted frame, unnormalize_to
+        v2.x = v2.x * unnormalize_to.w + unnormalize_to.x;
+        v2.y = v2.y * unnormalize_to.h + unnormalize_to.y;
+
+        return v2;
+    }
+
+
+    void viewer_model::draw_zone_2d(Zone zone, const rect& draw_within, const frame& frame)
+    {
+        glLineWidth(3.0f);
+        glBegin(GL_LINE_LOOP);
+
+        auto MM_TO_CM_SCALE = 0.1f;  // coords are in mm, converts to cm
+        auto zone_to_draw = init_zone(zone, frame, MM_TO_CM_SCALE);
+        set_polygon_color(zone);
+
+        constexpr GLfloat width = 512; // range of Y values for polygons - -2.56 - +2.56 meters
+        constexpr GLfloat height = 640; // range of X values for polygons - 0-6.4 meters
+        rect safety_regions_rect = { -256, 0, width, height };  //-256 is the minimum Y value, 0 is the minimum X value, all zones are within this area
+        for (vertex& v : zone_to_draw)
+        {
+            auto vertex = transform_vertex(v, safety_regions_rect, draw_within);
+            glVertex2f(vertex.x, vertex.y);
+        }
+
+        glEnd();
+        glLineWidth(1.0f);
+    }
+
         
 }

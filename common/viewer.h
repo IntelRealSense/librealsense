@@ -288,5 +288,6 @@ namespace rs2
         std::vector<vertex> init_zone(Zone zone, const frame& frame, float scale_factor);
         void draw_zone_2d(Zone zone, const rect& draw_within, const frame& frame);
         void draw_zone_3d(Zone zone, const rs2::labeled_points& frame);
+        vertex transform_vertex(vertex v, const rect& normalize_from, const rect& unnormalize_to);
     };
 }
