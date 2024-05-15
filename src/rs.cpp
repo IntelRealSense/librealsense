@@ -4456,7 +4456,7 @@ void rs2_set_safety_preset(const rs2_sensor* sensor,
     rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);
-    VALIDATE_RANGE(index, 1, 63);
+    VALIDATE_RANGE(index, 0, 63);
     auto safety_sensor = VALIDATE_INTERFACE(sensor->sensor, librealsense::safety_sensor);
     safety_sensor->set_safety_preset(index, *sp);
 }
