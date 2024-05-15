@@ -459,10 +459,10 @@ def test_wrapper( test, configuration=None, repetition=1, sns=None ):
                 log.debug_unindent()  # just to make it stand out a little more
                 log.d( f'  Failed; retry #{retry}' )
                 log.debug_indent()
-            if no_reset:
+            if no_reset or not sns:
                 time.sleep(1)  # small pause between tries
             else:
-                devices.enable_only( serial_numbers, recycle=True )
+                devices.enable_only( sns, recycle=True )
         if test_wrapper_( test, configuration, repetition, retry, sns ):
             return True
         log._n_errors -= 1
