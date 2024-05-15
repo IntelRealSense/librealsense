@@ -1824,7 +1824,8 @@ namespace rs2
                     }
                     case RS2_STREAM_OCCUPANCY:
                         auto frame = streams[stream].texture->get_last_frame();
-                        if (frame && frame.get_data() && streams[stream].show_safety_zones_2d)
+                        auto zoom = streams[stream].dev->normalized_zoom.w;
+                        if (frame && frame.get_data() && streams[stream].show_safety_zones_2d && zoom == 1)
                         {
                             draw_zone_2d(Zone::Diagnostic, stream_rect, frame);
                             draw_zone_2d(Zone::Warning, stream_rect, frame);
