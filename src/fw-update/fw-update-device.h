@@ -147,15 +147,19 @@ namespace librealsense
         rs2_dfu_state get_dfu_state(std::shared_ptr<platform::usb_messenger> messenger) const;
         void detach(std::shared_ptr<platform::usb_messenger> messenger) const;
         bool wait_for_state(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, size_t timeout = 1000) const;
-        bool wait_for_manifest_completion(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, 
+        virtual bool wait_for_manifest_completion(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, 
             size_t timeout, rs2_update_progress_callback_sptr update_progress_callback) const;
         void read_device_info(std::shared_ptr<platform::usb_messenger> messenger);
 
         const std::string & get_name() const { return _name; }
         const std::string & get_product_line() const { return _product_line; }
         const std::string & get_serial_number() const { return _serial_number; }
+        std::string to_string(platform::usb_status state) const;
+        std::string to_string(rs2_dfu_state state) const;
+        float compute_progress(float progress, float start, float end, float threshold) const;
 
-
+        const int DEFAULT_TIMEOUT = 100;
+        const int FW_UPDATE_INTERFACE_NUMBER = 0;
         const std::shared_ptr< const device_info > _dev_info;
         const platform::rs_usb_device _usb_device;
         std::vector<uint8_t> _serial_number_buffer;
@@ -167,6 +171,5 @@ namespace librealsense
         std::string _name;
         std::string _product_line;
         std::string _serial_number;
-        mutable std::ofstream _out;
     };
 }

@@ -14,8 +14,6 @@
 #include <algorithm>
 #include <thread>
 
-#define DEFAULT_TIMEOUT 100
-#define FW_UPDATE_INTERFACE_NUMBER 0
 namespace librealsense
 {
     std::string get_formatted_fw_version(uint32_t fw_last_version)
@@ -92,7 +90,7 @@ namespace librealsense
         LOG_INFO("DFU status: " << lock_status << " , DFU version is: " << payload.dfu_version);
     }
 
-    std::string to_string(platform::usb_status state)
+    std::string update_device::to_string(platform::usb_status state) const
     {
         switch (state)
         {
@@ -129,7 +127,7 @@ namespace librealsense
         }
     }
 
-    std::string to_string(rs2_dfu_state state)
+    std::string update_device::to_string(rs2_dfu_state state) const
     {
         switch (state)
         {
@@ -189,7 +187,7 @@ namespace librealsense
         return false;
     }
 
-    float compute_progress(float progress, float start, float end, float threshold)
+    float update_device::compute_progress(float progress, float start, float end, float threshold) const
     {
         return start + (ceil(progress * threshold) / threshold) * (end - start) / 100.f;
     }
@@ -197,41 +195,7 @@ namespace librealsense
     bool update_device::wait_for_manifest_completion(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, 
         size_t timeout, rs2_update_progress_callback_sptr update_progress_callback) const
     {
-        std::chrono::milliseconds elapsed_milliseconds;
-        _out << "wait_for_state: " << to_string(state) << std::endl;
-        auto start = std::chrono::system_clock::now();
-        rs2_dfu_state dfu_state = RS2_DFU_STATE_APP_IDLE;
-        dfu_status_payload status;
-        int percentage_of_transfer = 0;
-
-        do {
-            uint32_t transferred = 0;
-            auto sts = messenger->control_transfer(0xa1 /*DFU_GETSTATUS_PACKET*/, RS2_DFU_GET_STATUS, 0, 0, (uint8_t*)&status, sizeof(status), transferred, 5000);
-            dfu_state = status.get_state();
-            percentage_of_transfer = (int)(status.iString);
-            _out << datetime_string() << " - " << "DFU_GETSTATUS called, state is: " << to_string(dfu_state);
-            _out << ", iString equals: " << percentage_of_transfer << ", and bwPollTimeOut equals: " << status.bwPollTimeout << std::endl;
-
-            if (update_progress_callback)
-            {
-                auto progress_for_bar = compute_progress(static_cast<float>(percentage_of_transfer), 20.f, 100.f, 5.f) / 100.f;
-                update_progress_callback->on_update_progress(progress_for_bar);
-            }
-
-            if (sts != platform::RS2_USB_STATUS_SUCCESS)
-                _out << "control xfer error: " << to_string(sts) << std::endl;
-
-            //test for dfu error state
-            if (status.is_error_state()) {
-                return false;
-            }
-
-            // FW doesn't set the bwPollTimeout value, therefore it is wrong to use status.bwPollTimeout
-            std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TIMEOUT));
-
-            auto curr = std::chrono::system_clock::now();
-            elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(curr - start);
-        } while (percentage_of_transfer < 100);
+        // used for devices which get the progress percentage in the GET_DFU_STATUS call 
 
         return true;
     }
@@ -244,7 +208,6 @@ namespace librealsense
         , _physical_port( usb_device->get_info().id )
         , _pid( rsutils::string::from() << std::uppercase << rsutils::string::hexdump( usb_device->get_info().pid ))
         , _product_line( product_line )
-        , _out("DFU_GETSTATUS_calls.txt", std::ofstream::app)
     {
         if (auto messenger = _usb_device->open(FW_UPDATE_INTERFACE_NUMBER))
         {
@@ -289,8 +252,7 @@ namespace librealsense
         size_t offset = 0;
         uint32_t transferred = 0;
         int retries = 10;
-        _out << datetime_string() << " - " << "Starting DFU Process..." << std::endl;
-
+        
         while (remaining_bytes > 0)
         {
             size_t chunk_size = std::min(transfer_size, remaining_bytes);
@@ -298,7 +260,6 @@ namespace librealsense
             auto curr_block = ((uint8_t*)fw_image + offset);
             auto sts = messenger->control_transfer(0x21 /*DFU_DOWNLOAD_PACKET*/, RS2_DFU_DOWNLOAD, block_number, 0, curr_block, uint32_t(chunk_size), transferred, 5000);
             auto now_time = std::chrono::system_clock::now();
-            _out << datetime_string() << " - " << "Download Chunk" << std::endl;
             if (sts != platform::RS2_USB_STATUS_SUCCESS || !wait_for_state(messenger, RS2_DFU_STATE_DFU_DOWNLOAD_IDLE, 1000))
             {
                 auto state = get_dfu_state(messenger);
@@ -338,16 +299,10 @@ namespace librealsense
         if (sts != platform::RS2_USB_STATUS_SUCCESS)
             throw std::runtime_error("Failed to send final FW packet");
 
-        _out << datetime_string() << " - " << "Final FW packet sent" << std::endl;
 
-
-        // d500 code added ----------------------------------
-
+        // measuring the progress of the writing to flash (when enabled by FW)
         if (!wait_for_manifest_completion(messenger, RS2_DFU_STATE_DFU_MANIFEST, 20000, update_progress_callback))
             throw std::runtime_error("Firmware manifest failed");
-
-
-        // end of code added
 
 
         // After the zero length DFU_DNLOAD request terminates the Transfer
