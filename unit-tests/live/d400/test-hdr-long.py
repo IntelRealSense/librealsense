@@ -6,6 +6,7 @@
 ######################################
 
 # test:device D400*
+# test:donotrun:!nightly
 
 
 import pyrealsense2 as rs
