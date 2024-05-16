@@ -6,7 +6,6 @@
 ######################################
 
 # test:device D400*
-# test:donotrun:!nightly
 
 
 import pyrealsense2 as rs
@@ -356,7 +355,7 @@ with test.closure("HDR Merge - discard merged frame"):
         pipe.stop()
 
         # timer added to permit restoring of the pipe, needed especially for jetson
-        time.sleep(0.2)
+        time.sleep(1)
 
         if test.check(at_least_one_frame_supported_seq_id):
             test.check(first_series_last_merged_ts != -1)
