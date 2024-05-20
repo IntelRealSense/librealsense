@@ -143,7 +143,8 @@ namespace rs2
             static const char* last_ip{ "viewer_model.last_ip" };
 
             static const char* lpc_point_size{ "viewer_model.lpc_point_size" };
-            static const char* show_safety_zones{ "viewer_model.show_safety_zones" };
+            static const char* show_safety_zones_3d{ "viewer_model.show_safety_zones_3d" };
+            static const char* show_safety_zones_2d{ "viewer_model.show_safety_zones_2d" };
         }
         namespace window
         {

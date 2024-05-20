@@ -97,6 +97,7 @@ namespace rs2
         temporal_event _stream_not_alive;
         bool show_map_ruler = true;
         bool show_metadata = false;
+        bool show_safety_zones_2d = true;
 
         animated<float> _info_height{ 0.f };
         int _prev_mouse_pos_x = 0;
