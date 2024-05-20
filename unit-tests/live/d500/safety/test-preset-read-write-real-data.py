@@ -122,6 +122,8 @@ def get_valid_preset():
     safety_environment.depth_fill_threshold = 255  # [0..100%] , 255 is reserved for ignore
     safety_environment.diagnostic_zone_height_median_threshold = 255  # [millimeter]
     safety_environment.vision_hara_persistency = 1  # consecutive frames
+    # The below param is random on purpose and the test
+    # "Writing safety preset to random index, then reading and comparing" relies on that to be random
     safety_environment.crypto_signature = random.sample(range(0, 255), 32)
     safety_environment.reserved = [0] * 3
 
