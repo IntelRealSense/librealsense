@@ -394,7 +394,7 @@ namespace rs2
         if (!viewer.allow_stream_close) --num_of_buttons;
         if (viewer.streams.size() > 1) ++num_of_buttons;
         if (RS2_STREAM_DEPTH == profile.stream_type()) ++num_of_buttons; // Color map ruler button
-        if (RS2_STREAM_OCCUPANCY == profile.stream_type()) ++num_of_buttons; // Safety zones button
+        if (RS2_STREAM_OCCUPANCY == profile.stream_type() && _normalized_zoom.w == 1) ++num_of_buttons; // Safety zones button
 
         ImGui_ScopePushFont(font);
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
@@ -539,7 +539,7 @@ namespace rs2
             ImGui::SameLine();
         }
 
-        if (RS2_STREAM_OCCUPANCY == profile.stream_type())
+        if (RS2_STREAM_OCCUPANCY == profile.stream_type() && _normalized_zoom.w == 1) // hide polygons button when zooming in
         {
             label = rsutils::string::from() << textual_icons::polygon << "##Safety zones";
             if (show_safety_zones_2d)
