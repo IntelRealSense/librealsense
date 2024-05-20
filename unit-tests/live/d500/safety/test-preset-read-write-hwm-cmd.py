@@ -40,16 +40,16 @@ test.finish()
 
 #############################################################################################
 
-test.start("Valid read and write from index 0 to 2")
-safety_preset_at_zero = safety_sensor.get_safety_preset(0)
-safety_sensor.set_safety_preset(2, safety_preset_at_zero)
+test.start("Valid read and write from index 1 to 0")
+safety_preset_at_one = safety_sensor.get_safety_preset(1)
+safety_sensor.set_safety_preset(0, safety_preset_at_one)
 test.finish()
 
 #############################################################################################
 
-test.start("Valid read and write from index 1 to 3")
+test.start("Valid read and write from index 1 to 2")
 safety_preset_at_one = safety_sensor.get_safety_preset(1)
-safety_sensor.set_safety_preset(3, safety_preset_at_one)
+safety_sensor.set_safety_preset(2, safety_preset_at_one)
 test.finish()
 
 #############################################################################################
