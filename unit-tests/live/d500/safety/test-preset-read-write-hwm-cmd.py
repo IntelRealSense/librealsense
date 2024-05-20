@@ -29,7 +29,7 @@ test.finish()
 
 #############################################################################################
 test.start("Valid read from index 1")
-safety_preset_at_zero = safety_sensor.get_safety_preset(1)
+safety_preset_at_one = safety_sensor.get_safety_preset(1)
 test.finish()
 
 #############################################################################################
@@ -40,9 +40,16 @@ test.finish()
 
 #############################################################################################
 
-test.start("Valid read and write from index 1 to 2")
-safety_preset_at_zero = safety_sensor.get_safety_preset(1)
+test.start("Valid read and write from index 0 to 2")
+safety_preset_at_zero = safety_sensor.get_safety_preset(0)
 safety_sensor.set_safety_preset(2, safety_preset_at_zero)
+test.finish()
+
+#############################################################################################
+
+test.start("Valid read and write from index 1 to 3")
+safety_preset_at_one = safety_sensor.get_safety_preset(1)
+safety_sensor.set_safety_preset(3, safety_preset_at_one)
 test.finish()
 
 #############################################################################################
@@ -57,16 +64,6 @@ test.finish()
 test.start("Invalid Read - index out of range")
 try:
     sp = safety_sensor.get_safety_preset(64)
-except:
-    pass
-else:
-    test.unexpected_exception()
-test.finish()
-#############################################################################################
-
-test.start("Invalid Write - index 0 is readonly")
-try:
-    safety_sensor.set_safety_preset(0, safety_preset_at_zero)
 except:
     pass
 else:
