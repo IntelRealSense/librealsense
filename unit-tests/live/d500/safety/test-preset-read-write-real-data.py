@@ -155,15 +155,15 @@ test.finish()
 
 test.start("Init all safety zones")
 random_safety_preset = get_valid_preset()
-for x in range(63):
-    log.d("Init preset ID =", x + 1)
-    safety_sensor.set_safety_preset(x + 1, random_safety_preset)
+for x in range(64):
+    log.d("Init preset ID =", x)
+    safety_sensor.set_safety_preset(x, random_safety_preset)
 test.finish()
 
 #############################################################################################
 
 test.start("Writing safety preset to random index, then reading and comparing")
-index = random.randint(1, 63)
+index = random.randint(0, 64)
 log.out( "writing to index = ", index )
 safety_preset = get_valid_preset()
 
