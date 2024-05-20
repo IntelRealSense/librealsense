@@ -120,8 +120,9 @@ namespace librealsense
             auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>(d500_device::_hw_monitor, ds::APM_STROBE_GET, ds::APM_STROBE_SET);
             get_depth_sensor().register_option(RS2_OPTION_EMITTER_ALWAYS_ON, emitter_always_on_opt);
 
-            // this should be last as we wish to protect the depth options setting when not in service safety mode
-            d500_safety::gate_depth_options();
+            // Note - requirement to gate depth options was removed to allow validation checks. Gated by FW only.
+            // This should be last as we wish to protect the depth options setting when not in service safety mode
+            // d500_safety::gate_depth_options();
         }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;

@@ -94,13 +94,14 @@ namespace librealsense
 
     void d500_safety::block_advanced_mode_if_needed( float val )
     {
-        if( ! _advanced_mode )
-            throw std::runtime_error( "Advanced mode device not set" );
-
-        if( val == static_cast< float >( RS2_SAFETY_MODE_SERVICE ) )
-            _advanced_mode->unblock();
-        else
-            _advanced_mode->block( std::string( "Option can be set only in safety service mode" ) );
+        // Note - requirement to block advanced mode was removed to allow validation checks. Gated by FW only.
+        //if( ! _advanced_mode )
+        //    throw std::runtime_error( "Advanced mode device not set" );
+        //
+        //if( val == static_cast< float >( RS2_SAFETY_MODE_SERVICE ) )
+        //    _advanced_mode->unblock();
+        //else
+        //    _advanced_mode->block( std::string( "Option can be set only in safety service mode" ) );
     }
 
     void d500_safety::register_options(std::shared_ptr<d500_safety_sensor> safety_ep, std::shared_ptr<uvc_sensor> raw_safety_sensor)
