@@ -48,12 +48,23 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
         rs2_dfu_state dfu_state = RS2_DFU_STATE_APP_IDLE;
         dfu_status_payload status;
         int percentage_of_transfer = 0;
+        int iteration = 0;
+        // progress should start increase even in the 2nd iteration, 
+        // when this DFU progress is enabled by FW
+        int max_iteration_number_for_progress_start = 10;
 
         do {
             uint32_t transferred = 0;
             auto sts = messenger->control_transfer(0xa1 /*DFU_GETSTATUS_PACKET*/, RS2_DFU_GET_STATUS, 0, 0, (uint8_t*)&status, sizeof(status), transferred, 5000);
             dfu_state = status.get_state();
             percentage_of_transfer = (int)(status.iString);
+
+            // the below code avoids process stuck when using a d5XXX device, 
+            // which has a fw version without the DFU progress feature
+            if (percentage_of_transfer == 0 && 
+                ++iteration == max_iteration_number_for_progress_start)
+                return true;
+
             std::stringstream ss;
             ss << "DFU_GETSTATUS called, state is: " << to_string(dfu_state); 
             ss << ", iString equals: " << percentage_of_transfer << ", and bwPollTimeOut equals: " << status.bwPollTimeout << std::endl;
@@ -78,7 +89,7 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
 
             auto curr = std::chrono::system_clock::now();
             elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(curr - start);
-        } while (percentage_of_transfer < 100);
+        } while (percentage_of_transfer < 100 && dfu_state == RS2_DFU_STATE_DFU_MANIFEST);
 
         return true;
     }

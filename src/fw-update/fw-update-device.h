@@ -5,7 +5,6 @@
 #include <src/core/device-interface.h>
 #include "fw-update-device-interface.h"
 #include "usb/usb-device.h"
-#include <fstream>
 
 namespace librealsense
 {

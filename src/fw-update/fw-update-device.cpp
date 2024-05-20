@@ -30,17 +30,6 @@ namespace librealsense
         return fw_version.str();
     }
 
-    std::string datetime_string()
-    {
-        auto t = time(nullptr);
-        char buffer[20] = {};
-        const tm* time = localtime(&t);
-        if (nullptr != time)
-            strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", time);
-
-        return std::string(buffer);
-    }
-
     rs2_dfu_state update_device::get_dfu_state(std::shared_ptr<platform::usb_messenger> messenger) const
     {
         uint8_t state = RS2_DFU_STATE_DFU_ERROR;
@@ -228,7 +217,6 @@ namespace librealsense
         }
     }
 
-
     update_device::~update_device()
     {
 
@@ -252,14 +240,13 @@ namespace librealsense
         size_t offset = 0;
         uint32_t transferred = 0;
         int retries = 10;
-        
+
         while (remaining_bytes > 0)
         {
             size_t chunk_size = std::min(transfer_size, remaining_bytes);
 
             auto curr_block = ((uint8_t*)fw_image + offset);
             auto sts = messenger->control_transfer(0x21 /*DFU_DOWNLOAD_PACKET*/, RS2_DFU_DOWNLOAD, block_number, 0, curr_block, uint32_t(chunk_size), transferred, 5000);
-            auto now_time = std::chrono::system_clock::now();
             if (sts != platform::RS2_USB_STATUS_SUCCESS || !wait_for_state(messenger, RS2_DFU_STATE_DFU_DOWNLOAD_IDLE, 1000))
             {
                 auto state = get_dfu_state(messenger);
