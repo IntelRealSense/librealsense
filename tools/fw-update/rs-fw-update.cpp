@@ -244,7 +244,7 @@ try
     SwitchArg unsigned_arg("u", "unsigned", "Update unsigned firmware, available only for unlocked cameras");
     ValueArg<std::string> backup_arg("b", "backup", "Create a backup to the camera flash and saved it to the given path", false, "", "string");
     ValueArg<std::string> file_arg("f", "file", "Path of the firmware image file", false, "", "string");
-    ValueArg<std::string> serial_number_arg("s", "serial_number", "The serial number of the device to be update, this is mandetory if more than one device is connected", false, "", "string");
+    ValueArg<std::string> serial_number_arg("s", "serial_number", "The serial number of the device to be update, this is mandatory if more than one device is connected", false, "", "string");
     SwitchArg only_sw_arg( "", "sw-only", "Show only software devices (playback, DDS, etc. -- but not USB/HID/etc.)" );
 
     cmd.add(debug_arg);
