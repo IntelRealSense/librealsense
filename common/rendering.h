@@ -561,30 +561,6 @@ namespace rs2
                         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);
                     }
                     break;
-                case RS2_FORMAT_M420:
-                    if (m420_to_rgb)
-                    {
-                        if (auto colorized_frame = m420_to_rgb->process(frame).as<video_frame>())
-                        {
-                            if (!colorized_frame.is<gl::gpu_frame>())
-                            {
-                                glBindTexture(GL_TEXTURE_2D, texture);
-                                data = colorized_frame.get_data();
-
-                                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
-                                    colorized_frame.get_width(),
-                                    colorized_frame.get_height(),
-                                    0, GL_RGB, GL_UNSIGNED_BYTE,
-                                    colorized_frame.get_data());
-                            }
-                            rendered_frame = colorized_frame;
-                        }
-                    }
-                    else
-                    {
-                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);
-                    }
-                    break;
                 case RS2_FORMAT_Y411:
                     if (y411)
                     {
