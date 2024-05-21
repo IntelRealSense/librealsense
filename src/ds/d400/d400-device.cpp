@@ -493,9 +493,6 @@ namespace librealsense
 
         auto depth_ep = std::make_shared<d400_depth_sensor>(this, raw_depth_ep);
 
-        // Many commands need power during initialization phase, no point turning it on and off again for each.
-        raw_depth_ep->power_for_duration( std::chrono::milliseconds( 1000 ) );
-
         depth_ep->register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, filter_by_mi(all_device_infos, 0).front().device_path);
 
         depth_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
