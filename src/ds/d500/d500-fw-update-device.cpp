@@ -41,9 +41,9 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
     }
 
     bool ds_d500_update_device::wait_for_manifest_completion(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state,
-        size_t timeout, rs2_update_progress_callback_sptr update_progress_callback) const
+        std::chrono::seconds timeout_seconds, rs2_update_progress_callback_sptr update_progress_callback) const
     {
-        std::chrono::milliseconds elapsed_milliseconds;
+        std::chrono::seconds elapsed_seconds;
         auto start = std::chrono::system_clock::now();
         rs2_dfu_state dfu_state = RS2_DFU_STATE_APP_IDLE;
         dfu_status_payload status;
@@ -57,9 +57,9 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
             uint32_t transferred = 0;
             auto sts = messenger->control_transfer(0xa1 /*DFU_GETSTATUS_PACKET*/, RS2_DFU_GET_STATUS, 0, 0, (uint8_t*)&status, sizeof(status), transferred, 5000);
             dfu_state = status.get_state();
-            percentage_of_transfer = (int)(status.iString);
+            percentage_of_transfer = static_cast<int>(status.iString);
 
-            // the below code avoids process stuck when using a d5XXX device, 
+            // the below code avoids process stuck when using a d5XX device, 
             // which has a fw version without the DFU progress feature
             if (percentage_of_transfer == 0 && 
                 ++iteration == max_iteration_number_for_progress_start)
@@ -77,7 +77,7 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
             }
 
             if (sts != platform::RS2_USB_STATUS_SUCCESS)
-                LOG_DEBUG("control xfer error: " << to_string(sts));
+                LOG_DEBUG("control xfer error: " << platform::usb_status_to_string[sts]);
 
             //test for dfu error state
             if (status.is_error_state()) {
@@ -85,10 +85,15 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
             }
 
             // FW doesn't set the bwPollTimeout value, therefore it is wrong to use status.bwPollTimeout
-            std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TIMEOUT));
+            std::this_thread::sleep_for(std::chrono::seconds(1));
 
             auto curr = std::chrono::system_clock::now();
-            elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(curr - start);
+            elapsed_seconds = std::chrono::duration_cast<std::chrono::seconds>(curr - start);
+            if (elapsed_seconds > timeout_seconds)
+            {
+                LOG_DEBUG("DFU in MANIFEST STATUS Timeout");
+                return false;
+            }
         } while (percentage_of_transfer < 100 && dfu_state == RS2_DFU_STATE_DFU_MANIFEST);
 
         return true;

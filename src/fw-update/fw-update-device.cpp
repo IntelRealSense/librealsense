@@ -79,43 +79,6 @@ namespace librealsense
         LOG_INFO("DFU status: " << lock_status << " , DFU version is: " << payload.dfu_version);
     }
 
-    std::string update_device::to_string(platform::usb_status state) const
-    {
-        switch (state)
-        {
-        case platform::RS2_USB_STATUS_SUCCESS:
-            return "USB_STATUS_SUCCESS";
-        case platform::RS2_USB_STATUS_IO:
-            return "USB_STATUS_IO";
-        case platform::RS2_USB_STATUS_INVALID_PARAM:
-            return "USB_STATUS_INVALID_PARAM";
-        case platform::RS2_USB_STATUS_ACCESS:
-            return "USB_STATUS_ACCESS";
-        case platform::RS2_USB_STATUS_NO_DEVICE:
-            return "USB_STATUS_NO_DEVICE";
-        case platform::RS2_USB_STATUS_NOT_FOUND:
-            return "USB_STATUS_NOT_FOUND";
-        case platform::RS2_USB_STATUS_BUSY:
-            return "USB_STATUS_BUSY";
-        case platform::RS2_USB_STATUS_TIMEOUT:
-            return "USB_STATUS_TIMEOUT";
-        case platform::RS2_USB_STATUS_OVERFLOW:
-            return "USB_STATUS_OVERFLOW";
-        case platform::RS2_USB_STATUS_PIPE:
-            return "USB_STATUS_PIPE";
-        case platform::RS2_USB_STATUS_INTERRUPTED:
-            return "USB_STATUS_INTERRUPTED";
-        case platform::RS2_USB_STATUS_NO_MEM:
-            return "USB_STATUS_NO_MEM";
-        case platform::RS2_USB_STATUS_NOT_SUPPORTED:
-            return "USB_STATUS_NOT_SUPPORTED";
-        case platform::RS2_USB_STATUS_OTHER:
-            return "USB_STATUS_OTHER";
-        default:
-            return "USB???";
-        }
-    }
-
     std::string update_device::to_string(rs2_dfu_state state) const
     {
         switch (state)
@@ -182,7 +145,7 @@ namespace librealsense
     }
 
     bool update_device::wait_for_manifest_completion(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, 
-        size_t timeout, rs2_update_progress_callback_sptr update_progress_callback) const
+        std::chrono::seconds timeout_seconds, rs2_update_progress_callback_sptr update_progress_callback) const
     {
         // used for devices which get the progress percentage in the GET_DFU_STATUS call 
 
@@ -288,8 +251,8 @@ namespace librealsense
 
 
         // measuring the progress of the writing to flash (when enabled by FW)
-        if (!wait_for_manifest_completion(messenger, RS2_DFU_STATE_DFU_MANIFEST, 20000, update_progress_callback))
-            throw std::runtime_error("Firmware manifest failed");
+        if (!wait_for_manifest_completion(messenger, RS2_DFU_STATE_DFU_MANIFEST, std::chrono::seconds(200), update_progress_callback))
+            throw std::runtime_error("Firmware manifest completion failed");
 
 
         // After the zero length DFU_DNLOAD request terminates the Transfer
