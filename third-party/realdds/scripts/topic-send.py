@@ -42,14 +42,17 @@ import sys
 
 dds.debug( args.debug )
 
+max_sample_size = 1470                     # assuming ~1500 max packet size at destination IP stack
+flow_period_bytes = 256 * max_sample_size  # 256=quarter of number of buffers available at destination
+flow_period_ms = 100                       # how often to send
 settings = {
     'flow-controllers': {
         'blob': {
-            'max-bytes-per-period': 256 * 1470,
-            'period-ms': 250
+            'max-bytes-per-period': flow_period_bytes,
+            'period-ms': flow_period_ms
             }
         },
-    'max-out-message-bytes': 1470
+    'max-out-message-bytes': max_sample_size
     }
 
 participant = dds.participant()
@@ -70,7 +73,7 @@ if args.blob:
     wqos = dds.topic_writer.qos()  # reliable
     writer.override_qos_from_json( wqos, { 'publish-mode': { 'flow-control': 'blob' } } )
     writer.run( wqos )
-    if not writer.wait_for_readers( dds.time( 2. ) ):
+    if not writer.wait_for_readers( dds.time( 3. ) ):
         e( 'Timeout waiting for readers' )
         sys.exit( 1 )
     with open( args.blob, mode='rb' ) as file: # b is important -> binary
@@ -80,7 +83,8 @@ if args.blob:
     blob.write_to( writer )
     # We must wait for acks, since we use a flow controller and write_to() will return before we've
     # actually finished the send
-    if not writer.wait_for_acks( dds.time( 5. ) ):  # seconds
+    seconds_to_send = blob.size() / flow_period_bytes / (1000. / flow_period_ms)
+    if not writer.wait_for_acks( dds.time( 5. + seconds_to_send ) ):
         e( 'Timeout waiting for ack' )
         sys.exit( 1 )
     i( f'Acknowledged' )
