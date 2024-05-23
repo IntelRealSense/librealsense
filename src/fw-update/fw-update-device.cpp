@@ -141,6 +141,8 @@ namespace librealsense
 
     float update_device::compute_progress(float progress, float start, float end, float threshold) const
     {
+        if (threshold < 1.f && threshold > -1.f)
+            throw std::invalid_argument("Avoid division by zero");
         return start + (ceil(progress * threshold) / threshold) * (end - start) / 100.f;
     }
 
@@ -236,7 +238,7 @@ namespace librealsense
             LOG_DEBUG("fw update progress: " << progress);
             if (update_progress_callback)
             {
-                auto progress_for_bar = compute_progress(progress, 0.f, 20.f, 5.f) / 100.f;//((ceil(progress * 5) / 5) * 20.f / 100.f) / 100.f;
+                auto progress_for_bar = compute_progress(progress, 0.f, 20.f, 5.f) / 100.f;
                 update_progress_callback->on_update_progress(progress_for_bar);
             }
         }

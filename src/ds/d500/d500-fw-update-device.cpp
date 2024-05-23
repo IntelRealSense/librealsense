@@ -91,7 +91,7 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
             elapsed_seconds = std::chrono::duration_cast<std::chrono::seconds>(curr - start);
             if (elapsed_seconds > timeout_seconds)
             {
-                LOG_DEBUG("DFU in MANIFEST STATUS Timeout");
+                LOG_ERROR("DFU in MANIFEST STATUS Timeout");
                 return false;
             }
         } while (percentage_of_transfer < 100 && dfu_state == RS2_DFU_STATE_DFU_MANIFEST);
