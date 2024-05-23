@@ -141,7 +141,7 @@ namespace librealsense
 
     float update_device::compute_progress(float progress, float start, float end, float threshold) const
     {
-        if (threshold < 1.f && threshold > -1.f)
+        if (threshold < 1.f)
             throw std::invalid_argument("Avoid division by zero");
         return start + (ceil(progress * threshold) / threshold) * (end - start) / 100.f;
     }
