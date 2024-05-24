@@ -1,6 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
-
+// Copyright(c) 2021-4 Intel Corporation. All Rights Reserved.
 #pragma once
 
 // When including this file outside LibRealSense you also need to:
@@ -41,13 +40,56 @@
 #define LOG_DEBUG(...)   do { std::ostringstream ss; ss << __VA_ARGS__; __android_log_write( ANDROID_LOG_DEBUG, ANDROID_LOG_TAG, ss.str().c_str() ); } while(false)
 #endif
 
+#define LOG_DEBUG_STR(STR)    LOG_DEBUG( STR )
+#define LOG_INFO_STR(STR)     LOG_INFO( STR )
+#define LOG_WARNING_STR(STR)  LOG_WARNING( STR )
+#define LOG_ERROR_STR(STR)    LOG_ERROR( STR )
+#define LOG_FATAL_STR(STR)    LOG_FATAL( STR )
+
 #else //__ANDROID__  
 
-#define LOG_DEBUG(...)   do { CLOG(DEBUG   , LIBREALSENSE_ELPP_ID) << __VA_ARGS__; } while(false)
-#define LOG_INFO(...)    do { CLOG(INFO    , LIBREALSENSE_ELPP_ID) << __VA_ARGS__; } while(false)
-#define LOG_WARNING(...) do { CLOG(WARNING , LIBREALSENSE_ELPP_ID) << __VA_ARGS__; } while(false)
-#define LOG_ERROR(...)   do { CLOG(ERROR   , LIBREALSENSE_ELPP_ID) << __VA_ARGS__; } while(false)
-#define LOG_FATAL(...)   do { CLOG(FATAL   , LIBREALSENSE_ELPP_ID) << __VA_ARGS__; } while(false)
+// Direct log to ELPP, without conversion to string first
+// We've seen cases where this fails in U22, causing weird effects with custom overloads/types (e.g., json)
+#define LIBRS_LOG_STR_( LEVEL, STR )                                                                                   \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        auto logger__ = el::Loggers::getLogger( LIBREALSENSE_ELPP_ID );                                                \
+        if( logger__ && logger__->enabled( el::Level::LEVEL ) )                                                        \
+        {                                                                                                              \
+            el::base::Writer( el::Level::LEVEL, __FILE__, __LINE__, ELPP_FUNC, el::base::DispatchAction::NormalLog )   \
+                    .construct( logger__ )                                                                             \
+                << STR;                                                                                                \
+        }                                                                                                              \
+    }                                                                                                                  \
+    while( false )
+
+// Same, but first convert to string using usual mechanisms
+#define LIBRS_LOG_( LEVEL, ... )                                                                                       \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        auto logger__ = el::Loggers::getLogger( LIBREALSENSE_ELPP_ID );                                                \
+        if( logger__ && logger__->enabled( el::Level::LEVEL ) )                                                        \
+        {                                                                                                              \
+            std::ostringstream os__;                                                                                   \
+            os__ << __VA_ARGS__;                                                                                       \
+            el::base::Writer( el::Level::LEVEL, __FILE__, __LINE__, ELPP_FUNC, el::base::DispatchAction::NormalLog )   \
+                    .construct( logger__ )                                                                             \
+                << os__.str();                                                                                         \
+        }                                                                                                              \
+    }                                                                                                                  \
+    while( false )
+
+#define LOG_DEBUG(...)    LIBRS_LOG_( Debug,    __VA_ARGS__ )
+#define LOG_INFO(...)     LIBRS_LOG_( Info,     __VA_ARGS__ )
+#define LOG_WARNING(...)  LIBRS_LOG_( Warning,  __VA_ARGS__ )
+#define LOG_ERROR(...)    LIBRS_LOG_( Error,    __VA_ARGS__ )
+#define LOG_FATAL(...)    LIBRS_LOG_( Fatal,    __VA_ARGS__ )
+
+#define LOG_DEBUG_STR(STR)    LIBRS_LOG_STR_( Debug,    STR )
+#define LOG_INFO_STR(STR)     LIBRS_LOG_STR_( Info,     STR )
+#define LOG_WARNING_STR(STR)  LIBRS_LOG_STR_( Warning,  STR )
+#define LOG_ERROR_STR(STR)    LIBRS_LOG_STR_( Error,    STR )
+#define LOG_FATAL_STR(STR)    LIBRS_LOG_STR_( Fatal,    STR )
 
 namespace rsutils {
 
@@ -72,6 +114,12 @@ void configure_elpp_logger( bool enable_debug = false,
 #define LOG_WARNING(...) do { ; } while(false)
 #define LOG_ERROR(...)   do { ; } while(false)
 #define LOG_FATAL(...)   do { ; } while(false)
+
+#define LOG_DEBUG_STR(STR)    do { ; } while(false)
+#define LOG_INFO_STR(STR)     do { ; } while(false)
+#define LOG_WARNING_STR(STR)  do { ; } while(false)
+#define LOG_ERROR_STR(STR)    do { ; } while(false)
+#define LOG_FATAL_STR(STR)    do { ; } while(false)
 
 
 #endif // BUILD_EASYLOGGINGPP
