@@ -48,12 +48,13 @@
 
 #else //__ANDROID__  
 
-// Direct log to ELPP, without conversion to string first
+// Direct log to ELPP, without conversion to string first; use this as an optimization, if you have simple string output
+// 
 // We've seen cases where this fails in U22, causing weird effects with custom overloads/types (e.g., json)
 #define LIBRS_LOG_STR_( LEVEL, STR )                                                                                   \
     do                                                                                                                 \
     {                                                                                                                  \
-        auto logger__ = el::Loggers::getLogger( LIBREALSENSE_ELPP_ID );                                                \
+        auto logger__ = el::Loggers::getLogger( rsutils::g_librealsense_elpp_id );                                     \
         if( logger__ && logger__->enabled( el::Level::LEVEL ) )                                                        \
         {                                                                                                              \
             el::base::Writer( el::Level::LEVEL, __FILE__, __LINE__, ELPP_FUNC, el::base::DispatchAction::NormalLog )   \
@@ -67,7 +68,7 @@
 #define LIBRS_LOG_( LEVEL, ... )                                                                                       \
     do                                                                                                                 \
     {                                                                                                                  \
-        auto logger__ = el::Loggers::getLogger( LIBREALSENSE_ELPP_ID );                                                \
+        auto logger__ = el::Loggers::getLogger( rsutils::g_librealsense_elpp_id );                                     \
         if( logger__ && logger__->enabled( el::Level::LEVEL ) )                                                        \
         {                                                                                                              \
             std::ostringstream os__;                                                                                   \
@@ -92,6 +93,10 @@
 #define LOG_FATAL_STR(STR)    LIBRS_LOG_STR_( Fatal,    STR )
 
 namespace rsutils {
+
+
+// This is a caching of LIBREALSENSE_ELPP_ID in a string, as a performance optimization
+extern std::string const g_librealsense_elpp_id;
 
 
 // Configure the same logger as librealsense (by default), to disable/enable debug output
