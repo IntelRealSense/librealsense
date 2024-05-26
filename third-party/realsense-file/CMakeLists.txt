@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.9...3.20.5)
+cmake_minimum_required(VERSION 3.8)
 
 project(realsense-file)
 
@@ -26,6 +26,8 @@ add_library(${PROJECT_NAME} STATIC
     ${SOURCE_FILES_ROSBAG}
     ${SOURCE_FILES_COMPRESSION}
 )
+
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${ROSBAG_HEADER_DIRS}
