@@ -16,7 +16,11 @@ function(get_fastdds)
     FetchContent_Declare(
       fastdds
       GIT_REPOSITORY https://github.com/eProsima/Fast-DDS.git
-      GIT_TAG        v2.11.2
+      # 2.10.x is eProsima's last LTS version that still supports U20
+      # 2.10.4 has specific modifications based on support provided, but it has some incompatibility
+      # with the way we clone (which works with v2.11+), so they made a fix and tagged it for us:
+      # Once they have 2.10.5 we should move to it
+      GIT_TAG        v2.10.4-realsense
       GIT_SUBMODULES ""     # Submodules will be cloned as part of the FastDDS cmake configure stage
       GIT_SHALLOW ON        # No history needed
       SOURCE_DIR ${CMAKE_BINARY_DIR}/third-party/fastdds
