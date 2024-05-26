@@ -86,7 +86,7 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
     // If history is too small writer will not be able to re-transmit needed samples.
     // Setting history to cover known use-cases plus some spare
     wqos.history().depth = 24;
-    wqos.override_from_json( publisher->get_participant()->settings().nested( "device", "notification" ) );
+    _writer->override_qos_from_json( wqos, publisher->get_participant()->settings().nested( "device", "notification" ) );
 
     _writer->run( wqos );
 }

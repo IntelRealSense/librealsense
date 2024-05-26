@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #include <realdds/dds-participant.h>
 #include <realdds/dds-utilities.h>
@@ -14,6 +14,7 @@
 #include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
 #include <fastdds/rtps/transport/UDPv4TransportDescriptor.h>
 
+#include <rsutils/string/from.h>
 #include <rsutils/string/slice.h>
 #include <rsutils/json.h>
 
@@ -186,12 +187,36 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
 };
 
 
-void dds_participant::init( dds_domain_id domain_id, std::string const & participant_name, rsutils::json const & settings )
+dds_participant::qos::qos( std::string const & participant_name )
+{
+    name( participant_name );
+
+    // Indicates for how much time should a remote DomainParticipant consider the local DomainParticipant to be alive.
+    wire_protocol().builtin.discovery_config.leaseDuration = { 10, 0 };  // [sec,nsec]
+
+    // Disable shared memory, use only UDP
+    // Disabling because sometimes, after improper destruction (e.g. stopping debug) the shared memory is not opened
+    // correctly and the application is stuck. eProsima is working on it. Manual solution delete shared memory files,
+    // C:\ProgramData\eprosima\fastrtps_interprocess on Windows, /dev/shm on Linux
+    auto udp_transport = std::make_shared< eprosima::fastdds::rtps::UDPv4TransportDescriptor >();
+    // Also change the receive buffers: we deal with lots of information and, without this, we'll get dropped frames and
+    // unusual behavior...
+    udp_transport->sendBufferSize = 16 * 1024 * 1024;
+    udp_transport->receiveBufferSize = 16 * 1024 * 1024;
+    // The server may not be able to handle fragmented packets; certain hardware cannot handle more than 1500 bytes!
+    // UDP default is 64K; overridable via 'udp/max-message-size'
+    //udp_transport->maxMessageSize = 1470; TODO this affects reading, too! We need writer-only property for this...
+    transport().use_builtin_transports = false;
+    transport().user_transports.push_back( udp_transport );
+}
+
+
+void dds_participant::init( dds_domain_id domain_id, qos & pqos, rsutils::json const & settings )
 {
     if( is_valid() )
     {
         DDS_THROW( runtime_error,
-                   "participant is already initialized; cannot init '" << participant_name << "' on domain id "
+                   "participant is already initialized; cannot init '" << pqos.name() << "' on domain id "
                                                                        << domain_id );
     }
 
@@ -206,25 +231,7 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
     // Initialize the timestr "start" time
     timestr{ realdds::now() };
 
-    DomainParticipantQos pqos;
-    pqos.name( participant_name );
-
-    // Indicates for how much time should a remote DomainParticipant consider the local DomainParticipant to be alive.
-    pqos.wire_protocol().builtin.discovery_config.leaseDuration = { 10, 0 };  // [sec,nsec]
-
-    // Disable shared memory, use only UDP
-    // Disabling because sometimes, after improper destruction (e.g. stopping debug) the shared memory is not opened
-    // correctly and the application is stuck. eProsima is working on it. Manual solution delete shared memory files,
-    // C:\ProgramData\eprosima\fastrtps_interprocess on Windows, /dev/shm on Linux
-    auto udp_transport = std::make_shared< eprosima::fastdds::rtps::UDPv4TransportDescriptor >();
-    // Also change the send/receive buffers: we deal with lots of information and, without this, we'll get dropped
-    // frames and unusual behavior...
-    udp_transport->sendBufferSize = 16 * 1024 * 1024;
-    udp_transport->receiveBufferSize = 16 * 1024 * 1024;
-    pqos.transport().use_builtin_transports = false;
-    pqos.transport().user_transports.push_back( udp_transport );
-
-    // Above are defaults
+    // The QoS given are what the user wants to use, but are supplied BEFORE any overrides from the settings
     override_participant_qos_from_json( pqos, settings );
 
     // NOTE: the listener callbacks we use are all specific to FastDDS and so are always enabled:
@@ -236,10 +243,7 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
         = DDS_API_CALL( _participant_factory->create_participant( domain_id, pqos, _domain_listener.get(), par_mask ) );
 
     if( ! _participant )
-    {
-        DDS_THROW( runtime_error,
-                   "failed creating participant " + participant_name + " on domain id " + std::to_string( domain_id ) );
-    }
+        DDS_THROW( runtime_error, "failed creating participant " << pqos.name() << " on domain id " << domain_id );
 
     if( settings.is_object() )
         _settings = settings;
@@ -248,8 +252,9 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
     else
         DDS_THROW( runtime_error, "provided settings are invalid: " << settings );
 
-    LOG_DEBUG( "participant '" << participant_name << "' (" << realdds::print_raw_guid( guid() ) << ") is up on domain "
-                               << domain_id << " with settings: " << _settings.dump( 4 ) );
+    LOG_DEBUG( "participant " << realdds::print_raw_guid( guid() ) << " " << pqos << "\nis up on domain " << domain_id
+                              << " from settings: " << std::setw( 4 ) << _settings );
+
 #ifdef BUILD_EASYLOGGINGPP
     // DDS participant destruction happens when all contexts are done with it but, in some situations (e.g., Python), it
     // means that it may happen last -- even after ELPP has already been destroyed! So, just like we keep the participant

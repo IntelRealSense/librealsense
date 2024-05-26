@@ -502,5 +502,48 @@ with test.closure("HDR Streaming - set locked options"):
         pipe.stop()
         depth_sensor.set_option(rs.option.hdr_enabled, 0)  # disable hdr before next tests
 
+with test.closure("HDR Streaming - enable runtime exposure update in HDR mode"):
+    device = test.find_first_device_or_exit()
+    depth_sensor = device.first_depth_sensor()
+
+    if test.check(depth_sensor and depth_sensor.supports(rs.option.hdr_enabled)):
+        exposure_range = depth_sensor.get_option_range(rs.option.exposure)
+        gain_range = depth_sensor.get_option_range(rs.option.gain)
+
+        depth_sensor.set_option(rs.option.hdr_enabled, 1)
+        test.check(depth_sensor.get_option(rs.option.hdr_enabled) == 1)
+
+        cfg = rs.config()
+        cfg.enable_stream(rs.stream.depth)
+        cfg.enable_stream(rs.stream.infrared, 1)
+        pipe = rs.pipeline()
+        pipe.start(cfg)
+
+        #change exposure and gain for seq id 1
+        depth_sensor.set_option(rs.option.sequence_id, 1)  # seq id 1 is expected to be the default value
+        test.check(depth_sensor.get_option(rs.option.sequence_id) == 1)
+        exp = depth_sensor.get_option(rs.option.exposure)
+        test.check(depth_sensor.get_option(rs.option.exposure) == exposure_range.default - 1000)  # w/a
+        depth_sensor.set_option(rs.option.exposure, exposure_range.default - 2000)
+        test.check(depth_sensor.get_option(rs.option.exposure) == exposure_range.default - 2000)
+
+        test.check(depth_sensor.get_option(rs.option.gain) == gain_range.default)
+        depth_sensor.set_option(rs.option.gain, gain_range.default + 2)
+        test.check(depth_sensor.get_option(rs.option.gain) == gain_range.default + 2)
+
+        # change exposure and gain for seq id 2
+        depth_sensor.set_option(rs.option.sequence_id, 2)# seq id 2 is expected to be the min value
+        test.check(depth_sensor.get_option(rs.option.sequence_id) == 2)
+        exp = depth_sensor.get_option(rs.option.exposure)
+        test.check(depth_sensor.get_option(rs.option.exposure) == exposure_range.min)  # w/a
+        depth_sensor.set_option(rs.option.exposure, exposure_range.default)
+        test.check(depth_sensor.get_option(rs.option.exposure) == exposure_range.default)
+
+        test.check(depth_sensor.get_option(rs.option.gain) == gain_range.min)
+        depth_sensor.set_option(rs.option.gain, gain_range.default + 10)
+        test.check(depth_sensor.get_option(rs.option.gain) == gain_range.default + 10)
+
+        pipe.stop()
+        depth_sensor.set_option(rs.option.hdr_enabled, 0)  # disable hdr before next tests
 
 test.print_results_and_exit()

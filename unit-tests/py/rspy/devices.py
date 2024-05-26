@@ -699,7 +699,7 @@ if __name__ == '__main__':
 
     try:
         opts,args = getopt.getopt( sys.argv[1:], '',
-            longopts = [ 'help', 'recycle', 'all', 'none', 'list', 'port=', 'ports' ])
+            longopts = [ 'help', 'recycle', 'all', 'none', 'list', 'port=', 'PORT=', 'ports' ])
     except getopt.GetoptError as err:
         print( '-F-', err )   # something like "option -a not recognized"
         usage()
@@ -719,7 +719,7 @@ if __name__ == '__main__':
         for opt,arg in opts:
             if opt in ('--list'):
                 action = 'list'
-            elif opt in ('--port'):
+            elif opt in ('--port','--PORT'):
                 if not hub:
                     log.f( 'No hub available' )
                 all_ports = hub.all_ports()
@@ -727,7 +727,11 @@ if __name__ == '__main__':
                 ports = [int(port) for port in str_ports if port.isnumeric() and int(port) in all_ports]
                 if len(ports) != len(str_ports):
                     log.f( 'Invalid ports', str_ports )
-                hub.enable_ports( ports, disable_other_ports=False )
+                # With --port, leave other ports alone
+                # With --PORT, disable other ports
+                #       This would otherwise require --none, wait, --port)
+                #       Note that it does not recycle the port if it was already enabled
+                hub.enable_ports( ports, disable_other_ports=(opt == '--PORT') )
                 action = 'none'
             elif opt in ('--ports'):
                 printer = get_phys_port

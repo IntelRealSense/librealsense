@@ -556,7 +556,7 @@ void dds_device::impl::create_control_writer()
     _control_writer = std::make_shared< dds_topic_writer >( topic );
     dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
     wqos.history().depth = 10;  // default is 1
-    wqos.override_from_json( _device_settings.nested( "control" ) );
+    _control_writer->override_qos_from_json( wqos, _device_settings.nested( "control" ) );
     _control_writer->run( wqos );
 }
 

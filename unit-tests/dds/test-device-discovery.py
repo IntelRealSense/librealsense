@@ -300,6 +300,7 @@ with test.remote.fork( nested_indent='  S' ) as remote:
 
 
     del watcher
+    device_info.stop()
     del device_info
     del participant
     test.print_results_and_exit()

@@ -413,6 +413,47 @@ jobs:
   
 
   #--------------------------------------------------------------------------------
+  U22_SH_Py_DDS_CI:  # Ubuntu 2022, Shared, Python, DDS, LibCI without executables
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v3
+          
+    - name: Prebuild
+      shell: bash
+      run: |
+        sudo apt-get update;
+        sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
+        sudo apt-get install -qq libusb-1.0-0-dev;
+        sudo apt-get install -qq libgtk-3-dev;
+        sudo apt-get install libglfw3-dev libglfw3;
+        python3 -m pip install numpy
+
+    - name: Check_API
+      shell: bash
+      run: |
+        cd scripts
+        ./api_check.sh
+        ./pr_check.sh
+        cd ..  
+        mkdir build
+
+    - name: Build
+      shell: bash
+      run: | 
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=${{env.LRS_RUN_CONFIG}} -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_UNIT_TESTS=false -DCHECK_FOR_UPDATES=false -DBUILD_WITH_DDS=true -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3)
+        cmake --build . -- -j4
+
+    - name: LibCI
+      # Note: we specifically disable BUILD_UNIT_TESTS so the executable C++ unit-tests won't run
+      # This is to save time as DDS already lengthens the build...
+      shell: bash
+      run: |
+        python3 unit-tests/run-unit-tests.py --no-color --debug --stdout --not-live --context "dds linux" --tag dds
+  
+
+  #--------------------------------------------------------------------------------
   U22_SH_RSUSB_LiveTest:  # Ubuntu 2022, Shared, Legacy live-tests
     runs-on: ubuntu-22.04
     timeout-minutes: 60

@@ -13,6 +13,7 @@
 #include "../../common/android_helpers.h"
 #endif
 
+#include <stdint.h>
 
 namespace librealsense
 {

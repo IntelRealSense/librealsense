@@ -4,10 +4,12 @@
 
 #include <fastdds/dds/subscriber/DataReaderListener.hpp>
 #include <fastdds/dds/subscriber/qos/DataReaderQos.hpp>
+#include "dds-defines.h"
 
 #include <rsutils/json-fwd.h>
 #include <functional>
 #include <memory>
+#include <atomic>
 
 
 namespace eprosima {
@@ -41,7 +43,7 @@ protected:
 
     eprosima::fastdds::dds::DataReader * _reader = nullptr;
 
-    int _n_writers = 0;
+    std::atomic< int > _n_writers;
 
 public:
     dds_topic_reader( std::shared_ptr< dds_topic > const & topic );
@@ -88,6 +90,9 @@ public:
 
     // The callbacks should be set before we actually create the underlying DDS objects, so the reader does not
     virtual void run( qos const & );
+
+    // Waits until writers are detected; return false on timeout
+    bool wait_for_writers( dds_time timeout );
 
     // Go back to a pre-run() state, such that is_running() returns false
     virtual void stop();

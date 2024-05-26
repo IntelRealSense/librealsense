@@ -174,33 +174,48 @@ Information about a specific stream:
           float bias_variances[3];   
       }
       ```
-    e.g.:
-      ```JSON
-      "intrinsics": {
-          "accel": [1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],
-          "gyro": [1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
-      }
-      ```
-- `options` is an array of option objects, same as `device-options` above
+- `options` is an array of option objects, same as `device-options` above; stream options are shown in the Viewer
+- `recommended-filters` is an array of filter names to be enabled in the Viewer
 
-Stream options are shown in the Viewer.
+E.g.:
+  
+```JSON
+{
+    "id": "stream-options",
+    "stream-name": "Motion",
+    "intrinsics": {
+        "accel": [1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],
+        "gyro": [1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
+    },
+    "options": [],
+    "recommended-filters": []
+}
+```
 
 #### Video Stream Intrinsics
 
 ```JSON
 {
     "id": "stream-options",
+    "stream-name": "Depth",
     "intrinsics": {
         "width": 1280,
         "height": 720,
         "principal-point": [640.2379150390625,357.3431396484375],
         "focal-length": [631.3428955078125,631.3428955078125]
     },
-    "options": [
-        ["Backlight Compensation",0.0,0.0,1.0,1.0,0.0,"Enable / disable backlight compensation"],
-        ["Brightness",0.0,-64.0,64.0,1.0,0.0,"UVC image brightness"],
-    ],
-    "stream-name": "Infrared 1"
+    "options": [],
+    "recommended-filters": [
+        "Decimation Filter",
+        "HDR Merge",
+        "Filter By Sequence id",
+        "Threshold Filter",
+        "Depth to Disparity",
+        "Spatial Filter",
+        "Temporal Filter",
+        "Hole Filling Filter",
+        "Disparity to Depth"
+    ]
 }
 ```
 
