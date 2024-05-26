@@ -14,6 +14,7 @@
 #include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
 #include <fastdds/rtps/transport/UDPv4TransportDescriptor.h>
 
+#include <rsutils/string/from.h>
 #include <rsutils/string/slice.h>
 #include <rsutils/json.h>
 
