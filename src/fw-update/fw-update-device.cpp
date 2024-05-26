@@ -14,8 +14,6 @@
 #include <algorithm>
 #include <thread>
 
-#define DEFAULT_TIMEOUT 100
-#define FW_UPDATE_INTERFACE_NUMBER 0
 namespace librealsense
 {
     std::string get_formatted_fw_version(uint32_t fw_last_version)
@@ -81,6 +79,35 @@ namespace librealsense
         LOG_INFO("DFU status: " << lock_status << " , DFU version is: " << payload.dfu_version);
     }
 
+    std::string update_device::to_string(rs2_dfu_state state) const
+    {
+        switch (state)
+        {
+        case(RS2_DFU_STATE_APP_IDLE):
+            return "APP_IDLE";
+        case(RS2_DFU_STATE_APP_DETACH):
+            return "APP_DETACH";
+        case(RS2_DFU_STATE_DFU_DOWNLOAD_SYNC):
+            return "DFU_DOWNLOAD_SYNC";
+        case(RS2_DFU_STATE_DFU_DOWNLOAD_BUSY):
+            return "DFU_DOWNLOAD_BUSY";
+        case(RS2_DFU_STATE_DFU_DOWNLOAD_IDLE):
+            return "DFU_DOWNLOAD_IDLE";
+        case(RS2_DFU_STATE_DFU_MANIFEST_SYNC):
+            return "DFU_MANIFEST_SYNC";
+        case(RS2_DFU_STATE_DFU_MANIFEST):
+            return "DFU_MANIFEST";
+        case(RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET):
+            return "DFU_MANIFEST_WAIT_RESET";
+        case(RS2_DFU_STATE_DFU_UPLOAD_IDLE):
+            return "DFU_UPLOAD_IDLE";
+        case(RS2_DFU_STATE_DFU_ERROR):
+            return "DFU_ERROR";
+        default:
+            return "DFU_STATE_???";
+        }
+    }
+
     bool update_device::wait_for_state(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, size_t timeout) const
     {
         std::chrono::milliseconds elapsed_milliseconds;
@@ -110,6 +137,21 @@ namespace librealsense
         } while (elapsed_milliseconds < std::chrono::milliseconds(timeout));
 
         return false;
+    }
+
+    float update_device::compute_progress(float progress, float start, float end, float threshold) const
+    {
+        if (threshold < 1.f)
+            throw std::invalid_argument("Avoid division by zero");
+        return start + (ceil(progress * threshold) / threshold) * (end - start) / 100.f;
+    }
+
+    bool update_device::wait_for_manifest_completion(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, 
+        std::chrono::seconds timeout_seconds, rs2_update_progress_callback_sptr update_progress_callback) const
+    {
+        // used for devices which get the progress percentage in the GET_DFU_STATUS call 
+
+        return true;
     }
 
     update_device::update_device( std::shared_ptr< const device_info > const & dev_info,
@@ -195,7 +237,10 @@ namespace librealsense
             float progress = (float)block_number / (float)blocks_count;
             LOG_DEBUG("fw update progress: " << progress);
             if (update_progress_callback)
-                update_progress_callback->on_update_progress(progress);
+            {
+                auto progress_for_bar = compute_progress(progress, 0.f, 20.f, 5.f) / 100.f;
+                update_progress_callback->on_update_progress(progress_for_bar);
+            }
         }
 
         // After the final block of firmware has been sent to the device and the status solicited, the host sends a
@@ -205,6 +250,12 @@ namespace librealsense
         auto sts = messenger->control_transfer(0x21 /*DFU_DOWNLOAD_PACKET*/, RS2_DFU_DOWNLOAD, block_number, 0, NULL, 0, transferred, DEFAULT_TIMEOUT);
         if (sts != platform::RS2_USB_STATUS_SUCCESS)
             throw std::runtime_error("Failed to send final FW packet");
+
+
+        // measuring the progress of the writing to flash (when enabled by FW)
+        if (!wait_for_manifest_completion(messenger, RS2_DFU_STATE_DFU_MANIFEST, std::chrono::seconds(200), update_progress_callback))
+            throw std::runtime_error("Firmware manifest completion failed");
+
 
         // After the zero length DFU_DNLOAD request terminates the Transfer
         // phase, the device is ready to manifest the new firmware. As described

@@ -16,6 +16,8 @@ namespace librealsense
 
         virtual bool check_fw_compatibility(const std::vector<uint8_t>& image) const override;
         virtual void update(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr = nullptr) const override;
+        virtual bool wait_for_manifest_completion(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state,
+            std::chrono::seconds timeout_seconds, rs2_update_progress_callback_sptr update_progress_callback) const override;
 
     private:
         std::string parse_serial_number(const std::vector<uint8_t>& buffer) const;
