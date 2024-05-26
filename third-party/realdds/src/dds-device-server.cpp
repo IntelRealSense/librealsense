@@ -21,6 +21,7 @@
 #include <realdds/dds-guid.h>
 #include <realdds/dds-sample.h>
 
+#include <rsutils/string/from.h>
 #include <rsutils/string/shorten-json-string.h>
 #include <rsutils/json.h>
 using rsutils::json;
