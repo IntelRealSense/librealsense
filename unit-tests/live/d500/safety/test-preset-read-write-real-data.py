@@ -122,6 +122,8 @@ def get_valid_preset():
     safety_environment.depth_fill_threshold = 255  # [0..100%] , 255 is reserved for ignore
     safety_environment.diagnostic_zone_height_median_threshold = 255  # [millimeter]
     safety_environment.vision_hara_persistency = 1  # consecutive frames
+    # The below param is random on purpose and the test
+    # "Writing safety preset to random index, then reading and comparing" relies on that to be random
     safety_environment.crypto_signature = random.sample(range(0, 255), 32)
     safety_environment.reserved = [0] * 3
 
@@ -155,15 +157,15 @@ test.finish()
 
 test.start("Init all safety zones")
 random_safety_preset = get_valid_preset()
-for x in range(63):
-    log.d("Init preset ID =", x + 1)
-    safety_sensor.set_safety_preset(x + 1, random_safety_preset)
+for x in range(64):
+    log.d("Init preset ID =", x)
+    safety_sensor.set_safety_preset(x, random_safety_preset)
 test.finish()
 
 #############################################################################################
 
 test.start("Writing safety preset to random index, then reading and comparing")
-index = random.randint(1, 63)
+index = random.randint(0, 64)
 log.out( "writing to index = ", index )
 safety_preset = get_valid_preset()
 
