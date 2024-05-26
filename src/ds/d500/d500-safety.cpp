@@ -413,6 +413,143 @@ namespace librealsense
         return result->safety_preset;
     }
 
+    std::string d500_safety_sensor::safety_preset_to_json_string(rs2_safety_preset const& sp) const
+    {
+        rsutils::json json_data;
+        auto&& rotation = json_data["safety_preset"]["platform_config"]["transformation_link"]["rotation"];
+        rotation[0][0] = sp.platform_config.transformation_link.rotation.x.x;
+        rotation[0][1] = sp.platform_config.transformation_link.rotation.x.y;
+        rotation[0][1] = sp.platform_config.transformation_link.rotation.x.z;
+        rotation[1][0] = sp.platform_config.transformation_link.rotation.y.x;
+        rotation[1][1] = sp.platform_config.transformation_link.rotation.y.y;
+        rotation[1][2] = sp.platform_config.transformation_link.rotation.y.z;
+        rotation[2][0] = sp.platform_config.transformation_link.rotation.z.x;
+        rotation[2][1] = sp.platform_config.transformation_link.rotation.z.y;
+        rotation[2][2] = sp.platform_config.transformation_link.rotation.z.z;
+
+        auto&& translation = json_data["safety_preset"]["platform_config"]["transformation_link"]["translation"];
+        translation[0] = sp.platform_config.transformation_link.translation.x;
+        translation[1] = sp.platform_config.transformation_link.translation.y;
+        translation[2] = sp.platform_config.transformation_link.translation.z;
+
+        json_data["safety_preset"]["platform_config"]["robot_height"] = sp.platform_config.robot_height;
+
+        auto&& safety_zones = json_data["safety_preset"]["safety_zones"];
+        for (int safety_zone_index = 0; safety_zone_index < 2; safety_zone_index++)
+        {
+            std::string zone_type = (safety_zone_index == 0) ? "danger_zone" : "warning_zone";
+            for (int zone_polygon_index = 0; zone_polygon_index < 4; zone_polygon_index++)
+            {
+                std::string p = "p" + std::to_string(zone_polygon_index);
+                safety_zones[zone_type]["zone_polygon"][p]["x"] = sp.safety_zones[safety_zone_index].zone_polygon[zone_polygon_index].x;
+                safety_zones[zone_type]["zone_polygon"][p]["y"] = sp.safety_zones[safety_zone_index].zone_polygon[zone_polygon_index].y;
+            }
+            safety_zones[zone_type]["safety_trigger_confidence"] = sp.safety_zones[safety_zone_index].safety_trigger_confidence;
+        }
+
+        auto&& masking_zones = json_data["safety_preset"]["masking_zones"];
+        for (int masking_zone_index = 0; masking_zone_index < 8; masking_zone_index++)
+        {
+            std::string masking_zone_index_str = std::to_string(masking_zone_index);
+            for (int region_of_interests_index = 0; region_of_interests_index < 4; region_of_interests_index++)
+            {
+                std::string p = "p" + std::to_string(region_of_interests_index);
+                masking_zones[masking_zone_index_str]["region_of_interests"][p]["i"] = sp.masking_zones[masking_zone_index].region_of_interests[region_of_interests_index].i;
+                masking_zones[masking_zone_index_str]["region_of_interests"][p]["j"] = sp.masking_zones[masking_zone_index].region_of_interests[region_of_interests_index].j;
+            }
+            masking_zones[masking_zone_index_str]["attributes"] = sp.masking_zones[masking_zone_index].attributes;
+        }
+
+        auto&& environment = json_data["safety_preset"]["environment"];
+        environment["safety_trigger_duration"] = sp.environment.safety_trigger_duration;
+        environment["linear_velocity"] = sp.environment.linear_velocity;
+        environment["angular_velocity"] = sp.environment.angular_velocity;
+        environment["payload_weight"] = sp.environment.payload_weight;
+        environment["surface_inclination"] = sp.environment.surface_inclination;
+        environment["surface_height"] = sp.environment.surface_height;
+        environment["diagnostic_zone_fill_rate_threshold"] = sp.environment.diagnostic_zone_fill_rate_threshold;
+        environment["floor_fill_threshold"] = sp.environment.floor_fill_threshold;
+        environment["depth_fill_threshold"] = sp.environment.depth_fill_threshold;
+        environment["diagnostic_zone_height_median_threshold"] = sp.environment.diagnostic_zone_height_median_threshold;
+        environment["vision_hara_persistency"] = sp.environment.vision_hara_persistency;
+        
+        size_t number_of_elements = sizeof(sp.environment.crypto_signature) / sizeof(sp.environment.crypto_signature[0]);
+        std::vector<uint8_t> crypto_signature_byte_array(number_of_elements);
+        memcpy(crypto_signature_byte_array.data(), sp.environment.crypto_signature, sizeof(sp.environment.crypto_signature));
+        environment["crypto_signature"] = crypto_signature_byte_array;
+
+        return json_data.dump();
+    }
+
+
+    rs2_safety_preset d500_safety_sensor::json_string_to_safety_preset(std::string& json_str) const
+    {
+        rsutils::json json_data = rsutils::json::parse(json_str);
+
+        rs2_safety_preset sp;
+        auto&& rotation = json_data["safety_preset"]["platform_config"]["transformation_link"]["rotation"];
+        sp.platform_config.transformation_link.rotation.x.x = rotation[0][0];
+        sp.platform_config.transformation_link.rotation.x.y = rotation[0][1];
+        sp.platform_config.transformation_link.rotation.x.z = rotation[0][1];
+        sp.platform_config.transformation_link.rotation.y.x = rotation[1][0];
+        sp.platform_config.transformation_link.rotation.y.y = rotation[1][1];
+        sp.platform_config.transformation_link.rotation.y.z = rotation[1][2];
+        sp.platform_config.transformation_link.rotation.z.x = rotation[2][0];
+        sp.platform_config.transformation_link.rotation.z.y = rotation[2][1];
+        sp.platform_config.transformation_link.rotation.z.z = rotation[2][2];
+
+        auto&& translation = json_data["safety_preset"]["platform_config"]["transformation_link"]["translation"];
+        sp.platform_config.transformation_link.translation.x = translation[0];
+        sp.platform_config.transformation_link.translation.y = translation[1];
+        sp.platform_config.transformation_link.translation.z = translation[2];
+
+        sp.platform_config.robot_height = json_data["safety_preset"]["platform_config"]["robot_height"];
+
+        auto&& safety_zones = json_data["safety_preset"]["safety_zones"];
+        for (int safety_zone_index = 0; safety_zone_index < 2; safety_zone_index++)
+        {
+            std::string zone_type = (safety_zone_index == 0) ? "danger_zone" : "warning_zone";
+            for (int zone_polygon_index = 0; zone_polygon_index < 4; zone_polygon_index++)
+            {
+                std::string p = "p" + std::to_string(zone_polygon_index);
+                sp.safety_zones[safety_zone_index].zone_polygon[zone_polygon_index].x = safety_zones[zone_type]["zone_polygon"][p]["x"];
+                sp.safety_zones[safety_zone_index].zone_polygon[zone_polygon_index].y = safety_zones[zone_type]["zone_polygon"][p]["y"];
+            }
+            sp.safety_zones[safety_zone_index].safety_trigger_confidence = safety_zones[zone_type]["safety_trigger_confidence"];
+        }
+
+        auto&& masking_zones = json_data["safety_preset"]["masking_zones"];
+        for (int masking_zone_index = 0; masking_zone_index < 8; masking_zone_index++)
+        {
+            std::string masking_zone_index_str = std::to_string(masking_zone_index);
+            for (int region_of_interests_index = 0; region_of_interests_index < 4; region_of_interests_index++)
+            {
+                std::string p = "p" + std::to_string(region_of_interests_index);
+                sp.masking_zones[masking_zone_index].region_of_interests[region_of_interests_index].i = masking_zones[masking_zone_index_str]["region_of_interests"][p]["i"];
+                sp.masking_zones[masking_zone_index].region_of_interests[region_of_interests_index].j = masking_zones[masking_zone_index_str]["region_of_interests"][p]["j"];
+            }
+            sp.masking_zones[masking_zone_index].attributes = masking_zones[masking_zone_index_str]["attributes"];
+        }
+
+        auto&& environment = json_data["safety_preset"]["environment"];
+        sp.environment.safety_trigger_duration = environment["safety_trigger_duration"];
+        sp.environment.linear_velocity = environment["linear_velocity"];
+        sp.environment.angular_velocity = environment["angular_velocity"];
+        sp.environment.payload_weight = environment["payload_weight"];
+        sp.environment.surface_inclination = environment["surface_inclination"];
+        sp.environment.surface_height = environment["surface_height"];
+        sp.environment.diagnostic_zone_fill_rate_threshold = environment["diagnostic_zone_fill_rate_threshold"];
+        sp.environment.floor_fill_threshold = environment["floor_fill_threshold"];
+        sp.environment.depth_fill_threshold = environment["depth_fill_threshold"];
+        sp.environment.diagnostic_zone_height_median_threshold = environment["diagnostic_zone_height_median_threshold"];
+        sp.environment.vision_hara_persistency = environment["vision_hara_persistency"];
+        
+        std::vector<uint8_t> crypto_signature_vector = environment["crypto_signature"].get<std::vector<uint8_t>>();
+        std::memcpy(sp.environment.crypto_signature, crypto_signature_vector.data(), crypto_signature_vector.size() * sizeof(uint8_t));
+
+        return sp;
+    }
+
     void d500_safety_sensor::set_safety_interface_config(const rs2_safety_interface_config& sic) const
     {
         // calculate CRC

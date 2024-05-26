@@ -683,6 +683,24 @@ void rs2_get_safety_preset(rs2_sensor const* sensor, int index, rs2_safety_prese
 void rs2_set_safety_preset(rs2_sensor const* sensor, int index, rs2_safety_preset const* sp, rs2_error** error);
 
 /**
+* rs2_json_string_to_safety_preset
+* \param[in]  sensor        Safety sensor
+* \param[in]  json_str      JSON string to convert
+* \param[out] sp            Safety preset struct result
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_json_string_to_safety_preset(rs2_sensor const* sensor, const char* json_str, rs2_safety_preset* sp, rs2_error** error);
+
+/**
+* rs2_safety_preset_to_json_string
+* \param[in]  sensor        Safety sensor
+* \param[in]  sp            Safety preset to convert
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                   JSON string representing the safety preset
+*/
+const char* rs2_safety_preset_to_json_string(rs2_sensor const* sensor, rs2_safety_preset const* sp, rs2_error** error);
+
+/**
 * rs2_get_safety_interface_config
 * \param[in]   sensor        Safety sensor
 * \param[out]  sic           Safety Interface Config struct result

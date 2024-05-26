@@ -448,6 +448,8 @@ EXPORTS
     rs2_d500_intercam_sync_mode_to_string
     rs2_get_safety_preset
     rs2_set_safety_preset
+    rs2_safety_preset_to_json_string
+    rs2_json_string_to_safety_preset
     rs2_get_safety_interface_config
     rs2_set_safety_interface_config
     rs2_safety_pin_direction_to_string

@@ -121,6 +121,8 @@ void init_sensor(py::module &m) {
     safety_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
         .def("get_safety_preset", &rs2::safety_sensor::get_safety_preset, "get safety preset at index", "index"_a, py::call_guard<py::gil_scoped_release>())
         .def("set_safety_preset", &rs2::safety_sensor::set_safety_preset, "set safety preset at index", "index"_a, "safety_preset"_a, py::call_guard<py::gil_scoped_release>())
+        .def("safety_preset_to_json_string", &rs2::safety_sensor::safety_preset_to_json_string, "safety preset to JSON string", "safety_preset"_a, py::call_guard<py::gil_scoped_release>())
+        .def("json_string_to_safety_preset", &rs2::safety_sensor::json_string_to_safety_preset, "JSON string to safety preset", "json_str"_a, py::call_guard<py::gil_scoped_release>())
         .def("get_safety_interface_config", 
             &rs2::safety_sensor::get_safety_interface_config,
             "get safety interface config", "calib_location"_a = RS2_CALIB_LOCATION_RAM, py::call_guard<py::gil_scoped_release>())

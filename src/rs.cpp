@@ -4462,6 +4462,33 @@ void rs2_set_safety_preset(const rs2_sensor* sensor,
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, index, sp)
 
+void rs2_json_string_to_safety_preset(
+    rs2_sensor const* sensor,
+    const char* json_str,
+    rs2_safety_preset* sp,
+    rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(sp);
+    auto safety_sensor = VALIDATE_INTERFACE(sensor->sensor, librealsense::safety_sensor);
+    std::string sp_json_str(json_str);
+    auto ret_data = safety_sensor->json_string_to_safety_preset(sp_json_str);
+    *sp = ret_data;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, sp)
+
+const char* rs2_safety_preset_to_json_string(
+    rs2_sensor const* sensor,
+    rs2_safety_preset const* sp,
+    rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(sp);
+    auto safety_sensor = VALIDATE_INTERFACE(sensor->sensor, librealsense::safety_sensor);
+    return safety_sensor->safety_preset_to_json_string(*sp).c_str();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor, sp)
+
 void rs2_get_safety_interface_config(const rs2_sensor* sensor,
     rs2_safety_interface_config* sic, rs2_calib_location loc,
     rs2_error** error) BEGIN_API_CALL

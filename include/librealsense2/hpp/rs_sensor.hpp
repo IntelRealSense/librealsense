@@ -750,7 +750,9 @@ namespace rs2
             }
             error::handle(e);
         }
+
         operator bool() const { return _sensor.get() != nullptr; }
+
         rs2_safety_preset get_safety_preset(int index) const
         {
             rs2_error* e = nullptr;
@@ -759,11 +761,29 @@ namespace rs2
             error::handle(e);
             return sp;
         }
+
         void set_safety_preset(int index, rs2_safety_preset const& sp) const
         {
             rs2_error* e = nullptr;
             rs2_set_safety_preset(_sensor.get(), index, &sp, &e);
             error::handle(e);
+        }
+
+        rs2_safety_preset json_string_to_safety_preset(std::string& json_str) const
+        {
+            rs2_error* e = nullptr;
+            rs2_safety_preset sp;
+            rs2_json_string_to_safety_preset(_sensor.get(), json_str.c_str(), &sp, &e);
+            error::handle(e);
+            return sp;
+        }
+
+        std::string safety_preset_to_json_string(rs2_safety_preset const& sp) const
+        {
+            rs2_error* e = nullptr;
+            std::string json_str = rs2_safety_preset_to_json_string(_sensor.get(), &sp, &e);
+            error::handle(e);
+            return json_str;
         }
 
         rs2_safety_interface_config get_safety_interface_config(rs2_calib_location calib_location = RS2_CALIB_LOCATION_RAM) const
