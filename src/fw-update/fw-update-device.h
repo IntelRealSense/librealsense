@@ -146,7 +146,7 @@ namespace librealsense
         rs2_dfu_state get_dfu_state(std::shared_ptr<platform::usb_messenger> messenger) const;
         void detach(std::shared_ptr<platform::usb_messenger> messenger) const;
         bool wait_for_state(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, size_t timeout = 1000) const;
-        virtual void dfu_process_after_download_completion(const platform::rs_usb_messenger& messenger, rs2_update_progress_callback_sptr update_progress_callback) const;
+        virtual void dfu_manifest_phase(const platform::rs_usb_messenger& messenger, rs2_update_progress_callback_sptr update_progress_callback) const;
         void read_device_info(std::shared_ptr<platform::usb_messenger> messenger);
 
         const std::string & get_name() const { return _name; }

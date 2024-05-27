@@ -243,10 +243,10 @@ namespace librealsense
         if (sts != platform::RS2_USB_STATUS_SUCCESS)
             throw std::runtime_error("Failed to send final FW packet");
 
-        dfu_process_after_download_completion(messenger, update_progress_callback);
+        dfu_manifest_phase(messenger, update_progress_callback);
     }
 
-    void update_device::dfu_process_after_download_completion(const platform::rs_usb_messenger& messenger, rs2_update_progress_callback_sptr update_progress_callback) const
+    void update_device::dfu_manifest_phase(const platform::rs_usb_messenger& messenger, rs2_update_progress_callback_sptr update_progress_callback) const
     {
         // After the zero length DFU_DNLOAD request terminates the Transfer
         // phase, the device is ready to manifest the new firmware. As described

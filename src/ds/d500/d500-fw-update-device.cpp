@@ -109,7 +109,7 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
         return true;
     }
 
-    void ds_d500_update_device::dfu_process_after_download_completion(const platform::rs_usb_messenger& messenger, rs2_update_progress_callback_sptr update_progress_callback) const
+    void ds_d500_update_device::dfu_manifest_phase(const platform::rs_usb_messenger& messenger, rs2_update_progress_callback_sptr update_progress_callback) const
     {
         // measuring the progress of the writing to flash (when enabled by FW)
         if (!wait_for_manifest_completion(messenger, RS2_DFU_STATE_DFU_MANIFEST, std::chrono::seconds(200), update_progress_callback))
