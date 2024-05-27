@@ -38,6 +38,13 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
     void ds_d500_update_device::update(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr update_progress_callback) const
     {
         update_device::update( fw_image, fw_image_size, update_progress_callback );
+
+        if (_wait_instead_of_sampling_manifest_reset)  // when dfu monitoring is not enabled by FW
+        {
+            LOG_DEBUG("Waiting for the FW to be burnt");
+            static constexpr int D500_FW_DFU_TIME = 120; // [sec]
+            report_progress_and_wait_for_fw_burn(update_progress_callback, D500_FW_DFU_TIME);
+        }
     }
 
     bool ds_d500_update_device::wait_for_manifest_completion(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state,
@@ -126,12 +133,6 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
         {
             if (!wait_for_state(messenger, RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET, 20000))
                 throw std::runtime_error("Firmware manifest failed");
-        }
-        else  // when dfu monitoring is not enabled by FW
-        {
-            LOG_DEBUG("Waiting for the FW to be burnt");
-            static constexpr int D500_FW_DFU_TIME = 120; // [sec]
-            report_progress_and_wait_for_fw_burn(update_progress_callback, D500_FW_DFU_TIME);
         }
     }
 
