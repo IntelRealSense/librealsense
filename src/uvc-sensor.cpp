@@ -32,6 +32,8 @@ uvc_sensor::uvc_sensor( std::string const & name,
     , _device( std::move( uvc_device ) )
     , _user_count( 0 )
     , _timestamp_reader( std::move( timestamp_reader ) )
+    , _gyro_counter(0)
+    , _accel_counter(0)
 {
     register_metadata( RS2_FRAME_METADATA_BACKEND_TIMESTAMP,
                        make_additional_data_parser( &frame_additional_data::backend_timestamp ) );
@@ -133,22 +135,31 @@ void uvc_sensor::open( const stream_profiles & requests )
                         return;
                     }
 
-                    const auto && fr = generate_frame_from_data( f,
+                    auto && fr = generate_frame_from_data( f,
                                                                  system_time,
                                                                  _timestamp_reader.get(),
                                                                  last_timestamp,
                                                                  last_frame_number,
                                                                  req_profile_base );
-                    const auto && timestamp_domain = _timestamp_reader->get_frame_timestamp_domain( fr );
+                    auto timestamp_domain = _timestamp_reader->get_frame_timestamp_domain( fr );
                     auto bpp = get_image_bpp( req_profile_base->get_format() );
-                    auto && frame_counter = fr->additional_data.frame_number;
-                    auto && timestamp = fr->additional_data.timestamp;
+                    auto & frame_counter = fr->additional_data.frame_number;
+                    auto & timestamp = fr->additional_data.timestamp;
 
                     // D457 development
                     size_t expected_size;
                     auto && msp = As< motion_stream_profile, stream_profile_interface >( req_profile );
                     if( msp )
+                    {
                         expected_size = 64;  // 32; // D457 - WORKAROUND - SHOULD BE REMOVED AFTER CORRECTION IN DRIVER
+                        auto pixels = (uint8_t *)f.pixels;
+                        if( pixels[0] == 1 ) 
+                            fr->additional_data.frame_number = ++_accel_counter;
+                        else if( pixels[0] == 2 ) 
+                            fr->additional_data.frame_number = ++_gyro_counter;
+                        frame_counter = fr->additional_data.frame_number;
+                    }
+                        
 
                     LOG_DEBUG( "FrameAccepted,"
                                << librealsense::get_string( req_profile_base->get_stream_type() ) << ",Counter,"
@@ -385,6 +396,8 @@ void uvc_sensor::stop()
     _is_streaming = false;
     _device->stop_callbacks();
     _timestamp_reader->reset();
+    _gyro_counter = 0;
+    _accel_counter = 0;
     raise_on_before_streaming_changes( false );
 }
 
