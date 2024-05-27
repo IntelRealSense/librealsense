@@ -23,6 +23,10 @@ namespace librealsense
     private:
         std::string parse_serial_number(const std::vector<uint8_t>& buffer) const;
         void report_progress_and_wait_for_fw_burn(rs2_update_progress_callback_sptr update_progress_callback, int required_dfu_time) const;
-        mutable bool _wait_instead_of_sampling_manifest_reset = false;
+        // The following data member _is_dfu_monitoring_enabled is needed to perform DFU when
+        // the DFU monitoring is not enabled by FW, for D500 device.
+        // Its value may be changed to false after the process starts as if the DFU monitoring was
+        // enabled and the progress feedback that should come from the FW remains 0 after few iterations.
+        mutable bool _is_dfu_monitoring_enabled = true;
     };
 }

@@ -39,7 +39,7 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
     {
         update_device::update( fw_image, fw_image_size, update_progress_callback );
 
-        if (_wait_instead_of_sampling_manifest_reset)  // when dfu monitoring is not enabled by FW
+        if (!_is_dfu_monitoring_enabled)
         {
             LOG_DEBUG("Waiting for the FW to be burnt");
             static constexpr int D500_FW_DFU_TIME = 120; // [sec]
@@ -71,7 +71,7 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
             if (percentage_of_transfer == 0 &&
                 ++iteration == max_iteration_number_for_progress_start)
             {
-                _wait_instead_of_sampling_manifest_reset = true;
+                _is_dfu_monitoring_enabled = false;
                 return true;
             }
 
@@ -129,7 +129,7 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
         // WaitForDFU state sends several DFU_GETSTATUS requests, until we hit
         // either RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET or RS2_DFU_STATE_DFU_ERROR status.
         // This command also reset the device
-        if (!_wait_instead_of_sampling_manifest_reset) // when dfu monitoring is enabled by FW
+        if (_is_dfu_monitoring_enabled)
         {
             if (!wait_for_state(messenger, RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET, 20000))
                 throw std::runtime_error("Firmware manifest failed");
