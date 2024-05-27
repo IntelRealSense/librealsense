@@ -13,7 +13,7 @@ ExternalProject_Add(
     # Once we have a minimal version support of cmake 3.17, we can switch the command to rm -rF
     DOWNLOAD_COMMAND   "${CMAKE_COMMAND}" -E  remove_directory  "${CMAKE_BINARY_DIR}/third-party/json"
              COMMAND   git clone -c advice.detachedHead=false --branch v3.11.3 https://github.com/nlohmann/json.git --depth 1 json
-    DOWNLOAD_DIR       ${CMAKE_BINARY_DIR}/third-party/
+    DOWNLOAD_DIR       "${CMAKE_BINARY_DIR}/third-party/"
     
     # Override default steps with no action, we just want the clone step.
     UPDATE_COMMAND ""
