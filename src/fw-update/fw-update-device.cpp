@@ -146,14 +146,6 @@ namespace librealsense
         return start + (ceil(progress * threshold) / threshold) * (end - start) / 100.f;
     }
 
-    bool update_device::wait_for_manifest_completion(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, 
-        std::chrono::seconds timeout_seconds, rs2_update_progress_callback_sptr update_progress_callback) const
-    {
-        // used for devices which get the progress percentage in the GET_DFU_STATUS call 
-
-        return true;
-    }
-
     update_device::update_device( std::shared_ptr< const device_info > const & dev_info,
                                   std::shared_ptr< platform::usb_device > const & usb_device,
                                   const std::string & product_line )
@@ -251,12 +243,11 @@ namespace librealsense
         if (sts != platform::RS2_USB_STATUS_SUCCESS)
             throw std::runtime_error("Failed to send final FW packet");
 
+        dfu_manifest_phase(messenger, update_progress_callback);
+    }
 
-        // measuring the progress of the writing to flash (when enabled by FW)
-        if (!wait_for_manifest_completion(messenger, RS2_DFU_STATE_DFU_MANIFEST, std::chrono::seconds(200), update_progress_callback))
-            throw std::runtime_error("Firmware manifest completion failed");
-
-
+    void update_device::dfu_manifest_phase(const platform::rs_usb_messenger& messenger, rs2_update_progress_callback_sptr update_progress_callback) const
+    {
         // After the zero length DFU_DNLOAD request terminates the Transfer
         // phase, the device is ready to manifest the new firmware. As described
         // previously, some devices may accumulate the firmware image and perform

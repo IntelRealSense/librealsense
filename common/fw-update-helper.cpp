@@ -272,7 +272,7 @@ namespace rs2
             if ( !log_backup_status.empty() )
                 log(log_backup_status);
 
-            next_progress = _progress + 10;
+            next_progress = static_cast<int>(_progress) + 10;
 
             if (_is_signed)
             {

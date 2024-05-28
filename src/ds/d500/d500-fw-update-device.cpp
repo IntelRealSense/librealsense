@@ -38,6 +38,13 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
     void ds_d500_update_device::update(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr update_progress_callback) const
     {
         update_device::update( fw_image, fw_image_size, update_progress_callback );
+
+        if (!_is_dfu_monitoring_enabled)
+        {
+            LOG_DEBUG("Waiting for the FW to be burnt");
+            static constexpr int D500_FW_DFU_TIME = 120; // [sec]
+            report_progress_and_wait_for_fw_burn(update_progress_callback, D500_FW_DFU_TIME);
+        }
     }
 
     bool ds_d500_update_device::wait_for_manifest_completion(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state,
@@ -61,9 +68,12 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
 
             // the below code avoids process stuck when using a d5XX device, 
             // which has a fw version without the DFU progress feature
-            if (percentage_of_transfer == 0 && 
+            if (percentage_of_transfer == 0 &&
                 ++iteration == max_iteration_number_for_progress_start)
+            {
+                _is_dfu_monitoring_enabled = false;
                 return true;
+            }
 
             std::stringstream ss;
             ss << "DFU_GETSTATUS called, state is: " << to_string(dfu_state); 
@@ -77,7 +87,7 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
             }
 
             if (sts != platform::RS2_USB_STATUS_SUCCESS)
-                LOG_DEBUG("control xfer error: " << platform::usb_status_to_string[sts]);
+                LOG_ERROR("control xfer error: " << platform::usb_status_to_string[sts]);
 
             //test for dfu error state
             if (status.is_error_state()) {
@@ -97,5 +107,50 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
         } while (percentage_of_transfer < 100 && dfu_state == RS2_DFU_STATE_DFU_MANIFEST);
 
         return true;
+    }
+
+    void ds_d500_update_device::dfu_manifest_phase(const platform::rs_usb_messenger& messenger, rs2_update_progress_callback_sptr update_progress_callback) const
+    {
+        // measuring the progress of the writing to flash (when enabled by FW)
+        if (!wait_for_manifest_completion(messenger, RS2_DFU_STATE_DFU_MANIFEST, std::chrono::seconds(200), update_progress_callback))
+            throw std::runtime_error("Firmware manifest completion failed");
+
+
+        // After the zero length DFU_DNLOAD request terminates the Transfer
+        // phase, the device is ready to manifest the new firmware. As described
+        // previously, some devices may accumulate the firmware image and perform
+        // the entire reprogramming operation at one time. Others may have only a
+        // small amount remaining to be reprogrammed, and still others may have
+        // none. Regardless, the device enters the dfuMANIFEST-SYNC state and
+        // awaits the solicitation of the status report by the host. Upon receipt
+        // of the anticipated DFU_GETSTATUS, the device enters the dfuMANIFEST
+        // state, where it completes its reprogramming operations.
+
+        // WaitForDFU state sends several DFU_GETSTATUS requests, until we hit
+        // either RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET or RS2_DFU_STATE_DFU_ERROR status.
+        // This command also reset the device
+        if (_is_dfu_monitoring_enabled)
+        {
+            if (!wait_for_state(messenger, RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET, 20000))
+                throw std::runtime_error("Firmware manifest failed");
+        }
+    }
+
+    void ds_d500_update_device::report_progress_and_wait_for_fw_burn(rs2_update_progress_callback_sptr update_progress_callback, int required_dfu_time) const
+    {
+        // We calculate the sleep time needed for each cycle to get to 100% progress bar
+        if (update_progress_callback)
+        {
+            float iteration_sleep_time_ms = (static_cast<float>(required_dfu_time) / 100.0f) * 1000.0f;
+            for (int i = 1; i <= 100; i++)
+            {
+                auto percentage_of_transfer = i;
+                auto progress_for_bar = compute_progress(static_cast<float>(percentage_of_transfer), 20.f, 100.f, 5.f) / 100.f;
+                update_progress_callback->on_update_progress(progress_for_bar);
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(iteration_sleep_time_ms)));
+            }
+        }
+        else
+            std::this_thread::sleep_for(std::chrono::seconds(required_dfu_time));
     }
 }
