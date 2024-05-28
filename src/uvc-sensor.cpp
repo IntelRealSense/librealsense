@@ -152,7 +152,7 @@ void uvc_sensor::open( const stream_profiles & requests )
                     if( msp )
                     {
                         expected_size = 64;  // 32; // D457 - WORKAROUND - SHOULD BE REMOVED AFTER CORRECTION IN DRIVER
-                        //Motion stran on uvc is used only for mipi. Stream frame number counts gyro and accel together.
+                        //Motion stream on uvc is used only for mipi. Stream frame number counts gyro and accel together.
                         //We override it using 2 seperate counters.
                         auto pixels = (uint8_t *)f.pixels;
                         if( pixels[0] == 1 ) 
