@@ -197,13 +197,13 @@ int write_fw_to_mipi_device( const rs2::device & dev, const std::vector< uint8_t
         printf( "    \r" ); // Delete progress, as it is not accurate, don't leave 85% when writing done
         if( ! fw_path_in_device.good() )
         {
-            std::cout << std::endl << "Firmware Update failed - write to device error";
+            std::cout << std::endl << "Firmware Update failed - write to device error" << std::endl;
             return EXIT_FAILURE;
         }
     }
     else 
     {
-        std::cout << std::endl << "Firmware Update failed - wrong path or permissions missing";
+        std::cout << std::endl << "Firmware Update failed - wrong path or permissions missing" << std::endl;
         return EXIT_FAILURE;
     }
     std::cout << std::endl << "Firmware update done" << std::endl;
