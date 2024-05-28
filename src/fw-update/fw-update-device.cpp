@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019-2024 Intel Corporation. All Rights Reserved.
 
 #include "fw-update-device.h"
 #include "../types.h"
@@ -13,7 +13,12 @@
 #include <stdexcept>
 #include <algorithm>
 #include <thread>
+#include <string>
+#include <regex>
+#include <fstream>
 
+#define DEFAULT_TIMEOUT 100
+#define FW_UPDATE_INTERFACE_NUMBER 0
 namespace librealsense
 {
     std::string get_formatted_fw_version(uint32_t fw_last_version)
@@ -174,12 +179,31 @@ namespace librealsense
         }
     }
 
+    update_device::update_device( std::shared_ptr< const device_info > const & dev_info,
+                                  std::shared_ptr< platform::mipi_device > const & mipi_device,
+                                  const std::string & product_line )
+        : _dev_info( dev_info )
+        , _mipi_device( mipi_device )
+        , _physical_port( mipi_device->get_info().dfu_device_path )
+        , _pid( rsutils::string::from() << std::uppercase << rsutils::string::hexdump( mipi_device->get_info().pid ))
+        , _product_line( product_line )
+        , _serial_number( mipi_device->get_info().serial_number )
+    {
+        std::ifstream fw_path_in_device(_physical_port.c_str());
+        if (!fw_path_in_device)
+        {
+            throw std::runtime_error("Firmware Update failed - wrong path or permissions missing");
+            return;
+        }
+        fw_path_in_device.close();
+    }
+
     update_device::~update_device()
     {
 
     }
 
-    void update_device::update(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr update_progress_callback) const
+    void update_device::update_usb(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr update_progress_callback) const
     {
         // checking fw compatibility (covering the case of recovery device with wrong product line fw )
         std::vector<uint8_t> buffer((uint8_t*)fw_image, (uint8_t*)fw_image + fw_image_size);
@@ -263,6 +287,62 @@ namespace librealsense
         // This command also reset the device
         if (!wait_for_state(messenger, RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET, 20000))
             throw std::runtime_error("Firmware manifest failed");
+    }
+
+    void update_device::update_mipi(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr update_progress_callback) const
+    {
+        // checking fw compatibility (covering the case of recovery device with wrong product line fw )
+        std::vector<uint8_t> buffer((uint8_t*)fw_image, (uint8_t*)fw_image + fw_image_size);
+        const size_t transfer_size = 1024;
+
+        size_t remaining_bytes = fw_image_size;
+        uint16_t blocks_count = uint16_t( fw_image_size / transfer_size );
+        uint16_t block_number = 0;
+
+        size_t offset = 0;
+        uint32_t transferred = 0;
+
+        if (!check_fw_compatibility(buffer))
+            throw librealsense::invalid_value_exception("Device: " + get_serial_number() + " failed to update firmware\nImage is unsupported for this device or corrupted");
+        // Write signed firmware to appropriate file descriptor
+
+        std::ofstream fw_path_in_device(_physical_port.c_str(), std::ios::binary);
+        if (!fw_path_in_device)
+        {
+            throw std::runtime_error("Firmware Update failed - wrong path or permissions missing");
+            return;
+        }
+        while (remaining_bytes > 0)
+        {
+            size_t chunk_size = std::min(transfer_size, remaining_bytes);
+
+            auto curr_block = ((uint8_t*)fw_image + offset);
+
+            fw_path_in_device.write(reinterpret_cast<const char*>(curr_block), chunk_size);
+
+            block_number++;
+            remaining_bytes -= chunk_size;
+            offset += chunk_size;
+
+            float progress = (float)block_number / (float)blocks_count;
+            LOG_DEBUG("fw update progress: " << progress);
+            if (update_progress_callback)
+                update_progress_callback->on_update_progress(progress);
+        }
+        LOG_INFO("Firmware Update for MIPI device done.");
+        fw_path_in_device.close();
+    }
+
+    void update_device::update(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr update_progress_callback) const
+    {
+        if(_pid == "ABCD" || _pid == "BBCD")
+        {
+            update_mipi(fw_image, fw_image_size, update_progress_callback);
+        }
+        else
+        {
+            update_usb(fw_image, fw_image_size, update_progress_callback);
+        }
     }
 
     sensor_interface& update_device::get_sensor(size_t i)

@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015-2024 Intel Corporation. All Rights Reserved.
 
 #pragma once
 
@@ -37,6 +37,7 @@ namespace librealsense
         const uint16_t RS405_PID = 0x0B5B; // D405
         const uint16_t RS455_PID = 0x0B5C; // D455
         const uint16_t RS457_PID = 0xabcd; // D457
+        const uint16_t RS457_RECOVERY_PID = 0xbbcd; // D457 DFU Recovery
 
         // d400 Devices supported by the current version
         static const std::set<std::uint16_t> rs400_sku_pid = {
@@ -124,6 +125,7 @@ namespace librealsense
             { RS405_PID,            "Intel RealSense D405" },
             { RS455_PID,            "Intel RealSense D455" },
             { RS457_PID,            "Intel RealSense D457" },
+            { RS457_RECOVERY_PID,   "Intel RealSense D457 Recovery"},
         };
 
         static std::map<uint16_t, std::string> d400_device_to_fw_min_version = {
@@ -150,7 +152,8 @@ namespace librealsense
             {RS416_RGB_PID, "5.8.15.0" },
             {RS405_PID, "5.12.11.8" },
             {RS455_PID, "5.13.0.50" },
-            {RS457_PID, "5.13.1.1" }
+            {RS457_PID, "5.13.1.1" },
+            {RS457_RECOVERY_PID, "5.13.1.1" }
         };
 
         std::vector<platform::uvc_device_info> filter_d400_device_by_capability(
