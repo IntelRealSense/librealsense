@@ -536,7 +536,7 @@ jobs:
         mkdir build
         # install coreutils for greadlink use
         brew install coreutils
-        brew install homebrew/core/glfw3;
+        brew install homebrew/core/glfw;
         brew list libusb || brew install libusb;
         
     - name: Build
