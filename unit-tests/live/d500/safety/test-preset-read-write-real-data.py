@@ -165,7 +165,7 @@ test.finish()
 #############################################################################################
 
 test.start("Writing safety preset to random index, then reading and comparing")
-index = random.randint(0, 64)
+index = random.randint(0, 63)
 log.out( "writing to index = ", index )
 safety_preset = get_valid_preset()
 
