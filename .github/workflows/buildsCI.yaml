@@ -297,7 +297,7 @@ jobs:
         ./live-test -d yes -i [software-device]        
 
     - name: Upload RS log artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with: 
         name: Log file - U22_ST_Py_EX_CfU_LiveTest
         path: build/${{env.LRS_RUN_CONFIG}}/*.log
@@ -500,7 +500,7 @@ jobs:
         ./live-test -d yes -i [software-device]
 
     - name: Upload RS log artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Log file - U22_SH_RSUSB_LiveTest
         path: build/${{env.LRS_BUILD_CONFIG}}/*.log
@@ -518,7 +518,7 @@ jobs:
 
   #--------------------------------------------------------------------------------
   Mac_cpp:
-    runs-on: macos-11
+    runs-on: macos-14
     timeout-minutes: 60
     
     steps:
