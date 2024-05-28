@@ -27,7 +27,7 @@ jobs:
     runs-on: windows-2019
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Enable Long Paths
       shell: powershell
@@ -69,7 +69,7 @@ jobs:
     runs-on: windows-2019
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Enable Long Paths
       shell: powershell
@@ -111,7 +111,7 @@ jobs:
     runs-on: windows-2019
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: actions/setup-python@v3
       with:
        python-version: '3.8.1'
@@ -171,7 +171,7 @@ jobs:
     runs-on: windows-2019
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: actions/setup-python@v3
       with:
        python-version: '3.8.1'
@@ -222,7 +222,7 @@ jobs:
     timeout-minutes: 60
       
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: actions/setup-python@v3
       with:
        python-version: '3.8.1'
@@ -264,7 +264,7 @@ jobs:
     runs-on: ubuntu-22.04    
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Prebuild
       shell: bash
@@ -318,7 +318,7 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Prebuild
       shell: bash
@@ -361,7 +361,7 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Prebuild
       shell: bash
@@ -417,7 +417,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
           
     - name: Prebuild
       shell: bash
@@ -460,7 +460,7 @@ jobs:
     env: 
       LRS_BUILD_NODEJS: true
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
           
     - name: Check_API
       shell: bash
@@ -522,7 +522,7 @@ jobs:
     timeout-minutes: 60
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Check_API
       shell: bash
@@ -556,7 +556,7 @@ jobs:
     runs-on: ubuntu-20.04   
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Check_API
       shell: bash
