@@ -31,5 +31,7 @@ with test.closure("frame index - mipi IMU "):
     time.sleep(seconds_to_count_frames) # Time to count frames
     sensor.stop()
     sensor.close()
-
+    test.check(gyro_frame_count > 0)
+    test.check(accel_frame_count > 0)
+    
 test.print_results_and_exit()
