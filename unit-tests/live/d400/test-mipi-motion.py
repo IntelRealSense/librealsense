@@ -2,6 +2,7 @@
 # Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 # test:device:jetson D457
+# test:donotrun:!jetson 
 
 import pyrealsense2 as rs
 from rspy import test
@@ -33,5 +34,5 @@ with test.closure("frame index - mipi IMU "):
     sensor.close()
     test.check(gyro_frame_count > 0)
     test.check(accel_frame_count > 0)
-    
+
 test.print_results_and_exit()
