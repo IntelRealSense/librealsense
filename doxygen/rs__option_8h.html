@@ -62,8 +62,6 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrs2__option__rect.html">rs2_option_rect</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrs2__option__value.html">rs2_option_value</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">The value of an option, in a known option type.  <a href="structrs2__option__value.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -76,8 +74,6 @@ Typedefs</h2></td></tr>
 <tr class="memitem:aff11efe982e9aadeddcdabb76de79023"><td class="memItemLeft" align="right" valign="top">typedef enum <a class="el" href="rs__option_8h.html#a6fbcb41e0f93df91cdc58a011da2d895">rs2_option_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__option_8h.html#aff11efe982e9aadeddcdabb76de79023">rs2_option_type</a></td></tr>
 <tr class="memdesc:aff11efe982e9aadeddcdabb76de79023"><td class="mdescLeft">&#160;</td><td class="mdescRight">Defines known option value types.  <a href="#aff11efe982e9aadeddcdabb76de79023">More...</a><br /></td></tr>
 <tr class="separator:aff11efe982e9aadeddcdabb76de79023"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa16c85dfdaae1d48123367abdedf8e14"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="structrs2__option__rect.html">rs2_option_rect</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__option_8h.html#aa16c85dfdaae1d48123367abdedf8e14">rs2_option_rect</a></td></tr>
-<tr class="separator:aa16c85dfdaae1d48123367abdedf8e14"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a40d9b24139fd62e90347252868af78d9"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="structrs2__option__value.html">rs2_option_value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__option_8h.html#a40d9b24139fd62e90347252868af78d9">rs2_option_value</a></td></tr>
 <tr class="memdesc:a40d9b24139fd62e90347252868af78d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">The value of an option, in a known option type.  <a href="#a40d9b24139fd62e90347252868af78d9">More...</a><br /></td></tr>
 <tr class="separator:a40d9b24139fd62e90347252868af78d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -238,9 +234,7 @@ Enumerations</h2></td></tr>
 &#160;&#160;<a class="el" href="rs__option_8h.html#a8b9c011f705cfab20c7eaaa7a26040e2a67752d9b914d07e17720de05da16ddc9">RS2_OPTION_OHM_TEMPERATURE</a>, 
 <a class="el" href="rs__option_8h.html#a8b9c011f705cfab20c7eaaa7a26040e2afa773a714c4f40889bcc7426fa39a41d">RS2_OPTION_SOC_PVT_TEMPERATURE</a>, 
 <a class="el" href="rs__option_8h.html#a8b9c011f705cfab20c7eaaa7a26040e2a9fb6dcd1f20ece04773e269bc9c4b147">RS2_OPTION_GYRO_SENSITIVITY</a>, 
-<a class="el" href="rs__option_8h.html#a8b9c011f705cfab20c7eaaa7a26040e2ae90e934983b809e93cdf9b2d8164015d">RS2_OPTION_REGION_OF_INTEREST</a>, 
-<br />
-&#160;&#160;<a class="el" href="rs__option_8h.html#a8b9c011f705cfab20c7eaaa7a26040e2a4158983f553ef28b078dd7716ce73419">RS2_OPTION_COUNT</a>
+<a class="el" href="rs__option_8h.html#a8b9c011f705cfab20c7eaaa7a26040e2a4158983f553ef28b078dd7716ce73419">RS2_OPTION_COUNT</a>
 <br />
  }</td></tr>
 <tr class="memdesc:a8b9c011f705cfab20c7eaaa7a26040e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Defines general configuration controls. These can generally be mapped to camera UVC controls, and can be set / queried at any time unless stated otherwise.  <a href="rs__option_8h.html#a8b9c011f705cfab20c7eaaa7a26040e2">More...</a><br /></td></tr>
@@ -251,8 +245,7 @@ Enumerations</h2></td></tr>
 <a class="el" href="rs__option_8h.html#a6fbcb41e0f93df91cdc58a011da2d895a0cdd6746fbbaa8653e4a7700862c4fc0">RS2_OPTION_TYPE_STRING</a>, 
 <a class="el" href="rs__option_8h.html#a6fbcb41e0f93df91cdc58a011da2d895a2a945218d3467c8f3a9e8b24e2921848">RS2_OPTION_TYPE_BOOLEAN</a>, 
 <br />
-&#160;&#160;<a class="el" href="rs__option_8h.html#a6fbcb41e0f93df91cdc58a011da2d895a94045d6d030c6028fcc5ec8986d880d2">RS2_OPTION_TYPE_RECT</a>, 
-<a class="el" href="rs__option_8h.html#a6fbcb41e0f93df91cdc58a011da2d895a216cddc5009790cdf7765681f3e21cd0">RS2_OPTION_TYPE_COUNT</a>
+&#160;&#160;<a class="el" href="rs__option_8h.html#a6fbcb41e0f93df91cdc58a011da2d895a216cddc5009790cdf7765681f3e21cd0">RS2_OPTION_TYPE_COUNT</a>
 <br />
  }</td></tr>
 <tr class="memdesc:a6fbcb41e0f93df91cdc58a011da2d895"><td class="mdescLeft">&#160;</td><td class="mdescRight">Defines known option value types.  <a href="rs__option_8h.html#a6fbcb41e0f93df91cdc58a011da2d895">More...</a><br /></td></tr>
@@ -547,21 +540,6 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Defines general configuration controls. These can generally be mapped to camera UVC controls, and can be set / queried at any time unless stated otherwise. </p>
-
-</div>
-</div>
-<a id="aa16c85dfdaae1d48123367abdedf8e14"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa16c85dfdaae1d48123367abdedf8e14">&#9670;&nbsp;</a></span>rs2_option_rect</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct <a class="el" href="structrs2__option__rect.html">rs2_option_rect</a>  <a class="el" href="structrs2__option__rect.html">rs2_option_rect</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>A rectangle expressed in 64 bits, used with <a class="el" href="structrs2__option__value.html#a94ebd5467e572033567551cd3a274efe">rs2_option_value::as_rect</a>. Same semantics as rs2_set_region_of_interest. </p>
 
 </div>
 </div>
@@ -1024,8 +1002,6 @@ Functions</h2></td></tr>
 </td></tr>
 <tr><td class="fieldname"><a id="a8b9c011f705cfab20c7eaaa7a26040e2a9fb6dcd1f20ece04773e269bc9c4b147"></a>RS2_OPTION_GYRO_SENSITIVITY&#160;</td><td class="fielddoc"><p>Control of the gyro sensitivity level, see rs2_gyro_sensitivity for values </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a8b9c011f705cfab20c7eaaa7a26040e2ae90e934983b809e93cdf9b2d8164015d"></a>RS2_OPTION_REGION_OF_INTEREST&#160;</td><td class="fielddoc"><p>The rectangular area used from the streaming profile </p>
-</td></tr>
 <tr><td class="fieldname"><a id="a8b9c011f705cfab20c7eaaa7a26040e2a4158983f553ef28b078dd7716ce73419"></a>RS2_OPTION_COUNT&#160;</td><td class="fielddoc"><p>Number of enumeration values. Not a valid input: intended to be used in for-loops. </p>
 </td></tr>
 </table>
@@ -1051,7 +1027,6 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="a6fbcb41e0f93df91cdc58a011da2d895a22d81515f41e5c210ded037182c9dd62"></a>RS2_OPTION_TYPE_FLOAT&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a6fbcb41e0f93df91cdc58a011da2d895a0cdd6746fbbaa8653e4a7700862c4fc0"></a>RS2_OPTION_TYPE_STRING&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a6fbcb41e0f93df91cdc58a011da2d895a2a945218d3467c8f3a9e8b24e2921848"></a>RS2_OPTION_TYPE_BOOLEAN&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a6fbcb41e0f93df91cdc58a011da2d895a94045d6d030c6028fcc5ec8986d880d2"></a>RS2_OPTION_TYPE_RECT&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a6fbcb41e0f93df91cdc58a011da2d895a216cddc5009790cdf7765681f3e21cd0"></a>RS2_OPTION_TYPE_COUNT&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
