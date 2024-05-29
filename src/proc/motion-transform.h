@@ -10,6 +10,19 @@ namespace librealsense
     class mm_calib_handler;
     class functional_processing_block;
 
+    class imu_to_librs_converter
+    {
+    protected:
+        double _scale_factor = 1.;
+
+    public:
+        imu_to_librs_converter( double scale_factor ) : _scale_factor( scale_factor )
+        {
+        }
+
+        virtual void convert( uint8_t * const dest[], const uint8_t * source ) = 0;
+    };
+
     class motion_transform : public functional_processing_block
     {
     public:
@@ -33,62 +46,57 @@ namespace librealsense
         float3x3            _gyro_sensitivity;
         float3              _gyro_bias;
         float3x3            _imu2depth_cs_alignment_matrix;     // Transform and align raw IMU axis [x,y,z] to be consistent with the Depth frame CS
+        std::unique_ptr< imu_to_librs_converter > _converter;
     };
 
     class motion_to_accel_gyro : public motion_transform
     {
     public:
-        motion_to_accel_gyro( std::shared_ptr< mm_calib_handler > mm_calib = nullptr,
-                              std::shared_ptr< enable_motion_correction > mm_correct_opt = nullptr,
-                              double gyro_scale_factor = 0.1 );
+        motion_to_accel_gyro( std::shared_ptr< mm_calib_handler > mm_calib,
+                              std::shared_ptr< enable_motion_correction > mm_correct_opt,
+                              double gyro_scale_factor, bool high_accuracy );
 
     protected:
         motion_to_accel_gyro( const char * name,
                               std::shared_ptr< mm_calib_handler > mm_calib,
                               std::shared_ptr< enable_motion_correction > mm_correct_opt,
-                              double gyro_scale_factor );
+                              double gyro_scale_factor, bool high_accuracy );
         void configure_processing_callback();
-        void process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size ) override;
+        void process_function( uint8_t * const dest[], const uint8_t * source, int, int, int, int ) override;
         void correct_motion(float3* xyz) const;
 
         std::shared_ptr<stream_profile_interface> _source_stream_profile;
         std::shared_ptr<stream_profile_interface> _accel_gyro_target_profile;
-        double _gyro_scale_factor = 0.1;
     };
 
     class acceleration_transform : public motion_transform
     {
     public:
-        acceleration_transform( std::shared_ptr< mm_calib_handler > mm_calib = nullptr,
-                                std::shared_ptr< enable_motion_correction > mm_correct_opt = nullptr,
-                                bool high_accuracy = false );
+        acceleration_transform( std::shared_ptr< mm_calib_handler > mm_calib,
+                                std::shared_ptr< enable_motion_correction > mm_correct_opt,
+                                bool high_accuracy );
 
     protected:
         acceleration_transform( const char * name,
                                 std::shared_ptr< mm_calib_handler > mm_calib,
                                 std::shared_ptr< enable_motion_correction > mm_correct_opt,
                                 bool high_accuracy );
-        void process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size) override;
-        //To be refactored and change to accel_scale_factor once we implement sensitivity feature for the accel like the gyro
-        bool _high_accuracy = false;
-
+        void process_function( uint8_t * const dest[], const uint8_t * source, int, int, int, int) override;
     };
 
     class gyroscope_transform : public motion_transform
     {
     public:
-        gyroscope_transform( std::shared_ptr< mm_calib_handler > mm_calib = nullptr,
-                             std::shared_ptr< enable_motion_correction > mm_correct_opt = nullptr,
-                             double gyro_scale_factor = 0.1 );
+        gyroscope_transform( std::shared_ptr< mm_calib_handler > mm_calib,
+                             std::shared_ptr< enable_motion_correction > mm_correct_opt,
+                             double gyro_scale_factor, bool high_accuracy );
 
     protected:
         gyroscope_transform( const char * name,
                              std::shared_ptr< mm_calib_handler > mm_calib,
                              std::shared_ptr< enable_motion_correction > mm_correct_opt,
-                             double gyro_scale_factor );
+                             double gyro_scale_factor, bool high_accuracy );
                              
-        void process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size ) override;
-
-        double  _gyro_scale_factor = 0.1;
+        void process_function( uint8_t * const dest[], const uint8_t * source, int, int, int, int) override;
     };
 }

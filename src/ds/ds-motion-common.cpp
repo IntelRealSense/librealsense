@@ -504,7 +504,7 @@ namespace librealsense
         }
         catch (...) {}
 
-        bool high_accuracy = _owner->is_accel_high_accuracy();    
+        bool high_accuracy = _owner->is_imu_high_accuracy();    
         hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
@@ -516,8 +516,8 @@ namespace librealsense
         hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
-                                           [&, mm_correct_opt, gyro_scale_factor]() {
-                                               return std::make_shared< gyroscope_transform >( _mm_calib, mm_correct_opt, gyro_scale_factor );
+            [&, mm_correct_opt, gyro_scale_factor, high_accuracy]()
+            { return std::make_shared< gyroscope_transform >( _mm_calib, mm_correct_opt, gyro_scale_factor, high_accuracy );
             });
 
         return hid_ep;

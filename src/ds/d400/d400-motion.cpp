@@ -80,14 +80,13 @@ namespace librealsense
         }
         catch (...) {}
 
-        // For FW >=5.16 the scale factor changed to 0.0001 to support higher resolution (diff between two adjacent samples)
-        double gyro_scale_factor = _fw_version >= firmware_version( 5, 16, 0, 0 ) ? 0.0001 : 0.1 ;
-
+        double gyro_scale_factor = get_gyro_default_scale();
+        bool high_accuracy = is_imu_high_accuracy();
         motion_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL}, {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
             [&, mm_correct_opt, gyro_scale_factor]()
-            { return std::make_shared< motion_to_accel_gyro >( _mm_calib, mm_correct_opt, gyro_scale_factor );
+            { return std::make_shared< motion_to_accel_gyro >( _mm_calib, mm_correct_opt, gyro_scale_factor, high_accuracy );
         });
 
         return motion_ep;
@@ -150,7 +149,7 @@ namespace librealsense
         return std::dynamic_pointer_cast< hid_sensor >( raw_sensor );
     }
 
-    bool d400_motion::is_accel_high_accuracy() const
+    bool d400_motion::is_imu_high_accuracy() const
     {
         // D400 FW 5.16 and above use 32 bits in the struct, instead of 16.
         return _fw_version >= firmware_version( 5, 16, 0, 0 );

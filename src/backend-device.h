@@ -31,8 +31,8 @@ public:
     uint16_t get_pid() const { return _pid; }
     std::shared_ptr< platform::backend > get_backend();
 
-    // Some FW versions use 16 bit accel values and some use 32 bit for higher accuracy.
-    virtual bool is_accel_high_accuracy() const { return false; }
+    // Some FW versions use 16 bit imu register values and some use 32 bit for higher accuracy.
+    virtual bool is_imu_high_accuracy() const { return false; }
     // Gyro scale factor (raw to physical) can be different between product lines and FW versions.
     virtual double get_gyro_default_scale() const { return 0.1; }
 

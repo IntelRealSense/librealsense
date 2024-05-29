@@ -49,7 +49,7 @@ namespace librealsense
         ds_motion_sensor & get_motion_sensor();
         std::shared_ptr<hid_sensor > get_raw_motion_sensor();
 
-        bool is_accel_high_accuracy() const override;
+        bool is_imu_high_accuracy() const override;
         double get_gyro_default_scale() const override;
 
     protected:
