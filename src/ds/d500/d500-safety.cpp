@@ -419,7 +419,7 @@ namespace librealsense
         auto&& rotation = json_data["safety_preset"]["platform_config"]["transformation_link"]["rotation"];
         rotation[0][0] = sp.platform_config.transformation_link.rotation.x.x;
         rotation[0][1] = sp.platform_config.transformation_link.rotation.x.y;
-        rotation[0][1] = sp.platform_config.transformation_link.rotation.x.z;
+        rotation[0][2] = sp.platform_config.transformation_link.rotation.x.z;
         rotation[1][0] = sp.platform_config.transformation_link.rotation.y.x;
         rotation[1][1] = sp.platform_config.transformation_link.rotation.y.y;
         rotation[1][2] = sp.platform_config.transformation_link.rotation.y.z;
@@ -490,7 +490,7 @@ namespace librealsense
         auto&& rotation = json_data["safety_preset"]["platform_config"]["transformation_link"]["rotation"];
         sp.platform_config.transformation_link.rotation.x.x = rotation[0][0];
         sp.platform_config.transformation_link.rotation.x.y = rotation[0][1];
-        sp.platform_config.transformation_link.rotation.x.z = rotation[0][1];
+        sp.platform_config.transformation_link.rotation.x.z = rotation[0][2];
         sp.platform_config.transformation_link.rotation.y.x = rotation[1][0];
         sp.platform_config.transformation_link.rotation.y.y = rotation[1][1];
         sp.platform_config.transformation_link.rotation.y.z = rotation[1][2];
