@@ -34,8 +34,9 @@ namespace librealsense
         else
         {
             auto hid = (hid_data*)(source);
-            //since D400 FW version 5.16 the hid report struct changed to 32 bit for each paramater.
-            //To support older FW versions we convert the data to int16_t before casting to float as we only get valid data at the lower 16  bits.
+            // The backend puts the data in a struct with 32 bit fields. When accuracy is not high data is valid at the
+            // lower 16 bits only. We convert to int16_t before casting to float to avoid incorrect handling of negative
+            // values and overflows.
             if( ! high_accuracy )
             {
                 hid->x = static_cast< int16_t >( hid->x );
@@ -66,8 +67,8 @@ namespace librealsense
                            double gyro_scale_factor = 0.1, bool is_mipi = false )
     {
         const double gyro_transform_factor = deg2rad( gyro_scale_factor );
-        //high_accuracy=true when gyro_scale_factor=0.0001 for FW version >=5.16 
-        //high_accuracy=false when gyro_scale_factor=0.1 for FW version <5.16 or 0.003814697265625 for HKR
+        //high_accuracy=true (32 bit fields) when gyro_scale_factor=0.0001 for D400 FW version >= 5.16 
+        //high_accuracy=false (16 bit fields) when gyro_scale_factor=0.1 for D400 FW version < 5.16 or 0.003814697265625 for D500
         bool high_accuracy = ( gyro_scale_factor == 0.0001 );
         copy_hid_axes< FORMAT >( dest, source, gyro_transform_factor, high_accuracy, is_mipi );
     }

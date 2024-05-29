@@ -445,18 +445,15 @@ namespace librealsense
 
     }
 
-    std::shared_ptr<synthetic_sensor> ds_motion_common::create_hid_device(std::shared_ptr<context> ctx, 
-        const std::vector<platform::hid_device_info>& all_hid_infos, 
-        const firmware_version& camera_fw_version,
-        std::shared_ptr<time_diff_keeper> tf_keeper)
+    std::shared_ptr<synthetic_sensor> ds_motion_common::create_hid_device( std::shared_ptr<context> ctx, 
+                                                                           const std::vector<platform::hid_device_info>& all_hid_infos, 
+                                                                           std::shared_ptr<time_diff_keeper> tf_keeper )
     {
         if (all_hid_infos.empty())
         {
             LOG_WARNING("No HID info provided, IMU is disabled");
             return nullptr;
         }
-
-        static const char* custom_sensor_fw_ver = "5.6.0.0";
 
         std::unique_ptr<frame_timestamp_reader> iio_hid_ts_reader(new iio_hid_timestamp_reader());
         std::unique_ptr<frame_timestamp_reader> custom_hid_ts_reader(new ds_custom_hid_timestamp_reader());
@@ -479,8 +476,8 @@ namespace librealsense
 
         auto raw_hid_ep = std::make_shared< hid_sensor >(
             _owner->get_backend()->create_hid_device( all_hid_infos.front() ),
-            std::unique_ptr< frame_timestamp_reader >(
-                new global_timestamp_reader( std::move( iio_hid_ts_reader ), tf_keeper, enable_global_time_option ) ),
+            std::unique_ptr< frame_timestamp_reader >( new global_timestamp_reader( std::move( iio_hid_ts_reader ),
+                                                                                    tf_keeper, enable_global_time_option ) ),
             std::unique_ptr< frame_timestamp_reader >( new global_timestamp_reader( std::move( custom_hid_ts_reader ),
                                                                                     tf_keeper,
                                                                                     enable_global_time_option ) ),
@@ -507,7 +504,7 @@ namespace librealsense
         }
         catch (...) {}
 
-        bool high_accuracy =  _fw_version >= firmware_version( 5, 16, 0, 0 );    
+        bool high_accuracy = _owner->is_accel_high_accuracy();    
         hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
@@ -515,9 +512,7 @@ namespace librealsense
             { return std::make_shared< acceleration_transform >( _mm_calib, mm_correct_opt, high_accuracy );
             });
 
-        //TODO this FW version is relevant for d400 devices. Need to change for propre d500 devices support.
-        bool high_sensitivity = _owner->is_gyro_high_sensitivity();
-        double gyro_scale_factor = high_sensitivity ? 0.003814697265625 : ( _fw_version >= firmware_version( 5, 16, 0, 0 ) ? 0.0001: 0.1 );    
+        double gyro_scale_factor = _owner->get_gyro_default_scale();
         hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
