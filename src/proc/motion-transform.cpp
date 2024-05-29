@@ -12,7 +12,7 @@
 
 namespace librealsense
 {
-    template<rs2_format FORMAT> void copy_hid_axes( uint8_t * const dest[], const uint8_t * source, double factor, bool high_accuracy, bool is_mipi)
+    void copy_hid_axes( uint8_t * const dest[], const uint8_t * source, double factor, bool high_accuracy, bool is_mipi)
     {
         using namespace librealsense;
 
@@ -52,17 +52,16 @@ namespace librealsense
 
     // The Accelerometer input format: signed int 16bit. data units 1LSB=0.001g;
     // Librealsense output format: floating point 32bit. units m/s^2,
-    template<rs2_format FORMAT> void unpack_accel_axes( uint8_t * const dest[], const uint8_t * source, int width, int height, int output_size, bool high_accuracy, bool is_mipi = false)
+    void unpack_accel_axes( uint8_t * const dest[], const uint8_t * source, int width, int height, int output_size, bool high_accuracy, bool is_mipi = false)
     {
         static constexpr float gravity = 9.80665f;          // Standard Gravitation Acceleration
         static constexpr double accelerator_transform_factor = 0.001*gravity;
 
-        copy_hid_axes< FORMAT >( dest, source, accelerator_transform_factor, high_accuracy, is_mipi );
+        copy_hid_axes( dest, source, accelerator_transform_factor, high_accuracy, is_mipi );
     }
 
     // The Gyro input format: signed int 16bit. data units depends on set sensitivity;
     // Librealsense output format: floating point 32bit. units rad/sec,
-    template< rs2_format FORMAT >
     void unpack_gyro_axes( uint8_t * const dest[], const uint8_t * source, int width, int height, int output_size,
                            double gyro_scale_factor = 0.1, bool is_mipi = false )
     {
@@ -70,7 +69,7 @@ namespace librealsense
         //high_accuracy=true (32 bit fields) when gyro_scale_factor=0.0001 for D400 FW version >= 5.16 
         //high_accuracy=false (16 bit fields) when gyro_scale_factor=0.1 for D400 FW version < 5.16 or 0.003814697265625 for D500
         bool high_accuracy = ( gyro_scale_factor == 0.0001 );
-        copy_hid_axes< FORMAT >( dest, source, gyro_transform_factor, high_accuracy, is_mipi );
+        copy_hid_axes( dest, source, gyro_transform_factor, high_accuracy, is_mipi );
     }
 
     motion_transform::motion_transform(rs2_format target_format, rs2_stream target_stream,
@@ -215,13 +214,12 @@ namespace librealsense
         {
             _target_stream = RS2_STREAM_ACCEL;
             bool high_accuracy = ( _gyro_scale_factor != 0.1 );
-            unpack_accel_axes< RS2_FORMAT_MOTION_XYZ32F >( dest, source, width, height, actual_size, high_accuracy, true );
+            unpack_accel_axes( dest, source, width, height, actual_size, high_accuracy, true );
         }
         else if (source[0] == 2)
         {
             _target_stream = RS2_STREAM_GYRO;
-            unpack_gyro_axes<RS2_FORMAT_MOTION_XYZ32F>( dest, source, width, height, actual_size,
-                                                       _gyro_scale_factor, true );
+            unpack_gyro_axes( dest, source, width, height, actual_size, _gyro_scale_factor, true );
         }
         else
         {
@@ -242,7 +240,7 @@ namespace librealsense
 
     void acceleration_transform::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int output_size, int actual_size )
     {
-        unpack_accel_axes< RS2_FORMAT_MOTION_XYZ32F >( dest, source, width, height, actual_size, _high_accuracy );
+        unpack_accel_axes( dest, source, width, height, actual_size, _high_accuracy );
     }
 
     gyroscope_transform::gyroscope_transform( std::shared_ptr< mm_calib_handler > mm_calib,
@@ -261,12 +259,7 @@ namespace librealsense
 
     void gyroscope_transform::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int output_size, int actual_size )
     {
-        unpack_gyro_axes< RS2_FORMAT_MOTION_XYZ32F >( dest,
-                                                      source,
-                                                      width,
-                                                      height,
-                                                      actual_size,
-                                                      _gyro_scale_factor );
+        unpack_gyro_axes( dest, source, width, height, actual_size, _gyro_scale_factor );
     }
 }
 
