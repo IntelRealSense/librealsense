@@ -238,6 +238,34 @@ namespace librealsense
             make_attribute_parser(&md_safety_info::safety_preset_id_used,
                 md_safety_info_attributes::safety_preset_id_used_attribute, md_prop_offset));
 
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SIP_DEGRADATION_USED,
+            make_attribute_parser(&md_safety_info::sip_degradation_diagnostics,
+                md_safety_info_attributes::sip_metrics_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_ACTIVATE,
+            make_attribute_parser(&md_safety_info::sip_generic_metrics_activate,
+                md_safety_info_attributes::sip_metrics_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_STATE,
+            make_attribute_parser(&md_safety_info::sip_generic_metrics_state,
+                md_safety_info_attributes::sip_metrics_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_INDICATIONS,
+            make_attribute_parser(&md_safety_info::sip_generic_metrics_indications,
+                md_safety_info_attributes::sip_metrics_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_THRESHOLD,
+            make_attribute_parser(&md_safety_info::sip_generic_metrics_threshold,
+                md_safety_info_attributes::sip_metrics_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_ZERO_MONITORING_ENABLED,
+            make_attribute_parser(&md_safety_info::zero_safety_monitoring_enabled,
+                md_safety_info_attributes::sip_metrics_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_HARA_HISTORY_MODE,
+            make_attribute_parser(&md_safety_info::hara_history_mode,
+                md_safety_info_attributes::sip_metrics_attribute, md_prop_offset));
+
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_FUSA_EVENTS,
             make_attribute_parser(&md_safety_info::soc_fusa_events, 
                 md_safety_info_attributes::soc_fusa_events_attribute, md_prop_offset));
@@ -278,6 +306,10 @@ namespace librealsense
             make_attribute_parser(&md_safety_info::soc_monitor_l3_error_type,
                 md_safety_info_attributes::soc_status_attribute, md_prop_offset));
 
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_SAFETY_AND_SECURITY,
+            make_attribute_parser(&md_safety_info::soc_safety_and_security,
+                md_safety_info_attributes::soc_status_attribute, md_prop_offset));
+
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT,
             make_attribute_parser(&md_safety_info::mb_fusa_event, 
                 md_safety_info_attributes::mb_fusa_event_attribute, md_prop_offset));
@@ -298,10 +330,6 @@ namespace librealsense
             make_attribute_parser(&md_safety_info::smcu_state,
                 md_safety_info_attributes::smcu_state_attribute, md_prop_offset));
 
-        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO,
-            make_attribute_parser(&md_safety_info::non_fusa_gpio,
-                md_safety_info_attributes::non_fusa_gpio_attribute, md_prop_offset));
-
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_STATUS_BITMASK,
             make_attribute_parser(&md_safety_info::smcu_status_bitmask,
                 md_safety_info_attributes::smcu_debug_info_attribute, md_prop_offset));
@@ -312,6 +340,14 @@ namespace librealsense
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_INFO_BIST_STATUS,
             make_attribute_parser(&md_safety_info::smcu_bist_status,
+                md_safety_info_attributes::smcu_debug_info_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO,
+            make_attribute_parser(&md_safety_info::non_fusa_gpio,
+                md_safety_info_attributes::non_fusa_gpio_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SMCU_HW_MONITOR_STATUS,
+            make_attribute_parser(&md_safety_info::smcu_hw_monitor_status,
                 md_safety_info_attributes::smcu_debug_info_attribute, md_prop_offset));
 
         // calc CRC for safety MD payload, starting from "version" field (not including the uvc and md headers),

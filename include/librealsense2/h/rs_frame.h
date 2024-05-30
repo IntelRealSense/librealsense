@@ -85,6 +85,13 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_SAFETY_PRESET_INTEGRITY              , /**< Bitmask, enumerated */
     RS2_FRAME_METADATA_SAFETY_PRESET_ID_SELECTED            , /**< Safety Preset index set via Adaptive Field selection GPIO */
     RS2_FRAME_METADATA_SAFETY_PRESET_ID_USED                , /**< Safety Preset index used in the latest Vision Safety algo processing */
+    RS2_FRAME_METADATA_SAFETY_SIP_DEGRADATION_USED          , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_ACTIVATE  , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_STATE     , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_INDICATIONS,/**< Byte array of up to 8 Generic Safety Algo continuous metrics indications */
+    RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_THRESHOLD , /**< Byte array of up to 8 Generic Safety Algo continuous metrics thresholds */
+    RS2_FRAME_METADATA_SAFETY_ZERO_MONITORING_ENABLED       , /**< Enum - 0:Regular (default) all safety in nominal mode - 1: "Zero Safety" mode */
+    RS2_FRAME_METADATA_SAFETY_HARA_HISTORY_MODE             , /**< Enum - 0:Regular - 1: No history - 2: Local history */
     RS2_FRAME_METADATA_SAFETY_SOC_FUSA_EVENTS               , /**< Bitmask, enumerated - SOC critical notification: L2/L3 that requires handling/troubleshooting in S.MCU 32-bit value, as supplied by STL mechanism */
     RS2_FRAME_METADATA_SAFETY_SOC_FUSA_ACTION               , /**< Bitmask, enumerated - Action taken. 0x1 << 0  - HKR Reset, 0x1 << 1  - HKR ShutDown */
     RS2_FRAME_METADATA_SAFETY_SOC_L0_COUNTER                , /**< Total number of L0 notifications captured */
@@ -95,10 +102,12 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_SAFETY_SOC_HKR_CRITICAL_ERROR_GPIO   , /**< Critical-erro GPIO Status: 0 - off, 1 - on */
     RS2_FRAME_METADATA_SAFETY_SOC_MONITOR_L2_ERROR_TYPE     , /**< Soc Monitor Escalation of L2 error to Arbiter */
     RS2_FRAME_METADATA_SAFETY_SOC_MONITOR_L3_ERROR_TYPE     , /**< Soc Monitor Escalation of L3 error to Arbiter */
+    RS2_FRAME_METADATA_SAFETY_SOC_SAFETY_AND_SECURITY       , /**< Bitmask, enumerated */
     RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_STATUS_BITMASK     , /**< Bitmask: The values are state-specific and non-FuSa related. Shall be presented as HEX string */
     RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_INFO_INTERNAL_STATE, /**< Enumerated: according to S.MCU FSM */
     RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_INFO_BIST_STATUS   , /**< Bitmask. To be presented as HEX value */
     RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO                 , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_SMCU_HW_MONITOR_STATUS        , /**< Bitmask, enumerated */
     RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT                 , /**< Bitmask, enumerated */
     RS2_FRAME_METADATA_SAFETY_MB_FUSA_ACTION                , /**< Bitmask, enumerated */
     RS2_FRAME_METADATA_SAFETY_MB_STATUS                     , /**< Bitmask, enumerated */

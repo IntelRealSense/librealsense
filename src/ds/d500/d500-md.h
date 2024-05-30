@@ -120,22 +120,22 @@ namespace librealsense
                                                 0x1 << 1  Sensor contamination detected
                                                 Bits [2..7] - Reserved for future modifications. S.MCU shall assume that 
                                                 all reserved bit can be used without further notice
-    * uint8_t     sip_generic_metric_activate;  BitMask field for up to 8 separate SIP Vision HaRa diagnostic mechanisms
+    * uint8_t     sip_generic_metrics_activate; BitMask field for up to 8 separate SIP Vision HaRa diagnostic mechanisms
                                                 where each bit is a marker for S.MCU whether the actual metric in this message was active:
                                                 For each bit in the bitmask turned on, the corresponding bit in the next field represents,
                                                 the status whether the specific metric was marked as "signalled" or not.
                                                 The purpose of each bit is AICV-defined.
                                                 The metric is tracked and managed by Vision Safety Monitor 
                                                 applying the "X occurances in the last Y frames" where X << Y
-    * uint8_t     sip_generic_metric_state;     BitMask for the current status (signalled On/Off) of up to 8 separate SIP Vision 
+    * uint8_t     sip_generic_metrics_state;    BitMask for the current status (signalled On/Off) of up to 8 separate SIP Vision 
                                                 HaRa diagnostic mechanisms, each represented by a single bit.
                                                 The purpose of each bit is AICV-defined.
                                                 The metric is tracked and managed by Vision Safety Monitor 
                                                 applying the "X occurances in the last Y frames" where X << Y
-    * uint8_t     sip_generic_metric_continuous_actual_indications[8];
+    * uint8_t     sip_generic_metrics_indications[8];
                                                 Byte array of up to 8 Generic Safety Algo continuous metrics, experssed as HaRa evidence present in X out of Y consecutive frames. 
                                                 Each cell stores the N value - the actual number of "positive" indications obtained in the last Y frames
-    * uint8_t     sip_generic_metric_continuous_indications_threshold[8];
+    * uint8_t     sip_generic_metrics_threshold[8];
                                                 Byte array of up to 8 Generic Safety Algo continuous metrics, experssed as HaRa evidence present in X out of Y consecutive frames. 
                                                 Each cell stores the X value - the threshold of  "positive" indications obtained required to trigger safety signal
                                                 Note that N <=X. In case of N reaches threshold its value shall not be further increased even if more positive indications are obtained.
@@ -153,8 +153,7 @@ namespace librealsense
                                                 L3_ERROR_TYPES_NO_ERROR = 0
                                                 L3_ERROR_L2_PASS_CNT = 1 <<0
      
-    * uint16_t    soc_safety_and_security_checks; 
-                                                Bitmask:
+    * uint16_t    soc_safety_and_security;      Bitmask:
                                                 0x1 << 0 - Unit is "Locked" (incl. Secure Boot )
                                                 0x1 << 1 - OHM Serial Numbers check is valid
                                                 0x1 << 2 - APM Serial Numbers check is valid
@@ -296,14 +295,14 @@ namespace librealsense
         uint8_t     safety_preset_integrity;        // Bitmask: see details above the struct
         uint8_t     safety_preset_id_selected;      // Safety Preset index set via Adaptive Field selection GPIO
         uint8_t     safety_preset_id_used;          // Safety Preset index used in the latest Vision Safety algo processing - retrieved from cpfpVisionSafetyResults message
-        uint8_t     sip_degradation_diagnostics;
-        uint8_t     sip_generic_metric_activate;    // Bitmask: see details above the struct
-        uint8_t     sip_generic_metric_state;       // Bitmask: see details above the struct
-        uint8_t     sip_generic_metric_continuous_actual_indications[8];     // see details above the struct
-        uint8_t     sip_generic_metric_continuous_indications_threshold[8];  // see details above the struct
-        uint8_t     zero_safety_monitoring_enabled; // enum - 0:Regular (default) all safety in nominal mode - 1: "Zero Safety" mode
-        uint8_t     hara_history_continuation;      // enum - 0:Regular - 1: No history - 2: Local history
-        uint8_t     vision_reserved[4];            // zeroed
+        uint8_t     sip_degradation_diagnostics;    // Bitmask: see details above the struct
+        uint8_t     sip_generic_metrics_activate;   // Bitmask: see details above the struct
+        uint8_t     sip_generic_metrics_state;      // Bitmask: see details above the struct
+        uint64_t    sip_generic_metrics_indications;// see details above the struct
+        uint64_t    sip_generic_metrics_threshold;  // see details above the struct
+        uint8_t     zero_safety_monitoring_enabled; // Enum - 0:Regular (default) all safety in nominal mode - 1: "Zero Safety" mode
+        uint8_t     hara_history_mode;              // Enum - 0:Regular - 1: No history - 2: Local history
+        uint8_t     vision_reserved[4];             // zeroed
 
         // SOC Monitor
         uint32_t    soc_fusa_events;                // Bitmask: see details above the struct
@@ -316,7 +315,7 @@ namespace librealsense
         uint8_t     soc_hkr_critical_error_gpio;    // Critical-erro GPIO Status: 0 - off, 1 - on
         uint32_t    soc_monitor_l2_error_type;      // Soc Monitor Escalation of L2 error to Arbiter
         uint32_t    soc_monitor_l3_error_type;      // Soc Monitor Escalation of L3 error to Arbiter
-        uint16_t    soc_safety_and_security_checks; // Bitmask: see details above the struct
+        uint16_t    soc_safety_and_security;        // Bitmask: see details above the struct
         uint8_t     soc_reserved[23];               // zeroed
 
         // MB Monitor
