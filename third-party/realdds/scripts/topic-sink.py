@@ -22,7 +22,7 @@ def time_arg(x):
         raise ValueError( f'--time should be >=0' )
     return t
 args.add_argument( '--wait', metavar='<seconds>', type=time_arg, default=5., help='seconds to wait for writers (default 5; 0=disable)' )
-args.add_argument( '--time', metavar='<seconds>', type=time_arg, default=5., help='runtime before stopping, in seconds (default 0=forever)' )
+args.add_argument( '--time', metavar='<seconds>', type=time_arg, help='runtime before stopping, in seconds (default 0=forever)' )
 args.add_argument( '--not-ready', action='store_true', help='start output immediately, without waiting for all topics' )
 args = args.parse_args()
 

@@ -14,7 +14,6 @@
 #include "ds/ds-timestamp.h"
 #include "ds/ds-options.h"
 #include "d500-info.h"
-#include "d500-private.h"
 #include "stream.h"
 #include "proc/motion-transform.h"
 #include "proc/auto-exposure-processor.h"
@@ -31,16 +30,16 @@ namespace librealsense
         return _ds_motion_common->get_motion_intrinsics(stream);
     }
 
-    bool d500_motion::is_gyro_high_sensitivity() const
+    double d500_motion::get_gyro_default_scale() const
     {
-        return get_info( RS2_CAMERA_INFO_NAME ) == ds::rs500_sku_names.at( ds::D585S_PID );
+        // D500 devices output physical data in 0.1 [deg/sec] units.
+        return 0.1;
     }
 
-    std::shared_ptr<synthetic_sensor> d500_motion::create_hid_device(std::shared_ptr<context> ctx,
-                                                                const std::vector<platform::hid_device_info>& all_hid_infos,
-                                                                const firmware_version& camera_fw_version)
+    std::shared_ptr<synthetic_sensor> d500_motion::create_hid_device( std::shared_ptr<context> ctx,
+                                                                      const std::vector<platform::hid_device_info>& all_hid_infos )
     {
-        return _ds_motion_common->create_hid_device(ctx, all_hid_infos, camera_fw_version, _tf_keeper);
+        return _ds_motion_common->create_hid_device( ctx, all_hid_infos, _tf_keeper );
     }
 
     d500_motion::d500_motion( std::shared_ptr< const d500_info > const & dev_info )
@@ -58,7 +57,7 @@ namespace librealsense
         initialize_fisheye_sensor( dev_info->get_context(), dev_info->get_group() );
 
         // Try to add HID endpoint
-        auto hid_ep = create_hid_device(dev_info->get_context(), dev_info->get_group().hid_devices, _fw_version);
+        auto hid_ep = create_hid_device( dev_info->get_context(), dev_info->get_group().hid_devices );
         if (hid_ep)
         {
             _motion_module_device_idx = static_cast<uint8_t>(add_sensor(hid_ep));

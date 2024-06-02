@@ -118,9 +118,9 @@ namespace librealsense
     {
     public:
         ds_motion_common( backend_device * owner,
-            firmware_version fw_version,
-            const ds::ds_caps& device_capabilities,
-            std::shared_ptr<hw_monitor> hwm);
+                          firmware_version fw_version,
+                          const ds::ds_caps& device_capabilities,
+                          std::shared_ptr<hw_monitor> hwm);
 
         rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const;
 
@@ -135,9 +135,8 @@ namespace librealsense
         void register_fisheye_metadata();
 
         std::shared_ptr<synthetic_sensor> create_hid_device(std::shared_ptr<context> ctx,
-            const std::vector<platform::hid_device_info>& all_hid_infos,
-            const firmware_version& camera_fw_version,
-            std::shared_ptr<time_diff_keeper> tf_keeper);
+                                                            const std::vector<platform::hid_device_info>& all_hid_infos,
+                                                            std::shared_ptr<time_diff_keeper> tf_keeper);
 
         void init_motion(bool is_infos_empty, const stream_interface& depth_stream);
 
