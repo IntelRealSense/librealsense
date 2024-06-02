@@ -1,7 +1,14 @@
 <p align="center"><img src="doc/img/realsense.png" width="70%" /><br><br></p>
 
 -----------------
+[![License](https://img.shields.io/github/license/IntelRealSense/librealsense.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+[![Release](https://img.shields.io/github/v/release/IntelRealSense/librealsense?sort=semver)](https://github.com/IntelRealSense/librealsense/releases/latest)
+[![Commits](https://img.shields.io/github/commits-since/IntelRealSense/librealsense/latest?label=commits%20since)](https://github.com/IntelRealSense/librealsense/tree/development)
+[![Issues](https://img.shields.io/github/issues/IntelRealSense/librealsense.svg)](https://github.com/IntelRealSense/librealsense/issues)
 [![GitHub CI](../../actions/workflows/buildsCI.yaml/badge.svg?branch=development)](../../actions/workflows/buildsCI.yaml)
+[![Forks](https://img.shields.io/github/forks/IntelRealSense/librealsense.svg)](https://github.com/IntelRealSense/librealsense/network/members)
+
+
 
 ## Overview
 **Intel® RealSense™ SDK 2.0** is a cross-platform library for Intel® RealSense™ depth cameras.
