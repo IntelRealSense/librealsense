@@ -7,6 +7,7 @@ target_sources( ${PROJECT_NAME}
 
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/h/rs_types.h"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/h/rs_safety_types.h"
+        "${CMAKE_CURRENT_LIST_DIR}/librealsense2/h/rs_safety_sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/h/rs_context.h"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/h/rs_device.h"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/h/rs_frame.h"
