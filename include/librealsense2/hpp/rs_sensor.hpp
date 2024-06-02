@@ -769,7 +769,7 @@ namespace rs2
             error::handle(e);
         }
 
-        rs2_safety_preset json_string_to_safety_preset(std::string& json_str) const
+        rs2_safety_preset json_string_to_safety_preset(const std::string& json_str) const
         {
             rs2_error* e = nullptr;
             rs2_safety_preset sp;

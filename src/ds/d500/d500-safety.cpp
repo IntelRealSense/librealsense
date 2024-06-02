@@ -482,7 +482,7 @@ namespace librealsense
     }
 
 
-    rs2_safety_preset d500_safety_sensor::json_string_to_safety_preset(std::string& json_str) const
+    rs2_safety_preset d500_safety_sensor::json_string_to_safety_preset(const std::string& json_str) const
     {
         rsutils::json json_data = rsutils::json::parse(json_str);
 
