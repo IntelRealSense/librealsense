@@ -1,9 +1,9 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
    Copyright(c) 2024 Intel Corporation. All Rights Reserved. */
 
-/** \file rs_sensor.h
+/** \file rs_safety_sensor.h
 * \brief
-* Exposes RealSense sensor functionality for C compilers
+* Exposes RealSense safety sensor functionality for C compilers
 */
 
 

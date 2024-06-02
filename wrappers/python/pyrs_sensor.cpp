@@ -1,8 +1,9 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
-Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+Copyright(c) 2017-2024 Intel Corporation. All Rights Reserved. */
 
 #include "pyrealsense2.h"
 #include <librealsense2/hpp/rs_sensor.hpp>
+#include <librealsense2/hpp/rs_safety_sensor.hpp>
 #include "max-usable-range-sensor.h"
 
 void init_sensor(py::module &m) {

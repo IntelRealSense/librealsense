@@ -1,5 +1,5 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
-   Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
+   Copyright(c) 2022-2024 Intel Corporation. All Rights Reserved. */
 
    /** \file rs_safety_types.h
    * \brief
@@ -115,9 +115,9 @@ typedef struct rs2_safety_occupancy_grid_params
     // Each range represnt the number of Depth pixels found in a specific cell to mark it as "occupied"
     // The Zone dymanic range is defined as: (min_range <= Z << max_range)
     // The difference between these 3 memebrs, is the range they can define.
-    uint8_t  close_range_quorum;  // Occupancy grid close-range [0…1000) mm
-    uint8_t  mid_range_quorum;    // Occupancy grid Mid-range [1000…2000) mm
-    uint8_t  long_range_quorum;   // Occupancy grid Mid-range [2000…3000) mm
+    uint8_t  close_range_quorum;  // Occupancy grid close-range [0ï¿½1000) mm
+    uint8_t  mid_range_quorum;    // Occupancy grid Mid-range [1000ï¿½2000) mm
+    uint8_t  long_range_quorum;   // Occupancy grid Mid-range [2000ï¿½3000) mm
 
 } rs2_safety_occupancy_grid_params;
 

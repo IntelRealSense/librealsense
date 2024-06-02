@@ -1,5 +1,5 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
-   Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+   Copyright(c) 2017-2024 Intel Corporation. All Rights Reserved. */
 
 /** \file rs_sensor.h
 * \brief
@@ -15,7 +15,6 @@ extern "C" {
 #endif
 
 #include "rs_types.h"
-#include "rs_safety_sensor.h"
 
 /** \brief Read-only strings that can be queried from the device.
    Not all information attributes are available on all camera types.
