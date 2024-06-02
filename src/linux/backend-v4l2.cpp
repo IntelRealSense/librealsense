@@ -948,10 +948,11 @@ namespace librealsense
             std::vector<std::string> dfu_device_paths = get_mipi_dfu_paths();
 
             for (const auto& dfu_device_path: dfu_device_paths) {
-                int vfd = open(dfu_device_path.c_str(), O_RDONLY | O_NONBLOCK);
+                auto mipi_dfu_chardev = "/dev/" + dfu_device_path;
+                int vfd = open(mipi_dfu_chardev.c_str(), O_RDONLY | O_NONBLOCK);
                 if (vfd >= 0) {
                     // Use legacy DFU device node used in firmware_update_manager
-                    info.dfu_device_path = dfu_device_path;
+                    info.dfu_device_path = mipi_dfu_chardev;
                     ::close(vfd); // file exists, close file and continue to assign it
                     break;
                 }
