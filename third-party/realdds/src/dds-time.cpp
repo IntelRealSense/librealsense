@@ -8,19 +8,23 @@
 namespace realdds {
 
 
-std::string time_to_string( dds_time const & t )
+std::ostream & operator<<( std::ostream & os, time_to_string const & t )
 {
-    if( t == eprosima::fastrtps::c_TimeInvalid )
-        return std::string( "INVALID", 7 );
-    std::string nsec = std::to_string( t.nanosec );
-    if( t.nanosec )
-    {
-        // DDS spec 2.3.2: "the nanosec field must verify 0 <= nanosec < 1000000000"
-        nsec.insert( 0, 9 - nsec.length(), '0' );  // will throw if more than 9 digits!
-        while( nsec.length() > 1 && nsec.back() == '0' )
-            nsec.pop_back();
-    }
-    return std::to_string( t.seconds ) + '.' + nsec;
+    if( t._seconds == eprosima::fastrtps::c_TimeInvalid.seconds
+        && t._nanosec == eprosima::fastrtps::c_TimeInvalid.nanosec )
+        return os << "INVALID";
+
+    os << t._seconds << '.';
+
+    if( ! t._nanosec )
+        return os << '0';
+
+    std::string nsec = std::to_string( t._nanosec );
+    // DDS spec 2.3.2: "the nanosec field must verify 0 <= nanosec < 1000000000"
+    nsec.insert( 0, 9 - nsec.length(), '0' );  // will throw if more than 9 digits!
+    while( nsec.length() > 1 && nsec.back() == '0' )
+        nsec.pop_back();
+    return os << nsec;
 }
 
 
