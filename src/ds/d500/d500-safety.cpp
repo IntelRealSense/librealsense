@@ -478,7 +478,14 @@ namespace librealsense
         memcpy(crypto_signature_byte_array.data(), sp.environment.crypto_signature, sizeof(sp.environment.crypto_signature));
         environment["crypto_signature"] = crypto_signature_byte_array;
 
-        return json_data.dump();
+        // Convert JSON object to string
+        std::string json_str = json_data.dump();
+
+        // Ensure UTF-8 encoding
+        std::string utf8_str = json_str.c_str(); // Ensure the string is UTF-8 encoded
+
+        // Return the UTF-8 string
+        return utf8_str.c_str();
     }
 
 
