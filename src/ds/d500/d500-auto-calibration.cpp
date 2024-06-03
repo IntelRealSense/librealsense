@@ -299,6 +299,38 @@ namespace librealsense
         throw std::runtime_error(rsutils::string::from() << "Calculate T not applicable for this device");
     }
 
+    rs2_calibration_config d500_auto_calibrated::get_calibration_config() const
+    {
+        rs2_calibration_config_with_header* calib_config_with_header;
+
+        // prepare command
+        using namespace ds;
+        command cmd(GET_HKR_CONFIG_TABLE,
+            static_cast<int>(d500_calib_location::d500_calib_flash_memory),
+            static_cast<int>(d500_calibration_table_id::calib_cfg_id),
+            static_cast<int>(d500_calib_type::d500_calib_dynamic));
+        auto res = _hw_monitor->send(cmd);
+
+        if (res.size() < sizeof(rs2_calib_config_with_header))
+        {
+            throw io_exception(rsutils::string::from() << "Calibration config reading failed");
+        }
+        calib_config_with_header = reinterpret_cast<rs2_calib_config_with_header*>(res.data());
+
+        // check CRC before returning result       
+        auto computed_crc32 = rsutils::number::calc_crc32(res.data() + sizeof(rs2_calibration_config_header), sizeof(rs2_calibration_config));
+        if (computed_crc32 != calib_config_with_header->header.crc32)
+        {
+            throw invalid_value_exception(rsutils::string::from() << "Invalid CRC value for calibration config table");
+        }
+
+        return calib_config_with_header->payload;
+    }
+
+    void d500_auto_calibrated::set_calibration_config(const rs2_calibration_config& calib_config)
+    {
+    }
+
     void d500_auto_calibrated::set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm)
     {
         _hw_monitor = hwm;

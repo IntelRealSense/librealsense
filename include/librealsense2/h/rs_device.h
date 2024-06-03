@@ -605,6 +605,24 @@ float rs2_calculate_target_z_cpp(rs2_device* device, rs2_frame_queue* queue1, rs
 float rs2_calculate_target_z(rs2_device* device, rs2_frame_queue* queue1, rs2_frame_queue* queue2, rs2_frame_queue* queue3,
     float target_width, float target_height, rs2_update_progress_callback_ptr progress_callback, void* client_data, rs2_error** error);
 
+
+/**
+* rs2_get_calibration_config
+* \param[in]   device        The device
+* \param[out]  calib_config  Calibration Configuration struct to be filled
+* \param[in]  loc            Calibration Config location that needs to be read from
+* \param[out]  error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_get_calibration_config(rs2_device* device, rs2_calibration_config* calib_config, rs2_error** error);
+
+/**
+* rs2_set_calibration_config
+* \param[in]  device        The device
+* \param[in]  calib_config  Calibration Configuration struct to set
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_set_calibration_config(rs2_device* device, rs2_calibration_config const* calib_config, rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

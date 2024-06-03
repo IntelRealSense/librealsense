@@ -4436,6 +4436,26 @@ float rs2_calculate_target_z(rs2_device* device, rs2_frame_queue* queue1, rs2_fr
 }
 HANDLE_EXCEPTIONS_AND_RETURN(-1.f, device, queue1, queue2, queue3, target_width, target_height)
 
+void rs2_get_calibration_config(rs2_device* device, rs2_calibration_config* calib_config, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(calib_config);
+
+    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
+    *calib_config = auto_calib->get_calibration_config();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, calib_config)
+
+void rs2_set_calibration_config(rs2_device* device, rs2_calibration_config const* calib_config, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(calib_config);
+
+    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
+    auto_calib->set_calibration_config(*calib_config);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, calib_config)
+
 void rs2_get_safety_preset(const rs2_sensor* sensor,
     int index,
     rs2_safety_preset* sp,

@@ -13,6 +13,8 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 /** \brief Category of the librealsense notification. */
 typedef enum rs2_notification_category{
     RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT,               /**< Frames didn't arrived within 5 seconds */
@@ -310,6 +312,54 @@ const char* rs2_get_failed_function            (const rs2_error* error);
 const char* rs2_get_failed_args                (const rs2_error* error);
 const char* rs2_get_error_message              (const rs2_error* error);
 void        rs2_free_error                     (rs2_error* error);
+
+/* rs2_calibration_roi - Array of four corners in Deph Frame Coordinate system that define a closed simple quadrangle (non-intersecting)*/
+typedef struct rs2_calibration_roi
+{
+    uint16_t mask_pixel[4][2];
+}rs2_calibration_roi;
+
+// BELOW LINES TO BE CHECKED!!!!!
+typedef struct float3_rm { float x, y, z; } float3_rm;
+typedef struct float3x3_row_major { float3_rm x, y, z; } float3x3_row_major;
+
+typedef struct rs2_extrinsics_table
+{
+    float3x3_row_major rotation; // Rotation matrix
+    float3_rm translation; // Metric units
+} rs2_extrinsics_table;
+
+typedef struct rs2_calibration_config
+{
+    uint8_t calib_roi_num_of_segments; // Within 0-4 range: 0 - Default.No limitations.Full FOV can be used in TC
+                                       //                   1 - 4: Segments defined.The segment must be sequential
+    rs2_calibration_roi roi[4];        // Segment 0 = convex tetragon - The vertices of the tetragon are ordered clockwise
+                                       //       Vertex = [x, y] = pixel coordinates in the reference depth map
+                                       //       0 - based coordinates : [0, 0] = center of the top - left pixel
+                                       // Segments 1-3 - structured identical to segment_#0 (reserved)
+                                       // The ROI segments can intersect, but each must be convex(angles <= 180 degrees).
+    uint8_t reserved1[12];
+    rs2_extrinsics_table camera_position;
+    uint8_t reserved2[300];
+    uint32_t crypto_signature[8];
+    uint8_t reserved3[39];
+} rs2_calibration_config;
+
+typedef struct rs2_calibration_config_header
+{
+    uint16_t version;       // major.minor. Big-endian
+    uint16_t table_type;    // type
+    uint32_t table_size;    // full size including: header footer
+    uint32_t calib_version; // major.minor.index
+    uint32_t crc32;         // crc of all the data in table excluding this header/CRC
+} rs2_calibration_config_header;
+
+typedef struct rs2_calibration_config_with_header
+{
+    rs2_calibration_config_header header;
+    rs2_calibration_config payload;
+} rs2_calib_config_with_header;
+
 
 #ifdef __cplusplus
 }

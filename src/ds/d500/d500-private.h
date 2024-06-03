@@ -108,6 +108,7 @@ namespace librealsense
             safety_presets_table_id = 0xc0da,
             safety_preset_id = 0xc0db,
             safety_interface_cfg_id = 0xc0dc,
+            calib_cfg_id = 0xc0dd,
             max_id = -1
         };
 
