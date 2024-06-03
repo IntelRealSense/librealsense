@@ -43,6 +43,10 @@ if not args.flexible and not args.flexible_be and not args.blob and not args.ima
 
 import pyrealdds as dds
 import time
+from datetime import datetime
+
+def timestamp():
+   return datetime.now().time()
 
 dds.debug( args.debug )
 
@@ -66,7 +70,7 @@ def on_blob_available( reader ):
             if not got_something:
                 raise RuntimeError( "expected message not received!" )
             break
-        i( f'{msg}', )
+        i( f'{timestamp()} {msg}', )
         got_something = True
 for topic_path in args.blob or []:
     reader = dds.topic_reader( dds.message.blob.create_topic( participant, topic_path ))
@@ -90,7 +94,7 @@ def on_image_available( reader ):
             if not got_something:
                 raise RuntimeError( "expected message not received!" )
             break
-        i( f'{msg}', )
+        i( f'{timestamp()} {msg}', )
         got_something = True
 for topic_path in args.image or []:
     reader = dds.topic_reader( dds.message.image.create_topic( participant, topic_path ))
@@ -114,7 +118,7 @@ def on_flexible_available( reader ):
             if not got_something:
                 raise RuntimeError( "expected message not received!" )
             break
-        i( f'{json.dumps( msg.json_data(), indent=4 )}', )
+        i( f'{timestamp()} {sample} {json.dumps( msg.json_data(), indent=4 )}', )
         got_something = True
 for topic_path in args.flexible_be or []:
     reader = dds.topic_reader( dds.message.flexible.create_topic( participant, topic_path ))
