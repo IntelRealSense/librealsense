@@ -128,7 +128,9 @@ void init_sensor(py::module &m) {
             &rs2::safety_sensor::get_safety_interface_config,
             "get safety interface config", "calib_location"_a = RS2_CALIB_LOCATION_RAM, py::call_guard<py::gil_scoped_release>())
         .def("set_safety_interface_config", &rs2::safety_sensor::set_safety_interface_config,
-            "set safety interface config", "safety_interface_config"_a, py::call_guard<py::gil_scoped_release>());
+            "set safety interface config", "safety_interface_config"_a, py::call_guard<py::gil_scoped_release>())
+        .def("safety_interface_config_to_json_string", &rs2::safety_sensor::safety_interface_config_to_json_string, "safety interface config to JSON string", "safety_interface_config"_a, py::call_guard<py::gil_scoped_release>())
+        .def("json_string_to_safety_interface_config", &rs2::safety_sensor::json_string_to_safety_interface_config, "JSON string to safety interface config", "json_str"_a, py::call_guard<py::gil_scoped_release>());
 
     py::class_<rs2::max_usable_range_sensor, rs2::sensor> mur_sensor(m, "max_usable_range_sensor");
     mur_sensor.def(py::init<rs2::sensor>(), "sensor"_a)

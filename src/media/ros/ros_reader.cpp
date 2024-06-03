@@ -958,6 +958,8 @@ namespace librealsense
         rs2_safety_preset json_string_to_safety_preset(const std::string& json_str) const override { return rs2_safety_preset(); }
         void set_safety_interface_config(const rs2_safety_interface_config& sic) const override {};
         rs2_safety_interface_config get_safety_interface_config(rs2_calib_location loc) const override { return rs2_safety_interface_config(); }
+        std::string safety_interface_config_to_json_string(rs2_safety_interface_config const& sic) const override { return ""; }
+        rs2_safety_interface_config json_string_to_safety_interface_config(const std::string& json_str) const override { return rs2_safety_interface_config(); }
     };
 
     class depth_mapping_sensor_snapshot

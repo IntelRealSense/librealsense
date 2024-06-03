@@ -70,6 +70,24 @@ void rs2_get_safety_interface_config(rs2_sensor const* sensor, rs2_safety_interf
 */
 void rs2_set_safety_interface_config(rs2_sensor const* sensor, rs2_safety_interface_config const* sic, rs2_error** error);
 
+/**
+* rs2_json_string_to_safety_interface_config
+* \param[in]  sensor        Safety sensor
+* \param[in]  json_str      JSON string to convert
+* \param[out] sp            Safety interface config struct result
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_json_string_to_safety_interface_config(rs2_sensor const* sensor, const char* json_str, rs2_safety_interface_config* sp, rs2_error** error);
+
+/**
+* rs2_safety_interface_config_to_json_string
+* \param[in]  sensor        Safety sensor
+* \param[in]  sp            Safety interface config to convert
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                   JSON string representing the safety interface config
+*/
+const char* rs2_safety_interface_config_to_json_string(rs2_sensor const* sensor, rs2_safety_interface_config const* sp, rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif
