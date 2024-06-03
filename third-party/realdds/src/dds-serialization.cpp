@@ -398,7 +398,8 @@ std::ostream & operator<<( std::ostream & os, WriterProxyData const & info )
         os << /*field::separator << "durability" << field::group() <<*/ info.m_qos.m_durability;
     if( ! ( info.m_qos.m_liveliness == eprosima::fastdds::dds::LivelinessQosPolicy() ) )
         os << field::separator << "liveliness" << field::value << info.m_qos.m_liveliness;
-    if( info.m_qos.m_publishMode.flow_controller_name )
+    if( info.m_qos.m_publishMode.flow_controller_name
+        && info.m_qos.m_publishMode.flow_controller_name != eprosima::fastdds::rtps::FASTDDS_FLOW_CONTROLLER_DEFAULT )
         os << field::separator << "flow-controller" << field::value << "'"
            << info.m_qos.m_publishMode.flow_controller_name << "'";
     return os;

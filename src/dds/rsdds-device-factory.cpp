@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 
 #include "rsdds-device-factory.h"
 #include "context.h"
@@ -10,6 +10,7 @@
 #include <realdds/dds-device-watcher.h>
 #include <realdds/dds-participant.h>
 #include <realdds/dds-device.h>
+#include <realdds/dds-serialization.h>
 #include <realdds/topics/device-info-msg.h>
 
 #include <rsutils/easylogging/easyloggingpp.h>
@@ -96,7 +97,33 @@ rsdds_device_factory::rsdds_device_factory( std::shared_ptr< context > const & c
         _participant = domain.participant.instance();
         if( ! _participant->is_valid() )
         {
-            _participant->init( domain_id, participant_name, dds_settings.default_object() );
+            realdds::dds_participant::qos qos( participant_name );  // default settings
+            
+            // As a client, we send messages to a server; sometimes big messages. E.g., for DFU these may be up to
+            // 20MB... flexible messages are up to 4K. The UDP protocol is supposed to break messages (by default, up to
+            // 64K) into fragmented packed, but the server may not be able to handle these; certain hardware cannot
+            // handle more than 1500 bytes!
+            // 
+            // FastDDS does provide a 'udp/max-message-size' setting (as of v2.10.4), but this applies to both send and
+            // receive. We want to only limit sends! So we use a new property of FastDDS:
+            qos.properties().properties().emplace_back( "fastdds.max_message_size", "1470" );
+            // (overridable with "max-out-message-bytes" in our settings)
+
+            // Create a flow-controller that will be used for DFU, because of similar possible IP stack limitations at
+            // the server side: if we send too many packets all at once, some servers get overloaded...
+            auto dfu_flow_control = std::make_shared< eprosima::fastdds::rtps::FlowControllerDescriptor >();
+            dfu_flow_control->name = "dfu";
+            // Max bytes to be sent to network per period; [1, 2147483647]; default=0 -> no limit.
+            // -> We allow 256 buffers, each the size of the UDP max-message-size
+            dfu_flow_control->max_bytes_per_period = 256 * 1470; // qos.transport().user_transports.front()->maxMessageSize;
+            // -> Every 100ms
+            dfu_flow_control->period_ms = 100;  // default=100
+            // Further override with settings from device/dfu
+            realdds::override_flow_controller_from_json( *dfu_flow_control, dds_settings.nested( "device", "dfu" ) );
+            qos.flow_controllers().push_back( dfu_flow_control );
+
+            // qos will get further overriden with the settings we pass in
+            _participant->init( domain_id, qos, dds_settings.default_object() );
         }
         else if( participant_name_j.exists() && participant_name != _participant->name() )
         {

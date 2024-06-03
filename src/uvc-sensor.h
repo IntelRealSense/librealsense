@@ -65,6 +65,9 @@ private:
     void acquire_power();
     void release_power();
     void reset_streaming();
+    std::atomic<int64_t> _gyro_counter;
+    std::atomic<int64_t> _accel_counter;
+
 
     struct power
     {
