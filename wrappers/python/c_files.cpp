@@ -4,7 +4,6 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include "pyrealsense2.h"
 #include <librealsense2/rs.h>
 #include <iomanip>
-#include "../include/librealsense2/hpp/rs_safety_types.hpp"
 
 std::string make_pythonic_str(std::string str)
 {

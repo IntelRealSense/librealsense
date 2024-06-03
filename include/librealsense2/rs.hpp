@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017-2024 Intel Corporation. All Rights Reserved.
 
 #ifndef LIBREALSENSE_RS2_HPP
 #define LIBREALSENSE_RS2_HPP
@@ -13,6 +13,7 @@
 #include "hpp/rs_processing.hpp"
 #include "hpp/rs_record_playback.hpp"
 #include "hpp/rs_sensor.hpp"
+#include "hpp/rs_safety_sensor.hpp"
 #include "hpp/rs_pipeline.hpp"
 
 namespace rs2

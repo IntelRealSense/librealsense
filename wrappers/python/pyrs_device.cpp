@@ -1,9 +1,10 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
-Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+Copyright(c) 2017-2024 Intel Corporation. All Rights Reserved. */
 
 #include "pyrealsense2.h"
 #include <librealsense2/hpp/rs_internal.hpp>
 #include <librealsense2/hpp/rs_device.hpp>
+#include <librealsense2/hpp/rs_safety_sensor.hpp>
 #include <librealsense2/hpp/rs_record_playback.hpp> // for downcasts
 #include <common/metadata-helper.h>
 

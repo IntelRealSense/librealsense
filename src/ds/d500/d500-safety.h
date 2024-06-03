@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-2024 Intel Corporation. All Rights Reserved.
 
 #pragma once
 
@@ -66,6 +66,8 @@ namespace librealsense
 
         void set_safety_preset(int index, const rs2_safety_preset& sp) const override;
         rs2_safety_preset get_safety_preset(int index) const override;
+        std::string safety_preset_to_json_string(rs2_safety_preset const& sp) const override;
+        rs2_safety_preset json_string_to_safety_preset(const std::string& json_str) const override;
 
         void set_safety_interface_config(const rs2_safety_interface_config& sic) const override;
         rs2_safety_interface_config get_safety_interface_config(rs2_calib_location loc = RS2_CALIB_LOCATION_RAM) const override;
