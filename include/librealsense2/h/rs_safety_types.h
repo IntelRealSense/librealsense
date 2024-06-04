@@ -74,7 +74,14 @@ typedef struct rs2_safety_environment
     float safety_trigger_duration; // duration in seconds to keep safety signal high after safety MCU is back to normal
 
     // Platform dynamics properties
-    float linear_velocity;  // m/sec
+    uint8_t zero_safety_monitoring;     // 0 - Regular (default). All Safety Mechanisms activated in nominal mode.
+                                        // 1 - "Zero Safety" mode.Continue monitoring but Inhibit triggering OSSD on Vision HaRA event + Collision Detections
+    uint8_t hara_history_continuation; // 0 - Regular or Global History. Vision HaRa Metrics are continued when switching Safety Preset. (default value)
+                                        // 1 - No History.When toggling Safety Preset all Vision HaRa metrics based on multiple sampling is being reset.
+                                        // 2 - Local History*, or History per Safety Preset.In this mode Vision HaRa metrics history is tracked per each preset 
+                                        // individually.When toggling Safety Presets S.MCU to check if that particular preset has history and if so - take that into consideration when reaching FuSa decision.
+                                        // In case the particular Safety Preset had no recorded history tracking then the expected behavior is similar to #1.
+    uint8_t reserved1[2];
     float angular_velocity; // rad/sec
     float payload_weight;   // a typical mass of the carriage payload in kg
 
