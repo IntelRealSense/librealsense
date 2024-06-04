@@ -102,13 +102,17 @@ namespace librealsense
                                                 (0x1 << 2) - Collision(s) identified in Warning Safety Zone
                                                 (0x1 << 3) - Depth Fill Rate is lower than the require confidence level(1 - yes; 0 - no)
                                                 (0x1 << 4) - Floor Detection(fill rate) is lower than the required confidence level(1 - yes; 0 - no)
-                                                (0x1 << 5) - (Reserved for) Cliff detection was triggered(1 - yes; 0 - no).opt*
-                                                (0x1 << 6) - (Reserved for)  Depth noise standard deviation  is higher than permitted level(1 - yes; 0 - no).opt*
+                                                (0x1 << 5) - SIP Immediate Metric triggered
+                                                (0x1 << 6) - SIP X/Y Metric triggered
                                                 (0x1 << 7) - Camera Posture / Floor position critical deviation is detected(calibration offset)
                                                 (0x1 << 8) - Safety Preset error (1 - yes; 0 - no)
                                                 (0x1 << 9) – Image Depth Fill Rate is lower than the require confidence level (1 - yes; 0 - no)
                                                 (0x1 << 10) – Frame drops/insufficient data (1 - yes; 0 - no)
-                                                bits[11..15] are reserved and must be zeroed
+                                                (0x1 << 11) – Sustained Frame drops
+                                                (0x1 << 12) – Frozen Depth image (Checksum  recurrence)
+                                                (0x1 << 13) – FTTI miss (data latency)
+                                                (0x1 << 14) – Safety&Security Check failure
+                                                bits 15 is reserved and must be zeroed
                                                 Setting bit_0 = 1 (high)implies having one or more of mask bits[1 - 8] set to 1 as well
     * uint8_t     safety_preset_integrity;      Bitmask:
                                                 (0x1 << 0) - Preset Integrity / inconsistency identified
