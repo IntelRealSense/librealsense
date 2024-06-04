@@ -250,12 +250,20 @@ namespace librealsense
             make_attribute_parser(&md_safety_info::sip_generic_metrics_state,
                 md_safety_info_attributes::sip_metrics_attribute, md_prop_offset));
 
-        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_INDICATIONS,
-            make_attribute_parser(&md_safety_info::sip_generic_metrics_indications,
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_VALUE1,
+            make_attribute_parser(&md_safety_info::sip_generic_metrics_value1,
                 md_safety_info_attributes::sip_metrics_attribute, md_prop_offset));
 
-        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_THRESHOLD,
-            make_attribute_parser(&md_safety_info::sip_generic_metrics_threshold,
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_THRESHOLD1,
+            make_attribute_parser(&md_safety_info::sip_generic_metrics_threshold1,
+                md_safety_info_attributes::sip_metrics_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_VALUE2,
+            make_attribute_parser(&md_safety_info::sip_generic_metrics_value2,
+                md_safety_info_attributes::sip_metrics_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_THRESHOLD2,
+            make_attribute_parser(&md_safety_info::sip_generic_metrics_threshold2,
                 md_safety_info_attributes::sip_metrics_attribute, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_ZERO_MONITORING_ENABLED,
@@ -348,7 +356,7 @@ namespace librealsense
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SMCU_HW_MONITOR_STATUS,
             make_attribute_parser(&md_safety_info::smcu_hw_monitor_status,
-                md_safety_info_attributes::smcu_debug_info_attribute, md_prop_offset));
+                md_safety_info_attributes::smcu_hw_report_attribute, md_prop_offset));
 
         // calc CRC for safety MD payload, starting from "version" field (not including the uvc and md headers),
         // and without the crc field itself.

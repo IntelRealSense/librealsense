@@ -302,8 +302,12 @@ namespace librealsense
         uint8_t     sip_degradation_diagnostics;    // Bitmask: see details above the struct
         uint8_t     sip_generic_metrics_activate;   // Bitmask: see details above the struct
         uint8_t     sip_generic_metrics_state;      // Bitmask: see details above the struct
-        uint64_t    sip_generic_metrics_indications;// see details above the struct
-        uint64_t    sip_generic_metrics_threshold;  // see details above the struct
+        uint8_t     sip_generic_metrics_value1;     // see details above the struct
+        uint8_t     sip_generic_metrics_value2;     // see details above the struct
+        uint8_t     sip_generic_metrics_values_reserved[6]; // see details above the struct
+        uint8_t     sip_generic_metrics_threshold1;  // see details above the struct
+        uint8_t     sip_generic_metrics_threshold2;  // see details above the struct
+        uint8_t     sip_generic_metrics_threshold_reserved[6]; // see details above the struct
         uint8_t     zero_safety_monitoring_enabled; // Enum - 0:Regular (default) all safety in nominal mode - 1: "Zero Safety" mode
         uint8_t     hara_history_mode;              // Enum - 0:Regular - 1: No history - 2: Local history
         uint8_t     vision_reserved[4];             // zeroed

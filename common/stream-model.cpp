@@ -57,6 +57,8 @@ namespace rs2
                 frame_md.md_attributes[i].first = false;
         }
 
+        deal_d585S_metadata_md_values_special_cases(f);
+
         texture->upload(f);
         return texture;
     }
@@ -1876,5 +1878,30 @@ namespace rs2
 
         if (is_middle_clicked)
             _middle_pos = g.cursor;
+    }
+
+    void stream_model::deal_d585S_metadata_md_values_special_cases(const frame& f)
+    {
+        // aim of this method is to disable the reading of the RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_VALUEX
+        // if the value of the RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_THRESHOLDX is 0 (or not enabled at all)
+        std::vector<std::pair<int, int> > values_and_thresholds_md_indices;
+        values_and_thresholds_md_indices.push_back(
+            std::make_pair(RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_VALUE1,
+                RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_THRESHOLD1)); 
+        values_and_thresholds_md_indices.push_back(
+            std::make_pair(RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_VALUE2,
+                RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_THRESHOLD2));
+
+        for (auto it = values_and_thresholds_md_indices.begin();
+            it != values_and_thresholds_md_indices.end() ; ++it)
+        {
+            if ((frame_md.md_attributes[it->first].first &&
+                !frame_md.md_attributes[it->second].first) ||
+                (frame_md.md_attributes[it->first].first &&
+                    f.get_frame_metadata(static_cast<rs2_frame_metadata_value>(it->second)) == 0))
+            {
+                frame_md.md_attributes[it->first].first = false;
+            }
+        }
     }
 }
