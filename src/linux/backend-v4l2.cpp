@@ -2167,6 +2167,11 @@ namespace librealsense
             _named_mtx->unlock();
         }
 
+        std::string v4l_uvc_device::get_device_unique_id() const
+        {
+            return std::to_string( _info.mi ) + _info.unique_id;
+        }
+
         uint32_t v4l_uvc_device::get_cid(rs2_option option) const
         {
             switch(option)

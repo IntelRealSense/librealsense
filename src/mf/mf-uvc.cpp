@@ -1053,6 +1053,11 @@ namespace librealsense
             _frame_callbacks.push_back(callback);
         }
 
+        std::string wmf_uvc_device::get_device_unique_id() const
+        {
+            return std::to_string( _info.mi ) + _info.unique_id;
+        }
+
         IAMVideoProcAmp* wmf_uvc_device::get_video_proc() const
         {
             if (get_power_state() != D0)

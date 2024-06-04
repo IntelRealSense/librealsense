@@ -142,6 +142,7 @@ public:
     virtual void unlock() const = 0;
 
     virtual std::string get_device_location() const = 0;
+    virtual std::string get_device_unique_id() const = 0;
     virtual usb_spec get_usb_specification() const = 0;
 
     virtual bool is_platform_jetson() const = 0;
@@ -242,6 +243,8 @@ public:
     std::vector< stream_profile > get_profiles() const override { return _dev->get_profiles(); }
 
     std::string get_device_location() const override { return _dev->get_device_location(); }
+
+    std::string get_device_unique_id() const override { return _dev->get_device_unique_id(); }
 
     usb_spec get_usb_specification() const override { return _dev->get_usb_specification(); }
 
@@ -349,6 +352,8 @@ public:
     }
 
     std::string get_device_location() const override { return _dev.front()->get_device_location(); }
+
+    std::string get_device_unique_id() const override { return _dev.front()->get_device_unique_id(); }
 
     usb_spec get_usb_specification() const override { return _dev.front()->get_usb_specification(); }
 

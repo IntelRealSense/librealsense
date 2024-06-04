@@ -30,7 +30,6 @@ uvc_sensor::uvc_sensor( std::string const & name,
                         device * dev )
     : super( name, dev )
     , _device( std::move( uvc_device ) )
-    , _user_count( 0 )
     , _timestamp_reader( std::move( timestamp_reader ) )
     , _gyro_counter(0)
     , _accel_counter(0)
@@ -413,7 +412,8 @@ void uvc_sensor::reset_streaming()
 void uvc_sensor::acquire_power()
 {
     std::lock_guard< std::mutex > lock( _power_lock );
-    if( _user_count.fetch_add( 1 ) == 0 )
+    auto & user_count = environment::get_instance().get_device_power_counter( _device->get_device_unique_id() );
+    if( user_count.fetch_add( 1 ) == 0 )
     {
         try
         {
@@ -423,13 +423,13 @@ void uvc_sensor::acquire_power()
         }
         catch( std::exception const & e )
         {
-            _user_count.fetch_add( -1 );
+            user_count.fetch_add( -1 );
             LOG_ERROR( "acquire_power failed: " << e.what() );
             throw;
         }
         catch( ... )
         {
-            _user_count.fetch_add( -1 );
+            user_count.fetch_add( -1 );
             LOG_ERROR( "acquire_power failed" );
             throw;
         }
@@ -439,7 +439,8 @@ void uvc_sensor::acquire_power()
 void uvc_sensor::release_power()
 {
     std::lock_guard< std::mutex > lock( _power_lock );
-    if( _user_count.fetch_add( -1 ) == 1 )
+    auto & user_count = environment::get_instance().get_device_power_counter( _device->get_device_unique_id() );
+    if( user_count.fetch_add( -1 ) == 1 )
     {
         try
         {

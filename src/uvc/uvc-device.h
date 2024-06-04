@@ -66,6 +66,7 @@ namespace librealsense
             virtual void unlock() const override;
 
             virtual std::string get_device_location() const override;
+            virtual std::string get_device_unique_id() const override;
             virtual usb_spec  get_usb_specification() const override;
 
             bool is_platform_jetson() const override { return false;}

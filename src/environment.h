@@ -108,6 +108,11 @@ namespace librealsense
 
         int generate_stream_id() { return _stream_id.fetch_add(1); }
 
+        std::atomic< int > & get_device_power_counter( const std::string & uid )
+        {
+            return _uvc_device_to_power_counter[uid];
+        }
+
         environment(const environment&) = delete;
         environment(const environment&&) = delete;
         environment operator=(const environment&) = delete;
@@ -116,6 +121,7 @@ namespace librealsense
     private:
         extrinsics_graph _extrinsics;
         std::atomic<int> _stream_id;
+        std::map< std::string /*uid*/, std::atomic< int > /*counter*/ > _uvc_device_to_power_counter;
 
         environment();
     };

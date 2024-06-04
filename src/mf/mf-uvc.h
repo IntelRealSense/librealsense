@@ -94,6 +94,7 @@ namespace librealsense
             bool is_platform_jetson() const override { return false;}
 
             std::string get_device_location() const override { return _location; }
+            std::string get_device_unique_id() const override;
             usb_spec get_usb_specification() const override { return _device_usb_spec; }
             IAMVideoProcAmp* get_video_proc() const;
             IAMCameraControl* get_camera_control() const;
