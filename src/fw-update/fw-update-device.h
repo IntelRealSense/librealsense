@@ -5,6 +5,7 @@
 #include <src/core/device-interface.h>
 #include "fw-update-device-interface.h"
 #include "usb/usb-device.h"
+#include "platform/mipi-device.h"
 
 namespace librealsense
 {
@@ -19,7 +20,7 @@ namespace librealsense
         RS2_DFU_STATUS_VERIFY = 0x07,       // Programmed memory failed verification.
         RS2_DFU_STATUS_ADDRESS = 0x08,      // Cannot program memory due to received address that is out of range.
         RS2_DFU_STATUS_NOTDONE = 0x09,      // Received DFU_DNLOAD with wLength = 0, but device does    not think it has all of the data yet.
-        RS2_DFU_STATUS_FIRMWARE = 0x0A,     // Device’s firmware is corrupt.It cannot return to run - time    (non - DFU) operations.
+        RS2_DFU_STATUS_FIRMWARE = 0x0A,     // Deviceï¿½s firmware is corrupt.It cannot return to run - time    (non - DFU) operations.
         RS2_DFU_STATUS_VENDOR = 0x0B,       // iString indicates a vendor - specific RS2_DFU_STATUS_or.
         RS2_DFU_STATUS_USBR = 0x0C,         // Device detected unexpected USB reset signaling.
         RS2_DFU_STATUS_POR = 0x0D,          // Device detected unexpected power on reset.
@@ -102,10 +103,15 @@ namespace librealsense
         update_device( std::shared_ptr< const device_info > const &,
                        std::shared_ptr< platform::usb_device > const & usb_device,
                        const std::string & _product_line );
+
+        update_device( std::shared_ptr< const device_info > const &,
+                       std::shared_ptr< platform::mipi_device > const & mipi_device,
+                       const std::string & _product_line );
+
         virtual ~update_device();
 
         virtual void update(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr = nullptr) const override;
-        
+
         virtual sensor_interface& get_sensor(size_t i) override;
 
         virtual const sensor_interface& get_sensor(size_t i) const override;
@@ -143,6 +149,8 @@ namespace librealsense
         virtual void enable_recording(std::function<void(const info_interface&)> recording_function) override;
 
     protected:
+        void update_usb(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr = nullptr) const;
+        void update_mipi(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr = nullptr) const;
         rs2_dfu_state get_dfu_state(std::shared_ptr<platform::usb_messenger> messenger) const;
         void detach(std::shared_ptr<platform::usb_messenger> messenger) const;
         bool wait_for_state(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, size_t timeout = 1000) const;
@@ -160,6 +168,7 @@ namespace librealsense
         const int FW_UPDATE_INTERFACE_NUMBER = 0;
         const std::shared_ptr< const device_info > _dev_info;
         const platform::rs_usb_device _usb_device;
+        const platform::rs_mipi_device _mipi_device;
         std::vector<uint8_t> _serial_number_buffer;
         std::string _highest_fw_version;
         std::string _last_fw_version;

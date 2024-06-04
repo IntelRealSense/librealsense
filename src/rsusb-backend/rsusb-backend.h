@@ -27,6 +27,7 @@ namespace librealsense
             // Not supported
             std::shared_ptr<hid_device> create_hid_device(hid_device_info info) const override;
             std::vector<hid_device_info> query_hid_devices() const override;
+            std::vector<mipi_device_info> query_mipi_devices() const override;
         };
     }
 }

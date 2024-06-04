@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017-2024 Intel Corporation. All Rights Reserved.
 
 #ifndef LIBREALSENSE_RS2_DEVICE_HPP
 #define LIBREALSENSE_RS2_DEVICE_HPP
@@ -60,6 +60,8 @@ namespace rs2
             {
                 std::string pid = get_info( RS2_CAMERA_INFO_PRODUCT_ID );
                 if( pid == "ABCD" ) // Specific for D457
+                    return "GMSL";
+                if( pid == "BBCD" ) // Specific for D457 Recovery DFU
                     return "GMSL";
                 return pid;  // for DDS devices, this will be "DDS"
             }
