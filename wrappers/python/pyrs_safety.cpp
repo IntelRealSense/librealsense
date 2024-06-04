@@ -53,7 +53,7 @@ void init_safety(py::module &m) {
         .def_readwrite("hkr_stl_timeout", &rs2_safety_smcu_arbitration_params::hkr_stl_timeout, "hkr_stl_timeout")
         .def_readwrite("mcu_stl_timeout", &rs2_safety_smcu_arbitration_params::mcu_stl_timeout, "mcu_stl_timeout")
         .def_readwrite("sustained_aicv_frame_drops", &rs2_safety_smcu_arbitration_params::sustained_aicv_frame_drops, "sustained_aicv_frame_drops")
-        .def_readwrite("generic_threshold_1", &rs2_safety_smcu_arbitration_params::generic_threshold_1, "generic_threshold_1");
+        .def_readwrite("ossd_self_test_pulse_width", &rs2_safety_smcu_arbitration_params::ossd_self_test_pulse_width, "ossd_self_test_pulse_width");
 
 
     py::class_<rs2_safety_occupancy_grid_params> safety_occupancy_grid_params(m, "safety_occupancy_grid_params"); // No docstring in C++
