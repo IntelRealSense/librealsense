@@ -319,15 +319,14 @@ typedef struct rs2_calibration_roi
     uint16_t mask_pixel[4][2];
 }rs2_calibration_roi;
 
-// BELOW LINES TO BE CHECKED!!!!!
-typedef struct float3_rm { float x, y, z; } float3_rm;
-typedef struct float3x3_row_major { float3_rm x, y, z; } float3x3_row_major;
+typedef struct float3_row_major { float x, y, z; } float3_row_major;
+typedef struct float3x3_row_major { float3_row_major x, y, z; } float3x3_row_major;
 
-typedef struct rs2_extrinsics_table
+typedef struct rs2_extrinsics_row_major
 {
     float3x3_row_major rotation; // Rotation matrix
-    float3_rm translation; // Metric units
-} rs2_extrinsics_table;
+    float3_row_major translation; // Metric units
+} rs2_extrinsics_row_major;
 
 typedef struct rs2_calibration_config
 {
@@ -339,7 +338,7 @@ typedef struct rs2_calibration_config
                                        // Segments 1-3 - structured identical to segment_#0 (reserved)
                                        // The ROI segments can intersect, but each must be convex(angles <= 180 degrees).
     uint8_t reserved1[12];
-    rs2_extrinsics_table camera_position;
+    rs2_extrinsics_row_major camera_position;
     uint8_t reserved2[300];
     uint32_t crypto_signature[8];
     uint8_t reserved3[39];

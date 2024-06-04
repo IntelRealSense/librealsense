@@ -13,19 +13,11 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
+#include "rs_types.h"
 
 #pragma pack(push, 1)
 // Convenience blocks
 typedef struct sc_float2 { float x, y; } sc_float2;
-typedef struct sc_float3 { float x, y, z; } sc_float3;
-typedef struct sc_float3x3 { sc_float3 x, y, z; } sc_float3x3;  // row-major
-
-typedef struct rs2_safety_extrinsics_table
-{
-    sc_float3x3 rotation; // Rotation matrix Sensor->Robot CS (""Leveled World"" assumed)
-    sc_float3 translation; // Metric units
-} rs2_safety_extrinsics_table;
 
 typedef struct sc_2d_pixel
 {
@@ -43,7 +35,7 @@ typedef struct rs2_safety_preset_header
 
 typedef struct rs2_safety_platform
 {
-    rs2_safety_extrinsics_table transformation_link; // Sensor->System Rigid-body Transformation (System CS is ""Leveled World"" assumed)
+    rs2_extrinsics_row_major transformation_link; // Sensor->System Rigid-body Transformation (System CS is ""Leveled World"" assumed)
     float robot_height; // Meters; above ground level. Used to calculate the max height for collision scanning
     uint8_t reserved[20];  // Can be modified  by changing the table minor version, without breaking back - compat
 } rs2_safety_platform;
@@ -207,7 +199,7 @@ typedef struct rs2_safety_interface_config
     rs2_safety_interface_config_pin preset4_b;
     rs2_safety_interface_config_pin ground;
     uint8_t gpio_stabilization_interval; // Time for GPIOs to stabilize before accepting the new Selection Zone index. In Millisec[15 - 150]
-    rs2_safety_extrinsics_table camera_position; // Sensor->System Rigid-body Transformation (System CS is "Leveled World" assumed)
+    rs2_extrinsics_row_major camera_position; // Sensor->System Rigid-body Transformation (System CS is "Leveled World" assumed)
     rs2_safety_occupancy_grid_params occupancy_grid_params;
     rs2_safety_smcu_arbitration_params smcu_arbitration_params;
     uint8_t crypto_signature[32]; // SHA2 or similar
