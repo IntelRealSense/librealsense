@@ -616,7 +616,7 @@ namespace librealsense
         return result->payload;
     }
 
-    std::string d500_safety_sensor::safety_interface_config_to_json_string(rs2_safety_interface_config const& sic) const
+    std::string d500_safety_sensor::safety_interface_config_to_json_string(const rs2_safety_interface_config& sic) const
     {
 
         rsutils::json json_data;

@@ -4471,8 +4471,7 @@ void rs2_json_string_to_safety_preset(
     VALIDATE_NOT_NULL(sensor);
     VALIDATE_NOT_NULL(sp);
     auto safety_sensor = VALIDATE_INTERFACE(sensor->sensor, librealsense::safety_sensor);
-    std::string sp_json_str(json_str);
-    *sp = safety_sensor->json_string_to_safety_preset(sp_json_str);
+    *sp = safety_sensor->json_string_to_safety_preset(json_str);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, sp)
 
@@ -4521,8 +4520,7 @@ void rs2_json_string_to_safety_interface_config(
     VALIDATE_NOT_NULL(sensor);
     VALIDATE_NOT_NULL(sic);
     auto safety_sensor = VALIDATE_INTERFACE(sensor->sensor, librealsense::safety_sensor);
-    std::string sp_json_str(json_str);
-    *sic = safety_sensor->json_string_to_safety_interface_config(sp_json_str);
+    *sic = safety_sensor->json_string_to_safety_interface_config(json_str);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, sic)
 

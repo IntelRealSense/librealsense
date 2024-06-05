@@ -71,7 +71,7 @@ namespace librealsense
 
         void set_safety_interface_config(const rs2_safety_interface_config& sic) const override;
         rs2_safety_interface_config get_safety_interface_config(rs2_calib_location loc = RS2_CALIB_LOCATION_RAM) const override;
-        std::string safety_interface_config_to_json_string(rs2_safety_interface_config const& sic) const override;
+        std::string safety_interface_config_to_json_string(const rs2_safety_interface_config& sic) const override;
         rs2_safety_interface_config json_string_to_safety_interface_config(const std::string& json_str) const override;
 
 
