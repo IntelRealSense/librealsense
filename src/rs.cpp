@@ -473,6 +473,7 @@ void rs2_get_video_stream_intrinsics(const rs2_stream_profile* from, rs2_intrins
 
     *intr = vid->get_intrinsics();
 }
+EXPECTED_EXCEPTION( not_implemented_exception, , from, intr )  // only accepted way of checking if profile has intrinsics
 HANDLE_EXCEPTIONS_AND_RETURN( , from, intr )
 
 // librealsense wrapper around a C function
