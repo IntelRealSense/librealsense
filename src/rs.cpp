@@ -464,17 +464,41 @@ void rs2_delete_stream_profiles_list(rs2_stream_profile_list* list) BEGIN_API_CA
 }
 NOEXCEPT_RETURN(, list)
 
-void rs2_get_video_stream_intrinsics(const rs2_stream_profile* from, rs2_intrinsics* intr, rs2_error** error) BEGIN_API_CALL
+
+std::ostream & operator<<( std::ostream & os, rs2_stream_profile const & p )
 {
-    VALIDATE_NOT_NULL(from);
+    if( ! p.profile )
+    {
+        os << "NULL";
+    }
+    else
+    {
+        os << "[ " << librealsense::get_abbr_string( p.profile->get_stream_type() );
+        os << " " << librealsense::get_string( p.profile->get_format() );
+        os << " " << p.profile->get_stream_index();
+        if( auto vsp = As< video_stream_profile, stream_profile_interface >( p.profile ) )
+        {
+            os << " " << vsp->get_width();
+            os << "x" << vsp->get_height();
+        }
+        os << " @ " << p.profile->get_framerate();
+        os << " ]";
+    }
+    return os;
+}
+
+
+void rs2_get_video_stream_intrinsics(const rs2_stream_profile* profile, rs2_intrinsics* intr, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( profile );
     VALIDATE_NOT_NULL(intr);
 
-    auto vid = VALIDATE_INTERFACE(from->profile, librealsense::video_stream_profile_interface);
+    auto vid = VALIDATE_INTERFACE( profile->profile, librealsense::video_stream_profile_interface);
 
     *intr = vid->get_intrinsics();
 }
-EXPECTED_EXCEPTION( not_implemented_exception, , from, intr )  // only accepted way of checking if profile has intrinsics
-HANDLE_EXCEPTIONS_AND_RETURN( , from, intr )
+EXPECTED_EXCEPTION( not_implemented_exception, , profile, output_arg( intr ) )  // only accepted way of checking if profile has intrinsics
+HANDLE_EXCEPTIONS_AND_RETURN(, profile, output_arg( intr ) )
 
 // librealsense wrapper around a C function
 class calibration_change_callback : public rs2_calibration_change_callback
