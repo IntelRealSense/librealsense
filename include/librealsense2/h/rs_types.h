@@ -313,6 +313,7 @@ const char* rs2_get_failed_args                (const rs2_error* error);
 const char* rs2_get_error_message              (const rs2_error* error);
 void        rs2_free_error                     (rs2_error* error);
 
+#pragma pack(push, 1)
 /* rs2_calibration_roi - Array of four corners in Deph Frame Coordinate system that define a closed simple quadrangle (non-intersecting)*/
 typedef struct rs2_calibration_roi
 {
@@ -340,7 +341,7 @@ typedef struct rs2_calibration_config
     uint8_t reserved1[12];
     rs2_extrinsics_row_major camera_position;
     uint8_t reserved2[300];
-    uint32_t crypto_signature[8];
+    uint8_t crypto_signature[32];
     uint8_t reserved3[39];
 } rs2_calibration_config;
 
@@ -357,8 +358,8 @@ typedef struct rs2_calibration_config_with_header
 {
     rs2_calibration_config_header header;
     rs2_calibration_config payload;
-} rs2_calib_config_with_header;
-
+} rs2_calibration_config_with_header;
+#pragma pack(pop)
 
 #ifdef __cplusplus
 }
