@@ -17,19 +17,19 @@ void init_safety(py::module &m) {
         .def_readwrite("x", &sc_float2::x, "x")
         .def_readwrite("y", &sc_float2::y, "y");
 
-    py::class_<sc_float3> float3(m, "float3"); // No docstring in C++
+    py::class_<float3_row_major> float3(m, "float3"); // No docstring in C++
     float3.def(py::init<>())
         .def(py::init<float, float, float>())
-        .def_readwrite("x", &sc_float3::x, "x")
-        .def_readwrite("y", &sc_float3::y, "y")
-        .def_readwrite("z", &sc_float3::z, "z");
+        .def_readwrite("x", &float3_row_major::x, "x")
+        .def_readwrite("y", &float3_row_major::y, "y")
+        .def_readwrite("z", &float3_row_major::z, "z");
 
-    py::class_<sc_float3x3> float3x3(m, "float3x3"); // No docstring in C++
+    py::class_<float3x3_row_major> float3x3(m, "float3x3"); // No docstring in C++
     float3x3.def(py::init<>())
-        .def(py::init<sc_float3, sc_float3, sc_float3>())
-        .def_readwrite("x", &sc_float3x3::x, "x")
-        .def_readwrite("y", &sc_float3x3::y, "y")
-        .def_readwrite("z", &sc_float3x3::z, "z");
+        .def(py::init<float3_row_major, float3_row_major, float3_row_major>())
+        .def_readwrite("x", &float3x3_row_major::x, "x")
+        .def_readwrite("y", &float3x3_row_major::y, "y")
+        .def_readwrite("z", &float3x3_row_major::z, "z");
 
     py::class_<sc_2d_pixel> pixel2D(m, "pixel2D"); // No docstring in C++
     pixel2D.def(py::init<>())
@@ -37,11 +37,11 @@ void init_safety(py::module &m) {
         .def_readwrite("i", &sc_2d_pixel::i, "i")
         .def_readwrite("j", &sc_2d_pixel::j, "j");
 
-    py::class_<rs2_safety_extrinsics_table> safety_extrinsics_table(m, "safety_extrinsics_table"); // No docstring in C++
+    py::class_<rs2_extrinsics_row_major> safety_extrinsics_table(m, "safety_extrinsics_table"); // No docstring in C++
     safety_extrinsics_table.def(py::init<>())
-        .def(py::init<sc_float3x3, sc_float3>())
-        .def_readwrite("rotation", &rs2_safety_extrinsics_table::rotation, "Rotation Value")
-        .def_readwrite("translation", &rs2_safety_extrinsics_table::translation, "Translation Value");
+        .def(py::init<float3x3_row_major, float3_row_major>())
+        .def_readwrite("rotation", &rs2_extrinsics_row_major::rotation, "Rotation Value")
+        .def_readwrite("translation", &rs2_extrinsics_row_major::translation, "Translation Value");
 
     py::class_<rs2_safety_smcu_arbitration_params> safety_mcu_arbitration_params(m, "safety_mcu_arbitration_params"); // No docstring in C++
     safety_mcu_arbitration_params.def(py::init<>())
