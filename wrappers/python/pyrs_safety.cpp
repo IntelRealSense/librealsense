@@ -113,7 +113,8 @@ void init_safety(py::module &m) {
     py::class_<rs2_safety_environment> safety_environment(m, "safety_environment"); // No docstring in C++
     safety_environment.def(py::init<>())
         .def_readwrite( "safety_trigger_duration", &rs2_safety_environment::safety_trigger_duration, "Safety Trigger Duration" )
-        .def_readwrite( "linear_velocity", &rs2_safety_environment::linear_velocity, "Linear Velocity" )
+        .def_readwrite( "zero_safety_monitoring", &rs2_safety_environment::zero_safety_monitoring, "Zero Safety Monitoring")
+        .def_readwrite( "hara_history_continuation", &rs2_safety_environment::hara_history_continuation, "Hara History Continuation" )
         .def_readwrite( "angular_velocity", &rs2_safety_environment::angular_velocity, "Angular Velocity" )
         .def_readwrite( "payload_weight", &rs2_safety_environment::payload_weight, "Payload Weight" )
         .def_readwrite( "surface_inclination", &rs2_safety_environment::surface_inclination, "Surface Inclination" )

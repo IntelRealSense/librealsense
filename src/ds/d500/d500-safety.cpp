@@ -368,7 +368,7 @@ namespace librealsense
 
         // prepare vector of data to be sent (header + sp)
         rs2_safety_preset_with_header data;
-        uint16_t version = ((uint16_t)0x03 << 8) | 0x00;  // major=0x03, minor=0x00 --> ver = major.minor
+        uint16_t version = ((uint16_t)0x03 << 8) | 0x01;  // major=0x03, minor=0x01 --> ver = major.minor
         data.header = { version, static_cast<uint16_t>(ds::d500_calibration_table_id::safety_preset_id), 
             sizeof(rs2_safety_preset), computed_crc32 };
         data.safety_preset = sp;
@@ -462,7 +462,8 @@ namespace librealsense
 
         auto&& environment = json_data["safety_preset"]["environment"];
         environment["safety_trigger_duration"] = sp.environment.safety_trigger_duration;
-        environment["linear_velocity"] = sp.environment.linear_velocity;
+        environment["zero_safety_monitoring"] = sp.environment.zero_safety_monitoring;
+        environment["hara_history_continuation"] = sp.environment.hara_history_continuation;
         environment["angular_velocity"] = sp.environment.angular_velocity;
         environment["payload_weight"] = sp.environment.payload_weight;
         environment["surface_inclination"] = sp.environment.surface_inclination;
@@ -540,7 +541,8 @@ namespace librealsense
 
         auto&& environment = json_data["safety_preset"]["environment"];
         sp.environment.safety_trigger_duration = environment["safety_trigger_duration"];
-        sp.environment.linear_velocity = environment["linear_velocity"];
+        sp.environment.zero_safety_monitoring = environment["zero_safety_monitoring"];
+        sp.environment.hara_history_continuation = environment["hara_history_continuation"];
         sp.environment.angular_velocity = environment["angular_velocity"];
         sp.environment.payload_weight = environment["payload_weight"];
         sp.environment.surface_inclination = environment["surface_inclination"];

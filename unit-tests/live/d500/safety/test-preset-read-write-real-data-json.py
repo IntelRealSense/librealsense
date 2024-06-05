@@ -194,7 +194,8 @@ sp_json_str = """
         "environment": 
         {
             "safety_trigger_duration" : 1,
-            "linear_velocity" : 0,
+            "zero_safety_monitoring" : 0,
+            "hara_history_continuation" : 0,
             "angular_velocity" : 0,
             "payload_weight" : 0,
             "surface_inclination" : 15,

@@ -112,7 +112,8 @@ def get_valid_preset():
     # safety environment
     safety_environment = rs.safety_environment()
     safety_environment.safety_trigger_duration = 1  # sec
-    safety_environment.linear_velocity = 0  # m/sec
+    safety_environment.zero_safety_monitoring = 0  # Regular
+    safety_environment.hara_history_continuation = 0  # Regular
     safety_environment.angular_velocity = 0  # rad/sec
     safety_environment.payload_weight = 0  # kg
     safety_environment.surface_inclination = 15  # angle in degrees
