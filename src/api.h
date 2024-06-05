@@ -56,6 +56,14 @@ namespace librealsense
         }
     };
 
+    // Provide a way for the API to denote something as output, so it's not shown on error
+    // Output arguments are always pointers
+    struct output_arg
+    {
+        void const * pointer;
+        output_arg( void const * pv ) : pointer( pv ) {}
+    };
+
     // Next we define type trait for testing if *t for some T* is streamable
     template<typename T>
     class is_streamable
@@ -101,6 +109,16 @@ namespace librealsense
         arg_streamer<T, is_streamable<T>::value> s;
         s.stream_arg(out, last, true);
     }
+    inline void stream_args( std::ostream & out, const char * names, const output_arg & last )
+    {
+        while( *names++ != '(' );        // skip "output_arg("
+        while( *names == ' ' ) ++names;  // skip "(" and any spaces
+        while( *names != ')' && *names != ' ' ) out << *names++;
+        out << ":";
+        if( ! last.pointer )
+            out << "nullptr";
+        out << "(out)";
+    }
     template<class T, class... U> void stream_args(std::ostream & out, const char * names, const T & first, const U &... rest)
     {
         while (*names && *names != ',') out << *names++;
@@ -108,6 +126,12 @@ namespace librealsense
         s.stream_arg(out, first, false);
         while (*names && (*names == ',' || isspace(*names))) ++names;
         stream_args(out, names, rest...);
+    }
+    template<class... U> void stream_args( std::ostream & out, const char * names, const output_arg & first, const U &... rest )
+    {
+        stream_args( out, names, first );
+        out << ", ";
+        stream_args( out, names, rest... );
     }
 
 
