@@ -130,7 +130,7 @@ typedef struct rs2_safety_smcu_arbitration_params
     uint8_t hkr_stl_timeout;                  // In ms
     uint8_t mcu_stl_timeout;                  // Application Specific
     uint8_t sustained_aicv_frame_drops;       // [0..100] % of frames required to arrive within the last 10 frames.
-    uint8_t generic_threshold_1;              // Application Specific
+    uint8_t ossd_self_test_pulse_width;       // Application Specific
 } rs2_safety_smcu_arbitration_params;
 
 typedef struct rs2_safety_interface_config_header

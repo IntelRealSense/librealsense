@@ -34,6 +34,8 @@ namespace librealsense
         mb_status_attribute = (1u << 20),
         smcu_liveliness_attribute = (1u << 21),
         smcu_state_attribute = (1u << 22),
+        sip_metrics_attribute = (1u << 23),
+        smcu_hw_report_attribute = (1u << 24),
         non_fusa_gpio_attribute = (1u << 29),
         smcu_debug_info_attribute = (1u << 30),
         crc32_attribute = (1u << 31)
@@ -100,19 +102,47 @@ namespace librealsense
                                                 (0x1 << 2) - Collision(s) identified in Warning Safety Zone
                                                 (0x1 << 3) - Depth Fill Rate is lower than the require confidence level(1 - yes; 0 - no)
                                                 (0x1 << 4) - Floor Detection(fill rate) is lower than the required confidence level(1 - yes; 0 - no)
-                                                (0x1 << 5) - (Reserved for) Cliff detection was triggered(1 - yes; 0 - no).opt*
-                                                (0x1 << 6) - (Reserved for)  Depth noise standard deviation  is higher than permitted level(1 - yes; 0 - no).opt*
+                                                (0x1 << 5) - SIP Immediate Metric triggered
+                                                (0x1 << 6) - SIP X/Y Metric triggered
                                                 (0x1 << 7) - Camera Posture / Floor position critical deviation is detected(calibration offset)
                                                 (0x1 << 8) - Safety Preset error (1 - yes; 0 - no)
                                                 (0x1 << 9) – Image Depth Fill Rate is lower than the require confidence level (1 - yes; 0 - no)
                                                 (0x1 << 10) – Frame drops/insufficient data (1 - yes; 0 - no)
-                                                bits[11..15] are reserved and must be zeroed
+                                                (0x1 << 11) – Sustained Frame drops
+                                                (0x1 << 12) – Frozen Depth image (Checksum  recurrence)
+                                                (0x1 << 13) – FTTI miss (data latency)
+                                                (0x1 << 14) – Safety&Security Check failure
+                                                bits 15 is reserved and must be zeroed
                                                 Setting bit_0 = 1 (high)implies having one or more of mask bits[1 - 8] set to 1 as well
     * uint8_t     safety_preset_integrity;      Bitmask:
                                                 (0x1 << 0) - Preset Integrity / inconsistency identified
                                                 (0x1 << 1) - Preset CRC check invalid
                                                 (0x1 << 2) - Discrepancy between actual and expected Preset Id.
                                                 Setting bit_0 = 1 (high)implies having one or more of mask bits[1 - 2] are set to 1 as well
+    * uint8_t     sip_degradation_diagnostics;  BitMask of Vision-impairing conditions identified by AICV algo in HKR:
+                                                0x1 << 0  Sensor(s) pollution detected
+                                                0x1 << 1  Sensor contamination detected
+                                                Bits [2..7] - Reserved for future modifications. S.MCU shall assume that 
+                                                all reserved bit can be used without further notice
+    * uint8_t     sip_generic_metrics_activate; BitMask field for up to 8 separate SIP Vision HaRa diagnostic mechanisms
+                                                where each bit is a marker for S.MCU whether the actual metric in this message was active:
+                                                For each bit in the bitmask turned on, the corresponding bit in the next field represents,
+                                                the status whether the specific metric was marked as "signalled" or not.
+                                                The purpose of each bit is AICV-defined.
+                                                The metric is tracked and managed by Vision Safety Monitor 
+                                                applying the "X occurances in the last Y frames" where X << Y
+    * uint8_t     sip_generic_metrics_state;    BitMask for the current status (signalled On/Off) of up to 8 separate SIP Vision 
+                                                HaRa diagnostic mechanisms, each represented by a single bit.
+                                                The purpose of each bit is AICV-defined.
+                                                The metric is tracked and managed by Vision Safety Monitor 
+                                                applying the "X occurances in the last Y frames" where X << Y
+    * uint8_t     sip_generic_metrics_indications[8];
+                                                Byte array of up to 8 Generic Safety Algo continuous metrics, experssed as HaRa evidence present in X out of Y consecutive frames. 
+                                                Each cell stores the N value - the actual number of "positive" indications obtained in the last Y frames
+    * uint8_t     sip_generic_metrics_threshold[8];
+                                                Byte array of up to 8 Generic Safety Algo continuous metrics, experssed as HaRa evidence present in X out of Y consecutive frames. 
+                                                Each cell stores the X value - the threshold of  "positive" indications obtained required to trigger safety signal
+                                                Note that N <=X. In case of N reaches threshold its value shall not be further increased even if more positive indications are obtained.
 
     * uint32_t    soc_monitor_l2_error_type;    Current Soc Monitor Escalation of L2 error to Arbiter (bitMask):
                                                 L2_ERROR_TYPES_NO_ERROR = 0
@@ -126,6 +156,16 @@ namespace librealsense
     * uint32_t    soc_monitor_l3_error_type;    Current Soc Monitor Escalation of L3 error to Arbiter (bitMask):
                                                 L3_ERROR_TYPES_NO_ERROR = 0
                                                 L3_ERROR_L2_PASS_CNT = 1 <<0
+     
+    * uint16_t    soc_safety_and_security;      Bitmask:
+                                                0x1 << 0 - Unit is "Locked" (incl. Secure Boot )
+                                                0x1 << 1 - OHM Serial Numbers check is valid
+                                                0x1 << 2 - APM Serial Numbers check is valid
+                                                0x1 << 3 - TBD
+                                                0x1 << 4 - Depth Calibration data is valid (integrity/CRC32)
+                                                0x1 << 5 - Triggered calibration result is valid (pass)
+                                                0x1 << 6 - Triggered calibration table is valid (integrity/CRC32 + Digital Signature)
+                                                Bits [7..15] are reserved
 
     * uint32_t    mb_fusa_events                Bitmask:
                                                 MB_FUSA_EVENT_NOT_SAFE_BIT                    1LU << 0U
@@ -211,6 +251,26 @@ namespace librealsense
                                                 11 = INTERLOCK_DANGER_STATE
                                                 12 = DFU_MCU_STATE"
 
+     uint32_t    smcu_hw_monitor_status;        S.MCU HW Error report.
+                                                The parameters are derived from FMEDA, bitmasked (1 for Danger, 0 otherwise) and S.MCU-specific
+                                                0x1 << 0 - Global Notification
+                                                [1:10] - SMU Alarms
+                                                0x1 << 11 - SMCU Image CRC Check failed
+                                                0x1 << 12 - LBIST Failure
+                                                0x1 << 13 - MONBIST Failure
+                                                0x1 << 14 - SMU Alive Alarm Failure
+                                                0x1 << 15 - RegMon CPU0 SRAM Failure
+                                                0x1 << 16 - MBIST Config0 Failure
+                                                0x1 << 17 - MBIST Config1 Failure
+                                                0x1 << 18 - DTS Result Failure
+                                                0x1 << 19 - RegMon CPU1 SRAM Failure
+                                                0x1 << 20 - RegMon CPU2 SRAM Failure
+                                                0x1 << 21 - RegMon SMU and PLL Failure
+                                                [22:31] - Reserved
+
+
+
+
     *
     *
     */ 
@@ -239,7 +299,18 @@ namespace librealsense
         uint8_t     safety_preset_integrity;        // Bitmask: see details above the struct
         uint8_t     safety_preset_id_selected;      // Safety Preset index set via Adaptive Field selection GPIO
         uint8_t     safety_preset_id_used;          // Safety Preset index used in the latest Vision Safety algo processing - retrieved from cpfpVisionSafetyResults message
-        uint8_t     vision_reserved[25];            // zeroed
+        uint8_t     sip_degradation_diagnostics;    // Bitmask: see details above the struct
+        uint8_t     sip_generic_metrics_activate;   // Bitmask: see details above the struct
+        uint8_t     sip_generic_metrics_state;      // Bitmask: see details above the struct
+        uint8_t     sip_generic_metrics_value1;     // see details above the struct
+        uint8_t     sip_generic_metrics_value2;     // see details above the struct
+        uint8_t     sip_generic_metrics_values_reserved[6]; // see details above the struct
+        uint8_t     sip_generic_metrics_threshold1;  // see details above the struct
+        uint8_t     sip_generic_metrics_threshold2;  // see details above the struct
+        uint8_t     sip_generic_metrics_threshold_reserved[6]; // see details above the struct
+        uint8_t     zero_safety_monitoring_enabled; // Enum - 0:Regular (default) all safety in nominal mode - 1: "Zero Safety" mode
+        uint8_t     hara_history_mode;              // Enum - 0:Regular - 1: No history - 2: Local history
+        uint8_t     vision_reserved[4];             // zeroed
 
         // SOC Monitor
         uint32_t    soc_fusa_events;                // Bitmask: see details above the struct
@@ -252,7 +323,8 @@ namespace librealsense
         uint8_t     soc_hkr_critical_error_gpio;    // Critical-erro GPIO Status: 0 - off, 1 - on
         uint32_t    soc_monitor_l2_error_type;      // Soc Monitor Escalation of L2 error to Arbiter
         uint32_t    soc_monitor_l3_error_type;      // Soc Monitor Escalation of L3 error to Arbiter
-        uint8_t     soc_reserved[25];               // zeroed
+        uint16_t    soc_safety_and_security;        // Bitmask: see details above the struct
+        uint8_t     soc_reserved[23];               // zeroed
 
         // MB Monitor
         uint64_t    mb_fusa_event;                  // Bitmask: see details above the struct
@@ -272,7 +344,9 @@ namespace librealsense
         // OUT
         uint8_t     non_fusa_gpio;                  // Bitmask: see details above the struct
 
-        uint8_t     mcu_reserved[32];               // zeroed
+        uint32_t    smcu_hw_monitor_status;         // Bitmask: see details above the struct
+
+        uint8_t     mcu_reserved[28];               // zeroed
         
         uint32_t    crc32;                          // CRC
     };

@@ -58,7 +58,7 @@ def generate_valid_table():
     cfg.smcu_arbitration_params.hkr_stl_timeout = 40
     cfg.smcu_arbitration_params.mcu_stl_timeout = 40
     cfg.smcu_arbitration_params.sustained_aicv_frame_drops = 50
-    cfg.smcu_arbitration_params.generic_threshold_1 = 1  # application specific
+    cfg.smcu_arbitration_params.ossd_self_test_pulse_width = 1  # application specific
     cfg.crypto_signature = [0] * 32
     cfg.reserved = [0] * 17
     return cfg
