@@ -261,6 +261,8 @@ namespace librealsense
 
         void wmf_uvc_device::init_xu(const extension_unit& xu)
         {
+            std::lock_guard< std::recursive_mutex > lock( _source_lock );
+
             if (!_source)
                 throw std::runtime_error("Could not initialize extensions controls!");
 
@@ -862,6 +864,8 @@ namespace librealsense
 
         void wmf_uvc_device::set_d0()
         {
+            std::lock_guard< std::recursive_mutex > lock( _source_lock );
+
             if (!_device_attrs)
                 _device_attrs = create_device_attrs();
 
@@ -883,10 +887,15 @@ namespace librealsense
             CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));
             CHECK_HR(_reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), TRUE));
             _power_state = D0;
+
+            for( auto && xu : _xus )
+                init_xu( xu );
         }
 
         void wmf_uvc_device::set_d3()
         {
+            std::lock_guard< std::recursive_mutex > lock( _source_lock );
+
             safe_release(_camera_control);
             safe_release(_video_proc);
             safe_release(_reader);
@@ -1207,5 +1216,11 @@ namespace librealsense
             _profiles.clear();
             _frame_callbacks.clear();
         }
-    }
-}
+
+        power_state wmf_uvc_device::get_power_state() const
+        {
+            std::lock_guard< std::recursive_mutex > lock( _source_lock );
+            return _source ? D0 : D3;
+        }
+    } //namespace platform
+} //namespace librealsense

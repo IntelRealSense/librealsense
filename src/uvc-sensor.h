@@ -103,7 +103,6 @@ private:
     std::vector< platform::stream_profile > _internal_config;
     std::mutex _power_lock;
     std::mutex _configure_lock;
-    std::vector< platform::extension_unit > _xus;
     std::unique_ptr< power > _power;
     std::unique_ptr< frame_timestamp_reader > _timestamp_reader;
 };

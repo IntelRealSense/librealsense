@@ -73,13 +73,14 @@ namespace librealsense
             void stop_callbacks() override;
             void close(stream_profile profile) override;
             void set_power_state(power_state state) override;
-            power_state get_power_state() const override { return _power_state; }
+            power_state get_power_state() const override;
             std::vector<stream_profile> get_profiles() const override;
 
             static bool is_connected(const uvc_device_info& info);
             static void foreach_uvc_device(enumeration_callback action);
 
-            void init_xu(const extension_unit& xu) override;
+            void register_xu( platform::extension_unit && xu ) override { _xus.push_back( std::move( xu ) ); }
+            void init_xu( const extension_unit & xu ) override;
             bool set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len) override;
             bool get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const override;
             control_range get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const override;
@@ -137,7 +138,7 @@ namespace librealsense
             uint16_t                                _streamIndex;
             std::vector<profile_and_callback>       _streams;
             std::mutex                              _streams_mutex;
-
+            mutable std::recursive_mutex            _source_lock;
             named_mutex                             _systemwide_lock;
             std::string                             _location;
             usb_spec                                _device_usb_spec;
@@ -147,6 +148,7 @@ namespace librealsense
             bool                                    _streaming = false;
             std::atomic<bool>                       _is_started = false;
             std::wstring                            _device_id;
+            std::vector< platform::extension_unit > _xus;
         };
 
         class source_reader_callback : public IMFSourceReaderCallback

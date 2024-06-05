@@ -370,7 +370,7 @@ void uvc_sensor::finished_bulk_operation()
 
 void uvc_sensor::register_xu( platform::extension_unit xu )
 {
-    _xus.push_back( std::move( xu ) );
+    _device->register_xu( std::move( xu ) );
 }
 
 
@@ -418,8 +418,6 @@ void uvc_sensor::acquire_power()
         try
         {
             _device->set_power_state( platform::D0 );
-            for( auto && xu : _xus )
-                _device->init_xu( xu );
         }
         catch( std::exception const & e )
         {
