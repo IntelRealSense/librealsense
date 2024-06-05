@@ -2567,6 +2567,16 @@ namespace librealsense
             throw std::runtime_error("Failed to extract target dimension info!");
     }
 
+    rs2_calibration_config auto_calibrated::get_calibration_config() const
+    {
+        throw std::runtime_error(rsutils::string::from() << "Calibration Config not applicable for this device");
+    }
+
+    void auto_calibrated::set_calibration_config(const rs2_calibration_config& calib_config)
+    {
+        throw std::runtime_error(rsutils::string::from() << "Calibration Config not applicable for this device");
+    }
+
     void auto_calibrated::set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm)
     {
         _hw_monitor = hwm;

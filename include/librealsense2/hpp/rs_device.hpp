@@ -867,6 +867,33 @@ namespace rs2
 
             return result;
         }
+
+        /**
+        * get_calibration_config
+        * \param[out]  error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+        * \return  calib_config      Calibration Configuration struct to be filled
+        */
+        rs2_calibration_config get_calibration_config() const
+        {
+            rs2_error* e = nullptr;
+            rs2_calibration_config calib_config;
+            rs2_get_calibration_config(_dev.get(), &calib_config, &e);
+            error::handle(e);
+            return calib_config;
+        }
+        
+        /**
+        * set_calibration_config
+        * \param[out]  error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+        * \param[out]  error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+        * \return  calib_config      Calibration Configuration struct to be filled
+        */
+        void set_calibration_config(const rs2_calibration_config& calib_config)
+        {
+            rs2_error* e = nullptr;
+            rs2_set_calibration_config(_dev.get(), &calib_config, &e);
+            error::handle(e);
+        }
     };
 
     /*

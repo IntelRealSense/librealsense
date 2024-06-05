@@ -435,3 +435,5 @@ EXPORTS
     rs2_transform_point_to_point
     rs2_fov
     rs2_project_color_pixel_to_depth_pixel
+    rs2_get_calibration_config
+    rs2_set_calibration_config

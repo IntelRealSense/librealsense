@@ -82,6 +82,7 @@ namespace librealsense
             rgb_calibration_id = 0xb9,
             rgb_lut_id = 0xba,
             imu_calibration_id = 0xbb,
+            calib_cfg_id = 0xc0dd,
             max_id = -1
         };
 
