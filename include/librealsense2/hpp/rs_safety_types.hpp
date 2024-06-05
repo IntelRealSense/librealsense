@@ -61,7 +61,7 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_environment const&
     return out;
 }
 
-inline std::ostream& operator<<(std::ostream& out, rs2_safety_extrinsics_table const& ext)
+inline std::ostream& operator<<(std::ostream& out, rs2_extrinsics_row_major const& ext)
 {
     out << "\t\t\t" << "Rotation:";
     out << "\n\t\t\t\t" << "{ x:" << ext.rotation.x.x << ", y:" << ext.rotation.x.y << ", z:" << ext.rotation.x.z << " }";
