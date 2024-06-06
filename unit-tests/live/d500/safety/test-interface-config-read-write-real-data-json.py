@@ -164,7 +164,7 @@ sic_json_str = '''
             "hkr_stl_timeout": 40,
             "mcu_stl_timeout": 40,
             "sustained_aicv_frame_drops": 50,
-            "generic_threshold_1": 1
+            "ossd_self_test_pulse_width": 23
         },
         "crypto_signature": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     }

@@ -735,7 +735,7 @@ namespace librealsense
         smcu_arbitration_params["hkr_stl_timeout"] = sic.smcu_arbitration_params.hkr_stl_timeout;
         smcu_arbitration_params["mcu_stl_timeout"] = sic.smcu_arbitration_params.mcu_stl_timeout;
         smcu_arbitration_params["sustained_aicv_frame_drops"] = sic.smcu_arbitration_params.sustained_aicv_frame_drops;
-        smcu_arbitration_params["generic_threshold_1"] = sic.smcu_arbitration_params.generic_threshold_1;
+        smcu_arbitration_params["ossd_self_test_pulse_width"] = sic.smcu_arbitration_params.ossd_self_test_pulse_width;
        
         size_t number_of_elements = sizeof(sic.crypto_signature) / sizeof(sic.crypto_signature[0]);
         std::vector<uint8_t> crypto_signature_byte_array(number_of_elements);
@@ -826,7 +826,7 @@ namespace librealsense
         sic.smcu_arbitration_params.hkr_stl_timeout = smcu_arbitration_params["hkr_stl_timeout"];
         sic.smcu_arbitration_params.mcu_stl_timeout = smcu_arbitration_params["mcu_stl_timeout"];
         sic.smcu_arbitration_params.sustained_aicv_frame_drops = smcu_arbitration_params["sustained_aicv_frame_drops"];
-        sic.smcu_arbitration_params.generic_threshold_1 = smcu_arbitration_params["generic_threshold_1"];
+        sic.smcu_arbitration_params.ossd_self_test_pulse_width = smcu_arbitration_params["ossd_self_test_pulse_width"];
 
         std::vector<uint8_t> crypto_signature_vector = json_data["safety_interface_config"]["crypto_signature"].get<std::vector<uint8_t>>();
         std::memcpy(sic.crypto_signature, crypto_signature_vector.data(), crypto_signature_vector.size() * sizeof(uint8_t));

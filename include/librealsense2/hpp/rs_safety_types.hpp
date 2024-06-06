@@ -91,7 +91,7 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_smcu_arbitration_p
     out << "\n\t\t\t\t" << "hkr_stl_timeout" << smcu_arbitration_params.hkr_stl_timeout;
     out << "\n\t\t\t\t" << "mcu_stl_timeout" << smcu_arbitration_params.mcu_stl_timeout;
     out << "\n\t\t\t\t" << "sustained_aicv_frame_drops" << smcu_arbitration_params.sustained_aicv_frame_drops;
-    out << "\n\t\t\t\t" << "generic_threshold_1" << smcu_arbitration_params.ossd_self_test_pulse_width;
+    out << "\n\t\t\t\t" << "ossd_self_test_pulse_width" << smcu_arbitration_params.ossd_self_test_pulse_width;
     return out;
 }
 
