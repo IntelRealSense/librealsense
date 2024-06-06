@@ -88,10 +88,10 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_SAFETY_SIP_DEGRADATION_USED          , /**< Bitmask, enumerated */
     RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_ACTIVATE  , /**< Bitmask, enumerated */
     RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_STATE     , /**< Bitmask, enumerated */
-    RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_VALUE1    , /**< Byte array of up to 8 Generic Safety Algo continuous metrics indications */
-    RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_VALUE2    , /**< Byte array of up to 8 Generic Safety Algo continuous metrics indications */
-    RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_THRESHOLD1, /**< Byte array of up to 8 Generic Safety Algo continuous metrics thresholds */
-    RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_THRESHOLD2, /**< Byte array of up to 8 Generic Safety Algo continuous metrics thresholds */
+    RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_VALUE1    , /**< First value from byte array of up to 8 Generic Safety Algo continuous metrics indications */
+    RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_VALUE2    , /**< Second value from byte array of up to 8 Generic Safety Algo continuous metrics indications */
+    RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_THRESHOLD1, /**< First value from byte array of up to 8 Generic Safety Algo continuous metrics thresholds */
+    RS2_FRAME_METADATA_SAFETY_SIP_GENERIC_METRICS_THRESHOLD2, /**< Second value from byte array of up to 8 Generic Safety Algo continuous metrics thresholds */
     RS2_FRAME_METADATA_SAFETY_ZERO_MONITORING_ENABLED       , /**< Enum - 0:Regular (default) all safety in nominal mode - 1: "Zero Safety" mode */
     RS2_FRAME_METADATA_SAFETY_HARA_HISTORY_MODE             , /**< Enum - 0:Regular - 1: No history - 2: Local history */
     RS2_FRAME_METADATA_SAFETY_SOC_FUSA_EVENTS               , /**< Bitmask, enumerated - SOC critical notification: L2/L3 that requires handling/troubleshooting in S.MCU 32-bit value, as supplied by STL mechanism */
