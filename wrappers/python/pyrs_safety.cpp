@@ -53,7 +53,7 @@ void init_safety(py::module &m) {
         .def_readwrite("hkr_stl_timeout", &rs2_safety_smcu_arbitration_params::hkr_stl_timeout, "hkr_stl_timeout")
         .def_readwrite("mcu_stl_timeout", &rs2_safety_smcu_arbitration_params::mcu_stl_timeout, "mcu_stl_timeout")
         .def_readwrite("sustained_aicv_frame_drops", &rs2_safety_smcu_arbitration_params::sustained_aicv_frame_drops, "sustained_aicv_frame_drops")
-        .def_readwrite("generic_threshold_1", &rs2_safety_smcu_arbitration_params::generic_threshold_1, "generic_threshold_1");
+        .def_readwrite("ossd_self_test_pulse_width", &rs2_safety_smcu_arbitration_params::ossd_self_test_pulse_width, "ossd_self_test_pulse_width");
 
 
     py::class_<rs2_safety_occupancy_grid_params> safety_occupancy_grid_params(m, "safety_occupancy_grid_params"); // No docstring in C++
@@ -113,7 +113,8 @@ void init_safety(py::module &m) {
     py::class_<rs2_safety_environment> safety_environment(m, "safety_environment"); // No docstring in C++
     safety_environment.def(py::init<>())
         .def_readwrite( "safety_trigger_duration", &rs2_safety_environment::safety_trigger_duration, "Safety Trigger Duration" )
-        .def_readwrite( "linear_velocity", &rs2_safety_environment::linear_velocity, "Linear Velocity" )
+        .def_readwrite( "zero_safety_monitoring", &rs2_safety_environment::zero_safety_monitoring, "Zero Safety Monitoring")
+        .def_readwrite( "hara_history_continuation", &rs2_safety_environment::hara_history_continuation, "Hara History Continuation" )
         .def_readwrite( "angular_velocity", &rs2_safety_environment::angular_velocity, "Angular Velocity" )
         .def_readwrite( "payload_weight", &rs2_safety_environment::payload_weight, "Payload Weight" )
         .def_readwrite( "surface_inclination", &rs2_safety_environment::surface_inclination, "Surface Inclination" )

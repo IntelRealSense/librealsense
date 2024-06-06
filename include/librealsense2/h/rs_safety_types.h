@@ -66,7 +66,14 @@ typedef struct rs2_safety_environment
     float safety_trigger_duration; // duration in seconds to keep safety signal high after safety MCU is back to normal
 
     // Platform dynamics properties
-    float linear_velocity;  // m/sec
+    uint8_t zero_safety_monitoring;     // 0 - Regular (default). All Safety Mechanisms activated in nominal mode.
+                                        // 1 - "Zero Safety" mode.Continue monitoring but Inhibit triggering OSSD on Vision HaRA event + Collision Detections
+    uint8_t hara_history_continuation; // 0 - Regular or Global History. Vision HaRa Metrics are continued when switching Safety Preset. (default value)
+                                        // 1 - No History.When toggling Safety Preset all Vision HaRa metrics based on multiple sampling is being reset.
+                                        // 2 - Local History*, or History per Safety Preset.In this mode Vision HaRa metrics history is tracked per each preset 
+                                        // individually.When toggling Safety Presets S.MCU to check if that particular preset has history and if so - take that into consideration when reaching FuSa decision.
+                                        // In case the particular Safety Preset had no recorded history tracking then the expected behavior is similar to #1.
+    uint8_t reserved1[2];
     float angular_velocity; // rad/sec
     float payload_weight;   // a typical mass of the carriage payload in kg
 
@@ -123,7 +130,7 @@ typedef struct rs2_safety_smcu_arbitration_params
     uint8_t hkr_stl_timeout;                  // In ms
     uint8_t mcu_stl_timeout;                  // Application Specific
     uint8_t sustained_aicv_frame_drops;       // [0..100] % of frames required to arrive within the last 10 frames.
-    uint8_t generic_threshold_1;              // Application Specific
+    uint8_t ossd_self_test_pulse_width;       // units are 10usec - Physical range : 100..300 usec, default = 230 usec - Valid control range : 10 - 30
 } rs2_safety_smcu_arbitration_params;
 
 typedef struct rs2_safety_interface_config_header

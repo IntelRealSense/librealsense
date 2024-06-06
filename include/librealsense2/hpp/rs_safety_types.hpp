@@ -46,7 +46,8 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_2d_masking_zone co
 inline std::ostream& operator<<(std::ostream& out, rs2_safety_environment const& se)
 {
     out << "\t\t" << "Safety Trigger Duration: " << se.safety_trigger_duration << " [sec]";
-    out << "\n\t\t" << "Linear Velocity: " << se.linear_velocity << " [m/sec]";
+    out << "\n\t\t" << "Zero Safety Monitoring: " << se.zero_safety_monitoring << " [m/sec]";
+    out << "\n\t\t" << "Hara History Continuation: " << se.hara_history_continuation << " [m/sec]";
     out << "\n\t\t" << "Angular Velocity: " << se.angular_velocity << " [rad/sec]";
     out << "\n\t\t" << "Payload Weight: " << se.payload_weight << " [kg]";
     out << "\n\t\t" << "Surface Inclination: " << se.surface_inclination << " [deg]";
@@ -90,7 +91,7 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_smcu_arbitration_p
     out << "\n\t\t\t\t" << "hkr_stl_timeout" << smcu_arbitration_params.hkr_stl_timeout;
     out << "\n\t\t\t\t" << "mcu_stl_timeout" << smcu_arbitration_params.mcu_stl_timeout;
     out << "\n\t\t\t\t" << "sustained_aicv_frame_drops" << smcu_arbitration_params.sustained_aicv_frame_drops;
-    out << "\n\t\t\t\t" << "generic_threshold_1" << smcu_arbitration_params.generic_threshold_1;
+    out << "\n\t\t\t\t" << "generic_threshold_1" << smcu_arbitration_params.ossd_self_test_pulse_width;
     return out;
 }
 
