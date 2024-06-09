@@ -44,7 +44,7 @@ def generate_valid_table():
     translation = rs.float3(0.0, 0.0, 0.27)
 
     
-    cfg.camera_position = rs.safety_extrinsics_table(rotation, translation)
+    cfg.camera_position = rs.extrinsics_table(rotation, translation)
 
     cfg.occupancy_grid_params.grid_cell_seed = random.randint(10,200) # mm
     cfg.occupancy_grid_params.close_range_quorum = random.randint(0, 255)
