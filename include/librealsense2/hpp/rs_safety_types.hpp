@@ -46,8 +46,8 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_2d_masking_zone co
 inline std::ostream& operator<<(std::ostream& out, rs2_safety_environment const& se)
 {
     out << "\t\t" << "Safety Trigger Duration: " << se.safety_trigger_duration << " [sec]";
-    out << "\n\t\t" << "Zero Safety Monitoring: " << se.zero_safety_monitoring << " [m/sec]";
-    out << "\n\t\t" << "Hara History Continuation: " << se.hara_history_continuation << " [m/sec]";
+    out << "\n\t\t" << "Zero Safety Monitoring: " << (int)se.zero_safety_monitoring << " [m/sec]";
+    out << "\n\t\t" << "Hara History Continuation: " << (int)se.hara_history_continuation << " [m/sec]";
     out << "\n\t\t" << "Angular Velocity: " << se.angular_velocity << " [rad/sec]";
     out << "\n\t\t" << "Payload Weight: " << se.payload_weight << " [kg]";
     out << "\n\t\t" << "Surface Inclination: " << se.surface_inclination << " [deg]";
@@ -74,24 +74,24 @@ inline std::ostream& operator<<(std::ostream& out, rs2_extrinsics_row_major cons
 
 inline std::ostream& operator<<(std::ostream& out, rs2_safety_occupancy_grid_params const& occ_grid_params)
 {
-    out << "\n\t\t\t\t" << "Grid Cell Seed" << occ_grid_params.grid_cell_seed ;
-    out << "\n\t\t\t\t" << "Close Range Quorum" << occ_grid_params.close_range_quorum;
-    out << "\n\t\t\t\t" << "Mid Range Quorum" << occ_grid_params.mid_range_quorum;
-    out << "\n\t\t\t\t" << "Long Range Quorum" << occ_grid_params.long_range_quorum;
+    out << "\n\t\t\t\t" << "Grid Cell Seed" << (int)occ_grid_params.grid_cell_seed;
+    out << "\n\t\t\t\t" << "Close Range Quorum" << (int)occ_grid_params.close_range_quorum;
+    out << "\n\t\t\t\t" << "Mid Range Quorum" << (int)occ_grid_params.mid_range_quorum;
+    out << "\n\t\t\t\t" << "Long Range Quorum" << (int)occ_grid_params.long_range_quorum;
     return out;
 }
 
 inline std::ostream& operator<<(std::ostream& out, rs2_safety_smcu_arbitration_params const& smcu_arbitration_params)
 {
-    out << "\n\t\t\t\t" << "l_0_total_threshold" << smcu_arbitration_params.l_0_total_threshold;
-    out << "\n\t\t\t\t" << "l_0_sustained_rate_threshold" << smcu_arbitration_params.l_0_sustained_rate_threshold;
-    out << "\n\t\t\t\t" << "l_1_total_threshold" << smcu_arbitration_params.l_1_total_threshold;
-    out << "\n\t\t\t\t" << "l_1_sustained_rate_threshold" << smcu_arbitration_params.l_1_sustained_rate_threshold;
-    out << "\n\t\t\t\t" << "l_4_total_threshold" << smcu_arbitration_params.l_4_total_threshold;
-    out << "\n\t\t\t\t" << "hkr_stl_timeout" << smcu_arbitration_params.hkr_stl_timeout;
-    out << "\n\t\t\t\t" << "mcu_stl_timeout" << smcu_arbitration_params.mcu_stl_timeout;
-    out << "\n\t\t\t\t" << "sustained_aicv_frame_drops" << smcu_arbitration_params.sustained_aicv_frame_drops;
-    out << "\n\t\t\t\t" << "ossd_self_test_pulse_width" << smcu_arbitration_params.ossd_self_test_pulse_width;
+    out << "\n\t\t\t\t" << "l_0_total_threshold" << (int)smcu_arbitration_params.l_0_total_threshold;
+    out << "\n\t\t\t\t" << "l_0_sustained_rate_threshold" << (int)smcu_arbitration_params.l_0_sustained_rate_threshold;
+    out << "\n\t\t\t\t" << "l_1_total_threshold" << (int)smcu_arbitration_params.l_1_total_threshold;
+    out << "\n\t\t\t\t" << "l_1_sustained_rate_threshold" << (int)smcu_arbitration_params.l_1_sustained_rate_threshold;
+    out << "\n\t\t\t\t" << "l_4_total_threshold" << (int)smcu_arbitration_params.l_4_total_threshold;
+    out << "\n\t\t\t\t" << "hkr_stl_timeout" << (int)smcu_arbitration_params.hkr_stl_timeout;
+    out << "\n\t\t\t\t" << "mcu_stl_timeout" << (int)smcu_arbitration_params.mcu_stl_timeout;
+    out << "\n\t\t\t\t" << "sustained_aicv_frame_drops" << (int)smcu_arbitration_params.sustained_aicv_frame_drops;
+    out << "\n\t\t\t\t" << "ossd_self_test_pulse_width" << (int)smcu_arbitration_params.ossd_self_test_pulse_width;
     return out;
 }
 
@@ -125,25 +125,25 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_interface_config_w
     out << "Safety Interface Config:\n";
     out << "\t" << "Pins:";
     out << "\t\t" << "direction:"             << "\t\t" << "|" << "\t\t" << "functionality \n";
-    out << "\t\t" << sic.payload.power.direction      << "\t\t" << "|" << "\t\t" << sic.payload.power.functionality << "\n";
-    out << "\t\t" << sic.payload.ossd1_b.direction    << "\t\t" << "|" << "\t\t" << sic.payload.ossd1_b.functionality << "\n";
-    out << "\t\t" << sic.payload.ossd1_a.direction    << "\t\t" << "|" << "\t\t" << sic.payload.ossd1_a.functionality << "\n";
-    out << "\t\t" << sic.payload.preset3_a.direction  << "\t\t" << "|" << "\t\t" << sic.payload.preset3_a.functionality << "\n";
-    out << "\t\t" << sic.payload.preset3_b.direction  << "\t\t" << "|" << "\t\t" << sic.payload.preset3_b.functionality << "\n";
-    out << "\t\t" << sic.payload.preset4_a.direction  << "\t\t" << "|" << "\t\t" << sic.payload.preset4_a.functionality << "\n";
-    out << "\t\t" << sic.payload.preset1_b.direction  << "\t\t" << "|" << "\t\t" << sic.payload.preset1_b.functionality << "\n";
-    out << "\t\t" << sic.payload.preset1_a.direction  << "\t\t" << "|" << "\t\t" << sic.payload.preset1_a.functionality << "\n";
-    out << "\t\t" << sic.payload.gpio_0.direction     << "\t\t" << "|" << "\t\t" << sic.payload.gpio_0.functionality << "\n";
-    out << "\t\t" << sic.payload.gpio_1.direction     << "\t\t" << "|" << "\t\t" << sic.payload.gpio_1.functionality << "\n";
-    out << "\t\t" << sic.payload.gpio_3.direction     << "\t\t" << "|" << "\t\t" << sic.payload.gpio_3.functionality << "\n";
-    out << "\t\t" << sic.payload.gpio_2.direction     << "\t\t" << "|" << "\t\t" << sic.payload.gpio_2.functionality << "\n";
-    out << "\t\t" << sic.payload.preset2_b.direction  << "\t\t" << "|" << "\t\t" << sic.payload.preset2_b.functionality << "\n";
-    out << "\t\t" << sic.payload.gpio_4.direction     << "\t\t" << "|" << "\t\t" << sic.payload.gpio_4.functionality << "\n";
-    out << "\t\t" << sic.payload.preset2_a.direction  << "\t\t" << "|" << "\t\t" << sic.payload.preset2_a.functionality << "\n";
-    out << "\t\t" << sic.payload.preset4_b.direction  << "\t\t" << "|" << "\t\t" << sic.payload.preset4_b.functionality << "\n";
-    out << "\t\t" << sic.payload.ground.direction     << "\t\t" << "|" << "\t\t" << sic.payload.ground.functionality << "\n";
+    out << "\t\t" << sic.payload.power.direction      << "\t\t" << "|" << "\t\t" << (int)sic.payload.power.functionality << "\n";
+    out << "\t\t" << sic.payload.ossd1_b.direction    << "\t\t" << "|" << "\t\t" << (int)sic.payload.ossd1_b.functionality << "\n";
+    out << "\t\t" << sic.payload.ossd1_a.direction    << "\t\t" << "|" << "\t\t" << (int)sic.payload.ossd1_a.functionality << "\n";
+    out << "\t\t" << sic.payload.preset3_a.direction  << "\t\t" << "|" << "\t\t" << (int)sic.payload.preset3_a.functionality << "\n";
+    out << "\t\t" << sic.payload.preset3_b.direction  << "\t\t" << "|" << "\t\t" << (int)sic.payload.preset3_b.functionality << "\n";
+    out << "\t\t" << sic.payload.preset4_a.direction  << "\t\t" << "|" << "\t\t" << (int)sic.payload.preset4_a.functionality << "\n";
+    out << "\t\t" << sic.payload.preset1_b.direction  << "\t\t" << "|" << "\t\t" << (int)sic.payload.preset1_b.functionality << "\n";
+    out << "\t\t" << sic.payload.preset1_a.direction  << "\t\t" << "|" << "\t\t" << (int)sic.payload.preset1_a.functionality << "\n";
+    out << "\t\t" << sic.payload.gpio_0.direction     << "\t\t" << "|" << "\t\t" << (int)sic.payload.gpio_0.functionality << "\n";
+    out << "\t\t" << sic.payload.gpio_1.direction     << "\t\t" << "|" << "\t\t" << (int)sic.payload.gpio_1.functionality << "\n";
+    out << "\t\t" << sic.payload.gpio_3.direction     << "\t\t" << "|" << "\t\t" << (int)sic.payload.gpio_3.functionality << "\n";
+    out << "\t\t" << sic.payload.gpio_2.direction     << "\t\t" << "|" << "\t\t" << (int)sic.payload.gpio_2.functionality << "\n";
+    out << "\t\t" << sic.payload.preset2_b.direction  << "\t\t" << "|" << "\t\t" << (int)sic.payload.preset2_b.functionality << "\n";
+    out << "\t\t" << sic.payload.gpio_4.direction     << "\t\t" << "|" << "\t\t" << (int)sic.payload.gpio_4.functionality << "\n";
+    out << "\t\t" << sic.payload.preset2_a.direction  << "\t\t" << "|" << "\t\t" << (int)sic.payload.preset2_a.functionality << "\n";
+    out << "\t\t" << sic.payload.preset4_b.direction  << "\t\t" << "|" << "\t\t" << (int)sic.payload.preset4_b.functionality << "\n";
+    out << "\t\t" << sic.payload.ground.direction     << "\t\t" << "|" << "\t\t" << (int)sic.payload.ground.functionality << "\n";
     out << "\n";
-    out << "\t\t" << "gpio stabilization interval: "  << "\t\t" << sic.payload.gpio_stabilization_interval << "\n";
+    out << "\t\t" << "gpio stabilization interval: "  << "\t\t" << (int)sic.payload.gpio_stabilization_interval << "\n";
     out << "\t\t" << "Camera position: " << "\t\t" << sic.payload.camera_position << "\n";
     out << "\t\t" << "Occupancy grid params: " << "\t\t" << sic.payload.occupancy_grid_params << "\n";
     out << "\t\t" << "SMCU arbitration params: " << "\t\t" << sic.payload.smcu_arbitration_params << "\n";
