@@ -85,7 +85,12 @@ namespace librealsense
                 info = color_devs_info[1];
             else
                 info = color_devs_info.front();
-            auto uvcd = get_backend()->create_uvc_device( info );
+            auto & uvcd = environment::get_instance().get_uvc_device( info.unique_id );
+            if( ! uvcd )
+            {
+                uvcd = get_backend()->create_uvc_device( info );
+                environment::get_instance().set_uvc_device( info.unique_id, uvcd );
+            }
             //auto ftr = std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(d400_timestamp_reader_metadata), _tf_keeper, enable_global_time_option));
             auto raw_color_ep = std::make_shared<uvc_sensor>("Raw RGB Camera",
                 uvcd,

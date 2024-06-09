@@ -72,7 +72,15 @@ platform_camera::platform_camera( std::shared_ptr< const device_info > const & d
     std::vector< std::shared_ptr< platform::uvc_device > > devs;
     auto backend = get_backend();
     for( auto & info : uvc_infos )
-        devs.push_back( backend->create_uvc_device( info ) );
+    {
+        auto & dev = environment::get_instance().get_uvc_device( info.unique_id );
+        if( ! dev )
+        {
+            dev = get_backend()->create_uvc_device( info );
+            environment::get_instance().set_uvc_device( info.unique_id, dev );
+        }
+        devs.push_back( dev );
+    }
 
     std::unique_ptr< frame_timestamp_reader > host_timestamp_reader_backup( new ds_timestamp_reader() );
     auto raw_color_ep = std::make_shared< uvc_sensor >(
