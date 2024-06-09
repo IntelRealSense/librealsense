@@ -311,11 +311,11 @@ namespace librealsense
             static_cast<int>(d500_calib_type::d500_calib_dynamic));
         auto res = _hw_monitor->send(cmd);
 
-        if (res.size() < sizeof(rs2_calib_config_with_header))
+        if (res.size() < sizeof(rs2_calibration_config_with_header))
         {
             throw io_exception(rsutils::string::from() << "Calibration config reading failed");
         }
-        calib_config_with_header = reinterpret_cast<rs2_calib_config_with_header*>(res.data());
+        calib_config_with_header = reinterpret_cast<rs2_calibration_config_with_header*>(res.data());
 
         // check CRC before returning result       
         auto computed_crc32 = rsutils::number::calc_crc32(res.data() + sizeof(rs2_calibration_config_header), sizeof(rs2_calibration_config));

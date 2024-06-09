@@ -457,4 +457,6 @@ EXPORTS
     rs2_safety_pin_direction_to_string
     rs2_safety_pin_functionality_to_string
     rs2_calib_location_to_string
+    rs2_get_calibration_config
+    rs2_set_calibration_config
     

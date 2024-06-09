@@ -55,7 +55,7 @@ def get_valid_preset():
     translation = rs.float3(0.0, 0.0, 0.27)
 
     # init safety extrinsics table (transformation link) from rotation matrix and translation vector
-    transformation_link = rs.safety_extrinsics_table(rotation, translation)
+    transformation_link = rs.extrinsics_table(rotation, translation)
 
     # init safety platform config
     safety_platform = rs.safety_platform()
