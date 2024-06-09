@@ -661,4 +661,176 @@ namespace librealsense
         
         return result->payload;
     }
+
+    std::string d500_safety_sensor::safety_interface_config_to_json_string(const rs2_safety_interface_config& sic) const
+    {
+
+        rsutils::json json_data;
+        auto&& pins = json_data["safety_interface_config"]["m12_safety_pins_configuration"];
+        pins["power"]["direction"] = sic.power.direction;
+        pins["power"]["functionality"] = sic.power.functionality;
+        pins["ossd1_b"]["direction"] = sic.ossd1_b.direction;
+        pins["ossd1_b"]["functionality"] = sic.ossd1_b.functionality;
+        pins["ossd1_a"]["direction"] = sic.ossd1_a.direction;
+        pins["ossd1_a"]["functionality"] = sic.ossd1_a.functionality;
+        pins["preset3_a"]["direction"] = sic.preset3_a.direction;
+        pins["preset3_a"]["functionality"] = sic.preset3_a.functionality;
+        pins["preset3_b"]["direction"] = sic.preset3_b.direction;
+        pins["preset3_b"]["functionality"] = sic.preset3_b.functionality;
+        pins["preset4_a"]["direction"] = sic.preset4_a.direction;
+        pins["preset4_a"]["functionality"] = sic.preset4_a.functionality;
+        pins["preset1_b"]["direction"] = sic.preset1_b.direction;
+        pins["preset1_b"]["functionality"] = sic.preset1_b.functionality;
+        pins["preset1_a"]["direction"] = sic.preset1_a.direction;
+        pins["preset1_a"]["functionality"] = sic.preset1_a.functionality;
+        pins["gpio_0"]["direction"] = sic.gpio_0.direction;
+        pins["gpio_0"]["functionality"] = sic.gpio_0.functionality;
+        pins["gpio_1"]["direction"] = sic.gpio_1.direction;
+        pins["gpio_1"]["functionality"] = sic.gpio_1.functionality;
+        pins["gpio_3"]["direction"] = sic.gpio_3.direction;
+        pins["gpio_3"]["functionality"] = sic.gpio_3.functionality;
+        pins["gpio_2"]["direction"] = sic.gpio_2.direction;
+        pins["gpio_2"]["functionality"] = sic.gpio_2.functionality;
+        pins["preset2_b"]["direction"] = sic.preset2_b.direction;
+        pins["preset2_b"]["functionality"] = sic.preset2_b.functionality;
+        pins["gpio_4"]["direction"] = sic.gpio_4.direction;
+        pins["gpio_4"]["functionality"] = sic.gpio_4.functionality;
+        pins["preset2_a"]["direction"] = sic.preset2_a.direction;
+        pins["preset2_a"]["functionality"] = sic.preset2_a.functionality;
+        pins["preset4_b"]["direction"] = sic.preset4_b.direction;
+        pins["preset4_b"]["functionality"] = sic.preset4_b.functionality;
+        pins["ground"]["direction"] = sic.ground.direction;
+        pins["ground"]["functionality"] = sic.ground.functionality;
+
+        json_data["safety_interface_config"]["gpio_stabilization_interval"] = sic.gpio_stabilization_interval;
+
+        auto&& rotation = json_data["safety_interface_config"]["camera_position"]["rotation"];
+        rotation[0][0] = sic.camera_position.rotation.x.x;
+        rotation[0][1] = sic.camera_position.rotation.x.y;
+        rotation[0][2] = sic.camera_position.rotation.x.z;
+        rotation[1][0] = sic.camera_position.rotation.y.x;
+        rotation[1][1] = sic.camera_position.rotation.y.y;
+        rotation[1][2] = sic.camera_position.rotation.y.z;
+        rotation[2][0] = sic.camera_position.rotation.z.x;
+        rotation[2][1] = sic.camera_position.rotation.z.y;
+        rotation[2][2] = sic.camera_position.rotation.z.z;
+
+        auto&& translation = json_data["safety_interface_config"]["camera_position"]["translation"];
+        translation[0] = sic.camera_position.translation.x;
+        translation[1] = sic.camera_position.translation.y;
+        translation[2] = sic.camera_position.translation.z;
+
+        auto occupancy_grid_params = json_data["safety_interface_config"]["occupancy_grid_params"];
+        occupancy_grid_params["grid_cell_seed"] = sic.occupancy_grid_params.grid_cell_seed;
+        occupancy_grid_params["close_range_quorum"] = sic.occupancy_grid_params.close_range_quorum;
+        occupancy_grid_params["mid_range_quorum"] = sic.occupancy_grid_params.mid_range_quorum;
+        occupancy_grid_params["long_range_quorum"] = sic.occupancy_grid_params.long_range_quorum;
+
+        auto smcu_arbitration_params = json_data["safety_interface_config"]["smcu_arbitration_params"];
+        smcu_arbitration_params["l_0_total_threshold"] = sic.smcu_arbitration_params.l_0_total_threshold;
+        smcu_arbitration_params["l_0_sustained_rate_threshold"] = sic.smcu_arbitration_params.l_0_sustained_rate_threshold;
+        smcu_arbitration_params["l_1_total_threshold"] = sic.smcu_arbitration_params.l_1_total_threshold;
+        smcu_arbitration_params["l_1_sustained_rate_threshold"] = sic.smcu_arbitration_params.l_1_sustained_rate_threshold;
+        smcu_arbitration_params["l_4_total_threshold"] = sic.smcu_arbitration_params.l_4_total_threshold;
+        smcu_arbitration_params["hkr_stl_timeout"] = sic.smcu_arbitration_params.hkr_stl_timeout;
+        smcu_arbitration_params["mcu_stl_timeout"] = sic.smcu_arbitration_params.mcu_stl_timeout;
+        smcu_arbitration_params["sustained_aicv_frame_drops"] = sic.smcu_arbitration_params.sustained_aicv_frame_drops;
+        smcu_arbitration_params["ossd_self_test_pulse_width"] = sic.smcu_arbitration_params.ossd_self_test_pulse_width;
+       
+        size_t number_of_elements = sizeof(sic.crypto_signature) / sizeof(sic.crypto_signature[0]);
+        std::vector<uint8_t> crypto_signature_byte_array(number_of_elements);
+        memcpy(crypto_signature_byte_array.data(), sic.crypto_signature, sizeof(sic.crypto_signature));
+        json_data["safety_interface_config"]["crypto_signature"] = crypto_signature_byte_array;
+
+        // Convert JSON object to string
+        std::string json_str = json_data.dump();
+
+        // Ensure UTF-8 encoding
+        std::string utf8_str = json_str.c_str(); // Ensure the string is UTF-8 encoded
+
+        // Return the UTF-8 string
+        return utf8_str.c_str();
+    }
+
+    rs2_safety_interface_config d500_safety_sensor::json_string_to_safety_interface_config(const std::string& json_str) const
+    {
+        rsutils::json json_data = rsutils::json::parse(json_str);
+        rs2_safety_interface_config sic;
+
+        auto&& pins = json_data["safety_interface_config"]["m12_safety_pins_configuration"];
+        sic.power.direction = pins["power"]["direction"];
+        sic.power.functionality = pins["power"]["functionality"];
+        sic.ossd1_b.direction = pins["ossd1_b"]["direction"];
+        sic.ossd1_b.functionality = pins["ossd1_b"]["functionality"];
+        sic.ossd1_a.direction = pins["ossd1_a"]["direction"];
+        sic.ossd1_a.functionality = pins["ossd1_a"]["functionality"];
+        sic.preset3_a.direction = pins["preset3_a"]["direction"];
+        sic.preset3_a.functionality = pins["preset3_a"]["functionality"];
+        sic.preset3_b.direction = pins["preset3_b"]["direction"];
+        sic.preset3_b.functionality = pins["preset3_b"]["functionality"];
+        sic.preset4_a.direction = pins["preset4_a"]["direction"];
+        sic.preset4_a.functionality = pins["preset4_a"]["functionality"];
+        sic.preset1_b.direction = pins["preset1_b"]["direction"];
+        sic.preset1_b.functionality = pins["preset1_b"]["functionality"];
+        sic.preset1_a.direction = pins["preset1_a"]["direction"];
+        sic.preset1_a.functionality = pins["preset1_a"]["functionality"];
+        sic.gpio_0.direction = pins["gpio_0"]["direction"];
+        sic.gpio_0.functionality = pins["gpio_0"]["functionality"];
+        sic.gpio_1.direction = pins["gpio_1"]["direction"];
+        sic.gpio_1.functionality = pins["gpio_1"]["functionality"];
+        sic.gpio_3.direction = pins["gpio_3"]["direction"];
+        sic.gpio_3.functionality = pins["gpio_3"]["functionality"];
+        sic.gpio_2.direction = pins["gpio_2"]["direction"];
+        sic.gpio_2.functionality = pins["gpio_2"]["functionality"];
+        sic.preset2_b.direction = pins["preset2_b"]["direction"];
+        sic.preset2_b.functionality = pins["preset2_b"]["functionality"];
+        sic.gpio_4.direction = pins["gpio_4"]["direction"];
+        sic.gpio_4.functionality = pins["gpio_4"]["functionality"];
+        sic.preset2_a.direction = pins["preset2_a"]["direction"];
+        sic.preset2_a.functionality = pins["preset2_a"]["functionality"];
+        sic.preset4_b.direction = pins["preset4_b"]["direction"];
+        sic.preset4_b.functionality = pins["preset4_b"]["functionality"];
+        sic.ground.direction = pins["ground"]["direction"];
+        sic.ground.functionality = pins["ground"]["functionality"];
+
+        sic.gpio_stabilization_interval = json_data["safety_interface_config"]["gpio_stabilization_interval"];
+
+        auto&& rotation = json_data["safety_interface_config"]["camera_position"]["rotation"];
+        sic.camera_position.rotation.x.x = rotation[0][0];
+        sic.camera_position.rotation.x.y = rotation[0][1];
+        sic.camera_position.rotation.x.z = rotation[0][2];
+        sic.camera_position.rotation.y.x = rotation[1][0];
+        sic.camera_position.rotation.y.y = rotation[1][1];
+        sic.camera_position.rotation.y.z = rotation[1][2];
+        sic.camera_position.rotation.z.x = rotation[2][0];
+        sic.camera_position.rotation.z.y = rotation[2][1];
+        sic.camera_position.rotation.z.z = rotation[2][2];
+
+        auto&& translation = json_data["safety_interface_config"]["camera_position"]["translation"];
+        sic.camera_position.translation.x = translation[0];
+        sic.camera_position.translation.y = translation[1];
+        sic.camera_position.translation.z = translation[2];
+
+        auto occupancy_grid_params = json_data["safety_interface_config"]["occupancy_grid_params"];
+        sic.occupancy_grid_params.grid_cell_seed = occupancy_grid_params["grid_cell_seed"];
+        sic.occupancy_grid_params.close_range_quorum = occupancy_grid_params["close_range_quorum"];
+        sic.occupancy_grid_params.mid_range_quorum = occupancy_grid_params["mid_range_quorum"];
+        sic.occupancy_grid_params.long_range_quorum = occupancy_grid_params["long_range_quorum"];
+
+        auto smcu_arbitration_params = json_data["safety_interface_config"]["smcu_arbitration_params"];
+        sic.smcu_arbitration_params.l_0_total_threshold =smcu_arbitration_params["l_0_total_threshold"];
+        sic.smcu_arbitration_params.l_0_sustained_rate_threshold = smcu_arbitration_params["l_0_sustained_rate_threshold"];
+        sic.smcu_arbitration_params.l_1_total_threshold = smcu_arbitration_params["l_1_total_threshold"];
+        sic.smcu_arbitration_params.l_1_sustained_rate_threshold = smcu_arbitration_params["l_1_sustained_rate_threshold"];
+        sic.smcu_arbitration_params.l_4_total_threshold = smcu_arbitration_params["l_4_total_threshold"];
+        sic.smcu_arbitration_params.hkr_stl_timeout = smcu_arbitration_params["hkr_stl_timeout"];
+        sic.smcu_arbitration_params.mcu_stl_timeout = smcu_arbitration_params["mcu_stl_timeout"];
+        sic.smcu_arbitration_params.sustained_aicv_frame_drops = smcu_arbitration_params["sustained_aicv_frame_drops"];
+        sic.smcu_arbitration_params.ossd_self_test_pulse_width = smcu_arbitration_params["ossd_self_test_pulse_width"];
+
+        std::vector<uint8_t> crypto_signature_vector = json_data["safety_interface_config"]["crypto_signature"].get<std::vector<uint8_t>>();
+        std::memcpy(sic.crypto_signature, crypto_signature_vector.data(), crypto_signature_vector.size() * sizeof(uint8_t));
+
+        return sic;
+    }
 }

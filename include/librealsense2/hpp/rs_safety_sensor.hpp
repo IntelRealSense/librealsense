@@ -66,11 +66,29 @@ namespace rs2
             error::handle(e);
             return sic;
         }
-        void set_safety_interface_config(rs2_safety_interface_config const& sic) const
+
+        void set_safety_interface_config(const rs2_safety_interface_config& sic) const
         {
             rs2_error* e = nullptr;
             rs2_set_safety_interface_config(_sensor.get(), &sic, &e);
             error::handle(e);
+        }
+
+        rs2_safety_interface_config json_string_to_safety_interface_config(const std::string& json_str) const
+        {
+            rs2_error* e = nullptr;
+            rs2_safety_interface_config sic;
+            rs2_json_string_to_safety_interface_config(_sensor.get(), json_str.c_str(), &sic, &e);
+            error::handle(e);
+            return sic;
+        }
+
+        std::string safety_interface_config_to_json_string(const rs2_safety_interface_config& sic) const
+        {
+            rs2_error* e = nullptr;
+            std::string json_str = rs2_safety_interface_config_to_json_string(_sensor.get(), &sic, &e);
+            error::handle(e);
+            return json_str;
         }
     };
 }

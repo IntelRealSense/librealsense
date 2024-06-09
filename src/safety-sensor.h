@@ -17,6 +17,8 @@ namespace librealsense {
         virtual rs2_safety_interface_config get_safety_interface_config(rs2_calib_location loc) const = 0;
         virtual std::string safety_preset_to_json_string(rs2_safety_preset const& sp) const = 0;
         virtual rs2_safety_preset json_string_to_safety_preset(const std::string& json_str) const = 0;
+        virtual std::string safety_interface_config_to_json_string(const rs2_safety_interface_config& sic) const = 0;
+        virtual rs2_safety_interface_config json_string_to_safety_interface_config(const std::string& json_str) const = 0;
 
     };
     MAP_EXTENSION(RS2_EXTENSION_SAFETY_SENSOR, librealsense::safety_sensor);
