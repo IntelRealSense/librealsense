@@ -401,6 +401,48 @@ namespace librealsense
         };
     };
 
+    class rs421_device : public d400_active,
+                         public ds_advanced_mode_base,
+                         public firmware_logger_device
+    {
+    public:
+        rs421_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
+            : device( dev_info, register_device_notifications )
+            , backend_device( dev_info, register_device_notifications )
+            , d400_device( dev_info )
+            , d400_active( dev_info )
+            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , firmware_logger_device(
+                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+        {
+            // Unregister unsupported options registered commonly by d400_device
+            auto & depth_sensor = get_depth_sensor();
+            depth_sensor.unregister_option( RS2_OPTION_OUTPUT_TRIGGER_ENABLED );
+            depth_sensor.unregister_option( RS2_OPTION_INTER_CAM_SYNC_MODE );
+        }
+
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+
+        std::vector<tagged_profile> get_profiles_tags() const override
+        {
+            std::vector<tagged_profile> tags;
+            auto usb_spec = get_usb_spec();
+            if (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined)
+            {
+                tags.push_back({ RS2_STREAM_DEPTH, -1, 848, 480, RS2_FORMAT_Z16, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+                tags.push_back({ RS2_STREAM_INFRARED, 1, 848, 480, RS2_FORMAT_Y8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+                tags.push_back({ RS2_STREAM_INFRARED, 2, 848, 480, RS2_FORMAT_Y8, 30, profile_tag::PROFILE_TAG_SUPERSET });
+            }
+            else
+            {
+                tags.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 15, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+                tags.push_back({ RS2_STREAM_INFRARED, 1, 640, 480, RS2_FORMAT_Y8, 15, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+                tags.push_back({ RS2_STREAM_INFRARED, 2, 640, 480, RS2_FORMAT_Y8, 15, profile_tag::PROFILE_TAG_SUPERSET });
+            }
+            return tags;
+        };
+    };
+
     // AWG
     class rs430_device : public d400_active,
                          public ds_advanced_mode_base,
@@ -1068,6 +1110,8 @@ namespace librealsense
             return std::make_shared< rs416_rgb_device >( dev_info, register_device_notifications );
         case RS420_PID:
             return std::make_shared< rs420_device >( dev_info, register_device_notifications );
+        case RS421_PID:
+            return std::make_shared< rs421_device >( dev_info, register_device_notifications );
         case RS420_MM_PID:
             return std::make_shared< rs420_mm_device >( dev_info, register_device_notifications );
         case RS430_PID:
@@ -1231,6 +1275,12 @@ namespace librealsense
     {
         std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get()};
         return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
+    }
+
+    std::shared_ptr< matcher > rs421_device::create_matcher( const frame_holder & frame ) const
+    {
+        std::vector< stream_interface * > streams = { _depth_stream.get(), _left_ir_stream.get(), _right_ir_stream.get() };
+        return matcher_factory::create( RS2_MATCHER_DEFAULT, streams );
     }
 
     std::shared_ptr<matcher> rs430_device::create_matcher(const frame_holder& frame) const
