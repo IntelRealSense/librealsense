@@ -413,7 +413,9 @@ void uvc_sensor::acquire_power()
 {
     std::lock_guard< std::mutex > lock( _power_lock );
     auto & user_count = environment::get_instance().get_device_power_counter( _device->get_device_unique_id() );
-    if( user_count.fetch_add( 1 ) == 0 )
+    int count = user_count.fetch_add( 1 );
+    LOG_ERROR( "uvc_sensor::acquire_power(). Counter is " + std::to_string( count ) );
+    if( count == 0 )
     {
         try
         {
@@ -438,7 +440,9 @@ void uvc_sensor::release_power()
 {
     std::lock_guard< std::mutex > lock( _power_lock );
     auto & user_count = environment::get_instance().get_device_power_counter( _device->get_device_unique_id() );
-    if( user_count.fetch_add( -1 ) == 1 )
+    int count = user_count.fetch_add( -1 );
+    LOG_ERROR( "uvc_sensor::release_power(). Counter is " + std::to_string( count ) );
+    if( count == 1 )
     {
         try
         {

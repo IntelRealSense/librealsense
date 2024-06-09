@@ -261,8 +261,9 @@ namespace librealsense
 
         void wmf_uvc_device::init_xu(const extension_unit& xu)
         {
+            LOG_ERROR( "wmf_uvc_device::init_xu start. UID = " << get_device_unique_id() << " this = " << this );
             std::lock_guard< std::recursive_mutex > lock( _source_lock );
-
+            LOG_ERROR( "wmf_uvc_device::init_xu got lock" );
             if (!_source)
                 throw std::runtime_error("Could not initialize extensions controls!");
 
@@ -282,11 +283,15 @@ namespace librealsense
             CHECK_HR(unknown->QueryInterface(__uuidof(IKsControl),
                 reinterpret_cast<void **>(&ks_control)));
             _ks_controls[xu.node] = ks_control;
+
+            LOG_ERROR( "wmf_uvc_device::init_xu finished. _ks_controls[" << xu.node << "] = " << ks_control );
         }
 
         bool wmf_uvc_device::set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len)
         {
-            auto ks_control = get_ks_control(xu);
+            LOG_ERROR( "wmf_uvc_device::set_xu start. UID = " << get_device_unique_id() << " this = " << this );
+            auto ks_control = get_ks_control( xu );
+            LOG_ERROR( "wmf_uvc_device::set_xu got ks_control " << ks_control << " for xu.node " << xu.node );
 
             KSP_NODE node;
             memset(&node, 0, sizeof(KSP_NODE));
@@ -308,7 +313,9 @@ namespace librealsense
 
         bool wmf_uvc_device::get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const
         {
-            auto ks_control = get_ks_control(xu);
+            LOG_ERROR( "wmf_uvc_device::get_xu start. UID = " << get_device_unique_id() << " this = " << this );
+            auto ks_control = get_ks_control( xu );
+            LOG_ERROR( "wmf_uvc_device::get_xu got ks_control " << ks_control << " for xu.node " << xu.node );
 
             KSP_NODE node;
             memset(&node, 0, sizeof(KSP_NODE));
@@ -399,7 +406,9 @@ namespace librealsense
 
         control_range wmf_uvc_device::get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const
         {
-            auto ks_control = get_ks_control(xu);
+            LOG_ERROR( "wmf_uvc_device::get_xu_range start. UID = " << get_device_unique_id() << " this = " << this );
+            auto ks_control = get_ks_control( xu );
+            LOG_ERROR( "wmf_uvc_device::get_xu_range got ks_control " << ks_control << " for xu.node " << xu.node );
 
             /* get step, min and max values*/
             KSP_NODE node;
@@ -504,11 +513,15 @@ namespace librealsense
 
         bool wmf_uvc_device::get_pu(rs2_option opt, int32_t& value) const
         {
+            LOG_ERROR( "wmf_uvc_device::get_pu for option " << opt << ". UID = " << get_device_unique_id() << " this = " << this );
             long val = 0, flags = 0;
             if ((opt == RS2_OPTION_EXPOSURE) || (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE))
             {
-                auto hr = get_camera_control()->Get(CameraControl_Exposure, &val, &flags);
-                if (hr == DEVICE_NOT_READY_ERROR)
+                auto cam = get_camera_control();
+                LOG_ERROR( "wmf_uvc_device::get_pu get_camera_control returned " << cam );
+                auto hr = cam->Get(CameraControl_Exposure, &val, &flags);
+                LOG_ERROR( "wmf_uvc_device::get_pu Get result = " << std::hex << hr );
+                if( hr == DEVICE_NOT_READY_ERROR )
                     return false;
 
                 value = (opt == RS2_OPTION_EXPOSURE) ? to_100micros(val) : (flags == CameraControl_Flags_Auto);
@@ -551,6 +564,7 @@ namespace librealsense
 
         bool wmf_uvc_device::set_pu(rs2_option opt, int value)
         {
+            LOG_ERROR( "wmf_uvc_device::set_pu for option " << opt << ". UID = " << get_device_unique_id() << " this = " << this );
             if (opt == RS2_OPTION_EXPOSURE)
             {
                 auto hr = get_camera_control()->Set(CameraControl_Exposure, from_100micros(value), CameraControl_Flags_Manual);
@@ -686,6 +700,7 @@ namespace librealsense
 
         control_range wmf_uvc_device::get_pu_range(rs2_option opt) const
         {
+            LOG_ERROR( "wmf_uvc_device::get_pu_range for option " << opt << ". UID = " << get_device_unique_id() << " this = " << this );
             if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE ||
                 opt == RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)
             {
@@ -791,7 +806,8 @@ namespace librealsense
             _systemwide_lock(info.unique_id.c_str(), WAIT_FOR_MUTEX_TIME_OUT),
             _location(""), _device_usb_spec(usb3_type)
         {
-            if (!is_connected(info))
+            LOG_ERROR( "wmf_uvc_device::wmf_uvc_device. this = " << this );
+            if( ! is_connected( info ) )
             {
                 throw std::runtime_error("Camera not connected!");
             }
@@ -820,7 +836,9 @@ namespace librealsense
 
         wmf_uvc_device::~wmf_uvc_device()
         {
-            try {
+            LOG_ERROR( "wmf_uvc_device::~wmf_uvc_device. this = " << this );
+            try
+            {
                 if (_streaming)
                 {
                     flush(MF_SOURCE_READER_ALL_STREAMS);
@@ -864,7 +882,9 @@ namespace librealsense
 
         void wmf_uvc_device::set_d0()
         {
+            LOG_ERROR( "wmf_uvc_device::set_d0 start. UID = " << get_device_unique_id() << " this = " << this );
             std::lock_guard< std::recursive_mutex > lock( _source_lock );
+            LOG_ERROR( "wmf_uvc_device::set_d0 got lock" );
 
             if (!_device_attrs)
                 _device_attrs = create_device_attrs();
@@ -876,9 +896,11 @@ namespace librealsense
             //enable source
             CHECK_HR(MFCreateDeviceSource(_device_attrs, &_source));
             LOG_HR(_source->QueryInterface(__uuidof(IAMCameraControl), reinterpret_cast<void **>(&_camera_control)));
+            LOG_ERROR( "wmf_uvc_device::set_d0 _camera_control = " << _camera_control << " _camera_control.p = " << _camera_control.p);
             // The IAMVideoProcAmp interface adjusts the qualities of an incoming video signal, such as brightness,
             // contrast, hue, saturation, gamma, and sharpness.
             auto hr = _source->QueryInterface( __uuidof( IAMVideoProcAmp ), reinterpret_cast< void ** >( &_video_proc ) );
+            LOG_ERROR( "wmf_uvc_device::set_d0 _video_proc = " << _video_proc << " _video_proc.p = " << _video_proc.p);
             // E_NOINTERFACE is expected... especially when no video camera
             if( hr != E_NOINTERFACE )
                 LOG_HR_STR( "QueryInterface(IAMVideoProcAmp)", hr );
@@ -890,11 +912,15 @@ namespace librealsense
 
             for( auto && xu : _xus )
                 init_xu( xu );
+
+            LOG_ERROR( "wmf_uvc_device::set_d0 finished" );
         }
 
         void wmf_uvc_device::set_d3()
         {
+            LOG_ERROR( "wmf_uvc_device::set_d3 start. UID = " << get_device_unique_id() << " this = " << this );
             std::lock_guard< std::recursive_mutex > lock( _source_lock );
+            LOG_ERROR( "wmf_uvc_device::set_d3 got lock" );
 
             safe_release(_camera_control);
             safe_release(_video_proc);
@@ -904,6 +930,8 @@ namespace librealsense
             for (auto& elem : _streams)
                 elem.callback = nullptr;
             _power_state = D3;
+
+            LOG_ERROR( "wmf_uvc_device::set_d3 finished" );
         }
 
         void wmf_uvc_device::foreach_profile(std::function<void(const mf_profile& profile, CComPtr<IMFMediaType> media_type, bool& quit)> action) const
@@ -1069,6 +1097,7 @@ namespace librealsense
 
         IAMVideoProcAmp* wmf_uvc_device::get_video_proc() const
         {
+            LOG_ERROR( "wmf_uvc_device::get_video_proc _video_proc = " << _video_proc << " _video_proc.p = " << _video_proc.p);
             if (get_power_state() != D0)
                 throw std::runtime_error("Device must be powered to query video_proc!");
             if (!_video_proc.p)
@@ -1078,6 +1107,8 @@ namespace librealsense
 
         IAMCameraControl* wmf_uvc_device::get_camera_control() const
         {
+            LOG_ERROR( "wmf_uvc_device::get_camera_control _camera_control = " << _camera_control << " _camera_control.p = " << _camera_control.p);
+
             if (get_power_state() != D0)
                 throw std::runtime_error("Device must be powered to query camera_control!");
             if (!_camera_control.p)
@@ -1219,7 +1250,10 @@ namespace librealsense
 
         power_state wmf_uvc_device::get_power_state() const
         {
+            LOG_ERROR( "wmf_uvc_device::get_power_state start. UID = " << get_device_unique_id() << " this = " << this );
             std::lock_guard< std::recursive_mutex > lock( _source_lock );
+            std::string tmp = _source ? "D0" : "D3";
+            LOG_ERROR( "wmf_uvc_device::get_power_state got lock. power state is " << tmp );
             return _source ? D0 : D3;
         }
     } //namespace platform
