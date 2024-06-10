@@ -16,6 +16,6 @@ namespace librealsense
 
     protected:
         y12i_to_y16y16(const char* name, int left_idx, int right_idx);
-        void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size) override;
+        void process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size) override;
     };
 }

@@ -5,6 +5,7 @@
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-guid.h>
 #include <realdds/dds-time.h>
+#include <realdds/dds-serialization.h>
 
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/domain/DomainParticipantListener.hpp>
@@ -14,6 +15,7 @@
 #include <fastdds/rtps/transport/UDPv4TransportDescriptor.h>
 
 #include <rsutils/string/slice.h>
+#include <rsutils/json.h>
 
 #include <map>
 #include <mutex>
@@ -101,7 +103,7 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
         {
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DISCOVERED_PARTICIPANT: {
             std::string name;
-            std::string guid = realdds::print( info.info.m_guid );  // has to be outside the mutex
+            std::string guid = rsutils::string::from( realdds::print_guid( info.info.m_guid ) );  // has to be outside the mutex
             {
                 std::lock_guard< std::mutex > lock( participants_mutex );
                 participant_info pinfo( info.info.m_participantName, info.info.m_guid.guidPrefix );
@@ -138,8 +140,8 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
         {
         case eprosima::fastrtps::rtps::WriterDiscoveryInfo::DISCOVERED_WRITER:
             /* Process the case when a new publisher was found in the domain */
-            LOG_DEBUG( _owner.name() << ": +writer (" << _owner.print( info.info.guid() ) << ") publishing '"
-                                     << info.info.topicName() << "' of type '" << info.info.typeName() << "'" );
+            LOG_DEBUG( _owner.name() << ": +writer (" << _owner.print( info.info.guid() ) << ") publishing "
+                                     << info.info );
             _owner.on_writer_added( info.info.guid(), info.info.topicName().c_str() );
             break;
 
@@ -158,8 +160,7 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
         switch( info.status )
         {
         case eprosima::fastrtps::rtps::ReaderDiscoveryInfo::DISCOVERED_READER:
-            LOG_DEBUG( _owner.name() << ": +reader (" << _owner.print( info.info.guid() ) << ") of '"
-                                     << info.info.topicName() << "' of type '" << info.info.typeName() << "'" );
+            LOG_DEBUG( _owner.name() << ": +reader (" << _owner.print( info.info.guid() ) << ") of " << info.info );
             _owner.on_reader_added( info.info.guid(), info.info.topicName().c_str() );
             break;
 
@@ -179,19 +180,25 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
                                     eprosima::fastrtps::types::DynamicType_ptr dyn_type ) override
     {
         TypeSupport type_support( new eprosima::fastrtps::types::DynamicPubSubType( dyn_type ) );
-        LOG_DEBUG( _owner.name() << ": discovered topic " << topic_name << " of type: " << type_support->getName() );
+        LOG_DEBUG( _owner.name() << ": +topic " << topic_name << " [" << type_support->getName() << "]" );
         _owner.on_type_discovery( topic_name.c_str(), dyn_type );
     }
 };
 
 
-void dds_participant::init( dds_domain_id domain_id, std::string const & participant_name, nlohmann::json const & settings )
+void dds_participant::init( dds_domain_id domain_id, std::string const & participant_name, rsutils::json const & settings )
 {
     if( is_valid() )
     {
         DDS_THROW( runtime_error,
-                   "participant is already initialized; cannot init '" + participant_name + "' on domain id "
-                       + std::to_string( domain_id ) );
+                   "participant is already initialized; cannot init '" << participant_name << "' on domain id "
+                                                                       << domain_id );
+    }
+
+    if( domain_id == -1 )
+    {
+        // Get it from settings and default to 0
+        domain_id = settings.nested( "domain" ).default_value( 0 );
     }
 
     _domain_listener = std::make_shared< listener_impl >( *this );
@@ -217,10 +224,13 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
     pqos.transport().use_builtin_transports = false;
     pqos.transport().user_transports.push_back( udp_transport );
 
-    // Listener will call DataReaderListener::on_data_available for a specific reader,
-    // not SubscriberListener::on_data_on_readers for any reader
-    // ( See note on https://fast-dds.docs.eprosima.com/en/v2.7.0/fastdds/dds_layer/core/entity/entity.html )
-    StatusMask par_mask = StatusMask::all() >> StatusMask::data_on_readers();
+    // Above are defaults
+    override_participant_qos_from_json( pqos, settings );
+
+    // NOTE: the listener callbacks we use are all specific to FastDDS and so are always enabled:
+    // https://fast-dds.docs.eprosima.com/en/latest/fastdds/dds_layer/core/entity/entity.html#listener
+    // We need none of the standard callbacks at this level: these can be enabled on a per-reader/-writer basis!
+    StatusMask const par_mask = StatusMask::none();
     _participant_factory = DomainParticipantFactory::get_shared_instance();
     _participant
         = DDS_API_CALL( _participant_factory->create_participant( domain_id, pqos, _domain_listener.get(), par_mask ) );
@@ -231,11 +241,14 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
                    "failed creating participant " + participant_name + " on domain id " + std::to_string( domain_id ) );
     }
 
-    if( ! settings.is_object() )
-        DDS_THROW( runtime_error, "provided settings are invalid" );
-    _settings = settings;
+    if( settings.is_object() )
+        _settings = settings;
+    else if( settings.is_null() )
+        _settings = rsutils::json::object();
+    else
+        DDS_THROW( runtime_error, "provided settings are invalid: " << settings );
 
-    LOG_DEBUG( "participant '" << participant_name << "' (" << realdds::print( guid() ) << ") is up on domain "
+    LOG_DEBUG( "participant '" << participant_name << "' (" << realdds::print_raw_guid( guid() ) << ") is up on domain "
                                << domain_id << " with settings: " << _settings.dump( 4 ) );
 #ifdef BUILD_EASYLOGGINGPP
     // DDS participant destruction happens when all contexts are done with it but, in some situations (e.g., Python), it
@@ -268,6 +281,12 @@ dds_guid const & dds_participant::guid() const
 }
 
 
+dds_domain_id dds_participant::domain_id() const
+{
+    return get()->get_domain_id();
+}
+
+
 rsutils::string::slice dds_participant::name() const
 {
     auto & string_255 = get()->get_qos().name();
@@ -277,7 +296,7 @@ rsutils::string::slice dds_participant::name() const
 
 std::string dds_participant::print( dds_guid const & guid_to_print ) const
 {
-    return realdds::print( guid_to_print, guid() );
+    return rsutils::string::from( realdds::print_guid( guid_to_print, guid() ) );
 }
 
 
@@ -300,7 +319,7 @@ std::string dds_participant::print( dds_guid const & guid_to_print ) const
 
 void dds_participant::on_writer_added( dds_guid guid, char const * topic_name )
 {
-    for( auto wl : _listeners )
+    for( auto & wl : _listeners )
     {
         if( auto l = wl.lock() )
         {
@@ -313,7 +332,7 @@ void dds_participant::on_writer_added( dds_guid guid, char const * topic_name )
 
 void dds_participant::on_writer_removed( dds_guid guid, char const * topic_name )
 {
-    for( auto wl : _listeners )
+    for( auto & wl : _listeners )
     {
         if( auto l = wl.lock() )
         {
@@ -326,7 +345,7 @@ void dds_participant::on_writer_removed( dds_guid guid, char const * topic_name 
 
 void dds_participant::on_reader_added( dds_guid guid, char const * topic_name )
 {
-    for( auto wl : _listeners )
+    for( auto & wl : _listeners )
     {
         if( auto l = wl.lock() )
         {
@@ -339,7 +358,7 @@ void dds_participant::on_reader_added( dds_guid guid, char const * topic_name )
 
 void dds_participant::on_reader_removed( dds_guid guid, char const * topic_name )
 {
-    for( auto wl : _listeners )
+    for( auto & wl : _listeners )
     {
         if( auto l = wl.lock() )
         {
@@ -352,7 +371,7 @@ void dds_participant::on_reader_removed( dds_guid guid, char const * topic_name 
 
 void dds_participant::on_participant_added( dds_guid guid, char const * participant_name )
 {
-    for( auto wl : _listeners )
+    for( auto & wl : _listeners )
     {
         if( auto l = wl.lock() )
         {
@@ -365,7 +384,7 @@ void dds_participant::on_participant_added( dds_guid guid, char const * particip
 
 void dds_participant::on_participant_removed( dds_guid guid, char const * participant_name )
 {
-    for( auto wl : _listeners )
+    for( auto & wl : _listeners )
     {
         if( auto l = wl.lock() )
         {
@@ -378,7 +397,7 @@ void dds_participant::on_participant_removed( dds_guid guid, char const * partic
 
 void dds_participant::on_type_discovery( char const * topic_name, eprosima::fastrtps::types::DynamicType_ptr dyn_type )
 {
-    for( auto wl : _listeners )
+    for( auto & wl : _listeners )
     {
         if( auto l = wl.lock() )
         {

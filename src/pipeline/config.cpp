@@ -5,6 +5,9 @@
 #include "pipeline.h"
 #include "platform/platform-device-info.h"
 #include "media/playback/playback-device-info.h"
+#include "context.h"
+#include <rsutils/string/from.h>
+
 
 namespace librealsense
 {
@@ -253,7 +256,9 @@ namespace librealsense
                     return pdev->create_device();
             }
 
-            return ctx->add_device(file)->create_device();
+            auto dev_info = std::make_shared< playback_device_info >( ctx, file );
+            ctx->add_device( dev_info );
+            return dev_info->create_device();
         }
 
         std::shared_ptr<device_interface> config::resolve_device_requests(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout)

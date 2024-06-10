@@ -3,6 +3,8 @@
 
 #include "proc/formats-converter.h"
 #include "stream.h"
+#include <src/composite-frame.h>
+#include <src/core/frame-callback.h>
 
 #include <ostream>
 
@@ -127,7 +129,7 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
                             target.resolution_transform( width, height );
                             cloned_vsp->set_dims( width, height );
                         }
-                        LOG_DEBUG( "         -> " << cloned_profile );
+                        LOG_DEBUG( "          -> " << cloned_profile );
 
                         // Cache pbf supported profiles for efficiency in find_pbf_matching_most_profiles
                         _pbf_supported_profiles[pbf.get()].push_back( cloned_profile );
@@ -169,7 +171,7 @@ formats_converter::clone_profile( const std::shared_ptr< stream_profile_interfac
     auto msp = std::dynamic_pointer_cast< motion_stream_profile >( raw_profile );
     if( vsp )
     {
-        cloned = std::make_shared< video_stream_profile >( platform::stream_profile{} );
+        cloned = std::make_shared< video_stream_profile >();
         if( ! cloned )
             throw librealsense::invalid_value_exception( "failed to clone profile" );
 
@@ -182,7 +184,7 @@ formats_converter::clone_profile( const std::shared_ptr< stream_profile_interfac
     }
     else if( msp )
     {
-        cloned = std::make_shared< motion_stream_profile >( platform::stream_profile{} );
+        cloned = std::make_shared< motion_stream_profile >();
         if( ! cloned )
             throw librealsense::invalid_value_exception( "failed to clone profile" );
 
@@ -367,19 +369,12 @@ formats_converter::find_pbf_matching_most_profiles( const stream_profiles & from
     return { best_match_processing_block_factory, best_match_profiles };
 }
 
-template< class T >
-frame_callback_ptr make_callback( T callback )
-{
-    return { new internal_frame_callback< T >( callback ),
-             []( rs2_frame_callback * p ) { p->release(); } };
-}
-
-void formats_converter::set_frames_callback( frame_callback_ptr callback )
+void formats_converter::set_frames_callback( rs2_frame_callback_sptr callback )
 {
     _converted_frames_callback = callback;
 
     // After processing callback
-    auto output_cb = make_callback( [&]( frame_holder f ) {
+    auto output_cb = make_frame_callback( [&]( frame_holder f ) {
         std::vector< frame_interface * > frames_to_be_processed;
         frames_to_be_processed.push_back( f.frame );
 

@@ -42,9 +42,9 @@ namespace librealsense
 
     private:
         bool is_hdr_id(int id) const;
-        bool is_hdr_enabled_in_device(std::vector<byte>& result) const;
-        bool is_current_subpreset_hdr(const std::vector<byte>& current_subpreset) const;
-        bool configure_hdr_as_in_fw(const std::vector<byte>& current_subpreset);
+        bool is_hdr_enabled_in_device( std::vector< uint8_t > & result ) const;
+        bool is_current_subpreset_hdr( const std::vector< uint8_t > & current_subpreset ) const;
+        bool configure_hdr_as_in_fw( const std::vector< uint8_t > & current_subpreset );
         command prepare_hdr_sub_preset_command() const;
         std::vector<uint8_t> prepare_sub_preset_header() const;
         std::vector<uint8_t> prepare_sub_preset_frames_config() const;
@@ -79,7 +79,6 @@ namespace librealsense
         int _current_hdr_sequence_index;
         mutable bool _is_enabled;
         bool _is_config_in_process;
-        bool _has_config_changed;
         bool _auto_exposure_to_be_restored;
         bool _emitter_on_off_to_be_restored;
         hw_monitor& _hwm;

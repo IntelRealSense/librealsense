@@ -137,6 +137,7 @@ namespace rs2
         void draw(ux_window& win, rect view_rect, std::vector<std::unique_ptr<device_model>> &  device_models);
 
         int get_output_height() const { return default_log_h; }
+        int get_dashboard_width() const { return default_dashboard_w; }
 
         void run_command(std::string command, std::vector<std::unique_ptr<device_model>> & device_models);
         bool user_defined_command(std::string command, std::vector<std::unique_ptr<device_model>> & device_models);
@@ -157,6 +158,8 @@ namespace rs2
 
         animated<int> default_log_h { 36 };
         bool is_output_open = true;
+        animated< int > default_dashboard_w { 0 };
+        bool is_dashboard_open = true;
 
         bool enable_firmware_logs = false;
 

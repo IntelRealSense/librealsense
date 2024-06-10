@@ -3,14 +3,14 @@
 
 #pragma once
 
-#include "device.h"
+#include "backend-device.h"
 #include "platform/platform-device-info.h"
 
 
 namespace librealsense {
 
 
-class platform_camera : public device
+class platform_camera : public backend_device
 {
 public:
     platform_camera( std::shared_ptr< const device_info > const & dev_info,

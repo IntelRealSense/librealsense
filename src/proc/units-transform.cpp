@@ -5,6 +5,7 @@
 #include <librealsense2/hpp/rs_processing.hpp>
 
 #include "core/depth-frame.h"
+#include "core/sensor-interface.h"
 #include "proc/synthetic-stream.h"
 #include "environment.h"
 #include "units-transform.h"
@@ -62,8 +63,8 @@ namespace librealsense
 
         if (new_f && _depth_units)
         {
-            auto ptr = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)new_f.get());
-            auto orig = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)f.get());
+            auto ptr = reinterpret_cast< librealsense::frame_interface * >( new_f.get() );
+            auto orig = reinterpret_cast< librealsense::frame_interface * >( f.get() );
 
             auto depth_data = (uint16_t*)orig->get_frame_data();
             auto new_data = (float*)ptr->get_frame_data();

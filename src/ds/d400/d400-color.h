@@ -5,6 +5,7 @@
 
 #include "d400-device.h"
 #include "ds/ds-color-common.h"
+#include <src/color-sensor.h>
 
 #include "stream.h"
 
@@ -23,13 +24,15 @@ namespace librealsense
             return dynamic_cast<synthetic_sensor&>(get_sensor(_color_device_idx));
         }
 
-        uvc_sensor& get_raw_color_sensor()
+        std::shared_ptr< uvc_sensor > get_raw_color_sensor()
         {
-            synthetic_sensor& color_sensor = get_color_sensor();
-            return dynamic_cast<uvc_sensor&>(*color_sensor.get_raw_sensor());
+            synthetic_sensor & color_sensor = get_color_sensor();
+            return std::dynamic_pointer_cast< uvc_sensor >( color_sensor.get_raw_sensor() );
         }
 
     protected:
+        void register_color_features();
+
         std::shared_ptr<stream_interface> _color_stream;
         std::shared_ptr<ds_color_common> _ds_color_common;
 

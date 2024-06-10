@@ -1,11 +1,17 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "core/frame-holder.h"
-#include "proc/synthetic-stream.h"
 #include "sync.h"
-#include "environment.h"
+#include "core/frame-holder.h"
+#include "core/synthetic-source-interface.h"
+#include "core/stream-profile-interface.h"
 #include "core/device-interface.h"
+#include "core/sensor-interface.h"
+#include "composite-frame.h"
+#include "core/time-service.h"
+
+#include <rsutils/string/from.h>
+
 
 namespace librealsense
 {
@@ -73,7 +79,14 @@ namespace librealsense
             LOG_WARNING(callbacks_inflight << " callbacks are still running on some other threads. Waiting until all callbacks return...");
         }
         // wait until user is done with all the stuff he chose to borrow
-        _callback_inflight.wait_until_empty();
+        try
+        {
+            _callback_inflight.wait_until_empty();
+        }
+        catch( const std::exception & e )
+        {
+            LOG_DEBUG( "Error while waiting for user callback to finish: " << e.what() );
+        }
     }
 
     identity_matcher::identity_matcher(stream_id stream, rs2_stream stream_type)
@@ -82,8 +95,7 @@ namespace librealsense
         _streams_type = {stream_type};
 
         std::ostringstream ss;
-        ss << rs2_stream_to_string( stream_type );
-        ss << '/';
+        ss << get_abbr_string( stream_type );
         ss << stream;
         _name = ss.str();
     }
@@ -137,6 +149,17 @@ namespace librealsense
         _name = create_composite_name(matchers, name);
     }
 
+    composite_matcher::matcher_queue::matcher_queue()
+        : q( QUEUE_MAX_SIZE,
+             []( frame_holder const & fh )
+             {
+                 // If queues are overrun, we'll get here
+                 LOG_DEBUG( "DROPPED frame " << fh );
+             } )
+    {
+    }
+
+
     void composite_matcher::dispatch(frame_holder f, const syncronization_environment& env)
     {
         clean_inactive_streams(f);
@@ -172,13 +195,13 @@ namespace librealsense
                 if( ! matcher->get_active() )
                 {
                     matcher->set_active( true );
-                    _frames_queue[matcher.get()].start();
+                    _frames_queue[matcher.get()].q.start();
                 }
                 return matcher;
             }
         }
-        LOG_DEBUG( "no matcher found for " << rs2_stream_to_string( stream_type ) << '/'
-                                           << stream_id << "; creating matcher from device..." );
+        LOG_DEBUG( "no matcher found for " << get_abbr_string( stream_type ) << stream_id
+                                           << "; creating matcher from device..." );
 
         auto sensor = frame.frame->get_sensor().get(); //TODO: Potential deadlock if get_sensor() gets a hold of the last reference of that sensor
         auto dev_exist = false;
@@ -266,7 +289,7 @@ namespace librealsense
 
         // Stop all our queues to wake up anyone waiting on them
         for( auto & fq : _frames_queue )
-            fq.second.stop();
+            fq.second.q.stop();
 
         // Trickle the stop down to any children
         for( auto m : _matchers )
@@ -289,7 +312,7 @@ namespace librealsense
         os << '[';
         for( auto m : matchers )
         {
-            auto const & q = _frames_queue[m];
+            auto const & q = _frames_queue[m].q;
             q.peek( [&os]( frame_holder const & fh ) {
                 os << fh;
                 } );
@@ -313,7 +336,7 @@ namespace librealsense
         // latest timestamp/frame-number/etc. that we can compare to.
         auto const last_arrived = f->get_header();
 
-        if( ! _frames_queue[matcher.get()].enqueue( std::move( f ) ) )
+        if( ! _frames_queue[matcher.get()].q.enqueue( std::move( f ) ) )
             // If we get stopped, nothing to do!
             return;
 
@@ -344,7 +367,7 @@ namespace librealsense
                 for( auto s = _frames_queue.begin(); s != _frames_queue.end(); s++ )
                 {
                     librealsense::matcher * const m = s->first;
-                    if( ! s->second.peek( [&]( frame_holder & fh ) {
+                    if( ! s->second.q.peek( [&]( frame_holder & fh ) {
                             LOG_IF_ENABLE( "... have " << *fh.frame, env );
                             frames_arrived.push_back( &fh );
                             frames_arrived_matchers.push_back( m );
@@ -395,12 +418,13 @@ namespace librealsense
                     // something missing, we can't release anything yet...
                     for( auto i : missing_streams )
                     {
-                        LOG_IF_ENABLE( "... missing " << i->get_name() << ", next expected "
-                                                      << _next_expected[i],
+                        LOG_IF_ENABLE( "... missing " << i->get_name() << ", next expected @"
+                                                      << rsutils::string::from( _next_expected[i].value ) << " (from "
+                                                      << rsutils::string::from( _next_expected[i].fps ) << " fps)",
                                        env );
                         if( skip_missing_stream( *curr_sync, i, last_arrived, env ) )
                         {
-                            LOG_IF_ENABLE( "...     ignoring it", env );
+                            LOG_IF_ENABLE( "...     cannot be synced; not waiting for it", env );
                             continue;
                         }
 
@@ -425,7 +449,7 @@ namespace librealsense
                     frame_holder frame;
                     int const timeout_ms = 5000;
                     librealsense::matcher * m = frames_arrived_matchers[index];
-                    _frames_queue[m].dequeue( &frame, timeout_ms );
+                    _frames_queue[m].q.dequeue( &frame, timeout_ms );
                     match.push_back( std::move( frame ) );
                 }
             }
@@ -474,9 +498,7 @@ namespace librealsense
         for(auto m: _matchers)
         {
             if( _last_arrived[m.second.get()]
-                && ( fabs( (long long)f->get_frame_number()
-                           - (long long)_last_arrived[m.second.get()] ) )
-                       > 5 )
+                && ( std::abs( (long long)f->get_frame_number() - (long long)_last_arrived[m.second.get()] ) ) > 5 )
             {
                 std::stringstream s;
                 s << "clean inactive stream in "<<_name;
@@ -493,7 +515,7 @@ namespace librealsense
 
         for(auto id: inactive_matchers)
         {
-            _frames_queue[_matchers[id].get()].clear();
+            _frames_queue[_matchers[id].get()].q.clear();
         }
     }
 
@@ -506,9 +528,10 @@ namespace librealsense
          if(!missing->get_active())
              return true;
 
-        auto next_expected = _next_expected[missing];
+        auto const & next_expected = _next_expected[missing];
 
-        if(synced_frame->get_frame_number() - next_expected > 4 || synced_frame->get_frame_number() < next_expected)
+        if( synced_frame->get_frame_number() - next_expected.value > 4
+            || synced_frame->get_frame_number() < next_expected.value )
         {
             return true;
         }
@@ -518,7 +541,7 @@ namespace librealsense
     void frame_number_composite_matcher::update_next_expected(
         std::shared_ptr< matcher > const & matcher, const frame_holder & f )
     {
-        _next_expected[matcher.get()] = f.frame->get_frame_number()+1.;
+        _next_expected[matcher.get()].value = f.frame->get_frame_number()+1.;
     }
 
     std::pair<double, double> extract_timestamps(frame_holder & a, frame_holder & b)
@@ -526,10 +549,7 @@ namespace librealsense
         if (a->get_frame_timestamp_domain() == b->get_frame_timestamp_domain())
             return{ a->get_frame_timestamp(), b->get_frame_timestamp() };
         else
-        {
-            return{ (double)a->get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL),
-                    (double)b->get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL) };
-        }
+            return{ a->get_frame_system_time(), b->get_frame_system_time() };
     }
 
     timestamp_composite_matcher::timestamp_composite_matcher(
@@ -563,31 +583,25 @@ namespace librealsense
 
     void timestamp_composite_matcher::update_last_arrived(frame_holder& f, matcher* m)
     {
-        if(f->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
-            _fps[m] = (uint32_t)f->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
-        else
-            _fps[m] = f->get_stream()->get_framerate();
-
         auto const now = time_service::get_time();
         //LOG_DEBUG( _name << ": _last_arrived[" << m->get_name() << "] = " << now );
         _last_arrived[m] = now;
     }
 
-    unsigned int timestamp_composite_matcher::get_fps( frame_interface const * f )
+    double timestamp_composite_matcher::get_fps( frame_interface const * f )
     {
-        uint32_t fps = 0;
-        if(f->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
-        {
-            fps = (uint32_t)f->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
-        }
+        double fps = 0.;
+        rs2_metadata_type fps_md;
+        if( f->find_metadata( RS2_FRAME_METADATA_ACTUAL_FPS, &fps_md ) )
+            fps = fps_md / 1000.;
         if( fps )
         {
-            //LOG_DEBUG( "fps " << fps << " from metadata" );
+            //LOG_DEBUG( "fps " << rsutils::string::from( fps ) << " from metadata " << *f );
         }
         else
         {
             fps = f->get_stream()->get_framerate();
-            //LOG_DEBUG( "fps " << fps << " from stream framerate" );
+            //LOG_DEBUG( "fps " << rsutils::string::from( fps ) << " from stream framerate " << *f );
         }
         return fps;
     }
@@ -597,13 +611,17 @@ namespace librealsense
                                                        const frame_holder & f )
     {
         auto fps = get_fps( f );
-        auto gap = 1000.f / (float)fps;
+        auto gap = 1000. / fps;
 
         auto ts = f.frame->get_frame_timestamp();
         auto ne = ts + gap;
-        //LOG_DEBUG( "... next_expected = {timestamp}" << ts << " + {gap}(1000/{fps}" << fps << ") = " << ne );
-        _next_expected[matcher.get()] = ne;
-        _next_expected_domain[matcher.get()] = f.frame->get_frame_timestamp_domain();
+        //LOG_DEBUG( "... next_expected = {timestamp}" << rsutils::string::from( ts ) << " + {gap}(1000/{fps}"
+        //                                             << rsutils::string::from( fps )
+        //                                             << ") = " << rsutils::string::from( ne ) );
+        auto & next_expected = _next_expected[matcher.get()];
+        next_expected.value = ne;
+        next_expected.fps = fps;
+        next_expected.domain = f.frame->get_frame_timestamp_domain();
     }
 
     void timestamp_composite_matcher::clean_inactive_streams(frame_holder& f)
@@ -624,20 +642,16 @@ namespace librealsense
 
         //LOG_IF_ENABLE( "...     matcher " << synced[0]->get_name(), env );
 
-        auto next_expected = _next_expected[missing];
+        auto const & next_expected = _next_expected[missing];
         // LOG_IF_ENABLE( "...     next    " << std::fixed << next_expected, env );
 
-        auto it = _next_expected_domain.find( missing );
-        if( it != _next_expected_domain.end() )
+        if( next_expected.domain != last_arrived.timestamp_domain )
         {
-            if( it->second != last_arrived.timestamp_domain )
-            {
-                // LOG_IF_ENABLE( "...     not the same domain: frameset not ready!", env );
-                // D457 dev - return false removed
-                // because IR has no md, so its ts domain is "system time"
-                // other streams have md, and their ts domain is "hardware clock"
-                //return false;
-            }
+            // LOG_IF_ENABLE( "...     not the same domain: frameset not ready!", env );
+            // D457 dev - return false removed
+            // because IR has no md, so its ts domain is "system time"
+            // other streams have md, and their ts domain is "hardware clock"
+            //return false;
         }
 
         // We want to calculate a cutout for inactive stream detection: if we wait too long past
@@ -683,26 +697,30 @@ namespace librealsense
         auto const fps = get_fps( waiting_to_be_released );
 
         rs2_time_t now = last_arrived.timestamp;
-        if( now > next_expected )
+        if( now > next_expected.value )
         {
             // Wait for the missing stream frame to arrive -- up to a cutout: anything more and we
             // let the frameset be ready without it...
-            auto gap = 1000.f / fps;
+            auto gap = 1000. / fps;
             // NOTE: the threshold is a function of the gap; the bigger it is, the more latency
             // between the streams we're willing to live with. Each gap is a frame so we are limited
             // by the number of frames we're willing to keep (which is our queue limit)
             auto threshold = 7 * gap;  // really 7+1 because NE is already 1 away
-            if( now - next_expected < threshold )
+            if( now - next_expected.value < threshold )
             {
-                //LOG_IF_ENABLE( "...     still below cutout of {NE+7*gap}" << ( next_expected + threshold ), env );
+                //LOG_IF_ENABLE( "...     still below cutout of {NE+7*gap}"
+                //                   << rsutils::string::from( next_expected + threshold ),
+                //               env );
                 return false;
             }
-            LOG_IF_ENABLE( "...     exceeded cutout of {NE+7*gap}" << ( next_expected + threshold ) << "; deactivating matcher!", env );
+            LOG_IF_ENABLE( "...     exceeded cutout of {NE+7*gap}"
+                               << rsutils::string::from( next_expected.value + threshold ) << "; deactivating matcher!",
+                           env );
 
             auto const q_it = _frames_queue.find( missing );
             if( q_it != _frames_queue.end() )
             {
-                if( q_it->second.empty() )
+                if( q_it->second.q.empty() )
                     _frames_queue.erase( q_it );
             }
             missing->set_active( false );
@@ -710,14 +728,24 @@ namespace librealsense
         }
 
         return ! are_equivalent( waiting_to_be_released->get_frame_timestamp(),
-                                 next_expected,
-                                 fps );  // should be min fps to match behavior elsewhere?
+                                 next_expected.value,
+                                 fps );
     }
 
-    bool timestamp_composite_matcher::are_equivalent( double a, double b, unsigned int fps )
+    bool timestamp_composite_matcher::are_equivalent( double a, double b, double fps )
     {
-        float gap = 1000.f / fps;
-        return abs(a - b) < (gap / 2);
+        auto gap = 1000. / fps;
+        if( std::abs( a - b ) < ( gap / 2 ) )
+        {
+            //LOG_DEBUG( "...     " << rsutils::string::from( a ) << " == " << rsutils::string::from( b ) << "  {diff}"
+            //                      << std::abs( a - b ) << " < " << rsutils::string::from( gap / 2 ) << "{gap/2}" );
+            return true;
+        }
+
+        //LOG_DEBUG( "...     " << rsutils::string::from( a ) << " != " << rsutils::string::from( b ) << "  {diff}"
+        //                      << rsutils::string::from( std::abs( a - b ) ) << " >= " << rsutils::string::from( gap / 2 )
+        //                      << "{gap/2}" );
+        return false;
     }
 
     composite_identity_matcher::composite_identity_matcher(
@@ -733,7 +761,7 @@ namespace librealsense
         if (!composite)
         {
             std::vector<frame_holder> match;
-            std::stringstream frame_string_for_logging;
+            std::ostringstream frame_string_for_logging;
             frame_string_for_logging << f; // Saving frame holder string before moving frame
 
             match.push_back(std::move(f));

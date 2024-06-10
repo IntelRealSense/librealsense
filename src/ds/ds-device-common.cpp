@@ -19,6 +19,7 @@
 #include "proc/temporal-filter.h"
 
 #include <src/backend.h>
+#include <librealsense2/h/rs_internal.h>
 
 namespace librealsense
 {
@@ -105,18 +106,18 @@ namespace librealsense
         }
     }
 
-    uvc_sensor& ds_device_common::get_raw_depth_sensor()
+    std::shared_ptr< uvc_sensor > ds_device_common::get_raw_depth_sensor()
     {
-        if (auto dev = dynamic_cast<d400_device*>(_owner))
+        if( auto dev = dynamic_cast< d400_device * >( _owner ) )
             return dev->get_raw_depth_sensor();
-       if (auto dev = dynamic_cast<d500_device*>(_owner))
+        if( auto dev = dynamic_cast< d500_device * >( _owner ) )
             return dev->get_raw_depth_sensor();
-        throw std::runtime_error("device not referenced in the product line");
+        throw std::runtime_error( "device not referenced in the product line" );
     }
 
-    bool ds_device_common::is_locked(uint8_t gvd_cmd, uint32_t offset)
+    bool ds_device_common::is_locked( const uint8_t * gvd_buff, uint32_t offset )
     {
-        _is_locked = _hw_monitor->is_camera_locked(gvd_cmd, offset);
+        std::memcpy( &_is_locked, gvd_buff + offset, 1 );
         return _is_locked;
     }
 
@@ -124,10 +125,10 @@ namespace librealsense
     {
         optic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset);
         asic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_asic_serial_offset);
-        fwv = _hw_monitor->get_firmware_version_string(gvd_buff, camera_fw_version_offset);
+        fwv = _hw_monitor->get_firmware_version_string<uint8_t>(gvd_buff, camera_fw_version_offset);
     }
 
-    std::vector<uint8_t> ds_device_common::backup_flash(update_progress_callback_ptr callback)
+    std::vector<uint8_t> ds_device_common::backup_flash( rs2_update_progress_callback_sptr callback )
     {
         int flash_size = 1024 * 2048;
         int max_bulk_size = 1016;
@@ -137,8 +138,8 @@ namespace librealsense
         flash.reserve(flash_size);
 
         LOG_DEBUG("Flash backup started...");
-        uvc_sensor& raw_depth_sensor = get_raw_depth_sensor();
-        raw_depth_sensor.invoke_powered([&](platform::uvc_device& dev)
+        std::shared_ptr< uvc_sensor > raw_depth_sensor = get_raw_depth_sensor();
+        raw_depth_sensor->invoke_powered([&](platform::uvc_device& dev)
             {
                 for (int i = 0; i < max_iterations; i++)
                 {
@@ -180,7 +181,7 @@ namespace librealsense
         return flash;
     }
 
-    void update_flash_section(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, uint32_t offset, uint32_t size, update_progress_callback_ptr callback, float continue_from, float ratio)
+    void update_flash_section(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, uint32_t offset, uint32_t size, rs2_update_progress_callback_sptr callback, float continue_from, float ratio)
     {
         size_t sector_count = size / ds::FLASH_SECTOR_SIZE;
         size_t first_sector = offset / ds::FLASH_SECTOR_SIZE;
@@ -222,7 +223,7 @@ namespace librealsense
     }
 
     void update_section(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& merged_image, flash_section fs, uint32_t tables_size,
-        update_progress_callback_ptr callback, float continue_from, float ratio)
+        rs2_update_progress_callback_sptr callback, float continue_from, float ratio)
     {
         auto first_table_offset = fs.tables.front().offset;
         float total_size = float(fs.app_size + tables_size);
@@ -234,7 +235,7 @@ namespace librealsense
         update_flash_section(hwm, merged_image, first_table_offset, tables_size, callback, app_ratio, tables_ratio);
     }
 
-    void update_flash_internal(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, std::vector<uint8_t>& flash_backup, update_progress_callback_ptr callback, int update_mode)
+    void update_flash_internal(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, std::vector<uint8_t>& flash_backup, rs2_update_progress_callback_sptr callback, int update_mode)
     {
         auto flash_image_info = ds::get_flash_info(image);
         auto flash_backup_info = ds::get_flash_info(flash_backup);
@@ -254,13 +255,22 @@ namespace librealsense
         }
     }
 
-    void ds_device_common::update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode)
+    void ds_device_common::update_flash(const std::vector<uint8_t>& image, rs2_update_progress_callback_sptr callback, int update_mode)
     {
+        // check if the given FW size matches the expected FW size
+        if( image.size() != unsigned_fw_size )
+        {
+            throw librealsense::invalid_value_exception( rsutils::string::from()
+                << "Unsupported firmware binary image (unsigned) provided - "
+                << image.size() << " bytes" );
+        }
+
+
         if (_is_locked)
             throw std::runtime_error("this camera is locked and doesn't allow direct flash write, for firmware update use rs2_update_firmware method (DFU)");
 
-        auto& raw_depth_sensor = get_raw_depth_sensor();
-        raw_depth_sensor.invoke_powered([&](platform::uvc_device& dev)
+        auto raw_depth_sensor = get_raw_depth_sensor();
+        raw_depth_sensor->invoke_powered([&](platform::uvc_device& dev)
             {
                 command cmdPFD(ds::PFD);
                 cmdPFD.require_response = false;
@@ -301,12 +311,19 @@ namespace librealsense
         return (0 != ret.front());
     }
 
-    notification ds_notification_decoder::decode(int value)
+    ds_notification_decoder::ds_notification_decoder( const std::map< int, std::string > & descriptions )
+        : _descriptions( descriptions )
     {
-        if (ds::ds_fw_error_report.find(static_cast<uint8_t>(value)) != ds::ds_fw_error_report.end())
-            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, ds::ds_fw_error_report.at(static_cast<uint8_t>(value)) };
+    }
+            
+    notification ds_notification_decoder::decode( int value )
+    {
+        auto iter = _descriptions.find( static_cast< uint8_t >( value ) );
+        if( iter != _descriptions.end() )
+            return { RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, iter->second };
 
-        return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_WARN, (rsutils::string::from() << "D400 HW report - unresolved type " << value) };
+        return { RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_WARN,
+                 ( rsutils::string::from() << "HW report - unresolved type " << value ) };
     }
 
     processing_blocks get_ds_depth_recommended_proccesing_blocks()

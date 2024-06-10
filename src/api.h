@@ -1,16 +1,22 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
-
-
 #pragma once
-#include "context.h"
+
 #include "core/extension.h"
 #include "device.h"
 #include <rsutils/string/from.h>
 #include <rsutils/subscription.h>
+#include "pose.h"
+#include "librealsense-exception.h"
 
+#include <librealsense2/rs.h>
 #include <type_traits>
 #include <iostream>
+
+namespace librealsense {
+struct notification;
+}
+
 
 struct rs2_raw_data_buffer
 {
@@ -106,7 +112,7 @@ namespace librealsense
 
 
 
-    static void translate_exception(const char * name, std::string args, rs2_error ** error)
+    static void translate_exception(const char * name, std::string const & args, rs2_error ** error)
     {
         try { throw; }
         catch (const librealsense_exception& e) { if (error) *error = rs2_create_error(e.what(), name, args.c_str(), e.get_exception_type() ); }
@@ -406,7 +412,7 @@ return __p.invoke(func);\
     #define VALIDATE_FIXED_SIZE(ARG, SIZE) if((ARG) != (SIZE)) { std::ostringstream ss; ss << "Unsupported size provided { " << ARG << " }," " expecting { " << SIZE << " }"; throw librealsense::invalid_value_exception(ss.str()); }
     #define VALIDATE_NOT_NULL(ARG) if(!(ARG)) throw std::runtime_error("null pointer passed for argument \"" #ARG "\"");
     #define VALIDATE_ENUM(ARG) if(!librealsense::is_valid(ARG)) { std::ostringstream ss; ss << "invalid enum value for argument \"" #ARG "\""; throw librealsense::invalid_value_exception(ss.str()); }
-#define VALIDATE_OPTION( OBJ, OPT_ID )                                                                                 \
+#define VALIDATE_OPTION_ENABLED( OBJ, OPT_ID )                                                                         \
     if( ! OBJ->options->supports_option( OPT_ID ) )                                                                    \
     {                                                                                                                  \
         std::ostringstream ss;                                                                                         \

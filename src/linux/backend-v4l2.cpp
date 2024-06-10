@@ -3,7 +3,9 @@
 
 #include "backend-v4l2.h"
 #include <src/platform/command-transfer.h>
+#include <src/platform/hid-data.h>
 #include <src/core/time-service.h>
+#include <src/core/notification.h>
 #include "backend-hid.h"
 #include "backend.h"
 #include "types.h"
@@ -176,7 +178,14 @@ namespace librealsense
 
         named_mutex::~named_mutex()
         {
-            unlock();
+            try
+            {
+                unlock();
+            }
+            catch(...)
+            {
+                LOG_DEBUG( "Error while unlocking mutex" );
+            }
         }
 
         void named_mutex::lock()
@@ -381,7 +390,7 @@ namespace librealsense
                 if (!_use_memory_map)
                 {
                     auto metadata_offset = get_full_length() - MAX_META_DATA_SIZE;
-                    memset((byte*)(get_frame_start()) + metadata_offset, 0, MAX_META_DATA_SIZE);
+                    memset((uint8_t *)(get_frame_start()) + metadata_offset, 0, MAX_META_DATA_SIZE);
                 }
 
                 LOG_DEBUG_V4L("Enqueue buf " << std::dec << _buf.index << " for fd " << fd);
@@ -500,13 +509,20 @@ namespace librealsense
             if (realpath(path.c_str(), usb_actual_path) != nullptr)
             {
                 path = std::string(usb_actual_path);
-                std::string val;
-                if(!(std::ifstream(path + "/version") >> val))
+                std::string camera_usb_version;
+                if(!(std::ifstream(path + "/version") >> camera_usb_version))
                     throw linux_backend_exception("Failed to read usb version specification");
 
-                auto it = usb_name_to_spec.find( val );
-                if( it != usb_name_to_spec.end() )
-                    res = it->second;
+                // go through the usb_name_to_spec map to find a usb type where the first element is contained in 'camera_usb_version'
+                // (contained and not strictly equal because of differences like "3.2" vs "3.20")
+                for(const auto usb_type : usb_name_to_spec ) {
+                    std::string usb_name = usb_type.first;
+                    if (std::string::npos != camera_usb_version.find(usb_name))
+                    {
+                         res = usb_type.second;
+                         return res;
+                    }
+                }
             }
             return res;
         }
@@ -870,7 +886,17 @@ namespace librealsense
             // assign unique id for mipi by appending camera id to bus_info (bus_info is same for each mipi port)
             // Note - jetson can use only bus_info, as card is different for each sensor and metadata node.
             info.unique_id = bus_info + "-" + std::to_string(cam_id); // use bus_info as per camera unique id for mipi
-            info.dfu_device_path = "/dev/d4xx-dfu504"; // Use legacy DFU device node used in firmware_update_manager
+            // Get DFU node for MIPI camera
+            std::array<std::string, 2> dfu_device_paths = {"/dev/d4xx-dfu504", "/dev/d4xx-dfu-30-0010"};
+            for (const auto& dfu_device_path: dfu_device_paths) {
+                int vfd = open(dfu_device_path.c_str(), O_RDONLY | O_NONBLOCK);
+                if (vfd >= 0) {
+                    // Use legacy DFU device node used in firmware_update_manager
+                    info.dfu_device_path = dfu_device_path;
+                    ::close(vfd); // file exists, close file and continue to assign it
+                    break;
+                }
+            }
             info.conn_spec = usb_specification;
             info.uvc_capabilities = get_dev_capabilities(dev_name).device_caps;
 
@@ -981,7 +1007,12 @@ namespace librealsense
                     }
                     else if(mipi_rs_enum_nodes.empty()) //video4linux devices that are not USB devices and not previously enumerated by rs links
                     {
+                        // filter out all posible codecs, work only with compatible driver
+                        static const std::regex rs_mipi_compatible(".vi:|ipu6");
                         info = get_info_from_mipi_device_path(video_path, name);
+                        if (!regex_search(info.unique_id, rs_mipi_compatible)) {
+                            continue;
+                        }
                     }
                     else // continue as we already have mipi nodes enumerated by rs links in uvc_nodes
                     {
@@ -1296,7 +1327,7 @@ namespace librealsense
         {
             uint32_t device_fourcc = id;
             char fourcc_buff[sizeof(device_fourcc)+1];
-            librealsense::copy(fourcc_buff, &device_fourcc, sizeof(device_fourcc));
+            std::memcpy( fourcc_buff, &device_fourcc, sizeof( device_fourcc ) );
             fourcc_buff[sizeof(device_fourcc)] = 0;
             return fourcc_buff;
         }
@@ -2352,9 +2383,7 @@ namespace librealsense
             _md_fd = open(_md_name.c_str(), O_RDWR | O_NONBLOCK, 0);
             if(_md_fd < 0)
             {
-                // D457 development - added for mipi device, for IR because no metadata there
-                return;
-                throw linux_backend_exception(rsutils::string::from() << "Cannot open '" << _md_name);
+                return;  // Does not throw, MIPI device metadata not received through UVC, no metadata here may be valid
             }
 
             //The minimal video/metadata nodes syncer will be implemented by using two blocking calls:
@@ -2390,9 +2419,7 @@ namespace librealsense
 
             if(::close(_md_fd) < 0)
             {
-                // D457 development - added for mipi device, for IR because no metadata there
-                return;
-                throw linux_backend_exception("v4l_uvc_meta_device: close(_md_fd) failed");
+                return;  // Does not throw, MIPI device metadata not received through UVC, no metadata here may be valid
             }
 
             _md_fd = 0;
@@ -2409,9 +2436,7 @@ namespace librealsense
 
             if (xioctl(_md_fd, VIDIOC_G_FMT, &fmt))
             {
-                // D457 development - added for mipi device, for IR because no metadata there
-                return;
-                throw linux_backend_exception(_md_name + " ioctl(VIDIOC_G_FMT) for metadata node failed");
+                return;  // Does not throw, MIPI device metadata not received through UVC, no metadata here may be valid
             }
 
             if (fmt.type != _md_type)

@@ -10,6 +10,7 @@
 #include <rsutils/number/running-average.h>
 #include <rsutils/number/stabilized-value.h>
 #include <rsutils/os/executable-name.h>
+#include <rsutils/os/special-folder.h>
 
 
 #define NAME pyrsutils
@@ -39,12 +40,14 @@ PYBIND11_MODULE(NAME, m) {
         py::arg( "max-length" ) = 96 );
     m.def(
         "shorten_json_string",
-        []( nlohmann::json const & j, size_t max_length )
+        []( rsutils::json const & j, size_t max_length )
         { return rsutils::string::shorten_json_string( j.dump(), max_length ).to_string(); },
         py::arg( "json" ),
         py::arg( "max-length" ) = 96 );
     m.def( "executable_path", &rsutils::os::executable_path );
     m.def( "executable_name", &rsutils::os::executable_name, py::arg( "with_extension" ) = false );
+
+    m.def( "string_from_double", []( double d ) { return rsutils::string::from( d ).str(); } );
 
     using rsutils::version;
     py::class_< version >( m, "version" )
@@ -139,4 +142,13 @@ PYBIND11_MODULE(NAME, m) {
         .def( "clear", &stabilized_value::clear )
         .def( "to_string", to_string )
         .def( "__str__", to_string );
+
+    py::enum_< rsutils::os::special_folder >( m, "special_folder" )
+        .value( "app_data", rsutils::os::special_folder::app_data )
+        .value( "temp_folder", rsutils::os::special_folder::temp_folder )
+        .value( "user_desktop", rsutils::os::special_folder::user_desktop )
+        .value( "user_documents", rsutils::os::special_folder::user_documents )
+        .value( "user_pictures", rsutils::os::special_folder::user_pictures )
+        .value( "user_videos", rsutils::os::special_folder::user_videos );
+    m.def( "get_special_folder", rsutils::os::get_special_folder );
 }

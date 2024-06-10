@@ -6,12 +6,30 @@
 #include "stream.h"
 #include "global_timestamp_reader.h"
 #include "metadata.h"
+#include "platform/stream-profile-impl.h"
+#include "fourcc.h"
+#include <src/metadata-parser.h>
+#include <src/core/time-service.h>
 
 
 namespace librealsense {
 
 
-// in sensor.cpp
+static const std::map< rs2_stream, uint32_t > stream_and_fourcc
+    = { { RS2_STREAM_GYRO,  rs_fourcc( 'G', 'Y', 'R', 'O' ) },
+        { RS2_STREAM_ACCEL, rs_fourcc( 'A', 'C', 'C', 'L' ) },
+        { RS2_STREAM_GPIO,  rs_fourcc( 'G', 'P', 'I', 'O' ) } };
+
+/*For gyro sensitivity - FW gets 0 for 61 millidegree/s/LSB resolution
+ 0.1 for 30.5 millidegree/s/LSB 
+ 0.2 for 15.3 millidegree/s/LSB 
+ 0.3 for 7.6 millidegree/s/LSB 
+ 0.4 for 3.8 millidegree/s/LSB 
+ Currently it is intended for D400 devices, when this feature will be added to D500 the convert needs to be checked*/
+static const std::map< float, double > gyro_sensitivity_convert
+    = { { 0.0f, 0 }, { 1.0f, 0.1 }, { 2.0f, 0.2 }, { 3.0f, 0.3 }, { 4.0f, 0.4 } };
+
+    // in sensor.cpp
 void log_callback_end( uint32_t fps,
                        rs2_time_t callback_start_time,
                        rs2_time_t callback_end_time,
@@ -26,7 +44,7 @@ hid_sensor::hid_sensor(
     const std::map< rs2_stream, std::map< unsigned, unsigned > > & fps_and_sampling_frequency_per_rs2_stream,
     const std::vector< std::pair< std::string, stream_profile > > & sensor_name_and_hid_profiles,
     device * dev )
-    : super( "Raw Motion Module", dev, (recommended_proccesing_blocks_interface *)this )
+    : super( "Raw Motion Module", dev )
     , _sensor_name_and_hid_profiles( sensor_name_and_hid_profiles )
     , _fps_and_sampling_frequency_per_rs2_stream( fps_and_sampling_frequency_per_rs2_stream )
     , _hid_device( hid_device )
@@ -75,7 +93,7 @@ stream_profiles hid_sensor::get_sensor_profiles( std::string sensor_name ) const
         {
             auto && p = elem.second;
             platform::stream_profile sp{ 1, 1, p.fps, stream_to_fourcc( p.stream ) };
-            auto profile = std::make_shared< motion_stream_profile >( sp );
+            auto profile = std::make_shared< platform::stream_profile_impl< motion_stream_profile > >( sp );
             profile->set_stream_index( p.index );
             profile->set_stream_type( p.stream );
             profile->set_format( p.format );
@@ -103,7 +121,8 @@ void hid_sensor::open( const stream_profiles & requests )
         _is_configured_stream[request->get_stream_type()] = true;
         configured_hid_profiles.push_back( platform::hid_profile{
             sensor_name,
-            fps_to_sampling_frequency( request->get_stream_type(), request->get_framerate() ) } );
+            fps_to_sampling_frequency(request->get_stream_type(), request->get_framerate()),
+            get_imu_sensitivity_values( request->get_stream_type() ) } );
     }
     _hid_device->open( configured_hid_profiles );
     if( Is< librealsense::global_time_interface >( _owner ) )
@@ -148,7 +167,7 @@ static rs2_stream custom_gpio_to_stream_type( uint32_t custom_gpio )
     return RS2_STREAM_ANY;
 }
 
-void hid_sensor::start( frame_callback_ptr callback )
+void hid_sensor::start( rs2_frame_callback_sptr callback )
 {
     std::lock_guard< std::mutex > lock( _configure_lock );
     if( _is_streaming )
@@ -223,11 +242,14 @@ void hid_sensor::start( frame_callback_ptr callback )
 
             last_frame_number = frame_counter;
             last_timestamp = timestamp;
-            frame_holder frame
-                = _source.alloc_frame( RS2_EXTENSION_MOTION_FRAME, data_size, std::move( fr->additional_data ), true );
+            frame_holder frame = _source.alloc_frame(
+                { request->get_stream_type(), request->get_stream_index(), RS2_EXTENSION_MOTION_FRAME },
+                data_size,
+                std::move( fr->additional_data ),
+                true );
             memcpy( (void *)frame->get_frame_data(),
                     sensor_data.fo.pixels,
-                    sizeof( byte ) * sensor_data.fo.frame_size );
+                    sizeof( uint8_t ) * sensor_data.fo.frame_size );
             if( ! frame )
             {
                 LOG_INFO( "Dropped frame. alloc_frame(...) returned nullptr" );
@@ -325,6 +347,29 @@ uint32_t hid_sensor::fps_to_sampling_frequency( rs2_stream stream, uint32_t fps 
         return fps_mapping->second;
     else
         return fps;
+}
+void hid_sensor::set_imu_sensitivity( rs2_stream stream, float value ) 
+{
+    _imu_sensitivity_per_rs2_stream[stream] = value;
+}
+
+void hid_sensor::set_gyro_scale_factor(double scale_factor) 
+{
+    _hid_device->set_gyro_scale_factor( scale_factor );
+}
+
+/*For gyro sensitivity - FW expects 0/0.1/0.2/0.3/0.4 we convert the values from the enum 0/1/2/3/4
+the user chooses to the values FW expects using gyro_sensitivity_convert*/
+double hid_sensor::get_imu_sensitivity_values( rs2_stream stream )
+{
+    if( _imu_sensitivity_per_rs2_stream.find( stream ) != _imu_sensitivity_per_rs2_stream.end() )
+    {
+        return gyro_sensitivity_convert.at( _imu_sensitivity_per_rs2_stream[stream] );
+    }
+    else
+        //FW recieve 0.1 and adjusts the gyro's sensitivity to its default setting of ±1000.
+        //FW recieve 0.001 and adjusts the accel's sensitivity to its default setting of ±4g.
+        return stream == RS2_STREAM_GYRO ? 0.1f : 0.001f;
 }
 
 iio_hid_timestamp_reader::iio_hid_timestamp_reader()

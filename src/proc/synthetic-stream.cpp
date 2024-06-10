@@ -6,23 +6,26 @@
 #include "core/video.h"
 #include "core/motion-frame.h"
 #include "core/depth-frame.h"
+#include <src/composite-frame.h>
+#include <src/core/frame-callback.h>
+#include <src/core/frame-processor-callback.h>
 #include "option.h"
-#include "context.h"
 #include "stream.h"
 #include "types.h"
+#include <src/core/time-service.h>
 
 #include <rsutils/string/from.h>
 
 
 namespace librealsense
 {
-    void processing_block::set_processing_callback(frame_processor_callback_ptr callback)
+    void processing_block::set_processing_callback( rs2_frame_processor_callback_sptr callback )
     {
         std::lock_guard<std::mutex> lock(_mutex);
         _callback = callback;
     }
 
-    void processing_block::set_output_callback(frame_callback_ptr callback)
+    void processing_block::set_output_callback( rs2_frame_callback_sptr callback )
     {
         _source.set_callback(callback);
     }
@@ -37,7 +40,9 @@ namespace librealsense
 
     void processing_block::invoke(frame_holder f)
     {
-        auto callback = _source.begin_callback();
+        frame_source::archive_id id
+            = { f->get_stream()->get_stream_type(), f->get_stream()->get_stream_index(), RS2_EXTENSION_VIDEO_FRAME };
+        auto callback = _source.begin_callback( id );
         try
         {
             if (_callback)
@@ -45,7 +50,7 @@ namespace librealsense
                 frame_interface* ptr = nullptr;
                 std::swap(f.frame, ptr);
 
-                _callback->on_frame((rs2_frame*)ptr, _source_wrapper.get_c_wrapper());
+                _callback->on_frame( (rs2_frame *)ptr, _source_wrapper.get_rs2_source() );
             }
         }
         catch (std::exception const & e)
@@ -256,10 +261,10 @@ namespace librealsense
             if (f.supports_frame_metadata(RS2_FRAME_METADATA_RAW_FRAME_SIZE))
                 raw_size = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_RAW_FRAME_SIZE));
         }
-        byte* planes[1];
-        planes[0] = (byte*)ret.get_data();
+        uint8_t * planes[1];
+        planes[0] = (uint8_t *)ret.get_data();
 
-        process_function(planes, static_cast<const byte*>(f.get_data()), width, height, height * width * _target_bpp, raw_size);
+        process_function(planes, static_cast<const uint8_t *>(f.get_data()), width, height, height * width * _target_bpp, raw_size);
 
         return ret;
     }
@@ -325,6 +330,12 @@ namespace librealsense
         return _stream_filter.match(frame);
     }
 
+    synthetic_source::synthetic_source( frame_source & actual )
+        : _actual_source( actual )
+        , _c_wrapper( new rs2_source{ this } )
+    {
+    }
+
     void synthetic_source::frame_ready(frame_holder result)
     {
         _actual_source.invoke_callback(std::move(result));
@@ -340,14 +351,14 @@ namespace librealsense
             data.timestamp = original->get_frame_timestamp();
             data.timestamp_domain = original->get_frame_timestamp_domain();
             data.metadata_size = 0;
-            data.system_time = _actual_source.get_time();
+            data.system_time = time_service::get_time();
             data.is_blocking = original->is_blocking();
 
-            auto res
-                = _actual_source.alloc_frame( frame_type,
-                                              vid_stream->get_width() * vid_stream->get_height() * sizeof( float ) * 5,
-                                              std::move( data ),
-                                              true );
+            auto res = _actual_source.alloc_frame(
+                { vid_stream->get_stream_type(), vid_stream->get_stream_index(), frame_type },
+                vid_stream->get_width() * vid_stream->get_height() * sizeof( float ) * 5,
+                std::move( data ),
+                true );
             if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
             res->set_sensor(original->get_sensor());
             res->set_stream(stream);
@@ -382,17 +393,17 @@ namespace librealsense
         auto bpp = new_bpp * 8;
         auto stride = new_stride;
 
-        if (bpp == 0)
+        if( bpp == 0 && vf )
         {
             bpp = vf->get_bpp();
         }
 
-        if (width == 0 && stride == 0)
+        if( width == 0 && stride == 0 && vf )
         {
             width = vf->get_width();
             stride = width * bpp / 8;
         }
-        else if (width == 0)
+        else if (width == 0 && bpp != 0)
         {
             width = stride * 8 / bpp;
         }
@@ -401,16 +412,25 @@ namespace librealsense
             stride = width * bpp / 8;
         }
 
-        if (height == 0)
+        if( height == 0 && vf )
         {
             height = vf->get_height();
         }
 
         auto of = dynamic_cast<frame*>(original);
+        if (!of)
+            throw std::runtime_error("Can not cast frame interface to frame");
+
         frame_additional_data data = of->additional_data;
-        auto res = _actual_source.alloc_frame( frame_type, stride * height, std::move( data ), true );
+        auto res = _actual_source.alloc_frame( { stream->get_stream_type(), stream->get_stream_index(), frame_type },
+                                               stride * height,
+                                               std::move( data ),
+                                               true );
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
         vf = dynamic_cast<video_frame*>(res);
+        if (!vf)
+            throw std::runtime_error("Frame is not video frame");
+
         vf->metadata_parsers = of->metadata_parsers;
         vf->assign(width, height, stride, bpp);
         vf->set_sensor(original->get_sensor());
@@ -419,7 +439,10 @@ namespace librealsense
         if (frame_type == RS2_EXTENSION_DEPTH_FRAME)
         {
             original->acquire();
-            (dynamic_cast<depth_frame*>(res))->set_original(original);
+            auto frame = dynamic_cast<depth_frame*>(res);
+            if (!frame)
+                throw std::runtime_error("Frame interface is not depth frame");
+            frame->set_original(original);
         }
 
         return res;
@@ -430,10 +453,20 @@ namespace librealsense
         rs2_extension frame_type)
     {
         auto of = dynamic_cast<frame*>(original);
+        if (!of)
+            throw std::runtime_error("Frame interface is not frame");
+
         frame_additional_data data = of->additional_data;
-        auto res = _actual_source.alloc_frame( frame_type, of->get_frame_data_size(), std::move( data ), true );
+        auto res = _actual_source.alloc_frame( { stream->get_stream_type(), stream->get_stream_index(), frame_type },
+                                               of->get_frame_data_size(),
+                                               std::move( data ),
+                                               true );
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
+
         auto mf = dynamic_cast<motion_frame*>(res);
+        if (!mf)
+            throw std::runtime_error("Frame interface is not motion frame");
+
         mf->metadata_parsers = of->metadata_parsers;
         mf->set_sensor(original->get_sensor());
         res->set_stream(stream);
@@ -477,7 +510,7 @@ namespace librealsense
         for (auto&& f : holders)
             req_size += get_embeded_frames_size(f.frame);
 
-        auto res = _actual_source.alloc_frame( RS2_EXTENSION_COMPOSITE_FRAME,
+        auto res = _actual_source.alloc_frame( { RS2_STREAM_ANY, 0, RS2_EXTENSION_COMPOSITE_FRAME }, // Special case for composite frames
                                                req_size * sizeof( rs2_frame * ),
                                                std::move( d ),
                                                true );
@@ -552,16 +585,14 @@ namespace librealsense
         update_info(RS2_CAMERA_INFO_NAME, block->get_info(RS2_CAMERA_INFO_NAME));
     }
 
-    void composite_processing_block::set_output_callback(frame_callback_ptr callback)
+    void composite_processing_block::set_output_callback( rs2_frame_callback_sptr callback )
     {
         // Each processing block will process the preceding processing block output frame.
         size_t i = 0;
         for (i = 1; i < _processing_blocks.size(); i++)
         {
-            auto output_cb = [i, this](frame_holder fh) {
-                _processing_blocks[i]->invoke(std::move(fh));
-            };
-            _processing_blocks[i - 1]->set_output_callback(std::make_shared<internal_frame_callback<decltype(output_cb)>>(output_cb));
+            _processing_blocks[i - 1]->set_output_callback( make_frame_callback(
+                [i, this]( frame_holder fh ) { _processing_blocks[i]->invoke( std::move( fh ) ); } ) );
         }
 
         // Set the output callback of the composite processing block as last processing block in the vector.
@@ -602,7 +633,7 @@ namespace librealsense
     void interleaved_functional_processing_block::configure_processing_callback()
     {
         // define and set the frame processing callback
-        auto process_callback = [&](frame_holder frame, synthetic_source_interface* source)
+        auto process_callback = [&](frame_holder && frame, synthetic_source_interface* source)
         {
             auto profile = As<video_stream_profile, stream_profile_interface>(frame.frame->get_stream());
             if (!profile)
@@ -649,17 +680,16 @@ namespace librealsense
                 w, h, w * _right_target_bpp, _right_extension_type);
 
             // process the frame
-            byte* planes[2];
-            planes[0] = (byte*)lf.frame->get_frame_data();
-            planes[1] = (byte*)rf.frame->get_frame_data();
+            uint8_t * planes[2];
+            planes[0] = (uint8_t *)lf.frame->get_frame_data();
+            planes[1] = (uint8_t *)rf.frame->get_frame_data();
 
-            process_function(planes, (const byte*)frame->get_frame_data(), w, h, 0, 0);
+            process_function(planes, (const uint8_t *)frame->get_frame_data(), w, h, 0, 0);
 
             source->frame_ready(std::move(lf));
             source->frame_ready(std::move(rf));
         };
 
-        set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
-            new internal_frame_processor_callback<decltype(process_callback)>(process_callback)));
+        set_processing_callback( make_frame_processor_callback( std::move( process_callback ) ) );
     }
 }

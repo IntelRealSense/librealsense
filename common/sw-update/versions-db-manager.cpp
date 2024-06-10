@@ -1,21 +1,22 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+
+#include "versions-db-manager.h"
+#include <rsutils/json.h>
+#include <rsutils/os/os.h>
+#include <rsutils/easylogging/easyloggingpp.h>
 #include <fstream>
 #include <unordered_map>
 #include <algorithm>
 #include <regex>
 
-#include <nlohmann/json.hpp>
-#include "versions-db-manager.h"
-#include <types.h>
-#include <rsutils/os/os.h>
 
 namespace rs2
 {
 
     namespace sw_update
     {
-        using json = nlohmann::json;
+        using json = rsutils::json;
         using namespace http;
 
         query_status_type versions_db_manager::query_versions(const std::string &device_name, component_part_type component, const update_policy_type policy, version& out_version)

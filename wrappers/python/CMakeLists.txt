@@ -46,6 +46,7 @@ set(RAW_RS
     ../../src/frame.cpp
     ../../src/environment.cpp
     ../../src/to-string.cpp
+    ../../src/core/options-container.cpp
     ../../src/core/options-registry.cpp
 )
 
@@ -146,6 +147,18 @@ if(${FORCE_RSUSB_BACKEND})
 if(APPLE)
     target_include_directories(pybackend2 PRIVATE ${CMAKE_SOURCE_DIR}/third-party/hidapi/)
 endif()
+endif()
+
+if(${BACKEND} STREQUAL RS2_USE_V4L2_BACKEND)
+    if(UDEV_FOUND)
+        target_sources( pybackend2
+            PRIVATE
+                ../../src/linux/udev-device-watcher.cpp
+                ../../src/linux/udev-device-watcher.h
+            )
+        target_link_libraries( pybackend2 PRIVATE udev )
+        target_compile_definitions( pybackend2 PRIVATE -DUSING_UDEV )
+    endif()
 endif()
 
 install(TARGETS pybackend2 pyrealsense2

@@ -3,6 +3,11 @@
 
 #include <queue>
 #include "hid-device.h"
+#include <src/platform/hid-data.h>
+
+#include <rsutils/string/from.h>
+#include <rsutils/string/hexdump.h>
+
 
 const int USB_REQUEST_COUNT = 1;
 
@@ -20,8 +25,8 @@ namespace librealsense
                 if(info.cls != RS2_USB_CLASS_HID)
                     continue;
                 platform::hid_device_info device_info;
-                device_info.vid = hexify(info.vid);
-                device_info.pid = hexify(info.pid);
+                device_info.vid = rsutils::string::from() << std::uppercase << rsutils::string::hexdump( info.vid );
+                device_info.pid = rsutils::string::from() << std::uppercase << rsutils::string::hexdump( info.pid );
                 device_info.unique_id = info.unique_id;
                 device_info.device_path = info.unique_id;//the device unique_id is the USB port
 

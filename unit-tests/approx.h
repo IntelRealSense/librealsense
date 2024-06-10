@@ -103,9 +103,9 @@ We provide our own functions to do approximate comparison:
 // Custom version of Approx, ==> better replaced by matchers <== for more control,
 // but provides LRS defaults that should closely (but not exactly) match them
 template< typename F >
-inline Approx approx( F f )
+inline Catch::Approx approx( F f )
 {
-    return Approx( f )
+    return Catch::Approx( f )
         .margin( __approx_margin< F >::value() )
         .epsilon( __approx_epsilon< F >::value() );
 }
@@ -138,9 +138,9 @@ Or, with the Catch matchers, even more:
 These matchers are type-sensitive (float vs. double).
 */
 #define approx_abs(D) \
-    Catch::WithinAbs( (D), approx_margin((D)) )
+    Catch::Matchers::WithinAbs( (D), approx_margin((D)) )
 #define approx_rel(D) \
-    Catch::WithinRel( (D), approx_epsilon((D)) )
+    Catch::Matchers::WithinRel( (D), approx_epsilon((D)) )
 #define approx_equals(D) \
     ( approx_abs(D)  ||  approx_rel(D) )
 

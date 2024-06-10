@@ -13,6 +13,7 @@
 #include <functional>
 #include <vector>
 #include <string>
+#include <algorithm>
 
 
 namespace librealsense {
@@ -105,6 +106,32 @@ struct backend_device_group
         }
 
         return s;
+    }
+
+
+    // Returns true if this group is completely accounted for in the right group
+    //
+    bool is_contained_in( backend_device_group const & second_data ) const
+    {
+        for( auto & uvc : uvc_devices )
+        {
+            if( std::find( second_data.uvc_devices.begin(), second_data.uvc_devices.end(), uvc )
+                == second_data.uvc_devices.end() )
+                return false;
+        }
+        for( auto & usb : usb_devices )
+        {
+            if( std::find( second_data.usb_devices.begin(), second_data.usb_devices.end(), usb )
+                == second_data.usb_devices.end() )
+                return false;
+        }
+        for( auto & hid : hid_devices )
+        {
+            if( std::find( second_data.hid_devices.begin(), second_data.hid_devices.end(), hid )
+                == second_data.hid_devices.end() )
+                return false;
+        }
+        return true;
     }
 };
 

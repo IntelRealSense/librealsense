@@ -47,9 +47,11 @@ def usage():
     print( '        --context <>         The context to use for test configuration' )
     print( '        --repeat <#>         Repeat each test <#> times' )
     print( '        --config <>          Ignore test configurations; use the one provided' )
-    print( '        --no-reset           Do not try to reset any devices, with or without Acroname' )
+    print( '        --device <>          Run only on the specified devices; ignore any test that does not match (implies --live)' )
+    print( '        --no-reset           Do not try to reset any devices, with or without a hub' )
+    print( '        --hub-reset          If a hub is available, reset the hub itself' )
     print( '        --rslog              Enable LibRS logging (LOG_DEBUG etc.) to console in each test' )
-    print( '        --skip-disconnected  Skip live test if required device is disconnected (only applies w/o Acroname)' )
+    print( '        --skip-disconnected  Skip live test if required device is disconnected (only applies w/o a hub)' )
     print( 'Examples:' )
     print( 'Running: python run-unit-tests.py -s' )
     print( '    Runs all tests, but direct their output to the console rather than log files' )
@@ -75,8 +77,8 @@ else:
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
-                                          'list-tests', 'no-exceptions', 'context=', 'repeat=', 'config=', 'no-reset',
-                                          'rslog', 'skip-disconnected', 'live', 'not-live'] )
+                                          'list-tests', 'no-exceptions', 'context=', 'repeat=', 'config=', 'no-reset', 'hub-reset',
+                                          'rslog', 'skip-disconnected', 'live', 'not-live', 'device='] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
@@ -89,7 +91,9 @@ no_exceptions = False
 context = []
 repeat = 1
 forced_configurations = None
+device_set = None
 no_reset = False
+hub_reset = False
 skip_disconnected = False
 rslog = False
 only_live = False
@@ -122,8 +126,16 @@ for opt, arg in opts:
         repeat = int(arg)
     elif opt == '--config':
         forced_configurations = [[arg]]
+    elif opt == '--device':
+        if only_not_live:
+            log.e( "--device and --not-live are mutually exclusive" )
+            usage()
+        only_live = True
+        device_set = arg.split()
     elif opt == '--no-reset':
         no_reset = True
+    elif opt == '--hub-reset':
+        hub_reset = True
     elif opt == '--rslog':
         rslog = True
     elif opt == '--skip-disconnected':
@@ -233,16 +245,21 @@ for dir in pyd_dirs:
     os.environ["PYTHONPATH"] += os.pathsep + dir
 
 
-def configuration_str( configuration, repetition=1, retry=0, sns=None, prefix='', suffix='' ):
+def serial_numbers_to_string( sns ):
+    return ' '.join( [f'{devices.get(sn).name}_{sn}' for sn in sns] )
+
+
+
+def configuration_str( configuration, repetition=0, retry=0, sns=None, prefix='', suffix='' ):
     """ Return a string repr (with a prefix and/or suffix) of the configuration or '' if it's None """
     s = ''
     if configuration is not None:
         s += '[' + ' '.join( configuration )
         if sns is not None:
-            s += ' -> ' + ' '.join( [f'{devices.get(sn).name}_{sn}' for sn in sns] )
+            s += ' -> ' + serial_numbers_to_string( sns )
         s += ']'
     elif sns is not None:
-        s += '[' + ' '.join( [f'{devices.get(sn).name}_{sn}' for sn in sns] ) + ']'
+        s += '[' + serial_numbers_to_string( sns ) + ']'
     if repetition:
         s += '[' + str(repetition+1) + ']'
     if retry:
@@ -375,13 +392,16 @@ def devices_by_test_config( test, exceptions ):
 
     :param test: The test (of class type Test) we're interested in
     """
-    global forced_configurations
+    global forced_configurations, device_set
     for configuration in ( forced_configurations  or  test.config.configurations ):
         try:
-            for serial_numbers in devices.by_configuration( configuration, exceptions ):
-                yield configuration, serial_numbers
+            for serial_numbers in devices.by_configuration( configuration, exceptions, device_set ):
+                if not serial_numbers:
+                    log.d( 'configuration:', configuration_str( configuration ), 'has no matching device; ignoring' )
+                else:
+                    yield configuration, serial_numbers
         except RuntimeError as e:
-            if devices.acroname:
+            if devices.hub:
                 log.e( log.red + test.name + log.reset + ': ' + str( e ) )
             else:
                 log.w( log.yellow + test.name + log.reset + ': ' + str( e ) )
@@ -439,12 +459,12 @@ try:
             sys.path.insert( 1, pyrs_path )  # Make sure we pick up the right pyrealsense2!
         from rspy import devices
 
-        devices.query()
+        devices.query( hub_reset = hub_reset ) #resets the device
         devices.map_unknown_ports()
         #
-        # Under a development environment (i.e., without an Acroname), we may only have one device connected
+        # Under a development environment (i.e., without a hub), we may only have one device connected
         # or even none and want to only show a warning for live tests:
-        skip_live_tests = len( devices.all() ) == 0 and not devices.acroname
+        skip_live_tests = len( devices.all() ) == 0 and not devices.hub
         #
         exceptions = None
         if not skip_live_tests:
@@ -457,6 +477,17 @@ try:
                     log.d( '==>', exceptions )
                 finally:
                     log.debug_unindent()
+        #
+        if device_set is not None:
+            sns = set()  # convert the list of specs to a list of serial numbers
+            ignored_list = list()
+            for spec in device_set:
+                included_devices = [sn for sn in devices.by_spec( spec, ignored_list )]
+                if not included_devices:
+                    log.f( f'No match for --device "{spec}"' )
+                sns.update( included_devices )
+            device_set = sns
+            log.d( f'ignoring devices other than: {serial_numbers_to_string( device_set )}' )
         #
         log.progress()
     #
@@ -539,7 +570,7 @@ try:
             for configuration, serial_numbers in devices_by_test_config( test, exceptions ):
                 for repetition in range(repeat):
                     try:
-                        log.d( 'configuration:', configuration )
+                        log.d( 'configuration:', configuration_str( configuration, repetition, sns=serial_numbers ) )
                         log.debug_indent()
                         if not no_reset:
                             devices.enable_only( serial_numbers, recycle=True )
@@ -587,12 +618,12 @@ try:
 #
 finally:
     #
-    # Disconnect from the Acroname -- if we don't it'll crash on Linux...
+    # Disconnect from the hub -- if we don't it might crash on Linux...
     # Before that we close all ports, no need for cameras to stay on between LibCI runs
     if not list_only and not only_not_live:
-        if devices.acroname and devices.acroname.is_connected():
-            devices.acroname.disable_ports()
+        if devices.hub and devices.hub.is_connected():
+            devices.hub.disable_ports()
             devices.wait_until_all_ports_disabled()
-            devices.acroname.disconnect()
+            devices.hub.disconnect()
 #
 sys.exit( 0 )

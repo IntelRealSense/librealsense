@@ -46,5 +46,6 @@ else()
     option(ENABLE_EASYLOGGINGPP_ASYNC "Switch Logger to Asynchronous Mode (set OFF for Synchronous Mode)" OFF)
 endif()
 option(BUILD_PC_STITCHING "Build pointcloud-stitching example" OFF)
-option(BUILD_WITH_DDS "Use FastDDS to access camera devices through DDS topics" OFF)
+option(BUILD_WITH_DDS "Access camera devices through DDS topics (requires CMake 3.16.3)" OFF)
+option(BUILD_RS2_ALL "Build realsense2-all static bundle containing all realsense libraries (with BUILD_SHARED_LIBS=OFF)" ON)
  

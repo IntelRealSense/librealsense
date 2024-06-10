@@ -8,6 +8,7 @@ import pyrealsense2 as rs
 from rspy import test, log
 import time
 import datetime
+from rspy import tests_wrapper as tw
 
 # Test multiple set_pu commands checking that the set control event polling works as expected.
 # We expect no exception thrown -  See [DSO-17185]
@@ -15,16 +16,19 @@ import datetime
 test_iterations = 200
 gain_values = [16,74,132,190,248]
 
+dev = test.find_first_device_or_exit()
+time.sleep( 3 ) # The device starts at D0 (Operational) state, allow time for it to get into idle state
+tw.start_wrapper( dev )
+
 ################################################################################################
 test.start("Stress test for setting a PU (gain) option")
 
-dev = test.find_first_device_or_exit()
-time.sleep( 3 ) # The device starts at D0 (Operational) state, allow time for it to get into idle state
 depth_ir_sensor = dev.first_depth_sensor()
 
 # Test only devices that supports set gain option
 if not depth_ir_sensor.supports(rs.option.gain):
     test.finish()
+    tw.stop_wrapper( dev )
     test.print_results_and_exit()
 
 
@@ -54,4 +58,5 @@ for i in range(test_iterations):
 test.finish()
 
 ################################################################################################
+tw.stop_wrapper( dev )
 test.print_results_and_exit()

@@ -1,17 +1,14 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
-
 #pragma once
-
 
 #include "flexible/flexible.h"
 #include <realdds/dds-defines.h>
 
+#include <rsutils/json-fwd.h>
 #include <string>
 #include <memory>
 #include <vector>
-
-#include <nlohmann/json_fwd.hpp>
 
 
 namespace eprosima {
@@ -75,17 +72,17 @@ public:
                            eprosima::fastdds::dds::SampleInfo * optional_info = nullptr );
 
     // WARNING: this moves the message content!
-    raw::flexible to_raw();
+    raw::flexible to_raw() &&;
     // WARNING: this moves the message content!
     // Returns some unique (to the writer) identifier for the sample that was sent, or 0 if unsuccessful
-    dds_sequence_number write_to( dds_topic_writer & );
+    dds_sequence_number write_to( dds_topic_writer & ) &&;
 
     flexible_msg() = default;
     flexible_msg( raw::flexible && );
-    flexible_msg( nlohmann::json const &, uint32_t version = 0 );
-    flexible_msg( data_format format, nlohmann::json const &, uint32_t version = 0 );
+    flexible_msg( rsutils::json const &, uint32_t version = 0 );
+    flexible_msg( data_format format, rsutils::json const &, uint32_t version = 0 );
 
-    nlohmann::json json_data() const;
+    rsutils::json json_data() const;
 
     // Get the custom data with casting to the desired type
     // Syntax: auto stream_info = msg.custom_data< STREAM_INFO >();

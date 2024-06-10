@@ -57,12 +57,6 @@ include(include/CMakeLists.txt)
 include(src/CMakeLists.txt)
 include(third-party/CMakeLists.txt)
 
-include(CMake/external_json.cmake)
-target_include_directories( rsutils
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/third-party/json/include>
-    )
-
 target_link_libraries( ${LRS_TARGET} PUBLIC rsutils )
 
 if(BUILD_WITH_DDS)
@@ -109,6 +103,7 @@ elseif(BUILD_TOOLS)
 endif()
 
 if(BUILD_UNIT_TESTS OR BUILD_LEGACY_LIVE_TEST)
+    include( CMake/external_catch2.cmake )
     add_subdirectory(unit-tests)
 endif()
 
@@ -118,3 +113,6 @@ endif()
 
 include(CMake/embedd_udev_rules.cmake)
 
+if( BUILD_RS2_ALL )
+    include( src/realsense2-all.cmake )
+endif()

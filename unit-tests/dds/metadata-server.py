@@ -22,6 +22,11 @@ color_stream.init_profiles( d435i.color_stream_profiles(), 0 )
 color_stream.init_options( [] )
 color_stream.set_intrinsics( d435i.color_stream_intrinsics() )
 
+def on_control( server, id, control, reply ):
+    # the control has already been output to debug by the calling code, as will the reply
+    return True  # otherwise the control will be flagged as error
+
+device_server.on_control( on_control )
 device_server.init( [color_stream], [], {} )
 
 

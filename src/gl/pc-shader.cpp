@@ -636,7 +636,7 @@ namespace librealsense
 
                                         auto right_left = lerp(pos - left, right - pos, 0.5f);
                                         auto down_up = lerp(pos - up, down - pos, 0.5f) * (-1.f);
-                                        *normal = cross(right_left, down_up).normalize();
+                                        *normal = cross(right_left, down_up).normalized();
                                         *xyz = pos;
                                     }
                                 }
@@ -728,8 +728,8 @@ namespace librealsense
                                 for (int y = 0; y < height - 1; ++y) {
                                     auto a = y * width + x, b = y * width + x + 1, c = (y + 1)*width + x, d = (y + 1)*width + x + 1;
                                     if (vertices[a].z && vertices[b].z && vertices[c].z && vertices[d].z
-                                        && abs(vertices[a].z - vertices[b].z) < threshold && abs(vertices[a].z - vertices[c].z) < threshold
-                                        && abs(vertices[b].z - vertices[d].z) < threshold && abs(vertices[c].z - vertices[d].z) < threshold) {
+                                        && std::abs(vertices[a].z - vertices[b].z) < threshold && std::abs(vertices[a].z - vertices[c].z) < threshold
+                                        && std::abs(vertices[b].z - vertices[d].z) < threshold && std::abs(vertices[c].z - vertices[d].z) < threshold) {
                                         glVertex3fv(vertices[a]); glTexCoord2fv(tex_coords[a]);
                                         glVertex3fv(vertices[b]); glTexCoord2fv(tex_coords[b]);
                                         glVertex3fv(vertices[d]); glTexCoord2fv(tex_coords[d]);

@@ -4,6 +4,8 @@
 #include <algorithm>
 #include "stream.h"
 #include "aggregator.h"
+#include <src/composite-frame.h>
+#include <src/core/frame-processor-callback.h>
 
 namespace librealsense
 {
@@ -16,13 +18,9 @@ namespace librealsense
             _streams_to_sync_ids(streams_to_sync),
             _accepting(true)
         {
-            auto processing_callback = [&](frame_holder frame, synthetic_source_interface* source)
-            {
-                handle_frame(std::move(frame), source);
-            };
-
-            set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
-                new internal_frame_processor_callback<decltype(processing_callback)>(processing_callback)));
+            set_processing_callback(
+                make_frame_processor_callback( [&]( frame_holder && frame, synthetic_source_interface * source )
+                                               { handle_frame( std::move( frame ), source ); } ) );
         }
 
         void aggregator::handle_frame(frame_holder frame, synthetic_source_interface* source)

@@ -7,6 +7,7 @@
 #include <src/device-info.h>
 
 #include <memory>
+#include <vector>
 
 
 namespace librealsense {
@@ -34,10 +35,10 @@ public:
 
     std::string get_address() const override
     {
-        for( auto & d : _group.uvc_devices )
-            return d.device_path;
-        for( auto & d : _group.usb_devices )
-            return d.id;
+        if( ! _group.uvc_devices.empty() )
+            return _group.uvc_devices.front().device_path;
+        if( ! _group.usb_devices.empty() )
+            return _group.usb_devices.front().id;
         throw std::runtime_error( "non-standard platform-device-info" );
     }
 
@@ -59,4 +60,13 @@ public:
 
 
 }  // namespace platform
+
+
+// subtract_sets( left, right ) = what is in left that's not in right
+//
+std::vector< std::shared_ptr< platform::platform_device_info > >
+subtract_sets( const std::vector< std::shared_ptr< platform::platform_device_info > > & left,
+               const std::vector< std::shared_ptr< platform::platform_device_info > > & right );
+
+
 }  // namespace librealsense

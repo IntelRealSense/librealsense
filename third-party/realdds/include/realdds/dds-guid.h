@@ -5,6 +5,7 @@
 
 #include "dds-defines.h"
 #include <fastdds/rtps/common/Guid.h>
+#include <iosfwd>
 
 
 namespace realdds {
@@ -13,25 +14,77 @@ namespace realdds {
 static constexpr auto & unknown_guid = eprosima::fastrtps::rtps::c_Guid_Unknown;
 
 
-// Custom GUID printer: attempts a more succinct representation
-// If a base_prefix is provided, will try to minimize a common denominator (vendor, host, etc.) -- you can use your
-// participant's guid if you want to shorten
+// Convert a prefix to a hex string: not human-readable!
+// In one of two formats:
+//     223344556677.<0xPID>               // eProsima
+// Or:
+//     001122334455667788990011           // everything else
+// Used internally by next function.
 //
-std::string print( dds_guid const & guid,
-                   dds_guid_prefix const & base_prefix = unknown_guid.guidPrefix,
-                   bool readable_name = true );
-
-// Same as above, without a base prefix
-inline std::string print( dds_guid const & guid, bool readable_name )
+struct print_raw_guid_prefix
 {
-    return print( guid, unknown_guid.guidPrefix, readable_name );
-}
+    dds_guid_prefix const & _prefix;
+    explicit print_raw_guid_prefix( dds_guid_prefix const & prefix,
+                                    dds_guid_prefix const & /*base_prefix*/ = unknown_guid.guidPrefix )
+        : _prefix( prefix )
+    {
+    }
+};
+std::ostream & operator<<( std::ostream &, print_raw_guid_prefix const & );
 
-// Same as above, with a guid base for flexibility
-inline std::string print( dds_guid const & guid, dds_guid const & base_guid, bool readable_name = true )
+
+// Custom GUID printer: attempts a more succinct representation:
+// If the participant is known, its name will be shown instead of the raw bytes.
+//     <name-or-prefix>.<entity-id-in-hex>
+// If a base_prefix is provided, will try to minimize a common denominator -- you can use your
+// participant's guid if you want to shorten.
+//
+struct print_guid
 {
-    return print( guid, base_guid.guidPrefix, readable_name );
-}
+    dds_guid const & _guid;
+    dds_guid_prefix const & _base_prefix;
+
+    explicit print_guid( dds_guid const & guid, dds_guid_prefix const & base_prefix = unknown_guid.guidPrefix )
+        : _guid( guid )
+        , _base_prefix( base_prefix )
+    {
+    }
+    explicit print_guid( dds_guid const & guid, dds_guid const & base_guid )
+        : print_guid( guid, base_guid.guidPrefix )
+    {
+    }
+};
+std::ostream & operator<<( std::ostream &, print_guid const & );
+
+
+// Same, except leaves output in raw form (bytes, not name)
+//     <prefix>.<entity-id-in-hex>
+//
+struct print_raw_guid
+{
+    dds_guid const & _guid;
+    dds_guid_prefix const & _base_prefix;
+
+    explicit print_raw_guid( dds_guid const & guid, dds_guid_prefix const & base_prefix = unknown_guid.guidPrefix )
+        : _guid( guid )
+        , _base_prefix( base_prefix )
+    {
+    }
+    explicit print_raw_guid( dds_guid const & guid, dds_guid const & base_guid )
+        : print_raw_guid( guid, base_guid.guidPrefix )
+    {
+    }
+};
+std::ostream & operator<<( std::ostream &, print_raw_guid const & );
+
+
+// The reverse: get a guid from a RAW guid string.
+// Expecting one of two formats:
+//     223344556677.<0xPID>.<0xEID>       // eProsima
+// Or:
+//     001122334455667788990011.<0xEID>   // everything else
+// Returns unknown_guid if not parseable
+dds_guid guid_from_string( std::string const & );
 
 
 }  // namespace realdds

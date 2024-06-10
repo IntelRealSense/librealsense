@@ -27,13 +27,14 @@ namespace librealsense
                         throw not_implemented_exception(rsutils::string::from() << "USB device "
                             << std::hex << info.pid << ":" << info.vid << std::dec << " is not supported.");
                         break;
-                    }*/
+                    }
 
                     if (found)
                     {
                         devices.erase(it);
                         return true;
                     }
+                    */
                 }
             }
             return false;
@@ -190,9 +191,18 @@ namespace librealsense
             intrinsics.ppy = k_brown.z.y;
             intrinsics.fx = k_brown.x.x;
             intrinsics.fy = k_brown.y.y;
+            intrinsics.model = RS2_DISTORTION_BROWN_CONRADY;
 
             // update values in the distortion params of the calibration table
             rgb_coefficients_table.distortion_model = RS2_DISTORTION_BROWN_CONRADY;
+
+            // Since we override the table we need an indication that the table had changed from
+            // outside this function Decided to use a reserve field for that
+            if( rgb_coefficients_table.reserved[3] != 0 )
+                throw invalid_value_exception( "reserved field read from RGB distortion model table is expected to be zero" );
+
+            rgb_coefficients_table.reserved[3] = 1;
+
             rgb_coefficients_table.distortion_coeffs[5] = 0;
             rgb_coefficients_table.distortion_coeffs[6] = 0;
             rgb_coefficients_table.distortion_coeffs[7] = 0;
@@ -204,7 +214,7 @@ namespace librealsense
             // updating crc after values have been modified
             auto ptr = reinterpret_cast<uint8_t*>(&rgb_calib_table);
             std::vector<uint8_t> raw_data(ptr, ptr + sizeof(rgb_calib_table));
-            rgb_calib_table.header.crc32 = calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header));
+            rgb_calib_table.header.crc32 = rsutils::number::calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header));
         }
 
         rs2_intrinsics get_d500_color_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)
@@ -220,15 +230,28 @@ namespace librealsense
             intrinsics.width = width;
             intrinsics.height = height;
 
-            auto rect_params = compute_rect_params_from_resolution(table->rectified_intrinsics, 
-                width, height, false);
+            // For D555e, model will be brown and we need the unrectified intrinsics
+            // We use reserved[3] as a flag here to indicate the full distortion module is not
+            // really brown but we treat it as such because the HW fixes fisheye distortion.
+            bool use_base_intrinsics
+                = ( table->rgb_coefficients_table.distortion_model == RS2_DISTORTION_BROWN_CONRADY
+                    && table->rgb_coefficients_table.reserved[3] == 0 );
+
+            auto rect_params = compute_rect_params_from_resolution(
+                use_base_intrinsics ? table->rgb_coefficients_table.base_instrinsics
+                                    : table->rectified_intrinsics,
+                                      width,
+                                      height,
+                                      false );  // symmetry not needed for RGB
 
             intrinsics.fx = rect_params[0];
             intrinsics.fy = rect_params[1];
             intrinsics.ppx = rect_params[2];
             intrinsics.ppy = rect_params[3];
             intrinsics.model = table->rgb_coefficients_table.distortion_model;
-            librealsense::copy(intrinsics.coeffs, table->rgb_coefficients_table.distortion_coeffs, sizeof(intrinsics.coeffs));
+            std::memcpy( intrinsics.coeffs,
+                         table->rgb_coefficients_table.distortion_coeffs,
+                         sizeof( intrinsics.coeffs ) );
 
             update_table_to_correct_fisheye_distortion(const_cast<ds::d500_rgb_calibration_table&>(*table), intrinsics);
 
@@ -249,5 +272,6 @@ namespace librealsense
 
             return{ rect_rot_mat,trans_vector };
         }
+
     } // librealsense::ds
 } // namespace librealsense

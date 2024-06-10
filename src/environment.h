@@ -1,16 +1,22 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-
 #pragma once
-#include "core/streaming.h"
-#include "types.h"
+
+#include <librealsense2/h/rs_sensor.h>
 #include <rsutils/lazy.h>
 #include <memory>
 #include <mutex>
 #include <set>
+#include <map>
+#include <vector>
+#include <atomic>
+
 
 namespace librealsense
 {
+    class stream_interface;
+
+
     /**
     * \brief The class stores and manages the inter - stream extrinsic information in a form of dis / connected graph.
     *        The nodes of the graph represent the streaming profiles that the different sensors provide.

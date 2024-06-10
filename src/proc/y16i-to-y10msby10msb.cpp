@@ -20,7 +20,7 @@ namespace librealsense
                         uint16_t l() const { return left << 6 | left >> 4; }
                         uint16_t r() const { return right << 6 | right >> 4; }
     };
-    void unpack_y10msb_y10msb_from_y16i(byte* const dest[], const byte* source, int width, int height, int actual_size)
+    void unpack_y10msb_y10msb_from_y16i( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size)
     {
         auto count = width * height;
 // CUDA TODO
@@ -41,7 +41,7 @@ namespace librealsense
             RS2_FORMAT_Y16, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME, 2)
     {}
 
-    void y16i_to_y10msby10msb::process_function(byte* const dest[], const byte* source, int width, int height, int actual_size, int input_size)
+    void y16i_to_y10msby10msb::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size)
     {
         unpack_y10msb_y10msb_from_y16i(dest, source, width, height, actual_size);
     }

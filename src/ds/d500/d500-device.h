@@ -17,14 +17,13 @@
 #include "ds/ds-options.h"
 
 #include "ds/ds-device-common.h"
-#include "ds/ds-device.h"
+#include "backend-device.h"
 
 #include <rsutils/lazy.h>
 
 
 namespace librealsense
 {
-    class hdr_config;
     class d400_thermal_monitor;
     class ds_devices_common;
     class d500_info;
@@ -34,7 +33,7 @@ namespace librealsense
     }
 
     class d500_device
-        : public virtual ds_device
+        : public virtual backend_device
         , public debug_interface
         , public global_time_interface
         , public updatable
@@ -48,10 +47,10 @@ namespace librealsense
             return dynamic_cast<synthetic_sensor&>(get_sensor(_depth_device_idx));
         }
 
-        uvc_sensor& get_raw_depth_sensor()
+        std::shared_ptr< uvc_sensor > get_raw_depth_sensor()
         {
-            synthetic_sensor& depth_sensor = get_depth_sensor();
-            return dynamic_cast<uvc_sensor&>(*depth_sensor.get_raw_sensor());
+            synthetic_sensor & depth_sensor = get_depth_sensor();
+            return std::dynamic_pointer_cast< uvc_sensor >( depth_sensor.get_raw_sensor() );
         }
 
         d500_device( std::shared_ptr< const d500_info > const & );
@@ -72,8 +71,8 @@ namespace librealsense
         virtual double get_device_time_ms() override;
 
         void enter_update_state() const override;
-        std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback) override;
-        void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode) override;
+        std::vector<uint8_t> backup_flash( rs2_update_progress_callback_sptr callback ) override;
+        void update_flash(const std::vector<uint8_t>& image, rs2_update_progress_callback_sptr callback, int update_mode) override;
         bool check_fw_compatibility( const std::vector<uint8_t>& image ) const override { return true; };
     protected:
         std::shared_ptr<ds_device_common> _ds_device_common;
@@ -93,8 +92,8 @@ namespace librealsense
         command get_firmware_logs_command() const;
         command get_flash_logs_command() const;
 
-        void init(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group);
+        void init(std::shared_ptr<context> ctx, const platform::backend_device_group& group);
+        void register_features();
 
         friend class d500_depth_sensor;
 

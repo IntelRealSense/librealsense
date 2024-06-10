@@ -1,21 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
-
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include <librealsense2/rs.hpp>
 #include "notifications.h"
+#include <rsutils/number/float3.h>
 
-namespace librealsense
-{
-    struct float3x3;
-}
-
-namespace helpers
-{
-    // Calculate CRC code for arbitrary characters buffer
-    uint32_t calc_crc32(const uint8_t* buf, size_t bufsize);
-}
 
 namespace rs2
 {
@@ -23,6 +13,8 @@ namespace rs2
 
     class calibration_model
     {
+        using float3x3 = rsutils::number::float3x3;
+
     public:
         calibration_model(rs2::device dev, std::shared_ptr<notifications_model> not_model);
 
@@ -33,7 +25,7 @@ namespace rs2
         void open() { to_open = true; }
 
     private:
-        void draw_float4x4(std::string name, librealsense::float3x3& feild, const librealsense::float3x3& original, bool& changed);
+        void draw_float4x4(std::string name, float3x3 & feild, const float3x3& original, bool& changed);
         void draw_float(std::string name, float& x, const float& orig, bool& changed);
 
         rs2::device dev;

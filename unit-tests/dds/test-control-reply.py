@@ -2,7 +2,7 @@
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
-#test:retries 2
+#test:retries:gha 2
 
 from rspy import log, test
 import pyrealdds as dds
@@ -36,7 +36,7 @@ with test.remote.fork( nested_indent=None ) as remote:
                 reply['sequence'] = n_replies            # to show that we've processed it
                 reply['nested-json'] = { 'more': True }  # to show off
                 return True  # otherwise the control will be flagged as error
-            server.on_control( _on_control )
+            subscription = server.on_control( _on_control )
 
         raise StopIteration()  # exit the 'with' statement
 
@@ -81,8 +81,7 @@ with test.remote.fork( nested_indent=None ) as remote:
                 reply_count[device.guid()] += 1
             else:
                 log.d( f'notification to {device}' )
-            return True  # otherwise the notification will be flagged as unhandled
-        device.on_notification( _on_notification )
+        notification_subscription = device.on_notification( _on_notification )
 
     with test.closure( 'Send a notification that is not a reply' ):
         dev1_notifications = notification_count[device.guid()]
@@ -100,9 +99,10 @@ with test.remote.fork( nested_indent=None ) as remote:
             server_sequence += 1
             expect_notifications( n )
             reply = device.send_control( json, True )  # Wait for reply
-            test.check_equal( reply['id'], json['id'] )
             if test.check( reply.get('control') is not None ):
                 test.check_equal( reply['control']['id'], json['id'] )
+            else:
+                test.check_equal( reply['id'], json['id'] )
             test.check_equal( reply['sequence'], server_sequence )
             test.check_equal( reply['sample'][0], str(device.guid()) )
             notifications.wait( 3 )  # We may get the reply before the other notifications are received
@@ -117,7 +117,7 @@ with test.remote.fork( nested_indent=None ) as remote:
         device2 = dds.device( participant, device_info )
         notification_count[device2.guid()] = 0
         reply_count[device2.guid()] = 0
-        device2.on_notification( _on_notification )
+        notification2_subscription = device2.on_notification( _on_notification )
         device2.wait_until_ready()
 
     with test.closure( 'Controls generate notifications to all devices' ):

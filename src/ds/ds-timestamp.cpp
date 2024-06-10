@@ -3,6 +3,8 @@
 
 #include "ds-private.h"
 #include "ds-timestamp.h"
+#include <src/frame.h>
+#include <src/core/time-service.h>
 
 #include <mutex>
 #include <chrono>
@@ -10,7 +12,6 @@
 #include <iterator>
 
 #include "device.h"
-#include "context.h"
 #include "image.h"
 #include "metadata.h"
 

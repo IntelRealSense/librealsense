@@ -1,13 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
-#include "types.h"
+#include "core/enum-helpers.h"
+#include <librealsense2/hpp/rs_types.hpp>
+
 #include <rsutils/string/from.h>
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/os/ensure-console.h>
-#include <librealsense2/h/rs_types.h>  // rs2_log_severity
 
 #include <stdexcept>
 #include <mutex>
@@ -16,6 +16,12 @@
 
 namespace librealsense
 {
+    void log_to_console( rs2_log_severity min_severity );
+    void log_to_file( rs2_log_severity min_severity, const char * file_path );
+    void log_to_callback( rs2_log_severity min_severity, rs2_log_callback_sptr callback );
+    void reset_logger();
+    void enable_rolling_log_file( unsigned max_size );
+
 #if BUILD_EASYLOGGINGPP
     struct log_message
     {
@@ -204,7 +210,7 @@ namespace librealsense
         class elpp_dispatcher : public el::LogDispatchCallback
         {
         public:
-            log_callback_ptr callback;
+            rs2_log_callback_sptr callback;
             rs2_log_severity min_severity = RS2_LOG_SEVERITY_NONE;
 
         protected:
@@ -229,7 +235,7 @@ namespace librealsense
             callback_dispatchers.clear();
         }
 
-        void log_to_callback( rs2_log_severity min_severity, log_callback_ptr callback )
+        void log_to_callback( rs2_log_severity min_severity, rs2_log_callback_sptr callback )
         {
             open();
             

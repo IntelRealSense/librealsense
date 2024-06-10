@@ -1,24 +1,37 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include "lrs-device-controller.h"
 
 #include <common/metadata-helper.h>
 
-#include <rsutils/easylogging/easyloggingpp.h>
-#include <rsutils/json.h>
-
 #include <realdds/topics/image-msg.h>
 #include <realdds/topics/imu-msg.h>
+#include <realdds/topics/blob-msg.h>
+#include <realdds/topics/dds-topic-names.h>
 #include <realdds/topics/ros2/ros2vector3.h>
 #include <realdds/topics/flexible-msg.h>
+#include <realdds/topics/dds-topic-names.h>
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
+#include <realdds/dds-topic-reader-thread.h>
+#include <realdds/dds-participant.h>
+#include <realdds/dds-guid.h>
+
+#include <fastdds/dds/subscriber/SampleInfo.hpp>
+
+#include <rsutils/number/crc32.h>
+#include <rsutils/easylogging/easyloggingpp.h>
+#include <rsutils/json.h>
+#include <rsutils/string/hexarray.h>
+#include <rsutils/time/timer.h>
+#include <rsutils/string/from.h>
 
 #include <algorithm>
 #include <iostream>
 
-using nlohmann::json;
+using rsutils::string::hexarray;
+using rsutils::json;
 using namespace realdds;
 using tools::lrs_device_controller;
 
@@ -39,16 +52,6 @@ using tools::lrs_device_controller;
     }                                                                                                                  \
     break
 
-realdds::dds_option_range to_realdds( const rs2::option_range & range )
-{
-    realdds::dds_option_range ret_val;
-    ret_val.max = range.max;
-    ret_val.min = range.min;
-    ret_val.step = range.step;
-    ret_val.default_value = range.def;
-
-    return ret_val;
-}
 
 realdds::video_intrinsics to_realdds( const rs2_intrinsics & intr )
 {
@@ -108,6 +111,21 @@ static std::string stream_name_from_rs2( const rs2::stream_profile & profile )
 }
 
 
+static std::string stream_name_from_rs2( rs2::sensor const & sensor )
+{
+    static std::map< std::string, std::string > sensor_stream_name{
+        { "Stereo Module", rs2_stream_to_string( RS2_STREAM_DEPTH ) },
+        { "RGB Camera", rs2_stream_to_string( RS2_STREAM_COLOR ) },
+        { "Motion Module", "Motion" },
+    };
+
+    auto it = sensor_stream_name.find( sensor.get_info( RS2_CAMERA_INFO_NAME ) );
+    if( it == sensor_stream_name.end() )
+        return {};
+    return it->second;
+}
+
+
 std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controller::get_supported_streams()
 {
     std::map< std::string, realdds::dds_stream_profiles > stream_name_to_profiles;
@@ -115,7 +133,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
     std::map< std::string, std::set< realdds::video_intrinsics > > stream_name_to_video_intrinsics;
 
     // Iterate over all profiles of all sensors and build appropriate dds_stream_servers
-    for( auto sensor : _rs_dev.query_sensors() )
+    for( auto & sensor : _rs_dev.query_sensors() )
     {
         std::string const sensor_name = sensor.get_info( RS2_CAMERA_INFO_NAME );
         // We keep a copy of the sensors throughout the run time:
@@ -231,9 +249,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
         server->init_profiles( profiles, default_profile_index );
 
         // Get supported options and recommended filters for this stream
-        realdds::dds_options stream_options;
-        std::vector< std::string > filter_names;
-        for( auto sensor : _rs_dev.query_sensors() )
+        for( auto & sensor : _rs_dev.query_sensors() )
         {
             std::string const sensor_name = sensor.get_info( RS2_CAMERA_INFO_NAME );
             if( server->sensor_name().compare( sensor_name ) != 0 )
@@ -243,10 +259,8 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
             // only need to do this once per sensor!
             if( sensors_handled.emplace( sensor_name ).second )
             {
+                realdds::dds_options stream_options;
                 auto supported_options = sensor.get_supported_options();
-                // Hack - some options can be queried only if streaming so start sensor and close after query
-                // sensor.open( sensor.get_stream_profiles()[0] );
-                // sensor.start( []( rs2::frame f ) {} );
                 for( auto option_id : supported_options )
                 {
                     // Certain options are automatically added by librealsense and shouldn't actually be shared
@@ -256,11 +270,35 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
                     std::string option_name = sensor.get_option_name( option_id );
                     try
                     {
-                        auto dds_opt = std::make_shared< realdds::dds_option >(
-                            option_name,
-                            to_realdds( sensor.get_option_range( option_id ) ),
-                            sensor.get_option_description( option_id ) );
-                        dds_opt->set_value( sensor.get_option( option_id ) );
+                        json j = json::array();
+                        json props = json::array();
+                        j += option_name;
+                        json option_value;  // null - no value
+                        try
+                        {
+                            option_value = sensor.get_option( option_id );
+                        }
+                        catch( ... )
+                        {
+                            // Some options can be queried only if certain conditions exist skip them for now
+                            props += "optional";
+                        }
+                        j += option_value;
+                        {
+                            // Even read-only options have ranges in librealsense
+                            auto const range = sensor.get_option_range( option_id );
+                            j += range.min;
+                            j += range.max;
+                            j += range.step;
+                            j += range.def;
+                        }
+                        j += sensor.get_option_description( option_id );
+                        if( sensor.is_option_read_only( option_id ) )
+                            props += "read-only";
+                        if( ! props.empty() )
+                            j += props;
+                        auto dds_opt = realdds::dds_option::from_json( j );
+                        LOG_DEBUG( "... option -> " << j << " -> " << dds_opt->to_json() );
                         stream_options.push_back( dds_opt );  // TODO - filter options relevant for stream type
                     }
                     catch( ... )
@@ -269,10 +307,9 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
                         // Some options can be queried only if certain conditions exist skip them for now
                     }
                 }
-                // sensor.stop();
-                // sensor.close();
 
                 auto recommended_filters = sensor.get_recommended_filters();
+                std::vector< std::string > filter_names;
                 for( auto const & filter : recommended_filters )
                     filter_names.push_back( filter.get_info( RS2_CAMERA_INFO_NAME ) );
 
@@ -295,7 +332,7 @@ extrinsics_map get_extrinsics_map( const rs2::device & dev )
     std::map< std::string, rs2::stream_profile > stream_name_to_rs2_stream_profile;
 
     // Iterate over profiles of all sensors and split to streams
-    for( auto sensor : dev.query_sensors() )
+    for( auto & sensor : dev.query_sensors() )
     {
         auto stream_profiles = sensor.get_stream_profiles();
         std::for_each( stream_profiles.begin(),
@@ -335,7 +372,7 @@ extrinsics_map get_extrinsics_map( const rs2::device & dev )
 }
 
 
-std::shared_ptr< dds_stream_profile > create_dds_stream_profile( std::string const & type_string, nlohmann::json const & j )
+std::shared_ptr< dds_stream_profile > create_dds_stream_profile( std::string const & type_string, json const & j )
 {
     if( "motion" == type_string )
         return dds_stream_profile::from_json< dds_motion_stream_profile >( j );
@@ -494,15 +531,30 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
     if( ! _dds_device_server )
         throw std::runtime_error( "Empty dds_device_server" );
 
-    _dds_device_server->on_set_option( [&]( const std::shared_ptr< realdds::dds_option > & option, float value ) {
+    _dds_device_server->on_set_option( [&]( const std::shared_ptr< realdds::dds_option > & option, json & value ) {
         set_option( option, value );
     } );
-    _dds_device_server->on_query_option( [&]( const std::shared_ptr< realdds::dds_option > & option ) -> float {
+    _dds_device_server->on_query_option( [&]( const std::shared_ptr< realdds::dds_option > & option ) -> json {
         return query_option( option );
     } );
     _dds_device_server->on_control(
-        [this]( std::string const & id, nlohmann::json const & control, nlohmann::json & reply )
+        [this]( std::string const & id, json const & control, json & reply )
         { return on_control( id, control, reply ); } );
+
+    std::vector< std::shared_ptr< realdds::dds_stream_server > > supported_streams;
+    extrinsics_map extrinsics;
+    realdds::dds_options options;
+
+    if( is_recovery() )
+    {
+        _device_sn = _rs_dev.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
+        LOG_DEBUG( "LRS device manager for recovery device: " << _device_sn << " created" );
+
+        // Initialize with nothing: no streams, no options, empty extrinsics, etc.
+        _md_enabled = false;
+        _dds_device_server->init( supported_streams, options, extrinsics );
+        return;
+    }
 
     _device_sn = _rs_dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
     LOG_DEBUG( "LRS device manager for device: " << _device_sn << " created" );
@@ -514,7 +566,7 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                && rs2::metadata_helper::instance().is_enabled( _rs_dev.get_info( RS2_CAMERA_INFO_PHYSICAL_PORT ) );
 
     // Create a supported streams list for initializing the relevant DDS topics
-    auto supported_streams = get_supported_streams();
+    supported_streams = get_supported_streams();
 
     _bridge.on_start_sensor(
         [this]( std::string const & sensor_name, dds_stream_profiles const & active_profiles )
@@ -597,7 +649,7 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
     _bridge.on_error(
         [this]( std::string const & error_string )
         {
-            nlohmann::json j = nlohmann::json::object( {
+            json j = json::object( {
                 { "id", "error" },
                 { "error", error_string },
             } );
@@ -605,12 +657,81 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
         } );
     _bridge.init( supported_streams );
 
-    auto extrinsics = get_extrinsics_map( dev );
-
-    realdds::dds_options options;  // TODO - get all device level options
+    extrinsics = get_extrinsics_map( dev );
 
     // Initialize the DDS device server with the supported streams
     _dds_device_server->init( supported_streams, options, extrinsics );
+
+    for( auto & name_sensor : _rs_sensors )
+    {
+        auto & sensor = name_sensor.second;
+        sensor.on_options_changed(
+            [this, weak_sensor = std::weak_ptr< rs2_sensor >( sensor.get() )]( rs2::options_list const & options )
+            {
+                if( auto strong_sensor = weak_sensor.lock() )
+                {
+                    rs2::sensor sensor( strong_sensor );
+                    json option_values = json::object();
+                    for( auto changed_option : options )
+                    {
+                        std::string const option_name = sensor.get_option_name( changed_option->id );
+                        std::string const stream_name = stream_name_from_rs2( sensor );
+                        if( stream_name.empty() )
+                        {
+                            LOG_ERROR( "Unknown option '" << option_name
+                                                          << "' stream: " << sensor.get_info( RS2_CAMERA_INFO_NAME ) );
+                            continue;
+                        }
+                        auto dds_option = _dds_device_server->find_option( option_name, stream_name );
+                        if( ! dds_option )
+                        {
+                            LOG_ERROR( "Missing option '" << option_name
+                                                          << "' stream: " << sensor.get_info( RS2_CAMERA_INFO_NAME ) );
+                            continue;
+                        }
+                        json value;
+                        if( changed_option->is_valid )
+                        {
+                            switch( changed_option->type )
+                            {
+                            case RS2_OPTION_TYPE_FLOAT:
+                                value = changed_option->as_float;
+                                break;
+                            case RS2_OPTION_TYPE_STRING:
+                                value = changed_option->as_string;
+                                break;
+                            case RS2_OPTION_TYPE_INTEGER:
+                                value = changed_option->as_integer;
+                                break;
+                            case RS2_OPTION_TYPE_BOOLEAN:
+                                value = (bool)changed_option->as_integer;
+                                break;
+                            default:
+                                LOG_ERROR( "Unknown option '" << option_name << "' type: "
+                                                              << rs2_option_type_to_string( changed_option->type ) );
+                                continue;
+                            }
+                        }
+                        else
+                        {
+                            // No value available
+                            value = rsutils::null_json;
+                        }
+                        dds_option->set_value( std::move( value ) );
+                        option_values[stream_name][option_name] = dds_option->get_value();
+                    }
+                    if( option_values.size() )
+                    {
+                        json j = json::object( {
+                            { realdds::topics::notification::key::id, realdds::topics::reply::query_options::id },
+                            { realdds::topics::reply::query_options::key::option_values, std::move( option_values ) },
+                        } );
+                        LOG_DEBUG( "[" << _dds_device_server->debug_name() << "] options changed: " << j.dump( 4 ) );
+                        _dds_device_server->publish_notification( std::move( j ) );
+                    }
+                }
+            } );
+    }
 }
 
 
@@ -620,7 +741,14 @@ lrs_device_controller::~lrs_device_controller()
 }
 
 
-bool lrs_device_controller::on_open_streams( nlohmann::json const & control, nlohmann::json & reply )
+bool lrs_device_controller::is_recovery() const
+{
+    auto update_device = rs2::update_device( _rs_dev );
+    return update_device;
+}
+
+
+bool lrs_device_controller::on_open_streams( json const & control, json & reply )
 {
     // Note that this function is called "start-streaming" but it's really a response to "open-streams" so does not
     // actually start streaming. It simply sets and locks in which streams should be open when streaming starts.
@@ -628,10 +756,10 @@ bool lrs_device_controller::on_open_streams( nlohmann::json const & control, nlo
     // out, a sensor is reset back to its default state using implicit stream selection.
     // (For example, the 'Stereo Module' sensor controls Depth, IR1, IR2: but turning on all 3 has performance
     // implications and may not be desirable. So you can open only Depth and IR1/2 will stay inactive...)
-    if( rsutils::json::get< bool >( control, "reset", true ) )
+    if( control.nested( topics::control::open_streams::key::reset ).default_value( true ) )
         _bridge.reset();
 
-    auto const & msg_profiles = control["stream-profiles"];
+    auto const & msg_profiles = control[topics::control::open_streams::key::stream_profiles];
     for( auto const & name2profile : msg_profiles.items() )
     {
         std::string const & stream_name = name2profile.key();
@@ -651,7 +779,7 @@ bool lrs_device_controller::on_open_streams( nlohmann::json const & control, nlo
     }
 
     // We're here so all the profiles were acceptable; lock them in -- with no implicit profiles!
-    if( rsutils::json::get< bool >( control, "commit", true ) )
+    if( control.nested( topics::control::open_streams::key::commit ).default_value( true ) )
         _bridge.commit();
 
     // We don't touch the reply - it's already filled in for us
@@ -664,15 +792,15 @@ void lrs_device_controller::publish_frame_metadata( const rs2::frame & f, realdd
     if( ! _dds_device_server->has_metadata_readers() )
         return;
 
-    nlohmann::json md_header = nlohmann::json::object( {
-        { "frame-number", f.get_frame_number() },               // communicated; up to client to pick up
-        { "timestamp", timestamp.to_ns() },                     // syncer key: needs to match the image timestamp, bit-for-bit!
-        { "timestamp-domain", f.get_frame_timestamp_domain() }  // needed if we're dealing with different domains!
+    json md_header = json::object( {
+        { topics::metadata::header::key::frame_number, f.get_frame_number() },               // communicated; up to client to pick up
+        { topics::metadata::header::key::timestamp, timestamp.to_ns() },                     // syncer key: needs to match the image timestamp, bit-for-bit!
+        { topics::metadata::header::key::timestamp_domain, f.get_frame_timestamp_domain() }  // needed if we're dealing with different domains!
     } );
     if( f.is< rs2::depth_frame >() )
-        md_header["depth-units"] = f.as< rs2::depth_frame >().get_units();
+        md_header[topics::metadata::header::key::depth_units] = f.as< rs2::depth_frame >().get_units();
 
-    nlohmann::json metadata = nlohmann::json::object();
+    json metadata = json::object();
     for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
     {
         rs2_frame_metadata_value val = static_cast< rs2_frame_metadata_value >( i );
@@ -680,10 +808,10 @@ void lrs_device_controller::publish_frame_metadata( const rs2::frame & f, realdd
             metadata[rs2_frame_metadata_to_string( val )] = f.get_frame_metadata( val );
     }
 
-    nlohmann::json md_msg = nlohmann::json::object( {
-        { "stream-name", stream_name_from_rs2( f.get_profile() ) },
-        { "header", std::move( md_header ) },
-        { "metadata", std::move( metadata ) },
+    json md_msg = json::object( {
+        { topics::metadata::key::stream_name, stream_name_from_rs2( f.get_profile() ) },
+        { topics::metadata::key::header, std::move( md_header ) },
+        { topics::metadata::key::metadata, std::move( metadata ) },
     } );
     _dds_device_server->publish_metadata( std::move( md_msg ) );
 }
@@ -749,7 +877,7 @@ void lrs_device_controller::set_option( const std::shared_ptr< realdds::dds_opti
 }
 
 
-float lrs_device_controller::query_option( const std::shared_ptr< realdds::dds_option > & option )
+json lrs_device_controller::query_option( const std::shared_ptr< realdds::dds_option > & option )
 {
     auto stream = option->stream();
     if( ! stream )
@@ -760,7 +888,17 @@ float lrs_device_controller::query_option( const std::shared_ptr< realdds::dds_o
         throw std::runtime_error( "no stream '" + stream->name() + "' in device" );
     auto server = it->second;
     auto & sensor = _rs_sensors[server->sensor_name()];
-    return sensor.get_option( option_name_to_id( option->get_name() ) );
+    try
+    {
+        return sensor.get_option( option_name_to_id( option->get_name() ) );
+    }
+    catch( rs2::invalid_value_error const & )
+    {
+        // It's possible for an option to no longer be supported (temperates do this) because we stopped streaming...
+        if( option->is_optional() )
+            return rsutils::null_json;
+        throw;
+    }
 }
 
 
@@ -836,13 +974,15 @@ size_t lrs_device_controller::get_index_of_profile( const realdds::dds_stream_pr
 }
 
 
-bool lrs_device_controller::on_control( std::string const & id, nlohmann::json const & control, nlohmann::json & reply )
+bool lrs_device_controller::on_control( std::string const & id, json const & control, json & reply )
 {
-    static std::map< std::string, bool ( lrs_device_controller::* )( nlohmann::json const &, nlohmann::json & ) > const
-        control_handlers{
-            { "hw-reset", &lrs_device_controller::on_hardware_reset },
-            { "open-streams", &lrs_device_controller::on_open_streams },
-        };
+    static std::map< std::string, bool ( lrs_device_controller::* )( json const &, json & ) > const control_handlers{
+        { realdds::topics::control::hw_reset::id, &lrs_device_controller::on_hardware_reset },
+        { realdds::topics::control::open_streams::id, &lrs_device_controller::on_open_streams },
+        { realdds::topics::control::hwm::id, &lrs_device_controller::on_hwm },
+        { realdds::topics::control::dfu_start::id, &lrs_device_controller::on_dfu_start },
+        { realdds::topics::control::dfu_apply::id, &lrs_device_controller::on_dfu_apply },
+    };
     auto it = control_handlers.find( id );
     if( it == control_handlers.end() )
         return false;
@@ -851,10 +991,373 @@ bool lrs_device_controller::on_control( std::string const & id, nlohmann::json c
 }
 
 
-bool lrs_device_controller::on_hardware_reset( nlohmann::json const & control, nlohmann::json & reply )
+bool lrs_device_controller::on_hardware_reset( json const & control, json & reply )
 {
+    _dds_device_server->broadcast_disconnect();
     _rs_dev.hardware_reset();
     return true;
+}
+
+
+bool lrs_device_controller::on_hwm( json const & control, json & reply )
+{
+    rs2::debug_protocol dp( _rs_dev );
+    if( ! dp )
+        throw std::runtime_error( "device does not have a debug protocol implemented" );
+
+    rsutils::string::hexarray data;
+
+    uint32_t opcode;
+    if( control.nested( topics::control::hwm::key::opcode ).get_ex( opcode ) )
+    {
+        // In the presence of 'opcode', we're asked to build the command using optional parameters
+        uint32_t param1 = 0, param2 = 0, param3 = 0, param4 = 0;
+        control.nested( topics::control::hwm::key::param1 ).get_ex( param1 );
+        control.nested( topics::control::hwm::key::param2 ).get_ex( param2 );
+        control.nested( topics::control::hwm::key::param3 ).get_ex( param3 );
+        control.nested( topics::control::hwm::key::param4 ).get_ex( param4 );
+
+        control.nested( topics::control::hwm::key::data ).get_ex( data );  // optional
+
+        // Build the HWM command
+        data = dp.build_command( opcode, param1, param2, param3, param4, data.get_bytes() );
+
+        // And, if told to not actually run it, we return the HWM command
+        if( control.nested( topics::control::hwm::key::build_command ).default_value( false ) )
+        {
+            reply[topics::reply::hwm::key::data] = data;
+            return true;
+        }
+    }
+    else
+    {
+        if( ! control.nested( topics::control::hwm::key::data ).get_ex( data ) )
+            throw std::runtime_error( "no 'data' in HWM control" );
+    }
+
+    data = dp.send_and_receive_raw_data( data.get_bytes() );
+    reply[topics::reply::hwm::key::data] = data;
+    return true;
+}
+
+
+struct lrs_device_controller::dfu_support
+{
+    rs2::device rsdev;
+    std::string uid;
+    std::weak_ptr< dds_device_server > server;
+    std::weak_ptr< lrs_device_controller > controller;
+    std::shared_ptr< realdds::dds_topic_reader > reader;
+    std::shared_ptr< realdds::topics::blob_msg > image;
+    realdds::dds_guid_prefix initiator;
+
+    std::string debug_name() const
+    {
+        if( auto dev = server.lock() )
+            return rsutils::string::from() << "[" << dev->debug_name() << "] ";
+        return {};
+    }
+};
+
+
+bool lrs_device_controller::on_dfu_start( rsutils::json const & control, rsutils::json & reply )
+{
+    if( _dfu )
+        throw std::runtime_error( "DFU already in progress" );
+
+    // The FW-update-ID is used to recognize the device, even in recovery mode (serial-number is not enough)
+    if( ! _rs_dev.supports( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID ) )
+        throw std::runtime_error( "device does not support fw-update-id" );
+
+    // Either updatable (regular device) or update_device (recovery) implement the check_fw_compatibility API, from
+    // which we can proceed
+    if( ! rs2::updatable( _rs_dev ) && ! rs2::update_device( _rs_dev ) )
+        throw std::runtime_error( "device is not in an updatable state" );
+
+    _dfu = std::make_shared< dfu_support >();
+    _dfu->server = _dds_device_server;
+    _dfu->controller = shared_from_this();
+    _dfu->rsdev = _rs_dev;
+    _dfu->initiator
+        = realdds::guid_from_string( reply[realdds::topics::reply::key::sample][0].string_ref() ).guidPrefix;
+    _dfu->uid = _rs_dev.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
+
+    // Open a DFU topic and wait for the image on another thread
+    auto topic = topics::blob_msg::create_topic( _dds_device_server->participant(),
+                                                 _dds_device_server->topic_root() + realdds::topics::DFU_TOPIC_NAME );
+
+    _dfu->reader = std::make_shared< dds_topic_reader_thread >( topic, _dds_device_server->subscriber() );
+    _dfu->reader->on_data_available(
+        [weak_dfu = std::weak_ptr< dfu_support >( _dfu )]
+        {
+            topics::blob_msg blob;
+            eprosima::fastdds::dds::SampleInfo sample;
+            while( auto dfu = weak_dfu.lock() )
+            {
+                if( ! topics::blob_msg::take_next( *dfu->reader, &blob, &sample ) )
+                    break;
+                if( ! blob.is_valid() )
+                    continue;
+                auto const & sender = sample.sample_identity.writer_guid().guidPrefix;
+                if( sender != dfu->initiator )
+                {
+                    LOG_ERROR( dfu->debug_name()
+                               << "DFU image received from " << realdds::print_raw_guid_prefix( sender ) << " != "
+                               << realdds::print_raw_guid_prefix( dfu->initiator ) << " that started the DFU" );
+                }
+                else if( dfu->image )
+                {
+                    LOG_ERROR( dfu->debug_name() << "More than one DFU image received!" );
+                }
+                else
+                {
+                    size_t const n_bytes = blob.data().size();
+                    auto const crc = rsutils::number::calc_crc32( blob.data().data(), blob.data().size() );
+                    LOG_INFO( dfu->debug_name() << "DFU image received, " << n_bytes << " bytes, crc " << crc );
+
+                    // Build a reply
+                    rsutils::json j = rsutils::json::object( {
+                        { realdds::topics::notification::key::id, realdds::topics::notification::dfu_ready::id },
+                        { "size", n_bytes },
+                        { "crc", crc } } );
+
+                    try
+                    {
+                        // Check the image
+                        rs2_error * e = nullptr;
+                        bool is_compatible = rs2_check_firmware_compatibility( dfu->rsdev.get().get(),
+                                                                               blob.data().data(),
+                                                                               (int)blob.data().size(),
+                                                                               &e );
+                        rs2::error::handle( e );
+
+                        if( ! is_compatible )
+                            throw std::runtime_error( "image is incompatible" );
+
+                        // Keep it until we get a 'dfu-apply'
+                        dfu->image = std::make_shared< topics::blob_msg >( std::move( blob ) );
+                    }
+                    catch( std::exception const & e )
+                    {
+                        j[realdds::topics::reply::key::status] = "check-fw-compat";
+                        j[realdds::topics::reply::key::explanation] = e.what();
+                        LOG_ERROR( dfu->debug_name() << "DFU image check failed: " << e.what() << "; exiting DFU state" );
+                        if( auto controller = dfu->controller.lock() )
+                            controller->_dfu.reset();  // no longer in DFU state
+                    }
+
+                    if( auto server = dfu->server.lock() )
+                        server->publish_notification( std::move( j ) );
+                }
+            }
+        } );
+
+    dds_topic_reader::qos rqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
+    rqos.override_from_json( _dds_device_server->participant()->settings().nested( "device", "dfu" ) );
+    _dfu->reader->run( rqos );
+
+    // Start a thread that will cancel if we don't receive an image in time, or if the process somehow takes too long
+    std::thread(
+        [weak_dfu = std::weak_ptr< dfu_support >( _dfu )]
+        {
+            std::this_thread::sleep_for( std::chrono::seconds( 5 ) );
+            if( auto dfu = weak_dfu.lock() )
+            {
+                if( ! dfu->image )
+                {
+                    if( auto controller = dfu->controller.lock() )
+                    {
+                        LOG_ERROR( dfu->debug_name() << "DFU timed out waiting for image; resetting" );
+                        controller->_dfu.reset();  // no longer in DFU state
+                    }
+                    if( auto server = dfu->server.lock() )
+                    {
+                        rsutils::json j = rsutils::json::object(
+                            { { realdds::topics::notification::key::id, realdds::topics::notification::dfu_ready::id },
+                              { realdds::topics::reply::key::status, "error" },
+                              { realdds::topics::reply::key::explanation,
+                                "timed out waiting for an image; resetting" } } );
+                        server->publish_notification( std::move( j ) );
+                    }
+                    return;
+                }
+            }
+            else
+                return;
+
+            // We have an image: sleep some more and cancel the DFU after a while if no dfu-apply is received
+            std::this_thread::sleep_for( std::chrono::seconds( 10 ) );
+            if( auto dfu = weak_dfu.lock() )
+            {
+                if( auto controller = dfu->controller.lock() )
+                {
+                    LOG_ERROR( dfu->debug_name() << "DFU timed out waiting for apply; resetting" );
+                    controller->_dfu.reset();  // no longer in DFU state
+                }
+                if( auto server = dfu->server.lock() )
+                {
+                    rsutils::json j = rsutils::json::object(
+                        { { realdds::topics::notification::key::id, realdds::topics::notification::dfu_ready::id },
+                          { realdds::topics::reply::key::status, "error" },
+                          { realdds::topics::reply::key::explanation, "timed out; resetting" } } );
+                    server->publish_notification( std::move( j ) );
+                }
+            }
+        } )
+        .detach();
+
+    return true;  // we handled it
+}
+
+
+bool lrs_device_controller::on_dfu_apply( rsutils::json const & control, rsutils::json & reply )
+{
+    if( _dfu )
+    {
+        auto const sender
+            = realdds::guid_from_string( reply[realdds::topics::reply::key::sample][0].string_ref() ).guidPrefix;
+        if( sender != _dfu->initiator )
+            throw std::runtime_error( "only the DFU initiator can apply/cancel" );
+    }
+
+    if( control.nested( realdds::topics::control::dfu_apply::key::cancel ).default_value( false ) )
+    {
+        if( _dfu )
+            LOG_DEBUG( _dfu->debug_name() << "DFU cancelled" );
+        _dfu.reset();
+        return true;  // handled
+    }
+
+    if( ! _dfu )
+        throw std::runtime_error( "DFU not started" );
+    if( ! _dfu->reader )
+        throw std::runtime_error( "dfu-apply already received" );
+
+    // Keep the DFU alive once apply starts, even if reset somewhere else - but the reader is no longer needed
+    auto dfu = _dfu;
+    _dfu->reader.reset();
+
+    if( ! _dfu->image )
+        throw std::runtime_error( "no image received" );
+
+    // We want to return a reply right away; we already have an image in hand, so all that needs to happen is to apply
+    // it in the background and return a reply when done
+    std::thread(
+        [dfu]
+        {
+            auto on_fail = [dfu]( char const * what )
+            {
+                LOG_ERROR( "Failed to apply DFU image: " << what );
+                if( auto server = dfu->server.lock() )
+                {
+                    rsutils::json j
+                        = json::object( { { realdds::topics::reply::key::id, realdds::topics::reply::dfu_apply::id },
+                                          { realdds::topics::reply::key::status, "error" } } );
+                    if( what )
+                        j[realdds::topics::reply::key::explanation] = what;
+                    server->publish_notification( std::move( j ) );
+                }
+            };
+
+            try
+            {
+                // We already checked FW compatibility; to actually do a signed update, we switch to recovery mode (we need
+                // an update_device to do a signed update - but to get one, we need to be in recovery mode):
+                rs2::update_device update_device = dfu->rsdev;
+                if( ! update_device )
+                {
+                    LOG_INFO( "Switching device (update ID " << dfu->uid << ") to recovery mode" );
+                    if( auto server = dfu->server.lock() )
+                        server->broadcast_disconnect( { 3, 0 } );  // timeout for ACKs
+                    rs2::updatable( dfu->rsdev ).enter_update_state();
+                    // NOTE: the device will go offline; the adapter will see the device disappear, and so will the controller/server!
+
+                    // We need a context but cannot get one from the device... so we can just create a new one:
+                    rsutils::json settings;
+                    settings["dds"] = false;  // don't want DDS devices
+                    rs2::context context( settings.dump() );
+
+                    // Wait for the recovery device
+                    rsutils::time::timer timeout( std::chrono::seconds( 60 ) );
+                    while( dfu->controller.lock() )
+                    {
+                        try
+                        {
+                            auto devs = context.query_devices( RS2_PRODUCT_LINE_ANY_INTEL );
+                            for( uint32_t j = 0; j < devs.size(); j++ )
+                            {
+                                auto d = devs[j];
+                                if( d.is< rs2::update_device >() && d.supports( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID )
+                                    && dfu->uid == d.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID ) )
+                                {
+                                    LOG_DEBUG( "... found DFU recovery device (update ID " << dfu->uid << ")" );
+                                    update_device = d;
+                                    break;
+                                }
+                            }
+                        }
+                        catch( std::exception const & e )
+                        {
+                            LOG_DEBUG( "... error looking for DFU device: " << e.what() );
+                        }
+                        catch( ... )
+                        {
+                            LOG_DEBUG( "... error looking for DFU device" );
+                        }
+
+                        if( update_device )
+                            break;
+
+                        if( timeout.has_expired() )
+                            throw std::runtime_error( "failed to find recovery device" );
+
+                        // Wait a little and retry
+                        std::this_thread::sleep_for( std::chrono::milliseconds( 1000 ) );
+                    }
+                }
+                if( update_device )
+                {
+                    if( auto controller = dfu->controller.lock() )
+                    {
+                        LOG_INFO( "Updating - DO NOT SHUT DOWN" );
+                        int progress = 0;
+                        update_device.update(
+                            dfu->image->data(),
+                            [dfu, progress = int( 0 )]( float percent ) mutable
+                            {
+                                int new_progress = int( percent * 10 );  // update only every 10%
+                                if( new_progress != progress )
+                                {
+                                    progress = new_progress;
+                                    if( auto server = dfu->server.lock() )
+                                        server->publish_notification(
+                                            json::object( { { realdds::topics::notification::key::id,
+                                                              realdds::topics::notification::dfu_apply::id },
+                                                            { realdds::topics::notification::dfu_apply::key::progress,
+                                                              percent } } ) );
+                                }
+                            } );
+                        // NOTE: the device will go offline again, and should come up normally
+                        LOG_INFO( "DFU done" );
+                    }
+                }
+            }
+            catch( std::exception const & e )
+            {
+                on_fail( e.what() );
+            }
+            catch( ... )
+            {
+                on_fail( nullptr );
+            }
+
+            // Whether successful or not, we're done with the DFU
+            if( auto controller = dfu->controller.lock() )
+                controller->_dfu.reset();
+        } )
+        .detach();
+
+    return true;  // handled
 }
 
 

@@ -4,7 +4,10 @@
 #include "fw-update-device.h"
 #include "../types.h"
 #include "../context.h"
+#include "../device-info.h"
 #include "ds/d400/d400-private.h"
+
+#include <rsutils/string/hexdump.h>
 
 #include <chrono>
 #include <stdexcept>
@@ -110,8 +113,13 @@ namespace librealsense
     }
 
     update_device::update_device( std::shared_ptr< const device_info > const & dev_info,
-                                  std::shared_ptr< platform::usb_device > const & usb_device )
-        : _dev_info(dev_info), _usb_device(usb_device), _physical_port( usb_device->get_info().id), _pid(hexify(usb_device->get_info().pid))
+                                  std::shared_ptr< platform::usb_device > const & usb_device,
+                                  const std::string & product_line )
+        : _dev_info( dev_info )
+        , _usb_device( usb_device )
+        , _physical_port( usb_device->get_info().id )
+        , _pid( rsutils::string::from() << std::uppercase << rsutils::string::hexdump( usb_device->get_info().pid ))
+        , _product_line( product_line )
     {
         if (auto messenger = _usb_device->open(FW_UPDATE_INTERFACE_NUMBER))
         {
@@ -137,7 +145,7 @@ namespace librealsense
 
     }
 
-    void update_device::update(const void* fw_image, int fw_image_size, update_progress_callback_ptr update_progress_callback) const
+    void update_device::update(const void* fw_image, int fw_image_size, rs2_update_progress_callback_sptr update_progress_callback) const
     {
         // checking fw compatibility (covering the case of recovery device with wrong product line fw )
         std::vector<uint8_t> buffer((uint8_t*)fw_image, (uint8_t*)fw_image + fw_image_size);
@@ -284,6 +292,10 @@ namespace librealsense
         case RS2_CAMERA_INFO_PRODUCT_LINE:          return get_product_line();
         case RS2_CAMERA_INFO_PHYSICAL_PORT:         return _physical_port;
         case RS2_CAMERA_INFO_PRODUCT_ID:            return _pid;
+        case RS2_CAMERA_INFO_FIRMWARE_VERSION:
+            if( ! _last_fw_version.empty() )
+                return _last_fw_version;
+            // fall-thru
         default:
             throw std::runtime_error("update_device does not support " + std::string(rs2_camera_info_to_string(info)));
         }
@@ -299,6 +311,9 @@ namespace librealsense
         case RS2_CAMERA_INFO_PHYSICAL_PORT:
         case RS2_CAMERA_INFO_PRODUCT_ID:
             return true;
+
+        case RS2_CAMERA_INFO_FIRMWARE_VERSION:
+            return ! _last_fw_version.empty();
 
         default:
             return false;

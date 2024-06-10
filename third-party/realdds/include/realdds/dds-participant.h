@@ -1,12 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
 #include "dds-defines.h"
 
-#include <nlohmann/json.hpp>
-
+#include <rsutils/json.h>
 #include <memory>
 #include <functional>
 #include <string>
@@ -52,16 +50,19 @@ class dds_participant
 
     struct listener_impl;
 
-    nlohmann::json _settings;
+    rsutils::json _settings;
 
 public:
     dds_participant() = default;
     dds_participant( const dds_participant & ) = delete;
     ~dds_participant();
 
-    // Creates the underlying DDS participant and sets the QoS
-    // If need to use callbacks set them before calling init, they may be called before init returns.
-    void init( dds_domain_id, std::string const & participant_name, nlohmann::json const & settings );
+    // Creates the underlying DDS participant and sets the QoS.
+    // If callbacks are needed, set them before calling init. Note they may be called before init returns!
+    // 
+    // The domain ID may be -1: in this case the settings "domain" is queried and a default of 0 is used
+    //
+    void init( dds_domain_id, std::string const & participant_name, rsutils::json const & settings );
 
     bool is_valid() const { return ( nullptr != _participant ); }
     bool operator!() const { return ! is_valid(); }
@@ -69,7 +70,7 @@ public:
     eprosima::fastdds::dds::DomainParticipant * get() const { return _participant; }
     eprosima::fastdds::dds::DomainParticipant * operator->() const { return get(); }
 
-    nlohmann::json const & settings() const { return _settings; }
+    rsutils::json const & settings() const { return _settings; }
 
     // RTPS 8.2.4.2 "Every Participant has GUID <prefix, ENTITYID_PARTICIPANT>, where the constant ENTITYID_PARTICIPANT
     //     is a special value defined by the RTPS protocol. Its actual value depends on the PSM."
@@ -84,6 +85,10 @@ public:
     // The prefix is a combination of (vendor, host, process, participant-id).
     //
     dds_guid const & guid() const;
+
+    // Returns the domain-ID for this participant
+    //
+    dds_domain_id domain_id() const;
 
     // Returns this participant's name from the QoS
     //

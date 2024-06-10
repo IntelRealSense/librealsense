@@ -8,7 +8,6 @@
 #include <cstddef>
 
 #include "device.h"
-#include "context.h"
 #include "image.h"
 #include "metadata-parser.h"
 
@@ -30,5 +29,23 @@ namespace librealsense
             _device_capabilities, _hw_monitor, _fw_version);
 
         _ds_active_common->register_options();
+
+        //PROJECTOR TEMPERATURE OPTION
+        auto pid = this->_pid;
+        auto& depth_ep = get_depth_sensor();
+
+        if( pid == ds::RS457_PID )
+        {
+            depth_ep.register_option( RS2_OPTION_PROJECTOR_TEMPERATURE,
+                                      std::make_shared< projector_temperature_option_mipi >(
+                                          _hw_monitor,
+                                          RS2_OPTION_PROJECTOR_TEMPERATURE ) );
+        }
+        else
+        {
+            depth_ep.register_option( RS2_OPTION_PROJECTOR_TEMPERATURE,
+                                      std::make_shared< asic_and_projector_temperature_options >( get_raw_depth_sensor(),
+                                          RS2_OPTION_PROJECTOR_TEMPERATURE ) );
+        }
     }
 }

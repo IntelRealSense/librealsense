@@ -6,8 +6,6 @@
 #include <realdds/dds-subscriber.h>
 #include <realdds/dds-utilities.h>
 
-#include <rsutils/time/stopwatch.h>
-
 #include <fastdds/dds/subscriber/Subscriber.hpp>
 #include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/topic/Topic.hpp>
@@ -41,17 +39,16 @@ void dds_topic_reader_thread::run( qos const & rqos )
     if( ! _on_data_available )
         DDS_THROW( runtime_error, "on-data-available must be provided" );
 
-    eprosima::fastdds::dds::StatusMask status_mask;
-    status_mask << eprosima::fastdds::dds::StatusMask::subscription_matched();
-    //status_mask << eprosima::fastdds::dds::StatusMask::data_available();
-    _reader = DDS_API_CALL( _subscriber->get()->create_datareader( _topic->get(), rqos, this, status_mask ) );
+    _reader = DDS_API_CALL( _subscriber->get()->create_datareader( _topic->get(), rqos ) );
     
     _th = std::thread(
         [this, name = _topic->get()->get_name()]()
         {
             eprosima::fastdds::dds::WaitSet wait_set;
             auto & condition = _reader->get_statuscondition();
-            condition.set_enabled_statuses( eprosima::fastdds::dds::StatusMask::data_available() );
+            condition.set_enabled_statuses( eprosima::fastdds::dds::StatusMask::data_available()
+                                            << eprosima::fastdds::dds::StatusMask::subscription_matched()
+                                            << eprosima::fastdds::dds::StatusMask::sample_lost() );
             wait_set.attach_condition( condition );
 
             wait_set.attach_condition( _stopped );
@@ -64,10 +61,23 @@ void dds_topic_reader_thread::run( qos const & rqos )
                 if( _stopped.get_trigger_value() )
                     break;
 
-                rsutils::time::stopwatch stopwatch;
-                _on_data_available();
-                if( stopwatch.get_elapsed() > std::chrono::milliseconds( 500 ) )
-                    LOG_WARNING( "<---- '" << name << "' callback took too long!" );
+                auto & changed = _reader->get_status_changes();
+                if( changed.is_active( eprosima::fastdds::dds::StatusMask::sample_lost() ) )
+                {
+                    eprosima::fastdds::dds::SampleLostStatus status;
+                    _reader->get_sample_lost_status( status );
+                    on_sample_lost( _reader, status );
+                }
+                if( changed.is_active( eprosima::fastdds::dds::StatusMask::data_available() ) )
+                {
+                    on_data_available( _reader );
+                }
+                if( changed.is_active( eprosima::fastdds::dds::StatusMask::subscription_matched() ) )
+                {
+                    eprosima::fastdds::dds::SubscriptionMatchedStatus status;
+                    _reader->get_subscription_matched_status( status );
+                    on_subscription_matched( _reader, status );
+                }
             }
         } );
 }

@@ -1,12 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
 #include <set>
 #include "notifications.h"
 #include "realsense-ui-advanced-mode.h"
-#include <nlohmann/json.hpp>
+#include <rsutils/json.h>
 #include "sw-update/dev-updates-profile.h"
 #include <rsutils/time/periodic-timer.h>
 #include "updates-model.h"
@@ -62,7 +61,7 @@ inline ImVec4 blend(const ImVec4& c, float a)
 
 namespace rs2
 {
-    void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18, ImFont*& monofont);
+    void imgui_easy_theming(ImFont*& font_dynamic, ImFont*& font_18, ImFont*& monofont, int& font_size);
 
     constexpr const char* server_versions_db_url = "https://librealsense.intel.com/Releases/rs_versions_db.json";
 
@@ -122,6 +121,7 @@ namespace rs2
             static const char* last_calib_notice{ "viewer_model.last_calib_notice" };
             static const char* is_measuring{ "viewer_model.is_measuring" };
             static const char* output_open{ "viewer_model.output_open" };
+            static const char* dashboard_open{ "viewer_model.dashboard_open" };
             static const char* search_term{ "viewer_model.search_term" };
 
             static const char* log_to_console{ "viewer_model.log_to_console" };
@@ -148,6 +148,7 @@ namespace rs2
             static const char* width{ "window.width" };
             static const char* height{ "window.height" };
             static const char* maximized{ "window.maximized" };
+            static const char* font_size{ "window.font_size" };
         }
         namespace performance
         {
@@ -367,6 +368,8 @@ namespace rs2
             viewer_model& viewer, std::string& error_message);
         void begin_update_unsigned(viewer_model& viewer, std::string& error_message);
         void check_for_device_updates(viewer_model& viewer, bool activated_by_user = false);
+        bool disable_record_button_logic(bool is_streaming, bool is_playback_device);
+        std::string get_record_button_hover_text(bool is_streaming);
 
 
         std::shared_ptr< atomic_objects_in_frame > get_detected_objects() const { return _detected_objects; }
@@ -424,7 +427,7 @@ namespace rs2
             const std::string& error_message);
 
         void load_viewer_configurations(const std::string& json_str);
-        void save_viewer_configurations(std::ofstream& outfile, nlohmann::json& j);
+        void save_viewer_configurations(std::ofstream& outfile, rsutils::json& j);
         void handle_online_sw_update(
             std::shared_ptr< notifications_model > nm,
             std::shared_ptr< sw_update::dev_updates_profile::update_profile > update_profile,

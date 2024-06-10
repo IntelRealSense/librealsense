@@ -1,7 +1,18 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-
 #pragma once
+
+#include "core/sensor-interface.h"
+
+#include "source.h"
+#include "core/extension.h"
+#include "proc/formats-converter.h"
+#include <src/synthetic-options-watcher.h>
+#include <src/platform/stream-profile.h>
+#include <src/platform/frame-object.h>
+
+#include <rsutils/lazy.h>
+#include <rsutils/signal.h>
 
 #include <chrono>
 #include <memory>
@@ -11,26 +22,14 @@
 #include <limits.h>
 #include <atomic>
 #include <functional>
-#include "core/debug.h"
-
-#include "archive.h"
-#include "core/streaming.h"
-#include "core/roi.h"
-#include "core/options.h"
-#include "source.h"
-#include "core/extension.h"
-#include "proc/formats-converter.h"
-#include "platform/stream-profile.h"
-#include "platform/frame-object.h"
-
-#include <rsutils/lazy.h>
-#include <rsutils/signal.h>
 
 
 namespace librealsense
 {
     class device;
     class option;
+    class stream_interface;
+    class notifications_processor;
     enum class format_conversion;
 
 
@@ -47,30 +46,31 @@ namespace librealsense
         virtual void reset() = 0;
     };
 
+    class notifications_processor;
+    class frame;
+
     class sensor_base
         : public std::enable_shared_from_this< sensor_base >
         , public virtual sensor_interface
         , public options_container
         , public virtual info_container
-        , public recommended_proccesing_blocks_base
+        , public recordable< recommended_proccesing_blocks_interface >
     {
     public:
-        explicit sensor_base( std::string const & name,
-                              device * device,
-                              recommended_proccesing_blocks_interface * owner );
+        explicit sensor_base( std::string const & name, device * device );
         virtual ~sensor_base() override { _source.flush(); }
 
         void set_source_owner(sensor_base* owner); // will direct the source to the top in the source hierarchy.
         virtual stream_profiles init_stream_profiles() = 0;
         stream_profiles get_stream_profiles(int tag = profile_tag::PROFILE_TAG_ANY) const override;
         stream_profiles get_active_streams() const override;
-        notifications_callback_ptr get_notifications_callback() const override;
-        void register_notifications_callback(notifications_callback_ptr callback) override;
+        rs2_notifications_callback_sptr get_notifications_callback() const override;
+        void register_notifications_callback( rs2_notifications_callback_sptr callback ) override;
         int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
         void unregister_before_start_callback(int token) override;
         virtual std::shared_ptr<notifications_processor> get_notifications_processor() const;
-        virtual frame_callback_ptr get_frames_callback() const override;
-        virtual void set_frames_callback(frame_callback_ptr callback) override;
+        virtual rs2_frame_callback_sptr get_frames_callback() const override;
+        virtual void set_frames_callback( rs2_frame_callback_sptr callback ) override;
         bool is_streaming() const override;
         virtual bool is_opened() const;
         virtual void register_metadata(rs2_frame_metadata_value metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const;
@@ -88,6 +88,20 @@ namespace librealsense
         processing_blocks get_recommended_processing_blocks() const override
         {
             return {};
+        }
+
+        // recordable< recommended_proccesing_blocks_interface > is needed to record our recommended processing blocks
+    public:
+        void enable_recording( std::function< void( const recommended_proccesing_blocks_interface & ) > ) override {}
+        void create_snapshot( std::shared_ptr< recommended_proccesing_blocks_interface > & snapshot ) const override
+        {
+            snapshot
+                = std::make_shared< recommended_proccesing_blocks_snapshot >( get_recommended_processing_blocks() );
+        }
+
+        rsutils::subscription register_options_changed_callback( options_watcher::callback && cb ) override
+        {
+            throw not_implemented_exception( "Registering options value changed callback is not implemented for this sensor" );
         }
 
     protected:
@@ -118,7 +132,7 @@ namespace librealsense
             return width * height * bpp >> 3;
         }
 
-        std::vector<byte> align_width_to_64(int width, int height, int bpp, byte* pix) const;
+        std::vector<uint8_t> align_width_to_64(int width, int height, int bpp, uint8_t * pix) const;
 
         std::atomic<bool> _is_streaming;
         std::atomic<bool> _is_opened;
@@ -168,9 +182,8 @@ namespace librealsense
 
     protected:
         explicit raw_sensor_base( std::string const & name,
-                                  device * device,
-                                  recommended_proccesing_blocks_interface * owner )
-            : super( name, device, owner )
+                                  device * device )
+            : super( name, device )
         {
         }
 
@@ -183,6 +196,11 @@ namespace librealsense
 
         std::shared_ptr< std::map< uint32_t, rs2_format > > & get_fourcc_to_rs2_format_map();
         std::shared_ptr< std::map< uint32_t, rs2_stream > > & get_fourcc_to_rs2_stream_map();
+
+        // Sometimes it is more efficient to prepare for large or repeating operations. Depending on the actual sensor
+        // type we might want to change power state or encapsulate small transactions into a large one.
+        virtual void prepare_for_bulk_operation() {}
+        virtual void finished_bulk_operation(){}
     };
 
     // A sensor pointer to another "raw sensor", usually UVC/HID
@@ -200,7 +218,7 @@ namespace librealsense
 
         virtual void register_option(rs2_option id, std::shared_ptr<option> option);
         virtual bool try_register_option(rs2_option id, std::shared_ptr<option> option);
-        void unregister_option(rs2_option id);
+        virtual void unregister_option(rs2_option id);
         void register_pu(rs2_option id);
         bool try_register_pu(rs2_option id);
 
@@ -211,7 +229,7 @@ namespace librealsense
 
         void open(const stream_profiles& requests) override;
         void close() override;
-        void start(frame_callback_ptr callback) override;
+        void start( rs2_frame_callback_sptr callback ) override;
         void stop() override;
 
         virtual float get_preset_max_value() const;
@@ -223,14 +241,18 @@ namespace librealsense
         void register_processing_block(const std::vector<processing_block_factory>& pbfs);
 
         std::shared_ptr< raw_sensor_base > const & get_raw_sensor() const { return _raw_sensor; }
-        frame_callback_ptr get_frames_callback() const override;
-        void set_frames_callback(frame_callback_ptr callback) override;
-        void register_notifications_callback(notifications_callback_ptr callback) override;
+        rs2_frame_callback_sptr get_frames_callback() const override;
+        void set_frames_callback( rs2_frame_callback_sptr callback ) override;
+        void register_notifications_callback( rs2_notifications_callback_sptr callback ) override;
         int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
         void unregister_before_start_callback(int token) override;
         void register_metadata(rs2_frame_metadata_value metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const override;
         bool is_streaming() const override;
         bool is_opened() const override;
+
+        rsutils::subscription register_options_changed_callback( options_watcher::callback && cb ) override;
+        virtual void register_option_to_update( rs2_option id, std::shared_ptr< option > option );
+        virtual void unregister_option_from_update( rs2_option id );
 
     private:
         void register_processing_block_options(const processing_block& pb);
@@ -238,10 +260,12 @@ namespace librealsense
 
         std::mutex _synthetic_configure_lock;
 
-        frame_callback_ptr _post_process_callback;
+        rs2_frame_callback_sptr _post_process_callback;
         std::shared_ptr<raw_sensor_base> _raw_sensor;
         formats_converter _formats_converter;
         std::vector<rs2_option> _cached_processing_blocks_options;
+
+        synthetic_options_watcher _options_watcher;
     };
 
 

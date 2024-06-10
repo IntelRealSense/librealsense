@@ -51,7 +51,7 @@ namespace librealsense
     /////////////////////////////
     // This templated function unpacks YUY2 into Y8/Y16/RGB8/RGBA8/BGR8/BGRA8, depending on the compile-time parameter FORMAT.
     // It is expected that all branching outside of the loop control variable will be removed due to constant-folding.
-    template<rs2_format FORMAT> void unpack_yuy2(byte * const d[], const byte * s, int width, int height, int actual_size)
+    template<rs2_format FORMAT> void unpack_yuy2( uint8_t * const d[], const uint8_t * s, int width, int height, int actual_size)
     {
         auto n = width * height;
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
@@ -95,10 +95,11 @@ namespace librealsense
 
                 if (FORMAT == RS2_FORMAT_Y8)
                 {
-                    // Align all Y components and output 16 pixels (16 bytes) at once
-                    __m128i y0 = _mm_shuffle_epi8(s0, _mm_setr_epi8(1, 3, 5, 7, 9, 11, 13, 15, 0, 2, 4, 6, 8, 10, 12, 14));
-                    __m128i y1 = _mm_shuffle_epi8(s1, _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15));
-                    _mm_storeu_si128(&dst[i], _mm_alignr_epi8(y0, y1, 8));
+                    const __m128i vmask = _mm_set1_epi16( 0x00ff );
+                    s0 = _mm_and_si128( s0, vmask );  // mask unwanted bytes
+                    s1 = _mm_and_si128( s1, vmask );
+                    // Convert packed signed 16-bit integers from a and b to packed 8-bit integers using unsigned saturation
+                    _mm_storeu_si128( &dst[i], _mm_packus_epi16( s0, s1 ) );
                     continue;
                 }
 
@@ -232,7 +233,7 @@ namespace librealsense
                     src[16], src[18], src[20], src[22],
                     src[24], src[26], src[28], src[30],
                 };
-                librealsense::copy(dst, out, sizeof out);
+                std::memcpy( dst, out, sizeof out );
                 dst += sizeof out;
                 continue;
             }
@@ -246,7 +247,7 @@ namespace librealsense
                     0, src[16], 0, src[18], 0, src[20], 0, src[22],
                     0, src[24], 0, src[26], 0, src[28], 0, src[30],
                 };
-                librealsense::copy(dst, out, sizeof out);
+                std::memcpy(dst, out, sizeof out);
                 dst += sizeof out;
                 continue;
             }
@@ -295,7 +296,7 @@ namespace librealsense
                     r[12], g[12], b[12], r[13], g[13], b[13],
                     r[14], g[14], b[14], r[15], g[15], b[15],
                 };
-                librealsense::copy(dst, out, sizeof out);
+                std::memcpy( dst, out, sizeof out );
                 dst += sizeof out;
                 continue;
             }
@@ -312,7 +313,7 @@ namespace librealsense
                     b[12], g[12], r[12], b[13], g[13], r[13],
                     b[14], g[14], r[14], b[15], g[15], r[15],
                 };
-                librealsense::copy(dst, out, sizeof out);
+                std::memcpy( dst, out, sizeof out );
                 dst += sizeof out;
                 continue;
             }
@@ -329,7 +330,7 @@ namespace librealsense
                     r[12], g[12], b[12], 255, r[13], g[13], b[13], 255,
                     r[14], g[14], b[14], 255, r[15], g[15], b[15], 255,
                 };
-                librealsense::copy(dst, out, sizeof out);
+                std::memcpy( dst, out, sizeof out );
                 dst += sizeof out;
                 continue;
             }
@@ -346,7 +347,7 @@ namespace librealsense
                     b[12], g[12], r[12], 255, b[13], g[13], r[13], 255,
                     b[14], g[14], r[14], 255, b[15], g[15], r[15], 255,
                 };
-                librealsense::copy(dst, out, sizeof out);
+                std::memcpy( dst, out, sizeof out );
                 dst += sizeof out;
                 continue;
             }
@@ -355,14 +356,14 @@ namespace librealsense
     }
 
     template<rs2_format FORMAT>
-    void m420_parse_one_line(const byte* y_one_line, const byte* uv_one_line, uint8_t** dst, int width)
+    void m420_parse_one_line(const uint8_t * y_one_line, const uint8_t * uv_one_line, uint8_t** dst, int width)
     {
         // building 16 pixels at each iteration 
         for (int y_pix = 0, uv_pix = 0; y_pix < width; y_pix += 16, uv_pix += 16)
         {
             // grabbing matching y,u,v values
             uint8_t y[16] = { 0 };
-            librealsense::copy(y, &y_one_line[y_pix], 16);
+            std::memcpy( y, &y_one_line[y_pix], 16 );
 
             uint8_t u[16] = {
                 uv_one_line[uv_pix + 0], uv_one_line[uv_pix + 0], uv_one_line[uv_pix + 2], uv_one_line[uv_pix + 2],
@@ -407,7 +408,7 @@ namespace librealsense
                     r[12], g[12], b[12], r[13], g[13], b[13],
                     r[14], g[14], b[14], r[15], g[15], b[15]
                 };
-                librealsense::copy(*dst, out, sizeof(out));
+                std::memcpy( *dst, out, sizeof( out ) );
                 *dst += sizeof out;
                 continue;
             }
@@ -424,7 +425,7 @@ namespace librealsense
                     b[12], g[12], r[12], b[13], g[13], r[13],
                     b[14], g[14], r[14], b[15], g[15], r[15],
                 };
-                librealsense::copy(*dst, out, sizeof out);
+                std::memcpy( *dst, out, sizeof out );
                 *dst += sizeof out;
                 continue;
             }
@@ -441,7 +442,7 @@ namespace librealsense
                     r[12], g[12], b[12], 255, r[13], g[13], b[13], 255,
                     r[14], g[14], b[14], 255, r[15], g[15], b[15], 255,
                 };
-                librealsense::copy(*dst, out, sizeof out);
+                std::memcpy( *dst, out, sizeof out );
                 *dst += sizeof out;
                 continue;
             }
@@ -458,7 +459,7 @@ namespace librealsense
                     b[12], g[12], r[12], 255, b[13], g[13], r[13], 255,
                     b[14], g[14], r[14], 255, b[15], g[15], r[15], 255,
                 };
-                librealsense::copy(*dst, out, sizeof out);
+                std::memcpy( *dst, out, sizeof out );
                 *dst += sizeof out;
                 continue;
             }
@@ -614,7 +615,7 @@ namespace librealsense
     // The first pixel is (Y0, U0, V0), second pixel is (Y1, U0, V0)
     // The first pixel in the second line is (Yw, U0, V0) second pixel in second line is (Yw+1, U0, V0)
     // The third pixel in second line is (Yw+2, U1, V1)
-    template<rs2_format FORMAT> void unpack_m420(byte* const d[], const byte* s, int width, int height, int actual_size)
+    template<rs2_format FORMAT> void unpack_m420( uint8_t * const d[], const uint8_t * s, int width, int height, int actual_size)
     {
         auto n = width * height;
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
@@ -700,7 +701,7 @@ namespace librealsense
                 // fill the destination with y values
                 // while y is on 2 lines, and uv on the third line
                 auto start_of_y = src + k * width;
-                librealsense::copy(dst, start_of_y, 2 * width);
+                std::memcpy( dst, start_of_y, 2 * width );
                 dst += 2 * width;
             }
             return;
@@ -720,7 +721,7 @@ namespace librealsense
                     {
                         y[dst_idx] = start_of_y[src_idx + pix] << 8;
                     }
-                    librealsense::copy(dst, y, sizeof y);
+                    std::memcpy( dst, y, sizeof y );
                     dst += sizeof y;
                 }
             }
@@ -744,18 +745,15 @@ namespace librealsense
 #endif // __SSSE3__
     }
 
-    void unpack_yuy2(rs2_format dst_format, rs2_stream dst_stream, byte * const d[], const byte * s, int w, int h, int actual_size)
+    void unpack_yuy2(rs2_format dst_format, rs2_stream dst_stream, uint8_t * const d[], const uint8_t * s, int w, int h, int actual_size)
     {
         switch (dst_format)
         {
-        case RS2_FORMAT_Y8:
-            unpack_yuy2<RS2_FORMAT_Y8>(d, s, w, h, actual_size);
-            break;
-        case RS2_FORMAT_Y16:
-            unpack_yuy2<RS2_FORMAT_Y16>(d, s, w, h, actual_size);
-            break;
         case RS2_FORMAT_RGB8:
             unpack_yuy2<RS2_FORMAT_RGB8>(d, s, w, h, actual_size);
+            break;
+        case RS2_FORMAT_Y8:
+            unpack_yuy2<RS2_FORMAT_Y8>(d, s, w, h, actual_size);
             break;
         case RS2_FORMAT_RGBA8:
             unpack_yuy2<RS2_FORMAT_RGBA8>(d, s, w, h, actual_size);
@@ -766,13 +764,16 @@ namespace librealsense
         case RS2_FORMAT_BGRA8:
             unpack_yuy2<RS2_FORMAT_BGRA8>(d, s, w, h, actual_size);
             break;
+        case RS2_FORMAT_Y16:
+            unpack_yuy2<RS2_FORMAT_Y16>( d, s, w, h, actual_size );
+            break;
         default:
             LOG_ERROR("Unsupported format for YUY2 conversion.");
             break;
         }
     }
 
-    void unpack_m420(rs2_format dst_format, rs2_stream dst_stream, byte* const d[], const byte* s, int w, int h, int actual_size)
+    void unpack_m420(rs2_format dst_format, rs2_stream dst_stream, uint8_t * const d[], const uint8_t * s, int w, int h, int actual_size)
     {
         LOG_DEBUG("unpack m420 called with dst_format: " << rs2_format_to_string(dst_format));
         switch (dst_format)
@@ -806,7 +807,7 @@ namespace librealsense
     /////////////////////////////
     // This templated function unpacks UYVY into RGB8/RGBA8/BGR8/BGRA8, depending on the compile-time parameter FORMAT.
     // It is expected that all branching outside of the loop control variable will be removed due to constant-folding.
-    template<rs2_format FORMAT> void unpack_uyvy(byte * const d[], const byte * s, int width, int height, int actual_size)
+    template<rs2_format FORMAT> void unpack_uyvy( uint8_t * const d[], const uint8_t * s, int width, int height, int actual_size)
     {
         auto n = width * height;
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
@@ -986,7 +987,7 @@ namespace librealsense
                     r[12], g[12], b[12], r[13], g[13], b[13],
                     r[14], g[14], b[14], r[15], g[15], b[15],
                 };
-                librealsense::copy(dst, out, sizeof out);
+                std::memcpy( dst, out, sizeof out );
                 dst += sizeof out;
                 continue;
             }
@@ -1003,7 +1004,7 @@ namespace librealsense
                     b[12], g[12], r[12], b[13], g[13], r[13],
                     b[14], g[14], r[14], b[15], g[15], r[15],
                 };
-                librealsense::copy(dst, out, sizeof out);
+                std::memcpy( dst, out, sizeof out );
                 dst += sizeof out;
                 continue;
             }
@@ -1020,7 +1021,7 @@ namespace librealsense
                     r[12], g[12], b[12], 255, r[13], g[13], b[13], 255,
                     r[14], g[14], b[14], 255, r[15], g[15], b[15], 255,
                 };
-                librealsense::copy(dst, out, sizeof out);
+                std::memcpy( dst, out, sizeof out );
                 dst += sizeof out;
                 continue;
             }
@@ -1037,7 +1038,7 @@ namespace librealsense
                     b[12], g[12], r[12], 255, b[13], g[13], r[13], 255,
                     b[14], g[14], r[14], 255, b[15], g[15], r[15], 255,
                 };
-                librealsense::copy(dst, out, sizeof out);
+                std::memcpy( dst, out, sizeof out );
                 dst += sizeof out;
                 continue;
             }
@@ -1045,7 +1046,7 @@ namespace librealsense
 #endif
     }
 
-    void unpack_uyvyc(rs2_format dst_format, rs2_stream dst_stream, byte * const d[], const byte * s, int w, int h, int actual_size)
+    void unpack_uyvyc(rs2_format dst_format, rs2_stream dst_stream, uint8_t * const d[], const uint8_t * s, int w, int h, int actual_size)
     {
         switch (dst_format)
         {
@@ -1070,14 +1071,14 @@ namespace librealsense
     /////////////////////////////
     // MJPEG unpacking routines //
     /////////////////////////////
-    void unpack_mjpeg(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
+    void unpack_mjpeg( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size)
     {
         int w, h, bpp;
         auto uncompressed_rgb = stbi_load_from_memory(source, actual_size, &w, &h, &bpp, false);
         if (uncompressed_rgb)
         {
             auto uncompressed_size = w * h * bpp;
-            librealsense::copy(dest[0], uncompressed_rgb, uncompressed_size);
+            std::memcpy( dest[0], uncompressed_rgb, uncompressed_size );
             stbi_image_free(uncompressed_rgb);
         }
         else
@@ -1087,40 +1088,40 @@ namespace librealsense
     /////////////////////////////
     // BGR unpacking routines //
     /////////////////////////////
-    void unpack_rgb_from_bgr(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void unpack_rgb_from_bgr( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size)
     {
         auto count = width * height;
         auto in = reinterpret_cast<const uint8_t *>(source);
         auto out = reinterpret_cast<uint8_t *>(dest[0]);
 
-        librealsense::copy(out, in, count * 3);
+        std::memcpy( out, in, count * 3 );
         for (auto i = 0; i < count; i++)
         {
             std::swap(out[i * 3], out[i * 3 + 2]);
         }
     }
 
-    void yuy2_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
+    void yuy2_converter::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size)
     {
         unpack_yuy2(_target_format, _target_stream, dest, source, width, height, actual_size);
     }
 
-    void uyvy_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
+    void uyvy_converter::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size)
     {
         unpack_uyvyc(_target_format, _target_stream, dest, source, width, height, actual_size);
     }
 
-    void mjpeg_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
+    void mjpeg_converter::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size)
     {
         unpack_mjpeg(dest, source, width, height, actual_size, input_size);
     }
 
-    void bgr_to_rgb::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
+    void bgr_to_rgb::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size)
     {
         unpack_rgb_from_bgr(dest, source, width, height, actual_size);
     }
 
-    void m420_converter::process_function(byte* const dest[], const byte* source, int width, int height, int actual_size, int input_size)
+    void m420_converter::process_function( uint8_t * const dest[], const uint8_t * source, int width, int height, int actual_size, int input_size)
     {
         unpack_m420(_target_format, _target_stream, dest, source, width, height, actual_size);
     }

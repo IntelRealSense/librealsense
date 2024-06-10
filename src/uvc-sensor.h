@@ -23,10 +23,13 @@ public:
 
     void open( const stream_profiles & requests ) override;
     void close() override;
-    void start( frame_callback_ptr callback ) override;
+    void start( rs2_frame_callback_sptr callback ) override;
     void stop() override;
     void register_xu( platform::extension_unit xu );
     void register_pu( rs2_option id );
+
+    virtual void prepare_for_bulk_operation() override;
+    virtual void finished_bulk_operation() override;
 
     std::vector< platform::stream_profile > get_configuration() const { return _internal_config; }
     std::shared_ptr< platform::uvc_device > get_uvc_device() { return _device; }

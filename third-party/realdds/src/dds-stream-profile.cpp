@@ -6,8 +6,6 @@
 #include <realdds/dds-exceptions.h>
 
 #include <rsutils/json.h>
-using nlohmann::json;
-
 #include <map>
 
 
@@ -137,15 +135,15 @@ dds_video_encoding dds_video_encoding::from_rs2( int rs2_format )
 }
 
 
-dds_stream_profile::dds_stream_profile( json const & j, int & it )
-    : _frequency( rsutils::json::get< int16_t >( j, it++ ) )
+dds_stream_profile::dds_stream_profile( rsutils::json const & j, int & it )
+    : _frequency( j[it++].get< int16_t >() )
 {
     // NOTE: the order of construction is the order of declaration -- therefore the to_json() function
     // should use the same ordering!
 }
 
 
-/* static */ void dds_stream_profile::verify_end_of_json( nlohmann::json const & j, int index )
+/* static */ void dds_stream_profile::verify_end_of_json( rsutils::json const & j, int index )
 {
     if( index != j.size() )
         DDS_THROW( runtime_error, "expected end of json at index " + std::to_string( index ) );
@@ -189,23 +187,23 @@ void dds_stream_profile::init_stream( std::weak_ptr< dds_stream_base > const & s
 }
 
 
-json dds_stream_profile::to_json() const
+rsutils::json dds_stream_profile::to_json() const
 {
     // NOTE: same ordering as construction!
-    return json::array( { frequency() } );
+    return rsutils::json::array( { frequency() } );
 }
 
 
-dds_video_stream_profile::dds_video_stream_profile( nlohmann::json const & j, int & index )
+dds_video_stream_profile::dds_video_stream_profile( rsutils::json const & j, int & index )
     : super( j, index )
-    , _encoding( rsutils::json::get< std::string >( j, index++ ) )
+    , _encoding( j[index++].get< std::string >() )
 {
-    _width = rsutils::json::get< int16_t >( j, index++ );
-    _height = rsutils::json::get< int16_t >( j, index++ );
+    _width = j[index++].get< int16_t >();
+    _height = j[index++].get< int16_t >();
 }
 
 
-json dds_video_stream_profile::to_json() const
+rsutils::json dds_video_stream_profile::to_json() const
 {
     auto profile = super::to_json();
     profile += encoding().to_string();

@@ -1,18 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <mutex>
-#include <chrono>
-#include <vector>
-#include <iterator>
-#include <cstddef>
-
 #include "device.h"
-#include "context.h"
 #include "image.h"
 #include "metadata-parser.h"
 
 #include <src/core/matcher-factory.h>
+#include <src/proc/color-formats-converter.h>
 
 #include "d500-info.h"
 #include "d500-private.h"
@@ -28,6 +22,16 @@
 #include "firmware_logger_device.h"
 #include "device-calibration.h"
 
+#include <rsutils/string/hexdump.h>
+using rsutils::string::hexdump;
+
+#include <mutex>
+#include <chrono>
+#include <vector>
+#include <iterator>
+#include <cstddef>
+
+
 namespace librealsense
 {
 
@@ -42,27 +46,28 @@ class d555e_device
 public:
     d555e_device( std::shared_ptr< const d500_info > dev_info )
         : device( dev_info )
-        , ds_device( dev_info )
+        , backend_device( dev_info )
         , d500_device( dev_info )
         , d500_active( dev_info )
-        , d500_color( dev_info )
+        , d500_color( dev_info, RS2_FORMAT_YUYV )
         , d500_motion( dev_info )
         , ds_advanced_mode_base( d500_device::_hw_monitor, get_depth_sensor() )
         , firmware_logger_device(
               dev_info, d500_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
     {
+        auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>( d500_device::_hw_monitor, ds::LASERONCONST, ds::LASERONCONST);
+        get_depth_sensor().register_option(RS2_OPTION_EMITTER_ALWAYS_ON,emitter_always_on_opt);
     }
 
     std::shared_ptr< matcher > create_matcher( const frame_holder & frame ) const override
     {
         std::vector<stream_interface *> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(),     _color_stream.get() };
-#if 0
         std::vector<stream_interface *> mm_streams = { _ds_motion_common->get_accel_stream().get(),
-                                                        _ds_motion_common->get_gyro_stream().get() };
+                                                       _ds_motion_common->get_gyro_stream().get() };
         streams.insert( streams.end(), mm_streams.begin(), mm_streams.end() );
-#endif
         return matcher_factory::create( RS2_MATCHER_DEFAULT, streams );
     }
+
 
     std::vector< tagged_profile > get_profiles_tags() const override
     {
@@ -117,8 +122,7 @@ public:
             return std::make_shared< d555e_device >( dev_info );
 
         default:
-            throw std::runtime_error( rsutils::string::from() << "Unsupported D500 model! 0x" << std::hex
-                                                              << std::setw( 4 ) << std::setfill( '0' ) << (int)pid );
+            throw std::runtime_error( rsutils::string::from() << "unsupported D500 PID 0x" << hexdump( pid ) );
         }
     }
 

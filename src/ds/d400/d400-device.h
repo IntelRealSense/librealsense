@@ -16,7 +16,7 @@
 #include "d400-options.h"
 
 #include "ds/ds-device-common.h"
-#include "ds/ds-device.h"
+#include "backend-device.h"
 
 namespace librealsense
 {
@@ -24,7 +24,7 @@ namespace librealsense
     class d400_thermal_monitor;
 
     class d400_device
-        : public virtual ds_device
+        : public virtual backend_device
         , public debug_interface
         , public global_time_interface
         , public updatable
@@ -39,10 +39,10 @@ namespace librealsense
             return dynamic_cast<synthetic_sensor&>(get_sensor(_depth_device_idx));
         }
 
-        uvc_sensor& get_raw_depth_sensor()
+        std::shared_ptr< uvc_sensor > get_raw_depth_sensor()
         {
             synthetic_sensor& depth_sensor = get_depth_sensor();
-            return dynamic_cast<uvc_sensor&>(*depth_sensor.get_raw_sensor());
+            return std::dynamic_pointer_cast< uvc_sensor >( depth_sensor.get_raw_sensor() );
         }
 
         d400_device( std::shared_ptr< const d400_info > const & );
@@ -63,9 +63,10 @@ namespace librealsense
         virtual double get_device_time_ms() override;
 
         void enter_update_state() const override;
-        std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback) override;
-        void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode) override;
+        std::vector<uint8_t> backup_flash( rs2_update_progress_callback_sptr callback) override;
+        void update_flash(const std::vector<uint8_t>& image, rs2_update_progress_callback_sptr callback, int update_mode) override;
         bool check_fw_compatibility(const std::vector<uint8_t>& image) const override;
+
     protected:
         std::shared_ptr<ds_device_common> _ds_device_common;
 
@@ -85,8 +86,8 @@ namespace librealsense
         void register_metadata(const synthetic_sensor& depth_sensor, const firmware_version& hdr_firmware_version) const;
         void register_metadata_mipi(const synthetic_sensor& depth_sensor, const firmware_version& hdr_firmware_version) const;
 
-        void init(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group);
+        void init(std::shared_ptr<context> ctx, const platform::backend_device_group& group);
+        void register_features();
 
         friend class d400_depth_sensor;
 

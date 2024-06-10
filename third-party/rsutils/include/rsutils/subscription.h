@@ -44,6 +44,11 @@ public:
         return *this;
     }
 
+    // Return true if the subscription is active, meaning subscription-needs-to-be-cancelled-if-alive:
+    // The signal/subscription source may already be gone but we won't know that until we try to cancel, so active does
+    // not mean the source is alive! I.e., if true then a subscription was made and cancel() will get called.
+    bool is_active() const { return _d; }
+
     // Unsubscribing is "canceling" the subscription. Will not throw if we've already cancelled.
     void cancel()
     {

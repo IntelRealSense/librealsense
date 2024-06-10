@@ -3,14 +3,14 @@
 
 #pragma once
 
-#include "types.h"
-#include "core/streaming.h"
+#include "core/frame-additional-data.h"
 #include "callback-invocation.h"
 
 
 namespace librealsense
 {
-    struct frame_additional_data;
+    class frame_interface;
+    class sensor_interface;
 
     class archive_interface
     {
@@ -22,7 +22,7 @@ namespace librealsense
         virtual std::shared_ptr<metadata_parser_map> get_md_parsers() const = 0;
 
         virtual std::shared_ptr< sensor_interface > get_sensor() const = 0;
-        virtual void set_sensor( std::shared_ptr< sensor_interface > ) = 0;
+        virtual void set_sensor( const std::weak_ptr< sensor_interface > & ) = 0;
 
         virtual void flush() = 0;
 

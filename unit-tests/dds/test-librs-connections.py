@@ -2,7 +2,7 @@
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
-#test:retries 2
+#test:retries:gha 2
 
 from rspy import log, test
 log.nested = 'C  '
@@ -30,7 +30,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         remote.run( 'instance2 = broadcast_device( d405, d405.device_info )' )
 
         # Create context after remote device is ready to test discovery on start-up
-        context = rs.context( { 'dds': { 'domain': 123, 'participant': 'librs' }} )
+        context = rs.context( { 'dds': { 'enabled': True, 'domain': 123, 'participant': 'librs' }} )
         # The DDS devices take time to be recognized and we just created the context; we
         # should not see them yet!
         #test.check( len( context.query_devices( only_sw_devices )) != 2 )

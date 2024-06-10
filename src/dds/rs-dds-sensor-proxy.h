@@ -1,16 +1,16 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
-
 #include "sid_index.h"
-#include <src/software-device.h>
+#include <src/frame.h>
+#include <src/software-sensor.h>
 #include <src/proc/formats-converter.h>
+#include <src/core/options-watcher.h>
 
 #include <realdds/dds-metadata-syncer.h>
 
-#include <nlohmann/json_fwd.hpp>
+#include <rsutils/json-fwd.h>
 #include <memory>
 #include <map>
 
@@ -36,19 +36,24 @@ class dds_device_proxy;
 
 class dds_sensor_proxy : public software_sensor
 {
+    using super = software_sensor;
+
     std::shared_ptr< realdds::dds_device > const _dev;
     std::string const _name;
     bool const _md_enabled;
+    options_watcher _options_watcher;
 
     typedef realdds::dds_metadata_syncer syncer_type;
     static void frame_releaser( syncer_type::frame_type * f ) { static_cast< frame * >( f )->release(); }
 
+protected:
     struct streaming_impl
     {
         syncer_type syncer;
         std::atomic< unsigned long long > last_frame_number{ 0 };
     };
 
+private:
     std::map< sid_index, std::shared_ptr< realdds::dds_stream > > _streams;
     std::map< std::string, streaming_impl > _streaming_by_name;
 
@@ -66,18 +71,20 @@ public:
     std::shared_ptr<stream_profile_interface> add_motion_stream( rs2_motion_stream motion_stream, bool is_default ) override;
 
     void open( const stream_profiles & profiles ) override;
-    void start( frame_callback_ptr callback ) override;
+    void start( rs2_frame_callback_sptr callback ) override;
     void stop();
 
     void add_option( std::shared_ptr< realdds::dds_option > option );
 
-    void add_processing_block( std::string filter_name );
-    bool processing_block_exists( processing_blocks const & blocks, std::string const & block_name ) const;
-    void create_processing_block( std::string & filter_name );
+    void add_processing_block( std::string const & filter_name );
 
     const std::map< sid_index, std::shared_ptr< realdds::dds_stream > > & streams() const { return _streams; }
 
-private:
+    // sensor_interface
+public:
+    rsutils::subscription register_options_changed_callback( options_watcher::callback && ) override;
+
+protected:
     void register_basic_converters();
     stream_profiles init_stream_profiles() override;
 
@@ -93,9 +100,11 @@ private:
     void handle_motion_data( realdds::topics::imu_msg &&,
                              const std::shared_ptr< stream_profile_interface > &,
                              streaming_impl & );
-    void handle_new_metadata( std::string const & stream_name, nlohmann::json && metadata );
+    void handle_new_metadata( std::string const & stream_name,
+                              std::shared_ptr< const rsutils::json > const & metadata );
 
-    void add_frame_metadata( frame * const, nlohmann::json && metadata, streaming_impl & );
+    virtual void add_no_metadata( frame *, streaming_impl & );
+    virtual void add_frame_metadata( frame *, rsutils::json const & metadata, streaming_impl & );
 
     friend class dds_device_proxy;  // Currently calls handle_new_metadata
 };

@@ -393,6 +393,9 @@ namespace rs2
         ImGui::GetWindowDrawList()->AddRectFilled({ stream_rect.x, stream_rect.y - top_bar_height },
             { stream_rect.x + stream_rect.w, stream_rect.y }, ImColor(sensor_bg));
 
+        if( ! dev )
+            throw std::runtime_error( "device is not set for the stream" );
+
         int offset = 5;
         if (dev->_is_being_recorded) offset += 23;
         auto p = dev->dev.as<playback>();
@@ -401,7 +404,7 @@ namespace rs2
         ImGui::SetCursorScreenPos({ stream_rect.x + 4 + offset, stream_rect.y - top_bar_height + 7 });
 
         std::string tooltip;
-        if (dev && dev->dev.supports(RS2_CAMERA_INFO_NAME) &&
+        if (dev->dev.supports(RS2_CAMERA_INFO_NAME) &&
             dev->dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) &&
             dev->s->supports(RS2_CAMERA_INFO_NAME))
         {
@@ -805,7 +808,7 @@ namespace rs2
                                     "Frame Timestamp is normalized represetation of when the frame was taken.\n"
                                     "It's a property of every frame, so when exact creation time is not provided by "
                                     "the hardware, an approximation will be used.\n"
-                                    "Clock Domain feilds helps to interpret the meaning of timestamp\n"
+                                    "Clock Domain fields helps to interpret the meaning of timestamp\n"
                                     "Timestamp is measured in milliseconds, and is allowed to roll-over (reset to "
                                     "zero) in some situations" } );
         stream_details.push_back(
@@ -891,11 +894,12 @@ namespace rs2
               "When AE is set On, the value is controlled by firmware. Integer value" },
             { RS2_FRAME_METADATA_AUTO_EXPOSURE, "Auto Exposure Mode indicator. Zero corresponds to AE switched off. " },
             { RS2_FRAME_METADATA_WHITE_BALANCE, "White Balance setting as a color temperature. Kelvin degrees" },
-            { RS2_FRAME_METADATA_TIME_OF_ARRIVAL, "Time of arrival in system clock " },
+            { RS2_FRAME_METADATA_TIME_OF_ARRIVAL, "Time of arrival in system clock" },
             { RS2_FRAME_METADATA_TEMPERATURE,
               "Temperature of the device, measured at the time of the frame capture. Celsius degrees " },
             { RS2_FRAME_METADATA_BACKEND_TIMESTAMP, "Timestamp get from uvc driver. usec" },
-            { RS2_FRAME_METADATA_ACTUAL_FPS, "Actual hardware FPS. May differ from requested due to Auto-Exposure" },
+            { RS2_FRAME_METADATA_ACTUAL_FPS, "Hardware FPS * 1000 =\n"
+              "1000000 * (frame-number - prev-frame-number) / (timestamp - prev-timestamp)" },
             { RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE,
               "Laser power mode. Zero corresponds to Laser power switched off and one for switched on." },
             { RS2_FRAME_METADATA_EXPOSURE_PRIORITY,
@@ -912,10 +916,10 @@ namespace rs2
             {
                 auto val = (rs2_frame_metadata_value)i;
                 std::string name = rs2_frame_metadata_to_string( val );
-                std::string desc = "";
+                std::string desc;
                 if( descriptions.find( val ) != descriptions.end() )
                     desc = descriptions[val];
-                stream_details.push_back( { name, rsutils::string::from() << kvp.second, desc } );
+                stream_details.push_back( { name, format_value(val, kvp.second), desc } );
             }
         }
 
@@ -1038,6 +1042,23 @@ namespace rs2
         }
 
         ImGui::EndChild();
+    }
+
+    std::string stream_model::format_value(rs2_frame_metadata_value& md_val, rs2_metadata_type& attribute_val) const
+    {
+        if (should_show_in_hex(md_val))
+            return rsutils::string::from() << "0x" << std::hex << attribute_val; // return value as hex
+        return rsutils::string::from() << attribute_val;
+    }
+
+    bool stream_model::should_show_in_hex(rs2_frame_metadata_value& md_val) const
+    {
+        // place in the SET metadata types you wish to display in HEX format
+        static std::unordered_set< int > show_in_hex;
+
+        if (show_in_hex.find(md_val) != show_in_hex.end())
+            return true;
+        return false;
     }
 
     void stream_model::show_stream_footer(ImFont* font, const rect &stream_rect, const mouse_info& mouse, const std::map<int, stream_model> &streams, viewer_model& viewer)
@@ -1619,31 +1640,32 @@ namespace rs2
 
         _mid_click = is_middle_clicked;
 
-        _normalized_zoom = get_normalized_zoom(stream_rect,
-            g, is_middle_clicked,
-            zoom_val);
-        texture->show(stream_rect, 1.f, _normalized_zoom);
-
-        if (dev && dev->show_algo_roi)
+        if( dev )
         {
-            rect r{ float(dev->algo_roi.min_x), float(dev->algo_roi.min_y),
-                    float(dev->algo_roi.max_x - dev->algo_roi.min_x),
-                    float(dev->algo_roi.max_y - dev->algo_roi.min_y) };
+            _normalized_zoom = get_normalized_zoom( stream_rect, g, is_middle_clicked, zoom_val );
+            texture->show(stream_rect, 1.f, _normalized_zoom);
 
-            r = r.normalize(_normalized_zoom.unnormalize(get_original_stream_bounds())).unnormalize(stream_rect).cut_by(stream_rect);
-            glColor3f(yellow.x, yellow.y, yellow.z);
-            draw_rect(r, 2, true);
+            if( dev->show_algo_roi )
+            {
+                rect r{ float(dev->algo_roi.min_x), float(dev->algo_roi.min_y),
+                        float(dev->algo_roi.max_x - dev->algo_roi.min_x),
+                        float(dev->algo_roi.max_y - dev->algo_roi.min_y) };
 
-            std::string message = "Metrics Region of Interest";
-            auto msg_width = stb_easy_font_width((char*)message.c_str());
-            if (msg_width < r.w)
-                draw_text(static_cast<int>(r.x + r.w / 2 - msg_width / 2), static_cast<int>(r.y + 10), message.c_str());
+                r = r.normalize(_normalized_zoom.unnormalize(get_original_stream_bounds())).unnormalize(stream_rect).cut_by(stream_rect);
+                glColor3f(yellow.x, yellow.y, yellow.z);
+                draw_rect(r, 2, true);
 
-            glColor3f(1.f, 1.f, 1.f);
-            roi_percentage = dev->roi_percentage;
+                std::string message = "Metrics Region of Interest";
+                auto msg_width = stb_easy_font_width((char*)message.c_str());
+                if (msg_width < r.w)
+                    draw_text(static_cast<int>(r.x + r.w / 2 - msg_width / 2), static_cast<int>(r.y + 10), message.c_str());
+
+                glColor3f(1.f, 1.f, 1.f);
+                roi_percentage = dev->roi_percentage;
+            }
+
+            update_ae_roi_rect(stream_rect, g, error_message);
         }
-
-        update_ae_roi_rect(stream_rect, g, error_message);
         texture->show_preview(stream_rect, _normalized_zoom);
 
         if (is_middle_clicked)

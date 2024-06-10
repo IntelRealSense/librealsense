@@ -16,6 +16,7 @@ extern "C" {
 
 /**
 * \brief Creates RealSense context that is required for the rest of the API.
+* Context settings are taken from the library configuration file's 'context' key.
 * \param[in] api_version Users are expected to pass their version of \c RS2_API_VERSION to make sure they are running the correct librealsense version.
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return            Context object
@@ -27,14 +28,20 @@ rs2_context* rs2_create_context(int api_version, rs2_error** error);
 * \param[in] api_version Users are expected to pass their version of \c RS2_API_VERSION to make sure they are running the correct librealsense version.
 * \param[in] json_settings Pointer to a string containing a JSON configuration to use, or null if none
 *     Possible <setting>:<default-value> :
-*         dds: {}                      - (requires BUILD_WITH_DDS) false disables DDS; otherwise the DDS settings:
-*             domain: 0                - (int) the number of the DDS domain [0-232]
-*             participant: <exe name>  - (string) the name of the participant
+*         inherit: true                 - (bool) whether to inherit and override library configuration file values:
+*             the 'context' key in the file is taken as-is
+*             '<executable-name>/context' is merged, if it exists
+*             then the context-settings are merged
+*         dds: {}                       - (requires BUILD_WITH_DDS) false disables DDS; otherwise the DDS settings:
+*             domain: 0                 - (int) the number of the DDS domain [0-232]
+*             participant: <exe name>   - (string) the name of the participant
 *                 (see additional settings in realdds/doc/device.md#Settings)
-*         format-conversion: full      - (string) how to convert formats
+*         format-conversion: full       - (string) how to convert formats
 *             full: provide all conversions (e.g., YUYV -> RGB8 etc.)
 *             basic: use mostly raw camera formats (no RGB8 etc.); convert interleaved (Y8I -> 2xY8)
 *             raw: leave all formats from camera as they are
+*         options-update-interval: 1000 - (uint32_t) time interval in milliseconds for option value change notifications
+*             (see rs2_set_options_changed_callback)
 * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
 * \return            Context object
 */

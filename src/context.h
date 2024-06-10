@@ -1,70 +1,29 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
-#include "backend-device-factory.h"
-#include "device-info.h"
-#include "types.h"
-
-#include <rsutils/lazy.h>
-#include <nlohmann/json.hpp>
+#include <rsutils/signal.h>
+#include <rsutils/json.h>
 #include <vector>
 #include <map>
 
 
 namespace librealsense
 {
-    class context;
+    class device_factory;
     class device_info;
-    class stream_profile_interface;
-}
-
-struct rs2_device_info
-{
-    std::shared_ptr<librealsense::context> ctx;
-    std::shared_ptr<librealsense::device_info> info;
-};
-
-struct rs2_device_list
-{
-    std::shared_ptr<librealsense::context> ctx;
-    std::vector<rs2_device_info> list;
-};
-
-struct rs2_stream_profile
-{
-    librealsense::stream_profile_interface* profile;
-    std::shared_ptr<librealsense::stream_profile_interface> clone;
-};
+    class processing_block_interface;
 
 
-#ifdef BUILD_WITH_DDS
-namespace realdds {
-    class dds_device_watcher;
-    class dds_participant;
-}  // namespace realdds
-#endif
-
-
-namespace librealsense
-{
-    class device;
-    class context;
-    class playback_device_info;
-    class stream_interface;
-
-    namespace platform {
-        class backend;
-        class device_watcher;
-    }
-
-    class context : public std::enable_shared_from_this<context>
+    class context
     {
-        context();
+        context( rsutils::json const & );  // private! use make()
+
+        void create_factories( std::shared_ptr< context > const & sptr );
+
     public:
-        explicit context( nlohmann::json const & );
-        explicit context( char const * json_settings );
+        static std::shared_ptr< context > make( rsutils::json const & );
+        static std::shared_ptr< context > make( char const * json_settings );
 
         ~context();
 
@@ -80,46 +39,48 @@ namespace librealsense
         //
         static unsigned combine_device_masks( unsigned requested_mask, unsigned mask_in_settings );
 
-        std::vector<std::shared_ptr<device_info>> query_devices(int mask) const;
-        const platform::backend& get_backend() const { return *_backend; }
+        // Query any subset of available devices and return them as device-info objects from which actual devices can be
+        // created as needed.
+        //
+        // Devices will match both the requested mask and the device-mask from the context settings. See
+        // RS2_PRODUCT_LINE_... defines for possible values.
+        //
+        std::vector< std::shared_ptr< device_info > > query_devices( int mask ) const;
 
-        uint64_t register_internal_device_callback(devices_changed_callback_ptr callback);
-        void unregister_internal_device_callback(uint64_t cb_id);
-        void set_devices_changed_callback(devices_changed_callback_ptr callback);
+        using devices_changed_callback
+            = std::function< void( std::vector< std::shared_ptr< device_info > > const & devices_removed,
+                                   std::vector< std::shared_ptr< device_info > > const & devices_added ) >;
 
-        void query_software_devices( std::vector< std::shared_ptr< device_info > > & list, unsigned requested_mask ) const;
+        // Subscribe to a notification to receive when the device-list changes.
+        //
+        rsutils::subscription on_device_changes( devices_changed_callback && );
 
-        std::shared_ptr<playback_device_info> add_device(const std::string& file);
-        void remove_device(const std::string& file);
+        // Let the context maintain a list of custom devices. These can be anything, like playback devices or devices
+        // maintained by the user.
+        void add_device( std::shared_ptr< device_info > const & );
+        void remove_device( std::shared_ptr< device_info > const & );
 
-        void add_software_device(std::shared_ptr<device_info> software_device);
-        
-        const nlohmann::json & get_settings() const { return _settings; }
+        const rsutils::json & get_settings() const { return _settings; }
+
+        // Create processing blocks given a name and settings.
+        //
+        std::shared_ptr< processing_block_interface > create_pp_block( std::string const & name,
+                                                                       rsutils::json const & settings );
 
     private:
-        void invoke_devices_changed_callbacks( std::vector<rs2_device_info> & rs2_devices_info_removed,
-                                               std::vector<rs2_device_info> & rs2_devices_info_added );
-        void raise_devices_changed(const std::vector<rs2_device_info>& removed, const std::vector<rs2_device_info>& added);
+        void invoke_devices_changed_callbacks( std::vector< std::shared_ptr< device_info > > const & devices_removed,
+                                               std::vector< std::shared_ptr< device_info > > const & devices_added );
 
-        std::shared_ptr<platform::backend> _backend;
+        std::map< std::string /*address*/, std::weak_ptr< device_info > > _user_devices;
 
-        std::map<std::string, std::weak_ptr<device_info>> _playback_devices;
-        std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
-#ifdef BUILD_WITH_DDS
-        std::shared_ptr< realdds::dds_participant > _dds_participant;
-        std::shared_ptr< realdds::dds_device_watcher > _dds_watcher;
+        rsutils::signal< std::vector< std::shared_ptr< device_info > > const & /*removed*/,
+                         std::vector< std::shared_ptr< device_info > > const & /*added*/ >
+            _devices_changed;
 
-        void start_dds_device_watcher();
-#endif
-
-        nlohmann::json _settings; // Save operation settings
+        rsutils::json _settings; // Save operation settings
         unsigned const _device_mask;
-        backend_device_factory _backend_device_factory;
 
-        devices_changed_callback_ptr _devices_changed_callback;
-        std::map<int, std::weak_ptr<const stream_interface>> _streams;
-        std::map< int, std::map< int, std::weak_ptr< rsutils::lazy< rs2_extrinsics > > > > _extrinsics;
-        std::mutex _streams_mutex, _devices_changed_callbacks_mtx;
+        std::vector< std::shared_ptr< device_factory > > _factories;
     };
 
 }

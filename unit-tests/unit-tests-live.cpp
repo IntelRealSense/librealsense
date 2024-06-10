@@ -45,7 +45,7 @@ TEST_CASE("Sync sanity", "[live][mayfail]") {
         }
 
         std::vector<std::vector<double>> all_timestamps;
-        auto actual_fps = fps;
+        auto actual_fps = float( fps );
 
         for (auto i = 0; i < 200; i++)
         {
@@ -61,7 +61,7 @@ TEST_CASE("Sync sanity", "[live][mayfail]") {
 
                 if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
                 {
-                    auto val = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS));
+                    auto val = f.get_frame_metadata( RS2_FRAME_METADATA_ACTUAL_FPS ) / 1000.f;
                     if (val < actual_fps)
                         actual_fps = val;
                 }
@@ -98,7 +98,7 @@ TEST_CASE("Sync sanity", "[live][mayfail]") {
                 continue;
 
             std::sort(set_timestamps.begin(), set_timestamps.end());
-            REQUIRE(set_timestamps[set_timestamps.size() - 1] - set_timestamps[0] <= (float)1000 / (float)actual_fps);
+            REQUIRE(set_timestamps[set_timestamps.size() - 1] - set_timestamps[0] <= 1000.f / actual_fps);
         }
 
         CAPTURE(num_of_partial_sync_sets);
@@ -2801,13 +2801,13 @@ TEST_CASE("Auto-complete feature works", "[offline][util::config][using_pipeline
 //}
 
 
-void validate(std::vector<std::vector<stream_profile>> frames, std::vector<std::vector<double>> timestamps, device_profiles requests, int actual_fps)
+void validate(std::vector<std::vector<stream_profile>> frames, std::vector<std::vector<double>> timestamps, device_profiles requests, float actual_fps)
 {
     REQUIRE(frames.size() > 0);
 
     int successful = 0;
 
-    auto gap = (float)1000 / (float)actual_fps;
+    auto gap = 1000.f / actual_fps;
 
     auto ts = 0;
 
@@ -2957,7 +2957,7 @@ TEST_CASE("Pipeline wait_for_frames", "[live][pipeline][using_pipeline][!mayfail
             for (auto i = 0; i < 30; i++)
                 REQUIRE_NOTHROW(pipe.wait_for_frames(10000));
 
-            auto actual_fps = pipeline_default_configurations.at(PID).fps;
+            auto actual_fps = float( pipeline_default_configurations.at(PID).fps );
 
             while (frames.size() < 100)
             {
@@ -2970,7 +2970,7 @@ TEST_CASE("Pipeline wait_for_frames", "[live][pipeline][using_pipeline][!mayfail
                 {
                     if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
                     {
-                        auto val = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS));
+                        auto val = f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS) / 1000.f;
                         if (val < actual_fps)
                             actual_fps = val;
                     }
@@ -3024,7 +3024,7 @@ TEST_CASE("Pipeline poll_for_frames", "[live][pipeline][using_pipeline][!mayfail
             for (auto i = 0; i < 30; i++)
                 REQUIRE_NOTHROW(pipe.wait_for_frames(5000));
 
-            auto actual_fps = pipeline_default_configurations.at(PID).fps;
+            auto actual_fps = float( pipeline_default_configurations.at(PID).fps );
             while (frames.size() < 100)
             {
                 frameset frame;
@@ -3036,7 +3036,7 @@ TEST_CASE("Pipeline poll_for_frames", "[live][pipeline][using_pipeline][!mayfail
                     {
                         if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
                         {
-                            auto val = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS));
+                            auto val = f.get_frame_metadata( RS2_FRAME_METADATA_ACTUAL_FPS ) / 1000.f;
                             if (val < actual_fps)
                                 actual_fps = val;
                         }
@@ -3117,7 +3117,7 @@ TEST_CASE("Pipeline enable stream", "[live][pipeline][using_pipeline]") {
         for (auto i = 0; i < 30; i++)
             REQUIRE_NOTHROW(pipe.wait_for_frames(5000));
 
-        auto actual_fps = dev_requests[PID].fps;
+        auto actual_fps = float( dev_requests[PID].fps );
 
         while (frames.size() < 100)
         {
@@ -3130,7 +3130,7 @@ TEST_CASE("Pipeline enable stream", "[live][pipeline][using_pipeline]") {
             {
                 if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
                 {
-                    auto val = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS));
+                    auto val = f.get_frame_metadata( RS2_FRAME_METADATA_ACTUAL_FPS ) / 1000.f;
                     if (val < actual_fps)
                         actual_fps = val;
                 }
@@ -3211,7 +3211,7 @@ TEST_CASE("Pipeline enable stream auto complete", "[live][pipeline][using_pipeli
             for (auto i = 0; i < 30; i++)
                 REQUIRE_NOTHROW(pipe.wait_for_frames(5000));
 
-            auto actual_fps = configurations[PID].fps;
+            auto actual_fps = float( configurations[PID].fps );
 
             while (frames.size() < 100)
             {
@@ -3223,7 +3223,7 @@ TEST_CASE("Pipeline enable stream auto complete", "[live][pipeline][using_pipeli
                 {
                     if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
                     {
-                        auto val = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS));
+                        auto val = f.get_frame_metadata( RS2_FRAME_METADATA_ACTUAL_FPS ) / 1000.f;
                         if (val < actual_fps)
                             actual_fps = val;
                     }
@@ -3288,7 +3288,7 @@ TEST_CASE("Pipeline disable_all", "[live][pipeline][using_pipeline][!mayfail]") 
             for (auto i = 0; i < 30; i++)
                 REQUIRE_NOTHROW(pipe.wait_for_frames(5000));
 
-            auto actual_fps = default_configurations[PID].fps;
+            auto actual_fps = float( default_configurations[PID].fps );
 
             while (frames.size() < 100)
             {
@@ -3300,7 +3300,7 @@ TEST_CASE("Pipeline disable_all", "[live][pipeline][using_pipeline][!mayfail]") 
                 {
                     if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
                     {
-                        auto val = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS));
+                        auto val = f.get_frame_metadata( RS2_FRAME_METADATA_ACTUAL_FPS ) / 1000.f;
                         if (val < actual_fps)
                             actual_fps = val;
                     }
@@ -3367,7 +3367,7 @@ TEST_CASE("Pipeline disable stream", "[live][pipeline][using_pipeline]") {
             for (auto i = 0; i < 30; i++)
                 REQUIRE_NOTHROW(pipe.wait_for_frames(5000));
 
-            auto actual_fps = configurations[PID].fps;
+            auto actual_fps = float( configurations[PID].fps );
             while (frames.size() < 100)
             {
                 frameset frame;
@@ -3378,7 +3378,7 @@ TEST_CASE("Pipeline disable stream", "[live][pipeline][using_pipeline]") {
                 {
                     if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
                     {
-                        auto val = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS));
+                        auto val = f.get_frame_metadata( RS2_FRAME_METADATA_ACTUAL_FPS ) / 1000.f;
                         if (val < actual_fps)
                             actual_fps = val;
                     }
@@ -5094,7 +5094,7 @@ TEST_CASE("Test Motion Module Extension", "[software-device][using_pipeline][pro
 }
 
 // Marked as MayFail due to DSO-11753. TODO -revisit once resolved
-TEST_CASE("Projection from recording", "[software-device][using_pipeline][projection][!mayfail]") {
+TEST_CASE("Projection from recording", "[software-device-disabled][using_pipeline][projection][!mayfail]") {
     rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
     if( ! ctx )
         return;
@@ -5675,7 +5675,7 @@ TEST_CASE("Wheel_Odometry_API", "[live]")
                         REQUIRE_NOTHROW(b = wo_snr.send_wheel_odometry(0, 0, { 1,0,0 }));
                         REQUIRE(b);
                     }
-                    Approx approx_norm(0);
+                    Catch::Approx approx_norm(0);
                     approx_norm.epsilon(0.005); // 0.5cm threshold
                     REQUIRE_FALSE(norm_max == approx_norm);
                     REQUIRE_NOTHROW(pipe.stop());

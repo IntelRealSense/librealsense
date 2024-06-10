@@ -1,12 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
-// Metadata attributes provided by RS4xx Depth Cameras
-
 #pragma once
 
-#include "types.h"
+#include "float3.h"
 #include "platform/hid-device.h"
 #include "platform/uvc-device.h"
+
+
+// Metadata attributes provided by RS4xx Depth Cameras
 
 
 #define REGISTER_MD_TYPE(A,B)\
@@ -708,6 +709,7 @@ namespace librealsense
         platform::uvc_header    header;
         md_modes                mode;
     };
+    constexpr int metadata_raw_mode_offset = sizeof(metadata_raw::header);
 
     /**\brief metadata_mipi_raw - metadata structure
      *  layout as transmitted and received by backend */

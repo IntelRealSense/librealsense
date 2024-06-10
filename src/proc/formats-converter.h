@@ -39,8 +39,8 @@ namespace librealsense
         stream_profiles get_active_source_profiles() const;
         std::vector< std::shared_ptr< processing_block > > get_active_converters() const;
 
-        void set_frames_callback( frame_callback_ptr callback );
-        frame_callback_ptr get_frames_callback() const { return _converted_frames_callback; }
+        void set_frames_callback( rs2_frame_callback_sptr callback );
+        rs2_frame_callback_sptr get_frames_callback() const { return _converted_frames_callback; }
         void convert_frame( frame_holder & f );
 
     protected:
@@ -64,6 +64,6 @@ namespace librealsense
                             std::unordered_set< std::shared_ptr< processing_block > > > _raw_profile_to_converters;
         std::unordered_map< rs2_format, stream_profiles > _format_mapping_to_from_profiles;
 
-        frame_callback_ptr _converted_frames_callback = nullptr;
+        rs2_frame_callback_sptr _converted_frames_callback;
     };
 }
