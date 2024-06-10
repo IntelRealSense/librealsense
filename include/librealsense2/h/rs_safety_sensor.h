@@ -49,9 +49,9 @@ void rs2_json_string_to_safety_preset(rs2_sensor const* sensor, const char* json
 * \param[in]  sensor        Safety sensor
 * \param[in]  sp            Safety preset to convert
 * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return                   JSON string representing the safety preset
+* \return                   JSON string representing the safety preset as rs2_raw_data_buffer
 */
-const char* rs2_safety_preset_to_json_string(rs2_sensor const* sensor, rs2_safety_preset const* sp, rs2_error** error);
+const rs2_raw_data_buffer* rs2_safety_preset_to_json_string(rs2_sensor const* sensor, rs2_safety_preset const* sp, rs2_error** error);
 
 /**
 * rs2_get_safety_interface_config
@@ -84,9 +84,9 @@ void rs2_json_string_to_safety_interface_config(rs2_sensor const* sensor, const 
 * \param[in]  sensor        Safety sensor
 * \param[in]  sp            Safety interface config to convert
 * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return                   JSON string representing the safety interface config
+* \return                   JSON string representing the safety interface config as rs2_raw_data_buffer
 */
-const char* rs2_safety_interface_config_to_json_string(rs2_sensor const* sensor, rs2_safety_interface_config const* sp, rs2_error** error);
+const rs2_raw_data_buffer* rs2_safety_interface_config_to_json_string(rs2_sensor const* sensor, rs2_safety_interface_config const* sp, rs2_error** error);
 
 #ifdef __cplusplus
 }

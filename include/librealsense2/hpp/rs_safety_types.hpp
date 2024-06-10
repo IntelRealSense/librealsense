@@ -158,4 +158,9 @@ inline bool operator==(rs2_safety_interface_config_with_header const& self, rs2_
     return !std::memcmp(&self, &other, sizeof(rs2_safety_interface_config_with_header));
 }
 
+inline bool operator==(rs2_safety_interface_config const& self, rs2_safety_interface_config const& other)
+{
+    return !std::memcmp(&self, &other, sizeof(rs2_safety_interface_config));
+}
+
 #endif // LIBREALSENSE_RS2_SAFETY_TYPES_HPP

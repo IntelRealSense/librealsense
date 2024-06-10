@@ -2,7 +2,6 @@
 # Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #test:device D585S
-#test:donotrun
 
 import pyrealsense2 as rs
 import random
@@ -167,7 +166,8 @@ sic_json_str = '''
             "sustained_aicv_frame_drops": 50,
             "ossd_self_test_pulse_width": 23
         },
-        "crypto_signature": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        "crypto_signature": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        "reserved": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     }
 }
 '''
@@ -191,7 +191,7 @@ test.check_equal(read_result, sic)
 # verify the JSON objects are equal (comparing JSON object because
 # the JSON string can have different order of inner fields
 read_result_json_str = safety_sensor.safety_interface_config_to_json_string(read_result)
-sic_json_str = safety_sensor.safety_preset_to_json_string(sic)
+sic_json_str = safety_sensor.safety_interface_config_to_json_string(sic)
 test.check_equal(json.loads(sic_json_str), json.loads(read_result_json_str))
 
 # restore original table

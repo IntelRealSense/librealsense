@@ -189,7 +189,11 @@ void init_safety(py::module &m) {
             .def_readwrite("occupancy_grid_params", &rs2_safety_interface_config::occupancy_grid_params, "occupancy_grid_params")
             .def_readwrite("smcu_arbitration_params", &rs2_safety_interface_config::smcu_arbitration_params, "smcu_arbitration_params")
             .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_safety_interface_config, crypto_signature, uint8_t, sizeof(rs2_safety_interface_config::crypto_signature)), "crypto_signature")
-            .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_safety_interface_config, reserved, uint8_t, sizeof(rs2_safety_interface_config::reserved)), "reserved");
+            .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_safety_interface_config, reserved, uint8_t, sizeof(rs2_safety_interface_config::reserved)), "reserved")
+            .def("__eq__", [](const rs2_safety_interface_config& self, const rs2_safety_interface_config& other){
+                    return self == other;
+             });
+
 
     /** end rs_safety_types.h **/
 }

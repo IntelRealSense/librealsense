@@ -460,7 +460,8 @@ namespace librealsense
     std::string d500_safety_sensor::safety_preset_to_json_string(rs2_safety_preset const& sp) const
     {
         rsutils::json json_data;
-        auto&& rotation = json_data["safety_preset"]["platform_config"]["transformation_link"]["rotation"];
+
+        auto& rotation = json_data["safety_preset"]["platform_config"]["transformation_link"]["rotation"];
         rotation[0][0] = sp.platform_config.transformation_link.rotation.x.x;
         rotation[0][1] = sp.platform_config.transformation_link.rotation.x.y;
         rotation[0][2] = sp.platform_config.transformation_link.rotation.x.z;
@@ -471,14 +472,14 @@ namespace librealsense
         rotation[2][1] = sp.platform_config.transformation_link.rotation.z.y;
         rotation[2][2] = sp.platform_config.transformation_link.rotation.z.z;
 
-        auto&& translation = json_data["safety_preset"]["platform_config"]["transformation_link"]["translation"];
+        auto& translation = json_data["safety_preset"]["platform_config"]["transformation_link"]["translation"];
         translation[0] = sp.platform_config.transformation_link.translation.x;
         translation[1] = sp.platform_config.transformation_link.translation.y;
         translation[2] = sp.platform_config.transformation_link.translation.z;
 
         json_data["safety_preset"]["platform_config"]["robot_height"] = sp.platform_config.robot_height;
 
-        auto&& safety_zones = json_data["safety_preset"]["safety_zones"];
+        auto& safety_zones = json_data["safety_preset"]["safety_zones"];
         for (int safety_zone_index = 0; safety_zone_index < 2; safety_zone_index++)
         {
             std::string zone_type = (safety_zone_index == 0) ? "danger_zone" : "warning_zone";
@@ -491,7 +492,7 @@ namespace librealsense
             safety_zones[zone_type]["safety_trigger_confidence"] = sp.safety_zones[safety_zone_index].safety_trigger_confidence;
         }
 
-        auto&& masking_zones = json_data["safety_preset"]["masking_zones"];
+        auto& masking_zones = json_data["safety_preset"]["masking_zones"];
         for (int masking_zone_index = 0; masking_zone_index < 8; masking_zone_index++)
         {
             std::string masking_zone_index_str = std::to_string(masking_zone_index);
@@ -504,7 +505,7 @@ namespace librealsense
             masking_zones[masking_zone_index_str]["attributes"] = sp.masking_zones[masking_zone_index].attributes;
         }
 
-        auto&& environment = json_data["safety_preset"]["environment"];
+        auto& environment = json_data["safety_preset"]["environment"];
         environment["safety_trigger_duration"] = sp.environment.safety_trigger_duration;
         environment["zero_safety_monitoring"] = sp.environment.zero_safety_monitoring;
         environment["hara_history_continuation"] = sp.environment.hara_history_continuation;
@@ -523,23 +524,16 @@ namespace librealsense
         memcpy(crypto_signature_byte_array.data(), sp.environment.crypto_signature, sizeof(sp.environment.crypto_signature));
         environment["crypto_signature"] = crypto_signature_byte_array;
 
-        // Convert JSON object to string
-        std::string json_str = json_data.dump();
-
-        // Ensure UTF-8 encoding
-        std::string utf8_str = json_str.c_str(); // Ensure the string is UTF-8 encoded
-
-        // Return the UTF-8 string
-        return utf8_str.c_str();
+        return json_data.dump();
     }
 
 
     rs2_safety_preset d500_safety_sensor::json_string_to_safety_preset(const std::string& json_str) const
     {
         rsutils::json json_data = rsutils::json::parse(json_str);
-
         rs2_safety_preset sp;
-        auto&& rotation = json_data["safety_preset"]["platform_config"]["transformation_link"]["rotation"];
+
+        auto& rotation = json_data["safety_preset"]["platform_config"]["transformation_link"]["rotation"];
         sp.platform_config.transformation_link.rotation.x.x = rotation[0][0];
         sp.platform_config.transformation_link.rotation.x.y = rotation[0][1];
         sp.platform_config.transformation_link.rotation.x.z = rotation[0][2];
@@ -550,14 +544,14 @@ namespace librealsense
         sp.platform_config.transformation_link.rotation.z.y = rotation[2][1];
         sp.platform_config.transformation_link.rotation.z.z = rotation[2][2];
 
-        auto&& translation = json_data["safety_preset"]["platform_config"]["transformation_link"]["translation"];
+        auto& translation = json_data["safety_preset"]["platform_config"]["transformation_link"]["translation"];
         sp.platform_config.transformation_link.translation.x = translation[0];
         sp.platform_config.transformation_link.translation.y = translation[1];
         sp.platform_config.transformation_link.translation.z = translation[2];
 
         sp.platform_config.robot_height = json_data["safety_preset"]["platform_config"]["robot_height"];
 
-        auto&& safety_zones = json_data["safety_preset"]["safety_zones"];
+        auto& safety_zones = json_data["safety_preset"]["safety_zones"];
         for (int safety_zone_index = 0; safety_zone_index < 2; safety_zone_index++)
         {
             std::string zone_type = (safety_zone_index == 0) ? "danger_zone" : "warning_zone";
@@ -570,7 +564,7 @@ namespace librealsense
             sp.safety_zones[safety_zone_index].safety_trigger_confidence = safety_zones[zone_type]["safety_trigger_confidence"];
         }
 
-        auto&& masking_zones = json_data["safety_preset"]["masking_zones"];
+        auto& masking_zones = json_data["safety_preset"]["masking_zones"];
         for (int masking_zone_index = 0; masking_zone_index < 8; masking_zone_index++)
         {
             std::string masking_zone_index_str = std::to_string(masking_zone_index);
@@ -583,7 +577,7 @@ namespace librealsense
             sp.masking_zones[masking_zone_index].attributes = masking_zones[masking_zone_index_str]["attributes"];
         }
 
-        auto&& environment = json_data["safety_preset"]["environment"];
+        auto& environment = json_data["safety_preset"]["environment"];
         sp.environment.safety_trigger_duration = environment["safety_trigger_duration"];
         sp.environment.zero_safety_monitoring = environment["zero_safety_monitoring"];
         sp.environment.hara_history_continuation = environment["hara_history_continuation"];
@@ -596,7 +590,7 @@ namespace librealsense
         sp.environment.depth_fill_threshold = environment["depth_fill_threshold"];
         sp.environment.diagnostic_zone_height_median_threshold = environment["diagnostic_zone_height_median_threshold"];
         sp.environment.vision_hara_persistency = environment["vision_hara_persistency"];
-        
+
         std::vector<uint8_t> crypto_signature_vector = environment["crypto_signature"].get<std::vector<uint8_t>>();
         std::memcpy(sp.environment.crypto_signature, crypto_signature_vector.data(), crypto_signature_vector.size() * sizeof(uint8_t));
 
@@ -664,9 +658,9 @@ namespace librealsense
 
     std::string d500_safety_sensor::safety_interface_config_to_json_string(const rs2_safety_interface_config& sic) const
     {
-
         rsutils::json json_data;
-        auto&& pins = json_data["safety_interface_config"]["m12_safety_pins_configuration"];
+
+        auto& pins = json_data["safety_interface_config"]["m12_safety_pins_configuration"];
         pins["power"]["direction"] = sic.power.direction;
         pins["power"]["functionality"] = sic.power.functionality;
         pins["ossd1_b"]["direction"] = sic.ossd1_b.direction;
@@ -704,7 +698,7 @@ namespace librealsense
 
         json_data["safety_interface_config"]["gpio_stabilization_interval"] = sic.gpio_stabilization_interval;
 
-        auto&& rotation = json_data["safety_interface_config"]["camera_position"]["rotation"];
+        auto& rotation = json_data["safety_interface_config"]["camera_position"]["rotation"];
         rotation[0][0] = sic.camera_position.rotation.x.x;
         rotation[0][1] = sic.camera_position.rotation.x.y;
         rotation[0][2] = sic.camera_position.rotation.x.z;
@@ -715,18 +709,18 @@ namespace librealsense
         rotation[2][1] = sic.camera_position.rotation.z.y;
         rotation[2][2] = sic.camera_position.rotation.z.z;
 
-        auto&& translation = json_data["safety_interface_config"]["camera_position"]["translation"];
+        auto& translation = json_data["safety_interface_config"]["camera_position"]["translation"];
         translation[0] = sic.camera_position.translation.x;
         translation[1] = sic.camera_position.translation.y;
         translation[2] = sic.camera_position.translation.z;
 
-        auto occupancy_grid_params = json_data["safety_interface_config"]["occupancy_grid_params"];
+        auto& occupancy_grid_params = json_data["safety_interface_config"]["occupancy_grid_params"];
         occupancy_grid_params["grid_cell_seed"] = sic.occupancy_grid_params.grid_cell_seed;
         occupancy_grid_params["close_range_quorum"] = sic.occupancy_grid_params.close_range_quorum;
         occupancy_grid_params["mid_range_quorum"] = sic.occupancy_grid_params.mid_range_quorum;
         occupancy_grid_params["long_range_quorum"] = sic.occupancy_grid_params.long_range_quorum;
 
-        auto smcu_arbitration_params = json_data["safety_interface_config"]["smcu_arbitration_params"];
+        auto& smcu_arbitration_params = json_data["safety_interface_config"]["smcu_arbitration_params"];
         smcu_arbitration_params["l_0_total_threshold"] = sic.smcu_arbitration_params.l_0_total_threshold;
         smcu_arbitration_params["l_0_sustained_rate_threshold"] = sic.smcu_arbitration_params.l_0_sustained_rate_threshold;
         smcu_arbitration_params["l_1_total_threshold"] = sic.smcu_arbitration_params.l_1_total_threshold;
@@ -737,19 +731,19 @@ namespace librealsense
         smcu_arbitration_params["sustained_aicv_frame_drops"] = sic.smcu_arbitration_params.sustained_aicv_frame_drops;
         smcu_arbitration_params["ossd_self_test_pulse_width"] = sic.smcu_arbitration_params.ossd_self_test_pulse_width;
        
+        // fill crypto signature array
         size_t number_of_elements = sizeof(sic.crypto_signature) / sizeof(sic.crypto_signature[0]);
         std::vector<uint8_t> crypto_signature_byte_array(number_of_elements);
         memcpy(crypto_signature_byte_array.data(), sic.crypto_signature, sizeof(sic.crypto_signature));
         json_data["safety_interface_config"]["crypto_signature"] = crypto_signature_byte_array;
 
-        // Convert JSON object to string
-        std::string json_str = json_data.dump();
+        // fill reserved array (needed for CRC32 check)
+        number_of_elements = sizeof(sic.reserved) / sizeof(sic.reserved[0]);
+        std::vector<uint8_t> reserved_array(number_of_elements);
+        memcpy(reserved_array.data(), sic.reserved, sizeof(sic.reserved));
+        json_data["safety_interface_config"]["reserved"] = reserved_array;
 
-        // Ensure UTF-8 encoding
-        std::string utf8_str = json_str.c_str(); // Ensure the string is UTF-8 encoded
-
-        // Return the UTF-8 string
-        return utf8_str.c_str();
+        return json_data.dump();
     }
 
     rs2_safety_interface_config d500_safety_sensor::json_string_to_safety_interface_config(const std::string& json_str) const
@@ -757,7 +751,7 @@ namespace librealsense
         rsutils::json json_data = rsutils::json::parse(json_str);
         rs2_safety_interface_config sic;
 
-        auto&& pins = json_data["safety_interface_config"]["m12_safety_pins_configuration"];
+        auto& pins = json_data["safety_interface_config"]["m12_safety_pins_configuration"];
         sic.power.direction = pins["power"]["direction"];
         sic.power.functionality = pins["power"]["functionality"];
         sic.ossd1_b.direction = pins["ossd1_b"]["direction"];
@@ -795,7 +789,7 @@ namespace librealsense
 
         sic.gpio_stabilization_interval = json_data["safety_interface_config"]["gpio_stabilization_interval"];
 
-        auto&& rotation = json_data["safety_interface_config"]["camera_position"]["rotation"];
+        auto& rotation = json_data["safety_interface_config"]["camera_position"]["rotation"];
         sic.camera_position.rotation.x.x = rotation[0][0];
         sic.camera_position.rotation.x.y = rotation[0][1];
         sic.camera_position.rotation.x.z = rotation[0][2];
@@ -806,18 +800,18 @@ namespace librealsense
         sic.camera_position.rotation.z.y = rotation[2][1];
         sic.camera_position.rotation.z.z = rotation[2][2];
 
-        auto&& translation = json_data["safety_interface_config"]["camera_position"]["translation"];
+        auto& translation = json_data["safety_interface_config"]["camera_position"]["translation"];
         sic.camera_position.translation.x = translation[0];
         sic.camera_position.translation.y = translation[1];
         sic.camera_position.translation.z = translation[2];
 
-        auto occupancy_grid_params = json_data["safety_interface_config"]["occupancy_grid_params"];
+        auto& occupancy_grid_params = json_data["safety_interface_config"]["occupancy_grid_params"];
         sic.occupancy_grid_params.grid_cell_seed = occupancy_grid_params["grid_cell_seed"];
         sic.occupancy_grid_params.close_range_quorum = occupancy_grid_params["close_range_quorum"];
         sic.occupancy_grid_params.mid_range_quorum = occupancy_grid_params["mid_range_quorum"];
         sic.occupancy_grid_params.long_range_quorum = occupancy_grid_params["long_range_quorum"];
 
-        auto smcu_arbitration_params = json_data["safety_interface_config"]["smcu_arbitration_params"];
+        auto& smcu_arbitration_params = json_data["safety_interface_config"]["smcu_arbitration_params"];
         sic.smcu_arbitration_params.l_0_total_threshold =smcu_arbitration_params["l_0_total_threshold"];
         sic.smcu_arbitration_params.l_0_sustained_rate_threshold = smcu_arbitration_params["l_0_sustained_rate_threshold"];
         sic.smcu_arbitration_params.l_1_total_threshold = smcu_arbitration_params["l_1_total_threshold"];
@@ -828,8 +822,13 @@ namespace librealsense
         sic.smcu_arbitration_params.sustained_aicv_frame_drops = smcu_arbitration_params["sustained_aicv_frame_drops"];
         sic.smcu_arbitration_params.ossd_self_test_pulse_width = smcu_arbitration_params["ossd_self_test_pulse_width"];
 
+        // fill crypto signature array
         std::vector<uint8_t> crypto_signature_vector = json_data["safety_interface_config"]["crypto_signature"].get<std::vector<uint8_t>>();
         std::memcpy(sic.crypto_signature, crypto_signature_vector.data(), crypto_signature_vector.size() * sizeof(uint8_t));
+
+        // fill reserved signature array (needed for CRC32 check)
+        std::vector<uint8_t> reserved_vector = json_data["safety_interface_config"]["reserved"].get<std::vector<uint8_t>>();
+        std::memcpy(sic.reserved, reserved_vector.data(), reserved_vector.size() * sizeof(uint8_t));
 
         return sic;
     }
