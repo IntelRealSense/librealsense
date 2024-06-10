@@ -175,14 +175,14 @@ def set_app_config_table(app_config_table):
     d500_dynamic = 0
     version_array = np.array([1, 0])
     header = build_header(app_config_table, app_config_id, version_array)
-    table_with_header = np.hstack((header, app_config_table_array))
+    table_with_header = np.hstack((header, app_config_table))
     cmd = hwm_dev.build_command(opcode=set_table_opcode,
                                 param1=flash_mem_enum,
                                 param2=app_config_id,
                                 param3=d500_dynamic,
                                 data=table_with_header)
     ans = hwm_dev.send_and_receive_raw_data(cmd)
-    opcode = ans[3]
+    opcode = ans[0]
     test.check_equal(opcode, set_table_opcode)
     return ans
 
@@ -197,7 +197,7 @@ def get_app_config_table():
                                 param2=app_config_id,
                                 param3=d500_dynamic)
     ans = hwm_dev.send_and_receive_raw_data(cmd)
-    opcode = ans[3]
+    opcode = ans[0]
     test.check_equal(opcode, get_table_opcode)
     # slicing:
     # the 4 first bytes - opcode
@@ -228,21 +228,21 @@ test.finish()
 
 #############################################################################################
 test.start("set app config table, and check its writing")
-app_config_table_array = generate_app_config_table()
-ans = set_app_config_table(app_config_table_array)
+generated_app_config_table_array = generate_app_config_table()
+ans = set_app_config_table(generated_app_config_table_array)
 log.d("app config successfully uploaded")
 # checking the app config table now in device is equal to the one uploaded
 curr_config_table = get_app_config_table()
-test.check_equal(curr_config_table, generate_app_config_table())
+test.check_equal(curr_config_table, generated_app_config_table_array.tolist())
 test.finish()
 
 #############################################################################################
 test.start("restoring config table")
-app_config_table = set_app_config_table(orig_app_config_table)
+app_config_table = set_app_config_table(np.asarray(orig_app_config_table, dtype=np.uint8))
 log.d("app config successfully uploaded")
 # checking the app config table now in device is equal to the one uploaded
 curr_config_table = get_app_config_table()
-test.check_equal(curr_config_table, generate_app_config_table())
+test.check_equal(curr_config_table, orig_app_config_table)
 test.finish()
 
 #############################################################################################
