@@ -2,7 +2,6 @@
 # Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #test:device D585S
-#test:donotrun
 
 import pyrealsense2 as rs
 import random
