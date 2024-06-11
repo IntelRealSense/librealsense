@@ -90,7 +90,7 @@ TEST_CASE( "Syncer dynamic FPS - throughput test" )
                 if (!f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS) || !f.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP))
                     return;
                 auto frame_num = f.get_frame_number();
-                auto actual_fps = (float)f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
+                auto actual_fps = f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS) / 1000.f;
                 auto frame_arrival = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP); // usec
                 if (stream_type == "Infrared 1")
                     _ir_frames_arrival_info.push_back({ (float)frame_arrival, actual_fps });

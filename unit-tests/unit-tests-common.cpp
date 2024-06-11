@@ -594,9 +594,9 @@ rs2::depth_sensor restart_first_device_and_return_depth_sensor( const rs2::conte
     REQUIRE_NOTHROW( serial = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) );
     // forcing hardware reset to simulate device disconnection
     auto shared_dev = std::make_shared< rs2::device >( devices_list.front() );
-    shared_dev
-        = do_with_waiting_for_camera_connection( ctx, shared_dev, serial, [&]() { shared_dev->hardware_reset(); } );
-    rs2::depth_sensor depth_sensor = dev.query_sensors().front();
+    shared_dev = do_with_waiting_for_camera_connection( ctx, shared_dev, serial, [&]() { shared_dev->hardware_reset(); } );
+    REQUIRE( shared_dev );
+    rs2::depth_sensor depth_sensor = shared_dev->query_sensors().front();
     return depth_sensor;
 }
 

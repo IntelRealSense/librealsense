@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #include <realdds/topics/flexible-msg.h>
 #include <realdds/topics/flexible/flexiblePubSubTypes.h>
@@ -13,8 +13,7 @@
 #include <fastdds/dds/publisher/DataWriter.hpp>
 #include <fastdds/dds/topic/Topic.hpp>
 
-#include <nlohmann/json.hpp>
-using nlohmann::json;
+#include <rsutils/json.h>
 
 
 namespace realdds {
@@ -29,7 +28,7 @@ flexible_msg::flexible_msg( raw::flexible && main )
 }
 
 
-flexible_msg::flexible_msg( json const & j, uint32_t version )
+flexible_msg::flexible_msg( rsutils::json const & j, uint32_t version )
     : _data_format( data_format::JSON )
     , _version( version )
 {
@@ -39,13 +38,13 @@ flexible_msg::flexible_msg( json const & j, uint32_t version )
 }
 
 
-flexible_msg::flexible_msg( data_format format, json const & j, uint32_t version )
+flexible_msg::flexible_msg( data_format format, rsutils::json const & j, uint32_t version )
     : _data_format( format )
     , _version( version )
 {
     if( data_format::CBOR == format )
     {
-        _data = std::move( json::to_cbor( j ) );
+        _data = std::move( rsutils::json::to_cbor( j ) );
     }
     else if( data_format::JSON == format )
     {
@@ -70,13 +69,13 @@ flexible_msg::create_topic( std::shared_ptr< dds_participant > const & participa
 
 
 /*static*/ bool
-flexible_msg::take_next( dds_topic_reader & reader, flexible_msg * output, eprosima::fastdds::dds::SampleInfo * info )
+flexible_msg::take_next( dds_topic_reader & reader, flexible_msg * output, dds_sample * sample )
 {
     raw::flexible raw_data;
-    eprosima::fastdds::dds::SampleInfo info_;
-    if( ! info )
-        info = &info_;  // use the local copy if the user hasn't provided their own
-    auto status = reader->take_next_sample( &raw_data, info );
+    dds_sample sample_;
+    if( ! sample )
+        sample = &sample_;  // use the local copy if the user hasn't provided their own
+    auto status = reader->take_next_sample( &raw_data, sample );
     if( status == ReturnCode_t::RETCODE_OK )
     {
         // We have data
@@ -85,7 +84,7 @@ flexible_msg::take_next( dds_topic_reader & reader, flexible_msg * output, epros
             // Only samples for which valid_data is true should be accessed
             // valid_data indicates that the instance is still ALIVE and the `take` return an
             // updated sample
-            if( ! info->valid_data )
+            if( ! sample->valid_data )
                 output->invalidate();
             else
                 *output = std::move( raw_data );
@@ -101,23 +100,23 @@ flexible_msg::take_next( dds_topic_reader & reader, flexible_msg * output, epros
 }
 
 
-json flexible_msg::json_data() const
+rsutils::json flexible_msg::json_data() const
 {
     if( _data_format == data_format::JSON )
     {
         char const * begin = (char const *)_data.data();
         char const * end = begin + _data.size();
-        return json::parse( begin, end );
+        return rsutils::json::parse( begin, end );
     }
     if( _data_format == data_format::CBOR )
     {
-        return json::from_cbor( _data.begin(), _data.end() );
+        return rsutils::json::from_cbor( _data.begin(), _data.end() );
     }
     DDS_THROW( runtime_error, "non-json flexible data is still unsupported" );
 }
 
 
-raw::flexible flexible_msg::to_raw()
+raw::flexible flexible_msg::to_raw() &&
 {
     raw::flexible raw_msg;
     raw_msg.data_format( (raw::flexible_data_format) _data_format );
@@ -130,9 +129,9 @@ raw::flexible flexible_msg::to_raw()
 }
 
 
-dds_sequence_number flexible_msg::write_to( dds_topic_writer & writer )
+dds_sequence_number flexible_msg::write_to( dds_topic_writer & writer ) &&
 {
-    auto raw_msg = to_raw();
+    auto raw_msg = std::move( *this ).to_raw();
 
     eprosima::fastrtps::rtps::WriteParams params;
     bool success = DDS_API_CALL( writer.get()->write( &raw_msg, params ) );

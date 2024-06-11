@@ -11,13 +11,14 @@ namespace librealsense
     class d500_motion : public virtual d500_device
     {
     public:
-        std::shared_ptr<synthetic_sensor> create_hid_device(std::shared_ptr<context> ctx,
-                                                      const std::vector<platform::hid_device_info>& all_hid_infos,
-                                                      const firmware_version& camera_fw_version);
+        std::shared_ptr<synthetic_sensor> create_hid_device( std::shared_ptr<context> ctx,
+                                                             const std::vector<platform::hid_device_info>& all_hid_infos );
 
         d500_motion( std::shared_ptr< const d500_info > const & );
 
         rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const;
+
+        double get_gyro_default_scale() const override;
 
     protected:
         friend class ds_motion_common;

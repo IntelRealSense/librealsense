@@ -1,11 +1,14 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
-#include "types.h"
 #include "core/options-registry.h"
+#include "core/enum-helpers.h"
+
+#include <rsutils/string/make-less-screamy.h>
+#include <cassert>
 
 
-#define STRX( X ) make_less_screamy( #X )
+#define STRX( X ) rsutils::string::make_less_screamy( #X )
 #define STRCASE( T, X )                                                                                                \
     case RS2_##T##_##X: {                                                                                              \
         static const std::string s##T##_##X##_str = STRX( X );                                                         \
@@ -14,7 +17,7 @@
 #define STRARR( ARRAY, T, X ) ARRAY[RS2_##T##_##X] = STRX( X )
 
 
-static std::string const unknown_value_str( UNKNOWN_VALUE );
+static std::string const unknown_value_str( librealsense::UNKNOWN_VALUE );
 
 
 namespace librealsense {
@@ -62,6 +65,28 @@ const char * get_string( rs2_stream value )
     }
 #undef CASE
 }
+
+char const * get_abbr_string( rs2_stream value)
+{
+    switch( value )
+    {
+    case RS2_STREAM_ANY: return "Any";
+    case RS2_STREAM_DEPTH: return "D";
+    case RS2_STREAM_COLOR: return "C";
+    case RS2_STREAM_INFRARED: return "IR";
+    case RS2_STREAM_FISHEYE: return "FE";
+    case RS2_STREAM_GYRO: return "G";
+    case RS2_STREAM_ACCEL: return "A";
+    case RS2_STREAM_GPIO: return "GPIO";
+    case RS2_STREAM_POSE: return "P";
+    case RS2_STREAM_CONFIDENCE: return "Conf";
+    case RS2_STREAM_MOTION: return "M";
+    default:
+        assert( !is_valid( value ) );
+        return "?";
+    }
+}
+
 
 const char * get_string( rs2_sr300_visual_preset value )
 {
@@ -205,6 +230,23 @@ const char * get_string( rs2_depth_auto_exposure_mode mode )
     CASE( ACCELERATED )
     default:
         assert( ! is_valid( mode ) );
+        return UNKNOWN_VALUE;
+    }
+#undef CASE
+}
+
+const char * get_string( rs2_gyro_sensitivity value )
+{
+#define CASE( X ) STRCASE( GYRO_SENSITIVITY, X )
+    switch( value )
+    {
+        CASE( 61_0_MILLI_DEG_SEC )
+        CASE( 30_5_MILLI_DEG_SEC )
+        CASE( 15_3_MILLI_DEG_SEC )
+        CASE( 7_6_MILLI_DEG_SEC )
+        CASE( 3_8_MILLI_DEG_SEC )
+    default:
+        assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
     }
 #undef CASE
@@ -414,7 +456,10 @@ std::string const & get_string_( rs2_option value )
         CASE( AUTO_GAIN_LIMIT_TOGGLE )
         CASE( EMITTER_FREQUENCY )
         arr[RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE] = "Auto Exposure Mode";
-        CASE( LEFT_IR_TEMPERATURE )
+        CASE( OHM_TEMPERATURE )
+        CASE( SOC_PVT_TEMPERATURE )
+        CASE( GYRO_SENSITIVITY )
+        arr[RS2_OPTION_REGION_OF_INTEREST] = "Region of Interest";
 #undef CASE
         return arr;
     }();
@@ -698,6 +743,25 @@ const char * get_string( rs2_l500_visual_preset value )
 }
 
 
+std::string const & get_string( rs2_option_type value )
+{
+    static auto str_array = []()
+    {
+        std::vector< std::string > arr( RS2_OPTION_TYPE_COUNT );
+#define CASE( X ) STRARR( arr, OPTION_TYPE, X );
+        CASE( FLOAT )
+        CASE( STRING )
+        CASE( INTEGER )
+        CASE( BOOLEAN )
+#undef CASE
+            return arr;
+    }();
+    if( ! is_valid( value ) )
+        return unknown_value_str;
+    return str_array[value];
+}
+
+
 }  // namespace librealsense
 
 const char * rs2_stream_to_string( rs2_stream stream ) { return librealsense::get_string( stream ); }
@@ -716,6 +780,7 @@ rs2_option rs2_option_from_string( char const * option_name )
         : RS2_OPTION_COUNT;
 }
 
+const char * rs2_option_type_to_string( rs2_option_type type ) { return librealsense::get_string( type ).c_str(); }
 const char * rs2_camera_info_to_string( rs2_camera_info info ) { return librealsense::get_string( info ); }
 const char * rs2_timestamp_domain_to_string( rs2_timestamp_domain info ) { return librealsense::get_string( info ); }
 const char * rs2_notification_category_to_string( rs2_notification_category category ) { return librealsense::get_string( category ); }
@@ -739,3 +804,4 @@ const char * rs2_calibration_status_to_string( rs2_calibration_status status ) {
 const char * rs2_host_perf_mode_to_string( rs2_host_perf_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_emitter_frequency_mode_to_string( rs2_emitter_frequency_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_depth_auto_exposure_mode_to_string( rs2_depth_auto_exposure_mode mode ) { return librealsense::get_string( mode ); }
+const char * rs2_gyro_sensitivity_to_string( rs2_gyro_sensitivity mode ){return librealsense::get_string( mode );}

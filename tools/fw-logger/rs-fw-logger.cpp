@@ -25,10 +25,10 @@ string datetime_string()
     return string(buffer);
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char* argv[]) try
 {
     int default_polling_interval_ms = 100;
-    CmdLine cmd("librealsense rs-fw-logger example tool", ' ', RS2_API_VERSION_STR);
+    CmdLine cmd("librealsense rs-fw-logger example tool", ' ', RS2_API_FULL_VERSION_STR);
     ValueArg<string> sn_arg("s", "sn", "camera serial number", false, "", "camera serial number");
     ValueArg<string> xml_arg("l", "load", "Full file path of HW Logger Events XML file", false, "", "Load HW Logger Events XML file");
     ValueArg<string> out_arg("o", "out", "Full file path of output file", false, "", "Print Fw logs to output file");
@@ -113,6 +113,8 @@ int main(int argc, char* argv[])
                 }
             }
 
+            fw_log_device.start_collecting();
+
             bool are_there_remaining_flash_logs_to_pull = true;
             auto time_of_previous_polling_ms = std::chrono::high_resolution_clock::now();
 
@@ -141,11 +143,14 @@ int main(int argc, char* argv[])
                         auto parsed_log = fw_log_device.create_parsed_message();
                         bool parsing_result = fw_log_device.parse_log(log_message, parsed_log);
                         
+                        std::string module_print = parsed_log.module_name() + " ";
+                        if( module_print == "Unknown " )
+                            module_print.clear();  // Some devices don't support FW log modules
+
                         stringstream sstr;
                         sstr << datetime_string() << " " << parsed_log.timestamp() << " " << parsed_log.sequence_id()
-                            << " " << parsed_log.severity() << " " << parsed_log.thread_name()
-                            << " " << parsed_log.file_name() << " " << parsed_log.line()
-                            << " " << parsed_log.message();
+                             << " " << parsed_log.severity() << " " << parsed_log.thread_name() << " " << module_print
+                             << parsed_log.file_name() << " " << parsed_log.line() << " " << parsed_log.message();
                         
                         fw_log_lines.push_back(sstr.str());
                     }
@@ -182,6 +187,8 @@ int main(int argc, char* argv[])
                     time_of_previous_polling_ms = std::chrono::high_resolution_clock::now();
                 }
             }
+
+            fw_log_device.stop_collecting();
         }
         catch (const error & e)
         {
@@ -190,4 +197,19 @@ int main(int argc, char* argv[])
     }
 
     return EXIT_SUCCESS;
+}
+catch( const rs2::error & e )
+{
+    cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
+    return EXIT_FAILURE;
+}
+catch( const exception & e )
+{
+    cerr << e.what() << endl;
+    return EXIT_FAILURE;
+}
+catch( ... )
+{
+    cerr << "some error" << endl;
+    return EXIT_FAILURE;
 }

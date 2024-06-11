@@ -27,24 +27,57 @@ Currently, the topic root as used by `rs-dds-adapter` is built as:
 
 ## Settings
 
-On the client, device behavior with librealsense can be fine-tuned with certain JSON settings passed through the participant (and therefore from the librealsense context's `dds` settings):
+On the client, device behavior with librealsense can be fine-tuned with JSON settings passed through the participant (and therefore from the librealsense context's `dds` settings), inside a `device` object:
+
+```JSON
+{
+  "dds": {
+    "device": {
+      "control": { "reply-timeout-ms": 2000 },
+      "metadata": { "reliability": "reliable" }
+    }
+  }
+}
+```
+
+The above overrides the default reply timeout to 2 seconds and makes the metadata topic use reliable QoS rather than the default `best-effort`.
+
+#### Standard topic QoS settings
+
+`control`, `notification`, and `metadata` topics all can have their own objects to override default QoS and other settings. See the above for an example. They all share common settings:
+
+* `reliability` can be a string denoting the `kind`, or an object:
+    * `kind` is `best-effort` or `reliable`
+* `durability` can be a string denoting the `kind`, or an object:
+    * `kind` is `volatile`, `transient-local`, `transient`, or `persistent`
+* `history` can be a number denoting the `depth`, or an object:
+    * `kind` is `keep-last` or `keep-all`
+    * `depth` is the number of samples to manage with `keep-last`
+* `data-sharing` is a boolean: `true` to automatically enable if needed; `false` to turn off
+* `endpoint` is an object:
+    * `history-memory-policy` is `preallocated`, `preallocated-with-realloc`, `dynamic-reserve`, or `dynamic-reusable`
+
+Note that these settings are **overrides**. The default values may be different depending on the topic for which they're intended (for example, `metadata` uses `best-effort` by default while `control` and `notification` use `reliable`).
+
+#### Other Settings
 
 | Field                    | Default | Type    | Description        |
-|--------------------------|---------|---------|--------------------|
-| device-reply-timeout-ms  |    1000 | size_t  | How long to wait for a control reply to arrive, in millisec
-| disable-metadata         |   false | bool    | When true, the metadata topic will be disabled, even with metadata-enabled streams
+|--------------------------|--------:|---------|--------------------|
+| `control`/
+| &nbsp;&nbsp;&nbsp;&nbsp;`reply-timeout-ms` |    2000 | size_t  | Reply timeout, in milliseconds
 
-To control device-level options of the server's, controls need to be sent.
-The server should publish its device options as part of the initialization sequence, in the `device-options` message.
-If available, the [`query-option` and `set-option` controls](control.md#query-option--set-option) can be used (no `owner-name`) to retrieve or update the values. **Setting these options will not take effect until the device is reset.**
+#### Device Options
 
-The following settings may have options available for controlling:
+To use device-level options, the control-reply needs to be used.
+The server publishes device options as part of the initialization sequence, in the `device-options` message.
+If available, the [`query-option` and `set-option` controls](control.md#query-option--set-option) can be used (no `stream-name`) to retrieve or update the values. **Setting these options will not take effect until the device is reset.**
 
-| Setting        | Default | Type             | `option-name`   | Description
-|----------------|---------|------------------|-----------------|---------------
-| Domain ID      |       0 | int 0-232        | `domain-id`     | The DDS domain number to use to segment communications on the network
-| IP address     |       ? | string "#.#.#.#" | `ip-address`    | The static IP that the server uses for itself (if DHCP is off)
-| DHCP enable    |       ? | bool             | `dhcp`          | If on, the `ip-address` is ignored and retrieved on startup from a DHCP server
+The following device options may be available:
+
+| Setting        | Default | Type             | `option-name`   | Description          |
+|----------------|--------:|------------------|-----------------|---------------|
+| Domain ID      |       0 | int, 0-232       | `domain-id`     | The DDS domain number to use to segment communications on the network
+| IP address     |   empty | string "#.#.#.#" | `ip-address`    | The static IP that the server uses for itself (empty=DHCP on)
 | Multicast IP   |       - | string "#.#.#.#" | `multicast-ip` | The IP address to use for multicasting (empty to disable)
 
 

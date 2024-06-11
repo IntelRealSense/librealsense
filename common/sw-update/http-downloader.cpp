@@ -9,12 +9,13 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
+#include <fstream>
 #include <curl/curl.h>
 #include <curl/easy.h>
-#include "types.h"
 #endif // CHECK_FOR_UPDATES
 
 #include "http-downloader.h"
+#include <rsutils/easylogging/easyloggingpp.h>
 
 
 namespace rs2
@@ -95,17 +96,15 @@ namespace rs2
             progress_data *myp = static_cast<progress_data *>(p);
             CURL *curl(myp->curl);
             curl_off_t curtime(0);
-            curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME_T, &curtime);
-            if (dltotal != 0 && (curtime - myp->last_run_time > HALF_SEC))
-            {
-                myp->last_run_time = curtime;
-                return myp->user_callback_func(static_cast<uint64_t>(dlnow),
-                    static_cast<uint64_t>(dltotal)) == callback_result::CONTINUE_DOWNLOAD ? 0 : 1;
-            }
-            else
-            {
-                return 0;
-            }
+            if( curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME_T, &curtime) == CURLE_OK )
+                if (dltotal != 0 && (curtime - myp->last_run_time > HALF_SEC))
+                {
+                    myp->last_run_time = curtime;
+                    return myp->user_callback_func(static_cast<uint64_t>(dlnow),
+                        static_cast<uint64_t>(dltotal)) == callback_result::CONTINUE_DOWNLOAD ? 0 : 1;
+                }
+
+            return 0;
         }
 
         http_downloader::http_downloader() : _curl(nullptr)
@@ -126,10 +125,11 @@ namespace rs2
             if (!_curl) return false;
 
             set_common_options(url);
-            curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, stream_write_callback);
-            curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &output);
-            curl_easy_setopt(_curl, CURLOPT_SSL_VERIFYPEER ,0L);
-            curl_easy_setopt(_curl, CURLOPT_SSL_VERIFYHOST ,0L);
+            if( curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, stream_write_callback) != CURLE_OK ||
+                curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &output) != CURLE_OK                   ||
+                curl_easy_setopt(_curl, CURLOPT_SSL_VERIFYPEER ,0L) != CURLE_OK                   ||
+                curl_easy_setopt(_curl, CURLOPT_SSL_VERIFYHOST ,0L) != CURLE_OK )
+                throw std::invalid_argument( "Setting CURL option failed" );
 
             progress_data progress_record; // Should stay here - "curl_easy_perform" use it
             if (user_callback_func)
@@ -151,8 +151,9 @@ namespace rs2
             if (!_curl) return false;
 
             set_common_options(url);
-            curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, vector_write_callback);
-            curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &output);
+            if( curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, vector_write_callback) != CURLE_OK ||
+                curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &output) != CURLE_OK )
+                throw std::invalid_argument( "Setting CURL option failed" );
 
             progress_data progress_record; // Should stay here - "curl_easy_perform" use it
             if (user_callback_func)
@@ -180,8 +181,9 @@ namespace rs2
             if (out_file.good())
             {
                 set_common_options(url);
-                curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, file_write_callback);
-                curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &out_file);
+                if( curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, file_write_callback) != CURLE_OK ||
+                    curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &out_file) != CURLE_OK )
+                    throw std::invalid_argument( "Setting CURL option failed" );
 
                 progress_data progress_record; // Should stay here - "curl_easy_perform" use it
                 if (user_callback_func)
@@ -208,19 +210,22 @@ namespace rs2
 
         void http_downloader::set_common_options(const std::string &url)
         {
-            curl_easy_setopt(_curl, CURLOPT_URL, url.c_str());                  // provide the URL to use in the request
-            curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);                // follow HTTP 3xx redirects
-            curl_easy_setopt(_curl, CURLOPT_NOSIGNAL, 1);                       // skip all signal handling
-            curl_easy_setopt(_curl, CURLOPT_CONNECTTIMEOUT, CONNECT_TIMEOUT);   // timeout for the connect phase
-            curl_easy_setopt(_curl, CURLOPT_FAILONERROR, 1L);                   // request failure on HTTP response >= 400
-            curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, 1L);                    // switch off the progress meter
+            if( curl_easy_setopt( _curl, CURLOPT_CONNECTTIMEOUT, CONNECT_TIMEOUT ) != CURLE_OK || // timeout for the connect phase
+                curl_easy_setopt( _curl, CURLOPT_URL, url.c_str() )   != CURLE_OK ||  // provide the URL to use in the request
+                curl_easy_setopt( _curl, CURLOPT_FOLLOWLOCATION, 1L ) != CURLE_OK ||  // follow HTTP 3xx redirects
+                curl_easy_setopt( _curl, CURLOPT_NOSIGNAL, 1 )        != CURLE_OK ||  // skip all signal handling
+                curl_easy_setopt( _curl, CURLOPT_FAILONERROR, 1L )    != CURLE_OK ||  // request failure on HTTP response >= 400
+                curl_easy_setopt( _curl, CURLOPT_NOPROGRESS, 1L )     != CURLE_OK )   // switch off the progress meter
+                throw std::invalid_argument( "Setting CURL option failed" );
         }
+
         void http_downloader::register_progress_call_back(progress_data &progress_record, user_callback_func_type user_callback_func)
         {
             progress_record = { 0, user_callback_func, _curl };
-            curl_easy_setopt(_curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
-            curl_easy_setopt(_curl, CURLOPT_XFERINFODATA, &progress_record);
-            curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, 0L);
+            if( curl_easy_setopt(_curl, CURLOPT_XFERINFOFUNCTION, progress_callback) != CURLE_OK ||
+                curl_easy_setopt(_curl, CURLOPT_XFERINFODATA, &progress_record) != CURLE_OK ||
+                curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, 0L) != CURLE_OK )
+                throw std::invalid_argument( "Setting CURL option failed" );
         }
 #endif
     }

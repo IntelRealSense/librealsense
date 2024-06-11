@@ -1,0 +1,26 @@
+From fddfc8b3055abe1ccb3d03eacbe8028043d81257 Mon Sep 17 00:00:00 2001
+From: Nir <nir.azkiel@intel.com>
+Date: Thu, 9 May 2024 21:21:31 +0300
+Subject: [PATCH] add uvcvideo version update patch
+
+---
+ drivers/media/usb/uvc/uvcvideo.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
+index 6fb0a78b1..d522b0f10 100644
+--- a/drivers/media/usb/uvc/uvcvideo.h
++++ b/drivers/media/usb/uvc/uvcvideo.h
+@@ -45,7 +45,8 @@
+  * Driver specific constants.
+  */
+ 
+-#define DRIVER_VERSION		"1.1.1"
++#define DRIVER_VERSION_SUFFIX "realsense-patch"
++#define DRIVER_VERSION		"1.1.1-" DRIVER_VERSION_SUFFIX
+ 
+ /* Number of isochronous URBs. */
+ #define UVC_URBS		5
+-- 
+2.34.1
+

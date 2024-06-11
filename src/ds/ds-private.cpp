@@ -35,7 +35,7 @@ namespace librealsense
             intrinsics.height = height;
             intrinsics.width = width;
 
-            librealsense::copy(intrinsics.coeffs, table->distortion, sizeof(table->distortion));
+            std::memcpy( intrinsics.coeffs, table->distortion, sizeof( table->distortion ) );
 
             LOG_DEBUG(endl << array2str((float_4&)(intrinsics.fx, intrinsics.fy, intrinsics.ppx, intrinsics.ppy)) << endl);
 
@@ -105,6 +105,17 @@ namespace librealsense
             rv.read_write_section.offset = rv.header.read_write_start_address;
 
             return rv;
+        }
+
+        std::string table_header::to_string() const
+        {
+            std::string res;
+            res += "version:\t" + std::to_string(version) + "\n";
+            res += "table_type:\t" + std::to_string(table_type) + "\n";
+            res += "table_size:\t" + std::to_string(table_size) + "\n";
+            res += "param:\t" + std::to_string(param) + "\n";
+            res += "crc32:\t" + std::to_string(crc32) + "\n";
+            return res;
         }
     } // librealsense::ds
 } // namespace librealsense

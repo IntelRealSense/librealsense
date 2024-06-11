@@ -5,7 +5,6 @@
 #include <core/roi.h>
 #include <core/extension.h>
 #include <core/serialization.h>
-#include "core/streaming.h"
 #include <src/core/device-interface.h>
 #include "archive.h"
 #include "sensor.h"

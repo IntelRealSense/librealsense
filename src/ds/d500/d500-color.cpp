@@ -11,6 +11,10 @@
 #include "d500-info.h"
 #include "backend.h"
 #include "platform/platform-utils.h"
+#include <src/fourcc.h>
+#include <src/metadata-parser.h>
+
+#include <src/ds/features/auto-exposure-roi-feature.h>
 
 namespace librealsense
 {
@@ -31,10 +35,12 @@ namespace librealsense
         {rs_fourcc('M','4','2','0'), RS2_STREAM_COLOR}
     };
 
-    d500_color::d500_color( std::shared_ptr< const d500_info > const & dev_info )
-        : d500_device(dev_info), device(dev_info),
-          _color_stream(new stream(RS2_STREAM_COLOR)),
-          _separate_color(true)
+    d500_color::d500_color( std::shared_ptr< const d500_info > const & dev_info, rs2_format native_format )
+        : d500_device( dev_info )
+        , device( dev_info )
+        , _color_stream( new stream( RS2_STREAM_COLOR ) )
+        , _separate_color( true )
+        , _native_format( native_format )
     {
         create_color_device( dev_info->get_context(), dev_info->get_group() );
         init();
@@ -43,7 +49,6 @@ namespace librealsense
     void d500_color::create_color_device(std::shared_ptr<context> ctx, const platform::backend_device_group& group)
     {
         using namespace ds;
-        auto&& backend = ctx->get_backend();
 
         _color_calib_table_raw = [this]()
         {
@@ -61,10 +66,14 @@ namespace librealsense
         std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(ds_timestamp_reader_backup)));
 
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
-        auto raw_color_ep = std::make_shared<uvc_sensor>("Raw RGB Camera",
-            backend.create_uvc_device(color_devs_info.front()),
-            std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)),
-            this);
+        auto raw_color_ep = std::make_shared< uvc_sensor >(
+            "Raw RGB Camera",
+            get_backend()->create_uvc_device( color_devs_info.front() ),
+            std::unique_ptr< frame_timestamp_reader >(
+                new global_timestamp_reader( std::move( ds_timestamp_reader_metadata ),
+                                             _tf_keeper,
+                                             enable_global_time_option ) ),
+            this );
 
         auto color_ep = std::make_shared<d500_color_sensor>(this,
             raw_color_ep,
@@ -78,25 +87,65 @@ namespace librealsense
         _color_device_idx = add_sensor(color_ep);
     }
 
+    void d500_color::register_color_features()
+    {
+        register_feature( std::make_shared< auto_exposure_roi_feature >( get_color_sensor(), _hw_monitor, true ) );
+    }
+
     void d500_color::init()
     {
         auto& color_ep = get_color_sensor();
-        auto& raw_color_ep = get_raw_color_sensor();
+        auto raw_color_ep = get_raw_color_sensor();
 
-        _ds_color_common = std::make_shared<ds_color_common>(raw_color_ep, color_ep,
-             _fw_version, _hw_monitor, this);
+        _ds_color_common = std::make_shared<ds_color_common>(raw_color_ep, color_ep, _fw_version, _hw_monitor, this);
 
+        register_color_features();
         register_options();
         register_metadata();
-        register_processing_blocks();
+        register_color_processing_blocks();
+    }
+
+    void d500_color::register_color_processing_blocks()
+    {
+        auto & color_ep = get_color_sensor();
+
+        switch( _native_format )
+        {
+        case RS2_FORMAT_YUYV:
+            color_ep.register_processing_block( processing_block_factory::create_pbf_vector< yuy2_converter >(
+                RS2_FORMAT_YUYV,
+                map_supported_color_formats( RS2_FORMAT_YUYV ),
+                RS2_STREAM_COLOR ) );
+            break;
+        case RS2_FORMAT_M420:
+            color_ep.register_processing_block( processing_block_factory::create_pbf_vector< m420_converter >(
+                RS2_FORMAT_M420,
+                map_supported_color_formats( RS2_FORMAT_M420 ),
+                RS2_STREAM_COLOR ) );
+            break;
+        default:
+            throw invalid_value_exception( "invalid native color format "
+                                           + std::string( get_string( _native_format ) ) );
+        }
+        color_ep.register_processing_block(  // Color Raw (Bayer 10-bit embedded in 16-bit) for calibration
+            processing_block_factory::create_id_pbf( RS2_FORMAT_RAW16, RS2_STREAM_COLOR ) );
     }
 
     void d500_color::register_options()
     {
         auto& color_ep = get_color_sensor();
-        auto& raw_color_ep = get_raw_color_sensor();
+        auto raw_color_ep = get_raw_color_sensor();
 
         _ds_color_common->register_color_options();
+
+        std::map< float, std::string > description_per_value = std::map<float, std::string>{ 
+            { 0.f, "Disabled"},
+            { 1.f, "50Hz" },
+            { 2.f, "60Hz" } };
+
+        color_ep.register_option(RS2_OPTION_POWER_LINE_FREQUENCY,
+            std::make_shared<power_line_freq_option>(raw_color_ep, RS2_OPTION_POWER_LINE_FREQUENCY,
+                description_per_value));
 
         color_ep.register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
 
@@ -109,7 +158,7 @@ namespace librealsense
     {
         auto& color_ep = get_color_sensor();
 
-        auto md_prop_offset = offsetof(metadata_raw, mode) +
+        auto md_prop_offset = metadata_raw_mode_offset +
             offsetof(md_rgb_mode, rgb_mode) +
             offsetof(md_rgb_normal_mode, intel_rgb_control);
 
@@ -119,15 +168,11 @@ namespace librealsense
         _ds_color_common->register_metadata();
     }
 
-    void d500_color::register_processing_blocks()
+    void d500_color::register_stream_to_extrinsic_group( const stream_interface & stream, uint32_t group_index )
     {
-        auto& color_ep = get_color_sensor();
-
-        color_ep.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_COLOR));
-
-        color_ep.register_processing_block(processing_block_factory::create_pbf_vector<m420_converter>(RS2_FORMAT_M420, map_supported_color_formats(RS2_FORMAT_M420), RS2_STREAM_COLOR));
+        device::register_stream_to_extrinsic_group( stream, group_index );
     }
-
+    
     rs2_intrinsics d500_color_sensor::get_intrinsics(const stream_profile& profile) const
     {
         return get_d500_intrinsic_by_resolution(
@@ -170,10 +215,5 @@ namespace librealsense
     processing_blocks d500_color_sensor::get_recommended_processing_blocks() const
     {
         return get_color_recommended_proccesing_blocks();
-    }
-
-    void d500_color::register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index)
-    {
-        device::register_stream_to_extrinsic_group(stream, group_index);
     }
 }

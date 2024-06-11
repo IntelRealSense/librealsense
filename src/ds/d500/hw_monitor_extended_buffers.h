@@ -17,8 +17,8 @@ namespace librealsense
         enum class hwm_buffer_type
         {
             standard,
-            big_buffer_to_receive,
-            big_buffer_to_send
+            extended_receive,
+            extended_send
         };
 
         explicit hw_monitor_extended_buffers(std::shared_ptr<locked_transfer> locked_transfer)
@@ -26,14 +26,13 @@ namespace librealsense
         {}
 
         virtual std::vector<uint8_t> send(std::vector<uint8_t> const& data) const override;
-        virtual std::vector<uint8_t> send(command cmd, hwmon_response* = nullptr, bool locked_transfer = false) const override;
+        virtual std::vector<uint8_t> send(command const & cmd, hwmon_response* = nullptr, bool locked_transfer = false) const override;
 
     private:
-        int get_msg_length(command cmd) const;
-        int get_number_of_chunks(int msg_length) const;
+        int get_number_of_chunks(size_t msg_length) const;
         hwm_buffer_type get_buffer_type(command cmd) const;
-        std::vector<uint8_t> send_big_buffer_to_receive(command cmd, hwmon_response* p_response, bool locked_transfer) const;
-        void send_big_buffer_to_send(command cmd, hwmon_response* p_response, bool locked_transfer) const;
+        std::vector<uint8_t> extended_receive(command cmd, hwmon_response* p_response, bool locked_transfer) const;
+        void extended_send(command cmd, hwmon_response* p_response, bool locked_transfer) const;
 
         // The following method prepares the param4 of the command for extended buffers
         // The aim of this param is to send the chunk number out of max of expected chunks for the current command

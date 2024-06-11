@@ -4,6 +4,7 @@
 #pragma once
 #include <librealsense2/hpp/rs_frame.hpp>
 #include "rotation-transform.h"
+#include <src/pose.h>
 
 #define ROTATION_BUFFER_SIZE 32 // minimum limit that could be divided by all resolutions
 #define VERTICAL_SCAN_WINDOW_SIZE 16

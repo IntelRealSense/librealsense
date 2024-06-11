@@ -10,10 +10,9 @@
 #include <realdds/topics/imu-msg.h>
 #include <realdds/topics/flexible-msg.h>
 #include <realdds/dds-exceptions.h>
+#include <realdds/dds-sample.h>
 
 #include <rsutils/json.h>
-
-#include <fastdds/dds/subscriber/SampleInfo.hpp>
 
 
 namespace realdds {
@@ -22,6 +21,13 @@ namespace realdds {
 dds_stream::dds_stream( std::string const & stream_name, std::string const & sensor_name )
     : super( stream_name, sensor_name )
 {
+}
+
+
+dds_stream::~dds_stream()
+{
+    if( _reader )
+        _reader->stop();
 }
 
 
@@ -63,6 +69,8 @@ void dds_motion_stream::open( std::string const & topic_name, std::shared_ptr< d
 
 void dds_stream::close()
 {
+    if( _reader )
+        _reader->stop();
     _reader.reset();
 }
 
@@ -83,14 +91,14 @@ void dds_stream::start_streaming()
 void dds_video_stream::handle_data()
 {
     topics::image_msg frame;
-    eprosima::fastdds::dds::SampleInfo info;
-    while( _reader && topics::image_msg::take_next( *_reader, &frame, &info ) )
+    dds_sample sample;
+    while( _reader && topics::image_msg::take_next( *_reader, &frame, &sample ) )
     {
         if( ! frame.is_valid() )
             continue;
 
         if( is_streaming() && _on_data_available )
-            _on_data_available( std::move( frame ) );
+            _on_data_available( std::move( frame ), std::move( sample ) );
     }
 }
 
@@ -98,11 +106,11 @@ void dds_video_stream::handle_data()
 void dds_motion_stream::handle_data()
 {
     topics::imu_msg imu;
-    eprosima::fastdds::dds::SampleInfo info;
-    while( _reader && topics::imu_msg::take_next( *_reader, &imu, &info ) )
+    dds_sample sample;
+    while( _reader && topics::imu_msg::take_next( *_reader, &imu, &sample ) )
     {
         if( is_streaming() && _on_data_available )
-            _on_data_available( std::move( imu ) );
+            _on_data_available( std::move( imu ), std::move( sample ) );
     }
 }
 

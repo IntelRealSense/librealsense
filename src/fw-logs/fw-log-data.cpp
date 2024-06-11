@@ -1,94 +1,93 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019-2024 Intel Corporation. All Rights Reserved.
+
 #include "fw-log-data.h"
-#include <sstream>
-#include <iomanip>
-#include <locale>
-#include <string>
 
-using namespace std;
+#include <rsutils/string/from.h>
 
-# define SET_WIDTH_AND_FILL(num, element) \
-setfill(' ') << setw(num) << left << element \
+#include <algorithm>
 
 namespace librealsense
 {
     namespace fw_logs
     {
-        fw_log_data::fw_log_data(void)
-        {
-            _magic_number = 0;
-            _severity = 0;
-            _file_id = 0;
-            _group_id = 0;
-            _event_id = 0;
-            _line = 0;
-            _sequence = 0;
-            _p1 = 0;
-            _p2 = 0;
-            _p3 = 0;
-            _timestamp = 0;
-            _delta = 0;
-            _message = "";
-            _file_name = "";
-        }
-
-
-        fw_log_data::~fw_log_data(void)
-        {
-        }
-
-
-        rs2_log_severity fw_log_data::get_severity() const
-        {
-            return fw_logs_severity_to_log_severity(_severity);
-        }
-
-        const std::string& fw_log_data::get_message() const
-        {
-            return _message;
-        }
-
-        const std::string& fw_log_data::get_file_name() const
-        {
-            return _file_name;
-        }
-
-        const std::string& fw_log_data::get_thread_name() const
-        {
-            return _thread_name;
-        }
-
-        uint32_t fw_log_data::get_line() const
-        {
-            return _line;
-        }
-
-        uint32_t fw_log_data::get_timestamp() const
-        {
-            return (uint32_t)_timestamp;
-        }
-
-        uint32_t fw_log_data::get_sequence_id() const
-        {
-            return _sequence;
-        }
+        constexpr const size_t min_binary_size = std::min( sizeof( fw_log_binary ), sizeof( extended_fw_log_binary ) );
+        constexpr const uint8_t fw_logs_magic_number = 0xA0;
+        constexpr const uint8_t extended_fw_logs_magic_number = 0xA5;
 
         rs2_log_severity fw_logs_binary_data::get_severity() const
         {
-            const fw_log_binary* log_binary = reinterpret_cast<const fw_log_binary*>(logs_buffer.data());
-            return fw_logs_severity_to_log_severity(static_cast<int32_t>(log_binary->dword1.bits.severity));
+            if( logs_buffer.size() < min_binary_size )
+                throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                             << "FW log data size is too small "
+                                                             << logs_buffer.size() );
+
+            const auto log_binary = reinterpret_cast< const fw_log_binary_common * >( logs_buffer.data() );
+            if( log_binary->magic_number == extended_fw_logs_magic_number )
+                return extended_fw_logs_severity_to_rs2_log_severity( log_binary->severity );
+            if( log_binary->magic_number == fw_logs_magic_number )
+                return fw_logs_severity_to_rs2_log_severity( log_binary->severity );
+
+            throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                         << "Received unfamiliar FW log 'magic number' "
+                                                         << log_binary->magic_number );
         }
 
         uint32_t fw_logs_binary_data::get_timestamp() const
         {
-            const fw_log_binary* log_binary = reinterpret_cast<const fw_log_binary*>(logs_buffer.data());
-            return static_cast<uint32_t>(log_binary->dword5.timestamp);
+            if( logs_buffer.size() < min_binary_size )
+                throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                             << "FW log data size is too small "
+                                                             << logs_buffer.size() );
+
+            const auto log_binary = reinterpret_cast< const fw_log_binary_common * >( logs_buffer.data() );
+            if( log_binary->magic_number == extended_fw_logs_magic_number )
+            {
+                auto timestamp = reinterpret_cast< const extended_fw_log_binary * >( this )->soc_timestamp;
+                return static_cast< uint32_t >( timestamp );
+            }
+            if( log_binary->magic_number == fw_logs_magic_number )
+                return reinterpret_cast< const fw_log_binary * >( this )->timestamp;
+
+            throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                         << "Received unfamiliar FW log 'magic number' "
+                                                         << log_binary->magic_number );
         }
 
-        rs2_log_severity fw_logs_severity_to_log_severity(int32_t severity)
+        rs2_log_severity extended_fw_logs_severity_to_rs2_log_severity( int32_t severity )
         {
             rs2_log_severity result = RS2_LOG_SEVERITY_NONE;
+
+            switch( severity )
+            {
+            case 1: // Verbose level. Fall through, debug is LibRS most verbose level
+            case 2:
+                result = RS2_LOG_SEVERITY_DEBUG;
+                break;
+            case 4:
+                result = RS2_LOG_SEVERITY_INFO;
+                break;
+            case 8:
+                result = RS2_LOG_SEVERITY_WARN;
+                break;
+            case 16:
+                result = RS2_LOG_SEVERITY_ERROR;
+                break;
+            case 32:
+                result = RS2_LOG_SEVERITY_FATAL;
+                break;
+            case 0: // No logging. Fall through to keep level None set above.
+            default:
+                break;
+            }
+
+            return result;
+        }
+
+        rs2_log_severity fw_logs_severity_to_rs2_log_severity(int32_t severity)
+        {
+            rs2_log_severity result = RS2_LOG_SEVERITY_NONE;
+
             switch (severity)
             {
             case 1:
@@ -106,7 +105,8 @@ namespace librealsense
             default:
                 break;
             }
+
             return result;
         }
-    }
-}
+    } // namespace fw_logs
+} // namespace librealsense

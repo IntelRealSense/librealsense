@@ -16,11 +16,9 @@ doesn't. You may also want to use '//#test:flag custom-args'.
 See below for each of the custom options...
 */
 
-// We are not using the main from catch2
-#define CATCH_CONFIG_RUNNER
 #include <unit-tests/test.h>
 
-using namespace Catch::clara;
+using namespace Catch::Clara;
 
 int main( int argc, char * argv[] )
 {

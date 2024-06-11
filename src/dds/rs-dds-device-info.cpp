@@ -9,6 +9,8 @@
 #include <realdds/dds-device.h>
 #include <realdds/topics/device-info-msg.h>
 
+#include <rsutils/string/from.h>
+
 
 namespace librealsense {
 
@@ -25,22 +27,14 @@ std::string dds_device_info::get_address() const
 
     return rsutils::string::from() << "dds." << domain_id << "://"
                                    << _dev->participant()->print( _dev->server_guid() ) << "@"
-                                   << _dev->device_info().topic_root;
+                                   << _dev->device_info().topic_root();
 }
 
 
 void dds_device_info::to_stream( std::ostream & os ) const
 {
     os << "DDS device (" << _dev->participant()->print( _dev->guid() ) << " on domain "
-       << _dev->participant()->get()->get_domain_id() << "):";
-    os << "\n\tName: " << _dev->device_info().name;
-    if( ! _dev->device_info().serial.empty() )
-        os << "\n\tSerial: " << _dev->device_info().serial;
-    if( ! _dev->device_info().product_line.empty() )
-        os << "\n\tProduct line: " << _dev->device_info().product_line;
-    os << "\n\tTopic root: " << _dev->device_info().topic_root;
-    if( _dev->device_info().locked )
-        os << "\n\tLOCKED";
+       << _dev->participant()->get()->get_domain_id() << "):" << _dev->device_info().to_json().dump( 4 );
 }
 
 

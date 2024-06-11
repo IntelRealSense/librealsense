@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #include "rs-dds-sniffer.h"
 
@@ -18,38 +18,31 @@
 #include <tclap/ValueArg.h>
 #include <tclap/SwitchArg.h>
 
-#include <rsutils/easylogging/easyloggingpp.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-guid.h>
 #include <realdds/dds-log-consumer.h>
 
+#include <rsutils/os/special-folder.h>
+#include <rsutils/os/executable-name.h>
+#include <rsutils/easylogging/easyloggingpp.h>
+#include <rsutils/json.h>
+#include <rsutils/json-config.h>
+
 using namespace TCLAP;
 using namespace eprosima::fastdds::dds;
 using namespace eprosima::fastrtps::types;
-using realdds::print;
-
-// FastDDS GUID_t: (MSB first, little-endian; see GuidUtils.hpp)
-//     2 bytes  -  vendor ID
-//     2 bytes  -  host
-//     4 bytes  -  process (2 pid, 2 random)
-//     4 bytes  -  participant
-//     4 bytes  -  entity ID (reader/writer)
-// For example:
-//  Participant 1                 - 01.0f.be.05.f0.09.86.b6.01.00.00.00|0.0.1.c1
-//  Writer under participant 1    - 01.0f.be.05.f0.09.86.b6.01.00.00.00|0.0.1.2
-//  Participant 2 of same process - 01.0f.be.05.f0.09.86.b6.02.00.00.00|0.0.1.c1
-//  Reader under participant 2    - 01.0f.be.05.f0.09.86.b6.02.00.00.00|0.0.1.7
-//  Participant 3 other process   - 01.0f.be.05.88.50.ea.4a.01.00.00.00|0.0.1.c1
-// Note same host for all, participant and entity IDs may be repeat for different processes
-// To differentiate entities of different participant with same name we append process GUID values to the name
-constexpr uint8_t GUID_PROCESS_LOCATION = 4;
 
 static eprosima::fastrtps::rtps::GuidPrefix_t std_prefix;
+
+static inline realdds::print_guid print_guid( realdds::dds_guid const & guid )
+{
+    return realdds::print_guid( guid, std_prefix );
+}
 
 
 int main( int argc, char ** argv ) try
 {
-    realdds::dds_domain_id domain = 0;
+    realdds::dds_domain_id domain = -1;  // from settings; default to 0
     uint32_t seconds = 0;
 
     CmdLine cmd( "librealsense rs-dds-sniffer tool", ' ' );
@@ -59,12 +52,14 @@ int main( int argc, char ** argv ) try
     SwitchArg debug_arg( "", "debug", "Enable debug logging", false );
     SwitchArg participants_arg( "", "participants", "Show participants and quit; implies --snapshot", false );
     ValueArg< realdds::dds_domain_id > domain_arg( "d", "domain", "select domain ID to listen on", false, 0, "0-232" );
+    ValueArg< std::string > root_arg( "r", "root", "filter anything not inside this root path", false, "", "" );
     cmd.add( snapshot_arg );
     cmd.add( machine_readable_arg );
     cmd.add( topic_samples_arg );
     cmd.add( domain_arg );
     cmd.add( debug_arg );
     cmd.add( participants_arg );
+    cmd.add( root_arg );
     cmd.parse( argc, argv );
 
     bool participants = participants_arg.isSet();
@@ -98,6 +93,8 @@ int main( int argc, char ** argv ) try
     sniffer.print_by_topics( snapshot && ! participants );
     sniffer.print_machine_readable( machine_readable );
     sniffer.print_topic_samples( topic_samples && ! snapshot );
+
+    sniffer.set_root( root_arg.getValue() );
 
     if( ! sniffer.init( domain ) )
     {
@@ -181,6 +178,30 @@ dds_sniffer::~dds_sniffer()
     _discovered_types_datas.clear();
 }
 
+
+static rsutils::json load_settings( rsutils::json const & local_settings )
+{
+    // Load the realsense configuration file settings
+    std::string const filename = rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + "realsense-config.json";
+    auto config = rsutils::json_config::load_from_file( filename );
+
+    // Take just the 'context' part
+    config = rsutils::json_config::load_settings( config, "context", "config-file" );
+
+    // Take the "dds" settings only
+    config = config.nested( "dds" );
+
+    // We should always have DDS enabled
+    if( config.is_object() )
+        config.erase( "enabled" );
+
+    // Patch the given local settings into the configuration
+    config.override( local_settings, "local settings" );
+
+    return config;
+}
+
+
 bool dds_sniffer::init( realdds::dds_domain_id domain )
 {
     // Set callbacks before calling _participant.init(), or some events, specifically on_participant_added, might get lost
@@ -207,11 +228,26 @@ bool dds_sniffer::init( realdds::dds_domain_id domain )
             on_type_discovery( topic_name, dyn_type );
         } );
 
-    auto settings = nlohmann::json::object();
-    _participant.init( domain, "rs-dds-sniffer", std::move( settings ) );
+    rsutils::json settings( rsutils::json::object() );
+    settings = load_settings( settings );
+    _participant.init( domain, rsutils::os::executable_name(), std::move( settings ) );
 
     return _participant.is_valid();
 }
+
+
+static bool filter_topic( std::string const & topic, std::string const & root )
+{
+    if( root.empty() )
+        return false;
+    if( 0 == strncmp( topic.data(), root.data(), root.length() ) )
+        return false;
+    if( 0 == strncmp( topic.data(), "rt/", 3 )
+        && 0 == strncmp( topic.data() + 3, root.data(), root.length() ) )
+        return false;
+    return true;
+}
+
 
 void dds_sniffer::on_writer_added( realdds::dds_guid guid, const char * topic_name )
 {
@@ -283,7 +319,7 @@ void dds_sniffer::on_type_discovery( char const * topic_name, DynamicType_ptr dy
         // Register type with participant
         TypeSupport type_support( DDS_API_CALL( new DynamicPubSubType( dyn_type ) ) );
         DDS_API_CALL( type_support.register_type( _participant.get() ) );
-        std::cout << "Discovered topic '" << topic_name << "' of type '" << type_support->getName() << "'" << std::endl;
+        std::cout << "+Topic '" << topic_name << "' of type '" << type_support->getName() << "'" << std::endl;
 
         if( _print_topic_samples )
         {
@@ -344,10 +380,10 @@ void dds_sniffer::dds_reader_listener::on_data_available( DataReader * reader )
     if( dit != _datas.end() )
     {
         DynamicData_ptr data = dit->second;
-        SampleInfo info;
-        if( DDS_API_CALL( reader->take_next_sample( data.get(), &info ) ) == ReturnCode_t::RETCODE_OK )
+        realdds::dds_sample sample;
+        if( DDS_API_CALL( reader->take_next_sample( data.get(), &sample ) ) == ReturnCode_t::RETCODE_OK )
         {
-            if( info.valid_data )
+            if( sample.valid_data )
             {
                 DynamicDataHelper::print( data );
             }
@@ -359,11 +395,11 @@ void dds_sniffer::dds_reader_listener::on_subscription_matched( DataReader * rea
 {
     if( info.current_count_change == 1 )
     {
-        LOG_DEBUG( "Subscriber matched by reader " << print( reader->guid(), std_prefix ) );
+        LOG_DEBUG( "Subscriber matched by reader " << print_guid( reader->guid() ) );
     }
     else if( info.current_count_change == -1 )
     {
-        LOG_DEBUG( "Subscriber unmatched by reader " << print( reader->guid(), std_prefix ) );
+        LOG_DEBUG( "Subscriber unmatched by reader " << print_guid( reader->guid() ) );
     }
     else
     {
@@ -420,8 +456,10 @@ uint32_t dds_sniffer::calc_max_indentation() const
     uint32_t indentation = 0;
     uint32_t max_indentation = 0;
 
-    for( auto topic : _topics_info_by_name )  //_dds_entities_lock locked by print_topics()
+    for( auto & topic : _topics_info_by_name )  //_dds_entities_lock locked by print_topics()
     {
+        if( filter_topic( topic.first, _root ) )
+            continue;
         // Use / as delimiter for nested topic names
         indentation = static_cast< uint32_t >( std::count( topic.first.begin(), topic.first.end(), '/' ) );
         if( indentation >= max_indentation )
@@ -437,15 +475,17 @@ void dds_sniffer::print_writer_discovered( realdds::dds_guid guid,
                                            const char * topic_name,
                                            bool discovered ) const
 {
+    if( filter_topic( topic_name, _root ) )
+        return;
     if( _print_machine_readable )
     {
-        std::cout << "DataWriter," << print( guid, std_prefix ) << "," << topic_name
+        std::cout << "DataWriter," << print_guid( guid ) << "," << topic_name
                   << ( discovered ? ",discovered" : ",removed" ) << std::endl;
     }
     else
     {
-        std::cout << "DataWriter " << print( guid, std_prefix ) << " publishing topic '" << topic_name
-                  << ( discovered ? "' discovered" : "' removed" ) << std::endl;
+        std::cout << ( discovered ? "+" : "-" ) << print_guid( guid ) << " publishing topic '" << topic_name << "'"
+                  << std::endl;
     }
 }
 
@@ -453,15 +493,17 @@ void dds_sniffer::print_reader_discovered( realdds::dds_guid guid,
                                            const char * topic_name,
                                            bool discovered ) const
 {
+    if( filter_topic( topic_name, _root ) )
+        return;
     if( _print_machine_readable )
     {
-        std::cout << "DataReader," << print( guid, std_prefix ) << "," << topic_name
+        std::cout << "DataReader," << print_guid( guid ) << "," << topic_name
                   << ( discovered ? ",discovered" : ",removed" ) << std::endl;
     }
     else
     {
-        std::cout << "DataReader " << print( guid, std_prefix ) << " reading topic '" << topic_name
-                  << ( discovered ? "' discovered" : "' removed" ) << std::endl;
+        std::cout << ( discovered ? "+" : "-" ) << print_guid( guid ) << " reading topic '" << topic_name << "'"
+                  << std::endl;
     }
 }
 
@@ -471,18 +513,14 @@ void dds_sniffer::print_participant_discovered( realdds::dds_guid guid,
 {
     if( _print_machine_readable )
     {
-        std::cout << "Participant," << print( guid, std_prefix ) << "," << participant_name
+        std::cout << "Participant," << print_guid( guid ) << "," << participant_name
                   << ( discovered ? ",discovered" : ",removed" )
                   << std::endl;
     }
     else
     {
-        //prefix_.value[4] = static_cast<octet>( pid & 0xFF );
-        //prefix_.value[5] = static_cast<octet>( ( pid >> 8 ) & 0xFF );
-        uint16_t pid
-            = guid.guidPrefix.value[GUID_PROCESS_LOCATION] + ( guid.guidPrefix.value[GUID_PROCESS_LOCATION + 1] << 8 );
-        std::cout << "Participant " << print( guid, std_prefix ) << " '" << participant_name << "' (" << std::hex << pid
-                  << std::dec << ") " << ( discovered ? " discovered" : " removed" ) << std::endl;
+        std::cout << ( discovered ? "+" : "-" ) << "Participant '" << participant_name << "' "
+                  << realdds::print_raw_guid( guid ) << std::endl;
     }
 }
 
@@ -490,14 +528,17 @@ void dds_sniffer::print_topics_machine_readable() const
 {
     std::lock_guard< std::mutex > lock( _dds_entities_lock );
 
-    for( auto topic : _topics_info_by_name )
+    for( auto & topic : _topics_info_by_name )
     {
-        for( auto writer : topic.second.writers )
+        if( filter_topic( topic.first, _root ) )
+            continue;
+
+        for( auto & writer : topic.second.writers )
         {
             std::cout << topic.first << ",";
             print_topic_writer( writer );
         }
-        for( auto reader : topic.second.readers )
+        for( auto & reader : topic.second.readers )
         {
             std::cout << topic.first << ",";
             print_topic_reader( reader );
@@ -514,8 +555,10 @@ void dds_sniffer::print_topics() const
 
     uint32_t max_indentation( calc_max_indentation() );
 
-    for( auto topic : _topics_info_by_name )
+    for( auto & topic : _topics_info_by_name )
     {
+        if( filter_topic( topic.first, _root ) )
+            continue;
         std::cout << std::endl;
 
         std::istringstream current_topic( topic.first );  // Get topic name
@@ -541,7 +584,7 @@ void dds_sniffer::print_topics() const
             }
         }
 
-        // Print reminder of string
+        // Print remainder of string
         while( std::getline( current_topic, current_topic_nested, '/' ) )
         {
             ident( indentation );
@@ -549,11 +592,11 @@ void dds_sniffer::print_topics() const
             ++indentation;
         }
 
-        for( auto writer : topic.second.writers )
+        for( auto & writer : topic.second.writers )
         {
             print_topic_writer( writer, max_indentation );
         }
-        for( auto reader : topic.second.readers )
+        for( auto & reader : topic.second.readers )
         {
             print_topic_reader( reader, max_indentation );
         }
@@ -570,7 +613,7 @@ void dds_sniffer::print_participants( bool with_guids ) const
     {
         std::cout << guid2name.second;
         if( with_guids )
-            std::cout << ' ' << realdds::print( guid2name.first );
+            std::cout << ' ' << realdds::print_raw_guid( guid2name.first );
         std::cout << std::endl;
     }
 }
@@ -592,18 +635,14 @@ void dds_sniffer::print_topic_writer( realdds::dds_guid guid, uint32_t indentati
     {
         if( iter->first.guidPrefix == guid.guidPrefix )
         {
-            uint16_t tmp;
-            memcpy( &tmp, &iter->first.guidPrefix.value[GUID_PROCESS_LOCATION], sizeof( tmp ) );
             if( _print_machine_readable )
             {
-                std::cout << "Writer," << iter->second << "_" << std::hex << std::setw( 4 ) << std::setfill( '0' )
-                          << tmp << std::dec << std::endl;
+                std::cout << "Writer," << realdds::dds_participant::name_from_guid( iter->first ) << std::endl;
             }
             else
             {
                 ident( indentation );
-                std::cout << "Writer of \"" << iter->second << "_" << std::hex << std::setw( 4 ) << std::setfill( '0' )
-                          << tmp << std::dec << "\"" << std::endl;
+                std::cout << "Writer of \"" << realdds::dds_participant::name_from_guid( iter->first ) << "\"" << std::endl;
             }
             break;
         }
@@ -615,6 +654,7 @@ void dds_sniffer::print_topic_writer( realdds::dds_guid guid, uint32_t indentati
     }
 }
 
+
 void dds_sniffer::print_topic_reader( realdds::dds_guid guid, uint32_t indentation ) const
 {
     auto iter = _discovered_participants.begin();
@@ -622,18 +662,14 @@ void dds_sniffer::print_topic_reader( realdds::dds_guid guid, uint32_t indentati
     {
         if( iter->first.guidPrefix == guid.guidPrefix )
         {
-            uint16_t tmp;
-            memcpy( &tmp, &iter->first.guidPrefix.value[GUID_PROCESS_LOCATION], sizeof( tmp ) );
             if( _print_machine_readable )
             {
-                std::cout << "Reader," << iter->second << "_" << std::hex << std::setw( 4 ) << std::setfill( '0' )
-                          << tmp << std::dec << std::endl;
+                std::cout << "Reader," << realdds::dds_participant::name_from_guid( iter->first ) << std::endl;
             }
             else
             {
                 ident( indentation );
-                std::cout << "Reader of \"" << iter->second << "_" << std::hex << std::setw( 4 ) << std::setfill( '0' )
-                          << tmp << std::dec << "\"" << std::endl;
+                std::cout << "Reader of \"" << realdds::dds_participant::name_from_guid( iter->first ) << "\"" << std::endl;
             }
             break;
         }

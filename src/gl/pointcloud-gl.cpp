@@ -9,7 +9,8 @@
 #include "pointcloud-gl.h"
 #include "option.h"
 #include "environment.h"
-#include "context.h"
+#include "stream.h"
+#include <src/pose.h>
 
 #include <iostream>
 #include <chrono>
@@ -388,10 +389,17 @@ void pointcloud_gl::create_gpu_resources()
 
 pointcloud_gl::~pointcloud_gl()
 {
-    perform_gl_action([&]()
+    try
     {
-        cleanup_gpu_resources();
-    }, []{});
+        perform_gl_action( [&]()
+        {
+            cleanup_gpu_resources();
+        }, [] {} );
+    }
+    catch(...)
+    {
+        LOG_DEBUG( "Error while cleaning up gpu resources" );
+    }
 }
 
 pointcloud_gl::pointcloud_gl()
@@ -435,6 +443,8 @@ void pointcloud_gl::get_texture_map(
         auto frame_ref = (frame_interface*)output.get();
 
         auto gf = dynamic_cast<gpu_addon_interface*>(frame_ref);
+        if (!gf)
+            throw std::runtime_error("Frame interface is not gpu addon interface");
 
         uint32_t depth_texture;
 

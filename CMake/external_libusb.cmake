@@ -20,6 +20,7 @@ ExternalProject_Add(
             -DANDROID_ABI=${ANDROID_ABI}
             -DANDROID_STL=${ANDROID_STL}
             -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/libusb_install
+            --no-warn-unused-cli
     TEST_COMMAND ""
     BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/libusb_install/lib/${CMAKE_STATIC_LIBRARY_PREFIX}usb${CMAKE_STATIC_LIBRARY_SUFFIX}
 )
@@ -28,6 +29,8 @@ add_library(usb INTERFACE)
 target_include_directories(usb INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb/libusb>)
 target_link_libraries(usb INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/libusb_install/lib/${CMAKE_STATIC_LIBRARY_PREFIX}usb${CMAKE_STATIC_LIBRARY_SUFFIX})
 set(USE_EXTERNAL_USB ON) # INTERFACE libraries can't have real deps, so targets that link with usb need to also depend on libusb
+
+set_target_properties( libusb PROPERTIES FOLDER "3rd Party")
 
 if (APPLE)
   find_library(corefoundation_lib CoreFoundation)

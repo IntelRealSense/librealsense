@@ -1,6 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2019 Intel Corporation. All Rights Reserved.
-cmake_minimum_required(VERSION 3.1.0)
+# Copyright(c) 2019-2024 Intel Corporation. All Rights Reserved.
+cmake_minimum_required(VERSION 3.8)
 
 project(realsense-viewer)
 
@@ -219,7 +219,6 @@ include_directories(
     ../../common
     ../../third-party
     ../../third-party/tinyfiledialogs
-    ../../third-party/tclap/include
     ${GLFW_SOURCE_DIR}/include
     ../../third-party/imgui
     ../../third-party/glad
@@ -241,7 +240,7 @@ if (IMPORT_DEPTH_CAM_FW)
     target_link_libraries(${PROJECT_NAME} fw)
 endif()
 
-target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES} ${RS_VIEWER_LIBS})
+target_link_libraries( ${PROJECT_NAME} ${DEPENDENCIES} ${RS_VIEWER_LIBS} tclap )
 
 set_target_properties (${PROJECT_NAME} PROPERTIES
     FOLDER Tools

@@ -5,7 +5,6 @@
 #include "../../core/roi.h"
 #include "../../core/extension.h"
 #include "../../core/serialization.h"
-#include "../../core/streaming.h"
 #include "../../archive.h"
 #include "../../sensor.h"
 #include "../../types.h"
@@ -21,7 +20,7 @@ namespace librealsense
         public options_container,
         public std::enable_shared_from_this<playback_sensor>
     {
-        std::function< void( uint32_t, frame_callback_ptr ) > _on_started;
+        std::function< void( uint32_t, rs2_frame_callback_sptr ) > _on_started;
         std::function< void( uint32_t, bool ) > _on_stopped;
         std::function< void( const std::vector< device_serializer::stream_identifier > & ) > _on_opened;
         std::function< void( const std::vector< device_serializer::stream_identifier > & ) > _on_closed;
@@ -32,7 +31,7 @@ namespace librealsense
         playback_sensor(device_interface& parent_device, const device_serializer::sensor_snapshot& sensor_description);
         virtual ~playback_sensor();
 
-        void on_started( std::function< void( uint32_t id, frame_callback_ptr user_callback ) > && callback )
+        void on_started( std::function< void( uint32_t id, rs2_frame_callback_sptr user_callback ) > && callback )
             { _on_started = std::move( callback ); }
         void on_stopped( std::function< void( uint32_t id, bool invoke_required ) > && callback )
             { _on_stopped = std::move( callback ); }
@@ -44,9 +43,9 @@ namespace librealsense
         stream_profiles get_stream_profiles(int tag = profile_tag::PROFILE_TAG_ANY) const override;
         void open(const stream_profiles& requests) override;
         void close() override;
-        void register_notifications_callback(notifications_callback_ptr callback) override;
-        notifications_callback_ptr get_notifications_callback() const override;
-        void start(frame_callback_ptr callback) override;
+        void register_notifications_callback( rs2_notifications_callback_sptr callback ) override;
+        rs2_notifications_callback_sptr get_notifications_callback() const override;
+        void start( rs2_frame_callback_sptr callback ) override;
         void stop() override;
         bool is_streaming() const override;
         bool extend_to(rs2_extension extension_type, void** ext) override;
@@ -55,8 +54,8 @@ namespace librealsense
         void stop(bool invoke_required);
         void flush_pending_frames();
         void update(const device_serializer::sensor_snapshot& sensor_snapshot);
-        frame_callback_ptr get_frames_callback() const override;
-        void set_frames_callback(frame_callback_ptr callback) override;
+        rs2_frame_callback_sptr get_frames_callback() const override;
+        void set_frames_callback( rs2_frame_callback_sptr callback ) override;
         stream_profiles get_active_streams() const override;
         stream_profiles const & get_raw_stream_profiles() const override { return m_available_profiles; }
         int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
@@ -77,6 +76,12 @@ namespace librealsense
             }
             return processing_blocks_api->get_recommended_processing_blocks();
         }
+
+        rsutils::subscription register_options_changed_callback( options_watcher::callback && cb ) override
+        {
+            throw not_implemented_exception( "Registering options value changed callback is not implemented for playback sensor" );
+        }
+
     protected:
         void set_active_streams(const stream_profiles& requests);
 
@@ -87,7 +92,7 @@ namespace librealsense
         
 
 
-        frame_callback_ptr m_user_callback;
+        rs2_frame_callback_sptr m_user_callback;
         notifications_processor _notifications_processor;
         using stream_unique_id = int;
         std::map<stream_unique_id, std::shared_ptr<dispatcher>> m_dispatchers;

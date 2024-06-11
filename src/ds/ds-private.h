@@ -3,9 +3,11 @@
 
 #pragma once
 
-#include "types.h"
+#include <src/pose.h>
 #include "fw-update/fw-update-unsigned.h"
+#include <src/firmware-version.h>
 #include <rsutils/string/from.h>
+#include <rsutils/number/crc32.h>
 
 #include <map>
 #include <iomanip>
@@ -21,6 +23,26 @@
 
 namespace librealsense
 {
+    typedef float float_4[4];
+
+    template<typename T>
+    constexpr size_t arr_size( T const & ) { return 1; }
+
+    template<typename T, size_t sz>
+    constexpr size_t arr_size( T( &arr )[sz] )
+    {
+        return sz * arr_size( arr[0] );
+    }
+
+    template<typename T>
+    std::string array2str( T & data )
+    {
+        std::stringstream ss;
+        for( auto i = 0; i < arr_size( data ); i++ )
+            ss << " [" << i << "] = " << data[i] << "\t";
+        return ss.str();
+    }
+
     namespace ds
     {
         // DS5 depth XU identifiers
@@ -67,7 +89,7 @@ namespace librealsense
             FEF = 0x0c,     // Erase flash full <Parameter1 Name="0xACE">
             FSRU = 0x0d,     // Flash status register unlock
             FPLOCK = 0x0e,     // Permanent lock on lower Quarter region of the flash
-            GLD = 0x0f,     // FW logs
+            GLD = 0x0f,     // Legacy get FW logs command
             GVD = 0x10,     // camera details
             GETINTCAL = 0x15,     // Read calibration table
             SETINTCAL = 0x16,     // Set Internal sub calibration table
@@ -101,11 +123,18 @@ namespace librealsense
             RECPARAMSGET = 0x7E,     // Retrieve depth calibration table in new format (fw >= 5.11.12.100)
             LASERONCONST = 0x7F,     // Enable Laser On constantly (GS SKU Only)
             AUTO_CALIB = 0x80,      // auto calibration commands
-            SAFETY_PRESET_READ = 0x94,  // Read safety preset from given index
-            SAFETY_PRESET_WRITE = 0x95,   // Write safety preset to given index
+            GETAELIMITS = 0x89,   //Auto Exp/Gain Limit command FW version >= 5.13.0.200
+            SETAELIMITS = 0x8A,   //Auto Exp/Gain Limit command FW version >= 5.13.0.200
+
+
+            APM_STROBE_SET = 0x96,        // Control if Laser on constantly or pulse
+            APM_STROBE_GET = 0x99,        // Query if Laser on constantly or pulse
             SET_HKR_CONFIG_TABLE = 0xA6, // HKR Set Internal sub calibration table
             GET_HKR_CONFIG_TABLE = 0xA7, // HKR Get Internal sub calibration table
-            CALIBRESTOREEPROM = 0xA8 // HKR Store EEPROM Calibration
+            CALIBRESTOREEPROM = 0xA8, // HKR Store EEPROM Calibration
+            GET_FW_LOGS = 0xB4, // Get FW logs extended format
+            SET_CALIB_MODE = 0xB8,      // Set Calibration Mode
+            GET_CALIB_STATUS = 0xB9      // Get Calibration Status
         };
 
 #define TOSTRING(arg) #arg
@@ -137,6 +166,7 @@ namespace librealsense
                 ENUM2STR(SETSUBPRESET);
                 ENUM2STR(GETSUBPRESET);
                 ENUM2STR(GETSUBPRESETID);
+                ENUM2STR(GET_FW_LOGS);
             default:
               return ( rsutils::string::from() << "Unrecognized FW command " << state );
             }
@@ -237,6 +267,8 @@ namespace librealsense
             uint32_t                table_size;     // full size including: TOC header + TOC + actual tables
             uint32_t                param;          // This field content is defined ny table type
             uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
+
+            std::string to_string() const;
         };
 
         enum ds_rect_resolutions : unsigned short
@@ -286,7 +318,7 @@ namespace librealsense
                                                << sizeof( table_header ) << " , actual: " << raw_data.size() );
             }
             // verify the parsed table
-            if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
+            if (table->header.crc32 != rsutils::number::calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
             {
                 throw invalid_value_exception("Calibration data CRC error, parsing aborted!");
             }
@@ -535,74 +567,6 @@ namespace librealsense
         };
 
         ds_rect_resolutions width_height_to_ds_rect_resolutions(uint32_t width, uint32_t height);
-
-        enum ds_notifications_types
-        {
-            success = 0,
-            hot_laser_power_reduce,
-            hot_laser_disable,
-            flag_B_laser_disable,
-            stereo_module_not_connected,
-            eeprom_corrupted,
-            calibration_corrupted,
-            mm_upd_fail,
-            isp_upd_fail,
-            mm_force_pause,
-            mm_failure,
-            usb_scp_overflow,
-            usb_rec_overflow,
-            usb_cam_overflow,
-            mipi_left_error,
-            mipi_right_error,
-            mipi_rt_error,
-            mipi_fe_error,
-            i2c_cfg_left_error,
-            i2c_cfg_right_error,
-            i2c_cfg_rt_error,
-            i2c_cfg_fe_error,
-            stream_not_start_z,
-            stream_not_start_y,
-            stream_not_start_cam,
-            rec_error,
-            usb2_limit,
-            cold_laser_disable,
-            no_temperature_disable_laser,
-            isp_boot_data_upload_failed,
-        };
-
-        // Elaborate FW XU report. The reports may be consequently extended for PU/CTL/ISP
-        const std::map< uint8_t, std::string> ds_fw_error_report = {
-            { success,                      "Success" },
-            { hot_laser_power_reduce,       "Laser hot - power reduce" },
-            { hot_laser_disable,            "Laser hot - disabled" },
-            { flag_B_laser_disable,         "Flag B - laser disabled" },
-            { stereo_module_not_connected,  "Stereo Module is not connected" },
-            { eeprom_corrupted,             "EEPROM corrupted" },
-            { calibration_corrupted,        "Calibration corrupted" },
-            { mm_upd_fail,                  "Motion Module update failed" },
-            { isp_upd_fail,                 "ISP update failed" },
-            { mm_force_pause,               "Motion Module force pause" },
-            { mm_failure,                   "Motion Module failure" },
-            { usb_scp_overflow,             "USB SCP overflow" },
-            { usb_rec_overflow,             "USB REC overflow" },
-            { usb_cam_overflow,             "USB CAM overflow" },
-            { mipi_left_error,              "Left MIPI error" },
-            { mipi_right_error,             "Right MIPI error" },
-            { mipi_rt_error,                "RT MIPI error" },
-            { mipi_fe_error,                "FishEye MIPI error" },
-            { i2c_cfg_left_error,           "Left IC2 Config error" },
-            { i2c_cfg_right_error,          "Right IC2 Config error" },
-            { i2c_cfg_rt_error,             "RT IC2 Config error" },
-            { i2c_cfg_fe_error,             "FishEye IC2 Config error" },
-            { stream_not_start_z,           "Depth stream start failure" },
-            { stream_not_start_y,           "IR stream start failure" },
-            { stream_not_start_cam,         "Camera stream start failure" },
-            { rec_error,                    "REC error" },
-            { usb2_limit,                   "USB2 Limit" },
-            { cold_laser_disable,           "Laser cold - disabled" },
-            { no_temperature_disable_laser, "Temperature read failure - laser disabled" },
-            { isp_boot_data_upload_failed,  "ISP boot data upload failure" },
-        };
 
         // subpreset pattern used in firmware versions that do not support subpreset ID
         const std::vector<uint8_t> alternating_emitter_pattern_with_name{ 0x19, 0,

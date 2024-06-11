@@ -1,13 +1,15 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
-
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include <fastdds/dds/subscriber/DataReaderListener.hpp>
 #include <fastdds/dds/subscriber/qos/DataReaderQos.hpp>
+#include "dds-defines.h"
 
+#include <rsutils/json-fwd.h>
 #include <functional>
 #include <memory>
+#include <atomic>
 
 
 namespace eprosima {
@@ -31,13 +33,17 @@ class dds_subscriber;
 // You may choose to create one via a 'subscriber' that manages the activities of several readers.
 // on_data_available callback will be called when a sample is received.
 //
-class dds_topic_reader : public eprosima::fastdds::dds::DataReaderListener
+class dds_topic_reader
+    : public eprosima::fastdds::dds::DataReaderListener
+    , public std::enable_shared_from_this< dds_topic_reader >
 {
 protected:
     std::shared_ptr< dds_topic > const _topic;
-    std::shared_ptr < dds_subscriber > const _subscriber;
+    std::shared_ptr< dds_subscriber > const _subscriber;
 
     eprosima::fastdds::dds::DataReader * _reader = nullptr;
+
+    std::atomic< int > _n_writers;
 
 public:
     dds_topic_reader( std::shared_ptr< dds_topic > const & topic );
@@ -48,17 +54,24 @@ public:
     eprosima::fastdds::dds::DataReader * operator->() const { return get(); }
 
     bool is_running() const { return ( get() != nullptr ); }
+    bool has_writers() const { return _n_writers > 0; }
 
     std::shared_ptr< dds_topic > const & topic() const { return _topic; }
 
     typedef std::function< void() > on_data_available_callback;
     typedef std::function< void( eprosima::fastdds::dds::SubscriptionMatchedStatus const & ) >
         on_subscription_matched_callback;
+    typedef std::function< void( eprosima::fastdds::dds::SampleLostStatus const & ) >
+        on_sample_lost_callback;
 
     void on_data_available( on_data_available_callback callback ) { _on_data_available = std::move( callback ); }
     void on_subscription_matched( on_subscription_matched_callback callback )
     {
         _on_subscription_matched = std::move( callback );
+    }
+    void on_sample_lost( on_sample_lost_callback callback )
+    {
+        _on_sample_lost = std::move( callback );
     }
 
     class qos : public eprosima::fastdds::dds::DataReaderQos
@@ -70,10 +83,16 @@ public:
                = eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS,  // default
              eprosima::fastdds::dds::DurabilityQosPolicyKind durability
                = eprosima::fastdds::dds::VOLATILE_DURABILITY_QOS );  // default is transient local
+
+        // Override default values with JSON contents
+        void override_from_json( rsutils::json const & );
     };
 
     // The callbacks should be set before we actually create the underlying DDS objects, so the reader does not
     virtual void run( qos const & );
+
+    // Waits until writers are detected; return false on timeout
+    bool wait_for_writers( dds_time timeout );
 
     // Go back to a pre-run() state, such that is_running() returns false
     virtual void stop();
@@ -85,9 +104,12 @@ protected:
 
     void on_data_available( eprosima::fastdds::dds::DataReader * ) override;
 
+    void on_sample_lost( eprosima::fastdds::dds::DataReader *, const eprosima::fastdds::dds::SampleLostStatus & ) override;
+
 protected:
     on_data_available_callback _on_data_available;
     on_subscription_matched_callback _on_subscription_matched;
+    on_sample_lost_callback _on_sample_lost;
 };
 
 

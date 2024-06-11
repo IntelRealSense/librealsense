@@ -1,6 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2019 Intel Corporation. All Rights Reserved.
-cmake_minimum_required(VERSION 3.1.0)
+# Copyright(c) 2019-2024 Intel Corporation. All Rights Reserved.
+cmake_minimum_required(VERSION 3.8)
 
 project( rs-depth-quality )
 
@@ -76,7 +76,6 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         include_directories(../../common  ../../third-party
                             ../../third-party/imgui
                             ../../third-party/glad
-                            ../../third-party/tclap/include
                             ../../third-party/tinyfiledialogs
                             ${CMAKE_CURRENT_SOURCE_DIR}/res/)
 
@@ -95,8 +94,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         include_directories(../../common  ../../third-party
                             ../../third-party/imgui
                             ../../third-party/glad
-                            ../../third-party/tinyfiledialogs
-                            ../../third-party/tclap/include)
+                            ../../third-party/tinyfiledialogs )
     endif()
 
     source_group("SW-Update" FILES ${SW_UPDATE_FILES})
@@ -110,7 +108,8 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES}
                                            ${GTK3_LIBRARIES}
                                            Threads::Threads
-                                           realsense2-gl)
+                                           realsense2-gl
+                                           tclap )
 
     if (IMPORT_DEPTH_CAM_FW)
         add_definitions(-DINTERNAL_FW)

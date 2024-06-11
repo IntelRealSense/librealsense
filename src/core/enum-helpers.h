@@ -3,10 +3,14 @@
 
 #pragma once
 
+#include <src/basics.h>
 #include <librealsense2/hpp/rs_types.hpp>
 
 
 namespace librealsense {
+
+
+constexpr static char const * UNKNOWN_VALUE = "UNKNOWN";
 
 
 // Require the last enumerator value to be in format of RS2_#####_COUNT
@@ -43,7 +47,9 @@ bool is_valid( rs2_option value );
 std::ostream & operator<<( std::ostream & out, rs2_option option );
 bool try_parse( const std::string & option_name, rs2_option & result );
 
+RS2_ENUM_HELPERS_CUSTOMIZED( rs2_option_type, 0, RS2_OPTION_TYPE_COUNT - 1, std::string const & )
 RS2_ENUM_HELPERS( rs2_stream, STREAM )
+LRS_EXTENSION_API char const * get_abbr_string( rs2_stream );
 RS2_ENUM_HELPERS( rs2_format, FORMAT )
 RS2_ENUM_HELPERS( rs2_distortion, DISTORTION )
 RS2_ENUM_HELPERS( rs2_camera_info, CAMERA_INFO )
@@ -72,6 +78,7 @@ RS2_ENUM_HELPERS_CUSTOMIZED( rs2_digital_gain, RS2_DIGITAL_GAIN_HIGH, RS2_DIGITA
 RS2_ENUM_HELPERS( rs2_host_perf_mode, HOST_PERF )
 RS2_ENUM_HELPERS( rs2_emitter_frequency_mode, EMITTER_FREQUENCY )
 RS2_ENUM_HELPERS( rs2_depth_auto_exposure_mode, DEPTH_AUTO_EXPOSURE )
+RS2_ENUM_HELPERS( rs2_gyro_sensitivity, GYRO_SENSITIVITY )
 
 
 }  // namespace librealsense

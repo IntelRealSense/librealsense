@@ -1,6 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
-
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #pragma warning(push)
@@ -26,10 +25,8 @@
 // makes std::function conversions work
 #include <pybind11/functional.h>
 
-// and enable a bridge to/from nlohmann::json
-#include <pybind11_json/pybind11_json.hpp>
-constexpr auto json_to_py = pyjson::from_json;
-constexpr auto py_to_json = pyjson::to_json;
+// and enable a bridge to/from rsutils::json
+#include "json.h"
 
 
 namespace py = pybind11;

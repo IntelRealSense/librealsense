@@ -1,43 +1,33 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include "rs-dds-sensor-proxy.h"
 #include "rs-dds-option.h"
 
+#include <src/software-device.h>
+
 #include <realdds/dds-device.h>
 #include <realdds/dds-time.h>
+#include <realdds/dds-sample.h>
 
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/image-msg.h>
 #include <realdds/topics/imu-msg.h>
+#include <realdds/topics/dds-topic-names.h>
 
 #include <src/core/options-registry.h>
+#include <src/core/frame-callback.h>
+#include <src/core/roi.h>
+#include <src/core/time-service.h>
 #include <src/stream.h>
 
-// Processing blocks for DDS SW sensors
-#include <proc/decimation-filter.h>
-#include <proc/disparity-transform.h>
-#include <proc/hdr-merge.h>
-#include <proc/hole-filling-filter.h>
-#include <proc/sequence-id-filter.h>
-#include <proc/spatial-filter.h>
-#include <proc/temporal-filter.h>
-#include <proc/threshold.h>
-#include <proc/color-formats-converter.h>
+#include <src/proc/color-formats-converter.h>
 
 #include <rsutils/json.h>
+using rsutils::json;
 
 
 namespace librealsense {
-
-
-// Constants for Json lookups
-static const std::string frame_number_key( "frame-number", 12 );
-static const std::string metadata_key( "metadata", 8 );
-static const std::string timestamp_key( "timestamp", 9 );
-static const std::string timestamp_domain_key( "timestamp-domain", 16 );
-static const std::string depth_units_key( "depth-units", 11 );
-static const std::string metadata_header_key( "header", 6 );
 
 
 dds_sensor_proxy::dds_sensor_proxy( std::string const & sensor_name,
@@ -48,6 +38,28 @@ dds_sensor_proxy::dds_sensor_proxy( std::string const & sensor_name,
     , _name( sensor_name )
     , _md_enabled( dev->supports_metadata() )
 {
+    rsutils::json const & settings = owner->get_context()->get_settings();
+    if( auto interval_j = settings.nested( std::string( "options-update-interval", 23 ) ) )
+    {
+        auto interval = interval_j.get< uint32_t >();  // NOTE: can throw!
+        _options_watcher.set_update_interval( std::chrono::milliseconds( interval ) );
+    }
+}
+
+
+bool dds_sensor_proxy::extend_to( rs2_extension extension_type, void ** ptr )
+{
+    if( extension_type == RS2_EXTENSION_ROI )
+    {
+        // We do not extend roi_sensor_interface, as our support is enabled only if there's an option with the specific
+        // type! Instead, we expose through extend_to() only if such an option is found. See add_option().
+        if( _roi_support )
+        {
+            *ptr = _roi_support.get();
+            return true;
+        }
+    }
+    return super::extend_to( extension_type, ptr );
 }
 
 
@@ -66,10 +78,7 @@ void dds_sensor_proxy::add_dds_stream( sid_index sidx, std::shared_ptr< realdds:
 std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_video_stream( rs2_video_stream video_stream,
                                                                                 bool is_default )
 {
-    auto profile = std::make_shared< video_stream_profile >( platform::stream_profile{ (uint32_t)video_stream.width,
-                                                                                       (uint32_t)video_stream.height,
-                                                                                       (uint32_t)video_stream.fps,
-                                                                                       0 } );
+    auto profile = std::make_shared< video_stream_profile >();
     profile->set_dims( video_stream.width, video_stream.height );
     profile->set_format( video_stream.fmt );
     profile->set_framerate( video_stream.fps );
@@ -90,10 +99,7 @@ std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_video_stream( 
 std::shared_ptr< stream_profile_interface > dds_sensor_proxy::add_motion_stream( rs2_motion_stream motion_stream,
                                                                                  bool is_default )
 {
-    auto profile = std::make_shared< motion_stream_profile >( platform::stream_profile{ 0,
-                                                                                        0,
-                                                                                        (uint32_t)motion_stream.fps,
-                                                                                        0 } );
+    auto profile = std::make_shared< motion_stream_profile >();
     profile->set_format( motion_stream.fmt );
     profile->set_framerate( motion_stream.fps );
     profile->set_stream_index( motion_stream.index );
@@ -142,12 +148,12 @@ void dds_sensor_proxy::register_basic_converters()
     _formats_converter.register_converters(
         processing_block_factory::create_pbf_vector< uyvy_converter >(
             RS2_FORMAT_UYVY,
-            { RS2_FORMAT_UYVY, RS2_FORMAT_YUYV, RS2_FORMAT_RGB8, RS2_FORMAT_RGBA8, RS2_FORMAT_BGR8, RS2_FORMAT_BGRA8 },
+            { RS2_FORMAT_UYVY, RS2_FORMAT_YUYV, RS2_FORMAT_RGB8, RS2_FORMAT_Y8, RS2_FORMAT_RGBA8, RS2_FORMAT_BGR8, RS2_FORMAT_BGRA8 },
             RS2_STREAM_COLOR ) );
     _formats_converter.register_converters(
         processing_block_factory::create_pbf_vector< yuy2_converter >(
             RS2_FORMAT_YUYV,
-            { RS2_FORMAT_YUYV, RS2_FORMAT_RGB8, RS2_FORMAT_RGBA8, RS2_FORMAT_BGR8, RS2_FORMAT_BGRA8 },
+            { RS2_FORMAT_YUYV, RS2_FORMAT_RGB8, RS2_FORMAT_Y8, RS2_FORMAT_RGBA8, RS2_FORMAT_BGR8, RS2_FORMAT_BGRA8 },
             RS2_STREAM_COLOR ) );
 
     // Depth
@@ -172,6 +178,12 @@ void dds_sensor_proxy::register_basic_converters()
 
     // Confidence
     _formats_converter.register_converter( processing_block_factory::create_id_pbf( RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE ) );
+}
+
+
+rsutils::subscription dds_sensor_proxy::register_options_changed_callback( options_watcher::callback && cb )
+{
+    return _options_watcher.subscribe( std::move( cb ) );
 }
 
 
@@ -276,15 +288,21 @@ void dds_sensor_proxy::open( const stream_profiles & profiles )
 
 
 void dds_sensor_proxy::handle_video_data( realdds::topics::image_msg && dds_frame,
+                                          realdds::dds_sample && dds_sample,
                                           const std::shared_ptr< stream_profile_interface > & profile,
                                           streaming_impl & streaming )
 {
     frame_additional_data data;  // with NO metadata by default!
+    data.system_time = time_service::get_time();  // time of arrival in system clock
+    data.backend_timestamp                        // time when the underlying backend (DDS) received it
+        = static_cast<rs2_time_t>(realdds::time_to_double( dds_sample.reception_timestamp ) * 1e3);
     data.timestamp               // in ms
         = static_cast< rs2_time_t >( realdds::time_to_double( dds_frame.timestamp ) * 1e3 );
+    data.last_timestamp = streaming.last_timestamp.exchange( data.timestamp );
     data.timestamp_domain;  // from metadata, or leave default (hardware domain)
     data.depth_units;       // from metadata
     data.frame_number;      // filled in only once metadata is known
+    data.raw_size = static_cast< uint32_t >( dds_frame.raw_data.size() );
 
     auto vid_profile = dynamic_cast< video_stream_profile_interface * >( profile.get() );
     if( ! vid_profile )
@@ -306,6 +324,7 @@ void dds_sensor_proxy::handle_video_data( realdds::topics::image_msg && dds_fram
     }
     else
     {
+        add_no_metadata( new_frame, streaming );
         invoke_new_frame( new_frame,
                           nullptr,    // pixels are already inside new_frame->data
                           nullptr );  // so no deleter is necessary
@@ -314,15 +333,21 @@ void dds_sensor_proxy::handle_video_data( realdds::topics::image_msg && dds_fram
 
 
 void dds_sensor_proxy::handle_motion_data( realdds::topics::imu_msg && imu,
+                                           realdds::dds_sample && sample,
                                            const std::shared_ptr< stream_profile_interface > & profile,
                                            streaming_impl & streaming )
 {
     frame_additional_data data;  // with NO metadata by default!
+    data.system_time = time_service::get_time();  // time of arrival in system clock
+    data.backend_timestamp                        // time when the underlying backend (DDS) received it
+        = static_cast<rs2_time_t>(realdds::time_to_double( sample.reception_timestamp ) * 1e3);
     data.timestamp               // in ms
         = static_cast< rs2_time_t >( realdds::time_to_double( imu.timestamp() ) * 1e3 );
+    data.last_timestamp = streaming.last_timestamp.exchange( data.timestamp );
     data.timestamp_domain;  // leave default (hardware domain)
     data.last_frame_number = streaming.last_frame_number.fetch_add( 1 );
     data.frame_number = data.last_frame_number + 1;
+    data.raw_size = sizeof( rs2_combined_motion );
 
     auto new_frame_interface = allocate_new_frame( RS2_EXTENSION_MOTION_FRAME, profile.get(), std::move( data ) );
     if( ! new_frame_interface )
@@ -349,40 +374,48 @@ void dds_sensor_proxy::handle_motion_data( realdds::topics::imu_msg && imu,
 }
 
 
-void dds_sensor_proxy::handle_new_metadata( std::string const & stream_name, nlohmann::json && dds_md )
+void dds_sensor_proxy::handle_new_metadata( std::string const & stream_name,
+                                            std::shared_ptr< const json > const & dds_md )
 {
     if( ! _md_enabled )
         return;
 
     auto it = _streaming_by_name.find( stream_name );
     if( it != _streaming_by_name.end() )
-        it->second.syncer.enqueue_metadata(
-            rsutils::json::get< realdds::dds_nsec >( dds_md[metadata_header_key], timestamp_key ),
-            std::move( dds_md ) );
+    {
+        if( auto timestamp = dds_md->nested( realdds::topics::metadata::key::header,
+                                             realdds::topics::metadata::header::key::timestamp ) )
+            it->second.syncer.enqueue_metadata( timestamp.get< realdds::dds_nsec >(), dds_md );
+        else
+            throw std::runtime_error( "missing metadata header/timestamp" );
+    }
     // else we're not streaming -- must be another client that's subscribed
 }
 
 
-void dds_sensor_proxy::add_frame_metadata( frame * const f, nlohmann::json && dds_md, streaming_impl & streaming )
+void dds_sensor_proxy::add_no_metadata( frame * const f, streaming_impl & streaming )
 {
-    if( dds_md.empty() )
-    {
-        // Without MD, we have no way of knowing the frame-number - we assume it's one higher than
-        // the last
-        f->additional_data.last_frame_number = streaming.last_frame_number.fetch_add( 1 );
-        f->additional_data.frame_number = f->additional_data.last_frame_number + 1;
-        // the frame should already have empty metadata, so no need to do anything else
-        return;
-    }
+    // Without MD, we have no way of knowing the frame-number - we assume it's one higher than the last
+    f->additional_data.last_frame_number = streaming.last_frame_number.fetch_add( 1 );
+    f->additional_data.frame_number = f->additional_data.last_frame_number + 1;
 
-    nlohmann::json const & md_header = dds_md[metadata_header_key];
-    nlohmann::json const & md = dds_md[metadata_key];
+    // the frame should already have empty metadata, so no need to do anything else
+}
+
+
+void dds_sensor_proxy::add_frame_metadata( frame * const f,
+                                           json const & dds_md,
+                                           streaming_impl & streaming )
+{
+    auto md_header = dds_md.nested( realdds::topics::metadata::key::header );
+    auto md = dds_md.nested( realdds::topics::metadata::key::metadata );
 
     // A frame number is "optional". If the server supplies it, we try to use it for the simple fact that,
     // otherwise, we have no way of detecting drops without some advanced heuristic tracking the FPS and
     // timestamps. If not supplied, we use an increasing counter.
     // Note that if we have no metadata, we have no frame-numbers! So we need a way of generating them
-    if( rsutils::json::get_ex( md_header, frame_number_key, &f->additional_data.frame_number ) )
+    if( md_header.nested( realdds::topics::metadata::header::key::frame_number )
+            .get_ex( f->additional_data.frame_number ) )
     {
         f->additional_data.last_frame_number = streaming.last_frame_number.exchange( f->additional_data.frame_number );
         if( f->additional_data.frame_number != f->additional_data.last_frame_number + 1
@@ -402,41 +435,33 @@ void dds_sensor_proxy::add_frame_metadata( frame * const f, nlohmann::json && dd
     // purposes, so we ignore here. The domain is optional, and really only rs-dds-adapter communicates it
     // because the source is librealsense...
     f->additional_data.timestamp;
-    rsutils::json::get_ex( md_header, timestamp_domain_key, &f->additional_data.timestamp_domain );
+    md_header.nested( realdds::topics::metadata::header::key::timestamp_domain )
+        .get_ex( f->additional_data.timestamp_domain );
 
-    // Expected metadata for all depth images
-    rsutils::json::get_ex( md_header, depth_units_key, &f->additional_data.depth_units );
-
-    // Other metadata fields. Metadata fields that are present but unknown by librealsense will be ignored.
-    auto & metadata = reinterpret_cast< metadata_array & >( f->additional_data.metadata_blob );
-    for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
+    if( ! md.empty() )
     {
-        auto key = static_cast< rs2_frame_metadata_value >( i );
-        std::string const & keystr = librealsense::get_string( key );
-        try
+        // Other metadata fields. Metadata fields that are present but unknown by librealsense will be ignored.
+        auto & metadata = reinterpret_cast< metadata_array & >( f->additional_data.metadata_blob );
+        for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
         {
-            metadata[key] = { true, rsutils::json::get< rs2_metadata_type >( md, keystr ) };
-        }
-        catch( nlohmann::json::exception const & )
-        {
-            // The metadata key doesn't exist or the value isn't the right type... we ignore it!
-            // (all metadata is not there when we create the frame, so no need to erase)
+            auto key = static_cast< rs2_frame_metadata_value >( i );
+            std::string const & keystr = librealsense::get_string( key );
+            try
+            {
+                if( auto value_j = md.nested( keystr, &json::is_number_integer ) )
+                    metadata[key] = { true, value_j.get< rs2_metadata_type >() };
+            }
+            catch( json::exception const & )
+            {
+                // The metadata key doesn't exist or the value isn't the right type... we ignore it!
+                // (all metadata is not there when we create the frame, so no need to erase)
+            }
         }
     }
 }
 
 
-template<class T>
-frame_callback_ptr make_callback( T callback )
-{
-    return {
-        new internal_frame_callback<T>( callback ),
-        []( rs2_frame_callback * p ) { p->release(); }
-    };
-}
-
-
-void dds_sensor_proxy::start( frame_callback_ptr callback )
+void dds_sensor_proxy::start( rs2_frame_callback_sptr callback )
 {
     for( auto & profile : sensor_base::get_active_streams() )
     {
@@ -448,15 +473,18 @@ void dds_sensor_proxy::start( frame_callback_ptr callback )
         }
         auto const & dds_stream = streamit->second;
         // Opening it will start streaming on the server side automatically
-        dds_stream->open( "rt/" + _dev->device_info().topic_root + '_' + dds_stream->name(), _dev->subscriber() );
+        dds_stream->open( "rt/" + _dev->device_info().topic_root() + '_' + dds_stream->name(), _dev->subscriber() );
         auto & streaming = _streaming_by_name[dds_stream->name()];
         streaming.syncer.on_frame_release( frame_releaser );
         streaming.syncer.on_frame_ready(
-            [this, &streaming]( syncer_type::frame_holder && fh, nlohmann::json && md )
+            [this, &streaming]( syncer_type::frame_holder && fh, std::shared_ptr< const json > const & md )
             {
                 if( _is_streaming ) // stop was not called
                 {
-                    add_frame_metadata( static_cast< frame * >( fh.get() ), std::move( md ), streaming );
+                    if( ! md )
+                        add_no_metadata( static_cast< frame * >( fh.get() ), streaming );
+                    else
+                        add_frame_metadata( static_cast< frame * >( fh.get() ), *md, streaming );
                     invoke_new_frame( static_cast< frame * >( fh.release() ), nullptr, nullptr );
                 }
             } );
@@ -464,19 +492,19 @@ void dds_sensor_proxy::start( frame_callback_ptr callback )
         if( auto dds_video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( dds_stream ) )
         {
             dds_video_stream->on_data_available(
-                [profile, this, &streaming]( realdds::topics::image_msg && dds_frame )
+                [profile, this, &streaming]( realdds::topics::image_msg && dds_frame, realdds::dds_sample && sample )
                 {
                     if( _is_streaming )
-                        handle_video_data( std::move( dds_frame ), profile, streaming );
+                        handle_video_data( std::move( dds_frame ), std::move( sample ), profile, streaming );
                 } );
         }
         else if( auto dds_motion_stream = std::dynamic_pointer_cast< realdds::dds_motion_stream >( dds_stream ) )
         {
             dds_motion_stream->on_data_available(
-                [profile, this, &streaming]( realdds::topics::imu_msg && imu )
+                [profile, this, &streaming]( realdds::topics::imu_msg && imu, realdds::dds_sample && sample )
                 {
                     if( _is_streaming )
-                        handle_motion_data( std::move( imu ), profile, streaming );
+                        handle_motion_data( std::move( imu ), std::move( sample ), profile, streaming );
                 } );
         }
         else
@@ -486,7 +514,7 @@ void dds_sensor_proxy::start( frame_callback_ptr callback )
     }
 
     _formats_converter.set_frames_callback( callback );
-    const auto && process_cb = make_callback( [&, this]( frame_holder f ) {
+    const auto && process_cb = make_frame_callback( [&, this]( frame_holder f ) {
         _formats_converter.convert_frame( f );
     } );
 
@@ -532,6 +560,32 @@ void dds_sensor_proxy::stop()
 }
 
 
+class dds_option_roi_method : public region_of_interest_method
+{
+    std::shared_ptr< rs_dds_option > _rs_option;
+
+public:
+    dds_option_roi_method( std::shared_ptr< rs_dds_option > const & rs_option )
+        : _rs_option( rs_option )
+    {
+    }
+
+    void set( const region_of_interest & roi ) override
+    {
+        _rs_option->set_value( json::array( { roi.min_x, roi.min_y, roi.max_x, roi.max_y } ) );
+    }
+
+    region_of_interest get() const override
+    {
+        auto j = _rs_option->get_value();
+        if( ! j.is_array() )
+            throw std::runtime_error( "no ROI available" );
+        region_of_interest roi{ j[0], j[1], j[2], j[3] };
+        return roi;
+    }
+};
+
+
 void dds_sensor_proxy::add_option( std::shared_ptr< realdds::dds_option > option )
 {
     bool const ok_if_there = true;
@@ -546,26 +600,41 @@ void dds_sensor_proxy::add_option( std::shared_ptr< realdds::dds_option > option
     if( get_option_handler( option_id ) )
         throw std::runtime_error( "option '" + option->get_name() + "' already exists in sensor" );
 
+    LOG_DEBUG( "... option -> " << option->get_name() );
     auto opt = std::make_shared< rs_dds_option >(
         option,
-        [=]( const std::string & name, float value ) { _dev->set_option_value( option, value ); },
-        [=]( const std::string & name ) -> float { return _dev->query_option_value( option ); } );
+        [=]( json value )
+        {
+            // Send the new value to the remote device; the local value gets cached automatically as part of the reply
+            _dev->set_option_value( option, std::move( value ) );
+        },
+        [=]() -> json
+        {
+            // We don't have to constantly query the option: we expect to get new values automatically, so can return
+            // the "last-known" value:
+            return option->get_value();
+            // If the value is null, we shouldn't get here (is_enabled() should return false) from the user but it's
+            // still possible from internal mechanisms (like the options-watcher).
+            // If we query for the actual current value:
+            //    return _dev->query_option_value( option );
+            // Then we may have get a null even when is_enabled() returned true!
+        } );
     register_option( option_id, opt );
+    _options_watcher.register_option( option_id, opt );
+
+    if( std::dynamic_pointer_cast< realdds::dds_rect_option >( option ) && option->get_name() == "Region of Interest" )
+    {
+        if( _roi_support )
+            throw std::runtime_error( "more than one ROI option in stream" );
+
+        auto roi = std::make_shared< roi_sensor_base >();
+        roi->set_roi_method( std::make_shared< dds_option_roi_method >( opt ) );
+        _roi_support = roi;
+    }
 }
 
 
-void dds_sensor_proxy::add_processing_block( std::string filter_name )
-{
-    auto & current_filters = get_software_recommended_proccesing_blocks();
-
-    if( processing_block_exists( current_filters.get_recommended_processing_blocks(), filter_name ) )
-        return;  // Already created by another stream of this sensor
-
-    create_processing_block( filter_name );
-}
-
-
-bool dds_sensor_proxy::processing_block_exists( processing_blocks const & blocks, std::string const & block_name ) const
+static bool processing_block_exists( processing_blocks const & blocks, std::string const & block_name )
 {
     for( auto & block : blocks )
         if( block_name.compare( block->get_info( RS2_CAMERA_INFO_NAME ) ) == 0 )
@@ -575,32 +644,24 @@ bool dds_sensor_proxy::processing_block_exists( processing_blocks const & blocks
 }
 
 
-void dds_sensor_proxy::create_processing_block( std::string & filter_name )
+void dds_sensor_proxy::add_processing_block( std::string const & filter_name )
 {
-    auto & current_filters = get_software_recommended_proccesing_blocks();
+    if( processing_block_exists( get_recommended_processing_blocks(), filter_name ) )
+        return;  // Already created by another stream of this sensor
 
-    if( filter_name.compare( "Decimation Filter" ) == 0 )
-        // sensor.cpp sets format option based on sensor type, but the filter does not use it and selects the
-        // appropriate decimation algorithm based on processed frame profile format.
-        current_filters.add_processing_block( std::make_shared< decimation_filter >() );
-    else if( filter_name.compare( "HDR Merge" ) == 0 )
-        current_filters.add_processing_block( std::make_shared< hdr_merge >() );
-    else if( filter_name.compare( "Filter By Sequence id" ) == 0 )
-        current_filters.add_processing_block( std::make_shared< sequence_id_filter >() );
-    else if( filter_name.compare( "Threshold Filter" ) == 0 )
-        current_filters.add_processing_block( std::make_shared< threshold >() );
-    else if( filter_name.compare( "Depth to Disparity" ) == 0 )
-        current_filters.add_processing_block( std::make_shared< disparity_transform >( true ) );
-    else if( filter_name.compare( "Disparity to Depth" ) == 0 )
-        current_filters.add_processing_block( std::make_shared< disparity_transform >( false ) );
-    else if( filter_name.compare( "Spatial Filter" ) == 0 )
-        current_filters.add_processing_block( std::make_shared< spatial_filter >() );
-    else if( filter_name.compare( "Temporal Filter" ) == 0 )
-        current_filters.add_processing_block( std::make_shared< temporal_filter >() );
-    else if( filter_name.compare( "Hole Filling Filter" ) == 0 )
-        current_filters.add_processing_block( std::make_shared< hole_filling_filter >() );
-    else
-        throw std::runtime_error( "Unsupported processing block '" + filter_name + "' received" );
+    try
+    {
+        auto ppb = get_device().get_context()->create_pp_block( filter_name, {} );
+        if( ! ppb )
+            LOG_WARNING( "Unsupported processing block '" + filter_name + "' received" );
+        else
+            super::add_processing_block( ppb );
+    }
+    catch( std::exception const & e )
+    {
+        // Bad settings, error in configuration, etc.
+        LOG_ERROR( "Failed to create processing block '" << filter_name << "': " << e.what() );
+    }
 }
 
 

@@ -160,8 +160,8 @@ namespace rs2
             auto p2 = p[(i+1) % p.size()];
             if ((p2 - p1).length() < 1e-3) return false;
 
-            p1 = p1.normalize();
-            p2 = p2.normalize();
+            p1 = p1.normalized();
+            p2 = p2.normalized();
 
             angles.push_back(acos((p1 * p2) / sqrt(p1.length() * p2.length())));
         }

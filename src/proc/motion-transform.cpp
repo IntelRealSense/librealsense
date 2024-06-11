@@ -6,57 +6,93 @@
 #include "synthetic-stream.h"
 #include "motion-transform.h"
 #include "stream.h"
+#include <src/platform/hid-data.h>
+#include <src/core/frame-processor-callback.h>
+
 
 namespace librealsense
 {
-    template<rs2_format FORMAT> void copy_hid_axes(byte * const dest[], const byte * source, double factor, bool is_mipi)
+    class converter_16_bit : public imu_to_librs_converter
     {
-        using namespace librealsense;
-
-        auto res = float3();
-        // D457 dev
-        if (is_mipi)
+    public:
+        converter_16_bit( double scale_factor ) : imu_to_librs_converter( scale_factor )
         {
-            auto hid = (hid_mipi_data*)(source);
-            res = float3{ float(hid->x), float(hid->y), float(hid->z) } *float(factor);
-        }
-        else
-        {
-            auto hid = (hid_data*)(source);
-            res = float3{ float(hid->x), float(hid->y), float(hid->z) } *float(factor);
         }
 
-        librealsense::copy(dest[0], &res, sizeof(float3));
-    }
+        void convert( uint8_t * const dest[], const uint8_t * source ) override
+        {
+            // The backend puts the data in a struct with 32 bit fields, data is valid at the lower 16 bits only.
+            // Converting to int16_t before casting to float avoids incorrect handling of negative values and overflows.
+            hid_data hid = *reinterpret_cast< const hid_data * >( source );
+            hid.x = static_cast< int16_t >( hid.x );
+            hid.y = static_cast< int16_t >( hid.y );
+            hid.z = static_cast< int16_t >( hid.z );
 
-    // The Accelerometer input format: signed int 16bit. data units 1LSB=0.001g;
-    // Librealsense output format: floating point 32bit. units m/s^2,
-    template<rs2_format FORMAT> void unpack_accel_axes(byte * const dest[], const byte * source, int width, int height, int output_size, bool is_mipi = false)
+            float3 res = float3{ float( hid.x ), float( hid.y ), float( hid.z ) } * float( _scale_factor );
+            std::memcpy( dest[0], &res, sizeof( float3 ) );
+        }
+    };
+
+    class converter_32_bit : public imu_to_librs_converter
     {
-        static constexpr float gravity = 9.80665f;          // Standard Gravitation Acceleration
-        static constexpr double accelerator_transform_factor = 0.001*gravity;
+    public:
+        converter_32_bit( double scale_factor ) : imu_to_librs_converter( scale_factor )
+        {
+        }
 
-        copy_hid_axes<FORMAT>(dest, source, accelerator_transform_factor, is_mipi);
-    }
+        void convert( uint8_t * const dest[], const uint8_t * source ) override
+        {
+            const hid_data * hid = reinterpret_cast< const hid_data * >( source );
+            float3 res = float3{ float( hid->x ), float( hid->y ), float( hid->z ) } * float( _scale_factor );
+            std::memcpy( dest[0], &res, sizeof( float3 ) );
+        }
+    };
 
-    // The Gyro input format: signed int 16bit. data units 1LSB=0.1deg/sec;
-    // Librealsense output format: floating point 32bit. units rad/sec,
-    template<rs2_format FORMAT> void unpack_gyro_axes(byte * const dest[], const byte * source, int width, int height, int output_size, bool is_mipi = false)
+    class converter_16_bit_mipi : public imu_to_librs_converter
     {
-        static const double gyro_transform_factor = deg2rad(0.1);
+    public:
+        converter_16_bit_mipi( double scale_factor ) : imu_to_librs_converter( scale_factor )
+        {
+        }
 
-        copy_hid_axes<FORMAT>(dest, source, gyro_transform_factor, is_mipi);
+        void convert( uint8_t * const dest[], const uint8_t * source ) override
+        {
+            const hid_mipi_data * hid = reinterpret_cast< const hid_mipi_data * >( source );
+            float3 res = float3{ float( hid->x ), float( hid->y ), float( hid->z ) } * float( _scale_factor );
+            std::memcpy( dest[0], &res, sizeof( float3 ) );
+        }
+    };
+
+    class converter_32_bit_mipi : public imu_to_librs_converter
+    {
+    public:
+        converter_32_bit_mipi( double scale_factor ) : imu_to_librs_converter( scale_factor )
+        {
+        }
+
+        void convert( uint8_t * const dest[], const uint8_t * source ) override
+        {
+            const hid_mipi_data_32 * hid = reinterpret_cast< const hid_mipi_data_32 * >( source );
+            float3 res = float3{ float( hid->x ), float( hid->y ), float( hid->z ) } * float( _scale_factor );
+            std::memcpy( dest[0], &res, sizeof( float3 ) );
+        }
+    };
+
+    motion_transform::motion_transform( rs2_format target_format,
+                                        rs2_stream target_stream,
+                                        std::shared_ptr< mm_calib_handler > mm_calib,
+                                        std::shared_ptr< enable_motion_correction > mm_correct_opt )
+        : motion_transform( "Motion Transform", target_format, target_stream, mm_calib, mm_correct_opt )
+    {
     }
 
-    motion_transform::motion_transform(rs2_format target_format, rs2_stream target_stream,
-        std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt)
-        : motion_transform("Motion Transform", target_format, target_stream, mm_calib, mm_correct_opt)
-    {}
-
-    motion_transform::motion_transform(const char* name, rs2_format target_format, rs2_stream target_stream,
-        std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt)
-        : functional_processing_block(name, target_format, target_stream, RS2_EXTENSION_MOTION_FRAME),
-        _mm_correct_opt(mm_correct_opt)
+    motion_transform::motion_transform( const char * name,
+                                        rs2_format target_format,
+                                        rs2_stream target_stream,
+                                        std::shared_ptr< mm_calib_handler > mm_calib,
+                                        std::shared_ptr< enable_motion_correction > mm_correct_opt )
+        : functional_processing_block( name, target_format, target_stream, RS2_EXTENSION_MOTION_FRAME )
+        , _mm_correct_opt( mm_correct_opt )
     {
         if (mm_calib)
         {
@@ -116,20 +152,31 @@ namespace librealsense
         correct_motion_helper(xyz, _accel_gyro_target_profile->get_stream_type());
     }
 
-    motion_to_accel_gyro::motion_to_accel_gyro(std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt)
-        : motion_to_accel_gyro("Accel_Gyro Transform", mm_calib, mm_correct_opt)
+    motion_to_accel_gyro::motion_to_accel_gyro( std::shared_ptr< mm_calib_handler > mm_calib,
+                                                std::shared_ptr< enable_motion_correction > mm_correct_opt,
+                                                double gyro_scale_factor,
+                                                bool high_accuracy )
+        : motion_to_accel_gyro( "Accel_Gyro Transform", mm_calib, mm_correct_opt, gyro_scale_factor, high_accuracy )
     {}
 
-    motion_to_accel_gyro::motion_to_accel_gyro(const char * name, std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt)
+    motion_to_accel_gyro::motion_to_accel_gyro( const char * name,
+                                                std::shared_ptr< mm_calib_handler > mm_calib,
+                                                std::shared_ptr< enable_motion_correction > mm_correct_opt,
+                                                double gyro_scale_factor,
+                                                bool high_accuracy )
         : motion_transform(name, RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ANY, mm_calib, mm_correct_opt)
     {
+        if( high_accuracy )
+            _converter = std::make_unique< converter_32_bit_mipi >( deg2rad( gyro_scale_factor ) );
+        else
+            _converter = std::make_unique< converter_16_bit_mipi >( deg2rad( gyro_scale_factor ) );
         configure_processing_callback();
     }
 
     void motion_to_accel_gyro::configure_processing_callback()
     {
         // define and set the frame processing callback
-        auto process_callback = [&](frame_holder frame, synthetic_source_interface* source)
+        auto process_callback = [&](frame_holder && frame, synthetic_source_interface* source)
         {
             auto profile = As<motion_stream_profile, stream_profile_interface>(frame.frame->get_stream());
             if (!profile)
@@ -165,9 +212,9 @@ namespace librealsense
             agf = source->allocate_motion_frame(_accel_gyro_target_profile, frame);
 
             // process the frame
-            byte* frame_data[1];
-            frame_data[0] = (byte*)agf.frame->get_frame_data();
-            process_function(frame_data, (const byte*)frame->get_frame_data(), 0, 0, 0, 0);
+            uint8_t * frame_data[1];
+            frame_data[0] = (uint8_t *)agf.frame->get_frame_data();
+            process_function(frame_data, (const uint8_t *)frame->get_frame_data(), 0, 0, 0, 0);
 
             // correct the axes values according to the device's data
             correct_motion((float3*)(frame_data[0]));
@@ -175,52 +222,74 @@ namespace librealsense
             source->frame_ready(std::move(agf));
         };
 
-        set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
-            new internal_frame_processor_callback<decltype(process_callback)>(process_callback)));
+        set_processing_callback( make_frame_processor_callback( std::move( process_callback ) ) );
     }
 
-    void motion_to_accel_gyro::process_function(byte * const dest[], const byte * source, int width, int height, int output_size, int actual_size)
+    void motion_to_accel_gyro::process_function( uint8_t * const dest[], const uint8_t * source, int, int, int, int )
     {
         if (source[0] == 1)
         {
             _target_stream = RS2_STREAM_ACCEL;
-            unpack_accel_axes<RS2_FORMAT_MOTION_XYZ32F>(dest, source, width, height, actual_size, true);
         }
         else if (source[0] == 2)
         {
             _target_stream = RS2_STREAM_GYRO;
-            unpack_gyro_axes<RS2_FORMAT_MOTION_XYZ32F>(dest, source, width, height, actual_size, true);
         }
         else
         {
             throw("motion_to_accel_gyro::process_function - stream type not discovered");
         }
+
+        _converter->convert( dest, source );
     }
 
-    acceleration_transform::acceleration_transform(std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt)
-        : acceleration_transform("Acceleration Transform", mm_calib, mm_correct_opt)
+    acceleration_transform::acceleration_transform( std::shared_ptr< mm_calib_handler > mm_calib,
+                                                    std::shared_ptr< enable_motion_correction > mm_correct_opt,
+                                                    bool high_accuracy )
+        : acceleration_transform( "Acceleration Transform", mm_calib, mm_correct_opt, high_accuracy )
     {}
 
-    acceleration_transform::acceleration_transform(const char * name, std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt)
-        : motion_transform(name, RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL, mm_calib, mm_correct_opt)
-    {}
-
-    void acceleration_transform::process_function(byte * const dest[], const byte * source, int width, int height, int output_size, int actual_size)
+    acceleration_transform::acceleration_transform( const char * name,
+                                                    std::shared_ptr< mm_calib_handler > mm_calib,
+                                                    std::shared_ptr< enable_motion_correction > mm_correct_opt,
+                                                    bool high_accuracy )
+        : motion_transform( name, RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL, mm_calib, mm_correct_opt )
     {
-        unpack_accel_axes<RS2_FORMAT_MOTION_XYZ32F>(dest, source, width, height, actual_size);
+        static constexpr float gravity = 9.80665f;  // Standard Gravitation Acceleration
+        static constexpr double accelerator_scale_factor = 0.001 * gravity;
+
+        if( high_accuracy )
+            _converter = std::make_unique< converter_32_bit >( accelerator_scale_factor );
+        else
+            _converter = std::make_unique< converter_16_bit >( accelerator_scale_factor );
     }
 
-    gyroscope_transform::gyroscope_transform(std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt)
-        : gyroscope_transform("Gyroscope Transform", mm_calib, mm_correct_opt)
+    void acceleration_transform::process_function( uint8_t * const dest[], const uint8_t * source, int, int, int, int )
+    {
+        _converter->convert( dest, source );
+    }
+
+    gyroscope_transform::gyroscope_transform( std::shared_ptr< mm_calib_handler > mm_calib,
+                                              std::shared_ptr< enable_motion_correction > mm_correct_opt,
+                                              double gyro_scale_factor, bool high_accuracy )
+        : gyroscope_transform( "Gyroscope Transform", mm_calib, mm_correct_opt, gyro_scale_factor, high_accuracy )
     {}
 
-    gyroscope_transform::gyroscope_transform(const char * name, std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt)
+    gyroscope_transform::gyroscope_transform( const char * name,
+                                              std::shared_ptr< mm_calib_handler > mm_calib,
+                                              std::shared_ptr< enable_motion_correction > mm_correct_opt,
+                                              double gyro_scale_factor, bool high_accuracy )
         : motion_transform(name, RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO, mm_calib, mm_correct_opt)
-    {}
-
-    void gyroscope_transform::process_function(byte * const dest[], const byte * source, int width, int height, int output_size, int actual_size)
     {
-        unpack_gyro_axes<RS2_FORMAT_MOTION_XYZ32F>(dest, source, width, height, actual_size);
+        if( high_accuracy )
+            _converter = std::make_unique< converter_32_bit >( deg2rad( gyro_scale_factor ) );
+        else
+            _converter = std::make_unique< converter_16_bit >( deg2rad( gyro_scale_factor ) );
+    }
+
+    void gyroscope_transform::process_function( uint8_t * const dest[], const uint8_t * source, int, int, int, int )
+    {
+        _converter->convert( dest, source );
     }
 }
 

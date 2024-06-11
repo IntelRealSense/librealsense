@@ -1,17 +1,23 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-topic.h>
 #include <realdds/dds-participant.h>
 #include <realdds/dds-subscriber.h>
+#include <realdds/dds-serialization.h>
 #include <realdds/dds-utilities.h>
+
+#include <rsutils/time/stopwatch.h>
 
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/subscriber/Subscriber.hpp>
 #include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/topic/Topic.hpp>
 #include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
+
+#include <rsutils/time/timer.h>
+#include <rsutils/json.h>
 
 
 namespace realdds {
@@ -27,6 +33,7 @@ dds_topic_reader::dds_topic_reader( std::shared_ptr< dds_topic > const & topic,
                                     std::shared_ptr< dds_subscriber > const & subscriber )
     : _topic( topic )
     , _subscriber( subscriber )
+    , _n_writers( 0 )
 {
 }
 
@@ -79,8 +86,21 @@ dds_topic_reader::qos::qos( eprosima::fastdds::dds::ReliabilityQosPolicyKind rel
 
     // Does not allocate for every sample but still gives flexibility. See:
     //     https://github.com/eProsima/Fast-DDS/discussions/2707
-    // (default is PREALLOCATED_MEMORY_MODE)
+    // (default is PREALLOCATED_WITH_REALLOC_MEMORY_MODE)
     endpoint().history_memory_policy = eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
+}
+
+
+void dds_topic_reader::qos::override_from_json( rsutils::json const & qos_settings )
+{
+    // Default values should be set before we're called:
+    // All we do here is override those - if specified!
+    override_reliability_qos_from_json( reliability(), qos_settings.nested( "reliability" ) );
+    override_durability_qos_from_json( durability(), qos_settings.nested( "durability" ) );
+    override_history_qos_from_json( history(), qos_settings.nested( "history" ) );
+    override_liveliness_qos_from_json( liveliness(), qos_settings.nested( "liveliness" ) );
+    override_data_sharing_qos_from_json( data_sharing(), qos_settings.nested( "data-sharing" ) );
+    override_endpoint_qos_from_json( endpoint(), qos_settings.nested( "endpoint" ) );
 }
 
 
@@ -90,7 +110,23 @@ void dds_topic_reader::run( qos const & rqos )
     eprosima::fastdds::dds::StatusMask status_mask;
     status_mask << eprosima::fastdds::dds::StatusMask::subscription_matched();
     status_mask << eprosima::fastdds::dds::StatusMask::data_available();
+    status_mask << eprosima::fastdds::dds::StatusMask::sample_lost();
     _reader = DDS_API_CALL( _subscriber->get()->create_datareader( _topic->get(), rqos, this, status_mask ) );
+}
+
+
+bool dds_topic_reader::wait_for_writers( dds_time timeout )
+{
+    // Better to use on_subscription_matched, but that would require additional data members etc.
+    // For now, keep it simple:
+    rsutils::time::timer timer( std::chrono::nanoseconds( timeout.to_ns() ) );
+    while( _n_writers.load() < 1 )
+    {
+        if( timer.has_expired() )
+            return false;
+        std::this_thread::sleep_for( std::chrono::milliseconds( 250 ) );
+    }
+    return true;
 }
 
 
@@ -112,15 +148,40 @@ void dds_topic_reader::on_subscription_matched(
     eprosima::fastdds::dds::DataReader *, eprosima::fastdds::dds::SubscriptionMatchedStatus const & info )
 {
     // Called when the subscriber is matched (un)with a Writer
+    _n_writers = info.current_count;
     if( _on_subscription_matched )
         _on_subscription_matched( info );
 }
 
+
 void dds_topic_reader::on_data_available( eprosima::fastdds::dds::DataReader * )
 {
-    // Called when a new  Data Message is received
+    // Called when a new Data Message is received
     if( _on_data_available )
-        _on_data_available();
+    {
+        try
+        {
+            rsutils::time::stopwatch stopwatch;
+            _on_data_available();
+            if( stopwatch.get_elapsed() > std::chrono::milliseconds( 500 ) )
+                LOG_WARNING( _topic->get()->get_name() << "' callback took too long!" );
+        }
+        catch( std::exception const & e )
+        {
+            LOG_ERROR( "[" << _topic->get()->get_name() << "] exception: " << e.what() );
+        }
+    }
+}
+
+
+void dds_topic_reader::on_sample_lost( eprosima::fastdds::dds::DataReader *, const eprosima::fastdds::dds::SampleLostStatus & status )
+{
+    // Called when a sample is lost: i.e., when a fragment is received that is a jump in sequence number
+    // If such a jump in sequence number (sample) isn't received then we never get here!
+    if( _on_sample_lost )
+        _on_sample_lost( status );
+    else
+        LOG_WARNING( "[" << _topic->get()->get_name() << "] " << status.total_count_change << " sample(s) lost" );
 }
 
 

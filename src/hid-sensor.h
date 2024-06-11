@@ -49,9 +49,11 @@ public:
 
     void open( const stream_profiles & requests ) override;
     void close() override;
-    void start( frame_callback_ptr callback ) override;
+    void start( rs2_frame_callback_sptr callback ) override;
     void stop() override;
-
+    void set_imu_sensitivity( rs2_stream stream, float value );
+    double get_imu_sensitivity_values( rs2_stream stream );
+    void set_gyro_scale_factor(double scale_factor);
     std::vector< uint8_t > get_custom_report_data( const std::string & custom_sensor_name,
                                                    const std::string & report_name,
                                                    platform::custom_sensor_report_field report_field ) const;
@@ -60,10 +62,6 @@ protected:
     stream_profiles init_stream_profiles() override;
 
 private:
-    const std::map< rs2_stream, uint32_t > stream_and_fourcc = { { RS2_STREAM_GYRO, rs_fourcc( 'G', 'Y', 'R', 'O' ) },
-                                                                 { RS2_STREAM_ACCEL, rs_fourcc( 'A', 'C', 'C', 'L' ) },
-                                                                 { RS2_STREAM_GPIO, rs_fourcc( 'G', 'P', 'I', 'O' ) } };
-
     const std::vector< std::pair< std::string, stream_profile > > _sensor_name_and_hid_profiles;
     std::map< rs2_stream, std::map< uint32_t, uint32_t > > _fps_and_sampling_frequency_per_rs2_stream;
     std::shared_ptr< platform::hid_device > _hid_device;
@@ -73,6 +71,8 @@ private:
     std::vector< platform::hid_sensor > _hid_sensors;
     std::unique_ptr< frame_timestamp_reader > _hid_iio_timestamp_reader;
     std::unique_ptr< frame_timestamp_reader > _custom_hid_timestamp_reader;
+    //Keeps set sensitivity values for gyro and accel
+    std::map< rs2_stream, float > _imu_sensitivity_per_rs2_stream;
 
     stream_profiles get_sensor_profiles( std::string sensor_name ) const;
 

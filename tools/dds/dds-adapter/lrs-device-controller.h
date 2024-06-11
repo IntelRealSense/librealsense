@@ -1,13 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
-
 #pragma once
+
 #include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
 #include <realdds/dds-stream-sensor-bridge.h>
 #include <realdds/dds-stream-profile.h>
-#include <nlohmann/json_fwd.hpp>
 
-#include <unordered_map>
+#include <rsutils/json-fwd.h>
+#include <map>
 #include <vector>
 
 namespace rs2 {
@@ -26,23 +26,28 @@ class dds_option;
 namespace tools {
 
 // This class is in charge of handling a RS device: streaming, control..
-class lrs_device_controller
+class lrs_device_controller : public std::enable_shared_from_this< lrs_device_controller >
 {
 public:
     lrs_device_controller( rs2::device dev, std::shared_ptr< realdds::dds_device_server > dds_device_server );
     ~lrs_device_controller();
 
-    void set_option( const std::shared_ptr< realdds::dds_option > & option, float new_value );
-    float query_option( const std::shared_ptr< realdds::dds_option > & option );
+    void set_option( const std::shared_ptr< realdds::dds_option > & option, rsutils::json const & new_value );
+    rsutils::json query_option( const std::shared_ptr< realdds::dds_option > & option );
+
+    bool is_recovery() const;
 
 private:
     std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_streams();
 
     void publish_frame_metadata( const rs2::frame & f, realdds::dds_time const & );
 
-    bool on_control( std::string const & id, nlohmann::json const & control, nlohmann::json & reply );
-    bool on_hardware_reset( nlohmann::json const &, nlohmann::json & );
-    bool on_open_streams( nlohmann::json const &, nlohmann::json & );
+    bool on_control( std::string const & id, rsutils::json const & control, rsutils::json & reply );
+    bool on_hardware_reset( rsutils::json const &, rsutils::json & );
+    bool on_hwm( rsutils::json const &, rsutils::json & );
+    bool on_dfu_start( rsutils::json const &, rsutils::json & );
+    bool on_dfu_apply( rsutils::json const &, rsutils::json & );
+    bool on_open_streams( rsutils::json const &, rsutils::json & );
 
     void override_default_profiles( const std::map< std::string, realdds::dds_stream_profiles > & stream_name_to_profiles,
                                     std::map< std::string, size_t > & stream_name_to_default_profile ) const;
@@ -59,6 +64,9 @@ private:
     std::map< std::string, rs2::sensor > _rs_sensors;
     std::string _device_sn;
     realdds::dds_stream_sensor_bridge _bridge;
+
+    struct dfu_support;
+    std::shared_ptr< dfu_support > _dfu;
 
     std::map< std::string, std::shared_ptr< realdds::dds_stream_server > > _stream_name_to_server;
 

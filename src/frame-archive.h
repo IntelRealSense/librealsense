@@ -3,9 +3,15 @@
 #pragma once
 
 #include "archive.h"
+#include <src/core/frame-interface.h>
+
+#include <atomic>
+#include <vector>
 
 namespace librealsense
 {
+    constexpr static int RS2_USER_QUEUE_SIZE = 128;
+
     // Defines general frames storage model
     template<class T>
     class frame_archive : public std::enable_shared_from_this<frame_archive<T>>, public archive_interface
@@ -23,7 +29,7 @@ namespace librealsense
 
         std::weak_ptr<sensor_interface> _sensor;
         std::shared_ptr<sensor_interface> get_sensor() const override { return _sensor.lock(); }
-        void set_sensor(std::shared_ptr<sensor_interface> s) override { _sensor = s; }
+        void set_sensor( const std::weak_ptr< sensor_interface > & s ) override { _sensor = s; }
 
         T alloc_frame(const size_t size, frame_additional_data && additional_data, bool requires_memory)
         {
@@ -77,14 +83,14 @@ namespace librealsense
             return nullptr;
         }
 
-        void unpublish_frame(frame_interface* frame) override
+        void unpublish_frame(frame_interface * fi) override
         {
-            if (frame)
+            if( fi )
             {
-                auto f = (T*)frame;
+                auto f = (T *)fi;
                 std::unique_lock<std::recursive_mutex> lock(mutex);
 
-                frame->keep();
+                fi->keep();
 
                 if (recycle_frames)
                 {
@@ -104,9 +110,9 @@ namespace librealsense
             --published_frames_count;
         }
 
-        frame_interface* publish_frame(frame_interface* frame) override
+        frame_interface * publish_frame( frame_interface * fi ) override
         {
-            auto f = (T*)frame;
+            auto f = (T *)fi;
 
             unsigned int max_frames = *max_frame_queue_size;
 

@@ -6,8 +6,10 @@
 #include "viewer.h"
 #include "ux-window.h"
 
+#include <rsutils/os/special-folder.h>
 #include "os.h"
 
+#include <rsutils/easylogging/easyloggingpp.h>
 #include <map>
 #include <vector>
 #include <string>
@@ -126,29 +128,33 @@ namespace rs2
 
     void firmware_update_manager::process_mipi()
     {
+        bool is_mipi_recovery = !(strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "BBCD"));
         if (!_is_signed)
         {
             fail("Signed FW update for MIPI device - This FW file is not signed ");
             return;
         }
-        auto dev_updatable = _dev.as<updatable>();
-        if(!(dev_updatable && dev_updatable.check_firmware_compatibility(_fw)))
+        if (!is_mipi_recovery)
         {
-            fail("Firmware Update failed - fw version must be newer than version 5.13.1.1");
-            return;
+            auto dev_updatable = _dev.as<updatable>();
+            if(!(dev_updatable && dev_updatable.check_firmware_compatibility(_fw)))
+            {
+                fail("Firmware Update failed - fw version must be newer than version 5.13.1.1");
+                return;
+            }
         }
-
         log("Burning Signed Firmware on MIPI device");
-
-        // Enter DFU mode
-        auto device_debug = _dev.as<rs2::debug_protocol>();
-        uint32_t dfu_opcode = 0x1e;
-        device_debug.build_command(dfu_opcode, 1);
-
+        if (!is_mipi_recovery)
+        {
+            // Enter DFU mode
+            auto device_debug = _dev.as<rs2::debug_protocol>();
+            uint32_t dfu_opcode = 0x1e;
+            device_debug.build_command(dfu_opcode, 1);
+        }
         _progress = 30;
-
-        // Write signed firmware to appropriate file descritptor
-        std::ofstream fw_path_in_device(_dev.get_info(RS2_CAMERA_INFO_DFU_DEVICE_PATH), std::ios::binary);
+        rs2_camera_info _dfu_port_info = (is_mipi_recovery)?(RS2_CAMERA_INFO_PHYSICAL_PORT):(RS2_CAMERA_INFO_DFU_DEVICE_PATH);
+        // Write signed firmware to appropriate file descriptor
+        std::ofstream fw_path_in_device(_dev.get_info(_dfu_port_info), std::ios::binary);
         if (fw_path_in_device)
         {
             fw_path_in_device.write(reinterpret_cast<const char*>(_fw.data()), _fw.size());
@@ -158,10 +164,20 @@ namespace rs2
             fail("Firmware Update failed - wrong path or permissions missing");
             return;
         }
-        LOG_INFO("Firmware Update for MIPI device done.");
+        log("FW update process completed successfully.");
+        LOG_INFO("FW update process completed successfully.");
         fw_path_in_device.close();
 
         _progress = 100;
+        if (is_mipi_recovery)
+        {
+            log("For GMSL MIPI device please reboot, or reload d4xx driver\n"\
+                "sudo rmmod d4xx && sudo modprobe d4xx\n"\
+                "and restart the realsense-viewer");
+            LOG_INFO("For GMSL MIPI device please reboot, or reload d4xx driver\n"\
+                     "sudo rmmod d4xx && sudo modprobe d4xx\n"\
+                     "and restart the realsense-viewer");
+        }
         _done = true;
         // need to find a way to update the fw version field in the viewer
     }
@@ -171,7 +187,10 @@ namespace rs2
         invoker invoke)
     {
         // if device is D457, and fw is signed - using mipi specific procedure
-        if (!strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "ABCD") && _is_signed)
+        if (_is_signed
+                && (!strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "ABCD")
+                 || !strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "BBCD"))
+                )
         {
             process_mipi();
             return;
@@ -219,19 +238,21 @@ namespace rs2
                     return;
                 }
             }
-            if ( ! _is_d500_device )
+
+            log( "Trying to back-up camera flash memory" );
+
+            std::string log_backup_status;
+            try
             {
-                log( "Backing-up camera flash memory" );
+                auto flash = upd.create_flash_backup( [&]( const float progress )
+                    {
+                        _progress = ( ( ceil( progress * 5 ) / 5 ) * ( 30 - next_progress ) ) + next_progress;
+                    } );
 
-                std::string log_backup_status;
-                try
+                // Not all cameras supports this feature
+                if( !flash.empty() )
                 {
-                    auto flash = upd.create_flash_backup( [&]( const float progress )
-                        {
-                            _progress = ( ( ceil( progress * 5 ) / 5 ) * ( 30 - next_progress ) ) + next_progress;
-                        } );
-
-                    auto temp = get_folder_path( special_folder::app_data );
+                    auto temp = rsutils::os::get_special_folder( rsutils::os::special_folder::app_data );
                     temp += serial + "." + get_timestamped_file_name() + ".bin";
 
                     {
@@ -240,32 +261,35 @@ namespace rs2
                         log_backup_status = "Backup completed and saved as '" + temp + "'";
                     }
                 }
-                catch( const std::exception& e )
+                else
                 {
-                    if( auto not_model_protected = get_protected_notification_model() )
-                    {
-                        log_backup_status = "WARNING: backup failed; continuing without it...";
-                        not_model_protected->output.add_log( RS2_LOG_SEVERITY_WARN,
-                            __FILE__,
-                            __LINE__,
-                            log_backup_status + ", Error: " + e.what() );
-                    }
+                    log_backup_status = "Backup flash is not supported";
                 }
-                catch( ... )
+            }
+            catch( const std::exception& e )
+            {
+                if( auto not_model_protected = get_protected_notification_model() )
                 {
-                    if( auto not_model_protected = get_protected_notification_model() )
-                    {
-                        log_backup_status = "WARNING: backup failed; continuing without it...";
-                        not_model_protected->add_log( log_backup_status + ", Unknown error occurred" );
-                    }
+                    log_backup_status = "WARNING: backup failed; continuing without it...";
+                    not_model_protected->output.add_log( RS2_LOG_SEVERITY_WARN,
+                        __FILE__,
+                        __LINE__,
+                        log_backup_status + ", Error: " + e.what() );
                 }
-
-                log(log_backup_status);
+            }
+            catch( ... )
+            {
+                if( auto not_model_protected = get_protected_notification_model() )
+                {
+                    log_backup_status = "WARNING: backup failed; continuing without it...";
+                    not_model_protected->add_log( log_backup_status + ", Unknown error occurred" );
+                }
             }
 
-            
+            if ( !log_backup_status.empty() )
+                log(log_backup_status);
 
-            next_progress = 40;
+            next_progress = static_cast<int>(_progress) + 10;
 
             if (_is_signed)
             {
@@ -290,6 +314,7 @@ namespace rs2
                                 {
                                     if (serial == d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))
                                     {
+                                        log( "DFU device '" + serial + "' found" );
                                         dfu = d;
                                         return true;
                                     }
@@ -325,29 +350,17 @@ namespace rs2
         {
             _progress = float(next_progress);
 
-            log("Recovery device connected, starting update");
+            log("Recovery device connected, starting update..\n"
+                "Internal write is in progress\n"
+                "Please DO NOT DISCONNECT the camera");
 
             dfu.update(_fw, [&](const float progress)
             {
                 _progress = ((ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress);
             });
 
-            // D400 devices takes 3 seconds after image transition until DFU process finish.
-            // D500 only starts the process after the image is transferred and it takes much time..
-            if( !_is_d500_device )
-            {
-                log( "Firmware Download completed, await DFU transition event" );
-                std::this_thread::sleep_for( std::chrono::seconds( 3 ) );
-            }
-            else
-            {
-                log( "Firmware Download completed, await DFU transition event\n"
-                    "Internal write is in progress\n"
-                    "Please DO NOT DISCONNECT the camera (might take a few minutes)");
-                std::this_thread::sleep_for( std::chrono::seconds( 60 ) );
-            }
-
-            log("Firmware Update completed, waiting for device to reconnect");
+            log( "Firmware Download completed, await DFU transition event" );
+            std::this_thread::sleep_for( std::chrono::seconds( 3 ) );
         }
         else
         {
@@ -382,13 +395,14 @@ namespace rs2
             }
 
             return false;
-        }, cleanup, std::chrono::seconds(_is_d500_device ? 120 : 60))) // TODO: HKR DFU issue - increased timeout from 60 to 120 seconds for HKR to complete FW write to flash
+        }, cleanup, std::chrono::seconds(60)))
         {
             fail("Original device did not reconnect in time!");
             return;
         }
 
-        log("Device reconnected succesfully!");
+        log( "Device reconnected successfully!\n"
+             "FW update process completed successfully" );
 
         _progress = 100;
 
@@ -458,6 +472,8 @@ namespace rs2
                 {
                     // stopping stream before starting fw update
                     auto fw_update_manager = dynamic_cast<firmware_update_manager*>(update_manager.get());
+                    if( ! fw_update_manager )
+                        throw std::runtime_error( "Cannot convert firmware_update_manager" );
                     std::for_each(fw_update_manager->get_device_model().subdevices.begin(),
                         fw_update_manager->get_device_model().subdevices.end(),
                         [&](const std::shared_ptr<subdevice_model>& sm)

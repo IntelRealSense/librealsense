@@ -1,16 +1,22 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
-
-
 #pragma once
-#include "context.h"
+
 #include "core/extension.h"
 #include "device.h"
 #include <rsutils/string/from.h>
 #include <rsutils/subscription.h>
+#include "pose.h"
+#include "librealsense-exception.h"
 
+#include <librealsense2/rs.h>
 #include <type_traits>
 #include <iostream>
+
+namespace librealsense {
+struct notification;
+}
+
 
 struct rs2_raw_data_buffer
 {
@@ -48,6 +54,14 @@ namespace librealsense
         {
             out << ':' << val << (last ? "" : ", ");
         }
+    };
+
+    // Provide a way for the API to denote something as output, so it's not shown on error
+    // Output arguments are always pointers
+    struct output_arg
+    {
+        void const * pointer;
+        output_arg( void const * pv ) : pointer( pv ) {}
     };
 
     // Next we define type trait for testing if *t for some T* is streamable
@@ -95,6 +109,16 @@ namespace librealsense
         arg_streamer<T, is_streamable<T>::value> s;
         s.stream_arg(out, last, true);
     }
+    inline void stream_args( std::ostream & out, const char * names, const output_arg & last )
+    {
+        while( *names++ != '(' );        // skip "output_arg("
+        while( *names == ' ' ) ++names;  // skip "(" and any spaces
+        while( *names != ')' && *names != ' ' ) out << *names++;
+        out << ":";
+        if( ! last.pointer )
+            out << "nullptr";
+        out << "(out)";
+    }
     template<class T, class... U> void stream_args(std::ostream & out, const char * names, const T & first, const U &... rest)
     {
         while (*names && *names != ',') out << *names++;
@@ -103,10 +127,16 @@ namespace librealsense
         while (*names && (*names == ',' || isspace(*names))) ++names;
         stream_args(out, names, rest...);
     }
+    template<class... U> void stream_args( std::ostream & out, const char * names, const output_arg & first, const U &... rest )
+    {
+        stream_args( out, names, first );
+        out << ", ";
+        stream_args( out, names, rest... );
+    }
 
 
 
-    static void translate_exception(const char * name, std::string args, rs2_error ** error)
+    static void translate_exception(const char * name, std::string const & args, rs2_error ** error)
     {
         try { throw; }
         catch (const librealsense_exception& e) { if (error) *error = rs2_create_error(e.what(), name, args.c_str(), e.get_exception_type() ); }
@@ -397,6 +427,18 @@ return __p.invoke(func);\
 
 #define BEGIN_API_CALL try
 #define NOEXCEPT_RETURN(R, ...) catch(...) { std::ostringstream ss; librealsense::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rs2_error* e; librealsense::translate_exception(__FUNCTION__, ss.str(), &e); LOG_WARNING(rs2_get_error_message(e)); rs2_free_error(e); return R; }
+// If you want to avoid any errors being reported because an exception an expected API behavior:
+#define EXPECTED_EXCEPTION( E, R, ... )                                                                                \
+    catch( E const & e )                                                                                               \
+    {                                                                                                                  \
+        if( error )                                                                                                    \
+        {                                                                                                              \
+            std::ostringstream ss;                                                                                     \
+            librealsense::stream_args( ss, #__VA_ARGS__, __VA_ARGS__ );                                                \
+            *error = new rs2_error{ e.what(), __FUNCTION__, ss.str(), RS2_EXCEPTION_TYPE_COUNT };                      \
+        }                                                                                                              \
+        return R;                                                                                                      \
+    }
 #define HANDLE_EXCEPTIONS_AND_RETURN(R, ...) catch(...) { std::ostringstream ss; librealsense::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); librealsense::translate_exception(__FUNCTION__, ss.str(), error); return R; }
 #define NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(R) catch(...) { librealsense::translate_exception(__FUNCTION__, "", error); return R; }
 #define NOARGS_HANDLE_EXCEPTIONS_AND_RETURN_VOID() catch(...) { librealsense::translate_exception(__FUNCTION__, "", error); }
@@ -406,7 +448,7 @@ return __p.invoke(func);\
     #define VALIDATE_FIXED_SIZE(ARG, SIZE) if((ARG) != (SIZE)) { std::ostringstream ss; ss << "Unsupported size provided { " << ARG << " }," " expecting { " << SIZE << " }"; throw librealsense::invalid_value_exception(ss.str()); }
     #define VALIDATE_NOT_NULL(ARG) if(!(ARG)) throw std::runtime_error("null pointer passed for argument \"" #ARG "\"");
     #define VALIDATE_ENUM(ARG) if(!librealsense::is_valid(ARG)) { std::ostringstream ss; ss << "invalid enum value for argument \"" #ARG "\""; throw librealsense::invalid_value_exception(ss.str()); }
-#define VALIDATE_OPTION( OBJ, OPT_ID )                                                                                 \
+#define VALIDATE_OPTION_ENABLED( OBJ, OPT_ID )                                                                         \
     if( ! OBJ->options->supports_option( OPT_ID ) )                                                                    \
     {                                                                                                                  \
         std::ostringstream ss;                                                                                         \

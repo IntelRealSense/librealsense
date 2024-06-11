@@ -4,24 +4,47 @@
 #pragma once
 
 #include "basics.h"  // C4250
-#include "core/device-interface.h"
-#include "core/info.h"
+#include <src/core/device-interface.h>
+#include <src/core/info.h>
+#include <src/core/features-container.h>
 
 #include "device-info.h"
 
 #include <rsutils/lazy.h>
+#include <rsutils/subscription.h>
 #include <chrono>
 #include <memory>
 #include <vector>
+#include <atomic>
 
 
 namespace librealsense {
 
 
+// Device profiles undergo format conversion before becoming available to the user. This is typically done within each
+// sensor's init_stream_profiles(), but the behavior can be overriden by the user through the device JSON settings (see
+// device ctor) to enable querying the device's raw or basic formats only.
+// 
+// Note that streaming may be available only with full (the default) profiles. The others are for inspection only, and
+// can directly be queried in rs-enumerate-devices.
+// 
+// Note also that default profiles (those returned by get_profiles_tags()) must take the conversion method into account
+// or profiles may not get tagged correctly in non-full modes.
+//
 enum class format_conversion
 {
+    // Report raw profiles as provided by the camera, without any manipulation whatsoever by librealsense.
     raw,
+
+    // Take the raw profiles, perform the librealsense mappings, but then remove any "unwanted" mappings:
+    //      - any conversion between formats is thrown away (e.g., YUYV->RGB8)
+    //      - colored infrared is removed
+    //      - interleaved (Y12I, Y8I) are kept (so become Y16 and Y8, respectively)
+    // See formats_converter::drop_non_basic_formats()
     basic,
+
+    // The default conversion mode: all the librealsense mappings are intact; the user will see profiles including
+    // format conversions (e.g., YUYV->RGB8), etc.
     full
 };
 
@@ -32,6 +55,7 @@ enum class format_conversion
 class device
     : public virtual device_interface
     , public info_container
+    , public features_container
 {
 public:
     virtual ~device();
@@ -52,11 +76,7 @@ public:
 
     std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const override;
 
-    bool is_valid() const override
-    {
-        std::lock_guard<std::mutex> lock(_device_changed_mtx);
-        return _is_valid;
-    }
+    bool is_valid() const override { return *_is_alive; }
 
     void tag_profiles(stream_profiles profiles) const override;
 
@@ -66,7 +86,7 @@ public:
 
     virtual void stop_activity() const;
 
-    bool device_changed_notifications_on() const { return _device_changed_callback_id; }
+    bool device_changed_notifications_on() const { return _device_change_subscription.is_active(); }
 
     format_conversion get_format_conversion() const;
 
@@ -83,12 +103,10 @@ protected:
 private:
     std::vector<std::shared_ptr<sensor_interface>> _sensors;
     std::shared_ptr< const device_info > _dev_info;
-    bool _is_valid;
-    mutable std::mutex _device_changed_mtx;
-    uint64_t _device_changed_callback_id = 0;
+    std::shared_ptr< std::atomic< bool > > _is_alive;
+    rsutils::subscription _device_change_subscription;
     rsutils::lazy< std::vector< tagged_profile > > _profiles_tags;
-
-    std::shared_ptr< bool > _is_alive; // Ensures object can be accessed
+    rsutils::lazy< format_conversion > _format_conversion;
 };
 
 

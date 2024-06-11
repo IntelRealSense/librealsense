@@ -14,7 +14,7 @@ In addition you may want to use the 'info' functions in this module to add more 
 messages in case of a failed check
 """
 
-import os, sys, subprocess, traceback, platform, math
+import os, sys, subprocess, threading, traceback, platform, math, re
 
 from rspy import log
 
@@ -203,11 +203,13 @@ def check_passed():
     return True
 
 
-def check_failed( on_fail=LOG ):
+def check_failed( on_fail=LOG, description=None ):
     """
     Function for when a check fails
     :return: always False (so you can 'return check_failed()'
     """
+    if description:
+        log.out( f'    {description}' )
     _count_check()
     global n_failed_assertions, test_failed
     n_failed_assertions += 1
@@ -235,11 +237,7 @@ def check( exp, description=None, on_fail=LOG ):
     """
     if not exp:
         print_stack()
-        if description:
-            log.out( f'        {description}' )
-        else:
-            log.out( f'        check failed; received {exp}' )
-        return check_failed( on_fail )
+        return check_failed( on_fail, description=( description or f'Got \'{exp}\'' ))
     return check_passed()
 
 
@@ -247,7 +245,10 @@ def check_false( exp, description=None, on_fail=LOG ):
     """
     Opposite of check()
     """
-    return check( not exp, description, on_fail )
+    if exp:
+        print_stack()
+        return check_failed( on_fail, description=( description or f'Expecting False; got \'{exp}\'' ))
+    return check_passed()
 
 
 def check_equal( result, expected, on_fail=LOG ):
@@ -258,19 +259,42 @@ def check_equal( result, expected, on_fail=LOG ):
     :param on_fail: How to behave on failure; see constants above
     :return: True if assertion passed, False otherwise
     """
-    if type(expected) == list:
-        raise RuntimeError( "check_equal should not be used for lists. Use check_equal_lists instead" )
-    if type(expected) != type(result):
-        print_stack()
-        log.out( "        left  type:", type(result) )
-        log.out( "        right type:", type(expected) )
-        return check_failed( on_fail )
+    if expected is not None  and  result is not None  and  type(expected) != type(result):
+        raise RuntimeError( f'incompatible types passed to check_equal( {type(result)}, {type(expected)} )' )
     if result != expected:
         print_stack()
-        log.out( "        left  :", result )
-        log.out( "        right :", expected )
+        if type(expected) == list:
+            i = 0
+            if len(result) != len(expected):
+                log.out( f'        left  : {result} len {len(result)}' )
+                log.out( f'        right : {expected} len {len(expected)}' )
+            else:
+                log.out( f'        list diffs, size={len(expected)}:' )
+                n = 0
+                w = 5
+                for res, exp in zip(result, expected):
+                    if res != exp:
+                        if n <= 5:
+                            w = max( len(str(res)), w )
+                        else:
+                            break;
+                        n += 1
+                n = 0
+                for res, exp in zip(result, expected):
+                    if res != exp:
+                        if n <= 5:
+                            log.out( f'{i:13} : {res:>{w}}  ->  {exp}' )
+                        n += 1
+                    i += 1
+                if n > 5:
+                    log.out( f'                ... and {n-5} more' )
+        else:
+            log.out( f'        left  : {result}' )
+            log.out( f'        right : {expected}' )
         return check_failed( on_fail )
     return check_passed()
+
+check_equal_lists = check_equal
 
 
 def check_between( result, min, max, on_fail=LOG ):
@@ -315,8 +339,7 @@ def _unexpected_exception( type, e, tb ):
     print_stack_( traceback.format_list( traceback.extract_tb( tb )))
     for line in traceback.format_exception_only( type, e ):
         log.out( line[:-1], line_prefix = '    ' )
-    log.out( '      Unexpected exception!' )
-    check_failed()
+    check_failed( description='Unexpected exception!' )
 
 
 def unexpected_exception():
@@ -326,35 +349,6 @@ def unexpected_exception():
     """
     type,e,tb = sys.exc_info()
     return _unexpected_exception( type, e, tb )
-
-
-def check_equal_lists( result, expected, on_fail=LOG ):
-    """
-    Used to assert that 2 lists are identical. python "equality" (using ==) requires same length & elements
-    but not necessarily same ordering. Here we require exactly the same, including ordering.
-    :param result: The actual list
-    :param expected: The expected list
-    :param on_fail: How to behave on failure; see constants above
-    :return: True if assertion passed, False otherwise
-    """
-    failed = False
-    if len(result) != len(expected):
-        failed = True
-        log.out("Check equal lists failed due to lists of different sizes:")
-        log.out("The resulted list has", len(result), "elements, but the expected list has", len(expected), "elements")
-    i = 0
-    for res, exp in zip(result, expected):
-        if res != exp:
-            failed = True
-            log.out("Check equal lists failed due to unequal elements:")
-            log.out("The element of index", i, "in both lists was not equal")
-        i += 1
-    if failed:
-        print_stack()
-        log.out( "        result list  :", result )
-        log.out( "        expected list:", expected )
-        return check_failed( on_fail )
-    return check_passed()
 
 
 def check_float_lists( result, expected, epsilon=1e-6, on_fail=LOG ):
@@ -391,7 +385,7 @@ def check_exception( exception, expected_type, expected_msg=None, on_fail=LOG ):
     Used to assert a certain type of exception was raised, placed in the except block
     :param exception: The exception that was raised
     :param expected_type: The expected type of exception
-    :param expected_msg: The expected message in the exception
+    :param expected_msg: The expected message in the exception; can be re.Pattern: use re.compile(...)
     :param on_fail: How to behave on failure; see constants above
     :return: True if assertion passed, False otherwise
     """
@@ -400,9 +394,17 @@ def check_exception( exception, expected_type, expected_msg=None, on_fail=LOG ):
         failed = [ "        raised exception was", type(exception),
                  "\n        but expected", expected_type,
                  "\n      With message:", str(exception) ]
-    elif expected_msg is not None and str(exception) != expected_msg:
-        failed = [ "        exception message:", str(exception),
-                 "\n        but we expected  :", expected_msg ]
+    elif expected_msg is not None:
+        if isinstance( expected_msg, str ):
+            if str(exception) != expected_msg:
+                failed = [ "        exception message:", str(exception),
+                         "\n        but we expected  :", expected_msg ]
+        elif isinstance( expected_msg, re.Pattern ):
+            if not expected_msg.fullmatch( str(exception) ):
+                failed = [ "        exception message :", str(exception),
+                         "\n        but expected regex:", expected_msg.pattern ]
+        else:
+            raise RuntimeError( f"exception message should be string or compiled regex (got {type(expected_msg)})" )
     if failed:
         print_stack()
         log.out( *failed )
@@ -558,7 +560,6 @@ def finish( on_fail=LOG ):
     else:
         log.i("Test passed")
     test_in_progress = None
-
 
 def print_separator():
     """
@@ -732,6 +733,17 @@ class remote:
     def on_finish( self, callback ):
         self._on_finish = callback
 
+    def _output_ready( self ):
+        log.d( self._name, self._exception and 'raised an error' or 'is ready' )
+        if self._events:
+            event = self._events.pop(0)
+            if event:
+                event.set()
+        else:
+            # We raise the error here only as a last resort: we prefer handing it over to
+            # the waiting thread on the event!
+            self._raise_if_needed()
+
     def _output_reader( self ):
         """
         This is the worker function called from a thread to output the process stdout.
@@ -739,22 +751,19 @@ class remote:
         please follow the usage guidelines in the class notes.
         """
         nested_prefix = self._nested_indent and f'[{self._nested_indent}] ' or ''
+        if not nested_prefix:
+            x = -1
+        missing_ready = None
         for line in iter( self._process.stdout.readline, '' ):
             # NOTE: line will include the terminating \n EOL
             # NOTE: so readline will return '' (with no EOL) when EOF is reached - the "sentinel"
             #       2nd argument to iter() - and we'll break out of the loop
             if line == '___ready\n':
-                log.d( self._name, self._exception and 'raised an error' or 'is ready' )
-                if self._events:
-                    event = self._events.pop(0)
-                    if event:
-                        event.set()
-                else:
-                    # We raise the error here only as a last resort: we prefer handing it over to
-                    # the waiting thread on the event!
-                    self._raise_if_needed()
+                self._output_ready()
                 continue
-            if not nested_prefix or line.find( nested_prefix ) < 0:  # there could be color codes in the line
+            if nested_prefix:
+                x = line.find( nested_prefix )  # there could be color codes in the line
+            if x < 0:
                 if self._exception:
                     self._exception.append( line[:-1] )
                     # We cannot raise an error here -- it'll just exit the thread and not be
@@ -764,8 +773,16 @@ class remote:
                 elif line.startswith( '  File "' ):
                     # Some exception are syntax errors in the command, which would not have a 'Traceback'...
                     self._exception = [line[:-1]]
+                if missing_ready and line.endswith( missing_ready ):
+                    self._output_ready()
+                    line = line[:-len(missing_ready)]
+                    missing_ready = None
+                    if not line:
+                        continue
                 print( nested_prefix + line, end='', flush=True )
             else:
+                if x > 0 and line[:x] == '___ready\n'[:x]:
+                    missing_ready = '___ready\n'[x:]
                 print( line, end='', flush=True )
         #
         log.d( self._name, 'stdout is finished' )
@@ -777,13 +794,11 @@ class remote:
         """
         Start the process
         """
-        import subprocess, threading
         log.d( self._name, 'starting:', self._cmd )
         self._process = subprocess.Popen( self._cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True )
         self._thread = threading.Thread( target = remote._output_reader, args=(self,) )
         #
         # We allow waiting until the script is ready for input: see wait_until_ready()
-        import threading
         self._ready = threading.Event()
         self._events = [ self._ready ]
         #
@@ -850,10 +865,11 @@ class remote:
             if self._interactive:
                 self._process.stdin.write( 'exit()\n' )  # make sure we respond to it to avoid timeouts
                 self._process.stdin.flush()
-            log.d( 'waiting for', self._name, 'to finish...' )
-            self._thread.join( timeout )
-            if self._thread.is_alive():
-                log.d( self._name, 'waiting for thread join timed out after', timeout, 'seconds' )
+            if self._thread != threading.current_thread():
+                log.d( 'waiting for', self._name, 'to finish...' )
+                self._thread.join( timeout )
+                if self._thread.is_alive():
+                    log.d( self._name, 'waiting for thread join timed out after', timeout, 'seconds' )
         self._terminate()
         self._raise_if_needed()
         return self.status()

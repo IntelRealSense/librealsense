@@ -12,6 +12,7 @@
 #include "ros_writer.h"
 #include "core/pose-frame.h"
 #include "core/motion-frame.h"
+#include <src/core/sensor-interface.h>
 #include <src/core/device-interface.h>
 
 #include <rsutils/string/from.h>
@@ -106,9 +107,9 @@ namespace librealsense
         for (int i = 0; i < static_cast<rs2_frame_metadata_value>(rs2_frame_metadata_value::RS2_FRAME_METADATA_COUNT); i++)
         {
             rs2_frame_metadata_value type = static_cast<rs2_frame_metadata_value>(i);
-            if (frame->supports_frame_metadata(type))
+            rs2_metadata_type md;
+            if (frame->find_metadata(type, &md))
             {
-                auto md = frame->get_frame_metadata(type);
                 diagnostic_msgs::KeyValue md_msg;
                 md_msg.key = librealsense::get_string(type);
                 md_msg.value = std::to_string(md);
@@ -176,7 +177,8 @@ namespace librealsense
     {
         sensor_msgs::Image image;
         auto vid_frame = dynamic_cast<librealsense::video_frame*>(frame.frame);
-        assert(vid_frame != nullptr);
+        if (!vid_frame)
+            throw std::runtime_error("Frame is not video frame");
 
         image.width = static_cast<uint32_t>(vid_frame->get_width());
         image.height = static_cast<uint32_t>(vid_frame->get_height());
@@ -491,11 +493,17 @@ namespace librealsense
         }
     }
 
-    rs2_extension ros_writer::get_processing_block_extension(const std::shared_ptr<processing_block_interface> block)
+    static std::string get_processing_block_extension_name( const std::shared_ptr< processing_block_interface > block )
     {
-#define RETURN_IF_EXTENSION(E, T)\
-    if (Is<ExtensionToType<T>::type>(E))\
-    return T;\
+        // We want to write the block name (as opposed to the extension name):
+        // The block can behave differently and have a different name based on how it was created (e.g., the disparity
+        // filter). This makes new rosbag files incompatible with older librealsense versions.
+        if( block->supports_info( RS2_CAMERA_INFO_NAME ) )
+            return block->get_info( RS2_CAMERA_INFO_NAME );
+
+#define RETURN_IF_EXTENSION( B, E )                                                                                    \
+    if( Is< ExtensionToType< E >::type >( B ) )                                                                        \
+        return rs2_extension_type_to_string( E )
  
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_DECIMATION_FILTER);
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_THRESHOLD_FILTER);
@@ -508,33 +516,29 @@ namespace librealsense
 
 #undef RETURN_IF_EXTENSION
 
-        throw invalid_value_exception( rsutils::string::from()
-                                       << "processing block " << block->get_info( RS2_CAMERA_INFO_NAME )
-                                       << "has no map to extension" );
+        return {};
     }
 
     void ros_writer::write_sensor_processing_blocks(device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, std::shared_ptr<recommended_proccesing_blocks_interface> proccesing_blocks)
     {
-        rs2_extension ext = RS2_EXTENSION_UNKNOWN;
         for (auto block : proccesing_blocks->get_recommended_processing_blocks())
         {
+            std::string name = get_processing_block_extension_name( block );
+            if( name.empty() )
+            {
+                LOG_WARNING( "Failed to get recommended processing block name for sensor " << sensor_id.sensor_index );
+                continue;
+            }
             try
             {
-                try
-                {
-                    ext = get_processing_block_extension(block);
-                }
-                catch (std::exception& e)
-                {
-                    LOG_WARNING("Failed to write proccesing block " << " for sensor " << sensor_id.sensor_index << ". Exception: " << e.what());
-                }
                 std_msgs::String processing_block_msg;
-                processing_block_msg.data = rs2_extension_type_to_string(ext);
-                write_message(ros_topic::post_processing_blocks_topic(sensor_id), timestamp, processing_block_msg);
+                processing_block_msg.data = name;
+                write_message( ros_topic::post_processing_blocks_topic( sensor_id ), timestamp, processing_block_msg );
             }
-            catch (std::exception& e)
+            catch( std::exception & e )
             {
-                LOG_WARNING("Failed to get or write recommended proccesing blocks " << " for sensor " << sensor_id.sensor_index << ". Exception: " << e.what());
+                LOG_WARNING( "Failed to write processing block '" << name << "' for sensor " << sensor_id.sensor_index
+                                                                  << ": " << e.what() );
             }
         }
     }

@@ -186,9 +186,16 @@ namespace librealsense
         gpu_section::~gpu_section()
         {
             backup_content = false;
-            perform_gl_action([&](){
-                cleanup_gpu_resources();
-            }, []{});
+            try
+            {
+                perform_gl_action( [&]() {
+                    cleanup_gpu_resources();
+                    }, [] {} );
+            }
+            catch(...)
+            {
+                LOG_DEBUG( "Error while cleaning up gpu resources" );
+            }
         }
 
         void gpu_section::create_gpu_resources()

@@ -245,10 +245,11 @@ namespace librealsense
         if (!frame || frame.is<rs2::frameset>())
             return false;
 
-        if (frame.get_profile().stream_type() != RS2_STREAM_DEPTH)
-            return false;
+        if ((frame.get_profile().stream_type() == RS2_STREAM_DEPTH) && 
+                    (_supported_formats.find(frame.get_profile().format()) != _supported_formats.end()))
+            return true;
 
-        return true;
+        return false;
     }
 
     rs2::frame colorizer::process_frame(const rs2::frame_source& source, const rs2::frame& f)

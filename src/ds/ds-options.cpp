@@ -33,7 +33,7 @@ namespace librealsense
         }
     }
 
-    emitter_option::emitter_option(uvc_sensor& ep)
+    emitter_option::emitter_option( const std::weak_ptr< uvc_sensor > & ep )
         : uvc_xu_option(ep, ds::depth_xu, ds::DS5_DEPTH_EMITTER_ENABLED,
                         "Emitter select, 0-disable all emitters, 1-enable laser, 2-enable laser auto (opt), 3-enable LED (opt)")
     {}
@@ -53,7 +53,11 @@ namespace librealsense
         };
         #pragma pack(pop)
 
-        auto temperature_data = static_cast<temperature>(_ep.invoke_powered(
+        auto strong_ep = _ep.lock();
+        if (!strong_ep)
+            throw camera_disconnected_exception("asic and proj temperatures cannot access the sensor");
+
+        auto temperature_data = static_cast<temperature>(strong_ep->invoke_powered(
             [this](platform::uvc_device& dev)
             {
                 temperature temp{};
@@ -82,11 +86,11 @@ namespace librealsense
             is_valid_field = &temperature::is_projector_valid;
             break;
         default:
-            throw invalid_value_exception(rsutils::string::from() << _ep.get_option_name(_option) << " is not temperature option!");
+            throw invalid_value_exception(rsutils::string::from() << strong_ep->get_option_name(_option) << " is not temperature option!");
         }
 
         if (0 == temperature_data.*is_valid_field)
-            LOG_ERROR(_ep.get_option_name(_option) << " value is not valid!");
+            LOG_ERROR(strong_ep->get_option_name(_option) << " value is not valid!");
 
         return temperature_data.*field;
     }
@@ -98,11 +102,19 @@ namespace librealsense
 
     bool asic_and_projector_temperature_options::is_enabled() const
     {
-        return _ep.is_streaming();
+        auto strong_ep = _ep.lock();
+        if (!strong_ep)
+            throw camera_disconnected_exception("asic and proj temperatures cannot access the sensor");
+
+        return strong_ep->is_streaming();
     }
 
     const char* asic_and_projector_temperature_options::get_description() const
     {
+        auto strong_ep = _ep.lock();
+        if (! strong_ep)
+            throw camera_disconnected_exception("asic and proj temperatures cannot access the sensor");
+
         switch (_option)
         {
         case RS2_OPTION_ASIC_TEMPERATURE:
@@ -110,12 +122,12 @@ namespace librealsense
         case RS2_OPTION_PROJECTOR_TEMPERATURE:
             return "Current Projector Temperature (degree celsius)";
         default:
-            throw invalid_value_exception(rsutils::string::from() << _ep.get_option_name(_option) << " is not temperature option!");
+            throw invalid_value_exception(rsutils::string::from() << strong_ep->get_option_name(_option) << " is not temperature option!");
         }
     }
 
-    asic_and_projector_temperature_options::asic_and_projector_temperature_options(uvc_sensor& ep, rs2_option opt)
-        : _option(opt), _ep(ep)
+    asic_and_projector_temperature_options::asic_and_projector_temperature_options( const std::weak_ptr<uvc_sensor> & ep, rs2_option opt)
+        : _option(opt), _ep(std::move(ep))
         {}
 
     float motion_module_temperature_option::query() const
@@ -374,7 +386,7 @@ namespace librealsense
         return *_range;
     }
 
-    external_sync_mode::external_sync_mode(hw_monitor& hwm, sensor_base* ep, int ver)
+    external_sync_mode::external_sync_mode( hw_monitor & hwm, const std::weak_ptr< sensor_base > & ep, int ver )
         : _hwm(hwm), _sensor(ep), _ver(ver)
     {
         _range = [this]()
@@ -395,7 +407,11 @@ namespace librealsense
         }
         else
         {
-            if (_sensor->is_streaming())
+            auto strong = _sensor.lock();
+            if( ! strong )
+                throw std::runtime_error( "Cannot set Inter-camera HW synchronization, sensor is not alive" );
+
+            if( strong->is_streaming() )
                 throw std::runtime_error("Cannot change Inter-camera HW synchronization mode while streaming!");
 
             if (value < 4)
@@ -445,7 +461,13 @@ namespace librealsense
         return *_range;
     }
 
-    emitter_on_and_off_option::emitter_on_and_off_option(hw_monitor& hwm, sensor_base* ep)
+    bool external_sync_mode::is_read_only() const
+    {
+        auto strong = _sensor.lock();
+        return strong && strong->is_opened();
+    }
+
+    emitter_on_and_off_option::emitter_on_and_off_option( hw_monitor & hwm, const std::weak_ptr< sensor_base > & ep )
         : _hwm(hwm), _sensor(ep)
     {
         _range = [this]()
@@ -456,7 +478,11 @@ namespace librealsense
 
     void emitter_on_and_off_option::set(float value)
     {
-        if (_sensor->is_streaming())
+        auto strong = _sensor.lock();
+        if( ! strong )
+            throw std::runtime_error( "Cannot set Emitter On/Off option, sensor is not alive" );
+
+        if( strong->is_streaming() )
             throw std::runtime_error("Cannot change Emitter On/Off option while streaming!");
 
         command cmd(ds::SET_PWM_ON_OFF);
@@ -491,8 +517,8 @@ namespace librealsense
             return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave";
     }
 
-    alternating_emitter_option::alternating_emitter_option(hw_monitor& hwm, sensor_base* ep, bool is_fw_version_using_id)
-        : _hwm(hwm), _sensor(ep), _is_fw_version_using_id(is_fw_version_using_id)
+    alternating_emitter_option::alternating_emitter_option(hw_monitor& hwm, bool is_fw_version_using_id)
+        : _hwm(hwm), _is_fw_version_using_id(is_fw_version_using_id)
     {
         _range = [this]()
         {
@@ -524,16 +550,26 @@ namespace librealsense
         {
             float rv = 0.f;
             command cmd(ds::GETSUBPRESETID);
-            // if no subpreset is streaming, the firmware returns "ON_DATA_TO_RETURN" error
-            try {
-                auto res = _hwm.send(cmd);
-                // if a subpreset is streaming, checking this is the alternating emitter sub preset
-                if (res.size())
-                    rv = (res[0] == ds::ALTERNATING_EMITTER_SUBPRESET_ID) ? 1.0f : 0.f;
+            try
+            {
+                hwmon_response response;
+                auto res = _hwm.send( cmd, &response );  // avoid the throw
+                switch( response )
+                {
+                case hwmon_response::hwm_NoDataToReturn:
+                    // If no subpreset is streaming, the firmware returns "NO_DATA_TO_RETURN" error
+                    break;
+                default:
+                    // if a subpreset is streaming, checking this is the alternating emitter sub preset
+                    if( res.size() )
+                        rv = ( res[0] == ds::ALTERNATING_EMITTER_SUBPRESET_ID ) ? 1.0f : 0.f;
+                    else
+                        LOG_DEBUG( "alternating emitter query: " << hwmon_error_string( cmd, response ) );
+                    break;
+                }
             }
             catch (...)
             {
-                rv = 0.f;
             }
 
             return rv;
@@ -550,9 +586,12 @@ namespace librealsense
         }
     }
 
-    emitter_always_on_option::emitter_always_on_option(hw_monitor& hwm, sensor_base* ep)
-        : _hwm(hwm), _sensor(ep)
+    emitter_always_on_option::emitter_always_on_option( std::shared_ptr<hw_monitor> hwm, ds::fw_cmd _hmc_get_opcode, ds::fw_cmd _hmc_set_opcode )
+        : _hwm(hwm), _hmc_get_opcode(_hmc_get_opcode), _hmc_set_opcode(_hmc_set_opcode)
     {
+        // On d400 option, We use the same opcode both for set and get.
+        _is_legacy = (_hmc_get_opcode == _hmc_set_opcode);
+
         _range = [this]()
         {
             return option_range{ 0, 1, 1, 0 };
@@ -561,23 +600,61 @@ namespace librealsense
 
     void emitter_always_on_option::set(float value)
     {
-        command cmd(ds::LASERONCONST);
-        cmd.param1 = static_cast<int>(value);
+        command cmd( _hmc_set_opcode );
+        // New FW opcode is different than the legacy opcode and has a reverse logic.
+        // On legacy we query: `LASERONCONST` and in the new opcode we query 'APM_STROBE_ON'
+        // Both return 'EMITTER_ALWAYES_ON' so they are handled differently
+        bool always_on = _is_legacy ? value : ( value != 1.0f );
+        cmd.param1 = static_cast<uint32_t>(always_on);
 
-        _hwm.send(cmd);
+        auto strong_hwm = _hwm.lock();
+        if ( !strong_hwm )
+            throw camera_disconnected_exception("emitter alwayes on cannot communicate with the camera");
+
+        strong_hwm->send(cmd);
         _record_action(*this);
     }
 
+
     float emitter_always_on_option::query() const
     {
-        command cmd(ds::LASERONCONST);
-        cmd.param1 = 2;
+        if( _is_legacy )
+            return legacy_query();
+        else
+            return new_query();
+    }
 
-        auto res = _hwm.send(cmd);
+    float emitter_always_on_option::legacy_query() const
+    {
+       command cmd( _hmc_get_opcode );
+            cmd.param1 = 2;
+        
+        auto strong_hwm = _hwm.lock();
+        if ( !strong_hwm )
+            throw camera_disconnected_exception("emitter alwayes on cannot communicate with the camera");
+
+        auto res = strong_hwm->send(cmd);
         if (res.empty())
             throw invalid_value_exception("emitter_always_on_option::query result is empty!");
 
-        return (res.front());
+        return ( res.front() );
+    }
+
+    float emitter_always_on_option::new_query() const
+    {
+       command cmd( _hmc_get_opcode );
+
+        auto strong_hwm = _hwm.lock();
+        if ( !strong_hwm )
+            throw camera_disconnected_exception("emitter alwayes on cannot communicate with the camera");
+
+        auto res = strong_hwm->send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("emitter_always_on_option::query result is empty!");
+
+        // reverse logic as we query 'APM_STROBE_ON' and return 'EMITTER_ALWAYS_ON'
+        bool always_on = res.front() != 1;
+        return ( always_on );
     }
 
     option_range emitter_always_on_option::get_range() const
@@ -613,12 +690,28 @@ namespace librealsense
     void hdr_conditional_option::set(float value)
     {
         if (_hdr_cfg->is_config_in_process())
-            _hdr_option->set(value);
+        {
+            if( _hdr_cfg->is_enabled() )
+            {
+                // Changing exposure while HDR is enabled was requested by customers.It is currently disabled by D400
+                // FW, so we workaround it by disabling HDR,changing exposure and enabling again.Disabling/Enabling
+                // resets the sequence index so we need to keep and restore it.
+                auto _current_hdr_sequence_index = _hdr_cfg->get( RS2_OPTION_SEQUENCE_ID );
+                _hdr_cfg->set( RS2_OPTION_HDR_ENABLED, 0, { 0, 1, 1, 0 } );
+                _hdr_cfg->set( RS2_OPTION_SEQUENCE_ID, _current_hdr_sequence_index, { 0, 2, 1, 0 } );
+                _hdr_option->set( value );
+                _hdr_cfg->set( RS2_OPTION_HDR_ENABLED, 1, { 0, 1, 1, 0 } );
+                _hdr_cfg->set( RS2_OPTION_SEQUENCE_ID, _current_hdr_sequence_index, { 0, 2, 1, 0 } );
+            }
+            else
+                _hdr_option->set( value );
+        }    
         else
         {
             if (_hdr_cfg->is_enabled())
-                LOG_WARNING("The control - " << _uvc_option->get_description()
-                     << " - is locked while HDR mode is active.\n"); 
+                throw wrong_api_call_sequence_exception(
+                    rsutils::string::from() << "The control - " << _uvc_option->get_description()
+                                    << " - is locked while HDR mode is active.");
             else
                 _uvc_option->set(value);
         }

@@ -20,6 +20,7 @@ skip_hid_patch=0
 apply_hid_gyro_patch=0
 skip_plf_patch=0
 build_only=0
+skip_md_patch=0
 
 #Parse input
 while test $# -gt 0; do
@@ -92,6 +93,7 @@ k_tick=$(echo ${kernel_version[2]} | awk -F'-' '{print $2}')
 [ $k_maj_min -eq 504 ] && [ $k_tick -ge 156 ] && apply_hid_gyro_patch=1 && skip_hid_patch=1
 # For kernel versions 6+ powerline frequency already applied
 [ $k_maj_min -ge 600 ] && skip_plf_patch=1
+[ $k_maj_min -ge 605 ] && skip_md_patch=1
 
 # Construct branch name from distribution codename {xenial,bionic,..} and kernel version
 # ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
@@ -175,9 +177,12 @@ then
 		# Patching kernel for RealSense devices
 		echo -e "\e[32mApplying patches for \e[36m${ubuntu_codename}-${kernel_branch}\e[32m line\e[0m"
 		echo -e "\e[32mApplying realsense-uvc patch\e[0m"
+		patch -p1 < ../scripts/realsense-uvc-driver-version.patch 
 		patch -p1 < ../scripts/realsense-camera-formats-${ubuntu_codename}-${kernel_branch}.patch || patch -p1 < ../scripts/realsense-camera-formats-${ubuntu_codename}-master.patch
-		echo -e "\e[32mApplying realsense-metadata patch\e[0m"
-		patch -p1 < ../scripts/realsense-metadata-${ubuntu_codename}-${kernel_branch}.patch || patch -p1 < ../scripts/realsense-metadata-${ubuntu_codename}-master.patch
+		if [ ${skip_md_patch} -eq 0 ]; then
+			echo -e "\e[32mApplying realsense-metadata patch\e[0m"
+			patch -p1 < ../scripts/realsense-metadata-${ubuntu_codename}-${kernel_branch}.patch || patch -p1 < ../scripts/realsense-metadata-${ubuntu_codename}-master.patch
+		fi
 		if [ ${skip_hid_patch} -eq 0 ]; then
 			echo -e "\e[32mApplying realsense-hid patch\e[0m"
 			patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-${kernel_branch}.patch ||  patch -p1 < ../scripts/realsense-hid-${ubuntu_codename}-master.patch
@@ -213,8 +218,10 @@ then
 			echo -e "\e[32mApplying 04-xhci-remove-unused-stopped_td-pointer patch\e[0m"
 			patch -p1 < ../scripts/04-xhci-remove-unused-stopped_td-pointer.patch
 		fi
-		echo -e "\e[32mIncrease UVC_URBs in uvcvideo\e[0m"
-		patch -p1 < ../scripts/uvcvideo_increase_UVC_URBS.patch
+		if [ ${skip_md_patch} -eq 0 ]; then
+			echo -e "\e[32mIncrease UVC_URBs in uvcvideo\e[0m"
+			patch -p1 < ../scripts/uvcvideo_increase_UVC_URBS.patch
+		fi
 		if [ $debug_uvc -eq 1 ]; then
 			echo -e "\e[32mApplying uvcvideo and videobuf2 debug patch\e[0m"
 			patch -p1 < ../scripts/uvc_debug.patch
@@ -268,6 +275,9 @@ cp $KBASE/Module.symvers .
 
 echo -e "\e[32mCompiling uvc module\e[0m"
 make -j -C $KBASE M=$KBASE/drivers/media/usb/uvc/ modules
+if [ $k_maj_min -ge 605 ]; then
+	make -j -C $KBASE M=$KBASE/drivers/media/common/ modules
+fi
 if [ $skip_hid_patch -eq 0 ]; then
 	echo -e "\e[32mCompiling accelerometer and gyro modules\e[0m"
 	make -j -C $KBASE M=$KBASE/drivers/iio/accel modules
@@ -282,6 +292,10 @@ fi
 
 # Copy the patched modules to a  location
 cp $KBASE/drivers/media/usb/uvc/uvcvideo.ko ~/$LINUX_BRANCH-uvcvideo.ko
+if [[ $k_maj_min -ge 605 ]]; then
+	cp $KBASE/drivers/media/common/uvc.ko ~/$LINUX_BRANCH-uvc.ko
+fi
+
 if [ $skip_hid_patch -eq 0 ]; then
 	cp $KBASE/drivers/iio/accel/hid-sensor-accel-3d.ko ~/$LINUX_BRANCH-hid-sensor-accel-3d.ko
 	cp $KBASE/drivers/iio/gyro/hid-sensor-gyro-3d.ko ~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko
@@ -316,6 +330,7 @@ fi
 try_unload_module uvcvideo
 try_unload_module videobuf2_v4l2
 [ ${k_maj_min} -ge 500 ] && try_unload_module videobuf2_common
+[ ${k_maj_min} -ge 605 ] && try_unload_module uvc
 try_unload_module videodev
 
 if [ $build_usbcore_modules -eq 1 ]; then
@@ -343,7 +358,9 @@ if [ $build_usbcore_modules -eq 1 ]; then
 	try_module_insert videobuf2_core ~/$LINUX_BRANCH-videobuf2-core.ko /lib/modules/`uname -r`/kernel/drivers/media/v4l2-core/videobuf2-core.ko
 	try_module_insert videobuf2_v4l2 ~/$LINUX_BRANCH-videobuf2-v4l2.ko /lib/modules/`uname -r`/kernel/drivers/media/v4l2-core/videobuf2-v4l2.ko
 fi
-
+if [ ${k_maj_min} -ge 605 ]; then
+        try_module_insert uvc ~/$LINUX_BRANCH-uvc.ko /lib/modules/`uname -r`/kernel/drivers/media/common/uvc.ko
+fi
 try_module_insert videodev            ~/$LINUX_BRANCH-videodev.ko            /lib/modules/`uname -r`/kernel/drivers/media/v4l2-core/videodev.ko
 if [[ ( ${k_maj_min} -ge 500 ) && ( $debug_uvc -eq 1 ) ]]; then
 	try_module_insert videobuf2-common ~/$LINUX_BRANCH-videobuf2-common.ko /lib/modules/`uname -r`/kernel/drivers/media/common/videobuf2/videobuf2-common.ko
@@ -354,4 +371,5 @@ if [ $skip_hid_patch -eq 0 ]; then
 	try_module_insert hid_sensor_gyro_3d  ~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko  /lib/modules/`uname -r`/kernel/drivers/iio/gyro/hid-sensor-gyro-3d.ko
 fi
 echo -e "\e[92m\n\e[1mScript has completed. Please consult the installation guide for further instruction.\n\e[0m"
+
 

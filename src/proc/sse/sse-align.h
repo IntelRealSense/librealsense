@@ -1,9 +1,10 @@
-/* License: Apache 2.0. See LICENSE file in root directory. */
-/* Copyright(c) 2019 Intel Corporation. All Rights Reserved. */
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 #pragma once
 #ifdef __SSSE3__
 
 #include "proc/align.h"
+#include <src/float3.h>
 
 namespace librealsense
 {
@@ -21,8 +22,8 @@ namespace librealsense
             const rs2_extrinsics& from_to_other);
 
         inline void align_other_to_depth(const uint16_t* z_pixels,
-            const byte* source,
-            byte* dest, int bpp, const rs2_intrinsics& to,
+            const uint8_t * source,
+            uint8_t* dest, int bpp, const rs2_intrinsics& to,
             const rs2_extrinsics& from_to_other);
 
         void pre_compute_x_y_map_corners();
@@ -52,8 +53,8 @@ namespace librealsense
 
         template<rs2_distortion dist = RS2_DISTORTION_NONE>
         inline void align_other_to_depth_sse(const uint16_t* z_pixels,
-            const byte* source,
-            byte* dest, int bpp, const rs2_intrinsics& to,
+            const uint8_t * source,
+            uint8_t* dest, int bpp, const rs2_intrinsics& to,
             const rs2_extrinsics& from_to_other);
 
         inline void move_depth_to_other(const uint16_t* z_pixels,

@@ -1,10 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
-
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 #pragma once
+
+#include <src/float3.h>
 
 #include <map>
 #include <vector>
+#include <set>
 
 namespace rs2
 {
@@ -36,7 +38,7 @@ namespace librealsense {
         {
             if (_max == _min) return *_data;
             auto t = (value - _min) / (_max - _min);
-            t = clamp_val(t, 0.f, 1.f);
+            t = std::max( 0.f, std::min( t, 1.f ) );
             return _data[(int)(t * (_size - 1))];
         }
 
@@ -168,5 +170,7 @@ namespace librealsense {
 
         float   _depth_units = 0.f;
         float   _d2d_convert_factor = 0.f;
+
+        const std::set<rs2_format> _supported_formats = {RS2_FORMAT_Z16, RS2_FORMAT_DISPARITY32};
     };
 }

@@ -16,7 +16,7 @@ def domain_arg(x):
     if t <= 0 or t > 232:
         raise ValueError( f'--domain should be [0,232]' )
     return t
-args.add_argument( '--domain', metavar='<0-232>', type=domain_arg, default=0, help='DDS domain to use (default=0)' )
+args.add_argument( '--domain', metavar='<0-232>', type=domain_arg, default=-1, help='DDS domain to use (default=0)' )
 args = args.parse_args()
 
 
@@ -35,8 +35,10 @@ import time
 
 dds.debug( args.debug )
 
+settings = {}
+
 participant = dds.participant()
-participant.init( args.domain, 'devices' )
+participant.init( dds.load_rs_settings( settings ), args.domain )
 
 watcher = dds.device_watcher( participant )
 watcher.start()
@@ -44,10 +46,8 @@ watcher.start()
 i( 'Waiting for devices...' )
 time.sleep( args.time )
 
-def device_found( device ):
+for device in watcher.devices():
     di = device.device_info()
     print( di.topic_root )
-    return True  # keep going
-watcher.foreach_device( device_found )
 
 

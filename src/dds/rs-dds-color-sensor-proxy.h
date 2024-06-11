@@ -4,6 +4,7 @@
 #pragma once
 
 #include "rs-dds-sensor-proxy.h"
+#include <src/color-sensor.h>
 
 
 namespace librealsense {

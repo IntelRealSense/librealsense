@@ -35,6 +35,12 @@ using namespace pybind11::literals;
 using namespace librealsense;
 using namespace pybackend2;
 
+namespace librealsense {
+namespace platform {
+std::shared_ptr< backend > create_backend();
+}  // namespace platform
+}  // namespace librealsense
+
 
 // Prevents expensive copies of pixel buffers into python
 PYBIND11_MAKE_OPAQUE(std::vector<uint8_t>)
@@ -476,4 +482,3 @@ void librealsense::info_container::enable_recording(std::function<void(const inf
 void librealsense::info_container::update(std::shared_ptr<extension_snapshot> ext){}
 bool librealsense::info_container::supports_info(rs2_camera_info info) const { return false; }
 const std::string& librealsense::info_container::get_info(enum rs2_camera_info) const { static std::string s = ""; return s; }
-std::vector<rs2_option> librealsense::options_container::get_supported_options(void)const { return{}; }

@@ -5,6 +5,7 @@
 
 #include "d500-device.h"
 #include "ds/ds-color-common.h"
+#include <src/color-sensor.h>
 
 #include "stream.h"
 
@@ -17,27 +18,30 @@ namespace librealsense
     class d500_color : public virtual d500_device
     {
     public:
-        d500_color( std::shared_ptr< const d500_info > const & );
+        d500_color( std::shared_ptr< const d500_info > const &, rs2_format native_format );
 
         synthetic_sensor& get_color_sensor()
         {
             return dynamic_cast<synthetic_sensor&>(get_sensor(_color_device_idx));
         }
 
-        uvc_sensor& get_raw_color_sensor()
+        std::shared_ptr< uvc_sensor > get_raw_color_sensor()
         {
-            synthetic_sensor& color_sensor = get_color_sensor();
-            return dynamic_cast<uvc_sensor&>(*color_sensor.get_raw_sensor());
+            synthetic_sensor & color_sensor = get_color_sensor();
+            return std::dynamic_pointer_cast< uvc_sensor >( color_sensor.get_raw_sensor() );
         }
 
     protected:
+        void register_color_features();
+
         std::shared_ptr<stream_interface> _color_stream;
         std::shared_ptr<ds_color_common> _ds_color_common;
+        rs2_format const _native_format;
 
     private:
         void register_options();
         void register_metadata();
-        void register_processing_blocks();
+        void register_color_processing_blocks();
 
         void register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index);
 

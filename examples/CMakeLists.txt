@@ -1,6 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2019 Intel Corporation. All Rights Reserved.
-cmake_minimum_required(VERSION 3.1.0)
+# Copyright(c) 2019-2024 Intel Corporation. All Rights Reserved.
+cmake_minimum_required(VERSION 3.8)
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
@@ -26,6 +26,7 @@ add_subdirectory(save-to-disk)
 add_subdirectory(multicam)
 add_subdirectory(pointcloud)
 add_subdirectory(align)
+add_subdirectory(align-gl)
 add_subdirectory(align-advanced)
 add_subdirectory(sensor-control)
 add_subdirectory(measure)
@@ -37,4 +38,3 @@ add_subdirectory(record-playback)
 add_subdirectory(motion)
 add_subdirectory(gl)
 add_subdirectory(hdr)
-

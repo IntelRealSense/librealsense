@@ -1,13 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
-#include "types.h"
+#include "core/enum-helpers.h"
+#include <librealsense2/hpp/rs_types.hpp>
+
 #include <rsutils/string/from.h>
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/os/ensure-console.h>
-#include <librealsense2/h/rs_types.h>  // rs2_log_severity
 
 #include <stdexcept>
 #include <mutex>
@@ -16,6 +16,12 @@
 
 namespace librealsense
 {
+    void log_to_console( rs2_log_severity min_severity );
+    void log_to_file( rs2_log_severity min_severity, const char * file_path );
+    void log_to_callback( rs2_log_severity min_severity, rs2_log_callback_sptr callback );
+    void reset_logger();
+    void enable_rolling_log_file( unsigned max_size );
+
 #if BUILD_EASYLOGGINGPP
     struct log_message
     {
@@ -49,9 +55,9 @@ namespace librealsense
     template<char const * NAME>
     class logger_type
     {
-        rs2_log_severity minimum_log_severity = RS2_LOG_SEVERITY_NONE;
         rs2_log_severity minimum_console_severity = RS2_LOG_SEVERITY_NONE;
         rs2_log_severity minimum_file_severity = RS2_LOG_SEVERITY_NONE;
+        rs2_log_severity minimum_callback_severity = RS2_LOG_SEVERITY_NONE;
 
         std::mutex log_mutex;
         std::ofstream log_file;
@@ -98,16 +104,12 @@ namespace librealsense
             defaultConf.setToDefault();
             // To set GLOBAL configurations you may use
 
-            defaultConf.setGlobally(el::ConfigurationType::ToFile, "false");
-            defaultConf.setGlobally(el::ConfigurationType::ToStandardOutput, "false");
-            defaultConf.setGlobally(el::ConfigurationType::LogFlushThreshold, "10");
-            defaultConf.setGlobally(el::ConfigurationType::Format, " %datetime{%d/%M %H:%m:%s,%g} %level [%thread] (%fbase:%line) %msg");
-
-            for (int i = minimum_console_severity; i < RS2_LOG_SEVERITY_NONE; i++)
-            {
-                defaultConf.set(severity_to_level(static_cast<rs2_log_severity>(i)),
-                    el::ConfigurationType::ToStandardOutput, "true");
-            }
+            defaultConf.setGlobally( el::ConfigurationType::Enabled, "false" );
+            defaultConf.setGlobally( el::ConfigurationType::ToFile, "false" );
+            defaultConf.setGlobally( el::ConfigurationType::ToStandardOutput, "false" );
+            defaultConf.setGlobally( el::ConfigurationType::LogFlushThreshold, "10" );
+            defaultConf.setGlobally( el::ConfigurationType::Format,
+                                     " %datetime{%d/%M %H:%m:%s,%g} %level [%thread] (%fbase:%line) %msg" );
 
             // NOTE: you can only log to one file, so successive calls to log_to_file
             // will override one another!
@@ -117,10 +119,21 @@ namespace librealsense
                 // prevents creation of empty log files that are not required.
                 defaultConf.setGlobally(el::ConfigurationType::Filename, filename);
             }
-            for (int i = minimum_file_severity; i < RS2_LOG_SEVERITY_NONE; i++)
+
+            auto min_severity
+                = std::min( minimum_file_severity, std::min( minimum_callback_severity, minimum_console_severity ) );
+
+            for( int i = RS2_LOG_SEVERITY_DEBUG; i < RS2_LOG_SEVERITY_NONE; ++i )
             {
-                defaultConf.set(severity_to_level(static_cast<rs2_log_severity>(i)),
-                    el::ConfigurationType::ToFile, "true");
+                auto severity = static_cast< rs2_log_severity >( i );
+                auto level = severity_to_level( severity );
+                defaultConf.set( level, el::ConfigurationType::Enabled, severity >= min_severity ? "true" : "false" );
+                defaultConf.set( level,
+                                 el::ConfigurationType::ToStandardOutput,
+                                 severity >= minimum_console_severity ? "true" : "false" );
+                defaultConf.set( level,
+                                 el::ConfigurationType::ToFile,
+                                 severity >= minimum_file_severity ? "true" : "false" );
             }
 
             el::Loggers::reconfigureLogger(log_id, defaultConf);
@@ -132,8 +145,9 @@ namespace librealsense
             defaultConf.setToDefault();
             // To set GLOBAL configurations you may use
 
-            defaultConf.setGlobally(el::ConfigurationType::ToFile, "false");
-            defaultConf.setGlobally(el::ConfigurationType::ToStandardOutput, "false");
+            defaultConf.setGlobally( el::ConfigurationType::Enabled, "false" );
+            defaultConf.setGlobally( el::ConfigurationType::ToFile, "false" );
+            defaultConf.setGlobally( el::ConfigurationType::ToStandardOutput, "false" );
 
             el::Loggers::reconfigureLogger(log_id, defaultConf);
         }
@@ -142,15 +156,10 @@ namespace librealsense
         logger_type()
             : filename( rsutils::string::from::datetime() + ".log" )
         {
-            rs2_log_severity severity;
-            if (try_get_log_severity(severity))
-            {
-                log_to_file(severity, filename.c_str());
-            }
+            if( try_get_log_severity( minimum_file_severity ) )
+                open();
             else
-            {
                 open_def();
-            }
         }
 
         static bool try_get_log_severity(rs2_log_severity& severity)
@@ -204,7 +213,7 @@ namespace librealsense
         class elpp_dispatcher : public el::LogDispatchCallback
         {
         public:
-            log_callback_ptr callback;
+            rs2_log_callback_sptr callback;
             rs2_log_severity min_severity = RS2_LOG_SEVERITY_NONE;
 
         protected:
@@ -227,12 +236,11 @@ namespace librealsense
             for( auto const& dispatch : callback_dispatchers )
                 el::Helpers::uninstallLogDispatchCallback< elpp_dispatcher >( dispatch );
             callback_dispatchers.clear();
+            minimum_callback_severity = RS2_LOG_SEVERITY_NONE;
         }
 
-        void log_to_callback( rs2_log_severity min_severity, log_callback_ptr callback )
+        void log_to_callback( rs2_log_severity min_severity, rs2_log_callback_sptr callback )
         {
-            open();
-            
             try_get_log_severity( min_severity );
             if( callback  &&  min_severity != RS2_LOG_SEVERITY_NONE )
             {
@@ -249,21 +257,25 @@ namespace librealsense
                 auto dispatcher = el::Helpers::logDispatchCallback< elpp_dispatcher >( dispatch_name );
                 dispatcher->callback = callback;
                 dispatcher->min_severity = min_severity;
+                if( min_severity < minimum_callback_severity )
+                    minimum_callback_severity = min_severity;
                 
                 // Remove the default logger (which will log to standard out/err) or it'll still be active
                 //el::Helpers::uninstallLogDispatchCallback< el::base::DefaultLogDispatchCallback >( "DefaultLogDispatchCallback" );
+
+                open();
             }
         }
 
         // Stop logging and reset logger to initial configurations
         void reset_logger()
         {
-            el::Loggers::reconfigureLogger(log_id, el::ConfigurationType::ToFile, "false");
-            el::Loggers::reconfigureLogger(log_id, el::ConfigurationType::ToStandardOutput, "false");
-            el::Loggers::reconfigureLogger(log_id, el::ConfigurationType::MaxLogFileSize, "0");
+            el::Loggers::reconfigureLogger( log_id, el::ConfigurationType::Enabled, "false" );
+            el::Loggers::reconfigureLogger( log_id, el::ConfigurationType::ToFile, "false" );
+            el::Loggers::reconfigureLogger( log_id, el::ConfigurationType::ToStandardOutput, "false" );
+            el::Loggers::reconfigureLogger( log_id, el::ConfigurationType::MaxLogFileSize, "0" );
             remove_callbacks();
 
-            minimum_log_severity = RS2_LOG_SEVERITY_NONE;
             minimum_console_severity = RS2_LOG_SEVERITY_NONE;
             minimum_file_severity = RS2_LOG_SEVERITY_NONE;
         }

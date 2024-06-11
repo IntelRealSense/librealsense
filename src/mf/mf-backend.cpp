@@ -176,6 +176,11 @@ namespace librealsense
             return devices;
         }
 
+        std::vector<mipi_device_info> wmf_backend::query_mipi_devices() const
+        {
+            return std::vector<mipi_device_info>();
+        }
+
         class win_event_device_watcher : public device_watcher
         {
         public:

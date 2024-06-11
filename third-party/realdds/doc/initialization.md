@@ -32,7 +32,7 @@ While a set of initialization messages are outgoing, all other notifications mus
 ## Messages
 
 
-#### `device-header`
+### `device-header`
 
 This is the very first message, for example:
 
@@ -48,40 +48,75 @@ This is the very first message, for example:
 }
 ```
 
-Mainly the number of streams to expect. The device will wait for this many stream headers to arrive to finish initialization.
+- `n-streams` is the number of streams to expect
+     The device will wait for this many stream headers to arrive to finish initialization
+- `extrinsics` describe world coordinate transformations between any two streams in the device, required for proper translation of pixel coordinates between sensors, such as when a point-cloud is needed
+- `presets` is an optional array of preset names
+    The presets may then be applied using `change-preset`
 
-The `extrinsics` describe world coordinate transformations between any two streams in the device. This is required for proper alignment on the client.
+#### Extrinsics
 
-Optionally, the device may supply a `presets` array of preset names. The presets may then be applied (currently not implemented).
+In order to translate from one stream viewpoint to another, a graph needs to be available with nodes for each stream and a directional edge between them (one from A to B; another from B to A).
 
+So `extrinsics` is an array of such edges: `[<edge1>,<edge2>,...]`,
+Each `edge` is also an array: `[<from>,<to>,[<r00>,<r01>,...,<r22>,<tx>,<ty>,<tz>]]`.
+Where `<from>` and `<to>` are stream names, and the array inside contains the 9 rotation values (column-major) followed by 3 translation vector values.
 
-#### `device-options`
+The complete graph can be transmitted like this but this is overkill: given at least one edge from each stream to another, the rest can be computed. This is what librealsense does:
+- Depth to IR = identity
+- Depth to IR2 = {...}
+- RGB to Depth = {...}
 
-This is optional: not all devices have options. See [device](device.md).
+With those 3, one can compute IR2 to RGB, for example.
+
+### `device-options`
+
+This is optional: not all devices have options. Device options will not be shown in the Viewer. See [device](device.md).
 
 ```JSON
 {
     "id": "device-options",
     "options": [
-        {"description":"Enable/Disable global timestamp","name":"Global Time Enabled","range-default":1.0,"range-max":1.0,"range-min":0.0,"range-step":1.0,"value":1.0},
-        {"description":"HDR Option","name":"Hdr Enabled","range-default":0.0,"range-max":1.0,"range-min":0.0,"range-step":1.0,"value":0.0}
+        ["Domain",0,0,232,1,0,"The DDS domain (0-232) in which this device will be discovered"],
+        ["IP Address","1.2.3.4",null,"Which IP address to assign to the device; if empty, DHCP will be used", ["optional","IPv4"]]
     ]
 }
 ```
 
-* A `name`
-* The `type` defaults to `float`
-    * `bool`
-    * `float` is accompanied by a valid range (`default`, `min`, `max`, `step`)
-    * `int` is accompanied by a valid range (`default`, `min`, `max`, `step`)
-    * `string` for free text, or a choice from a `choices` array, e.g. `"type":"string","choices":["Value A","Value B"]`
-* A `description` is a brief string description of the functionality this option exposes
-* The `value` of the option
+* `"options"` is an array of options:
 
-Device options will not be shown in the Viewer.
+#### Options
+
+Options are defined with a JSON array: `[name, value, range..., default-value, description, [properties...]]`:
+* The `name` is what will be displayed to the user
+* The current `value`
+* An optional `range` of valid values
+    * Numeric options (`float`, `int`), defined by a `minimum`, `maximum`, and `stepping`
+        * I.e., is-valid = one-of( `minimum`, `minimum+1*stepping`, `minimum+2*stepping`, ..., `maximum` )
+    * Booleans can remove the range, e.g. `["Enabled", true, true, "Description"]`
+        * Booleans can be expressed as a range with `minimum=0`, `maximum=1`, `stepping=1`
+    * Free string options would likewise have no range, e.g. `["Name", "Bob", "", "The customer's name"]`
+        * `"IPv4"` is a string option that conforms to `W.X.Y.Z` (IP address) format
+    * Enum options are strings with an array of choices, e.g. `["Preset", "Maximum Quality", ["Maximum Range", "Maximum Quality", "Maximum Speed"], "Maximum Speed", "Standard preset combination of options"]`
+    * Rectangles are defined with values that arrays themselves: `[x1, y1, x2, y2]`
+        * All four should be integers
+        * No range should be used
+        * E.g., `["name", [1,2,3,4], null, "description", ["optional"]]`
+* A `default-value` which also adheres to the range
+    * If this and the range are missing, the option is read-only
+* A user-friendly description that describes the option, to be shown in any tooltip
+* Additional `properties` describing behavior or nature, as an array of (case-sensitive) strings
+    * `"optional"` to note that it's possible for it to not have a value; lack of a value is denoted as `null` in the JSON
+        * If optional, a type must be deducible or present in the properties
+        * E.g., `["name", null, "description", ["optional", "string"]]` is an optional read-only string value that's currently unset
+        * Enums cannot be optional
+    * `"string"`, `"int"`, `"boolean"`, `"float"`, `"IPv4"`, `"enum"`, `"rect"` can (and sometime must) indicate the value type
+        * If missing, the type will be deduced, if possible, from the values
+    * `"read-only"` options are not settable
+        * `set-option` will fail for these, though their value may change on the server side
 
 
-#### `stream-header`
+### `stream-header`
 
 Information about a specific stream:
 - `name` is the stream name, e.g. `Color`
@@ -118,12 +153,11 @@ Information about a specific stream:
 }
 ```
 
-#### `stream-options`
+### `stream-options`
 
 - `stream-name` is the name of the stream, same as in `stream-header`
 - `intrinsics` is:
-    - For video streams, an array of (width,height)-specific intrinsic values
-        - Each is itself an array of `[width, height, principal_point_x, principal_point_y, focal_lenght_x, focal_lenght_y, distortion_model,  distortion_coeffs[0], distortion_coeffs[1], distortion_coeffs[2], distortion_coeffs[3], distortion_coeffs[4]]`
+    - For video streams, see below
     - For motion streams, a mapping from either `accel` or `gyro` to an array of float values conforming to:
       ```C++
       struct rs2_motion_device_intrinsic
@@ -140,29 +174,66 @@ Information about a specific stream:
           float bias_variances[3];   
       }
       ```
-    e.g.:
-      ```JSON
-      "intrinsics": {
-          "accel": [1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],
-          "gyro": [1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
-      }
-      ```
-- `options` is an array of option objects, same as `device-options` above
+- `options` is an array of option objects, same as `device-options` above; stream options are shown in the Viewer
+- `recommended-filters` is an array of filter names to be enabled in the Viewer
+
+E.g.:
+  
+```JSON
+{
+    "id": "stream-options",
+    "stream-name": "Motion",
+    "intrinsics": {
+        "accel": [1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],
+        "gyro": [1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
+    },
+    "options": [],
+    "recommended-filters": []
+}
+```
+
+#### Video Stream Intrinsics
 
 ```JSON
 {
     "id": "stream-options",
-    "intrinsics": [
-        [640,480,320.14276123046875,238.4058837890625,378.80572509765625,378.80572509765625,4,0.0,0.0,0.0,0.0,0.0],
-        [1280,720,640.2379150390625,357.3431396484375,631.3428955078125,631.3428955078125,4,0.0,0.0,0.0,0.0,0.0]
-    ],
-    "options": [
-        {"description":"Enable / disable backlight compensation","name":"Backlight Compensation","range-default":0.0,"range-max":1.0,"range-min":0.0,"range-step":1.0,"value":0.0},
-        {"description":"UVC image brightness","name":"Brightness","range-default":0.0,"range-max":64.0,"range-min":-64.0,"range-step":1.0,"value":0.0},
-        {"description":"UVC image contrast","name":"Contrast","range-default":50.0,"range-max":100.0,"range-min":0.0,"range-step":1.0,"value":50.0}
-    ],
-    "stream-name":"Infrared 1"
+    "stream-name": "Depth",
+    "intrinsics": {
+        "width": 1280,
+        "height": 720,
+        "principal-point": [640.2379150390625,357.3431396484375],
+        "focal-length": [631.3428955078125,631.3428955078125]
+    },
+    "options": [],
+    "recommended-filters": [
+        "Decimation Filter",
+        "HDR Merge",
+        "Filter By Sequence id",
+        "Threshold Filter",
+        "Depth to Disparity",
+        "Spatial Filter",
+        "Temporal Filter",
+        "Hole Filling Filter",
+        "Disparity to Depth"
+    ]
 }
 ```
 
-Stream options are shown in the Viewer.
+Like extrinsics are used to communicate translation between different stream viewpoints, the intrinsics serve to transform 2D pixel values to 3D world coordinates. I.e., an RGB pixel has to be converted to a 3D point in space, then mapped to a 3D point from the viewpoint of the Depth stream, then transformed back into a 2D Depth pixel.
+
+The intrinsics are communicated in an object, as shown above:
+- A `width` and `height` are for the native stream resolution, as 16-bit integer values
+- A `principal-point` defined as `[<x>,<y>]` floating point values
+- A `focal-length`, also as `[<x>,<y>]` floats
+
+A distortion model may be applied:
+- The `model` would specify which model is to be used, with the default of `brown`
+- The `coefficients` is an array of floating point values, the number and meaning which depend on the `model`
+    - For `brown`, 5 points [k1, k2, p1, p2, k3] are needed
+
+The coefficients are assumed 0 if not there, applying no un/distortion.
+
+An additional `force-symmetry` boolean can be applied, and defaults to `false`.
+
+The intrinsics are communicated for the native resolution the device chooses. Librealsense, or any client, will need to scale these to a target resolution.
+

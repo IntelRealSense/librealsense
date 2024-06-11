@@ -1,18 +1,17 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!dds
+#test:retries:gha 2
 
 from rspy import log, test
-import pyrealsense2 as rs
-import dds
+import librs as rs
 
 if log.is_debug_on():
     rs.log_to_console( rs.log_severity.debug )
 log.nested = 'C  '
 
-context = rs.context( { 'dds': { 'domain': 123, 'participant': 'test-formats-conversion' }} )
-only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
+context = rs.context( { 'dds': { 'enabled': True, 'domain': 123, 'participant': 'test-formats-conversion' }} )
 
 import os.path
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -24,10 +23,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     with test.closure( "Test setup", on_fail=test.ABORT ):
         remote.run( 'create_server()' )
-        n_devs = 0
-        for dev in dds.wait_for_devices( context, only_sw_devices ):
-            n_devs += 1
-        test.check_equal( n_devs, 1 )
+        dev = rs.wait_for_devices( context, rs.only_sw_devices, n=1. )
         sensors = {sensor.get_info( rs.camera_info.name ) : sensor for sensor in dev.query_sensors()}
     #
     #############################################################################################
@@ -48,12 +44,13 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             sensor = sensors.get('YUYV-sensor')
             profiles = sensor.get_stream_profiles()
 
-            test.check_equal( len( profiles ), 5 ) # YUYV -> YUYV/RGB8/RGBA8/BGR8/BGRA8
+            test.check_equal( len( profiles ), 6 ) # YUYV -> YUYV/RGB8/RGBA8/BGR8/BGRA8/Y8
             test.check_equal( profiles[0].format(), rs.format.rgb8 )
-            test.check_equal( profiles[1].format(), rs.format.bgra8 )
-            test.check_equal( profiles[2].format(), rs.format.rgba8 )
-            test.check_equal( profiles[3].format(), rs.format.bgr8 )
-            test.check_equal( profiles[4].format(), rs.format.yuyv )
+            test.check_equal( profiles[1].format(), rs.format.y8 )
+            test.check_equal( profiles[2].format(), rs.format.bgra8 )
+            test.check_equal( profiles[3].format(), rs.format.rgba8 )
+            test.check_equal( profiles[4].format(), rs.format.bgr8 )
+            test.check_equal( profiles[5].format(), rs.format.yuyv )
     #
     #############################################################################################
     #
@@ -62,13 +59,14 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             sensor = sensors.get('UYVY-sensor')
             profiles = sensor.get_stream_profiles()
 
-            test.check_equal( len( profiles ), 6 ) # UYVY -> UYVY/YUYV/RGB8/RGBA8/BGR8/BGRA8
+            test.check_equal( len( profiles ), 7 ) # UYVY -> UYVY/YUYV/RGB8/RGBA8/BGR8/BGRA8/Y8
             test.check_equal( profiles[0].format(), rs.format.rgb8 )
             test.check_equal( profiles[1].format(), rs.format.uyvy )
-            test.check_equal( profiles[2].format(), rs.format.bgra8 )
-            test.check_equal( profiles[3].format(), rs.format.rgba8 )
-            test.check_equal( profiles[4].format(), rs.format.bgr8 )
-            test.check_equal( profiles[5].format(), rs.format.yuyv )
+            test.check_equal( profiles[2].format(), rs.format.y8 )
+            test.check_equal( profiles[3].format(), rs.format.bgra8 )
+            test.check_equal( profiles[4].format(), rs.format.rgba8 )
+            test.check_equal( profiles[5].format(), rs.format.bgr8 )
+            test.check_equal( profiles[6].format(), rs.format.yuyv )
     #
     #############################################################################################
     #
@@ -115,18 +113,20 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             #     RGBA8 @ 30/15/5 Hz
             #     BGR8 @ 30/15/5 Hz
             #     YUYV @ 30/15/5 Hz
-            test.check_equal( len( profiles ), 15 )
+            test.check_equal( len( profiles ), 18 )
             for i,f in zip( range(3), (30,15,5) ):
                 test.check_equal( profiles[0 + i].format(), rs.format.rgb8 )
                 test.check_equal( profiles[0 + i].fps(), f )
-                test.check_equal( profiles[3 + i].format(), rs.format.bgra8 )
+                test.check_equal( profiles[3 + i].format(), rs.format.y8 )
                 test.check_equal( profiles[3 + i].fps(), f )
-                test.check_equal( profiles[6 + i].format(), rs.format.rgba8 )
+                test.check_equal( profiles[6 + i].format(), rs.format.bgra8 )
                 test.check_equal( profiles[6 + i].fps(), f )
-                test.check_equal( profiles[9 + i].format(), rs.format.bgr8 )
+                test.check_equal( profiles[9 + i].format(), rs.format.rgba8 )
                 test.check_equal( profiles[9 + i].fps(), f )
-                test.check_equal( profiles[12 + i].format(), rs.format.yuyv )
+                test.check_equal( profiles[12 + i].format(), rs.format.bgr8 )
                 test.check_equal( profiles[12 + i].fps(), f )
+                test.check_equal( profiles[15 + i].format(), rs.format.yuyv )
+                test.check_equal( profiles[15 + i].fps(), f )
     #
     #############################################################################################
     #

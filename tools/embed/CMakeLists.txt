@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2021-2024 Intel Corporation. All Rights Reserved.
 
-cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 3.8)
 
 project(RealsenseToolsEmbed)
 
@@ -16,7 +16,8 @@ add_executable(rs-embed
 
 set_property(TARGET rs-embed PROPERTY CXX_STANDARD 11)
 
-include_directories(rs-embed ${LZ4_DIR} ../../third-party ../../third-party/tclap/include)
+include_directories(rs-embed ${LZ4_DIR} ../../third-party)
+target_link_libraries( rs-embed PRIVATE tclap )
 set_target_properties (rs-embed PROPERTIES FOLDER Tools)
 
 

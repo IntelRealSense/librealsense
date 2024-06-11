@@ -13,20 +13,22 @@
 #include "imgui-fonts-fontawesome.hpp"
 #include "imgui-fonts-monofont.hpp"
 
+#include <rsutils/os/special-folder.h>
 #include "os.h"
 #include <rsutils/os/os.h>
 #include "viewer.h"
 #include "on-chip-calib.h"
+#include "d500-on-chip-calib.h"
 #include "subdevice-model.h"
 #include "device-model.h"
 
 using namespace rs400;
-using namespace nlohmann;
+using rsutils::json;
 using namespace rs2::sw_update;
 
 namespace rs2
 {
-    void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18, ImFont*& monofont)
+    void imgui_easy_theming(ImFont*& font_dynamic, ImFont*& font_18, ImFont*& monofont, int& font_size)
     {
         ImGuiStyle& style = ImGui::GetStyle();
 
@@ -34,6 +36,7 @@ namespace rs2
         io.IniFilename = nullptr;
 
         const int OVERSAMPLE = config_file::instance().get(configurations::performance::font_oversample);
+        font_size = config_file::instance().get( configurations::window::font_size );
 
         static const ImWchar icons_ranges[] = { 0xf000, 0xf999, 0 }; // will not be copied by AddFont* so keep in scope.
 
@@ -41,13 +44,15 @@ namespace rs2
             ImFontConfig config_words;
             config_words.OversampleV = OVERSAMPLE;
             config_words.OversampleH = OVERSAMPLE;
-            font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(karla_regular_compressed_data, karla_regular_compressed_size, 16.f);
+            font_dynamic = io.Fonts->AddFontFromMemoryCompressedTTF( karla_regular_compressed_data,
+                                                                karla_regular_compressed_size,
+                                                                (float)font_size );
 
             ImFontConfig config_glyphs;
             config_glyphs.MergeMode = true;
             config_glyphs.OversampleV = OVERSAMPLE;
             config_glyphs.OversampleH = OVERSAMPLE;
-            font_14 = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
+            font_dynamic = io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_compressed_data,
                 font_awesome_compressed_size, 14.f, &config_glyphs, icons_ranges);
         }
 
@@ -416,7 +421,7 @@ namespace rs2
 
         refresh_notifications(viewer);
 
-        auto path = get_folder_path( special_folder::user_documents );
+        auto path = rsutils::os::get_special_folder( rsutils::os::special_folder::user_documents );
         path += "librealsense2/presets/";
         try
         {
@@ -1212,11 +1217,11 @@ namespace rs2
         textual_icon button_icon = is_recording ? textual_icons::stop : textual_icons::circle;
         const float icons_width = 78.0f;
         const ImVec2 device_panel_icons_size{ icons_width, 25 };
-        std::string recorod_button_name = rsutils::string::from() << button_icon << "##" << id;
+        std::string record_button_name = rsutils::string::from() << button_icon << "##" << id;
         auto record_button_color = is_recording ? light_blue : light_grey;
         ImGui::PushStyleColor(ImGuiCol_Text, record_button_color);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, record_button_color);
-        if (ImGui::ButtonEx(recorod_button_name.c_str(), device_panel_icons_size, (!is_streaming || is_playback_device) ? ImGuiButtonFlags_Disabled : 0))
+        if (ImGui::ButtonEx(record_button_name.c_str(), device_panel_icons_size, (disable_record_button_logic(is_streaming, is_playback_device)) ? ImGuiButtonFlags_Disabled : 0))
         {
             if (is_recording) //is_recording is changed inside stop/start_recording
             {
@@ -1248,7 +1253,7 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
-            std::string record_button_hover_text = (!is_streaming ? "Start streaming to enable recording" : (is_recording ? "Stop Recording" : "Start Recording"));
+            std::string record_button_hover_text = get_record_button_hover_text(is_streaming);
             ImGui::SetTooltip("%s", record_button_hover_text.c_str());
             if (is_streaming) window.link_hovered();
         }
@@ -1341,7 +1346,7 @@ namespace rs2
 
                 if (dev.is<rs2::updatable>() || dev.is<rs2::update_device>())
                 {
-                    if (ImGui::Selectable("Update Firmware...", false, updateFwFlags))
+                    if (ImGui::Selectable("Update Firmware", false, updateFwFlags))
                     {
                         begin_update({}, viewer, error_message);
                     }
@@ -1404,329 +1409,7 @@ namespace rs2
                 }
             }
 
-            bool has_autocalib = false;
-            for (auto&& sub : subdevices)
-            {
-                if (sub->supports_on_chip_calib() && !has_autocalib)
-                {
-                    something_to_show = true;
-
-                    std::string device_pid = sub->s->supports(RS2_CAMERA_INFO_PRODUCT_ID) ? sub->s->get_info(RS2_CAMERA_INFO_PRODUCT_ID) : "unknown";
-                    std::string device_usb_type = sub->s->supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR) ? sub->s->get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR) : "unknown";
-
-                    bool show_disclaimer = val_in_range(device_pid, { std::string("0AD2"), std::string("0AD3") }); // Specific for D410/5
-                    bool disable_fl_cal = (((device_pid == "0B5C") || show_disclaimer) &&
-                                            (!starts_with(device_usb_type, "3."))); // D410/D15/D455@USB2
-
-                    if (ImGui::Selectable("On-Chip Calibration"))
-                    {
-                        try
-                        {
-                            if (show_disclaimer)
-                            {
-                                auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
-                                viewer.not_model->add_notification(disclaimer_notice);
-                            }
-
-                            auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
-                            auto n = std::make_shared<autocalib_notification_model>("", manager, false);
-                            viewer.not_model->add_notification(n);
-                            n->forced = true;
-                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_SELF_INPUT;
-
-                            for (auto&& n : related_notifications)
-                                if (dynamic_cast<autocalib_notification_model*>(n.get()))
-                                    n->dismiss(false);
-
-                            related_notifications.push_back(n);
-                        }
-                        catch (const error& e)
-                        {
-                            error_message = error_to_string(e);
-                        }
-                        catch (const std::exception& e)
-                        {
-                            error_message = e.what();
-                        }
-                    }
-                    if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("This will improve the depth noise.\n"
-                            "Point at a scene that normally would have > 50 %% valid depth pixels,\n"
-                            "then press calibrate."
-                            "The health-check will be calculated.\n"
-                            "If >0.25 we recommend applying the new calibration.\n"
-                            "\"White wall\" mode should only be used when pointing at a flat white wall with projector on");
-
-                    if (ImGui::Selectable("Focal Length Calibration"))
-                    {
-                        try
-                        {
-                            if (disable_fl_cal)
-                            {
-                                auto disable_fl_notice = std::make_shared<fl_cal_limitation_model>();
-                                viewer.not_model->add_notification(disable_fl_notice);
-                            }
-                            else
-                            {
-                                std::shared_ptr< subdevice_model> sub_color;
-                                for (auto&& sub2 : subdevices)
-                                {
-                                    if (sub2->s->is<rs2::color_sensor>())
-                                    {
-                                        sub_color = sub2;
-                                        break;
-                                    }
-                                }
-
-                                if (show_disclaimer)
-                                {
-                                    auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
-                                    viewer.not_model->add_notification(disclaimer_notice);
-                                }
-                                auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub_color);
-                                auto n = std::make_shared<autocalib_notification_model>("", manager, false);
-                                viewer.not_model->add_notification(n);
-                                n->forced = true;
-                                n->update_state = autocalib_notification_model::RS2_CALIB_STATE_FL_INPUT;
-
-                                for (auto&& n : related_notifications)
-                                    if (dynamic_cast<autocalib_notification_model*>(n.get()))
-                                        n->dismiss(false);
-
-                                related_notifications.push_back(n);
-                                manager->start_fl_viewer();
-                            }
-                        }
-                        catch (const error& e)
-                        {
-                            error_message = error_to_string(e);
-                        }
-                        catch (const std::exception& e)
-                        {
-                            error_message = e.what();
-                        }
-                    }
-                    if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Focal length calibration is used to adjust camera focal length with specific target.");
-
-                    if (ImGui::Selectable("Tare Calibration"))
-                    {
-                        try
-                        {
-                            if (show_disclaimer)
-                            {
-                                auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
-                                viewer.not_model->add_notification(disclaimer_notice);
-                            }
-                            auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
-                            auto n = std::make_shared<autocalib_notification_model>("", manager, false);
-                            viewer.not_model->add_notification(n);
-                            n->forced = true;
-                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_TARE_INPUT;
-
-                            for (auto&& n : related_notifications)
-                                if (dynamic_cast<autocalib_notification_model*>(n.get()))
-                                    n->dismiss(false);
-
-                            related_notifications.push_back(n);
-                        }
-                        catch (const error& e)
-                        {
-                            error_message = error_to_string(e);
-                        }
-                        catch (const std::exception& e)
-                        {
-                            error_message = e.what();
-                        }
-                    }
-                    if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Tare calibration is used to adjust camera absolute distance to flat target.\n"
-                            "User needs either to enter the known ground truth or use the get button\n"
-                            "with specific target to get the ground truth.");
-
-//#define UVMAP_CAL
-#ifdef UVMAP_CAL // Disabled due to stability and maturity levels
-                    try
-                    {
-                        for (auto&& sub2 : subdevices)
-                        {
-                            if (sub2->s->is<rs2::color_sensor>())
-                            {
-                                if (ImGui::Selectable("UV-Mapping Calibration"))
-                                {
-                                    if (show_disclaimer)
-                                    {
-                                        auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
-                                        viewer.not_model->add_notification(disclaimer_notice);
-                                    }
-                                    auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub2, sub2->uvmapping_calib_full);
-                                    auto n = std::make_shared<autocalib_notification_model>("", manager, false);
-                                    viewer.not_model->add_notification(n);
-                                    n->forced = true;
-                                    n->update_state = autocalib_notification_model::RS2_CALIB_STATE_UVMAPPING_INPUT;
-
-                                    for (auto&& n : related_notifications)
-                                        if (dynamic_cast<autocalib_notification_model*>(n.get()))
-                                            n->dismiss(false);
-
-                                    related_notifications.push_back(n);
-                                    manager->start_uvmapping_viewer();
-                                }
-
-                                if (ImGui::IsItemHovered())
-                                    ImGui::SetTooltip("UV-Mapping calibration is used to improve UV-Mapping with specific target.");
-                            }
-                        }
-                    }
-                    catch (const error& e)
-                    {
-                        error_message = error_to_string(e);
-                    }
-                    catch (const std::exception& e)
-                    {
-                        error_message = e.what();
-                    }
-#endif //UVMAP_CAL
-
-                    //if (ImGui::Selectable("Focal Length Plus Calibration"))
-                    //{
-                    //    try
-                    //    {
-                    //        std::shared_ptr< subdevice_model> sub_color;
-                    //        for (auto&& sub2 : subdevices)
-                    //        {
-                    //            if (sub2->s->is<rs2::color_sensor>())
-                    //            {
-                    //                sub_color = sub2;
-                    //                break;
-                    //            }
-                    //        }
-
-                    //        auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub_color);
-                    //        auto n = std::make_shared<autocalib_notification_model>("", manager, false);
-
-                    //        viewer.not_model->add_notification(n);
-                    //        n->forced = true;
-                    //        n->update_state = autocalib_notification_model::RS2_CALIB_STATE_FL_PLUS_INPUT;
-
-                    //        for (auto&& n : related_notifications)
-                    //            if (dynamic_cast<autocalib_notification_model*>(n.get()))
-                    //                n->dismiss(false);
-
-                    //        related_notifications.push_back(n);
-                    //        manager->start_fl_plus_viewer();
-                    //    }
-                    //    catch (const error& e)
-                    //    {
-                    //        error_message = error_to_string(e);
-                    //    }
-                    //    catch (const std::exception& e)
-                    //    {
-                    //        error_message = e.what();
-                    //    }
-                    //}
-                    //if (ImGui::IsItemHovered())
-                    //    ImGui::SetTooltip("Focal length plus calibration is used to adjust camera focal length and principal points with specific target.");
-
-                    if (_calib_model.supports())
-                    {
-                        if (ImGui::Selectable("Calibration Data"))
-                        {
-                            _calib_model.open();
-                        }
-                        if (ImGui::IsItemHovered())
-                            ImGui::SetTooltip("Access low level camera calibration parameters");
-                    }
-
-                    if (auto fwlogger = dev.as<rs2::firmware_logger>())
-                    {
-                        if (ImGui::Selectable("Recover Logs from Flash"))
-                        {
-                            try
-                            {
-                                bool has_parser = false;
-                                std::string hwlogger_xml = config_file::instance().get(configurations::viewer::hwlogger_xml);
-                                std::ifstream f(hwlogger_xml.c_str());
-                                if (f.good())
-                                {
-                                    try
-                                    {
-                                        std::string str((std::istreambuf_iterator<char>(f)),
-                                            std::istreambuf_iterator<char>());
-                                        fwlogger.init_parser(str);
-                                        has_parser = true;
-                                    }
-                                    catch (const std::exception& ex)
-                                    {
-                                        viewer.not_model->output.add_log(
-                                            RS2_LOG_SEVERITY_WARN,
-                                            __FILE__,
-                                            __LINE__,
-                                            rsutils::string::from()
-                                                << "Invalid Hardware Logger XML at '" << hwlogger_xml
-                                                << "': " << ex.what() << "\nEither configure valid XML or remove it" );
-                                    }
-                                }
-
-                                auto message = fwlogger.create_message();
-
-                                while (fwlogger.get_flash_log(message))
-                                {
-                                    auto parsed = fwlogger.create_parsed_message();
-                                    auto parsed_ok = false;
-
-                                    if (has_parser)
-                                    {
-                                        if (fwlogger.parse_log(message, parsed))
-                                        {
-                                            parsed_ok = true;
-
-                                            viewer.not_model->output.add_log( message.get_severity(),
-                                                                              parsed.file_name(),
-                                                                              parsed.line(),
-                                                                              rsutils::string::from()
-                                                                                  << "FW-LOG [" << parsed.thread_name()
-                                                                                  << "] " << parsed.message() );
-                                        }
-                                    }
-
-                                    if (!parsed_ok)
-                                    {
-                                        std::stringstream ss;
-                                        for (auto& elem : message.data())
-                                            ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem) << " ";
-                                        viewer.not_model->output.add_log(message.get_severity(), __FILE__, 0, ss.str());
-                                    }
-                                }
-                            }
-                            catch(const std::exception& ex)
-                            {
-                                viewer.not_model->output.add_log(
-                                    RS2_LOG_SEVERITY_WARN,
-                                    __FILE__,
-                                    __LINE__,
-                                    rsutils::string::from() << "Failed to fetch firmware logs: " << ex.what() );
-                            }
-                        }
-                        if (ImGui::IsItemHovered())
-                            ImGui::SetTooltip("Recovers last set of firmware logs prior to camera shutdown / disconnect");
-                    }
-
-                    has_autocalib = true;
-                }
-            }
-            if (!has_autocalib)
-            {
-                bool selected = false;
-                something_to_show = true;
-                ImGui::Selectable("On-Chip Calibration", &selected, ImGuiSelectableFlags_Disabled);
-                ImGui::Selectable("Tare Calibration", &selected, ImGuiSelectableFlags_Disabled);
-            }
-
-            if (!something_to_show)
-            {
-                ImGui::Text("This device has no additional options");
-            }
+            draw_device_panel_auto_calib(viewer, something_to_show, error_message);
 
             ImGui::PopStyleColor();
 
@@ -2250,21 +1933,11 @@ namespace rs2
 
                         ///////////////////////////////////////////
                         //TODO: make this a member function
-                        std::vector<const char*> labels;
+                        int selected;
+                        std::vector< const char * > labels = opt_model.get_combo_labels( &selected );
                         std::vector< float > counters;
-                        auto selected = 0, counter = 0;
                         for (auto i = opt_model.range.min; i <= opt_model.range.max; i += opt_model.range.step)
-                        {
-                            std::string product = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-
-                            if (std::fabs(i - opt_model.value) < 0.001f)
-                            {
-                                selected = counter;
-                            }
-                            labels.push_back(opt_model.endpoint->get_option_value_description(opt_model.opt, i));
                             counters.push_back(i);
-                            counter++;
-                        }
                         ///////////////////////////////////////////
 
                         ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, white);
@@ -2489,7 +2162,7 @@ namespace rs2
         const float left_space = 3.f;
         const float upper_space = 3.f;
 
-        bool update_read_only_options = _update_readonly_options_timer;
+        bool update_read_only_options = false; // _update_readonly_options_timer;
 
         const ImVec2 initial_screen_pos = ImGui::GetCursorScreenPos();
         //Upper Space
@@ -2675,8 +2348,6 @@ namespace rs2
         pos = ImGui::GetCursorPos();
 
         ImVec2 rc;
-        std::string fw_version;
-        std::string min_fw_version;
 
         int info_control_panel_height = 0;
         if (show_device_info)
@@ -2692,7 +2363,6 @@ namespace rs2
                 if (pair.first == "Recommended Firmware Version")
                 {
                     info_category = "Min FW Version";
-                    min_fw_version = pair.second;
                 }
                 else
                 {
@@ -2703,21 +2373,12 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_FrameBg, sensor_bg);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
                 ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-                ImGui::SetCursorPos({ rc.x + 145, rc.y + 1 });
+                ImGui::SetCursorPos({ rc.x + 9.f * window.get_font_size(), rc.y + 1 });
                 std::string label = rsutils::string::from() << "##" << id << " " << pair.first;
-                if (pair.first == "Firmware Version")
-                {
-                    fw_version = pair.second;
-                    ImGui::PushItemWidth(80);
-                }
                 ImGui::InputText(label.c_str(),
                     (char*)pair.second.data(),
                     pair.second.size() + 1,
                     ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
-                if (pair.first == "Firmware Version")
-                {
-                    ImGui::PopItemWidth();
-                }
                 ImGui::PopStyleColor(3);
                 ImGui::SetCursorPos({ rc.x, rc.y + line_h });
             }
@@ -2752,13 +2413,16 @@ namespace rs2
                 {
                     bool stop_recording = false;
 
-                    ImGui::SetCursorPos({ windows_width - 35, pos.y + 3 });
+                    ImGui::SetCursorPos({ windows_width - 42, pos.y + 3 });
                     ImGui_ScopePushFont(window.get_font());
 
                     ImGui_ScopePushStyleColor(ImGuiCol_Button, sensor_bg);
                     ImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
                     ImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
 
+                    int font_size = window.get_font_size();
+                    ImVec2 button_size = { font_size * 1.9f, font_size * 1.9f };
+                    
                     if (!sub->streaming)
                     {
                         std::string label = rsutils::string::from()
@@ -2801,7 +2465,7 @@ namespace rs2
                         }
                         if (can_stream)
                         {
-                            if (ImGui::Button(label.c_str(), { 30,30 }))
+                            if( ImGui::Button( label.c_str(), button_size ) )
                             {
                                 if (profiles.empty()) // profiles might be already filled
                                     profiles = sub->get_selected_profiles();
@@ -2849,7 +2513,7 @@ namespace rs2
                         ImGui_ScopePushStyleColor(ImGuiCol_Text, light_blue);
                         ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
 
-                        if (ImGui::Button(label.c_str(), { 30,30 }))
+                        if( ImGui::Button( label.c_str(), button_size ) )
                         {
                             sub->stop(viewer.not_model);
                             std::string friendly_name = sub->s->get_info(RS2_CAMERA_INFO_NAME);
@@ -2933,7 +2597,7 @@ namespace rs2
                     label = rsutils::string::from() << "Controls ##" << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << id;
                     if (ImGui::TreeNode(label.c_str()))
                     {
-                        std::vector<rs2_option> supported_options = sub->s->get_supported_options();
+                        auto const & supported_options = sub->options_metadata;
 
                         // moving the color dedicated options to the end of the vector
                         std::vector<rs2_option> color_options = {
@@ -2950,23 +2614,26 @@ namespace rs2
 
                         std::vector<rs2_option> so_ordered;
 
-                        for (auto&& i : supported_options)
+                        for (auto const & id_model : supported_options)
                         {
-                            auto it = find(color_options.begin(), color_options.end(), i);
+                            auto it = find( color_options.begin(), color_options.end(), id_model.first );
                             if (it == color_options.end())
-                                so_ordered.push_back(i);
+                                so_ordered.push_back( id_model.first );
                         }
 
-                        std::for_each(color_options.begin(), color_options.end(), [&](rs2_option opt) {
-                            auto it = std::find(supported_options.begin(), supported_options.end(), opt);
-                            if (it != supported_options.end())
-                                so_ordered.push_back(opt);
-                            });
+                        std::for_each( color_options.begin(),
+                                       color_options.end(),
+                                       [&]( rs2_option opt )
+                                       {
+                                           auto it = supported_options.find( opt );
+                                           if( it != supported_options.end() )
+                                               so_ordered.push_back( opt );
+                                       } );
 
-                        for (auto&& i : so_ordered)
+                        for (auto opt : so_ordered)
                         {
-                            auto opt = static_cast<rs2_option>(i);
-                            if (viewer.is_option_skipped(opt)) continue;
+                            if( viewer.is_option_skipped( opt ) )
+                                continue;
                             if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
                             {
                                 if (serialize && opt == RS2_OPTION_VISUAL_PRESET)
@@ -3000,27 +2667,10 @@ namespace rs2
                         label = rsutils::string::from() << pb->get_name() << "##" << id;
                         if (ImGui::TreeNode(label.c_str()))
                         {
-                            if (!viewer.is_option_skipped(RS2_OPTION_MIN_DISTANCE)) 
-                            {
-                                pb->get_option(RS2_OPTION_MIN_DISTANCE).update_all_fields(error_message, *viewer.not_model);
-                            }
-                            if (!viewer.is_option_skipped(RS2_OPTION_MAX_DISTANCE))
-                            {
-                                pb->get_option(RS2_OPTION_MAX_DISTANCE).update_all_fields(error_message, *viewer.not_model);
-                            }
-                            if (!viewer.is_option_skipped(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED))
-                            {
-                                pb->get_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED).update_all_fields(error_message, *viewer.not_model);
-                            }
-
-                            for (auto i = 0; i < RS2_OPTION_COUNT; i++)
-                            {
-                                auto opt = static_cast<rs2_option>(i);
-                                if (viewer.is_option_skipped(opt)) continue;
-                                pb->get_option(opt).draw_option(
-                                    dev.is<playback>() || update_read_only_options,
-                                    false, error_message, *viewer.not_model);
-                            }
+                            pb->draw_options( viewer,
+                                              dev.is< playback >() || update_read_only_options,
+                                              false,
+                                              error_message );
 
                             ImGui::TreePop();
                         }
@@ -3033,8 +2683,7 @@ namespace rs2
                     const ImVec2 pos = ImGui::GetCursorPos();
 
                     draw_later.push_back([windows_width, &window, sub, pos, &viewer, this]() {
-                        if (!sub->streaming) ImGui::SetCursorPos({ windows_width - 34 , pos.y - 3 });
-                        else ImGui::SetCursorPos({ windows_width - 34, pos.y - 3 });
+                        ImGui::SetCursorPos({ windows_width - 41, pos.y - 3 });
 
                         try
                         {
@@ -3123,9 +2772,7 @@ namespace rs2
                             const ImVec2 pos = ImGui::GetCursorPos();
 
                             draw_later.push_back([windows_width, &window, sub, pos, &viewer, this, pb]() {
-                                if (!sub->streaming || !sub->post_processing_enabled) ImGui::SetCursorPos({ windows_width - 35, pos.y - 3 });
-                                else
-                                    ImGui::SetCursorPos({ windows_width - 35, pos.y - 3 });
+                                ImGui::SetCursorPos({ windows_width - 42, pos.y - 3 });
 
                                 try
                                 {
@@ -3134,6 +2781,8 @@ namespace rs2
                                     ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
                                     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
                                     ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
+                                    int font_size = window.get_font_size();
+                                    const ImVec2 button_size = { font_size * 2.f, font_size * 1.5f };
 
                                     if (!sub->post_processing_enabled)
                                     {
@@ -3146,7 +2795,7 @@ namespace rs2
 
                                             ImGui::PushStyleColor(ImGuiCol_Text, redish);
                                             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
-                                            ImGui::ButtonEx(label.c_str(), { 25,24 }, ImGuiButtonFlags_Disabled);
+                                            ImGui::ButtonEx(label.c_str(), button_size, ImGuiButtonFlags_Disabled);
                                         }
                                         else
                                         {
@@ -3156,7 +2805,7 @@ namespace rs2
                                                              << pb->get_name();
                                             ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                                             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
-                                            ImGui::ButtonEx(label.c_str(), { 25,24 }, ImGuiButtonFlags_Disabled);
+                                            ImGui::ButtonEx(label.c_str(), button_size, ImGuiButtonFlags_Disabled);
                                         }
                                     }
                                     else
@@ -3171,7 +2820,7 @@ namespace rs2
                                             ImGui::PushStyleColor(ImGuiCol_Text, redish);
                                             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
 
-                                            if (ImGui::Button(label.c_str(), { 25,24 }))
+                                            if (ImGui::Button(label.c_str(), button_size))
                                             {
                                                 pb->enable(true);
                                                 pb->save_to_config_file();
@@ -3192,7 +2841,7 @@ namespace rs2
                                             ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                                             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
 
-                                            if (ImGui::Button(label.c_str(), { 25,24 }))
+                                            if (ImGui::Button(label.c_str(), button_size))
                                             {
                                                 pb->enable(false);
                                                 pb->save_to_config_file();
@@ -3221,22 +2870,10 @@ namespace rs2
                             label = rsutils::string::from() << pb->get_name() << "##" << id;
                             if (ImGui::TreeNode(label.c_str()))
                             {
-                                for (auto&& opt : pb->get_option_list())
-                                {
-                                    if (viewer.is_option_skipped(opt)) continue;
-                                    pb->get_option(opt).draw_option(
-                                        dev.is<playback>() || update_read_only_options,
-                                        false, error_message, *viewer.not_model);
-
-                                    if (opt == RS2_OPTION_MIN_DISTANCE)
-                                    {
-                                        pb->get_option(RS2_OPTION_MAX_DISTANCE).update_all_fields(error_message, *viewer.not_model);
-                                    }
-                                    else if (opt == RS2_OPTION_MAX_DISTANCE)
-                                    {
-                                        pb->get_option(RS2_OPTION_MIN_DISTANCE).update_all_fields(error_message, *viewer.not_model);
-                                    }
-                                }
+                                pb->draw_options( viewer,
+                                                  dev.is< playback >() || update_read_only_options,
+                                                  false,
+                                                  error_message );
 
                                 ImGui::TreePop();
                             }
@@ -3285,6 +2922,25 @@ namespace rs2
         //TODO: Move under hour glass
     }
 
+    bool device_model::disable_record_button_logic(bool is_streaming, bool is_playback_device)
+    {
+        return (!is_streaming || is_playback_device);
+    }
+
+    std::string device_model::get_record_button_hover_text(bool is_streaming)
+    {
+        std::string record_button_hover_text;
+        if (!is_streaming)
+        {
+            record_button_hover_text = "Start streaming to enable recording";
+        }
+        else
+        {
+            record_button_hover_text = is_recording ? "Stop Recording" : "Start Recording";
+        }
+        return record_button_hover_text;
+    }
+
     std::vector<std::pair<std::string, std::string>> get_devices_names(const device_list& list)
     {
         std::vector<std::pair<std::string, std::string>> device_names;
@@ -3329,4 +2985,436 @@ namespace rs2
         _changes.pop();
         return true;
     }
+
+    void device_model::draw_device_panel_auto_calib(viewer_model& viewer, bool& something_to_show,
+        std::string& error_message)
+    {
+        bool has_autocalib = false;
+        bool is_d500 = dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && (std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D500");
+        if (is_d500)
+        {
+            has_autocalib = draw_device_panel_auto_calib_d500(viewer, something_to_show, error_message);
+        }
+        else
+        {
+            has_autocalib = draw_device_panel_auto_calib_d400(viewer, something_to_show, error_message);
+        }
+
+        if (!has_autocalib)
+        {
+            bool selected = false;
+            something_to_show = true;
+            ImGui::Selectable("On-Chip Calibration", &selected, ImGuiSelectableFlags_Disabled);
+            ImGui::Selectable("Tare Calibration", &selected, ImGuiSelectableFlags_Disabled);
+        }
+
+        if (!something_to_show)
+        {
+            ImGui::Text("This device has no additional options");
+        }
+    }
+
+    bool device_model::draw_device_panel_auto_calib_d400(viewer_model& viewer, bool& something_to_show,
+        std::string& error_message)
+    {
+        bool has_autocalib = false;
+        for (auto&& sub : subdevices)
+        {
+            if (sub->supports_on_chip_calib() && !has_autocalib)
+            {
+                something_to_show = true;
+
+                std::string device_pid = sub->s->supports(RS2_CAMERA_INFO_PRODUCT_ID) ? sub->s->get_info(RS2_CAMERA_INFO_PRODUCT_ID) : "unknown";
+                std::string device_usb_type = sub->s->supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR) ? sub->s->get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR) : "unknown";
+
+                bool show_disclaimer = val_in_range(device_pid, { std::string("0AD2"), std::string("0AD3") }); // Specific for D410/5
+                bool disable_fl_cal = (((device_pid == "0B5C") || show_disclaimer) &&
+                    (!starts_with(device_usb_type, "3."))); // D410/D15/D455@USB2
+
+                if (ImGui::Selectable("On-Chip Calibration"))
+                {
+                    try
+                    {
+                        if (show_disclaimer)
+                        {
+                            auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
+                            viewer.not_model->add_notification(disclaimer_notice);
+                        }
+
+
+                        auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
+                        auto n = std::make_shared<autocalib_notification_model>("", manager, false);
+                        viewer.not_model->add_notification(n);
+                        n->forced = true;
+                        n->update_state = autocalib_notification_model::RS2_CALIB_STATE_SELF_INPUT;
+
+                        for (auto&& n : related_notifications)
+                            if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                n->dismiss(false);
+
+                        related_notifications.push_back(n);
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("This will improve the depth noise.\n"
+                        "Point at a scene that normally would have > 50 %% valid depth pixels,\n"
+                        "then press calibrate."
+                        "The health-check will be calculated.\n"
+                        "If >0.25 we recommend applying the new calibration.\n"
+                        "\"White wall\" mode should only be used when pointing at a flat white wall with projector on");
+
+                if (ImGui::Selectable("Focal Length Calibration"))
+                {
+                    try
+                    {
+                        if (disable_fl_cal)
+                        {
+                            auto disable_fl_notice = std::make_shared<fl_cal_limitation_model>();
+                            viewer.not_model->add_notification(disable_fl_notice);
+                        }
+                        else
+                        {
+                            std::shared_ptr< subdevice_model> sub_color;
+                            for (auto&& sub2 : subdevices)
+                            {
+                                if (sub2->s->is<rs2::color_sensor>())
+                                {
+                                    sub_color = sub2;
+                                    break;
+                                }
+                            }
+
+                            if (show_disclaimer)
+                            {
+                                auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
+                                viewer.not_model->add_notification(disclaimer_notice);
+                            }
+                            auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub_color);
+                            auto n = std::make_shared<autocalib_notification_model>("", manager, false);
+                            viewer.not_model->add_notification(n);
+                            n->forced = true;
+                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_FL_INPUT;
+
+                            for (auto&& n : related_notifications)
+                                if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                    n->dismiss(false);
+
+                            related_notifications.push_back(n);
+                            manager->start_fl_viewer();
+                        }
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Focal length calibration is used to adjust camera focal length with specific target.");
+
+                if (ImGui::Selectable("Tare Calibration"))
+                {
+                    try
+                    {
+                        if (show_disclaimer)
+                        {
+                            auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
+                            viewer.not_model->add_notification(disclaimer_notice);
+                        }
+                        auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
+                        auto n = std::make_shared<autocalib_notification_model>("", manager, false);
+                        viewer.not_model->add_notification(n);
+                        n->forced = true;
+                        n->update_state = autocalib_notification_model::RS2_CALIB_STATE_TARE_INPUT;
+
+                        for (auto&& n : related_notifications)
+                            if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                n->dismiss(false);
+
+                        related_notifications.push_back(n);
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Tare calibration is used to adjust camera absolute distance to flat target.\n"
+                        "User needs either to enter the known ground truth or use the get button\n"
+                        "with specific target to get the ground truth.");
+
+                //#define UVMAP_CAL
+#ifdef UVMAP_CAL // Disabled due to stability and maturity levels
+                try
+                {
+                    for (auto&& sub2 : subdevices)
+                    {
+                        if (sub2->s->is<rs2::color_sensor>())
+                        {
+                            if (ImGui::Selectable("UV-Mapping Calibration"))
+                            {
+                                if (show_disclaimer)
+                                {
+                                    auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
+                                    viewer.not_model->add_notification(disclaimer_notice);
+                                }
+                                auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub2, sub2->uvmapping_calib_full);
+                                auto n = std::make_shared<autocalib_notification_model>("", manager, false);
+                                viewer.not_model->add_notification(n);
+                                n->forced = true;
+                                n->update_state = autocalib_notification_model::RS2_CALIB_STATE_UVMAPPING_INPUT;
+
+                                for (auto&& n : related_notifications)
+                                    if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                        n->dismiss(false);
+
+                                related_notifications.push_back(n);
+                                manager->start_uvmapping_viewer();
+                            }
+
+                            if (ImGui::IsItemHovered())
+                                ImGui::SetTooltip("UV-Mapping calibration is used to improve UV-Mapping with specific target.");
+                        }
+                    }
+                }
+                catch (const error& e)
+                {
+                    error_message = error_to_string(e);
+                }
+                catch (const std::exception& e)
+                {
+                    error_message = e.what();
+                }
+#endif //UVMAP_CAL
+
+                //if (ImGui::Selectable("Focal Length Plus Calibration"))
+                //{
+                //    try
+                //    {
+                //        std::shared_ptr< subdevice_model> sub_color;
+                //        for (auto&& sub2 : subdevices)
+                //        {
+                //            if (sub2->s->is<rs2::color_sensor>())
+                //            {
+                //                sub_color = sub2;
+                //                break;
+                //            }
+                //        }
+
+                //        auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub_color);
+                //        auto n = std::make_shared<autocalib_notification_model>("", manager, false);
+
+                //        viewer.not_model->add_notification(n);
+                //        n->forced = true;
+                //        n->update_state = autocalib_notification_model::RS2_CALIB_STATE_FL_PLUS_INPUT;
+
+                //        for (auto&& n : related_notifications)
+                //            if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                //                n->dismiss(false);
+
+                //        related_notifications.push_back(n);
+                //        manager->start_fl_plus_viewer();
+                //    }
+                //    catch (const error& e)
+                //    {
+                //        error_message = error_to_string(e);
+                //    }
+                //    catch (const std::exception& e)
+                //    {
+                //        error_message = e.what();
+                //    }
+                //}
+                //if (ImGui::IsItemHovered())
+                //    ImGui::SetTooltip("Focal length plus calibration is used to adjust camera focal length and principal points with specific target.");
+
+                if (_calib_model.supports())
+                {
+                    if (ImGui::Selectable("Calibration Data"))
+                    {
+                        _calib_model.open();
+                    }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Access low level camera calibration parameters");
+                }
+
+                if (auto fwlogger = dev.as<rs2::firmware_logger>())
+                {
+                    if (ImGui::Selectable("Recover Logs from Flash"))
+                    {
+                        try
+                        {
+                            bool has_parser = false;
+                            std::string hwlogger_xml = config_file::instance().get(configurations::viewer::hwlogger_xml);
+                            std::ifstream f(hwlogger_xml.c_str());
+                            if (f.good())
+                            {
+                                try
+                                {
+                                    std::string str((std::istreambuf_iterator<char>(f)),
+                                        std::istreambuf_iterator<char>());
+                                    fwlogger.init_parser(str);
+                                    has_parser = true;
+                                }
+                                catch (const std::exception& ex)
+                                {
+                                    viewer.not_model->output.add_log(
+                                        RS2_LOG_SEVERITY_WARN,
+                                        __FILE__,
+                                        __LINE__,
+                                        rsutils::string::from()
+                                        << "Invalid Hardware Logger XML at '" << hwlogger_xml
+                                        << "': " << ex.what() << "\nEither configure valid XML or remove it");
+                                }
+                            }
+
+                            auto message = fwlogger.create_message();
+
+                            while (fwlogger.get_flash_log(message))
+                            {
+                                auto parsed = fwlogger.create_parsed_message();
+                                auto parsed_ok = false;
+
+                                if (has_parser)
+                                {
+                                    if (fwlogger.parse_log(message, parsed))
+                                    {
+                                        parsed_ok = true;
+
+                                        viewer.not_model->output.add_log(message.get_severity(),
+                                            parsed.file_name(),
+                                            parsed.line(),
+                                            rsutils::string::from()
+                                            << "FW-LOG [" << parsed.thread_name()
+                                            << "] " << parsed.message());
+                                    }
+                                }
+
+                                if (!parsed_ok)
+                                {
+                                    std::stringstream ss;
+                                    for (auto& elem : message.data())
+                                        ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem) << " ";
+                                    viewer.not_model->output.add_log(message.get_severity(), __FILE__, 0, ss.str());
+                                }
+                            }
+                        }
+                        catch (const std::exception& ex)
+                        {
+                            viewer.not_model->output.add_log(
+                                RS2_LOG_SEVERITY_WARN,
+                                __FILE__,
+                                __LINE__,
+                                rsutils::string::from() << "Failed to fetch firmware logs: " << ex.what());
+                        }
+                    }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Recovers last set of firmware logs prior to camera shutdown / disconnect");
+                }
+
+                has_autocalib = true;
+            }
+        }
+        return has_autocalib;
+    }
+
+    bool device_model::draw_device_panel_auto_calib_d500(viewer_model& viewer, bool& something_to_show,
+        std::string& error_message)
+    {
+        bool has_autocalib = false;
+
+        bool streaming = is_streaming();
+        ImGuiSelectableFlags avoid_selection_flag = (streaming) ? ImGuiSelectableFlags_Disabled : 0;
+
+        for (auto&& sub : subdevices)
+        {
+            if (sub->supports_on_chip_calib() && !has_autocalib)
+            {
+                if (ImGui::Selectable("On-Chip Calibration", false, avoid_selection_flag))
+                {
+                    try
+                    {
+                        auto manager = std::make_shared<d500_on_chip_calib_manager>(viewer, sub, *this, dev);
+                        auto n = std::make_shared<d500_autocalib_notification_model>("", manager, false);
+                        viewer.not_model->add_notification(n);
+                        n->forced = true;
+                        n->update_state = d500_autocalib_notification_model::RS2_CALIB_STATE_INIT_CALIB;
+
+                        for (auto&& n : related_notifications)
+                            if (dynamic_cast<d500_autocalib_notification_model*>(n.get()))
+                                n->dismiss(false);
+
+                        related_notifications.push_back(n);
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    std::string tooltip = rsutils::string::from()
+                        << "On-Chip Calibration"
+                        << (streaming ? " (Disabled while streaming)" : "");
+                    ImGui::SetTooltip("%s", tooltip.c_str());
+                }
+                    
+                if (ImGui::Selectable("Dry Run On-Chip Calibration", false, avoid_selection_flag))
+                {
+                    try
+                    {
+                        auto manager = std::make_shared<d500_on_chip_calib_manager>(viewer, sub, *this, dev);
+                        auto n = std::make_shared<d500_autocalib_notification_model>("", manager, false);
+                        viewer.not_model->add_notification(n);
+                        n->forced = true;
+                        n->update_state = d500_autocalib_notification_model::RS2_CALIB_STATE_INIT_DRY_RUN;
+
+                        for (auto&& n : related_notifications)
+                            if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                n->dismiss(false);
+
+                        related_notifications.push_back(n);
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    std::string tooltip = rsutils::string::from()
+                        << "Dry Run On-Chip Calibration"
+                        << (streaming ? " (Disabled while streaming)" : "");
+                    ImGui::SetTooltip("%s", tooltip.c_str());
+                }
+
+                has_autocalib = true;
+                continue;
+            }
+        }
+        return has_autocalib;
+    }
+
 }

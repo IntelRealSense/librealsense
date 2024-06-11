@@ -17,7 +17,7 @@ def domain_arg(x):
     if t <= 0 or t > 232:
         raise ValueError( f'--domain should be [0,232]' )
     return t
-args.add_argument( '--domain', metavar='<0-232>', type=domain_arg, default=0, help='DDS domain to use (default=0)' )
+args.add_argument( '--domain', metavar='<0-232>', type=domain_arg, default=-1, help='DDS domain to use (default=0)' )
 args.add_argument( '--with-metadata', action='store_true', help='stream with metadata, if available (default off)' )
 args = args.parse_args()
 
@@ -40,10 +40,10 @@ dds.debug( args.debug )
 
 settings = {}
 if not args.with_metadata:
-    settings['disable-metadata'] = True
+    settings['device'] = { 'metadata' : False };
 
 participant = dds.participant()
-participant.init( args.domain, 'fps', settings )
+participant.init( dds.load_rs_settings( settings ), args.domain )
 
 # Most important is the topic-root: this assumes we know it in advance and do not have to
 # wait for a device-info message (which would complicate the code here).
@@ -53,7 +53,7 @@ info.topic_root = args.device
 
 # Create the device and initialize
 # The server must be up and running, or the init will time out!
-device = dds.device( participant, participant.create_guid(), info )
+device = dds.device( participant, info )
 try:
     i( 'Looking for device at', info.topic_root, '...' )
     device.wait_until_ready()  # If unavailable before timeout, this throws
@@ -62,13 +62,13 @@ except:
     sys.exit(1)
 
 n_depth = 0
-def on_depth_image( stream, image ):
+def on_depth_image( stream, image, sample ):
     #d( f'----> depth {image}')
     global n_depth
     n_depth += 1
 
 n_color = 0
-def on_color_image( stream, image ):
+def on_color_image( stream, image, sample ):
     #d( f'----> color {image}')
     global n_color
     n_color += 1
@@ -93,11 +93,12 @@ for stream in device.streams():
     stream.start_streaming()
 
 # Wait until we have at least one frame from each
-tries = 3
+tries = 5
 while tries > 0:
     if n_depth > 0  and  n_color > 0:
         break
     time.sleep( 1 )
+    tries -= 1
 else:
     raise RuntimeError( 'timed out waiting for frames to arrive' )
 n_depth = n_color = 0

@@ -5,6 +5,7 @@
 #include <realdds/dds-topic.h>
 #include <realdds/dds-participant.h>
 #include <realdds/dds-publisher.h>
+#include <realdds/dds-serialization.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-guid.h>
 
@@ -12,6 +13,9 @@
 #include <fastdds/dds/publisher/Publisher.hpp>
 #include <fastdds/dds/publisher/DataWriter.hpp>
 #include <fastdds/dds/topic/Topic.hpp>
+
+#include <rsutils/time/timer.h>
+#include <rsutils/json.h>
 
 
 namespace realdds {
@@ -27,6 +31,7 @@ dds_topic_writer::dds_topic_writer( std::shared_ptr< dds_topic > const & topic,
                                     std::shared_ptr< dds_publisher > const & publisher )
     : _topic( topic )
     , _publisher( publisher )
+    , _n_readers( 0 )
 {
 }
 
@@ -82,11 +87,46 @@ dds_topic_writer::qos::qos( eprosima::fastdds::dds::ReliabilityQosPolicyKind rel
 }
 
 
+void dds_topic_writer::override_qos_from_json( qos & wqos, rsutils::json const & qos_settings )
+{
+    // Default values should be set before we're called:
+    // All we do here is override those - if specified!
+    override_reliability_qos_from_json( wqos.reliability(), qos_settings.nested( "reliability" ) );
+    override_durability_qos_from_json( wqos.durability(), qos_settings.nested( "durability" ) );
+    override_history_qos_from_json( wqos.history(), qos_settings.nested( "history" ) );
+    override_liveliness_qos_from_json( wqos.liveliness(), qos_settings.nested( "liveliness" ) );
+    override_data_sharing_qos_from_json( wqos.data_sharing(), qos_settings.nested( "data-sharing" ) );
+    override_endpoint_qos_from_json( wqos.endpoint(), qos_settings.nested( "endpoint" ) );
+    override_publish_mode_qos_from_json( wqos.publish_mode(), qos_settings.nested( "publish-mode" ), *publisher()->get_participant() );
+}
+
+
 void dds_topic_writer::run( qos const & wqos )
 {
     eprosima::fastdds::dds::StatusMask status_mask;
     status_mask << eprosima::fastdds::dds::StatusMask::publication_matched();
     _writer = DDS_API_CALL( _publisher->get()->create_datawriter( _topic->get(), wqos, this, status_mask ) );
+}
+
+
+bool dds_topic_writer::wait_for_readers( dds_time timeout )
+{
+    // Better to use on_publication_matched, but that would require additional data members etc.
+    // For now, keep it simple:
+    rsutils::time::timer timer( std::chrono::nanoseconds( timeout.to_ns() ) );
+    while( _n_readers.load() < 1 )
+    {
+        if( timer.has_expired() )
+            return false;
+        std::this_thread::sleep_for( std::chrono::milliseconds( 250 ) );
+    }
+    return true;
+}
+
+
+bool dds_topic_writer::wait_for_acks( dds_time timeout )
+{
+    return !! _writer->wait_for_acknowledgments( timeout );
 }
 
 

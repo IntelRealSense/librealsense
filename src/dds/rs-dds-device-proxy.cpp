@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include "rs-dds-device-proxy.h"
 #include "rs-dds-color-sensor-proxy.h"
@@ -9,21 +9,26 @@
 #include <realdds/dds-device.h>
 #include <realdds/dds-stream.h>
 #include <realdds/dds-trinsics.h>
+#include <realdds/dds-participant.h>
+#include <realdds/dds-topic-writer.h>
 
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/flexible-msg.h>
+#include <realdds/topics/blob-msg.h>
+#include <realdds/topics/dds-topic-names.h>
 
 #include <src/stream.h>
 #include <src/environment.h>
 
 #include <rsutils/json.h>
+#include <rsutils/string/hexarray.h>
+#include <rsutils/string/from.h>
+#include <rsutils/number/crc32.h>
+
+using rsutils::json;
 
 
 namespace librealsense {
-
-
-// Constants for Json lookups
-static const std::string stream_name_key( "stream-name", 11 );
 
 
 static rs2_stream to_rs2_stream_type( std::string const & type_string )
@@ -43,12 +48,41 @@ static rs2_stream to_rs2_stream_type( std::string const & type_string )
 }
 
 
+rs2_distortion to_rs2_distortion( realdds::distortion_model model )
+{
+    switch( model )
+    {
+    case realdds::distortion_model::none: return RS2_DISTORTION_NONE;
+    case realdds::distortion_model::brown: return RS2_DISTORTION_BROWN_CONRADY;
+    case realdds::distortion_model::inverse_brown: return RS2_DISTORTION_INVERSE_BROWN_CONRADY;
+    case realdds::distortion_model::modified_brown: return RS2_DISTORTION_MODIFIED_BROWN_CONRADY;
+    default:
+        throw invalid_value_exception( "unexpected realdds distortion model: " + std::to_string( (int)model ) );
+    }
+}
+
+
+rs2_intrinsics to_rs2_intrinsics( const realdds::video_intrinsics & intrinsics )
+{
+    rs2_intrinsics intr;
+    intr.width = intrinsics.width;
+    intr.height = intrinsics.height;
+    intr.ppx = intrinsics.principal_point.x;
+    intr.ppy = intrinsics.principal_point.y;
+    intr.fx = intrinsics.focal_length.x;
+    intr.fy = intrinsics.focal_length.y;
+    intr.model = to_rs2_distortion( intrinsics.distortion.model );
+    memcpy( intr.coeffs, intrinsics.distortion.coeffs.data(), sizeof( intr.coeffs ) );
+    return intr;
+}
+
+
 static rs2_video_stream to_rs2_video_stream( rs2_stream const stream_type,
                                              sid_index const & sidx,
                                              std::shared_ptr< realdds::dds_video_stream_profile > const & profile,
                                              const std::set< realdds::video_intrinsics > & intrinsics )
 {
-    rs2_video_stream prof = {};
+    rs2_video_stream prof;
     prof.type = stream_type;
     prof.index = sidx.index;
     prof.uid = sidx.sid;
@@ -64,14 +98,7 @@ static rs2_video_stream to_rs2_video_stream( rs2_stream const stream_type,
                               { return profile->width() == intr.width && profile->height() == intr.height; } );
     if( intr != intrinsics.end() )  // Some profiles don't have intrinsics
     {
-        prof.intrinsics.width = intr->width;
-        prof.intrinsics.height = intr->height;
-        prof.intrinsics.ppx = intr->principal_point_x;
-        prof.intrinsics.ppy = intr->principal_point_y;
-        prof.intrinsics.fx = intr->focal_lenght_x;
-        prof.intrinsics.fy = intr->focal_lenght_y;
-        prof.intrinsics.model = static_cast< rs2_distortion >( intr->distortion_model );
-        memcpy( prof.intrinsics.coeffs, intr->distortion_coeffs.data(), sizeof( prof.intrinsics.coeffs ) );
+        prof.intrinsics = to_rs2_intrinsics( *intr );
     }
 
     return prof;
@@ -119,12 +146,25 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
     , _dds_dev( dev )
 {
     LOG_DEBUG( "=====> dds-device-proxy " << this << " created on top of dds-device " << _dds_dev.get() );
-    register_info( RS2_CAMERA_INFO_NAME, dev->device_info().name );
-    register_info( RS2_CAMERA_INFO_SERIAL_NUMBER, dev->device_info().serial );
-    register_info( RS2_CAMERA_INFO_PRODUCT_LINE, dev->device_info().product_line );
+    register_info( RS2_CAMERA_INFO_NAME, dev->device_info().name() );
+    register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, dev->device_info().topic_root() );
     register_info( RS2_CAMERA_INFO_PRODUCT_ID, "DDS" );
-    register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, dev->device_info().topic_root );
-    register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, dev->device_info().locked ? "YES" : "NO" );
+
+    auto & j = dev->device_info().to_json();
+    std::string str;
+    if( j.nested( "serial" ).get_ex( str ) )
+    {
+        register_info( RS2_CAMERA_INFO_SERIAL_NUMBER, str );
+        j.nested( "fw-update-id" ).get_ex( str );  // if fails, str will be the serial
+        register_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, str );
+    }
+    else if( j.nested( "fw-update-id" ).get_ex( str ) )
+        register_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, str );
+    if( j.nested( "fw-version" ).get_ex( str ) )
+        register_info( RS2_CAMERA_INFO_FIRMWARE_VERSION, str );
+    if( j.nested( "product-line" ).get_ex( str ) )
+        register_info( RS2_CAMERA_INFO_PRODUCT_LINE, str );
+    register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, j.nested( "locked" ).default_value( true ) ? "YES" : "NO" );
 
     // Assumes dds_device initialization finished
     struct sensor_info
@@ -202,7 +242,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
             auto const & default_profile = profiles[stream->default_profile_index()];
             for( auto & profile : profiles )
             {
-                LOG_DEBUG( "    " << profile->details_to_string() );
+                //LOG_DEBUG( "    " << profile->details_to_string() );
                 if( video_stream )
                 {
                     auto video_profile = std::static_pointer_cast< realdds::dds_video_stream_profile >( profile );
@@ -242,17 +282,17 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
         // Set profile's ID based on the dds_stream's ID (index already set). Connect the profile to the extrinsics graph.
         for( auto & profile : sensor_info.second.proxy->get_stream_profiles() )
         {
-            if( auto p = std::dynamic_pointer_cast< librealsense::video_stream_profile_interface >( profile ) )
-            {
-                LOG_DEBUG( "    " << get_string( p->get_stream_type() ) << ' ' << p->get_stream_index() << ' '
-                                  << get_string( p->get_format() ) << ' ' << p->get_width() << 'x' << p->get_height()
-                                  << " @ " << p->get_framerate() );
-            }
-            else if( auto p = std::dynamic_pointer_cast<librealsense::motion_stream_profile_interface>( profile ) )
-            {
-                LOG_DEBUG( "    " << get_string( p->get_stream_type() ) << ' ' << p->get_stream_index() << ' '
-                                  << get_string( p->get_format() ) << " @ " << p->get_framerate() );
-            }
+            //if( auto p = std::dynamic_pointer_cast< librealsense::video_stream_profile_interface >( profile ) )
+            //{
+            //    LOG_DEBUG( "    " << get_string( p->get_stream_type() ) << ' ' << p->get_stream_index() << ' '
+            //                      << get_string( p->get_format() ) << ' ' << p->get_width() << 'x' << p->get_height()
+            //                      << " @ " << p->get_framerate() );
+            //}
+            //else if( auto p = std::dynamic_pointer_cast<librealsense::motion_stream_profile_interface>( profile ) )
+            //{
+            //    LOG_DEBUG( "    " << get_string( p->get_stream_type() ) << ' ' << p->get_stream_index() << ' '
+            //                      << get_string( p->get_format() ) << " @ " << p->get_framerate() );
+            //}
             sid_index type_and_index( profile->get_stream_type(), profile->get_stream_index() );
             
             auto & streams = sensor_info.second.proxy->streams();
@@ -280,13 +320,13 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
 
     if( _dds_dev->supports_metadata() )
     {
-        _dds_dev->on_metadata_available(
-            [this]( nlohmann::json && dds_md )
+        _metadata_subscription = _dds_dev->on_metadata_available(
+            [this]( std::shared_ptr< const json > const & dds_md )
             {
-                std::string stream_name = rsutils::json::get< std::string >( dds_md, stream_name_key );
+                auto & stream_name = dds_md->nested( realdds::topics::metadata::key::stream_name ).string_ref();
                 auto it = _stream_name_to_owning_sensor.find( stream_name );
                 if( it != _stream_name_to_owning_sensor.end() )
-                    it->second->handle_new_metadata( stream_name, std::move( dds_md ) );
+                    it->second->handle_new_metadata( stream_name, dds_md );
             } );
     }
 
@@ -334,6 +374,17 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
         }
     }
     // TODO - need to register extrinsics group in dev?
+
+    // Use the default D400 matchers:
+    // Depth & IR matched by frame-number, time-stamp-matched to color.
+    // Motion streams will not get synced.
+    rs2_matchers matcher = RS2_MATCHER_DLR_C;
+    if( auto matcher_j = _dds_dev->participant()->settings().nested( "device", "matcher" ) )
+    {
+        if( ! matcher_j.is_string() || ! try_parse( matcher_j.string_ref(), matcher ) )
+            LOG_WARNING( "Invalid 'device/matcher' value " << matcher_j );
+    }
+    set_matcher_type( matcher );
 }
 
 
@@ -370,25 +421,29 @@ void dds_device_proxy::set_video_profile_intrinsics( std::shared_ptr< stream_pro
                                                      std::shared_ptr< realdds::dds_video_stream > stream ) const
 {
     auto vsp = std::dynamic_pointer_cast< video_stream_profile >( profile );
-    auto & stream_intrinsics = stream->get_intrinsics();
-    auto it = std::find_if( stream_intrinsics.begin(),
-                            stream_intrinsics.end(),
-                            [vsp]( const realdds::video_intrinsics & intr )
-                            { return vsp->get_width() == intr.width && vsp->get_height() == intr.height; } );
+    int const w = vsp->get_width();
+    int const h = vsp->get_height();
 
-    if( it != stream_intrinsics.end() )  // Some profiles don't have intrinsics
+    auto & stream_intrinsics = stream->get_intrinsics();
+    if( 1 == stream_intrinsics.size() )
     {
-        rs2_intrinsics intr;
-        intr.width = it->width;
-        intr.height = it->height;
-        intr.ppx = it->principal_point_x;
-        intr.ppy = it->principal_point_y;
-        intr.fx = it->focal_lenght_x;
-        intr.fy = it->focal_lenght_y;
-        intr.model = static_cast< rs2_distortion >( it->distortion_model );
-        memcpy( intr.coeffs, it->distortion_coeffs.data(), sizeof( intr.coeffs ) );
-        vsp->set_intrinsics( [intr]() { return intr; } );
+        // A single set of intrinsics will get scaled to any profile resolution
+        vsp->set_intrinsics( [intrinsics = *stream_intrinsics.begin(), w, h]()
+                             { return to_rs2_intrinsics( intrinsics.scaled_to( w, h ) ); } );
     }
+    else
+    {
+        // When we have multiple sets of intrinsics (one per resolution), we're limited to these
+        auto it = std::find_if( stream_intrinsics.begin(),
+                                stream_intrinsics.end(),
+                                [w, h]( const realdds::video_intrinsics & intr )
+                                { return intr.width == w && intr.height == h; } );
+        if( it != stream_intrinsics.end() )  // Some profiles don't have intrinsics
+        {
+            vsp->set_intrinsics( [intr = to_rs2_intrinsics( *it )]() { return intr; } );
+        }
+    }
+
 }
 
 
@@ -480,13 +535,153 @@ void dds_device_proxy::tag_profiles( stream_profiles profiles ) const
 
 void dds_device_proxy::hardware_reset()
 {
-    nlohmann::json control = nlohmann::json::object( { { "id", "hw-reset" } } );
-    nlohmann::json reply;
+    json control = json::object( { { realdds::topics::control::key::id, realdds::topics::control::hw_reset::id } } );
+    json reply;
     _dds_dev->send_control( control, &reply );
-    std::string default_status( "OK", 2 );
-    if( rsutils::json::get( reply, "status", default_status ) != default_status )
-        throw std::runtime_error( "Failed to reset: "
-                                  + rsutils::json::get( reply, "status", std::string( "unknown reason" ) ) );
+}
+
+
+std::vector< uint8_t > dds_device_proxy::send_receive_raw_data( const std::vector< uint8_t > & input )
+{
+    // debug_interface function
+    auto hexdata = rsutils::string::hexarray::to_string( input );
+    json control = json::object( { { realdds::topics::control::key::id, realdds::topics::control::hwm::id },
+                                   { realdds::topics::control::hwm::key::data, hexdata } } );
+    json reply;
+    _dds_dev->send_control( control, &reply );
+    rsutils::string::hexarray data;
+    if( ! reply.nested( realdds::topics::reply::hwm::key::data ).get_ex( data ) )
+        throw std::runtime_error( "Failed HWM: missing 'data' in reply" );
+    return data.detach();
+}
+
+
+std::vector< uint8_t > dds_device_proxy::build_command( uint32_t opcode,
+                                                        uint32_t param1,
+                                                        uint32_t param2,
+                                                        uint32_t param3,
+                                                        uint32_t param4,
+                                                        uint8_t const * data,
+                                                        size_t dataLength ) const
+{
+    // debug_interface function
+    rsutils::string::hexarray hexdata( std::vector< uint8_t >( data, data + dataLength ) );
+    json control = rsutils::json::object( { { realdds::topics::control::key::id, realdds::topics::control::hwm::id },
+                                            { realdds::topics::control::hwm::key::data, hexdata },
+                                            { realdds::topics::control::hwm::key::opcode, opcode },
+                                            { realdds::topics::control::hwm::key::param1, param1 },
+                                            { realdds::topics::control::hwm::key::param2, param2 },
+                                            { realdds::topics::control::hwm::key::param3, param3 },
+                                            { realdds::topics::control::hwm::key::param4, param4 },
+                                            { realdds::topics::control::hwm::key::build_command, true } } );
+    json reply;
+    _dds_dev->send_control( control, &reply );
+    if( ! reply.nested( realdds::topics::reply::hwm::key::data ).get_ex( hexdata ) )
+        throw std::runtime_error( "Failed HWM: missing 'data' in reply" );
+    return hexdata.detach();
+}
+
+
+bool dds_device_proxy::check_fw_compatibility( const std::vector< uint8_t > & image ) const
+{
+    try
+    {
+        // Start DFU
+        auto const crc = rsutils::number::calc_crc32( image.data(), image.size() );
+        json dfu_start{
+            { realdds::topics::control::key::id, realdds::topics::control::dfu_start::id },
+            { realdds::topics::control::dfu_start::key::size, image.size() },
+            { realdds::topics::control::dfu_start::key::crc, crc },
+        };
+        json reply;
+        _dds_dev->send_control( dfu_start, &reply );
+
+        // Set up a reply handler that will get the "dfu-ready" message
+        std::mutex mutex;
+        std::condition_variable cv;
+        json dfu_ready;
+        auto subscription = _dds_dev->on_notification(
+            [&]( std::string const & id, json const & notification )
+            {
+                if( id != realdds::topics::notification::dfu_ready::id )
+                    return;
+                std::unique_lock< std::mutex > lock( mutex );
+                dfu_ready = notification;
+                cv.notify_all();
+            } );
+
+        // Upload the image; this will check its compatibility
+        auto topic = realdds::topics::blob_msg::create_topic( _dds_dev->participant(),
+                                                              _dds_dev->device_info().topic_root()
+                                                                  + realdds::topics::DFU_TOPIC_NAME );
+        auto writer = std::make_shared< realdds::dds_topic_writer >( topic );
+        realdds::dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
+        wqos.publish_mode().kind = eprosima::fastdds::dds::ASYNCHRONOUS_PUBLISH_MODE;
+        wqos.publish_mode().flow_controller_name = "dfu";
+        writer->override_qos_from_json( wqos, _dds_dev->participant()->settings().nested( "device", "dfu" ) );
+        writer->run( wqos );
+        if( ! writer->wait_for_readers( { 3, 0 } ) )
+            throw std::runtime_error( "timeout waiting for DFU subscriber" );
+        auto blob = realdds::topics::blob_msg( std::vector< uint8_t >( image ) );
+        blob.write_to( *writer );
+        if( ! writer->wait_for_acks( { 3, 0 } ) )
+            throw std::runtime_error( "timeout waiting for DFU image ack" );
+
+        // Wait for a reply
+        {
+            std::unique_lock< std::mutex > lock( mutex );
+            if( ! cv.wait_for( lock, std::chrono::seconds( 5 ), [&]() { return ! dfu_ready.is_null(); } ) )
+                throw std::runtime_error( "timeout waiting for dfu-ready" );
+            subscription.cancel();
+        }
+        LOG_DEBUG( dfu_ready );
+        realdds::dds_device::check_reply( dfu_ready );  // throws if not OK
+    }
+    catch( std::exception const & e )
+    {
+        //LOG_ERROR( "DFU start failed: " << e.what() );
+        throw std::runtime_error( rsutils::string::from() << "failed to check image compatibility: " << e.what() );
+    }
+
+    return true;
+}
+
+
+void dds_device_proxy::update_flash( std::vector< uint8_t > const & image, rs2_update_progress_callback_sptr, int update_mode )
+{
+    throw not_implemented_exception( "update_flash not yet implemented" );
+}
+
+
+void dds_device_proxy::update( const void * /*image*/, int /*image_size*/, rs2_update_progress_callback_sptr callback ) const
+{
+    // Set up a reply handler that will get the "dfu-apply" messages and progress notifications
+    // NOTE: this depends on the implementation! If the device goes offline (as the DDS adapter device will), we won't
+    // get anything...
+    auto subscription = _dds_dev->on_notification(
+        [callback]( std::string const & id, json const & notification )
+        {
+            if( id != realdds::topics::notification::dfu_apply::id )
+                return;
+            if( auto progress
+                = notification.nested( realdds::topics::notification::dfu_apply::key::progress, &json::is_number ) )
+            {
+                auto fraction = progress.get< float >();
+                LOG_DEBUG( "... DFU progress: " << ( fraction * 100 ) );
+                if( callback )
+                    callback->on_update_progress( fraction );
+            }
+        } );
+
+    // Will throw if an error is returned
+    json reply;
+    _dds_dev->send_control(
+        json::object( { { realdds::topics::control::key::id, realdds::topics::control::dfu_apply::id } } ),
+        &reply );
+
+    // The device will take time to do its thing. We want to return only when it's done, but we cannot know when it's
+    // done if it goes down. It should go down right before restarting, so that's what we wait for:
+    _dds_dev->wait_until_offline( 5 * 60 * 1000 );  // ms -> 5 minutes
 }
 
 

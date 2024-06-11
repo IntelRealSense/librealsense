@@ -96,11 +96,13 @@ dot=$(${media_util} -d ${mdev} --print-dot)
 vid_dev_idx=$(echo "${dot}" | grep "DS5 mux" | grep "vi-output" | tr '\\n' '\n' | grep video | awk -F'"' '{print $1}' | grep -Po "\\d+")
 [[ -z ${vid_dev_idx} ]] && exit 0
 [[ $quiet -eq 0 ]] && printf "Bus\tCamera\tSensor\tNode Type\tVideo Node\tRS Link\n"
+vid_dev_idx_arr=($(echo $vid_dev_idx | tr " " "\n"))
+idx_0=${vid_dev_idx_arr[0]}
   for i in $vid_dev_idx; do
     vid="/dev/video${i}"
     [[ ! -c "${vid}" ]] && break
-    cam_id=$((i/6))
-    sens_id=$((i%6))
+    cam_id=$(((i-${idx_0})/6))
+    sens_id=$(((i-${idx_0})%6))
     dev_name=$(${v4l2_util} -d ${vid} -D | grep 'Driver name' | head -n1 | awk -F' : ' '{print $2}')
     bus="mipi"   
     if [ "${dev_name}" = "tegra-video" ]; then
@@ -131,7 +133,7 @@ vid_dev_idx=$(echo "${dot}" | grep "DS5 mux" | grep "vi-output" | tr '\\n' '\n' 
     [[ ${sensor_name} == 'imu' ]] && continue
 
     i=$((i+1))
-    sens_id=$((i%6))
+    sens_id=$(((i-${idx_0})%6))
 
     type="Metadata"
     vid="/dev/video${i}"

@@ -3,23 +3,17 @@
 
 #pragma once
 
-#include <functional>
-#include <memory>
-#include <vector>
-
-
-struct rs2_device_info;
+#include <rscore/device-factory.h>
+#include <rsutils/subscription.h>
 
 
 namespace librealsense {
 
 
-class device_info;
-class context;
+class device_watcher_singleton;
 
 
 namespace platform {
-class device_watcher;
 struct backend_device_group;
 class platform_device_info;
 }  // namespace platform
@@ -35,22 +29,21 @@ class platform_device_info;
 // manages these device-info objects such that lifetime is tracked and updated appropriately, without the caller's
 // knowledge.
 //
-class backend_device_factory
+class backend_device_factory : public device_factory
 {
-    context & _context;
-    std::shared_ptr< platform::device_watcher > const _device_watcher;
+    typedef device_factory super;
 
-    using callback = std::function< void( std::vector< rs2_device_info > & rs2_devices_info_removed,
-                                          std::vector< rs2_device_info > & rs2_devices_info_added ) >;
+    std::shared_ptr< device_watcher_singleton > const _device_watcher;
+    rsutils::subscription const _dtor;  // raii generic code, used to automatically unsubscribe our callback
 
 public:
-    backend_device_factory( context &, callback && );
+    backend_device_factory( std::shared_ptr< context > const &, callback && );
     ~backend_device_factory();
 
     // Query any subset of available devices and return them as device-info objects
     // Devices will match both the requested mask and the device-mask from the context settings
     //
-    std::vector< std::shared_ptr< device_info > > query_devices( unsigned mask ) const;
+    std::vector< std::shared_ptr< device_info > > query_devices( unsigned mask ) const override;
 
 private:
     std::vector< std::shared_ptr< platform::platform_device_info > >

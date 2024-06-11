@@ -1,6 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
-cmake_minimum_required( VERSION 3.1.0 )
+# Copyright(c) 2023-2024 Intel Corporation. All Rights Reserved.
+cmake_minimum_required( VERSION 3.8 )
 project( rs-dds-adapter )
 
 set(TOOL_FILES
@@ -13,10 +13,7 @@ set(TOOL_FILES
     )
 
 add_executable( ${PROJECT_NAME} ${TOOL_FILES} )
-target_include_directories( ${PROJECT_NAME} PRIVATE
-    ${REPO_ROOT}/third-party/tclap/include
-    )
-target_link_libraries( ${PROJECT_NAME} PRIVATE realdds realsense2 )
+target_link_libraries( ${PROJECT_NAME} PRIVATE realdds realsense2 tclap )
 set_target_properties (${PROJECT_NAME} PROPERTIES
     FOLDER Tools/dds
     CXX_STANDARD 14

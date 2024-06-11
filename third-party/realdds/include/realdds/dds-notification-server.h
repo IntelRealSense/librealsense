@@ -41,6 +41,8 @@ public:
 
     // On-discovery notification: when a new client is detected
     void add_discovery_notification( topics::flexible_msg && notification );
+    // Allow manual trigger of discovery
+    void trigger_discovery_notifications();
 
 private:
     void send_discovery_notifications();

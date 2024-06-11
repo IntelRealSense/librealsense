@@ -1,23 +1,23 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 //
 // Plane Fit implementation follows http://www.ilikebigbits.com/blog/2015/3/2/plane-from-points algorithm
-
 #pragma once
+
+#include "float3.h"
+#include "plane.h"
 
 #ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES
 #endif
 #include <algorithm>
 #include <array>
-#include <cmath>
+#include <math.h>
 #include <mutex>
 #include <vector>
+#include <cmath>
 
 #include <librealsense2/rs.hpp>
-
-#include "float3.h"
-#include "plane.h"
 
 
 namespace rs2
@@ -115,7 +115,7 @@ namespace rs2
                 dir = { a, b, 1 };
             }
 
-            return plane_from_point_and_normal(centroid, dir.normalize());
+            return plane_from_point_and_normal(centroid, dir.normalized());
         }
 
         inline double evaluate_pixel(const plane& p, const rs2_intrinsics* intrin, float x, float y, float distance, float3& output)

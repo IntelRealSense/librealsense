@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5) 
+cmake_minimum_required(VERSION 3.16.3)  # same as in FastDDS (U20)
 include(FetchContent)
 
 # We use a function to enforce a scoped variables creation only for FastDDS build (i.e turn off BUILD_SHARED_LIBS which is used on LRS build as well)
@@ -16,7 +16,11 @@ function(get_fastdds)
     FetchContent_Declare(
       fastdds
       GIT_REPOSITORY https://github.com/eProsima/Fast-DDS.git
-      GIT_TAG        v2.9.1
+      # 2.10.x is eProsima's last LTS version that still supports U20
+      # 2.10.4 has specific modifications based on support provided, but it has some incompatibility
+      # with the way we clone (which works with v2.11+), so they made a fix and tagged it for us:
+      # Once they have 2.10.5 we should move to it
+      GIT_TAG        v2.10.4-realsense
       GIT_SUBMODULES ""     # Submodules will be cloned as part of the FastDDS cmake configure stage
       GIT_SHALLOW ON        # No history needed
       SOURCE_DIR ${CMAKE_BINARY_DIR}/third-party/fastdds
@@ -31,6 +35,10 @@ function(get_fastdds)
     set(COMPILE_TOOLS OFF CACHE INTERNAL "" FORCE)
     set(BUILD_TESTING OFF CACHE INTERNAL "" FORCE)
     set(SQLITE3_SUPPORT OFF CACHE INTERNAL "" FORCE)
+    #set(ENABLE_OLD_LOG_MACROS OFF CACHE INTERNAL "" FORCE)  doesn't work
+    set(FASTDDS_STATISTICS OFF CACHE INTERNAL "" FORCE)
+    # Enforce NO_TLS to disable SSL: if OpenSSL is found, it will be linked to, and we don't want it!
+    set(NO_TLS ON CACHE INTERNAL "" FORCE)
 
     # Set special values for FastDDS sub directory
     set(BUILD_SHARED_LIBS OFF)
@@ -45,13 +53,13 @@ function(get_fastdds)
     mark_as_advanced(FETCHCONTENT_UPDATES_DISCONNECTED_FASTDDS)
 
     # place FastDDS project with other 3rd-party projects
-    set_target_properties(fastcdr fastrtps PROPERTIES
-                          FOLDER "ExternalProjectTargets/fastdds")
+    set_target_properties(fastcdr fastrtps foonathan_memory PROPERTIES
+                          FOLDER "3rd Party/fastdds")
 
     list(POP_BACK CMAKE_MESSAGE_INDENT) # Unindent outputs
 
     add_library(dds INTERFACE)
-    target_link_libraries(dds INTERFACE  fastcdr fastrtps)
+    target_link_libraries( dds INTERFACE fastcdr fastrtps )
 
     add_definitions(-DBUILD_WITH_DDS)
 

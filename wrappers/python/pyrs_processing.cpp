@@ -48,8 +48,8 @@ void init_processing(py::module &m) {
 
     py::class_<rs2::processing_block, rs2::options> processing_block(m, "processing_block", "Define the processing block workflow, inherit this class to "
                                                                      "generate your own processing_block.");
-    processing_block.def(py::init([](std::function<void(rs2::frame, rs2::frame_source&)> processing_function) {
-            return new rs2::processing_block(processing_function);
+    processing_block.def(py::init([](std::function<void(rs2::frame, rs2::frame_source*)> processing_function) {
+        return new rs2::processing_block([=](rs2::frame f, rs2::frame_source& fs) {processing_function(f, &fs); });
         }), "processing_function"_a)
         .def("start", [](rs2::processing_block& self, std::function<void(rs2::frame)> f) {
             self.start(f);

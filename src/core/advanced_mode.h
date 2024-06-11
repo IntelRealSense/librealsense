@@ -4,10 +4,9 @@
 
 #include "ds/ds-private.h"
 #include "hw-monitor.h"
-#include "streaming.h"
 #include "option.h"
 #include "ds/advanced_mode/presets.h"
-#include "../../include/librealsense2/h/rs_advanced_mode_command.h"
+#include <librealsense2/h/rs_advanced_mode_command.h>
 #include "serializable-interface.h"
 #include <rsutils/lazy.h>
 
@@ -150,6 +149,9 @@ namespace librealsense
         static const uint16_t HW_MONITOR_COMMAND_SIZE = 1000;
         static const uint16_t HW_MONITOR_BUFFER_SIZE = 1024;
 
+        void block( const std::string & exception_message );
+        void unblock();
+
     private:
         friend class auto_calibrated;
         void set_exposure(synthetic_sensor& sensor, const exposure_control& val);
@@ -204,17 +206,24 @@ namespace librealsense
         rsutils::lazy< synthetic_sensor * > _color_sensor;
         rsutils::lazy< bool > _enabled;
         std::shared_ptr<advanced_mode_preset_option> _preset_opt;
-        rsutils::lazy< bool > _rgb_exposure_gain_bind;
         rsutils::lazy< bool > _amplitude_factor_support;
+        bool _blocked = false;
+        std::string _block_message;
 
         preset get_all() const;
-        void set_all(const preset& p);
+        void set_all( const preset & p );
+        void set_all_depth( const preset & p );
+        void set_all_rgb( const preset & p );
+        bool should_set_rgb_preset() const;
 
         std::vector<uint8_t> send_receive(const std::vector<uint8_t>& input) const;
 
         template<class T>
         void set(const T& strct, EtAdvancedModeRegGroup cmd) const
         {
+            if( _blocked )
+                throw std::runtime_error( _block_message );
+
             auto ptr = (uint8_t*)(&strct);
             std::vector<uint8_t> data(ptr, ptr + sizeof(T));
 

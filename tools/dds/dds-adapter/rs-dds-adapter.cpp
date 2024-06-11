@@ -1,9 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <rsutils/easylogging/easyloggingpp.h>
-#include <rsutils/json.h>
-
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
 #include <realdds/dds-participant.h>
@@ -17,6 +14,12 @@
 #include <tclap/CmdLine.h>
 #include <tclap/ValueArg.h>
 
+#include <rsutils/os/executable-name.h>
+#include <rsutils/os/special-folder.h>
+#include <rsutils/easylogging/easyloggingpp.h>
+#include <rsutils/json.h>
+#include <rsutils/json-config.h>
+
 #include <string>
 #include <iostream>
 #include <map>
@@ -26,42 +29,90 @@ using namespace TCLAP;
 using namespace realdds;
 
 
-std::string get_topic_root( topics::device_info const & dev_info )
+std::string get_topic_root( std::string const & name, std::string const & serial_number )
 {
     // Build device root path (we use a device model only name like DXXX)
     // example: /realsense/D435/11223344
     constexpr char const * DEVICE_NAME_PREFIX = "Intel RealSense ";
     constexpr size_t DEVICE_NAME_PREFIX_CCH = 16;
     // We don't need the prefix in the path
-    std::string model_name = dev_info.name;
-    if ( model_name.length() > DEVICE_NAME_PREFIX_CCH
-       && 0 == strncmp( model_name.data(), DEVICE_NAME_PREFIX, DEVICE_NAME_PREFIX_CCH ) )
+    std::string model_name = name;
+    if( model_name.length() > DEVICE_NAME_PREFIX_CCH
+        && 0 == strncmp( model_name.data(), DEVICE_NAME_PREFIX, DEVICE_NAME_PREFIX_CCH ) )
     {
         model_name.erase( 0, DEVICE_NAME_PREFIX_CCH );
     }
+    for( auto it = model_name.begin(); it != model_name.end(); ++it )
+        if( *it == ' ' )
+            *it = '_';  // e.g., 'D4xx Recovery'
     constexpr char const * RS_ROOT = "realsense/";
-    return RS_ROOT + model_name + '_' + dev_info.serial;
+    return RS_ROOT + model_name + '_' + serial_number;
 }
 
 
 topics::device_info rs2_device_to_info( rs2::device const & dev )
 {
-    topics::device_info dev_info;
-    dev_info.name = dev.get_info( RS2_CAMERA_INFO_NAME );
-    dev_info.serial = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
-    dev_info.product_line = dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
-    dev_info.locked = ( strcmp( dev.get_info( RS2_CAMERA_INFO_CAMERA_LOCKED ), "YES" ) == 0 );
+    rsutils::json j;
+
+    // Name is mandatory
+    std::string const name = dev.get_info( RS2_CAMERA_INFO_NAME );
+    j[realdds::topics::device_info::key::name] = name;
+
+    if( dev.supports( RS2_CAMERA_INFO_SERIAL_NUMBER ) )
+        j[realdds::topics::device_info::key::serial] = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
+    if( dev.supports( RS2_CAMERA_INFO_PRODUCT_LINE ) )
+        j["product-line"] = dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
+    if( dev.supports( RS2_CAMERA_INFO_CAMERA_LOCKED ) )
+        j["locked"] = ( strcmp( dev.get_info( RS2_CAMERA_INFO_CAMERA_LOCKED ), "YES" ) == 0 );
+
+    // FW update ID is a must for DFU; all cameras should have one
+    std::string const serial_number = dev.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
+    j["fw-update-id"] = serial_number;
+    if( auto update_device = rs2::update_device( dev ) )
+    {
+        j[realdds::topics::device_info::key::recovery] = true;
+        if( dev.supports( RS2_CAMERA_INFO_PRODUCT_ID ) )
+            // Append the ID so we have it
+            j[realdds::topics::device_info::key::name] = name + " [" + dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID ) + "]";
+    }
+
+    if( dev.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) )
+        j["fw-version"] = dev.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION );
 
     // Build device topic root path
-    dev_info.topic_root = get_topic_root( dev_info );
-    return dev_info;
+    j[realdds::topics::device_info::key::topic_root] = get_topic_root( name, serial_number );
+
+    return topics::device_info::from_json( j );
+}
+
+
+static rsutils::json load_settings( rsutils::json const & local_settings )
+{
+    // Load the realsense configuration file settings
+    std::string const filename = rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME;
+    auto config = rsutils::json_config::load_from_file( filename );
+
+    // Take just the 'context' part
+    config = rsutils::json_config::load_settings( config, "context", "config-file" );
+
+    // Take the "dds" settings only
+    config = config.nested( "dds" );
+
+    // We should always have DDS enabled
+    if( config.is_object() )
+        config.erase( "enabled" );
+
+    // Patch the given local settings into the configuration
+    config.override( local_settings, "local settings" );
+
+    return config;
 }
 
 
 int main( int argc, char * argv[] )
 try
 {
-    dds_domain_id domain = 0;
+    dds_domain_id domain = -1;  // from settings; default to 0
     CmdLine cmd( "librealsense rs-dds-adapter tool, use CTRL + C to stop..", ' ' );
     ValueArg< dds_domain_id > domain_arg( "d",
                                           "domain",
@@ -104,10 +155,13 @@ try
 
     std::cout << "Starting RS DDS Adapter.." << std::endl;
 
-    // Create a DDS publisher
+    // Create a DDS participant
     auto participant = std::make_shared< dds_participant >();
-    auto settings = nlohmann::json::object();
-    participant->init( domain, "rs-dds-adapter", std::move( settings ) );
+    {
+        rsutils::json dds_settings = rsutils::json::object();
+        dds_settings = load_settings( dds_settings );
+        participant->init( domain, "rs-dds-adapter", std::move( dds_settings ) );
+    }
 
     struct device_handler
     {
@@ -120,7 +174,7 @@ try
     std::cout << "Start listening to RS devices.." << std::endl;
 
     // Create a RealSense context
-    nlohmann::json j = {
+    rsutils::json j = {
         { "dds",               false   }, // Don't discover DDS devices from the network, we want local devices only 
         { "format-conversion", "basic" }  // Don't convert raw sensor formats (except interleaved) will be done by receiver
     };
@@ -136,7 +190,7 @@ try
 
             // Create a dds-device-server for this device
             auto dds_device_server
-                = std::make_shared< realdds::dds_device_server >( participant, dev_info.topic_root );
+                = std::make_shared< realdds::dds_device_server >( participant, dev_info.topic_root() );
  
             // Create a lrs_device_manager for this device
             std::shared_ptr< tools::lrs_device_controller > lrs_device_controller

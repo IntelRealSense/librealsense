@@ -1,13 +1,14 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
-
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include <fastdds/dds/publisher/DataWriterListener.hpp>
 #include <fastdds/dds/publisher/qos/DataWriterQos.hpp>
 #include "dds-defines.h"
 
+#include <rsutils/json-fwd.h>
 #include <memory>
+#include <atomic>
 
 
 namespace eprosima {
@@ -38,7 +39,7 @@ class dds_topic_writer : protected eprosima::fastdds::dds::DataWriterListener
 
     eprosima::fastdds::dds::DataWriter * _writer = nullptr;
 
-    int _n_readers = 0;
+    std::atomic< int > _n_readers;
 
 public:
     dds_topic_writer( std::shared_ptr< dds_topic > const & topic );
@@ -73,8 +74,17 @@ public:
                = eprosima::fastdds::dds::VOLATILE_DURABILITY_QOS );  // default is transient local
     };
 
+    // Override default values with JSON contents
+    void override_qos_from_json( qos &, rsutils::json const & );
+
     // The callbacks should be set before we actually create the underlying DDS objects, so the writer does not
     void run( qos const & = qos() );
+
+    // Waits until readers are detected; return false on timeout
+    bool wait_for_readers( dds_time timeout );
+
+    // Waits until all changes were acknowledged; return false on timeout
+    bool wait_for_acks( dds_time timeout );
 
     // DataWriterListener
 protected:

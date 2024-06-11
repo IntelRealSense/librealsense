@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include <realdds/dds-device-broadcaster.h>
 
@@ -17,8 +17,10 @@
 
 #include <rsutils/shared-ptr-singleton.h>
 #include <rsutils/string/slice.h>
-using rsutils::string::slice;
 #include <rsutils/json.h>
+
+using rsutils::string::slice;
+using rsutils::json;
 
 
 namespace realdds {
@@ -114,6 +116,11 @@ public:
         std::lock_guard< std::mutex > lock( _broadcasters_mutex );
         _broadcasters.erase( broadcaster );
     }
+
+    void broadcast()
+    {
+        _ready_for_broadcast.set_trigger_value( true );
+    }
 };
 
 
@@ -122,8 +129,12 @@ static std::map< realdds::dds_guid, rsutils::shared_ptr_singleton< detail::broad
 
 
 dds_device_broadcaster::dds_device_broadcaster( std::shared_ptr< dds_publisher > const & publisher,
-                                                topics::device_info const & dev_info )
+                                                topics::device_info const & dev_info,
+                                                std::function< void() > && on_ack,
+                                                dds_time ack_timeout )
     : _device_info( dev_info )
+    , _on_ack( std::move( on_ack ) )
+    , _ack_timeout( ack_timeout )
 {
     if( ! publisher )
         DDS_THROW( runtime_error, "null publisher" );
@@ -132,22 +143,72 @@ dds_device_broadcaster::dds_device_broadcaster( std::shared_ptr< dds_publisher >
     _manager = participant_broadcast_manager[participant_guid].instance( publisher );
     _writer = _manager->register_broadcaster( this );
 
-    broadcast();  // possible we have no subscribers, but can't hurt
+    _manager->broadcast();  // possible we have no subscribers, but can't hurt
 }
 
 
 void dds_device_broadcaster::broadcast() const
 {
+    // Called from the manager, in its worker thread, whenever our device-info needs broadcasting (which can happen
+    // multiple times, once per new participant we see). This happens automatically when a dds_device_broadcaster is
+    // instantiated.
     try
     {
         topics::flexible_msg msg( _device_info.to_json() );
-        LOG_DEBUG( "sending device-info message " << slice( msg.custom_data< char const >(), msg._data.size() ) );
-        msg.write_to( *_writer );
+        LOG_DEBUG( "[" << _device_info.debug_name() << "] broadcasting device-info " << _device_info.to_json().dump(4) );
+        std::move( msg ).write_to( *_writer );
+
+        // If a broadcast callback is asked for, we wait for acks and call it on the first broadcast (and never again)
+        if( _on_ack )
+        {
+            std::thread(
+                [on_ack = std::move( _on_ack ),
+                 weak_broadcaster = std::weak_ptr< const dds_device_broadcaster >( shared_from_this() )]
+                {
+                    if( auto broadcaster = weak_broadcaster.lock() )
+                    {
+                        try
+                        {
+                            if( ! broadcaster->_writer->wait_for_acks( broadcaster->_ack_timeout ) )
+                                LOG_DEBUG( "[" << broadcaster->_device_info.debug_name()
+                                               << "] timeout waiting for broadcast acknowledgement" );
+                            on_ack();
+                        }
+                        catch( ... ) {}
+                    }
+                } )
+                .detach();
+        }
     }
     catch( std::exception const & e )
     {
-        LOG_ERROR( "Error sending device-info message for S/N " << _device_info.serial << ": " << e.what() );
+        LOG_ERROR( "Error sending device-info message for S/N " << _device_info.serial_number() << ": " << e.what() );
     }
+}
+
+
+bool dds_device_broadcaster::broadcast_disconnect( dds_time ack_timeout ) const
+{
+    try
+    {
+        // Let subscribers on device-info know we're about to drop
+        topics::flexible_msg msg( json::object( { { topics::device_info::key::topic_root, _device_info.topic_root() },
+                                                  { topics::device_info::key::stopping, true } } ) );
+        LOG_DEBUG( "[" << _device_info.debug_name() << "] sending disconnect message "
+                       << slice( msg.custom_data< char const >(), msg._data.size() ) );
+        std::move( msg ).write_to( *_writer );
+
+        // Wait until all changes were acknowledged; return false on timeout
+        // Needed to avoid destroying the writer before readers get a chance to see the message (or the writer to even
+        // send it)
+        if( ack_timeout.seconds || ack_timeout.nanosec )
+            return _writer->wait_for_acks( ack_timeout );
+    }
+    catch( std::exception const & e )
+    {
+        LOG_ERROR( "Error sending disconnect message for S/N " << _device_info.serial_number() << ": " << e.what() );
+    }
+    return false;
 }
 
 

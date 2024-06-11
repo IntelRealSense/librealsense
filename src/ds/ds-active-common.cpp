@@ -2,24 +2,29 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include "ds-active-common.h"
-#include "d400/d400-color.h"
+#include "d400/d400-private.h" // for RS_USB2_PID
+#include "ds-options.h"
+
+#include  <src/backend-device.h>
 
 namespace librealsense
 {
     using namespace ds;
 
-    ds_active_common::ds_active_common(uvc_sensor& raw_depth_ep,
-        synthetic_sensor& depth_ep,
-        ds_device* owner,
-        ds_caps device_capabilities,
-        std::shared_ptr<hw_monitor> hw_monitor,
-        firmware_version fw_version) :
-        _raw_depth_ep(raw_depth_ep),
-        _depth_ep(depth_ep),
-        _owner(owner),
-        _device_capabilities(device_capabilities),
-        _hw_monitor(hw_monitor),
-        _fw_version(fw_version) {}
+    ds_active_common::ds_active_common( const std::shared_ptr< uvc_sensor > & raw_depth_ep,
+                                        synthetic_sensor & depth_ep,
+                                        backend_device * owner,
+                                        ds_caps device_capabilities,
+                                        std::shared_ptr< hw_monitor > hw_monitor,
+                                        firmware_version fw_version )
+        : _raw_depth_ep( raw_depth_ep )
+        , _depth_ep( depth_ep )
+        , _owner( owner )
+        , _device_capabilities( device_capabilities )
+        , _hw_monitor( hw_monitor )
+        , _fw_version( fw_version )
+    {
+    }
 
     void ds_active_common::register_options()
     {
@@ -61,36 +66,6 @@ namespace librealsense
             {
                 _depth_ep.register_option(RS2_OPTION_EMITTER_ENABLED, emitter_enabled);
                 _depth_ep.register_option(RS2_OPTION_LASER_POWER, laser_power_auto_disabling);
-            }
-
-            //PROJECTOR TEMPERATURE OPTION
-            if (pid == ds::RS457_PID)
-            {
-                _depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                    std::make_shared<projector_temperature_option_mipi>(_hw_monitor,
-                        RS2_OPTION_PROJECTOR_TEMPERATURE));
-            }
-            else
-            {
-                _depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                    std::make_shared<asic_and_projector_temperature_options>(_raw_depth_ep,
-                        RS2_OPTION_PROJECTOR_TEMPERATURE));
-            }
-
-            // EMITTER FREQUENCY OPTION
-            if ((pid == ds::RS457_PID || pid == ds::RS455_PID)
-                && _fw_version >= firmware_version("5.14.0"))
-            {
-                auto emitter_freq = std::make_shared<uvc_xu_option<uint16_t>>(
-                    _raw_depth_ep,
-                    ds::depth_xu,
-                    ds::DS5_EMITTER_FREQUENCY,
-                    "Controls the emitter frequency, 57 [KHZ] / 91 [KHZ]",
-                    std::map<float, std::string>{
-                        { (float)RS2_EMITTER_FREQUENCY_57_KHZ, "57 KHZ" },
-                    { (float)RS2_EMITTER_FREQUENCY_91_KHZ, "91 KHZ" } }, false);
-
-                _depth_ep.register_option(RS2_OPTION_EMITTER_FREQUENCY, emitter_freq);
             }
         }
         else

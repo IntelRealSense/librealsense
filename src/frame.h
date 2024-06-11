@@ -10,6 +10,7 @@
 #include <atomic>
 #include <vector>
 #include <memory>
+#include "archive.h"
 
 
 namespace librealsense {
@@ -31,15 +32,38 @@ public:
     {
     }
     frame( const frame & r ) = delete;
-    frame( frame && r );
+    frame(frame&& r)
+        : ref_count(r.ref_count.exchange(0))
+        , owner(r.owner)
+        , on_release()
+        , _kept(r._kept.exchange(false))
+    {
+        *this = std::move(r);
+        if (owner)
+            metadata_parsers = owner->get_md_parsers();
+    }
+
+    frame& operator=(frame&& r)
+    {
+        data = std::move(r.data);
+        owner = r.owner;
+        ref_count = r.ref_count.exchange(0);
+        _kept = r._kept.exchange(false);
+        on_release = std::move(r.on_release);
+        additional_data = std::move(r.additional_data);
+        r.owner.reset();
+        if (owner)
+            metadata_parsers = owner->get_md_parsers();
+        if (r.metadata_parsers)
+            metadata_parsers = std::move(r.metadata_parsers);
+        return *this;
+    }
 
     frame & operator=( const frame & r ) = delete;
-    frame & operator=( frame && r );
 
     virtual ~frame() { on_release.reset(); }
     frame_header const & get_header() const override { return additional_data; }
-    rs2_metadata_type get_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const override;
-    bool supports_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const override;
+    bool find_metadata( rs2_frame_metadata_value, rs2_metadata_type * p_output_value ) const override;
     int get_frame_data_size() const override;
     const uint8_t * get_frame_data() const override;
     rs2_time_t get_frame_timestamp() const override;
@@ -50,6 +74,9 @@ public:
     {
         additional_data.timestamp_domain = timestamp_domain;
     }
+
+    // Return FPS calculated as (1000*d_frames/d_timestamp), or 0 if this cannot be estimated
+    double calc_actual_fps() const;
 
     rs2_time_t get_frame_system_time() const override;
 

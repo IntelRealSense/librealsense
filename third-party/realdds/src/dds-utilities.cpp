@@ -3,6 +3,7 @@
 
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-log-consumer.h>
+#include <realdds/topics/dds-topic-names.h>
 
 namespace realdds {
 
@@ -29,6 +30,16 @@ std::string get_dds_error( eprosima::fastrtps::types::ReturnCode_t ret_code )
     std::ostringstream os;
     os << "error " << ret_code();
     return os.str();
+}
+
+
+rsutils::string::slice device_name_from_root( std::string const & topic_root )
+{
+    auto begin = topic_root.c_str();
+    auto end = begin + topic_root.length();
+    if( topic_root.length() > topics::ROOT_LEN && topics::SEPARATOR == begin[topics::ROOT_LEN - 1] )
+        begin += topics::ROOT_LEN;
+    return{ begin, end };
 }
 
 
