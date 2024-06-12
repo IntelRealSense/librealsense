@@ -19,6 +19,7 @@ jobs:
           - humble
           - iron
           - rolling
+          - jazzy
 
         include:
           # Humble Hawksbill
@@ -30,8 +31,12 @@ jobs:
             ros_distribution: iron
 
           # Rolling Ridley
-          - docker_image: ubuntu:jammy
+          - docker_image: ubuntu:noble
             ros_distribution: rolling
+
+          # Jazzy Jalisco
+          - docker_image: ubuntu:noble
+            ros_distribution: jazzy
 
     container:
       image: ${{ matrix.docker_image }}
