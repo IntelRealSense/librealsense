@@ -204,6 +204,8 @@ namespace librealsense
 
     void d400_color::register_metadata(const synthetic_sensor& color_ep) const
     {
+        color_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
+
         if (_separate_color)
         {
             auto md_prop_offset = metadata_raw_mode_offset +
