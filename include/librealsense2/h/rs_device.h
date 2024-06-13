@@ -603,7 +603,6 @@ float rs2_calculate_target_z(rs2_device* device, rs2_frame_queue* queue1, rs2_fr
 * rs2_get_calibration_config
 * \param[in]   device        The device
 * \param[out]  calib_config  Calibration Configuration struct to be filled
-* \param[in]  loc            Calibration Config location that needs to be read from
 * \param[out]  error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_get_calibration_config(rs2_device* device, rs2_calibration_config* calib_config, rs2_error** error);
