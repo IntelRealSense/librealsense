@@ -26,6 +26,10 @@ namespace librealsense
             float* const health, int health_size, rs2_update_progress_callback_sptr progress_callback) override;
         float calculate_target_z(rs2_frame_queue* queue1, rs2_frame_queue* queue2, rs2_frame_queue* queue3,
             float target_width, float target_height, rs2_update_progress_callback_sptr progress_callback) override;
+        rs2_calibration_config get_calibration_config() const override;
+        void set_calibration_config(const rs2_calibration_config& calib_config) override;
+        
+        
         void set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm);
 
         enum class d500_calibration_state
