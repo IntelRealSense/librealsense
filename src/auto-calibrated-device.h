@@ -27,6 +27,8 @@ namespace librealsense
             float target_w, float target_h, rs2_update_progress_callback_sptr progress_callback) = 0;
         virtual rs2_calibration_config get_calibration_config() const = 0;
         virtual void set_calibration_config(const rs2_calibration_config& calib_config) = 0;
+        virtual std::string calibration_config_to_json_string(const rs2_calibration_config& calib_config) const = 0;
+        virtual rs2_calibration_config json_string_to_calibration_config(const std::string& json_str) const = 0;
     };
     MAP_EXTENSION(RS2_EXTENSION_AUTO_CALIBRATED_DEVICE, auto_calibrated_interface);
 }

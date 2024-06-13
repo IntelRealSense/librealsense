@@ -615,6 +615,24 @@ void rs2_get_calibration_config(rs2_device* device, rs2_calibration_config* cali
 */
 void rs2_set_calibration_config(rs2_device* device, rs2_calibration_config const* calib_config, rs2_error** error);
 
+/**
+* rs2_json_string_to_calibration_config
+* \param[in]  device        The device
+* \param[in]  json_str      JSON string to convert
+* \param[out] calib_config  Calibration config struct result
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_json_string_to_calibration_config(rs2_device* device, const char* json_str, rs2_calibration_config* calib_config, rs2_error** error);
+
+/**
+* rs2_calibration_config_to_json_string
+* \param[in]  device        The device
+* \param[in]  calib_config  Calibration config to convert
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                   JSON string representing the calibration config as rs2_raw_data_buffer
+*/
+const rs2_raw_data_buffer* rs2_calibration_config_to_json_string(rs2_device* device, rs2_calibration_config const* calib_config, rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

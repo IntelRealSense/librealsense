@@ -98,7 +98,10 @@ void init_types(py::module &m) {
         .def_readwrite("camera_position", &rs2_calibration_config::camera_position, "camera_position")
         .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_calibration_config, reserved2, uint8_t, sizeof(rs2_calibration_config::reserved2)), "reserved2")
         .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_calibration_config, crypto_signature, uint8_t, sizeof(rs2_calibration_config::crypto_signature)), "crypto_signature")
-        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_calibration_config, reserved3, uint8_t, sizeof(rs2_calibration_config::reserved3)), "reserved3");
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_calibration_config, reserved3, uint8_t, sizeof(rs2_calibration_config::reserved3)), "reserved3")
+        .def("__eq__", [](const rs2_calibration_config& self, const rs2_calibration_config& other) {
+            return self == other;
+        });
 
     /** end rs_types.hpp **/
 }

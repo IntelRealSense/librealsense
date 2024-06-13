@@ -696,6 +696,48 @@ namespace rs2
         }
 
         /**
+        * json_string_to_calibration_config
+        * \param[in]   json_str      JSON string to convert to calibration config struct
+        * \param[out]  error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+        * \return  calib_config      Calibration Configuration struct to be filled
+        */
+        rs2_calibration_config json_string_to_calibration_config(const std::string& json_str) const
+        {
+            rs2_error* e = nullptr;
+            rs2_calibration_config calib_config;
+            rs2_json_string_to_calibration_config(_dev.get(), json_str.c_str(), &calib_config, &e);
+            error::handle(e);
+            return calib_config;
+        }
+
+        /**
+        * calibration_config_to_json_string
+        * \param[in]   calib_config  Calibration config struct to convert to JSON string
+        * \param[out]  error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+        * \return  calib_config      Calibration Configuration struct to be filled
+        */
+        std::string calibration_config_to_json_string(const rs2_calibration_config& calib_config) const
+        {
+            std::vector<uint8_t> result;
+
+            rs2_error* e = nullptr;
+            auto buffer = rs2_calibration_config_to_json_string(_dev.get(), &calib_config, &e);
+
+            std::shared_ptr<const rs2_raw_data_buffer> list(buffer, rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+            error::handle(e);
+
+            result.insert(result.begin(), start, start + size);
+
+            return std::string(result.begin(), result.end());
+        }
+
+        /**
         *  Run target-based focal length calibration for D400 Stereo Cameras
         * \param[in]    left_queue: container for left IR frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI.
         * \param[in]    right_queue: container for right IR frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI
