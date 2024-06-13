@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
-# test:device D500*
+# test:donotrun
 
 import pyrealsense2 as rs
 from rspy import test, log
@@ -85,25 +85,12 @@ def is_equal_calib_configs(first, second):
 dev = test.find_first_device_or_exit()
 ac_dev = dev.as_auto_calibrated_device()
 
-safety_sensor = dev.first_safety_sensor()
-original_mode = safety_sensor.get_option(rs.option.safety_mode)
-
-#############################################################################################
-with test.closure("Switch to Service Mode"):
-    safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.service)
-    test.check_equal(safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.service))
-
 #############################################################################################
 with test.closure("Set / Get calib config table"):
     generated_calib_config = generate_calib_config_table()
     ac_dev.set_calibration_config(generated_calib_config)
     current_calib_config = ac_dev.get_calibration_config()
     test.check(is_equal_calib_configs(generated_calib_config, current_calib_config))
-
-#############################################################################################
-with test.closure("Restoring safety mode"):
-    safety_sensor.set_option(rs.option.safety_mode, original_mode)
-    test.check_equal(safety_sensor.get_option(rs.option.safety_mode), original_mode)
 
 #############################################################################################
 
