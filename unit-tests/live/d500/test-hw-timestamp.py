@@ -21,7 +21,7 @@ def check_hw_ts_right_before_sensor_ts(frame):
     hw_ts = frame.get_frame_metadata(rs.frame_metadata_value.frame_timestamp)
     sensor_ts = frame.get_frame_metadata(rs.frame_metadata_value.sensor_timestamp)
     delta = sensor_ts - hw_ts
-    test.check(delta < (1/fps * 10^6))
+    test.check((1 / fps * 10 ^ 6) > delta > 0)
 
 
 #############################################################################################
