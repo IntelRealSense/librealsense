@@ -437,3 +437,5 @@ EXPORTS
     rs2_project_color_pixel_to_depth_pixel
     rs2_get_calibration_config
     rs2_set_calibration_config
+    rs2_calibration_config_to_json_string
+    rs2_json_string_to_calibration_config
