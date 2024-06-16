@@ -2577,6 +2577,16 @@ namespace librealsense
         throw std::runtime_error(rsutils::string::from() << "Calibration Config not applicable for this device");
     }
 
+    std::string auto_calibrated::calibration_config_to_json_string(const rs2_calibration_config& calib_config) const
+    {
+        throw std::runtime_error(rsutils::string::from() << "Calibration Config not applicable for this device");
+    }
+
+    rs2_calibration_config auto_calibrated::json_string_to_calibration_config(const std::string& json_str) const
+    {
+        throw std::runtime_error(rsutils::string::from() << "Calibration Config not applicable for this device");
+    }
+
     void auto_calibrated::set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm)
     {
         _hw_monitor = hwm;

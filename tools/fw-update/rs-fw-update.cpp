@@ -349,6 +349,7 @@ try
         try
         {
             update_serial_number = recovery_device.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
+            bool d457_recovery_device = strcmp( recovery_device.get_info( RS2_CAMERA_INFO_PRODUCT_ID ), "BBCD" ) == 0;
             volatile bool recovery_device_found = false;
             ctx.set_devices_changed_callback( [&]( rs2::event_information & info ) {
                 for( auto && d : info.get_new_devices() )
@@ -371,6 +372,7 @@ try
             print_device_info( recovery_device );
             update( recovery_device, fw_image );
             std::cout << "Waiting for new device..." << std::endl;
+            if (!d457_recovery_device)
             {
                 std::unique_lock< std::mutex > lk( mutex );
                 if( ! recovery_device_found
@@ -383,6 +385,12 @@ try
                 }
             }
             std::cout << std::endl << "Recovery done" << std::endl;
+            if (d457_recovery_device)
+            {
+                std::cout << std::endl << "For GMSL device please reload d4xx driver:" << std::endl;
+                std::cout << "sudo rmmod d4xx && sudo modprobe d4xx" << std::endl;
+                std::cout << "or reboot the system" << std::endl;
+            }
             return EXIT_SUCCESS;
         }
         catch (...)

@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017-2024 Intel Corporation. All Rights Reserved.
 
 #ifndef LIBREALSENSE_RS2_DEVICE_HPP
 #define LIBREALSENSE_RS2_DEVICE_HPP
@@ -60,6 +60,8 @@ namespace rs2
             {
                 std::string pid = get_info( RS2_CAMERA_INFO_PRODUCT_ID );
                 if( pid == "ABCD" ) // Specific for D457
+                    return "GMSL";
+                if( pid == "BBCD" ) // Specific for D457 Recovery DFU
                     return "GMSL";
                 return pid;  // for DDS devices, this will be "DDS"
             }
@@ -698,6 +700,48 @@ namespace rs2
             rs2_error* e = nullptr;
             rs2_set_calibration_table(_dev.get(), calibration.data(), static_cast< int >( calibration.size() ), &e);
             error::handle(e);
+        }
+
+        /**
+        * json_string_to_calibration_config
+        * \param[in]   json_str      JSON string to convert to calibration config struct
+        * \param[out]  error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+        * \return  calib_config      Calibration Configuration struct to be filled
+        */
+        rs2_calibration_config json_string_to_calibration_config(const std::string& json_str) const
+        {
+            rs2_error* e = nullptr;
+            rs2_calibration_config calib_config;
+            rs2_json_string_to_calibration_config(_dev.get(), json_str.c_str(), &calib_config, &e);
+            error::handle(e);
+            return calib_config;
+        }
+
+        /**
+        * calibration_config_to_json_string
+        * \param[in]   calib_config  Calibration config struct to convert to JSON string
+        * \param[out]  error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+        * \return  calib_config      Calibration Configuration struct to be filled
+        */
+        std::string calibration_config_to_json_string(const rs2_calibration_config& calib_config) const
+        {
+            std::vector<uint8_t> result;
+
+            rs2_error* e = nullptr;
+            auto buffer = rs2_calibration_config_to_json_string(_dev.get(), &calib_config, &e);
+
+            std::shared_ptr<const rs2_raw_data_buffer> list(buffer, rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+            error::handle(e);
+
+            result.insert(result.begin(), start, start + size);
+
+            return std::string(result.begin(), result.end());
         }
 
         /**

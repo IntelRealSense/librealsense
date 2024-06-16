@@ -2,23 +2,23 @@ if(CHECK_FOR_UPDATES)
     include(ExternalProject)
     message(STATUS "Building libcurl enabled")
     
-    set(CURL_FLAGS -DBUILD_CURL_EXE=OFF -DBUILD_SHARED_LIBS=OFF -DUSE_WIN32_LDAP=OFF -DHTTP_ONLY=ON -DCURL_ZLIB=OFF -DCURL_DISABLE_CRYPTO_AUTH=ON -DCMAKE_USE_LIBSSH2=OFF -DBUILD_TESTING=OFF )
+    set(CURL_FLAGS -DBUILD_CURL_EXE=OFF -DBUILD_SHARED_LIBS=OFF -DUSE_WIN32_LDAP=OFF -DHTTP_ONLY=ON -DCURL_ZLIB=OFF -DCURL_DISABLE_CRYPTO_AUTH=ON -DCURL_USE_LIBSSH2=OFF -DCURL_DISABLE_TESTS=ON )
     if (WIN32)
         set(CURL_FLAGS ${CURL_FLAGS} -DCURL_STATIC_CRT=ON )
     endif()
     
     # Add SSL library flag
     if (WIN32)
-        set(CURL_FLAGS ${CURL_FLAGS} -DCMAKE_USE_SCHANNEL=ON )
+        set(CURL_FLAGS ${CURL_FLAGS} -DCURL_USE_SCHANNEL=ON )
     else()
-        set(CURL_FLAGS ${CURL_FLAGS} -DCMAKE_USE_OPENSSL=ON )
+        set(CURL_FLAGS ${CURL_FLAGS} -DCURL_USE_OPENSSL=ON )
     endif()
     
     ExternalProject_Add(
         libcurl
         PREFIX libcurl
         GIT_REPOSITORY "https://github.com/curl/curl.git"
-        GIT_TAG "2f33be817cbce6ad7a36f27dd7ada9219f13584c" # curl-7_75_0
+        GIT_TAG "curl-8_8_0"
         SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/third-party/libcurl
         CMAKE_ARGS  -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
                     -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
@@ -55,6 +55,9 @@ if(CHECK_FOR_UPDATES)
     else()
         find_package(OpenSSL REQUIRED)
         target_link_libraries(curl INTERFACE OpenSSL::SSL OpenSSL::Crypto)
+        if (APPLE)
+            target_link_libraries(curl INTERFACE "-framework CoreFoundation -framework SystemConfiguration")
+        endif()
     endif()
 
 endif() #CHECK_FOR_UPDATES

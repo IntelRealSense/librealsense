@@ -117,6 +117,8 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/platform/hid-data.h"
         "${CMAKE_CURRENT_LIST_DIR}/platform/hid-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/platform/hid-device-info.h"
+        "${CMAKE_CURRENT_LIST_DIR}/platform/mipi-device.h"
+        "${CMAKE_CURRENT_LIST_DIR}/platform/mipi-device-info.h"
         "${CMAKE_CURRENT_LIST_DIR}/platform/playback-device-info.h"
         "${CMAKE_CURRENT_LIST_DIR}/platform/platform-utils.h"
         "${CMAKE_CURRENT_LIST_DIR}/platform/platform-utils.cpp"
