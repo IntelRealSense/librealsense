@@ -4481,6 +4481,33 @@ void rs2_set_calibration_config(rs2_device* device, rs2_calibration_config const
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, calib_config)
 
+void rs2_json_string_to_calibration_config(
+    rs2_device* device,
+    const char* json_str,
+    rs2_calibration_config* calib_config,
+    rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(calib_config);
+    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
+    *calib_config = auto_calib->json_string_to_calibration_config(json_str);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, calib_config)
+
+const rs2_raw_data_buffer* rs2_calibration_config_to_json_string(
+    rs2_device* device,
+    rs2_calibration_config const* calib_config,
+    rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(calib_config);
+    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
+    auto ret_str = auto_calib->calibration_config_to_json_string(*calib_config);
+    std::vector<uint8_t> vec(ret_str.begin(), ret_str.end());
+    return new rs2_raw_data_buffer{ std::move(vec) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, calib_config)
+
 void rs2_get_safety_preset(const rs2_sensor* sensor,
     int index,
     rs2_safety_preset* sp,
