@@ -64,5 +64,10 @@ namespace librealsense
         {
             return query_hid_devices_info();
         }
+
+        std::vector<mipi_device_info> rs_backend::query_mipi_devices() const
+        {
+            return std::vector<mipi_device_info>();
+        }
     }
 }

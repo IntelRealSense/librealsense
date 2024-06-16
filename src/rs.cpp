@@ -467,16 +467,41 @@ void rs2_delete_stream_profiles_list(rs2_stream_profile_list* list) BEGIN_API_CA
 }
 NOEXCEPT_RETURN(, list)
 
-void rs2_get_video_stream_intrinsics(const rs2_stream_profile* from, rs2_intrinsics* intr, rs2_error** error) BEGIN_API_CALL
+
+std::ostream & operator<<( std::ostream & os, rs2_stream_profile const & p )
 {
-    VALIDATE_NOT_NULL(from);
+    if( ! p.profile )
+    {
+        os << "NULL";
+    }
+    else
+    {
+        os << "[ " << librealsense::get_abbr_string( p.profile->get_stream_type() );
+        os << " " << librealsense::get_string( p.profile->get_format() );
+        os << " " << p.profile->get_stream_index();
+        if( auto vsp = As< video_stream_profile, stream_profile_interface >( p.profile ) )
+        {
+            os << " " << vsp->get_width();
+            os << "x" << vsp->get_height();
+        }
+        os << " @ " << p.profile->get_framerate();
+        os << " ]";
+    }
+    return os;
+}
+
+
+void rs2_get_video_stream_intrinsics(const rs2_stream_profile* profile, rs2_intrinsics* intr, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( profile );
     VALIDATE_NOT_NULL(intr);
 
-    auto vid = VALIDATE_INTERFACE(from->profile, librealsense::video_stream_profile_interface);
+    auto vid = VALIDATE_INTERFACE( profile->profile, librealsense::video_stream_profile_interface);
 
     *intr = vid->get_intrinsics();
 }
-HANDLE_EXCEPTIONS_AND_RETURN( , from, intr )
+EXPECTED_EXCEPTION( not_implemented_exception, , profile, output_arg( intr ) )  // only accepted way of checking if profile has intrinsics
+HANDLE_EXCEPTIONS_AND_RETURN(, profile, output_arg( intr ) )
 
 // librealsense wrapper around a C function
 class calibration_change_callback : public rs2_calibration_change_callback
@@ -4456,6 +4481,33 @@ void rs2_set_calibration_config(rs2_device* device, rs2_calibration_config const
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, calib_config)
 
+void rs2_json_string_to_calibration_config(
+    rs2_device* device,
+    const char* json_str,
+    rs2_calibration_config* calib_config,
+    rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(calib_config);
+    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
+    *calib_config = auto_calib->json_string_to_calibration_config(json_str);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, calib_config)
+
+const rs2_raw_data_buffer* rs2_calibration_config_to_json_string(
+    rs2_device* device,
+    rs2_calibration_config const* calib_config,
+    rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(calib_config);
+    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
+    auto ret_str = auto_calib->calibration_config_to_json_string(*calib_config);
+    std::vector<uint8_t> vec(ret_str.begin(), ret_str.end());
+    return new rs2_raw_data_buffer{ std::move(vec) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, calib_config)
+
 void rs2_get_safety_preset(const rs2_sensor* sensor,
     int index,
     rs2_safety_preset* sp,
@@ -4559,3 +4611,4 @@ const rs2_raw_data_buffer* rs2_safety_interface_config_to_json_string(
     return new rs2_raw_data_buffer{ std::move(vec) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor, sic)
+

@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-2024 Intel Corporation. All Rights Reserved.
 
 #include "backend-device-factory.h"
 #include "context.h"
@@ -181,6 +181,7 @@ std::vector< std::shared_ptr< device_info > > backend_device_factory::query_devi
     auto backend = _device_watcher->get_backend();
     platform::backend_device_group group( backend->query_uvc_devices(),
                                           backend->query_usb_devices(),
+                                          backend->query_mipi_devices(),
                                           backend->query_hid_devices() );
     auto devices = create_devices_from_group( group, requested_mask );
     return { devices.begin(), devices.end() };
@@ -211,6 +212,13 @@ backend_device_factory::create_devices_from_group( platform::backend_device_grou
         {
             auto recovery_devices
                 = fw_update_info::pick_recovery_devices( ctx, devices.usb_devices, mask );
+            std::copy( begin( recovery_devices ), end( recovery_devices ), std::back_inserter( list ) );
+        }
+
+        // Supported mipi recovery devices
+        {
+            auto recovery_devices
+                = fw_update_info::pick_recovery_devices( ctx, devices.mipi_devices, mask );
             std::copy( begin( recovery_devices ), end( recovery_devices ), std::back_inserter( list ) );
         }
 

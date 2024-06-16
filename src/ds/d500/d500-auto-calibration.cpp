@@ -5,6 +5,7 @@
 #include "d500-auto-calibration.h"
 #include "d500-private.h"
 #include <rsutils/string/from.h>
+#include <rsutils/json.h>
 
 
 namespace librealsense
@@ -352,6 +353,86 @@ namespace librealsense
 
         // send command 
         _hw_monitor->send(cmd);
+    }
+
+    std::string d500_auto_calibrated::calibration_config_to_json_string(const rs2_calibration_config& calib_config) const
+    {
+
+        rsutils::json json_data;
+        json_data["calibration_config"]["calib_roi_num_of_segments"] = calib_config.calib_roi_num_of_segments;
+
+        for (int roi_index = 0; roi_index < 4; roi_index++)
+        {
+            for (int mask_index = 0; mask_index < 4; mask_index++)
+            {
+                json_data["calibration_config"]["roi"][roi_index][mask_index][0] = calib_config.roi[roi_index].mask_pixel[mask_index][0];
+                json_data["calibration_config"]["roi"][roi_index][mask_index][1] = calib_config.roi[roi_index].mask_pixel[mask_index][1];
+            }
+        }
+
+        auto& rotation = json_data["calibration_config"]["camera_position"]["rotation"];
+        rotation[0][0] = calib_config.camera_position.rotation.x.x;
+        rotation[0][1] = calib_config.camera_position.rotation.x.y;
+        rotation[0][2] = calib_config.camera_position.rotation.x.z;
+        rotation[1][0] = calib_config.camera_position.rotation.y.x;
+        rotation[1][1] = calib_config.camera_position.rotation.y.y;
+        rotation[1][2] = calib_config.camera_position.rotation.y.z;
+        rotation[2][0] = calib_config.camera_position.rotation.z.x;
+        rotation[2][1] = calib_config.camera_position.rotation.z.y;
+        rotation[2][2] = calib_config.camera_position.rotation.z.z;
+
+        auto& translation = json_data["calibration_config"]["camera_position"]["translation"];
+        translation[0] = calib_config.camera_position.translation.x;
+        translation[1] = calib_config.camera_position.translation.y;
+        translation[2] = calib_config.camera_position.translation.z;
+
+        // fill crypto signature array
+        size_t number_of_elements = sizeof(calib_config.crypto_signature) / sizeof(calib_config.crypto_signature[0]);
+        std::vector<uint8_t> crypto_signature_byte_array(number_of_elements);
+        memcpy(crypto_signature_byte_array.data(), calib_config.crypto_signature, sizeof(calib_config.crypto_signature));
+        json_data["calibration_config"]["crypto_signature"] = crypto_signature_byte_array;
+
+        return json_data.dump();
+
+    }
+
+    rs2_calibration_config d500_auto_calibrated::json_string_to_calibration_config(const std::string& json_str) const
+    {
+        rsutils::json json_data = rsutils::json::parse(json_str);
+        rs2_calibration_config calib_config;
+
+        calib_config.calib_roi_num_of_segments = json_data["calibration_config"]["calib_roi_num_of_segments"];
+
+        for (int roi_index = 0; roi_index < 4; roi_index++)
+        {
+            for (int mask_index = 0; mask_index < 4; mask_index++)
+            {
+                calib_config.roi[roi_index].mask_pixel[mask_index][0] = json_data["calibration_config"]["roi"][roi_index][mask_index][0];
+                calib_config.roi[roi_index].mask_pixel[mask_index][1] = json_data["calibration_config"]["roi"][roi_index][mask_index][1];
+            }
+        }
+
+        auto& rotation = json_data["calibration_config"]["camera_position"]["rotation"];
+        calib_config.camera_position.rotation.x.x = rotation[0][0];
+        calib_config.camera_position.rotation.x.y = rotation[0][1];
+        calib_config.camera_position.rotation.x.z = rotation[0][2];
+        calib_config.camera_position.rotation.y.x = rotation[1][0];
+        calib_config.camera_position.rotation.y.y = rotation[1][1];
+        calib_config.camera_position.rotation.y.z = rotation[1][2];
+        calib_config.camera_position.rotation.z.x = rotation[2][0];
+        calib_config.camera_position.rotation.z.y = rotation[2][1];
+        calib_config.camera_position.rotation.z.z = rotation[2][2];
+
+        auto& translation = json_data["calibration_config"]["camera_position"]["translation"];
+        calib_config.camera_position.translation.x = translation[0];
+        calib_config.camera_position.translation.y = translation[1];
+        calib_config.camera_position.translation.z = translation[2];
+
+        // fill crypto signature array
+        std::vector<uint8_t> crypto_signature_vector = json_data["calibration_config"]["crypto_signature"].get<std::vector<uint8_t>>();
+        std::memcpy(calib_config.crypto_signature, crypto_signature_vector.data(), crypto_signature_vector.size() * sizeof(uint8_t));
+
+        return calib_config;
     }
 
     void d500_auto_calibrated::set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm)
