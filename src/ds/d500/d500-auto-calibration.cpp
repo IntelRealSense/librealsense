@@ -400,6 +400,7 @@ namespace librealsense
     {
         rsutils::json json_data = rsutils::json::parse(json_str);
         rs2_calibration_config calib_config;
+        std::memset(&calib_config, 0, sizeof(rs2_calibration_config));
 
         calib_config.calib_roi_num_of_segments = json_data["calibration_config"]["calib_roi_num_of_segments"];
 

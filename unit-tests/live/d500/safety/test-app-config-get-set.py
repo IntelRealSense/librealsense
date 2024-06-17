@@ -8,6 +8,7 @@ import numpy as np
 import zlib
 import pyrealsense2 as rs
 from rspy import test, log, devices
+from rspy import tests_wrapper as tw
 
 
 DEFAULT_PERCENTAGE_THRESHOLD = 15 #15%
@@ -70,7 +71,9 @@ def generate_features_1_4():
 
 
 def default_temp_threshold():
-    return np.asarray([100, 120, -40, -50], dtype=np.uint8 )
+    minus_40_in_uint8 = 216
+    minus_50_in_uint8 = 206
+    return np.asarray([100, 120, minus_40_in_uint8, minus_50_in_uint8], dtype=np.uint8)
 
 
 def generate_temp_thresholds():
@@ -211,14 +214,8 @@ def get_app_config_table():
 #############################################################################################
 
 dev = test.find_first_device_or_exit()
-safety_sensor = dev.first_safety_sensor()
 hwm_dev = dev.as_debug_protocol()
-
-#############################################################################################
-test.start("Switch to Service Mode")
-safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.service)
-test.check_equal(safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.service))
-test.finish()
+tw.start_wrapper(dev)
 
 #############################################################################################
 test.start("get app config table")
@@ -246,5 +243,5 @@ test.check_equal(curr_config_table, orig_app_config_table)
 test.finish()
 
 #############################################################################################
-
+tw.stop_wrapper(dev)
 test.print_results_and_exit()

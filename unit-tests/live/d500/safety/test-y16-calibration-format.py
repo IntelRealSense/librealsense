@@ -8,6 +8,7 @@ import time
 import pyrealsense2 as rs
 from rspy import test, log
 from rspy.timer import Timer
+from rspy import tests_wrapper as tw
 
 y16_streamed = False
 
@@ -36,11 +37,7 @@ device = test.find_first_device_or_exit()
 safety_sensor = device.first_safety_sensor()
 depth_sensor = device.first_depth_sensor()
 
-########################################################################
-test.start("Switch to service mode")
-safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.service)
-test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.service))
-test.finish()
+tw.start_wrapper(device)
 
 #########################################################################
 test.start('Check that y16 is streaming')
@@ -66,9 +63,5 @@ if profile_y16:
 test.finish()
 
 ###########################################################################
-test.start("Restoring to run safety mode")
-safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.run)
-test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.run))
-test.finish()
-
+tw.stop_wrapper(device)
 test.print_results_and_exit()

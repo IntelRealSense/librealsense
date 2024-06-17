@@ -6,6 +6,7 @@
 import pyrealsense2 as rs
 from rspy import test, log
 import json
+from rspy import tests_wrapper as tw
 
 #############################################################################################
 # Tests
@@ -17,6 +18,9 @@ dev = ctx.query_devices()[0]
 ac_dev = dev.as_auto_calibrated_device()
 test.finish()
 
+safety_sensor = dev.first_safety_sensor()
+
+tw.start_wrapper(dev)
 #############################################################################################
 
 test.start("Writing calibration config, then reading and comparing calibration config JSONs")
@@ -70,5 +74,5 @@ ac_dev.set_calibration_config(previous_result)
 test.finish()
 
 #############################################################################################
-
+tw.stop_wrapper(dev)
 test.print_results_and_exit()
