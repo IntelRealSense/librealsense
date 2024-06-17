@@ -1243,12 +1243,18 @@ namespace rs2
     }
 
     // This function contains a cursor behavior on IMU stream with no metadata on
-    void stream_model::show_stream_imu(ImFont* font, const rect &stream_rect, const  rs2_vector& axis, const mouse_info& mouse)
+    float stream_model::show_stream_imu( ImFont * font,
+                                         const rect & stream_rect,
+                                         const rs2_vector & axis,
+                                         const mouse_info & mouse,
+                                         char const * const units,
+                                         char const * const title,
+                                         float y_offset )
     {
+        float total_h = 0.f;
         if (stream_rect.contains(mouse.cursor) && !show_metadata)
         {
             const auto precision = 3;
-            rs2_stream stream_type = profile.stream_type();
 
             ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
@@ -1257,7 +1263,6 @@ namespace rs2
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
 
-            float y_offset = 0;
             if (show_stream_details)
             {
                 y_offset += 30;
@@ -1265,8 +1270,20 @@ namespace rs2
 
             std::string label = rsutils::string::from() << "IMU Stream Info of " << profile.unique_id();
 
+            int const line_h = 18;
+
             ImVec2 pos{ stream_rect.x, stream_rect.y + y_offset };
             ImGui::SetCursorScreenPos({ pos.x + 5, pos.y + 5 });
+            if( title )
+            {
+                auto rc = ImGui::GetCursorPos();
+                ImGui::SetCursorPos( { rc.x + 12, rc.y + 4 } );
+                ImGui::PushStyleColor( ImGuiCol_Text, from_rgba( 255, 255, 255, 255, true ) );
+                ImGui::Text( title );
+                ImGui::PopStyleColor( 1 );
+                ImGui::SetCursorPos( { rc.x, rc.y + line_h } );
+                total_h += line_h;
+            }
 
             struct motion_data {
                 std::string name;
@@ -1280,13 +1297,11 @@ namespace rs2
 
             float norm = std::sqrt((axis.x*axis.x) + (axis.y*axis.y) + (axis.z*axis.z));
 
-            std::map<rs2_stream, std::string> motion_unit = { { RS2_STREAM_GYRO, "Radians/Sec" },{ RS2_STREAM_ACCEL, "Meter/Sec^2" } };
-            std::vector<motion_data> motion_vector = { { "X", axis.x, motion_unit[stream_type].c_str(), "Vector X", from_rgba(233, 0, 0, 255, true) , from_rgba(233, 0, 0, 255, true), 0},
-                                                    { "Y", axis.y, motion_unit[stream_type].c_str(), "Vector Y", from_rgba(0, 255, 0, 255, true) , from_rgba(2, 100, 2, 255, true), 0},
-                                                    { "Z", axis.z, motion_unit[stream_type].c_str(), "Vector Z", from_rgba(85, 89, 245, 255, true) , from_rgba(0, 0, 245, 255, true), 0},
+            std::vector<motion_data> motion_vector = { { "X", axis.x, units, "Vector X", from_rgba(233, 0, 0, 255, true) , from_rgba(233, 0, 0, 255, true), 0},
+                                                    { "Y", axis.y, units, "Vector Y", from_rgba(0, 255, 0, 255, true) , from_rgba(2, 100, 2, 255, true), 0},
+                                                    { "Z", axis.z, units, "Vector Z", from_rgba(85, 89, 245, 255, true) , from_rgba(0, 0, 245, 255, true), 0},
                                                     { "N", norm, "Norm", "||V|| = SQRT(X^2 + Y^2 + Z^2)",from_rgba(255, 255, 255, 255, true) , from_rgba(255, 255, 255, 255, true), 0} };
 
-            int line_h = 18;
             for (auto&& motion : motion_vector)
             {
                 auto rc = ImGui::GetCursorPos();
@@ -1300,12 +1315,12 @@ namespace rs2
                 ImGui::PopStyleColor(1);
 
                 ImGui::SameLine();
-                ImGui::PushStyleColor(ImGuiCol_FrameBg, black);
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, motion.colorBg);
 
                 ImGui::PushItemWidth(100);
                 ImGui::SetCursorPos({ rc.x + 27 + motion.nameExtraSpace, rc.y + 1 });
-                std::string label = rsutils::string::from() << "##" << profile.unique_id() << " " << motion.name.c_str();
+                std::string label = rsutils::string::from() << "##" << profile.unique_id() << "." << rc.y << " " << motion.name.c_str();
                 std::string coordinate = rsutils::string::from() << std::fixed << std::setprecision(precision) << std::showpos << motion.coordinate;
                 ImGui::InputText(label.c_str(), (char*)coordinate.c_str(), coordinate.size() + 1, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
                 ImGui::PopItemWidth();
@@ -1316,10 +1331,12 @@ namespace rs2
 
                 ImGui::PopStyleColor(3);
                 ImGui::SetCursorPos({ rc.x, rc.y + line_h });
+                total_h += line_h;
             }
 
             ImGui::PopStyleColor(5);
         }
+        return total_h;
     }
 
     void stream_model::show_stream_pose(ImFont* font, const rect &stream_rect,
