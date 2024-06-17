@@ -1315,12 +1315,12 @@ namespace rs2
                 ImGui::PopStyleColor(1);
 
                 ImGui::SameLine();
-                ImGui::PushStyleColor(ImGuiCol_FrameBg, black);
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, motion.colorBg);
 
                 ImGui::PushItemWidth(100);
                 ImGui::SetCursorPos({ rc.x + 27 + motion.nameExtraSpace, rc.y + 1 });
-                std::string label = rsutils::string::from() << "##" << profile.unique_id() << " " << motion.name.c_str();
+                std::string label = rsutils::string::from() << "##" << profile.unique_id() << "." << rc.y << " " << motion.name.c_str();
                 std::string coordinate = rsutils::string::from() << std::fixed << std::setprecision(precision) << std::showpos << motion.coordinate;
                 ImGui::InputText(label.c_str(), (char*)coordinate.c_str(), coordinate.size() + 1, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
                 ImGui::PopItemWidth();
