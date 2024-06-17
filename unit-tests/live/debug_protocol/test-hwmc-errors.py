@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
-# test:device D400*
+# test:device each(D400*)
 
 import pyrealsense2 as rs
 from rspy import devices, log, test, file, repo
@@ -85,9 +85,9 @@ test.finish()
 
 #############################################################################################
 
-test.start("Set PWM - Wrong Parameter")
+test.start("Set advanced mode - Wrong Parameter")
 try:
-    hwmc_opcode_as_int = 0x1a
+    hwmc_opcode_as_int = 0x2b
     # ERR_WrongParameter = -6 = 0xfa
     hwmc_opcode_as_string = "fa ff ff ff"  # little endian
 

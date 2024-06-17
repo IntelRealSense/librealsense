@@ -72,14 +72,14 @@ product_line = dev.get_info(rs.camera_info.product_line)
 #####################################################################################################
 test.start("Testing depth fps " + product_line + " device - "+ platform.system() + " OS")
 
-for i in range(len(tested_fps)):
-    requested_fps = tested_fps[i]
-    ds = dev.first_depth_sensor()
-    # Set auto-exposure option as it might take precedence over requested FPS
-    if product_line == "D400":
-        if ds.supports(rs.option.enable_auto_exposure):
-            ds.set_option(rs.option.enable_auto_exposure, 1)
+ds = dev.first_depth_sensor()
+# Set auto-exposure option as it might take precedence over requested FPS
+if product_line == "D400":
+    if ds.supports(rs.option.enable_auto_exposure):
+        ds.set_option(rs.option.enable_auto_exposure, 1)
 
+for i in range(len(tested_fps)):
+    requested_fps = tested_fps[i]    
     try:
         dp = next(p for p in ds.profiles
                   if p.fps() == requested_fps
@@ -98,9 +98,15 @@ test.finish()
 #####################################################################################################
 test.start("Testing color fps " + product_line + " device - "+ platform.system() + " OS")
 
-for i in range(len(tested_fps)):
-    requested_fps = tested_fps[i]
+product_name = dev.get_info(rs.camera_info.name)
+cs = None
+try:
     cs = dev.first_color_sensor()
+except RuntimeError as rte:
+    if 'D421' not in product_name and 'D405' not in product_name: # Cameras with no color sensor may fail.
+        test.unexpected_exception()
+
+if cs:        
     # Set auto-exposure option as it might take precedence over requested FPS
     if product_line == "D400":
         if cs.supports(rs.option.enable_auto_exposure):
@@ -108,18 +114,20 @@ for i in range(len(tested_fps)):
         if cs.supports(rs.option.auto_exposure_priority):
             cs.set_option(rs.option.auto_exposure_priority, 0) # AE priority should be 0 for constant FPS
 
-    try:
-        cp = next(p for p in cs.profiles
-                  if p.fps() == requested_fps
-                  and p.stream_type() == rs.stream.color
-                  and p.format() == rs.format.rgb8)
-    except StopIteration:
-        log.i("Requested fps: {:.1f} [Hz], not supported".format(requested_fps))
-    else:
-        fps = measure_fps(cs, cp, time_to_test_fps[i])
-        log.i("Requested fps: {:.1f} [Hz], actual fps: {:.1f} [Hz]. Time to first frame {:.6f}".format(requested_fps, fps, first_frame_seconds))
-        delta_Hz = requested_fps * 0.05 # Validation KPI is 5%
-        test.check(fps <= (requested_fps + delta_Hz) and fps >= (requested_fps - delta_Hz))
+    for i in range(len(tested_fps)):
+        requested_fps = tested_fps[i]
+        try:
+            cp = next(p for p in cs.profiles
+                      if p.fps() == requested_fps
+                      and p.stream_type() == rs.stream.color
+                      and p.format() == rs.format.rgb8)
+        except StopIteration:
+            log.i("Requested fps: {:.1f} [Hz], not supported".format(requested_fps))
+        else:
+            fps = measure_fps(cs, cp, time_to_test_fps[i])
+            log.i("Requested fps: {:.1f} [Hz], actual fps: {:.1f} [Hz]. Time to first frame {:.6f}".format(requested_fps, fps, first_frame_seconds))
+            delta_Hz = requested_fps * 0.05 # Validation KPI is 5%
+            test.check(fps <= (requested_fps + delta_Hz) and fps >= (requested_fps - delta_Hz))
 
 test.finish()
 

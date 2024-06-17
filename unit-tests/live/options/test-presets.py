@@ -12,9 +12,16 @@ from rspy import log
 from rspy import tests_wrapper as tw
 
 dev = test.find_first_device_or_exit()
-depth_sensor = dev.first_depth_sensor()
-color_sensor = dev.first_color_sensor()
 product_line = dev.get_info(rs.camera_info.product_line)
+product_name = dev.get_info(rs.camera_info.name)
+
+depth_sensor = dev.first_depth_sensor()
+color_sensor = None
+try:
+    color_sensor = dev.first_color_sensor()
+except RuntimeError as rte:
+    if 'D421' not in product_name and 'D405' not in product_name: # Cameras with no color sensor may fail.
+        test.unexpected_exception()
 
 tw.start_wrapper( dev )
 
@@ -43,7 +50,7 @@ with test.closure( 'setting color options' ):
     # Not all cameras support Hue (e.g. D457) but using common setting like Gain or Exposure is dependant on auto-exposure logic
     # This test is intended to check new D500 modules logic of not updating color sensor setting, while keeping legacy
     # D400 devices behavior of updating it. For this purpose it is OK if not all module types will be tested.
-    if color_sensor.supports( rs.option.hue ):
+    if color_sensor and color_sensor.supports( rs.option.hue ):
         color_sensor.set_option( rs.option.hue, 123 )
         test.check( color_sensor.get_option( rs.option.hue ) == 123 )
     
