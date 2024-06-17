@@ -199,6 +199,7 @@ def check_passed():
     :return: always False (so you can 'return check_failed()'
     """
     _count_check()
+    print_info( error = False )
     reset_info()
     return True
 
@@ -498,13 +499,13 @@ def reset_info(persistent = False):
         test_info = new_info
 
 
-def print_info():
+def print_info( error = True ):
     global test_info
     if not test_info: # No information is stored
         return
-    #log.out("Printing information")
+    logger = error and log.out or log.d
     for name, information in test_info.items():
-        log.out( f"        {name} : {information.value}" )
+        logger( f"        {name} : {information.value}" )
     reset_info()
 
 
