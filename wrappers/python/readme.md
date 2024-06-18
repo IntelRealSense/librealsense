@@ -20,10 +20,7 @@ Package is available at https://pypi.python.org/pypi/pyrealsense2
 To install the package, run:
 > `pip install pyrealsense2`
 
-Windows users can install the RealSense SDK 2.0 from the release tab to get pre-compiled binaries of the wrapper, for both x86 and x64 architectures. (Python versions 3.7, 3.8, 3.9, 3.10, 3.11 are supported).
-
-> **Note:**
-> Python 2.7 distributables can be found for pyrealsense2 versions <= 2.51.1
+Windows users can install the RealSense SDK 2.0 from the release tab to get pre-compiled binaries of the wrapper, for both x86 and x64 architectures. (Python versions 3.8, 3.9, 3.10, 3.11 are supported).
 
 
 ## Building From Source
@@ -32,9 +29,8 @@ Windows users can install the RealSense SDK 2.0 from the release tab to get pre-
 1. Ensure apt-get is up to date
   * `sudo apt-get update && sudo apt-get upgrade`
   * **Note:** Use `sudo apt-get dist-upgrade`, instead of `sudo apt-get upgrade`, in case you have an older Ubuntu 14.04 version
-2. Install Python and its development files via apt-get (Python 2 and 3 both work)
-  * `sudo apt-get install python python-dev` or `sudo apt-get install python3 python3-dev`
-      * **Note:** The project will only use Python 2 if it can't use Python 3
+2. Install Python and its development files via apt-get
+  * `sudo apt-get install python3 python3-dev`
 3. Run the top level CMake command with the following additional flag `-DBUILD_PYTHON_BINDINGS:bool=true`:
 
    * **Note:** For building a self-contained (statically compiled) pyrealsense2 library add the CMake flag:
@@ -43,7 +39,7 @@ Windows users can install the RealSense SDK 2.0 from the release tab to get pre-
   * `mkdir build`
   * `cd build`
   * `cmake ../ -DBUILD_PYTHON_BINDINGS:bool=true`
-> **Note**: To force compilation with a specific version on a system with both Python 2 and Python 3 installed, add the following flag to CMake command:
+> **Note**: To force compilation with a specific version on a system with a few Python versions installed, add the following flag to CMake command:
 `-DPYTHON_EXECUTABLE=[full path to the exact python executable]`
   * `make -j4`
   * `sudo make install`
@@ -55,7 +51,7 @@ Windows users can install the RealSense SDK 2.0 from the release tab to get pre-
 
 
 #### Windows
-1. Install Python 2 or 3 for windows. You can find the downloads on the official Python website [here](https://www.python.org/downloads/windows/)
+1. Install Python 3 for windows. You can find the downloads on the official Python website [here](https://www.python.org/downloads/windows/)
 
 2. When running `cmake-gui`, select the `BUILD_PYTHON_BINDINGS` option
 
@@ -64,12 +60,12 @@ Windows users can install the RealSense SDK 2.0 from the release tab to get pre-
       `-DBUILD_SHARED_LIBS=false`
 
 3. If you have multiple python installations on your machine you can use: `-DPYTHON_EXECUTABLE=<path to python executable>`
-  For example: `-DPYTHON_EXECUTABLE=C:/Python27/python.exe`
-> The precompiled binaries shipped with [the installer](https://github.com/IntelRealSense/librealsense/releases) assume **Python 3.7**.
+  For example: `-DPYTHON_EXECUTABLE=C:/Python310/python.exe`
+> The precompiled binaries shipped with [the installer](https://github.com/IntelRealSense/librealsense/releases) assume **Python 3.11**.
 >The error `ImportError: DLL load failed: The specified module could not be found` might indicate versions mismatch or architecture (x86 vs x64) mismatch.
 
 4. Open `librealsense2.sln` that was created in the previous step, and build the `pyrealsense2` project
-5. Open the output folder of the project (e.g `build\x64-Release\Release\`) and copy `pyrealsense2.pyd` into your python's `site-packages` (e.g `C:\Python27\Lib\site-packages`)
+5. Open the output folder of the project (e.g `build\x64-Release\Release\`) and copy `pyrealsense2.pyd` into your python's `site-packages` (e.g `C:\Python310\Lib\site-packages`)
 6. Alternatively, copy the build output (`realsense2.dll` and `pyrealsense2.pyd`) next to your script.
 
 ## Examples
