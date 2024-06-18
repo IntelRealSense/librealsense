@@ -5,12 +5,7 @@
 
 import pyrealsense2 as rs
 from rspy import test
-import time
-
-# Constants
-RUN_MODE     = 0 # RS2_SAFETY_MODE_RUN (RESUME)
-STANDBY_MODE = 1 # RS2_SAFETY_MODE_STANDBY (PAUSE)
-SERVICE_MODE = 2 # RS2_SAFETY_MODE_SERVICE (MAINTENANCE)
+from rspy import tests_wrapper as tw
 
 #############################################################################################
 # Tests
@@ -32,12 +27,7 @@ test.start("Valid read from index 1")
 safety_preset_at_one = safety_sensor.get_safety_preset(1)
 test.finish()
 
-#############################################################################################
-test.start("Switch to Service Mode")  # See SRS ID 3.3.1.7.a
-safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.service)
-test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.service))
-test.finish()
-
+tw.start_wrapper(dev)
 #############################################################################################
 
 test.start("Valid read and write from index 1 to 0")
@@ -82,9 +72,5 @@ else:
 test.finish()
 
 #############################################################################################
-
-# switch back to Run safety mode
-safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.run)
-test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.run))
-
+tw.stop_wrapper(dev)
 test.print_results_and_exit()

@@ -8,16 +8,11 @@
 import pyrealsense2 as rs
 import random
 from rspy import test, log
-import time
+from rspy import tests_wrapper as tw
 
 #############################################################################################
 # Helper Functions
 #############################################################################################
-
-# Constants
-RUN_MODE     = 0 # RS2_SAFETY_MODE_RUN (RESUME)
-STANDBY_MODE = 1 # RS2_SAFETY_MODE_STANDBY (PAUSE)
-SERVICE_MODE = 2 # RS2_SAFETY_MODE_SERVICE (MAINTENANCE)
 
 def generate_diagnostics_zone(rp1, rp2, rp3, rp4):
     diagnostics_zone = rs.masking_zone()
@@ -147,13 +142,7 @@ dev = ctx.query_devices()[0]
 safety_sensor = dev.first_safety_sensor()
 test.finish()
 
-#############################################################################################
-
-test.start("Switch to Service Mode")  # See SRS ID 3.3.1.7.a
-safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.service)
-test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.service))
-test.finish()
-
+tw.start_wrapper(dev)
 #############################################################################################
 
 test.start("Init all safety zones")
@@ -185,8 +174,5 @@ safety_sensor.set_safety_preset(index, previous_result)
 test.finish()
 
 #############################################################################################
-
-# switch back to Run safety mode
-safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.run)
-test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.run))
+tw.stop_wrapper(dev)
 test.print_results_and_exit()

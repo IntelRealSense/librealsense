@@ -9,6 +9,7 @@ import time
 import pyrealsense2 as rs
 from rspy import test, log, devices
 import random
+from rspy import tests_wrapper as tw
 
 def generate_valid_table():
     cfg = rs.safety_interface_config()
@@ -134,14 +135,7 @@ def check_configurations_equal(first_config, second_config) :
 
 dev = test.find_first_device_or_exit()
 safety_sensor = dev.first_safety_sensor()
-original_mode = safety_sensor.get_option(rs.option.safety_mode)
-
-#############################################################################################
-test.start("Switch to Service Mode")
-safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.service)
-test.check_equal( safety_sensor.get_option(rs.option.safety_mode), float(rs.safety_mode.service))
-test.finish()
-
+tw.start_wrapper(dev)
 #############################################################################################
 test.start("Valid get/set scenario")
 
@@ -166,10 +160,7 @@ print_config(config_we_read)
 
 # checking the requested config has been written to the device
 check_configurations_equal(config_we_write, config_we_read)
-
 test.finish()
-
-
 
 #############################################################################################
 test.start("verify same table after camera reboot")
@@ -228,12 +219,5 @@ test.finish()
 # check_configurations_equal(generate_valid_table(), current_config)
 # test.finish()
 #############################################################################################
-
-test.start("Restoring safety mode")
-safety_sensor.set_option(rs.option.safety_mode, original_mode)
-test.check_equal( safety_sensor.get_option(rs.option.safety_mode), original_mode)
-test.finish()
-
-#############################################################################################
-
+tw.stop_wrapper(dev)
 test.print_results_and_exit()
