@@ -563,8 +563,9 @@ namespace librealsense
             offsetof(md_depth_y_normal_mode, intel_capture_timing);
 
         depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, make_attribute_parser(&md_capture_timing::frame_counter, md_capture_timing_attributes::frame_counter_attribute, md_prop_offset));
-        depth_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, make_rs400_sensor_ts_parser(make_uvc_header_parser(&uvc_header::timestamp),
-            make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, 
+            make_rs400_sensor_ts_parser(make_attribute_parser(&md_capture_stats::hw_timestamp, md_capture_stat_attributes::hw_timestamp_attribute, md_prop_offset),
+                make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
 
         // attributes of md_capture_stats
         md_prop_offset = metadata_raw_mode_offset +
