@@ -1279,7 +1279,7 @@ namespace rs2
                 auto rc = ImGui::GetCursorPos();
                 ImGui::SetCursorPos( { rc.x + 12, rc.y + 4 } );
                 ImGui::PushStyleColor( ImGuiCol_Text, from_rgba( 255, 255, 255, 255, true ) );
-                ImGui::Text( title );
+                ImGui::Text( "%s", title);
                 ImGui::PopStyleColor( 1 );
                 ImGui::SetCursorPos( { rc.x, rc.y + line_h } );
                 total_h += line_h;
