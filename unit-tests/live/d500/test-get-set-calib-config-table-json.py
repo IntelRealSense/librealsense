@@ -18,8 +18,6 @@ dev = ctx.query_devices()[0]
 ac_dev = dev.as_auto_calibrated_device()
 test.finish()
 
-safety_sensor = dev.first_safety_sensor()
-
 tw.start_wrapper(dev)
 #############################################################################################
 
