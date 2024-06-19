@@ -133,6 +133,40 @@ void init_c_files(py::module &m) {
             return ss.str();
         });
 
+    py::class_< rs2_combined_motion > combined_motion( m, "combined_motion", "IMU combined GYRO & ACCEL data" );
+    combined_motion.def( py::init<>() )
+        .def_property(
+            "angular_velocity",
+            []( rs2_combined_motion const & self )
+            {
+                return rs2_vector{ (float)self.angular_velocity.x,
+                                   (float)self.angular_velocity.y,
+                                   (float)self.angular_velocity.z };
+            },
+            []( rs2_combined_motion & self, rs2_vector const & v ) {
+                self.angular_velocity = { v.x, v.y, v.z };
+            } )
+        .def_property(
+            "linear_acceleration",
+            []( rs2_combined_motion const & self )
+            {
+                return rs2_vector{ (float)self.linear_acceleration.x,
+                                   (float)self.linear_acceleration.y,
+                                   (float)self.linear_acceleration.z };
+            },
+            []( rs2_combined_motion & self, rs2_vector const & v ) {
+                self.linear_acceleration = { v.x, v.y, v.z };
+            } )
+        .def( "__repr__",
+              []( const rs2_combined_motion & self )
+              {
+                  std::ostringstream ss;
+                  ss << "gyro[" << self.angular_velocity.x << "," << self.angular_velocity.y << ","
+                      << self.angular_velocity.z << "] accel[" << self.linear_acceleration.x << ","
+                      << self.linear_acceleration.y << "," << self.linear_acceleration.z << "]";
+                  return ss.str();
+              } );
+
     py::class_<rs2_pose> pose(m, "pose"); // No docstring in C++
     pose.def(py::init<>())
         .def_readwrite("translation", &rs2_pose::translation, "X, Y, Z values of translation, in meters (relative to initial position)")

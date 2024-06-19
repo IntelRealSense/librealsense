@@ -2055,9 +2055,9 @@ namespace librealsense
                 return range;
             }
 
-            struct v4l2_queryctrl query = {};
+            struct v4l2_query_ext_ctrl query = {};
             query.id = get_cid(option);
-            if (xioctl(_fd, VIDIOC_QUERYCTRL, &query) < 0)
+            if (xioctl(_fd, VIDIOC_QUERY_EXT_CTRL, &query) < 0)
             {
                 // Some controls (exposure, auto exposure, auto hue) do not seem to work on V4L2
                 // Instead of throwing an error, return an empty range. This will cause this control to be omitted on our UI sample.
@@ -2822,7 +2822,19 @@ namespace librealsense
 
         control_range v4l_mipi_device::get_pu_range(rs2_option option) const
         {
-            return v4l_uvc_device::get_pu_range(option);
+            struct v4l2_query_ext_ctrl query = {};
+            query.id = get_cid(option);
+            if (xioctl(_fd, VIDIOC_QUERY_EXT_CTRL, &query) < 0)
+            {
+                // Some controls (exposure, auto exposure, auto hue) do not seem to work on V4L2
+                // Instead of throwing an error, return an empty range. This will cause this control to be omitted on our UI sample.
+                // TODO: Figure out what can be done about these options and make this work
+                query.minimum = query.maximum = 0;
+            }
+
+            control_range range(query.minimum, query.maximum, query.step, query.default_value);
+
+            return range;
         }
 
         uint32_t v4l_mipi_device::get_cid(rs2_option option) const

@@ -286,7 +286,8 @@ void init_frame(py::module &m) {
 
     py::class_<rs2::motion_frame, rs2::frame> motion_frame(m, "motion_frame", "Extends the frame class with additional motion related attributes and functions");
     motion_frame.def(py::init<rs2::frame>())
-        .def("get_motion_data", &rs2::motion_frame::get_motion_data, "Retrieve the motion data from IMU sensor.")
+        .def("get_motion_data", &rs2::motion_frame::get_motion_data, "Retrieve motion data from a GYRO/ACCEL sensor")
+        .def("get_combined_motion_data", &rs2::motion_frame::get_combined_motion_data, "Retrieve motion data from a MOTION sensor")
         .def_property_readonly("motion_data", &rs2::motion_frame::get_motion_data, "Motion data from IMU sensor. Identical to calling get_motion_data.");
 
     py::class_<rs2::pose_frame, rs2::frame> pose_frame(m, "pose_frame", "Extends the frame class with additional pose related attributes and functions.");

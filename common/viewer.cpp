@@ -1801,8 +1801,35 @@ namespace rs2
                         if (motion.get())
                         {
                             auto axis = motion.get_motion_data();
-                            stream_mv.show_stream_imu(font1, stream_rect, axis, mouse);
+                            stream_mv.show_stream_imu( font1,
+                                                       stream_rect,
+                                                       axis,
+                                                       mouse,
+                                                       stream_type == RS2_STREAM_GYRO ? "Radians/Sec" : "Meter/Sec^2" );
                         }
+                        break;
+                    }
+                    case RS2_STREAM_MOTION:
+                    {
+                        auto & motion = *reinterpret_cast< const rs2_combined_motion * >(
+                            streams[stream].texture->get_last_frame().get_data() );
+                        auto height = stream_mv.show_stream_imu( font1,
+                                                                 stream_rect,
+                                                                 { (float)motion.linear_acceleration.x,
+                                                                   (float)motion.linear_acceleration.y,
+                                                                   (float)motion.linear_acceleration.z },
+                                                                 mouse,
+                                                                 "Meter/Sec^2",
+                                                                 "Linear Acceletion" );
+                        stream_mv.show_stream_imu( font1,
+                                                   stream_rect,
+                                                   { (float)motion.angular_velocity.x,
+                                                     (float)motion.angular_velocity.y,
+                                                     (float)motion.angular_velocity.z },
+                                                   mouse,
+                                                   "Radians/Sec",
+                                                   "Angular Velocity",
+                                                   height + 9 );
                         break;
                     }
                     case RS2_STREAM_POSE:
