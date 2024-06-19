@@ -100,38 +100,37 @@ namespace librealsense
     *   to the inner struct, we pre-calculate and store the attribute offset internally
     *   http://stackoverflow.com/questions/1929887/is-pointer-to-inner-struct-member-forbidden
     */
-    template<class S, class Attribute, typename Flag>
-    class md_attribute_parser : public md_attribute_parser_base
+
+    /**\brief always enabled param parser class*/
+    template<class S, class Attribute>
+    class md_always_enabled_param_parser : public md_attribute_parser_base
     {
     public:
-        md_attribute_parser( Attribute S::*attribute_name, Flag flag, unsigned long long offset, attrib_modifyer mod )
-            : _md_attribute( attribute_name )
-            , _md_flag( flag )
-            , _offset( offset )
-            , _modifyer( mod )
-        {
-        }
+        md_always_enabled_param_parser(Attribute S::* attribute_name, unsigned long long offset, attrib_modifyer mod)
+            : _md_attribute(attribute_name)
+            , _offset(offset)
+            , _modifyer(mod) {};
 
-        bool find( const frame & frm, rs2_metadata_type * p_value ) const override
+        bool find(const frame& frm, rs2_metadata_type* p_value) const override
         {
-            auto s = reinterpret_cast< const S * >( ( (const uint8_t *)frm.additional_data.metadata_blob.data() )
-                                                    + _offset );
+            auto s = reinterpret_cast<const S*>(((const uint8_t*)frm.additional_data.metadata_blob.data())
+                + _offset);
 
-            if( ! is_attribute_valid( s ) )
+            if (!is_attribute_valid(s))
                 return false;
 
-            if( p_value )
+            if (p_value)
             {
                 auto attrib = static_cast<rs2_metadata_type>((*s).*_md_attribute);
-                if( _modifyer )
-                    attrib = _modifyer( attrib );
+                if (_modifyer)
+                    attrib = _modifyer(attrib);
                 *p_value = attrib;
             }
             return true;
         }
 
     protected:
-        virtual bool is_attribute_valid( const S * s ) const
+        virtual bool is_attribute_valid(const S* s) const
         {
             // verify that the struct is of the correct type
             // Check that the header id and the struct size corresponds.
@@ -157,16 +156,48 @@ namespace librealsense
                     << md_type_desc.at(expected_type) << ")");
                 return false;
             }
+            return true;
+        }
+
+    private:
+        md_always_enabled_param_parser() = delete;
+        md_always_enabled_param_parser(const md_always_enabled_param_parser&) = delete;
+
+        Attribute S::*      _md_attribute;  // Pointer to the attribute within uvc header that provides the relevant data
+        unsigned long long  _offset;        // Inner struct offset with regard to the most outer one
+        attrib_modifyer     _modifyer;      // Post-processing on received attribute
+    };
+
+    /**\brief A utility function to create UVC metadata header parser*/
+    template<class S, class Attribute>
+    std::shared_ptr<md_attribute_parser_base> make_always_enabled_param_parser(Attribute S::* attribute, unsigned long long offset, attrib_modifyer mod = nullptr)
+    {
+        std::shared_ptr<md_always_enabled_param_parser<S, Attribute>> parser(new md_always_enabled_param_parser<S, Attribute>(attribute, offset, mod));
+        return parser;
+    }
+
+    template<class S, class Attribute, typename Flag>
+    class md_attribute_parser : public md_always_enabled_param_parser<S, Attribute>
+    {
+    public:
+        md_attribute_parser( Attribute S::*attribute_name, Flag flag, unsigned long long offset, attrib_modifyer mod )
+            : md_always_enabled_param_parser(attribute_name, offset, mod)
+            , _md_flag( flag )
+        {
+        }
+
+    protected:
+        virtual bool is_attribute_valid( const S * s ) const
+        {
+            if (!md_always_enabled_param_parser<S, Attribute>::is_attribute_valid(s))
+                return false;
 
             // Check if the attribute's flag is set
-            auto attribute_enabled = ( 0 != ( s->flags & static_cast< uint32_t >( _md_flag ) ) );
+            auto attribute_enabled = (0 != (s->flags & static_cast<uint32_t>(_md_flag)));
             return attribute_enabled;
         }
 
-        Attribute S::*      _md_attribute;  // Pointer to the attribute within struct that holds the relevant data
-        Flag                _md_flag;       // Bit that indicates whether the particular attribute is active
-        unsigned long long  _offset;        // Inner struct offset with regard to the most outer one
-        attrib_modifyer     _modifyer;      // Post-processing on received attribute
+        Flag  _md_flag;       // Bit that indicates whether the particular attribute is active
 
     private:
         md_attribute_parser() = delete;

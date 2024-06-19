@@ -267,12 +267,10 @@ namespace librealsense
                 md_safety_info_attributes::sip_metrics_attribute, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_ZERO_MONITORING_ENABLED,
-            make_attribute_parser(&md_safety_info::zero_safety_monitoring_enabled,
-                md_safety_info_attributes::sip_metrics_attribute, md_prop_offset));
+            make_always_enabled_param_parser(&md_safety_info::zero_safety_monitoring_enabled, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_HARA_HISTORY_MODE,
-            make_attribute_parser(&md_safety_info::hara_history_mode,
-                md_safety_info_attributes::sip_metrics_attribute, md_prop_offset));
+            make_always_enabled_param_parser(&md_safety_info::hara_history_mode, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_FUSA_EVENTS,
             make_attribute_parser(&md_safety_info::soc_fusa_events, 
