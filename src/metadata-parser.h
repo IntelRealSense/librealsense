@@ -181,7 +181,7 @@ namespace librealsense
     {
     public:
         md_attribute_parser( Attribute S::*attribute_name, Flag flag, unsigned long long offset, attrib_modifyer mod )
-            : md_always_enabled_param_parser(attribute_name, offset, mod)
+            : md_always_enabled_param_parser<S, Attribute>(attribute_name, offset, mod)
             , _md_flag( flag )
         {
         }
