@@ -266,7 +266,8 @@ namespace rs2
 
             auto dev_name = get_device_name(dev);
 
-            if( dev.is<update_device>() || is_upgradeable( fw, recommended_fw_ver) )
+            // TODO - D421. Don't suggest to update FW as it doesn't support D421. Revert after 5.17 release with supporting FW
+            if( ( dev.is<update_device>() || is_upgradeable( fw, recommended_fw_ver) ) && pid != "0B5D" ) // 0x0B5D is D421 PID
             {
                 std::stringstream msg;
 
