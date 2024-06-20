@@ -59,6 +59,12 @@ void converter_base::wait()
     _worker.join();
 }
 
+void converter_base::flush()
+{
+	
+}
+
+
 std::string converter_base::get_statistics()
 {
     std::stringstream result;
