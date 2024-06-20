@@ -290,6 +290,76 @@ namespace librealsense
             return calc_intrinsic;
         }
 
+        //D405 needs special calculation because the ISP crops the full sensor image using non linear transformation.
+        rs2_intrinsics get_d405_color_stream_intrinsic(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)
+        {
+            // Convert normalized focal lenght and principal point to pixel units (K matrix format)
+            auto k_to_pixels = []( float3x3 & k, ds_rect_resolutions res )
+            {
+                k( 0, 0 ) = k( 0, 0 ) * resolutions_list[res].x / 2.f;  // fx
+                k( 1, 1 ) = k( 1, 1 ) * resolutions_list[res].y / 2.f;  // fy
+                k( 2, 0 ) = ( k( 2, 0 ) + 1 ) * resolutions_list[res].x / 2.f;  // ppx
+                k( 2, 1 ) = ( k( 2, 1 ) + 1 ) * resolutions_list[res].y / 2.f;  // ppy
+            };
+
+            // Scale focal lenght and principal point in pixel units from one resolution to another (K matrix format)
+            auto scale_pixel_k = []( float3x3 & k, ds_rect_resolutions in_res, ds_rect_resolutions out_res )
+            {
+                float scale_x = resolutions_list[out_res].x / static_cast< float >( resolutions_list[in_res].x );
+                float scale_y = resolutions_list[out_res].y / static_cast< float >( resolutions_list[in_res].y );
+                float scale = max( scale_x, scale_y );
+                float shift_x = ( resolutions_list[in_res].x * scale - resolutions_list[out_res].x ) / 2.f;
+                float shift_y = ( resolutions_list[in_res].y * scale - resolutions_list[out_res].y ) / 2.f;
+
+                k( 0, 0 ) = k( 0, 0 ) * scale;  // fx
+                k( 1, 1 ) = k( 1, 1 ) * scale;  // fy
+                k( 2, 0 ) = k( 2, 0 ) * scale - shift_x;  // ppx
+                k( 2, 1 ) = k( 2, 1 ) * scale - shift_y;  // ppy
+            };
+
+            auto table = check_calib< ds::d400_rgb_calibration_table >( raw_data );
+            auto raw_res = width_height_to_ds_rect_resolutions( 1280, 800 );
+            auto output_res = width_height_to_ds_rect_resolutions( width, height );
+            auto calibration_res = width_height_to_ds_rect_resolutions( table->calib_width, table->calib_height );
+
+            float3x3 k = table->intrinsic;
+            if( output_res == res_1280_720 )
+                k_to_pixels( k, output_res );
+            else if( output_res == res_640_480 )
+            {
+                // Extrapolate K to raw resolution
+                float scale_y = resolutions_list[calibration_res].y / static_cast< float >( resolutions_list[raw_res].y );
+                k( 1, 1 ) = k( 1, 1 ) * scale_y;  // fy
+                k( 2, 1 ) = k( 2, 1 ) * scale_y;  // ppy
+                k_to_pixels( k, raw_res );
+                // Handle ISP scaling
+                auto scale_res = width_height_to_ds_rect_resolutions( 770, 480 );
+                scale_pixel_k( k, raw_res, scale_res );
+                // Handle ISP crop
+                k( 2, 0 ) = k( 2, 0 ) - ( resolutions_list[scale_res].x - resolutions_list[output_res].x ) / 2;  // ppx
+                k( 2, 1 ) = k( 2, 1 ) - ( resolutions_list[scale_res].y - resolutions_list[output_res].y ) / 2;  // ppy
+            }
+            else
+            {
+                k_to_pixels( k, calibration_res );
+                scale_pixel_k( k, calibration_res, output_res );
+            }
+
+            // Convert k matrix format to rs2 format
+            rs2_intrinsics rs2_intr{
+                static_cast< int >( width ),
+                static_cast< int >( height ),
+                k( 2, 0 ),
+                k( 2, 1 ),
+                k( 0, 0 ),
+                k( 1, 1 ),
+                RS2_DISTORTION_INVERSE_BROWN_CONRADY  // The coefficients shall be use for undistort
+            };
+            std::memcpy( rs2_intr.coeffs, table->distortion, sizeof( table->distortion ) );
+
+            return rs2_intr;
+        }
+
         // Parse intrinsics from newly added RECPARAMSGET command
         bool try_get_d400_intrinsic_by_resolution_new(const vector<uint8_t>& raw_data,
             uint32_t width, uint32_t height, rs2_intrinsics* result)
