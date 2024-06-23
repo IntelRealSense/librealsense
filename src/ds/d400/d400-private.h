@@ -23,7 +23,7 @@ namespace librealsense
         const uint16_t RS_D400_USB2_RECOVERY_PID = 0x0adc;
         const uint16_t RS400_IMU_PID = 0x0af2; // IMU
         const uint16_t RS420_PID = 0x0af6;      // PWG
-        const uint16_t RS421_PID = 0x0B5D;     // D421
+        const uint16_t RS421_PID = 0x1155;     // D421
         const uint16_t RS420_MM_PID = 0x0afe; // PWGT
         const uint16_t RS410_MM_PID = 0x0aff; // ASRT
         const uint16_t RS400_MM_PID = 0x0b00; // PSR
