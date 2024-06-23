@@ -1,6 +1,6 @@
 # Wrappers for Intel® RealSense™ Technology
 
-* [Python](./python/) - Supports both Python 2 and 3
+* [Python](./python/) - Supports Python 3
 * [ROS](https://github.com/intel-ros/realsense/releases) - Integration with Robot Operating System
 * [LabVIEW](./labview) - Integration with National Instruments LabVIEW
 * [OpenCV](./opencv) - Integration with OpenCV computer-vision library
