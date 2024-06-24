@@ -126,6 +126,9 @@ void rs_dds_option::set( float value )
                                          << "use rs2_set_option_value to set " << get_string( _rs_type ) << " value" );
     }
 
+    if( is_read_only() )
+        throw invalid_value_exception( "option is read-only: " + _dds_opt->get_name() );
+
     _set_opt_cb( j_value );
 }
 
@@ -157,6 +160,9 @@ void rs_dds_option::set_value( json value )
 {
     if( ! _set_opt_cb )
         throw std::runtime_error( "Set option callback is not set for option " + _dds_opt->get_name() );
+
+    if( is_read_only() )
+        throw invalid_value_exception( "option is read-only: " + _dds_opt->get_name() );
 
     _set_opt_cb( std::move( value ) );
 }
