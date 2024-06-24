@@ -32,7 +32,7 @@ macro(os_set_flags)
         set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mssse3")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mssse3")
         set(LRS_TRY_USE_AVX true)
-    endif(${MACHINE} MATCHES "arm-*")
+    endif(${MACHINE} MATCHES "arm64-*" OR ${MACHINE} MATCHES "aarch64-*")
 
     if(BUILD_WITH_OPENMP)
         find_package(OpenMP REQUIRED)
