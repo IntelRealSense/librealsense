@@ -1865,7 +1865,12 @@ namespace rs2
                         auto itr = sub->options_metadata.find(RS2_OPTION_VISUAL_PRESET);
                         if (itr != sub->options_metadata.end())
                         {
-                            itr->second.endpoint->set_option(RS2_OPTION_VISUAL_PRESET, RS2_RS400_VISUAL_PRESET_CUSTOM);
+                            // Make sure we actually have a "Custom" preset
+                            if( std::string( "Custom", 6 )
+                                == itr->second.endpoint->get_option_value_description(
+                                    RS2_OPTION_VISUAL_PRESET,
+                                    RS2_RS400_VISUAL_PRESET_CUSTOM ) )
+                                itr->second.endpoint->set_option(RS2_OPTION_VISUAL_PRESET, RS2_RS400_VISUAL_PRESET_CUSTOM);
                         }
                     }
                 }
