@@ -425,7 +425,8 @@ std::ostream & operator<<( std::ostream & os, DiscoverySettings const & qos )
     //bool use_SIMPLE_EndpointDiscoveryProtocol = true;
     //bool use_STATIC_EndpointDiscoveryProtocol = false;
     os << dump_field_as( qos, leaseDuration, json );
-    //Duration_t leaseDuration_announcementperiod = { 3, 0 };
+    os << field::separator << "announcement-period" << field::value << json( qos.leaseDuration_announcementperiod )
+       << field_changed( qos, leaseDuration_announcementperiod, _def );
     //InitialAnnouncementConfig initial_announcements;
     //SimpleEDPAttributes m_simpleEDP;
     //PDPFactory m_PDPfactory{};
@@ -695,8 +696,10 @@ void override_participant_qos_from_json( eprosima::fastdds::dds::DomainParticipa
 {
     if( ! j.is_object() )
         return;
-    j.nested( "participant-id" ).get_ex( qos.wire_protocol().participant_id );
-    j.nested( "lease-duration" ).get_ex( qos.wire_protocol().builtin.discovery_config.leaseDuration );
+    auto & wp = qos.wire_protocol();
+    j.nested( "participant-id" ).get_ex( wp.participant_id );
+    j.nested( "lease-duration" ).get_ex( wp.builtin.discovery_config.leaseDuration );  // must be > announcement period!
+    j.nested( "announcement-period" ).get_ex( wp.builtin.discovery_config.leaseDuration_announcementperiod );
 
     j.nested( "use-builtin-transports" ).get_ex( qos.transport().use_builtin_transports );
     if( auto udp_j = j.nested( "udp" ) )
