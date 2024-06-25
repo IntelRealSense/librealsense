@@ -192,7 +192,8 @@ dds_participant::qos::qos( std::string const & participant_name )
     name( participant_name );
 
     // Indicates for how much time should a remote DomainParticipant consider the local DomainParticipant to be alive.
-    wire_protocol().builtin.discovery_config.leaseDuration = { 10, 0 };  // [sec,nsec]
+    wire_protocol().builtin.discovery_config.leaseDuration = realdds::dds_time( 3.0 );  // seconds
+    wire_protocol().builtin.discovery_config.leaseDuration_announcementperiod = realdds::dds_time( 1.5 );
 
     // Disable shared memory, use only UDP
     // Disabling because sometimes, after improper destruction (e.g. stopping debug) the shared memory is not opened
