@@ -16,7 +16,14 @@ if log.is_debug_on():
     rs.log_to_console( rs.log_severity.debug )
 from time import sleep
 
-context = rs.context( { 'dds': { 'enabled': True, 'domain': 123, 'participant': 'device-properties-client' }} )
+context = rs.context( {
+    'dds': {
+        'enabled': True,
+        'domain': 123,
+        'participant': 'device-properties-client'
+       },
+    'device-mask': rs.only_sw_devices
+    } )
 
 
 import os.path
@@ -29,7 +36,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     with test.closure( "Test D435i" ):
         remote.run( 'instance = broadcast_device( d435i, d435i.device_info )' )
-        dev = rs.wait_for_devices( context, rs.only_sw_devices, n=1. )
+        dev = rs.wait_for_devices( context, n=1. )
         test.check_equal( dev.get_info( rs.camera_info.name ), d435i.device_info.name )
         test.check_equal( dev.get_info( rs.camera_info.serial_number ), d435i.device_info.serial )
         test.check_equal( dev.get_info( rs.camera_info.physical_port ), d435i.device_info.topic_root )
@@ -60,7 +67,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     with test.closure( "Test D405" ):
         remote.run( 'instance = broadcast_device( d405, d405.device_info )' )
-        dev = rs.wait_for_devices( context, rs.only_sw_devices, n=1. )
+        dev = rs.wait_for_devices( context, n=1. )
         test.check_equal( dev.get_info( rs.camera_info.name ), d405.device_info.name )
         test.check_equal( dev.get_info( rs.camera_info.serial_number ), d405.device_info.serial )
         test.check_equal( dev.get_info( rs.camera_info.physical_port ), d405.device_info.topic_root )
@@ -78,7 +85,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     with test.closure( "Test D455" ):
         remote.run( 'instance = broadcast_device( d455, d455.device_info )' )
-        dev = rs.wait_for_devices( context, rs.only_sw_devices, n=1. )
+        dev = rs.wait_for_devices( context, n=1. )
         test.check_equal( dev.get_info( rs.camera_info.name ), d455.device_info.name )
         test.check_equal( dev.get_info( rs.camera_info.serial_number ), d455.device_info.serial )
         test.check_equal( dev.get_info( rs.camera_info.physical_port ), d455.device_info.topic_root )
