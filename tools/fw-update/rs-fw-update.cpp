@@ -78,7 +78,7 @@ void print_device_info(rs2::device d)
         auto info = (rs2_camera_info)i;
         camera_info[info] = d.supports(info) ? d.get_info(info) : "unknown";
     }
- 
+
     std::cout << d.get_description() <<
         ", update serial number: " << camera_info[RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID] <<
         ", firmware version: " << camera_info[RS2_CAMERA_INFO_FIRMWARE_VERSION];
