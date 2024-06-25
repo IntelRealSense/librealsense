@@ -56,51 +56,60 @@ namespace librealsense
 
     std::shared_ptr<device_interface> fw_update_info::create_device()
     {
-        auto devices = platform::usb_enumerator::query_devices_info();
-        auto & dfu_id = get_group().usb_devices.front().id;
+        auto usb_devices = get_group().usb_devices;
+        if (!usb_devices.empty())
+        {
+            auto& dfu_id = usb_devices.front().id;
 
-        auto const & mipi_id = get_group().mipi_devices.front().id;
-
-        if (&dfu_id != nullptr) {
-            for (auto&& info : devices)
-            {
-                if( info.id == dfu_id )
+            if (&dfu_id != nullptr) {
+                for (auto&& info : usb_devices)
                 {
-                    auto usb = platform::usb_enumerator::create_usb_device(info);
-                    if (!usb)
-                        continue;
-                    switch( info.pid )
+                    if (info.id == dfu_id)
                     {
-                    case ds::RS_D400_RECOVERY_PID:
-                    case ds::RS_D400_USB2_RECOVERY_PID:
-                        return std::make_shared< ds_d400_update_device >( shared_from_this(), usb );
-                    case ds::D555E_RECOVERY_PID:
-                        return std::make_shared< ds_d500_update_device >( shared_from_this(), usb );
-                    default:
-                        // Do nothing
-                        break;
+                        auto usb = platform::usb_enumerator::create_usb_device(info);
+                        if (!usb)
+                            continue;
+                        switch (info.pid)
+                        {
+                        case ds::RS_D400_RECOVERY_PID:
+                        case ds::RS_D400_USB2_RECOVERY_PID:
+                            return std::make_shared< ds_d400_update_device >(shared_from_this(), usb);
+                        case ds::D555E_RECOVERY_PID:
+                            return std::make_shared< ds_d500_update_device >(shared_from_this(), usb);
+                        default:
+                            // Do nothing
+                            break;
+                        }
                     }
                 }
             }
+            throw std::runtime_error(rsutils::string::from()
+                << "Failed to create FW update device, device id: " << dfu_id);
         }
-        else {
-            for (auto&& info: get_group().mipi_devices)
+
+        auto mipi_devices = get_group().mipi_devices;
+        if (!mipi_devices.empty())
+        {
+            auto const& mipi_id = mipi_devices.front().id;
+            for (auto&& info : mipi_devices)
             {
                 auto mipi = platform::mipi_device::create_mipi_device(info);
                 if (!mipi)
                     continue;
-                switch( info.pid )
+                switch (info.pid)
                 {
-                case 0xbbcd:
-                    return std::make_shared< ds_d400_update_device >( shared_from_this(), mipi );
+                case ds::RS457_RECOVERY_PID:
+                    return std::make_shared< ds_d400_update_device >(shared_from_this(), mipi);
                 default:
                     // Do nothing
                     break;
                 }
             }
+            throw std::runtime_error(rsutils::string::from()
+                << "Failed to create FW update device, device id: " << mipi_id);
         }
-        throw std::runtime_error( rsutils::string::from()
-                                  << "Failed to create FW update device, device id: " << dfu_id );
+        throw std::runtime_error(rsutils::string::from()
+            << "Failed to create FW update device - device not found");
     }
 
 }
