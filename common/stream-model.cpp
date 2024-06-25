@@ -962,6 +962,8 @@ namespace rs2
             {
                 auto val = (rs2_frame_metadata_value)i;
                 std::string name = rs2_frame_metadata_to_string(val);
+                if( pid == "0B6B" )
+                    name = adapt_d585S_metadata_name( name );
                 std::string desc;
                 if( descriptions.find( val ) != descriptions.end() )
                     desc = descriptions[val];
@@ -1186,6 +1188,16 @@ namespace rs2
         };
         descriptions[RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO] = "Non-FuSa GPIO:" + get_meaning(RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO, meanings, "OK");
     }
+
+    std::string stream_model::adapt_d585S_metadata_name( const std::string & name ) const
+    {
+        if( name == "Manual White Balance" )
+            return "White Balance"; // D585S also outputs auto white balance values in this fields so the "manual" in the name is wrong
+
+        return name;
+    }
+
+
     // every bit is represented by its own meaning - first bit by first meaning second by second meaning etc.
     // if the value is 0, meaning_for_zero will be used instead
     std::string stream_model::get_meaning(const rs2_frame_metadata_value& md_val, const std::vector<std::string>& bits_meanings, const std::string& meaning_for_zero) const

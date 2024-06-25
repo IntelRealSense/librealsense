@@ -209,7 +209,7 @@ namespace librealsense
         gamma_attribute                 = (1u << 8),
         hue_attribute                   = (1u << 9),
         manual_exp_attribute            = (1u << 10),
-        manual_wb_attribute             = (1u << 11),
+        manual_wb_attribute             = (1u << 11), // Manual WB value on D400 models, current WB value on D585S
         power_line_frequency_attribute  = (1u << 12),
         low_light_comp_attribute        = (1u << 13),
     };
