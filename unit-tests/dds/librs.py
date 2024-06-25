@@ -20,7 +20,7 @@ def _device_change_callback( info ):
     _devices_updated.set()
 
 
-def wait_for_devices( context, mask, n=1, timeout=3, throw=None ):
+def wait_for_devices( context, mask=product_line.any, n=1, timeout=3, throw=None ):
     """
     Since DDS devices may take time to be recognized and then initialized, we try over time:
 

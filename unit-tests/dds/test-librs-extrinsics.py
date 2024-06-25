@@ -12,8 +12,13 @@ if log.is_debug_on():
     rs.log_to_console( rs.log_severity.debug )
 from time import sleep
 
-context = rs.context( { 'dds': { 'enabled': True, 'domain': 123 }} )
-only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
+context = rs.context( {
+    'dds': {
+        'enabled': True,
+        'domain': 123
+       },
+    'device-mask': rs.only_sw_devices
+    } )
 
 import os.path
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -27,7 +32,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     try:
         remote.run( 'instance = broadcast_device( d435i, d435i.device_info )' )
         n_devs = 0
-        for dev in rs.wait_for_devices( context, only_sw_devices ):
+        for dev in rs.wait_for_devices( context ):
             n_devs += 1
         test.check_equal( n_devs, 1 )
 

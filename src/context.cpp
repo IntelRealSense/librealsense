@@ -59,11 +59,14 @@ namespace librealsense {
 
     void context::create_factories( std::shared_ptr< context > const & sptr )
     {
-        _factories.push_back( std::make_shared< backend_device_factory >(
-            sptr,
-            [this]( std::vector< std::shared_ptr< device_info > > const & removed,
-                    std::vector< std::shared_ptr< device_info > > const & added )
-            { invoke_devices_changed_callbacks( removed, added ); } ) );
+        if( 0 == ( get_device_mask() & RS2_PRODUCT_LINE_SW_ONLY ) )
+        {
+            _factories.push_back( std::make_shared< backend_device_factory >(
+                sptr,
+                [this]( std::vector< std::shared_ptr< device_info > > const & removed,
+                        std::vector< std::shared_ptr< device_info > > const & added )
+                { invoke_devices_changed_callbacks( removed, added ); } ) );
+        }
 
 #ifdef BUILD_WITH_DDS
         _factories.push_back( std::make_shared< rsdds_device_factory >(
