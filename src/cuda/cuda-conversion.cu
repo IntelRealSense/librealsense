@@ -397,6 +397,61 @@ void rscuda::y16_y16_from_y12i_10_cuda_helper(uint8_t* const dest[], int count, 
 }
 
 
+__global__ void kernel_split_frame_y16_y16_from_y12i_cuda_mipi(uint16_t* a, uint16_t* b, int count, const rscuda::y12i_pixel_mipi * source)
+{
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+
+    if (i >= count)
+        return;
+
+    a[i] = source[i].l() << 6 | source[i].l() >> 4;
+    b[i] = source[i].r() << 6 | source[i].r() >> 4;
+}
+
+
+void rscuda::y16_y16_from_y12i_10_cuda_helper_mipi(uint8_t* const dest[], int count, const rscuda::y12i_pixel_mipi * source)
+{
+    /*
+        cudaEvent_t start, stop;
+        cudaEventCreate(&start);
+        cudaEventCreate(&stop);
+        cudaEventRecord(start); */
+
+    source = reinterpret_cast<const y12i_pixel_mipi*>(source);
+
+    int numBlocks = count / RS2_CUDA_THREADS_PER_BLOCK;
+    uint16_t* a = reinterpret_cast<uint16_t*>(dest[0]);
+    uint16_t* b = reinterpret_cast<uint16_t*>(dest[1]);
+
+    auto d_src = alloc_dev<rscuda::y12i_pixel_mipi>(count);
+    auto d_dst_0 = alloc_dev<uint16_t>(count);
+    auto d_dst_1 = alloc_dev<uint16_t>(count);
+
+
+    auto result = cudaMemcpy(d_src.get(), source, count * sizeof(rscuda::y12i_pixel_mipi), cudaMemcpyHostToDevice);
+    assert(result == cudaSuccess);
+
+    kernel_split_frame_y16_y16_from_y12i_cuda_mipi <<<numBlocks, RS2_CUDA_THREADS_PER_BLOCK>>> (d_dst_0.get(), d_dst_1.get(), count, d_src.get());
+    cudaStreamSynchronize(0);
+
+    result = cudaGetLastError();
+    assert(result == cudaSuccess);
+
+    result = cudaMemcpy(a, d_dst_0.get(), count * sizeof(uint16_t), cudaMemcpyDeviceToHost);
+    assert(result == cudaSuccess);
+    result = cudaMemcpy(b, d_dst_1.get(), count * sizeof(uint16_t), cudaMemcpyDeviceToHost);
+    assert(result == cudaSuccess);
+
+    /*
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    std::cout << milliseconds << std::endl;
+    */
+}
+
+
 __global__ void kernel_z16_y8_from_sr300_inzi_cuda(const uint16_t* source, uint8_t* const dest, int count)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
