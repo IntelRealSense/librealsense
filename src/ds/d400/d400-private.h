@@ -238,6 +238,7 @@ namespace librealsense
         rs2_intrinsics get_d400_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         pose get_d400_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
         rs2_intrinsics get_d400_color_stream_intrinsic(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
+        rs2_intrinsics get_d405_color_stream_intrinsic(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         bool try_get_d400_intrinsic_by_resolution_new(const std::vector<uint8_t>& raw_data,
             uint32_t width, uint32_t height, rs2_intrinsics* result);
 

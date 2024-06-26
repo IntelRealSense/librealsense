@@ -219,10 +219,15 @@ namespace librealsense
 
         rs2_intrinsics get_color_intrinsics(const stream_profile& profile) const
         {
-            return get_d400_intrinsic_by_resolution(
-                *_owner->_color_calib_table_raw,
-                ds::d400_calibration_table_id::rgb_calibration_id,
-                profile.width, profile.height);
+            if( _owner->_pid == ds::RS405_PID )
+                return ds::get_d405_color_stream_intrinsic( *_owner->_color_calib_table_raw,
+                                                            profile.width,
+                                                            profile.height );
+
+            return get_d400_intrinsic_by_resolution( *_owner->_color_calib_table_raw,
+                                                     ds::d400_calibration_table_id::rgb_calibration_id,
+                                                     profile.width,
+                                                     profile.height );
         }
 
         /*
