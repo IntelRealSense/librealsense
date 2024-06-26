@@ -55,7 +55,7 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_BACKLIGHT_COMPENSATION               , /**< Color backlight compensation. Zero corresponds to switched off. */
     RS2_FRAME_METADATA_HUE                                  , /**< Color image hue. */
     RS2_FRAME_METADATA_GAMMA                                , /**< Color image gamma. */
-    RS2_FRAME_METADATA_MANUAL_WHITE_BALANCE                 , /**< Color image white balance. */
+    RS2_FRAME_METADATA_MANUAL_WHITE_BALANCE                 , /**< Color image white balance. Manual WB value on D400, current WB value on D585S */
     RS2_FRAME_METADATA_POWER_LINE_FREQUENCY                 , /**< Power Line Frequency for anti-flickering Off/50Hz/60Hz/Auto. */
     RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION               , /**< Color lowlight compensation. Zero corresponds to switched off. */
     RS2_FRAME_METADATA_FRAME_EMITTER_MODE                   , /**< Emitter mode: 0 - all emitters disabled. 1 - laser enabled. 2 - auto laser enabled (opt). 3 - LED enabled (opt).*/
