@@ -22,8 +22,6 @@ def check_imu_streaming(stream, fps):
     pipe.stop()
 
 
-# due to a WIP bug, we have to wait after enumeration for a few secs before Accel stream, see RSDEV-1158/RSDEV-1227
-time.sleep(5)
 ################# Checking accel streaming with fps 100/200 ##################
 stream = rs.stream.accel
 
