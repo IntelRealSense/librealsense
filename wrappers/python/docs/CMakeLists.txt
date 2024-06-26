@@ -35,6 +35,7 @@ configure_file(
 	"${BINARY_BUILD_DIR}/conf.py"
 	@ONLY)
  
+ # if sphinx is causing issues building, replace -q with -v for a verbose error
 add_custom_target(pyrealsense2_docs ALL
 	${SPHINX_EXECUTABLE}
 		-q -b html
