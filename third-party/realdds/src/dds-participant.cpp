@@ -300,6 +300,18 @@ rsutils::string::slice dds_participant::name() const
 }
 
 
+std::shared_ptr< const eprosima::fastdds::rtps::FlowControllerDescriptor >
+dds_participant::find_flow_controller( char const * name ) const
+{
+    for( auto & controller : get()->get_qos().flow_controllers() )
+    {
+        if( ! strcmp( name, controller->name ) )
+            return controller;
+    }
+    return {};
+}
+
+
 std::string dds_participant::print( dds_guid const & guid_to_print ) const
 {
     return rsutils::string::from( realdds::print_guid( guid_to_print, guid() ) );

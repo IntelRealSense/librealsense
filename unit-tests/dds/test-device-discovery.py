@@ -290,7 +290,7 @@ with test.remote.fork( nested_indent='  S' ) as remote:
     with test.closure( "Check new content" ):
         test.check_throws( lambda:
             d2.query_option_value( d2option ),
-            RuntimeError, r'''["query-option" error] device option 'Backlight Compensation' not found''' )
+            RuntimeError, r'''["query-option"] device option 'Backlight Compensation' not found''' )
         if test.check_equal( len(d2.streams()), 1 ):
             stream = d2.streams()[0]
             test.check_equal( stream.name(), 's2' )

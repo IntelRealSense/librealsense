@@ -8,6 +8,16 @@
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/string/slice.h>
 
+
+namespace eprosima {
+namespace fastdds {
+namespace rtps {
+struct FlowControllerDescriptor;
+}  // namespace rtps
+}  // namespace fastdds
+}  // namespace eprosima
+
+
 // FastDDS, in most case, is using two error conventions:
 // 1. ReturnCode_t api_call(...)   -> return ReturnCode_t != RETCODE_OK
 // 2. <class_name> * api_call(...) -> return nullptr
@@ -28,6 +38,10 @@ inline std::string get_dds_error( T * address )
 
 // Given a topic-root, return a debug name to use for debug
 rsutils::string::slice device_name_from_root( std::string const & topic_root );
+
+
+// Calculate approximately how long it will take to send X bytes to the destination, given specific flow control.
+double estimate_seconds_to_send( size_t, eprosima::fastdds::rtps::FlowControllerDescriptor const & );
 
 
 }  // namespace realdds

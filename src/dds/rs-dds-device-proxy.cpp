@@ -11,6 +11,7 @@
 #include <realdds/dds-trinsics.h>
 #include <realdds/dds-participant.h>
 #include <realdds/dds-topic-writer.h>
+#include <realdds/dds-utilities.h>
 
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/flexible-msg.h>
@@ -594,7 +595,7 @@ bool dds_device_proxy::check_fw_compatibility( const std::vector< uint8_t > & im
             { realdds::topics::control::dfu_start::key::crc, crc },
         };
         json reply;
-        _dds_dev->send_control( dfu_start, &reply );
+        _dds_dev->send_control( dfu_start, &reply );  // throws on error
 
         // Set up a reply handler that will get the "dfu-ready" message
         std::mutex mutex;
@@ -622,9 +623,20 @@ bool dds_device_proxy::check_fw_compatibility( const std::vector< uint8_t > & im
         writer->run( wqos );
         if( ! writer->wait_for_readers( { 3, 0 } ) )
             throw std::runtime_error( "timeout waiting for DFU subscriber" );
+        LOG_DEBUG( "transmitting image: " << image.size() << " bytes; crc= " << crc );
         auto blob = realdds::topics::blob_msg( std::vector< uint8_t >( image ) );
         blob.write_to( *writer );
-        if( ! writer->wait_for_acks( { 3, 0 } ) )
+
+        double timeout = 5.;  // seconds
+        if( auto controller
+            = _dds_dev->participant()->find_flow_controller( wqos.publish_mode().flow_controller_name ) )
+        {
+            // Timeout depends on how much data we need to send, because of the flow controller
+            auto const seconds_to_send = realdds::estimate_seconds_to_send( blob.data().size(), *controller );
+            timeout += seconds_to_send * 2;  // *2 in case of resend etc.
+            LOG_DEBUG( "expecting ~" << rsutils::string::from( seconds_to_send, 2 ) << " seconds for image to get sent; timeout= " << rsutils::string::from( timeout, 2 ) );
+        }
+        if( ! writer->wait_for_acks( timeout ) )
             throw std::runtime_error( "timeout waiting for DFU image ack" );
 
         // Wait for a reply
@@ -639,8 +651,7 @@ bool dds_device_proxy::check_fw_compatibility( const std::vector< uint8_t > & im
     }
     catch( std::exception const & e )
     {
-        //LOG_ERROR( "DFU start failed: " << e.what() );
-        throw std::runtime_error( rsutils::string::from() << "failed to check image compatibility: " << e.what() );
+        throw invalid_value_exception( e.what() );
     }
 
     return true;

@@ -633,17 +633,15 @@ void override_publish_mode_qos_from_json( eprosima::fastdds::dds::PublishModeQos
         }
         else if( j_name.is_string() )
         {
-            auto & controller_name = j_name.string_ref();
-            for( auto & controller : participant.get()->get_qos().flow_controllers() )
+            if( auto controller = participant.find_flow_controller( j_name.string_ref().c_str() ) )
             {
-                if( ! strcmp( controller_name.c_str(), controller->name ) )
-                {
-                    qos.kind = eprosima::fastdds::dds::ASYNCHRONOUS_PUBLISH_MODE;
-                    qos.flow_controller_name = controller->name;
-                    return;
-                }
+                qos.kind = eprosima::fastdds::dds::ASYNCHRONOUS_PUBLISH_MODE;
+                qos.flow_controller_name = controller->name;
             }
-            DDS_THROW( runtime_error, "invalid flow-control name in publish-mode; got " << j_name );
+            else
+            {
+                DDS_THROW( runtime_error, "invalid flow-control name in publish-mode; got " << j_name );
+            }
         }
         else
             DDS_THROW( runtime_error, "flow-control must be a name; got " << j_name );
