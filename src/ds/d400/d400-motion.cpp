@@ -49,8 +49,16 @@ namespace librealsense
         }
 
         std::vector<std::shared_ptr<platform::uvc_device>> imu_devices;
-        for (auto&& info : filter_by_mi(all_uvc_infos, 4)) // Filter just mi=4, IMU
-            imu_devices.push_back( get_backend()->create_uvc_device( info ) );
+        for( auto && info : filter_by_mi( all_uvc_infos, 4 ) )  // Filter just mi=4, IMU
+        {
+            auto & dev = environment::get_instance().get_uvc_device( info.unique_id );
+            if( ! dev )
+            {
+                dev = get_backend()->create_uvc_device( info );
+                environment::get_instance().set_uvc_device( info.unique_id, dev );
+            }
+            imu_devices.push_back( dev );
+        }
 
         std::unique_ptr< frame_timestamp_reader > timestamp_reader_backup( new ds_timestamp_reader() );
         std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new ds_timestamp_reader_from_metadata_mipi_motion(std::move(timestamp_reader_backup)));

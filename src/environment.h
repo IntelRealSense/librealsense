@@ -98,6 +98,10 @@ namespace librealsense
 
     };
 
+    namespace platform
+    {
+        class uvc_device;
+    }
 
     class environment
     {
@@ -108,6 +112,21 @@ namespace librealsense
 
         int generate_stream_id() { return _stream_id.fetch_add(1); }
 
+        std::atomic< int > & get_device_power_counter( const std::string & uid )
+        {
+            return _uvc_device_to_power_counter[uid];
+        }
+
+        std::shared_ptr< platform::uvc_device > & get_uvc_device( const std::string & uvc_device_info_uid )
+        {
+            return _device_info_uid_to_uvc_device[uvc_device_info_uid];
+        }
+
+        void set_uvc_device( const std::string & uvc_device_info_uid, std::shared_ptr< platform::uvc_device > & device )
+        {
+            _device_info_uid_to_uvc_device[uvc_device_info_uid] = device;
+        }
+
         environment(const environment&) = delete;
         environment(const environment&&) = delete;
         environment operator=(const environment&) = delete;
@@ -116,6 +135,8 @@ namespace librealsense
     private:
         extrinsics_graph _extrinsics;
         std::atomic<int> _stream_id;
+        std::map< std::string /*uid*/, std::atomic< int > /*counter*/ > _uvc_device_to_power_counter;
+        std::map< std::string /*uid*/, std::shared_ptr< platform::uvc_device > > _device_info_uid_to_uvc_device;
 
         environment();
     };

@@ -345,6 +345,11 @@ namespace librealsense
             return _location;
         }
 
+        std::string rs_uvc_device::get_device_unique_id() const
+        {
+            return std::to_string( _info.mi ) + _info.unique_id;
+        }
+
         usb_spec rs_uvc_device::get_usb_specification() const
         {
             // On Win7, USB type is determined only when the USB device is created, _info.conn_spec holds wrong information

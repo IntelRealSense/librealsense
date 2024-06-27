@@ -355,7 +355,8 @@ namespace librealsense
             void set_power_state(power_state state) override;
             power_state get_power_state() const override { return _state; }
 
-            void init_xu(const extension_unit&) override {}
+            void register_xu( platform::extension_unit && xu ) override {}
+            void init_xu( const extension_unit & ) override {}
             bool set_xu(const extension_unit& xu, uint8_t control, const uint8_t* data, int size) override;
             bool get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const override;
             control_range get_xu_range(const extension_unit& xu, uint8_t control, int len) const override;
@@ -372,6 +373,7 @@ namespace librealsense
             void unlock() const override;
 
             std::string get_device_location() const override { return _device_path; }
+            virtual std::string get_device_unique_id() const override;
             usb_spec get_usb_specification() const override { return _device_usb_spec; }
 
             bool is_platform_jetson() const override {return false;}
