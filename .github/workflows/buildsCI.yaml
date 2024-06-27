@@ -27,7 +27,7 @@ jobs:
     runs-on: windows-2019
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
 
     - name: Enable Long Paths
       shell: powershell
@@ -69,7 +69,7 @@ jobs:
     runs-on: windows-2019
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
 
     - name: Enable Long Paths
       shell: powershell
@@ -111,8 +111,8 @@ jobs:
     runs-on: windows-2019
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v3
       with:
        python-version: '3.8.1'
 
@@ -171,8 +171,8 @@ jobs:
     runs-on: windows-2019
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v3
       with:
        python-version: '3.8.1'
 
@@ -222,8 +222,8 @@ jobs:
     timeout-minutes: 60
       
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v3
       with:
        python-version: '3.8.1'
 
@@ -273,7 +273,7 @@ jobs:
     name: ${{ matrix.name }}_ST_Py_EX_CfU_LiveTest 
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
     
     - name: Prebuild
       shell: bash
@@ -306,7 +306,7 @@ jobs:
         ./live-test -d yes -i [software-device]        
 
     - name: Upload RS log artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with: 
         name: Log file - ${{ matrix.name }}_ST_Py_EX_CfU_LiveTest
         path: build/${{env.LRS_RUN_CONFIG}}/*.log
@@ -327,7 +327,7 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
 
     - name: Prebuild
       shell: bash
@@ -370,7 +370,7 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
 
     - name: Prebuild
       shell: bash
@@ -487,7 +487,7 @@ jobs:
     env: 
       LRS_BUILD_NODEJS: true
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
           
     - name: Check_API
       shell: bash
@@ -527,7 +527,7 @@ jobs:
         ./live-test -d yes -i [software-device]
 
     - name: Upload RS log artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
         name: Log file - ${{ matrix.name }}_SH_RSUSB_LiveTest
         path: build/${{env.LRS_BUILD_CONFIG}}/*.log
@@ -549,7 +549,7 @@ jobs:
     timeout-minutes: 60
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
 
     - name: Check_API
       shell: bash
@@ -583,7 +583,7 @@ jobs:
     runs-on: ubuntu-20.04   
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
 
     - name: Check_API
       shell: bash
