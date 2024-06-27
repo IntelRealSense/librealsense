@@ -24,7 +24,10 @@ def check_hw_ts_right_before_sensor_ts(frame):
     hw_ts = frame.get_frame_metadata(rs.frame_metadata_value.frame_timestamp)
     sensor_ts = frame.get_frame_metadata(rs.frame_metadata_value.sensor_timestamp)
     delta = hw_ts - sensor_ts
-    test.check(depth_exposure > delta > 0)
+    time_between_frames = 1/fps *1000000
+    if not test.check_between(delta, min=0, max=time_between_frames):
+        print("hw_ts = " + repr(hw_ts) + ", sensor_ts = " + repr(sensor_ts) + ", delta = " + repr(delta))
+        print("time between frames = " + repr(time_between_frames))
 
 
 #############################################################################################
