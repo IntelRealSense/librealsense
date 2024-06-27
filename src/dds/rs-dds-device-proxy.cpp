@@ -696,4 +696,24 @@ void dds_device_proxy::update( const void * /*image*/, int /*image_size*/, rs2_u
 }
 
 
+std::vector< sensor_interface * > dds_device_proxy::get_serializable_sensors()
+{
+    std::vector< sensor_interface * > sensors;
+    auto const n_sensors = get_sensors_count();
+    for( auto i = 0; i < n_sensors; ++i )
+        sensors.push_back( &get_sensor( i ) );
+    return sensors;
+}
+
+
+std::vector< sensor_interface const * > dds_device_proxy::get_serializable_sensors() const
+{
+    std::vector< sensor_interface const * > sensors;
+    auto const n_sensors = get_sensors_count();
+    for( auto i = 0; i < n_sensors; ++i )
+        sensors.push_back( &get_sensor( i ) );
+    return sensors;
+}
+
+
 }  // namespace librealsense
