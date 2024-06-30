@@ -328,7 +328,7 @@ namespace librealsense
         auto labeled_points_frame = dynamic_cast<librealsense::labeled_points*>(frame.frame);
         assert(labeled_points_frame != nullptr);
 
-        convert(RS2_FORMAT_RAW8, image.encoding);
+        convert(RS2_FORMAT_Y8, image.encoding);
         image.is_bigendian = is_big_endian();
         auto size = labeled_points_frame->get_vertex_count() * labeled_points_frame->get_bpp() / 8;
         auto p_data = frame->get_frame_data();

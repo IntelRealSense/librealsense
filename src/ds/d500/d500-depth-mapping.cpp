@@ -26,11 +26,11 @@
 namespace librealsense
 {
     const std::map<uint32_t, rs2_format> mapping_fourcc_to_rs2_format = {
-        {rs_fourcc('G','R','E','Y'), RS2_FORMAT_RAW8},
+        {rs_fourcc('G','R','E','Y'), RS2_FORMAT_Y8},
         // point cloud - w/a done in backend in order to distinguish between occupancy
         // and labeled point cloud streams - PAL8 instead of GREY 
         // because both are received as GREY 
-        {rs_fourcc('P','A','L','8'), RS2_FORMAT_RAW8}
+        {rs_fourcc('P','A','L','8'), RS2_FORMAT_Y8}
     };
     const std::map<uint32_t, rs2_stream> mapping_fourcc_to_rs2_stream = {
         {rs_fourcc('G','R','E','Y'), RS2_STREAM_OCCUPANCY},
@@ -494,16 +494,16 @@ namespace librealsense
 void d500_depth_mapping::register_processing_blocks( std::shared_ptr< d500_depth_mapping_sensor > mapping_ep )
     {
         processing_block_factory occ_pbf
-            = { { { RS2_FORMAT_RAW8, RS2_STREAM_OCCUPANCY } },
-                { { RS2_FORMAT_RAW8, RS2_STREAM_OCCUPANCY } },
+            = { { { RS2_FORMAT_Y8, RS2_STREAM_OCCUPANCY } },
+                { { RS2_FORMAT_Y8, RS2_STREAM_OCCUPANCY } },
                 []() {
                     return std::make_shared< identity_processing_block >();
                 } };
         mapping_ep->register_processing_block( occ_pbf );
 
         processing_block_factory lpc_pbf
-            = { { { RS2_FORMAT_RAW8, RS2_STREAM_LABELED_POINT_CLOUD } },
-                { { RS2_FORMAT_RAW8, RS2_STREAM_LABELED_POINT_CLOUD } },
+            = { { { RS2_FORMAT_Y8, RS2_STREAM_LABELED_POINT_CLOUD } },
+                { { RS2_FORMAT_Y8, RS2_STREAM_LABELED_POINT_CLOUD } },
                 []() {
                     return std::make_shared< identity_processing_block >();
                 } };

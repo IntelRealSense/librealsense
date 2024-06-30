@@ -45,7 +45,7 @@ test.finish()
 test.start("Checking safety stream metadata frame counter and timestamp increasing")
 cfg = rs.config()
 fps = 30
-cfg.enable_stream(rs.stream.safety, rs.format.raw8, fps)
+cfg.enable_stream(rs.stream.safety, rs.format.y8, fps)
 pipe = rs.pipeline()
 pipe.start(cfg)
 iterations = 0

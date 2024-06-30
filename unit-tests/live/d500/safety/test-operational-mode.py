@@ -24,7 +24,7 @@ def verify_frames_received(pipe, count):
 with test.closure("Pause / Resume - no impact on streaming"):
 
     cfg = rs.config()
-    cfg.enable_stream(rs.stream.safety, rs.format.raw8, 30)
+    cfg.enable_stream(rs.stream.safety, rs.format.y8, 30)
     cfg.enable_stream(rs.stream.depth, rs.format.z16, 30)
     cfg.enable_stream(rs.stream.color, rs.format.rgb8, 30)
 
@@ -59,7 +59,7 @@ with test.closure("Pause / Resume - no impact on streaming"):
 with test.closure("Resume --> Maintenance keep video streaming"):
 
     cfg = rs.config()
-    cfg.enable_stream(rs.stream.safety, rs.format.raw8, 30)
+    cfg.enable_stream(rs.stream.safety, rs.format.y8, 30)
     cfg.enable_stream(rs.stream.depth, rs.format.z16, 30)
     cfg.enable_stream(rs.stream.color, rs.format.rgb8, 30)
 
@@ -96,7 +96,7 @@ with test.closure("Resume --> Maintenance keep video streaming"):
 with test.closure("Resume --> Maintenance keeps safety streaming on"):
 
     cfg = rs.config()
-    cfg.enable_stream(rs.stream.safety, rs.format.raw8, 30)
+    cfg.enable_stream(rs.stream.safety, rs.format.y8, 30)
 
     pipe = rs.pipeline()
     profile = pipe.start(cfg)
