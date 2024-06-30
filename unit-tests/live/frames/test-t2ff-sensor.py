@@ -63,24 +63,14 @@ max_delay_for_depth_frame = 1
 max_delay_for_color_frame = 1
 
 
+#####################################################################################################
+test.start("Testing first depth frame delay on " + product_line + " device - "+ platform.system() + " OS")
 ds = dev.first_depth_sensor()
-cs = dev.first_color_sensor()
-
 dp = next(p for p in
           ds.profiles if p.fps() == 30
           and p.stream_type() == rs.stream.depth
           and p.format() == rs.format.z16
           and p.is_default())
-
-cp = next(p for p in
-          cs.profiles if p.fps() == 30
-          and p.stream_type() == rs.stream.color
-          and p.format() == rs.format.rgb8
-          and p.is_default())
-
-
-#####################################################################################################
-test.start("Testing first depth frame delay on " + product_line + " device - "+ platform.system() + " OS")
 first_depth_frame_delay = time_to_first_frame(ds, dp, max_delay_for_depth_frame)
 print("Time until first depth frame is: {:.3f} [sec] max allowed is: {:.1f} [sec] ".format(first_depth_frame_delay, max_delay_for_depth_frame))
 test.check(first_depth_frame_delay < max_delay_for_depth_frame)
@@ -89,9 +79,23 @@ test.finish()
 
 #####################################################################################################
 test.start("Testing first color frame delay on " + product_line + " device - "+ platform.system() + " OS")
-first_color_frame_delay = time_to_first_frame(cs, cp, max_delay_for_color_frame)
-print("Time until first color frame is: {:.3f} [sec] max allowed is: {:.1f} [sec] ".format(first_color_frame_delay, max_delay_for_color_frame))
-test.check(first_color_frame_delay < max_delay_for_color_frame)
+product_name = dev.get_info(rs.camera_info.name)
+cs = None
+try:
+    cs = dev.first_color_sensor()
+except RuntimeError as rte:
+    if 'D421' not in product_name and 'D405' not in product_name: # Cameras with no color sensor may fail.
+        test.unexpected_exception()
+
+if cs:
+    cp = next(p for p in
+              cs.profiles if p.fps() == 30
+              and p.stream_type() == rs.stream.color
+              and p.format() == rs.format.rgb8
+              and p.is_default())
+    first_color_frame_delay = time_to_first_frame(cs, cp, max_delay_for_color_frame)
+    print("Time until first color frame is: {:.3f} [sec] max allowed is: {:.1f} [sec] ".format(first_color_frame_delay, max_delay_for_color_frame))
+    test.check(first_color_frame_delay < max_delay_for_color_frame)
 test.finish()
 
 

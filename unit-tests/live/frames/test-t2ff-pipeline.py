@@ -51,13 +51,15 @@ test.finish()
 
 
 ################################################################################################
-test.start("Testing pipeline first color frame delay on " + product_line + " device - " + platform.system() + " OS")
-color_cfg = rs.config()
-color_cfg.enable_stream(rs.stream.color, rs.format.rgb8, 30)
-frame_delay = time_to_first_frame(color_cfg)
-print("Delay from pipeline.start() until first color frame is: {:.3f} [sec] max allowed is: {:.1f} [sec] ".format(frame_delay, max_delay_for_color_frame))
-test.check(frame_delay < max_delay_for_color_frame)
-test.finish()
+product_name = dev.get_info(rs.camera_info.name)
+if 'D421' not in product_name and 'D405' not in product_name: # Cameras with no color sensor
+    test.start("Testing pipeline first color frame delay on " + product_line + " device - " + platform.system() + " OS")
+    color_cfg = rs.config()
+    color_cfg.enable_stream(rs.stream.color, rs.format.rgb8, 30)
+    frame_delay = time_to_first_frame(color_cfg)
+    print("Delay from pipeline.start() until first color frame is: {:.3f} [sec] max allowed is: {:.1f} [sec] ".format(frame_delay, max_delay_for_color_frame))
+    test.check(frame_delay < max_delay_for_color_frame)
+    test.finish()
 
 
 ################################################################################################

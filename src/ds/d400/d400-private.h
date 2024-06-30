@@ -22,7 +22,8 @@ namespace librealsense
         const uint16_t RS_D400_RECOVERY_PID = 0x0adb;
         const uint16_t RS_D400_USB2_RECOVERY_PID = 0x0adc;
         const uint16_t RS400_IMU_PID = 0x0af2; // IMU
-        const uint16_t RS420_PID = 0x0af6; // PWG
+        const uint16_t RS420_PID = 0x0af6;      // PWG
+        const uint16_t RS421_PID = 0x1155;     // D421
         const uint16_t RS420_MM_PID = 0x0afe; // PWGT
         const uint16_t RS410_MM_PID = 0x0aff; // ASRT
         const uint16_t RS400_MM_PID = 0x0b00; // PSR
@@ -49,6 +50,7 @@ namespace librealsense
             ds::RS_USB2_PID,
             ds::RS400_IMU_PID,
             ds::RS420_PID,
+            ds::RS421_PID,
             ds::RS420_MM_PID,
             ds::RS410_MM_PID,
             ds::RS400_MM_PID,
@@ -111,6 +113,7 @@ namespace librealsense
             { RS_D400_USB2_RECOVERY_PID, "Intel RealSense D4XX USB2 Recovery"},
             { RS400_IMU_PID,        "Intel RealSense IMU" },
             { RS420_PID,            "Intel RealSense D420"},
+            { RS421_PID,            "Intel RealSense D421"},
             { RS420_MM_PID,         "Intel RealSense D420 with Tracking Module"},
             { RS410_MM_PID,         "Intel RealSense D410 with Tracking Module"},
             { RS400_MM_PID,         "Intel RealSense D400 with Tracking Module"},
@@ -139,6 +142,7 @@ namespace librealsense
             {RS_D400_USB2_RECOVERY_PID, "5.8.15.0"},
             {RS400_IMU_PID, "5.8.15.0"},
             {RS420_PID, "5.8.15.0"},
+            {RS421_PID, "5.16.4.6"}, // TODO - D421, 5.16.4.6 is first dev FW with D421 PID. First formal FW will probably be 5.17.0
             {RS420_MM_PID, "5.8.15.0"},
             {RS410_MM_PID, "5.8.15.0"},
             {RS400_MM_PID, "5.8.15.0" },

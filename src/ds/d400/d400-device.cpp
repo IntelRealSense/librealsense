@@ -109,6 +109,10 @@ namespace librealsense
 
     void d400_device::enter_update_state() const
     {
+        if( _pid == ds::RS421_PID &&
+            !get_context()->get_settings().nested( "enable-d421-fw-update" ).default_value( false ) )
+            throw std::runtime_error( "D421 FW cannot be updated at this stage." );
+
         _ds_device_common->enter_update_state();
     }
 
