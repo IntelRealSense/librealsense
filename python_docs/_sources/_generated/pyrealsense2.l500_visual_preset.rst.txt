@@ -1,0 +1,38 @@
+pyrealsense2.l500_visual_preset
+===============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: l500_visual_preset
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~l500_visual_preset.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~l500_visual_preset.automatic
+      ~l500_visual_preset.custom
+      ~l500_visual_preset.default
+      ~l500_visual_preset.low_ambient_light
+      ~l500_visual_preset.max_range
+      ~l500_visual_preset.name
+      ~l500_visual_preset.no_ambient_light
+      ~l500_visual_preset.short_range
+      ~l500_visual_preset.value
+   
+   

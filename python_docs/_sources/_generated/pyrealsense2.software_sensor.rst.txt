@@ -1,0 +1,81 @@
+pyrealsense2.software_sensor
+============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: software_sensor
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~software_sensor.__init__
+      ~software_sensor.add_motion_stream
+      ~software_sensor.add_option
+      ~software_sensor.add_pose_stream
+      ~software_sensor.add_read_only_option
+      ~software_sensor.add_video_stream
+      ~software_sensor.as_color_sensor
+      ~software_sensor.as_debug_stream_sensor
+      ~software_sensor.as_depth_sensor
+      ~software_sensor.as_fisheye_sensor
+      ~software_sensor.as_max_usable_range_sensor
+      ~software_sensor.as_motion_sensor
+      ~software_sensor.as_pose_sensor
+      ~software_sensor.as_roi_sensor
+      ~software_sensor.as_wheel_odometer
+      ~software_sensor.close
+      ~software_sensor.from_frame
+      ~software_sensor.get_active_streams
+      ~software_sensor.get_info
+      ~software_sensor.get_option
+      ~software_sensor.get_option_description
+      ~software_sensor.get_option_range
+      ~software_sensor.get_option_value
+      ~software_sensor.get_option_value_description
+      ~software_sensor.get_recommended_filters
+      ~software_sensor.get_stream_profiles
+      ~software_sensor.get_supported_options
+      ~software_sensor.is_color_sensor
+      ~software_sensor.is_debug_stream_sensor
+      ~software_sensor.is_depth_sensor
+      ~software_sensor.is_fisheye_sensor
+      ~software_sensor.is_max_usable_range_sensor
+      ~software_sensor.is_motion_sensor
+      ~software_sensor.is_option_read_only
+      ~software_sensor.is_pose_sensor
+      ~software_sensor.is_roi_sensor
+      ~software_sensor.is_wheel_odometer
+      ~software_sensor.on_motion_frame
+      ~software_sensor.on_notification
+      ~software_sensor.on_options_changed
+      ~software_sensor.on_pose_frame
+      ~software_sensor.on_video_frame
+      ~software_sensor.open
+      ~software_sensor.set_metadata
+      ~software_sensor.set_notifications_callback
+      ~software_sensor.set_option
+      ~software_sensor.set_option_value
+      ~software_sensor.set_read_only_option
+      ~software_sensor.start
+      ~software_sensor.stop
+      ~software_sensor.supports
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~software_sensor.name
+      ~software_sensor.profiles
+   
+   

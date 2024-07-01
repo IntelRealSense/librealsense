@@ -1,0 +1,42 @@
+pyrealsense2.product_line
+=========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: product_line
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~product_line.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~product_line.D400
+      ~product_line.D500
+      ~product_line.DEPTH
+      ~product_line.L500
+      ~product_line.SR300
+      ~product_line.T200
+      ~product_line.TRACKING
+      ~product_line.any
+      ~product_line.any_intel
+      ~product_line.name
+      ~product_line.non_intel
+      ~product_line.sw_only
+      ~product_line.value
+   
+   

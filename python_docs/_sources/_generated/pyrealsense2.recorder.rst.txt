@@ -1,0 +1,62 @@
+pyrealsense2.recorder
+=====================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: recorder
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~recorder.__init__
+      ~recorder.as_auto_calibrated_device
+      ~recorder.as_calibration_change_device
+      ~recorder.as_debug_protocol
+      ~recorder.as_device_calibration
+      ~recorder.as_firmware_logger
+      ~recorder.as_playback
+      ~recorder.as_recorder
+      ~recorder.as_updatable
+      ~recorder.as_update_device
+      ~recorder.first_color_sensor
+      ~recorder.first_depth_sensor
+      ~recorder.first_fisheye_sensor
+      ~recorder.first_motion_sensor
+      ~recorder.first_pose_sensor
+      ~recorder.first_roi_sensor
+      ~recorder.get_info
+      ~recorder.hardware_reset
+      ~recorder.is_auto_calibrated_device
+      ~recorder.is_calibration_change_device
+      ~recorder.is_connected
+      ~recorder.is_debug_protocol
+      ~recorder.is_device_calibration
+      ~recorder.is_firmware_logger
+      ~recorder.is_metadata_enabled
+      ~recorder.is_playback
+      ~recorder.is_recorder
+      ~recorder.is_updatable
+      ~recorder.is_update_device
+      ~recorder.pause
+      ~recorder.query_sensors
+      ~recorder.resume
+      ~recorder.supports
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~recorder.sensors
+   
+   

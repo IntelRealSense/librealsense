@@ -1,0 +1,56 @@
+pyrealsense2.colorizer
+======================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: colorizer
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~colorizer.__init__
+      ~colorizer.as_decimation_filter
+      ~colorizer.as_disparity_transform
+      ~colorizer.as_hdr_merge
+      ~colorizer.as_hole_filling_filter
+      ~colorizer.as_sequence_id_filter
+      ~colorizer.as_spatial_filter
+      ~colorizer.as_temporal_filter
+      ~colorizer.as_threshold_filter
+      ~colorizer.colorize
+      ~colorizer.get_info
+      ~colorizer.get_option
+      ~colorizer.get_option_description
+      ~colorizer.get_option_range
+      ~colorizer.get_option_value
+      ~colorizer.get_option_value_description
+      ~colorizer.get_supported_options
+      ~colorizer.invoke
+      ~colorizer.is_decimation_filter
+      ~colorizer.is_disparity_transform
+      ~colorizer.is_hdr_merge
+      ~colorizer.is_hole_filling_filter
+      ~colorizer.is_option_read_only
+      ~colorizer.is_sequence_id_filter
+      ~colorizer.is_spatial_filter
+      ~colorizer.is_temporal_filter
+      ~colorizer.is_threshold_filter
+      ~colorizer.on_options_changed
+      ~colorizer.process
+      ~colorizer.set_option
+      ~colorizer.set_option_value
+      ~colorizer.start
+      ~colorizer.supports
+   
+   
+   
+   
+   
+   

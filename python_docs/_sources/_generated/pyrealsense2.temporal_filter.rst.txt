@@ -1,0 +1,55 @@
+pyrealsense2.temporal_filter
+============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: temporal_filter
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~temporal_filter.__init__
+      ~temporal_filter.as_decimation_filter
+      ~temporal_filter.as_disparity_transform
+      ~temporal_filter.as_hdr_merge
+      ~temporal_filter.as_hole_filling_filter
+      ~temporal_filter.as_sequence_id_filter
+      ~temporal_filter.as_spatial_filter
+      ~temporal_filter.as_temporal_filter
+      ~temporal_filter.as_threshold_filter
+      ~temporal_filter.get_info
+      ~temporal_filter.get_option
+      ~temporal_filter.get_option_description
+      ~temporal_filter.get_option_range
+      ~temporal_filter.get_option_value
+      ~temporal_filter.get_option_value_description
+      ~temporal_filter.get_supported_options
+      ~temporal_filter.invoke
+      ~temporal_filter.is_decimation_filter
+      ~temporal_filter.is_disparity_transform
+      ~temporal_filter.is_hdr_merge
+      ~temporal_filter.is_hole_filling_filter
+      ~temporal_filter.is_option_read_only
+      ~temporal_filter.is_sequence_id_filter
+      ~temporal_filter.is_spatial_filter
+      ~temporal_filter.is_temporal_filter
+      ~temporal_filter.is_threshold_filter
+      ~temporal_filter.on_options_changed
+      ~temporal_filter.process
+      ~temporal_filter.set_option
+      ~temporal_filter.set_option_value
+      ~temporal_filter.start
+      ~temporal_filter.supports
+   
+   
+   
+   
+   
+   

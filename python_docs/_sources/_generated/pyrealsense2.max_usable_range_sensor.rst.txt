@@ -1,0 +1,71 @@
+pyrealsense2.max_usable_range_sensor
+====================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: max_usable_range_sensor
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~max_usable_range_sensor.__init__
+      ~max_usable_range_sensor.as_color_sensor
+      ~max_usable_range_sensor.as_debug_stream_sensor
+      ~max_usable_range_sensor.as_depth_sensor
+      ~max_usable_range_sensor.as_fisheye_sensor
+      ~max_usable_range_sensor.as_max_usable_range_sensor
+      ~max_usable_range_sensor.as_motion_sensor
+      ~max_usable_range_sensor.as_pose_sensor
+      ~max_usable_range_sensor.as_roi_sensor
+      ~max_usable_range_sensor.as_wheel_odometer
+      ~max_usable_range_sensor.close
+      ~max_usable_range_sensor.from_frame
+      ~max_usable_range_sensor.get_active_streams
+      ~max_usable_range_sensor.get_info
+      ~max_usable_range_sensor.get_max_usable_depth_range
+      ~max_usable_range_sensor.get_option
+      ~max_usable_range_sensor.get_option_description
+      ~max_usable_range_sensor.get_option_range
+      ~max_usable_range_sensor.get_option_value
+      ~max_usable_range_sensor.get_option_value_description
+      ~max_usable_range_sensor.get_recommended_filters
+      ~max_usable_range_sensor.get_stream_profiles
+      ~max_usable_range_sensor.get_supported_options
+      ~max_usable_range_sensor.is_color_sensor
+      ~max_usable_range_sensor.is_debug_stream_sensor
+      ~max_usable_range_sensor.is_depth_sensor
+      ~max_usable_range_sensor.is_fisheye_sensor
+      ~max_usable_range_sensor.is_max_usable_range_sensor
+      ~max_usable_range_sensor.is_motion_sensor
+      ~max_usable_range_sensor.is_option_read_only
+      ~max_usable_range_sensor.is_pose_sensor
+      ~max_usable_range_sensor.is_roi_sensor
+      ~max_usable_range_sensor.is_wheel_odometer
+      ~max_usable_range_sensor.on_options_changed
+      ~max_usable_range_sensor.open
+      ~max_usable_range_sensor.set_notifications_callback
+      ~max_usable_range_sensor.set_option
+      ~max_usable_range_sensor.set_option_value
+      ~max_usable_range_sensor.start
+      ~max_usable_range_sensor.stop
+      ~max_usable_range_sensor.supports
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~max_usable_range_sensor.name
+      ~max_usable_range_sensor.profiles
+   
+   

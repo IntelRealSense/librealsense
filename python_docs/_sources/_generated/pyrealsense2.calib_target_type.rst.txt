@@ -1,0 +1,34 @@
+pyrealsense2.calib_target_type
+==============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: calib_target_type
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~calib_target_type.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~calib_target_type.name
+      ~calib_target_type.pos_gaussian_dot_vertices
+      ~calib_target_type.rect_gaussian_dot_vertices
+      ~calib_target_type.roi_rect_gaussian_dot_vertices
+      ~calib_target_type.value
+   
+   

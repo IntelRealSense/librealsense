@@ -1,0 +1,38 @@
+pyrealsense2.matchers
+=====================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: matchers
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~matchers.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~matchers.default
+      ~matchers.di
+      ~matchers.di_c
+      ~matchers.dic
+      ~matchers.dic_c
+      ~matchers.dlr
+      ~matchers.dlr_c
+      ~matchers.name
+      ~matchers.value
+   
+   

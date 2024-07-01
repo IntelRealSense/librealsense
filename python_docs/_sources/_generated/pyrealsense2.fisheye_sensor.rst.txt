@@ -1,0 +1,70 @@
+pyrealsense2.fisheye_sensor
+===========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: fisheye_sensor
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~fisheye_sensor.__init__
+      ~fisheye_sensor.as_color_sensor
+      ~fisheye_sensor.as_debug_stream_sensor
+      ~fisheye_sensor.as_depth_sensor
+      ~fisheye_sensor.as_fisheye_sensor
+      ~fisheye_sensor.as_max_usable_range_sensor
+      ~fisheye_sensor.as_motion_sensor
+      ~fisheye_sensor.as_pose_sensor
+      ~fisheye_sensor.as_roi_sensor
+      ~fisheye_sensor.as_wheel_odometer
+      ~fisheye_sensor.close
+      ~fisheye_sensor.from_frame
+      ~fisheye_sensor.get_active_streams
+      ~fisheye_sensor.get_info
+      ~fisheye_sensor.get_option
+      ~fisheye_sensor.get_option_description
+      ~fisheye_sensor.get_option_range
+      ~fisheye_sensor.get_option_value
+      ~fisheye_sensor.get_option_value_description
+      ~fisheye_sensor.get_recommended_filters
+      ~fisheye_sensor.get_stream_profiles
+      ~fisheye_sensor.get_supported_options
+      ~fisheye_sensor.is_color_sensor
+      ~fisheye_sensor.is_debug_stream_sensor
+      ~fisheye_sensor.is_depth_sensor
+      ~fisheye_sensor.is_fisheye_sensor
+      ~fisheye_sensor.is_max_usable_range_sensor
+      ~fisheye_sensor.is_motion_sensor
+      ~fisheye_sensor.is_option_read_only
+      ~fisheye_sensor.is_pose_sensor
+      ~fisheye_sensor.is_roi_sensor
+      ~fisheye_sensor.is_wheel_odometer
+      ~fisheye_sensor.on_options_changed
+      ~fisheye_sensor.open
+      ~fisheye_sensor.set_notifications_callback
+      ~fisheye_sensor.set_option
+      ~fisheye_sensor.set_option_value
+      ~fisheye_sensor.start
+      ~fisheye_sensor.stop
+      ~fisheye_sensor.supports
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~fisheye_sensor.name
+      ~fisheye_sensor.profiles
+   
+   

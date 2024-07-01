@@ -1,0 +1,55 @@
+pyrealsense2.save_single_frameset
+=================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: save_single_frameset
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~save_single_frameset.__init__
+      ~save_single_frameset.as_decimation_filter
+      ~save_single_frameset.as_disparity_transform
+      ~save_single_frameset.as_hdr_merge
+      ~save_single_frameset.as_hole_filling_filter
+      ~save_single_frameset.as_sequence_id_filter
+      ~save_single_frameset.as_spatial_filter
+      ~save_single_frameset.as_temporal_filter
+      ~save_single_frameset.as_threshold_filter
+      ~save_single_frameset.get_info
+      ~save_single_frameset.get_option
+      ~save_single_frameset.get_option_description
+      ~save_single_frameset.get_option_range
+      ~save_single_frameset.get_option_value
+      ~save_single_frameset.get_option_value_description
+      ~save_single_frameset.get_supported_options
+      ~save_single_frameset.invoke
+      ~save_single_frameset.is_decimation_filter
+      ~save_single_frameset.is_disparity_transform
+      ~save_single_frameset.is_hdr_merge
+      ~save_single_frameset.is_hole_filling_filter
+      ~save_single_frameset.is_option_read_only
+      ~save_single_frameset.is_sequence_id_filter
+      ~save_single_frameset.is_spatial_filter
+      ~save_single_frameset.is_temporal_filter
+      ~save_single_frameset.is_threshold_filter
+      ~save_single_frameset.on_options_changed
+      ~save_single_frameset.process
+      ~save_single_frameset.set_option
+      ~save_single_frameset.set_option_value
+      ~save_single_frameset.start
+      ~save_single_frameset.supports
+   
+   
+   
+   
+   
+   

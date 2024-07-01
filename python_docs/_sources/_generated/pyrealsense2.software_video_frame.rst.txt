@@ -1,0 +1,37 @@
+pyrealsense2.software_video_frame
+=================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: software_video_frame
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~software_video_frame.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~software_video_frame.bpp
+      ~software_video_frame.depth_units
+      ~software_video_frame.domain
+      ~software_video_frame.frame_number
+      ~software_video_frame.pixels
+      ~software_video_frame.profile
+      ~software_video_frame.stride
+      ~software_video_frame.timestamp
+   
+   

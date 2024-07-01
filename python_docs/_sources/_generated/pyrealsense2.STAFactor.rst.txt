@@ -1,0 +1,30 @@
+pyrealsense2.STAFactor
+======================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: STAFactor
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~STAFactor.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~STAFactor.a_factor
+   
+   

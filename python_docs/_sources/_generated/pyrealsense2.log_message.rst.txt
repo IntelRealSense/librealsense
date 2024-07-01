@@ -1,0 +1,28 @@
+pyrealsense2.log_message
+========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: log_message
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~log_message.__init__
+      ~log_message.filename
+      ~log_message.full
+      ~log_message.line_number
+      ~log_message.raw
+   
+   
+   
+   
+   
+   

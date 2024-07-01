@@ -1,0 +1,55 @@
+pyrealsense2.filter
+===================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: filter
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~filter.__init__
+      ~filter.as_decimation_filter
+      ~filter.as_disparity_transform
+      ~filter.as_hdr_merge
+      ~filter.as_hole_filling_filter
+      ~filter.as_sequence_id_filter
+      ~filter.as_spatial_filter
+      ~filter.as_temporal_filter
+      ~filter.as_threshold_filter
+      ~filter.get_info
+      ~filter.get_option
+      ~filter.get_option_description
+      ~filter.get_option_range
+      ~filter.get_option_value
+      ~filter.get_option_value_description
+      ~filter.get_supported_options
+      ~filter.invoke
+      ~filter.is_decimation_filter
+      ~filter.is_disparity_transform
+      ~filter.is_hdr_merge
+      ~filter.is_hole_filling_filter
+      ~filter.is_option_read_only
+      ~filter.is_sequence_id_filter
+      ~filter.is_spatial_filter
+      ~filter.is_temporal_filter
+      ~filter.is_threshold_filter
+      ~filter.on_options_changed
+      ~filter.process
+      ~filter.set_option
+      ~filter.set_option_value
+      ~filter.start
+      ~filter.supports
+   
+   
+   
+   
+   
+   

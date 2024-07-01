@@ -1,0 +1,66 @@
+pyrealsense2.software_device
+============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: software_device
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~software_device.__init__
+      ~software_device.add_sensor
+      ~software_device.add_to
+      ~software_device.as_auto_calibrated_device
+      ~software_device.as_calibration_change_device
+      ~software_device.as_debug_protocol
+      ~software_device.as_device_calibration
+      ~software_device.as_firmware_logger
+      ~software_device.as_playback
+      ~software_device.as_recorder
+      ~software_device.as_updatable
+      ~software_device.as_update_device
+      ~software_device.create_matcher
+      ~software_device.first_color_sensor
+      ~software_device.first_depth_sensor
+      ~software_device.first_fisheye_sensor
+      ~software_device.first_motion_sensor
+      ~software_device.first_pose_sensor
+      ~software_device.first_roi_sensor
+      ~software_device.get_info
+      ~software_device.hardware_reset
+      ~software_device.is_auto_calibrated_device
+      ~software_device.is_calibration_change_device
+      ~software_device.is_connected
+      ~software_device.is_debug_protocol
+      ~software_device.is_device_calibration
+      ~software_device.is_firmware_logger
+      ~software_device.is_metadata_enabled
+      ~software_device.is_playback
+      ~software_device.is_recorder
+      ~software_device.is_updatable
+      ~software_device.is_update_device
+      ~software_device.query_sensors
+      ~software_device.register_info
+      ~software_device.set_destruction_callback
+      ~software_device.supports
+      ~software_device.update_info
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~software_device.sensors
+   
+   

@@ -1,0 +1,55 @@
+pyrealsense2.align
+==================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: align
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~align.__init__
+      ~align.as_decimation_filter
+      ~align.as_disparity_transform
+      ~align.as_hdr_merge
+      ~align.as_hole_filling_filter
+      ~align.as_sequence_id_filter
+      ~align.as_spatial_filter
+      ~align.as_temporal_filter
+      ~align.as_threshold_filter
+      ~align.get_info
+      ~align.get_option
+      ~align.get_option_description
+      ~align.get_option_range
+      ~align.get_option_value
+      ~align.get_option_value_description
+      ~align.get_supported_options
+      ~align.invoke
+      ~align.is_decimation_filter
+      ~align.is_disparity_transform
+      ~align.is_hdr_merge
+      ~align.is_hole_filling_filter
+      ~align.is_option_read_only
+      ~align.is_sequence_id_filter
+      ~align.is_spatial_filter
+      ~align.is_temporal_filter
+      ~align.is_threshold_filter
+      ~align.on_options_changed
+      ~align.process
+      ~align.set_option
+      ~align.set_option_value
+      ~align.start
+      ~align.supports
+   
+   
+   
+   
+   
+   

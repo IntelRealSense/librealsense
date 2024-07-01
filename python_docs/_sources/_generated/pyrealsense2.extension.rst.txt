@@ -1,0 +1,87 @@
+pyrealsense2.extension
+======================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: extension
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~extension.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~extension.advanced_mode
+      ~extension.auto_calibrated_device
+      ~extension.auto_calibration_filter
+      ~extension.calibrated_sensor
+      ~extension.calibration_change_device
+      ~extension.color_sensor
+      ~extension.composite_frame
+      ~extension.debug
+      ~extension.debug_stream_sensor
+      ~extension.decimation_filter
+      ~extension.depth_frame
+      ~extension.depth_huffman_decoder
+      ~extension.depth_sensor
+      ~extension.depth_stereo_sensor
+      ~extension.device_calibration
+      ~extension.disparity_filter
+      ~extension.disparity_frame
+      ~extension.fisheye_sensor
+      ~extension.fw_logger
+      ~extension.global_timer
+      ~extension.hdr_merge
+      ~extension.hole_filling_filter
+      ~extension.info
+      ~extension.l500_depth_sensor
+      ~extension.max_usable_range_sensor
+      ~extension.motion
+      ~extension.motion_frame
+      ~extension.motion_profile
+      ~extension.motion_sensor
+      ~extension.name
+      ~extension.options
+      ~extension.playback
+      ~extension.points
+      ~extension.pose
+      ~extension.pose_frame
+      ~extension.pose_profile
+      ~extension.pose_sensor
+      ~extension.recommended_filters
+      ~extension.record
+      ~extension.roi
+      ~extension.sequence_id_filter
+      ~extension.serializable
+      ~extension.software_device
+      ~extension.software_sensor
+      ~extension.spatial_filter
+      ~extension.temporal_filter
+      ~extension.threshold_filter
+      ~extension.tm2
+      ~extension.tm2_sensor
+      ~extension.unknown
+      ~extension.updatable
+      ~extension.update_device
+      ~extension.value
+      ~extension.video
+      ~extension.video_frame
+      ~extension.video_profile
+      ~extension.wheel_odometer
+      ~extension.zero_order_filter
+   
+   

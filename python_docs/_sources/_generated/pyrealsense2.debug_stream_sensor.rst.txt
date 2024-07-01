@@ -1,0 +1,71 @@
+pyrealsense2.debug_stream_sensor
+================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: debug_stream_sensor
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~debug_stream_sensor.__init__
+      ~debug_stream_sensor.as_color_sensor
+      ~debug_stream_sensor.as_debug_stream_sensor
+      ~debug_stream_sensor.as_depth_sensor
+      ~debug_stream_sensor.as_fisheye_sensor
+      ~debug_stream_sensor.as_max_usable_range_sensor
+      ~debug_stream_sensor.as_motion_sensor
+      ~debug_stream_sensor.as_pose_sensor
+      ~debug_stream_sensor.as_roi_sensor
+      ~debug_stream_sensor.as_wheel_odometer
+      ~debug_stream_sensor.close
+      ~debug_stream_sensor.from_frame
+      ~debug_stream_sensor.get_active_streams
+      ~debug_stream_sensor.get_debug_stream_profiles
+      ~debug_stream_sensor.get_info
+      ~debug_stream_sensor.get_option
+      ~debug_stream_sensor.get_option_description
+      ~debug_stream_sensor.get_option_range
+      ~debug_stream_sensor.get_option_value
+      ~debug_stream_sensor.get_option_value_description
+      ~debug_stream_sensor.get_recommended_filters
+      ~debug_stream_sensor.get_stream_profiles
+      ~debug_stream_sensor.get_supported_options
+      ~debug_stream_sensor.is_color_sensor
+      ~debug_stream_sensor.is_debug_stream_sensor
+      ~debug_stream_sensor.is_depth_sensor
+      ~debug_stream_sensor.is_fisheye_sensor
+      ~debug_stream_sensor.is_max_usable_range_sensor
+      ~debug_stream_sensor.is_motion_sensor
+      ~debug_stream_sensor.is_option_read_only
+      ~debug_stream_sensor.is_pose_sensor
+      ~debug_stream_sensor.is_roi_sensor
+      ~debug_stream_sensor.is_wheel_odometer
+      ~debug_stream_sensor.on_options_changed
+      ~debug_stream_sensor.open
+      ~debug_stream_sensor.set_notifications_callback
+      ~debug_stream_sensor.set_option
+      ~debug_stream_sensor.set_option_value
+      ~debug_stream_sensor.start
+      ~debug_stream_sensor.stop
+      ~debug_stream_sensor.supports
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~debug_stream_sensor.name
+      ~debug_stream_sensor.profiles
+   
+   

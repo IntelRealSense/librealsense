@@ -1,0 +1,64 @@
+pyrealsense2.updatable
+======================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: updatable
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~updatable.__init__
+      ~updatable.as_auto_calibrated_device
+      ~updatable.as_calibration_change_device
+      ~updatable.as_debug_protocol
+      ~updatable.as_device_calibration
+      ~updatable.as_firmware_logger
+      ~updatable.as_playback
+      ~updatable.as_recorder
+      ~updatable.as_updatable
+      ~updatable.as_update_device
+      ~updatable.check_firmware_compatibility
+      ~updatable.create_flash_backup
+      ~updatable.enter_update_state
+      ~updatable.first_color_sensor
+      ~updatable.first_depth_sensor
+      ~updatable.first_fisheye_sensor
+      ~updatable.first_motion_sensor
+      ~updatable.first_pose_sensor
+      ~updatable.first_roi_sensor
+      ~updatable.get_info
+      ~updatable.hardware_reset
+      ~updatable.is_auto_calibrated_device
+      ~updatable.is_calibration_change_device
+      ~updatable.is_connected
+      ~updatable.is_debug_protocol
+      ~updatable.is_device_calibration
+      ~updatable.is_firmware_logger
+      ~updatable.is_metadata_enabled
+      ~updatable.is_playback
+      ~updatable.is_recorder
+      ~updatable.is_updatable
+      ~updatable.is_update_device
+      ~updatable.query_sensors
+      ~updatable.supports
+      ~updatable.update_unsigned
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~updatable.sensors
+   
+   

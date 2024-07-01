@@ -1,0 +1,32 @@
+pyrealsense2.firmware_log_parsed_message
+========================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: firmware_log_parsed_message
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~firmware_log_parsed_message.__init__
+      ~firmware_log_parsed_message.get_file_name
+      ~firmware_log_parsed_message.get_line
+      ~firmware_log_parsed_message.get_message
+      ~firmware_log_parsed_message.get_module_name
+      ~firmware_log_parsed_message.get_sequence_id
+      ~firmware_log_parsed_message.get_severity
+      ~firmware_log_parsed_message.get_thread_name
+      ~firmware_log_parsed_message.get_timestamp
+   
+   
+   
+   
+   
+   

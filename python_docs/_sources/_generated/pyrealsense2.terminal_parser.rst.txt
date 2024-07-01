@@ -1,0 +1,26 @@
+pyrealsense2.terminal_parser
+============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: terminal_parser
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~terminal_parser.__init__
+      ~terminal_parser.parse_command
+      ~terminal_parser.parse_response
+   
+   
+   
+   
+   
+   

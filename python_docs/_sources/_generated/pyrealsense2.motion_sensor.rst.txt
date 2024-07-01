@@ -1,0 +1,70 @@
+pyrealsense2.motion_sensor
+==========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: motion_sensor
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~motion_sensor.__init__
+      ~motion_sensor.as_color_sensor
+      ~motion_sensor.as_debug_stream_sensor
+      ~motion_sensor.as_depth_sensor
+      ~motion_sensor.as_fisheye_sensor
+      ~motion_sensor.as_max_usable_range_sensor
+      ~motion_sensor.as_motion_sensor
+      ~motion_sensor.as_pose_sensor
+      ~motion_sensor.as_roi_sensor
+      ~motion_sensor.as_wheel_odometer
+      ~motion_sensor.close
+      ~motion_sensor.from_frame
+      ~motion_sensor.get_active_streams
+      ~motion_sensor.get_info
+      ~motion_sensor.get_option
+      ~motion_sensor.get_option_description
+      ~motion_sensor.get_option_range
+      ~motion_sensor.get_option_value
+      ~motion_sensor.get_option_value_description
+      ~motion_sensor.get_recommended_filters
+      ~motion_sensor.get_stream_profiles
+      ~motion_sensor.get_supported_options
+      ~motion_sensor.is_color_sensor
+      ~motion_sensor.is_debug_stream_sensor
+      ~motion_sensor.is_depth_sensor
+      ~motion_sensor.is_fisheye_sensor
+      ~motion_sensor.is_max_usable_range_sensor
+      ~motion_sensor.is_motion_sensor
+      ~motion_sensor.is_option_read_only
+      ~motion_sensor.is_pose_sensor
+      ~motion_sensor.is_roi_sensor
+      ~motion_sensor.is_wheel_odometer
+      ~motion_sensor.on_options_changed
+      ~motion_sensor.open
+      ~motion_sensor.set_notifications_callback
+      ~motion_sensor.set_option
+      ~motion_sensor.set_option_value
+      ~motion_sensor.start
+      ~motion_sensor.stop
+      ~motion_sensor.supports
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~motion_sensor.name
+      ~motion_sensor.profiles
+   
+   

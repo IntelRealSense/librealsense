@@ -1,0 +1,33 @@
+pyrealsense2.STRsm
+==================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: STRsm
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~STRsm.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~STRsm.diffThresh
+      ~STRsm.removeThresh
+      ~STRsm.rsmBypass
+      ~STRsm.sloRauDiffThresh
+   
+   

@@ -1,0 +1,31 @@
+pyrealsense2.combined_motion
+============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: combined_motion
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~combined_motion.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~combined_motion.angular_velocity
+      ~combined_motion.linear_acceleration
+   
+   

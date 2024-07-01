@@ -1,0 +1,35 @@
+pyrealsense2.motion_stream
+==========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: motion_stream
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~motion_stream.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~motion_stream.fmt
+      ~motion_stream.fps
+      ~motion_stream.index
+      ~motion_stream.intrinsics
+      ~motion_stream.type
+      ~motion_stream.uid
+   
+   

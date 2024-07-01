@@ -1,0 +1,55 @@
+pyrealsense2.sequence_id_filter
+===============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: sequence_id_filter
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~sequence_id_filter.__init__
+      ~sequence_id_filter.as_decimation_filter
+      ~sequence_id_filter.as_disparity_transform
+      ~sequence_id_filter.as_hdr_merge
+      ~sequence_id_filter.as_hole_filling_filter
+      ~sequence_id_filter.as_sequence_id_filter
+      ~sequence_id_filter.as_spatial_filter
+      ~sequence_id_filter.as_temporal_filter
+      ~sequence_id_filter.as_threshold_filter
+      ~sequence_id_filter.get_info
+      ~sequence_id_filter.get_option
+      ~sequence_id_filter.get_option_description
+      ~sequence_id_filter.get_option_range
+      ~sequence_id_filter.get_option_value
+      ~sequence_id_filter.get_option_value_description
+      ~sequence_id_filter.get_supported_options
+      ~sequence_id_filter.invoke
+      ~sequence_id_filter.is_decimation_filter
+      ~sequence_id_filter.is_disparity_transform
+      ~sequence_id_filter.is_hdr_merge
+      ~sequence_id_filter.is_hole_filling_filter
+      ~sequence_id_filter.is_option_read_only
+      ~sequence_id_filter.is_sequence_id_filter
+      ~sequence_id_filter.is_spatial_filter
+      ~sequence_id_filter.is_temporal_filter
+      ~sequence_id_filter.is_threshold_filter
+      ~sequence_id_filter.on_options_changed
+      ~sequence_id_filter.process
+      ~sequence_id_filter.set_option
+      ~sequence_id_filter.set_option_value
+      ~sequence_id_filter.start
+      ~sequence_id_filter.supports
+   
+   
+   
+   
+   
+   

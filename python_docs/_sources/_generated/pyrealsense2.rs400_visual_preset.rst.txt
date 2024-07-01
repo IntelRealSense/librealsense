@@ -1,0 +1,38 @@
+pyrealsense2.rs400_visual_preset
+================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: rs400_visual_preset
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~rs400_visual_preset.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~rs400_visual_preset.custom
+      ~rs400_visual_preset.default
+      ~rs400_visual_preset.hand
+      ~rs400_visual_preset.high_accuracy
+      ~rs400_visual_preset.high_density
+      ~rs400_visual_preset.medium_density
+      ~rs400_visual_preset.name
+      ~rs400_visual_preset.remove_ir_pattern
+      ~rs400_visual_preset.value
+   
+   

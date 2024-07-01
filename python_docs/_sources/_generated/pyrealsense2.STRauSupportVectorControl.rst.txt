@@ -1,0 +1,37 @@
+pyrealsense2.STRauSupportVectorControl
+======================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: STRauSupportVectorControl
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~STRauSupportVectorControl.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~STRauSupportVectorControl.minEast
+      ~STRauSupportVectorControl.minNSsum
+      ~STRauSupportVectorControl.minNorth
+      ~STRauSupportVectorControl.minSouth
+      ~STRauSupportVectorControl.minWEsum
+      ~STRauSupportVectorControl.minWest
+      ~STRauSupportVectorControl.uShrink
+      ~STRauSupportVectorControl.vShrink
+   
+   

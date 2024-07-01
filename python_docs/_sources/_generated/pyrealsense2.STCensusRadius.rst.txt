@@ -1,0 +1,31 @@
+pyrealsense2.STCensusRadius
+===========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: STCensusRadius
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~STCensusRadius.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~STCensusRadius.uDiameter
+      ~STCensusRadius.vDiameter
+   
+   

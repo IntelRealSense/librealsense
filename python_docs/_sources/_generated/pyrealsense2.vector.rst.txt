@@ -1,0 +1,32 @@
+pyrealsense2.vector
+===================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: vector
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~vector.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~vector.x
+      ~vector.y
+      ~vector.z
+   
+   

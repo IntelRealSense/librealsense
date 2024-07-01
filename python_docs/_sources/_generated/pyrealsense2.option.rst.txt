@@ -1,0 +1,133 @@
+pyrealsense2.option
+===================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: option
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~option.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~option.accuracy
+      ~option.alternate_ir
+      ~option.ambient_light
+      ~option.apd_temperature
+      ~option.asic_temperature
+      ~option.auto_exposure_converge_step
+      ~option.auto_exposure_limit
+      ~option.auto_exposure_limit_toggle
+      ~option.auto_exposure_mode
+      ~option.auto_exposure_priority
+      ~option.auto_gain_limit
+      ~option.auto_gain_limit_toggle
+      ~option.auto_rx_sensitivity
+      ~option.backlight_compensation
+      ~option.brightness
+      ~option.color_scheme
+      ~option.confidence_threshold
+      ~option.contrast
+      ~option.depth_offset
+      ~option.depth_units
+      ~option.digital_gain
+      ~option.emitter_always_on
+      ~option.emitter_enabled
+      ~option.emitter_frequency
+      ~option.emitter_on_off
+      ~option.enable_auto_exposure
+      ~option.enable_auto_white_balance
+      ~option.enable_dynamic_calibration
+      ~option.enable_ir_reflectivity
+      ~option.enable_map_preservation
+      ~option.enable_mapping
+      ~option.enable_max_usable_range
+      ~option.enable_motion_correction
+      ~option.enable_pose_jumping
+      ~option.enable_relocalization
+      ~option.error_polling_enabled
+      ~option.exposure
+      ~option.filter_magnitude
+      ~option.filter_option
+      ~option.filter_smooth_alpha
+      ~option.filter_smooth_delta
+      ~option.fisheye_auto_exposure_mode
+      ~option.frames_queue_size
+      ~option.freefall_detection_enabled
+      ~option.gain
+      ~option.gamma
+      ~option.global_time_enabled
+      ~option.gyro_sensitivity
+      ~option.hardware_preset
+      ~option.hdr_enabled
+      ~option.histogram_equalization_enabled
+      ~option.holes_fill
+      ~option.host_performance
+      ~option.hue
+      ~option.humidity_temperature
+      ~option.inter_cam_sync_mode
+      ~option.invalidation_bypass
+      ~option.laser_power
+      ~option.ldd_temperature
+      ~option.led_power
+      ~option.lld_temperature
+      ~option.ma_temperature
+      ~option.max_distance
+      ~option.mc_temperature
+      ~option.min_distance
+      ~option.motion_module_temperature
+      ~option.motion_range
+      ~option.name
+      ~option.noise_estimation
+      ~option.noise_filtering
+      ~option.ohm_temperature
+      ~option.output_trigger_enabled
+      ~option.post_processing_sharpening
+      ~option.power_line_frequency
+      ~option.pre_processing_sharpening
+      ~option.projector_temperature
+      ~option.receiver_gain
+      ~option.receiver_sensitivity
+      ~option.region_of_interest
+      ~option.reset_camera_accuracy_health
+      ~option.saturation
+      ~option.sensor_mode
+      ~option.sequence_id
+      ~option.sequence_name
+      ~option.sequence_size
+      ~option.sharpness
+      ~option.soc_pvt_temperature
+      ~option.stereo_baseline
+      ~option.stream_filter
+      ~option.stream_format_filter
+      ~option.stream_index_filter
+      ~option.texture_source
+      ~option.thermal_compensation
+      ~option.total_frame_drops
+      ~option.transmitter_frequency
+      ~option.trigger_camera_accuracy_health
+      ~option.unknown
+      ~option.value
+      ~option.vertical_binning
+      ~option.visual_preset
+      ~option.white_balance
+      ~option.zero_order_enabled
+      ~option.zero_order_point_x
+      ~option.zero_order_point_y
+   
+   

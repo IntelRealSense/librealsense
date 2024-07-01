@@ -1,0 +1,29 @@
+pyrealsense2.firmware_log_message
+=================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: firmware_log_message
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~firmware_log_message.__init__
+      ~firmware_log_message.get_data
+      ~firmware_log_message.get_severity
+      ~firmware_log_message.get_severity_str
+      ~firmware_log_message.get_size
+      ~firmware_log_message.get_timestamp
+   
+   
+   
+   
+   
+   

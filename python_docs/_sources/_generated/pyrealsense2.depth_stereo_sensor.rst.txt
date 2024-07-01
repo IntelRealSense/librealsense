@@ -1,0 +1,72 @@
+pyrealsense2.depth_stereo_sensor
+================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: depth_stereo_sensor
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~depth_stereo_sensor.__init__
+      ~depth_stereo_sensor.as_color_sensor
+      ~depth_stereo_sensor.as_debug_stream_sensor
+      ~depth_stereo_sensor.as_depth_sensor
+      ~depth_stereo_sensor.as_fisheye_sensor
+      ~depth_stereo_sensor.as_max_usable_range_sensor
+      ~depth_stereo_sensor.as_motion_sensor
+      ~depth_stereo_sensor.as_pose_sensor
+      ~depth_stereo_sensor.as_roi_sensor
+      ~depth_stereo_sensor.as_wheel_odometer
+      ~depth_stereo_sensor.close
+      ~depth_stereo_sensor.from_frame
+      ~depth_stereo_sensor.get_active_streams
+      ~depth_stereo_sensor.get_depth_scale
+      ~depth_stereo_sensor.get_info
+      ~depth_stereo_sensor.get_option
+      ~depth_stereo_sensor.get_option_description
+      ~depth_stereo_sensor.get_option_range
+      ~depth_stereo_sensor.get_option_value
+      ~depth_stereo_sensor.get_option_value_description
+      ~depth_stereo_sensor.get_recommended_filters
+      ~depth_stereo_sensor.get_stereo_baseline
+      ~depth_stereo_sensor.get_stream_profiles
+      ~depth_stereo_sensor.get_supported_options
+      ~depth_stereo_sensor.is_color_sensor
+      ~depth_stereo_sensor.is_debug_stream_sensor
+      ~depth_stereo_sensor.is_depth_sensor
+      ~depth_stereo_sensor.is_fisheye_sensor
+      ~depth_stereo_sensor.is_max_usable_range_sensor
+      ~depth_stereo_sensor.is_motion_sensor
+      ~depth_stereo_sensor.is_option_read_only
+      ~depth_stereo_sensor.is_pose_sensor
+      ~depth_stereo_sensor.is_roi_sensor
+      ~depth_stereo_sensor.is_wheel_odometer
+      ~depth_stereo_sensor.on_options_changed
+      ~depth_stereo_sensor.open
+      ~depth_stereo_sensor.set_notifications_callback
+      ~depth_stereo_sensor.set_option
+      ~depth_stereo_sensor.set_option_value
+      ~depth_stereo_sensor.start
+      ~depth_stereo_sensor.stop
+      ~depth_stereo_sensor.supports
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~depth_stereo_sensor.name
+      ~depth_stereo_sensor.profiles
+   
+   

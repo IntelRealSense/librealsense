@@ -1,0 +1,65 @@
+pyrealsense2.save_to_ply
+========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: save_to_ply
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~save_to_ply.__init__
+      ~save_to_ply.as_decimation_filter
+      ~save_to_ply.as_disparity_transform
+      ~save_to_ply.as_hdr_merge
+      ~save_to_ply.as_hole_filling_filter
+      ~save_to_ply.as_sequence_id_filter
+      ~save_to_ply.as_spatial_filter
+      ~save_to_ply.as_temporal_filter
+      ~save_to_ply.as_threshold_filter
+      ~save_to_ply.get_info
+      ~save_to_ply.get_option
+      ~save_to_ply.get_option_description
+      ~save_to_ply.get_option_range
+      ~save_to_ply.get_option_value
+      ~save_to_ply.get_option_value_description
+      ~save_to_ply.get_supported_options
+      ~save_to_ply.invoke
+      ~save_to_ply.is_decimation_filter
+      ~save_to_ply.is_disparity_transform
+      ~save_to_ply.is_hdr_merge
+      ~save_to_ply.is_hole_filling_filter
+      ~save_to_ply.is_option_read_only
+      ~save_to_ply.is_sequence_id_filter
+      ~save_to_ply.is_spatial_filter
+      ~save_to_ply.is_temporal_filter
+      ~save_to_ply.is_threshold_filter
+      ~save_to_ply.on_options_changed
+      ~save_to_ply.process
+      ~save_to_ply.set_option
+      ~save_to_ply.set_option_value
+      ~save_to_ply.start
+      ~save_to_ply.supports
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~save_to_ply.option_ignore_color
+      ~save_to_ply.option_ply_binary
+      ~save_to_ply.option_ply_mesh
+      ~save_to_ply.option_ply_normals
+      ~save_to_ply.option_ply_threshold
+   
+   

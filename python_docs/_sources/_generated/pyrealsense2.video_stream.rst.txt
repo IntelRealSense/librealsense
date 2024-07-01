@@ -1,0 +1,38 @@
+pyrealsense2.video_stream
+=========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: video_stream
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~video_stream.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~video_stream.bpp
+      ~video_stream.fmt
+      ~video_stream.fps
+      ~video_stream.height
+      ~video_stream.index
+      ~video_stream.intrinsics
+      ~video_stream.type
+      ~video_stream.uid
+      ~video_stream.width
+   
+   

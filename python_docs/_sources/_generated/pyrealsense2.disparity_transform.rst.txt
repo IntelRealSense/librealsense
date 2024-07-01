@@ -1,0 +1,55 @@
+pyrealsense2.disparity_transform
+================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: disparity_transform
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~disparity_transform.__init__
+      ~disparity_transform.as_decimation_filter
+      ~disparity_transform.as_disparity_transform
+      ~disparity_transform.as_hdr_merge
+      ~disparity_transform.as_hole_filling_filter
+      ~disparity_transform.as_sequence_id_filter
+      ~disparity_transform.as_spatial_filter
+      ~disparity_transform.as_temporal_filter
+      ~disparity_transform.as_threshold_filter
+      ~disparity_transform.get_info
+      ~disparity_transform.get_option
+      ~disparity_transform.get_option_description
+      ~disparity_transform.get_option_range
+      ~disparity_transform.get_option_value
+      ~disparity_transform.get_option_value_description
+      ~disparity_transform.get_supported_options
+      ~disparity_transform.invoke
+      ~disparity_transform.is_decimation_filter
+      ~disparity_transform.is_disparity_transform
+      ~disparity_transform.is_hdr_merge
+      ~disparity_transform.is_hole_filling_filter
+      ~disparity_transform.is_option_read_only
+      ~disparity_transform.is_sequence_id_filter
+      ~disparity_transform.is_spatial_filter
+      ~disparity_transform.is_temporal_filter
+      ~disparity_transform.is_threshold_filter
+      ~disparity_transform.on_options_changed
+      ~disparity_transform.process
+      ~disparity_transform.set_option
+      ~disparity_transform.set_option_value
+      ~disparity_transform.start
+      ~disparity_transform.supports
+   
+   
+   
+   
+   
+   

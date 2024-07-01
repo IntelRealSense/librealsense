@@ -1,0 +1,31 @@
+pyrealsense2.texture_coordinate
+===============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: texture_coordinate
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~texture_coordinate.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~texture_coordinate.u
+      ~texture_coordinate.v
+   
+   

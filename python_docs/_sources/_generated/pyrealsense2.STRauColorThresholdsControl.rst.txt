@@ -1,0 +1,32 @@
+pyrealsense2.STRauColorThresholdsControl
+========================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: STRauColorThresholdsControl
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~STRauColorThresholdsControl.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~STRauColorThresholdsControl.rauDiffThresholdBlue
+      ~STRauColorThresholdsControl.rauDiffThresholdGreen
+      ~STRauColorThresholdsControl.rauDiffThresholdRed
+   
+   

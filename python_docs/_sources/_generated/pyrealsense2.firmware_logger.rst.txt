@@ -1,0 +1,69 @@
+pyrealsense2.firmware_logger
+============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: firmware_logger
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~firmware_logger.__init__
+      ~firmware_logger.as_auto_calibrated_device
+      ~firmware_logger.as_calibration_change_device
+      ~firmware_logger.as_debug_protocol
+      ~firmware_logger.as_device_calibration
+      ~firmware_logger.as_firmware_logger
+      ~firmware_logger.as_playback
+      ~firmware_logger.as_recorder
+      ~firmware_logger.as_updatable
+      ~firmware_logger.as_update_device
+      ~firmware_logger.create_message
+      ~firmware_logger.create_parsed_message
+      ~firmware_logger.first_color_sensor
+      ~firmware_logger.first_depth_sensor
+      ~firmware_logger.first_fisheye_sensor
+      ~firmware_logger.first_motion_sensor
+      ~firmware_logger.first_pose_sensor
+      ~firmware_logger.first_roi_sensor
+      ~firmware_logger.get_firmware_log
+      ~firmware_logger.get_flash_log
+      ~firmware_logger.get_info
+      ~firmware_logger.get_number_of_fw_logs
+      ~firmware_logger.hardware_reset
+      ~firmware_logger.init_parser
+      ~firmware_logger.is_auto_calibrated_device
+      ~firmware_logger.is_calibration_change_device
+      ~firmware_logger.is_connected
+      ~firmware_logger.is_debug_protocol
+      ~firmware_logger.is_device_calibration
+      ~firmware_logger.is_firmware_logger
+      ~firmware_logger.is_metadata_enabled
+      ~firmware_logger.is_playback
+      ~firmware_logger.is_recorder
+      ~firmware_logger.is_updatable
+      ~firmware_logger.is_update_device
+      ~firmware_logger.parse_log
+      ~firmware_logger.query_sensors
+      ~firmware_logger.start_collecting
+      ~firmware_logger.stop_collecting
+      ~firmware_logger.supports
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~firmware_logger.sensors
+   
+   

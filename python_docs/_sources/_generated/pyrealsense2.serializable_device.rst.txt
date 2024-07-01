@@ -1,0 +1,26 @@
+pyrealsense2.serializable_device
+================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: serializable_device
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~serializable_device.__init__
+      ~serializable_device.load_json
+      ~serializable_device.serialize_json
+   
+   
+   
+   
+   
+   

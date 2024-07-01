@@ -1,0 +1,33 @@
+pyrealsense2.quaternion
+=======================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: quaternion
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~quaternion.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~quaternion.w
+      ~quaternion.x
+      ~quaternion.y
+      ~quaternion.z
+   
+   

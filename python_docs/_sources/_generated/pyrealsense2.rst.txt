@@ -1,0 +1,170 @@
+﻿pyrealsense2
+============
+
+.. automodule:: pyrealsense2
+
+   
+   
+   .. rubric:: Functions
+   
+   .. autosummary::
+   
+      enable_rolling_log_file
+      log
+      log_to_callback
+      log_to_console
+      log_to_file
+      option_from_string
+      reset_logger
+      rs2_deproject_pixel_to_point
+      rs2_fov
+      rs2_project_color_pixel_to_depth_pixel
+      rs2_project_point_to_pixel
+      rs2_transform_point_to_point
+   
+   
+   
+   
+   
+   .. rubric:: Classes
+   
+   .. autosummary::
+      :toctree:
+	  :template: class.rst
+   
+   
+      BufData
+      STAEControl
+      STAFactor
+      STCensusRadius
+      STColorControl
+      STColorCorrection
+      STDepthControlGroup
+      STDepthTableControl
+      STHdad
+      STRauColorThresholdsControl
+      STRauSupportVectorControl
+      STRsm
+      STSloColorThresholdsControl
+      STSloPenaltyControl
+      align
+      auto_calibrated_device
+      calib_target_type
+      calibration_change_device
+      calibration_config
+      calibration_roi
+      calibration_status
+      calibration_type
+      camera_info
+      color_sensor
+      colorizer
+      combined_motion
+      composite_frame
+      config
+      context
+      debug_protocol
+      debug_stream_sensor
+      decimation_filter
+      depth_frame
+      depth_sensor
+      depth_stereo_sensor
+      device
+      device_calibration
+      device_list
+      disparity_frame
+      disparity_transform
+      distortion
+      event_information
+      extension
+      extrinsics
+      extrinsics_table
+      filter
+      filter_interface
+      firmware_log_message
+      firmware_log_parsed_message
+      firmware_logger
+      fisheye_sensor
+      float3
+      float3x3
+      format
+      frame
+      frame_metadata_value
+      frame_queue
+      frame_source
+      hdr_merge
+      hole_filling_filter
+      intrinsics
+      l500_visual_preset
+      log_message
+      log_severity
+      matchers
+      max_usable_range_sensor
+      motion_device_intrinsic
+      motion_frame
+      motion_sensor
+      motion_stream
+      motion_stream_profile
+      notification
+      notification_category
+      option
+      option_range
+      option_type
+      option_value
+      options
+      options_list
+      pipeline
+      pipeline_profile
+      pipeline_wrapper
+      playback
+      playback_status
+      pointcloud
+      points
+      pose
+      pose_frame
+      pose_sensor
+      pose_stream
+      pose_stream_profile
+      processing_block
+      product_line
+      quaternion
+      recorder
+      region_of_interest
+      roi_sensor
+      rs400_advanced_mode
+      rs400_visual_preset
+      save_single_frameset
+      save_to_ply
+      sensor
+      sequence_id_filter
+      serializable_device
+      software_device
+      software_motion_frame
+      software_notification
+      software_pose_frame
+      software_sensor
+      software_video_frame
+      spatial_filter
+      stream
+      stream_profile
+      syncer
+      temporal_filter
+      terminal_parser
+      texture_coordinate
+      threshold_filter
+      timestamp_domain
+      units_transform
+      updatable
+      update_device
+      vector
+      vertex
+      video_frame
+      video_stream
+      video_stream_profile
+      wheel_odometer
+      yuy_decoder
+   
+   
+   
+   
+   
+   

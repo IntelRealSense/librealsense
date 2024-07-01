@@ -1,0 +1,72 @@
+pyrealsense2.disparity_frame
+============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: disparity_frame
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~disparity_frame.__init__
+      ~disparity_frame.as_depth_frame
+      ~disparity_frame.as_frame
+      ~disparity_frame.as_frameset
+      ~disparity_frame.as_motion_frame
+      ~disparity_frame.as_points
+      ~disparity_frame.as_pose_frame
+      ~disparity_frame.as_video_frame
+      ~disparity_frame.extract_target_dimensions
+      ~disparity_frame.get_baseline
+      ~disparity_frame.get_bits_per_pixel
+      ~disparity_frame.get_bytes_per_pixel
+      ~disparity_frame.get_data
+      ~disparity_frame.get_data_size
+      ~disparity_frame.get_distance
+      ~disparity_frame.get_frame_metadata
+      ~disparity_frame.get_frame_number
+      ~disparity_frame.get_frame_timestamp_domain
+      ~disparity_frame.get_height
+      ~disparity_frame.get_profile
+      ~disparity_frame.get_stride_in_bytes
+      ~disparity_frame.get_timestamp
+      ~disparity_frame.get_units
+      ~disparity_frame.get_width
+      ~disparity_frame.is_depth_frame
+      ~disparity_frame.is_frame
+      ~disparity_frame.is_frameset
+      ~disparity_frame.is_motion_frame
+      ~disparity_frame.is_points
+      ~disparity_frame.is_pose_frame
+      ~disparity_frame.is_video_frame
+      ~disparity_frame.keep
+      ~disparity_frame.supports_frame_metadata
+      ~disparity_frame.swap
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~disparity_frame.bits_per_pixel
+      ~disparity_frame.bytes_per_pixel
+      ~disparity_frame.data
+      ~disparity_frame.frame_number
+      ~disparity_frame.frame_timestamp_domain
+      ~disparity_frame.height
+      ~disparity_frame.profile
+      ~disparity_frame.stride_in_bytes
+      ~disparity_frame.timestamp
+      ~disparity_frame.width
+   
+   

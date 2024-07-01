@@ -1,0 +1,37 @@
+pyrealsense2.log_severity
+=========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: log_severity
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~log_severity.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~log_severity.debug
+      ~log_severity.error
+      ~log_severity.fatal
+      ~log_severity.info
+      ~log_severity.name
+      ~log_severity.none
+      ~log_severity.value
+      ~log_severity.warn
+   
+   

@@ -1,0 +1,31 @@
+pyrealsense2.extrinsics
+=======================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: extrinsics
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~extrinsics.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~extrinsics.rotation
+      ~extrinsics.translation
+   
+   

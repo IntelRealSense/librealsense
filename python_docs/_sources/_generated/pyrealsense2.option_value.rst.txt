@@ -1,0 +1,32 @@
+pyrealsense2.option_value
+=========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: option_value
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~option_value.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~option_value.id
+      ~option_value.type
+      ~option_value.value
+   
+   

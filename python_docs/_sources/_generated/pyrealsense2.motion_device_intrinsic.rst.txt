@@ -1,0 +1,32 @@
+pyrealsense2.motion_device_intrinsic
+====================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: motion_device_intrinsic
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~motion_device_intrinsic.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~motion_device_intrinsic.bias_variances
+      ~motion_device_intrinsic.data
+      ~motion_device_intrinsic.noise_variances
+   
+   

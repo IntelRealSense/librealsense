@@ -1,0 +1,55 @@
+pyrealsense2.hdr_merge
+======================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: hdr_merge
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~hdr_merge.__init__
+      ~hdr_merge.as_decimation_filter
+      ~hdr_merge.as_disparity_transform
+      ~hdr_merge.as_hdr_merge
+      ~hdr_merge.as_hole_filling_filter
+      ~hdr_merge.as_sequence_id_filter
+      ~hdr_merge.as_spatial_filter
+      ~hdr_merge.as_temporal_filter
+      ~hdr_merge.as_threshold_filter
+      ~hdr_merge.get_info
+      ~hdr_merge.get_option
+      ~hdr_merge.get_option_description
+      ~hdr_merge.get_option_range
+      ~hdr_merge.get_option_value
+      ~hdr_merge.get_option_value_description
+      ~hdr_merge.get_supported_options
+      ~hdr_merge.invoke
+      ~hdr_merge.is_decimation_filter
+      ~hdr_merge.is_disparity_transform
+      ~hdr_merge.is_hdr_merge
+      ~hdr_merge.is_hole_filling_filter
+      ~hdr_merge.is_option_read_only
+      ~hdr_merge.is_sequence_id_filter
+      ~hdr_merge.is_spatial_filter
+      ~hdr_merge.is_temporal_filter
+      ~hdr_merge.is_threshold_filter
+      ~hdr_merge.on_options_changed
+      ~hdr_merge.process
+      ~hdr_merge.set_option
+      ~hdr_merge.set_option_value
+      ~hdr_merge.start
+      ~hdr_merge.supports
+   
+   
+   
+   
+   
+   

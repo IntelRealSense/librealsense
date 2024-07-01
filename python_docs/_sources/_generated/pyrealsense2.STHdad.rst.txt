@@ -1,0 +1,32 @@
+pyrealsense2.STHdad
+===================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: STHdad
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~STHdad.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~STHdad.ignoreSAD
+      ~STHdad.lambdaAD
+      ~STHdad.lambdaCensus
+   
+   

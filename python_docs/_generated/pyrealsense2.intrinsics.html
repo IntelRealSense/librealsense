@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>pyrealsense2.intrinsics &#8212; pyrealsense2 2.56.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=def86cc0" />
+    
+    <script src="../_static/documentation_options.js?v=d30441c9"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.56.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">pyrealsense2.intrinsics</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="pyrealsense2-intrinsics">
+<h1>pyrealsense2.intrinsics<a class="headerlink" href="#pyrealsense2-intrinsics" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyrealsense2.intrinsics">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyrealsense2.</span></span><span class="sig-name descname"><span class="pre">intrinsics</span></span><a class="headerlink" href="#pyrealsense2.intrinsics" title="Link to this definition">¶</a></dt>
+<dd><p>Video stream intrinsics.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.intrinsics.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.intrinsics" title="pyrealsense2.intrinsics"><span class="pre">pyrealsense2.intrinsics</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pyrealsense2.intrinsics.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.intrinsics.__init__" title="pyrealsense2.intrinsics.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(self)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.intrinsics.coeffs" title="pyrealsense2.intrinsics.coeffs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">coeffs</span></code></a></p></td>
+<td><p>Distortion coefficients</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.intrinsics.fx" title="pyrealsense2.intrinsics.fx"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fx</span></code></a></p></td>
+<td><p>Focal length of the image plane, as a multiple of pixel width</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.intrinsics.fy" title="pyrealsense2.intrinsics.fy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fy</span></code></a></p></td>
+<td><p>Focal length of the image plane, as a multiple of pixel height</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.intrinsics.height" title="pyrealsense2.intrinsics.height"><code class="xref py py-obj docutils literal notranslate"><span class="pre">height</span></code></a></p></td>
+<td><p>Height of the image in pixels</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.intrinsics.model" title="pyrealsense2.intrinsics.model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">model</span></code></a></p></td>
+<td><p>Distortion model of the image</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.intrinsics.ppx" title="pyrealsense2.intrinsics.ppx"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ppx</span></code></a></p></td>
+<td><p>Horizontal coordinate of the principal point of the image, as a pixel offset from the left edge</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.intrinsics.ppy" title="pyrealsense2.intrinsics.ppy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ppy</span></code></a></p></td>
+<td><p>Vertical coordinate of the principal point of the image, as a pixel offset from the top edge</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.intrinsics.width" title="pyrealsense2.intrinsics.width"><code class="xref py py-obj docutils literal notranslate"><span class="pre">width</span></code></a></p></td>
+<td><p>Width of the image in pixels</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py property">
+<dt class="sig sig-object py" id="pyrealsense2.intrinsics.coeffs">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">coeffs</span></span><a class="headerlink" href="#pyrealsense2.intrinsics.coeffs" title="Link to this definition">¶</a></dt>
+<dd><p>Distortion coefficients</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyrealsense2.intrinsics.fx">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fx</span></span><a class="headerlink" href="#pyrealsense2.intrinsics.fx" title="Link to this definition">¶</a></dt>
+<dd><p>Focal length of the image plane, as a multiple of pixel width</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyrealsense2.intrinsics.fy">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fy</span></span><a class="headerlink" href="#pyrealsense2.intrinsics.fy" title="Link to this definition">¶</a></dt>
+<dd><p>Focal length of the image plane, as a multiple of pixel height</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyrealsense2.intrinsics.height">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">height</span></span><a class="headerlink" href="#pyrealsense2.intrinsics.height" title="Link to this definition">¶</a></dt>
+<dd><p>Height of the image in pixels</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyrealsense2.intrinsics.model">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model</span></span><a class="headerlink" href="#pyrealsense2.intrinsics.model" title="Link to this definition">¶</a></dt>
+<dd><p>Distortion model of the image</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyrealsense2.intrinsics.ppx">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ppx</span></span><a class="headerlink" href="#pyrealsense2.intrinsics.ppx" title="Link to this definition">¶</a></dt>
+<dd><p>Horizontal coordinate of the principal point of the image, as a pixel offset from the left edge</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyrealsense2.intrinsics.ppy">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ppy</span></span><a class="headerlink" href="#pyrealsense2.intrinsics.ppy" title="Link to this definition">¶</a></dt>
+<dd><p>Vertical coordinate of the principal point of the image, as a pixel offset from the top edge</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyrealsense2.intrinsics.width">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">width</span></span><a class="headerlink" href="#pyrealsense2.intrinsics.width" title="Link to this definition">¶</a></dt>
+<dd><p>Width of the image in pixels</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">pyrealsense2.intrinsics</a><ul>
+<li><a class="reference internal" href="#pyrealsense2.intrinsics"><code class="docutils literal notranslate"><span class="pre">intrinsics</span></code></a><ul>
+<li><a class="reference internal" href="#pyrealsense2.intrinsics.__init__"><code class="docutils literal notranslate"><span class="pre">intrinsics.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.intrinsics.coeffs"><code class="docutils literal notranslate"><span class="pre">intrinsics.coeffs</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.intrinsics.fx"><code class="docutils literal notranslate"><span class="pre">intrinsics.fx</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.intrinsics.fy"><code class="docutils literal notranslate"><span class="pre">intrinsics.fy</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.intrinsics.height"><code class="docutils literal notranslate"><span class="pre">intrinsics.height</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.intrinsics.model"><code class="docutils literal notranslate"><span class="pre">intrinsics.model</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.intrinsics.ppx"><code class="docutils literal notranslate"><span class="pre">intrinsics.ppx</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.intrinsics.ppy"><code class="docutils literal notranslate"><span class="pre">intrinsics.ppy</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.intrinsics.width"><code class="docutils literal notranslate"><span class="pre">intrinsics.width</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/_generated/pyrealsense2.intrinsics.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.56.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">pyrealsense2.intrinsics</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Intel Realsense Team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.3.7.
+    </div>
+  </body>
+</html>

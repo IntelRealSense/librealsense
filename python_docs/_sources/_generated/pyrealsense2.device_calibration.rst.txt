@@ -1,0 +1,62 @@
+pyrealsense2.device_calibration
+===============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: device_calibration
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~device_calibration.__init__
+      ~device_calibration.as_auto_calibrated_device
+      ~device_calibration.as_calibration_change_device
+      ~device_calibration.as_debug_protocol
+      ~device_calibration.as_device_calibration
+      ~device_calibration.as_firmware_logger
+      ~device_calibration.as_playback
+      ~device_calibration.as_recorder
+      ~device_calibration.as_updatable
+      ~device_calibration.as_update_device
+      ~device_calibration.first_color_sensor
+      ~device_calibration.first_depth_sensor
+      ~device_calibration.first_fisheye_sensor
+      ~device_calibration.first_motion_sensor
+      ~device_calibration.first_pose_sensor
+      ~device_calibration.first_roi_sensor
+      ~device_calibration.get_info
+      ~device_calibration.hardware_reset
+      ~device_calibration.is_auto_calibrated_device
+      ~device_calibration.is_calibration_change_device
+      ~device_calibration.is_connected
+      ~device_calibration.is_debug_protocol
+      ~device_calibration.is_device_calibration
+      ~device_calibration.is_firmware_logger
+      ~device_calibration.is_metadata_enabled
+      ~device_calibration.is_playback
+      ~device_calibration.is_recorder
+      ~device_calibration.is_updatable
+      ~device_calibration.is_update_device
+      ~device_calibration.query_sensors
+      ~device_calibration.register_calibration_change_callback
+      ~device_calibration.supports
+      ~device_calibration.trigger_device_calibration
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~device_calibration.sensors
+   
+   

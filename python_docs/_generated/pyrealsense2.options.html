@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>pyrealsense2.options &#8212; pyrealsense2 2.56.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=def86cc0" />
+    
+    <script src="../_static/documentation_options.js?v=d30441c9"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.56.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">pyrealsense2.options</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="pyrealsense2-options">
+<h1>pyrealsense2.options<a class="headerlink" href="#pyrealsense2-options" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyrealsense2.options">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyrealsense2.</span></span><span class="sig-name descname"><span class="pre">options</span></span><a class="headerlink" href="#pyrealsense2.options" title="Link to this definition">¶</a></dt>
+<dd><p>Base class for options interface. Should be used via sensor or processing_block.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyrealsense2.options.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.__init__" title="pyrealsense2.options.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(*args, **kwargs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.get_option" title="pyrealsense2.options.get_option"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_option</span></code></a>(self, option)</p></td>
+<td><p>Read option value from the device.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.get_option_description" title="pyrealsense2.options.get_option_description"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_option_description</span></code></a>(self, option)</p></td>
+<td><p>Get option description.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.get_option_range" title="pyrealsense2.options.get_option_range"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_option_range</span></code></a>(self, option)</p></td>
+<td><p>Retrieve the available range of values of a supported option</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.get_option_value" title="pyrealsense2.options.get_option_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_option_value</span></code></a>(self, arg0)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.get_option_value_description" title="pyrealsense2.options.get_option_value_description"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_option_value_description</span></code></a>(self, option, value)</p></td>
+<td><p>Get option value description (In case a specific option value holds special meaning)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.get_supported_options" title="pyrealsense2.options.get_supported_options"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_supported_options</span></code></a>(self)</p></td>
+<td><p>Retrieve list of supported options</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.is_option_read_only" title="pyrealsense2.options.is_option_read_only"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_option_read_only</span></code></a>(self, option)</p></td>
+<td><p>Check if particular option is read only.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.on_options_changed" title="pyrealsense2.options.on_options_changed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_options_changed</span></code></a>(self, callback)</p></td>
+<td><p>Sets a callback to notify in case options in this container change value</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.set_option" title="pyrealsense2.options.set_option"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_option</span></code></a>(self, option, value)</p></td>
+<td><p>Write new value to device option</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyrealsense2.options.set_option_value" title="pyrealsense2.options.set_option_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_option_value</span></code></a>(self, arg0, arg1)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyrealsense2.options.supports" title="pyrealsense2.options.supports"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports</span></code></a>(self, option)</p></td>
+<td><p>Check if particular option is supported by a subdevice</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.get_option">
+<span class="sig-name descname"><span class="pre">get_option</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.option.html#pyrealsense2.option" title="pyrealsense2.option"><span class="pre">pyrealsense2.option</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#pyrealsense2.options.get_option" title="Link to this definition">¶</a></dt>
+<dd><p>Read option value from the device.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.get_option_description">
+<span class="sig-name descname"><span class="pre">get_option_description</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.option.html#pyrealsense2.option" title="pyrealsense2.option"><span class="pre">pyrealsense2.option</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#pyrealsense2.options.get_option_description" title="Link to this definition">¶</a></dt>
+<dd><p>Get option description.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.get_option_range">
+<span class="sig-name descname"><span class="pre">get_option_range</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.option.html#pyrealsense2.option" title="pyrealsense2.option"><span class="pre">pyrealsense2.option</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="pyrealsense2.option_range.html#pyrealsense2.option_range" title="pyrealsense2.option_range"><span class="pre">pyrealsense2.option_range</span></a></span></span><a class="headerlink" href="#pyrealsense2.options.get_option_range" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieve the available range of values of a supported option</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.get_option_value">
+<span class="sig-name descname"><span class="pre">get_option_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">arg0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.option.html#pyrealsense2.option" title="pyrealsense2.option"><span class="pre">pyrealsense2.option</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="pyrealsense2.option_value.html#pyrealsense2.option_value" title="pyrealsense2.option_value"><span class="pre">pyrealsense2.option_value</span></a></span></span><a class="headerlink" href="#pyrealsense2.options.get_option_value" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.get_option_value_description">
+<span class="sig-name descname"><span class="pre">get_option_value_description</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.option.html#pyrealsense2.option" title="pyrealsense2.option"><span class="pre">pyrealsense2.option</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#pyrealsense2.options.get_option_value_description" title="Link to this definition">¶</a></dt>
+<dd><p>Get option value description (In case a specific option value holds special meaning)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.get_supported_options">
+<span class="sig-name descname"><span class="pre">get_supported_options</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="pyrealsense2.option.html#pyrealsense2.option" title="pyrealsense2.option"><span class="pre">pyrealsense2.option</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#pyrealsense2.options.get_supported_options" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieve list of supported options</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.is_option_read_only">
+<span class="sig-name descname"><span class="pre">is_option_read_only</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.option.html#pyrealsense2.option" title="pyrealsense2.option"><span class="pre">pyrealsense2.option</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#pyrealsense2.options.is_option_read_only" title="Link to this definition">¶</a></dt>
+<dd><p>Check if particular option is read only.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.on_options_changed">
+<span class="sig-name descname"><span class="pre">on_options_changed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">callback</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="pyrealsense2.options_list.html#pyrealsense2.options_list" title="pyrealsense2.options_list"><span class="pre">pyrealsense2.options_list</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pyrealsense2.options.on_options_changed" title="Link to this definition">¶</a></dt>
+<dd><p>Sets a callback to notify in case options in this container change value</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.set_option">
+<span class="sig-name descname"><span class="pre">set_option</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.option.html#pyrealsense2.option" title="pyrealsense2.option"><span class="pre">pyrealsense2.option</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pyrealsense2.options.set_option" title="Link to this definition">¶</a></dt>
+<dd><p>Write new value to device option</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.set_option_value">
+<span class="sig-name descname"><span class="pre">set_option_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">arg0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.option.html#pyrealsense2.option" title="pyrealsense2.option"><span class="pre">pyrealsense2.option</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">arg1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">json</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pyrealsense2.options.set_option_value" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyrealsense2.options.supports">
+<span class="sig-name descname"><span class="pre">supports</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyrealsense2.options" title="pyrealsense2.options"><span class="pre">pyrealsense2.options</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pyrealsense2.option.html#pyrealsense2.option" title="pyrealsense2.option"><span class="pre">pyrealsense2.option</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#pyrealsense2.options.supports" title="Link to this definition">¶</a></dt>
+<dd><p>Check if particular option is supported by a subdevice</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">pyrealsense2.options</a><ul>
+<li><a class="reference internal" href="#pyrealsense2.options"><code class="docutils literal notranslate"><span class="pre">options</span></code></a><ul>
+<li><a class="reference internal" href="#pyrealsense2.options.__init__"><code class="docutils literal notranslate"><span class="pre">options.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.get_option"><code class="docutils literal notranslate"><span class="pre">options.get_option()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.get_option_description"><code class="docutils literal notranslate"><span class="pre">options.get_option_description()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.get_option_range"><code class="docutils literal notranslate"><span class="pre">options.get_option_range()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.get_option_value"><code class="docutils literal notranslate"><span class="pre">options.get_option_value()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.get_option_value_description"><code class="docutils literal notranslate"><span class="pre">options.get_option_value_description()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.get_supported_options"><code class="docutils literal notranslate"><span class="pre">options.get_supported_options()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.is_option_read_only"><code class="docutils literal notranslate"><span class="pre">options.is_option_read_only()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.on_options_changed"><code class="docutils literal notranslate"><span class="pre">options.on_options_changed()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.set_option"><code class="docutils literal notranslate"><span class="pre">options.set_option()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.set_option_value"><code class="docutils literal notranslate"><span class="pre">options.set_option_value()</span></code></a></li>
+<li><a class="reference internal" href="#pyrealsense2.options.supports"><code class="docutils literal notranslate"><span class="pre">options.supports()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/_generated/pyrealsense2.options.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.56.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">pyrealsense2.options</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Intel Realsense Team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.3.7.
+    </div>
+  </body>
+</html>

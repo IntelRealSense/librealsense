@@ -1,0 +1,32 @@
+pyrealsense2.STSloColorThresholdsControl
+========================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: STSloColorThresholdsControl
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~STSloColorThresholdsControl.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~STSloColorThresholdsControl.diffThresholdBlue
+      ~STSloColorThresholdsControl.diffThresholdGreen
+      ~STSloColorThresholdsControl.diffThresholdRed
+   
+   

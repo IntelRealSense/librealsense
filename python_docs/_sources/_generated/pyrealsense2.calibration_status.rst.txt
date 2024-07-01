@@ -1,0 +1,41 @@
+pyrealsense2.calibration_status
+===============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: calibration_status
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~calibration_status.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~calibration_status.bad_conditions
+      ~calibration_status.bad_result
+      ~calibration_status.failed
+      ~calibration_status.name
+      ~calibration_status.not_needed
+      ~calibration_status.retry
+      ~calibration_status.scene_invalid
+      ~calibration_status.special_frame
+      ~calibration_status.started
+      ~calibration_status.successful
+      ~calibration_status.triggered
+      ~calibration_status.value
+   
+   

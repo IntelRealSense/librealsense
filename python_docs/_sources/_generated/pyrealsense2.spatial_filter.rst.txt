@@ -1,0 +1,55 @@
+pyrealsense2.spatial_filter
+===========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: spatial_filter
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~spatial_filter.__init__
+      ~spatial_filter.as_decimation_filter
+      ~spatial_filter.as_disparity_transform
+      ~spatial_filter.as_hdr_merge
+      ~spatial_filter.as_hole_filling_filter
+      ~spatial_filter.as_sequence_id_filter
+      ~spatial_filter.as_spatial_filter
+      ~spatial_filter.as_temporal_filter
+      ~spatial_filter.as_threshold_filter
+      ~spatial_filter.get_info
+      ~spatial_filter.get_option
+      ~spatial_filter.get_option_description
+      ~spatial_filter.get_option_range
+      ~spatial_filter.get_option_value
+      ~spatial_filter.get_option_value_description
+      ~spatial_filter.get_supported_options
+      ~spatial_filter.invoke
+      ~spatial_filter.is_decimation_filter
+      ~spatial_filter.is_disparity_transform
+      ~spatial_filter.is_hdr_merge
+      ~spatial_filter.is_hole_filling_filter
+      ~spatial_filter.is_option_read_only
+      ~spatial_filter.is_sequence_id_filter
+      ~spatial_filter.is_spatial_filter
+      ~spatial_filter.is_temporal_filter
+      ~spatial_filter.is_threshold_filter
+      ~spatial_filter.on_options_changed
+      ~spatial_filter.process
+      ~spatial_filter.set_option
+      ~spatial_filter.set_option_value
+      ~spatial_filter.start
+      ~spatial_filter.supports
+   
+   
+   
+   
+   
+   

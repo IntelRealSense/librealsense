@@ -1,0 +1,30 @@
+pyrealsense2.pipeline
+=====================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: pipeline
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~pipeline.__init__
+      ~pipeline.get_active_profile
+      ~pipeline.poll_for_frames
+      ~pipeline.start
+      ~pipeline.stop
+      ~pipeline.try_wait_for_frames
+      ~pipeline.wait_for_frames
+   
+   
+   
+   
+   
+   
