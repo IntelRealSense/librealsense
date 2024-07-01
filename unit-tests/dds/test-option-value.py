@@ -130,7 +130,10 @@ with test.closure( 'IP address' ):
     test.check_throws( lambda:
         dds.option.from_json( ['ip', '', 'desc', ['IPv4']] ),
         RuntimeError, 'not an IP address: ""' )
-    dds.option.from_json( ['ip', '0.0.0.0', 'desc', ['IPv4']] )
+    test.check_throws( lambda:  # 0.0.0.0 is used to denote an "invalid" IP
+        dds.option.from_json( ['ip', '0.0.0.0', 'desc', ['IPv4']] ),
+        RuntimeError, 'not an IP address: "0.0.0.0"' )
+    dds.option.from_json( ['ip', '0.0.0.1', 'desc', ['IPv4']] )
     dds.option.from_json( ['ip', '255.255.255.255', 'desc', ['IPv4']] )
     test.check_throws( lambda:
         dds.option.from_json( ['ip', '255.255.255.256', 'desc', ['IPv4']] ),

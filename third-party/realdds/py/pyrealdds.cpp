@@ -178,7 +178,7 @@ PYBIND11_MODULE(NAME, m) {
         .def_static( "from_ns", []( dds_nsec ns ) { return realdds::time_from( ns ); } )
         .def_static( "from_double", []( long double d ) { return realdds::dds_time( d ); } )
         .def( "to_double", py::overload_cast< dds_time const & >( &realdds::time_to_double ) )
-        .def( "__repr__", &realdds::time_to_string )
+        .def( "__repr__", []( dds_time const & self ) -> std::string { return rsutils::string::from( realdds::time_to_string( self ) ); } )
         .def( pybind11::self == pybind11::self )
         .def( pybind11::self != pybind11::self );
 
@@ -503,7 +503,17 @@ PYBIND11_MODULE(NAME, m) {
         .def( py::init<>() )
         .def( "identity", []( dds_sample const & self ) { return self.sample_identity; } )
         .def( "source_timestamp", []( dds_sample const & self ) { return self.source_timestamp.to_ns(); } )
-        .def( "reception_timestamp", []( dds_sample const & self ) { return self.reception_timestamp.to_ns(); } );
+        .def( "reception_timestamp", []( dds_sample const & self ) { return self.reception_timestamp.to_ns(); } )
+        .def( "__repr__",
+              []( dds_sample const & self )
+              {
+                  std::ostringstream os;
+                  os << "<sample #" << self.sample_identity.sequence_number();
+                  os << " @ " << realdds::time_to_string( self.reception_timestamp );
+                  os << " from " << realdds::print_guid( self.sample_identity.writer_guid() );
+                  os << ">";
+                  return os.str();
+              } );
 
 
     py::class_< flexible_msg >( message, "flexible" )

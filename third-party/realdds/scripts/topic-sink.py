@@ -24,6 +24,7 @@ def time_arg(x):
 args.add_argument( '--wait', metavar='<seconds>', type=time_arg, default=5., help='seconds to wait for writers (default 5; 0=disable)' )
 args.add_argument( '--time', metavar='<seconds>', type=time_arg, help='runtime before stopping, in seconds (default 0=forever)' )
 args.add_argument( '--not-ready', action='store_true', help='start output immediately, without waiting for all topics' )
+args.add_argument( '--field', metavar='<name>', help='name to extract from the flexible JSON (or whole JSON is printed, indented)' )
 args = args.parse_args()
 
 if args.quiet:
@@ -43,6 +44,10 @@ if not args.flexible and not args.flexible_be and not args.blob and not args.ima
 
 import pyrealdds as dds
 import time
+from datetime import datetime
+
+def timestamp():
+   return datetime.now().time()
 
 dds.debug( args.debug )
 
@@ -66,7 +71,7 @@ def on_blob_available( reader ):
             if not got_something:
                 raise RuntimeError( "expected message not received!" )
             break
-        i( f'{msg}', )
+        i( f'{timestamp()} {msg}', )
         got_something = True
 for topic_path in args.blob or []:
     reader = dds.topic_reader( dds.message.blob.create_topic( participant, topic_path ))
@@ -90,7 +95,7 @@ def on_image_available( reader ):
             if not got_something:
                 raise RuntimeError( "expected message not received!" )
             break
-        i( f'{msg}', )
+        i( f'{timestamp()} {msg}', )
         got_something = True
 for topic_path in args.image or []:
     reader = dds.topic_reader( dds.message.image.create_topic( participant, topic_path ))
@@ -114,7 +119,14 @@ def on_flexible_available( reader ):
             if not got_something:
                 raise RuntimeError( "expected message not received!" )
             break
-        i( f'{json.dumps( msg.json_data(), indent=4 )}', )
+        j = msg.json_data()
+        if args.field:
+            s = j.get( args.field )
+            if not s:
+                s = json.dumps( j )  # without indent
+        else:
+            s = json.dumps( j, indent=4 )
+        i( f'{timestamp()} {sample} {s}', )
         got_something = True
 for topic_path in args.flexible_be or []:
     reader = dds.topic_reader( dds.message.flexible.create_topic( participant, topic_path ))
