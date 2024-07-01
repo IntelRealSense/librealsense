@@ -19,10 +19,11 @@ namespace librealsense
                 {
                     bool found = false;
                     result = *it;
-                    // to be uncommented after d500 device is added
-                    /*switch (info.pid)
+                    switch (info.pid)
                     {
-
+                    case D555E_PID:
+                        found = (result.mi == 6);
+                        break;
                     default:
                         throw not_implemented_exception(rsutils::string::from() << "USB device "
                             << std::hex << info.pid << ":" << info.vid << std::dec << " is not supported.");
@@ -34,7 +35,6 @@ namespace librealsense
                         devices.erase(it);
                         return true;
                     }
-                    */
                 }
             }
             return false;
