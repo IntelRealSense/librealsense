@@ -267,7 +267,8 @@ namespace rs2
 
             auto dev_name = get_device_name(dev);
 
-            if( dev.is<update_device>() || is_upgradeable( fw, recommended_fw_ver) )
+            // TODO - D421. Don't suggest to update FW as it doesn't support D421. Revert after 5.17 release with supporting FW
+            if( ( dev.is<update_device>() || is_upgradeable( fw, recommended_fw_ver) ) && pid != "1155" ) // 0x1155 is D421 PID
             {
                 std::stringstream msg;
 
@@ -1921,7 +1922,12 @@ namespace rs2
                         auto itr = sub->options_metadata.find(RS2_OPTION_VISUAL_PRESET);
                         if (itr != sub->options_metadata.end())
                         {
-                            itr->second.endpoint->set_option(RS2_OPTION_VISUAL_PRESET, RS2_RS400_VISUAL_PRESET_CUSTOM);
+                            // Make sure we actually have a "Custom" preset
+                            if( std::string( "Custom", 6 )
+                                == itr->second.endpoint->get_option_value_description(
+                                    RS2_OPTION_VISUAL_PRESET,
+                                    RS2_RS400_VISUAL_PRESET_CUSTOM ) )
+                                itr->second.endpoint->set_option(RS2_OPTION_VISUAL_PRESET, RS2_RS400_VISUAL_PRESET_CUSTOM);
                         }
                     }
                 }

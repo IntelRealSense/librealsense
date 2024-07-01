@@ -115,6 +115,10 @@ public:
     //
     rsutils::string::slice name() const;
 
+    // Given a flow-controller name, look it up in the participant QoS and return its object
+    //
+    std::shared_ptr< const eprosima::fastdds::rtps::FlowControllerDescriptor > find_flow_controller( char const * name ) const;
+
     // Utility to create a custom GUID, to help
     //
     dds_guid create_guid();

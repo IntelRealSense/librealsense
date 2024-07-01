@@ -1324,7 +1324,7 @@ bool lrs_device_controller::on_dfu_start( rsutils::json const & control, rsutils
                     }
                     catch( std::exception const & e )
                     {
-                        j[realdds::topics::reply::key::status] = "check-fw-compat";
+                        j[realdds::topics::reply::key::status] = "error";
                         j[realdds::topics::reply::key::explanation] = e.what();
                         LOG_ERROR( dfu->debug_name() << "DFU image check failed: " << e.what() << "; exiting DFU state" );
                         dfu->reset();

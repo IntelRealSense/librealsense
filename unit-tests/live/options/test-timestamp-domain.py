@@ -67,22 +67,31 @@ test.finish()
 close_resources(depth_sensor)
 
 # Color sensor test
-color_frame_queue = rs.frame_queue(queue_capacity, keep_frames=False)
+product_name = device.get_info(rs.camera_info.name)
+color_sensor = None
+try:
+    color_sensor = device.first_color_sensor()
+except RuntimeError as rte:
+    if 'D421' not in product_name and 'D405' not in product_name: # Cameras with no color sensor may fail.
+        test.unexpected_exception()
 
-color_sensor = device.first_color_sensor()
-color_profile = next(p for p in color_sensor.profiles if p.stream_type() == rs.stream.color and p.is_default())
-color_sensor.open(color_profile)
-color_sensor.start(color_frame_queue)
+if color_sensor:      
+    color_frame_queue = rs.frame_queue(queue_capacity, keep_frames=False)
 
-# Test #3
-test.start('Check setting global time domain: color sensor - timestamp domain is OFF')
-set_and_verify_timestamp_domain(color_sensor, color_frame_queue, False)
-test.finish()
+    color_profile = next(p for p in color_sensor.profiles if p.stream_type() == rs.stream.color and p.is_default())
+    color_sensor.open(color_profile)
+    color_sensor.start(color_frame_queue)
 
-# Test #4
-test.start('Check setting global time domain: color sensor - timestamp domain is ON')
-set_and_verify_timestamp_domain(color_sensor, color_frame_queue, True)
-test.finish()
+    # Test #3
+    test.start('Check setting global time domain: color sensor - timestamp domain is OFF')
+    set_and_verify_timestamp_domain(color_sensor, color_frame_queue, False)
+    test.finish()
 
-close_resources(color_sensor)
+    # Test #4
+    test.start('Check setting global time domain: color sensor - timestamp domain is ON')
+    set_and_verify_timestamp_domain(color_sensor, color_frame_queue, True)
+    test.finish()
+
+    close_resources(color_sensor)
+
 test.print_results_and_exit()

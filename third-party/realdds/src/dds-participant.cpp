@@ -192,7 +192,8 @@ dds_participant::qos::qos( std::string const & participant_name )
     name( participant_name );
 
     // Indicates for how much time should a remote DomainParticipant consider the local DomainParticipant to be alive.
-    wire_protocol().builtin.discovery_config.leaseDuration = { 10, 0 };  // [sec,nsec]
+    wire_protocol().builtin.discovery_config.leaseDuration = realdds::dds_time( 3.0 );  // seconds
+    wire_protocol().builtin.discovery_config.leaseDuration_announcementperiod = realdds::dds_time( 1.5 );
 
     // Disable shared memory, use only UDP
     // Disabling because sometimes, after improper destruction (e.g. stopping debug) the shared memory is not opened
@@ -296,6 +297,18 @@ rsutils::string::slice dds_participant::name() const
 {
     auto & string_255 = get()->get_qos().name();
     return rsutils::string::slice( string_255.c_str(), string_255.size() );
+}
+
+
+std::shared_ptr< const eprosima::fastdds::rtps::FlowControllerDescriptor >
+dds_participant::find_flow_controller( char const * name ) const
+{
+    for( auto & controller : get()->get_qos().flow_controllers() )
+    {
+        if( ! strcmp( name, controller->name ) )
+            return controller;
+    }
+    return {};
 }
 
 

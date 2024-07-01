@@ -75,7 +75,7 @@ with test.remote.fork( nested_indent=None ) as remote:
                 'option-name': 'custom option'
             }, True ),  # Wait for reply
             RuntimeError,
-            '["query-option" error] \'s1\' option \'custom option\' not found' )
+            '["query-option"] \'s1\' option \'custom option\' not found' )
 
     with test.closure( 'Query all options in a stream' ):
         reply = device.send_control( {
