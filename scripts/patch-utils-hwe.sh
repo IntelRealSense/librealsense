@@ -141,9 +141,21 @@ function choose_kernel_branch {
 			exit 1
 			;;
 		esac
+	elif [ "$2" == "noble" ]; 				# Ubuntu 22
+	then
+		case "${kernel_version[0]}.${kernel_version[1]}" in
+		"6.8")
+			echo hwe-6.8
+			;;
+		*)
+			#error message shall be redirected to stderr to be printed properly
+			echo -e "\e[31mUnsupported kernel version $1 . The Noble patches are maintained for Ubuntu LTS with kernel 6.8 only\e[0m" >&2
+			exit 1
+			;;
+		esac
 
 	else
-		echo -e "\e[31mUnsupported distribution $2, kernel version $1 . The patches are maintained for Ubuntu 16/18/20 LTS\e[0m" >&2
+		echo -e "\e[31mUnsupported distribution $2, kernel version $1 . The patches are maintained for Ubuntu 16/18/20/22/24 LTS\e[0m" >&2
 		exit 1
 	fi
 }
