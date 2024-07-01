@@ -1170,7 +1170,9 @@ namespace librealsense
 
             if(is_device_multisensor)
             {
-                all_sensors_present = all_sensors_present && mi_present(devices, 3);
+                all_sensors_present = all_sensors_present && 
+                    (mi_present(devices, 3) ||  // mi for RGB is 3 for USB devices
+                        mi_present(devices, 4));// mi for Accel/Gyro is 4 for MIPI devices
             }
 
 
