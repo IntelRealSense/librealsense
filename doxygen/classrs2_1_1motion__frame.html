@@ -68,6 +68,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3116113c650804831ce8d639f6e19ba1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa7b65349ec3a6a0bde66ef7f764d4400"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structrs2__vector.html">rs2_vector</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1motion__frame.html#aa7b65349ec3a6a0bde66ef7f764d4400">get_motion_data</a> () const</td></tr>
 <tr class="separator:aa7b65349ec3a6a0bde66ef7f764d4400"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a547e4e61cf60e1f2e8e8b378ca301eab"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structrs2__combined__motion.html">rs2_combined_motion</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1motion__frame.html#a547e4e61cf60e1f2e8e8b378ca301eab">get_combined_motion_data</a> () const</td></tr>
+<tr class="separator:a547e4e61cf60e1f2e8e8b378ca301eab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classrs2_1_1frame"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classrs2_1_1frame')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classrs2_1_1frame.html">rs2::frame</a></td></tr>
 <tr class="memitem:a533c348361561a73bf90a62ef4683f10 inherit pub_methods_classrs2_1_1frame"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1frame.html#a533c348361561a73bf90a62ef4683f10">frame</a> ()</td></tr>
 <tr class="separator:a533c348361561a73bf90a62ef4683f10 inherit pub_methods_classrs2_1_1frame"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -160,6 +162,32 @@ Additional Inherited Members</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a547e4e61cf60e1f2e8e8b378ca301eab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a547e4e61cf60e1f2e8e8b378ca301eab">&#9670;&nbsp;</a></span>get_combined_motion_data()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structrs2__combined__motion.html">rs2_combined_motion</a> rs2::motion_frame::get_combined_motion_data </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Retrieve the combined motion data for frames with RS2_FORMAT_COMBINED_MOTION and RS2_STREAM_MOTION. For RS2_FORMAT_MOTION_XYZ32F and RS2_STREAM_GYRO or RS2_STREAM_ACCEL, use <a class="el" href="classrs2_1_1motion__frame.html#aa7b65349ec3a6a0bde66ef7f764d4400">get_motion_data()</a>. </p><dl class="section return"><dt>Returns</dt><dd><a class="el" href="structrs2__combined__motion.html" title="RS2_STREAM_MOTION / RS2_FORMAT_COMBINED_MOTION content is similar to ROS2&#39;s Imu message. ">rs2_combined_motion</a> - including linear acceleration and angular velocity. </dd></dl>
+
+</div>
+</div>
 <a id="aa7b65349ec3a6a0bde66ef7f764d4400"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa7b65349ec3a6a0bde66ef7f764d4400">&#9670;&nbsp;</a></span>get_motion_data()</h2>
 
@@ -182,7 +210,7 @@ Additional Inherited Members</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>Retrieve the motion data from IMU sensor </p><dl class="section return"><dt>Returns</dt><dd><a class="el" href="structrs2__vector.html" title="3D vector in Euclidean coordinate space ">rs2_vector</a> - 3D vector in Euclidean coordinate space. </dd></dl>
+<p>Retrieve the motion data for frames with RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO or RS2_STREAM_ACCEL. For RS2_STREAM_MOTION and RS2_FORMAT_COMBINED_MOTION, use <a class="el" href="classrs2_1_1motion__frame.html#a547e4e61cf60e1f2e8e8b378ca301eab">get_combined_motion_data()</a>. </p><dl class="section return"><dt>Returns</dt><dd><a class="el" href="structrs2__vector.html" title="3D vector in Euclidean coordinate space ">rs2_vector</a> - 3D vector in Euclidean coordinate space. </dd></dl>
 
 </div>
 </div>

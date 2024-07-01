@@ -55,7 +55,8 @@ $(function() {
 
 <p>Exposes RealSense structs.  
 <a href="#details">More...</a></p>
-
+<div class="textblock"><code>#include &lt;stdint.h&gt;</code><br />
+</div>
 <p><a href="rs__types_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
@@ -79,6 +80,20 @@ Classes</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Quaternion used to represent rotation.  <a href="structrs2__quaternion.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrs2__pose.html">rs2_pose</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrs2__calibration__roi.html">rs2_calibration_roi</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structfloat3__row__major.html">float3_row_major</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structfloat3x3__row__major.html">float3x3_row_major</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrs2__extrinsics__row__major.html">rs2_extrinsics_row_major</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrs2__calibration__config.html">rs2_calibration_config</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrs2__calibration__config__header.html">rs2_calibration_config_header</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrs2__calibration__config__with__header.html">rs2_calibration_config_with_header</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
@@ -215,6 +230,20 @@ Typedefs</h2></td></tr>
 <tr class="separator:a8c102778c8a60c0db2c75d2bfe4ae94b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af22d2853bf06c8db88605b34c2af4a9f"><td class="memItemLeft" align="right" valign="top">typedef long long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__types_8h.html#af22d2853bf06c8db88605b34c2af4a9f">rs2_metadata_type</a></td></tr>
 <tr class="separator:af22d2853bf06c8db88605b34c2af4a9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8905f36ccab1a7fc0f203ded32233517"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="structrs2__calibration__roi.html">rs2_calibration_roi</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__types_8h.html#a8905f36ccab1a7fc0f203ded32233517">rs2_calibration_roi</a></td></tr>
+<tr class="separator:a8905f36ccab1a7fc0f203ded32233517"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1088a9fd6d275b804e36d9d158f566d7"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="structfloat3__row__major.html">float3_row_major</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__types_8h.html#a1088a9fd6d275b804e36d9d158f566d7">float3_row_major</a></td></tr>
+<tr class="separator:a1088a9fd6d275b804e36d9d158f566d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac5934dbdee9e7b82158250458192633d"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="structfloat3x3__row__major.html">float3x3_row_major</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__types_8h.html#ac5934dbdee9e7b82158250458192633d">float3x3_row_major</a></td></tr>
+<tr class="separator:ac5934dbdee9e7b82158250458192633d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad3db71e98b87ff78f70c7ed2e742f6a0"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="structrs2__extrinsics__row__major.html">rs2_extrinsics_row_major</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__types_8h.html#ad3db71e98b87ff78f70c7ed2e742f6a0">rs2_extrinsics_row_major</a></td></tr>
+<tr class="separator:ad3db71e98b87ff78f70c7ed2e742f6a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af87cbf486f7aa689ce1a35f4d4d87b27"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="structrs2__calibration__config.html">rs2_calibration_config</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__types_8h.html#af87cbf486f7aa689ce1a35f4d4d87b27">rs2_calibration_config</a></td></tr>
+<tr class="separator:af87cbf486f7aa689ce1a35f4d4d87b27"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adbd7b7e3bb09590852b1c62bac875b68"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="structrs2__calibration__config__header.html">rs2_calibration_config_header</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__types_8h.html#adbd7b7e3bb09590852b1c62bac875b68">rs2_calibration_config_header</a></td></tr>
+<tr class="separator:adbd7b7e3bb09590852b1c62bac875b68"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a641de671979f61b9b46ccb52323c8853"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="structrs2__calibration__config__with__header.html">rs2_calibration_config_with_header</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__types_8h.html#a641de671979f61b9b46ccb52323c8853">rs2_calibration_config_with_header</a></td></tr>
+<tr class="separator:a641de671979f61b9b46ccb52323c8853"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
 Enumerations</h2></td></tr>
@@ -398,6 +427,90 @@ Functions</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Exposes RealSense structs. </p>
 </div><h2 class="groupheader">Typedef Documentation</h2>
+<a id="a1088a9fd6d275b804e36d9d158f566d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1088a9fd6d275b804e36d9d158f566d7">&#9670;&nbsp;</a></span>float3_row_major</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct <a class="el" href="structfloat3__row__major.html">float3_row_major</a>  <a class="el" href="structfloat3__row__major.html">float3_row_major</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac5934dbdee9e7b82158250458192633d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac5934dbdee9e7b82158250458192633d">&#9670;&nbsp;</a></span>float3x3_row_major</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct <a class="el" href="structfloat3x3__row__major.html">float3x3_row_major</a>  <a class="el" href="structfloat3x3__row__major.html">float3x3_row_major</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af87cbf486f7aa689ce1a35f4d4d87b27"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af87cbf486f7aa689ce1a35f4d4d87b27">&#9670;&nbsp;</a></span>rs2_calibration_config</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct <a class="el" href="structrs2__calibration__config.html">rs2_calibration_config</a>  <a class="el" href="structrs2__calibration__config.html">rs2_calibration_config</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="adbd7b7e3bb09590852b1c62bac875b68"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adbd7b7e3bb09590852b1c62bac875b68">&#9670;&nbsp;</a></span>rs2_calibration_config_header</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct <a class="el" href="structrs2__calibration__config__header.html">rs2_calibration_config_header</a>  <a class="el" href="structrs2__calibration__config__header.html">rs2_calibration_config_header</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a641de671979f61b9b46ccb52323c8853"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a641de671979f61b9b46ccb52323c8853">&#9670;&nbsp;</a></span>rs2_calibration_config_with_header</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct <a class="el" href="structrs2__calibration__config__with__header.html">rs2_calibration_config_with_header</a>  <a class="el" href="structrs2__calibration__config__with__header.html">rs2_calibration_config_with_header</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a8905f36ccab1a7fc0f203ded32233517"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8905f36ccab1a7fc0f203ded32233517">&#9670;&nbsp;</a></span>rs2_calibration_roi</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct <a class="el" href="structrs2__calibration__roi.html">rs2_calibration_roi</a> <a class="el" href="structrs2__calibration__roi.html">rs2_calibration_roi</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="acfaa5076cefeda6a29710ea95f5e4e35"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#acfaa5076cefeda6a29710ea95f5e4e35">&#9670;&nbsp;</a></span>rs2_config</h2>
 
@@ -583,6 +696,20 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Specifies advanced interfaces (capabilities) objects may implement. </p>
+
+</div>
+</div>
+<a id="ad3db71e98b87ff78f70c7ed2e742f6a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad3db71e98b87ff78f70c7ed2e742f6a0">&#9670;&nbsp;</a></span>rs2_extrinsics_row_major</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct <a class="el" href="structrs2__extrinsics__row__major.html">rs2_extrinsics_row_major</a>  <a class="el" href="structrs2__extrinsics__row__major.html">rs2_extrinsics_row_major</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>

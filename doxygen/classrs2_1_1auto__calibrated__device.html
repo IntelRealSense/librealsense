@@ -86,6 +86,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a63a7d1f01887bbd0d7ea2ea159df1018"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaeba3f53d5820ce59c8c24f6c20b011d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1auto__calibrated__device.html#aaeba3f53d5820ce59c8c24f6c20b011d">set_calibration_table</a> (const <a class="el" href="namespacers2.html#a9e38fe1ddd6add2021fc374e119b478d">calibration_table</a> &amp;calibration)</td></tr>
 <tr class="separator:aaeba3f53d5820ce59c8c24f6c20b011d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab544687263a145f3d3f0b8f051a25aa7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structrs2__calibration__config.html">rs2_calibration_config</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1auto__calibrated__device.html#ab544687263a145f3d3f0b8f051a25aa7">json_string_to_calibration_config</a> (const std::string &amp;json_str) const</td></tr>
+<tr class="separator:ab544687263a145f3d3f0b8f051a25aa7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac0d711176a5691fc67ca8ff7e01522bc"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1auto__calibrated__device.html#ac0d711176a5691fc67ca8ff7e01522bc">calibration_config_to_json_string</a> (const <a class="el" href="structrs2__calibration__config.html">rs2_calibration_config</a> &amp;calib_config) const</td></tr>
+<tr class="separator:ac0d711176a5691fc67ca8ff7e01522bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a88361f66ed5db3b3a1cca432bca654c9"><td class="memItemLeft" align="right" valign="top">std::vector&lt; uint8_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1auto__calibrated__device.html#a88361f66ed5db3b3a1cca432bca654c9">run_focal_length_calibration</a> (<a class="el" href="classrs2_1_1frame__queue.html">rs2::frame_queue</a> left, <a class="el" href="classrs2_1_1frame__queue.html">rs2::frame_queue</a> right, float target_w, float target_h, int adjust_both_sides, float *ratio, float *angle) const</td></tr>
 <tr class="separator:a88361f66ed5db3b3a1cca432bca654c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac882e5c3a667eb7a066aea9eec5235c2"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
@@ -101,6 +105,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a92259985ac2112794eaa6331459cfc3b"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
 <tr class="memitem:a92259985ac2112794eaa6331459cfc3b"><td class="memTemplItemLeft" align="right" valign="top">float&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classrs2_1_1auto__calibrated__device.html#a92259985ac2112794eaa6331459cfc3b">calculate_target_z</a> (<a class="el" href="classrs2_1_1frame__queue.html">rs2::frame_queue</a> queue1, <a class="el" href="classrs2_1_1frame__queue.html">rs2::frame_queue</a> queue2, <a class="el" href="classrs2_1_1frame__queue.html">rs2::frame_queue</a> queue3, float target_width, float target_height, T callback) const</td></tr>
 <tr class="separator:a92259985ac2112794eaa6331459cfc3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9ddaeba6159de4e464a2679535be2a2f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structrs2__calibration__config.html">rs2_calibration_config</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1auto__calibrated__device.html#a9ddaeba6159de4e464a2679535be2a2f">get_calibration_config</a> () const</td></tr>
+<tr class="separator:a9ddaeba6159de4e464a2679535be2a2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b5335b9d0d014dca8600a64be5c1012"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1auto__calibrated__device.html#a5b5335b9d0d014dca8600a64be5c1012">set_calibration_config</a> (const <a class="el" href="structrs2__calibration__config.html">rs2_calibration_config</a> &amp;calib_config)</td></tr>
+<tr class="separator:a5b5335b9d0d014dca8600a64be5c1012"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classrs2_1_1calibrated__device"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classrs2_1_1calibrated__device')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classrs2_1_1calibrated__device.html">rs2::calibrated_device</a></td></tr>
 <tr class="memitem:aaddd33e0e529d0d8d795d86f4fdd3cfb inherit pub_methods_classrs2_1_1calibrated__device"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrs2_1_1calibrated__device.html#aaddd33e0e529d0d8d795d86f4fdd3cfb">calibrated_device</a> (<a class="el" href="classrs2_1_1device.html">device</a> d)</td></tr>
 <tr class="separator:aaddd33e0e529d0d8d795d86f4fdd3cfb inherit pub_methods_classrs2_1_1calibrated__device"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -320,6 +328,72 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
+<a id="ac0d711176a5691fc67ca8ff7e01522bc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac0d711176a5691fc67ca8ff7e01522bc">&#9670;&nbsp;</a></span>calibration_config_to_json_string()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string rs2::auto_calibrated_device::calibration_config_to_json_string </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structrs2__calibration__config.html">rs2_calibration_config</a> &amp;&#160;</td>
+          <td class="paramname"><em>calib_config</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>calibration_config_to_json_string </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">calib_config</td><td>Calibration config struct to convert to JSON string </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">error</td><td>If non-null, receives any error that occurs during this call, otherwise, errors are ignored </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>calib_config Calibration Configuration struct to be filled </dd></dl>
+
+</div>
+</div>
+<a id="a9ddaeba6159de4e464a2679535be2a2f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ddaeba6159de4e464a2679535be2a2f">&#9670;&nbsp;</a></span>get_calibration_config()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structrs2__calibration__config.html">rs2_calibration_config</a> rs2::auto_calibrated_device::get_calibration_config </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>get_calibration_config </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[out]</td><td class="paramname">error</td><td>If non-null, receives any error that occurs during this call, otherwise, errors are ignored </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>calib_config Calibration Configuration struct to be filled </dd></dl>
+
+</div>
+</div>
 <a id="a63a7d1f01887bbd0d7ea2ea159df1018"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a63a7d1f01887bbd0d7ea2ea159df1018">&#9670;&nbsp;</a></span>get_calibration_table()</h2>
 
@@ -343,6 +417,40 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 <p>Read current calibration table from flash. </p><dl class="section return"><dt>Returns</dt><dd>Calibration table </dd></dl>
+
+</div>
+</div>
+<a id="ab544687263a145f3d3f0b8f051a25aa7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab544687263a145f3d3f0b8f051a25aa7">&#9670;&nbsp;</a></span>json_string_to_calibration_config()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structrs2__calibration__config.html">rs2_calibration_config</a> rs2::auto_calibrated_device::json_string_to_calibration_config </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>json_str</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>json_string_to_calibration_config </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">json_str</td><td>JSON string to convert to calibration config struct </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">error</td><td>If non-null, receives any error that occurs during this call, otherwise, errors are ignored </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>calib_config Calibration Configuration struct to be filled </dd></dl>
 
 </div>
 </div>
@@ -1013,6 +1121,40 @@ template&lt;class T &gt; </div>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>New calibration table </dd></dl>
+
+</div>
+</div>
+<a id="a5b5335b9d0d014dca8600a64be5c1012"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5b5335b9d0d014dca8600a64be5c1012">&#9670;&nbsp;</a></span>set_calibration_config()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void rs2::auto_calibrated_device::set_calibration_config </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structrs2__calibration__config.html">rs2_calibration_config</a> &amp;&#160;</td>
+          <td class="paramname"><em>calib_config</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>set_calibration_config </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[out]</td><td class="paramname">error</td><td>If non-null, receives any error that occurs during this call, otherwise, errors are ignored </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">error</td><td>If non-null, receives any error that occurs during this call, otherwise, errors are ignored </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>calib_config Calibration Configuration struct to be filled </dd></dl>
 
 </div>
 </div>

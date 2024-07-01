@@ -69,6 +69,7 @@ $(function() {
 <code>#include &lt;iterator&gt;</code><br />
 <code>#include &lt;sstream&gt;</code><br />
 <code>#include &lt;chrono&gt;</code><br />
+<code>#include &lt;cstring&gt;</code><br />
 </div>
 <p><a href="rs__types_8hpp_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
@@ -158,6 +159,8 @@ Functions</h2></td></tr>
 <tr class="separator:a742351d6f5b3ca4e67df4d1ba22c0123"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6697e3b74ed1017f505a76be25c7a229"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__types_8hpp.html#a6697e3b74ed1017f505a76be25c7a229">operator&lt;&lt;</a> (std::ostream &amp;o, <a class="el" href="structrs2__quaternion.html">rs2_quaternion</a> q)</td></tr>
 <tr class="separator:a6697e3b74ed1017f505a76be25c7a229"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac536f583a60bc26d00270e8243257d30"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rs__types_8hpp.html#ac536f583a60bc26d00270e8243257d30">operator==</a> (<a class="el" href="structrs2__calibration__config.html">rs2_calibration_config</a> const &amp;self, <a class="el" href="structrs2__calibration__config.html">rs2_calibration_config</a> const &amp;other)</td></tr>
+<tr class="separator:ac536f583a60bc26d00270e8243257d30"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
 <a id="a39a2e2b40c03eb38672be931b2e9ad59"></a>
@@ -185,7 +188,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line"><span class="keyword">class </span>name : <span class="keyword">public</span> base\</div><div class="line">    {\</div><div class="line">    public:\</div><div class="line">        explicit name(<a class="code" href="rs__types_8h.html#ab2e9b1e9fd4b0cb3ed42f33f0c9dec03">rs2_error</a>* e) noexcept : base(e) {}\</div><div class="line">    }</div><div class="ttc" id="rs__types_8h_html_ab2e9b1e9fd4b0cb3ed42f33f0c9dec03"><div class="ttname"><a href="rs__types_8h.html#ab2e9b1e9fd4b0cb3ed42f33f0c9dec03">rs2_error</a></div><div class="ttdeci">struct rs2_error rs2_error</div><div class="ttdef"><b>Definition:</b> rs_types.h:227</div></div>
+<b>Value:</b><div class="fragment"><div class="line"><span class="keyword">class </span>name : <span class="keyword">public</span> base\</div><div class="line">    {\</div><div class="line">    public:\</div><div class="line">        explicit name(<a class="code" href="rs__types_8h.html#ab2e9b1e9fd4b0cb3ed42f33f0c9dec03">rs2_error</a>* e) noexcept : base(e) {}\</div><div class="line">    }</div><div class="ttc" id="rs__types_8h_html_ab2e9b1e9fd4b0cb3ed42f33f0c9dec03"><div class="ttname"><a href="rs__types_8h.html#ab2e9b1e9fd4b0cb3ed42f33f0c9dec03">rs2_error</a></div><div class="ttdeci">struct rs2_error rs2_error</div><div class="ttdef"><b>Definition:</b> rs_types.h:229</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -401,6 +404,42 @@ Functions</h2></td></tr>
           <td></td>
           <td class="paramtype"><a class="el" href="structrs2__quaternion.html">rs2_quaternion</a>&#160;</td>
           <td class="paramname"><em>q</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac536f583a60bc26d00270e8243257d30"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac536f583a60bc26d00270e8243257d30">&#9670;&nbsp;</a></span>operator==()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool operator== </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structrs2__calibration__config.html">rs2_calibration_config</a> const &amp;&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structrs2__calibration__config.html">rs2_calibration_config</a> const &amp;&#160;</td>
+          <td class="paramname"><em>other</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
