@@ -94,67 +94,80 @@ if [ -n "${mdev}" ]; then
 dot=$(${media_util} -d ${mdev} --print-dot)
 
 vid_dev_idx=$(echo "${dot}" | grep "DS5 mux" | grep "vi-output" | tr '\\n' '\n' | grep video | awk -F'"' '{print $1}' | grep -Po "\\d+")
+
 [[ -z ${vid_dev_idx} ]] && exit 0
+
+# get cameras physical location
+dfuid=($(ls -1 /sys/class/d4xx-class/ | awk -F'-' '{print $4}'))
+cam_id=0
 [[ $quiet -eq 0 ]] && printf "Bus\tCamera\tSensor\tNode Type\tVideo Node\tRS Link\n"
-vid_dev_idx_arr=($(echo $vid_dev_idx | tr " " "\n"))
-idx_0=${vid_dev_idx_arr[0]}
-  for i in $vid_dev_idx; do
-    vid="/dev/video${i}"
-    [[ ! -c "${vid}" ]] && break
-    cam_id=$(((i-${idx_0})/6))
-    sens_id=$(((i-${idx_0})%6))
-    dev_name=$(${v4l2_util} -d ${vid} -D | grep 'Driver name' | head -n1 | awk -F' : ' '{print $2}')
-    bus="mipi"   
-    if [ "${dev_name}" = "tegra-video" ]; then
-    	dev_ln="/dev/video-rs-${camera_vid[${sens_id}]}-${cam_id}"
-    else
+
+for dfuid_x in ${dfuid[*]}; do # for all physical cameras one by one.
+  vid_dev_idx_arr=($(echo "${dot}" | grep "vi-output, DS5 mux [[:digit:]]*-${dfuid_x}" | tr '\\n' '\n' | grep video | awk -F'"' '{print $1}' | grep -Po "\\d+"))
+  sens_id=0
+    for i in ${vid_dev_idx_arr[*]}; do
+      vid="/dev/video${i}"
+      [[ ! -c "${vid}" ]] && break
+      dev_name=$(${v4l2_util} -d ${vid} -D | grep 'Driver name' | head -n1 | awk -F' : ' '{print $2}')
+      bus="mipi"   
+      if [ "${dev_name}" = "tegra-video" ]; then
+    	  dev_ln="/dev/video-rs-${camera_vid[${sens_id}]}-${cam_id}"
+      else
         continue
-    fi
-    type="Streaming"
-    sensor_name=$(echo "${camera_vid[${sens_id}]}" | awk -F'-' '{print $1}')
-    [[ $quiet -eq 0 ]] && printf '%s\t%d\t%s\t%s\t%s\t%s\n' ${bus} ${cam_id} ${sensor_name} ${type} ${vid} ${dev_ln}
-
-    # create link only in case we choose not only to show it
-    if [[ $info -eq 0 ]]; then
-      [[ -e $dev_ln ]] && unlink $dev_ln
-      ln -s $vid $dev_ln
-      if [[ "${sensor_name}" == 'depth' ]]; then
-        # Create DFU device link for camera on jetson
-        i2cdev=$(echo "${dot}" | grep  "${vid}" | tr '\\n' ' ' | awk '{print $5}')
-        dev_dfu_name="/dev/d4xx-dfu-${i2cdev}"
-        dev_dfu_ln="/dev/d4xx-dfu-${cam_id}"
-        [[ -e $dev_dfu_ln ]] && unlink $dev_dfu_ln
-        ln -s $dev_dfu_name $dev_dfu_ln
       fi
-    fi
-    # find metadata
-    # skip IR and imu metadata node for now.
-    [[ ${sensor_name} == 'ir' ]] && continue
-    [[ ${sensor_name} == 'imu' ]] && continue
+      type="Streaming"
+      sensor_name=$(echo "${camera_vid[${sens_id}]}" | awk -F'-' '{print $1}')
+      [[ $quiet -eq 0 ]] && printf '%s\t%d\t%s\t%s\t%s\t%s\n' ${bus} ${cam_id} ${sensor_name} ${type} ${vid} ${dev_ln}
 
-    i=$((i+1))
-    sens_id=$(((i-${idx_0})%6))
+      # create link only in case we choose not only to show it
+      if [[ $info -eq 0 ]]; then
+        [[ -e $dev_ln ]] && unlink $dev_ln
+        ln -s $vid $dev_ln
+      fi
 
-    type="Metadata"
-    vid="/dev/video${i}"
-    [[ ! -c "${vid}" ]] && break
-    dev_name=$(${v4l2_util} -d ${vid} -D | grep 'Driver name' | head -n1 | awk -F' : ' '{print $2}')
-    if [ "${dev_name}" = "tegra-embedded" ]; then
-      dev_md_ln="/dev/video-rs-${camera_vid[${sens_id}]}-${cam_id}"
-    else
-       continue
-    fi
-    sensor_name=$(echo "${camera_vid[${sens_id}]}" | awk -F'-' '{print $1}')
-    [[ $quiet -eq 0 ]] && printf '%s\t%d\t%s\t%s\t%s\t%s\n' ${bus} ${cam_id} ${sensor_name} ${type} ${vid} ${dev_md_ln}
+      sens_id=$((sens_id+1))
+      # find metadata
+      # skip IR and imu metadata node for now.
+      [[ ${sensor_name} == 'ir' ]] && continue
+      [[ ${sensor_name} == 'imu' ]] && continue
 
-    # create link only in case we choose not only to show it
+      i=$((i+1)) # metadata video index next to the video node always
+
+      type="Metadata"
+      vid="/dev/video${i}"
+      [[ ! -c "${vid}" ]] && break
+      dev_name=$(${v4l2_util} -d ${vid} -D | grep 'Driver name' | head -n1 | awk -F' : ' '{print $2}')
+      if [ "${dev_name}" = "tegra-embedded" ]; then
+        dev_md_ln="/dev/video-rs-${camera_vid[${sens_id}]}-${cam_id}"
+      else
+        continue
+      fi
+      sensor_name=$(echo "${camera_vid[${sens_id}]}" | awk -F'-' '{print $1}')
+      [[ $quiet -eq 0 ]] && printf '%s\t%d\t%s\t%s\t%s\t%s\n' ${bus} ${cam_id} ${sensor_name} ${type} ${vid} ${dev_md_ln}
+
+      # create link only in case we choose not only to show it
+      if [[ $info -eq 0 ]]; then
+        [[ -e $dev_md_ln ]] && unlink $dev_md_ln
+        ln -s $vid $dev_md_ln
+      fi
+
+      sens_id=$((sens_id+1))
+    done # for i in $vid_dev_idx
+
+    # Create DFU device link for camera on jetson
+    i2cdev=$(ls -1 /sys/class/d4xx-class/ | grep ${dfuid_x})
+    dev_dfu_name="/dev/${i2cdev}"
+    dev_dfu_ln="/dev/d4xx-dfu-${cam_id}"
     if [[ $info -eq 0 ]]; then
-      [[ -e $dev_md_ln ]] && unlink $dev_md_ln
-      ln -s $vid $dev_md_ln
+      [[ -e $dev_dfu_ln ]] && unlink $dev_dfu_ln
+      ln -s $dev_dfu_name $dev_dfu_ln
     fi
-  done
-  exit 0
-fi
+    [[ $quiet -eq 0 ]] && printf '%s\t%d\t%s\tFirmware \t%s\t%s\n' " i2c " ${cam_id} "d4xx   " $dev_dfu_name $dev_dfu_ln
+
+  cam_id=$((cam_id+1))
+done # for dfuid_x in ${dfuid[*]}
+exit 0 # exit for Tegra
+fi # done for Jetson
 
 #ADL-P IPU6
 mdev=$(${v4l2_util} --list-devices | grep -A1 ipu6 | grep media)
