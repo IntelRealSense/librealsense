@@ -10,9 +10,15 @@ from rspy import log
 import time
 
 dev = test.find_first_device_or_exit()
-depth_sensor = dev.first_depth_sensor()
-color_sensor = dev.first_color_sensor()
+product_name = dev.get_info(rs.camera_info.name)
 product_line = dev.get_info(rs.camera_info.product_line)
+depth_sensor = dev.first_depth_sensor()
+color_sensor = None
+try:
+    color_sensor = dev.first_color_sensor()
+except RuntimeError as rte:
+    if 'D421' not in product_name and 'D405' not in product_name: # Cameras with no color sensor may fail.
+        test.unexpected_exception()
 
 previous_depth_frame_number = -1
 previous_color_frame_number = -1
@@ -62,16 +68,18 @@ depth_profile = next(p for p in
                      and p.as_video_stream_profile().width() == 640
                      and p.as_video_stream_profile().height() == 480)
 
-color_profile = next(p for p in color_sensor.profiles if p.fps() == 30
-                     and p.stream_type() == rs.stream.color
-                     and p.format() == rs.format.yuyv
-                     and p.as_video_stream_profile().width() == 640
-                     and p.as_video_stream_profile().height() == 480)
+if color_sensor:
+    color_profile = next(p for p in color_sensor.profiles if p.fps() == 30
+                         and p.stream_type() == rs.stream.color
+                         and p.format() == rs.format.yuyv
+                         and p.as_video_stream_profile().width() == 640
+                        and p.as_video_stream_profile().height() == 480)
 
 depth_sensor.open(depth_profile)
 depth_sensor.start(check_depth_frame_drops)
-color_sensor.open(color_profile)
-color_sensor.start(check_color_frame_drops)
+if color_sensor:
+    color_sensor.open(color_profile)
+    color_sensor.start(check_color_frame_drops)
 
 #############################################################################################
 # Test #1
@@ -137,17 +145,19 @@ test_option_changes(depth_sensor)
 test.finish()
 
 #############################################################################################
-time.sleep(0.5)  # jic
-test.start("Checking frame drops when setting options on color")
-test_option_changes( color_sensor )
-test.finish()
+if color_sensor:
+    time.sleep(0.5)  # jic
+    test.start("Checking frame drops when setting options on color")
+    test_option_changes( color_sensor )
+    test.finish()
 
 
 #############################################################################################
 depth_sensor.stop()
 depth_sensor.close()
 
-color_sensor.stop()
-color_sensor.close()
+if color_sensor:
+    color_sensor.stop()
+    color_sensor.close()
 
 test.print_results_and_exit()

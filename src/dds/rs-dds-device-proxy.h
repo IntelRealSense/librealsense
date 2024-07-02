@@ -6,6 +6,7 @@
 #include <src/fw-update/fw-update-device-interface.h>
 #include <src/core/debug.h>
 #include "sid_index.h"
+#include "rsdds-serializable.h"
 
 #include <memory>
 #include <vector>
@@ -40,6 +41,7 @@ class dds_device_proxy
     , public debug_interface
     , public updatable                // unsigned, non-recovery-mode
     , public update_device_interface  // signed, recovery-mode
+    , public dds_serializable
 {
     std::shared_ptr< realdds::dds_device > _dds_dev;
     std::map< std::string, std::vector< std::shared_ptr< stream_profile_interface > > > _stream_name_to_profiles;
@@ -91,6 +93,11 @@ private:
 private:
     void update( const void * image, int image_size, rs2_update_progress_callback_sptr = nullptr ) const override;
 
+    // dds_serializable
+private:
+    device_interface const & get_serializable_device() const override { return *this; }
+    std::vector< sensor_interface * > get_serializable_sensors() override;
+    std::vector< sensor_interface const * > get_serializable_sensors() const override;
 };
 
 

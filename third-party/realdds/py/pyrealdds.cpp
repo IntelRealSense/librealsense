@@ -913,6 +913,10 @@ PYBIND11_MODULE(NAME, m) {
         .def( "publish_metadata", &dds_device_server::publish_metadata, py::call_guard< py::gil_scoped_release >() )
         .def( "broadcast", &dds_device_server::broadcast )
         .def( "broadcast_disconnect", &dds_device_server::broadcast_disconnect, py::arg( "ack-timeout" ) = dds_time() )
+        .def( FN_FWD( dds_device_server, on_set_option,
+                      (dds_device_server &, std::shared_ptr< realdds::dds_option > const &, json_ref &&),
+                      ( std::shared_ptr< realdds::dds_option > const & option, json & value ),
+                      callback( self, option, json_ref{ value } ); ) )
         .def( FN_FWD_R( dds_device_server, on_control,
                         false,
                         (dds_device_server &, std::string const &, py::object &&, json_ref &&),
