@@ -1162,17 +1162,28 @@ namespace librealsense
             // Device with multi sensors can be enabled only if all sensors (RGB + Depth) are present
             auto is_pid_of_multisensor_device = [](int pid) { return std::find(std::begin(ds::d400_multi_sensors_pid), std::end(ds::d400_multi_sensors_pid), pid) != std::end(ds::d400_multi_sensors_pid); };
             bool is_device_multisensor = false;
+            auto is_pid_of_mipi_device = [](int pid) { return std::find(std::begin(ds::d400_mipi_device_pid), std::end(ds::d400_mipi_device_pid), pid) != std::end(ds::d400_mipi_device_pid); };
+            bool is_mipi_device = false;
             for (auto&& uvc : devices)
             {
                 if (is_pid_of_multisensor_device(uvc.pid))
                     is_device_multisensor = true;
+                if (is_pid_of_mipi_device(uvc.pid))
+                    is_mipi_device = true;
             }
 
             if(is_device_multisensor)
             {
-                all_sensors_present = all_sensors_present && 
-                    (mi_present(devices, 3) ||  // mi for RGB is 3 for USB devices
-                        mi_present(devices, 4));// mi for Accel/Gyro is 4 for MIPI devices
+                if(!is_mipi_device)
+                {
+                    all_sensors_present = all_sensors_present &&
+                                          mi_present(devices, 3); // mi for RGB is 3 for USB devices
+                }
+                else
+                {
+                    all_sensors_present = all_sensors_present &&
+                                           mi_present(devices, 4);// mi for Accel/Gyro is 4 for MIPI devices
+                }
             }
 
 
