@@ -80,6 +80,10 @@ namespace librealsense
             ds::RS457_PID
         };
 
+        static const std::set<std::uint16_t> d400_mipi_device_pid = {
+            ds::RS457_PID
+        };
+
         static const std::set<std::uint16_t> d400_hid_sensors_pid = {
             ds::RS435I_PID,
             ds::RS430I_PID,
