@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
-#include <rsutils/string/ip-address.h>
+#include <rsutils/type/ip-address.h>
 #include <rsutils/string/from.h>
 
 #include <rsutils/json.h>
@@ -9,7 +9,7 @@ using rsutils::json;
 
 
 namespace rsutils {
-namespace string {
+namespace type {
 
 
 static bool parse_ip_part( char const *& pch, uint8_t & out_byte ) noexcept
@@ -97,5 +97,5 @@ void from_json( json const & j, ip_address & ip )
 }
 
 
-}  // namespace string
+}  // namespace type
 }  // namespace rsutils

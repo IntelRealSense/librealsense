@@ -585,7 +585,7 @@ json dds_enum_option::to_json() const
 }
 
 
-/*static*/ rsutils::string::ip_address dds_ip_option::check_ip( json const & value )
+/*static*/ dds_ip_option::ip_address dds_ip_option::check_ip( json const & value )
 {
     ip_address ip( value.string_ref() );
     if( ip.is_valid() )

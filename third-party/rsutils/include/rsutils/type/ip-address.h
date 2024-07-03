@@ -10,7 +10,7 @@
 
 
 namespace rsutils {
-namespace string {
+namespace type {
 
 
 // An IP address, version 4.
@@ -73,5 +73,5 @@ void from_json( rsutils::json const &, ip_address & );
 // See https://github.com/nlohmann/json#arbitrary-types-conversions
 
 
-}  // namespace string
+}  // namespace type
 }  // namespace rsutils

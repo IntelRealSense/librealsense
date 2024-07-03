@@ -3,7 +3,7 @@
 #pragma once
 
 #include <rsutils/json.h>
-#include <rsutils/string/ip-address.h>
+#include <rsutils/type/ip-address.h>
 
 #include <string>
 #include <vector>
@@ -194,7 +194,7 @@ class dds_ip_option : public dds_string_option
     using super = dds_string_option;
 
 public:
-    using ip_address = rsutils::string::ip_address;
+    using ip_address = rsutils::type::ip_address;
 
     char const * value_type() const override { return "ip-address"; }
 
