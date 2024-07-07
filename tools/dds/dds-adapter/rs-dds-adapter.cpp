@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022-4 Intel Corporation. All Rights Reserved.
 
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
@@ -113,7 +113,7 @@ int main( int argc, char * argv[] )
 try
 {
     dds_domain_id domain = -1;  // from settings; default to 0
-    CmdLine cmd( "librealsense rs-dds-adapter tool, use CTRL + C to stop..", ' ' );
+    CmdLine cmd( "librealsense rs-dds-adapter tool, use CTRL + C to stop..", ' ', RS2_API_FULL_VERSION_STR );
     ValueArg< dds_domain_id > domain_arg( "d",
                                           "domain",
                                           "Select domain ID to publish on",

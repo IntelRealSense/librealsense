@@ -3,4 +3,5 @@
 
 add_subdirectory(dds-sniffer)
 add_subdirectory(dds-adapter)
+add_subdirectory(dds-config)
 
