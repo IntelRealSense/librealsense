@@ -1,4 +1,4 @@
-From 152daea37c2e6e3be4f2ae9d70441e2d381a0705 Mon Sep 17 00:00:00 2001
+From 1d10a22a198d8b54c252de46efd4b05396bc0aed Mon Sep 17 00:00:00 2001
 From: Dmitry Perchanov <dmitry.perchanov@intel.com>
 Date: Sun, 22 Jan 2023 13:46:16 +0200
 Subject: [PATCH] Enabling UVC Metadata attributes with Ubuntu 20.04. Kernel
@@ -8,15 +8,15 @@ Co-developed-by: Yu MENG <yu1.meng@intel.com>
 Co-developed-by: Evgeni Raikhel <evgeni.raikhel@intel.com>
 Signed-off-by: Dmitry Perchanov <dmitry.perchanov@intel.com>
 ---
- drivers/media/usb/uvc/uvc_driver.c | 279 +++++++++++++++++++++++++++++
+ drivers/media/usb/uvc/uvc_driver.c | 288 +++++++++++++++++++++++++++++
  drivers/media/usb/uvc/uvcvideo.h   |   2 +-
- 2 files changed, 280 insertions(+), 1 deletion(-)
+ 2 files changed, 289 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index 72fff7264..4d46d06f7 100644
+index 2816f79ef..81b86da7c 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -3164,6 +3164,285 @@ static const struct usb_device_id uvc_ids[] = {
+@@ -3221,6 +3221,294 @@ static const struct usb_device_id uvc_ids[] = {
  	  .bInterfaceSubClass	= 1,
  	  .bInterfaceProtocol	= 0,
  	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
@@ -299,14 +299,23 @@ index 72fff7264..4d46d06f7 100644
 +	  .bInterfaceSubClass	= 1,
 +	  .bInterfaceProtocol	= UVC_PC_PROTOCOL_15,
 +	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
++	  /* Intel D421 Depth Module */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x1155,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
  	/* Generic USB Video Class */
  	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, UVC_PC_PROTOCOL_UNDEFINED) },
  	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, UVC_PC_PROTOCOL_15) },
 diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
-index c3ea6a538..99f9041f8 100644
+index 098cc8fa4..5d252335c 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
-@@ -187,7 +187,7 @@
+@@ -221,7 +221,7 @@
  /* Maximum number of packets per URB. */
  #define UVC_MAX_PACKETS		32
  /* Maximum status buffer size in bytes of interrupt URB. */
@@ -316,5 +325,5 @@ index c3ea6a538..99f9041f8 100644
  #define UVC_CTRL_CONTROL_TIMEOUT	5000
  #define UVC_CTRL_STREAMING_TIMEOUT	5000
 -- 
-2.34.1
+2.25.1
 
