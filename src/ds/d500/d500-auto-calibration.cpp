@@ -3,7 +3,6 @@
 
 
 #include "d500-auto-calibration.h"
-#include "d500-private.h"
 #include <rsutils/string/from.h>
 #include <rsutils/json.h>
 
@@ -26,41 +25,12 @@ namespace librealsense
         "Failed to Run"
     };
 
-#pragma pack(push, 1)
-    struct d500_calibration_answer
-    {
-        uint8_t calibration_state;
-        int8_t calibration_progress;
-        uint8_t calibration_result;
-        ds::d500_coefficients_table depth_calibration;
-    };
-#pragma pack(pop)
-
-
     d500_auto_calibrated::d500_auto_calibrated() :
         _mode (d500_calibration_mode::RS2_D500_CALIBRATION_MODE_RESERVED),
         _state (d500_calibration_state::RS2_D500_CALIBRATION_STATE_IDLE),
         _result(d500_calibration_result::RS2_D500_CALIBRATION_RESULT_UNKNOWN)
-    {}
-
-    bool d500_auto_calibrated::check_buffer_size_from_get_calib_status(std::vector<uint8_t> res) const
     {
-        // the GET_CALIB_STATUS command will return:
-        // - 3 bytes during the whole process
-        // - 515 bytes (3 bytes + 512 bytes of the depth calibration) when the state is Complete
-
-        bool is_size_ok = false;
-        if (res.size() > 1)
-        {
-            if (res[0] < static_cast<int>(d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE) &&
-                res.size() == (sizeof(d500_calibration_answer) - sizeof(ds::d500_coefficients_table)))
-                is_size_ok = true;
-
-            if (res[0] == static_cast<int>(d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE) &&
-                res.size() == sizeof(d500_calibration_answer))
-                is_size_ok = true;
-        }
-        return is_size_ok;
+        _ac_handler = std::make_shared <d500_auto_calibrated_handler_hw_monitor>();
     }
 
     void d500_auto_calibrated::check_preconditions_and_set_state()
@@ -70,13 +40,8 @@ namespace librealsense
             _mode == d500_calibration_mode::RS2_D500_CALIBRATION_MODE_DRY_RUN)
         {
             // calibration state to be IDLE or COMPLETE
-            auto res = _hw_monitor->send(command{ ds::GET_CALIB_STATUS });
-            
-            // checking size of received buffer
-            if (!check_buffer_size_from_get_calib_status(res))
-                throw std::runtime_error("GET_CALIB_STATUS returned struct with wrong size");
+            auto calib_result = _ac_handler->get_status();
 
-            d500_calibration_answer calib_result = *reinterpret_cast<d500_calibration_answer*>(res.data());
             _state = static_cast<d500_calibration_state>(calib_result.calibration_state);
             if (!(_state == d500_calibration_state::RS2_D500_CALIBRATION_STATE_IDLE ||
                 _state == d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE))
@@ -89,11 +54,7 @@ namespace librealsense
         if (_mode == d500_calibration_mode::RS2_D500_CALIBRATION_MODE_ABORT)
         {
             // calibration state to be IN_PROCESS
-            auto res = _hw_monitor->send(command{ ds::GET_CALIB_STATUS });
-            if (!check_buffer_size_from_get_calib_status(res))
-                throw std::runtime_error("GET_CALIB_STATUS returned struct with wrong size");
-
-            d500_calibration_answer calib_result = *reinterpret_cast<d500_calibration_answer*>(res.data());
+            d500_calibration_answer calib_result = _ac_handler->get_status();
             _state = static_cast<d500_calibration_state>(calib_result.calibration_state);
             if (!(_state == d500_calibration_state::RS2_D500_CALIBRATION_STATE_PROCESS))
             {
@@ -124,7 +85,7 @@ namespace librealsense
             check_preconditions_and_set_state();
 
             // sending command to start calibration
-            res = _hw_monitor->send(command{ ds::SET_CALIB_MODE, static_cast<uint32_t>(_mode), 1 /*always*/});
+            res = _ac_handler->run_auto_calibration(_mode);
 
             if (_mode == d500_calibration_mode::RS2_D500_CALIBRATION_MODE_RUN ||
                 _mode == d500_calibration_mode::RS2_D500_CALIBRATION_MODE_DRY_RUN)
@@ -162,11 +123,8 @@ namespace librealsense
         do
         {
             std::this_thread::sleep_for(std::chrono::seconds(1));
-            res = _hw_monitor->send(command{ ds::GET_CALIB_STATUS });
-            if (!check_buffer_size_from_get_calib_status(res))
-                throw std::runtime_error("GET_CALIB_STATUS returned struct with wrong size");
+            calib_answer = _ac_handler->get_status();
 
-            calib_answer = *reinterpret_cast<d500_calibration_answer*>(res.data());
             _state = static_cast<d500_calibration_state>(calib_answer.calibration_state);
             _result = static_cast<d500_calibration_result>(calib_answer.calibration_result);
             std::stringstream ss;
@@ -224,19 +182,11 @@ namespace librealsense
     std::vector<uint8_t> d500_auto_calibrated::update_abort_status()
     {
         std::vector<uint8_t> ans;
-        auto res = _hw_monitor->send(command{ ds::GET_CALIB_STATUS });
-        if (!check_buffer_size_from_get_calib_status(res))
-            throw std::runtime_error("GET_CALIB_STATUS returned struct with wrong size");
-
-        d500_calibration_answer calib_answer = *reinterpret_cast<d500_calibration_answer*>(res.data());
+        auto calib_answer = _ac_handler->get_status();
         if (calib_answer.calibration_state == static_cast<uint8_t>(d500_calibration_state::RS2_D500_CALIBRATION_STATE_PROCESS))
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
-            res = _hw_monitor->send(command{ ds::GET_CALIB_STATUS });
-            if (!check_buffer_size_from_get_calib_status(res))
-                throw std::runtime_error("GET_CALIB_STATUS returned struct with wrong size");
-
-            calib_answer = *reinterpret_cast<d500_calibration_answer*>(res.data());
+            calib_answer = _ac_handler->get_status();
         }
         if (calib_answer.calibration_state == static_cast<uint8_t>(d500_calibration_state::RS2_D500_CALIBRATION_STATE_IDLE))
         {
@@ -303,57 +253,12 @@ namespace librealsense
 
     rs2_calibration_config d500_auto_calibrated::get_calibration_config() const
     {
-        rs2_calibration_config_with_header* calib_config_with_header;
-
-        // prepare command
-        using namespace ds;
-        command cmd(GET_HKR_CONFIG_TABLE,
-            static_cast<int>(d500_calib_location::d500_calib_flash_memory),
-            static_cast<int>(d500_calibration_table_id::calib_cfg_id),
-            static_cast<int>(d500_calib_type::d500_calib_dynamic));
-        auto res = _hw_monitor->send(cmd);
-
-        if (res.size() < sizeof(rs2_calibration_config_with_header))
-        {
-            throw io_exception(rsutils::string::from() << "Calibration config reading failed");
-        }
-        calib_config_with_header = reinterpret_cast<rs2_calibration_config_with_header*>(res.data());
-
-        // check CRC before returning result       
-        auto computed_crc32 = rsutils::number::calc_crc32(res.data() + sizeof(rs2_calibration_config_header), sizeof(rs2_calibration_config));
-        if (computed_crc32 != calib_config_with_header->header.crc32)
-        {
-            throw invalid_value_exception(rsutils::string::from() << "Invalid CRC value for calibration config table");
-        }
-
-        return calib_config_with_header->payload;
+        return _ac_handler->get_calibration_config();
     }
 
     void d500_auto_calibrated::set_calibration_config(const rs2_calibration_config& calib_config)
     {
-        // calculate CRC
-        uint32_t computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<const uint8_t*>(&calib_config), 
-            sizeof(rs2_calibration_config));
-
-        // prepare vector of data to be sent (header + sp)
-        rs2_calibration_config_with_header calib_config_with_header;
-        uint16_t version = ((uint16_t)0x01 << 8) | 0x01;  // major=0x01, minor=0x01 --> ver = major.minor
-        uint32_t calib_version = 0;  // ignoring this field, as requested by sw architect
-        calib_config_with_header.header = { version, static_cast<uint16_t>(ds::d500_calibration_table_id::calib_cfg_id),
-            sizeof(rs2_calibration_config), calib_version, computed_crc32 };
-        calib_config_with_header.payload = calib_config;
-        auto data_as_ptr = reinterpret_cast<const uint8_t*>(&calib_config_with_header);
-
-        // prepare command
-        command cmd(ds::SET_HKR_CONFIG_TABLE,
-            static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
-            static_cast<int>(ds::d500_calibration_table_id::calib_cfg_id),
-            static_cast<int>(ds::d500_calib_type::d500_calib_dynamic));
-        cmd.data.insert(cmd.data.end(), data_as_ptr, data_as_ptr + sizeof(rs2_calibration_config_with_header));
-        cmd.require_response = false;
-
-        // send command 
-        _hw_monitor->send(cmd);
+        _ac_handler->set_calibration_config(calib_config);
     }
 
     std::string d500_auto_calibrated::calibration_config_to_json_string(const rs2_calibration_config& calib_config) const
@@ -438,6 +343,6 @@ namespace librealsense
 
     void d500_auto_calibrated::set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm)
     {
-        _hw_monitor = hwm;
+        _ac_handler->set_hw_monitor_for_auto_calib(hwm);
     }
 }
