@@ -86,8 +86,12 @@ namespace rs2
         {
             auto depth_sensor = _sub->s->as <rs2::depth_sensor>();
 
-            // set depth preset as default preset
-            set_option_if_needed<rs2::depth_sensor>(depth_sensor, RS2_OPTION_VISUAL_PRESET, 1);
+            // disabling the depth visual preset change for D555e - not needed
+            if (get_device_pid() != "0B56")
+            {
+                // set depth preset as default preset
+                set_option_if_needed<rs2::depth_sensor>(depth_sensor, RS2_OPTION_VISUAL_PRESET, 1);
+            }
 
             // turn projector ON
             set_option_if_needed<rs2::depth_sensor>(depth_sensor, RS2_OPTION_EMITTER_ENABLED, 1);

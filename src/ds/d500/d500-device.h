@@ -6,18 +6,19 @@
 #include "d500-private.h"
 #include "hw_monitor_extended_buffers.h"
 
-#include "algo.h"
-#include "error-handling.h"
+//#include "algo.h"
+//#include "error-handling.h"
 #include "core/debug.h"
-#include "core/advanced_mode.h"
-#include "device.h"
+//#include "core/advanced_mode.h"
+//#include "device.h"
 #include "global_timestamp_reader.h"
 #include "fw-update/fw-update-device-interface.h"
-#include "ds/d400/d400-auto-calibration.h"
-#include "ds/ds-options.h"
+//#include "ds/d400/d400-auto-calibration.h"
+//#include "ds/ds-options.h"
 
 #include "ds/ds-device-common.h"
 #include "backend-device.h"
+#include "d500-auto-calibration.h"
 
 #include <rsutils/lazy.h>
 
@@ -36,6 +37,7 @@ namespace librealsense
         : public virtual backend_device
         , public debug_interface
         , public global_time_interface
+        , public d500_auto_calibrated
         , public updatable
     {
     public:
