@@ -51,6 +51,7 @@ struct video_intrinsics
     float2 principal_point = { 0, 0 };                 // Pixel offset from top-left edge
     float2 focal_length = { 0, 0 };                    // As a multiple of pixel width and height
     distortion_parameters distortion = { distortion_model::none, { 0 } };
+    bool force_symmetry = false;
 
     bool is_valid() const { return focal_length.x > 0 && focal_length.y > 0; }
 
@@ -63,7 +64,7 @@ struct video_intrinsics
     video_intrinsics scaled_to( int width, int height ) const;
 
     rsutils::json to_json() const;
-    static video_intrinsics from_json( rsutils::json const & j );
+    static video_intrinsics from_json( rsutils::json const & );
 };
 
 std::ostream & operator<<( std::ostream &, video_intrinsics const & );

@@ -49,7 +49,8 @@ std::ostream & operator<<( std::ostream & os, distortion_parameters const & p )
     case distortion_model::brown:
     case distortion_model::inverse_brown:
     case distortion_model::modified_brown:
-        os << ":" << p.coeffs[0] << ',' << p.coeffs[1] << ',' << p.coeffs[2] << ',' << p.coeffs[3] << ',' << p.coeffs[4];
+        os << "[" << p.coeffs[0] << ',' << p.coeffs[1] << ',' << p.coeffs[2] << ',' << p.coeffs[3] << ',' << p.coeffs[4]
+           << "]";
         break;
     }
     return os;
@@ -58,8 +59,13 @@ std::ostream & operator<<( std::ostream & os, distortion_parameters const & p )
 
 std::ostream & operator<<( std::ostream & os, video_intrinsics const & self )
 {
-    return os << self.width << 'x' << self.height << " pp[" << self.principal_point.x << ',' << self.principal_point.y
-              << "] fl[" << self.focal_length.x << ',' << self.focal_length.y << "] distortion[" << self.distortion << "]";
+    os << self.width << 'x' << self.height;
+    os << " pp[" << self.principal_point.x << ',' << self.principal_point.y << "]";
+    os << " fl[" << self.focal_length.x << ',' << self.focal_length.y << "]";
+    os << " " << self.distortion;
+    if( self.force_symmetry )
+        os << " force-symmetry";
+    return os;
 }
 
 
@@ -93,14 +99,17 @@ json video_intrinsics::to_json() const
     default:
         DDS_THROW( runtime_error, "unknown distortion model: " << int( distortion.model ) );
     }
+    if( force_symmetry )
+        j[topics::notification::stream_options::intrinsics::key::force_symmetry] = true;
     return j;
 }
 
-/* static  */ video_intrinsics video_intrinsics::from_json( json const & j )
+/* static */ video_intrinsics video_intrinsics::from_json( json const & j )
 {
     video_intrinsics ret;
     if( j.is_array() )
     {
+        // Legacy format; should be removed
         int index = 0;
 
         ret.width = j[index++].get< int >();
@@ -141,20 +150,24 @@ json video_intrinsics::to_json() const
     }
     else if( j.is_object() )
     {
+        using namespace topics::notification::stream_options::intrinsics;
+
         // The intrinsics are communicated in an object:
         //    - A `width` and `height` are for the native stream resolution, as 16 - bit integer values
         //    - A `principal-point` defined as `[<x>, <y>]` floating point values
         //    - A `focal-length`, also as `[<x>, <y>]` floats
-        j.nested( topics::notification::stream_options::intrinsics::key::width ).get_to( ret.width );
-        j.nested( topics::notification::stream_options::intrinsics::key::height ).get_to( ret.height );
-        j.nested( topics::notification::stream_options::intrinsics::key::principal_point ).get_to( ret.principal_point );
-        j.nested( topics::notification::stream_options::intrinsics::key::focal_length ).get_to( ret.focal_length );
+        j.nested( key::width ).get_to( ret.width );
+        j.nested( key::height ).get_to( ret.height );
+        j.nested( key::principal_point ).get_to( ret.principal_point );
+        j.nested( key::focal_length ).get_to( ret.focal_length );
+        //    - Symmetry affects how the intrinsics are scaled to different resolutions
+        ret.force_symmetry = j.nested( key::force_symmetry ).default_value( false );
         // A distortion model may be applied:
         //    - The `model` would specify which model is to be used, with the default of `brown`
         //    - The `coefficients` is an array of floating point values, the number and meaning which depend on the `model`
         //    - For `brown`, 5 points [k1, k2, p1, p2, k3] are needed
-        auto coeffs_j = j.nested( topics::notification::stream_options::intrinsics::key::coefficients );
-        auto model_j = j.nested( topics::notification::stream_options::intrinsics::key::model );
+        auto coeffs_j = j.nested( key::coefficients );
+        auto model_j = j.nested( key::model );
         switch( model_j.type() )
         {
         case json::value_t::discarded:
@@ -284,6 +297,9 @@ json extrinsics::to_json() const
 }
 
 
+// Scale video intrinsics at some nominal resolution to another.
+// The algo is the latest as implemented for D500 devices, and adapted from there.
+//
 video_intrinsics video_intrinsics::scaled_to( int const new_width, int const new_height ) const
 {
     if( ! width || ! height )
@@ -291,7 +307,6 @@ video_intrinsics video_intrinsics::scaled_to( int const new_width, int const new
 
     video_intrinsics scaled( *this );
 
-    bool const force_symmetry = false;  // TODO
     if( force_symmetry )
     {
         // Cropping the frame so that the principal point is at the middle
