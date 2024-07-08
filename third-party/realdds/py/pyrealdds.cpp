@@ -967,6 +967,7 @@ PYBIND11_MODULE(NAME, m) {
         video_stream_client_base( m, "video_stream", stream_client_base );
     video_stream_client_base  //
         .def( "set_intrinsics", &dds_video_stream::set_intrinsics )
+        .def( "get_intrinsics", &dds_video_stream::get_intrinsics )
         .def( FN_FWD( dds_video_stream,
                       on_data_available,
                       ( dds_video_stream &, image_msg &&, dds_sample && ),
