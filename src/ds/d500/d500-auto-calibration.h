@@ -4,6 +4,7 @@
 #pragma once
 
 #include "auto-calibrated-device.h"
+#include "d500-auto-calibration-handler.h"
 #include "../../core/advanced_mode.h"
 
 
@@ -33,38 +34,13 @@ namespace librealsense
         
         void set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm);
 
-        enum class d500_calibration_state
-        {
-            RS2_D500_CALIBRATION_STATE_IDLE = 0,
-            RS2_D500_CALIBRATION_STATE_PROCESS,
-            RS2_D500_CALIBRATION_STATE_DONE_SUCCESS,
-            RS2_D500_CALIBRATION_STATE_DONE_FAILURE,
-            RS2_D500_CALIBRATION_STATE_FLASH_UPDATE,
-            RS2_D500_CALIBRATION_STATE_COMPLETE
-        };
-
-        enum class d500_calibration_result
-        {
-            RS2_D500_CALIBRATION_RESULT_UNKNOWN = 0,
-            RS2_D500_CALIBRATION_RESULT_SUCCESS,
-            RS2_D500_CALIBRATION_RESULT_FAILED_TO_CONVERGE,
-            RS2_D500_CALIBRATION_RESULT_FAILED_TO_RUN
-        };
-
     private:
-        enum class d500_calibration_mode
-        {
-            RS2_D500_CALIBRATION_MODE_RESERVED = 0,
-            RS2_D500_CALIBRATION_MODE_RUN,
-            RS2_D500_CALIBRATION_MODE_ABORT,
-            RS2_D500_CALIBRATION_MODE_DRY_RUN
-        };
-
         void check_preconditions_and_set_state();
-        bool check_buffer_size_from_get_calib_status(std::vector<uint8_t> res) const;
         void get_mode_from_json(const std::string& json);
         std::vector<uint8_t> update_calibration_status(int timeout_ms, rs2_update_progress_callback_sptr progress_callback);
         std::vector<uint8_t> update_abort_status();
+
+        std::shared_ptr<d500_auto_calibrated_handler_interface> _ac_handler;
         std::shared_ptr<hw_monitor> _hw_monitor;
         d500_calibration_mode _mode;
         d500_calibration_state _state;
