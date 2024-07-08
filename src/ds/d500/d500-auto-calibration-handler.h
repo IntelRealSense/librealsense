@@ -68,6 +68,6 @@ namespace librealsense
 
     private:
         bool check_buffer_size_from_get_calib_status(std::vector<uint8_t> res) const;
-        std::shared_ptr<hw_monitor> _hw_monitor;
+        std::weak_ptr<hw_monitor> _hw_monitor;
     };
 }
