@@ -1,3 +1,8 @@
-# This branch is the root branch for the SDK doxygen API documantation and it accessable with the link: http://intelrealsense.github.io/librealsense/
+# This branch is the root branch for the SDK API documantation:
 
-## On each release the API documentation will be updated and pushed to this branch
+**Doxygen (C++ docs) is available [here](https://intelrealsense.github.io/librealsense/doxygen/annotated.html)**
+
+**Sphinx (python docs) is available [here](https://intelrealsense.github.io/librealsense/python_docs/_generated/pyrealsense2.html)**
+
+
+On each release the API documentation will be updated and pushed to this branch
