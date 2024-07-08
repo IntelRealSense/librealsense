@@ -5,7 +5,7 @@
 # Currently, we exclude D457 as it's failing
 # test:donotrun:!nightly
 # test:timeout 300
-# timeout - on the worst case, we're testing on D585S, which have 8 streams, so:
+# timeout - on the worst case we have 8 streams, so:
 # timeout = ((8 choose 2)+1) * (TIME_FOR_STEADY_STATE + TIME_TO_COUNT_FRAMES)
 # 8 choose 2 tests to do (one for each pair), plus one for all streams on
 
@@ -63,7 +63,6 @@ def get_sensors_and_profiles(device):
 dev = test.find_first_device_or_exit()
 
 sensor_profiles_array = get_sensors_and_profiles(dev)
-# print([profile for _, profile in sensor_profiles_array])
 all_pairs = [[a[1].stream_name(), b[1].stream_name()] for a, b in combinations(sensor_profiles_array, 2)]
 # all_streams = [[profile.stream_name() for _, profile in sensor_profiles_array]] # at the moment, this fails on CI
 permutations_to_run = all_pairs #+ all_streams
