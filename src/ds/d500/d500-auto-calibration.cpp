@@ -33,6 +33,8 @@ namespace librealsense
         _state (d500_calibration_state::RS2_D500_CALIBRATION_STATE_IDLE),
         _result(d500_calibration_result::RS2_D500_CALIBRATION_RESULT_UNKNOWN)
     {
+        // add here choice between hw_monitor or debug protocol
+        // is hw monitor needed at all (since debug protocol uses hwm
         _ac_handler = std::make_shared <d500_auto_calibrated_handler_hw_monitor>();
     }
 
