@@ -11,6 +11,39 @@ exec 2> /dev/null
 con_dev=$(ls /dev/video* | wc -l)
 exec 2>&3
 
+function DisplayNvidiaLicense {
+    patches_revison=$1
+
+    # verify that curl is installed
+    if  ! which curl > /dev/null  ; then
+      echo "curl is not installed."
+      echo "curl can be installed by 'sudo apt-get install curl'."
+      exit 1
+    fi
+
+    license_path="https://developer.download.nvidia.com/embedded/L4T/r32_Release_v7.1/T186/Tegra_Software_License_Agreement-Tegra-Linux.txt"
+    if [ "5.0.2" = ${patches_revison} ]; then
+        license_path="https://developer.download.nvidia.com/embedded/L4T/r35_Release_v1.0/Release/Tegra_Software_License_Agreement-Tegra-Linux.txt"
+    fi
+
+    if [ "5.1.2" = ${patches_revison} ]; then
+        license_path="https://developer.download.nvidia.com/embedded/L4T/r35_Release_v4.1/release/Tegra_Software_License_Agreement-Tegra-Linux.txt"
+    fi
+
+    if [ "6.0" = ${patches_revison} ]; then
+        license_path="https://developer.download.nvidia.com/embedded/L4T/r36_Release_v3.0/release/Tegra_Software_License_Agreement-Tegra-Linux.txt"
+    fi
+
+    echo -e "\nPlease notice: This script will download the kernel source (from nv-tegra, NVIDIA's public git repository) which is subject to the following license:\n\n${license_path}\n"
+
+    license="$(curl -L -s ${license_path})\n\n"
+
+    ## display the page ##
+    echo -e "${license}"
+
+    read -t 30 -n 1 -s -r -e -p 'Press any key to continue (or wait 30 seconds..)'
+}
+
 if [ $con_dev -ne 0 ];
 then
 	echo -e "\e[32m"
@@ -111,6 +144,10 @@ if [ "6.0" = "$PATCHES_REV" ]; then
 	TEGRA_TAG="jetson_36.3"
 fi
 cp ./scripts/Tegra/$TEGRA_SOURCE_SYNC_SH ${sdk_dir}/Tegra
+
+# Display NVIDIA license
+DisplayNvidiaLicense "$PATCHES_REV"
+
 #Download NVIDIA source, disregard errors on module tag sync
 ./Tegra/$TEGRA_SOURCE_SYNC_SH -k ${TEGRA_TAG} || true
 if [ "6.0" = "$PATCHES_REV" ]; then
