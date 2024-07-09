@@ -45,13 +45,14 @@ namespace librealsense
     };
 #pragma pack(pop)
 
-
+    class d500_device;
     class d500_auto_calibrated_handler_interface
     {
     public:
         virtual d500_calibration_answer get_status() const = 0;
         virtual std::vector<uint8_t> run_auto_calibration(d500_calibration_mode _mode) = 0;
         virtual void set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm) = 0;
+        virtual void set_device_for_auto_calib(std::shared_ptr<d500_device> device) = 0;
         virtual rs2_calibration_config get_calibration_config() const = 0;
         virtual void set_calibration_config(const rs2_calibration_config& calib_config) = 0;
     };
@@ -70,4 +71,20 @@ namespace librealsense
         bool check_buffer_size_from_get_calib_status(std::vector<uint8_t> res) const;
         std::weak_ptr<hw_monitor> _hw_monitor;
     };
+
+    class d500_auto_calibrated_handler_debug_protocol : public d500_auto_calibrated_handler_interface
+    {
+    public:
+        d500_auto_calibrated_handler_debug_protocol() {}
+        virtual d500_calibration_answer get_status() const override;
+        virtual std::vector<uint8_t, std::allocator<uint8_t>> run_auto_calibration(d500_calibration_mode _mode) override;
+        virtual void set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm) override;
+        virtual rs2_calibration_config get_calibration_config() const override;
+        virtual void set_calibration_config(const rs2_calibration_config& calib_config) override;
+
+    private:
+        bool check_buffer_size_from_get_calib_status(std::vector<uint8_t> res) const;
+        std::shared_ptr<hw_monitor> _hw_monitor;
+    };
+
 }

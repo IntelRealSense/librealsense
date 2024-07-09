@@ -10,6 +10,7 @@
 
 namespace librealsense
 {
+    class d500_device;
     class d500_auto_calibrated : public auto_calibrated_interface
     {
     public:
@@ -33,6 +34,7 @@ namespace librealsense
         rs2_calibration_config json_string_to_calibration_config(const std::string& json_str) const override;
         
         void set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm);
+        void set_device_for_auto_calib(std::shared_ptr<d500_device> device);
 
     private:
         void check_preconditions_and_set_state();
