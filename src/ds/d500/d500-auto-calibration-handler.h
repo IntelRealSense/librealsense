@@ -4,7 +4,7 @@
 #pragma once
 
 #include "d500-private.h"
-#include "../../hw-monitor.h"
+#include <src/hw-monitor.h>
 
 
 namespace librealsense
@@ -50,7 +50,7 @@ namespace librealsense
     {
     public:
         virtual d500_calibration_answer get_status() const = 0;
-        virtual std::vector<uint8_t, std::allocator<uint8_t>> run_auto_calibration(d500_calibration_mode _mode) = 0;
+        virtual std::vector<uint8_t> run_auto_calibration(d500_calibration_mode _mode) = 0;
         virtual void set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm) = 0;
         virtual rs2_calibration_config get_calibration_config() const = 0;
         virtual void set_calibration_config(const rs2_calibration_config& calib_config) = 0;
@@ -59,9 +59,9 @@ namespace librealsense
     class d500_auto_calibrated_handler_hw_monitor : public d500_auto_calibrated_handler_interface
     {
     public:
-        d500_auto_calibrated_handler_hw_monitor();
+        d500_auto_calibrated_handler_hw_monitor() {};
         virtual d500_calibration_answer get_status() const override;
-        virtual std::vector<uint8_t, std::allocator<uint8_t>> run_auto_calibration(d500_calibration_mode _mode) override;
+        virtual std::vector<uint8_t> run_auto_calibration(d500_calibration_mode _mode) override;
         virtual void set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm) override;
         virtual rs2_calibration_config get_calibration_config() const override;
         virtual void set_calibration_config(const rs2_calibration_config& calib_config) override;
