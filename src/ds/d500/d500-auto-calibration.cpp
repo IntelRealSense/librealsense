@@ -7,6 +7,7 @@
 
 #include <rsutils/string/from.h>
 #include <rsutils/json.h>
+#include "d500-device.h"
 #include "d500-types/calibration-config.h"
 
 namespace librealsense
@@ -364,5 +365,10 @@ namespace librealsense
     void d500_auto_calibrated::set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm)
     {
         _ac_handler->set_hw_monitor_for_auto_calib(hwm);
+    }
+
+    void d500_auto_calibrated::set_device_for_auto_calib(std::shared_ptr<d500_device> device)
+    {
+        _ac_handler->set_device_for_auto_calib(device);
     }
 }
