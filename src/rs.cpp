@@ -2201,7 +2201,18 @@ void rs2_pipeline_stop(rs2_pipeline* pipe, rs2_error ** error) BEGIN_API_CALL
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
 
-rs2_frame* rs2_pipeline_wait_for_frames(rs2_pipeline* pipe, unsigned int timeout_ms, rs2_error ** error) BEGIN_API_CALL
+void rs2_pipeline_set_device( rs2_pipeline * pipe,
+                                             rs2_device * device,
+                                             rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( pipe );
+    VALIDATE_NOT_NULL( device );
+
+    pipe->pipeline->set_device( device->device );
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, pipe, device ) 
+
+rs2_frame* rs2_pipeline_wait_for_frames(rs2_pipeline* pipe, unsigned int timeout_ms, rs2_error ** error)BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(pipe);
 

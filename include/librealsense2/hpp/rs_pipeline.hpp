@@ -493,6 +493,18 @@ namespace rs2
         }
 
         /**
+         * Set the device to be used in the pipline.
+         * The function is used to assign the device, ensuring the pipeline maintains the sensitivity values configured for this device by the user.
+         * \param[in] device  the device to be used in the pipline. 
+         */
+        void set_device( rs2::device* device )
+        { 
+            rs2_error * e = nullptr;
+            rs2_pipeline_set_device( _pipeline.get(), device->get().get(), &e );
+            error::handle( e );
+        }
+
+        /**
         * Wait until a new set of frames becomes available.
         * The frames set includes time-synchronized frames of each enabled stream in the pipeline.
         * In case of different frame rates of the streams, the frames set include a matching frame of the slow stream,
@@ -583,7 +595,7 @@ namespace rs2
         {
             return _pipeline;
         }
-        explicit pipeline(std::shared_ptr<rs2_pipeline> ptr) : _pipeline(ptr) {}
+        explicit pipeline(std::shared_ptr<rs2_pipeline> ptr) : _pipeline(ptr) {} 
 
     private:
         std::shared_ptr<rs2_pipeline> _pipeline;

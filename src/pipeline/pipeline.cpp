@@ -46,6 +46,17 @@ namespace librealsense
             return unsafe_get_active_profile();
         }
 
+        void pipeline::set_device(
+             std::shared_ptr< librealsense::device_interface >  device_interface ) 
+        {
+            _device_interface = device_interface;
+        }
+
+        std::shared_ptr< librealsense::device_interface >  pipeline::get_device() 
+        {
+            return _device_interface;
+        }
+
         std::shared_ptr<profile> pipeline::get_active_profile() const
         {
             std::lock_guard<std::mutex> lock(_mtx);

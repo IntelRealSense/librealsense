@@ -41,6 +41,9 @@ extern "C" {
     */
     void rs2_pipeline_stop(rs2_pipeline* pipe, rs2_error ** error);
 
+    
+    void rs2_pipeline_set_device( rs2_pipeline * pipe, rs2_device * device, rs2_error ** error );
+
     /**
     * Wait until a new set of frames becomes available.
     * The frames set includes time-synchronized frames of each enabled stream in the pipeline.
