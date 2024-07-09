@@ -6,11 +6,6 @@
 
 namespace librealsense
 {
-    d500_auto_calibrated_handler_hw_monitor::d500_auto_calibrated_handler_hw_monitor()
-    {
-
-    }
-
     d500_calibration_answer d500_auto_calibrated_handler_hw_monitor::get_status() const
     {
         if (auto hwm = _hw_monitor.lock())
@@ -22,16 +17,16 @@ namespace librealsense
 
             return *reinterpret_cast<d500_calibration_answer*>(res.data());
         }
-        throw std::runtime_error("hw monitor has not bewen set");
+        throw std::runtime_error("hw monitor has not been set");
     }
 
-    std::vector<uint8_t, std::allocator<uint8_t>> d500_auto_calibrated_handler_hw_monitor::run_auto_calibration(d500_calibration_mode _mode)
+    std::vector<uint8_t> d500_auto_calibrated_handler_hw_monitor::run_auto_calibration(d500_calibration_mode _mode)
     {
         if (auto hwm = _hw_monitor.lock())
         {
             return hwm->send(command{ ds::SET_CALIB_MODE, static_cast<uint32_t>(_mode), 1 /*always*/ });
         }
-        throw std::runtime_error("hw monitor has not bewen set");
+        throw std::runtime_error("hw monitor has not been set");
     }
 
     void d500_auto_calibrated_handler_hw_monitor::set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm)
@@ -89,7 +84,7 @@ namespace librealsense
 
             return calib_config_with_header->payload;
         }
-        throw std::runtime_error("hw monitor has not bewen set"); 
+        throw std::runtime_error("hw monitor has not been set"); 
     }
 
     void d500_auto_calibrated_handler_hw_monitor::set_calibration_config(const rs2_calibration_config& calib_config)
@@ -122,7 +117,7 @@ namespace librealsense
         }
         else
         {
-            throw std::runtime_error("hw monitor has not bewen set");
+            throw std::runtime_error("hw monitor has not been set");
         }
     }
 
