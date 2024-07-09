@@ -294,31 +294,37 @@ namespace librealsense
         //D405 needs special calculation because the ISP crops the full sensor image using non linear transformation.
         rs2_intrinsics get_d405_color_stream_intrinsic(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)
         {
-            // Convert normalized focal length and principal point to pixel units (K matrix format)
-            auto normalized_k_to_pixels = [&]( float3x3 & k, ds_rect_resolutions res )
+            struct resolution
             {
-                if( res == max_ds_rect_resolutions )
-                    throw invalid_value_exception( rsutils::string::from() << 
+                uint32_t width = 0;
+                uint32_t height = 0;
+            };
+
+            // Convert normalized focal length and principal point to pixel units (K matrix format)
+            auto normalized_k_to_pixels = [&]( float3x3 & k, resolution res )
+            {
+                if( res.width == 0 || res.height == 0 )
+                    throw invalid_value_exception( rsutils::string::from() <<
                                                    "Unsupported resolution used (" << width << ", " << height << ")" );
 
-                k( 0, 0 ) = k( 0, 0 ) * resolutions_list[res].x / 2.f;  // fx
-                k( 1, 1 ) = k( 1, 1 ) * resolutions_list[res].y / 2.f;  // fy
-                k( 2, 0 ) = ( k( 2, 0 ) + 1 ) * resolutions_list[res].x / 2.f;  // ppx
-                k( 2, 1 ) = ( k( 2, 1 ) + 1 ) * resolutions_list[res].y / 2.f;  // ppy
+                k( 0, 0 ) = k( 0, 0 ) * res.width / 2.f;      // fx
+                k( 1, 1 ) = k( 1, 1 ) * res.height / 2.f;     // fy
+                k( 2, 0 ) = ( k( 2, 0 ) + 1 ) * res.width / 2.f;  // ppx
+                k( 2, 1 ) = ( k( 2, 1 ) + 1 ) * res.height / 2.f;  // ppy
             };
 
             // Scale focal length and principal point in pixel units from one resolution to another (K matrix format)
-            auto scale_pixel_k = [&]( float3x3 & k, ds_rect_resolutions in_res, ds_rect_resolutions out_res )
+            auto scale_pixel_k = [&]( float3x3 & k, resolution in_res, resolution out_res)
             {
-                if( in_res == max_ds_rect_resolutions || out_res == max_ds_rect_resolutions )
-                    throw invalid_value_exception( rsutils::string::from() << 
+                if( in_res.width == 0 || in_res.height == 0 || out_res.width == 0 || out_res.height == 0 )
+                    throw invalid_value_exception( rsutils::string::from() <<
                                                    "Unsupported resolution used (" << width << ", " << height << ")" );
 
-                float scale_x = resolutions_list[out_res].x / static_cast< float >( resolutions_list[in_res].x );
-                float scale_y = resolutions_list[out_res].y / static_cast< float >( resolutions_list[in_res].y );
+                float scale_x = out_res.width / static_cast< float >( in_res.width );
+                float scale_y = out_res.height / static_cast< float >( in_res.height );
                 float scale = max( scale_x, scale_y );
-                float shift_x = ( resolutions_list[in_res].x * scale - resolutions_list[out_res].x ) / 2.f;
-                float shift_y = ( resolutions_list[in_res].y * scale - resolutions_list[out_res].y ) / 2.f;
+                float shift_x = ( in_res.width * scale - out_res.width ) / 2.f;
+                float shift_y = ( in_res.height * scale - out_res.height ) / 2.f;
 
                 k( 0, 0 ) = k( 0, 0 ) * scale;  // fx
                 k( 1, 1 ) = k( 1, 1 ) * scale;  // fy
@@ -327,26 +333,26 @@ namespace librealsense
             };
 
             auto table = check_calib< ds::d400_rgb_calibration_table >( raw_data );
-            auto output_res = width_height_to_ds_rect_resolutions( width, height );
-            auto calibration_res = width_height_to_ds_rect_resolutions( table->calib_width, table->calib_height );
+            auto output_res = resolution{ width, height };
+            auto calibration_res = resolution{ table->calib_width, table->calib_height };
 
             float3x3 k = table->intrinsic;
-            if( output_res == res_1280_720 )
+            if( width == 1280 && height == 720 )
                 normalized_k_to_pixels( k, output_res );
-            else if( output_res == res_640_480 ) // 640x480 is 4:3 not 16:9 like other available resolutions. The ISP handling is different.
+            else if( width == 640 && height == 480 ) // 640x480 is 4:3 not 16:9 like other available resolutions, ISP handling is different.
             {
-                auto raw_res = width_height_to_ds_rect_resolutions( 1280, 800 );
+                auto raw_res = resolution{ 1280, 800 };
                 // Extrapolate K to raw resolution
-                float scale_y = resolutions_list[calibration_res].y / static_cast< float >( resolutions_list[raw_res].y );
+                float scale_y = calibration_res.height / static_cast< float >( raw_res.height );
                 k( 1, 1 ) = k( 1, 1 ) * scale_y;  // fy
                 k( 2, 1 ) = k( 2, 1 ) * scale_y;  // ppy
                 normalized_k_to_pixels( k, raw_res );
                 // Handle ISP scaling to 770x480
-                auto scale_res = width_height_to_ds_rect_resolutions( 770, 480 );
+                auto scale_res = resolution{ 770, 480 };
                 scale_pixel_k( k, raw_res, scale_res );
                 // Handle ISP cropping to 640x480
-                k( 2, 0 ) = k( 2, 0 ) - ( resolutions_list[scale_res].x - resolutions_list[output_res].x ) / 2;  // ppx
-                k( 2, 1 ) = k( 2, 1 ) - ( resolutions_list[scale_res].y - resolutions_list[output_res].y ) / 2;  // ppy
+                k( 2, 0 ) = k( 2, 0 ) - ( scale_res.width - output_res.width ) / 2;  // ppx
+                k( 2, 1 ) = k( 2, 1 ) - ( scale_res.height - output_res.height ) / 2;  // ppy
             }
             else
             {
