@@ -138,18 +138,20 @@ namespace librealsense
         return check_buffer_size_from_get_calib_status_method(res);
     }
 
-    void d500_auto_calibrated_handler_debug_protocol::set_device_for_auto_calib(std::shared_ptr<d500_device> device)
+    void d500_auto_calibrated_handler_debug_protocol::set_device_for_auto_calib(d500_device* device)
     {
         _dev = device;
     }
 
     d500_calibration_answer d500_auto_calibrated_handler_debug_protocol::get_status() const
     {
-        if (auto device = _dev.lock())
+        if (_dev)
         {
-            auto cmd = device->build_command(ds::GET_CALIB_STATUS);
-            auto res = device->send_receive_raw_data(cmd);
+            auto cmd = _dev->build_command(ds::GET_CALIB_STATUS);
+            auto res = _dev->send_receive_raw_data(cmd);
 
+            // slicing 4 first bytes - opcode
+            res.erase(res.begin(), res.begin() + 4);
             // checking size of received buffer
             if (!check_buffer_size_from_get_calib_status(res))
                 throw std::runtime_error("GET_CALIB_STATUS returned struct with wrong size");
@@ -161,29 +163,29 @@ namespace librealsense
 
     std::vector<uint8_t> d500_auto_calibrated_handler_debug_protocol::run_auto_calibration(d500_calibration_mode _mode)
     {
-        if (auto device = _dev.lock())
+        if (_dev)
         {
-            auto cmd = device->build_command(ds::SET_CALIB_MODE, static_cast<uint32_t>(_mode), 1 /*always*/);
-            return device->send_receive_raw_data(cmd);
+            auto cmd = _dev->build_command(ds::SET_CALIB_MODE, static_cast<uint32_t>(_mode), 1 /*always*/);
+            return _dev->send_receive_raw_data(cmd);
         }
         throw std::runtime_error("device has not been set");
     }
 
     void d500_auto_calibrated_handler_debug_protocol::set_calibration_config(const rs2_calibration_config& calib_config)
     {
-        if (auto device = _dev.lock())
+        if (_dev)
         {
             auto calib_config_with_header = add_header_to_calib_config(calib_config);
 
             // prepare command
-            auto cmd = device->build_command(ds::SET_HKR_CONFIG_TABLE,
+            auto cmd = _dev->build_command(ds::SET_HKR_CONFIG_TABLE,
                 static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
                 static_cast<int>(ds::d500_calibration_table_id::calib_cfg_id),
                 static_cast<int>(ds::d500_calib_type::d500_calib_dynamic), 0,
                 calib_config_with_header.data(), sizeof(rs2_calibration_config_with_header));
 
             // send command 
-            auto res = device->send_receive_raw_data(cmd);
+            auto res = _dev->send_receive_raw_data(cmd);
         }
         else
         {
@@ -193,19 +195,19 @@ namespace librealsense
 
     rs2_calibration_config d500_auto_calibrated_handler_debug_protocol::get_calibration_config() const
     {
-        if (auto device = _dev.lock())
+        if (_dev)
         {
             rs2_calibration_config_with_header* calib_config_with_header;
 
             // prepare command
             using namespace ds;
-            auto cmd = device->build_command(GET_HKR_CONFIG_TABLE,
+            auto cmd = _dev->build_command(GET_HKR_CONFIG_TABLE,
                 static_cast<int>(d500_calib_location::d500_calib_flash_memory),
                 static_cast<int>(d500_calibration_table_id::calib_cfg_id),
                 static_cast<int>(d500_calib_type::d500_calib_dynamic));
 
             // sending command
-            auto res = device->send_receive_raw_data(cmd);
+            auto res = _dev->send_receive_raw_data(cmd);
 
             if (res.size() < sizeof(rs2_calibration_config_with_header))
             {

@@ -33,7 +33,7 @@ namespace librealsense
     {
         // add here choice between hw_monitor or debug protocol
         // is hw monitor needed at all (since debug protocol uses hwm
-        _ac_handler = std::make_shared <d500_auto_calibrated_handler_hw_monitor>();
+        _ac_handler = std::make_shared <d500_auto_calibrated_handler_debug_protocol>();
     }
 
     void d500_auto_calibrated::check_preconditions_and_set_state()
@@ -349,7 +349,7 @@ namespace librealsense
         _ac_handler->set_hw_monitor_for_auto_calib(hwm);
     }
 
-    void d500_auto_calibrated::set_device_for_auto_calib(std::shared_ptr<d500_device> device)
+    void d500_auto_calibrated::set_device_for_auto_calib(d500_device* device)
     {
         _ac_handler->set_device_for_auto_calib(device);
     }
