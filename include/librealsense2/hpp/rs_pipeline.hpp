@@ -595,7 +595,7 @@ namespace rs2
         {
             return _pipeline;
         }
-        explicit pipeline(std::shared_ptr<rs2_pipeline> ptr) : _pipeline(ptr) {} 
+        explicit pipeline(std::shared_ptr<rs2_pipeline> ptr) : _pipeline(ptr) {}
 
     private:
         std::shared_ptr<rs2_pipeline> _pipeline;
