@@ -834,7 +834,7 @@ namespace librealsense
 
     std::string d500_safety_sensor::get_application_config() const
     { 
-        ApplicationConfigWithHeader* result;
+        application_config_with_header* result;
 
         // prepare command
         command cmd(ds::GET_HKR_CONFIG_TABLE,
@@ -845,38 +845,39 @@ namespace librealsense
 
         // send command to device and get response (safety_interface_config entry + header)
         std::vector< uint8_t > response = _owner->_hw_monitor->send(cmd);
-        if (response.size() < sizeof(ApplicationConfigWithHeader))
+        if (response.size() < sizeof(application_config_with_header))
         {
             throw io_exception(rsutils::string::from() << "Applicaion Config Read Failed");
         }
+
         // check CRC before returning result       
-        auto computed_crc32 = rsutils::number::calc_crc32(response.data() + sizeof(ApplicationConfigWithHeader),
-            sizeof(ApplicationConfig));
-        result = reinterpret_cast<ApplicationConfigWithHeader*>(response.data());
-        if (computed_crc32 != result->header.crc32)
+        auto computed_crc32 = rsutils::number::calc_crc32(response.data() + sizeof(application_config_with_header),
+            sizeof(application_config));
+        result = reinterpret_cast<application_config_with_header*>(response.data());
+
+        if (computed_crc32 != result->get_table_header().get_crc32())
         {
-            throw invalid_value_exception(rsutils::string::from() << "Safety Interface Config invalid CRC value");
+            throw invalid_value_exception(rsutils::string::from() << "Applicaion Config Invalid CRC Value");
         }
 
-        rsutils::json j = result->app_config.toJson();
+        rsutils::json j = result->get_application_config().to_json();
         return j.dump();
     }
 
     void d500_safety_sensor::set_application_config(const std::string& application_config_json_str) const
     {
         rsutils::json json_data = rsutils::json::parse(application_config_json_str);
-        ApplicationConfig app_config(json_data["application_config"]);
+        application_config app_config(json_data["application_config"]);
 
         // calculate CRC
-        uint32_t computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<const uint8_t*>(&app_config), sizeof(ApplicationConfig));
+        uint32_t computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<const uint8_t*>(&app_config), sizeof(application_config));
 
         // prepare vector of data to be sent (header + sp)
-        ApplicationConfigWithHeader app_config_with_header;
         uint16_t version = ((uint16_t)0x03 << 8) | 0x00;  // major=0x03, minor=0x00 --> ver = major.minor
         uint32_t calib_version = 0;  // ignoring this field, as requested by sw architect
-        app_config_with_header.header = { version, static_cast<uint16_t>(ds::d500_calibration_table_id::app_config_table_id),
-            sizeof(ApplicationConfig), calib_version, computed_crc32 };
-        app_config_with_header.app_config = app_config;
+        table_header header(version, static_cast<uint16_t>(ds::d500_calibration_table_id::app_config_table_id), sizeof(application_config),
+            calib_version, computed_crc32);
+        application_config_with_header app_config_with_header(header, app_config);
         auto data_as_ptr = reinterpret_cast<const uint8_t*>(&app_config_with_header);
 
         // prepare command
@@ -884,7 +885,7 @@ namespace librealsense
             static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
             static_cast<int>(ds::d500_calibration_table_id::app_config_table_id),
             static_cast<int>(ds::d500_calib_type::d500_calib_dynamic));
-        cmd.data.insert(cmd.data.end(), data_as_ptr, data_as_ptr + sizeof(ApplicationConfigWithHeader));
+        cmd.data.insert(cmd.data.end(), data_as_ptr, data_as_ptr + sizeof(application_config_with_header));
         cmd.require_response = false;
 
         // send command 
