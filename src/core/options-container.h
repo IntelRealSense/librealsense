@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2015-24 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include "options-interface.h"
@@ -24,8 +24,9 @@ class LRS_EXTENSION_API options_container : public virtual options_interface, pu
 public:
     bool supports_option(rs2_option id) const override
     {
-        auto it = _options.find(id);
-        if (it == _options.end()) return false;
+        auto it = _options_by_id.find( id );
+        if( it == _options_by_id.end() )
+            return false;
         return it->second->is_enabled();
     }
 
@@ -41,22 +42,16 @@ public:
         return (const_cast<const options_container*>(this)->get_option_handler(id));
     }
 
-    std::shared_ptr<option> get_option_handler(rs2_option id) const
+    std::shared_ptr<option> get_option_handler( rs2_option id ) const
     {
-        auto it = _options.find(id);
-        return (it == _options.end() ? std::shared_ptr<option>(nullptr) : it->second);
+        auto it = _options_by_id.find( id );
+        if( it == _options_by_id.end() )
+            return {};
+        return it->second;
     }
 
-    void register_option(rs2_option id, std::shared_ptr<option> option)
-    {
-        _options[id] = option;
-        _recording_function(*this);
-    }
-
-    void unregister_option(rs2_option id)
-    {
-        _options.erase(id);
-    }
+    void register_option( rs2_option id, std::shared_ptr< option > option );
+    void unregister_option( rs2_option id );
 
     void create_snapshot(std::shared_ptr<options_interface>& snapshot) const override
     {
@@ -75,7 +70,8 @@ public:
     std::string const & get_option_name( rs2_option option ) const override;
 
 protected:
-    std::map<rs2_option, std::shared_ptr<option>> _options;
+    std::vector< rs2_option > _ordered_options;
+    std::map< rs2_option, std::shared_ptr< option > > _options_by_id;
     std::function<void(const options_interface&)> _recording_function = [](const options_interface&) {};
 };
 
