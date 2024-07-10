@@ -162,6 +162,7 @@ try
     CmdLine cmd( "librealsense rs-dds-config tool", ' ', RS2_API_FULL_VERSION_STR );
     SwitchArg debug_arg( "", "debug", "Enable debug (-D-) output; by default only errors (-E-) are shown" );
     SwitchArg quiet_arg( "", "quiet", "Suppress regular informational (-I-) messages" );
+    SwitchArg reset_arg( "", "reset", "Hardware reset without making any changes" );
     SwitchArg no_reset_arg( "", "no-reset", "Do not hardware reset after changes are made" );
     SwitchArg golden_arg( "", "golden", "Show R/O golden values vs. current; mutually exclusive with any changes" );
     SwitchArg factory_reset_arg( "", "factory-reset", "Reset settings back to the --golden values" );
@@ -207,6 +208,7 @@ try
     cmd.add( usb_first_arg );
     cmd.add( factory_reset_arg );
     cmd.add( golden_arg );
+    cmd.add( reset_arg );
     cmd.add( sn_arg );
     cmd.add( quiet_arg );
     cmd.add( debug_arg );
@@ -249,13 +251,22 @@ try
     INFO( "Device: " << device.get_description() );
 
     eth_config requested( current );
-    if( golden || factory_reset_arg.isSet() )
+    if( golden || factory_reset_arg.isSet() || reset_arg.isSet() )
     {
         if( ip_arg.isSet() || mask_arg.isSet() || usb_first_arg.isSet() || eth_first_arg.isSet()
-            || dynamic_priority_arg.isSet() || link_timeout_arg.isSet() || dhcp_arg.isSet() || dhcp_timeout_arg.isSet()
-            || golden == factory_reset_arg.isSet() )
+            || dynamic_priority_arg.isSet() || link_timeout_arg.isSet() || dhcp_arg.isSet() || dhcp_timeout_arg.isSet() )
         {
-            throw std::runtime_error( "Cannot change any settings with --golden" );
+            throw std::runtime_error( "Cannot change any settings with --golden, --factory-reset, or --reset" );
+        }
+        if( golden + factory_reset_arg.isSet() + reset_arg.isSet() > 1 )
+        {
+            throw std::runtime_error( "Mutually exclusive: --golden, --factory-reset, and --reset" );
+        }
+        if( reset_arg.isSet() )
+        {
+            INFO( "Resetting..." );
+            device.hardware_reset();
+            return EXIT_SUCCESS;
         }
         if( factory_reset_arg.isSet() )
         {
