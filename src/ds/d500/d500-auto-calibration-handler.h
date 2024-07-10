@@ -46,6 +46,7 @@ namespace librealsense
 #pragma pack(pop)
 
     class d500_device;
+    class debug_interface;
 
     class d500_auto_calibrated_handler
     {
@@ -53,13 +54,13 @@ namespace librealsense
         d500_auto_calibrated_handler() : _dev(nullptr){}
         d500_calibration_answer get_status() const;
         std::vector<uint8_t> run_auto_calibration(d500_calibration_mode _mode);
-        void set_device_for_auto_calib(d500_device* device);
+        void set_device_for_auto_calib(debug_interface* device);
         rs2_calibration_config get_calibration_config() const;
         void set_calibration_config(const rs2_calibration_config& calib_config);
 
     private:
         bool check_buffer_size_from_get_calib_status(std::vector<uint8_t> res) const;
-        d500_device* _dev;
+        debug_interface* _dev;
     };
 
 }

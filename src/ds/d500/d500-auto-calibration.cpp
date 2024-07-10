@@ -364,7 +364,7 @@ namespace librealsense
         _ac_handler->set_calibration_config(calib_config);
     }
 
-    void d500_auto_calibrated::set_device_for_auto_calib(d500_device* device)
+    void d500_auto_calibrated::set_device_for_auto_calib(debug_interface* device)
     {
         _ac_handler->set_device_for_auto_calib(device);
     }

@@ -3,6 +3,7 @@
 
 #include "d500-auto-calibration-handler.h"
 #include "d500-device.h"
+#include <src/core/debug.h>
 
 
 namespace librealsense
@@ -27,7 +28,7 @@ namespace librealsense
         return is_size_ok;
     }
 
-    void d500_auto_calibrated_handler::set_device_for_auto_calib(d500_device* device)
+    void d500_auto_calibrated_handler::set_device_for_auto_calib(debug_interface* device)
     {
         _dev = device;
     }
