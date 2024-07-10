@@ -46,14 +46,14 @@ namespace librealsense
             return unsafe_get_active_profile();
         }
 
-        void pipeline::set_device( std::shared_ptr< librealsense::device_interface >  device_interface ) 
+        void pipeline::set_device( std::shared_ptr< librealsense::device_interface >  dev ) 
         {
-            _device = device_interface;
+            _dev = dev;
         }
 
-        std::shared_ptr< librealsense::device_interface >  pipeline::get_device() 
+        std::shared_ptr< librealsense::device_interface > pipeline::get_device() 
         {
-            return _device;
+            return _dev;
         }
 
         std::shared_ptr<profile> pipeline::get_active_profile() const
