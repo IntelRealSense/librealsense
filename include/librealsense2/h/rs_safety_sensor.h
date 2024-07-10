@@ -88,6 +88,22 @@ void rs2_json_string_to_safety_interface_config(rs2_sensor const* sensor, const 
 */
 const rs2_raw_data_buffer* rs2_safety_interface_config_to_json_string(rs2_sensor const* sensor, rs2_safety_interface_config const* sp, rs2_error** error);
 
+/**
+* rs2_get_application_config
+* \param[in]  sensor        Safety sensor
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                   JSON string representing the application config as rs2_raw_data_buffer
+*/
+const rs2_raw_data_buffer* rs2_get_application_config(rs2_sensor const* sensor, rs2_error** error);
+
+/**
+* rs2_set_application_config
+* \param[in]  sensor                           Safety sensor
+* \param[in]  application_config_json_str      Application config as JSON string
+* \param[out] error                            If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_set_application_config(rs2_sensor const* sensor, const char* application_config_json_str,  rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif
