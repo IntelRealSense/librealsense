@@ -20,8 +20,8 @@ with test.closure("pipeline - set device"):
 
     motion_sensor.set_option(rs.option.gyro_sensitivity, 4)
 
-    cfg.enable_stream(rs.stream.accel, rs.format.motion_xyz32f, 200)
-    cfg.enable_stream(rs.stream.gyro, rs.format.motion_xyz32f, 200)
+    cfg.enable_stream(rs.stream.accel)
+    cfg.enable_stream(rs.stream.gyro)
 
     profile = pipe.start(cfg)
     device_from_profile = profile.get_device()
