@@ -850,11 +850,10 @@ namespace librealsense
             throw io_exception(rsutils::string::from() << "Applicaion Config Read Failed");
         }
 
-        // check CRC before returning result       
-        auto computed_crc32 = rsutils::number::calc_crc32(response.data() + sizeof(application_config_with_header),
+        // check CRC before returning result
+        auto computed_crc32 = rsutils::number::calc_crc32(response.data() + sizeof(table_header),
             sizeof(application_config));
         result = reinterpret_cast<application_config_with_header*>(response.data());
-
         if (computed_crc32 != result->get_table_header().get_crc32())
         {
             throw invalid_value_exception(rsutils::string::from() << "Applicaion Config Invalid CRC Value");
@@ -890,6 +889,5 @@ namespace librealsense
 
         // send command 
         _owner->_hw_monitor->send(cmd);
-
     }
 }

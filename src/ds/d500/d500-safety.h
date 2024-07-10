@@ -79,7 +79,6 @@ namespace librealsense
 
     protected:
         const d500_safety* _owner;
-
     };
 
     // subdevice[h] unit[fw], node[h] guid[fw]

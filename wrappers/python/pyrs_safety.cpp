@@ -195,7 +195,5 @@ void init_safety(py::module &m) {
              });
 
 
-
-
     /** end rs_safety_types.h **/
 }
