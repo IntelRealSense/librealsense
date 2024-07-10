@@ -21,10 +21,8 @@ function DisplayNvidiaLicense {
       exit 1
     fi
 
-    license_path="https://developer.download.nvidia.com/embedded/L4T/r32_Release_v7.1/T186/Tegra_Software_License_Agreement-Tegra-Linux.txt"
-    if [ "5.0.2" = ${patches_revison} ]; then
-        license_path="https://developer.download.nvidia.com/embedded/L4T/r35_Release_v1.0/Release/Tegra_Software_License_Agreement-Tegra-Linux.txt"
-    fi
+    # By default referencing license agreement of JP 5.0.2
+    license_path="https://developer.download.nvidia.com/embedded/L4T/r35_Release_v1.0/Release/Tegra_Software_License_Agreement-Tegra-Linux.txt"
 
     if [ "5.1.2" = ${patches_revison} ]; then
         license_path="https://developer.download.nvidia.com/embedded/L4T/r35_Release_v4.1/release/Tegra_Software_License_Agreement-Tegra-Linux.txt"
