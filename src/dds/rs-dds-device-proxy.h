@@ -7,7 +7,7 @@
 #include <src/core/debug.h>
 #include "sid_index.h"
 #include "rsdds-serializable.h"
-
+#include <src/dds/rs-dds-auto-calibration.h>
 #include <memory>
 #include <vector>
 
@@ -27,6 +27,7 @@ namespace librealsense {
 class stream;
 class dds_sensor_proxy;
 class stream_profile_interface;
+class dds_auto_calibrated;
 
 
 // This is the rs2 device; it proxies to an actual DDS device that does all the actual
@@ -42,6 +43,7 @@ class dds_device_proxy
     , public updatable                // unsigned, non-recovery-mode
     , public update_device_interface  // signed, recovery-mode
     , public dds_serializable
+    , public dds_auto_calibrated
 {
     std::shared_ptr< realdds::dds_device > _dds_dev;
     std::map< std::string, std::vector< std::shared_ptr< stream_profile_interface > > > _stream_name_to_profiles;
