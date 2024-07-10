@@ -494,7 +494,7 @@ namespace rs2
 
         /**
          * Set the device to be used in the pipline.
-         * The function is used to assign the device, ensuring the pipeline maintains the sensitivity values configured for this device by the user.
+         * The function is used to assign the device, useful when the user wish to set controls that cannot be set while streaming. 
          * \param[in] device  the device to be used in the pipline. 
          */
         void set_device( rs2::device* device )

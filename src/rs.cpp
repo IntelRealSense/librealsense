@@ -2201,9 +2201,7 @@ void rs2_pipeline_stop(rs2_pipeline* pipe, rs2_error ** error) BEGIN_API_CALL
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, pipe)
 
-void rs2_pipeline_set_device( rs2_pipeline * pipe,
-                                             rs2_device * device,
-                                             rs2_error ** error ) BEGIN_API_CALL
+void rs2_pipeline_set_device( rs2_pipeline * pipe, rs2_device * device, rs2_error ** error ) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL( pipe );
     VALIDATE_NOT_NULL( device );

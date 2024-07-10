@@ -169,6 +169,9 @@ void init_pipeline(py::module &m) {
             auto success = self.try_wait_for_frames(&fs, timeout_ms);
             return std::make_tuple(success, fs);
         }, "timeout_ms"_a = 5000, py::call_guard<py::gil_scoped_release>())
-        .def("get_active_profile", &rs2::pipeline::get_active_profile); // No docstring in C++
+        .def("get_active_profile", &rs2::pipeline::get_active_profile) // No docstring in C++
+        .def( "set_device", &rs2::pipeline::set_device,
+              "The function is used to assign the device, useful when the user wish to set controls that cannot be set while streaming. ",
+              "device"_a );
     /** end rs_pipeline.hpp **/
 }

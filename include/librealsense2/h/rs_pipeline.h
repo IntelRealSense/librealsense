@@ -43,9 +43,8 @@ extern "C" {
 
     /**
      * Set the device to be used in the pipline.
-     * The function is used to assign the device, ensuring the pipeline maintains the sensitivity values configured for
-     * this device by the user. 
-     * \param[in] pipe the pipeline
+     * The function is used to assign the device, useful when the user wish to set controls that cannot be set while streaming. 
+     * \param[in] pipe the pipeline.
      * \param[in] device  the device to be used in the pipline.
      */
     void rs2_pipeline_set_device( rs2_pipeline * pipe, rs2_device * device, rs2_error ** error );
