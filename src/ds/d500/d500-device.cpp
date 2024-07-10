@@ -397,7 +397,6 @@ namespace librealsense
                 std::make_shared< locked_transfer >( get_backend()->create_usb_device( group.usb_devices.front() ),
                                                      raw_sensor ) );
         }
-        set_hw_monitor_for_auto_calib(_hw_monitor);
         set_device_for_auto_calib(this);
 
         _ds_device_common = std::make_shared<ds_device_common>(this, _hw_monitor);

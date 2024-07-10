@@ -32,8 +32,7 @@ namespace librealsense
         void set_calibration_config(const rs2_calibration_config& calib_config) override;
         std::string calibration_config_to_json_string(const rs2_calibration_config& calib_config) const override;
         rs2_calibration_config json_string_to_calibration_config(const std::string& json_str) const override;
-        
-        void set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm);
+
         void set_device_for_auto_calib(d500_device* device);
 
     private:
@@ -42,7 +41,7 @@ namespace librealsense
         std::vector<uint8_t> update_calibration_status(int timeout_ms, rs2_update_progress_callback_sptr progress_callback);
         std::vector<uint8_t> update_abort_status();
 
-        std::shared_ptr<d500_auto_calibrated_handler_interface> _ac_handler;
+        std::shared_ptr<d500_auto_calibrated_handler> _ac_handler;
         std::shared_ptr<hw_monitor> _hw_monitor;
         d500_calibration_mode _mode;
         d500_calibration_state _state;
