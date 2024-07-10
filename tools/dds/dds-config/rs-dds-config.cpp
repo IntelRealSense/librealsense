@@ -180,10 +180,10 @@ try
     ValueArg< std::string > dhcp_arg( "", "dhcp",
                                       "DHCP dynamic IP discovery 'on' or 'off'",
                                       false, "on", "on/off" );
-    ValueArg< uint32_t > dhcp_timeout_arg( "", "dhcp-timout",
+    ValueArg< uint32_t > dhcp_timeout_arg( "", "dhcp-timeout",
                                            "Seconds before DHCP times out and falls back to a static IP",
                                            false, 30, "seconds" );
-    ValueArg< uint32_t > link_timeout_arg( "", "link-timout",
+    ValueArg< uint32_t > link_timeout_arg( "", "link-timeout",
                                            "Milliseconds before --eth-first link times out and falls back to USB",
                                            false, 4000, "milliseconds" );
     ValueArg< uint8_t > domain_id_arg( "", "domain-id",
