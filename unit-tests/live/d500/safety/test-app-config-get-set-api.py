@@ -39,12 +39,7 @@ app_config_json_str = '''
 			"reserved3": [0, 0, 0, 0],
 			"imu": [0, 0, 0, 0]
 		},
-		
-		"humidity_thresholds":
-		{
-			"sht4x": 23
-		},
-		
+		"sht4x_humidity_threshold": 23,
 		"voltage_thresholds":
 		{
 			"vdd3v3": 0,
@@ -57,10 +52,8 @@ app_config_json_str = '''
 			"vdd5vo_l": 0,
 			"vdd0v8_ddr": 0
 		},
-
 		"reserved1": 0,
 		"reserved2": 0,
-		
 		"developer_mode":
 		{
 			"hkr": 0,
@@ -68,7 +61,6 @@ app_config_json_str = '''
 			"hkr_simulated_lock_state": 0,
 			"sc": 0
 		},
-
         "depth_pipeline_config": 0,
         "depth_roi": 0,
         "ir_for_sip": 0,
