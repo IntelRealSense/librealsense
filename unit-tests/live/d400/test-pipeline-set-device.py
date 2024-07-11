@@ -18,7 +18,7 @@ with test.closure("pipeline - set device"):
     pipe = rs.pipeline(ctx)
     pipe.set_device(dev)
 
-    motion_sensor.set_option(rs.option.gyro_sensitivity, 4)
+    motion_sensor.set_option(rs.option.gyro_sensitivity, gyro_sensitivity_value)
 
     cfg.enable_stream(rs.stream.accel)
     cfg.enable_stream(rs.stream.gyro)
