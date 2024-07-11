@@ -52,9 +52,6 @@ namespace librealsense
 
             std::vector<uint8_t> mechanisms_sampling_interval_vec = j["mechanisms_sampling_interval"].get<std::vector<uint8_t>>();
             std::memcpy(m_mechanisms_sampling_interval, mechanisms_sampling_interval_vec.data(), mechanisms_sampling_interval_vec.size());
-
-            std::vector<uint8_t> reserved_vec = j["reserved"].get<std::vector<uint8_t>>();
-            std::memcpy(m_reserved, reserved_vec.data(), reserved_vec.size());
         }
 
         json to_json() const
@@ -64,7 +61,6 @@ namespace librealsense
             j["temporal_safety_features_selection"] = m_temporal_safety_features_selection;
             j["mechanisms_thresholds"] = native_arr_to_std_vector(m_mechanisms_thresholds);
             j["mechanisms_sampling_interval"] = native_arr_to_std_vector(m_mechanisms_sampling_interval);
-            j["reserved"] = native_arr_to_std_vector(m_reserved);
             return j;
         }
 
@@ -73,7 +69,7 @@ namespace librealsense
         uint8_t m_temporal_safety_features_selection;
         uint8_t m_mechanisms_thresholds[16];
         uint8_t m_mechanisms_sampling_interval[8];
-        uint8_t m_reserved[64];
+        uint8_t m_reserved[64] = {0};
     };
 
     /***
@@ -117,23 +113,14 @@ namespace librealsense
             std::vector<int8_t> apm_right_vec = j["apm_right"].get<std::vector<int8_t>>();
             std::memcpy(m_apm_right, apm_right_vec.data(), apm_right_vec.size());
 
-            std::vector<int8_t> reserved1_vec = j["reserved1"].get<std::vector<int8_t>>();
-            std::memcpy(m_reserved1, reserved1_vec.data(), reserved1_vec.size());
-
             std::vector<int8_t> hkr_core_vec = j["hkr_core"].get<std::vector<int8_t>>();
             std::memcpy(m_hkr_core, hkr_core_vec.data(), hkr_core_vec.size());
 
             std::vector<int8_t> smcu_right_vec = j["smcu_right"].get<std::vector<int8_t>>();
             std::memcpy(m_smcu_right, smcu_right_vec.data(), smcu_right_vec.size());
 
-            std::vector<int8_t> reserved2_vec = j["reserved2"].get<std::vector<int8_t>>();
-            std::memcpy(m_reserved2, reserved2_vec.data(), reserved2_vec.size());
-
             std::vector<int8_t> sht4x_vec = j["sht4x"].get<std::vector<int8_t>>();
             std::memcpy(m_sht4x, sht4x_vec.data(), sht4x_vec.size());
-
-            std::vector<int8_t> reserved3_vec = j["reserved3"].get<std::vector<int8_t>>();
-            std::memcpy(m_reserved3, reserved3_vec.data(), reserved3_vec.size());
 
             std::vector<int8_t> imu_vec = j["imu"].get<std::vector<int8_t>>();
             std::memcpy(m_imu, imu_vec.data(), imu_vec.size());
@@ -146,12 +133,9 @@ namespace librealsense
             j["ir_left"] = native_arr_to_std_vector(m_ir_left);
             j["apm_left"] = native_arr_to_std_vector(m_apm_left);
             j["apm_right"] = native_arr_to_std_vector(m_apm_left);
-            j["reserved1"] = native_arr_to_std_vector(m_reserved1);
             j["hkr_core"] = native_arr_to_std_vector(m_hkr_core);
             j["smcu_right"] = native_arr_to_std_vector(m_smcu_right);
-            j["reserved2"] = native_arr_to_std_vector(m_reserved2);
             j["sht4x"] = native_arr_to_std_vector(m_sht4x);
-            j["reserved3"] = native_arr_to_std_vector(m_reserved3);
             j["imu"] = native_arr_to_std_vector(m_imu);
             return j;
         }
@@ -161,12 +145,12 @@ namespace librealsense
         int8_t m_ir_left[4];
         int8_t m_apm_left[4];
         int8_t m_apm_right[4];
-        int8_t m_reserved1[4];
+        int8_t m_reserved1[4] = {0};
         int8_t m_hkr_core[4];
         int8_t m_smcu_right[4];
-        int8_t m_reserved2[4];
+        int8_t m_reserved2[4] = {0};
         int8_t m_sht4x[4];
-        int8_t m_reserved3[4];
+        int8_t m_reserved3[4] = {0};
         int8_t m_imu[4];
     };
 
@@ -363,21 +347,13 @@ namespace librealsense
                                             m_temp_thresholds(j["temp_thresholds"]),
                                             m_sht4x_humidity_threshold(j["sht4x_humidity_threshold"]),
                                             m_voltage_thresholds(j["voltage_thresholds"]),
-                                            m_reserved1(j["reserved1"]),
-                                            m_reserved2(j["reserved2"]),
                                             m_developer_mode(j["developer_mode"]),
                                             m_depth_pipeline_config(j["depth_pipeline_config"]),
                                             m_depth_roi(j["depth_roi"]),
                                             m_ir_for_sip(j["ir_for_sip"])
         {
-            std::vector<uint8_t> reserved3_vec = j["reserved3"].get<std::vector<uint8_t>>();
-            std::memcpy(m_reserved3, reserved3_vec.data(), reserved3_vec.size());
-
             std::vector<uint8_t> digital_signature_vec = j["digital_signature"].get<std::vector<uint8_t>>();
             std::memcpy(m_digital_signature, digital_signature_vec.data(), digital_signature_vec.size());
-
-            std::vector<uint8_t> reserved4_vec = j["reserved4"].get<std::vector<uint8_t>>();
-            std::memcpy(m_reserved4, reserved4_vec.data(), reserved4_vec.size());
         }
 
         rsutils::json to_json()
@@ -393,15 +369,11 @@ namespace librealsense
             app_config_json["temp_thresholds"] = m_temp_thresholds.to_json();
             app_config_json["sht4x_humidity_threshold"] = m_sht4x_humidity_threshold;
             app_config_json["voltage_thresholds"] = m_voltage_thresholds.to_json();
-            app_config_json["reserved1"] = m_reserved1;
-            app_config_json["reserved2"] = m_reserved2;
             app_config_json["developer_mode"] = m_developer_mode.to_json();
             app_config_json["depth_pipeline_config"] = m_depth_pipeline_config;
             app_config_json["depth_roi"] = m_depth_roi;
             app_config_json["ir_for_sip"] = m_ir_for_sip;
-            app_config_json["reserved3"] = native_arr_to_std_vector(m_reserved3);
             app_config_json["digital_signature"] = native_arr_to_std_vector(m_digital_signature);
-            app_config_json["reserved4"] = native_arr_to_std_vector(m_reserved4);
             return j;
         }
 
@@ -415,15 +387,15 @@ namespace librealsense
         temp_thresholds m_temp_thresholds;
         uint8_t m_sht4x_humidity_threshold;
         voltage_thresholds m_voltage_thresholds;
-        uint8_t m_reserved1;
-        uint8_t m_reserved2;
+        uint8_t m_reserved1 = 0;
+        uint8_t m_reserved2 = 0;
         developer_mode m_developer_mode;
         uint8_t m_depth_pipeline_config;
         uint8_t m_depth_roi;
         uint8_t m_ir_for_sip;
-        uint8_t m_reserved3[39];
+        uint8_t m_reserved3[39] = {0};
         uint8_t m_digital_signature[32];
-        uint8_t m_reserved4[228];
+        uint8_t m_reserved4[228] = {0};
     };
 
 

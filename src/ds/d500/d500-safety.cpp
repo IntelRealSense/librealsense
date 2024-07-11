@@ -601,7 +601,7 @@ namespace librealsense
         // calculate CRC
         uint32_t computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<const uint8_t*>(&sic), sizeof(rs2_safety_interface_config));
 
-        // prepare vector of data to be sent (header + sp)
+        // prepare vector of data to be sent (header + sic)
         rs2_safety_interface_config_with_header sic_with_header;
         uint16_t version = ((uint16_t)0x03 << 8) | 0x00;  // major=0x03, minor=0x00 --> ver = major.minor
         uint32_t calib_version = 0;  // ignoring this field, as requested by sw architect
@@ -871,7 +871,7 @@ namespace librealsense
         // calculate CRC
         uint32_t computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<const uint8_t*>(&app_config), sizeof(application_config));
 
-        // prepare vector of data to be sent (header + sp)
+        // prepare vector of data to be sent (header + application_config)
         uint16_t version = ((uint16_t)0x01 << 8) | 0x00;  // major=0x01, minor=0x00 --> ver = major.minor
         uint32_t calib_version = 0;  // ignoring this field, as requested by sw architect
         table_header header(version, static_cast<uint16_t>(ds::d500_calibration_table_id::app_config_table_id), sizeof(application_config),
