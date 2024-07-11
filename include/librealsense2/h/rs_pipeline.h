@@ -42,6 +42,14 @@ extern "C" {
     void rs2_pipeline_stop(rs2_pipeline* pipe, rs2_error ** error);
 
     /**
+     * Set the device to be used in the pipline.
+     * The function is used to assign the device, useful when the user wish to set controls that cannot be set while streaming. 
+     * \param[in] pipe the pipeline.
+     * \param[in] device  the device to be used in the pipline.
+     */
+    void rs2_pipeline_set_device( rs2_pipeline * pipe, rs2_device * device, rs2_error ** error );
+
+    /**
     * Wait until a new set of frames becomes available.
     * The frames set includes time-synchronized frames of each enabled stream in the pipeline.
     * The method blocks the calling thread, and fetches the latest unread frames set.

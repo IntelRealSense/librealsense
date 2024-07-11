@@ -306,6 +306,7 @@ EXPORTS
     rs2_pipeline_get_active_profile
     rs2_pipeline_profile_get_device
     rs2_pipeline_profile_get_streams
+    rs2_pipeline_set_device
     rs2_delete_pipeline_profile
 
     rs2_create_config
