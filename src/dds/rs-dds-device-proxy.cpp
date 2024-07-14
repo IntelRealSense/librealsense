@@ -386,6 +386,8 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
             LOG_WARNING( "Invalid 'device/matcher' value " << matcher_j );
     }
     set_matcher_type( matcher );
+
+    set_device_for_auto_calib(this);
 }
 
 

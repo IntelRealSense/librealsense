@@ -17,10 +17,12 @@ namespace librealsense
         bool is_size_ok = false;
         if (res.size() > 1)
         {
+            // if state is not COMPLETE - answer should be returned without calibration table
             if (res[0] < static_cast<int>(d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE) &&
                 res.size() == (sizeof(d500_calibration_answer) - sizeof(ds::d500_coefficients_table)))
                 is_size_ok = true;
 
+            // if state is COMPLETE - answer should be returned with calibration table (modified by the calibration process)
             if (res[0] == static_cast<int>(d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE) &&
                 res.size() == sizeof(d500_calibration_answer))
                 is_size_ok = true;
