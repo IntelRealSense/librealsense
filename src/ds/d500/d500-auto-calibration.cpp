@@ -355,8 +355,10 @@ namespace librealsense
         std::vector< uint8_t > ret;
         const float correction_factor = 0.5f;
 
-        auto calib_table = get_calibration_table(); // Table is returned without the header
-        auto table = reinterpret_cast< librealsense::ds::d500_coefficients_table *>( calib_table.data() );
+        auto table_data = get_calibration_table(); // Table is returned without the header
+        auto full_table = _curr_calibration; // During get_calibration_table header is saved in _curr_calibration
+        full_table.insert( full_table.end(), table_data.begin(), table_data.end() );
+        auto table = reinterpret_cast< librealsense::ds::d500_coefficients_table * >( full_table.data() );
 
         float ratio_to_apply = ds_calib_common::get_focal_length_correction_factor( left_rect_sides,
                                                                                     right_rect_sides,
@@ -382,7 +384,9 @@ namespace librealsense
             table->right_coefficients_table.base_instrinsics.fy *= ratio_to_apply;
         }
 
-        return calib_table;
+        //Return data without header
+        table_data.assign( full_table.begin() + sizeof( ds::table_header ), full_table.end() );
+        return table_data;
     }
 
     std::vector<uint8_t> d500_auto_calibrated::run_uv_map_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
