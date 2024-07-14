@@ -1749,10 +1749,13 @@ namespace rs2
         std::string fw_version = s->supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ?
             s->get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) : "";
 
-        bool supported_fw = s->supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ?
+        bool d400_supported_fw = s->supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ?
             is_upgradeable("05.11.12.0", fw_version) : false;
 
-        return s->is<rs2::depth_sensor>() && is_d400 && supported_fw;
+        bool is_d555 = s->supports( RS2_CAMERA_INFO_PRODUCT_ID) ?
+            std::string( s->get_info( RS2_CAMERA_INFO_PRODUCT_ID ) ) == "0B56" : false;
+
+        return s->is< rs2::depth_sensor >() && ( (is_d400 && d400_supported_fw ) || is_d555 );
         // TODO: Once auto-calib makes it into the API, switch to querying camera info
     }
 
