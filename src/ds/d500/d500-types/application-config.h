@@ -3,14 +3,10 @@
 
 #pragma once
 
-#include <stdint.h>
 #include "common.h"
-#include <rsutils/json.h>
 
 namespace librealsense
 {
-
-    using rsutils::json;
 
 #pragma pack(push, 1)
 
@@ -44,9 +40,13 @@ namespace librealsense
     class safety_ip
     {
     public:
-        safety_ip(const json &j) : m_immediate_mode_safety_features_selection(j["immediate_mode_safety_features_selection"].get<uint8_t>()),
-                                   m_temporal_safety_features_selection(j["temporal_safety_features_selection"].get<uint8_t>())
+        safety_ip(const json &j)
         {
+            validate_json(j);
+
+            m_immediate_mode_safety_features_selection = j["immediate_mode_safety_features_selection"].get<uint8_t>();
+            m_temporal_safety_features_selection = j["temporal_safety_features_selection"].get<uint8_t>();
+
             std::vector<uint8_t> mechanisms_thresholds_vec = j["mechanisms_thresholds"].get<std::vector<uint8_t>>();
             std::memcpy(m_mechanisms_thresholds, mechanisms_thresholds_vec.data(), mechanisms_thresholds_vec.size());
 
@@ -70,6 +70,14 @@ namespace librealsense
         uint8_t m_mechanisms_thresholds[16];
         uint8_t m_mechanisms_sampling_interval[8];
         uint8_t m_reserved[64] = {0};
+
+        bool validate_json(const json &j) const
+        {
+            return validate_json_field<uint8_t>(j, "immediate_mode_safety_features_selection") &&
+                   validate_json_field<uint8_t>(j, "temporal_safety_features_selection") &&
+                   validate_json_field<std::vector<uint8_t>>(j, "mechanisms_thresholds", 16) &&
+                   validate_json_field<std::vector<uint8_t>>(j, "mechanisms_sampling_interval", 8);
+        }
     };
 
     /***
@@ -101,6 +109,8 @@ namespace librealsense
     public:
         temp_thresholds(const json &j)
         {
+            validate_json(j);
+
             std::vector<int8_t> ir_right_vec = j["ir_right"].get<std::vector<int8_t>>();
             std::memcpy(m_ir_right, ir_right_vec.data(), ir_right_vec.size());
 
@@ -152,6 +162,18 @@ namespace librealsense
         int8_t m_sht4x[4];
         int8_t m_reserved3[4] = {0};
         int8_t m_imu[4];
+
+        bool validate_json(const json &j) const
+        {
+            return validate_json_field<std::vector<int8_t>>(j, "ir_right", 4) &&
+                   validate_json_field<std::vector<int8_t>>(j, "ir_left", 4) &&
+                   validate_json_field<std::vector<int8_t>>(j, "apm_left", 4) &&
+                   validate_json_field<std::vector<int8_t>>(j, "apm_right", 4) &&
+                   validate_json_field<std::vector<int8_t>>(j, "hkr_core", 4) &&
+                   validate_json_field<std::vector<int8_t>>(j, "smcu_right", 4) &&
+                   validate_json_field<std::vector<int8_t>>(j, "sht4x", 4) &&
+                   validate_json_field<std::vector<int8_t>>(j, "imu", 4);
+        }
     };
 
     /***
@@ -176,16 +198,19 @@ namespace librealsense
     class voltage_thresholds
     {
     public:
-        voltage_thresholds(const json &j) : m_vdd3v3(j["vdd3v3"].get<uint8_t>()),
-                                            m_vdd1v8(j["vdd1v8"].get<uint8_t>()),
-                                            m_vdd1v2(j["vdd1v2"].get<uint8_t>()),
-                                            m_vdd1v1(j["vdd1v1"].get<uint8_t>()),
-                                            m_vdd0v8(j["vdd0v8"].get<uint8_t>()),
-                                            m_vdd0v6(j["vdd0v6"].get<uint8_t>()),
-                                            m_vdd5vo_u(j["vdd5vo_u"].get<uint8_t>()),
-                                            m_vdd5vo_l(j["vdd5vo_l"].get<uint8_t>()),
-                                            m_vdd0v8_ddr(j["vdd0v8_ddr"].get<uint8_t>())
+        voltage_thresholds(const json &j)
         {
+            validate_json(j);
+
+            m_vdd3v3 = j["vdd3v3"].get<uint8_t>();
+            m_vdd1v8 = j["vdd1v8"].get<uint8_t>();
+            m_vdd1v2 = j["vdd1v2"].get<uint8_t>();
+            m_vdd1v1 = j["vdd1v1"].get<uint8_t>();
+            m_vdd0v8 = j["vdd0v8"].get<uint8_t>();
+            m_vdd0v6 = j["vdd0v6"].get<uint8_t>();
+            m_vdd5vo_u = j["vdd5vo_u"].get<uint8_t>();
+            m_vdd5vo_l = j["vdd5vo_l"].get<uint8_t>();
+            m_vdd0v8_ddr = j["vdd0v8_ddr"].get<uint8_t>();
         }
 
         json to_json() const
@@ -213,6 +238,19 @@ namespace librealsense
         uint8_t m_vdd5vo_u;
         uint8_t m_vdd5vo_l;
         uint8_t m_vdd0v8_ddr;
+
+        bool validate_json(const json &j) const
+        {
+            return validate_json_field<uint8_t>(j, "vdd3v3") &&
+                   validate_json_field<uint8_t>(j, "vdd1v8") &&
+                   validate_json_field<uint8_t>(j, "vdd1v2") &&
+                   validate_json_field<uint8_t>(j, "vdd1v1") &&
+                   validate_json_field<uint8_t>(j, "vdd0v8") &&
+                   validate_json_field<uint8_t>(j, "vdd0v6") &&
+                   validate_json_field<uint8_t>(j, "vdd5vo_u") &&
+                   validate_json_field<uint8_t>(j, "vdd5vo_l") &&
+                   validate_json_field<uint8_t>(j, "vdd0v8_ddr");
+        }
     };
 
     /***
@@ -245,11 +283,14 @@ namespace librealsense
     class developer_mode
     {
     public:
-        developer_mode(const json &j) : m_hkr(j["hkr"].get<uint8_t>()),
-                                        m_smcu(j["smcu"].get<uint8_t>()),
-                                        m_hkr_simulated_lock_state(j["hkr_simulated_lock_state"].get<uint8_t>()),
-                                        m_sc(j["sc"].get<uint8_t>())
+        developer_mode(const json &j)
         {
+            validate_json(j);
+
+            m_hkr = j["hkr"].get<uint8_t>();
+            m_smcu = j["smcu"].get<uint8_t>();
+            m_hkr_simulated_lock_state = j["hkr_simulated_lock_state"].get<uint8_t>();
+            m_sc = j["sc"].get<uint8_t>();
         }
 
         json to_json() const
@@ -267,6 +308,14 @@ namespace librealsense
         uint8_t m_smcu;
         uint8_t m_hkr_simulated_lock_state;
         uint8_t m_sc;
+
+        bool validate_json(const json &j) const
+        {
+            return validate_json_field<uint8_t>(j, "hkr") &&
+                   validate_json_field<uint8_t>(j, "smcu") &&
+                   validate_json_field<uint8_t>(j, "hkr_simulated_lock_state") &&
+                   validate_json_field<uint8_t>(j, "sc");
+        }
     };
 
     /***
@@ -339,19 +388,22 @@ namespace librealsense
     {
     public:
         application_config(const json &j) : m_sip(j["sip"]),
-                                            m_dev_rules_selection(j["dev_rules_selection"]),
-                                            m_depth_pipe_safety_checks_override(j["depth_pipe_safety_checks_override"]),
-                                            m_triggered_calib_safety_checks_override(j["triggered_calib_safety_checks_override"]),
-                                            m_smcu_bypass_directly_to_maintenance_mode(j["smcu_bypass_directly_to_maintenance_mode"]),
-                                            m_smcu_skip_spi_error(j["smcu_skip_spi_error"]),
                                             m_temp_thresholds(j["temp_thresholds"]),
-                                            m_sht4x_humidity_threshold(j["sht4x_humidity_threshold"]),
                                             m_voltage_thresholds(j["voltage_thresholds"]),
-                                            m_developer_mode(j["developer_mode"]),
-                                            m_depth_pipeline_config(j["depth_pipeline_config"]),
-                                            m_depth_roi(j["depth_roi"]),
-                                            m_ir_for_sip(j["ir_for_sip"])
+                                            m_developer_mode(j["developer_mode"])
         {
+            validate_json(j);
+
+            m_dev_rules_selection = j["dev_rules_selection"];
+            m_depth_pipe_safety_checks_override = j["depth_pipe_safety_checks_override"];
+            m_triggered_calib_safety_checks_override = j["triggered_calib_safety_checks_override"];
+            m_smcu_bypass_directly_to_maintenance_mode = j["smcu_bypass_directly_to_maintenance_mode"];
+            m_smcu_skip_spi_error = j["smcu_skip_spi_error"];
+            m_sht4x_humidity_threshold = j["sht4x_humidity_threshold"];
+            m_depth_pipeline_config = j["depth_pipeline_config"];
+            m_depth_roi = j["depth_roi"];
+            m_ir_for_sip = j["ir_for_sip"];
+
             std::vector<uint8_t> digital_signature_vec = j["digital_signature"].get<std::vector<uint8_t>>();
             std::memcpy(m_digital_signature, digital_signature_vec.data(), digital_signature_vec.size());
         }
@@ -396,8 +448,21 @@ namespace librealsense
         uint8_t m_reserved3[39] = {0};
         uint8_t m_digital_signature[32];
         uint8_t m_reserved4[228] = {0};
-    };
 
+        bool validate_json(const json &j) const
+        {
+            return validate_json_field<uint64_t>(j, "dev_rules_selection") &&
+                   validate_json_field<uint8_t>(j, "depth_pipe_safety_checks_override") &&
+                   validate_json_field<uint8_t>(j, "triggered_calib_safety_checks_override") &&
+                   validate_json_field<uint8_t>(j, "smcu_bypass_directly_to_maintenance_mode") &&
+                   validate_json_field<uint8_t>(j, "smcu_skip_spi_error") &&
+                   validate_json_field<uint8_t>(j, "sht4x_humidity_threshold") &&
+                   validate_json_field<uint8_t>(j, "depth_pipeline_config") &&
+                   validate_json_field<uint8_t>(j, "depth_roi") &&
+                   validate_json_field<uint8_t>(j, "ir_for_sip") &&
+                   validate_json_field<std::vector<uint8_t>>(j, "digital_signature", 32);
+        }
+    };
 
     /***
      *  application_config_with_header class
@@ -426,5 +491,4 @@ namespace librealsense
     };
 
 #pragma pack(pop)
-
 }

@@ -2,7 +2,7 @@
 // Copyright(c) 2022-2024 Intel Corporation. All Rights Reserved.
 
 #include "d500-safety.h"
-#include "safety-types/application-config.h"
+#include "d500-types/application-config.h"
 
 #include <vector>
 #include <map>
