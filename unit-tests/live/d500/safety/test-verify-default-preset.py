@@ -6,11 +6,10 @@
 import pyrealsense2 as rs
 from rspy import test, log, tests_wrapper
 
-ctx = rs.context()
-dev = ctx.query_devices()[0]
+dev = test.find_first_device_or_exit()
 depth_sensor = dev.first_depth_sensor()
 
-def get_all_advacnced_controls():
+def get_all_advanced_controls():
     advnc_mode = rs.rs400_advanced_mode(dev)
     color_sensor = dev.first_color_sensor()
     d = {}
@@ -58,18 +57,18 @@ def get_all_advacnced_controls():
 test.start("Check startup values are the same as the default preset values")
 
 # get startup values
-startup_advanced_controls = get_all_advacnced_controls()
-print("Startup advanced controls values:")
-print(startup_advanced_controls)
+startup_advanced_controls = get_all_advanced_controls()
+log.d("Startup advanced controls values:")
+log.d(startup_advanced_controls)
 
 # switch to default preset
 tests_wrapper.start_wrapper(dev)
 depth_sensor.set_option(rs.option.visual_preset, int(rs.rs400_visual_preset.default))
 
 # get default preset values
-default_preset_advanced_controls = get_all_advacnced_controls()
-print("Default preset advanced controls values:")
-print(default_preset_advanced_controls)
+default_preset_advanced_controls = get_all_advanced_controls()
+log.d("Default preset advanced controls values:")
+log.d(default_preset_advanced_controls)
 
 test.check(startup_advanced_controls == default_preset_advanced_controls)
 
