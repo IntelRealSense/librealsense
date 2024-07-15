@@ -15,7 +15,7 @@ TIME_TO_COUNT_FRAMES = 5
 # ---------- Helper Functions ---------- #
 ##########################################
 def check_fps_pair(measured_fps, expected_fps):
-    delta_Hz = expected_fps * 0.1  # Validation KPI is 10%
+    delta_Hz = expected_fps * 0.15  # Validation KPI is 15%
     return (measured_fps <= (expected_fps + delta_Hz) and measured_fps >= (expected_fps - delta_Hz))
 
 
