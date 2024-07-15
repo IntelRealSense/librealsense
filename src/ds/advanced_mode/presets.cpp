@@ -550,7 +550,7 @@ namespace librealsense
         p.depth_controls.textureDifferenceThreshold = 0;
         p.rsm.diffThresh = 7.96875f;
         p.rsm.removeThresh = 115;
-        p.rsm.rsmBypass = 1;
+        p.rsm.rsmBypass = 0; // inverted field, should be the opposite in the json
         p.rsm.sloRauDiffThresh = 3.96875f;
         p.rsvc.minEast = 1;
         p.rsvc.minNorth = 1;
