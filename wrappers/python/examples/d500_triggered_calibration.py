@@ -177,6 +177,7 @@ def write_after_calib_to_device(calib_filename_after):
 
 
 ctx = rs.context()
+time.sleep(2)
 dev = ctx.query_devices().front()
 
 # Check this device is Safety Camera
