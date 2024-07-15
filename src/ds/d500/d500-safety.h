@@ -74,6 +74,8 @@ namespace librealsense
         std::string safety_interface_config_to_json_string(const rs2_safety_interface_config& sic) const override;
         rs2_safety_interface_config json_string_to_safety_interface_config(const std::string& json_str) const override;
 
+        std::string get_application_config() const override;
+        void set_application_config(const std::string& application_config_json_str) const override;
 
     protected:
         const d500_safety* _owner;
