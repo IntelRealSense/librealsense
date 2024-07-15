@@ -1,12 +1,15 @@
 # Linux Distribution
 
 #### Using pre-build packages
-**Intel® RealSense™ SDK 2.0** provides installation packages for Intel X86/AMD64-based Debian distributions in [`dpkg`](https://en.wikipedia.org/wiki/Dpkg) format for Ubuntu 16/18/20/22 [LTS](https://wiki.ubuntu.com/LTS).    
-The Realsense [DKMS](https://en.wikipedia.org/wiki/Dynamic_Kernel_Module_Support) kernel drivers package (`librealsense2-dkms`) supports Ubuntu LTS kernels 4.4, 4.8, 4.10, 4.13, 4.15, 4.18*, 5.0*, 5.3*, 5.4, 5.13, 5.15, 5.19, 6.2 and 6.5. Please refer to [Ubuntu Kernel Release Schedule](https://wiki.ubuntu.com/Kernel/Support) for further details.
+**Intel® RealSense™ SDK 2.0** provides installation packages for Intel X86/AMD64/ARM-based Debian distributions in [`dpkg`](https://en.wikipedia.org/wiki/Dpkg) format for Ubuntu 20/22/24 [LTS](https://wiki.ubuntu.com/LTS).
+For EOL Ubuntu distributions please use the following versions:
+Ubuntu 16 -> [2.51.1](https://github.com/IntelRealSense/librealsense/releases/tag/v2.51.1)
+Ubuntu 18 -> [2.55.1](https://github.com/IntelRealSense/librealsense/releases/tag/v2.55.1)
+The Realsense [DKMS](https://en.wikipedia.org/wiki/Dynamic_Kernel_Module_Support) kernel drivers package (`librealsense2-dkms`) supports Ubuntu LTS HWE kernels 5.15, 5.19 and 6.5. Please refer to [Ubuntu Kernel Release Schedule](https://wiki.ubuntu.com/Kernel/Support) for further details.
 
 #### Configuring and building from the source code
 While we strongly recommend to use DKMS package whenever possible, there are certain cases where installing and patching the system manually is necessary:
- - Using SDK with non-LTS Ubuntu kernel versions: **4.16 **
+ - Using SDK with non-LTS Ubuntu kernel versions
  - Integration of user-specific patches/modules with `librealsense` SDK.
  - Adjusting the patches for alternative kernels/distributions.
 
