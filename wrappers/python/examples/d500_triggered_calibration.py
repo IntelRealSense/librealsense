@@ -14,12 +14,13 @@ and to check the improvement of the depth stream before / after the running of t
 '''
 
 
-def check_safety_camera_found(dev):
-    device_name = dev.get_info(rs.camera_info.name)
-    if device_name != "Intel RealSense D585S":
-        print("Safety Camera not connected - please check")
+def check_d500_camera_found(dev):
+    product_line = dev.get_info(rs.camera_info.product_line)
+    if product_line != "D500":
+        print("Device is not D500 Product Line - please check")
+        exit(1)
     else:
-        print("Safety Camera found")
+        print("D500 Product Line Camera found")
 
 
 def compute_fill_rate(frame):
@@ -131,21 +132,6 @@ def run_calibration():
     return depth_calib_after
 
 
-def switch_device_to_service_mode(device):
-    sensors = device.query_sensors()
-    safety_sensor = next(s for s in
-                         sensors if s.get_info(rs.camera_info.name) == "Safety Camera")
-    safety_mode = safety_sensor.get_option(rs.option.safety_mode)
-    if safety_mode != rs.safety_mode.service:
-        safety_sensor.set_option(rs.option.safety_mode, rs.safety_mode.service)
-    time.sleep(1)
-    safety_mode = safety_sensor.get_option(rs.option.safety_mode)
-    if safety_mode != rs.safety_mode.service:
-        print("Could not switch Safety Sensor to Service Mode")
-    else:
-        print("Safety Sensor is now in Service Mode")
-
-
 def exit_if_calibrations_are_equal():
     global calib_before, calib_after
     is_equal_check = (calib_before == calib_after)
@@ -194,16 +180,13 @@ ctx = rs.context()
 dev = ctx.query_devices().front()
 
 # Check this device is Safety Camera
-check_safety_camera_found(dev)
+check_d500_camera_found(dev)
 
 # Stream and get Depth Fill Rate
 fill_rate_before = stream_and_get_fill_rate()
 
 # Get existing depth calibration
 calib_before = get_depth_calib_from_device()
-
-# switching to service mode
-switch_device_to_service_mode(dev)
 
 # Save existing calibration to file
 save_calib_to_file(calib_before, "depth_calib_before.bin")
@@ -217,9 +200,6 @@ save_calib_to_file(calib_after, "depth_calib_after.bin")
 # Stopping the script if the calibration received from the calibration operation
 # is the same as before
 exit_if_calibrations_are_equal()
-
-# switching to service mode
-switch_device_to_service_mode(dev)
 
 # Set calibration from file - needed until the flash writing is implemented in HKR
 write_after_calib_to_device("depth_calib_after.bin")
