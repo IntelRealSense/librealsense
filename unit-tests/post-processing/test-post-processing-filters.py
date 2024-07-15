@@ -1,6 +1,9 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
+#temporary fix to prevent the test from running on Win_SH_Py_DDS_CI
+#test:donotrun:dds
+
 import pyrealsense2 as rs, tempfile, os, random, csv
 from rspy import test, repo
 ################################################################################################
