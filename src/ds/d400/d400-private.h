@@ -146,7 +146,7 @@ namespace librealsense
             {RS_D400_USB2_RECOVERY_PID, "5.8.15.0"},
             {RS400_IMU_PID, "5.8.15.0"},
             {RS420_PID, "5.8.15.0"},
-            {RS421_PID, "5.16.4.6"}, // TODO - D421, 5.16.4.6 is first dev FW with D421 PID. First formal FW will probably be 5.17.0
+            {RS421_PID, "5.16.1.0"},
             {RS420_MM_PID, "5.8.15.0"},
             {RS410_MM_PID, "5.8.15.0"},
             {RS400_MM_PID, "5.8.15.0" },
