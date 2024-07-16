@@ -85,7 +85,7 @@ public:
                 T t;
                 if( ! dev.get_xu( _xu, _id, reinterpret_cast< uint8_t * >( &t ), sizeof( T ) ) )
                     throw invalid_value_exception( rsutils::string::from()
-                                                   << "get_xu(id=" << std::to_string( _id ) << ") failed!"
+                                                   << "get_xu(id=" << _id << ") failed!"
                                                    << " Last Error: " << strerror( errno ) );
                 if (_parsing_modifier)
                     return _parsing_modifier(t);

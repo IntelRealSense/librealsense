@@ -1,4 +1,4 @@
-From 68ebc4e3fb3729f2b6804ea4d72d5dfda356512f Mon Sep 17 00:00:00 2001
+From f8c4dca6a001d42a79a2a7a5d9fc4748bb5df25c Mon Sep 17 00:00:00 2001
 From: Dmitry Perchanov <dmitry.perchanov@intel.com>
 Date: Sun, 22 Jan 2023 12:58:19 +0200
 Subject: [PATCH] Enabling UVC Metadata attributes with Ubuntu 22.04. Kernel
@@ -8,15 +8,15 @@ Co-developed-by: Yu MENG <yu1.meng@intel.com>
 Co-developed-by: Evgeni Raikhel <evgeni.raikhel@intel.com>
 Signed-off-by: Dmitry Perchanov <dmitry.perchanov@intel.com>
 ---
- drivers/media/usb/uvc/uvc_driver.c | 279 +++++++++++++++++++++++++++++
+ drivers/media/usb/uvc/uvc_driver.c | 288 +++++++++++++++++++++++++++++
  drivers/media/usb/uvc/uvcvideo.h   |   2 +-
- 2 files changed, 280 insertions(+), 1 deletion(-)
+ 2 files changed, 289 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index 2e7df1de0..848417912 100644
+index caed9a2ab..c6763420b 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -3152,6 +3152,285 @@ static const struct usb_device_id uvc_ids[] = {
+@@ -3234,6 +3234,294 @@ static const struct usb_device_id uvc_ids[] = {
  	  .bInterfaceSubClass	= 1,
  	  .bInterfaceProtocol	= 0,
  	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
@@ -236,7 +236,7 @@ index 2e7df1de0..848417912 100644
 +	  .bInterfaceSubClass	= 1,
 +	  .bInterfaceProtocol	= 0,
 +	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
-+	/* Intel D555e Depth Camera */
++	/* Intel D555 Depth Camera */
 +	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
 +				| USB_DEVICE_ID_MATCH_INT_INFO,
 +	  .idVendor		= 0x8086,
@@ -299,14 +299,23 @@ index 2e7df1de0..848417912 100644
 +	  .bInterfaceSubClass	= 1,
 +	  .bInterfaceProtocol	= UVC_PC_PROTOCOL_15,
 +	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
++	  /* Intel D421 Depth Module */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x1155,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_INFO_META(V4L2_META_FMT_D4XX) },
  	/* Generic USB Video Class */
  	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, UVC_PC_PROTOCOL_UNDEFINED) },
  	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, UVC_PC_PROTOCOL_15) },
 diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
-index 1aa2cc985..2772a4640 100644
+index 20782860d..f469327d9 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
-@@ -187,7 +187,7 @@
+@@ -224,7 +224,7 @@
  /* Maximum number of packets per URB. */
  #define UVC_MAX_PACKETS		32
  /* Maximum status buffer size in bytes of interrupt URB. */

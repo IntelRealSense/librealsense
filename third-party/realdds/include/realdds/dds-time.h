@@ -59,7 +59,29 @@ inline long double time_to_double( eprosima::fastrtps::rtps::Time_t const & t )
 }
 
 
-std::string time_to_string( dds_time const & t );
+struct time_to_string
+{
+    int32_t _seconds;
+    uint32_t _nanosec;
+
+    time_to_string( dds_time const & t )
+        : _seconds( t.seconds )
+        , _nanosec( t.nanosec )
+    {}
+
+    time_to_string( eprosima::fastrtps::rtps::Time_t const & t )
+        : _seconds( t.seconds() )
+        , _nanosec( t.nanosec() )
+    {}
+
+    time_to_string( int32_t seconds, uint32_t nanoseconds )
+        : _seconds( seconds )
+        , _nanosec( nanoseconds )
+    {}
+};
+
+
+std::ostream & operator<<( std::ostream &, time_to_string const & );
 
 
 // Easy way to format DDS time to a legible string, in milliseconds

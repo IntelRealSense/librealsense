@@ -36,6 +36,8 @@ namespace librealsense
             std::shared_ptr<device_interface> wait_for_device(const std::chrono::milliseconds& timeout = std::chrono::hours::max(),
                 const std::string& serial = "");
             std::shared_ptr<librealsense::context> get_context() const;
+            void set_device( std::shared_ptr< librealsense::device_interface >  dev );
+            std::shared_ptr< librealsense::device_interface >  get_device();
 
         protected:
             rs2_frame_callback_sptr get_callback(std::vector<int> unique_ids);
@@ -61,6 +63,7 @@ namespace librealsense
 
             rs2_frame_callback_sptr _streams_callback;
             std::vector<rs2_stream> _synced_streams;
+            std::shared_ptr< librealsense::device_interface > _dev = nullptr;
         };
     }
 }

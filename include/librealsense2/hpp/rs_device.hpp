@@ -1056,8 +1056,8 @@ namespace rs2
             rs2_error* e = nullptr;
             auto buffer = rs2_build_debug_protocol_command(_dev.get(), opcode, param1, param2, param3, param4,
                 (void*)data.data(), (uint32_t)data.size(), &e);
-            std::shared_ptr<const rs2_raw_data_buffer> list(buffer, rs2_delete_raw_data);
             error::handle(e);
+            std::shared_ptr< const rs2_raw_data_buffer > list( buffer, rs2_delete_raw_data );
 
             auto size = rs2_get_raw_data_size(list.get(), &e);
             error::handle(e);
