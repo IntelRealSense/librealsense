@@ -4,7 +4,6 @@
 #pragma once
 
 #include <src/auto-calibrated-device.h>
-#include <src/ds/d500/d500-auto-calibration.h>
 
 
 namespace librealsense
@@ -32,10 +31,10 @@ public:
     std::string calibration_config_to_json_string(const rs2_calibration_config& calib_config) const override;
     rs2_calibration_config json_string_to_calibration_config(const std::string& json_str) const override;
 
-    void set_device_for_auto_calib(debug_interface* device);
+    void set_device_for_auto_calib(debug_interface* device) override;
 
 private:
-    std::shared_ptr<d500_auto_calibrated> _d500_ac;
+    std::shared_ptr<auto_calibrated_interface> _auto_calib_capability;
 };
 
 } // namespace librealsense

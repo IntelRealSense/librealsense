@@ -2421,4 +2421,9 @@ namespace librealsense
     {
         _hw_monitor = hwm;
     }
+
+    void auto_calibrated::set_device_for_auto_calib(debug_interface* device)
+    {
+        throw not_implemented_exception(rsutils::string::from() << "Set device for auto calibration not applicable for this device");
+    }
 }

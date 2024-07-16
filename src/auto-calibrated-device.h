@@ -5,6 +5,7 @@
 #include "types.h"
 #include "core/extension.h"
 #include <vector>
+#include <core/debug.h>
 
 
 namespace librealsense
@@ -27,6 +28,7 @@ namespace librealsense
             float target_w, float target_h, rs2_update_progress_callback_sptr progress_callback) = 0;
         virtual std::string get_calibration_config() const = 0;
         virtual void set_calibration_config(const std::string& calibration_config_json_str) const = 0;
+        virtual void set_device_for_auto_calib(debug_interface* device) = 0;
     };
     MAP_EXTENSION(RS2_EXTENSION_AUTO_CALIBRATED_DEVICE, auto_calibrated_interface);
 }

@@ -11,13 +11,13 @@
 namespace librealsense
 {
 dds_auto_calibrated::dds_auto_calibrated() :
-    _d500_ac(std::make_shared<d500_auto_calibrated>()) {}
+    _auto_calib_capability(std::make_shared<d500_auto_calibrated>()) {}
 
 
 std::vector<uint8_t> dds_auto_calibrated::run_on_chip_calibration(int timeout_ms, std::string json, 
     float* const health, rs2_update_progress_callback_sptr progress_callback)
 {
-    return _d500_ac->run_on_chip_calibration(timeout_ms, json, health, progress_callback);
+    return _auto_calib_capability->run_on_chip_calibration(timeout_ms, json, health, progress_callback);
 }
 
 
@@ -71,27 +71,27 @@ float dds_auto_calibrated::calculate_target_z(rs2_frame_queue* queue1, rs2_frame
 
 rs2_calibration_config dds_auto_calibrated::get_calibration_config() const
 {
-    return _d500_ac->get_calibration_config();
+    return _auto_calib_capability->get_calibration_config();
 }
 
 void dds_auto_calibrated::set_calibration_config(const rs2_calibration_config& calib_config)
 {
-    _d500_ac->set_calibration_config(calib_config);
+    _auto_calib_capability->set_calibration_config(calib_config);
 }
 
 std::string dds_auto_calibrated::calibration_config_to_json_string(const rs2_calibration_config& calib_config) const
 {
-    return _d500_ac->calibration_config_to_json_string(calib_config);
+    return _auto_calib_capability->calibration_config_to_json_string(calib_config);
 }
 
 rs2_calibration_config dds_auto_calibrated::json_string_to_calibration_config(const std::string& json_str) const
 {
-    return _d500_ac->json_string_to_calibration_config(json_str);
+    return _auto_calib_capability->json_string_to_calibration_config(json_str);
 }
 
 void dds_auto_calibrated::set_device_for_auto_calib(debug_interface* device)
 {
-    _d500_ac->set_device_for_auto_calib(device);
+    _auto_calib_capability->set_device_for_auto_calib(device);
 }
 
 } //namespace librealsense
