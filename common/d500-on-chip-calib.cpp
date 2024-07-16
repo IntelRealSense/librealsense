@@ -82,12 +82,13 @@ namespace rs2
     void d500_on_chip_calib_manager::prepare_for_calibration()
     {
         // set depth preset as default preset, turn projector ON and depth AE ON
-        if (_sub->s->is <rs2::depth_sensor>())
+        if (_sub->s->supports(RS2_CAMERA_INFO_NAME) && 
+            (std::string(_sub->s->get_info(RS2_CAMERA_INFO_NAME)) == "Stereo Module"))
         {
             auto depth_sensor = _sub->s->as <rs2::depth_sensor>();
 
             // disabling the depth visual preset change for D555e - not needed
-            if (get_device_pid() != "0B56")
+            if (get_device_pid() != "0B56" && get_device_pid() != "DDS")
             {
                 // set depth preset as default preset
                 set_option_if_needed<rs2::depth_sensor>(depth_sensor, RS2_OPTION_VISUAL_PRESET, 1);

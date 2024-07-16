@@ -37,30 +37,28 @@ namespace librealsense
 
     d500_calibration_answer d500_auto_calibrated_handler::get_status() const
     {
-        if (_dev)
-        {
-            auto cmd = _dev->build_command(ds::GET_CALIB_STATUS);
-            auto res = _dev->send_receive_raw_data(cmd);
+        if (!_dev)
+            throw std::runtime_error("device has not been set");
 
-            // slicing 4 first bytes - opcode
-            res.erase(res.begin(), res.begin() + 4);
-            // checking size of received buffer
-            if (!check_buffer_size_from_get_calib_status(res))
-                throw std::runtime_error("GET_CALIB_STATUS returned struct with wrong size");
+        auto cmd = _dev->build_command(ds::GET_CALIB_STATUS);
+        auto res = _dev->send_receive_raw_data(cmd);
 
-            return *reinterpret_cast<d500_calibration_answer*>(res.data());
-        }
-        throw std::runtime_error("device has not been set");
+        // slicing 4 first bytes - opcode
+        res.erase(res.begin(), res.begin() + 4);
+        // checking size of received buffer
+        if (!check_buffer_size_from_get_calib_status(res))
+            throw std::runtime_error("GET_CALIB_STATUS returned struct with wrong size");
+
+        return *reinterpret_cast<d500_calibration_answer*>(res.data());
     }
 
     std::vector<uint8_t> d500_auto_calibrated_handler::run_auto_calibration(d500_calibration_mode _mode)
     {
-        if (_dev)
-        {
-            auto cmd = _dev->build_command(ds::SET_CALIB_MODE, static_cast<uint32_t>(_mode), 1 /*always*/);
-            return _dev->send_receive_raw_data(cmd);
-        }
-        throw std::runtime_error("device has not been set");
+        if (!_dev)
+            throw std::runtime_error("device has not been set"); 
+        
+        auto cmd = _dev->build_command(ds::SET_CALIB_MODE, static_cast<uint32_t>(_mode), 1 /*always*/);
+        return _dev->send_receive_raw_data(cmd);
     }
 
     static std::vector<uint8_t> add_header_to_calib_config(const rs2_calibration_config& calib_config)
@@ -82,58 +80,52 @@ namespace librealsense
 
     void d500_auto_calibrated_handler::set_calibration_config(const rs2_calibration_config& calib_config)
     {
-        if (_dev)
-        {
-            auto calib_config_with_header = add_header_to_calib_config(calib_config);
+        if (!_dev)
+            throw std::runtime_error("device has not been set"); 
+        
+        auto calib_config_with_header = add_header_to_calib_config(calib_config);
 
-            // prepare command
-            auto cmd = _dev->build_command(ds::SET_HKR_CONFIG_TABLE,
-                static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
-                static_cast<int>(ds::d500_calibration_table_id::calib_cfg_id),
-                static_cast<int>(ds::d500_calib_type::d500_calib_dynamic), 0,
-                calib_config_with_header.data(), sizeof(rs2_calibration_config_with_header));
+        // prepare command
+        auto cmd = _dev->build_command(ds::SET_HKR_CONFIG_TABLE,
+            static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
+            static_cast<int>(ds::d500_calibration_table_id::calib_cfg_id),
+            static_cast<int>(ds::d500_calib_type::d500_calib_dynamic), 0,
+            calib_config_with_header.data(), sizeof(rs2_calibration_config_with_header));
 
-            // send command 
-            auto res = _dev->send_receive_raw_data(cmd);
-        }
-        else
-        {
-            throw std::runtime_error("device has not been set");
-        }
+        // send command 
+        auto res = _dev->send_receive_raw_data(cmd);
     }
 
     rs2_calibration_config d500_auto_calibrated_handler::get_calibration_config() const
     {
-        if (_dev)
+        if (!_dev)
+            throw std::runtime_error("device has not been set");
+
+        rs2_calibration_config_with_header* calib_config_with_header;
+        // prepare command
+        using namespace ds;
+        auto cmd = _dev->build_command(GET_HKR_CONFIG_TABLE,
+            static_cast<int>(d500_calib_location::d500_calib_flash_memory),
+            static_cast<int>(d500_calibration_table_id::calib_cfg_id),
+            static_cast<int>(d500_calib_type::d500_calib_dynamic));
+
+        // sending command
+        auto res = _dev->send_receive_raw_data(cmd);
+
+        if (res.size() < sizeof(rs2_calibration_config_with_header))
         {
-            rs2_calibration_config_with_header* calib_config_with_header;
-
-            // prepare command
-            using namespace ds;
-            auto cmd = _dev->build_command(GET_HKR_CONFIG_TABLE,
-                static_cast<int>(d500_calib_location::d500_calib_flash_memory),
-                static_cast<int>(d500_calibration_table_id::calib_cfg_id),
-                static_cast<int>(d500_calib_type::d500_calib_dynamic));
-
-            // sending command
-            auto res = _dev->send_receive_raw_data(cmd);
-
-            if (res.size() < sizeof(rs2_calibration_config_with_header))
-            {
-                throw io_exception(rsutils::string::from() << "Calibration config reading failed");
-            }
-            calib_config_with_header = reinterpret_cast<rs2_calibration_config_with_header*>(res.data());
-
-            // check CRC before returning result       
-            auto computed_crc32 = rsutils::number::calc_crc32(res.data() + sizeof(rs2_calibration_config_header), sizeof(rs2_calibration_config));
-            if (computed_crc32 != calib_config_with_header->header.crc32)
-            {
-                throw invalid_value_exception(rsutils::string::from() << "Invalid CRC value for calibration config table");
-            }
-
-            return calib_config_with_header->payload;
+            throw io_exception(rsutils::string::from() << "Calibration config reading failed");
         }
-        throw std::runtime_error("device has not been set");
+        calib_config_with_header = reinterpret_cast<rs2_calibration_config_with_header*>(res.data());
+
+        // check CRC before returning result       
+        auto computed_crc32 = rsutils::number::calc_crc32(res.data() + sizeof(rs2_calibration_config_header), sizeof(rs2_calibration_config));
+        if (computed_crc32 != calib_config_with_header->header.crc32)
+        {
+            throw invalid_value_exception(rsutils::string::from() << "Invalid CRC value for calibration config table");
+        }
+
+        return calib_config_with_header->payload;
     }
 
 }// namespace librealsense

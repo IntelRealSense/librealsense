@@ -27,7 +27,6 @@ namespace librealsense {
 class stream;
 class dds_sensor_proxy;
 class stream_profile_interface;
-class dds_auto_calibrated;
 
 
 // This is the rs2 device; it proxies to an actual DDS device that does all the actual
