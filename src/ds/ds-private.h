@@ -273,6 +273,7 @@ namespace librealsense
             std::string to_string() const;
         };
 
+        // Note ds_rect_resolutions is used in struct d400_coefficients_table. Update with caution.
         enum ds_rect_resolutions : unsigned short
         {
             res_1920_1080,
@@ -292,8 +293,6 @@ namespace librealsense
             res_576_576,
             res_720_720,
             res_1152_1152,
-            // Internal scaled resolution of D405
-            res_770_480,
             max_ds_rect_resolutions
         };
 
@@ -567,7 +566,6 @@ namespace librealsense
             { res_576_576,{ 576, 576 } },
             { res_720_720,{ 720, 720 } },
             { res_1152_1152,{ 1152, 1152 } },
-            { res_770_480,{ 770, 480 } },
         };
 
         ds_rect_resolutions width_height_to_ds_rect_resolutions(uint32_t width, uint32_t height);

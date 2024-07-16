@@ -247,7 +247,18 @@ A device can run the flow when in recovery mode or during normal operation:
 
 Starts the DFU process.
 
-The device will subscribe to a `dfu` topic under the topic root (accepting a `blob` message, reliable). Enough memory should be allocated to make sure we're ready to receive the image before a reply is sent.
+The device will subscribe to a `dfu` topic under the topic root (accepting a `blob` message, reliable).
+
+```JSON
+{
+    "id": "dfu-start",
+    "size": 2097152,
+    "crc": 65358876
+}
+```
+
+- A `size` will be communicated to ensure enough memory is allocated and we're ready to receive the image
+- The `crc` is needed to verify the image is intact
 
 A reply should indicate the image is ready to be received.
 
@@ -268,14 +279,6 @@ Errors can look like this:
 }
 ```
 If status is not `OK`, then the device is expected to go back to the pre-DFU state and the process needs to start over.
-
-On success, the device may send back a `"crc": <crc32-value>` or `"size": <number-of-bytes>`, to help debug, or any other relevant content:
-```JSON
-{
-    "id": "dfu-ready",
-    "crc": <value>
-}
-```
 
 The `dfu` subscription can be removed at this time.
 

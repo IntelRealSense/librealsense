@@ -93,7 +93,8 @@ k_tick=$(echo ${kernel_version[2]} | awk -F'-' '{print $2}')
 [ $k_maj_min -eq 504 ] && [ $k_tick -ge 156 ] && apply_hid_gyro_patch=1 && skip_hid_patch=1
 # For kernel versions 6+ powerline frequency already applied
 [ $k_maj_min -ge 600 ] && skip_plf_patch=1
-[ $k_maj_min -ge 605 ] && skip_md_patch=1
+# do not skip md patch - new d421.
+#[ $k_maj_min -ge 605 ] && skip_md_patch=1
 
 # Construct branch name from distribution codename {xenial,bionic,..} and kernel version
 # ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
