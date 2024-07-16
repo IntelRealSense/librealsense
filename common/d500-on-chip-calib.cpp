@@ -87,7 +87,7 @@ namespace rs2
         {
             auto depth_sensor = _sub->s->as <rs2::depth_sensor>();
 
-            // disabling the depth visual preset change for D555e - not needed
+            // disabling the depth visual preset change for D555 - not needed
             if (get_device_pid() != "0B56" && get_device_pid() != "DDS")
             {
                 // set depth preset as default preset

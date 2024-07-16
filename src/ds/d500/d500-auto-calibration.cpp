@@ -40,7 +40,7 @@ namespace librealsense
 
     void d500_auto_calibrated::check_preconditions_and_set_state()
     {
-        // moreover, relevant only for d585s, not for d555e
+        // moreover, relevant only for d585s, not for d555
         if (_mode == d500_calibration_mode::RS2_D500_CALIBRATION_MODE_RUN ||
             _mode == d500_calibration_mode::RS2_D500_CALIBRATION_MODE_DRY_RUN)
         {

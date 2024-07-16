@@ -14,8 +14,8 @@ namespace librealsense
 
     namespace ds
     {
-        const uint16_t D555E_PID = 0x0B56;
-        const uint16_t D555E_RECOVERY_PID = 0x0ADE;
+        const uint16_t D555_PID = 0x0B56;
+        const uint16_t D555_RECOVERY_PID = 0x0ADE;
 
         // DS500 depth XU identifiers
         const uint8_t DS5_HKR_PVT_TEMPERATURE = 0x15;
@@ -24,24 +24,24 @@ namespace librealsense
 
         // d500 Devices supported by the current version
         static const std::set<std::uint16_t> rs500_sku_pid = {
-            D555E_PID
+            D555_PID
         };
 
         static const std::set<std::uint16_t> d500_multi_sensors_pid = {
-            D555E_PID
+            D555_PID
         };
 
         static const std::set<std::uint16_t> d500_hid_sensors_pid = {
-            D555E_PID
+            D555_PID
         };
 
         static const std::set<std::uint16_t> d500_hid_bmi_085_pid = {
-            D555E_PID
+            D555_PID
         };
 
         static const std::map< std::uint16_t, std::string > rs500_sku_names = {
-            { ds::D555E_PID,          "Intel RealSense D555e" },
-            { ds::D555E_RECOVERY_PID, "Intel RealSense D555e Recovery" }
+            { ds::D555_PID,          "Intel RealSense D555" },
+            { ds::D555_RECOVERY_PID, "Intel RealSense D555 Recovery" }
         };
 
         bool d500_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,

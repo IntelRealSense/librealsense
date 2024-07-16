@@ -10,7 +10,6 @@
 
 namespace librealsense
 {
-    class d500_device;
     class d500_auto_calibrated : public auto_calibrated_interface
     {
     public:
