@@ -538,19 +538,19 @@ namespace librealsense
 
     void default_585S( preset & p )
     {
-        p.depth_controls.deepSeaMedianThreshold = 0;
+        p.depth_controls.deepSeaMedianThreshold = 97;
         p.depth_controls.deepSeaNeighborThreshold = 0;
-        p.depth_controls.deepSeaSecondPeakThreshold = 248;
-        p.depth_controls.lrAgreeThreshold = 24;
-        p.depth_controls.minusDecrement = 0;
+        p.depth_controls.deepSeaSecondPeakThreshold = 0;
+        p.depth_controls.lrAgreeThreshold = 146;
+        p.depth_controls.minusDecrement = 20;
         p.depth_controls.plusIncrement = 0;
         p.depth_controls.scoreThreshA = 0;
-        p.depth_controls.scoreThreshB = 4095;
+        p.depth_controls.scoreThreshB = 3043;
         p.depth_controls.textureCountThreshold = 0;
         p.depth_controls.textureDifferenceThreshold = 0;
         p.rsm.diffThresh = 7.96875f;
-        p.rsm.removeThresh = 65;
-        p.rsm.rsmBypass = 0;
+        p.rsm.removeThresh = 115;
+        p.rsm.rsmBypass = 0; // inverted field, should be the opposite in the json
         p.rsm.sloRauDiffThresh = 3.96875f;
         p.rsvc.minEast = 1;
         p.rsvc.minNorth = 1;
@@ -572,11 +572,11 @@ namespace librealsense
         p.sctc.diffThresholdGreen = 72;
         p.sctc.diffThresholdRed = 72;
         p.spc.sloK1Penalty = 0;
-        p.spc.sloK1PenaltyMod1 = 105;
-        p.spc.sloK1PenaltyMod2 = 75;
-        p.spc.sloK2Penalty = 156;
-        p.spc.sloK2PenaltyMod1 = 190;
-        p.spc.sloK2PenaltyMod2 = 130;
+        p.spc.sloK1PenaltyMod1 = 102;
+        p.spc.sloK1PenaltyMod2 = 71;
+        p.spc.sloK2Penalty = 146;
+        p.spc.sloK2PenaltyMod1 = 192;
+        p.spc.sloK2PenaltyMod2 = 129;
         p.hdad.lambdaAD = 800.f;
         p.hdad.lambdaCensus = 26.f;
         p.cc.colorCorrection1 = -0.492961f;
@@ -601,17 +601,17 @@ namespace librealsense
         p.census.vDiameter = 9;
         p.laser_state.laser_state = 1;
         p.laser_power.laser_power = 360.f;
-        p.depth_exposure.exposure = 4329.f;
+        p.depth_exposure.exposure = 10000.f;
         p.depth_auto_exposure.auto_exposure = 1;
         p.color_auto_exposure.auto_exposure = 1;
-        p.color_exposure.exposure = 156;
+        p.color_exposure.exposure = 166;
         p.color_backlight_compensation.backlight_compensation = 0;
         p.color_brightness.brightness = 0;
         p.color_contrast.contrast = 50;
-        p.color_gain.gain = 64;
-        p.color_gamma.gamma = 300;
+        p.color_gain.gain = 16;
+        p.color_gamma.gamma = 100;
         p.color_hue.hue = 0;
-        p.color_power_line_frequency.power_line_frequency = 3;
+        p.color_power_line_frequency.power_line_frequency = 0;
         p.color_saturation.saturation = 64;
         p.color_sharpness.sharpness = 50;
         p.color_auto_white_balance.auto_white_balance = 1;
