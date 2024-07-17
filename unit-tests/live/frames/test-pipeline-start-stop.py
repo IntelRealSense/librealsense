@@ -16,7 +16,7 @@ ITERATIONS_COUNT = 50
 dev, ctx = test.find_first_device_or_exit()
 
 def run_and_verify_frame_received():
-    pipe = rs.pipeline()
+    pipe = rs.pipeline(ctx)
     start_call_stopwatch = Stopwatch()
     pipe.start()
     # wait_for_frames will throw if no frames received so no assert is needed

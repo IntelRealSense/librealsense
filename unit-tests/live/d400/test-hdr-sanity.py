@@ -37,7 +37,7 @@ with test.closure("HDR Streaming - custom config"):
         cfg = rs.config()
         cfg.enable_stream(rs.stream.depth)
         cfg.enable_stream(rs.stream.infrared, 1)
-        pipe = rs.pipeline()
+        pipe = rs.pipeline(ctx)
         pipe.start(cfg)
 
         for iteration in range(1, 100):

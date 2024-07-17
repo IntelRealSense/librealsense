@@ -128,14 +128,14 @@ test.start("Trying to record and playback using pipeline interface")
 cfg = pipeline = None
 try:
     # creating a pipeline and recording to a file
-    pipeline = rs.pipeline()
+    pipeline = rs.pipeline(ctx)
     cfg = rs.config()
     cfg.enable_record_to_file( file_name )
     pipeline.start( cfg )
     time.sleep(3)
     pipeline.stop()
     # we create a new pipeline and use it to playback from the file we just recoded to
-    pipeline = rs.pipeline()
+    pipeline = rs.pipeline(ctx)
     cfg = rs.config()
     cfg.enable_device_from_file(file_name)
     pipeline.start(cfg)

@@ -31,7 +31,7 @@ else:
 
 
 def time_to_first_frame(config):
-    pipe = rs.pipeline()
+    pipe = rs.pipeline(ctx)
     start_call_stopwatch = Stopwatch()
     pipe.start(config)
     pipe.wait_for_frames()

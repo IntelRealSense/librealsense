@@ -15,7 +15,7 @@ depth_sensor = dev.first_depth_sensor()
 
 try:
     cfg = pipeline = None
-    pipeline = rs.pipeline()
+    pipeline = rs.pipeline(ctx)
     cfg = rs.config()
     pipeline_profile = pipeline.start(cfg)
 

@@ -83,7 +83,7 @@ def frames_to_image(depth, color, save, display, laser_enabled):
 
 
 def get_frames(config, laser_enabled):
-    pipeline = rs.pipeline()
+    pipeline = rs.pipeline(ctx)
     pipeline_profile = pipeline.start(config)
 
     sensor = pipeline_profile.get_device().first_depth_sensor()
