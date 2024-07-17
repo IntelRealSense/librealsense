@@ -391,10 +391,7 @@ namespace librealsense
                 }
                 auto size_of_enum = sizeof(rs2_frame_metadata_value);
                 auto size_of_data = sizeof(rs2_metadata_type);
-                if (total_md_size + size_of_enum + size_of_data > 255)
-                {
-                    continue; //stop adding metadata to frame
-                }
+               
                 memcpy(additional_data.metadata_blob.data() + total_md_size, &type, size_of_enum);
                 total_md_size += static_cast<uint32_t>(size_of_enum);
                 memcpy(additional_data.metadata_blob.data() + total_md_size, &md, size_of_data);
