@@ -16,7 +16,7 @@ previous_color_frame_number = -1
 got_frames_rgb = False
 got_frames_depth = False
 
-dev = test.find_first_device_or_exit()
+dev, ctx = test.find_first_device_or_exit()
 depth_sensor = dev.first_depth_sensor()
 color_sensor = dev.first_color_sensor()
 
@@ -154,7 +154,7 @@ test.start("Trying to record and playback using sensor interface")
 
 recorder = depth_sensor = color_sensor = playback = None
 try:
-    dev = test.find_first_device_or_exit()
+    dev, ctx = test.find_first_device_or_exit()
     recorder = rs.recorder( file_name, dev )
     depth_sensor = dev.first_depth_sensor()
     color_sensor = dev.first_color_sensor()
@@ -225,7 +225,7 @@ test.start("Trying to record and playback using sensor interface with syncer")
 
 try:
     sync = rs.syncer()
-    dev = test.find_first_device_or_exit()
+    dev, ctx = test.find_first_device_or_exit()
     recorder = rs.recorder( file_name, dev )
     depth_sensor = dev.first_depth_sensor()
     color_sensor = dev.first_color_sensor()

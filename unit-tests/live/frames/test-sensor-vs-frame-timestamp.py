@@ -7,7 +7,7 @@ import pyrealsense2 as rs
 from rspy import test
 import time
 
-dev = test.find_first_device_or_exit()
+dev, ctx = test.find_first_device_or_exit()
 depth_sensor = dev.first_depth_sensor()
 is_global_time_enabled_orig = False
 fps = 30

@@ -9,7 +9,7 @@ from rspy import test, log
 from rspy import tests_wrapper as tw
 
 ctx = rs.context()
-device = test.find_first_device_or_exit();
+device, ctx = test.find_first_device_or_exit();
 depth_sensor = device.first_depth_sensor()
 fw_version = rsutils.version( device.get_info( rs.camera_info.firmware_version ))
 tw.start_wrapper( device )

@@ -23,7 +23,7 @@ def frame_callback( f ):
 ################################################################################################
 with test.closure("frame index - mipi IMU "):
     seconds_to_count_frames = 10
-    dev = test.find_first_device_or_exit()
+    dev, ctx = test.find_first_device_or_exit()
     sensor = dev.first_motion_sensor()
     motion_profile_accel = next(p for p in sensor.profiles if p.stream_type() == rs.stream.accel and p.fps() == 100)
     motion_profile_gyro = next(p for p in sensor.profiles if p.stream_type() == rs.stream.gyro and p.fps()==100)

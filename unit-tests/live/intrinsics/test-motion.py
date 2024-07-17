@@ -8,7 +8,7 @@
 import pyrealsense2 as rs
 from rspy import test, log
 
-device = test.find_first_device_or_exit()
+device, ctx = test.find_first_device_or_exit()
 motion_sensor = device.first_motion_sensor()
 
 test.start('Check intrinsics in motion sensor:')

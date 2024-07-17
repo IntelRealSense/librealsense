@@ -43,7 +43,7 @@ def set_and_verify_timestamp_domain(sensor, frame_queue, global_time_enabled: bo
 
 queue_capacity = 1
 
-device = test.find_first_device_or_exit()
+device, ctx = test.find_first_device_or_exit()
 
 # Depth sensor test
 depth_frame_queue = rs.frame_queue(queue_capacity, keep_frames=False)

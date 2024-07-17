@@ -8,7 +8,7 @@ import pyrealsense2 as rs
 from rspy import test
 
 ctx = rs.context()
-device = test.find_first_device_or_exit()
+device, ctx = test.find_first_device_or_exit()
 depth_sensor = device.first_depth_sensor()
 
 ################################################################################################

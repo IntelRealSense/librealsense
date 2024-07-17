@@ -15,7 +15,7 @@ import time
 
 # HDR CONFIGURATION TESTS
 with test.closure("HDR Config - default config"):
-    device = test.find_first_device_or_exit()
+    device, ctx = test.find_first_device_or_exit()
     depth_sensor = device.first_depth_sensor()
 
     if test.check(depth_sensor and depth_sensor.supports(rs.option.hdr_enabled)):
@@ -42,7 +42,7 @@ with test.closure("HDR Config - default config"):
 
 with test.closure("HDR Config - custom config"):
     # Require at least one device to be plugged in
-    device = test.find_first_device_or_exit()
+    device, ctx = test.find_first_device_or_exit()
     depth_sensor = device.first_depth_sensor()
 
     if test.check(depth_sensor and depth_sensor.supports(rs.option.hdr_enabled)):
@@ -72,7 +72,7 @@ with test.closure("HDR Config - custom config"):
 
 # HDR STREAMING TEST
 with test.closure("HDR Streaming - default config"):
-    device = test.find_first_device_or_exit()
+    device, ctx = test.find_first_device_or_exit()
     depth_sensor = device.first_depth_sensor()
 
     if test.check(depth_sensor and depth_sensor.supports(rs.option.hdr_enabled)):
@@ -111,7 +111,7 @@ with test.closure("HDR Streaming - default config"):
 
 # CHECKING HDR AFTER PIPE RESTART
 with test.closure("HDR Running - restart hdr at restream"):
-    device = test.find_first_device_or_exit()
+    device, ctx = test.find_first_device_or_exit()
     depth_sensor = device.first_depth_sensor()
     if test.check(depth_sensor and depth_sensor.supports(rs.option.hdr_enabled)):
         cfg = rs.config()
@@ -186,7 +186,7 @@ def check_hdr_frame_counter(pipe, num_of_frames, merging_filter):
 
 # CHECKING HDR MERGE AFTER HDR RESTART
 with test.closure("HDR Running - hdr merge after hdr restart"):
-    device = test.find_first_device_or_exit()
+    device, ctx = test.find_first_device_or_exit()
     depth_sensor = device.first_depth_sensor()
     if test.check(depth_sensor and depth_sensor.supports(rs.option.hdr_enabled)):
         # initializing the merging filter
@@ -280,7 +280,7 @@ def check_sequence_id(pipe):
 
 # CHECKING SEQUENCE ID WHILE STREAMING
 with test.closure("HDR Streaming - checking sequence id"):
-    device = test.find_first_device_or_exit()
+    device, ctx = test.find_first_device_or_exit()
     depth_sensor = device.first_depth_sensor()
     if test.check(depth_sensor and depth_sensor.supports(rs.option.hdr_enabled)):
         cfg = rs.config()
@@ -299,7 +299,7 @@ with test.closure("HDR Streaming - checking sequence id"):
         
 
 with test.closure("Emitter on/off - checking sequence id"):
-    device = test.find_first_device_or_exit()
+    device, ctx = test.find_first_device_or_exit()
     depth_sensor = device.first_depth_sensor()
 
     if test.check(depth_sensor and depth_sensor.supports(rs.option.emitter_on_off)):
@@ -320,7 +320,7 @@ with test.closure("Emitter on/off - checking sequence id"):
 
 # This tests checks that the previously saved merged frame is discarded after a pipe restart
 with test.closure("HDR Merge - discard merged frame"):
-    device = test.find_first_device_or_exit()
+    device, ctx = test.find_first_device_or_exit()
     depth_sensor = device.first_depth_sensor()
     if test.check(depth_sensor and depth_sensor.supports(rs.option.hdr_enabled)):
         depth_sensor.set_option(rs.option.hdr_enabled, 1)
@@ -376,7 +376,7 @@ with test.closure("HDR Merge - discard merged frame"):
 
 
 with test.closure("HDR Start Stop - recover manual exposure and gain"):
-    device = test.find_first_device_or_exit()
+    device, ctx = test.find_first_device_or_exit()
     depth_sensor = device.first_depth_sensor()
     if test.check(depth_sensor and depth_sensor.supports(rs.option.hdr_enabled)):
 
@@ -428,7 +428,7 @@ with test.closure("HDR Start Stop - recover manual exposure and gain"):
 
 # CONTROLS STABILITY WHILE HDR ACTIVE
 with test.closure("HDR Active - set locked options"):
-    device = test.find_first_device_or_exit()
+    device, ctx = test.find_first_device_or_exit()
     depth_sensor = device.first_depth_sensor()
 
     if test.check(depth_sensor and depth_sensor.supports(rs.option.hdr_enabled)):
@@ -465,7 +465,7 @@ with test.closure("HDR Active - set locked options"):
         
 
 with test.closure("HDR Streaming - set locked options"):
-    device = test.find_first_device_or_exit()
+    device, ctx = test.find_first_device_or_exit()
     depth_sensor = device.first_depth_sensor()
     if test.check(depth_sensor and depth_sensor.supports(rs.option.hdr_enabled)):
         # setting laser ON
@@ -503,7 +503,7 @@ with test.closure("HDR Streaming - set locked options"):
         depth_sensor.set_option(rs.option.hdr_enabled, 0)  # disable hdr before next tests
 
 with test.closure("HDR Streaming - enable runtime exposure update in HDR mode"):
-    device = test.find_first_device_or_exit()
+    device, ctx = test.find_first_device_or_exit()
     depth_sensor = device.first_depth_sensor()
 
     if test.check(depth_sensor and depth_sensor.supports(rs.option.hdr_enabled)):

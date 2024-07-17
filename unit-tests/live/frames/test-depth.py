@@ -22,7 +22,7 @@ DEBUG_MODE = False
 DETAIL_LEVEL = 10
 FRAMES_TO_CHECK = 30
 
-dev = test.find_first_device_or_exit()
+dev, ctx = test.find_first_device_or_exit()
 tw.start_wrapper( dev )
 
 cfg = rs.config()

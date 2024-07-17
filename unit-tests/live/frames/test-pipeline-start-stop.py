@@ -13,7 +13,7 @@ import time
 # Run multiple start stop of all streams and verify we get a frame for each once
 ITERATIONS_COUNT = 50
 
-dev = test.find_first_device_or_exit()
+dev, ctx = test.find_first_device_or_exit()
 
 def run_and_verify_frame_received():
     pipe = rs.pipeline()
