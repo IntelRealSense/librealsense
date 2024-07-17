@@ -4,8 +4,99 @@
 #temporary fix to prevent the test from running on Win_SH_Py_DDS_CI
 #test:donotrun:dds
 
-import pyrealsense2 as rs, tempfile, os, random, csv
+import pyrealsense2 as rs, os, random, csv
 from rspy import test, repo
+import urllib.request
+from urllib.error import URLError, HTTPError
+
+def download_file(url, subdir, filename):
+    destination = os.path.join(subdir, filename)
+    try:
+        if not os.path.exists(subdir):
+            os.makedirs(subdir, exist_ok=True)
+            print(f"Created directory: {subdir}")
+
+        if not os.path.exists(destination):
+            print(f"Downloading {url}/{filename} to {destination}")
+            try:
+                req = urllib.request.Request(url)
+                with urllib.request.urlopen(req) as response, open(destination, 'wb') as out_file:
+                    out_file.write(response.read())
+                print(f"Downloaded {filename} successfully.")
+            except (URLError, HTTPError) as e:
+                print(f"Failed to download {url}/{filename}: {e.reason}")
+                return False
+    except OSError as e:
+        print(f"Failed to create directory {subdir}: {e.strerror}")
+        return False
+
+    return True
+
+RECORDINGS_FOLDER = os.path.join(repo.build, 'unit-tests', 'recordings')
+
+if os.name == 'nt':
+    Deployment_Location = os.getenv('TESTDATA_LOCATION', os.getenv('TEMP', 'C:\\Temp'))
+else:
+    Deployment_Location = os.getenv('TESTDATA_LOCATION', '/tmp/')
+
+PP_Tests_List = [
+    "1551257764229", "1551257812956", "1551257880762", "1551257882796",
+    "1551257884097", "1551257987255", "1551259481873", "1551261946511",
+    "1551262153516", "1551262256875", "1551262841203", "1551262772964",
+    "1551262971309", "1551263177558"
+]
+
+# Extensions for post-processing test files
+PP_Test_extensions_List = [".Input.raw", ".Input.csv", ".Output.raw", ".Output.csv"]
+
+PP_TESTS_URL = "https://librealsense.intel.com/rs-tests/post_processing_tests_2018_ww18/"
+
+def get_sequence_length(contents):
+    sequence_length = 1
+    for line in contents.split('\n'):
+        if "Frames sequence length" in line:
+            parts = line.split(',')
+            if len(parts) > 1 and parts[1].isdigit():
+                sequence_length = int(parts[1])
+                break
+    return sequence_length
+
+def produce_sequence_extensions(source, target):
+    if not os.path.exists(target):
+        download_file(PP_TESTS_URL + source, RECORDINGS_FOLDER, source)
+    with open(target, 'r') as f:
+        contents = f.read()
+    sequence_length = get_sequence_length(contents)
+    return [f".{i}" for i in range(sequence_length)]
+
+print(f"Preparing to download Post-processing tests dataset...\nRemote server: {PP_TESTS_URL}\nTarget Location: {Deployment_Location}")
+
+for test_pattern in PP_Tests_List:
+    sequence_meta_file = f"{test_pattern}.0.Output.csv"
+    source = sequence_meta_file
+    destination = os.path.join(RECORDINGS_FOLDER, sequence_meta_file)
+    sequence_extensions = produce_sequence_extensions(source, destination)
+
+    for ext in PP_Test_extensions_List:
+        for idx in sequence_extensions:
+            test_file_name = f"{test_pattern}{idx}{ext}"
+            source = test_file_name
+            destination = os.path.join(RECORDINGS_FOLDER, test_file_name)
+            download_file(PP_TESTS_URL + test_file_name, RECORDINGS_FOLDER, test_file_name)
+
+for test_pattern in PP_Tests_List:
+    sequence_meta_file = f"{test_pattern}.0.Output.csv"
+    source = sequence_meta_file
+    destination = os.path.join(RECORDINGS_FOLDER, sequence_meta_file)
+    sequence_extensions = produce_sequence_extensions(source, destination)
+
+    for ext in PP_Test_extensions_List:
+        for idx in sequence_extensions:
+            test_file_name = f"{test_pattern}{idx}{ext}"
+            source = test_file_name
+            destination = os.path.join(RECORDINGS_FOLDER, test_file_name)
+            download_file(PP_TESTS_URL + test_file_name, RECORDINGS_FOLDER, test_file_name)
+
 ################################################################################################
 frame_metadata_count = 43
 
