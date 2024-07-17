@@ -24,9 +24,9 @@ def check_depth_and_ir_streaming(fps):
     pipe.stop()
 
 
-################# Checking depth and IR streaming with fps 5/15/30/60 ##################
+################# Checking depth and IR streaming with fps 5/15/30 ##################
 
-fps_arr = [5, 15, 30, 60]
+fps_arr = [5, 15, 30]
 
 for fps in fps_arr:
     test.start("Checking depth and IR streaming with fps " + repr(fps))

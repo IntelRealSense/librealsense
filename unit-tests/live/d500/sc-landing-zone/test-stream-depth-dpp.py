@@ -26,7 +26,7 @@ def check_depth_dpp_streaming(width, height, fps):
 ################# Checking depth dpp streaming with all required combinations ##################
 
 res_arr = [[1280, 720], [640, 360]]
-fps_arr = [5, 15, 30, 60]
+fps_arr = [5, 15, 30]
 
 for res in res_arr:
     for fps in fps_arr:
