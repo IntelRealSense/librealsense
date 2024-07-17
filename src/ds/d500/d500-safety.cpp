@@ -314,8 +314,7 @@ namespace librealsense
                 md_safety_info_attributes::soc_status_attribute, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_SAFETY_AND_SECURITY,
-            make_attribute_parser(&md_safety_info::soc_safety_and_security,
-                md_safety_info_attributes::soc_status_attribute, md_prop_offset));
+            make_always_enabled_param_parser(&md_safety_info::soc_safety_and_security, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT,
             make_attribute_parser(&md_safety_info::mb_fusa_event, 
