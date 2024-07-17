@@ -187,9 +187,7 @@ try
     ValueArg< uint32_t > link_timeout_arg( "", "link-timeout",
                                            "Milliseconds before --eth-first link times out and falls back to USB",
                                            false, 4000, "milliseconds" );
-    ValueArg< uint8_t > domain_id_arg( "", "domain-id",
-                                       "DDS Domain ID to use (default is 0)",
-                                       false, 0, "0-232" );
+    ValueArg< int > domain_id_arg( "", "domain-id", "DDS Domain ID to use (default is 0)", false, 0, "0-232" );
     SwitchArg usb_first_arg( "", "usb-first", "Prioritize USB before Ethernet" );
     SwitchArg eth_first_arg( "", "eth-first", "Prioritize Ethernet and fall back to USB after link timeout" );
     SwitchArg dynamic_priority_arg( "", "dynamic-priority", "Dynamically prioritize the last-working connection method (the default)" );
@@ -313,7 +311,7 @@ try
             requested.dhcp.timeout = dhcp_timeout_arg.getValue();
         if( domain_id_arg.isSet() )
         {
-            if( domain_id_arg.getValue() > 232 )
+            if( domain_id_arg.getValue() < 0 || domain_id_arg.getValue() > 232 )
                 throw std::invalid_argument( "--domain-id must be 0-232" );
             requested.dds.domain_id = domain_id_arg.getValue();
         }
