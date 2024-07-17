@@ -4,16 +4,16 @@
 #pragma once
 
 #include <src/auto-calibrated-device.h>
-#include <src/ds/d500/d500-auto-calibration-handler.h>
-#include "../../core/advanced_mode.h"
+#include <src/calibration-engine-interface.h>  // should remain for members _mode, _state, _result
 
 
 namespace librealsense
 {
+    class d500_debug_protocol_calibration_engine;
     class d500_auto_calibrated : public auto_calibrated_interface
     {
     public:
-        d500_auto_calibrated();
+        d500_auto_calibrated(std::shared_ptr<d500_debug_protocol_calibration_engine> calib_engine);
         void write_calibration() const override;
         std::vector<uint8_t> run_on_chip_calibration(int timeout_ms, std::string json, float* const health, rs2_update_progress_callback_sptr progress_callback) override;
         std::vector<uint8_t> run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* const health, rs2_update_progress_callback_sptr progress_callback) override;
@@ -31,8 +31,6 @@ namespace librealsense
         void set_calibration_config(const std::string& calibration_config_json_str) const override;
         
         void set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm);
-        void set_device_for_auto_calib(debug_interface* device) override;
-
     private:
         void check_preconditions_and_set_state();
         void get_mode_from_json(const std::string& json);
@@ -40,9 +38,9 @@ namespace librealsense
         std::vector<uint8_t> update_abort_status();
 
         mutable std::vector< uint8_t > _curr_calibration;
-		std::shared_ptr<d500_auto_calibrated_handler_interface> _ac_handler;
-        d500_calibration_mode _mode;
-        d500_calibration_state _state;
-        d500_calibration_result _result;
+        std::shared_ptr<d500_debug_protocol_calibration_engine> _calib_engine;
+        calibration_mode _mode;
+        calibration_state _state;
+        calibration_result _result;
     };
 }

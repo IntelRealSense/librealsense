@@ -8,11 +8,12 @@
 #include <rsutils/string/from.h>
 #include <rsutils/json.h>
 #include "d500-device.h"
+#include <src/ds/d500/d500-debug-protocol-calibration-engine.h>
 #include "d500-types/calibration-config.h"
 
 namespace librealsense
 {
-    static const std::string d500_calibration_state_strings[] = {
+    static const std::string calibration_state_strings[] = {
         "Idle",
         "In Process",
         "Done Success",
@@ -21,46 +22,43 @@ namespace librealsense
         "Complete"
     };
 
-    static const std::string d500_calibration_result_strings[] = {
+    static const std::string calibration_result_strings[] = {
         "Unkown",
         "Success",
         "Failed to Converge",
         "Failed to Run"
     };
 
-    d500_auto_calibrated::d500_auto_calibrated() :
-        _mode (d500_calibration_mode::RS2_D500_CALIBRATION_MODE_RESERVED),
-        _state (d500_calibration_state::RS2_D500_CALIBRATION_STATE_IDLE),
-        _result(d500_calibration_result::RS2_D500_CALIBRATION_RESULT_UNKNOWN)
-    {
-        // add here choice between hw_monitor or debug protocol
-        // is hw monitor needed at all (since debug protocol uses hwm
-        _ac_handler = std::make_shared <d500_auto_calibrated_handler>();
-    }
+    d500_auto_calibrated::d500_auto_calibrated(std::shared_ptr<d500_debug_protocol_calibration_engine> calib_engine) :
+        _calib_engine(calib_engine),
+        _mode (calibration_mode::RS2_CALIBRATION_MODE_RESERVED),
+        _state (calibration_state::RS2_CALIBRATION_STATE_IDLE),
+        _result(calibration_result::RS2_CALIBRATION_RESULT_UNKNOWN)
+    {}
 
     void d500_auto_calibrated::check_preconditions_and_set_state()
     {
-        if (_mode == d500_calibration_mode::RS2_D500_CALIBRATION_MODE_RUN ||
-            _mode == d500_calibration_mode::RS2_D500_CALIBRATION_MODE_DRY_RUN)
+        if (_mode == calibration_mode::RS2_CALIBRATION_MODE_RUN ||
+            _mode == calibration_mode::RS2_CALIBRATION_MODE_DRY_RUN)
         {
             // calibration state to be IDLE or COMPLETE
-            auto calib_result = _ac_handler->get_status();
+            _calib_engine->update_status();
 
-            _state = static_cast<d500_calibration_state>(calib_result.calibration_state);
-            if (!(_state == d500_calibration_state::RS2_D500_CALIBRATION_STATE_IDLE ||
-                _state == d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE))
+            _state = _calib_engine->get_state();
+            if (!(_state == calibration_state::RS2_CALIBRATION_STATE_IDLE ||
+                _state == calibration_state::RS2_CALIBRATION_STATE_COMPLETE))
             {
                 LOG_ERROR("Calibration State is not Idle nor Complete - pleare restart the device");
                 throw std::runtime_error("OCC triggerred when Calibration State is not Idle not Complete");
             }
         }
         
-        if (_mode == d500_calibration_mode::RS2_D500_CALIBRATION_MODE_ABORT)
+        if (_mode == calibration_mode::RS2_CALIBRATION_MODE_ABORT)
         {
             // calibration state to be IN_PROCESS
-            d500_calibration_answer calib_result = _ac_handler->get_status();
-            _state = static_cast<d500_calibration_state>(calib_result.calibration_state);
-            if (!(_state == d500_calibration_state::RS2_D500_CALIBRATION_STATE_PROCESS))
+            _calib_engine->update_status();
+            _state = _calib_engine->get_state();
+            if (!(_state == calibration_state::RS2_CALIBRATION_STATE_PROCESS))
             {
                 LOG_ERROR("Calibration State is not In Process - so it could not be aborted");
                 throw std::runtime_error("OCC aborted when Calibration State is not In Process");
@@ -70,11 +68,11 @@ namespace librealsense
 
     void d500_auto_calibrated::get_mode_from_json(const std::string& json)
     {
-        _mode = d500_calibration_mode::RS2_D500_CALIBRATION_MODE_RUN;
+        _mode = calibration_mode::RS2_CALIBRATION_MODE_RUN;
         if (json.find("dry run") != std::string::npos)
-            _mode = d500_calibration_mode::RS2_D500_CALIBRATION_MODE_DRY_RUN;
+            _mode = calibration_mode::RS2_CALIBRATION_MODE_DRY_RUN;
         else if (json.find("abort") != std::string::npos)
-            _mode = d500_calibration_mode::RS2_D500_CALIBRATION_MODE_ABORT;
+            _mode = calibration_mode::RS2_CALIBRATION_MODE_ABORT;
     }
 
     std::vector<uint8_t> d500_auto_calibrated::run_on_chip_calibration(int timeout_ms, std::string json, 
@@ -89,14 +87,14 @@ namespace librealsense
             check_preconditions_and_set_state();
 
             // sending command to start calibration
-            res = _ac_handler->run_auto_calibration(_mode);
+            res = _calib_engine->run_auto_calibration(_mode);
 
-            if (_mode == d500_calibration_mode::RS2_D500_CALIBRATION_MODE_RUN ||
-                _mode == d500_calibration_mode::RS2_D500_CALIBRATION_MODE_DRY_RUN)
+            if (_mode == calibration_mode::RS2_CALIBRATION_MODE_RUN ||
+                _mode == calibration_mode::RS2_CALIBRATION_MODE_DRY_RUN)
             {
                 res = update_calibration_status(timeout_ms, progress_callback);
             }
-            else if (_mode == d500_calibration_mode::RS2_D500_CALIBRATION_MODE_ABORT)
+            else if (_mode == calibration_mode::RS2_CALIBRATION_MODE_ABORT)
             {
                 res = update_abort_status();
             }
@@ -108,9 +106,9 @@ namespace librealsense
         catch(...)
         {
             std::string error_message_prefix = "\nRUN OCC ";
-            if (_mode == d500_calibration_mode::RS2_D500_CALIBRATION_MODE_DRY_RUN)
+            if (_mode == calibration_mode::RS2_CALIBRATION_MODE_DRY_RUN)
                 error_message_prefix = "\nDRY RUN OCC ";
-            else if (_mode == d500_calibration_mode::RS2_D500_CALIBRATION_MODE_ABORT)
+            else if (_mode == calibration_mode::RS2_CALIBRATION_MODE_ABORT)
                 error_message_prefix = "\nABORT OCC ";
 
             throw std::runtime_error(rsutils::string::from() << error_message_prefix + "Could not be triggered");
@@ -123,28 +121,27 @@ namespace librealsense
     {
         auto start_time = std::chrono::high_resolution_clock::now();
         std::vector<uint8_t> res;
-        d500_calibration_answer calib_answer;
         do
         {
             std::this_thread::sleep_for(std::chrono::seconds(1));
-            calib_answer = _ac_handler->get_status();
+            _calib_engine->update_status();
 
-            _state = static_cast<d500_calibration_state>(calib_answer.calibration_state);
-            _result = static_cast<d500_calibration_result>(calib_answer.calibration_result);
+            _state = _calib_engine->get_state();
+            _result = _calib_engine->get_result();
             std::stringstream ss;
-            ss << "Calibration in progress - State = " << d500_calibration_state_strings[static_cast<int>(_state)];
-            if (_state == d500_calibration_state::RS2_D500_CALIBRATION_STATE_PROCESS)
+            ss << "Calibration in progress - State = " << calibration_state_strings[static_cast<int>(_state)];
+            if (_state == calibration_state::RS2_CALIBRATION_STATE_PROCESS)
             {
-                ss << ", progress = " << static_cast<int>(calib_answer.calibration_progress);
-                ss << ", result = " << d500_calibration_result_strings[static_cast<int>(_result)];
+                ss << ", progress = " << _calib_engine->get_progress();
+                ss << ", result = " << calibration_result_strings[static_cast<int>(_result)];
             }
             LOG_INFO(ss.str().c_str());
             if (progress_callback)
             {
-                progress_callback->on_update_progress(calib_answer.calibration_progress);
+                progress_callback->on_update_progress(_calib_engine->get_progress());
             }
             
-            if (_result == d500_calibration_result::RS2_D500_CALIBRATION_RESULT_FAILED_TO_RUN)
+            if (_result == calibration_result::RS2_CALIBRATION_RESULT_FAILED_TO_RUN)
             {
                 break;
             }
@@ -153,19 +150,19 @@ namespace librealsense
             {
                 throw std::runtime_error("OCC Calibration Timeout");
             }
-        } while (_state != d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE &&
+        } while (_state != calibration_state::RS2_CALIBRATION_STATE_COMPLETE &&
             // if state is back to idle, it means that Abort action has been called
-            _state != d500_calibration_state::RS2_D500_CALIBRATION_STATE_IDLE);
+            _state != calibration_state::RS2_CALIBRATION_STATE_IDLE);
 
         // printing new calibration to log
-        if (_state == d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE)
+        if (_state == calibration_state::RS2_CALIBRATION_STATE_COMPLETE)
         {
-            if (_result == d500_calibration_result::RS2_D500_CALIBRATION_RESULT_SUCCESS)
+            if (_result == calibration_result::RS2_CALIBRATION_RESULT_SUCCESS)
             {
-                auto depth_calib = *reinterpret_cast<ds::d500_coefficients_table*>(&calib_answer.depth_calibration);
+                auto depth_calib = _calib_engine->get_depth_calibration();
                 LOG_INFO("Depth new Calibration = \n" + depth_calib.to_string());
             }
-            else if (_result == d500_calibration_result::RS2_D500_CALIBRATION_RESULT_FAILED_TO_CONVERGE)
+            else if (_result == calibration_result::RS2_CALIBRATION_RESULT_FAILED_TO_CONVERGE)
             {
                 LOG_ERROR("Calibration completed but algorithm failed");
                 throw std::runtime_error("Calibration completed but algorithm failed");
@@ -173,7 +170,7 @@ namespace librealsense
         }
         else
         {
-            if (_result == d500_calibration_result::RS2_D500_CALIBRATION_RESULT_FAILED_TO_RUN)
+            if (_result == calibration_result::RS2_CALIBRATION_RESULT_FAILED_TO_RUN)
             {
                 LOG_ERROR("Calibration failed to run");
                 throw std::runtime_error("Calibration failed to run");
@@ -186,13 +183,13 @@ namespace librealsense
     std::vector<uint8_t> d500_auto_calibrated::update_abort_status()
     {
         std::vector<uint8_t> ans;
-        auto calib_answer = _ac_handler->get_status();
-        if (calib_answer.calibration_state == static_cast<uint8_t>(d500_calibration_state::RS2_D500_CALIBRATION_STATE_PROCESS))
+        _calib_engine->update_status();
+        if (_calib_engine->get_state() == calibration_state::RS2_CALIBRATION_STATE_PROCESS)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
-            calib_answer = _ac_handler->get_status();
+            _calib_engine->update_status();
         }
-        if (calib_answer.calibration_state == static_cast<uint8_t>(d500_calibration_state::RS2_D500_CALIBRATION_STATE_IDLE))
+        if (_calib_engine->get_state() == calibration_state::RS2_CALIBRATION_STATE_IDLE)
         {
             LOG_INFO("Depth Calibration Successfully Aborted");
             // returning success
@@ -355,16 +352,12 @@ namespace librealsense
 
     std::string d500_auto_calibrated::get_calibration_config() const
     {
-        return _ac_handler->get_calibration_config();
+        return _calib_engine->get_calibration_config();
     }
 
     void d500_auto_calibrated::set_calibration_config(const std::string& calibration_config_json_str) const
     {
-        _ac_handler->set_calibration_config(calib_config);
+        _calib_engine->set_calibration_config(calib_config);
     }
 
-    void d500_auto_calibrated::set_device_for_auto_calib(debug_interface* device)
-    {
-        _ac_handler->set_device_for_auto_calib(device);
-    }
 }

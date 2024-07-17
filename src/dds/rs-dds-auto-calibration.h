@@ -9,10 +9,11 @@
 namespace librealsense
 {
 
+class calibration_engine_interface;
 class dds_auto_calibrated : public auto_calibrated_interface
 {
 public:
-    dds_auto_calibrated();
+    dds_auto_calibrated(std::shared_ptr<calibration_engine_interface> calib_engine);
     void write_calibration() const override;
     std::vector<uint8_t> run_on_chip_calibration(int timeout_ms, std::string json, float* const health, rs2_update_progress_callback_sptr progress_callback) override;
     std::vector<uint8_t> run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* const health, rs2_update_progress_callback_sptr progress_callback) override;
@@ -31,10 +32,10 @@ public:
     std::string calibration_config_to_json_string(const rs2_calibration_config& calib_config) const override;
     rs2_calibration_config json_string_to_calibration_config(const std::string& json_str) const override;
 
-    void set_device_for_auto_calib(debug_interface* device) override;
+    void set_auto_calibration_capability(std::shared_ptr<auto_calibrated_interface> ac_cap);
 
 private:
-    std::shared_ptr<auto_calibrated_interface> _auto_calib_capability;
+    std::weak_ptr<auto_calibrated_interface> _auto_calib_capability;
 };
 
 } // namespace librealsense

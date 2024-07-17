@@ -1,14 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
-#include "d500-auto-calibration-handler.h"
+#include <src/ds/d500/d500-debug-protocol-calibration-engine.h>
 #include "d500-device.h"
-#include <src/core/debug.h>
 
 
 namespace librealsense
 {
-    bool d500_auto_calibrated_handler::check_buffer_size_from_get_calib_status(std::vector<uint8_t> res) const
+    bool d500_debug_protocol_calibration_engine::check_buffer_size_from_get_calib_status(std::vector<uint8_t> res) const
     {
         // the GET_CALIB_STATUS command will return:
         // - 3 bytes during the whole process
@@ -18,24 +17,19 @@ namespace librealsense
         if (res.size() > 1)
         {
             // if state is not COMPLETE - answer should be returned without calibration table
-            if (res[0] < static_cast<int>(d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE) &&
+            if (res[0] < static_cast<int>(calibration_state::RS2_CALIBRATION_STATE_COMPLETE) &&
                 res.size() == (sizeof(d500_calibration_answer) - sizeof(ds::d500_coefficients_table)))
                 is_size_ok = true;
 
             // if state is COMPLETE - answer should be returned with calibration table (modified by the calibration process)
-            if (res[0] == static_cast<int>(d500_calibration_state::RS2_D500_CALIBRATION_STATE_COMPLETE) &&
+            if (res[0] == static_cast<int>(calibration_state::RS2_CALIBRATION_STATE_COMPLETE) &&
                 res.size() == sizeof(d500_calibration_answer))
                 is_size_ok = true;
         }
         return is_size_ok;
     }
 
-    void d500_auto_calibrated_handler::set_device_for_auto_calib(debug_interface* device)
-    {
-        _dev = device;
-    }
-
-    d500_calibration_answer d500_auto_calibrated_handler::get_status() const
+    void d500_debug_protocol_calibration_engine::update_status()
     {
         if (!_dev)
             throw std::runtime_error("device has not been set");
@@ -49,10 +43,11 @@ namespace librealsense
         if (!check_buffer_size_from_get_calib_status(res))
             throw std::runtime_error("GET_CALIB_STATUS returned struct with wrong size");
 
-        return *reinterpret_cast<d500_calibration_answer*>(res.data());
+        _calib_ans = *reinterpret_cast<d500_calibration_answer*>(res.data());
     }
 
-    std::vector<uint8_t> d500_auto_calibrated_handler::run_auto_calibration(d500_calibration_mode _mode)
+
+    std::vector<uint8_t> d500_debug_protocol_calibration_engine::run_auto_calibration(calibration_mode _mode)
     {
         if (!_dev)
             throw std::runtime_error("device has not been set"); 
@@ -78,7 +73,7 @@ namespace librealsense
         return std::vector<uint8_t>(data_as_ptr, data_as_ptr + sizeof(rs2_calibration_config_with_header));
     }
 
-    void d500_auto_calibrated_handler::set_calibration_config(const rs2_calibration_config& calib_config)
+    void d500_debug_protocol_calibration_engine::set_calibration_config(const rs2_calibration_config& calib_config)
     {
         if (!_dev)
             throw std::runtime_error("device has not been set"); 
@@ -96,7 +91,7 @@ namespace librealsense
         auto res = _dev->send_receive_raw_data(cmd);
     }
 
-    rs2_calibration_config d500_auto_calibrated_handler::get_calibration_config() const
+    rs2_calibration_config d500_debug_protocol_calibration_engine::get_calibration_config() const
     {
         if (!_dev)
             throw std::runtime_error("device has not been set");
@@ -126,6 +121,23 @@ namespace librealsense
         }
 
         return calib_config_with_header->payload;
+    }
+
+    calibration_state d500_debug_protocol_calibration_engine::get_state() const
+    {
+        return static_cast<calibration_state>(_calib_ans.calibration_state);
+    }
+    calibration_result d500_debug_protocol_calibration_engine::get_result() const
+    {
+        return static_cast<calibration_result>(_calib_ans.calibration_result);
+    }
+    int8_t d500_debug_protocol_calibration_engine::get_progress() const
+    {
+        return _calib_ans.calibration_progress;
+    }
+    ds::d500_coefficients_table d500_debug_protocol_calibration_engine::get_depth_calibration() const
+    {
+        return _calib_ans.depth_calibration;
     }
 
 }// namespace librealsense

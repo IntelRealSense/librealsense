@@ -63,8 +63,6 @@ namespace librealsense
         std::string get_calibration_config() const override;
         void set_calibration_config(const std::string& calibration_config_json_str) const override;
         void set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm);
-        void set_device_for_auto_calib(debug_interface* device) override;
-
     private:
         std::vector<uint8_t> get_calibration_results(float* const health = nullptr) const;
         std::vector<uint8_t> get_PyRxFL_calibration_results(float* const health = nullptr, float* health_fl = nullptr) const;
