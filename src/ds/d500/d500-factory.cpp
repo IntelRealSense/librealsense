@@ -7,6 +7,7 @@
 
 #include <src/core/matcher-factory.h>
 #include <src/proc/color-formats-converter.h>
+#include <src/core/advanced_mode.h>
 
 #include "d500-info.h"
 #include "d500-private.h"

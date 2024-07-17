@@ -31,6 +31,8 @@
 #include <vector>
 #include <string>
 
+#include <src/ds/d500/d500-debug-protocol-calibration-engine.h>
+
 #ifdef HWM_OVER_XU
 constexpr bool hw_mon_over_xu = true;
 #else

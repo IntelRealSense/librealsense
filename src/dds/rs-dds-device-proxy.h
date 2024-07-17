@@ -7,7 +7,7 @@
 #include <src/core/debug.h>
 #include "sid_index.h"
 #include "rsdds-serializable.h"
-#include <src/dds/rs-dds-auto-calibration.h>
+#include <src/auto-calibrated-proxy.h>
 #include <memory>
 #include <vector>
 
@@ -42,7 +42,7 @@ class dds_device_proxy
     , public updatable                // unsigned, non-recovery-mode
     , public update_device_interface  // signed, recovery-mode
     , public dds_serializable
-    , public dds_auto_calibrated
+    , public auto_calibrated_proxy
 {
     std::shared_ptr< realdds::dds_device > _dds_dev;
     std::map< std::string, std::vector< std::shared_ptr< stream_profile_interface > > > _stream_name_to_profiles;
