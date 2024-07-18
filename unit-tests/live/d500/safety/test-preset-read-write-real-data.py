@@ -66,7 +66,7 @@ def get_valid_preset():
     p4 = rs.float2(0.5, -0.1)
     danger_zone = rs.safety_zone()
     danger_zone.zone_polygon = [p1, p2, p3, p4]
-    danger_zone.safety_trigger_confidence = 1  # number of consecutive frames to raise safety signal
+    danger_zone.safety_trigger_confidence = 3  # number of consecutive frames to raise safety signal
     danger_zone.reserved = [0] * 7
     
     # safety zone #1 (warning zones)
@@ -77,7 +77,7 @@ def get_valid_preset():
     p4 = rs.float2(0.8, -0.1)
     warning_zone = rs.safety_zone()
     warning_zone.zone_polygon = [p1, p2, p3, p4]
-    warning_zone.safety_trigger_confidence = 1  # number of consecutive frames to raise safety signal
+    warning_zone.safety_trigger_confidence = 3  # number of consecutive frames to raise safety signal
     warning_zone.reserved = [0] * 7
 
     # masking zone #0 (will be used 8 times)

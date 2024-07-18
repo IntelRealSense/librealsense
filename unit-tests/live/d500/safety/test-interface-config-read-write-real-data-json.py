@@ -144,11 +144,11 @@ sic_json_str = '''
         },
         "smcu_arbitration_params":
         {
-            "l_0_total_threshold": 0,
+            "l_0_total_threshold": 100,
             "l_0_sustained_rate_threshold": 20,
-            "l_1_total_threshold": 0,
+            "l_1_total_threshold": 100,
             "l_1_sustained_rate_threshold": 20,
-            "l_4_total_threshold": 0,
+            "l_4_total_threshold": 10,
             "hkr_stl_timeout": 40,
             "mcu_stl_timeout": 40,
             "sustained_aicv_frame_drops": 50,

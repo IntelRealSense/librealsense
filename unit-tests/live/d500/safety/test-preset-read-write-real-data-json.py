@@ -64,7 +64,7 @@ sp_json_str = """
                     "p2": {"x": 0.8, "y": -0.1},
                     "p3": {"x": 0.5, "y": -0.1}
                 },
-                "safety_trigger_confidence": 1
+                "safety_trigger_confidence": 3
             },
             "warning_zone":
             {
@@ -75,7 +75,7 @@ sp_json_str = """
                     "p2": {"x": 1.2, "y": -0.1},
                     "p3": {"x": 0.8, "y": -0.1}
                 },
-                "safety_trigger_confidence": 1
+                "safety_trigger_confidence": 3
             }
         },
 
