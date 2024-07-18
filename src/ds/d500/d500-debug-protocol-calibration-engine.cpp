@@ -125,15 +125,15 @@ rs2_calibration_config d500_debug_protocol_calibration_engine::get_calibration_c
 
 calibration_state d500_debug_protocol_calibration_engine::get_triggered_calibration_state() const
 {
-    return _calib_ans.calibration_state;
+    return _calib_ans.state;
 }
 calibration_result d500_debug_protocol_calibration_engine::get_triggered_calibration_result() const
 {
-    return _calib_ans.calibration_result;
+    return _calib_ans.result;
 }
 int8_t d500_debug_protocol_calibration_engine::get_triggered_calibration_progress() const
 {
-    return _calib_ans.calibration_progress;
+    return _calib_ans.progress;
 }
 ds::d500_coefficients_table d500_debug_protocol_calibration_engine::get_depth_calibration() const
 {

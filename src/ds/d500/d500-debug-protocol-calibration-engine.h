@@ -12,9 +12,9 @@ namespace librealsense
 #pragma pack(push, 1)
 struct d500_calibration_answer
 {
-    calibration_state calibration_state;
-    int8_t calibration_progress;
-    calibration_result calibration_result;
+    calibration_state state;
+    int8_t progress;
+    calibration_result result;
     ds::d500_coefficients_table depth_calibration;
 };
 #pragma pack(pop)
