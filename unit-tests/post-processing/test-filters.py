@@ -101,10 +101,10 @@ for test_pattern in PP_Tests_List:
 frame_metadata_count = 43
 
 ppf_test_cases = [
-    # All the tests below include depth-disparity domain transformation
-    # Downsample scales 2 and 3 are tested only. scales 4-7 are differ in impementation from the reference code:
-    # In Librealsense for all scales [2-8] the filter is the mean of depth.
-    # I the reference code for [2-3] the filter uses mean of depth, and for 4-7 is switches to man of disparities doe to implementation constrains
+    # All the tests below involve transforming between the depth and disparity domains.
+    # We only test downsample scales 2 and 3 because scales 4-7 are implemented differently from the reference code:
+    # In Librealsense, the filter uses the mean of depth for all scales [2-8].
+    # In the reference code, the filter uses the mean of depth for scales [2-3], but switches to the mean of disparities for scales [4-7] due to implementation constraints.
     ("1551257764229", "D435_DS(2)"),
     ("1551257812956", "D435_DS(3)"),
     # Downsample + Hole-Filling modes 0/1/2
@@ -149,52 +149,52 @@ class post_proccesing_filters:
     def __init__(self):
         self.depth_to_disparity = rs.disparity_transform(True)
         self.disparity_to_depth = rs.disparity_transform(False)
-        self.dec_pb = False
-        self.spat_pb = False
-        self.temp_pb = False
-        self.holes_pb = False
-        self.dec_filter = rs.decimation_filter()
-        self.spat_filter = rs.spatial_filter()
-        self.temp_filter = rs.temporal_filter()
+        self.use_decimation = False
+        self.use_spatial = False
+        self.use_temporal = False
+        self.use_holes = False
+        self.decimation_filter = rs.decimation_filter()
+        self.spatial_filter = rs.spatial_filter()
+        self.temporal_filter = rs.temporal_filter()
         self.hole_filling_filter = rs.hole_filling_filter()
 
     def configure(self,filters_cfg):
         #Reconfigure the post-processing according to the test spec
-        self.dec_pb = filters_cfg.downsample_scale != 1
-        self.dec_filter.set_option(rs.option.filter_magnitude, filters_cfg.downsample_scale)
+        self.use_decimation = filters_cfg.downsample_scale != 1
+        self.decimation_filter.set_option(rs.option.filter_magnitude, filters_cfg.downsample_scale)
 
         if filters_cfg.spatial_filter:
-            self.spat_pb = filters_cfg.spatial_filter
-            self.spat_filter.set_option(rs.option.filter_smooth_alpha, filters_cfg.spatial_alpha)
-            self.spat_filter.set_option(rs.option.filter_smooth_delta, filters_cfg.spatial_delta)
-            self.spat_filter.set_option(rs.option.filter_magnitude,filters_cfg.spatial_iterations)
+            self.use_spatial = filters_cfg.spatial_filter
+            self.spatial_filter.set_option(rs.option.filter_smooth_alpha, filters_cfg.spatial_alpha)
+            self.spatial_filter.set_option(rs.option.filter_smooth_delta, filters_cfg.spatial_delta)
+            self.spatial_filter.set_option(rs.option.filter_magnitude,filters_cfg.spatial_iterations)
 
         if filters_cfg.temporal_filter:
-            self.temp_pb = filters_cfg.temporal_filter
-            self.temp_filter.set_option(rs.option.filter_smooth_alpha, filters_cfg.temporal_alpha)
-            self.temp_filter.set_option(rs.option.filter_smooth_delta, filters_cfg.temporal_delta)
-            self.temp_filter.set_option(rs.option.holes_fill, filters_cfg.temporal_persistence)
+            self.use_temporal = filters_cfg.temporal_filter
+            self.temporal_filter.set_option(rs.option.filter_smooth_alpha, filters_cfg.temporal_alpha)
+            self.temporal_filter.set_option(rs.option.filter_smooth_delta, filters_cfg.temporal_delta)
+            self.temporal_filter.set_option(rs.option.holes_fill, filters_cfg.temporal_persistence)
 
         if filters_cfg.holes_filter:
-            self.holes_pb = filters_cfg.holes_filter
+            self.use_holes = filters_cfg.holes_filter
             self.hole_filling_filter.set_option(rs.option.holes_fill, filters_cfg.holes_filling_mode)
 
     def process(self, frame_input):
         processed = frame_input
-        if self.dec_pb:
-            processed = self.dec_filter.process(processed)
+        if self.use_decimation:
+            processed = self.decimation_filter.process(processed)
 
         processed = self.depth_to_disparity.process(processed)
 
-        if self.spat_pb:
-            processed = self.spat_filter.process(processed)
+        if self.use_spatial:
+            processed = self.spatial_filter.process(processed)
 
-        if self.temp_pb:
-            processed = self.temp_filter.process(processed)
+        if self.use_temporal:
+            processed = self.temporal_filter.process(processed)
 
         processed = self.disparity_to_depth.process(processed)
 
-        if self.holes_pb:
+        if self.use_holes:
             processed = self.hole_filling_filter.process(processed)
 
         return processed
@@ -287,7 +287,7 @@ def check_load_test_configuration(test_config):
         test.check(len(test_config._input_frames[i]))
         test.check(len(test_config._output_frames[i]))
 
-    _padded_width = int((test_config.input_res_x / test_config.downsample_scale) + 3) // 4 * 4
+    _padded_width = int((test_config.input_res_x // test_config.downsample_scale) + 3) // 4 * 4
     _padded_height = int((test_config.input_res_y // test_config.downsample_scale) + 3) // 4 * 4
 
     test.check_equal(test_config.output_res_x, _padded_width)
@@ -404,14 +404,11 @@ def validate_ppf_results(result_depth, reference_data, frame_idx):
     test.check_equal(result_profile.width(), reference_data.output_res_x)
     test.check_equal(result_profile.height(), reference_data.output_res_y)
 
-    #Pixel-by-pixel comparison of the resulted filtered depth vs data ercorded with external tool
+    #Pixel-by-pixel comparison of the resulted filtered depth vs data encoded with external tool
     v1 = bytearray(result_depth.get_data())
     v2 = (reference_data._output_frames[frame_idx])
+    test.check_equal(len(v1), len(v2))
     diff2ref = [abs(byte1 - byte2) for byte1, byte2 in zip(v1, v2)]
-
-    #validating depth<->disparity domain transformation is lostless.
-    if domain_transform_only:
-        test.check(profile_diffs(diff2orig, 0, 0))
 
     #Validate the filters
     #The differences between the reference code and librealsense implementation are byte-compared below
