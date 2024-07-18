@@ -31,34 +31,34 @@ namespace librealsense
 
     d500_auto_calibrated::d500_auto_calibrated(std::shared_ptr<d500_debug_protocol_calibration_engine> calib_engine) :
         _calib_engine(calib_engine),
-        _mode (calibration_mode::RS2_CALIBRATION_MODE_RESERVED),
-        _state (calibration_state::RS2_CALIBRATION_STATE_IDLE),
-        _result(calibration_result::RS2_CALIBRATION_RESULT_UNKNOWN)
+        _mode (calibration_mode::RESERVED),
+        _state (calibration_state::IDLE),
+        _result(calibration_result::UNKNOWN)
     {}
 
     void d500_auto_calibrated::check_preconditions_and_set_state()
     {
-        if (_mode == calibration_mode::RS2_CALIBRATION_MODE_RUN ||
-            _mode == calibration_mode::RS2_CALIBRATION_MODE_DRY_RUN)
+        if (_mode == calibration_mode::RUN ||
+            _mode == calibration_mode::DRY_RUN)
         {
             // calibration state to be IDLE or COMPLETE
             _calib_engine->update_status();
 
             _state = _calib_engine->get_state();
-            if (!(_state == calibration_state::RS2_CALIBRATION_STATE_IDLE ||
-                _state == calibration_state::RS2_CALIBRATION_STATE_COMPLETE))
+            if (!(_state == calibration_state::IDLE ||
+                _state == calibration_state::COMPLETE))
             {
                 LOG_ERROR("Calibration State is not Idle nor Complete - pleare restart the device");
                 throw std::runtime_error("OCC triggerred when Calibration State is not Idle not Complete");
             }
         }
         
-        if (_mode == calibration_mode::RS2_CALIBRATION_MODE_ABORT)
+        if (_mode == calibration_mode::ABORT)
         {
             // calibration state to be IN_PROCESS
             _calib_engine->update_status();
             _state = _calib_engine->get_state();
-            if (!(_state == calibration_state::RS2_CALIBRATION_STATE_PROCESS))
+            if (!(_state == calibration_state::PROCESS))
             {
                 LOG_ERROR("Calibration State is not In Process - so it could not be aborted");
                 throw std::runtime_error("OCC aborted when Calibration State is not In Process");
@@ -68,11 +68,11 @@ namespace librealsense
 
     void d500_auto_calibrated::get_mode_from_json(const std::string& json)
     {
-        _mode = calibration_mode::RS2_CALIBRATION_MODE_RUN;
+        _mode = calibration_mode::RUN;
         if (json.find("dry run") != std::string::npos)
-            _mode = calibration_mode::RS2_CALIBRATION_MODE_DRY_RUN;
+            _mode = calibration_mode::DRY_RUN;
         else if (json.find("abort") != std::string::npos)
-            _mode = calibration_mode::RS2_CALIBRATION_MODE_ABORT;
+            _mode = calibration_mode::ABORT;
     }
 
     std::vector<uint8_t> d500_auto_calibrated::run_on_chip_calibration(int timeout_ms, std::string json, 
@@ -89,12 +89,12 @@ namespace librealsense
             // sending command to start calibration
             res = _calib_engine->run_auto_calibration(_mode);
 
-            if (_mode == calibration_mode::RS2_CALIBRATION_MODE_RUN ||
-                _mode == calibration_mode::RS2_CALIBRATION_MODE_DRY_RUN)
+            if (_mode == calibration_mode::RUN ||
+                _mode == calibration_mode::DRY_RUN)
             {
                 res = update_calibration_status(timeout_ms, progress_callback);
             }
-            else if (_mode == calibration_mode::RS2_CALIBRATION_MODE_ABORT)
+            else if (_mode == calibration_mode::ABORT)
             {
                 res = update_abort_status();
             }
@@ -106,9 +106,9 @@ namespace librealsense
         catch(...)
         {
             std::string error_message_prefix = "\nRUN OCC ";
-            if (_mode == calibration_mode::RS2_CALIBRATION_MODE_DRY_RUN)
+            if (_mode == calibration_mode::DRY_RUN)
                 error_message_prefix = "\nDRY RUN OCC ";
-            else if (_mode == calibration_mode::RS2_CALIBRATION_MODE_ABORT)
+            else if (_mode == calibration_mode::ABORT)
                 error_message_prefix = "\nABORT OCC ";
 
             throw std::runtime_error(rsutils::string::from() << error_message_prefix + "Could not be triggered");
@@ -130,7 +130,7 @@ namespace librealsense
             _result = _calib_engine->get_result();
             std::stringstream ss;
             ss << "Calibration in progress - State = " << calibration_state_strings[static_cast<int>(_state)];
-            if (_state == calibration_state::RS2_CALIBRATION_STATE_PROCESS)
+            if (_state == calibration_state::PROCESS)
             {
                 ss << ", progress = " << static_cast<int>(_calib_engine->get_progress());
                 ss << ", result = " << calibration_result_strings[static_cast<int>(_result)];
@@ -141,7 +141,7 @@ namespace librealsense
                 progress_callback->on_update_progress(_calib_engine->get_progress());
             }
             
-            if (_result == calibration_result::RS2_CALIBRATION_RESULT_FAILED_TO_RUN)
+            if (_result == calibration_result::FAILED_TO_RUN)
             {
                 break;
             }
@@ -150,19 +150,19 @@ namespace librealsense
             {
                 throw std::runtime_error("OCC Calibration Timeout");
             }
-        } while (_state != calibration_state::RS2_CALIBRATION_STATE_COMPLETE &&
+        } while (_state != calibration_state::COMPLETE &&
             // if state is back to idle, it means that Abort action has been called
-            _state != calibration_state::RS2_CALIBRATION_STATE_IDLE);
+            _state != calibration_state::IDLE);
 
         // printing new calibration to log
-        if (_state == calibration_state::RS2_CALIBRATION_STATE_COMPLETE)
+        if (_state == calibration_state::COMPLETE)
         {
-            if (_result == calibration_result::RS2_CALIBRATION_RESULT_SUCCESS)
+            if (_result == calibration_result::SUCCESS)
             {
                 auto depth_calib = _calib_engine->get_depth_calibration();
                 LOG_INFO("Depth new Calibration = \n" + depth_calib.to_string());
             }
-            else if (_result == calibration_result::RS2_CALIBRATION_RESULT_FAILED_TO_CONVERGE)
+            else if (_result == calibration_result::FAILED_TO_CONVERGE)
             {
                 LOG_ERROR("Calibration completed but algorithm failed");
                 throw std::runtime_error("Calibration completed but algorithm failed");
@@ -170,7 +170,7 @@ namespace librealsense
         }
         else
         {
-            if (_result == calibration_result::RS2_CALIBRATION_RESULT_FAILED_TO_RUN)
+            if (_result == calibration_result::FAILED_TO_RUN)
             {
                 LOG_ERROR("Calibration failed to run");
                 throw std::runtime_error("Calibration failed to run");
@@ -184,12 +184,12 @@ namespace librealsense
     {
         std::vector<uint8_t> ans;
         _calib_engine->update_status();
-        if (_calib_engine->get_state() == calibration_state::RS2_CALIBRATION_STATE_PROCESS)
+        if (_calib_engine->get_state() == calibration_state::PROCESS)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
             _calib_engine->update_status();
         }
-        if (_calib_engine->get_state() == calibration_state::RS2_CALIBRATION_STATE_IDLE)
+        if (_calib_engine->get_state() == calibration_state::IDLE)
         {
             LOG_INFO("Depth Calibration Successfully Aborted");
             // returning success
