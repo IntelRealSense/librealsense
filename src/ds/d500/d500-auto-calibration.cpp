@@ -4,6 +4,8 @@
 
 #include "d500-auto-calibration.h"
 #include "d500-private.h"
+#include <src/ds/ds-calib-common.h>
+
 #include <rsutils/string/from.h>
 #include <rsutils/json.h>
 
@@ -265,17 +267,61 @@ namespace librealsense
 
     std::vector<uint8_t> d500_auto_calibrated::get_calibration_table() const
     {
-        throw std::runtime_error(rsutils::string::from() << "Get Calibration Table not applicable for this device");
+        // Getting depth calibration table. RGB table is currently not supported by auto_calibrated_interface API
+        std::vector< uint8_t > res;
+
+        command cmd( ds::GET_HKR_CONFIG_TABLE,
+                     static_cast< int >( ds::d500_calib_location::d500_calib_flash_memory ),
+                     static_cast< int >( ds::d500_calibration_table_id::depth_calibration_id ),
+                     static_cast< int >( ds::d500_calib_type::d500_calib_dynamic ) );
+        auto calib = _hw_monitor->send( cmd );
+
+        if( calib.size() < sizeof( ds::table_header ) )
+            throw std::runtime_error( "GET_HKR_CONFIG_TABLE response is smaller then calibration header!" );
+
+        auto header = (ds::table_header *)( calib.data() );
+
+        if( calib.size() < sizeof( ds::table_header ) + header->table_size )
+            throw std::runtime_error( "GET_HKR_CONFIG_TABLE response is smaller then expected table size!" );
+
+        // Backwards compalibility dictates that we will return the table without the header, but we need the header
+        // details like versions to later set back the table. Save it at the start of _curr_calibration.
+        _curr_calibration.assign( calib.begin(), calib.begin() + sizeof( ds::table_header ) );
+
+        res.assign( calib.begin() + sizeof( ds::table_header ), calib.end() );
+
+        return res;
     }
 
     void d500_auto_calibrated::write_calibration() const
     {
-        throw std::runtime_error(rsutils::string::from() << "Write Calibration not applicable for this device");
+        auto table_header = reinterpret_cast< ds::table_header * >( _curr_calibration.data() );
+        table_header->crc32 = rsutils::number::calc_crc32( _curr_calibration.data() + sizeof( ds::table_header ),
+                                                           _curr_calibration.size() - sizeof( ds::table_header ) );
+
+        command cmd( ds::SET_HKR_CONFIG_TABLE,
+                     static_cast< int >( ds::d500_calib_location::d500_calib_flash_memory ),
+                     static_cast< int >( table_header->table_type ),
+                     static_cast< int >( ds::d500_calib_type::d500_calib_dynamic ) );
+        cmd.data.assign( _curr_calibration.begin(), _curr_calibration.end() );
+        cmd.require_response = false;
+
+        _hw_monitor->send( cmd );
     }
 
     void d500_auto_calibrated::set_calibration_table(const std::vector<uint8_t>& calibration)
     {
-        throw std::runtime_error(rsutils::string::from() << "Set Calibration Table not applicable for this device");
+        if( _curr_calibration.size() != sizeof( ds::table_header ) && // First time setting table, only header set by get_calibration_table
+            _curr_calibration.size() != sizeof( ds::d500_coefficients_table ) ) // Table was previously set
+            throw std::runtime_error( rsutils::string::from() <<
+                                      "Current calibration table has unexpected size " << _curr_calibration.size() );
+
+        if( calibration.size() != sizeof( ds::d500_coefficients_table ) - sizeof( ds::table_header ) )
+            throw std::runtime_error( rsutils::string::from() <<
+                                      "Setting calibration table with unexpected size" << calibration.size() );
+
+        _curr_calibration.resize( sizeof( ds::table_header ) ); // Remove previously set calibration, keep header.
+        _curr_calibration.insert( _curr_calibration.end(), calibration.begin(), calibration.end() );
     }
 
     void d500_auto_calibrated::reset_to_factory_calibration() const
@@ -283,10 +329,64 @@ namespace librealsense
         throw std::runtime_error(rsutils::string::from() << "Tare Calibration not applicable for this device");
     }
 
-    std::vector<uint8_t> d500_auto_calibrated::run_focal_length_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h,
-        int adjust_both_sides, float *ratio, float * angle, rs2_update_progress_callback_sptr progress_callback)
+    std::vector< uint8_t > d500_auto_calibrated::run_focal_length_calibration( rs2_frame_queue * left,
+                                                                               rs2_frame_queue * right,
+                                                                               float target_w,
+                                                                               float target_h,
+                                                                               int adjust_both_sides,
+                                                                               float * ratio,
+                                                                               float * angle,
+                                                                               rs2_update_progress_callback_sptr progress_callback )
     {
-        throw std::runtime_error(rsutils::string::from() << "Focal Length Calibration not applicable for this device");
+        float fx[2] = { -1.0f, -1.0f };
+        float fy[2] = { -1.0f, -1.0f };
+
+        float left_rect_sides[4] = { 0.f };
+        ds_calib_common::get_target_rect_info( left,
+                                               left_rect_sides,
+                                               fx[0],
+                                               fy[0],
+                                               50,
+                                               progress_callback );  // Report 50% progress
+
+        float right_rect_sides[4] = { 0.f };
+        ds_calib_common::get_target_rect_info( right, right_rect_sides, fx[1], fy[1], 75, progress_callback );
+
+        std::vector< uint8_t > ret;
+        const float correction_factor = 0.5f;
+
+        auto table_data = get_calibration_table(); // Table is returned without the header
+        auto full_table = _curr_calibration; // During get_calibration_table header is saved in _curr_calibration
+        full_table.insert( full_table.end(), table_data.begin(), table_data.end() );
+        auto table = reinterpret_cast< librealsense::ds::d500_coefficients_table * >( full_table.data() );
+
+        float ratio_to_apply = ds_calib_common::get_focal_length_correction_factor( left_rect_sides,
+                                                                                    right_rect_sides,
+                                                                                    fx,
+                                                                                    fy,
+                                                                                    target_w,
+                                                                                    target_h,
+                                                                                    table->baseline,
+                                                                                    *ratio,
+                                                                                    *angle );
+
+        if( adjust_both_sides )
+        {
+            float ratio_to_apply_2 = sqrtf( ratio_to_apply );
+            table->left_coefficients_table.base_instrinsics.fx /= ratio_to_apply_2;
+            table->left_coefficients_table.base_instrinsics.fy /= ratio_to_apply_2;
+            table->right_coefficients_table.base_instrinsics.fx *= ratio_to_apply_2;
+            table->right_coefficients_table.base_instrinsics.fy *= ratio_to_apply_2;
+        }
+        else
+        {
+            table->right_coefficients_table.base_instrinsics.fx *= ratio_to_apply;
+            table->right_coefficients_table.base_instrinsics.fy *= ratio_to_apply;
+        }
+
+        //Return data without header
+        table_data.assign( full_table.begin() + sizeof( ds::table_header ), full_table.end() );
+        return table_data;
     }
 
     std::vector<uint8_t> d500_auto_calibrated::run_uv_map_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,

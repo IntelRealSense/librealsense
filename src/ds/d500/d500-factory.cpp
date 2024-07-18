@@ -16,6 +16,7 @@
 #include "d500-color.h"
 #include "d500-motion.h"
 #include "sync.h"
+#include <src/ds/d500/d500-auto-calibration.h>
 
 #include <src/platform/platform-utils.h>
 

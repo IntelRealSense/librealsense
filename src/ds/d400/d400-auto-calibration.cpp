@@ -10,6 +10,7 @@
 #include "librealsense2/rsutil.h"
 #include "algo.h"
 #include <src/core/video-frame.h>
+#include <src/ds/ds-calib-common.h>
 
 #include <rsutils/string/from.h>
 
@@ -578,7 +579,7 @@ namespace librealsense
                 << ", fy scan range = " << fy_scan_range << ", keep new value after sucessful scan = " << keep_new_value_after_sucessful_scan
                 << ", interrrupt data sampling " << fl_data_sampling << ", adjust both sides = " << adjust_both_sides
                 << ", fl scan location = " << fl_scan_location << ", fy scan direction = " << fy_scan_direction << ", white wall mode = " << white_wall_mode);
-            check_focal_length_params(fl_step_count, fy_scan_range, keep_new_value_after_sucessful_scan, fl_data_sampling, adjust_both_sides, fl_scan_location, fy_scan_direction, white_wall_mode);
+            ds_calib_common::check_focal_length_params(fl_step_count, fy_scan_range, keep_new_value_after_sucessful_scan, fl_data_sampling, adjust_both_sides, fl_scan_location, fy_scan_direction, white_wall_mode);
 
             // Begin auto-calibration
             uint32_t p4 = 0;
@@ -1657,26 +1658,6 @@ namespace librealsense
                                            << " is out of range (0 - 3)." );
     }
 
-    void auto_calibrated::check_focal_length_params(int step_count, int fy_scan_range, int keep_new_value_after_sucessful_scan, int interrrupt_data_samling, int adjust_both_sides, int fl_scan_location, int fy_scan_direction, int white_wall_mode) const
-    {
-        if (step_count < 8 || step_count >  256)
-            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'step_count' " << step_count << " is out of range (8 - 256).");
-        if (fy_scan_range < 1 || fy_scan_range >  60000)
-            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'fy_scan_range' " << fy_scan_range << " is out of range (1 - 60000).");
-        if (keep_new_value_after_sucessful_scan < 0 || keep_new_value_after_sucessful_scan >  1)
-            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'keep_new_value_after_sucessful_scan' " << keep_new_value_after_sucessful_scan << " is out of range (0 - 1).");
-        if (interrrupt_data_samling < 0 || interrrupt_data_samling >  1)
-            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'interrrupt_data_samling' " << interrrupt_data_samling << " is out of range (0 - 1).");
-        if (adjust_both_sides < 0 || adjust_both_sides >  1)
-            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'adjust_both_sides' " << adjust_both_sides << " is out of range (0 - 1).");
-        if (fl_scan_location < 0 || fl_scan_location >  1)
-            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'fl_scan_location' " << fl_scan_location << " is out of range (0 - 1).");
-        if (fy_scan_direction < 0 || fy_scan_direction >  1)
-            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'fy_scan_direction' " << fy_scan_direction << " is out of range (0 - 1).");
-        if (white_wall_mode < 0 || white_wall_mode >  1)
-            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'white_wall_mode' " << white_wall_mode << " is out of range (0 - 1).");
-    }
-
     void auto_calibrated::check_one_button_params(int speed, int keep_new_value_after_sucessful_scan, int data_sampling, int adjust_both_sides, int fl_scan_location, int fy_scan_direction, int white_wall_mode) const
     {
         if (speed < speed_very_fast || speed >  speed_white_wall)
@@ -1873,63 +1854,6 @@ namespace librealsense
         _hw_monitor->send(cmd);
     }
 
-    void auto_calibrated::get_target_rect_info(rs2_frame_queue* frames, float rect_sides[4], float& fx, float& fy, int progress, rs2_update_progress_callback_sptr progress_callback)
-    {
-        fx = -1.0f;
-        std::vector<std::array<float, 4>> rect_sides_arr;
-
-        rs2_error* e = nullptr;
-        rs2_frame* f = nullptr;
-
-        int queue_size = rs2_frame_queue_size(frames, &e);
-        if (queue_size==0)
-            throw std::runtime_error("Extract target rectangle info - no frames in input queue!");
-        int fc = 0;
-        while ((fc++ < queue_size) && rs2_poll_for_frame(frames, &f, &e))
-        {
-            rs2::frame ff(f);
-            if (ff.get_data())
-            {
-                if (fx < 0.0f)
-                {
-                    auto p = ff.get_profile();
-                    auto vsp = p.as<rs2::video_stream_profile>();
-                    rs2_intrinsics intrin = vsp.get_intrinsics();
-                    fx = intrin.fx;
-                    fy = intrin.fy;
-                }
-
-                std::array< float, 4 > rec_sides_cur{};
-                rs2_extract_target_dimensions(f, RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES, rec_sides_cur.data(), 4, &e);
-                if (e)
-                    throw std::runtime_error("Failed to extract target information\nfrom the captured frames!");
-                rect_sides_arr.emplace_back(rec_sides_cur);
-            }
-
-            rs2_release_frame(f);
-
-            if (progress_callback)
-                progress_callback->on_update_progress(static_cast<float>(++progress));
-        }
-
-        if (rect_sides_arr.size())
-        {
-            for (int i = 0; i < 4; ++i)
-                rect_sides[i] = rect_sides_arr[0][i];
-
-            for (int j = 1; j < rect_sides_arr.size(); ++j)
-            {
-                for (int i = 0; i < 4; ++i)
-                    rect_sides[i] += rect_sides_arr[j][i];
-            }
-
-            for (int i = 0; i < 4; ++i)
-                rect_sides[i] /= rect_sides_arr.size();
-        }
-        else
-            throw std::runtime_error("Failed to extract the target rectangle info!");
-    }
-
     std::vector<uint8_t> auto_calibrated::run_focal_length_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h,
         int adjust_both_sides, float *ratio, float * angle, rs2_update_progress_callback_sptr progress_callback)
     {
@@ -1937,10 +1861,10 @@ namespace librealsense
         float fy[2] = { -1.0f, -1.0f };
 
         float left_rect_sides[4] = {0.f};
-        get_target_rect_info(left, left_rect_sides, fx[0], fy[0], 50, progress_callback); // Report 50% progress
+        ds_calib_common::get_target_rect_info(left, left_rect_sides, fx[0], fy[0], 50, progress_callback); // Report 50% progress
 
         float right_rect_sides[4] = {0.f};
-        get_target_rect_info(right, right_rect_sides, fx[1], fy[1], 75, progress_callback);
+        ds_calib_common::get_target_rect_info( right, right_rect_sides, fx[1], fy[1], 75, progress_callback );
 
         std::vector<uint8_t> ret;
         const float correction_factor = 0.5f;
@@ -1948,93 +1872,9 @@ namespace librealsense
         auto calib_table = get_calibration_table();
         auto table = (librealsense::ds::d400_coefficients_table*)calib_table.data();
 
-        float ar[2] = { 0 };
-        float tmp = left_rect_sides[2] + left_rect_sides[3];
-        if (tmp > 0.1f)
-            ar[0] = (left_rect_sides[0] + left_rect_sides[1]) / tmp;
-
-        tmp = right_rect_sides[2] + right_rect_sides[3];
-        if (tmp > 0.1f)
-            ar[1] = (right_rect_sides[0] + right_rect_sides[1]) / tmp;
-
-        float align = 0.0f;
-        if (ar[0] > 0.0f)
-            align = ar[1] / ar[0] - 1.0f;
-
-        float ta[2] = { 0 };
-        float gt[4] = { 0 };
-        float ave_gt = 0.0f;
-
-        if (left_rect_sides[0] > 0)
-            gt[0] = fx[0] * target_w / left_rect_sides[0];
-
-        if (left_rect_sides[1] > 0)
-            gt[1] = fx[0] * target_w / left_rect_sides[1];
-
-        if (left_rect_sides[2] > 0)
-            gt[2] = fy[0] * target_h / left_rect_sides[2];
-
-        if (left_rect_sides[3] > 0)
-            gt[3] = fy[0] * target_h / left_rect_sides[3];
-
-        ave_gt = 0.0f;
-        for (int i = 0; i < 4; ++i)
-            ave_gt += gt[i];
-        ave_gt /= 4.0;
-
-        ta[0] = atanf(align * ave_gt / std::abs(table->baseline));
-        ta[0] = rad2deg(ta[0]);
-
-        if (right_rect_sides[0] > 0)
-            gt[0] = fx[1] * target_w / right_rect_sides[0];
-
-        if (right_rect_sides[1] > 0)
-            gt[1] = fx[1] * target_w / right_rect_sides[1];
-
-        if (right_rect_sides[2] > 0)
-            gt[2] = fy[1] * target_h / right_rect_sides[2];
-
-        if (right_rect_sides[3] > 0)
-            gt[3] = fy[1] * target_h / right_rect_sides[3];
-
-        ave_gt = 0.0f;
-        for (int i = 0; i < 4; ++i)
-            ave_gt += gt[i];
-        ave_gt /= 4.0;
-
-        ta[1] = atanf(align * ave_gt / std::abs(table->baseline));
-        ta[1] = rad2deg(ta[1]);
-
-        *angle = (ta[0] + ta[1]) / 2;
-
-        align *= 100;
-
-        float r[4] = { 0 };
-        float c = fx[0] / fx[1];
-
-        if (left_rect_sides[0] > 0.1f)
-            r[0] = c * right_rect_sides[0] / left_rect_sides[0];
-
-        if (left_rect_sides[1] > 0.1f)
-            r[1] = c * right_rect_sides[1] / left_rect_sides[1];
-
-        c = fy[0] / fy[1];
-        if (left_rect_sides[2] > 0.1f)
-            r[2] = c * right_rect_sides[2] / left_rect_sides[2];
-
-        if (left_rect_sides[3] > 0.1f)
-            r[3] = c * right_rect_sides[3] / left_rect_sides[3];
-
-        float ra = 0.0f;
-        for (int i = 0; i < 4; ++i)
-            ra += r[i];
-        ra /= 4;
-
-        ra -= 1.0f;
-        ra *= 100;
-
-        *ratio = ra - correction_factor * align;
-        float ratio_to_apply = *ratio / 100.0f + 1.0f;
+        float ratio_to_apply = ds_calib_common::get_focal_length_correction_factor( left_rect_sides, right_rect_sides,
+                                                                                    fx, fy, target_w, target_h,
+                                                                                    table->baseline, *ratio, *angle );
 
         if (adjust_both_sides)
         {
