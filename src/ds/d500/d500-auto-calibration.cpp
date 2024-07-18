@@ -186,7 +186,7 @@ namespace librealsense
         _calib_engine->update_status();
         if (_calib_engine->get_state() == calibration_state::RS2_CALIBRATION_STATE_PROCESS)
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
             _calib_engine->update_status();
         }
         if (_calib_engine->get_state() == calibration_state::RS2_CALIBRATION_STATE_IDLE)
