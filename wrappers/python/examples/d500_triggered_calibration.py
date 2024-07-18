@@ -63,7 +63,7 @@ def stream_and_get_fill_rate():
 def build_header(new_calib_array):
     version_major = 0
     version_minor = 4
-    depth_table_id = 180  # 0xb4
+    depth_table_id = 0xb4
     depth_table_size = 496
     counter = 0
     test_cal_version = 0
