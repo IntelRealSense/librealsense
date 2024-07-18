@@ -9,7 +9,7 @@
 namespace librealsense
 {
     
-enum class calibration_state
+enum class calibration_state : uint8_t
 {
     IDLE = 0,
     PROCESS,
@@ -19,7 +19,7 @@ enum class calibration_state
     COMPLETE
 };
 
-enum class calibration_result
+enum class calibration_result : uint8_t
 {
     UNKNOWN = 0,
     SUCCESS,
@@ -38,13 +38,13 @@ enum class calibration_mode
 class calibration_engine_interface
 {
 public:
-    virtual void update_status() = 0;
-    virtual std::vector<uint8_t> run_auto_calibration(calibration_mode _mode) = 0;
+    virtual void update_triggered_calibration_status() = 0;
+    virtual std::vector<uint8_t> run_triggered_calibration(calibration_mode _mode) = 0;
     virtual rs2_calibration_config get_calibration_config() const = 0;
     virtual void set_calibration_config(const rs2_calibration_config& calib_config) = 0;
-    virtual calibration_state get_state() const = 0;
-    virtual calibration_result get_result() const = 0;
-    virtual int8_t get_progress() const = 0;
+    virtual calibration_state get_triggered_calibration_state() const = 0;
+    virtual calibration_result get_triggered_calibration_result() const = 0;
+    virtual int8_t get_triggered_calibration_progress() const = 0;
 };
 
 } // namespace librealsense

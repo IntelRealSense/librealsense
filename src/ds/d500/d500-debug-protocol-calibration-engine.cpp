@@ -29,7 +29,7 @@ bool d500_debug_protocol_calibration_engine::check_buffer_size_from_get_calib_st
     return is_size_ok;
 }
 
-void d500_debug_protocol_calibration_engine::update_status()
+void d500_debug_protocol_calibration_engine::update_triggered_calibration_status()
 {
     if (!_dev)
         throw std::runtime_error("device has not been set");
@@ -47,7 +47,7 @@ void d500_debug_protocol_calibration_engine::update_status()
 }
 
 
-std::vector<uint8_t> d500_debug_protocol_calibration_engine::run_auto_calibration(calibration_mode _mode)
+std::vector<uint8_t> d500_debug_protocol_calibration_engine::run_triggered_calibration(calibration_mode _mode)
 {
     if (!_dev)
         throw std::runtime_error("device has not been set"); 
@@ -123,15 +123,15 @@ rs2_calibration_config d500_debug_protocol_calibration_engine::get_calibration_c
     return calib_config_with_header->payload;
 }
 
-calibration_state d500_debug_protocol_calibration_engine::get_state() const
+calibration_state d500_debug_protocol_calibration_engine::get_triggered_calibration_state() const
 {
-    return static_cast<calibration_state>(_calib_ans.calibration_state);
+    return _calib_ans.calibration_state;
 }
-calibration_result d500_debug_protocol_calibration_engine::get_result() const
+calibration_result d500_debug_protocol_calibration_engine::get_triggered_calibration_result() const
 {
-    return static_cast<calibration_result>(_calib_ans.calibration_result);
+    return _calib_ans.calibration_result;
 }
-int8_t d500_debug_protocol_calibration_engine::get_progress() const
+int8_t d500_debug_protocol_calibration_engine::get_triggered_calibration_progress() const
 {
     return _calib_ans.calibration_progress;
 }

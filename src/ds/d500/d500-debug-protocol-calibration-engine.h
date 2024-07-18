@@ -12,9 +12,9 @@ namespace librealsense
 #pragma pack(push, 1)
 struct d500_calibration_answer
 {
-    uint8_t calibration_state;
+    calibration_state calibration_state;
     int8_t calibration_progress;
-    uint8_t calibration_result;
+    calibration_result calibration_result;
     ds::d500_coefficients_table depth_calibration;
 };
 #pragma pack(pop)
@@ -23,13 +23,13 @@ class d500_debug_protocol_calibration_engine : public calibration_engine_interfa
 {
 public:
     d500_debug_protocol_calibration_engine(debug_interface* dev) : _dev(dev){}
-    void update_status() override;
-    std::vector<uint8_t> run_auto_calibration(calibration_mode _mode) override;
+    void update_triggered_calibration_status() override;
+    std::vector<uint8_t> run_triggered_calibration(calibration_mode _mode) override;
     rs2_calibration_config get_calibration_config() const override;
     void set_calibration_config(const rs2_calibration_config& calib_config) override;
-    virtual calibration_state get_state() const override;
-    virtual calibration_result get_result() const override;
-    virtual int8_t get_progress() const override;
+    virtual calibration_state get_triggered_calibration_state() const override;
+    virtual calibration_result get_triggered_calibration_result() const override;
+    virtual int8_t get_triggered_calibration_progress() const override;
     ds::d500_coefficients_table get_depth_calibration() const;
 
 private:

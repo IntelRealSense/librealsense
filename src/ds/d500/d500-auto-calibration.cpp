@@ -42,9 +42,9 @@ namespace librealsense
             _mode == calibration_mode::DRY_RUN)
         {
             // calibration state to be IDLE or COMPLETE
-            _calib_engine->update_status();
+            _calib_engine->update_triggered_calibration_status();
 
-            _state = _calib_engine->get_state();
+            _state = _calib_engine->get_triggered_calibration_state();
             if (!(_state == calibration_state::IDLE ||
                 _state == calibration_state::COMPLETE))
             {
@@ -56,8 +56,8 @@ namespace librealsense
         if (_mode == calibration_mode::ABORT)
         {
             // calibration state to be IN_PROCESS
-            _calib_engine->update_status();
-            _state = _calib_engine->get_state();
+            _calib_engine->update_triggered_calibration_status();
+            _state = _calib_engine->get_triggered_calibration_state();
             if (!(_state == calibration_state::PROCESS))
             {
                 LOG_ERROR("Calibration State is not In Process - so it could not be aborted");
@@ -87,7 +87,7 @@ namespace librealsense
             check_preconditions_and_set_state();
 
             // sending command to start calibration
-            res = _calib_engine->run_auto_calibration(_mode);
+            res = _calib_engine->run_triggered_calibration(_mode);
 
             if (_mode == calibration_mode::RUN ||
                 _mode == calibration_mode::DRY_RUN)
@@ -124,21 +124,21 @@ namespace librealsense
         do
         {
             std::this_thread::sleep_for(std::chrono::seconds(1));
-            _calib_engine->update_status();
+            _calib_engine->update_triggered_calibration_status();
 
-            _state = _calib_engine->get_state();
-            _result = _calib_engine->get_result();
+            _state = _calib_engine->get_triggered_calibration_state();
+            _result = _calib_engine->get_triggered_calibration_result();
             std::stringstream ss;
             ss << "Calibration in progress - State = " << calibration_state_strings[static_cast<int>(_state)];
             if (_state == calibration_state::PROCESS)
             {
-                ss << ", progress = " << static_cast<int>(_calib_engine->get_progress());
+                ss << ", progress = " << static_cast<int>(_calib_engine->get_triggered_calibration_progress());
                 ss << ", result = " << calibration_result_strings[static_cast<int>(_result)];
             }
             LOG_INFO(ss.str().c_str());
             if (progress_callback)
             {
-                progress_callback->on_update_progress(_calib_engine->get_progress());
+                progress_callback->on_update_progress(_calib_engine->get_triggered_calibration_progress());
             }
             
             if (_result == calibration_result::FAILED_TO_RUN)
@@ -183,13 +183,13 @@ namespace librealsense
     std::vector<uint8_t> d500_auto_calibrated::update_abort_status()
     {
         std::vector<uint8_t> ans;
-        _calib_engine->update_status();
-        if (_calib_engine->get_state() == calibration_state::PROCESS)
+        _calib_engine->update_triggered_calibration_status();
+        if (_calib_engine->get_triggered_calibration_state() == calibration_state::PROCESS)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
-            _calib_engine->update_status();
+            _calib_engine->update_triggered_calibration_status();
         }
-        if (_calib_engine->get_state() == calibration_state::IDLE)
+        if (_calib_engine->get_triggered_calibration_state() == calibration_state::IDLE)
         {
             LOG_INFO("Depth Calibration Successfully Aborted");
             // returning success
