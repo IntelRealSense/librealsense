@@ -216,61 +216,17 @@ namespace librealsense
 
     std::vector<uint8_t> d500_auto_calibrated::get_calibration_table() const
     {
-        // Getting depth calibration table. RGB table is currently not supported by auto_calibrated_interface API
-        std::vector< uint8_t > res;
-
-        command cmd( ds::GET_HKR_CONFIG_TABLE,
-                     static_cast< int >( ds::d500_calib_location::d500_calib_flash_memory ),
-                     static_cast< int >( ds::d500_calibration_table_id::depth_calibration_id ),
-                     static_cast< int >( ds::d500_calib_type::d500_calib_dynamic ) );
-        auto calib = _hw_monitor->send( cmd );
-
-        if( calib.size() < sizeof( ds::table_header ) )
-            throw std::runtime_error( "GET_HKR_CONFIG_TABLE response is smaller then calibration header!" );
-
-        auto header = (ds::table_header *)( calib.data() );
-
-        if( calib.size() < sizeof( ds::table_header ) + header->table_size )
-            throw std::runtime_error( "GET_HKR_CONFIG_TABLE response is smaller then expected table size!" );
-
-        // Backwards compalibility dictates that we will return the table without the header, but we need the header
-        // details like versions to later set back the table. Save it at the start of _curr_calibration.
-        _curr_calibration.assign( calib.begin(), calib.begin() + sizeof( ds::table_header ) );
-
-        res.assign( calib.begin() + sizeof( ds::table_header ), calib.end() );
-
-        return res;
+        return _calib_engine->get_calibration_table(_curr_calibration);
     }
 
     void d500_auto_calibrated::write_calibration() const
     {
-        auto table_header = reinterpret_cast< ds::table_header * >( _curr_calibration.data() );
-        table_header->crc32 = rsutils::number::calc_crc32( _curr_calibration.data() + sizeof( ds::table_header ),
-                                                           _curr_calibration.size() - sizeof( ds::table_header ) );
-
-        command cmd( ds::SET_HKR_CONFIG_TABLE,
-                     static_cast< int >( ds::d500_calib_location::d500_calib_flash_memory ),
-                     static_cast< int >( table_header->table_type ),
-                     static_cast< int >( ds::d500_calib_type::d500_calib_dynamic ) );
-        cmd.data.assign( _curr_calibration.begin(), _curr_calibration.end() );
-        cmd.require_response = false;
-
-        _hw_monitor->send( cmd );
+        _calib_engine->write_calibration(_curr_calibration);
     }
 
     void d500_auto_calibrated::set_calibration_table(const std::vector<uint8_t>& calibration)
     {
-        if( _curr_calibration.size() != sizeof( ds::table_header ) && // First time setting table, only header set by get_calibration_table
-            _curr_calibration.size() != sizeof( ds::d500_coefficients_table ) ) // Table was previously set
-            throw std::runtime_error( rsutils::string::from() <<
-                                      "Current calibration table has unexpected size " << _curr_calibration.size() );
-
-        if( calibration.size() != sizeof( ds::d500_coefficients_table ) - sizeof( ds::table_header ) )
-            throw std::runtime_error( rsutils::string::from() <<
-                                      "Setting calibration table with unexpected size" << calibration.size() );
-
-        _curr_calibration.resize( sizeof( ds::table_header ) ); // Remove previously set calibration, keep header.
-        _curr_calibration.insert( _curr_calibration.end(), calibration.begin(), calibration.end() );
+        _calib_engine->set_calibration_table(calibration, _curr_calibration);
     }
 
     void d500_auto_calibrated::reset_to_factory_calibration() const

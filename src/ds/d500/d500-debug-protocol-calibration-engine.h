@@ -30,6 +30,9 @@ public:
     virtual calibration_state get_triggered_calibration_state() const override;
     virtual calibration_result get_triggered_calibration_result() const override;
     virtual int8_t get_triggered_calibration_progress() const override;
+    virtual std::vector<uint8_t> get_calibration_table(std::vector<uint8_t>& current_calibration) const override;
+    virtual void write_calibration(std::vector<uint8_t>& calibration) const override;
+    virtual void set_calibration_table(const std::vector<uint8_t>& calibration, std::vector<uint8_t>& current_calibration) const override;
     ds::d500_coefficients_table get_depth_calibration() const;
 
 private:

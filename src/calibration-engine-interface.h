@@ -45,6 +45,9 @@ public:
     virtual calibration_state get_triggered_calibration_state() const = 0;
     virtual calibration_result get_triggered_calibration_result() const = 0;
     virtual int8_t get_triggered_calibration_progress() const = 0;
+    virtual std::vector<uint8_t> get_calibration_table(std::vector<uint8_t>& current_calibration) const = 0;
+    virtual void write_calibration(std::vector<uint8_t>& calibration) const = 0;
+    virtual void set_calibration_table(const std::vector<uint8_t>& calibration, std::vector<uint8_t>& current_calibration) const = 0;
 };
 
 } // namespace librealsense
