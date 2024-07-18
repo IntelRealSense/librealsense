@@ -124,11 +124,13 @@ namespace librealsense
             throw std::runtime_error( "Failed to extract the target rectangle info!" );
     }
 
-    float ds_calib_common::get_focal_length_correction_factor( float left_rect_sides[4],
-                                                               float right_rect_sides[4],
-                                                               float fx[2], float fy[2],
-                                                               float target_w, float target_h,
-                                                               float baseline,
+    float ds_calib_common::get_focal_length_correction_factor( const float left_rect_sides[4],
+                                                               const float right_rect_sides[4],
+                                                               const float fx[2],
+                                                               const float fy[2],
+                                                               const float target_w,
+                                                               const float target_h,
+                                                               const float baseline,
                                                                float & ratio,
                                                                float & angle )
     {
