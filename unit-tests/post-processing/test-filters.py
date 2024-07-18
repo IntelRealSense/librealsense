@@ -9,6 +9,7 @@ import pyrealsense2 as rs, os, random, csv
 from rspy import test, repo
 import urllib.request
 from urllib.error import URLError, HTTPError
+import platform
 
 def download_file(url, subdir, filename):
     destination = os.path.join(subdir, filename)
@@ -35,7 +36,7 @@ def download_file(url, subdir, filename):
 
 RECORDINGS_FOLDER = os.path.join(repo.build, 'unit-tests', 'recordings')
 
-if os.name == 'nt':
+if platform.system() == 'Windows':
     Deployment_Location = os.getenv('TESTDATA_LOCATION', os.getenv('TEMP', 'C:\\Temp'))
 else:
     Deployment_Location = os.getenv('TESTDATA_LOCATION', '/tmp/')
