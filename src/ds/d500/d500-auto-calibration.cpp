@@ -132,7 +132,7 @@ namespace librealsense
             ss << "Calibration in progress - State = " << calibration_state_strings[static_cast<int>(_state)];
             if (_state == calibration_state::RS2_CALIBRATION_STATE_PROCESS)
             {
-                ss << ", progress = " << _calib_engine->get_progress();
+                ss << ", progress = " << static_cast<int>(_calib_engine->get_progress());
                 ss << ", result = " << calibration_result_strings[static_cast<int>(_result)];
             }
             LOG_INFO(ss.str().c_str());
