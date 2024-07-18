@@ -3,6 +3,7 @@
 
 #temporary fix to prevent the test from running on Win_SH_Py_DDS_CI
 #test:donotrun:dds
+#test:donotrun:!nightly
 
 import pyrealsense2 as rs, os, random, csv
 from rspy import test, repo
@@ -163,20 +164,21 @@ class post_proccesing_filters:
         self.use_decimation = filters_cfg.downsample_scale != 1
         self.decimation_filter.set_option(rs.option.filter_magnitude, filters_cfg.downsample_scale)
 
+        self.use_spatial = filters_cfg.spatial_filter
+        self.use_temporal = filters_cfg.temporal_filter
+        self.use_holes = filters_cfg.holes_filter
+
         if filters_cfg.spatial_filter:
-            self.use_spatial = filters_cfg.spatial_filter
             self.spatial_filter.set_option(rs.option.filter_smooth_alpha, filters_cfg.spatial_alpha)
             self.spatial_filter.set_option(rs.option.filter_smooth_delta, filters_cfg.spatial_delta)
             self.spatial_filter.set_option(rs.option.filter_magnitude,filters_cfg.spatial_iterations)
 
         if filters_cfg.temporal_filter:
-            self.use_temporal = filters_cfg.temporal_filter
             self.temporal_filter.set_option(rs.option.filter_smooth_alpha, filters_cfg.temporal_alpha)
             self.temporal_filter.set_option(rs.option.filter_smooth_delta, filters_cfg.temporal_delta)
             self.temporal_filter.set_option(rs.option.holes_fill, filters_cfg.temporal_persistence)
 
         if filters_cfg.holes_filter:
-            self.use_holes = filters_cfg.holes_filter
             self.hole_filling_filter.set_option(rs.option.holes_fill, filters_cfg.holes_filling_mode)
 
     def process(self, frame_input):
