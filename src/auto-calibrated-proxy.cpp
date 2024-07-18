@@ -11,7 +11,7 @@
 
 namespace librealsense
 {
-auto_calibrated_proxy::auto_calibrated_proxy(std::shared_ptr<calibration_engine_interface> calib_engine){}
+auto_calibrated_proxy::auto_calibrated_proxy(){}
 
 
 std::vector<uint8_t> auto_calibrated_proxy::run_on_chip_calibration(int timeout_ms, std::string json, 
