@@ -390,7 +390,8 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
     }
     set_matcher_type( matcher );
 
-    if (!strcmp(get_info(RS2_CAMERA_INFO_PRODUCT_LINE).c_str(), "D500"))
+    if (supports_info(RS2_CAMERA_INFO_PRODUCT_LINE) && 
+        !strcmp(get_info(RS2_CAMERA_INFO_PRODUCT_LINE).c_str(), "D500"))
         set_auto_calibration_capability(std::make_shared<d500_auto_calibrated>(
             std::make_shared<d500_debug_protocol_calibration_engine>(this)));
 }
