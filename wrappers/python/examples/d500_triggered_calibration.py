@@ -152,30 +152,6 @@ def compare_results():
         print("Fill rate decreased by " + repr(delta_fill_rate_percentage) + "% !!!")
 
 
-def write_after_calib_to_device(calib_filename_after):
-    print("Uploading Calibration to device")
-    global dev
-    curr_path = os.path.dirname(os.path.realpath(__file__))
-    depth_cal_after_path = os.path.join(curr_path, calib_filename_after)
-    new_calib_array = np.fromfile(depth_cal_after_path, dtype=np.uint8)
-    hwm_dev = dev.as_debug_protocol()
-    set_calib_opcode = 0xa6
-    flash_mem_enum = 1
-    depth_calibration_id = 0xb4
-    d500_calib_dynamic = 0
-    header = build_header(new_calib_array)
-    list_header = list(header)
-    new_calib_with_header = np.hstack((header, new_calib_array))
-    cmd = hwm_dev.build_command(opcode=set_calib_opcode,
-                                param1=flash_mem_enum,
-                                param2=depth_calibration_id,
-                                param3=d500_calib_dynamic,
-                                data=new_calib_with_header)
-    ans = hwm_dev.send_and_receive_raw_data(cmd)
-    print("Calibration Uploaded to device")
-    return new_calib_array
-
-
 ctx = rs.context()
 time.sleep(2)
 dev = ctx.query_devices().front()
@@ -201,9 +177,6 @@ save_calib_to_file(calib_after, "depth_calib_after.bin")
 # Stopping the script if the calibration received from the calibration operation
 # is the same as before
 exit_if_calibrations_are_equal()
-
-# Set calibration from file - needed until the flash writing is implemented in HKR
-write_after_calib_to_device("depth_calib_after.bin")
 
 # Stream and get Depth Fill Rate
 fill_rate_after = stream_and_get_fill_rate()
