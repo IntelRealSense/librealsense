@@ -4389,50 +4389,27 @@ float rs2_calculate_target_z(rs2_device* device, rs2_frame_queue* queue1, rs2_fr
     }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(-1.f, device, queue1, queue2, queue3, target_width, target_height)
-void rs2_get_calibration_config(rs2_device* device, rs2_calibration_config* calib_config, rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(calib_config);
 
-    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
-    *calib_config = auto_calib->get_calibration_config();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device, calib_config)
-
-void rs2_set_calibration_config(rs2_device* device, rs2_calibration_config const* calib_config, rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(calib_config);
-
-    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
-    auto_calib->set_calibration_config(*calib_config);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device, calib_config)
-
-void rs2_json_string_to_calibration_config(
+const rs2_raw_data_buffer* rs2_get_calibration_config(
     rs2_device* device,
-    const char* json_str,
-    rs2_calibration_config* calib_config,
     rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(calib_config);
     auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
-    *calib_config = auto_calib->json_string_to_calibration_config(json_str);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device, calib_config)
-
-const rs2_raw_data_buffer* rs2_calibration_config_to_json_string(
-    rs2_device* device,
-    rs2_calibration_config const* calib_config,
-    rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(calib_config);
-    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
-    auto ret_str = auto_calib->calibration_config_to_json_string(*calib_config);
+    auto ret_str = auto_calib->get_calibration_config();
     std::vector<uint8_t> vec(ret_str.begin(), ret_str.end());
     return new rs2_raw_data_buffer{ std::move(vec) };
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, calib_config)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
+void rs2_set_calibration_config(
+    rs2_device* device,
+    const char* calibration_config_json_str,
+    rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(calibration_config_json_str);
+    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
+    auto_calib->set_calibration_config(calibration_config_json_str);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, calibration_config_json_str)
