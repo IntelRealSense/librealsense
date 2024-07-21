@@ -179,7 +179,7 @@ namespace librealsense
                 }
                 for (size_t k = 0; k < 3; ++k)
                 {
-                    if (!j.at("rotation")[i][k].is_number_float() && !j.at("rotation")[i][k].is_number_integer())
+                    if (!j.at("rotation")[i][k].is_number_float())
                     {
                         throw std::invalid_argument("Invalid rotation type: all rotation values must be floats.");
                     }

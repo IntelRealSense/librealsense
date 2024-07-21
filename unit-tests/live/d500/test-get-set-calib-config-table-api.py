@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
-# test:donotrun
+# test:donotrun  ## TODO: change this when D5555 device is connected to libCI
 
 import pyrealsense2 as rs
 from rspy import test, log

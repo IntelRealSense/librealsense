@@ -312,7 +312,7 @@ namespace librealsense
             static_cast<int>(ds::d500_calib_type::d500_calib_dynamic));
         cmd.require_response = true;
 
-        // send command to device and get response (safety_interface_config entry + header)
+        // send command to device and get response (calibration config entry + header)
         std::vector< uint8_t > response = _hw_monitor->send(cmd);
         if (response.size() < sizeof(calibration_config_with_header))
         {
