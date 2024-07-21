@@ -35,7 +35,7 @@ public:
     void set_auto_calibration_capability(std::shared_ptr<auto_calibrated_interface> ac_cap);
 
 private:
-    std::weak_ptr<auto_calibrated_interface> _auto_calib_capability;
+    std::shared_ptr<auto_calibrated_interface> _auto_calib_capability;
 };
 
 } // namespace librealsense

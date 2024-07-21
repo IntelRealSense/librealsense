@@ -29,8 +29,7 @@ namespace librealsense
             float target_width, float target_height, rs2_update_progress_callback_sptr progress_callback) override;
         std::string get_calibration_config() const override;
         void set_calibration_config(const std::string& calibration_config_json_str) const override;
-        
-        void set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm);
+
     private:
         void check_preconditions_and_set_state();
         void get_mode_from_json(const std::string& json);
