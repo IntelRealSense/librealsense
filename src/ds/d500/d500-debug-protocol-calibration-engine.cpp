@@ -151,6 +151,9 @@ std::vector<uint8_t> d500_debug_protocol_calibration_engine::get_calibration_tab
     // sending command
     auto calib = _dev->send_receive_raw_data(cmd);
 
+    // slicing 4 first bytes - opcode
+    calib.erase(calib.begin(), calib.begin() + 4);
+
     if (calib.size() < sizeof(ds::table_header))
         throw std::runtime_error("GET_HKR_CONFIG_TABLE response is smaller then calibration header!");
 
