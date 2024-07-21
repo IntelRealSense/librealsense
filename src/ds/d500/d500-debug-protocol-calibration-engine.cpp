@@ -2,6 +2,7 @@
 // Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include <src/ds/d500/d500-debug-protocol-calibration-engine.h>
+#include <src/ds/d500/d500-types/calibration-config.h>
 #include "d500-device.h"
 
 
@@ -71,56 +72,6 @@ static std::vector<uint8_t> add_header_to_calib_config(const rs2_calibration_con
     calib_config_with_header.payload = calib_config;
     auto data_as_ptr = reinterpret_cast<uint8_t*>(&calib_config_with_header);
     return std::vector<uint8_t>(data_as_ptr, data_as_ptr + sizeof(rs2_calibration_config_with_header));
-}
-
-void d500_debug_protocol_calibration_engine::set_calibration_config(const rs2_calibration_config& calib_config)
-{
-    if (!_dev)
-        throw std::runtime_error("device has not been set"); 
-        
-    auto calib_config_with_header = add_header_to_calib_config(calib_config);
-
-    // prepare command
-    auto cmd = _dev->build_command(ds::SET_HKR_CONFIG_TABLE,
-        static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
-        static_cast<int>(ds::d500_calibration_table_id::calib_cfg_id),
-        static_cast<int>(ds::d500_calib_type::d500_calib_dynamic), 0,
-        calib_config_with_header.data(), sizeof(rs2_calibration_config_with_header));
-
-    // send command 
-    auto res = _dev->send_receive_raw_data(cmd);
-}
-
-rs2_calibration_config d500_debug_protocol_calibration_engine::get_calibration_config() const
-{
-    if (!_dev)
-        throw std::runtime_error("device has not been set");
-
-    rs2_calibration_config_with_header* calib_config_with_header;
-    // prepare command
-    using namespace ds;
-    auto cmd = _dev->build_command(GET_HKR_CONFIG_TABLE,
-        static_cast<int>(d500_calib_location::d500_calib_flash_memory),
-        static_cast<int>(d500_calibration_table_id::calib_cfg_id),
-        static_cast<int>(d500_calib_type::d500_calib_dynamic));
-
-    // sending command
-    auto res = _dev->send_receive_raw_data(cmd);
-
-    if (res.size() < sizeof(rs2_calibration_config_with_header))
-    {
-        throw io_exception(rsutils::string::from() << "Calibration config reading failed");
-    }
-    calib_config_with_header = reinterpret_cast<rs2_calibration_config_with_header*>(res.data());
-
-    // check CRC before returning result       
-    auto computed_crc32 = rsutils::number::calc_crc32(res.data() + sizeof(rs2_calibration_config_header), sizeof(rs2_calibration_config));
-    if (computed_crc32 != calib_config_with_header->header.crc32)
-    {
-        throw invalid_value_exception(rsutils::string::from() << "Invalid CRC value for calibration config table");
-    }
-
-    return calib_config_with_header->payload;
 }
 
 calibration_state d500_debug_protocol_calibration_engine::get_triggered_calibration_state() const
@@ -202,6 +153,66 @@ void d500_debug_protocol_calibration_engine::set_calibration_table(const std::ve
 
     current_calibration.resize(sizeof(ds::table_header)); // Remove previously set calibration, keep header.
     current_calibration.insert(current_calibration.end(), calibration.begin(), calibration.end());
+}
+
+std::string d500_debug_protocol_calibration_engine::get_calibration_config() const
+{
+    calibration_config_with_header* result;
+
+    // prepare command
+    using namespace ds;
+    auto cmd = _dev->build_command(ds::GET_HKR_CONFIG_TABLE,
+        static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
+        static_cast<int>(ds::d500_calibration_table_id::calib_cfg_id),
+        static_cast<int>(ds::d500_calib_type::d500_calib_dynamic));
+
+    // send command to device and get response (calibration config entry + header)
+    std::vector< uint8_t > response = _dev->send_receive_raw_data(cmd);
+
+    if (response.size() < sizeof(calibration_config_with_header))
+    {
+        throw io_exception(rsutils::string::from() << "Calibration Config Read Failed");
+    }
+
+    // check CRC before returning result
+    auto computed_crc32 = rsutils::number::calc_crc32(response.data() + sizeof(librealsense::table_header),
+        sizeof(calibration_config));
+    result = reinterpret_cast<calibration_config_with_header*>(response.data());
+    if (computed_crc32 != result->get_table_header().get_crc32())
+    {
+        throw invalid_value_exception(rsutils::string::from() << "Calibration Config Invalid CRC Value");
+    }
+
+    rsutils::json j = result->get_calibration_config().to_json();
+    return j.dump();
+}
+
+void d500_debug_protocol_calibration_engine::set_calibration_config(const std::string& calibration_config_json_str) const
+{
+    rsutils::json json_data = rsutils::json::parse(calibration_config_json_str);
+    calibration_config calib_config(json_data["calibration_config"]);
+
+    // calculate CRC
+    uint32_t computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<const uint8_t*>(&calib_config), sizeof(calibration_config));
+
+    // prepare vector of data to be sent (header + calibration_config)
+    uint16_t version = ((uint16_t)0x01 << 8) | 0x01;  // major=0x01, minor=0x01 --> ver = major.minor
+    uint32_t calib_version = 0;  // ignoring this field, as requested by sw architect
+    table_header header(version, static_cast<uint16_t>(ds::d500_calibration_table_id::calib_cfg_id), sizeof(calibration_config),
+        calib_version, computed_crc32);
+    calibration_config_with_header calib_config_with_header(header, calib_config);
+    auto data_as_ptr = reinterpret_cast<const uint8_t*>(&calib_config_with_header);
+
+    // prepare command
+    using namespace ds;
+    auto cmd = _dev->build_command(SET_HKR_CONFIG_TABLE,
+        static_cast<int>(d500_calib_location::d500_calib_flash_memory),
+        static_cast<int>(d500_calibration_table_id::calib_cfg_id),
+        static_cast<int>(d500_calib_type::d500_calib_dynamic), 0,
+        data_as_ptr, sizeof(calibration_config_with_header));
+
+    // sending command
+    _dev->send_receive_raw_data(cmd);
 }
 
 ds::d500_coefficients_table d500_debug_protocol_calibration_engine::get_depth_calibration() const

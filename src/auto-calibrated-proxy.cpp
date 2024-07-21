@@ -94,31 +94,17 @@ float auto_calibrated_proxy::calculate_target_z(rs2_frame_queue* queue1, rs2_fra
     throw std::runtime_error("Auto Calibration capability has not been initiated");
 }
 
-rs2_calibration_config auto_calibrated_proxy::get_calibration_config() const
+std::string auto_calibrated_proxy::get_calibration_config() const
 {
     if (_auto_calib_capability)
         return _auto_calib_capability->get_calibration_config();
     throw std::runtime_error("Auto Calibration capability has not been initiated");
 }
 
-void auto_calibrated_proxy::set_calibration_config(const rs2_calibration_config& calib_config)
+void auto_calibrated_proxy::set_calibration_config(const std::string& calibration_config_json_str) const
 {
     if (_auto_calib_capability)
-        _auto_calib_capability->set_calibration_config(calib_config);
-    throw std::runtime_error("Auto Calibration capability has not been initiated");
-}
-
-std::string auto_calibrated_proxy::calibration_config_to_json_string(const rs2_calibration_config& calib_config) const
-{
-    if (_auto_calib_capability)
-        return _auto_calib_capability->calibration_config_to_json_string(calib_config);
-    throw std::runtime_error("Auto Calibration capability has not been initiated");
-}
-
-rs2_calibration_config auto_calibrated_proxy::json_string_to_calibration_config(const std::string& json_str) const
-{
-    if (_auto_calib_capability)
-        return _auto_calib_capability->json_string_to_calibration_config(json_str);
+        _auto_calib_capability->set_calibration_config(calibration_config_json_str);
     throw std::runtime_error("Auto Calibration capability has not been initiated");
 }
 

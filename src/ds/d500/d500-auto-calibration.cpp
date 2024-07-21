@@ -9,7 +9,6 @@
 #include <rsutils/json.h>
 #include "d500-device.h"
 #include <src/ds/d500/d500-debug-protocol-calibration-engine.h>
-#include "d500-types/calibration-config.h"
 
 namespace librealsense
 {
@@ -313,7 +312,7 @@ namespace librealsense
 
     void d500_auto_calibrated::set_calibration_config(const std::string& calibration_config_json_str) const
     {
-        _calib_engine->set_calibration_config(calib_config);
+        _calib_engine->set_calibration_config(calibration_config_json_str);
     }
 
 }

@@ -25,15 +25,16 @@ public:
     d500_debug_protocol_calibration_engine(debug_interface* dev) : _dev(dev){}
     void update_triggered_calibration_status() override;
     std::vector<uint8_t> run_triggered_calibration(calibration_mode _mode) override;
-    rs2_calibration_config get_calibration_config() const override;
-    void set_calibration_config(const rs2_calibration_config& calib_config) override;
     virtual calibration_state get_triggered_calibration_state() const override;
     virtual calibration_result get_triggered_calibration_result() const override;
     virtual int8_t get_triggered_calibration_progress() const override;
     virtual std::vector<uint8_t> get_calibration_table(std::vector<uint8_t>& current_calibration) const override;
     virtual void write_calibration(std::vector<uint8_t>& calibration) const override;
     virtual void set_calibration_table(const std::vector<uint8_t>& calibration, std::vector<uint8_t>& current_calibration) const override;
+    virtual std::string get_calibration_config() const override;
+    virtual void set_calibration_config(const std::string& calibration_config_json_str) const override;
     ds::d500_coefficients_table get_depth_calibration() const;
+
 
 private:
     bool check_buffer_size_from_get_calib_status(std::vector<uint8_t> res) const;
