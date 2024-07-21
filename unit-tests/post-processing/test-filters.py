@@ -128,25 +128,6 @@ ppf_test_cases = [
     ( "1551263177558",  "D435_DS(2)_Spat(A:0.7/D:25/I:2)_Temp(A:0.6/D:15/P:6))_HoleFill(1)" ),
 ]
 
-metadata_attributes = {
-    'res_x':        "Resolution_x",
-    'res_y':        "Resolution_y",
-    'focal_length':  "Focal Length",
-    'depth_units':   "Depth Units",
-    'stereo_baseline':"Stereo Baseline",
-    'downscale':    "Scale",
-    'spat_filter':   "Spatial Filter Params:",
-    'spat_alpha':   "SpatialAlpha",
-    'spat_delta':   "SpatialDelta",
-    'spat_iter':    "SpatialIterations",
-    'temp_filter':  "Temporal Filter Params:",
-    'temp_alpha':   "TemporalAlpha",
-    'temp_delta':   "TemporalDelta",
-    'temp_persist': "TemporalPersistency",
-    'holes_filter': "Holes Filling Mode:",
-    'holes_fill':   "HolesFilling",
-    'frames_sequence_size': "Frames sequence length"
-}
 class post_proccesing_filters:
     def __init__(self):
         self.depth_to_disparity = rs.disparity_transform(True)
@@ -247,7 +228,6 @@ def load_from_binary(file_name):
 
 
 def attrib_from_csv(file_path):
-    global metadata_attributes
 
     with open(file_path, 'r') as csv_file:
         reader = csv.reader(csv_file)
@@ -255,26 +235,26 @@ def attrib_from_csv(file_path):
 
     cfg = ppf_test_config()
 
-    cfg.input_res_x = int(dict.get(metadata_attributes.get('res_x'), 0))
-    cfg.input_res_y = int(dict.get(metadata_attributes.get('res_y'), 0))
-    cfg.stereo_baseline_mm = float(dict.get(metadata_attributes.get('stereo_baseline'), 0.0))
-    cfg.depth_units = float(dict.get(metadata_attributes.get('depth_units'), 0.0))
-    cfg.focal_length = float(dict.get(metadata_attributes.get('focal_length'), 0.0))
+    cfg.input_res_x = int(dict.get('Resolution_x', 0))
+    cfg.input_res_y = int(dict.get('Resolution_y', 0))
+    cfg.stereo_baseline_mm = float(dict.get('Stereo Baseline', 0.0))
+    cfg.depth_units = float(dict.get('Depth Units', 0.0))
+    cfg.focal_length = float(dict.get('Focal Length', 0.0))
 
-    cfg.downsample_scale = int(dict.get(metadata_attributes.get('downscale'), 1))
-    cfg.spatial_filter = metadata_attributes.get('spat_filter') in dict
-    cfg.spatial_alpha = float(dict.get(metadata_attributes.get('spat_alpha'), 0.0))
-    cfg.spatial_delta = float(dict.get(metadata_attributes.get('spat_delta'), 0))
-    cfg.spatial_iterations = int(dict.get(metadata_attributes.get('spat_iter'), 0))
-    cfg.temporal_filter = metadata_attributes.get('temp_filter') in dict
-    cfg.temporal_alpha = float(dict.get(metadata_attributes.get('temp_alpha'), 0.0))
-    cfg.temporal_delta = float(dict.get(metadata_attributes.get('temp_delta'), 0))
-    cfg.temporal_persistence = int(dict.get(metadata_attributes.get('temp_persist'), 0))
+    cfg.downsample_scale = int(dict.get('Scale', 1))
+    cfg.spatial_filter = 'Spatial Filter Params:' in dict
+    cfg.spatial_alpha = float(dict.get('SpatialAlpha', 0.0))
+    cfg.spatial_delta = float(dict.get('SpatialDelta', 0))
+    cfg.spatial_iterations = int(dict.get('SpatialIterations', 0))
+    cfg.temporal_filter = 'Temporal Filter Params:' in dict
+    cfg.temporal_alpha = float(dict.get('TemporalAlpha', 0.0))
+    cfg.temporal_delta = float(dict.get('TemporalDelta', 0))
+    cfg.temporal_persistence = int(dict.get('TemporalPersistency', 0))
 
-    cfg.holes_filter = metadata_attributes.get('holes_filter') in dict
-    cfg.holes_filling_mode = int(dict.get(metadata_attributes.get('holes_fill'), 0))
+    cfg.holes_filter = 'Holes Filling Mode:' in dict
+    cfg.holes_filling_mode = int(dict.get('HolesFilling', 0))
 
-    cfg.frames_sequence_size = int(dict.get(metadata_attributes.get('frames_sequence_size'), 0))
+    cfg.frames_sequence_size = int(dict.get('Frames sequence length', 0))
 
     cfg.input_frame_names = [dict.get(str(i), '') + ".raw" for i in range(cfg.frames_sequence_size)]
 
