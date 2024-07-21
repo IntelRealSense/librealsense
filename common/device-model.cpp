@@ -3516,11 +3516,54 @@ namespace rs2
                         << "Dry Run On-Chip Calibration"
                         << (streaming ? " (Disabled while streaming)" : "");
                     ImGui::SetTooltip("%s", tooltip.c_str());
-                    continue;
                 }
+
+                bool is_d555 = dev.supports( RS2_CAMERA_INFO_PRODUCT_ID ) ? 
+                    std::string( dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID ) ) == "0B56" : false;
+                if( is_d555 && ImGui::Selectable( "Focal Length Calibration" ) )
+                {
+                    try
+                    {
+                        std::shared_ptr< subdevice_model > sub_color;
+                        for( auto && sub2 : subdevices )
+                        {
+                            if( sub2->s->is< rs2::color_sensor >() )
+                            {
+                                sub_color = sub2;
+                                break;
+                            }
+                        }
+
+                        auto manager = std::make_shared< on_chip_calib_manager >( viewer, sub, *this, dev, sub_color );
+                        auto n = std::make_shared< autocalib_notification_model >( "", manager, false );
+                        viewer.not_model->add_notification( n );
+                        n->forced = true;
+                        n->update_state = autocalib_notification_model::RS2_CALIB_STATE_FL_INPUT;
+
+                        for( auto && n : related_notifications )
+                            if( dynamic_cast< autocalib_notification_model * >( n.get() ) )
+                                n->dismiss( false );
+
+                        related_notifications.push_back( n );
+                        manager->start_fl_viewer();
+                    }
+                    catch( const error & e )
+                    {
+                        error_message = error_to_string( e );
+                    }
+                    catch( const std::exception & e )
+                    {
+                        error_message = e.what();
+                    }
+                }
+                if( ImGui::IsItemHovered() )
+                    ImGui::SetTooltip(
+                        "Focal length calibration is used to adjust camera focal length with specific target." );
+
+                has_autocalib = true;
             }
-            has_autocalib = true;
         }
+
         return has_autocalib;
     }
 }

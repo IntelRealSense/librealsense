@@ -1777,18 +1777,19 @@ namespace rs2
     {
         bool is_d400 = s->supports(RS2_CAMERA_INFO_PRODUCT_LINE) ?
             std::string(s->get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D400" : false;
-
         std::string fw_version = s->supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ?
             s->get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) : "";
-
         bool supported_fw = s->supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ?
             is_upgradeable("05.11.12.0", fw_version) : false;
+        bool d400_on_chip_calib_supported = s->is<rs2::depth_sensor>() && is_d400 && supported_fw;
 
         bool is_d500 = s->supports(RS2_CAMERA_INFO_PRODUCT_LINE) ?
             std::string(s->get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D500" : false;
+        bool is_depth_sensor = s->supports(RS2_CAMERA_INFO_NAME) ?
+            std::string(s->get_info(RS2_CAMERA_INFO_NAME)) == "Stereo Module" : false;
+        bool d500_on_chip_calib_supported = is_depth_sensor && is_d500;
 
-        return (s->is<rs2::depth_sensor>() && is_d400 && supported_fw) || (s->is<rs2::depth_sensor>() && is_d500);
-        // TODO: Once auto-calib makes it into the API, switch to querying camera info
+        return d400_on_chip_calib_supported || d500_on_chip_calib_supported;
     }
 
     void subdevice_model::set_extrinsics_from_depth_if_needed()

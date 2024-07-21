@@ -4,9 +4,11 @@
 
 #include "d500-auto-calibration.h"
 #include "d500-private.h"
+#include <src/ds/ds-calib-common.h>
+
 #include <rsutils/string/from.h>
 #include <rsutils/json.h>
-
+#include "d500-types/calibration-config.h"
 
 namespace librealsense
 {
@@ -264,17 +266,61 @@ namespace librealsense
 
     std::vector<uint8_t> d500_auto_calibrated::get_calibration_table() const
     {
-        throw std::runtime_error(rsutils::string::from() << "Get Calibration Table not applicable for this device");
+        // Getting depth calibration table. RGB table is currently not supported by auto_calibrated_interface API
+        std::vector< uint8_t > res;
+
+        command cmd( ds::GET_HKR_CONFIG_TABLE,
+                     static_cast< int >( ds::d500_calib_location::d500_calib_flash_memory ),
+                     static_cast< int >( ds::d500_calibration_table_id::depth_calibration_id ),
+                     static_cast< int >( ds::d500_calib_type::d500_calib_dynamic ) );
+        auto calib = _hw_monitor->send( cmd );
+
+        if( calib.size() < sizeof( ds::table_header ) )
+            throw std::runtime_error( "GET_HKR_CONFIG_TABLE response is smaller then calibration header!" );
+
+        auto header = (ds::table_header *)( calib.data() );
+
+        if( calib.size() < sizeof( ds::table_header ) + header->table_size )
+            throw std::runtime_error( "GET_HKR_CONFIG_TABLE response is smaller then expected table size!" );
+
+        // Backwards compalibility dictates that we will return the table without the header, but we need the header
+        // details like versions to later set back the table. Save it at the start of _curr_calibration.
+        _curr_calibration.assign( calib.begin(), calib.begin() + sizeof( ds::table_header ) );
+
+        res.assign( calib.begin() + sizeof( ds::table_header ), calib.end() );
+
+        return res;
     }
 
     void d500_auto_calibrated::write_calibration() const
     {
-        throw std::runtime_error(rsutils::string::from() << "Write Calibration not applicable for this device");
+        auto table_header = reinterpret_cast< ds::table_header * >( _curr_calibration.data() );
+        table_header->crc32 = rsutils::number::calc_crc32( _curr_calibration.data() + sizeof( ds::table_header ),
+                                                           _curr_calibration.size() - sizeof( ds::table_header ) );
+
+        command cmd( ds::SET_HKR_CONFIG_TABLE,
+                     static_cast< int >( ds::d500_calib_location::d500_calib_flash_memory ),
+                     static_cast< int >( table_header->table_type ),
+                     static_cast< int >( ds::d500_calib_type::d500_calib_dynamic ) );
+        cmd.data.assign( _curr_calibration.begin(), _curr_calibration.end() );
+        cmd.require_response = false;
+
+        _hw_monitor->send( cmd );
     }
 
     void d500_auto_calibrated::set_calibration_table(const std::vector<uint8_t>& calibration)
     {
-        throw std::runtime_error(rsutils::string::from() << "Set Calibration Table not applicable for this device");
+        if( _curr_calibration.size() != sizeof( ds::table_header ) && // First time setting table, only header set by get_calibration_table
+            _curr_calibration.size() != sizeof( ds::d500_coefficients_table ) ) // Table was previously set
+            throw std::runtime_error( rsutils::string::from() <<
+                                      "Current calibration table has unexpected size " << _curr_calibration.size() );
+
+        if( calibration.size() != sizeof( ds::d500_coefficients_table ) - sizeof( ds::table_header ) )
+            throw std::runtime_error( rsutils::string::from() <<
+                                      "Setting calibration table with unexpected size" << calibration.size() );
+
+        _curr_calibration.resize( sizeof( ds::table_header ) ); // Remove previously set calibration, keep header.
+        _curr_calibration.insert( _curr_calibration.end(), calibration.begin(), calibration.end() );
     }
 
     void d500_auto_calibrated::reset_to_factory_calibration() const
@@ -282,10 +328,64 @@ namespace librealsense
         throw std::runtime_error(rsutils::string::from() << "Tare Calibration not applicable for this device");
     }
 
-    std::vector<uint8_t> d500_auto_calibrated::run_focal_length_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h,
-        int adjust_both_sides, float *ratio, float * angle, rs2_update_progress_callback_sptr progress_callback)
+    std::vector< uint8_t > d500_auto_calibrated::run_focal_length_calibration( rs2_frame_queue * left,
+                                                                               rs2_frame_queue * right,
+                                                                               float target_w,
+                                                                               float target_h,
+                                                                               int adjust_both_sides,
+                                                                               float * ratio,
+                                                                               float * angle,
+                                                                               rs2_update_progress_callback_sptr progress_callback )
     {
-        throw std::runtime_error(rsutils::string::from() << "Focal Length Calibration not applicable for this device");
+        float fx[2] = { -1.0f, -1.0f };
+        float fy[2] = { -1.0f, -1.0f };
+
+        float left_rect_sides[4] = { 0.f };
+        ds_calib_common::get_target_rect_info( left,
+                                               left_rect_sides,
+                                               fx[0],
+                                               fy[0],
+                                               50,
+                                               progress_callback );  // Report 50% progress
+
+        float right_rect_sides[4] = { 0.f };
+        ds_calib_common::get_target_rect_info( right, right_rect_sides, fx[1], fy[1], 75, progress_callback );
+
+        std::vector< uint8_t > ret;
+        const float correction_factor = 0.5f;
+
+        auto table_data = get_calibration_table(); // Table is returned without the header
+        auto full_table = _curr_calibration; // During get_calibration_table header is saved in _curr_calibration
+        full_table.insert( full_table.end(), table_data.begin(), table_data.end() );
+        auto table = reinterpret_cast< librealsense::ds::d500_coefficients_table * >( full_table.data() );
+
+        float ratio_to_apply = ds_calib_common::get_focal_length_correction_factor( left_rect_sides,
+                                                                                    right_rect_sides,
+                                                                                    fx,
+                                                                                    fy,
+                                                                                    target_w,
+                                                                                    target_h,
+                                                                                    table->baseline,
+                                                                                    *ratio,
+                                                                                    *angle );
+
+        if( adjust_both_sides )
+        {
+            float ratio_to_apply_2 = sqrtf( ratio_to_apply );
+            table->left_coefficients_table.base_instrinsics.fx /= ratio_to_apply_2;
+            table->left_coefficients_table.base_instrinsics.fy /= ratio_to_apply_2;
+            table->right_coefficients_table.base_instrinsics.fx *= ratio_to_apply_2;
+            table->right_coefficients_table.base_instrinsics.fy *= ratio_to_apply_2;
+        }
+        else
+        {
+            table->right_coefficients_table.base_instrinsics.fx *= ratio_to_apply;
+            table->right_coefficients_table.base_instrinsics.fy *= ratio_to_apply;
+        }
+
+        //Return data without header
+        table_data.assign( full_table.begin() + sizeof( ds::table_header ), full_table.end() );
+        return table_data;
     }
 
     std::vector<uint8_t> d500_auto_calibrated::run_uv_map_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
@@ -300,47 +400,51 @@ namespace librealsense
         throw std::runtime_error(rsutils::string::from() << "Calculate T not applicable for this device");
     }
 
-    rs2_calibration_config d500_auto_calibrated::get_calibration_config() const
+    std::string d500_auto_calibrated::get_calibration_config() const
     {
-        rs2_calibration_config_with_header* calib_config_with_header;
+        calibration_config_with_header* result;
 
         // prepare command
-        using namespace ds;
-        command cmd(GET_HKR_CONFIG_TABLE,
-            static_cast<int>(d500_calib_location::d500_calib_flash_memory),
-            static_cast<int>(d500_calibration_table_id::calib_cfg_id),
-            static_cast<int>(d500_calib_type::d500_calib_dynamic));
-        auto res = _hw_monitor->send(cmd);
+        command cmd(ds::GET_HKR_CONFIG_TABLE,
+            static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
+            static_cast<int>(ds::d500_calibration_table_id::calib_cfg_id),
+            static_cast<int>(ds::d500_calib_type::d500_calib_dynamic));
+        cmd.require_response = true;
 
-        if (res.size() < sizeof(rs2_calibration_config_with_header))
+        // send command to device and get response (calibration config entry + header)
+        std::vector< uint8_t > response = _hw_monitor->send(cmd);
+        if (response.size() < sizeof(calibration_config_with_header))
         {
-            throw io_exception(rsutils::string::from() << "Calibration config reading failed");
-        }
-        calib_config_with_header = reinterpret_cast<rs2_calibration_config_with_header*>(res.data());
-
-        // check CRC before returning result       
-        auto computed_crc32 = rsutils::number::calc_crc32(res.data() + sizeof(rs2_calibration_config_header), sizeof(rs2_calibration_config));
-        if (computed_crc32 != calib_config_with_header->header.crc32)
-        {
-            throw invalid_value_exception(rsutils::string::from() << "Invalid CRC value for calibration config table");
+            throw io_exception(rsutils::string::from() << "Calibration Config Read Failed");
         }
 
-        return calib_config_with_header->payload;
+        // check CRC before returning result
+        auto computed_crc32 = rsutils::number::calc_crc32(response.data() + sizeof(table_header),
+            sizeof(calibration_config));
+        result = reinterpret_cast<calibration_config_with_header*>(response.data());
+        if (computed_crc32 != result->get_table_header().get_crc32())
+        {
+            throw invalid_value_exception(rsutils::string::from() << "Calibration Config Invalid CRC Value");
+        }
+
+        rsutils::json j = result->get_calibration_config().to_json();
+        return j.dump();
     }
 
-    void d500_auto_calibrated::set_calibration_config(const rs2_calibration_config& calib_config)
+    void d500_auto_calibrated::set_calibration_config(const std::string& calibration_config_json_str) const
     {
-        // calculate CRC
-        uint32_t computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<const uint8_t*>(&calib_config), 
-            sizeof(rs2_calibration_config));
+        rsutils::json json_data = rsutils::json::parse(calibration_config_json_str);
+        calibration_config calib_config(json_data["calibration_config"]);
 
-        // prepare vector of data to be sent (header + sp)
-        rs2_calibration_config_with_header calib_config_with_header;
+        // calculate CRC
+        uint32_t computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<const uint8_t*>(&calib_config), sizeof(calibration_config));
+
+        // prepare vector of data to be sent (header + calibration_config)
         uint16_t version = ((uint16_t)0x01 << 8) | 0x01;  // major=0x01, minor=0x01 --> ver = major.minor
         uint32_t calib_version = 0;  // ignoring this field, as requested by sw architect
-        calib_config_with_header.header = { version, static_cast<uint16_t>(ds::d500_calibration_table_id::calib_cfg_id),
-            sizeof(rs2_calibration_config), calib_version, computed_crc32 };
-        calib_config_with_header.payload = calib_config;
+        table_header header(version, static_cast<uint16_t>(ds::d500_calibration_table_id::calib_cfg_id), sizeof(calibration_config),
+            calib_version, computed_crc32);
+        calibration_config_with_header calib_config_with_header(header, calib_config);
         auto data_as_ptr = reinterpret_cast<const uint8_t*>(&calib_config_with_header);
 
         // prepare command
@@ -348,92 +452,11 @@ namespace librealsense
             static_cast<int>(ds::d500_calib_location::d500_calib_flash_memory),
             static_cast<int>(ds::d500_calibration_table_id::calib_cfg_id),
             static_cast<int>(ds::d500_calib_type::d500_calib_dynamic));
-        cmd.data.insert(cmd.data.end(), data_as_ptr, data_as_ptr + sizeof(rs2_calibration_config_with_header));
+        cmd.data.insert(cmd.data.end(), data_as_ptr, data_as_ptr + sizeof(calibration_config_with_header));
         cmd.require_response = false;
 
         // send command 
         _hw_monitor->send(cmd);
-    }
-
-    std::string d500_auto_calibrated::calibration_config_to_json_string(const rs2_calibration_config& calib_config) const
-    {
-
-        rsutils::json json_data;
-        json_data["calibration_config"]["calib_roi_num_of_segments"] = calib_config.calib_roi_num_of_segments;
-
-        for (int roi_index = 0; roi_index < 4; roi_index++)
-        {
-            for (int mask_index = 0; mask_index < 4; mask_index++)
-            {
-                json_data["calibration_config"]["roi"][roi_index][mask_index][0] = calib_config.roi[roi_index].mask_pixel[mask_index][0];
-                json_data["calibration_config"]["roi"][roi_index][mask_index][1] = calib_config.roi[roi_index].mask_pixel[mask_index][1];
-            }
-        }
-
-        auto& rotation = json_data["calibration_config"]["camera_position"]["rotation"];
-        rotation[0][0] = calib_config.camera_position.rotation.x.x;
-        rotation[0][1] = calib_config.camera_position.rotation.x.y;
-        rotation[0][2] = calib_config.camera_position.rotation.x.z;
-        rotation[1][0] = calib_config.camera_position.rotation.y.x;
-        rotation[1][1] = calib_config.camera_position.rotation.y.y;
-        rotation[1][2] = calib_config.camera_position.rotation.y.z;
-        rotation[2][0] = calib_config.camera_position.rotation.z.x;
-        rotation[2][1] = calib_config.camera_position.rotation.z.y;
-        rotation[2][2] = calib_config.camera_position.rotation.z.z;
-
-        auto& translation = json_data["calibration_config"]["camera_position"]["translation"];
-        translation[0] = calib_config.camera_position.translation.x;
-        translation[1] = calib_config.camera_position.translation.y;
-        translation[2] = calib_config.camera_position.translation.z;
-
-        // fill crypto signature array
-        size_t number_of_elements = sizeof(calib_config.crypto_signature) / sizeof(calib_config.crypto_signature[0]);
-        std::vector<uint8_t> crypto_signature_byte_array(number_of_elements);
-        memcpy(crypto_signature_byte_array.data(), calib_config.crypto_signature, sizeof(calib_config.crypto_signature));
-        json_data["calibration_config"]["crypto_signature"] = crypto_signature_byte_array;
-
-        return json_data.dump();
-
-    }
-
-    rs2_calibration_config d500_auto_calibrated::json_string_to_calibration_config(const std::string& json_str) const
-    {
-        rsutils::json json_data = rsutils::json::parse(json_str);
-        rs2_calibration_config calib_config;
-        std::memset(&calib_config, 0, sizeof(rs2_calibration_config));
-
-        calib_config.calib_roi_num_of_segments = json_data["calibration_config"]["calib_roi_num_of_segments"];
-
-        for (int roi_index = 0; roi_index < 4; roi_index++)
-        {
-            for (int mask_index = 0; mask_index < 4; mask_index++)
-            {
-                calib_config.roi[roi_index].mask_pixel[mask_index][0] = json_data["calibration_config"]["roi"][roi_index][mask_index][0];
-                calib_config.roi[roi_index].mask_pixel[mask_index][1] = json_data["calibration_config"]["roi"][roi_index][mask_index][1];
-            }
-        }
-
-        auto& rotation = json_data["calibration_config"]["camera_position"]["rotation"];
-        calib_config.camera_position.rotation.x.x = rotation[0][0];
-        calib_config.camera_position.rotation.x.y = rotation[0][1];
-        calib_config.camera_position.rotation.x.z = rotation[0][2];
-        calib_config.camera_position.rotation.y.x = rotation[1][0];
-        calib_config.camera_position.rotation.y.y = rotation[1][1];
-        calib_config.camera_position.rotation.y.z = rotation[1][2];
-        calib_config.camera_position.rotation.z.x = rotation[2][0];
-        calib_config.camera_position.rotation.z.y = rotation[2][1];
-        calib_config.camera_position.rotation.z.z = rotation[2][2];
-
-        auto& translation = json_data["calibration_config"]["camera_position"]["translation"];
-        calib_config.camera_position.translation.x = translation[0];
-        calib_config.camera_position.translation.y = translation[1];
-        calib_config.camera_position.translation.z = translation[2];
-
-        // fill crypto signature array
-        std::vector<uint8_t> crypto_signature_vector = json_data["calibration_config"]["crypto_signature"].get<std::vector<uint8_t>>();
-        std::memcpy(calib_config.crypto_signature, crypto_signature_vector.data(), crypto_signature_vector.size() * sizeof(uint8_t));
-
-        return calib_config;
     }
 
     void d500_auto_calibrated::set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm)

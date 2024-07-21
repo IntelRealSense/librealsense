@@ -26,10 +26,8 @@ namespace librealsense
             float* const health, int health_size, rs2_update_progress_callback_sptr progress_callback) override;
         float calculate_target_z(rs2_frame_queue* queue1, rs2_frame_queue* queue2, rs2_frame_queue* queue3,
             float target_width, float target_height, rs2_update_progress_callback_sptr progress_callback) override;
-        rs2_calibration_config get_calibration_config() const override;
-        void set_calibration_config(const rs2_calibration_config& calib_config) override;
-        std::string calibration_config_to_json_string(const rs2_calibration_config& calib_config) const override;
-        rs2_calibration_config json_string_to_calibration_config(const std::string& json_str) const override;
+        std::string get_calibration_config() const override;
+        void set_calibration_config(const std::string& calibration_config_json_str) const override;
         
         void set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm);
 
@@ -65,6 +63,7 @@ namespace librealsense
         void get_mode_from_json(const std::string& json);
         std::vector<uint8_t> update_calibration_status(int timeout_ms, rs2_update_progress_callback_sptr progress_callback);
         std::vector<uint8_t> update_abort_status();
+        mutable std::vector< uint8_t > _curr_calibration;
         std::shared_ptr<hw_monitor> _hw_monitor;
         d500_calibration_mode _mode;
         d500_calibration_state _state;

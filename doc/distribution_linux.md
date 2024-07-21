@@ -2,9 +2,10 @@
 
 #### Using pre-build packages
 **Intel® RealSense™ SDK 2.0** provides installation packages for Intel X86/AMD64/ARM-based Debian distributions in [`dpkg`](https://en.wikipedia.org/wiki/Dpkg) format for Ubuntu 20/22/24 [LTS](https://wiki.ubuntu.com/LTS).
-For EOL Ubuntu distributions please use the following versions:
-Ubuntu 16 -> [2.51.1](https://github.com/IntelRealSense/librealsense/releases/tag/v2.51.1)
-Ubuntu 18 -> [2.55.1](https://github.com/IntelRealSense/librealsense/releases/tag/v2.55.1)
+
+> Note: For EOL Ubuntu distributions please use the following versions:  
+Ubuntu 16 -> [2.51.1](https://github.com/IntelRealSense/librealsense/releases/tag/v2.51.1).  
+Ubuntu 18 -> [2.55.1](https://github.com/IntelRealSense/librealsense/releases/tag/v2.55.1).  
 The Realsense [DKMS](https://en.wikipedia.org/wiki/Dynamic_Kernel_Module_Support) kernel drivers package (`librealsense2-dkms`) supports Ubuntu LTS HWE kernels 5.15, 5.19 and 6.5. Please refer to [Ubuntu Kernel Release Schedule](https://wiki.ubuntu.com/Kernel/Support) for further details.
 
 #### Configuring and building from the source code
