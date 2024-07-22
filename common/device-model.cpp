@@ -3416,8 +3416,15 @@ namespace rs2
                     ImGui::SetTooltip("%s", tooltip.c_str());
                 }
 
-                bool is_d555 = dev.supports( RS2_CAMERA_INFO_PRODUCT_ID ) ? 
-                    std::string( dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID ) ) == "0B56" : false;
+                bool is_d555 = false;
+                
+                if (dev.supports(RS2_CAMERA_INFO_PRODUCT_ID))
+                {
+                    auto pid_str = std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
+                    if (pid_str == "0B56" || pid_str == "DDS")
+                        is_d555 = true;
+                }
+
                 if( is_d555 && ImGui::Selectable( "Focal Length Calibration" ) )
                 {
                     try
