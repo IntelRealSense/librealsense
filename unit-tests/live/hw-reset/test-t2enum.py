@@ -43,8 +43,8 @@ dev, ctx = test.find_first_device_or_exit()
 
 max_dev_enum_time = get_max_enum_rime_by_device( dev )
 log.out( "Sending HW-reset command" )
-enumeration_sw = Stopwatch() # we know we add the device removal time, but it shouldn't take long
 time.sleep(1)
+enumeration_sw = Stopwatch() # we know we add the device removal time, but it shouldn't take long
 dev.hardware_reset()
 
 log.out( "Pending for device removal" )
