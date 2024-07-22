@@ -126,7 +126,7 @@ typedef struct rs2_safety_smcu_arbitration_params
     uint8_t l_0_sustained_rate_threshold;     // Notifications per FDTI. In [ 1..255] range. Default = 10
     uint16_t l_1_total_threshold;             // In [ 0..2^16-1] range. Default = 100
     uint8_t l_1_sustained_rate_threshold;     // Notifications per FDTI. In [ 1..255] range. Default = 10
-    uint8_t l_4_total_threshold;              // Number of HKR reset before switching to "Locked" state. [ 1..255] range. Default = 10
+    uint8_t l_2_total_threshold;              // Number of HKR reset before switching to "Locked" state. [ 1..255] range. Default = 10
     uint8_t hkr_stl_timeout;                  // In ms
     uint8_t mcu_stl_timeout;                  // Application Specific
     uint8_t sustained_aicv_frame_drops;       // [0..100] % of frames required to arrive within the last 10 frames.

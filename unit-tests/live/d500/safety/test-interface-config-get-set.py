@@ -55,7 +55,7 @@ def generate_valid_table():
     cfg.smcu_arbitration_params.l_0_sustained_rate_threshold = 20
     cfg.smcu_arbitration_params.l_1_total_threshold = 100
     cfg.smcu_arbitration_params.l_1_sustained_rate_threshold = 20
-    cfg.smcu_arbitration_params.l_4_total_threshold = 10
+    cfg.smcu_arbitration_params.l_2_total_threshold = 10
     cfg.smcu_arbitration_params.hkr_stl_timeout = 40
     cfg.smcu_arbitration_params.mcu_stl_timeout = 40
     cfg.smcu_arbitration_params.sustained_aicv_frame_drops = 50
