@@ -64,5 +64,10 @@ void init_types(py::module &m) {
         .def_readwrite("max_x", &rs2::region_of_interest::max_x)
         .def_readwrite("max_y", &rs2::region_of_interest::max_y);
 
+	py::class_< rs2_extrinsics_row_major > extrinsics_table( m, "extrinsics_table" );  // No docstring in C++
+    extrinsics_table.def( py::init<>() )
+        .def( py::init< float3x3_row_major, float3_row_major >() )
+        .def_readwrite( "rotation", &rs2_extrinsics_row_major::rotation, "Rotation Value" )
+        .def_readwrite( "translation", &rs2_extrinsics_row_major::translation, "Translation Value" );
     /** end rs_types.hpp **/
 }
