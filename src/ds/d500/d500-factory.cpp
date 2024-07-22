@@ -18,6 +18,7 @@
 #include "d500-safety.h"
 #include "d500-depth-mapping.h"
 #include "sync.h"
+#include <src/ds/d500/d500-auto-calibration.h>
 
 #include <src/platform/platform-utils.h>
 #include <src/core/advanced_mode.h>

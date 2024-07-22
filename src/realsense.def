@@ -460,7 +460,6 @@ EXPORTS
     rs2_calib_location_to_string
     rs2_get_calibration_config
     rs2_set_calibration_config
-    rs2_calibration_config_to_json_string
-    rs2_json_string_to_calibration_config
     rs2_get_application_config
     rs2_set_application_config
+    

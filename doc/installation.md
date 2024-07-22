@@ -18,8 +18,8 @@ Please ensure to work with the supported Kernel versions listed [here](https://g
 
 ## Prerequisites
 
-**Note:** We are supporting **Ubuntu 20/22/24 LTS** versions. \
-**Note:** The scripts and commands below invoke `wget, git, add-apt-repository` which may be blocked by router settings or a firewall. \
+Supported versions are:  **Ubuntu 20/22/24 LTS** versions. 
+> **Note:** The scripts and commands below invoke `wget, git, add-apt-repository` which may be blocked by router settings or a firewall. \
 Infrequently, apt-get mirrors or repositories may also cause timeout. For _librealsense_ users behind an enterprise firewall, \
 configuring the system-wide Ubuntu proxy generally resolves most timeout issues.
 
