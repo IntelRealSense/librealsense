@@ -99,6 +99,15 @@ namespace notification {
             extern std::string const progress;
         }
     }
+    namespace calibration_changed {
+        extern std::string const id;
+        namespace key {
+            using stream_options::key::intrinsics;
+        }
+        namespace intrinsics {
+            using namespace stream_options::intrinsics;
+        }
+    }
 }
 
 namespace control {
