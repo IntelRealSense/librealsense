@@ -56,17 +56,38 @@ def generate_sip_part():
     return sip4
 
 
+def generate_dev_rules_selection_bitmap():
+    # "Bit Mask values:
+    # 0x1 <<0 - Dev Mode is active. Note that if this bit is inactive then all the other can be safely disregarded
+    # 0x1 <<1 - Feat_#1 enabled
+    # 0x1 <<2 - Feat_#2 enabled
+    # 0x1 <<3 - ...
+    # 0x1 <<63 - Feat_#63 enabled"
+
+    bitmap = np.uint64(0)
+
+    # Set bit number 0 (Dev Mode is active. Note that if this bit is inactive then all the other can be safely disregarded)
+    bitmap |= np.uint64(1) << np.uint64(0)
+
+    # Set bit number 6 (Feat_#6: SHT4x Humidity Threshold)
+    bitmap |= np.uint64(1) << np.uint64(6)
+
+    # bitmap: 0000000000000000000000000000000000000000000000000000000001000001
+    # log.d(f"Bitmap: {bitmap:064b}") # uncomment this line for debug print of bitmap
+
+    # convert 64-bit-map to 8 bytes np array
+    bitmap_bytes = np.frombuffer(bitmap.tobytes(), dtype=np.uint8)
+    return bitmap_bytes
+
 def generate_features_1_4():
-    dev_rules_selection = to_np_array(0, 8)
+
     depth_pipe_safety_checks_override = 0
     triggered_calib_safety_checks_override = 0
     smcu_bypass_directly_to_maintenance_mode = 0
     smcu_skip_spi_error = 0
 
-    arr1 = np.asarray([depth_pipe_safety_checks_override, triggered_calib_safety_checks_override,
+    arr = np.asarray([depth_pipe_safety_checks_override, triggered_calib_safety_checks_override,
                        smcu_bypass_directly_to_maintenance_mode, smcu_skip_spi_error], dtype=np.uint8)
-    arr = np.hstack((dev_rules_selection, arr1), dtype=np.uint8)
-
     return arr
 
 
@@ -156,19 +177,21 @@ def generate_depth_sign_features():
 
 def generate_app_config_table():
     sip_np_arr = generate_sip_part()
-    rules_features_1_4_np_arr = generate_features_1_4()
+    dev_rules_selection_bitmap = generate_dev_rules_selection_bitmap()
+    features_1_4_np_arr = generate_features_1_4()
     features_temp_thresholds_np_arr = generate_temp_thresholds()
     features_humid_volt_thresholds_np_arr = generate_humid_volt_thresholds()
     features_dev_mode_np_arr = generate_dev_mode_features()
     depth_sign_features_np_arr = generate_depth_sign_features()
 
-    app_cfg_1 = np.hstack((sip_np_arr, rules_features_1_4_np_arr))
-    app_cfg_2 = np.hstack((app_cfg_1, features_temp_thresholds_np_arr))
-    app_cfg_3 = np.hstack((app_cfg_2, features_humid_volt_thresholds_np_arr))
-    app_cfg_4 = np.hstack((app_cfg_3, features_dev_mode_np_arr))
-    app_cfg_5 = np.hstack((app_cfg_4, depth_sign_features_np_arr))
+    app_cfg_1 = np.hstack((sip_np_arr, dev_rules_selection_bitmap))
+    app_cfg_2 = np.hstack((app_cfg_1, features_1_4_np_arr))
+    app_cfg_3 = np.hstack((app_cfg_2, features_temp_thresholds_np_arr))
+    app_cfg_4 = np.hstack((app_cfg_3, features_humid_volt_thresholds_np_arr))
+    app_cfg_5 = np.hstack((app_cfg_4, features_dev_mode_np_arr))
+    app_cfg_6 = np.hstack((app_cfg_5, depth_sign_features_np_arr))
 
-    return app_cfg_5
+    return app_cfg_6
 
 
 def set_app_config_table(app_config_table):

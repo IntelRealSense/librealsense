@@ -724,7 +724,7 @@ namespace librealsense
         smcu_arbitration_params["l_0_sustained_rate_threshold"] = sic.smcu_arbitration_params.l_0_sustained_rate_threshold;
         smcu_arbitration_params["l_1_total_threshold"] = sic.smcu_arbitration_params.l_1_total_threshold;
         smcu_arbitration_params["l_1_sustained_rate_threshold"] = sic.smcu_arbitration_params.l_1_sustained_rate_threshold;
-        smcu_arbitration_params["l_4_total_threshold"] = sic.smcu_arbitration_params.l_4_total_threshold;
+        smcu_arbitration_params["l_2_total_threshold"] = sic.smcu_arbitration_params.l_2_total_threshold;
         smcu_arbitration_params["hkr_stl_timeout"] = sic.smcu_arbitration_params.hkr_stl_timeout;
         smcu_arbitration_params["mcu_stl_timeout"] = sic.smcu_arbitration_params.mcu_stl_timeout;
         smcu_arbitration_params["sustained_aicv_frame_drops"] = sic.smcu_arbitration_params.sustained_aicv_frame_drops;
@@ -815,7 +815,7 @@ namespace librealsense
         sic.smcu_arbitration_params.l_0_sustained_rate_threshold = smcu_arbitration_params["l_0_sustained_rate_threshold"];
         sic.smcu_arbitration_params.l_1_total_threshold = smcu_arbitration_params["l_1_total_threshold"];
         sic.smcu_arbitration_params.l_1_sustained_rate_threshold = smcu_arbitration_params["l_1_sustained_rate_threshold"];
-        sic.smcu_arbitration_params.l_4_total_threshold = smcu_arbitration_params["l_4_total_threshold"];
+        sic.smcu_arbitration_params.l_2_total_threshold = smcu_arbitration_params["l_2_total_threshold"];
         sic.smcu_arbitration_params.hkr_stl_timeout = smcu_arbitration_params["hkr_stl_timeout"];
         sic.smcu_arbitration_params.mcu_stl_timeout = smcu_arbitration_params["mcu_stl_timeout"];
         sic.smcu_arbitration_params.sustained_aicv_frame_drops = smcu_arbitration_params["sustained_aicv_frame_drops"];

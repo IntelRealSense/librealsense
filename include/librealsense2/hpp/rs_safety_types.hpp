@@ -87,7 +87,7 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_smcu_arbitration_p
     out << "\n\t\t\t\t" << "l_0_sustained_rate_threshold" << (int)smcu_arbitration_params.l_0_sustained_rate_threshold;
     out << "\n\t\t\t\t" << "l_1_total_threshold" << (int)smcu_arbitration_params.l_1_total_threshold;
     out << "\n\t\t\t\t" << "l_1_sustained_rate_threshold" << (int)smcu_arbitration_params.l_1_sustained_rate_threshold;
-    out << "\n\t\t\t\t" << "l_4_total_threshold" << (int)smcu_arbitration_params.l_4_total_threshold;
+    out << "\n\t\t\t\t" << "l_2_total_threshold" << (int)smcu_arbitration_params.l_2_total_threshold;
     out << "\n\t\t\t\t" << "hkr_stl_timeout" << (int)smcu_arbitration_params.hkr_stl_timeout;
     out << "\n\t\t\t\t" << "mcu_stl_timeout" << (int)smcu_arbitration_params.mcu_stl_timeout;
     out << "\n\t\t\t\t" << "sustained_aicv_frame_drops" << (int)smcu_arbitration_params.sustained_aicv_frame_drops;

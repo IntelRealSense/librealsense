@@ -31,7 +31,7 @@ void init_safety(py::module &m) {
         .def_readwrite("l_0_sustained_rate_threshold", &rs2_safety_smcu_arbitration_params::l_0_sustained_rate_threshold, "l_0_sustained_rate_threshold")
         .def_readwrite("l_1_total_threshold", &rs2_safety_smcu_arbitration_params::l_1_total_threshold, "l_1_total_threshold")
         .def_readwrite("l_1_sustained_rate_threshold", &rs2_safety_smcu_arbitration_params::l_1_sustained_rate_threshold, "l_1_sustained_rate_threshold")
-        .def_readwrite("l_4_total_threshold", &rs2_safety_smcu_arbitration_params::l_4_total_threshold, "l_4_total_threshold")
+        .def_readwrite("l_2_total_threshold", &rs2_safety_smcu_arbitration_params::l_2_total_threshold, "l_2_total_threshold")
         .def_readwrite("hkr_stl_timeout", &rs2_safety_smcu_arbitration_params::hkr_stl_timeout, "hkr_stl_timeout")
         .def_readwrite("mcu_stl_timeout", &rs2_safety_smcu_arbitration_params::mcu_stl_timeout, "mcu_stl_timeout")
         .def_readwrite("sustained_aicv_frame_drops", &rs2_safety_smcu_arbitration_params::sustained_aicv_frame_drops, "sustained_aicv_frame_drops")

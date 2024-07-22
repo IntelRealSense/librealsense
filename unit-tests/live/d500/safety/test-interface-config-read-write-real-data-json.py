@@ -148,7 +148,7 @@ sic_json_str = '''
             "l_0_sustained_rate_threshold": 20,
             "l_1_total_threshold": 100,
             "l_1_sustained_rate_threshold": 20,
-            "l_4_total_threshold": 10,
+            "l_2_total_threshold": 10,
             "hkr_stl_timeout": 40,
             "mcu_stl_timeout": 40,
             "sustained_aicv_frame_drops": 50,
