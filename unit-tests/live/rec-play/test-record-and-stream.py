@@ -59,7 +59,6 @@ def try_streaming(default_profile):
 def play_recording(default_profile):
     global depth_sensor
 
-    ctx = rs.context()
     playback = ctx.load_device(file_name)
     depth_sensor = playback.first_depth_sensor()
     frame_queue = try_streaming(default_profile)

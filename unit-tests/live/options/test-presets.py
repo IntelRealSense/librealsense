@@ -11,7 +11,7 @@ from rspy import test
 from rspy import log
 from rspy import tests_wrapper as tw
 
-dev, ctx = test.find_first_device_or_exit()
+dev, _ = test.find_first_device_or_exit()
 product_line = dev.get_info(rs.camera_info.product_line)
 product_name = dev.get_info(rs.camera_info.name)
 

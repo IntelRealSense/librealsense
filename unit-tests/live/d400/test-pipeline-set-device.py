@@ -11,7 +11,6 @@ gyro_sensitivity_value = 4.0
 
 with test.closure("pipeline - set device"):
     cfg = rs.config()
-    ctx = rs.context()
 
     dev, ctx = test.find_first_device_or_exit()
     motion_sensor = dev.first_motion_sensor()

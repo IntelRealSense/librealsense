@@ -9,7 +9,7 @@ from rspy import test
 from rspy import log
 import time
 
-dev, ctx = test.find_first_device_or_exit()
+dev, _ = test.find_first_device_or_exit()
 product_name = dev.get_info(rs.camera_info.name)
 product_line = dev.get_info(rs.camera_info.product_line)
 depth_sensor = dev.first_depth_sensor()

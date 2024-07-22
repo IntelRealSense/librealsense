@@ -181,7 +181,6 @@ try:
     test.check( len(color_filters) > 0 )
     test.check( len(depth_filters) > 0 )
 
-    ctx = rs.context()
     playback = ctx.load_device( file_name )
 
     depth_sensor = playback.first_depth_sensor()
@@ -246,7 +245,6 @@ try:
     depth_sensor.stop()
     depth_sensor.close()
 
-    ctx = rs.context()
     playback = ctx.load_device( file_name )
 
     depth_sensor = playback.first_depth_sensor()
