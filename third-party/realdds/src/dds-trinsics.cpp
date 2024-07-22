@@ -160,66 +160,103 @@ json video_intrinsics::to_json() const
         j.nested( key::height ).get_to( ret.height );
         j.nested( key::principal_point ).get_to( ret.principal_point );
         j.nested( key::focal_length ).get_to( ret.focal_length );
+
         //    - Symmetry affects how the intrinsics are scaled to different resolutions
         ret.force_symmetry = j.nested( key::force_symmetry ).default_value( false );
-        // A distortion model may be applied:
-        //    - The `model` would specify which model is to be used, with the default of `brown`
-        //    - The `coefficients` is an array of floating point values, the number and meaning which depend on the `model`
-        //    - For `brown`, 5 points [k1, k2, p1, p2, k3] are needed
-        auto coeffs_j = j.nested( key::coefficients );
-        auto model_j = j.nested( key::model );
-        switch( model_j.type() )
-        {
-        case json::value_t::discarded:
-            if( coeffs_j.is_array() && coeffs_j.size() == 5 )
-                ret.distortion.model = distortion_model::brown;
-            else
-                ret.distortion.model = distortion_model::none;
-            break;
 
-        case json::value_t::string:
-            if( "brown" == model_j.string_ref() )
-                ret.distortion.model = distortion_model::brown;
-            else if( "none" == model_j.string_ref() )
-                ret.distortion.model = distortion_model::none;
-            else if( "inverse-brown" == model_j.string_ref() )
-                ret.distortion.model = distortion_model::inverse_brown;
-            else if( "modified-brown" == model_j.string_ref() )
-                ret.distortion.model = distortion_model::modified_brown;
-            else
-                DDS_THROW( runtime_error, "unknown distortion model: " << model_j );
-            break;
-
-        default:
-            DDS_THROW( runtime_error, "invalid distortion model: " << model_j );
-        }
-        switch( ret.distortion.model )
-        {
-        case distortion_model::none:
-            if( coeffs_j )
-                DDS_THROW( runtime_error, "distortion coefficients without a model" );
-            ret.distortion.coeffs = { 0 };
-            break;
-
-        case distortion_model::brown:
-        case distortion_model::inverse_brown:
-        case distortion_model::modified_brown:
-            if( ! coeffs_j.is_array() )
-                DDS_THROW( runtime_error, "invalid distortion coefficients: " << coeffs_j );
-            if( coeffs_j.size() != 5 )
-                DDS_THROW( runtime_error, "distortion coefficients expected [k1,k2,p1,p2,k3]: " << coeffs_j );
-            coeffs_j.get_to( ret.distortion.coeffs );
-            break;
-
-        default:
-            DDS_THROW( runtime_error, "invalid distortion model" );
-        }
+        // A distortion model default to none
+        ret.distortion = distortion_from_json( j );
     }
     else
         DDS_THROW( runtime_error, "unspected intrinsics json: " << j );
 
     return ret;
 }
+
+
+/*static */ distortion_parameters video_intrinsics::distortion_from_json( rsutils::json const & j )
+{
+    distortion_parameters result;
+    using namespace topics::notification::stream_options::intrinsics;
+
+    // A distortion model may be applied:
+    //    - The `model` would specify which model is to be used, with the default of `brown`
+    //    - The `coefficients` is an array of floating point values, the number and meaning which depend on the `model`
+    //    - For `brown`, 5 points [k1, k2, p1, p2, k3] are needed
+    auto coeffs_j = j.nested( key::coefficients );
+    auto model_j = j.nested( key::model );
+    switch( model_j.type() )
+    {
+    case json::value_t::discarded:
+        if( coeffs_j.is_array() && coeffs_j.size() == 5 )
+            result.model = distortion_model::brown;
+        else
+            result.model = distortion_model::none;
+        break;
+
+    case json::value_t::string:
+        if( "brown" == model_j.string_ref() )
+            result.model = distortion_model::brown;
+        else if( "none" == model_j.string_ref() )
+            result.model = distortion_model::none;
+        else if( "inverse-brown" == model_j.string_ref() )
+            result.model = distortion_model::inverse_brown;
+        else if( "modified-brown" == model_j.string_ref() )
+            result.model = distortion_model::modified_brown;
+        else
+            DDS_THROW( runtime_error, "unknown distortion model: " << model_j );
+        break;
+
+    default:
+        DDS_THROW( runtime_error, "invalid distortion model: " << model_j );
+    }
+    switch( result.model )
+    {
+    case distortion_model::none:
+        if( coeffs_j )
+            DDS_THROW( runtime_error, "distortion coefficients without a model" );
+        result.coeffs = { 0 };
+        break;
+
+    case distortion_model::brown:
+    case distortion_model::inverse_brown:
+    case distortion_model::modified_brown:
+        if( !coeffs_j.is_array() )
+            DDS_THROW( runtime_error, "invalid distortion coefficients: " << coeffs_j );
+        if( coeffs_j.size() != 5 )
+            DDS_THROW( runtime_error, "distortion coefficients expected [k1,k2,p1,p2,k3]: " << coeffs_j );
+        coeffs_j.get_to( result.coeffs );
+        break;
+
+    default:
+        DDS_THROW( runtime_error, "invalid distortion model" );
+    }
+
+    return result;
+}
+
+
+void video_intrinsics::override_from_json( json const & j )
+{
+    if( ! j.is_object() )
+        DDS_THROW( runtime_error, "cannot override intrinsics if not an object: " << j );
+
+    using namespace topics::notification::calibration_changed::intrinsics;
+
+    int w, h;
+    if( j.nested( key::width ).get_ex( w ) && w != width )
+        DDS_THROW( runtime_error, "intrinsics should not change width" );
+    if( j.nested( key::height ).get_ex( h ) && h != height )
+        DDS_THROW( runtime_error, "intrinsics should not change height" );
+
+    j.nested( key::principal_point ).get_ex( principal_point );
+    j.nested( key::focal_length ).get_ex( focal_length );
+    j.nested( key::force_symmetry ).get_ex( force_symmetry );
+
+    if( j.nested( key::coefficients ) || j.nested( key::model ) )
+        distortion = distortion_from_json( j );
+}
+
 
 json motion_intrinsics::to_json() const
 {

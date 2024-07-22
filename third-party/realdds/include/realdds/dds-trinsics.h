@@ -63,8 +63,11 @@ struct video_intrinsics
 
     video_intrinsics scaled_to( int width, int height ) const;
 
+    static distortion_parameters distortion_from_json( rsutils::json const & );
+
     rsutils::json to_json() const;
     static video_intrinsics from_json( rsutils::json const & );
+    void override_from_json( rsutils::json const & );
 };
 
 std::ostream & operator<<( std::ostream &, video_intrinsics const & );
