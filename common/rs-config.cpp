@@ -70,7 +70,7 @@ void config_file::save(const char* filename)
     try
     {
         std::ofstream out(filename);
-        out << _j.dump( 2 );
+        out << std::setw( 2 ) << _j;
         out.close();
     }
     catch (...)
