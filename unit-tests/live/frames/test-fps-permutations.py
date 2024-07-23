@@ -60,7 +60,7 @@ def get_sensors_and_profiles(device):
     return sensor_profiles_arr
 
 
-dev = test.find_first_device_or_exit()
+dev, _ = test.find_first_device_or_exit()
 
 sensor_profiles_array = get_sensors_and_profiles(dev)
 all_pairs = [[a[1].stream_name(), b[1].stream_name()] for a, b in combinations(sensor_profiles_array, 2)]

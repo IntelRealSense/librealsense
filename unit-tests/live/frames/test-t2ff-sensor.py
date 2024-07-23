@@ -51,7 +51,7 @@ time.sleep(3)
 #####################################################################################################
 test.start("Testing device creation time on " + platform.system() + " OS")
 device_creation_stopwatch = Stopwatch()
-dev = test.find_first_device_or_exit()
+dev, _ = test.find_first_device_or_exit()
 device_creation_time = device_creation_stopwatch.get_elapsed()
 max_time_for_device_creation = 1
 print("Device creation time is: {:.3f} [sec] max allowed is: {:.1f} [sec] ".format(device_creation_time, max_time_for_device_creation))
