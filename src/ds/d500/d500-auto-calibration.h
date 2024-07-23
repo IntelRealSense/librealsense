@@ -75,7 +75,8 @@ public:
     void set_calibration_config(const std::string& calibration_config_json_str) const override;
 
 private:
-    d500_calibration_answer get_triggered_calibration_status();
+    d500_calibration_answer get_triggered_calibration_answer();
+    void start_triggered_calibration(const std::string& json);
     bool check_buffer_size_from_get_calib_status(std::vector<uint8_t> res) const;
     void check_preconditions_and_set_state();
     void get_mode_from_json(const std::string& json);
@@ -84,6 +85,6 @@ private:
 
     mutable std::vector< uint8_t > _curr_calibration;
     std::shared_ptr<d500_debug_protocol_calibration_engine> _calib_engine;
-	calibration_mode _mode;
+    calibration_mode _mode;
 };
 }

@@ -40,7 +40,7 @@ void d500_auto_calibrated::check_preconditions_and_set_state()
         _mode == calibration_mode::DRY_RUN)
     {
         // calibration state to be IDLE or COMPLETE
-        auto calib_ans = get_triggered_calibration_status();
+        auto calib_ans = get_triggered_calibration_answer();
 
         if (!(calib_ans.state == calibration_state::IDLE ||
             calib_ans.state == calibration_state::COMPLETE))
@@ -53,7 +53,7 @@ void d500_auto_calibrated::check_preconditions_and_set_state()
     if (_mode == calibration_mode::ABORT)
     {
         // calibration state to be IN_PROCESS
-        auto calib_ans = get_triggered_calibration_status();
+        auto calib_ans = get_triggered_calibration_answer();
         
         if (!(calib_ans.state == calibration_state::PROCESS))
         {
@@ -79,13 +79,9 @@ std::vector<uint8_t> d500_auto_calibrated::run_on_chip_calibration(int timeout_m
     try
     {
         get_mode_from_json(json);
-
-        // checking preconditions
         check_preconditions_and_set_state();
 
-        // sending command to start calibration
-        _calib_engine->set(ds::SET_CALIB_MODE, static_cast<uint32_t>(_mode),
-            static_cast<uint32_t>(calibration_method::TRIGGERED_CALIBRATION));
+        start_triggered_calibration(json);
 
         if (_mode == calibration_mode::RUN ||
             _mode == calibration_mode::DRY_RUN)
@@ -114,6 +110,13 @@ std::vector<uint8_t> d500_auto_calibrated::run_on_chip_calibration(int timeout_m
     return res;
 }
 
+void d500_auto_calibrated::start_triggered_calibration(const std::string& json)
+{
+    // sending command to start calibration
+    _calib_engine->set(ds::SET_CALIB_MODE, static_cast<uint32_t>(_mode),
+        static_cast<uint32_t>(calibration_method::TRIGGERED_CALIBRATION));
+}
+
 std::vector<uint8_t> d500_auto_calibrated::update_calibration_status(int timeout_ms,
     rs2_update_progress_callback_sptr progress_callback)
 {
@@ -123,7 +126,7 @@ std::vector<uint8_t> d500_auto_calibrated::update_calibration_status(int timeout
     do
     {
         std::this_thread::sleep_for(std::chrono::seconds(1));
-        calib_ans = get_triggered_calibration_status();
+        calib_ans = get_triggered_calibration_answer();
 
         std::stringstream ss;
         ss << "Calibration in progress - State = " << calibration_state_strings[static_cast<int>(calib_ans.state)];
@@ -180,11 +183,11 @@ std::vector<uint8_t> d500_auto_calibrated::update_calibration_status(int timeout
 std::vector<uint8_t> d500_auto_calibrated::update_abort_status()
 {
     std::vector<uint8_t> ans;
-    auto calib_ans = get_triggered_calibration_status();
+    auto calib_ans = get_triggered_calibration_answer();
     if (calib_ans.state == calibration_state::PROCESS)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        calib_ans = get_triggered_calibration_status();
+        calib_ans = get_triggered_calibration_answer();
     }
     if (calib_ans.state == calibration_state::IDLE)
     {
@@ -223,7 +226,7 @@ bool d500_auto_calibrated::check_buffer_size_from_get_calib_status(std::vector<u
     return is_size_ok;
 }
 
-d500_calibration_answer d500_auto_calibrated::get_triggered_calibration_status()
+d500_calibration_answer d500_auto_calibrated::get_triggered_calibration_answer()
 {
     auto res = _calib_engine->get(ds::GET_CALIB_STATUS);
         
