@@ -144,6 +144,7 @@ void dds_sensor_proxy::register_basic_converters()
     _formats_converter.register_converter( processing_block_factory::create_id_pbf( RS2_FORMAT_RGBA8, RS2_STREAM_COLOR ) );
     _formats_converter.register_converter( processing_block_factory::create_id_pbf( RS2_FORMAT_BGR8, RS2_STREAM_COLOR ) );
     _formats_converter.register_converter( processing_block_factory::create_id_pbf( RS2_FORMAT_BGRA8, RS2_STREAM_COLOR ) );
+    _formats_converter.register_converter( processing_block_factory::create_id_pbf( RS2_FORMAT_RAW16, RS2_STREAM_COLOR ) );
 
     _formats_converter.register_converters(
         processing_block_factory::create_pbf_vector< uyvy_converter >(
