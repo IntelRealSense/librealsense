@@ -836,7 +836,7 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                             { realdds::topics::notification::key::id, realdds::topics::reply::query_options::id },
                             { realdds::topics::reply::query_options::key::option_values, std::move( option_values ) },
                         } );
-                        LOG_DEBUG( "[" << _dds_device_server->debug_name() << "] options changed: " << j.dump( 4 ) );
+                        LOG_DEBUG( "[" << _dds_device_server->debug_name() << "] options changed: " << std::setw( 4 ) << j );
                         _dds_device_server->publish_notification( std::move( j ) );
                     }
                 }
