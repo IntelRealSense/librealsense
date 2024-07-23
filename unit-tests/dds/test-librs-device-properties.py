@@ -53,7 +53,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             test.check( rs.color_sensor( sensor ))
             test.check( sensors[sensor.name] )
             test.check_equal( sensor.name, 'RGB Camera' )
-            test.check_equal( len(sensor.get_stream_profiles()), 192 ) # As measured running rs-sensor-control example
+            test.check_equal( len(sensor.get_stream_profiles()), 193 ) # As measured running rs-sensor-control example
         sensor = dev.first_motion_sensor()
         if test.check( sensor ):
             test.check( rs.motion_sensor( sensor ))
@@ -100,7 +100,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         if test.check( sensor ):
             test.check( sensors[sensor.name] )
             test.check_equal( sensor.name, 'RGB Camera' )
-            test.check_equal( len(sensor.get_stream_profiles()), 186 ) # As measured running rs-sensor-control example
+            test.check_equal( len(sensor.get_stream_profiles()), 187 ) # As measured running rs-sensor-control example
         sensor = dev.first_motion_sensor()
         if test.check( sensor ):
             test.check( sensors[sensor.name] )
