@@ -284,9 +284,9 @@ try
         if( ip_arg.isSet() )
             requested.configured.ip = ip_address( ip_arg.getValue(), rsutils::throw_if_not_valid );
         if( mask_arg.isSet() )
-            requested.configured.netmask = ip_address( ip_arg.getValue(), rsutils::throw_if_not_valid );
+            requested.configured.netmask = ip_address( mask_arg.getValue(), rsutils::throw_if_not_valid );
         if( gateway_arg.isSet() )
-            requested.configured.gateway = ip_address( ip_arg.getValue(), rsutils::throw_if_not_valid );
+            requested.configured.gateway = ip_address( gateway_arg.getValue(), rsutils::throw_if_not_valid );
         if( usb_first_arg.isSet() + eth_first_arg.isSet() + dynamic_priority_arg.isSet() > 1 )
             throw std::invalid_argument( "--usb-first, --eth-first, and --dynamic-priority are mutually exclusive" );
         if( usb_first_arg.isSet() )
