@@ -2,6 +2,11 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 #pragma once
 
+// Turn off normal JSON I/O (operator<<) serialization
+// This disables a few things like json::parse, but we do it because of conflict between our operator<< and the built-in
+// one by json. Otherwise (if we do not need custom stream serialization) it's not needed...
+#define JSON_NO_IO
+
 #include <nlohmann/json_fwd.hpp>
 
 
@@ -71,6 +76,10 @@ extern json const null_json;     // default json state
 extern json const missing_json;  // i.e., not there: exists() will be 'false'
 extern json const empty_json_string;
 extern json const empty_json_object;
+
+
+std::ostream & operator<<( std::ostream &, const json & );
+
 
 
 }  // namespace rsutils
