@@ -34,6 +34,15 @@ struct distortion_parameters
 {
     distortion_model model;
     std::array< float, 5 > coeffs;
+
+    bool operator==( distortion_parameters const & other ) const
+    {
+        return model == other.model && coeffs == other.coeffs;
+    }
+    bool operator!=( distortion_parameters const & other ) const
+    {
+        return model != other.model || coeffs != other.coeffs;
+    }
 };
 
 std::ostream & operator<<( std::ostream &, distortion_parameters const & );
@@ -60,6 +69,13 @@ struct video_intrinsics
         // Arrange the intrinsics in order of increasing resolution (width then height)
         return width < rhs.width || ( width == rhs.width && height < rhs.height );
     }
+    bool operator==( video_intrinsics const & other ) const
+    {
+        return width == other.width && height == other.height && principal_point == other.principal_point
+            && focal_length == other.focal_length && distortion == other.distortion
+            && force_symmetry == other.force_symmetry;
+    }
+    bool operator!=( video_intrinsics const & other ) const { return ! operator==( other ); }
 
     video_intrinsics scaled_to( int width, int height ) const;
 
@@ -83,6 +99,12 @@ struct motion_intrinsics
 
     rsutils::json to_json() const;
     static motion_intrinsics from_json( rsutils::json const & j );
+
+    bool operator!=( motion_intrinsics const & other ) const
+    {
+        return data != other.data || noise_variances != other.noise_variances || bias_variances != other.bias_variances;
+    }
+    bool operator==( motion_intrinsics const & other ) const { return ! operator!=( other ); }
 };
 
 
