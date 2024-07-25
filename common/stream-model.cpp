@@ -1272,6 +1272,7 @@ namespace rs2
                 RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_STATUS_BITMASK,
                 RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_INFO_BIST_STATUS,
                 RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO,
+                RS2_FRAME_METADATA_SAFETY_SOC_SAFETY_AND_SECURITY
             });
 
         if (show_in_hex.find(md_val) != show_in_hex.end())
