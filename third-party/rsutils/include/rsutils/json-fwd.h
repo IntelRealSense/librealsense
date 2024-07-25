@@ -39,6 +39,13 @@ class json_base
 
 public:
     inline bool exists() const;
+    // WARNING: this "overrides" the implicit operator<T> that the *derived* class defines that does implicit casting!
+    // I.e., if
+    //      bool b = j;
+    // used the implicit conversion ('bool b = j.get< bool >();') before, now it will do:
+    //      bool b = j.exists();
+    // In general, it is preferable to NEVER use implicit value conversions and instead stick to the .get<T>() syntax.
+    operator bool() const { return exists(); }
 
     template< class T > inline T default_value( T const & default_value ) const;
 
@@ -54,7 +61,6 @@ public:
 
     // Recursively patches with contents of 'overrides', which must be a JSON object
     void override( json_ref overrides, std::string const & what = {} );
-
 };
 
 

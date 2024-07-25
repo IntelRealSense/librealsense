@@ -90,7 +90,8 @@ config_file::config_file( std::string const & filename )
 {
     try
     {
-        if( auto j = rsutils::json_config::load_from_file( filename ) )
+        auto j = rsutils::json_config::load_from_file( filename );
+        if( j.exists() )
             _j = std::move( j );
     }
     catch(...)
