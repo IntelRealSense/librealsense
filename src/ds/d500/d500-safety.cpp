@@ -282,36 +282,28 @@ namespace librealsense
                 md_safety_info_attributes::soc_fusa_action_attribute, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_L0_COUNTER,
-            make_attribute_parser(&md_safety_info::soc_l_0_counter,
-                md_safety_info_attributes::soc_status_attribute, md_prop_offset));
+            make_always_enabled_param_parser(&md_safety_info::soc_l_0_counter, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_L0_RATE,
-            make_attribute_parser(&md_safety_info::soc_l_0_rate,
-                md_safety_info_attributes::soc_status_attribute, md_prop_offset));
+            make_always_enabled_param_parser(&md_safety_info::soc_l_0_rate, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_L1_COUNTER,
-            make_attribute_parser(&md_safety_info::soc_l_1_counter,
-                md_safety_info_attributes::soc_status_attribute, md_prop_offset));
+            make_always_enabled_param_parser(&md_safety_info::soc_l_1_counter, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_L1_RATE,
-            make_attribute_parser(&md_safety_info::soc_l_1_rate,
-                md_safety_info_attributes::soc_status_attribute, md_prop_offset));
+            make_always_enabled_param_parser(&md_safety_info::soc_l_1_rate, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_GMT_STATUS,
-            make_attribute_parser(&md_safety_info::soc_gmt_status,
-                md_safety_info_attributes::soc_status_attribute, md_prop_offset));
+            make_always_enabled_param_parser(&md_safety_info::soc_gmt_status, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_HKR_CRITICAL_ERROR_GPIO,
-            make_attribute_parser(&md_safety_info::soc_hkr_critical_error_gpio,
-                md_safety_info_attributes::soc_status_attribute, md_prop_offset));
+            make_always_enabled_param_parser(&md_safety_info::soc_hkr_critical_error_gpio, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_MONITOR_L2_ERROR_TYPE,
-            make_attribute_parser(&md_safety_info::soc_monitor_l2_error_type,
-                md_safety_info_attributes::soc_status_attribute, md_prop_offset));
+            make_always_enabled_param_parser(&md_safety_info::soc_monitor_l2_error_type, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_MONITOR_L3_ERROR_TYPE,
-            make_attribute_parser(&md_safety_info::soc_monitor_l3_error_type,
-                md_safety_info_attributes::soc_status_attribute, md_prop_offset));
+            make_always_enabled_param_parser(&md_safety_info::soc_monitor_l3_error_type, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_SAFETY_AND_SECURITY,
             make_always_enabled_param_parser(&md_safety_info::soc_safety_and_security, md_prop_offset));
