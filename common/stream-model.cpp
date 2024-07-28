@@ -1187,6 +1187,18 @@ namespace rs2
             "Error signal on / off",
         };
         descriptions[RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO] = "Non-FuSa GPIO:" + get_meaning(RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO, meanings, "OK");
+
+        meanings =
+        {
+            "Unit is Locked",
+            "OHM Serial Numbers check is valid",
+            "APM Serial Numbers check is valid",
+            "TBD",
+            "Depth calibration data is valid",
+            "Triggered calibration result is valid",
+            "Triggered calibration data is valid"
+        };
+        descriptions[RS2_FRAME_METADATA_SAFETY_SOC_SAFETY_AND_SECURITY] = "Soc Safety and Security:" + get_meaning(RS2_FRAME_METADATA_SAFETY_SOC_SAFETY_AND_SECURITY, meanings, "None");
     }
 
     std::string stream_model::adapt_d585S_metadata_name( const std::string & name ) const
