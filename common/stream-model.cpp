@@ -1121,7 +1121,8 @@ namespace rs2
             "Contious frame drops",
             "Sustained frame drops",
             "Frozen depth image (CRC recurrence)",
-            "FTTI miss (data latency)"
+            "FTTI miss (data latency)",
+            "Safety & Security check failure"
         };
         descriptions[RS2_FRAME_METADATA_SAFETY_HARA_EVENTS] = "HaRa events:" + get_meaning(RS2_FRAME_METADATA_SAFETY_HARA_EVENTS, meanings, "No HaRa events identified");
         
