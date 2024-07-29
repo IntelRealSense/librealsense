@@ -64,8 +64,8 @@ macro(global_set_flags)
     endif()
 
     if(BUILD_PYTHON_BINDINGS)
-        include(libusb_config)
-        include(CMake/external_pybind11.cmake)
+      include(libusb_config)
+      find_package(pybind11)
     endif()
 
     if(CHECK_FOR_UPDATES)

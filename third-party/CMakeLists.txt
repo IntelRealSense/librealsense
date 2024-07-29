@@ -1,6 +1,6 @@
 string(REPLACE ${PROJECT_SOURCE_DIR}/ "" _rel_path ${CMAKE_CURRENT_LIST_DIR})
 
-include(CMake/external_json.cmake)
+find_package(nlohmann_json)
 
 add_subdirectory( "${CMAKE_CURRENT_LIST_DIR}/rsutils" )
 

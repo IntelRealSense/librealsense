@@ -24,6 +24,9 @@ set_target_properties( ${PROJECT_NAME}
 
 using_easyloggingpp( ${PROJECT_NAME} )
 
+find_package(Python REQUIRED COMPONENTS Interpreter Development)
+set(PYTHON_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages/pyrealsense2" CACHE PATH "Installation directory for Python bindings")
+
 install(
     TARGETS ${PROJECT_NAME}
     EXPORT pyrealsense2Targets
