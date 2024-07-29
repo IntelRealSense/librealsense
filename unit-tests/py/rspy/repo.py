@@ -39,10 +39,10 @@ def find_pyrs():
         return None
     from rspy import file
     if platform.system() == 'Linux':
-        for so in file.find( build, '(^|/)pyrealsense2.*\.so$' ):
+        for so in file.find( build, r'(^|/)pyrealsense2.*\.so$' ):
             return os.path.join( build, so )
     else:
-        for pyd in file.find( build, '(^|/)pyrealsense2.*\.pyd$' ):
+        for pyd in file.find( build, r'(^|/)pyrealsense2.*\.pyd$' ):
             return os.path.join( build, pyd )
 
 
