@@ -45,7 +45,6 @@ public:
     virtual int8_t get_triggered_calibration_progress() const = 0;
     virtual std::vector<uint8_t> get_calibration_table(std::vector<uint8_t>& current_calibration) const = 0;
     virtual void write_calibration(std::vector<uint8_t>& calibration) const = 0;
-    virtual void set_calibration_table(const std::vector<uint8_t>& calibration, std::vector<uint8_t>& current_calibration) const = 0;
     virtual std::string get_calibration_config() const = 0;
     virtual void set_calibration_config(const std::string& calibration_config_json_str) const = 0;
 };

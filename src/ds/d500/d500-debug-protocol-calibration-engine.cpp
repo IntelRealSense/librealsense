@@ -113,7 +113,7 @@ std::vector<uint8_t> d500_debug_protocol_calibration_engine::get_calibration_tab
     if (calib.size() < sizeof(ds::table_header) + header->table_size)
         throw std::runtime_error("GET_HKR_CONFIG_TABLE response is smaller then expected table size!");
 
-    // Backwards compalibility dictates that we will return the table without the header, but we need the header
+    // Backwards compatibility dictates that we will return the table without the header, but we need the header
     // details like versions to later set back the table. Save it at the start of _curr_calibration.
     current_calibration.assign(calib.begin(), calib.begin() + sizeof(ds::table_header));
 
@@ -138,21 +138,6 @@ void d500_debug_protocol_calibration_engine::write_calibration(std::vector<uint8
 
     // sending command
     _dev->send_receive_raw_data(cmd);
-}
-
-void d500_debug_protocol_calibration_engine::set_calibration_table(const std::vector<uint8_t>& calibration, std::vector<uint8_t>& current_calibration) const
-{
-    if (current_calibration.size() != sizeof(ds::table_header) && // First time setting table, only header set by get_calibration_table
-        current_calibration.size() != sizeof(ds::d500_coefficients_table)) // Table was previously set
-        throw std::runtime_error(rsutils::string::from() <<
-            "Current calibration table has unexpected size " << current_calibration.size());
-
-    if (calibration.size() != sizeof(ds::d500_coefficients_table) - sizeof(ds::table_header))
-        throw std::runtime_error(rsutils::string::from() <<
-            "Setting calibration table with unexpected size" << calibration.size());
-
-    current_calibration.resize(sizeof(ds::table_header)); // Remove previously set calibration, keep header.
-    current_calibration.insert(current_calibration.end(), calibration.begin(), calibration.end());
 }
 
 std::string d500_debug_protocol_calibration_engine::get_calibration_config() const

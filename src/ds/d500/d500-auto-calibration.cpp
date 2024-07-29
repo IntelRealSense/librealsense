@@ -225,7 +225,17 @@ namespace librealsense
 
     void d500_auto_calibrated::set_calibration_table(const std::vector<uint8_t>& calibration)
     {
-        _calib_engine->set_calibration_table(calibration, _curr_calibration);
+        if (_curr_calibration.size() != sizeof(ds::table_header) && // First time setting table, only header set by get_calibration_table
+            _curr_calibration.size() != sizeof(ds::d500_coefficients_table)) // Table was previously set
+            throw std::runtime_error(rsutils::string::from() <<
+                "Current calibration table has unexpected size " << _curr_calibration.size());
+
+        if (calibration.size() != sizeof(ds::d500_coefficients_table) - sizeof(ds::table_header))
+            throw std::runtime_error(rsutils::string::from() <<
+                "Setting calibration table with unexpected size" << calibration.size());
+
+        _curr_calibration.resize(sizeof(ds::table_header)); // Remove previously set calibration, keep header.
+        _curr_calibration.insert(_curr_calibration.end(), calibration.begin(), calibration.end());
     }
 
     void d500_auto_calibrated::reset_to_factory_calibration() const
