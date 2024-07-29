@@ -113,7 +113,7 @@ std::vector<uint8_t> d500_debug_protocol_calibration_engine::get_calibration_tab
     if (calib.size() < sizeof(ds::table_header) + header->table_size)
         throw std::runtime_error("GET_HKR_CONFIG_TABLE response is smaller then expected table size!");
 
-    // Backwards compalibility dictates that we will return the table without the header, but we need the header
+    // Backwards compatibility dictates that we will return the table without the header, but we need the header
     // details like versions to later set back the table. Save it at the start of _curr_calibration.
     current_calibration.assign(calib.begin(), calib.begin() + sizeof(ds::table_header));
 
