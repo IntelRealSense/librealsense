@@ -142,6 +142,19 @@ PYBIND11_MODULE(NAME, m) {
            py::arg( "nested-string" ) = "",
            py::arg( "logger" ) = LIBREALSENSE_ELPP_ID );
 
+    m.def(
+        "json_dump",  // pretty print, using our own output; also available in pyrsutils - here for convenience
+        []( rsutils::json const & j, size_t indent )
+        {
+            std::ostringstream os;
+            if( indent )
+                os << std::setw( indent );
+            os << j;
+            return os.str();
+        },
+        py::arg( "json" ),
+        py::arg( "indent" ) = 4 );
+
     using realdds::dds_guid;
     py::class_< dds_guid >( m, "guid" )
         .def( py::init<>() )
