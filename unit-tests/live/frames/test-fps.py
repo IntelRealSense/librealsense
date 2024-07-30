@@ -89,8 +89,9 @@ for i in range(len(tested_fps)):
                   and p.format() == rs.format.z16
                   # On D585S the operational depth resolution is 1280x720
                   # 1280x960 is also available but only allowed in service mode
-                  and (("D585S" in camera_name and p.as_video_stream_profile().height() == 720)  or (product_line == "D400")))
-                  
+                  # 60 fps is only available in bypass mode
+                  and ((p.as_video_stream_profile().height() == 720 and p.fps() != 60) if "D585S" in camera_name else True))
+
     except StopIteration:
         log.i("Requested fps: {:.1f} [Hz], not supported".format(requested_fps))
     else:
