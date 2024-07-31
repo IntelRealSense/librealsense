@@ -1121,7 +1121,8 @@ namespace rs2
             "Contious frame drops",
             "Sustained frame drops",
             "Frozen depth image (CRC recurrence)",
-            "FTTI miss (data latency)"
+            "FTTI miss (data latency)",
+            "Safety & Security check failure"
         };
         descriptions[RS2_FRAME_METADATA_SAFETY_HARA_EVENTS] = "HaRa events:" + get_meaning(RS2_FRAME_METADATA_SAFETY_HARA_EVENTS, meanings, "No HaRa events identified");
         
@@ -1187,6 +1188,18 @@ namespace rs2
             "Error signal on / off",
         };
         descriptions[RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO] = "Non-FuSa GPIO:" + get_meaning(RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO, meanings, "OK");
+
+        meanings =
+        {
+            "Unit is Locked",
+            "OHM Serial Numbers check is valid",
+            "APM Serial Numbers check is valid",
+            "TBD",
+            "Depth calibration data is valid",
+            "Triggered calibration result is valid",
+            "Triggered calibration data is valid"
+        };
+        descriptions[RS2_FRAME_METADATA_SAFETY_SOC_SAFETY_AND_SECURITY] = "Soc Safety and Security:" + get_meaning(RS2_FRAME_METADATA_SAFETY_SOC_SAFETY_AND_SECURITY, meanings, "None");
     }
 
     std::string stream_model::adapt_d585S_metadata_name( const std::string & name ) const
@@ -1272,6 +1285,7 @@ namespace rs2
                 RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_STATUS_BITMASK,
                 RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_INFO_BIST_STATUS,
                 RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO,
+                RS2_FRAME_METADATA_SAFETY_SOC_SAFETY_AND_SECURITY
             });
 
         if (show_in_hex.find(md_val) != show_in_hex.end())
