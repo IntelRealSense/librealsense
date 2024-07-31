@@ -28,7 +28,7 @@ Updating device FW:
 
 Firmware update started. Please don't disconnect device!
 
-Firmware update progress: 0[%]
+Firmware update progress: 100[%]
 
 Firmware update done
 
@@ -50,14 +50,14 @@ In such case we can use the recovery flag and run ` rs-fw-update -r -f Signed_Im
 An example for the expected output is:
 
 ```
-Update to FW: C:\Users\nzini\Downloads\d400_series_fw_5_15_1_0\Signed_Image_UVC_5_15_1_0.bin
+Update to FW: Signed_Image_UVC_5_15_1_0.bin
 
 Recovering device:
 [0ADB] Intel RealSense D4XX Recovery, update serial number: 039223050231, firmware version: 5.16.0.1
 
 Firmware update started. Please don't disconnect device!
 
-Firmware update progress: 0[%]
+Firmware update progress: 100[%]
 
 Firmware update done
 Waiting for new device...
