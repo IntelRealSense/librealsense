@@ -13,55 +13,56 @@ After installing `librealsense` run ` rs-fw-update -l` to launch the tool and pr
 An example for output for a D415 camera is:
 
 ```
-connected devices:
-1) Name: Intel RealSense D415, serial number: 725112060411, ASIC serial number: 012345678901, firmware version: 05.11.01.100, USB type: 3.2
+Connected devices:
+1) [USB] Intel RealSense D435IF s/n 038322070306, update serial number: 039223050231, firmware version: 5.15.1
 ```
 
-Then we will provid the serial number to identify the device together with the path to firmware file that we want to update ` rs-fw-update -s 725112060411 -f Signed_Image_UVC_5_11_6_250.bin`.
+Then we will provid the serial number to identify the device together with the path to firmware file that we want to update ` rs-fw-update -s 038322070306 -f Signed_Image_UVC_5_15_1_0.bin`.
 An example for the expected output is:
 
 ```
-search for device with serial number: 725112060411
+Search for device with serial number: 038322070306
 
-update to FW: Signed_Image_UVC_5_11_6_250.bin
+Updating device FW:
+[USB] Intel RealSense D435IF s/n 038322070306, update serial number: 039223050231, firmware version: 5.15.1
 
-updating device:
-Name: Intel RealSense D415, serial number: 725112060411, ASIC serial number: 012345678901, firmware version: 05.11.01.100, USB type: 3.2
+Firmware update started. Please don't disconnect device!
 
-firmware update started
+Firmware update progress: 0[%]
 
-firmware update progress: 100[%]
+Firmware update done
 
-firmware update done
+Waiting for device to reconnect...
 
-device 725112060411 successfully updated to FW: 05.11.06.250
+Device 038322070306 successfully updated to FW: 5.15.1
 ```
 
-In case only one camera is connected you can simply run ` rs-fw-update -f Signed_Image_UVC_5_11_6_250.bin`.
+In case only one camera is connected you can simply run ` rs-fw-update -f Signed_Image_UVC_5_15_1_0.bin`.
 
 A camera/s might be in a recovery state, in such case listing the devices will output the following:
 
 ```
-connected devices:
-1) Name: Intel RealSense D4xx Recovery, serial number: unknown, ASIC serial number: 012345678901, firmware version: unknown, USB type: unknown
+Connected devices:
+1) [0ADB] Intel RealSense D4XX Recovery, update serial number: 039223050231, firmware version: 5.16.0.1
 ```
 
-In such case we can use the recovery flag and run ` rs-fw-update -r -f Signed_Image_UVC_5_11_6_250.bin`
+In such case we can use the recovery flag and run ` rs-fw-update -r -f Signed_Image_UVC_5_15_1_0.bin`
 An example for the expected output is:
 
 ```
-update to FW: Signed_Image_UVC_5_11_6_250.bin
+Update to FW: C:\Users\nzini\Downloads\d400_series_fw_5_15_1_0\Signed_Image_UVC_5_15_1_0.bin
 
-recovering device:
-Name: Intel RealSense D4xx Recovery, serial number: unknown, ASIC serial number: 012345678901, firmware version: unknown, USB type: unknown
+Recovering device:
+[0ADB] Intel RealSense D4XX Recovery, update serial number: 039223050231, firmware version: 5.16.0.1
 
-firmware update started
+Firmware update started. Please don't disconnect device!
 
-firmware update progress: 100[%]
+Firmware update progress: 0[%]
 
-firmware update done
+Firmware update done
+Waiting for new device...
 
-recovery done
+Recovery done
 
 ```
 
@@ -69,11 +70,16 @@ recovery done
 
 |Flag   |Description   |
 |---|---|
-|`-s`| The serial number of the device to be update, this is mandetory if more than one device is connected|
+|`--sw-only`|Show only software devices (playback, DDS, etc. -- but not USB/HID/etc.)|
+|`-b`|Create a backup to the camera flash and saved it to the given path|
+|`-s`|The serial number of the device to be update, this is mandetory if more than one device is connected|
 |`-f`|Path of the firmware image file|
+|`-u`|Update unsigned firmware, available only for unlocked cameras|
 |`-r`|Recover all connected devices which are in recovery mode|
 |`-l`|List all available devices and exits|
-|`-v`|Displays version information and exits|
+|`--debug`|Turn on LibRS debug logs|
+|`--`|Ignores the rest of the labeled arguments following this flag.|
+|`--version`|Displays version information and exits|
 |`-h`|Displays usage information and exits|
 | None| List supported streaming modes|
 
