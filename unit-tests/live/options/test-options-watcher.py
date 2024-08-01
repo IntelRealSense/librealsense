@@ -8,7 +8,7 @@ from rspy import test
 from rspy import log
 import time
 
-dev = test.find_first_device_or_exit()
+dev, _ = test.find_first_device_or_exit()
 depth_sensor = dev.first_depth_sensor()
 
 changed_options = 0

@@ -362,7 +362,7 @@ void log_callback_end( uint32_t fps,
     {
         auto it = _camera_info.find(info);
         if (it == _camera_info.end())
-            throw invalid_value_exception("Selected camera info is not supported for this camera!");
+            throw invalid_value_exception("Selected camera info: " + std::string(rs2_camera_info_to_string(info)) + ", is not supported for this camera!");
 
         return it->second;
     }

@@ -116,8 +116,8 @@ rsdds_device_factory::rsdds_device_factory( std::shared_ptr< context > const & c
             // Max bytes to be sent to network per period; [1, 2147483647]; default=0 -> no limit.
             // -> We allow 256 buffers, each the size of the UDP max-message-size
             dfu_flow_control->max_bytes_per_period = 256 * 1470; // qos.transport().user_transports.front()->maxMessageSize;
-            // -> Every 100ms
-            dfu_flow_control->period_ms = 100;  // default=100
+            // -> Every 250ms
+            dfu_flow_control->period_ms = 250;  // default=100
             // Further override with settings from device/dfu
             realdds::override_flow_controller_from_json( *dfu_flow_control, dds_settings.nested( "device", "dfu" ) );
             qos.flow_controllers().push_back( dfu_flow_control );

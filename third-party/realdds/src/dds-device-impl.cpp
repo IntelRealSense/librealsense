@@ -307,7 +307,7 @@ void dds_device::impl::on_query_options( json const & j, dds_sample const & )
     if( ! option_values.is_object() )
         throw std::runtime_error( "missing option-values" );
 
-    //LOG_DEBUG( "[" << debug_name() << "] got query-options: " << option_values.dump(4) );
+    //LOG_DEBUG( "[" << debug_name() << "] got query-options: " << std::setw( 4 ) << option_values );
     for( auto it = option_values.begin(); it != option_values.end(); ++it )
     {
         if( it->is_object() )

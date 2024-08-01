@@ -94,11 +94,11 @@ def add_slash_before_spaces(links):
     Because spaces in links can't been read properly from cmake files.
     """
     if links and type(links) is str:
-        return links.replace(' ', '\ ')
+        return links.replace( ' ', r'\ ' )
     if links and type(links) is list:
         # Build list comprehension of strings with backslash before spaces in case the link.
         # We can get a ${var} so, when we get this we return as is
-        return [link.replace(' ', '\ ') if link[0] != '$' else link for link in links]
+        return [link.replace( ' ', r'\ ' ) if link[0] != '$' else link for link in links]
     else:
         raise TypeError
 
@@ -209,7 +209,7 @@ def process_cpp( dir, builddir ):
     if regex:
         pattern = re.compile( regex )
     log.d( 'looking for C++ files in:', dir )
-    for f in file.find( dir, '(^|/)test-.*\.cpp$' ):
+    for f in file.find( dir, r'(^|/)test-.*\.cpp$' ):
         testdir = os.path.splitext( f )[0]                          # "log/internal/test-all"  <-  "log/internal/test-all.cpp"
         testparent = os.path.dirname(testdir)                       # "log/internal"
         # We need the project name unique: keep the path but make it nicer:
@@ -257,7 +257,7 @@ def process_cpp( dir, builddir ):
             static = False
             custom_main = False
             dependencies = 'realsense2'
-            for cmake_directive in file.grep( '^//#cmake:\s*', dir + '/' + f ):
+            for cmake_directive in file.grep( r'^//#cmake:\s*', dir + '/' + f ):
                 m = cmake_directive['match']
                 index = cmake_directive['index']
                 cmd, *rest = cmake_directive['line'][m.end():].split()
@@ -281,17 +281,17 @@ def process_cpp( dir, builddir ):
                                 includes = find_includes( abs_file, includes, dependencies )
                 elif cmd == 'static!':
                     if len(rest):
-                        log.e( f + '+' + str(index) + ': unexpected arguments past \'' + cmd + '\'' )
+                        log.e( f"{f}+{index}: unexpected arguments past '{cmd}'" )
                     elif shared:
-                        log.e( f + '+' + str(index) + ': \'' + cmd + '\' mutually exclusive with \'shared!\'' )
+                        log.e( f"{f}+{index}: '{cmd}' mutually exclusive with 'shared!'" )
                     else:
                         log.d( 'static!' )
                         static = True
                 elif cmd == 'shared!':
                     if len(rest):
-                        log.e( f + '+' + str(index) + ': unexpected arguments past \'' + cmd + '\'' )
+                        log.e( f"{f}+{index}: unexpected arguments past '{cmd}'" )
                     elif static:
-                        log.e( f + '+' + str(index) + ': \'' + cmd + '\' mutually exclusive with \'static!\'' )
+                        log.e( f"{f}+{index}: '{cmd}' mutually exclusive with 'static!'" )
                     else:
                         log.d( 'shared!' )
                         shared = True
@@ -300,7 +300,7 @@ def process_cpp( dir, builddir ):
                 elif cmd == 'dependencies':
                     dependencies = ' '.join( rest )
                 else:
-                    log.e( f + '+' + str(index) + ': unknown cmd \'' + cmd + '\' (should be \'add-file\', \'static!\', or \'shared!\')' )
+                    log.e( f"{f}+{index}: unknown cmd '{cmd}' (should be 'add-file', 'static!', or 'shared!')" )
 
             # Add any includes specified in the .cpp that we can find
             includes = find_includes( dir + '/' + f, includes, dependencies )

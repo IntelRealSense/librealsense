@@ -12,7 +12,7 @@ from rspy import test
 
 test.start("Testing USB type can be detected")
 
-dev = test.find_first_device_or_exit()
+dev, _ = test.find_first_device_or_exit()
 
 supports = dev.supports(rs.camera_info.usb_type_descriptor)
 test.check(supports)

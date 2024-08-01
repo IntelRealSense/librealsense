@@ -162,6 +162,7 @@ try
     CmdLine cmd( "librealsense rs-dds-config tool", ' ', RS2_API_FULL_VERSION_STR );
     SwitchArg debug_arg( "", "debug", "Enable debug (-D-) output; by default only errors (-E-) are shown" );
     SwitchArg quiet_arg( "", "quiet", "Suppress regular informational (-I-) messages" );
+    SwitchArg reset_arg( "", "reset", "Hardware reset without making any changes" );
     SwitchArg no_reset_arg( "", "no-reset", "Do not hardware reset after changes are made" );
     SwitchArg golden_arg( "", "golden", "Show R/O golden values vs. current; mutually exclusive with any changes" );
     SwitchArg factory_reset_arg( "", "factory-reset", "Reset settings back to the --golden values" );
@@ -180,15 +181,13 @@ try
     ValueArg< std::string > dhcp_arg( "", "dhcp",
                                       "DHCP dynamic IP discovery 'on' or 'off'",
                                       false, "on", "on/off" );
-    ValueArg< uint32_t > dhcp_timeout_arg( "", "dhcp-timout",
+    ValueArg< uint32_t > dhcp_timeout_arg( "", "dhcp-timeout",
                                            "Seconds before DHCP times out and falls back to a static IP",
                                            false, 30, "seconds" );
-    ValueArg< uint32_t > link_timeout_arg( "", "link-timout",
+    ValueArg< uint32_t > link_timeout_arg( "", "link-timeout",
                                            "Milliseconds before --eth-first link times out and falls back to USB",
                                            false, 4000, "milliseconds" );
-    ValueArg< uint8_t > domain_id_arg( "", "domain-id",
-                                       "DDS Domain ID to use (default is 0)",
-                                       false, 0, "0-232" );
+    ValueArg< int > domain_id_arg( "", "domain-id", "DDS Domain ID to use (default is 0)", false, 0, "0-232" );
     SwitchArg usb_first_arg( "", "usb-first", "Prioritize USB before Ethernet" );
     SwitchArg eth_first_arg( "", "eth-first", "Prioritize Ethernet and fall back to USB after link timeout" );
     SwitchArg dynamic_priority_arg( "", "dynamic-priority", "Dynamically prioritize the last-working connection method (the default)" );
@@ -207,6 +206,7 @@ try
     cmd.add( usb_first_arg );
     cmd.add( factory_reset_arg );
     cmd.add( golden_arg );
+    cmd.add( reset_arg );
     cmd.add( sn_arg );
     cmd.add( quiet_arg );
     cmd.add( debug_arg );
@@ -249,13 +249,22 @@ try
     INFO( "Device: " << device.get_description() );
 
     eth_config requested( current );
-    if( golden || factory_reset_arg.isSet() )
+    if( golden || factory_reset_arg.isSet() || reset_arg.isSet() )
     {
         if( ip_arg.isSet() || mask_arg.isSet() || usb_first_arg.isSet() || eth_first_arg.isSet()
-            || dynamic_priority_arg.isSet() || link_timeout_arg.isSet() || dhcp_arg.isSet() || dhcp_timeout_arg.isSet()
-            || golden == factory_reset_arg.isSet() )
+            || dynamic_priority_arg.isSet() || link_timeout_arg.isSet() || dhcp_arg.isSet() || dhcp_timeout_arg.isSet() )
         {
-            throw std::runtime_error( "Cannot change any settings with --golden" );
+            throw std::runtime_error( "Cannot change any settings with --golden, --factory-reset, or --reset" );
+        }
+        if( golden + factory_reset_arg.isSet() + reset_arg.isSet() > 1 )
+        {
+            throw std::runtime_error( "Mutually exclusive: --golden, --factory-reset, and --reset" );
+        }
+        if( reset_arg.isSet() )
+        {
+            INFO( "Resetting..." );
+            device.hardware_reset();
+            return EXIT_SUCCESS;
         }
         if( factory_reset_arg.isSet() )
         {
@@ -275,9 +284,9 @@ try
         if( ip_arg.isSet() )
             requested.configured.ip = ip_address( ip_arg.getValue(), rsutils::throw_if_not_valid );
         if( mask_arg.isSet() )
-            requested.configured.netmask = ip_address( ip_arg.getValue(), rsutils::throw_if_not_valid );
+            requested.configured.netmask = ip_address( mask_arg.getValue(), rsutils::throw_if_not_valid );
         if( gateway_arg.isSet() )
-            requested.configured.gateway = ip_address( ip_arg.getValue(), rsutils::throw_if_not_valid );
+            requested.configured.gateway = ip_address( gateway_arg.getValue(), rsutils::throw_if_not_valid );
         if( usb_first_arg.isSet() + eth_first_arg.isSet() + dynamic_priority_arg.isSet() > 1 )
             throw std::invalid_argument( "--usb-first, --eth-first, and --dynamic-priority are mutually exclusive" );
         if( usb_first_arg.isSet() )
@@ -302,7 +311,7 @@ try
             requested.dhcp.timeout = dhcp_timeout_arg.getValue();
         if( domain_id_arg.isSet() )
         {
-            if( domain_id_arg.getValue() > 232 )
+            if( domain_id_arg.getValue() < 0 || domain_id_arg.getValue() > 232 )
                 throw std::invalid_argument( "--domain-id must be 0-232" );
             requested.dds.domain_id = domain_id_arg.getValue();
         }

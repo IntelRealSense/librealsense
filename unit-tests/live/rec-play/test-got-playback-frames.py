@@ -17,7 +17,7 @@ previous_color_frame_number = -1
 got_frames_rgb = False
 got_frames_depth = False
 
-dev = test.find_first_device_or_exit()
+dev, ctx = test.find_first_device_or_exit()
 depth_sensor = dev.first_depth_sensor()
 color_sensor = dev.first_color_sensor()
 
@@ -129,14 +129,14 @@ test.start("Trying to record and playback using pipeline interface")
 cfg = pipeline = None
 try:
     # creating a pipeline and recording to a file
-    pipeline = rs.pipeline()
+    pipeline = rs.pipeline(ctx)
     cfg = rs.config()
     cfg.enable_record_to_file( file_name )
     pipeline.start( cfg )
     time.sleep(3)
     pipeline.stop()
     # we create a new pipeline and use it to playback from the file we just recoded to
-    pipeline = rs.pipeline()
+    pipeline = rs.pipeline(ctx)
     cfg = rs.config()
     cfg.enable_device_from_file(file_name)
     pipeline.start(cfg)
@@ -155,7 +155,7 @@ test.start("Trying to record and playback using sensor interface")
 
 recorder = depth_sensor = color_sensor = playback = None
 try:
-    dev = test.find_first_device_or_exit()
+    dev, ctx = test.find_first_device_or_exit()
     recorder = rs.recorder( file_name, dev )
     depth_sensor = dev.first_depth_sensor()
     color_sensor = dev.first_color_sensor()
@@ -182,7 +182,6 @@ try:
     test.check( len(color_filters) > 0 )
     test.check( len(depth_filters) > 0 )
 
-    ctx = rs.context()
     playback = ctx.load_device( file_name )
 
     depth_sensor = playback.first_depth_sensor()
@@ -226,7 +225,7 @@ test.start("Trying to record and playback using sensor interface with syncer")
 
 try:
     sync = rs.syncer()
-    dev = test.find_first_device_or_exit()
+    dev, ctx = test.find_first_device_or_exit()
     recorder = rs.recorder( file_name, dev )
     depth_sensor = dev.first_depth_sensor()
     color_sensor = dev.first_color_sensor()
@@ -247,7 +246,6 @@ try:
     depth_sensor.stop()
     depth_sensor.close()
 
-    ctx = rs.context()
     playback = ctx.load_device( file_name )
 
     depth_sensor = playback.first_depth_sensor()

@@ -162,7 +162,7 @@ namespace librealsense
         const std::string & get_serial_number() const { return _serial_number; }
         std::string to_string(platform::usb_status state) const;
         std::string to_string(rs2_dfu_state state) const;
-        float compute_progress(float progress, float start, float end, float threshold) const;
+        virtual float compute_progress(float progress, float start, float end, float threshold) const;
 
         const int DEFAULT_TIMEOUT = 100;
         const int FW_UPDATE_INTERFACE_NUMBER = 0;

@@ -124,6 +124,11 @@ namespace librealsense
         return y;
     }
 
+
+    // Method update_samples_base
+    // Aim: This method is used in our code to update global timestamp.
+    // It updates the relative origin of the HW timestamp if it had a rewind,
+    // so that the global timestamp can be correctly computed
     bool CLinearCoefficients::update_samples_base(double x)
     {
         static const double max_device_time(pow(2, 32) * TIMESTAMP_USEC_TO_MSEC);
@@ -139,13 +144,13 @@ namespace librealsense
         LOG_DEBUG(__FUNCTION__ << "(" << base_x << ")");
 
         double a, b;
-        get_a_b(x+base_x, a, b);
+        get_a_b(x + base_x, a, b);
         for (auto &&sample : _last_values)
         {
             sample._x -= base_x;
         }
         _prev_time -= base_x;
-        _base_sample._y += a * base_x;
+        _base_sample._x -= base_x;
         return true;
     }
 

@@ -17,7 +17,7 @@ from rspy import tests_wrapper as tw
 test_iterations = 200
 gain_values = [16,74,132,190,248]
 
-dev = test.find_first_device_or_exit()
+dev, _ = test.find_first_device_or_exit()
 time.sleep( 3 ) # The device starts at D0 (Operational) state, allow time for it to get into idle state
 tw.start_wrapper( dev )
 
