@@ -67,7 +67,7 @@ app_config_json_str = '''
 # Tests
 #############################################################################################
 
-dev = test.find_first_device_or_exit()
+dev, _ = test.find_first_device_or_exit()
 safety_sensor = dev.first_safety_sensor()
 tw.start_wrapper(dev)
 

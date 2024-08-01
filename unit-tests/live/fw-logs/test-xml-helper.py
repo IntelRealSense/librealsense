@@ -10,7 +10,7 @@ from rspy import log, test
 import os
 import time
 
-dev = test.find_first_device_or_exit()
+dev, _ = test.find_first_device_or_exit()
 logger = rs.firmware_logger(dev)
 
 fw_version = dev.get_info( rs.camera_info.firmware_version )

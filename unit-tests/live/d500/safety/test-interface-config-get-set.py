@@ -133,7 +133,7 @@ def check_configurations_equal(first_config, second_config) :
 # Tests
 #############################################################################################
 
-dev = test.find_first_device_or_exit()
+dev, _ = test.find_first_device_or_exit()
 safety_sensor = dev.first_safety_sensor()
 tw.start_wrapper(dev)
 #############################################################################################
@@ -172,7 +172,7 @@ log.d( "sleep to give some time for the device to reconnect" )
 time.sleep( devices.MAX_ENUMERATION_TIME )
 
 log.d( "Fetching new device" )
-dev = test.find_first_device_or_exit()
+dev, _ = test.find_first_device_or_exit()
 safety_sensor = dev.first_safety_sensor()
 
 log.d( "Setting operational mode to service" )

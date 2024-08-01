@@ -43,7 +43,7 @@ def get_sensors_and_profiles(device):
     return sensor_profiles_arr
 
 
-dev = test.find_first_device_or_exit()
+dev, _ = test.find_first_device_or_exit()
 tests_wrapper.start_wrapper(dev)
 
 sensor_profiles_array = get_sensors_and_profiles(dev)

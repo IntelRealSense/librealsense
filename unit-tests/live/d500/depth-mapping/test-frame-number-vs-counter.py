@@ -22,7 +22,7 @@ def check_frame_number_equal_to_counter(frame):
 wait_for_frames_timer = Timer(MAX_TIME_TO_WAIT_FOR_FRAMES)
 
 test.start("checking frame number and frame counter are synchronized")
-dev = test.find_first_device_or_exit()
+dev, _ = test.find_first_device_or_exit()
 
 depth_mapping_sensor = next(s for s in dev.query_sensors() if s.get_info(rs.camera_info.name) == "Depth Mapping Camera")
 occupancy_stream_profile = next(p for p in depth_mapping_sensor.profiles if p.stream_type() == rs.stream.occupancy)

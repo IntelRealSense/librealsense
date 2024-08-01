@@ -6,7 +6,7 @@
 import pyrealsense2 as rs
 from rspy import test, log, tests_wrapper
 
-dev = test.find_first_device_or_exit()
+dev, _ = test.find_first_device_or_exit()
 depth_sensor = dev.first_depth_sensor()
 
 def get_all_advanced_controls():

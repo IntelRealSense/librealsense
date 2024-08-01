@@ -8,7 +8,7 @@ from rspy import test
 
 # This test verifies we read a 12 digits serial number from GVD, and it matches the SDK reported device serial number
 
-dev = test.find_first_device_or_exit()
+dev, _ = test.find_first_device_or_exit()
 dp_device = dev.as_debug_protocol()
 
 #############################################################################################
