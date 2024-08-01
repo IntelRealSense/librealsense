@@ -9,6 +9,7 @@
 #include <realdds/dds-device.h>
 #include <realdds/dds-time.h>
 #include <realdds/dds-sample.h>
+#include <realdds/dds-exceptions.h>
 
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/image-msg.h>
@@ -279,12 +280,19 @@ void dds_sensor_proxy::open( const stream_profiles & profiles )
         }
     }
 
-    if( source_profiles.size() > 0 )
+    try
     {
-        _dev->open( realdds_profiles );
-    }
+        if( source_profiles.size() > 0 )
+        {
+            _dev->open( realdds_profiles );
+        }
 
-    software_sensor::open( source_profiles );
+        software_sensor::open( source_profiles );
+    }
+    catch( realdds::dds_runtime_error const & e )
+    {
+        throw invalid_value_exception( e.what() );
+    }
 }
 
 
@@ -422,8 +430,9 @@ void dds_sensor_proxy::add_frame_metadata( frame * const f,
         if( f->additional_data.frame_number != f->additional_data.last_frame_number + 1
             && f->additional_data.last_frame_number )
         {
-            LOG_DEBUG( "frame drop? expecting " << f->additional_data.last_frame_number + 1 << "; got "
-                                                << f->additional_data.frame_number );
+            LOG_DEBUG( dds_md.nested( realdds::topics::metadata::key::stream_name ).string_ref_or_empty()
+                       << " frame drop? expecting " << f->additional_data.last_frame_number + 1 << "; got "
+                       << f->additional_data.frame_number );
         }
     }
     else
