@@ -7,7 +7,6 @@
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-option.h>
 #include <realdds/topics/device-info-msg.h>
-#include <realdds/topics/flexible-msg.h>
 
 #include <fastdds/rtps/common/Guid.h>
 
@@ -26,10 +25,6 @@ namespace realdds {
 class dds_topic_reader;
 class dds_topic_writer;
 class dds_subscriber;
-
-namespace topics {
-class flexible_msg;
-}
 
 
 class dds_device::impl
@@ -86,7 +81,7 @@ public:
 
     void open( const dds_stream_profiles & profiles );
 
-    void write_control_message( topics::flexible_msg &&, rsutils::json * reply = nullptr );
+    void write_control_message( rsutils::json const &, rsutils::json * reply = nullptr );
 
     void set_option_value( const std::shared_ptr< dds_option > & option, rsutils::json new_value );
     rsutils::json query_option_value( const std::shared_ptr< dds_option > & option );

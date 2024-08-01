@@ -364,12 +364,19 @@ void dds_device::impl::on_log( json const & j, dds_sample const & )
             if( stype.length() != 1 || ! strchr( "EWID", stype[0] ) )
                 throw std::runtime_error( "type not one of 'EWID'" );
             char const type = stype[0];
-            auto const & text = entry[2].string_ref();
+            auto const & text_s = entry[2].string_ref();
+            rsutils::string::slice text( text_s );
+            if( text.length() && text.back() == '\n' )
+                text = { text.begin(), text.end() - 1 };
             auto const & data = entry.size() > 3 ? entry[3] : rsutils::null_json;
 
-            if( ! _on_device_log.raise( timestamp, type, text, data ) )
-                LOG_DEBUG( "[" << debug_name() << "][" << timestamp << "][" << type << "] " << text
-                               << " [" << data << "]" );
+            if( ! _on_device_log.raise( timestamp, type, text_s, data ) )
+            {
+                if( data.is_null() )
+                    LOG_DEBUG( "[" << debug_name() << "][" << timestamp << "][" << type << "] " << text );
+                else
+                    LOG_DEBUG( "[" << debug_name() << "][" << timestamp << "][" << type << "] " << text << " [" << data << "]" );
+            }
         }
         catch( std::exception const & e )
         {
@@ -445,10 +452,10 @@ json dds_device::impl::query_option_value( const std::shared_ptr< dds_option > &
 }
 
 
-void dds_device::impl::write_control_message( topics::flexible_msg && msg, json * reply )
+void dds_device::impl::write_control_message( json const & j, json * reply )
 {
     assert( _control_writer != nullptr );
-    auto this_sequence_number = std::move( msg ).write_to( *_control_writer );
+    auto this_sequence_number = topics::flexible_msg( j ).write_to( *_control_writer );
     if( reply )
     {
         std::unique_lock< std::mutex > lock( _replies_mutex );
@@ -462,7 +469,7 @@ void dds_device::impl::write_control_message( topics::flexible_msg && msg, json 
                                         return true;
                                     } ) )
         {
-            DDS_THROW( runtime_error, "timeout waiting for reply #" << this_sequence_number );
+            DDS_THROW( runtime_error, "timeout waiting for reply #" << this_sequence_number << ": " << j );
         }
         //LOG_DEBUG( "got reply: " << actual_reply );
         *reply = std::move( actual_reply );
