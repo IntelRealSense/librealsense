@@ -2620,11 +2620,11 @@ namespace rs2
 
                         std::vector<rs2_option> so_ordered;
 
-                        for (auto const & id_model : supported_options)
+                        for( auto const id_model : sub->supported_options )
                         {
-                            auto it = find( color_options.begin(), color_options.end(), id_model.first );
+                            auto it = find( color_options.begin(), color_options.end(), id_model );
                             if (it == color_options.end())
-                                so_ordered.push_back( id_model.first );
+                                so_ordered.push_back( id_model );
                         }
 
                         std::for_each( color_options.begin(),
