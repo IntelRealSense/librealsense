@@ -718,8 +718,10 @@ namespace librealsense
             static_cast<int>(d500_calibration_table_id::stream_pipe_config_id),
             static_cast<int>(d500_calib_type::d500_calib_dynamic));
         auto res = _hw_monitor->send(cmd);
-        uint32_t val = *reinterpret_cast<uint32_t*>(res.data());
-        return val == 1;
+        if (res.size() != sizeof(d500_stream_pipe_config_table))
+            throw std::runtime_error("Stream Config table has unexpected length");
+        auto stream_pipe_config_table = *reinterpret_cast<d500_stream_pipe_config_table*>(res.data());
+        return stream_pipe_config_table.is_depth_symmetrization_enabled == 1;
     }
     
     void d500_device::get_gvd_details(const std::vector<uint8_t>& gvd_buff, ds::d500_gvd_parsed_fields* parsed_fields) const

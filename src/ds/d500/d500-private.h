@@ -169,7 +169,14 @@ namespace librealsense
         rs2_intrinsics get_d500_color_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         pose get_d500_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
 
-
+        struct d500_stream_pipe_config_table
+        {
+            table_header    header;
+            uint8_t         is_depth_symmetrization_enabled;
+            uint8_t         is_color_symmetrization_enabled;
+            uint8_t         is_depth_vertical_alignment_enabled;
+            uint8_t         reserved[237];
+        };
 
         enum class d500_calib_location
         {
