@@ -714,7 +714,7 @@ namespace librealsense
     {
         using namespace ds;
         command cmd(GET_HKR_CONFIG_TABLE,
-            static_cast<int>(d500_calib_location::d500_calib_flash_memory),
+            static_cast<int>(d500_calib_location::d500_calib_ram_memory),
             static_cast<int>(d500_calibration_table_id::stream_pipe_config_id),
             static_cast<int>(d500_calib_type::d500_calib_dynamic));
         auto res = _hw_monitor->send(cmd);
