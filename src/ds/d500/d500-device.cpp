@@ -712,7 +712,11 @@ namespace librealsense
 
     bool d500_device::check_symmetrization_enabled() const
     {
-        command cmd{ ds::MRD, 0x80000004, 0x80000008 };
+        using namespace ds;
+        command cmd(GET_HKR_CONFIG_TABLE,
+            static_cast<int>(d500_calib_location::d500_calib_flash_memory),
+            static_cast<int>(d500_calibration_table_id::stream_pipe_config_id),
+            static_cast<int>(d500_calib_type::d500_calib_dynamic));
         auto res = _hw_monitor->send(cmd);
         uint32_t val = *reinterpret_cast<uint32_t*>(res.data());
         return val == 1;
