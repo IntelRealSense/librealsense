@@ -144,22 +144,11 @@ public:
             auto& devices = g.first;
             auto& hids = g.second;
 
-            bool all_sensors_present = mi_present(devices, 0);
+            bool is_mi_0_present = mi_present(devices, 0);
 
             // Device with multi sensors can be enabled only if all sensors (RGB + Depth) are present
             auto is_pid_of_multisensor_device = [](int pid) { return std::find(std::begin(ds::d500_multi_sensors_pid), 
                 std::end(ds::d500_multi_sensors_pid), pid) != std::end(ds::d500_multi_sensors_pid); };
-            bool is_device_multisensor = false;
-            for (auto&& uvc : devices)
-            {
-                if (is_pid_of_multisensor_device(uvc.pid))
-                    is_device_multisensor = true;
-            }
-
-            if(is_device_multisensor)
-            {
-                all_sensors_present = all_sensors_present && mi_present(devices, 3);
-            }
 
 
 #if !defined(__APPLE__) // Not supported by macos
@@ -171,16 +160,9 @@ public:
                 if (is_pid_of_hid_sensor_device(uvc.pid))
                     is_device_hid_sensor = true;
             }
-
-            // Device with hids can be enabled only if both hids (gyro and accelerometer) are present
-            // Assuming that hids amount of 2 and above guarantee that gyro and accelerometer are present
-            if (is_device_hid_sensor)
-            {
-                all_sensors_present &= (hids.size() >= 2);
-            }
 #endif
 
-            if (!devices.empty() && all_sensors_present)
+            if (!devices.empty() && is_mi_0_present)
             {
                 platform::usb_device_info hwm;
 
