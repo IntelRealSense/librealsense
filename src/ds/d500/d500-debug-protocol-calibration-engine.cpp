@@ -154,6 +154,9 @@ std::string d500_debug_protocol_calibration_engine::get_calibration_config() con
     // send command to device and get response (calibration config entry + header)
     std::vector< uint8_t > response = _dev->send_receive_raw_data(cmd);
 
+    // slicing 4 first bytes - opcode
+    response.erase(response.begin(), response.begin() + 4);
+
     if (response.size() < sizeof(calibration_config_with_header))
     {
         throw io_exception(rsutils::string::from() << "Calibration Config Read Failed");
