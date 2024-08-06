@@ -1252,7 +1252,10 @@ namespace rs2
 
             //Store metric environment
             csv << "\nEnvironment:\nPlane-Fit_distance_mm," << (_metrics->_plane_fit ? std::to_string(_metrics->_latest_metrics.distance) : "N/A") << std::endl;
-            csv << "Ground-Truth_Distance_mm," << (_metrics->_use_gt ? std::to_string(_metrics->_ground_truth_mm ) : "N/A") << std::endl;
+            {
+                std::lock_guard< std::mutex > lock( _metrics->_m );
+                csv << "Ground-Truth_Distance_mm," << (_metrics->_use_gt ? std::to_string(_metrics->_ground_truth_mm ) : "N/A") << std::endl;
+            }
 
             // Generate columns header
             csv << "\nSample Id,Frame #,Timestamp (ms),";
