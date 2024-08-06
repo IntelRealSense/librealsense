@@ -38,6 +38,9 @@ void d500_debug_protocol_calibration_engine::update_triggered_calibration_status
     auto cmd = _dev->build_command(ds::GET_CALIB_STATUS);
     auto res = _dev->send_receive_raw_data(cmd);
 
+    if (res.size() < 4)
+        throw io_exception(rsutils::string::from() << "Triggered calibration status polling failure");
+
     // slicing 4 first bytes - opcode
     res.erase(res.begin(), res.begin() + 4);
     // checking size of received buffer
@@ -102,11 +105,11 @@ std::vector<uint8_t> d500_debug_protocol_calibration_engine::get_calibration_tab
     // sending command
     auto calib = _dev->send_receive_raw_data(cmd);
 
+    if (calib.size() < (sizeof(ds::table_header) + 4))
+        throw std::runtime_error("GET_HKR_CONFIG_TABLE response is smaller then calibration header!");
+
     // slicing 4 first bytes - opcode
     calib.erase(calib.begin(), calib.begin() + 4);
-
-    if (calib.size() < sizeof(ds::table_header))
-        throw std::runtime_error("GET_HKR_CONFIG_TABLE response is smaller then calibration header!");
 
     auto header = (ds::table_header*)(calib.data());
 
@@ -154,10 +157,13 @@ std::string d500_debug_protocol_calibration_engine::get_calibration_config() con
     // send command to device and get response (calibration config entry + header)
     std::vector< uint8_t > response = _dev->send_receive_raw_data(cmd);
 
-    if (response.size() < sizeof(calibration_config_with_header))
+    if (response.size() < (sizeof(calibration_config_with_header) + 4))
     {
         throw io_exception(rsutils::string::from() << "Calibration Config Read Failed");
     }
+
+    // slicing 4 first bytes - opcode
+    response.erase(response.begin(), response.begin() + 4);
 
     // check CRC before returning result
     auto computed_crc32 = rsutils::number::calc_crc32(response.data() + sizeof(librealsense::table_header),
