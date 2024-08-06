@@ -44,7 +44,7 @@ dds.debug( args.debug )
 
 max_sample_size = 1470                     # assuming ~1500 max packet size at destination IP stack
 flow_period_bytes = 256 * max_sample_size  # 256=quarter of number of buffers available at destination
-flow_period_ms = 100                       # how often to send
+flow_period_ms = 250                       # how often to send
 settings = {
     'flow-controllers': {
         'blob': {

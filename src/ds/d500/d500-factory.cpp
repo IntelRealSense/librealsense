@@ -7,6 +7,7 @@
 
 #include <src/core/matcher-factory.h>
 #include <src/proc/color-formats-converter.h>
+#include <src/core/advanced_mode.h>
 
 #include "d500-info.h"
 #include "d500-private.h"
@@ -21,7 +22,6 @@
 #include <src/ds/d500/d500-auto-calibration.h>
 
 #include <src/platform/platform-utils.h>
-#include <src/core/advanced_mode.h>
 
 #include "firmware_logger_device.h"
 #include "device-calibration.h"
@@ -155,7 +155,7 @@ namespace librealsense
         }
     };
     
-    class d555e_device
+class d555_device
     : public d500_active
     , public d500_color
     , public d500_motion
@@ -163,7 +163,7 @@ namespace librealsense
     , public extended_firmware_logger_device
 {
 public:
-    d555e_device( std::shared_ptr< const d500_info > dev_info )
+    d555_device( std::shared_ptr< const d500_info > dev_info )
         : device( dev_info )
         , backend_device( dev_info )
         , d500_device( dev_info )
@@ -238,8 +238,8 @@ public:
         auto pid = _group.uvc_devices.front().pid;
         switch( pid )
         {
-        case ds::D555E_PID:
-            return std::make_shared< d555e_device >( dev_info );
+        case ds::D555_PID:
+            return std::make_shared< d555_device >( dev_info );
         case ds::D585_PID:
             return std::make_shared<rs_d585_device>( dev_info );
         case ds::D585S_PID:

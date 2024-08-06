@@ -14,8 +14,8 @@ namespace librealsense
 
     namespace ds
     {
-        const uint16_t D555E_PID = 0x0B56;
-        const uint16_t D555E_RECOVERY_PID = 0x0ADE;
+        const uint16_t D555_PID = 0x0B56;
+        const uint16_t D555_RECOVERY_PID = 0x0ADE;
         const uint16_t D585S_RECOVERY_PID = 0x0ADD;
         const uint16_t D585_PID = 0x0B6A; // D585, D for depth
         const uint16_t D585S_PID = 0x0B6B; // D585S, S for safety
@@ -27,35 +27,35 @@ namespace librealsense
 
         // d500 Devices supported by the current version
         static const std::set<std::uint16_t> rs500_sku_pid = {
-            ds::D555E_PID,
-            ds::D585_PID,
-            ds::D585S_PID
+            D555_PID,
+            D585_PID,
+            D585S_PID
         };
 
         static const std::set<std::uint16_t> d500_multi_sensors_pid = {
-            ds::D555E_PID,
-            ds::D585_PID,
-            ds::D585S_PID
+            D555_PID,
+            D585_PID,
+            D585S_PID
         };
 
         static const std::set<std::uint16_t> d500_hid_sensors_pid = {
-            ds::D555E_PID,
-            ds::D585_PID,
-            ds::D585S_PID
+            D555_PID,
+            D585_PID,
+            D585S_PID
         };
 
         static const std::set<std::uint16_t> d500_hid_bmi_085_pid = {
-            ds::D555E_PID,
-            ds::D585_PID,
-            ds::D585S_PID
+            D555_PID,
+            D585_PID,
+            D585S_PID
         };
 
-        static const std::map<std::uint16_t, std::string> rs500_sku_names = {
-            { ds::D555E_PID,            "Intel RealSense D555e" },
-            { ds::D555E_RECOVERY_PID,   "Intel RealSense D555e Recovery" },
-            { ds::D585_PID,             "Intel RealSense D585" },
-            { ds::D585S_PID,            "Intel RealSense D585S" },
-            { ds::D585S_RECOVERY_PID,   "Intel RealSense D585S Recovery"}
+        static const std::map< std::uint16_t, std::string > rs500_sku_names = {
+            { D555_PID,          "Intel RealSense D555" },
+            { D555_RECOVERY_PID, "Intel RealSense D555 Recovery" },
+            { D585_PID,             "Intel RealSense D585" },
+            { D585S_PID,            "Intel RealSense D585S" },
+            { D585S_RECOVERY_PID,   "Intel RealSense D585S Recovery"}
         };
 
         //TODO

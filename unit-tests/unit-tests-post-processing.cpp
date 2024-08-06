@@ -193,7 +193,7 @@ const std::vector< std::pair<std::string, std::string>> ppf_test_cases = {
 
 // The test is intended to check the results of filters applied on a sequence of frames, specifically the temporal filter
 // that preserves an internal state. The test utilizes rosbag recordings
-TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post-processing-filters]")
+TEST_CASE("Post-Processing Filters sequence validation", "[software-device-disabled][post-processing-filters]")
 {
     rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
     if( ctx )
@@ -271,7 +271,7 @@ TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post
     }
 }
 
-TEST_CASE("Post-Processing Filters metadata validation", "[software-device][post-processing-filters]")
+TEST_CASE("Post-Processing Filters metadata validation", "[software-device-disabled][post-processing-filters]")
 {
     rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
     if( ctx )

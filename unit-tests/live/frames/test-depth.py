@@ -23,7 +23,7 @@ DEBUG_MODE = False
 DETAIL_LEVEL = 10
 FRAMES_TO_CHECK = 30
 
-dev = test.find_first_device_or_exit()
+dev, ctx = test.find_first_device_or_exit()
 tw.start_wrapper( dev )
 
 cfg = rs.config()
@@ -84,7 +84,7 @@ def frames_to_image(depth, color, save, display, laser_enabled):
 
 
 def get_frames(config, laser_enabled):
-    pipeline = rs.pipeline()
+    pipeline = rs.pipeline(ctx)
     pipeline_profile = pipeline.start(config)
 
     sensor = pipeline_profile.get_device().first_depth_sensor()

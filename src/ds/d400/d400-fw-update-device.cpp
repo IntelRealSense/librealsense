@@ -65,4 +65,8 @@ ds_d400_update_device::ds_d400_update_device(
 
         return rv.str();
     }
+    float ds_d400_update_device::compute_progress(float progress, float start, float end, float threshold) const
+    {
+        return (progress*100);
+    }
 }

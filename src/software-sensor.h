@@ -53,6 +53,10 @@ public:
     void set_metadata( rs2_frame_metadata_value key, rs2_metadata_type value );
     void erase_metadata( rs2_frame_metadata_value key );
 
+    // options_container
+public:
+    std::vector< rs2_option > get_supported_options() const override;
+
 protected:
     frame_interface * allocate_new_frame( rs2_extension, stream_profile_interface *, frame_additional_data && );
     frame_interface * allocate_new_video_frame( video_stream_profile_interface *, int stride, int bpp, frame_additional_data && );

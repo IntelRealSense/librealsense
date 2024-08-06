@@ -236,7 +236,7 @@ def get_app_config_table():
 # Tests
 #############################################################################################
 
-dev = test.find_first_device_or_exit()
+dev, _ = test.find_first_device_or_exit()
 hwm_dev = dev.as_debug_protocol()
 tw.start_wrapper(dev)
 

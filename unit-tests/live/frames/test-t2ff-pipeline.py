@@ -18,7 +18,7 @@ import platform
 
 
 # Set maximum delay for first frame according to product line
-dev = test.find_first_device_or_exit()
+dev, ctx = test.find_first_device_or_exit()
 
 # The device starts at D0 (Operational) state, allow time for it to get into idle state
 time.sleep( 3 )
@@ -35,7 +35,7 @@ else:
 
 
 def time_to_first_frame(config):
-    pipe = rs.pipeline()
+    pipe = rs.pipeline(ctx)
     start_call_stopwatch = Stopwatch()
     pipe.start(config)
     pipe.wait_for_frames()

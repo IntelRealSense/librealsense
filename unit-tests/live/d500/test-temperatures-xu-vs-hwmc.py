@@ -8,7 +8,7 @@ from rspy import test
 
 # This test checks that the same values of temperature are received whether XU command or HWM Command are used.
 
-dev = test.find_first_device_or_exit()
+dev, _ = test.find_first_device_or_exit()
 depth_sensor = dev.first_depth_sensor()
 dp_device = dev.as_debug_protocol()
 

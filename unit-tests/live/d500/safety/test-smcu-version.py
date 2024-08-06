@@ -17,7 +17,7 @@ with test.closure("Test to read SMCU Version from rsutils FW version, HWMC Comma
     versions_dict ={}
 
     # Find the first RealSense device or exit if not found
-    device = test.find_first_device_or_exit()
+    device, _ = test.find_first_device_or_exit()
 
     ########################  FW version using rs camera info  #######################
 

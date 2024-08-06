@@ -90,12 +90,17 @@ namespace rs2
         }
 
         // set depth preset as default preset, turn projector ON and depth AE ON
-        if (_sub->s->is <rs2::depth_sensor>())
+        if (_sub->s->supports(RS2_CAMERA_INFO_NAME) && 
+            (std::string(_sub->s->get_info(RS2_CAMERA_INFO_NAME)) == "Stereo Module"))
         {
             auto depth_sensor = _sub->s->as <rs2::depth_sensor>();
 
-            // set depth preset as default preset
-            set_option_if_needed<rs2::depth_sensor>(depth_sensor, RS2_OPTION_VISUAL_PRESET, 1);
+            // disabling the depth visual preset change for D555 - not needed
+            if (get_device_pid() != "0B56" && get_device_pid() != "DDS")
+            {
+                // set depth preset as default preset
+                set_option_if_needed<rs2::depth_sensor>(depth_sensor, RS2_OPTION_VISUAL_PRESET, 1);
+            }
 
             // turn projector ON
             set_option_if_needed<rs2::depth_sensor>(depth_sensor, RS2_OPTION_EMITTER_ENABLED, 1);
@@ -307,13 +312,13 @@ namespace rs2
     {
         ImGui::SetCursorScreenPos({ float(x + 10), float(y) });
         ImGui::Text("%s", "Calibration Aborting");
-        ImGui::SetCursorScreenPos({ float(x + 10), float(y + 50) });
+        ImGui::SetCursorScreenPos({ float(x + 10), float(y + 40) });
         ImGui::PushFont(win.get_large_font());
         std::string txt = rsutils::string::from() << textual_icons::stop;
         ImGui::Text("%s", txt.c_str());
         ImGui::PopFont();
 
-        ImGui::SetCursorScreenPos({ float(x + 40), float(y + 50) });
+        ImGui::SetCursorScreenPos({ float(x + 40), float(y + 40) });
         if (_has_abort_succeeded)
         {
             ImGui::Text("%s", "Camera Calibration Aborted Successfully");

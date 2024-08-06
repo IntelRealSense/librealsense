@@ -2676,11 +2676,11 @@ namespace rs2
 
                         std::vector<rs2_option> so_ordered;
 
-                        for (auto const & id_model : supported_options)
+                        for( auto const id_model : sub->supported_options )
                         {
-                            auto it = find( color_options.begin(), color_options.end(), id_model.first );
+                            auto it = find( color_options.begin(), color_options.end(), id_model );
                             if (it == color_options.end())
-                                so_ordered.push_back( id_model.first );
+                                so_ordered.push_back( id_model );
                         }
 
                         std::for_each( color_options.begin(),
@@ -3518,8 +3518,15 @@ namespace rs2
                     ImGui::SetTooltip("%s", tooltip.c_str());
                 }
 
-                bool is_d555 = dev.supports( RS2_CAMERA_INFO_PRODUCT_ID ) ? 
-                    std::string( dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID ) ) == "0B56" : false;
+                bool is_d555 = false;
+                
+                if (dev.supports(RS2_CAMERA_INFO_PRODUCT_ID))
+                {
+                    auto pid_str = std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
+                    if (pid_str == "0B56" || pid_str == "DDS")
+                        is_d555 = true;
+                }
+
                 if( is_d555 && ImGui::Selectable( "Focal Length Calibration" ) )
                 {
                     try

@@ -44,7 +44,7 @@ wait_for_frames_timer = Timer(MAX_TIME_TO_WAIT_FOR_FRAMES)
 ################# Checking global timestamp for depth ##################
 
 test.start("Checking global timestamp for depth")
-dev = test.find_first_device_or_exit()
+dev, _ = test.find_first_device_or_exit()
 depth_sensor = dev.first_depth_sensor()
 
 test.check(depth_sensor.supports(rs.option.global_time_enabled))

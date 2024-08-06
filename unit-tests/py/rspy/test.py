@@ -139,7 +139,7 @@ def find_first_device_or_exit():
     dev = c.devices[0]
     log.d( 'found', dev )
     log.d( 'in', rs )
-    return dev
+    return dev, c
 
 
 def find_devices_by_product_line_or_exit( product_line ):

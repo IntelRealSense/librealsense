@@ -13,13 +13,18 @@ aim of this script is to show how to use the triggered calibration api with safe
 and to check the improvement of the depth stream before / after the running of the calibration
 '''
 
+is_safety_camera = False
 
-def check_safety_camera_found(dev):
-    device_name = dev.get_info(rs.camera_info.name)
-    if device_name != "Intel RealSense D585S":
-        print("Safety Camera not connected - please check")
+def check_d500_camera_found(dev):
+    global is_safety_camera
+    product_line = dev.get_info(rs.camera_info.product_line)
+    if product_line != "D500":
+        print("Device is not D500 Product Line - please check")
+        exit(1)
     else:
-        print("Safety Camera found")
+	    if device_name != "Intel RealSense D585S":
+		    is_safety_camera = True
+        print("D500 Product Line Camera found")
 
 
 def compute_fill_rate(frame):
@@ -62,7 +67,7 @@ def stream_and_get_fill_rate():
 def build_header(new_calib_array):
     version_major = 0
     version_minor = 4
-    depth_table_id = 180  # 0xb4
+    depth_table_id = 0xb4
     depth_table_size = 496
     counter = 0
     test_cal_version = 0
@@ -166,35 +171,12 @@ def compare_results():
         print("Fill rate decreased by " + repr(delta_fill_rate_percentage) + "% !!!")
 
 
-def write_after_calib_to_device(calib_filename_after):
-    print("Uploading Calibration to device")
-    global dev
-    curr_path = os.path.dirname(os.path.realpath(__file__))
-    depth_cal_after_path = os.path.join(curr_path, calib_filename_after)
-    new_calib_array = np.fromfile(depth_cal_after_path, dtype=np.uint8)
-    hwm_dev = dev.as_debug_protocol()
-    set_calib_opcode = 0xa6
-    flash_mem_enum = 1
-    depth_calibration_id = 0xb4
-    d500_calib_dynamic = 0
-    header = build_header(new_calib_array)
-    list_header = list(header)
-    new_calib_with_header = np.hstack((header, new_calib_array))
-    cmd = hwm_dev.build_command(opcode=set_calib_opcode,
-                                param1=flash_mem_enum,
-                                param2=depth_calibration_id,
-                                param3=d500_calib_dynamic,
-                                data=new_calib_with_header)
-    ans = hwm_dev.send_and_receive_raw_data(cmd)
-    print("Calibration Uploaded to device")
-    return new_calib_array
-
-
 ctx = rs.context()
+time.sleep(2)
 dev = ctx.query_devices().front()
 
 # Check this device is Safety Camera
-check_safety_camera_found(dev)
+check_d500_camera_found(dev)
 
 # Stream and get Depth Fill Rate
 fill_rate_before = stream_and_get_fill_rate()
@@ -218,8 +200,9 @@ save_calib_to_file(calib_after, "depth_calib_after.bin")
 # is the same as before
 exit_if_calibrations_are_equal()
 
-# switching to service mode
-switch_device_to_service_mode(dev)
+# switching to service mode if safety camera
+if is_safety_camera:
+    switch_device_to_service_mode(dev) 
 
 # Set calibration from file - needed until the flash writing is implemented in HKR
 write_after_calib_to_device("depth_calib_after.bin")

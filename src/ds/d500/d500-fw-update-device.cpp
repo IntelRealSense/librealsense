@@ -158,4 +158,10 @@ ds_d500_update_device::ds_d500_update_device( std::shared_ptr< const device_info
         else
             std::this_thread::sleep_for(std::chrono::seconds(required_dfu_time));
     }
+    float ds_d500_update_device::compute_progress(float progress, float start, float end, float threshold) const
+    {
+        if (threshold < 1.f)
+            throw std::invalid_argument("Avoid division by zero");
+        return start + (ceil(progress * threshold) / threshold) * (end - start) / 100.f;
+    }
 }

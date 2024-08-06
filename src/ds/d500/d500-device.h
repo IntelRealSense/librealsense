@@ -9,11 +9,10 @@
 #include "core/debug.h"
 #include "global_timestamp_reader.h"
 #include "fw-update/fw-update-device-interface.h"
-#include "ds/d500/d500-auto-calibration.h"
-#include "ds/ds-options.h"
 
 #include "ds/ds-device-common.h"
 #include "backend-device.h"
+#include "d500-auto-calibration.h"
 
 #include <rsutils/lazy.h>
 

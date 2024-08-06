@@ -33,7 +33,7 @@ def frame_callback(frame):
 
 timer = Timer(5)
 
-device = test.find_first_device_or_exit()
+device, _ = test.find_first_device_or_exit()
 safety_sensor = device.first_safety_sensor()
 depth_sensor = device.first_depth_sensor()
 

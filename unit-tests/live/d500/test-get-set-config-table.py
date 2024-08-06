@@ -9,7 +9,7 @@ from rspy import test, log
 # D500 devices support an extended buffer (> 1 KB) on HWMC for reading / writing calibration tables.
 # This test only test the 'read' part as we don't want to ruin our calibration tables in the device.
 
-dev = test.find_first_device_or_exit()
+dev, _ = test.find_first_device_or_exit()
 dp_device = dev.as_debug_protocol()
 
 #############################################################################################
