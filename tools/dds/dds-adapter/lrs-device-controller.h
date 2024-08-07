@@ -39,6 +39,7 @@ public:
 
 private:
     std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_streams();
+    bool update_stream_trinsics( rsutils::json * p_changes = nullptr );
 
     void publish_frame_metadata( const rs2::frame & f, realdds::dds_time const & );
 

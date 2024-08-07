@@ -842,6 +842,28 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                 }
             } );
     }
+
+    if( auto ccd = _rs_dev.as< rs2::calibration_change_device >() )
+    {
+        ccd.register_calibration_change_callback(
+            [this]( rs2_calibration_status status )
+            {
+                if( status == RS2_CALIBRATION_SUCCESSFUL )
+                {
+                    json j = json::object( {
+                        { realdds::topics::notification::key::id,
+                          realdds::topics::notification::calibration_changed::id },
+                    } );
+                    bool have_changes = update_stream_trinsics( &j );
+                    if( have_changes )
+                    {
+                        LOG_INFO( "Calibration changes detected" );
+                        LOG_DEBUG( std::setw( 4 ) << j );
+                        _dds_device_server->publish_notification( std::move( j ) );
+                    }
+                }
+            } );
+    }
 }
 
 
@@ -1533,6 +1555,128 @@ bool lrs_device_controller::on_dfu_apply( rsutils::json const & control, rsutils
         .detach();
 
     return true;  // handled
+}
+
+
+bool lrs_device_controller::update_stream_trinsics( json * p_changes )
+{
+    // Returns true if any changes are detected
+    // If p_changes is not null, it should point to a json object which will be populated with stream-name:changes
+    // mappings.
+    if( p_changes && ! p_changes->is_object() )
+        throw std::runtime_error( "expecting a json object" );
+
+    bool have_changes = false;
+    std::map< std::string, std::set< realdds::video_intrinsics > > stream_name_to_video_intrinsics;
+
+    // Iterate over all profiles of all sensors and build appropriate dds_stream_servers
+    for( auto & name_sensor : _rs_sensors )
+    {
+        std::string const & sensor_name = name_sensor.first;
+        auto const & sensor = name_sensor.second;
+
+        auto const stream_profiles = sensor.get_stream_profiles();
+        std::for_each( stream_profiles.begin(),
+                       stream_profiles.end(),
+                       [&]( const rs2::stream_profile & sp )
+                       {
+                           std::string const stream_name = stream_name_from_rs2( sp );
+                           auto server_it = _stream_name_to_server.find( stream_name );
+                           if( server_it == _stream_name_to_server.end() )
+                           {
+                               LOG_DEBUG( "could not find server '" << stream_name << "'" );
+                               return;
+                           }
+                           auto const & server = server_it->second;
+
+                           // Create appropriate realdds::profile for each sensor profile and map to a stream
+                           if( auto const vsp = rs2::video_stream_profile( sp ) )
+                           {
+                               try
+                               {
+                                   auto intr = to_realdds( vsp.get_intrinsics() );
+                                   stream_name_to_video_intrinsics[stream_name].insert( intr );
+                               }
+                               catch( ... )
+                               {
+                               }  // Some profiles don't have intrinsics
+                           }
+                           else if( auto const msp = rs2::motion_stream_profile( sp ) )
+                           {
+                               auto motion_server = std::dynamic_pointer_cast< dds_motion_stream_server >( server );
+                               auto const intr = to_realdds( msp.get_motion_intrinsics() );
+                               if( RS2_STREAM_ACCEL == msp.stream_type() )
+                               {
+                                   if( motion_server->get_accel_intrinsics() != intr )
+                                   {
+                                       have_changes = true;
+                                       if( p_changes )
+                                       {
+                                           ( *p_changes )
+                                               [stream_name]
+                                               [realdds::topics::notification::calibration_changed::key::intrinsics]
+                                               [realdds::topics::notification::stream_options::intrinsics::key::accel]
+                                               = intr.to_json();
+                                       }
+                                       motion_server->set_accel_intrinsics( intr );
+                                   }
+                               }
+                               else if( motion_server->get_gyro_intrinsics() != intr )
+                               {
+                                   have_changes = true;
+                                   if( p_changes )
+                                   {
+                                       ( *p_changes )
+                                           [stream_name]
+                                           [realdds::topics::notification::calibration_changed::key::intrinsics]
+                                           [realdds::topics::notification::stream_options::intrinsics::key::gyro]
+                                           = intr.to_json();
+                                   }
+                                   motion_server->set_gyro_intrinsics( intr );
+                               }
+                           }
+                       } );
+    }
+
+    for( auto & name_intr : stream_name_to_video_intrinsics )
+    {
+        auto const & stream_name = name_intr.first;
+        auto const & server = _stream_name_to_server[stream_name];
+        if( auto video_server = std::dynamic_pointer_cast< dds_video_stream_server >( server ) )
+        {
+            auto & intr = name_intr.second;
+            if( video_server->get_intrinsics() != intr )
+            {
+                if( intr.size() != video_server->get_intrinsics().size() )
+                {
+                    LOG_ERROR( "unexpected change in number of intrinsics for '" << stream_name << "'" );
+                    continue;
+                }
+                have_changes = true;
+                if( p_changes )
+                {
+                    auto & j_intrinsics
+                        = ( *p_changes )[stream_name]
+                                        [realdds::topics::notification::calibration_changed::key::intrinsics];
+                    if( 1 == intr.size() )
+                    {
+                        // Use an object with a single intrinsic
+                        j_intrinsics = intr.begin()->to_json();
+                    }
+                    else
+                    {
+                        // Multiple intrinsics are available
+                        j_intrinsics = json::array();
+                        for( auto const & i : intr )
+                            j_intrinsics.push_back( i.to_json() );
+                    }
+                }
+                video_server->set_intrinsics( std::move( name_intr.second ) );
+            }
+        }
+    }
+
+    return have_changes;
 }
 
 
