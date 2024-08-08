@@ -36,7 +36,7 @@ public class FrameQueue extends LrsClass {
     }
 
     public FrameSet waitForFrames() {
-        return waitForFrames(5000);
+        return waitForFrames();
     }
 
     public FrameSet waitForFrames(int timeout) {

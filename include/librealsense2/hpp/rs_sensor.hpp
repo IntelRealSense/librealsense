@@ -99,7 +99,6 @@ namespace rs2
     };
 
 
-
     class sensor : public options
     {
     public:
@@ -213,18 +212,44 @@ namespace rs2
             error::handle(e);
         }
 
-
         /**
         * Retrieves the list of stream profiles supported by the sensor.
         * \return   list of stream profiles that given sensor can provide
         */
         std::vector<stream_profile> get_stream_profiles() const
         {
-            std::vector<stream_profile> results{};
+            std::vector<stream_profile> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_stream_profile_list> list(
                 rs2_get_stream_profiles(_sensor.get(), &e),
+                rs2_delete_stream_profiles_list);
+            error::handle(e);
+
+            auto size = rs2_get_stream_profiles_count(list.get(), &e);
+            error::handle(e);
+
+            for (auto i = 0; i < size; i++)
+            {
+                stream_profile profile(rs2_get_stream_profile(list.get(), i, &e));
+                error::handle(e);
+                results.push_back(profile);
+            }
+
+            return results;
+        }
+
+        /**
+        * Retrieves the list of stream profiles currently streaming on the sensor.
+        * \return list of stream profiles that given sensor is streaming
+        */
+        std::vector<stream_profile> get_active_streams() const
+        {
+            std::vector<stream_profile> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_stream_profile_list> list(
+                rs2_get_active_streams(_sensor.get(), &e),
                 rs2_delete_stream_profiles_list);
             error::handle(e);
 
@@ -247,7 +272,7 @@ namespace rs2
         */
         std::vector<filter> get_recommended_filters() const
         {
-            std::vector<filter> results{};
+            std::vector<filter> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_processing_block_list> list(
@@ -344,6 +369,54 @@ namespace rs2
         return std::string(lhs.get_info(RS2_CAMERA_INFO_NAME)) == rhs.get_info(RS2_CAMERA_INFO_NAME)
             && std::string(lhs.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) == rhs.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
     }
+
+    class color_sensor : public sensor
+    {
+    public:
+        color_sensor(sensor s)
+            : sensor(s.get())
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_COLOR_SENSOR, &e) == 0 && !e)
+            {
+                _sensor.reset();
+            }
+            error::handle(e);
+        }
+        operator bool() const { return _sensor.get() != nullptr; }
+    };
+
+    class motion_sensor : public sensor
+    {
+    public:
+        motion_sensor(sensor s)
+            : sensor(s.get())
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_MOTION_SENSOR, &e) == 0 && !e)
+            {
+                _sensor.reset();
+            }
+            error::handle(e);
+        }
+        operator bool() const { return _sensor.get() != nullptr; }
+    };
+
+    class fisheye_sensor : public sensor
+    {
+    public:
+        fisheye_sensor(sensor s)
+            : sensor(s.get())
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_FISHEYE_SENSOR, &e) == 0 && !e)
+            {
+                _sensor.reset();
+            }
+            error::handle(e);
+        }
+        operator bool() const { return _sensor.get() != nullptr; }
+    };
 
     class roi_sensor : public sensor
     {
@@ -473,16 +546,15 @@ namespace rs2
          */
         std::vector<uint8_t> export_localization_map() const
         {
+            std::vector<uint8_t> results;
             rs2_error* e = nullptr;
-            std::shared_ptr<const rs2_raw_data_buffer> loc_map(
-                    rs2_export_localization_map(_sensor.get(), &e),
-                    rs2_delete_raw_data);
+            const rs2_raw_data_buffer *map = rs2_export_localization_map(_sensor.get(), &e);
             error::handle(e);
+            std::shared_ptr<const rs2_raw_data_buffer> loc_map(map, rs2_delete_raw_data);
 
             auto start = rs2_get_raw_data(loc_map.get(), &e);
             error::handle(e);
 
-            std::vector<uint8_t> results;
             if (start)
             {
                 auto size = rs2_get_raw_data_size(loc_map.get(), &e);
@@ -527,6 +599,18 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             auto res = rs2_get_static_node(_sensor.get(), guid.c_str(), &pos, &orient, &e);
+            error::handle(e);
+            return !!res;
+        }
+
+        /**
+         * Removes a static node from the current map.
+         * \param[in] guid unique name of the static node (limited to 127 chars).
+         */
+        bool remove_static_node(const std::string& guid) const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_remove_static_node(_sensor.get(), guid.c_str(), &e);
             error::handle(e);
             return !!res;
         }
@@ -577,6 +661,78 @@ namespace rs2
 
         operator bool() const { return _sensor.get() != nullptr; }
         explicit wheel_odometer(std::shared_ptr<rs2_sensor> dev) : wheel_odometer(sensor(dev)) {}
+    };
+
+    class max_usable_range_sensor : public sensor
+    {
+    public:
+        max_usable_range_sensor(sensor s)
+            : sensor(s.get())
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_MAX_USABLE_RANGE_SENSOR, &e) == 0 && !e)
+            {
+                _sensor.reset();
+            }
+            error::handle(e);
+        }
+
+        operator bool() const { return _sensor.get() != nullptr; }
+
+        /** Retrieves the maximum range of the camera given the amount of ambient light in the scene.
+        * \return max usable range in meters
+        */
+        float get_max_usable_depth_range() const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_get_max_usable_depth_range(_sensor.get(), &e);
+            error::handle(e);
+            return res;
+        }
+    };
+
+    class debug_stream_sensor : public sensor
+    {
+    public:
+        debug_stream_sensor( sensor s )
+            : sensor( s.get() )
+        {
+            rs2_error * e = nullptr;
+            if( rs2_is_sensor_extendable_to( _sensor.get(), RS2_EXTENSION_DEBUG_STREAM_SENSOR, &e ) == 0 && ! e )
+            {
+                _sensor.reset();
+            }
+            error::handle( e );
+        }
+
+        operator bool() const { return _sensor.get() != nullptr; }
+
+        /**
+        * Retrieves the list of debug stream profiles supported by the sensor.
+        * \return   list of debug stream profiles that given sensor can provide
+        */
+        std::vector< stream_profile > get_debug_stream_profiles() const
+        {
+            std::vector< stream_profile > results;
+
+            rs2_error * e = nullptr;
+            std::shared_ptr< rs2_stream_profile_list > list(
+                rs2_get_debug_stream_profiles( _sensor.get(), &e ),
+                rs2_delete_stream_profiles_list );
+            error::handle( e );
+
+            auto size = rs2_get_stream_profiles_count( list.get(), &e );
+            error::handle( e );
+
+            for( auto i = 0; i < size; i++ )
+            {
+                stream_profile profile( rs2_get_stream_profile( list.get(), i, &e ) );
+                error::handle( e );
+                results.push_back( profile );
+            }
+
+            return results;
+        }
     };
 }
 #endif // LIBREALSENSE_RS2_SENSOR_HPP

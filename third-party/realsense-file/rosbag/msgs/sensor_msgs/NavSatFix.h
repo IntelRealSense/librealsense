@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <array>
 
 #include <ros/types.h>
 #include <ros/serialization.h>
@@ -64,7 +65,7 @@ struct NavSatFix_
    typedef double _altitude_type;
   _altitude_type altitude;
 
-   typedef boost::array<double, 9>  _position_covariance_type;
+   typedef std::array<double, 9>  _position_covariance_type;
   _position_covariance_type position_covariance;
 
    typedef uint8_t _position_covariance_type_type;
@@ -77,15 +78,15 @@ struct NavSatFix_
      enum { COVARIANCE_TYPE_KNOWN = 3u };
  
 
-  typedef boost::shared_ptr< ::sensor_msgs::NavSatFix_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::NavSatFix_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::NavSatFix_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::NavSatFix_<ContainerAllocator> const> ConstPtr;
 
 }; // struct NavSatFix_
 
 typedef ::sensor_msgs::NavSatFix_<std::allocator<void> > NavSatFix;
 
-typedef boost::shared_ptr< ::sensor_msgs::NavSatFix > NavSatFixPtr;
-typedef boost::shared_ptr< ::sensor_msgs::NavSatFix const> NavSatFixConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::NavSatFix > NavSatFixPtr;
+typedef std::shared_ptr< ::sensor_msgs::NavSatFix const> NavSatFixConstPtr;
 
 // constants requiring out of line definition
 
@@ -125,32 +126,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::NavSatFix_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::NavSatFix_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::NavSatFix_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::NavSatFix_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::NavSatFix_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::NavSatFix_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 

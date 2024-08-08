@@ -114,17 +114,29 @@ namespace librealsense
             usb1_type = 0x0100,
             usb1_1_type = 0x0110,
             usb2_type = 0x0200,
+            usb2_01_type = 0x0201,
             usb2_1_type = 0x0210,
             usb3_type = 0x0300,
             usb3_1_type = 0x0310,
             usb3_2_type = 0x0320,
         };
 
+        static const std::map< std::string, usb_spec > usb_name_to_spec = { { "Undefined", usb_undefined },
+                                                                            { "1.0", usb1_type },
+                                                                            { "1.1", usb1_1_type },
+                                                                            { "2.0", usb2_type },
+                                                                            { "2.01", usb2_01_type },
+                                                                            { "2.1", usb2_1_type },
+                                                                            { "3.0", usb3_type },
+                                                                            { "3.1", usb3_1_type },
+                                                                            { "3.2", usb3_2_type } };
+
         static const std::map<usb_spec, std::string> usb_spec_names = {
                 { usb_undefined,"Undefined" },
                 { usb1_type,    "1.0" },
                 { usb1_1_type,  "1.1" },
                 { usb2_type,    "2.0" },
+                { usb2_01_type,  "2.01" },
                 { usb2_1_type,  "2.1" },
                 { usb3_type,    "3.0" },
                 { usb3_1_type,  "3.1" },
@@ -156,6 +168,12 @@ namespace librealsense
                 return s.str();
             }
         };
+
+        inline bool operator==( const usb_device_info & a, const usb_device_info & b )
+        {
+            return ( a.id == b.id ) && ( a.vid == b.vid ) && ( a.pid == b.pid ) && ( a.mi == b.mi )
+                && ( a.unique_id == b.unique_id ) && ( a.conn_spec == b.conn_spec );
+        }
 
         static std::map<usb_status,std::string> usb_status_to_string = 
         {
@@ -204,5 +222,20 @@ namespace librealsense
             uint8_t type;
             std::vector<uint8_t> data;
         };
+
+#pragma pack(push, 1)
+        struct dfu_header {
+            uint32_t dwCRC;
+            uint8_t  headerSignature[256];
+            uint8_t  cssHeader[128];
+            uint32_t magicNumber;
+            uint32_t prefixLength;
+            uint16_t bcdDFU;
+            uint32_t bcdDevice;
+            uint8_t  reserve[4];
+            uint32_t imageSize;
+            uint16_t nofBlocks;
+        };
+#pragma pack(pop)
     }
 }

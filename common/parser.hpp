@@ -3,17 +3,20 @@
 
 #include <string>
 #include <map>
+#include <regex>
 #include <fstream>
 #include <sstream>
 #include <vector>
 #include <functional>
 #include <cstring>
+#include <iomanip>
 
 #ifdef ANDROID
 #include "android_helpers.h"
 #endif
 
 #include "../third-party/rapidxml/rapidxml.hpp"
+#include <rsutils/string/string-utilities.h>
 
 #define MAX_PARAMS 4
 
@@ -160,7 +163,7 @@ struct custom_formatter {
     std::vector<kvp> kv;
 };
 
-struct command
+typedef struct command
 {
     std::string name;
     unsigned int op_code;
@@ -179,7 +182,7 @@ struct command
 
     data read_data;
     std::vector<parameter> parameters;
-};
+} command_from_xml;
 
 // units of nibbles
 enum FormatSize {
@@ -190,54 +193,30 @@ enum FormatSize {
 
 struct commands_xml
 {
-    std::map<std::string, command> commands;
+    std::map<std::string, command_from_xml> commands;
     std::map<std::string, custom_formatter> custom_formatters;
 };
 
-inline std::string hexify(unsigned char n)
+// While working from files, convert the file content into recognized raw format
+inline void file_argument_to_blob(std::vector<std::string>& params)
 {
-    std::string res;
-
-    do
+    if (!params.size())
+        return;
+ 
+    //The last parameter provided by the user can represent a fully-qualified file path
+    std::ifstream file(params.back(), std::ios::binary | std::ios::in);
+    if (file.good())
     {
-        res += "0123456789ABCDEF"[n % 16];
-        n >>= 4;
-    } while (n);
+        auto data = std::vector<uint8_t>((std::istreambuf_iterator<char>(file)),
+            std::istreambuf_iterator<char>());
 
-    std::reverse(res.begin(), res.end());
-
-    if (res.size() == 1)
-    {
-        res.insert(0, "0");
+        size_t unmodified_params = params.size() - 1; // non-negative due to the file parameter
+        std::vector<std::string> modified_params(unmodified_params + data.size());
+        if (unmodified_params)                        // copy leading parameters
+            std::copy(modified_params.begin(), modified_params.begin() + unmodified_params, params.begin());
+        std::transform(data.begin(), data.end(), modified_params.begin() + unmodified_params, [](uint8_t c) { return rsutils::string::hexify(c); });
+        params = modified_params; // substitute original params with modified data
     }
-
-    return res;
-}
-
-inline std::string to_lower(std::string x)
-{
-    transform(x.begin(), x.end(), x.begin(), tolower);
-    return x;
-}
-
-inline bool string_to_bool(const std::string& x)
-{
-    return (to_lower(x) == "true");
-}
-
-inline unsigned int string_to_hex(std::string str)
-{
-    std::string delimiter = "x";
-
-    auto pos = str.find(delimiter);
-    str.erase(0, pos + delimiter.length());
-
-    std::stringstream ss;
-    unsigned int value;
-    ss << str;
-    ss >> std::hex >> value;
-
-    return value;
 }
 
 inline void parse_xml_from_memory(const char * content, commands_xml& cmd_xml)
@@ -253,16 +232,16 @@ inline void parse_xml_from_memory(const char * content, commands_xml& cmd_xml)
     {
         if (!strcmp(NodeI->name(), "Command"))
         {
-            command cmd;
+            command_from_xml cmd;
             for (auto AttI = NodeI->first_attribute(); AttI; AttI = AttI->next_attribute())
             {
                 std::string value = AttI->value();
                 std::string att_name = AttI->name();
                 if (att_name == "Name") { cmd.name = value; }
-                else if (att_name == "Opcode") { cmd.op_code = string_to_hex(value); }
-                else if (att_name == "IsWriteOnly") { cmd.is_write_only = string_to_bool(value); }
+                else if (att_name == "Opcode") { cmd.op_code = rsutils::string::ascii_hex_string_to_uint(value); }
+                else if (att_name == "IsWriteOnly") { cmd.is_write_only = rsutils::string::string_to_bool(value); }
                 else if (att_name == "ReadFormat") { cmd.read_format = value; }
-                else if (att_name == "IsReadCommand") { cmd.is_read_command = string_to_bool(value); }
+                else if (att_name == "IsReadCommand") { cmd.is_read_command = rsutils::string::string_to_bool(value); }
                 else if (att_name == "CmdPermission") { cmd.cmd_permission = value; }
                 else if (att_name == "TimeOut") { cmd.time_out = stoi(value); }
                 else if (att_name == "Description") { cmd.description = value; }
@@ -284,7 +263,7 @@ inline void parse_xml_from_memory(const char * content, commands_xml& cmd_xml)
                         std::string value = paramAtt->value();
                         std::string att_name = paramAtt->name();
                         if (att_name == "Name") { param.name = value; }
-                        else if (att_name == "IsDecimal") { param.is_decimal = string_to_bool(value); }
+                        else if (att_name == "IsDecimal") { param.is_decimal = rsutils::string::string_to_bool(value); }
                     }
                     cmd.parameters.push_back(param);
                 }
@@ -299,7 +278,7 @@ inline void parse_xml_from_memory(const char * content, commands_xml& cmd_xml)
                         std::string data_att_name = dataAtt->name();
 
                         if (data_att_name == "Name") { param.name = value; }
-                        else if (data_att_name == "IsReverseBytes") { param.is_reverse_bytes = string_to_bool(value); }
+                        else if (data_att_name == "IsReverseBytes") { param.is_reverse_bytes = rsutils::string::string_to_bool(value); }
                         else if (data_att_name == "FormatLength") { param.format_length = stoi(value); }
                     }
                     cmd.parameters.push_back(param);
@@ -323,7 +302,7 @@ inline void parse_xml_from_memory(const char * content, commands_xml& cmd_xml)
                     }
                 }
             }
-            cmd_xml.commands.insert(std::pair<std::string, command>(to_lower(cmd.name), cmd));
+            cmd_xml.commands.insert(std::pair<std::string, command_from_xml>(rsutils::string::to_lower(cmd.name), cmd));
         }
         else if (!strcmp(NodeI->name(), "CustomFormatter"))
         {
@@ -353,7 +332,7 @@ inline void parse_xml_from_memory(const char * content, commands_xml& cmd_xml)
                 }
 
             }
-            cmd_xml.custom_formatters.insert(std::pair<std::string, custom_formatter>(to_lower(customFormatter.name), customFormatter));
+            cmd_xml.custom_formatters.insert(std::pair<std::string, custom_formatter>(rsutils::string::to_lower(customFormatter.name), customFormatter));
         }
     }
 }
@@ -362,7 +341,7 @@ inline bool parse_xml_from_file(const std::string& xml_full_file_path, commands_
 {
     std::ifstream fin(xml_full_file_path);
 
-    if (!fin)
+    if (!fin.good())
         return false;
 
     std::stringstream ss;
@@ -406,7 +385,7 @@ inline void update_format_type_to_lambda(std::map<std::string, xml_parser_functi
     format_type_to_lambda.insert(std::make_pair("HexByte", [&](const uint8_t* data_offset, const section& sec, std::stringstream& tempStr) {
         check_section_size(sec.size, sizeof(HexByte), sec.name.c_str(), "HexByte");
         auto hexByte = reinterpret_cast<const HexByte*>(data_offset + sec.offset);
-        tempStr << hexify(hexByte->Version4);
+        tempStr << rsutils::string::hexify(hexByte->Version4);
     }));
 
     format_type_to_lambda.insert(std::make_pair("LiguriaVersion", [&](const uint8_t* data_offset, const section& sec, std::stringstream& tempStr) {
@@ -447,39 +426,39 @@ inline void update_format_type_to_lambda(std::map<std::string, xml_parser_functi
     format_type_to_lambda.insert(std::make_pair("HexNumber", [&](const uint8_t* data_offset, const section& sec, std::stringstream& tempStr) {
         check_section_size(sec.size, sizeof(HexNumber), sec.name.c_str(), "HexNumber");
         auto hexNumber = reinterpret_cast<const HexNumber*>(data_offset + sec.offset);
-        tempStr << hexify(hexNumber->number1) <<
-            ((sec.size >= 2) ? hexify(hexNumber->number2) : "") <<
-            ((sec.size >= 3) ? hexify(hexNumber->number3) : "") <<
-            ((sec.size >= 4) ? hexify(hexNumber->number4) : "");
+        tempStr << rsutils::string::hexify(hexNumber->number1) <<
+            ((sec.size >= 2) ? rsutils::string::hexify(hexNumber->number2) : "") <<
+            ((sec.size >= 3) ? rsutils::string::hexify(hexNumber->number3) : "") <<
+            ((sec.size >= 4) ? rsutils::string::hexify(hexNumber->number4) : "");
     }));
 
     format_type_to_lambda.insert(std::make_pair("HexNumberTwoBytes", [&](const uint8_t* data_offset, const section& sec, std::stringstream& tempStr) {
         check_section_size(sec.size, sizeof(HexNumber), sec.name.c_str(), "HexNumber");
         auto hexNumber = reinterpret_cast<const HexNumber*>(data_offset + sec.offset);
-        tempStr << hexify(hexNumber->number2) <<
-            ((sec.size >= 2) ? hexify(hexNumber->number1) : "");
+        tempStr << rsutils::string::hexify(hexNumber->number2) <<
+            ((sec.size >= 2) ? rsutils::string::hexify(hexNumber->number1) : "");
     }));
 
     format_type_to_lambda.insert(std::make_pair("HexNumberReversed", [&](const uint8_t* data_offset, const section& sec, std::stringstream& tempStr) {
         check_section_size(sec.size, sizeof(HexNumberReversed), sec.name.c_str(), "HexNumberReversed");
         auto hexNumberReversed = reinterpret_cast<const HexNumberReversed*>(data_offset + sec.offset);
-        tempStr << hexify(hexNumberReversed->number4) <<
-            ((sec.size >= 2) ? hexify(hexNumberReversed->number3) : "") <<
-            ((sec.size >= 3) ? hexify(hexNumberReversed->number2) : "") <<
-            ((sec.size >= 4) ? hexify(hexNumberReversed->number1) : "");
+        tempStr << rsutils::string::hexify(hexNumberReversed->number4) <<
+            ((sec.size >= 2) ? rsutils::string::hexify(hexNumberReversed->number3) : "") <<
+            ((sec.size >= 3) ? rsutils::string::hexify(hexNumberReversed->number2) : "") <<
+            ((sec.size >= 4) ? rsutils::string::hexify(hexNumberReversed->number1) : "");
     }));
 
     format_type_to_lambda.insert(std::make_pair("BarCodeSerial12Char", [&](const uint8_t* data_offset, const section& sec, std::stringstream& tempStr) {
         check_section_size(sec.size, sizeof(BarCodeSerial12Char), sec.name.c_str(), "BarCodeSerial12Char");
         auto barCodeSerial12Char = reinterpret_cast<const BarCodeSerial12Char*>(data_offset + sec.offset);
-        tempStr << hexify(barCodeSerial12Char->number1) <<
-            ((sec.size >= 2) ? hexify(barCodeSerial12Char->number2) : "") <<
-            ((sec.size >= 3) ? hexify(barCodeSerial12Char->number3) : "") <<
-            ((sec.size >= 4) ? hexify(barCodeSerial12Char->number4) : "") <<
-            ((sec.size >= 5) ? hexify(barCodeSerial12Char->number5) : "") <<
-            ((sec.size >= 6) ? hexify(barCodeSerial12Char->number6) : "") <<
-            ((sec.size >= 7) ? hexify(barCodeSerial12Char->number7) : "") <<
-            ((sec.size >= 8) ? hexify(barCodeSerial12Char->number8) : "");
+        tempStr << rsutils::string::hexify(barCodeSerial12Char->number1) <<
+            ((sec.size >= 2) ? rsutils::string::hexify(barCodeSerial12Char->number2) : "") <<
+            ((sec.size >= 3) ? rsutils::string::hexify(barCodeSerial12Char->number3) : "") <<
+            ((sec.size >= 4) ? rsutils::string::hexify(barCodeSerial12Char->number4) : "") <<
+            ((sec.size >= 5) ? rsutils::string::hexify(barCodeSerial12Char->number5) : "") <<
+            ((sec.size >= 6) ? rsutils::string::hexify(barCodeSerial12Char->number6) : "") <<
+            ((sec.size >= 7) ? rsutils::string::hexify(barCodeSerial12Char->number7) : "") <<
+            ((sec.size >= 8) ? rsutils::string::hexify(barCodeSerial12Char->number8) : "");
     }));
 
     format_type_to_lambda.insert(std::make_pair("WideMajorMinorVersion", [&](const uint8_t* data_offset, const section& sec, std::stringstream& tempStr) {
@@ -509,7 +488,7 @@ inline void update_sections_data(const uint8_t* data_offset, std::vector<section
         else
         {
             // FormatType not found. searching in the custom format list
-            auto it = custom_formatters.find(to_lower(sec.format_type));
+            auto it = custom_formatters.find(rsutils::string::to_lower(sec.format_type));
             if (it != custom_formatters.end())
             {
                 if (it->second.key_size == "Byte")
@@ -538,7 +517,7 @@ inline void update_sections_data(const uint8_t* data_offset, std::vector<section
     }
 }
 
-inline void decode_string_from_raw_data(const command& command, const std::map<std::string, custom_formatter>& custom_formatters, const uint8_t* raw_data_offset, size_t data_size, std::string& output, const std::map<std::string, xml_parser_function>& format_type_to_lambda)
+inline void decode_string_from_raw_data(const command_from_xml& command, const std::map<std::string, custom_formatter>& custom_formatters, const uint8_t* raw_data_offset, size_t data_size, std::string& output, const std::map<std::string, xml_parser_function>& format_type_to_lambda)
 {
     auto data_offset = raw_data_offset + 4;
     data_size -= 4;
@@ -616,7 +595,7 @@ inline void decode_string_from_raw_data(const command& command, const std::map<s
         {
             ++bytes_per_line;
             ++bytes;
-            buffer.push_back(hexify(static_cast<unsigned char>(*(data_offset + offset))));
+            buffer.push_back(rsutils::string::hexify(static_cast<unsigned char>(*(data_offset + offset))));
 
             if (bytes == num_of_bytes_for_space)
             {
@@ -675,7 +654,7 @@ inline void decode_string_from_raw_data(const command& command, const std::map<s
     output = ss_output.str();
 }
 
-inline void encode_raw_data_command(const command& xml_cmd_info, const std::vector<parameter>& params, std::vector<uint8_t>& raw_data)
+inline void encode_raw_data_command(const command_from_xml& xml_cmd_info, const std::vector<parameter>& params, std::vector<uint8_t>& raw_data)
 {
     auto cmd_op_code = xml_cmd_info.op_code;
     auto is_cmd_writes_data = xml_cmd_info.is_cmd_write_data;

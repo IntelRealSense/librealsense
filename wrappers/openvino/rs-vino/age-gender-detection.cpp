@@ -1,11 +1,10 @@
-// Copyright (C) 2018-2019 Intel Corporation
+// Copyright (C) 2020 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 //
 
 #include <rs-vino/age-gender-detection.h>
 #include <rs-vino/openvino-helpers.h>
-#include <easylogging++.h>
-
+#include <rsutils/easylogging/easyloggingpp.h>
 
 using namespace InferenceEngine;
 
@@ -14,10 +13,11 @@ namespace openvino_helpers
 {
     age_gender_detection::age_gender_detection(
         const std::string &pathToModel,
-        int maxBatch, bool isBatchDynamic, bool isAsync,
+        bool isAsync,
+        int maxBatch, bool isBatchDynamic,
         bool doRawOutputMessages
     )
-        : base_detection( "Age/Gender", pathToModel, maxBatch, isBatchDynamic, isAsync, doRawOutputMessages)
+        : base_detection( "age/gender", pathToModel, maxBatch, isBatchDynamic, isAsync, doRawOutputMessages)
         , _n_enqued_frames(0)
     {
     }
@@ -27,11 +27,8 @@ namespace openvino_helpers
     {
         if( !_n_enqued_frames )
             return;
-        if (isBatchDynamic) {
-            _request->SetBatch( _n_enqued_frames );
-        }
-        base_detection::submit_request();
         _n_enqued_frames = 0;
+        base_detection::submit_request();
     }
 
 
@@ -39,15 +36,8 @@ namespace openvino_helpers
     {
         if( !enabled() )
             return;
-        if( _n_enqued_frames == maxBatch )
-        {
-            LOG(WARNING) << "Number of detected faces more than maximum (" << maxBatch << ") processed by Age/Gender Recognition network";
-            return;
-        }
         if( !_request )
-        {
             _request = net.CreateInferRequestPtr();
-        }
 
         Blob::Ptr inputBlob = _request->GetBlob( input );
         matU8ToBlob<uint8_t>( face, inputBlob, _n_enqued_frames );
@@ -74,25 +64,34 @@ namespace openvino_helpers
 
     CNNNetwork age_gender_detection::read_network()
     {
-        LOG(INFO) << "Loading network files for Age/Gender Recognition network from: " << pathToModel;
+        LOG(INFO) << "Loading " << topoName << " model from: " << pathToModel;
+
+        CNNNetwork network;
+
+#ifdef OPENVINO2019
         CNNNetReader netReader;
-        // Read network
-        netReader.ReadNetwork(pathToModel);
 
-        // Set maximum batch size to be used.
-        netReader.getNetwork().setBatchSize(maxBatch);
-        if( doRawOutputMessages )
-            LOG(DEBUG) << "Batch size is set to " << netReader.getNetwork().getBatchSize() << " for Age/Gender Recognition network";
+        /** Read network model **/
+        netReader.ReadNetwork( pathToModel );
+        network = netReader.getNetwork();
 
+        /** Extract model name and load its weights **/
+        std::string binFileName = remove_ext( pathToModel ) + ".bin";
+        netReader.ReadWeights( binFileName );
+#else
+        InferenceEngine::Core ie;
+        /** Read network model **/
+        network = ie.ReadNetwork(pathToModel);
+#endif
 
-        // Extract model name and load its weights
-        std::string binFileName = fileNameNoExt(pathToModel) + ".bin";
-        netReader.ReadWeights(binFileName);
+        /** Set batch size **/
+        //LOG(DEBUG) << "Batch size is set to " << maxBatch;
+        network.setBatchSize(maxBatch);
 
         // Age/Gender Recognition network should have one input and two outputs
 
         LOG(DEBUG) << "Checking Age/Gender Recognition network inputs";
-        InputsDataMap inputInfo(netReader.getNetwork().getInputsInfo());
+        InputsDataMap inputInfo(network.getInputsInfo());
         if (inputInfo.size() != 1)
             throw std::logic_error("Age/Gender Recognition network should have only one input");
         InputInfo::Ptr& inputInfoFirst = inputInfo.begin()->second;
@@ -100,7 +99,7 @@ namespace openvino_helpers
         input = inputInfo.begin()->first;
 
         LOG(DEBUG) << "Checking Age/Gender Recognition network outputs";
-        OutputsDataMap outputInfo(netReader.getNetwork().getOutputsInfo());
+        OutputsDataMap outputInfo(network.getOutputsInfo());
         if (outputInfo.size() != 2)
             throw std::logic_error("Age/Gender Recognition network should have two output layers");
         auto it = outputInfo.begin();
@@ -113,6 +112,8 @@ namespace openvino_helpers
         if (!ptrGenderOutput)
             throw std::logic_error("Gender output data pointer is not valid");
 
+
+#ifdef OPENVINO2019
         auto genderCreatorLayer = ptrGenderOutput->getCreatorLayer().lock();
         auto ageCreatorLayer = ptrAgeOutput->getCreatorLayer().lock();
 
@@ -127,21 +128,83 @@ namespace openvino_helpers
 
         if (ptrAgeOutput->getCreatorLayer().lock()->type != "Convolution")
             throw std::logic_error("In Age/Gender Recognition network, age layer (" + ageCreatorLayer->name +
-                                    ") should be a Convolution, but was: " + ageCreatorLayer->type);
+                ") should be a Convolution, but was: " + ageCreatorLayer->type);
 
         if (ptrGenderOutput->getCreatorLayer().lock()->type != "SoftMax")
             throw std::logic_error("In Age/Gender Recognition network, gender layer (" + genderCreatorLayer->name +
-                                    ") should be a SoftMax, but was: " + genderCreatorLayer->type);
-        if( doRawOutputMessages )
+                ") should be a SoftMax, but was: " + genderCreatorLayer->type);
+
+        if (doRawOutputMessages)
         {
             LOG(DEBUG) << "Age layer: " << ageCreatorLayer->name;
             LOG(DEBUG) << "Gender layer: " << genderCreatorLayer->name;
         }
+#else
+#ifdef OPENVINO_NGRAPH
+        if (auto ngraphFunction = network.getFunction())
+        {
+            // Looking for the age and gender nodes in the ngraph: the age layer node should be Convolution type.
+            // If we find ptrGenderOutput is with Convolution type, swap them.
+            for (const auto& op : ngraphFunction->get_ops())
+            {
+                std::string friendly_name = op->get_friendly_name();
+                std::string output_type = op->get_type_name();
+
+                if ((friendly_name.find(ptrGenderOutput->getName()) != std::string::npos) && (output_type == "Convolution"))
+                {
+                    std::swap(ptrAgeOutput, ptrGenderOutput);
+                    break;
+                }
+            }
+
+            bool outputAgeOk = false;
+
+            for (const auto& op : ngraphFunction->get_ops())
+            {
+                std::string friendly_name = op->get_friendly_name();
+                std::string output_type = op->get_type_name();
+
+                if ((friendly_name.find(ptrAgeOutput->getName()) != std::string::npos) && (output_type == "Convolution")) {
+                    outputAgeOk = true;
+                    break;
+                }
+            }
+
+            if (!outputAgeOk)
+            {
+                throw std::logic_error("In Age/Gender Recognition network, Age layer (" + ptrAgeOutput->getName() + ") should be a Convolution");
+            }
+
+            bool outputGenderOk = false;
+
+            for (const auto& op : ngraphFunction->get_ops()) {
+                std::string friendly_name = op->get_friendly_name();
+                std::string output_type = op->get_type_name();
+
+                if ((friendly_name.find(ptrGenderOutput->getName()) != std::string::npos) && (output_type == "Softmax")) {
+                    outputGenderOk = true;
+                    break;
+                }
+            }
+
+            if (!outputGenderOk)
+            {
+                throw std::logic_error("In Age/Gender Recognition network, Gender layer (" + ptrGenderOutput->getName() + ") should be a Softmax");
+            }
+        }
+
+        if (doRawOutputMessages)
+        {
+            LOG(DEBUG) << "Age layer: " << ptrAgeOutput->getName();
+            LOG(DEBUG) << "Gender layer: " << ptrGenderOutput->getName();
+        }
+#endif
+#endif
 
         outputAge = ptrAgeOutput->getName();
         outputGender = ptrGenderOutput->getName();
 
         _enabled = true;
-        return netReader.getNetwork();
+        return network;
     }
 }

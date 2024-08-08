@@ -30,6 +30,7 @@ DerivedData
 librealsense.xc/build
 
 *~
+*.TMP
 *.a
 *.o
 *.so
@@ -66,7 +67,6 @@ librealsense-log.txt
 *.bin
 *.suo
 *.tlog
-*.obj
 *.ilk
 *.pdb
 *.exp

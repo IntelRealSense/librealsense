@@ -1,15 +1,19 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/hpp/rs_sensor.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
 #include "option.h"
 #include "environment.h"
-#include "context.h"
-#include "software-device.h"
+#include "software-sensor.h"
+#include <src/depth-sensor.h>
 #include "proc/synthetic-stream.h"
 #include "proc/hole-filling-filter.h"
 #include "proc/spatial-filter.h"
+
+#include <librealsense2/hpp/rs_sensor.hpp>
+#include <librealsense2/hpp/rs_processing.hpp>
+
+#include <rsutils/string/from.h>
+
 
 namespace librealsense
 {
@@ -78,14 +82,18 @@ namespace librealsense
             delta_step,
             delta_default_val,
             &_spatial_delta_param, "Edge-preserving Threshold");
-        spatial_filter_delta->on_set([this, spatial_filter_delta](float val)
+
+        auto weak_spatial_filter_delta = std::weak_ptr<ptr_option<uint8_t>>();
+        spatial_filter_delta->on_set([this, weak_spatial_filter_delta](float val)
         {
+            auto strong_spatial_filter_delta = weak_spatial_filter_delta.lock();
+            if(!strong_spatial_filter_delta) return;
+
+            if (!strong_spatial_filter_delta->is_valid(val))
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Unsupported spatial delta: " << val << " is out of range." );
+
             std::lock_guard<std::mutex> lock(_mutex);
-
-            if (!spatial_filter_delta->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported spatial delta: " << val << " is out of range.");
-
             _spatial_delta_param = static_cast<uint8_t>(val);
             _spatial_edge_threshold = float(_spatial_delta_param);
         });
@@ -111,14 +119,18 @@ namespace librealsense
         holes_filling_mode->set_description(sp_hf_16_pixel_radius, "16-pixel radius");
         holes_filling_mode->set_description(sp_hf_unlimited_radius, "Unlimited");
 
-        holes_filling_mode->on_set([this, holes_filling_mode](float val)
+        auto weak_holes_filling_mode = std::weak_ptr<ptr_option<uint8_t>>();
+        holes_filling_mode->on_set([this, weak_holes_filling_mode](float val)
         {
+            auto strong_holes_filling_mode = weak_holes_filling_mode.lock();
+            if(!strong_holes_filling_mode) return;
+
+            if (!strong_holes_filling_mode->is_valid(val))
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Unsupported mode for spatial holes filling selected: value " << val
+                                               << " is out of range." );
+
             std::lock_guard<std::mutex> lock(_mutex);
-
-            if (!holes_filling_mode->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported mode for spatial holes filling selected: value " << val << " is out of range.");
-
             _holes_filling_mode = static_cast<uint8_t>(val);
             switch (_holes_filling_mode)
             {
@@ -135,9 +147,9 @@ namespace librealsense
                 _holes_filling_radius = 0x1 << _holes_filling_mode; // 2's exponential radius
                 break;
             default:
-                throw invalid_value_exception(to_string()
-                    << "Unsupported spatial hole-filling requested: value " << _holes_filling_mode << " is out of range.");
-                break;
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Unsupported spatial hole-filling requested: value "
+                                               << _holes_filling_mode << " is out of range." );
             }
         });
 

@@ -28,7 +28,8 @@ namespace openvino_helpers
 
     public:
         age_gender_detection( const std::string &pathToModel,
-            int maxBatch, bool isBatchDynamic, bool isAsync,
+            bool isAsync = true,
+            int maxBatch = 1, bool isBatchDynamic = false, 
             bool doRawOutputMessages = false );
 
         InferenceEngine::CNNNetwork read_network() override;

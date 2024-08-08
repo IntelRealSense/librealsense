@@ -8,12 +8,16 @@ namespace Intel.RealSense
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Runtime.InteropServices;
+    using Base;
 
     /// <summary>
     /// Class to store the profile of stream
     /// </summary>
     public class StreamProfile : Base.PooledObject
     {
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        internal static readonly Base.Deleter StreamProfileReleaser = NativeMethods.rs2_delete_stream_profile;
+
         internal override void Initialize()
         {
             object error;
@@ -25,6 +29,21 @@ namespace Intel.RealSense
             : base(ptr, null)
         {
             this.Initialize();
+        }
+
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (clone != null)
+                {
+                    clone.Dispose();
+                    clone = null;
+                }
+            }
+
+            base.Dispose(disposing);
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -41,6 +60,9 @@ namespace Intel.RealSense
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private int uniqueId;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        internal DeleterHandle clone;
 
         /// <summary>
         /// Gets the stream type of the profile
@@ -90,6 +112,8 @@ namespace Intel.RealSense
         /// </summary>
         public bool IsDefault { get; private set; }
 
+        public bool IsCloned => clone?.IsInvalid == false;
+
         /// <summary>
         /// Gets the extrinsics from this profile to the other
         /// </summary>
@@ -107,6 +131,22 @@ namespace Intel.RealSense
         {
             object error;
             NativeMethods.rs2_register_extrinsics(Handle, other.Handle, extrinsics, out error);
+        }
+
+        /// <summary>
+        /// Clone the current profile and change the type, index and format to input parameters
+        /// </summary>
+        /// <param name="type">will change the stream type from the cloned profile.</param>
+        /// <param name="index">will change the stream index from the cloned profile.</param>
+        /// <param name="format">will change the stream format from the cloned profile.</param>
+        /// <returns>the cloned stream profile.</returns>
+        public StreamProfile Clone(Stream type, int index, Format format)
+        {
+            object error;
+            var ptr = NativeMethods.rs2_clone_stream_profile(Handle, type, index, format, out error);
+            var p = StreamProfile.Create(ptr);
+            p.clone = new DeleterHandle(ptr, StreamProfileReleaser);
+            return p;
         }
 
         /// <summary>

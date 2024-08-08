@@ -1,10 +1,16 @@
-# OpenVINO Samples for Intel® RealSense™ cameras
+﻿# OpenVINO Samples for Intel® RealSense™ cameras
 Examples in this folder are designed to complement existing
 [SDK examples](../../examples) and demonstrate how Intel RealSense cameras can
 be used together with the OpenVINO™ toolkit in the domain of computer-vision.
 
-> RealSense examples have been designed and tested with OpenVINO version
-> 2019.3.379. Working with newer versions may require code changes.
+> RealSense examples have been designed and tested with the following OpenVINO versions
+> 2019.3.379
+> 2020.3.194
+> 2020.4.287
+> 2021.1.110
+> 2021.3.394
+>
+> Working with other versions may require code changes.
 
 ## List of Samples:
 1. [Face](./face) - Facial recognition

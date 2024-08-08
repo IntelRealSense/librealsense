@@ -1,16 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/rs.hpp"
-#include "../include/librealsense2/rsutil.h"
+#include <librealsense2/rs.hpp>
 
-#include "proc/synthetic-stream.h"
-#include "environment.h"
-#include "proc/occlusion-filter.h"
-#include "proc/sse/sse-pointcloud.h"
-#include "option.h"
-#include "environment.h"
-#include "context.h"
+#include "../synthetic-stream.h"
+#include "../../environment.h"
+#include "../occlusion-filter.h"
+#include "sse-pointcloud.h"
+#include "../../option.h"
 
 #include <iostream>
 
@@ -57,8 +54,7 @@ namespace librealsense
 
     const float3* pointcloud_sse::depth_to_points(rs2::points output,
             const rs2_intrinsics &depth_intrinsics, 
-            const rs2::depth_frame& depth_frame,
-            float depth_scale)
+            const rs2::depth_frame& depth_frame)
     {
 #ifdef __SSSE3__
 
@@ -77,7 +73,7 @@ namespace librealsense
         const __m128i mask1 = _mm_set_epi8((char)0xff, (char)0xff, (char)15, (char)14, (char)0xff, (char)0xff, (char)13, (char)12,
             (char)0xff, (char)0xff, (char)11, (char)10, (char)0xff, (char)0xff, (char)9, (char)8);
 
-        auto scale = _mm_set_ps1(depth_scale);
+        auto scale = _mm_set_ps1(depth_frame.get_units());
 
         auto mapx = pre_compute_x;
         auto mapy = pre_compute_y;
@@ -139,15 +135,15 @@ namespace librealsense
         return (float3*)output.get_vertices();
     }
 
-    void pointcloud_sse::get_texture_map(rs2::points output,
-        const float3* points,
-        const unsigned int width,
-        const unsigned int height,
-        const rs2_intrinsics &other_intrinsics,
-        const rs2_extrinsics& extr,
-        float2* pixels_ptr)
+    void pointcloud_sse::get_texture_map_sse( float2 * texture_map,
+                                          const float3 * points,
+                                          const unsigned int width,
+                                          const unsigned int height,
+                                          const rs2_intrinsics & other_intrinsics,
+                                          const rs2_extrinsics & extr,
+                                          float2 * pixels_ptr )
     {
-        auto tex_ptr = (float2*)output.get_texture_coordinates();
+        auto tex_ptr = texture_map;
 
 #ifdef __SSSE3__
         auto point = reinterpret_cast<const float*>(points);
@@ -175,9 +171,10 @@ namespace librealsense
         auto fy = _mm_set_ps1(other_intrinsics.fy);
         auto ppx = _mm_set_ps1(other_intrinsics.ppx);
         auto ppy = _mm_set_ps1(other_intrinsics.ppy);
-        auto w = _mm_set_ps1(other_intrinsics.width);
-        auto h = _mm_set_ps1(other_intrinsics.height);
-        auto mask_inv_brown_conrady = _mm_set_ps1(RS2_DISTORTION_INVERSE_BROWN_CONRADY);
+        auto w = _mm_set_ps1(float(other_intrinsics.width));
+        auto h = _mm_set_ps1(float(other_intrinsics.height));
+        auto mask_brown_conrady = _mm_set_ps1(RS2_DISTORTION_BROWN_CONRADY);
+        auto mask_distortion_none = _mm_set_ps1(RS2_DISTORTION_NONE);
         auto zero = _mm_set_ps1(0);
         auto one = _mm_set_ps1(1);
         auto two = _mm_set_ps1(2);
@@ -206,30 +203,35 @@ namespace librealsense
             p_y = _mm_div_ps(p_y, p_z);
 
             // if(model == RS2_DISTORTION_MODIFIED_BROWN_CONRADY)
-            auto dist = _mm_set_ps1(other_intrinsics.model);
+            auto dist = _mm_set_ps1( (float)other_intrinsics.model );
 
             auto r2 = _mm_add_ps(_mm_mul_ps(p_x, p_x), _mm_mul_ps(p_y, p_y));
             auto r3 = _mm_add_ps(_mm_mul_ps(c[1], _mm_mul_ps(r2, r2)), _mm_mul_ps(c[4], _mm_mul_ps(r2, _mm_mul_ps(r2, r2))));
             auto f = _mm_add_ps(one, _mm_add_ps(_mm_mul_ps(c[0], r2), r3));
 
+            auto brown = _mm_cmpeq_ps(mask_brown_conrady, dist);
+           
             auto x_f = _mm_mul_ps(p_x, f);
             auto y_f = _mm_mul_ps(p_y, f);
 
-            auto r4 = _mm_mul_ps(c[3], _mm_add_ps(r2, _mm_mul_ps(two, _mm_mul_ps(x_f, x_f))));
-            auto d_x = _mm_add_ps(x_f, _mm_add_ps(_mm_mul_ps(two, _mm_mul_ps(c[2], _mm_mul_ps(x_f, y_f))), r4));
+            auto x_f_dist = _mm_or_ps(_mm_and_ps(brown, p_x), _mm_andnot_ps(brown, x_f));
+            auto y_f_dist = _mm_or_ps(_mm_and_ps(brown, p_y), _mm_andnot_ps(brown, y_f));
 
-            auto r5 = _mm_mul_ps(c[2], _mm_add_ps(r2, _mm_mul_ps(two, _mm_mul_ps(y_f, y_f))));
-            auto d_y = _mm_add_ps(y_f, _mm_add_ps(_mm_mul_ps(two, _mm_mul_ps(c[3], _mm_mul_ps(x_f, y_f))), r4));
+            auto r4 = _mm_mul_ps(c[3], _mm_add_ps(r2, _mm_mul_ps(two, _mm_mul_ps(x_f_dist, x_f_dist))));
+            auto d_x = _mm_add_ps(x_f, _mm_add_ps(_mm_mul_ps(two, _mm_mul_ps(c[2], _mm_mul_ps(x_f_dist, y_f_dist))), r4));
 
-            auto cmp = _mm_cmpeq_ps(mask_inv_brown_conrady, dist);
+            auto r5 = _mm_mul_ps(c[2], _mm_add_ps(r2, _mm_mul_ps(two, _mm_mul_ps(y_f_dist, y_f_dist))));
+            auto d_y = _mm_add_ps(y_f, _mm_add_ps(_mm_mul_ps(two, _mm_mul_ps(c[3], _mm_mul_ps(x_f_dist, y_f_dist))), r5));
 
-            p_x = _mm_or_ps(_mm_and_ps(cmp, d_x), _mm_andnot_ps(cmp, p_x));
-            p_y = _mm_or_ps(_mm_and_ps(cmp, d_y), _mm_andnot_ps(cmp, p_y));
+            auto distortion_none = _mm_cmpeq_ps(mask_distortion_none, dist);
+
+            p_x = _mm_or_ps(_mm_and_ps(distortion_none, p_x ), _mm_andnot_ps(distortion_none, d_x));
+            p_y = _mm_or_ps(_mm_and_ps(distortion_none, p_y ), _mm_andnot_ps(distortion_none, d_y));
 
             //TODO: add handle to RS2_DISTORTION_FTHETA
 
             //zero the x and y if z is zero
-            cmp = _mm_cmpneq_ps(z, zero);
+            auto cmp = _mm_cmpneq_ps(z, zero);
             p_x = _mm_and_ps(_mm_add_ps(_mm_mul_ps(p_x, fx), ppx), cmp);
             p_y = _mm_and_ps(_mm_add_ps(_mm_mul_ps(p_y, fy), ppy), cmp);
 
@@ -262,4 +264,22 @@ namespace librealsense
 #endif
 
     }
-}
+
+    void pointcloud_sse::get_texture_map( rs2::points output,
+                                          const float3 * points,
+                                          const unsigned int width,
+                                          const unsigned int height,
+                                          const rs2_intrinsics & other_intrinsics,
+                                          const rs2_extrinsics & extr,
+                                          float2 * pixels_ptr )
+    {
+
+        get_texture_map_sse( (float2 *)output.get_texture_coordinates(),
+                         points,
+                         width,
+                         height,
+                         other_intrinsics,
+                         extr,
+                         pixels_ptr );
+    }
+    }

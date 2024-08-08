@@ -6,6 +6,8 @@
 #include "backend.h"
 #include "types.h"
 
+#include <rsutils/string/from.h>
+
 #include <thread>
 #include <chrono>
 #include <ctime>
@@ -23,6 +25,13 @@ const size_t HID_DATA_ACTUAL_SIZE = 6;  // bytes
 const std::string IIO_DEVICE_PREFIX("iio:device");
 const std::string IIO_ROOT_PATH("/sys/bus/iio/devices");
 const std::string HID_CUSTOM_PATH("/sys/bus/platform/drivers/hid_sensor_custom");
+
+//#define DEBUG_HID
+#ifdef DEBUG_HID
+#define LOG_DEBUG_HID(...)   do { CLOG(DEBUG   ,LIBREALSENSE_ELPP_ID) << __VA_ARGS__; } while(false)
+#else
+#define LOG_DEBUG_HID(...)
+#endif //DEBUG_HID
 
 namespace librealsense
 {
@@ -47,7 +56,14 @@ namespace librealsense
 
         hid_input::~hid_input()
         {
-            enable(false);
+            try
+            {
+                enable( false );
+            }
+            catch(...)
+            {
+                LOG_DEBUG( "Error while disabling a hid device" );
+            }
         }
 
         // enable scan input. doing so cause the input to be part of the data provided in the polling.
@@ -60,7 +76,7 @@ namespace librealsense
 
             if (!iio_device_file.is_open())
             {
-                throw linux_backend_exception(to_string() << "Failed to open scan_element " << element_path);
+                throw linux_backend_exception(rsutils::string::from() << "Failed to open scan_element " << element_path);
             }
             iio_device_file << input_data;
             iio_device_file.close();
@@ -84,7 +100,7 @@ namespace librealsense
             std::ifstream device_type_file(read_scan_type_path);
             if (!device_type_file)
             {
-                throw linux_backend_exception(to_string() << "Failed to open read_scan_type " << read_scan_type_path);
+                throw linux_backend_exception(rsutils::string::from() << "Failed to open read_scan_type " << read_scan_type_path);
             }
 
             device_type_file.getline(buffer, sizeof(buffer));
@@ -101,7 +117,7 @@ namespace librealsense
 
             if (ret < 0)
             {
-                throw linux_backend_exception(to_string() << "Failed to parse device_type " << read_scan_type_path);
+                throw linux_backend_exception(rsutils::string::from() << "Failed to parse device_type " << read_scan_type_path);
             }
 
             device_type_file.close();
@@ -121,7 +137,7 @@ namespace librealsense
             std::ifstream device_index_file(read_scan_index_path);
             if (!device_index_file)
             {
-                throw linux_backend_exception(to_string() << "Failed to open scan_index " << read_scan_index_path);
+                throw linux_backend_exception(rsutils::string::from() << "Failed to open scan_index " << read_scan_index_path);
             }
 
             device_index_file.getline(buffer, sizeof(buffer));
@@ -134,7 +150,7 @@ namespace librealsense
             std::ifstream device_enabled_file(read_enable_state_path);
             if (!device_enabled_file)
             {
-                throw linux_backend_exception(to_string() << "Failed to open scan_index " << read_enable_state_path);
+                throw linux_backend_exception(rsutils::string::from() << "Failed to open scan_index " << read_enable_state_path);
             }
 
             device_enabled_file.getline(buffer, sizeof(buffer));
@@ -185,7 +201,7 @@ namespace librealsense
             }
             catch(std::out_of_range)
             {
-                throw invalid_value_exception(to_string() << "report directory name " << report_name << " not found!");
+                throw invalid_value_exception(rsutils::string::from() << "report directory name " << report_name << " not found!");
             }
         }
 
@@ -252,7 +268,9 @@ namespace librealsense
                     size_t read_size = 0;
 
                     struct timeval tv = {5,0};
+                    LOG_DEBUG_HID("HID Select initiated");
                     auto val = select(max_fd + 1, &fds, nullptr, nullptr, &tv);
+                    LOG_DEBUG_HID("HID Select done, val = " << val);
                     if (val < 0)
                     {
                         // TODO: write to log?
@@ -277,9 +295,15 @@ namespace librealsense
                         else
                         {
                             // TODO: write to log?
+                            LOG_WARNING("HID unresolved event : after select->FD_ISSET");
                             continue;
                         }
 
+                        auto sz= read_size / channel_size;
+                        if (sz > 2)
+                        {
+                            LOG_DEBUG("HID: Going to handle " <<  sz << " packets");
+                        }
                         for (auto i = 0; i < read_size / channel_size; ++i)
                         {
                             auto p_raw_data = raw_data.data() + channel_size * i;
@@ -290,6 +314,10 @@ namespace librealsense
 
                             sens_data.fo = {channel_size, channel_size, p_raw_data, p_raw_data};
                             this->_callback(sens_data);
+                        }
+                        if (sz > 2)
+                        {
+                            LOG_DEBUG("HID: Finished to handle " <<  sz << " packets");
                         }
                     }
                     else
@@ -398,7 +426,7 @@ namespace librealsense
 
             if (!custom_device_file.is_open())
             {
-                throw linux_backend_exception(to_string() << "Failed to enable_sensor " << element_path);
+                throw linux_backend_exception(rsutils::string::from() << "Failed to enable_sensor " << element_path);
             }
             custom_device_file << input_data;
             custom_device_file.close();
@@ -425,7 +453,7 @@ namespace librealsense
             }
         }
 
-        iio_hid_sensor::iio_hid_sensor(const std::string& device_path, uint32_t frequency)
+        iio_hid_sensor::iio_hid_sensor(const std::string& device_path, uint32_t frequency, float sensitivity)
             : _stop_pipe_fd{},
               _fd(0),
               _iio_device_number(0),
@@ -436,7 +464,7 @@ namespace librealsense
               _is_capturing(false),
               _pm_dispatcher(16)    // queue for async power management commands
         {
-            init(frequency);
+            init(frequency, sensitivity);
         }
 
         iio_hid_sensor::~iio_hid_sensor()
@@ -521,13 +549,17 @@ namespace librealsense
                     FD_SET(_stop_pipe_fd[0], &fds);
 
                     int max_fd = std::max(_stop_pipe_fd[0], _fd);
-                    ssize_t read_size = 0;
 
+                    ssize_t read_size = 0;
                     struct timeval tv = {5, 0};
+                    LOG_DEBUG_HID("HID IIO Select initiated");
                     auto val = select(max_fd + 1, &fds, nullptr, nullptr, &tv);
+                    LOG_DEBUG_HID("HID IIO Select done, val = " << val);
+
                     if (val < 0)
                     {
                         // TODO: write to log?
+                        LOG_WARNING("iio_hid_sensor: select failed, return val = " << val);
                         continue;
                     }
                     else if (val > 0)
@@ -549,18 +581,24 @@ namespace librealsense
                         else
                         {
                             // TODO: write to log?
+                            LOG_WARNING("HID IIO unresolved event : after select->FD_ISSET");
                             continue;
                         }
 
+                        auto sz= read_size / channel_size;
+                        if (sz > 2)
+                        {
+                            LOG_DEBUG("HID: Going to handle " <<  sz << " packets");
+                        }
                         // TODO: code refactoring to reduce latency
-                        for (auto i = 0; i < read_size / channel_size; ++i)
+                        for (auto i = 0; i < sz; ++i)
                         {
                             auto now_ts = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
                             auto p_raw_data = raw_data.data() + channel_size * i;
                             sensor_data sens_data{};
                             sens_data.sensor = hid_sensor{get_sensor_name()};
 
-                            auto hid_data_size = channel_size - HID_METADATA_SIZE;
+                            auto hid_data_size = channel_size - (metadata ? HID_METADATA_SIZE : 0);
                             // Populate HID IMU data - Header
                             metadata_hid_raw meta_data{};
                             meta_data.header.report_type = md_hid_report_type::hid_report_imu;
@@ -592,10 +630,15 @@ namespace librealsense
 
                             this->_callback(sens_data);
                         }
+                        if (sz > 2)
+                        {
+                            LOG_DEBUG("HID: Finished to handle " <<  sz << " packets");
+                        }
                     }
                     else
                     {
-                        LOG_WARNING("iio_hid_sensor: Frames didn't arrived within 5 seconds");
+                        LOG_WARNING("iio_hid_sensor: Frames didn't arrived within the predefined interval");
+                        std::this_thread::sleep_for(std::chrono::milliseconds(2));
                     }
                 } while(this->_is_capturing);
             }));
@@ -632,7 +675,7 @@ namespace librealsense
 
             std::unique_ptr<int, std::function<void(int*)> > fd(
                         new int (_fd = open(iio_read_device_path.str().c_str(), O_RDONLY | O_NONBLOCK)),
-                        [&](int* d){ if (d && (*d)) { _fd = ::close(*d);}});
+                        [&](int* d){ if (d && (*d)) { _fd = ::close(*d); } delete d; });
 
             if (!(*fd > 0))
                 throw linux_backend_exception("open() failed with all retries!");
@@ -659,10 +702,25 @@ namespace librealsense
 
             if (!iio_device_file.is_open())
             {
-                 throw linux_backend_exception(to_string() << "Failed to set frequency " << frequency <<
+                 throw linux_backend_exception(rsutils::string::from() << "Failed to set frequency " << frequency <<
                                                ". device path: " << sampling_frequency_path);
             }
             iio_device_file << frequency;
+            iio_device_file.close();
+        }
+
+        void iio_hid_sensor::set_sensitivity( float sensitivity ) 
+        {
+            auto sensitivity_path = _iio_device_path + "/" + _sensitivity_name;
+            std::ofstream iio_device_file( sensitivity_path );
+
+            if( ! iio_device_file.is_open() )
+            {
+                throw linux_backend_exception( rsutils::string::from()
+                                               << "Failed to set sensitivity " << sensitivity
+                                                                       << ". device path: " << sensitivity_path );
+            }
+            iio_device_file << sensitivity;
             iio_device_file.close();
         }
 
@@ -695,7 +753,8 @@ namespace librealsense
 
         bool iio_hid_sensor::has_metadata()
         {
-            if(get_output_size() == HID_DATA_ACTUAL_SIZE + HID_METADATA_SIZE)
+            //for FW>=5.16 HID_METADATA_SIZE is 12 
+            if(get_output_size() >= HID_DATA_ACTUAL_SIZE + HID_METADATA_SIZE)
                 return true;
             return false;
         }
@@ -720,14 +779,14 @@ namespace librealsense
         }
 
         // initialize the device sensor. reading its name and all of its inputs.
-        void iio_hid_sensor::init(uint32_t frequency)
+        void iio_hid_sensor::init(uint32_t frequency, float sensitivity)
         {
             std::ifstream iio_device_file(_iio_device_path + "/name");
 
             // find iio_device in file system.
             if (!iio_device_file.good())
             {
-                throw linux_backend_exception(to_string() << "Failed to open device sensor. " << _iio_device_path);
+                throw linux_backend_exception(rsutils::string::from() << "Failed to open device sensor. " << _iio_device_path);
             }
 
             char name_buffer[256] = {};
@@ -740,7 +799,7 @@ namespace librealsense
             static const std::string suffix_iio_device_path("/" + IIO_DEVICE_PREFIX);
             auto pos = _iio_device_path.find_last_of(suffix_iio_device_path);
             if (pos == std::string::npos)
-                throw linux_backend_exception(to_string() << "Wrong iio device path " << _iio_device_path);
+                throw linux_backend_exception(rsutils::string::from() << "Wrong iio device path " << _iio_device_path);
 
             auto substr = _iio_device_path.substr(pos + 1);
             if (std::all_of(substr.begin(), substr.end(), ::isdigit))
@@ -749,7 +808,7 @@ namespace librealsense
             }
             else
             {
-                throw linux_backend_exception(to_string() << "IIO device number is incorrect! Failed to open device sensor. " << _iio_device_path);
+                throw linux_backend_exception(rsutils::string::from() << "IIO device number is incorrect! Failed to open device sensor. " << _iio_device_path);
             }
 
             _pm_dispatcher.start();
@@ -779,10 +838,14 @@ namespace librealsense
             // get the specific name of sampling_frequency
             _sampling_frequency_name = get_sampling_frequency_name();
 
+            // get the specific name of sensitivity
+            _sensitivity_name = get_sensitivity_name();
+            
             for (auto& input : _inputs)
                 input->enable(true);
 
             set_frequency(frequency);
+            set_sensitivity( sensitivity );
             write_fs_attribute(_iio_device_path + "/buffer/length", hid_buf_len);
         }
 
@@ -836,7 +899,7 @@ namespace librealsense
             dir = opendir(_iio_device_path.c_str());
             if (dir == nullptr)
             {
-                 throw linux_backend_exception(to_string() << "Failed to open scan_element " << _iio_device_path);
+                 throw linux_backend_exception(rsutils::string::from() << "Failed to open scan_element " << _iio_device_path);
             }
 
             // verify file format. should include in_ (input) and _en (enable).
@@ -855,6 +918,38 @@ namespace librealsense
             return sampling_frequency_name;
         }
 
+        /*The sensitivity value we need to transfer to FW is stored in a file named with "hysteresis" in its title.
+        Therefore, we are searching for a file that includes "hysteresis" in its name.*/
+        std::string iio_hid_sensor::get_sensitivity_name() const
+        {
+            std::string sensitivity_name = "";
+            DIR * dir = nullptr;
+            struct dirent * dir_ent = nullptr;
+
+            // start enumerate the scan elemnts dir.
+            dir = opendir( _iio_device_path.c_str() );
+            if( dir == nullptr )
+            {
+                throw linux_backend_exception( rsutils::string::from()
+                                               << "Failed to open scan_element " << _iio_device_path );
+            }
+
+            // verify file format. should include in_ (input) and _en (enable).
+            while( ( dir_ent = readdir( dir ) ) != nullptr )
+            {
+                if( dir_ent->d_type != DT_DIR )
+                {
+                    std::string file( dir_ent->d_name );
+                    if( file.find( "hysteresis" ) != std::string::npos )
+                    {
+                        sensitivity_name = file;
+                    }
+                }
+            }
+            closedir( dir );
+            return sensitivity_name;
+        }
+
 
         // read the IIO device inputs.
         void iio_hid_sensor::read_device_inputs()
@@ -867,7 +962,7 @@ namespace librealsense
             dir = opendir(scan_elements_path.c_str());
             if (dir == nullptr)
             {
-                throw linux_backend_exception(to_string() << "Failed to open scan_element " << _iio_device_path);
+                throw linux_backend_exception(rsutils::string::from() << "Failed to open scan_element " << _iio_device_path);
             }
 
             // verify file format. should include in_ (input) and _en (enable).
@@ -918,12 +1013,26 @@ namespace librealsense
         {
             for (auto& elem : _streaming_iio_sensors)
             {
-                elem->stop_capture();
+                try
+                {
+                    elem->stop_capture();
+                }
+                catch(...)
+                {
+                    LOG_DEBUG( "Error while stopping capture sensor" );
+                }
             }
 
             for (auto& elem : _streaming_custom_sensors)
             {
-                elem->stop_capture();
+                try
+                {
+                    elem->stop_capture();
+                }
+                catch(...)
+                {
+                    LOG_DEBUG( "Error while stopping capture sensor" );
+                }
             }
         }
 
@@ -943,11 +1052,13 @@ namespace librealsense
                     else
                     {
                         uint32_t frequency = 0;
+                        float sensitivity = 0;
                         for (auto& profile : hid_profiles)
                         {
                             if (profile.sensor_name == device_info.id)
                             {
                                 frequency = profile.frequency;
+                                sensitivity = profile.sensitivity;
                                 break;
                             }
                         }
@@ -955,7 +1066,7 @@ namespace librealsense
                         if (frequency == 0)
                             continue;
 
-                        auto device = std::unique_ptr<iio_hid_sensor>(new iio_hid_sensor(device_info.device_path, frequency));
+                        auto device = std::unique_ptr<iio_hid_sensor>(new iio_hid_sensor(device_info.device_path, frequency, sensitivity));
                         _iio_hid_sensors.push_back(std::move(device));
                     }
                 }
@@ -1098,7 +1209,7 @@ namespace librealsense
             {
                 return (*it)->get_report_data(report_name, report_field);
             }
-            throw linux_backend_exception(to_string() << " custom sensor " << custom_sensor_name << " not found!");
+            throw linux_backend_exception(rsutils::string::from() << " custom sensor " << custom_sensor_name << " not found!");
         }
 
         void v4l_hid_device::foreach_hid_device(std::function<void(const hid_device_info&)> action)

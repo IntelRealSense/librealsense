@@ -3,21 +3,22 @@
 
 #pragma once
 
+#include <src/core/stream-profile.h>
+#include <src/core/stream-profile-interface.h>
+
 #include <vector>
 
-#include "align.h"
-#include "types.h"
+#include "../types.h"
 
-#include "proc/identity-processing-block.h"
+#include "identity-processing-block.h"
 
 namespace librealsense
 {
-    std::shared_ptr<librealsense::align> create_align(rs2_stream align_to);
 
     class processing_block_factory
     {
     public:
-        processing_block_factory() {};
+        processing_block_factory() {}
 
         processing_block_factory(const std::vector<stream_profile>& from,
             const std::vector<stream_profile>& to,
@@ -25,28 +26,37 @@ namespace librealsense
 
         bool operator==(const processing_block_factory& rhs) const;
 
-        std::vector<stream_profile> get_source_info() const { return _source_info; }
-        std::vector<stream_profile> get_target_info() const { return _target_info; }
+        const std::vector<stream_profile> & get_source_info() const { return _source_info; }
+        const std::vector<stream_profile> & get_target_info() const { return _target_info; }
         std::shared_ptr<processing_block> generate();
         
         static processing_block_factory create_id_pbf(rs2_format format, rs2_stream stream, int idx = 0);
-        template<typename T>
-        static std::vector<processing_block_factory> create_pbf_vector(rs2_format src, const std::vector<rs2_format>& dst, rs2_stream stream)
+        template<typename T, typename Fn>
+        static std::vector<processing_block_factory> create_pbf_vector( rs2_format src, const std::vector<rs2_format>& dst, rs2_stream stream, Fn creator )
         {
             std::vector<processing_block_factory> rgb_factories;
-            for (auto d : dst)
+            for( auto d : dst )
             {
                 // register identity processing block if requested
-                if (src == d)
+                if( src == d )
                 {
-                    rgb_factories.push_back({ { {src} }, { {src, stream} }, []() { return std::make_shared<identity_processing_block>(); } });
+                    rgb_factories.push_back( { { {src} }, { {src, stream} }, [=]() { return creator( std::make_shared<identity_processing_block>() ); } } );
                     continue;
                 }
 
-                rgb_factories.push_back({ { {src} }, { {d, stream} }, [d]() { return std::make_shared<T>(d); } });
+                rgb_factories.push_back( { { {src} }, { {d, stream} }, [=]() { return creator( std::make_shared<T>( d )); } } );
             }
 
             return rgb_factories;
+        }
+        template<typename T>
+        static std::vector<processing_block_factory> create_pbf_vector( rs2_format src, const std::vector<rs2_format>& dst, rs2_stream stream )
+        {
+            return create_pbf_vector< T >( src, dst, stream,
+                []( std::shared_ptr< generic_processing_block > pb )
+                {
+                    return pb;
+                } );
         }
 
         stream_profiles find_satisfied_requests(const stream_profiles& sp, const stream_profiles& supported_profiles) const;

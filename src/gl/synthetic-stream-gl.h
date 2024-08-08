@@ -3,22 +3,22 @@
 
 #pragma once
 
-#include "core/processing.h"
-#include "image.h"
-#include "source.h"
-#include "../include/librealsense2/hpp/rs_frame.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
-#include "../include/librealsense2-gl/rs_processing_gl.hpp"
-#include "opengl3.h"
-#include "tiny-profiler.h"
+#include "../proc/synthetic-stream.h"
+#include "../core/depth-frame.h"
+#include "../points.h"
 
-#include "concurrency.h"
+#include <librealsense2/hpp/rs_frame.hpp>
+#include <librealsense2/hpp/rs_processing.hpp>
+#include <librealsense2-gl/rs_processing_gl.hpp>
+#include "opengl3.h"        // common/
+#include "tiny-profiler.h"  // common/
+#include <glad/glad.h>
+
 #include <functional>
 #include <thread>
 #include <deque>
 #include <unordered_set>
 
-#include "proc/synthetic-stream.h"
 
 #define RS2_EXTENSION_VIDEO_FRAME_GL (rs2_extension)(RS2_EXTENSION_COUNT)
 #define RS2_EXTENSION_DEPTH_FRAME_GL (rs2_extension)(RS2_EXTENSION_COUNT + 1)
@@ -50,6 +50,67 @@ namespace librealsense
             uint32_t internal_format;
             uint32_t gl_format;
             uint32_t data_type;
+        };
+
+        template<class T, int N = 2>
+        class pbo
+        {
+        public:
+            void init(int w, int h) 
+            {
+                glGenBuffers(N, pboIds);
+                for (int i = 0; i < N; i++)
+                {
+                    glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[i]);
+                    check_gl_error();
+                    glBufferData(GL_PIXEL_PACK_BUFFER, sizeof(T) * w * h, 0, GL_STREAM_READ);
+                    check_gl_error();
+                }
+                
+                glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+                check_gl_error();
+            }
+
+            void query(T* res, int x0, int y0, int w, int h, uint32_t format, uint32_t type)
+            {
+                GLubyte* pData = NULL;
+                
+                int next_idx = (index + 1) % N;
+                glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[next_idx]);
+                check_gl_error();
+                {
+                    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+                    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+
+                    glReadPixels(x0, y0, w, h, format, type, 0);
+                    check_gl_error();
+                }
+
+                glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[index]);
+                check_gl_error();
+                {
+                    pData = (GLubyte*) glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+                }
+                check_gl_error();
+
+                if (pData)
+                {
+                    memcpy(res, (void*)pData, w * h * sizeof(T));
+                    glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+                    check_gl_error();
+                }
+
+                index = next_idx;
+            }
+
+            void reset()
+            {
+                glDeleteBuffers(N, pboIds);
+            }
+
+        private:
+            uint32_t pboIds[N];
+            int index = 0;
         };
 
         texture_mapping& rs_format_to_gl_format(rs2_format type);
@@ -338,7 +399,7 @@ namespace librealsense
                 _section.on_unpublish();
                 T::unpublish();
             }
-            const byte* get_frame_data() const override
+            const uint8_t * get_frame_data() const override
             {
                 auto res = T::get_frame_data();
                 _section.fetch_frame((void*)res);
@@ -381,7 +442,7 @@ namespace librealsense
                     // will only read from the currently selected
                     // block, setting an option will propogate
                     // to all blocks in the group
-                    for(int i = 0; i < _parent->_blocks.size(); i++)
+                    for(size_t i = 0; i < _parent->_blocks.size(); i++)
                     {
                         if (_parent->_blocks[i]->supports_option(_opt))
                         {
@@ -408,9 +469,9 @@ namespace librealsense
 
             processing_block& get() 
             { 
-                for(int i = 0; i < _blocks.size(); i++)
+                for(auto i = 0; i < _blocks.size(); i++)
                 {
-                    index = i;
+                    index = (int)i;
                     if (_blocks[i]->supports_option(RS2_OPTION_COUNT))
                     {
                         auto val = _blocks[i]->get_option(RS2_OPTION_COUNT).query();
@@ -437,11 +498,11 @@ namespace librealsense
                 update_info(RS2_CAMERA_INFO_NAME, block->get_info(RS2_CAMERA_INFO_NAME));
             }
 
-            void set_processing_callback(frame_processor_callback_ptr callback) override
+            void set_processing_callback( rs2_frame_processor_callback_sptr callback ) override
             {
                 for (auto&& pb : _blocks) pb->set_processing_callback(callback);
             }
-            void set_output_callback(frame_callback_ptr callback) override
+            void set_output_callback( rs2_frame_callback_sptr callback ) override
             {
                 for (auto&& pb : _blocks) pb->set_output_callback(callback);
             }

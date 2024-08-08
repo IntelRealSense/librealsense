@@ -4,10 +4,11 @@
 #pragma once
 
 #include "usb/usb-types.h"
-#include "../concurrency.h"
 
 #include <memory>
-#include <libusb.h>
+#include <thread>
+#include <mutex>
+#include "libusb.h"
 
 namespace librealsense
 {
@@ -34,8 +35,7 @@ namespace librealsense
             int _handler_requests = 0;
             struct libusb_context* _ctx;
             int _kill_handler_thread = 0;
-            bool _handling_events = false;
-            std::shared_ptr<active_object<>> _event_handler;
+            std::thread _event_handler;
         };
     }
 }

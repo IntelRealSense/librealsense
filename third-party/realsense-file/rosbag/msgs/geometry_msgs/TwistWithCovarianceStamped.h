@@ -86,32 +86,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::geometry_msgs::TwistWithCovarianceStamped_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::geometry_msgs::TwistWithCovarianceStamped_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::geometry_msgs::TwistWithCovarianceStamped_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::geometry_msgs::TwistWithCovarianceStamped_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::geometry_msgs::TwistWithCovarianceStamped_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::geometry_msgs::TwistWithCovarianceStamped_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 

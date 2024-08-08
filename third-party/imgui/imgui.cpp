@@ -6455,8 +6455,11 @@ bool ImGui::SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v
                 new_value = ImLerp(v_min, v_max, normalized_pos);
             }
 
-            // Round past decimal precision
+            // Round past decimal precision, verify that it remains within min/max range
             new_value = RoundScalar(new_value, decimal_precision);
+            if (new_value > v_max)  new_value = v_max;
+            if (new_value < v_min)  new_value = v_min;
+
             if (*v != new_value)
             {
                 *v = new_value;
@@ -6536,7 +6539,6 @@ bool ImGui::SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v
                 bb.Min.x -= 0.5;
                 bb.Max.x += 0.5;
             }
-            float grab_paddingl = 2.0f;
             //Vertical fills from down upwards
             fill_br.Min = bb.Min;
             fill_br.Min.y = grab_bb.Min.y;

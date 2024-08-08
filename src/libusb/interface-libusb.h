@@ -7,7 +7,7 @@
 #include "usb/usb-interface.h"
 #include "usb/usb-device.h"
 
-#include <libusb.h>
+#include "libusb.h"
 
 namespace librealsense
 {

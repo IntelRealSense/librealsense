@@ -1,15 +1,17 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
-
 #pragma once
+
 #include <core/roi.h>
 #include <core/extension.h>
 #include <core/serialization.h>
-#include "core/streaming.h"
+#include <src/core/device-interface.h>
 #include "archive.h"
-#include "concurrency.h"
 #include "sensor.h"
 #include "record_sensor.h"
+#include <rsutils/concurrency/concurrency.h>
+#include <rsutils/lazy.h>
+
 
 namespace librealsense
 {
@@ -39,7 +41,7 @@ namespace librealsense
         void pause_recording();
         void resume_recording();
         const std::string& get_filename() const;
-        platform::backend_device_group get_device_data() const override;
+        std::shared_ptr< const device_info > get_device_info() const override;
         std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const override;
         bool is_valid() const override;
 
@@ -63,23 +65,19 @@ namespace librealsense
         std::shared_ptr<device_interface> m_device;
         std::vector<std::shared_ptr<record_sensor>> m_sensors;
 
-        lazy<std::shared_ptr<dispatcher>> m_write_thread;
+        rsutils::lazy< std::shared_ptr< dispatcher > > m_write_thread;
         std::shared_ptr<device_serializer::writer> m_ros_writer;
 
         std::chrono::high_resolution_clock::time_point m_capture_time_base;
-        std::chrono::high_resolution_clock::duration m_record_pause_time;
+        std::chrono::high_resolution_clock::duration m_record_total_pause_duration;
         std::chrono::high_resolution_clock::time_point m_time_of_pause;
 
         std::mutex m_mutex;
         bool m_is_recording;
         std::once_flag m_first_frame_flag;
-        int m_on_notification_token;
-        int m_on_frame_token;
-        int m_on_extension_change_token;
         uint64_t m_cached_data_size;
         std::once_flag m_first_call_flag;
         void initialize_recording();
-        void stop_gracefully(to_string error_msg);
     };
 
     MAP_EXTENSION(RS2_EXTENSION_RECORD, record_device);

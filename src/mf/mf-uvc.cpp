@@ -27,6 +27,9 @@ The library will be compiled without the metadata support!\n")
 #include "mf-uvc.h"
 #include "../types.h"
 #include "uvc/uvc-types.h"
+#include <src/backend.h>  // monotonic_to_realtime
+
+#include <rsutils/string/from.h>
 
 #include "Shlwapi.h"
 #include <Windows.h>
@@ -46,6 +49,8 @@ The library will be compiled without the metadata support!\n")
 #define did_guid  MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK
 
 #define DEVICE_NOT_READY_ERROR _HRESULT_TYPEDEF_(0x80070015L)
+#define MF_E_SHUTDOWN_ERROR _HRESULT_TYPEDEF_(0xC00D3E85)
+#define SEMAPHORE_TIMEOUT_ERROR _HRESULT_TYPEDEF_(0x80070079L)
 
 #define MAX_PINS 5
 
@@ -53,7 +58,6 @@ namespace librealsense
 {
     namespace platform
     {
-
 #ifdef METADATA_SUPPORT
 
 #pragma pack(push, 1)
@@ -75,7 +79,7 @@ namespace librealsense
 
             constexpr uint8_t ms_header_size = sizeof(ms_metadata_header);
 
-            bool try_read_metadata(IMFSample *pSample, uint8_t& metadata_size, byte** bytes)
+            bool try_read_metadata(IMFSample *pSample, uint8_t& metadata_size, uint8_t ** bytes)
             {
                 CComPtr<IUnknown>       spUnknown;
                 CComPtr<IMFAttributes>  spSample;
@@ -105,7 +109,7 @@ namespace librealsense
                     // Microsoft converts the standard UVC (12-byte) header into MS proprietary 40-bytes struct
                     // Therefore we revert it to the original structure for uniform handling
                     static const uint8_t md_lenth_max = 0xff;
-                    auto md_raw = reinterpret_cast<byte*>(pMetadata);
+                    auto md_raw = reinterpret_cast<uint8_t *>(pMetadata);
                     ms_metadata_header *ms_hdr = reinterpret_cast<ms_metadata_header*>(md_raw);
                     uvc_header *uvc_hdr = reinterpret_cast<uvc_header*>(md_raw + ms_header_size - uvc_header_size);
                     try
@@ -129,7 +133,7 @@ namespace librealsense
                     uvc_hdr->info = 0x0; // TODO - currently not available
                     metadata_size = static_cast<uint8_t>(uvc_hdr->length + uvc_header_size);
 
-                    *bytes = (byte*)uvc_hdr;
+                    *bytes = (uint8_t *)uvc_hdr;
 
                     return true;
                 }
@@ -165,14 +169,22 @@ namespace librealsense
 
         STDMETHODIMP source_reader_callback::OnReadSample(HRESULT hrStatus,
             DWORD dwStreamIndex,
-            DWORD /*dwStreamFlags*/,
+            DWORD dwStreamFlags,
             LONGLONG llTimestamp,
             IMFSample *sample)
         {
             auto owner = _owner.lock();
             if (owner && owner->_reader)
             {
-                if (FAILED(hrStatus)) owner->_readsample_result = hrStatus;
+                if (FAILED(hrStatus))
+                {
+                    owner->_readsample_result = hrStatus;
+                    if (dwStreamFlags == MF_SOURCE_READERF_ERROR)
+                    {
+                        owner->close_all();
+                        return S_OK;
+                    }
+                }
                 owner->_has_started.set();
 
                 LOG_HR(owner->_reader->ReadSample(dwStreamIndex, 0, nullptr, nullptr, nullptr, nullptr));
@@ -185,11 +197,11 @@ namespace librealsense
                     CComPtr<IMFMediaBuffer> buffer = nullptr;
                     if (SUCCEEDED(sample->GetBufferByIndex(0, &buffer)))
                     {
-                        byte* byte_buffer=nullptr;
+                        uint8_t * byte_buffer=nullptr;
                         DWORD max_length{}, current_length{};
                         if (SUCCEEDED(buffer->Lock(&byte_buffer, &max_length, &current_length)))
                         {
-                            byte* metadata = nullptr;
+                            uint8_t * metadata = nullptr;
                             uint8_t metadata_size = 0;
 #ifdef METADATA_SUPPORT
                             try_read_metadata(sample, metadata_size, &metadata);
@@ -258,7 +270,7 @@ namespace librealsense
                 reinterpret_cast<void **>(&ks_topology_info)));
 
             DWORD nNodes=0;
-            check("get_NumNodes", ks_topology_info->get_NumNodes(&nNodes));
+            LOG_HR_STR("get_NumNodes", ks_topology_info->get_NumNodes(&nNodes));
 
             CComPtr<IUnknown> unknown = nullptr;
             CHECK_HR(ks_topology_info->CreateNodeInstance(xu.node, IID_IUnknown,
@@ -309,11 +321,12 @@ namespace librealsense
 
             if (hr == DEVICE_NOT_READY_ERROR)
                 return false;
+            CHECK_HR( hr );
 
             if (bytes_received != len)
-                throw std::runtime_error(to_string() << "Get XU n:" << (int)ctrl << " received " << bytes_received << "/" << len << " bytes");
+                throw std::runtime_error( rsutils::string::from() << "Get XU n:" << (int)ctrl << " received "
+                                                                  << bytes_received << "/" << len << " bytes" );
 
-            CHECK_HR(hr);
             return true;
         }
 
@@ -349,13 +362,13 @@ namespace librealsense
 
                 auto pStruct = next_struct;
                 cfg.step.resize(option_range_size);
-                librealsense::copy(cfg.step.data(), pStruct, field_width);
+                std::memcpy( cfg.step.data(), pStruct, field_width );
                 pStruct += length;
                 cfg.min.resize(option_range_size);
-                librealsense::copy(cfg.min.data(), pStruct, field_width);
+                std::memcpy( cfg.min.data(), pStruct, field_width );
                 pStruct += length;
                 cfg.max.resize(option_range_size);
-                librealsense::copy(cfg.max.data(), pStruct, field_width);
+                std::memcpy( cfg.max.data(), pStruct, field_width );
                 return;
             }
             case KSPROPERTY_MEMBER_VALUES:
@@ -373,7 +386,7 @@ namespace librealsense
                     }
 
                     cfg.def.resize(option_range_size);
-                    librealsense::copy(cfg.def.data(), next_struct, field_width);
+                    std::memcpy( cfg.def.data(), next_struct, field_width );
                 }
                 return;
             }
@@ -531,7 +544,7 @@ namespace librealsense
                 }
             }
 
-            throw std::runtime_error(to_string() << "Unsupported control - " << opt);
+            throw std::runtime_error( rsutils::string::from() << "Unsupported control - " << opt );
         }
 
         bool wmf_uvc_device::set_pu(rs2_option opt, int value)
@@ -607,8 +620,18 @@ namespace librealsense
                     else
                     {
                         auto hr = get_video_proc()->Set(pu.property, value, VideoProcAmp_Flags_Manual);
-                        if (hr == DEVICE_NOT_READY_ERROR)
+
+                        // We found 2 cases when we want to return false and let the backend retry mechanism call another set command.
+                        // DEVICE_NOT_READY_ERROR: Can be return if the device is busy, not a real error.
+                        // SEMAPHORE_TIMEOUT_ERROR: We get this error at a very low statistics when setting multiple PU commands (i.e. gain command)
+                        // It is not expected but we decided to raise a log_debug and allow a retry on that case [DSO-17181].
+                        if( hr == DEVICE_NOT_READY_ERROR || hr == SEMAPHORE_TIMEOUT_ERROR )
+                        {
+                            if( hr == SEMAPHORE_TIMEOUT_ERROR )
+                                LOG_DEBUG( "set_pu returned error code: "
+                                           << rsutils::hresult::hr_to_string( hr ) );
                             return false;
+                        }
 
                         CHECK_HR(hr);
                     }
@@ -656,7 +679,7 @@ namespace librealsense
                     return true;
                 }
             }
-            throw std::runtime_error(to_string() << "Unsupported control - " << opt);
+            throw std::runtime_error( rsutils::string::from() << "Unsupported control - " << opt );
         }
 
         control_range wmf_uvc_device::get_pu_range(rs2_option opt) const
@@ -720,7 +743,7 @@ namespace librealsense
 
                     WCHAR * wchar_name = nullptr; UINT32 length;
                     CHECK_HR(pDevice->GetAllocatedString(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK, &wchar_name, &length));
-                    auto name = win_to_utf(wchar_name);
+                    auto name = rsutils::string::windows::win_to_utf(wchar_name);
                     CoTaskMemFree(wchar_name);
 
                     uint16_t vid, pid, mi; std::string unique_id, guid;
@@ -849,7 +872,12 @@ namespace librealsense
             //enable source
             CHECK_HR(MFCreateDeviceSource(_device_attrs, &_source));
             LOG_HR(_source->QueryInterface(__uuidof(IAMCameraControl), reinterpret_cast<void **>(&_camera_control)));
-            LOG_HR(_source->QueryInterface(__uuidof(IAMVideoProcAmp), reinterpret_cast<void **>(&_video_proc)));
+            // The IAMVideoProcAmp interface adjusts the qualities of an incoming video signal, such as brightness,
+            // contrast, hue, saturation, gamma, and sharpness.
+            auto hr = _source->QueryInterface( __uuidof( IAMVideoProcAmp ), reinterpret_cast< void ** >( &_video_proc ) );
+            // E_NOINTERFACE is expected... especially when no video camera
+            if( hr != E_NOINTERFACE )
+                LOG_HR_STR( "QueryInterface(IAMVideoProcAmp)", hr );
 
             //enable reader
             CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));
@@ -882,7 +910,7 @@ namespace librealsense
                     {
                         safe_release(pMediaType);
                         if (hr != MF_E_NO_MORE_TYPES) // An object ran out of media types to suggest therefore the requested chain of streaming objects cannot be completed
-                            check("_reader->GetNativeMediaType(sIndex, k, &pMediaType.p)", hr, false);
+                            LOG_HR_STR("_reader->GetNativeMediaType(sIndex, k, &pMediaType.p)",hr);
 
                         break;
                     }
@@ -994,7 +1022,7 @@ namespace librealsense
                                 const auto timeout_ms = RS2_DEFAULT_TIMEOUT;
                                 if (_has_started.wait(timeout_ms))
                                 {
-                                    check("_reader->ReadSample(...)", _readsample_result);
+                                    LOG_HR_STR("_reader->ReadSample(...)", _readsample_result);
                                 }
                                 else
                                 {
@@ -1064,12 +1092,7 @@ namespace librealsense
             }
             catch (...)
             {
-                for (auto& elem : _streams)
-                    if (elem.callback)
-                        close(elem.profile);
-
-                _profiles.clear();
-                _frame_callbacks.clear();
+                close_all();
 
                 throw;
             }
@@ -1115,10 +1138,10 @@ namespace librealsense
 
             check_connection();
 
-            auto& elem = std::find_if(_streams.begin(), _streams.end(),
-                [&](const profile_and_callback& pac) {
-                return (pac.profile == profile && (pac.callback));
-            });
+            auto elem = std::find_if( _streams.begin(),
+                                      _streams.end(),
+                                      [&]( const profile_and_callback & pac )
+                                      { return ( pac.profile == profile && ( pac.callback ) ); } );
 
             if (elem == _streams.end() && _frame_callbacks.empty())
                 throw std::runtime_error("Camera is not streaming!");
@@ -1150,7 +1173,7 @@ namespace librealsense
                         if (sts == MF_E_HW_MFT_FAILED_START_STREAMING)
                             throw std::runtime_error("Camera already streaming");
 
-                        throw std::runtime_error(to_string() << "Flush failed" << sts);
+                        throw std::runtime_error( rsutils::string::from() << "Flush failed" << sts );
                     }
 
                     _is_flushed.wait(INFINITE);
@@ -1162,6 +1185,22 @@ namespace librealsense
         {
             if (!is_connected(_info))
                 throw std::runtime_error("Camera is no longer connected!");
+        }
+
+        void wmf_uvc_device::close_all()
+        {
+            for (auto& elem : _streams)
+                if (elem.callback)
+                {
+                    try
+                    {
+                        close(elem.profile);
+                    }
+                    catch (...) {}
+                }
+                       
+            _profiles.clear();
+            _frame_callbacks.clear();
         }
     }
 }

@@ -209,17 +209,35 @@ namespace rs2
         {
             enqueue(std::move(f));
         }
+
+        /**
+        * Return the capacity of the queue
+        * \return capacity size
+        */
+        size_t size() const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_frame_queue_size(_queue.get(), &e);
+            error::handle(e);
+            return static_cast<size_t>(res);
+        }
+
         /**
         * Return the capacity of the queue
         * \return capacity size
         */
         size_t capacity() const { return _capacity; }
-
         /**
         * Return whether or not the queue calls keep on enqueued frames
         * \return keeping frames
         */
         bool keep_frames() const { return _keep; }
+
+        /**
+        * Provide a getter for underlying rs2_frame_queue object. Used to invoke C-API that require C-type parameters in signature
+        * \return keeping frames
+        */
+        std::shared_ptr<rs2_frame_queue> get() { return _queue; }
 
     private:
         std::shared_ptr<rs2_frame_queue> _queue;
@@ -428,7 +446,7 @@ namespace rs2
         * \param[in] depth - the depth frame to generate point cloud and texture.
         * \return points instance.
         */
-        points calculate(frame depth)
+        points calculate(frame depth) const
         {
             auto res = process(depth);
             if (res.as<points>())
@@ -507,7 +525,33 @@ namespace rs2
             return block;
         }
     };
-  
+
+    class y411_decoder : public filter
+    {
+    public:
+        /**
+         * Creates y411 decoder processing block. This block accepts raw y411 frames and outputs frames in RGB8.
+         *     https://www.fourcc.org/pixel-format/yuv-y411/
+         * Y411 is disguised as NV12 to allow Linux compatibility. Both are 12bpp encodings that allow high-resolution
+         * modes in the camera to still fit within the USB3 limits (YUY wasn't enough).
+         */
+        y411_decoder() : filter(init()) { }
+
+    protected:
+        y411_decoder(std::shared_ptr<rs2_processing_block> block) : filter(block) {}
+
+    private:
+        static std::shared_ptr<rs2_processing_block> init()
+        {
+            rs2_error* e = nullptr;
+            auto block = std::shared_ptr<rs2_processing_block>(
+                rs2_create_y411_decoder(&e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return block;
+        }
+    };
   class threshold_filter : public filter
     {
     public:
@@ -516,9 +560,9 @@ namespace rs2
         * By controlling min and max options on the block, one could filter out depth values
         * that are either too large or too small, as a software post-processing step
         */
-        threshold_filter(float min_dist = 0.15f, float max_dist = 4.f) 
-            : filter(init(), 1) 
-        { 
+        threshold_filter(float min_dist = 0.15f, float max_dist = 4.f)
+            : filter(init(), 1)
+        {
             set_option(RS2_OPTION_MIN_DISTANCE, min_dist);
             set_option(RS2_OPTION_MAX_DISTANCE, max_dist);
         }
@@ -535,7 +579,7 @@ namespace rs2
 
     protected:
         threshold_filter(std::shared_ptr<rs2_processing_block> block) : filter(block, 1) {}
-        
+
     private:
         std::shared_ptr<rs2_processing_block> init()
         {
@@ -559,7 +603,7 @@ namespace rs2
 
     protected:
         units_transform(std::shared_ptr<rs2_processing_block> block) : filter(block, 1) {}
-        
+
     private:
         std::shared_ptr<rs2_processing_block> init()
         {
@@ -788,7 +832,7 @@ namespace rs2
              }
              error::handle(e);
         }
-       
+
     private:
         friend class context;
 
@@ -958,21 +1002,20 @@ namespace rs2
             return block;
         }
     };
-    
-    class zero_order_invalidation : public filter
+
+    class depth_huffman_decoder : public filter
     {
     public:
         /**
-        * Create zero order fix filter
-        * The filter fixes the zero order artifact
+        * Deprecated!  - Create decoder for Huffman-code compressed Depth frames
         */
-        zero_order_invalidation() : filter(init())
+        depth_huffman_decoder() : filter(init())
         {}
 
-        zero_order_invalidation(filter f) :filter(f)
+        depth_huffman_decoder(filter f) :filter(f)
         {
             rs2_error* e = nullptr;
-            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_ZERO_ORDER_FILTER, &e) && !e)
+            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_DEPTH_HUFFMAN_DECODER, &e) && !e)
             {
                 _block.reset();
             }
@@ -986,7 +1029,7 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             auto block = std::shared_ptr<rs2_processing_block>(
-                rs2_create_zero_order_invalidation_block(&e),
+                rs2_create_huffman_depth_decompress_block(&e),
                 rs2_delete_processing_block);
             error::handle(e);
 
@@ -1060,6 +1103,85 @@ namespace rs2
             rs2_error* e = nullptr;
             auto block = std::shared_ptr<rs2_processing_block>(
                 rs2_create_rates_printer_block(&e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return block;
+        }
+    };
+
+    class hdr_merge : public filter
+    {
+    public:
+        /**
+        * Create hdr_merge processing block
+        * the processing merges between depth frames with 
+        * different sub-preset sequence ids.
+        */
+        hdr_merge() : filter(init()) {}
+
+        hdr_merge(filter f) :filter(f)
+        {
+            rs2_error* e = nullptr;
+            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_HDR_MERGE, &e) && !e)
+            {
+                _block.reset();
+            }
+            error::handle(e);
+        }
+
+    private:
+        friend class context;
+
+        std::shared_ptr<rs2_processing_block> init()
+        {
+            rs2_error* e = nullptr;
+            auto block = std::shared_ptr<rs2_processing_block>(
+                rs2_create_hdr_merge_processing_block(&e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return block;
+        }
+    };
+
+    class sequence_id_filter : public filter
+    {
+    public:
+        /**
+        * Create sequence_id_filter processing block
+        * the processing perform the hole filling base on different hole filling mode.
+        */
+        sequence_id_filter() : filter(init()) {}
+
+        /**
+        * Create sequence_id_filter processing block
+        * the processing perform the hole filling base on different hole filling mode.
+        * \param[in] sequence_id - sequence id to pass the filter.
+        */
+        sequence_id_filter(float sequence_id) : filter(init(), 1)
+        {
+            set_option(RS2_OPTION_SEQUENCE_ID, sequence_id);
+        }
+
+        sequence_id_filter(filter f) :filter(f)
+        {
+            rs2_error* e = nullptr;
+            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_SEQUENCE_ID_FILTER, &e) && !e)
+            {
+                _block.reset();
+            }
+            error::handle(e);
+        }
+
+    private:
+        friend class context;
+
+        std::shared_ptr<rs2_processing_block> init()
+        {
+            rs2_error* e = nullptr;
+            auto block = std::shared_ptr<rs2_processing_block>(
+                rs2_create_sequence_id_filter(&e),
                 rs2_delete_processing_block);
             error::handle(e);
 

@@ -1,20 +1,21 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+
 #include "rs-config.h"
 
-#include "../third-party/json.hpp"
-
-#include "model-views.h"
-
+#include <librealsense2/rs.h>
+#include <rsutils/os/special-folder.h>
+#include <rsutils/json.h>
+#include <rsutils/json-config.h>
 #include <fstream>
 
-#include "os.h"
-
-using json = nlohmann::json;
+using json = rsutils::json;
 
 using namespace rs2;
 
 void config_file::set(const char* key, const char* value)
 {
-    _values[key] = value;
+    _j[key] = value;
     save();
 }
 
@@ -23,26 +24,32 @@ void config_file::set_default(const char* key, const char* calculate)
     _defaults[key] = calculate;
 }
 
+void config_file::remove(const char* key)
+{
+    _j.erase(key);
+    save();
+}
+
 void config_file::reset()
 {
-    _values.clear();
+    _j = json::object();
     save();
 }
 
 std::string config_file::get(const char* key, const char* def) const
 {
-    auto it = _values.find(key);
-    if (it != _values.end())
+    auto it = _j.find(key);
+    if (it != _j.end() && it->is_string())
     {
-        return it->second;
+        return it->string_ref();
     }
     return get_default(key, def);
 }
 
 bool config_file::contains(const char* key) const
 {
-    auto it = _values.find(key);
-    return it != _values.end();
+    auto it = _j.find(key);
+    return it != _j.end() && it->is_string();
 }
 
 std::string config_file::get_default(const char* key, const char* def) const
@@ -60,16 +67,10 @@ config_value config_file::get(const char* key) const
 
 void config_file::save(const char* filename)
 {
-    json j;
-    for(auto kvp : _values)
-    {
-        j[kvp.first] = kvp.second; 
-    }
-    std::string s = j.dump(2);
     try
     {
         std::ofstream out(filename);
-        out << s;
+        out << std::setw( 2 ) << _j;
         out.close();
     }
     catch (...)
@@ -79,26 +80,19 @@ void config_file::save(const char* filename)
 
 config_file& config_file::instance()
 {
-    static config_file inst(get_folder_path(rs2::special_folder::app_data) 
-                            + std::string("realsense-config.json"));
+    static config_file inst( rsutils::os::get_special_folder( rsutils::os::special_folder::app_data )
+                             + RS2_CONFIG_FILENAME );
     return inst;
 }
 
-config_file::config_file(std::string filename)
-    : _filename(std::move(filename)), _values()
+config_file::config_file( std::string const & filename )
+    : _filename( filename )
 {
     try
     {
-
-        std::ifstream t(_filename);
-        if (!t.good()) return;
-        std::string str((std::istreambuf_iterator<char>(t)),
-                 std::istreambuf_iterator<char>());
-        auto j = json::parse(str);
-        for (json::iterator it = j.begin(); it != j.end(); ++it) 
-        {
-            _values[it.key()] = it.value();
-        }
+        auto j = rsutils::json_config::load_from_file( filename );
+        if( j.exists() )
+            _j = std::move( j );
     }
     catch(...)
     {
@@ -112,7 +106,7 @@ void config_file::save()
 }
 
 config_file::config_file()
-    : _filename(""), _values()
+    : _j( rsutils::json::object() )
 {
 }
 
@@ -120,7 +114,7 @@ config_file& config_file::operator=(const config_file& other)
 {
     if (this != &other)
     {
-        _values = other._values;
+        _j = other._j;
         _defaults = other._defaults;
         save();
     }
@@ -129,5 +123,5 @@ config_file& config_file::operator=(const config_file& other)
 
 bool config_file::operator==(const config_file& other) const
 {
-    return _values == other._values;
+    return _j == other._j;
 }

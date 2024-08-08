@@ -35,24 +35,24 @@ struct ChannelFloat32_
 
 
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _name_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > >  _name_type;
   _name_type name;
 
-   typedef std::vector<float, typename ContainerAllocator::template rebind<float>::other >  _values_type;
+   typedef std::vector<float, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< float > >  _values_type;
   _values_type values;
 
 
 
 
-  typedef boost::shared_ptr< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> const> ConstPtr;
 
 }; // struct ChannelFloat32_
 
 typedef ::sensor_msgs::ChannelFloat32_<std::allocator<void> > ChannelFloat32;
 
-typedef boost::shared_ptr< ::sensor_msgs::ChannelFloat32 > ChannelFloat32Ptr;
-typedef boost::shared_ptr< ::sensor_msgs::ChannelFloat32 const> ChannelFloat32ConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::ChannelFloat32 > ChannelFloat32Ptr;
+typedef std::shared_ptr< ::sensor_msgs::ChannelFloat32 const> ChannelFloat32ConstPtr;
 
 // constants requiring out of line definition
 
@@ -84,32 +84,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 
@@ -205,7 +205,7 @@ struct Printer< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> >
   template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::sensor_msgs::ChannelFloat32_<ContainerAllocator>& v)
   {
     s << indent << "name: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.name);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > > >::stream(s, indent + "  ", v.name);
     s << indent << "values[]" << std::endl;
     for (size_t i = 0; i < v.values.size(); ++i)
     {

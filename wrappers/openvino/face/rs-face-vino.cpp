@@ -8,8 +8,13 @@
 #include <rs-vino/object-detection.h>
 #include <rs-vino/detected-object.h>
 
-#include <easylogging++.h>
+#include <rsutils/easylogging/easyloggingpp.h>
+#ifdef BUILD_SHARED_LIBS
+// With static linkage, ELPP is initialized by librealsense, so doing it here will
+// create errors. When we're using the shared .so/.dll, the two are separate and we have
+// to initialize ours if we want to use the APIs!
 INITIALIZE_EASYLOGGINGPP
+#endif
 
 
 namespace openvino = InferenceEngine;
@@ -32,10 +37,18 @@ int main(int argc, char * argv[]) try
     // us to run the inference on the CPU. A GPU solution may be possible but, at least without a GPU,
     // a CPU-bound process is faster. To change to GPU, use "GPU" instead (and remove AddExtension()):
     openvino::Core engine;
+
+#ifdef OPENVINO2019
     openvino_helpers::error_listener error_listener;
     engine.SetLogCallback( error_listener );
+#endif
+
     std::string const device_name { "CPU" };
+
+    // Cpu extensions library was removed in OpenVINO >= 2020.1, extensions were merged into the cpu plugin.
+#ifdef OPENVINO2019
     engine.AddExtension( std::make_shared< openvino::Extensions::Cpu::CpuExtensions >(), device_name );
+#endif
 
     openvino_helpers::object_detection faceDetector(
         "face-detection-adas-0001.xml",

@@ -1,61 +1,115 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019-2024 Intel Corporation. All Rights Reserved.
 
 #include "fw-update-factory.h"
 #include "fw-update-device.h"
 #include "usb/usb-enumerator.h"
-#include "ds5/ds5-private.h"
-#include "ds5/ds5-fw-update-device.h"
-#include "ivcam/sr300.h"
-#include "ivcam/sr300-fw-update-device.h"
-#include "l500/l500-private.h"
-#include "l500/l500-fw-update-device.h"
+#include "ds/d400/d400-private.h"
+#include "ds/d500/d500-private.h"
+#include "ds/d400/d400-fw-update-device.h"
+#include "ds/d500/d500-fw-update-device.h"
+
+#include <rsutils/string/from.h>
+
+
+#define FW_UPDATE_INTERFACE_NUMBER 0
+#define DEFAULT_TIMEOUT 100
 
 namespace librealsense
 {
-    int get_product_line(uint16_t pid, platform::usb_class cls)
+    int get_product_line(const platform::usb_device_info &usb_info)
     {
-        if (SR300_RECOVERY == pid && platform::RS2_USB_CLASS_VENDOR_SPECIFIC == cls)
-            return RS2_PRODUCT_LINE_SR300;
-        if(ds::RS_RECOVERY_PID == pid || ds::RS_USB2_RECOVERY_PID == pid)
+        if( ds::RS_D400_RECOVERY_PID == usb_info.pid )
             return RS2_PRODUCT_LINE_D400;
-        if (L500_RECOVERY_PID == pid)
-            return RS2_PRODUCT_LINE_L500;
+        if( ds::RS_D400_USB2_RECOVERY_PID == usb_info.pid )
+            return RS2_PRODUCT_LINE_D400;
+        if( ds::D555_RECOVERY_PID == usb_info.pid )
+            return RS2_PRODUCT_LINE_D500;
         return 0;
     }
 
-    std::vector<std::shared_ptr<device_info>> fw_update_info::pick_recovery_devices(
-        std::shared_ptr<context> ctx,
-        const std::vector<platform::usb_device_info>& usb_devices, int mask)
+
+    std::vector< std::shared_ptr< fw_update_info > > fw_update_info::pick_recovery_devices(
+        std::shared_ptr< context > ctx, const std::vector< platform::usb_device_info > & usb_devices, int mask )
     {
-        std::vector<std::shared_ptr<device_info>> list;
+        std::vector< std::shared_ptr< fw_update_info > > list;
         for (auto&& usb : usb_devices)
         {
-            auto pl = get_product_line(usb.pid, usb.cls);
+            auto pl = get_product_line(usb);
             if(pl & mask)
                 list.push_back(std::make_shared<fw_update_info>(ctx, usb));
         }
         return list;
     }
 
-    std::shared_ptr<device_interface> fw_update_info::create(std::shared_ptr<context> ctx, bool register_device_notifications) const
+    std::vector< std::shared_ptr< fw_update_info > > fw_update_info::pick_recovery_devices(
+        std::shared_ptr< context > ctx, const std::vector< platform::mipi_device_info > & mipi_devices, int mask )
     {
-        auto devices = platform::usb_enumerator::query_devices_info();
-        for (auto&& info : devices)
+        std::vector< std::shared_ptr< fw_update_info > > list;
+        for (auto&& mipi : mipi_devices)
         {
-            if (info.id == _dfu.id)
-            {
-                auto usb = platform::usb_enumerator::create_usb_device(info);
-                if (!usb)
-                    continue;
-                if (ds::RS_RECOVERY_PID == info.pid || ds::RS_USB2_RECOVERY_PID == info.pid)
-                    return std::make_shared<ds_update_device>(ctx, register_device_notifications, usb);
-                if (SR300_RECOVERY == info.pid)
-                    return std::make_shared<sr300_update_device>(ctx, register_device_notifications, usb);
-                if (L500_RECOVERY_PID == info.pid)
-                    return std::make_shared<l500_update_device>(ctx, register_device_notifications, usb);
-            }
+            list.push_back(std::make_shared<fw_update_info>(ctx, mipi));
         }
-        throw std::runtime_error(to_string() << "Failed to create FW update device, device id: " << _dfu.id);
+        return list;
     }
+
+
+    std::shared_ptr<device_interface> fw_update_info::create_device()
+    {
+        auto usb_devices = get_group().usb_devices;
+        if (!usb_devices.empty())
+        {
+            auto& dfu_id = usb_devices.front().id;
+
+            if (&dfu_id != nullptr) {
+                for (auto&& info : usb_devices)
+                {
+                    if (info.id == dfu_id)
+                    {
+                        auto usb = platform::usb_enumerator::create_usb_device(info);
+                        if (!usb)
+                            continue;
+                        switch (info.pid)
+                        {
+                        case ds::RS_D400_RECOVERY_PID:
+                        case ds::RS_D400_USB2_RECOVERY_PID:
+                            return std::make_shared< ds_d400_update_device >(shared_from_this(), usb);
+                        case ds::D555_RECOVERY_PID:
+                            return std::make_shared< ds_d500_update_device >(shared_from_this(), usb);
+                        default:
+                            // Do nothing
+                            break;
+                        }
+                    }
+                }
+            }
+            throw std::runtime_error(rsutils::string::from()
+                << "Failed to create FW update device, device id: " << dfu_id);
+        }
+
+        auto mipi_devices = get_group().mipi_devices;
+        if (!mipi_devices.empty())
+        {
+            auto const& mipi_id = mipi_devices.front().id;
+            for (auto&& info : mipi_devices)
+            {
+                auto mipi = platform::mipi_device::create_mipi_device(info);
+                if (!mipi)
+                    continue;
+                switch (info.pid)
+                {
+                case ds::RS457_RECOVERY_PID:
+                    return std::make_shared< ds_d400_update_device >(shared_from_this(), mipi);
+                default:
+                    // Do nothing
+                    break;
+                }
+            }
+            throw std::runtime_error(rsutils::string::from()
+                << "Failed to create FW update device, device id: " << mipi_id);
+        }
+        throw std::runtime_error(rsutils::string::from()
+            << "Failed to create FW update device - device not found");
+    }
+
 }

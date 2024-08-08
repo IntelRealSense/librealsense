@@ -93,13 +93,13 @@ struct BatteryState_
    typedef uint8_t _present_type;
   _present_type present;
 
-   typedef std::vector<float, typename ContainerAllocator::template rebind<float>::other >  _cell_voltage_type;
+   typedef std::vector<float, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< float > >  _cell_voltage_type;
   _cell_voltage_type cell_voltage;
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _location_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > >  _location_type;
   _location_type location;
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _serial_number_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > >  _serial_number_type;
   _serial_number_type serial_number;
 
 
@@ -126,15 +126,15 @@ struct BatteryState_
      enum { POWER_SUPPLY_TECHNOLOGY_LIMN = 6u };
  
 
-  typedef boost::shared_ptr< ::sensor_msgs::BatteryState_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::BatteryState_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::BatteryState_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::BatteryState_<ContainerAllocator> const> ConstPtr;
 
 }; // struct BatteryState_
 
 typedef ::sensor_msgs::BatteryState_<std::allocator<void> > BatteryState;
 
-typedef boost::shared_ptr< ::sensor_msgs::BatteryState > BatteryStatePtr;
-typedef boost::shared_ptr< ::sensor_msgs::BatteryState const> BatteryStateConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::BatteryState > BatteryStatePtr;
+typedef std::shared_ptr< ::sensor_msgs::BatteryState const> BatteryStateConstPtr;
 
 // constants requiring out of line definition
 
@@ -208,32 +208,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::BatteryState_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::BatteryState_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::BatteryState_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::BatteryState_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::BatteryState_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::BatteryState_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 
@@ -413,9 +413,9 @@ struct Printer< ::sensor_msgs::BatteryState_<ContainerAllocator> >
       Printer<float>::stream(s, indent + "  ", v.cell_voltage[i]);
     }
     s << indent << "location: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.location);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > > >::stream(s, indent + "  ", v.location);
     s << indent << "serial_number: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.serial_number);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > > >::stream(s, indent + "  ", v.serial_number);
   }
 };
 

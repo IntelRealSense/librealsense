@@ -3,32 +3,10 @@
 
 #include "processing-blocks-factory.h"
 
-#include "sse/sse-align.h"
-#include "cuda/cuda-align.h"
-
 #include "stream.h"
 
 namespace librealsense
 {
-#ifdef RS2_USE_CUDA
-    std::shared_ptr<librealsense::align> create_align(rs2_stream align_to)
-    {
-        return std::make_shared<librealsense::align_cuda>(align_to);
-    }
-#else
-#ifdef __SSSE3__
-    std::shared_ptr<librealsense::align> create_align(rs2_stream align_to)
-    {
-        return std::make_shared<librealsense::align_sse>(align_to);
-    }
-#else // No optimizations
-    std::shared_ptr<librealsense::align> create_align(rs2_stream align_to)
-    {
-        return std::make_shared<librealsense::align>(align_to);
-    }
-#endif // __SSSE3__
-#endif // RS2_USE_CUDA
-
     processing_block_factory::processing_block_factory(const std::vector<stream_profile>& from, const std::vector<stream_profile>& to, std::function<std::shared_ptr<processing_block>(void)> generate_func) :
         _source_info(from), _target_info(to), generate_processing_block(generate_func)
     {}
@@ -50,16 +28,16 @@ namespace librealsense
 
     bool processing_block_factory::operator==(const processing_block_factory & rhs) const
     {
-        const auto&& rhs_src = rhs.get_source_info();
-        for (auto&& src : _source_info)
+        const auto & rhs_src = rhs.get_source_info();
+        for (auto & src : _source_info)
         {
             auto equals = [&src](const stream_profile& prof) { return prof == src; };
             if (std::none_of(begin(rhs_src), end(rhs_src), equals))
                 return false;
         }
 
-        const auto&& rhs_tgt = rhs.get_target_info();
-        for (auto&& tgt : _target_info)
+        const auto & rhs_tgt = rhs.get_target_info();
+        for (auto & tgt : _target_info)
         {
             auto equals = [&tgt](const stream_profile& prof) { return prof == tgt; };
             if (std::none_of(begin(rhs_tgt), end(rhs_tgt), equals))

@@ -59,7 +59,7 @@ namespace rs2
                     record_frames(frames);
 
                     if (sample.size())
-                        _samples.push_back({ sample, _model_timer.elapsed_ms(), frames.get_frame_number() });
+                        _samples.push_back({ sample, _model_timer.get_elapsed_ms(), frames.get_frame_number() });
                 }
             }
             void start_record(metrics_model* metrics)
@@ -91,14 +91,18 @@ namespace rs2
                         }
                         catch (...)
                         {
-                            _viewer_model.not_model.add_notification(notification_data{ to_string() << "Metrics Recording: JSON Serializaion has failed",
-                                RS2_LOG_SEVERITY_WARN, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                            _viewer_model.not_model->add_notification(
+                                notification_data{ "Metrics Recording: JSON Serializaion has failed",
+                                                   RS2_LOG_SEVERITY_WARN,
+                                                   RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR } );
                         }
                     }
                 }
                 _samples.clear();
-                _viewer_model.not_model.add_notification(notification_data{ to_string() << "Finished to record frames and matrics data " ,
-                    RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                _viewer_model.not_model->add_notification(
+                    notification_data{ "Finished to record frames and matrics data ",
+                                       RS2_LOG_SEVERITY_INFO,
+                                       RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR } );
             }
 
             bool is_recording()
@@ -112,7 +116,7 @@ namespace rs2
             viewer_model& _viewer_model;
             std::vector<metric_definition> _metric_data;
             std::vector<sample> _samples;
-            timer _model_timer;
+            rsutils::time::stopwatch _model_timer;
             std::mutex _m;
             bool _recording;
             std::string _filename_base;
@@ -169,7 +173,7 @@ namespace rs2
             {
                 std::lock_guard<std::mutex> lock(_m);
                 _vals[_idx]         = val;
-                _timestamps[_idx]   = _model_timer.elapsed_ms();
+                _timestamps[_idx]   = _model_timer.get_elapsed_ms();
                 _idx = (_idx + 1) % SIZE;
                 if (_first_idx== _idx)
                     _first_idx = (_first_idx + 1) % SIZE;
@@ -210,7 +214,7 @@ namespace rs2
             bool _enabled;
             const bool _requires_plane_fit;
 
-            timer _model_timer;
+            rsutils::time::stopwatch _model_timer;
             temporal_event _trending_up;
             temporal_event _trending_down;
             temporal_event _persistent_visibility;  // Control the metric visualization
@@ -353,7 +357,7 @@ namespace rs2
         class tool_model
         {
         public:
-            tool_model();
+            tool_model( rs2::context & ctx, bool disable_log_to_console = false );
 
             bool start(ux_window& win);
 
@@ -381,6 +385,7 @@ namespace rs2
 
             std::string capture_description();
 
+            rs2::context&                   _ctx;
             pipeline                        _pipe;
             std::shared_ptr<device_model>   _device_model;
             viewer_model                    _viewer_model;
@@ -390,7 +395,7 @@ namespace rs2
             metrics_model                   _metrics_model;
             std::string                     _error_message;
             bool                            _first_frame = true;
-            periodic_timer                  _update_readonly_options_timer;
+            rsutils::time::periodic_timer  _update_readonly_options_timer;
             bool                            _device_in_use = false;
 
             float                           _roi_percent = 0.4f;
@@ -408,7 +413,6 @@ namespace rs2
 
             float                           _min_dist, _max_dist, _max_angle;
             std::mutex                      _mutex;
-            rs2::context                    _ctx;
 
             bool                            _use_ground_truth = false;
             int                             _ground_truth = 0;

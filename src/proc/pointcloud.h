@@ -1,9 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
-
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 #pragma once
-#include "../include/librealsense2/hpp/rs_frame.hpp"
+
 #include "synthetic-stream.h"
+#include <src/float3.h>
+
 
 namespace librealsense
 {
@@ -19,8 +20,7 @@ namespace librealsense
         virtual const float3 * depth_to_points(
             rs2::points output,
             const rs2_intrinsics &depth_intrinsics, 
-            const rs2::depth_frame& depth_frame,
-            float depth_scale);
+            const rs2::depth_frame& depth_frame);
         virtual void get_texture_map(
             rs2::points output,
             const float3* points,
@@ -31,6 +31,7 @@ namespace librealsense
             float2* pixels_ptr);
         virtual rs2::points allocate_points(const rs2::frame_source& source, const rs2::frame& f);
         virtual void preprocess() {}
+        virtual bool run__occlusion_filter(const rs2_extrinsics& extr);
 
     protected:
         pointcloud(const char* name);
@@ -57,5 +58,6 @@ namespace librealsense
         void set_extrinsics();
 
         stream_filter _prev_stream_filter;
+        std::shared_ptr< pointcloud > _registered_auto_calib_cb;
     };
 }

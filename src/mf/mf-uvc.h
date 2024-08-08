@@ -2,7 +2,8 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "../backend.h"
+#include <src/platform/uvc-device.h>
+#include <src/platform/uvc-device-info.h>
 #include "win/win-helpers.h"
 
 #include <mfidl.h>
@@ -58,15 +59,6 @@ namespace librealsense
             stream_profile profile;
         } mf_profile;
 
-        template <class T>
-        static void safe_release(T &ppT)
-        {
-            if (ppT)
-            {
-                ppT.Release();
-                ppT = NULL;
-            }
-        }
 
         class wmf_uvc_device : public std::enable_shared_from_this<wmf_uvc_device>,
             public uvc_device
@@ -99,6 +91,8 @@ namespace librealsense
             void lock() const override { _systemwide_lock.lock(); }
             void unlock() const override { _systemwide_lock.unlock(); }
 
+            bool is_platform_jetson() const override { return false;}
+
             std::string get_device_location() const override { return _location; }
             usb_spec get_usb_specification() const override { return _device_usb_spec; }
             IAMVideoProcAmp* get_video_proc() const;
@@ -111,6 +105,7 @@ namespace librealsense
             void stop_stream_cleanup(const stream_profile& profile, std::vector<profile_and_callback>::iterator& elem);
             void flush(int sIndex);
             void check_connection() const;
+            void close_all();
             IKsControl* get_ks_control(const extension_unit& xu) const;
             CComPtr<IMFAttributes> create_device_attrs();
             CComPtr<IMFAttributes> create_reader_attrs();
@@ -118,6 +113,9 @@ namespace librealsense
 
             void set_d0();
             void set_d3();
+
+            // Don't move the position of wmf_backend member. This object must be destroyed only after COM objects.
+            std::shared_ptr<const wmf_backend>      _backend;
 
             const uvc_device_info                   _info;
             power_state                             _power_state = D3;
@@ -131,15 +129,13 @@ namespace librealsense
             CComPtr<IAMVideoProcAmp>                _video_proc = nullptr;
             std::unordered_map<int, CComPtr<IKsControl>>      _ks_controls;
 
-            manual_reset_event                      _is_flushed;
+            auto_reset_event                        _is_flushed;
             manual_reset_event                      _has_started;
             HRESULT                                 _readsample_result = S_OK;
 
             uint16_t                                _streamIndex;
             std::vector<profile_and_callback>       _streams;
             std::mutex                              _streams_mutex;
-
-            std::shared_ptr<const wmf_backend>      _backend;
 
             named_mutex                             _systemwide_lock;
             std::string                             _location;

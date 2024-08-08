@@ -43,24 +43,24 @@ struct PointCloud_
    typedef  ::std_msgs::Header_<ContainerAllocator>  _header_type;
   _header_type header;
 
-   typedef std::vector< ::geometry_msgs::Point32_<ContainerAllocator> , typename ContainerAllocator::template rebind< ::geometry_msgs::Point32_<ContainerAllocator> >::other >  _points_type;
+   typedef std::vector< ::geometry_msgs::Point32_<ContainerAllocator> , typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< ::geometry_msgs::Point32_<ContainerAllocator>  > >  _points_type;
   _points_type points;
 
-   typedef std::vector< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> , typename ContainerAllocator::template rebind< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> >::other >  _channels_type;
+   typedef std::vector< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> , typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< ::sensor_msgs::ChannelFloat32_<ContainerAllocator>  > >  _channels_type;
   _channels_type channels;
 
 
 
 
-  typedef boost::shared_ptr< ::sensor_msgs::PointCloud_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::PointCloud_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::PointCloud_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::PointCloud_<ContainerAllocator> const> ConstPtr;
 
 }; // struct PointCloud_
 
 typedef ::sensor_msgs::PointCloud_<std::allocator<void> > PointCloud;
 
-typedef boost::shared_ptr< ::sensor_msgs::PointCloud > PointCloudPtr;
-typedef boost::shared_ptr< ::sensor_msgs::PointCloud const> PointCloudConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::PointCloud > PointCloudPtr;
+typedef std::shared_ptr< ::sensor_msgs::PointCloud const> PointCloudConstPtr;
 
 // constants requiring out of line definition
 
@@ -92,32 +92,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::PointCloud_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::PointCloud_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::PointCloud_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::PointCloud_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::PointCloud_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::PointCloud_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 

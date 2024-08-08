@@ -1,8 +1,8 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-#include "python.hpp"
-#include "../include/librealsense2/hpp/rs_context.hpp"
+#include "pyrealsense2.h"
+#include <librealsense2/hpp/rs_context.hpp>
 
 void init_context(py::module &m) {
         /* rs2_context.hpp */
@@ -16,10 +16,13 @@ void init_context(py::module &m) {
 
     // Not binding devices_changed_callback, templated
 
-    py::class_<rs2::context> context(m, "context", "Librealsense context class. Includes realsense API version.");
-    context.def(py::init<>())
+    py::class_< rs2::context >( m, "context", "Librealsense context class. Includes realsense API version." )
+        .def( py::init< char const * >(), py::arg( "json-settings" ) = nullptr )
+        .def( py::init<>( []( rsutils::json const & j ) { return rs2::context( j.dump() ); } ), py::arg( "json-settings" ) )
         .def("query_devices", (rs2::device_list(rs2::context::*)() const) &rs2::context::query_devices, "Create a static"
              " snapshot of all connected devices at the time of the call.")
+        .def( "query_devices", ( rs2::device_list( rs2::context::* )(int) const ) & rs2::context::query_devices, "Create a static"
+              " snapshot of all connected devices of specific product line at the time of the call." )
         .def_property_readonly("devices", (rs2::device_list(rs2::context::*)() const) &rs2::context::query_devices,
                                "A static snapshot of all connected devices at time of access. Identical to calling query_devices.")
         .def("query_all_sensors", &rs2::context::query_all_sensors, "Generate a flat list of "

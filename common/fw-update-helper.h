@@ -5,34 +5,43 @@
 
 #include "notifications.h"
 
+
 namespace rs2
 {
-    int parse_product_line(std::string id);
-    std::string get_available_firmware_version(int product_line);
-    std::map<int, std::vector<uint8_t>> create_default_fw_table();
-    std::vector<int> parse_fw_version(const std::string& fw);
+    class viewer_model;
+
+    int parse_product_line(const std::string& product_line);
+    std::string get_available_firmware_version(int product_line, const std::string& pid);
+
+    std::vector<uint8_t> get_default_fw_image(int product_line, const std::string& pid);
     bool is_upgradeable(const std::string& curr, const std::string& available);
-    bool is_recommended_fw_available(std::string version);
+    bool is_recommended_fw_available(const std::string& product_line, const std::string& pid);
 
     class firmware_update_manager : public process_manager
     {
     public:
-        firmware_update_manager(device_model& model, device dev, context ctx, std::vector<uint8_t> fw, bool is_signed) 
-            : process_manager("Firmware Update"), _model(model),
+        firmware_update_manager(std::shared_ptr<notifications_model> not_model, device_model& model, device dev, context ctx, std::vector<uint8_t> fw, bool is_signed)
+            : process_manager("Firmware Update"), _not_model(not_model), _model(model),
               _fw(fw), _is_signed(is_signed), _dev(dev), _ctx(ctx) {}
 
-    private:
-        void process_flow(std::function<void()> cleanup, 
+        const device_model& get_device_model() const { return _model; }
+        std::shared_ptr<notifications_model> get_protected_notification_model() { return _not_model.lock(); };
+
+    protected:
+        void process_flow(std::function<void()> cleanup,
             invoker invoke) override;
+        void process_mipi();
         bool check_for(
             std::function<bool()> action, std::function<void()> cleanup,
             std::chrono::system_clock::duration delta);
 
+        std::weak_ptr<notifications_model> _not_model;
         device _dev;
         context _ctx;
         std::vector<uint8_t> _fw;
         bool _is_signed;
         device_model& _model;
+        bool _is_d500_device = false;
     };
 
     struct fw_update_notification_model : public process_notification_model

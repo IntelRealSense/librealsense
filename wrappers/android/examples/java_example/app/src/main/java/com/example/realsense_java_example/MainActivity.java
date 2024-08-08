@@ -3,9 +3,9 @@ package com.example.realsense_java_example;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.appcompat.app.AppCompatActivity;
 import android.widget.TextView;
 
 import com.intel.realsense.librealsense.DepthFrame;
@@ -14,6 +14,7 @@ import com.intel.realsense.librealsense.Extension;
 import com.intel.realsense.librealsense.Frame;
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.Pipeline;
+import com.intel.realsense.librealsense.PipelineProfile;
 import com.intel.realsense.librealsense.RsContext;
 import com.intel.realsense.librealsense.StreamType;
 
@@ -89,7 +90,8 @@ public class MainActivity extends AppCompatActivity {
     //Start streaming and print the distance of the center pixel in the depth frame.
     private void stream() throws Exception {
         Pipeline pipe = new Pipeline();
-        pipe.start();
+        // try statement needed here to release resources allocated by the Pipeline:start() method
+        try(PipelineProfile pp = pipe.start()){}
         final DecimalFormat df = new DecimalFormat("#.##");
 
         while (!mStreamingThread.isInterrupted())

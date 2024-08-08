@@ -1,8 +1,9 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-#include "python.hpp"
-#include "../include/librealsense2/rs.h"
+#include "pyrealsense2.h"
+#include <librealsense2/rs.h>
+#include <iomanip>
 
 std::string make_pythonic_str(std::string str)
 {
@@ -23,16 +24,46 @@ void init_c_files(py::module &m) {
     BIND_ENUM(m, rs2_distortion, RS2_DISTORTION_COUNT, "Distortion model: defines how pixel coordinates should be mapped to sensor coordinates.")
     BIND_ENUM(m, rs2_log_severity, RS2_LOG_SEVERITY_COUNT, "Severity of the librealsense logger.")
     BIND_ENUM(m, rs2_extension, RS2_EXTENSION_COUNT, "Specifies advanced interfaces (capabilities) objects may implement.")
-    // rs2_matchers
+    BIND_ENUM(m, rs2_matchers, RS2_MATCHER_COUNT, "Specifies types of different matchers.")
     BIND_ENUM(m, rs2_camera_info, RS2_CAMERA_INFO_COUNT, "This information is mainly available for camera debug and troubleshooting and should not be used in applications.")
     BIND_ENUM(m, rs2_stream, RS2_STREAM_COUNT, "Streams are different types of data provided by RealSense devices.")
     BIND_ENUM(m, rs2_format, RS2_FORMAT_COUNT, "A stream's format identifies how binary data is encoded within a frame.")
     BIND_ENUM(m, rs2_timestamp_domain, RS2_TIMESTAMP_DOMAIN_COUNT, "Specifies the clock in relation to which the frame timestamp was measured.")
     BIND_ENUM(m, rs2_frame_metadata_value, RS2_FRAME_METADATA_COUNT, "Per-Frame-Metadata is the set of read-only properties that might be exposed for each individual frame.")
-    BIND_ENUM(m, rs2_option, RS2_OPTION_COUNT, "Defines general configuration controls. These can generally be mapped to camera UVC controls, and can be set / queried at any time unless stated otherwise.")
-    // rs2_sr300_visual_preset
-    // rs2_rs400_visual_preset
-    BIND_ENUM(m, rs2_playback_status, RS2_PLAYBACK_STATUS_COUNT, "") // No docstring in C++
+    BIND_ENUM(m, rs2_calib_target_type, RS2_CALIB_TARGET_COUNT, "Calibration target type.")
+
+    BIND_ENUM(m, rs2_option, RS2_OPTION_COUNT+1, "Defines general configuration controls. These can generally be mapped to camera UVC controls, and can be set / queried at any time unless stated otherwise.")
+    // Without __repr__ and __str__, we get the default 'enum_base' showing '???'
+    py_rs2_option.attr( "__repr__" ) = py::cpp_function(
+        []( const py::object & arg ) -> py::str
+        {
+            auto type = py::type::handle_of( arg );
+            py::object type_name = type.attr( "__name__" );
+            py::int_ arg_int( arg );
+            py::str enum_name( rs2_option_to_string( rs2_option( (int) arg_int ) ) );
+            return py::str( "<{} {} '{}'>" ).format( std::move( type_name ), arg_int, enum_name );
+        },
+        py::name( "__repr__" ),
+        py::is_method( py_rs2_option ) );
+    py_rs2_option.attr( "__str__" ) = py::cpp_function(
+        []( const py::object & arg ) -> py::str {
+            py::int_ arg_int( arg );
+            return rs2_option_to_string( rs2_option( (int) arg_int ) );
+        },
+        py::name( "name" ),
+        py::is_method( py_rs2_option ) );
+    // Force binding of deprecated (renamed) options that we still want to expose for backwards compatibility
+    py_rs2_option.value("ambient_light", RS2_OPTION_AMBIENT_LIGHT);
+    py_rs2_option.value( "lld_temperature", RS2_OPTION_LLD_TEMPERATURE );
+
+    m.def( "option_from_string", &rs2_option_from_string );
+
+    BIND_ENUM(m, rs2_option_type, RS2_OPTION_TYPE_COUNT, "The different types option values can take on")
+    BIND_ENUM(m, rs2_l500_visual_preset, RS2_L500_VISUAL_PRESET_COUNT, "For L500 devices: provides optimized settings (presets) for specific types of usage.")
+    BIND_ENUM(m, rs2_rs400_visual_preset, RS2_RS400_VISUAL_PRESET_COUNT, "For D400 devices: provides optimized settings (presets) for specific types of usage.")
+    BIND_ENUM(m, rs2_playback_status, RS2_PLAYBACK_STATUS_COUNT, "") // No docsDtring in C++
+    BIND_ENUM(m, rs2_calibration_type, RS2_CALIBRATION_TYPE_COUNT, "Calibration type for use in device_calibration")
+    BIND_ENUM_CUSTOM(m, rs2_calibration_status, RS2_CALIBRATION_STATUS_FIRST, RS2_CALIBRATION_STATUS_LAST, "Calibration callback status for use in device_calibration.trigger_device_calibration")
 
     /** rs_types.h **/
     py::class_<rs2_intrinsics> intrinsics(m, "intrinsics", "Video stream intrinsics.");
@@ -45,18 +76,17 @@ void init_c_files(py::module &m) {
         .def_readwrite("fy", &rs2_intrinsics::fy, "Focal length of the image plane, as a multiple of pixel height")
         .def_readwrite("model", &rs2_intrinsics::model, "Distortion model of the image")
         .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_intrinsics, coeffs, float, 5), "Distortion coefficients")
-        .def("__repr__", [](const rs2_intrinsics& self) {
-            std::stringstream ss;
-            ss << "width: " << self.width << ", ";
-            ss << "height: " << self.height << ", ";
-            ss << "ppx: " << self.ppx << ", ";
-            ss << "ppy: " << self.ppy << ", ";
-            ss << "fx: " << self.fx << ", ";
-            ss << "fy: " << self.fy << ", ";
-            ss << "model: " << self.model << ", ";
-            ss << "coeffs: " << array_to_string(self.coeffs);
-            return ss.str();
-        });
+        .def( "__repr__",
+              []( const rs2_intrinsics & i )
+              {
+                  std::ostringstream ss;
+                  ss << "[ " << i.width << "x" << i.height
+                     << "  p[" << i.ppx << " " << i.ppy << "]"
+                     << "  f[" << i.fx << " " << i.fy << "]"
+                     << "  " << rs2_distortion_to_string( i.model ) << " [" << i.coeffs[0] << " " << i.coeffs[1] << " "
+                     << i.coeffs[2] << " " << i.coeffs[3] << " " << i.coeffs[4] << "] ]";
+                  return ss.str();
+              } );
 
     py::class_<rs2_motion_device_intrinsic> motion_device_intrinsic(m, "motion_device_intrinsic", "Motion device intrinsics: scale, bias, and variances.");
     motion_device_intrinsic.def(py::init<>())
@@ -101,6 +131,40 @@ void init_c_files(py::module &m) {
             ss << "w: " << self.w;
             return ss.str();
         });
+
+    py::class_< rs2_combined_motion > combined_motion( m, "combined_motion", "IMU combined GYRO & ACCEL data" );
+    combined_motion.def( py::init<>() )
+        .def_property(
+            "angular_velocity",
+            []( rs2_combined_motion const & self )
+            {
+                return rs2_vector{ (float)self.angular_velocity.x,
+                                   (float)self.angular_velocity.y,
+                                   (float)self.angular_velocity.z };
+            },
+            []( rs2_combined_motion & self, rs2_vector const & v ) {
+                self.angular_velocity = { v.x, v.y, v.z };
+            } )
+        .def_property(
+            "linear_acceleration",
+            []( rs2_combined_motion const & self )
+            {
+                return rs2_vector{ (float)self.linear_acceleration.x,
+                                   (float)self.linear_acceleration.y,
+                                   (float)self.linear_acceleration.z };
+            },
+            []( rs2_combined_motion & self, rs2_vector const & v ) {
+                self.linear_acceleration = { v.x, v.y, v.z };
+            } )
+        .def( "__repr__",
+              []( const rs2_combined_motion & self )
+              {
+                  std::ostringstream ss;
+                  ss << "gyro[" << self.angular_velocity.x << "," << self.angular_velocity.y << ","
+                      << self.angular_velocity.z << "] accel[" << self.linear_acceleration.x << ","
+                      << self.linear_acceleration.y << "," << self.linear_acceleration.z << "]";
+                  return ss.str();
+              } );
 
     py::class_<rs2_pose> pose(m, "pose"); // No docstring in C++
     pose.def(py::init<>())

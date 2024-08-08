@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.intel.realsense.camera">
 
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
@@ -15,7 +17,8 @@
         android:theme="@style/AppTheme">
         <activity
             android:name=".DetachedActivity"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:theme="@style/AppTheme.NoActionBar"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -24,25 +27,29 @@
         </activity>
         <activity
             android:name=".PreviewActivity"
+            android:launchMode="singleTop"
+            android:configChanges="orientation|screenSize"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".SettingsActivity"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".RecordingActivity"
+            android:configChanges="orientation|screenSize"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".PlaybackActivity"
+            android:configChanges="orientation|screenSize"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".FileBrowserActivity"
             android:label="@string/title_activity_file_browser"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
-            android:name=".PresetsActivity"
+            android:name=".InfoActivity"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
-            android:name=".InfoActivity"
+            android:name=".TerminalActivity"
             android:theme="@style/AppTheme.NoActionBar" />
     </application>
 

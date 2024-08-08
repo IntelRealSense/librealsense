@@ -6,10 +6,10 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
@@ -20,6 +20,7 @@ import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
 import com.intel.realsense.librealsense.Pipeline;
+import com.intel.realsense.librealsense.PipelineProfile;
 import com.intel.realsense.librealsense.RsContext;
 import com.intel.realsense.librealsense.StreamType;
 
@@ -32,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int PERMISSIONS_REQUEST_CAMERA = 0;
     private static final int PERMISSIONS_REQUEST_WRITE = 1;
 
-    private boolean mPermissionsGrunted = false;
+    private boolean mPermissionsGranted = false;
 
     private Context mAppContext;
     private TextView mBackGroundText;
@@ -83,7 +84,13 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        mPermissionsGrunted = true;
+        mPermissionsGranted = true;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mGLSurfaceView.close();
     }
 
     @Override
@@ -98,14 +105,14 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        mPermissionsGrunted = true;
+        mPermissionsGranted = true;
     }
 
     @Override
     protected void onResume() {
         super.onResume();
 
-        if(mPermissionsGrunted)
+        if(mPermissionsGranted)
             init();
         else
             Log.e(TAG, "missing permissions");
@@ -120,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String getFilePath(){
-        File folder = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "rs_bags");
+        File folder = new File(getExternalFilesDir(null).getAbsolutePath() + File.separator + "rs_bags");
         folder.mkdir();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
         String currentDateAndTime = sdf.format(new Date());
@@ -187,7 +194,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
             try {
-                try(FrameSet frames = mPipeline.waitForFrames(1000)) {
+                try(FrameSet frames = mPipeline.waitForFrames()) {
                     mGLSurfaceView.upload(frames);
                 }
                 mHandler.post(mStreaming);
@@ -209,7 +216,8 @@ public class MainActivity extends AppCompatActivity {
                 cfg.enableStream(StreamType.COLOR, 640, 480);
                 if (record)
                     cfg.enableRecordToFile(getFilePath());
-                mPipeline.start(cfg);
+                // try statement needed here to release resources allocated by the Pipeline:start() method
+                try(PipelineProfile pp = mPipeline.start(cfg)){}
             }
             mIsStreaming = true;
             mHandler.post(mStreaming);
@@ -227,6 +235,7 @@ public class MainActivity extends AppCompatActivity {
             mIsStreaming = false;
             mHandler.removeCallbacks(mStreaming);
             mPipeline.stop();
+            mGLSurfaceView.clear();
             Log.d(TAG, "streaming stopped successfully");
         }  catch (Exception e) {
             Log.d(TAG, "failed to stop streaming");

@@ -49,7 +49,16 @@ namespace librealsense
         usb_status usb_messenger_libusb::bulk_transfer(const std::shared_ptr<usb_endpoint>&  endpoint, uint8_t* buffer, uint32_t length, uint32_t& transferred, uint32_t timeout_ms)
         {
             int actual_length = 0;
-            auto sts = libusb_bulk_transfer(_handle->get(), endpoint->get_address(), buffer, length, &actual_length, timeout_ms);
+            int sts;
+            if (endpoint->get_type() == RS2_USB_ENDPOINT_BULK)
+                sts = libusb_bulk_transfer(_handle->get(), endpoint->get_address(), buffer, length, &actual_length, timeout_ms);
+            else if (endpoint->get_type() == RS2_USB_ENDPOINT_INTERRUPT)
+                sts = libusb_interrupt_transfer(_handle->get(), endpoint->get_address(), buffer, length, &actual_length, timeout_ms);
+            else {
+                LOG_ERROR("Invalid transfer type " << endpoint->get_type() << " on endpoint " << endpoint->get_address());
+                return RS2_USB_STATUS_OTHER;
+            }
+
             if(sts < 0)
             {
                 std::string strerr = strerror(errno);
@@ -90,7 +99,7 @@ namespace librealsense
         {
             auto nr = reinterpret_cast<libusb_transfer*>(request->get_native_request());
             auto sts = libusb_cancel_transfer(nr);
-            if (sts < 0)
+            if (sts < 0 && sts != LIBUSB_ERROR_NOT_FOUND)
             {
                 std::string strerr = strerror(errno);
                 LOG_WARNING("usb_request_cancel returned error, endpoint: " << (int)request->get_endpoint()->get_address() << " error: " << strerr << ", number: " << (int)errno);

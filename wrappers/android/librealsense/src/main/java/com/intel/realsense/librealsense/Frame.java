@@ -16,6 +16,7 @@ public class Frame extends LrsClass implements Cloneable{
             case DEPTH_FRAME: return (T) new DepthFrame(mHandle);
             case MOTION_FRAME: return (T) new MotionFrame(mHandle);
             case POINTS: return (T) new Points(mHandle);
+            case FRAMESET: return (T) new FrameSet(mHandle);
         }
         throw new RuntimeException("this profile is not extendable to " + extension.name());
     }
@@ -44,6 +45,8 @@ public class Frame extends LrsClass implements Cloneable{
         int rv = nGetTimestampDomain(mHandle);
         return TimestampDomain.values()[rv];
     }
+
+    public boolean supportsMetadata(FrameMetadata type) { return nSupportsMetadata(mHandle, type.value());}
 
     public long getMetadata(FrameMetadata type) { return nGetMetadata(mHandle, type.value());}
 
@@ -79,4 +82,5 @@ public class Frame extends LrsClass implements Cloneable{
     private static native double nGetTimestamp(long handle);
     private static native int nGetTimestampDomain(long handle);
     private static native long nGetMetadata(long handle, int metadata_type);
+    private static native boolean nSupportsMetadata(long handle, int metadata_type);
 }

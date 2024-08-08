@@ -2,13 +2,17 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "environment.h"
+#include "pose.h"
+#include "core/stream-interface.h"
+#include <rsutils/easylogging/easyloggingpp.h>
+
 
 namespace librealsense
 {
     extrinsics_graph::extrinsics_graph()
         : _locks_count(0)
     {
-        _id = std::make_shared<lazy<rs2_extrinsics>>([]()
+        _id = std::make_shared< rsutils::lazy< rs2_extrinsics > >( []()
         {
             return identity_matrix();
         });
@@ -25,7 +29,27 @@ namespace librealsense
         register_extrinsics(from, to, _id);
     }
 
-    void extrinsics_graph::register_extrinsics(const stream_interface& from, const stream_interface& to, std::weak_ptr<lazy<rs2_extrinsics>> extr)
+    // The aim of this method is to add the profile to the graph extrinsics - as a leaf not connected to any other at this stage
+    // It is used when a profile is cloned
+    // The cloned profile will later on be connected to its owning stream by the method register_extrinsics 
+    // (starting from init_stream_profiles method in the device's contructor)
+    void extrinsics_graph::register_profile(const stream_interface& profile)
+    {
+        std::lock_guard<std::mutex> lock(_mutex); 
+        
+        // First, trim any dead stream, to make sure we are not keep gaining memory
+        cleanup_extrinsics();
+
+        // Second, register new extrinsics
+        auto profile_idx = find_stream_profile(profile);
+
+        if (_extrinsics.find(profile_idx) == _extrinsics.end())
+            _extrinsics.insert({ profile_idx, {} });
+    }
+
+    void extrinsics_graph::register_extrinsics( const stream_interface & from,
+                                                const stream_interface & to,
+                                                std::weak_ptr< rsutils::lazy< rs2_extrinsics > > extr )
     {
         std::lock_guard<std::mutex> lock(_mutex);
 
@@ -42,14 +66,41 @@ namespace librealsense
         auto to_idx = find_stream_profile(to);
 
         _extrinsics[from_idx][to_idx] = extr;
-        _extrinsics[to_idx][from_idx] = std::shared_ptr<lazy<rs2_extrinsics>>(nullptr);
+        _extrinsics[to_idx][from_idx] = std::shared_ptr< rsutils::lazy< rs2_extrinsics > >( nullptr );
     }
 
     void extrinsics_graph::register_extrinsics(const stream_interface & from, const stream_interface & to, rs2_extrinsics extr)
     {
-        auto lazy_extr = std::make_shared<lazy<rs2_extrinsics>>([=]() {return extr; });
+        auto lazy_extr = std::make_shared< rsutils::lazy< rs2_extrinsics > >( [=]() { return extr; } );
         _external_extrinsics.push_back(lazy_extr);
         register_extrinsics(from, to, lazy_extr);
+    }
+
+    void extrinsics_graph::override_extrinsics( const stream_interface& from, const stream_interface& to, rs2_extrinsics const & extr )
+    {
+        std::lock_guard<std::mutex> lock( _mutex );
+
+        // First, trim any dead stream, to make sure we are not keep gaining memory
+        cleanup_extrinsics();
+
+        // The extrinsics must already exist!
+        auto from_idx = find_stream_profile( from, false );  // do not add if not there
+        auto from_it = _extrinsics.find( from_idx );
+        if( from_it == _extrinsics.end() )
+            throw std::runtime_error( "override_extrinsics called for invalid <from> stream" );
+        auto& from_map = from_it->second;
+
+        auto to_idx = find_stream_profile( to, false );  // do not add if not there
+        auto to_it = from_map.find( to_idx );
+        if( to_it == from_map.end() )
+            throw std::runtime_error( "override_extrinsics called for invalid <to> stream" );
+        auto& weak_ptr = to_it->second;
+        auto sp = weak_ptr.lock();
+        if( !sp )
+            throw std::runtime_error( "override_extrinsics called for out-of-date stream" );
+
+        auto & lazy_extr = *sp;
+        lazy_extr = [=]() { return extr; };
     }
 
     void extrinsics_graph::cleanup_extrinsics()
@@ -82,19 +133,21 @@ namespace librealsense
         }
 
         if (!invalid_ids.empty())
-            LOG_INFO("Found " << invalid_ids.size() << " unreachable streams, " << counter << " extrinsics deleted");
+            LOG_INFO("Found " << invalid_ids.size() << " unreachable streams, " << std::dec << counter << " extrinsics deleted");
     }
 
-    int extrinsics_graph::find_stream_profile(const stream_interface& p)
+    int extrinsics_graph::find_stream_profile(const stream_interface& p, bool add_if_not_there)
     {
         auto sp = p.shared_from_this();
         auto max = 0;
         for (auto&& kvp : _streams)
         {
-            max = std::max(max, kvp.first);
             if (kvp.second.lock().get() == sp.get())
                 return kvp.first;
+            max = std::max( max, kvp.first );
         }
+        if( !add_if_not_there )
+            return -1;
         _streams[max + 1] = sp;
         return max + 1;
 
@@ -169,7 +222,7 @@ namespace librealsense
         return false;
     }
 
-    std::shared_ptr<lazy<rs2_extrinsics>> extrinsics_graph::fetch_edge(int from, int to)
+    std::shared_ptr< rsutils::lazy< rs2_extrinsics > > extrinsics_graph::fetch_edge( int from, int to )
     {
         auto it = _extrinsics.find(from);
         if (it != _extrinsics.end())
@@ -185,6 +238,12 @@ namespace librealsense
     }
 
 
+    environment::environment()
+        : _stream_id( 0 )
+    {
+    }
+
+
     environment& environment::get_instance()
     {
         static environment env;
@@ -194,15 +253,5 @@ namespace librealsense
     extrinsics_graph& environment::get_extrinsics_graph()
     {
         return _extrinsics;
-    }
-
-    void environment::set_time_service(std::shared_ptr<platform::time_service> ts)
-    {
-        _ts = ts;
-    }
-
-    std::shared_ptr<platform::time_service> environment::get_time_service()
-    {
-        return _ts;
     }
 }

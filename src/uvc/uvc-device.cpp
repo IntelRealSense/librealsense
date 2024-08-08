@@ -2,6 +2,10 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "uvc-device.h"
+#include "uvc-parser.h"
+#include "uvc-streamer.h"
+
+#include <rsutils/string/from.h>
 
 #define UVC_AE_MODE_D0_MANUAL   ( 1 << 0 )
 #define UVC_AE_MODE_D1_AUTO     ( 1 << 1 )
@@ -13,6 +17,25 @@
 const int CONTROL_TRANSFER_TIMEOUT = 100;
 const int INTERRUPT_BUFFER_SIZE = 1024;
 const int FIRST_FRAME_MILLISECONDS_TIMEOUT = 2000;
+
+class lock_singleton
+{
+public:
+    static lock_singleton& instance()
+    {
+        static lock_singleton inst;
+        return inst;
+    }
+    static void lock();
+    static void unlock();
+
+private:
+    static std::recursive_mutex m;
+};
+std::recursive_mutex lock_singleton::m;
+void lock_singleton::lock() { m.lock(); }
+void lock_singleton::unlock() { m.unlock(); }
+
 
 namespace librealsense
 {
@@ -141,7 +164,7 @@ namespace librealsense
 
             stop_stream_cleanup(profile, elem);
 
-            if (_profiles.empty())
+            if (!_profiles.empty())
                 _streamers.clear();
         }
 
@@ -157,7 +180,12 @@ namespace librealsense
                             _messenger = _usb_device->open(_info.mi);
                             if (_messenger)
                             {
-                                listen_to_interrupts();
+                                try{
+                                    listen_to_interrupts();
+                                } catch(const std::exception& exception) {
+                                    // this exception catching avoids crash when disconnecting 2 devices at once - bug seen in android os
+                                    LOG_WARNING("rs_uvc_device exception in listen_to_interrupts method: " << exception.what());
+                                }
                                 _power_state = D0;
                             }
                             break;
@@ -301,14 +329,15 @@ namespace librealsense
             return results;
         }
 
+
         void rs_uvc_device::lock() const
         {
-
+            lock_singleton::instance().lock();
         }
 
         void rs_uvc_device::unlock() const
         {
-
+            lock_singleton::instance().unlock();
         }
 
         std::string rs_uvc_device::get_device_location() const
@@ -461,8 +490,8 @@ namespace librealsense
             unsigned char buffer[4] = {0};
             int32_t ret = 0;
             
-            usb_status sts;
-            uint32_t transferred;
+            usb_status sts = RS2_USB_STATUS_OTHER;
+            uint32_t transferred = 0;
             _action_dispatcher.invoke_and_wait([&, this](dispatcher::cancellable_timer c)
             {
                 if (_messenger)
@@ -541,7 +570,7 @@ namespace librealsense
                     unit = _parser->get_input_terminal().bTerminalID;
                     return UVC_CT_AE_PRIORITY_CONTROL;
                 default:
-                    throw linux_backend_exception(to_string() << "invalid option : " << option);
+                    throw linux_backend_exception(rsutils::string::from() << "invalid option : " << option);
             }
         }
 
@@ -550,8 +579,8 @@ namespace librealsense
             unsigned char buffer[4];
             INT_TO_DW(value, buffer);
 
-            usb_status sts;
-            uint32_t transferred;
+            usb_status sts = RS2_USB_STATUS_OTHER;
+            uint32_t transferred = 0;
 
             _action_dispatcher.invoke_and_wait([&, this](dispatcher::cancellable_timer c)
             {
@@ -641,7 +670,7 @@ namespace librealsense
                              std::string buff = "";
                              for (int i = 0; i < response->get_actual_length(); i++)
                                  buff += std::to_string(response->get_buffer()[i]) + ", ";
-                             LOG_WARNING("interrupt event received: " << buff.c_str());
+                             LOG_DEBUG("interrupt event received: " << buff.c_str());
                          }
 
                          _action_dispatcher.invoke([this](dispatcher::cancellable_timer c)

@@ -21,6 +21,7 @@
 #include <iterator>
 #include <sstream>
 #include <chrono>
+#include <cstring>
 
 struct rs2_frame_callback
 {
@@ -28,6 +29,7 @@ struct rs2_frame_callback
     virtual void                            release() = 0;
     virtual                                 ~rs2_frame_callback() {}
 };
+typedef std::shared_ptr<rs2_frame_callback> rs2_frame_callback_sptr;
 
 struct rs2_frame_processor_callback
 {
@@ -35,6 +37,7 @@ struct rs2_frame_processor_callback
     virtual void                            release() = 0;
     virtual                                 ~rs2_frame_processor_callback() {}
 };
+typedef std::shared_ptr<rs2_frame_processor_callback> rs2_frame_processor_callback_sptr;
 
 struct rs2_notifications_callback
 {
@@ -42,13 +45,33 @@ struct rs2_notifications_callback
     virtual void                            release() = 0;
     virtual                                 ~rs2_notifications_callback() {}
 };
+typedef std::shared_ptr<rs2_notifications_callback> rs2_notifications_callback_sptr;
+
+typedef void ( *log_callback_function_ptr )(rs2_log_severity severity, rs2_log_message const * msg );
+
+struct rs2_software_device_destruction_callback
+{
+    virtual void                            on_destruction() = 0;
+    virtual void                            release() = 0;
+    virtual                                 ~rs2_software_device_destruction_callback() {}
+};
+typedef std::shared_ptr<rs2_software_device_destruction_callback> rs2_software_device_destruction_callback_sptr;
 
 struct rs2_log_callback
 {
-    virtual void                            on_event(rs2_log_severity severity, const char * message) = 0;
+    virtual void                            on_log( rs2_log_severity severity, rs2_log_message const & msg ) noexcept = 0;
     virtual void                            release() = 0;
     virtual                                 ~rs2_log_callback() {}
 };
+typedef std::shared_ptr< rs2_log_callback > rs2_log_callback_sptr;
+
+struct rs2_calibration_change_callback
+{
+    virtual void                            on_calibration_change( rs2_calibration_status ) noexcept = 0;
+    virtual void                            release() = 0;
+    virtual                                 ~rs2_calibration_change_callback() {}
+};
+typedef std::shared_ptr<rs2_calibration_change_callback> rs2_calibration_change_callback_sptr;
 
 struct rs2_devices_changed_callback
 {
@@ -56,6 +79,7 @@ struct rs2_devices_changed_callback
     virtual void                            release() = 0;
     virtual                                 ~rs2_devices_changed_callback() {}
 };
+typedef std::shared_ptr<rs2_devices_changed_callback> rs2_devices_changed_callback_sptr;
 
 struct rs2_playback_status_changed_callback
 {
@@ -63,6 +87,7 @@ struct rs2_playback_status_changed_callback
     virtual void                            release() = 0;
     virtual                                 ~rs2_playback_status_changed_callback() {}
 };
+typedef std::shared_ptr<rs2_playback_status_changed_callback> rs2_playback_status_changed_callback_sptr;
 
 struct rs2_update_progress_callback
 {
@@ -70,6 +95,15 @@ struct rs2_update_progress_callback
     virtual void                            release() = 0;
     virtual                                 ~rs2_update_progress_callback() {}
 };
+typedef std::shared_ptr<rs2_update_progress_callback> rs2_update_progress_callback_sptr;
+
+struct rs2_options_changed_callback
+{
+    virtual void on_value_changed( rs2_options_list * list ) = 0;
+    virtual void release() = 0;
+    virtual ~rs2_options_changed_callback() {}
+};
+typedef std::shared_ptr< rs2_options_changed_callback > rs2_options_changed_callback_sptr;
 
 namespace rs2
 {
@@ -176,5 +210,10 @@ namespace rs2
 
 inline std::ostream & operator << (std::ostream & o, rs2_vector v) { return o << v.x << ", " << v.y << ", " << v.z; }
 inline std::ostream & operator << (std::ostream & o, rs2_quaternion q) { return o << q.x << ", " << q.y << ", " << q.z << ", " << q.w; }
+
+inline bool operator==(rs2_calibration_config const& self, rs2_calibration_config const& other)
+{
+    return !std::memcmp(&self, &other, sizeof(rs2_calibration_config));
+}
 
 #endif // LIBREALSENSE_RS2_TYPES_HPP

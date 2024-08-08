@@ -2,14 +2,12 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include "../backend.h"
+#include <src/platform/uvc-device.h>
+#include <src/platform/uvc-device-info.h>
+#include <src/usb/usb-messenger.h>
+#include <src/usb/usb-enumerator.h>
+
 #include "uvc-types.h"
-#include "../usb/usb-messenger.h"
-#include "../usb/usb-enumerator.h"
-#include "../concurrency.h"
-#include "../types.h"
-#include "uvc-parser.h"
-#include "uvc-streamer.h"
 
 #include "stdio.h"
 #include "stdlib.h"
@@ -17,6 +15,8 @@
 #include <string>
 #include <chrono>
 #include <thread>
+#include <vector>
+#include <memory>
 
 typedef void(uvc_frame_callback_t)(struct librealsense::platform::frame_object *frame, void *user_ptr);
 
@@ -24,6 +24,9 @@ namespace librealsense
 {
     namespace platform
     {
+        class uvc_parser;
+        class uvc_streamer;
+
         std::vector<uvc_device_info> query_uvc_devices_info();
         std::shared_ptr<uvc_device> create_rsuvc_device(uvc_device_info info);
 
@@ -64,6 +67,8 @@ namespace librealsense
 
             virtual std::string get_device_location() const override;
             virtual usb_spec  get_usb_specification() const override;
+
+            bool is_platform_jetson() const override { return false;}
 
         private:
             friend class source_reader_callback;

@@ -15,7 +15,7 @@ Install the SDK or build it from source  ([Linux](https://github.com/IntelRealSe
 
 Set minimum required CMake version
 ```
-cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 3.8)
 ```
 
 Name the project, in this sample the project name will be also the executable name
@@ -29,7 +29,7 @@ Find librealsense installation, this feature is currently available only for Lin
 find_package(realsense2 REQUIRED)
 ```
 
-Enable C++ 11 standard in the applicatoin
+Enable C++11 standard in the application
 ```
 # Enable C++11
 set(CMAKE_CXX_STANDARD 11)

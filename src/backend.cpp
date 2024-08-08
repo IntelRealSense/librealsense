@@ -16,16 +16,47 @@
 #endif
 
 #include "backend.h"
-void librealsense::platform::control_range::populate_raw_data(std::vector<uint8_t>& vec, int32_t value)
+#include "platform/uvc-device.h"
+
+#include <iomanip>
+
+
+namespace librealsense {
+namespace platform {
+
+
+void control_range::populate_raw_data(std::vector<uint8_t>& vec, int32_t value)
 {
     vec.resize(sizeof(value));
     auto data = reinterpret_cast<const uint8_t*>(&value);
     std::copy(data, data + sizeof(value), vec.data());
 }
 
-double librealsense::monotonic_to_realtime(double monotonic)
+
+std::ostream & operator<<( std::ostream & os, guid const & g )
+{
+    std::ios_base::fmtflags f( os.flags() );
+    os << std::hex;
+    auto prev_fill = os.fill();
+    os.fill( '0' );
+    os << g.data1 << '-' << g.data2 << '-' << g.data3 << '-';
+    for( auto b : g.data4 )
+        os << std::setw(2) << (int)b;
+    os.flags( f );
+    os.fill( prev_fill );
+    return os;
+}
+
+
+}  // namespace platform
+
+
+double monotonic_to_realtime(double monotonic)
 {
     auto realtime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     auto time_since_epoch = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
     return monotonic + (realtime - time_since_epoch);
 }
+
+
+}  // namespace librealsense

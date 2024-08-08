@@ -13,6 +13,8 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 /** \brief Category of the librealsense notification. */
 typedef enum rs2_notification_category{
     RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT,               /**< Frames didn't arrived within 5 seconds */
@@ -64,7 +66,7 @@ typedef struct rs2_intrinsics
     float         fx;        /**< Focal length of the image plane, as a multiple of pixel width */
     float         fy;        /**< Focal length of the image plane, as a multiple of pixel height */
     rs2_distortion model;    /**< Distortion model of the image */
-    float         coeffs[5]; /**< Distortion coefficients */
+    float         coeffs[5]; /**< Distortion coefficients. Order for Brown-Conrady: [k1, k2, p1, p2, k3]. Order for F-Theta Fish-eye: [k1, k2, k3, k4, 0]. Other models are subject to their own interpretations */
 } rs2_intrinsics;
 
 /** \brief Motion device intrinsics: scale, bias, and variances. */
@@ -125,8 +127,9 @@ typedef enum rs2_log_severity {
     RS2_LOG_SEVERITY_ERROR, /**< Indication of definite failure */
     RS2_LOG_SEVERITY_FATAL, /**< Indication of unrecoverable failure */
     RS2_LOG_SEVERITY_NONE , /**< No logging will occur */
-    RS2_LOG_SEVERITY_COUNT  /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
-} rs2_log_severity;
+    RS2_LOG_SEVERITY_COUNT, /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+    RS2_LOG_SEVERITY_ALL = RS2_LOG_SEVERITY_DEBUG   /**< Include any/all log messages */
+ } rs2_log_severity;
 const char* rs2_log_severity_to_string(rs2_log_severity info);
 
 /** \brief Specifies advanced interfaces (capabilities) objects may implement. */
@@ -174,6 +177,20 @@ typedef enum rs2_extension
     RS2_EXTENSION_L500_DEPTH_SENSOR,
     RS2_EXTENSION_TM2_SENSOR,
     RS2_EXTENSION_AUTO_CALIBRATED_DEVICE,
+    RS2_EXTENSION_COLOR_SENSOR,
+    RS2_EXTENSION_MOTION_SENSOR,
+    RS2_EXTENSION_FISHEYE_SENSOR,
+    RS2_EXTENSION_DEPTH_HUFFMAN_DECODER, // DEPRECATED
+    RS2_EXTENSION_SERIALIZABLE,
+    RS2_EXTENSION_FW_LOGGER,
+    RS2_EXTENSION_AUTO_CALIBRATION_FILTER,
+    RS2_EXTENSION_DEVICE_CALIBRATION,
+    RS2_EXTENSION_CALIBRATED_SENSOR,
+    RS2_EXTENSION_HDR_MERGE,
+    RS2_EXTENSION_SEQUENCE_ID_FILTER,
+    RS2_EXTENSION_MAX_USABLE_RANGE_SENSOR,
+    RS2_EXTENSION_DEBUG_STREAM_SENSOR,
+    RS2_EXTENSION_CALIBRATION_CHANGE_DEVICE,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);
@@ -186,7 +203,6 @@ typedef enum rs2_matchers
 
    RS2_MATCHER_DI_C,    //compare depth and ir based on frame number,
                         //compare the pair of corresponding depth and ir with color based on closest timestamp,
-                        //commonly used by SR300
 
    RS2_MATCHER_DLR_C,   //compare depth, left and right ir based on frame number,
                         //compare the set of corresponding depth, left and right with color based on closest timestamp,
@@ -204,11 +220,14 @@ typedef enum rs2_matchers
    RS2_MATCHER_DEFAULT, //the default matcher compare all the streams based on closest timestamp
 
    RS2_MATCHER_COUNT
-}rs2_matchers;
+} rs2_matchers;
+const char* rs2_matchers_to_string(rs2_matchers stream);
+
 
 typedef struct rs2_device_info rs2_device_info;
 typedef struct rs2_device rs2_device;
 typedef struct rs2_error rs2_error;
+typedef struct rs2_log_message rs2_log_message;
 typedef struct rs2_raw_data_buffer rs2_raw_data_buffer;
 typedef struct rs2_frame rs2_frame;
 typedef struct rs2_frame_queue rs2_frame_queue;
@@ -234,14 +253,22 @@ typedef struct rs2_sensor_list rs2_sensor_list;
 typedef struct rs2_sensor rs2_sensor;
 typedef struct rs2_options rs2_options;
 typedef struct rs2_options_list rs2_options_list;
+typedef struct rs2_options_changed_callback rs2_options_changed_callback;
 typedef struct rs2_devices_changed_callback rs2_devices_changed_callback;
 typedef struct rs2_notification rs2_notification;
 typedef struct rs2_notifications_callback rs2_notifications_callback;
+typedef struct rs2_firmware_log_message rs2_firmware_log_message;
+typedef struct rs2_firmware_log_parsed_message rs2_firmware_log_parsed_message;
+typedef struct rs2_firmware_log_parser rs2_firmware_log_parser;
+typedef struct rs2_terminal_parser rs2_terminal_parser;
+typedef void (*rs2_log_callback_ptr)(rs2_log_severity, rs2_log_message const *, void * arg);
 typedef void (*rs2_notification_callback_ptr)(rs2_notification*, void*);
+typedef void (*rs2_software_device_destruction_callback_ptr)(void*);
 typedef void (*rs2_devices_changed_callback_ptr)(rs2_device_list*, rs2_device_list*, void*);
 typedef void (*rs2_frame_callback_ptr)(rs2_frame*, void*);
 typedef void (*rs2_frame_processor_callback_ptr)(rs2_frame*, rs2_source*, void*);
-typedef void(*rs2_update_progress_callback_ptr)(const float, void*);
+typedef void (*rs2_update_progress_callback_ptr)(const float, void*);
+typedef void (*rs2_options_changed_callback_ptr)(const rs2_options_list *);
 
 typedef double      rs2_time_t;     /**< Timestamp format. units are milliseconds */
 typedef long long   rs2_metadata_type; /**< Metadata attribute type is defined as 64 bit signed integer*/
@@ -252,6 +279,54 @@ const char* rs2_get_failed_function            (const rs2_error* error);
 const char* rs2_get_failed_args                (const rs2_error* error);
 const char* rs2_get_error_message              (const rs2_error* error);
 void        rs2_free_error                     (rs2_error* error);
+
+#pragma pack(push, 1)
+/* rs2_calibration_roi - Array of four corners in Deph Frame Coordinate system that define a closed simple quadrangle (non-intersecting)*/
+typedef struct rs2_calibration_roi
+{
+    uint16_t mask_pixel[4][2];
+}rs2_calibration_roi;
+
+typedef struct float3_row_major { float x, y, z; } float3_row_major;
+typedef struct float3x3_row_major { float3_row_major x, y, z; } float3x3_row_major;
+
+typedef struct rs2_extrinsics_row_major
+{
+    float3x3_row_major rotation; // Rotation matrix
+    float3_row_major translation; // Metric units
+} rs2_extrinsics_row_major;
+
+typedef struct rs2_calibration_config
+{
+    uint8_t calib_roi_num_of_segments; // Within 0-4 range: 0 - Default.No limitations.Full FOV can be used in TC
+                                       //                   1 - 4: Segments defined.The segment must be sequential
+    rs2_calibration_roi roi[4];        // Segment 0 = convex tetragon - The vertices of the tetragon are ordered clockwise
+                                       //       Vertex = [x, y] = pixel coordinates in the reference depth map
+                                       //       0 - based coordinates : [0, 0] = center of the top - left pixel
+                                       // Segments 1-3 - structured identical to segment_#0 (reserved)
+                                       // The ROI segments can intersect, but each must be convex(angles <= 180 degrees).
+    uint8_t reserved1[12];
+    rs2_extrinsics_row_major camera_position;
+    uint8_t reserved2[300];
+    uint8_t crypto_signature[32];
+    uint8_t reserved3[39];
+} rs2_calibration_config;
+
+typedef struct rs2_calibration_config_header
+{
+    uint16_t version;       // major.minor. Big-endian
+    uint16_t table_type;    // type
+    uint32_t table_size;    // full size including: header footer
+    uint32_t calib_version; // major.minor.index
+    uint32_t crc32;         // crc of all the data in table excluding this header/CRC
+} rs2_calibration_config_header;
+
+typedef struct rs2_calibration_config_with_header
+{
+    rs2_calibration_config_header header;
+    rs2_calibration_config payload;
+} rs2_calibration_config_with_header;
+#pragma pack(pop)
 
 #ifdef __cplusplus
 }

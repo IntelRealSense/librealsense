@@ -2,6 +2,7 @@ LIBRARY
 
 EXPORTS
     rs2_create_context
+    rs2_create_context_ex
     rs2_delete_context
     rs2_create_recording_context
     rs2_create_mock_context
@@ -17,6 +18,7 @@ EXPORTS
     rs2_delete_device_list
     rs2_create_device
     rs2_delete_device
+    rs2_device_is_connected
 
     rs2_query_sensors
     rs2_get_sensors_count
@@ -26,9 +28,13 @@ EXPORTS
 
     rs2_get_extrinsics
     rs2_register_extrinsics
+    rs2_override_extrinsics
     rs2_get_motion_intrinsics
+    rs2_override_intrinsics
+    rs2_reset_sensor_calibration
 
     rs2_get_stream_profiles
+    rs2_get_active_streams
     rs2_get_stream_profile
     rs2_get_stream_profiles_count
     rs2_delete_stream_profiles_list
@@ -51,6 +57,12 @@ EXPORTS
     rs2_get_notification_category
     rs2_get_notification_serialized_data
 
+    rs2_register_calibration_change_callback
+    rs2_register_calibration_change_callback_cpp
+    rs2_trigger_device_calibration
+    rs2_calibration_type_to_string
+    rs2_calibration_status_to_string
+
     rs2_get_frame_metadata
     rs2_supports_frame_metadata
     rs2_get_frame_timestamp
@@ -71,9 +83,13 @@ EXPORTS
     rs2_keep_frame
     rs2_frame_add_ref
     rs2_pose_frame_get_pose_data
+    rs2_extract_target_dimensions
 
     rs2_get_option
+    rs2_get_option_value
+    rs2_delete_option_value
     rs2_set_option
+    rs2_set_option_value
     rs2_supports_option
     rs2_get_option_range
     rs2_get_option_description
@@ -82,12 +98,16 @@ EXPORTS
     rs2_is_option_read_only
     rs2_get_options_list
     rs2_get_option_from_list
+    rs2_get_option_value_from_list
     rs2_get_options_list_size
     rs2_delete_options_list
+    rs2_set_options_changed_callback
+    rs2_set_options_changed_callback_cpp
 
     rs2_set_region_of_interest
     rs2_get_region_of_interest
 
+    rs2_build_debug_protocol_command
     rs2_send_and_receive_raw_data
     rs2_get_raw_data_size
     rs2_delete_raw_data
@@ -105,6 +125,7 @@ EXPORTS
     rs2_try_wait_for_frame
     rs2_enqueue_frame
     rs2_flush_queue
+    rs2_frame_queue_size
 
     rs2_create_error
     rs2_get_failed_function
@@ -115,6 +136,7 @@ EXPORTS
     rs2_exception_type_to_string
     rs2_extension_type_to_string
     rs2_extension_to_string
+    rs2_matchers_to_string
     rs2_playback_status_to_string
     rs2_log_severity_to_string
     rs2_log
@@ -123,15 +145,28 @@ EXPORTS
     rs2_format_to_string
     rs2_distortion_to_string
     rs2_option_to_string
+    rs2_option_type_to_string
+    rs2_option_from_string
     rs2_camera_info_to_string
     rs2_frame_metadata_to_string
     rs2_frame_metadata_value_to_string
+    rs2_calib_target_type_to_string
     rs2_timestamp_domain_to_string
     rs2_sr300_visual_preset_to_string
     rs2_notification_category_to_string
+    rs2_cah_trigger_to_string
 
     rs2_log_to_console
     rs2_log_to_file
+    rs2_log_to_callback
+    rs2_log_to_callback_cpp
+    rs2_reset_logger
+    rs2_enable_rolling_log_file
+
+    rs2_get_log_message_line_number
+    rs2_get_log_message_filename
+    rs2_get_raw_log_message
+    rs2_get_full_log_message
 
     rs2_get_api_version
     rs2_set_devices_changed_callback_cpp
@@ -157,6 +192,7 @@ EXPORTS
     rs2_clone_video_stream_profile
 
     rs2_allocate_synthetic_video_frame
+    rs2_allocate_synthetic_motion_frame
     rs2_allocate_points
     rs2_allocate_composite_frame
     rs2_synthetic_frame_ready
@@ -181,10 +217,14 @@ EXPORTS
     rs2_create_rates_printer_block
     rs2_create_disparity_transform_block
     rs2_create_zero_order_invalidation_block
-    
+    rs2_create_huffman_depth_decompress_block
+    rs2_create_hdr_merge_processing_block
+    rs2_create_sequence_id_filter
+
     rs2_embedded_frames_count
     rs2_extract_frame
     rs2_depth_frame_get_distance
+    rs2_depth_frame_get_units
     rs2_depth_stereo_frame_get_baseline
     rs2_get_stereo_baseline
 
@@ -215,10 +255,16 @@ EXPORTS
     rs2_get_amp_factor
     rs2_set_amp_factor
     rs2_rs400_visual_preset_to_string
+    rs2_l500_visual_preset_to_string
+    rs2_sensor_mode_to_string
+    rs2_host_perf_mode_to_string
     rs2_is_enabled
     rs2_toggle_advanced_mode
     rs2_load_json
     rs2_serialize_json
+    rs2_emitter_frequency_mode_to_string
+    rs2_depth_auto_exposure_mode_to_string
+    rs2_gyro_sensitivity_to_string
 
     rs2_create_record_device
     rs2_create_record_device_ex
@@ -260,6 +306,7 @@ EXPORTS
     rs2_pipeline_get_active_profile
     rs2_pipeline_profile_get_device
     rs2_pipeline_profile_get_streams
+    rs2_pipeline_set_device
     rs2_delete_pipeline_profile
 
     rs2_create_config
@@ -284,16 +331,26 @@ EXPORTS
     rs2_export_to_ply
     rs2_create_software_device
     rs2_software_device_add_sensor
+    rs2_software_device_set_destruction_callback
+    rs2_software_device_set_destruction_callback_cpp
+    rs2_software_device_register_info
+    rs2_software_device_update_info
     rs2_software_sensor_on_video_frame
     rs2_software_sensor_on_motion_frame
     rs2_software_sensor_on_pose_frame
+    rs2_software_sensor_on_notification
     rs2_software_device_create_matcher
     rs2_software_sensor_add_video_stream
+    rs2_software_sensor_add_video_stream_ex
     rs2_software_sensor_add_motion_stream
+    rs2_software_sensor_add_motion_stream_ex
     rs2_software_sensor_add_pose_stream
+    rs2_software_sensor_add_pose_stream_ex
     rs2_software_sensor_add_read_only_option
     rs2_software_sensor_update_read_only_option
+    rs2_software_sensor_add_option
     rs2_software_sensor_set_metadata
+    rs2_software_sensor_detach
 
     rs2_loopback_enable
     rs2_loopback_disable
@@ -309,6 +366,7 @@ EXPORTS
     rs2_export_localization_map
     rs2_set_static_node
     rs2_get_static_node
+    rs2_remove_static_node
     rs2_load_wheel_odometry_config
     rs2_send_wheel_odometry
     rs2_get_processing_block
@@ -324,11 +382,59 @@ EXPORTS
     rs2_create_flash_backup_cpp
     rs2_update_firmware_unsigned
     rs2_update_firmware_unsigned_cpp
+    rs2_check_firmware_compatibility
     rs2_enter_update_state
-    rs2_run_on_chip_calibration_cpp
-    rs2_run_tare_calibration_cpp
+
     rs2_run_on_chip_calibration
+    rs2_run_on_chip_calibration_cpp
     rs2_run_tare_calibration
+    rs2_run_tare_calibration_cpp
+    rs2_process_calibration_frame
+    rs2_run_focal_length_calibration
+    rs2_run_focal_length_calibration_cpp
+    rs2_run_uv_map_calibration
+    rs2_run_uv_map_calibration_cpp
+    rs2_calculate_target_z
+    rs2_calculate_target_z_cpp
     rs2_get_calibration_table
     rs2_set_calibration_table
 
+    rs2_start_collecting_fw_logs
+    rs2_stop_collecting_fw_logs
+    rs2_create_fw_log_message
+    rs2_delete_fw_log_message
+    rs2_get_number_of_fw_logs
+    rs2_get_fw_log
+    rs2_get_flash_log
+    rs2_fw_log_message_severity
+    rs2_fw_log_message_timestamp
+    rs2_fw_log_message_data
+    rs2_fw_log_message_size
+    rs2_init_fw_log_parser
+    rs2_parse_firmware_log
+    rs2_create_fw_log_parsed_message
+    rs2_delete_fw_log_parsed_message
+    rs2_get_fw_log_parsed_message
+    rs2_get_fw_log_parsed_file_name
+    rs2_get_fw_log_parsed_thread_name
+    rs2_get_fw_log_parsed_module_name
+    rs2_get_fw_log_parsed_severity
+    rs2_get_fw_log_parsed_line
+    rs2_get_fw_log_parsed_timestamp
+    rs2_get_fw_log_parsed_sequence_id
+
+    rs2_create_terminal_parser
+    rs2_delete_terminal_parser
+    rs2_terminal_parse_command
+    rs2_terminal_parse_response
+
+    rs2_get_max_usable_depth_range
+    rs2_get_debug_stream_profiles
+
+    rs2_project_point_to_pixel
+    rs2_deproject_pixel_to_point
+    rs2_transform_point_to_point
+    rs2_fov
+    rs2_project_color_pixel_to_depth_pixel
+    rs2_get_calibration_config
+    rs2_set_calibration_config

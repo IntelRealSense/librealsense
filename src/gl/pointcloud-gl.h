@@ -23,8 +23,7 @@ namespace librealsense
             const float3 * depth_to_points(
                 rs2::points output,
                 const rs2_intrinsics &depth_intrinsics, 
-                const rs2::depth_frame& depth_frame,
-                float depth_scale) override;
+                const rs2::depth_frame& depth_frame) override;
             void get_texture_map(rs2::points output,
                 const float3* points,
                 const unsigned int width,
@@ -36,7 +35,10 @@ namespace librealsense
                 const rs2::frame_source& source, 
                 const rs2::frame& f) override;
 
+            bool run__occlusion_filter(const rs2_extrinsics& extr) override;
+
             std::shared_ptr<rs2::visualizer_2d> _projection_renderer;
+            std::shared_ptr<rs2::visualizer_2d> _occu_renderer;
 
             rs2::depth_frame _depth_data;
             float _depth_scale;

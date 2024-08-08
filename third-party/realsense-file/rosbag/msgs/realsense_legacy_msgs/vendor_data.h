@@ -35,10 +35,10 @@ struct vendor_data_
 
 
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _name_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > >  _name_type;
   _name_type name;
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _value_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > >  _value_type;
   _value_type value;
 
 
@@ -84,32 +84,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::realsense_legacy_msgs::vendor_data_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::realsense_legacy_msgs::vendor_data_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::realsense_legacy_msgs::vendor_data_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::realsense_legacy_msgs::vendor_data_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::realsense_legacy_msgs::vendor_data_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::realsense_legacy_msgs::vendor_data_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 
@@ -183,9 +183,9 @@ struct Printer< ::realsense_legacy_msgs::vendor_data_<ContainerAllocator> >
   template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::realsense_legacy_msgs::vendor_data_<ContainerAllocator>& v)
   {
     s << indent << "name: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.name);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > > >::stream(s, indent + "  ", v.name);
     s << indent << "value: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.value);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > > >::stream(s, indent + "  ", v.value);
   }
 };
 

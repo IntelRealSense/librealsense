@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2019-2024 Intel Corporation. All Rights Reserved.
 
-cmake_minimum_required(VERSION 2.8.9)
+cmake_minimum_required(VERSION 3.8)
 
 project(realsense2-gl)
 
@@ -10,6 +10,8 @@ set(REALSENSE_GL_CPP
     synthetic-stream-gl.cpp
     yuy2rgb-gl.h
     yuy2rgb-gl.cpp
+    y4112rgb-gl.h
+    y4112rgb-gl.cpp
     pointcloud-gl.h
     pointcloud-gl.cpp
     rs-gl.cpp
@@ -86,9 +88,10 @@ configure_package_config_file(../../CMake/realsense2-glConfig.cmake.in realsense
 
 configure_file(../../config/librealsense-gl.pc.in ../../config/realsense2-gl.pc @ONLY)
 
-target_link_libraries(${PROJECT_NAME} 
-    PRIVATE ${DEPENDENCIES}
-)
+target_link_libraries( ${PROJECT_NAME}
+    PRIVATE
+        ${DEPENDENCIES}
+    )
 
 # CMake prior to 3.13 cannot install targets located in sub-directories.
 #https://gitlab.kitware.com/cmake/cmake/merge_requests/2152

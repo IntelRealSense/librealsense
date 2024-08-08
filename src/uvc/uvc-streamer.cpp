@@ -2,7 +2,6 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "uvc-streamer.h"
-#include "../backend.h"
 
 const int UVC_PAYLOAD_MAX_HEADER_LENGTH         = 1024;
 const int DEQUEUE_MILLISECONDS_TIMEOUT          = 50;
@@ -25,7 +24,7 @@ namespace librealsense
             _read_endpoint = inf->first_endpoint(platform::RS2_USB_ENDPOINT_DIRECTION_READ);
 
             _read_buff_length = UVC_PAYLOAD_MAX_HEADER_LENGTH + _context.control->dwMaxVideoFrameSize;
-            LOG_INFO("endpoint " << (int)_read_endpoint->get_address() << " read buffer size: " << _read_buff_length);
+            LOG_INFO("endpoint " << (int)_read_endpoint->get_address() << " read buffer size: " << std::dec <<_read_buff_length);
 
             _action_dispatcher.start();
 
@@ -113,13 +112,15 @@ namespace librealsense
 
             _request_callback = std::make_shared<usb_request_callback>([this](platform::rs_usb_request r)
             {
-                _action_dispatcher.invoke([this, r](dispatcher::cancellable_timer c)
+                _action_dispatcher.invoke([this, r](dispatcher::cancellable_timer)
                 {
                     if(!_running)
                       return;
 
                     auto al = r->get_actual_length();
-                    if(al > 0 && al == r->get_buffer().data()[0] + _context.control->dwMaxVideoFrameSize)
+                    // Relax the frame size constrain for compressed streams
+                    bool is_compressed = val_in_range(_context.profile.format, { 0x4d4a5047U , 0x5a313648U}); // MJPEG, Z16H
+                    if(al > 0L && ((al == r->get_buffer().data()[0] + _context.control->dwMaxVideoFrameSize) || is_compressed ))
                     {
                         auto f = backend_frame_ptr(_frames_archive->allocate(), &cleanup_frame);
                         if(f)
@@ -155,7 +156,10 @@ namespace librealsense
 
                 _context.messenger->reset_endpoint(_read_endpoint, RS2_USB_ENDPOINT_DIRECTION_READ);
 
-                _running = true;
+                {
+                    std::lock_guard<std::mutex> lock(_running_mutex);
+                    _running = true;
+                }
 
                 for(auto&& r : _requests)
                 {
@@ -195,14 +199,25 @@ namespace librealsense
 
                 _publish_frame_thread->stop();
 
-                _running = false;
+                {
+                    std::lock_guard<std::mutex> lock(_running_mutex);
+                    _running = false;
+                    _stopped_cv.notify_one();
+                }
 
             }, [this](){ return !_running; });
         }
 
         void uvc_streamer::flush()
         {
-            stop();
+            if(_running)
+                stop();
+
+            // synchronized so do not destroy shared pointers while it's still being running
+            {
+                std::unique_lock<std::mutex> lock(_running_mutex);
+                _stopped_cv.wait_for(lock, std::chrono::seconds(1), [&]() { return !_running; });
+            }
 
             _read_endpoint.reset();
 

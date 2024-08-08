@@ -7,15 +7,11 @@ macro(infoValue variableName)
 endmacro()
 
 macro(config_cxx_flags)
-    include(CheckCXXCompilerFlag)
-    CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-    CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-    if(COMPILER_SUPPORTS_CXX11)
-        set(CMAKE_CXX_STANDARD 11)
-        set(CMAKE_CUDA_STANDARD 11)
-    elseif(COMPILER_SUPPORTS_CXX0X)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-    endif()
+    # We require that the current project (e.g., librealsense) use C++14. However, projects using
+    # the library don't need to be C++14 -- they can use C++11. Hence this is PRIVATE and not PUBLIC:
+    target_compile_features( ${PROJECT_NAME} PRIVATE cxx_std_14 )
+    target_compile_features( ${PROJECT_NAME} INTERFACE cxx_std_11 )
+    #set( CMAKE_CUDA_STANDARD ${LRS_CXX_STANDARD} )
 endmacro()
 
 macro(config_crt)

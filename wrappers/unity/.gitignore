@@ -3,7 +3,11 @@
 [Oo]bj/
 [Bb]uild/
 [Bb]uilds/
+[Ll]ogs/
 Assets/AssetStoreTools*
+Packages/
+UserSettings/
+UnityPackageManager/
 
 # Visual Studio 2015 cache directory
 /.vs/

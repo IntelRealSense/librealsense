@@ -1,5 +1,4 @@
-#  minimum required cmake version: 3.1.0
-cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 3.8)
 
 project(RealSenseVinoFaceExample)
 
@@ -20,6 +19,14 @@ add_executable(rs-face-vino
 	${OPENVINO_FILES}
     ${ELPP_FILES}
 )
+
+if(OPENVINO2019)
+	target_compile_definitions(rs-face-vino PRIVATE OPENVINO2019)
+endif()
+
+if(OPENVINO_NGRAPH)
+	target_compile_definitions(rs-face-vino PRIVATE OPENVINO_NGRAPH)
+endif()
 
 source_group("OpenVINO" FILES ${OPENVINO_FILES})
 source_group("EasyLogging++" FILES ${ELPP_FILES})
@@ -42,6 +49,13 @@ install(
 
 # Download model files -- these will go into build/wrappers/openvino/face, which is also where the sample
 # is run from in Visual Studio
+if(OPENVINO2019)
 dl_vino_model( "README.txt"                    "789e144d6cafa379c8437d2a6860829b6d935a8d" )
 dl_vino_model( "face-detection-adas-0001.bin"  "1625f05ada1d8e78e36856def7124f78cd0a6c2a" )
 dl_vino_model( "face-detection-adas-0001.xml"  "11c36f6e4488b2f5437ccff9f330d02545087ab3" )
+else()
+# Newer model files with IRv10, 2020.1 and later
+dl_vino_model( "README.txt"                    "789e144d6cafa379c8437d2a6860829b6d935a8d" )
+dl_vino_model( "face-detection-adas-0001.bin"  "065e9015297c7adbc650ebfc17176477cd0a4279" )
+dl_vino_model( "face-detection-adas-0001.xml"  "331be642a248213f586ec1d1b71c223435a437e3" )
+endif()

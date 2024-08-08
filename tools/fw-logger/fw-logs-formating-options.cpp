@@ -79,7 +79,7 @@ namespace fw_logger
         }
     }
 
-    std::unordered_map<std::string, std::vector<std::string>> fw_logs_formating_options::get_enums() const
+    std::unordered_map<string, std::vector<kvp>> fw_logs_formating_options::get_enums() const
     {
         return _fw_logs_enum_names_list;
     }

@@ -5,12 +5,11 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
-import android.widget.Switch;
 import android.widget.TextView;
 
 import com.intel.realsense.librealsense.Align;
@@ -26,6 +25,7 @@ import com.intel.realsense.librealsense.GLRsSurfaceView;
 import com.intel.realsense.librealsense.HoleFillingFilter;
 import com.intel.realsense.librealsense.Option;
 import com.intel.realsense.librealsense.Pipeline;
+import com.intel.realsense.librealsense.PipelineProfile;
 import com.intel.realsense.librealsense.Pointcloud;
 import com.intel.realsense.librealsense.RsContext;
 import com.intel.realsense.librealsense.SpatialFilter;
@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "librs process example";
     private static final int PERMISSIONS_REQUEST_CAMERA = 0;
 
-    private boolean mPermissionsGrunted = false;
+    private boolean mPermissionsGranted = false;
 
     private Context mAppContext;
     private TextView mBackGroundText;
@@ -93,7 +93,14 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        mPermissionsGrunted = true;
+        mPermissionsGranted = true;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mGLSurfaceViewOrg.close();
+        mGLSurfaceViewProcessed.close();
     }
 
     @Override
@@ -102,13 +109,13 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, PERMISSIONS_REQUEST_CAMERA);
             return;
         }
-        mPermissionsGrunted = true;
+        mPermissionsGranted = true;
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if(mPermissionsGrunted)
+        if(mPermissionsGranted)
             init();
         else
             Log.e(TAG, "missing permissions");
@@ -186,7 +193,7 @@ public class MainActivity extends AppCompatActivity {
         public void run() {
             try {
                 try(FrameReleaser fr = new FrameReleaser()){
-                    FrameSet frames = mPipeline.waitForFrames(1000).releaseWith(fr);
+                    FrameSet frames = mPipeline.waitForFrames().releaseWith(fr);
                     FrameSet orgSet = frames.applyFilter(mColorizerOrg).releaseWith(fr);
                     FrameSet processedSet = frames.applyFilter(mDecimationFilter).releaseWith(fr).
                             applyFilter(mHoleFillingFilter).releaseWith(fr).
@@ -195,10 +202,12 @@ public class MainActivity extends AppCompatActivity {
                             applyFilter(mThresholdFilter).releaseWith(fr).
                             applyFilter(mColorizerProcessed).releaseWith(fr).
                             applyFilter(mAlign).releaseWith(fr);
-                    Frame org = orgSet.first(StreamType.DEPTH, StreamFormat.RGB8).releaseWith(fr);
-                    Frame processed = processedSet.first(StreamType.DEPTH, StreamFormat.RGB8).releaseWith(fr);
-                    mGLSurfaceViewOrg.upload(org);
-                    mGLSurfaceViewProcessed.upload(processed);
+                    try(Frame org = orgSet.first(StreamType.DEPTH, StreamFormat.RGB8).releaseWith(fr)){
+                        try(Frame processed = processedSet.first(StreamType.DEPTH, StreamFormat.RGB8).releaseWith(fr)){
+                            mGLSurfaceViewOrg.upload(org);
+                            mGLSurfaceViewProcessed.upload(processed);
+                        }
+                    }
                 }
                 mHandler.post(mStreaming);
             }
@@ -213,7 +222,8 @@ public class MainActivity extends AppCompatActivity {
         {
             config.enableStream(StreamType.DEPTH, 640, 480);
             config.enableStream(StreamType.COLOR, 640, 480);
-            mPipeline.start(config);
+            // try statement needed here to release resources allocated by the Pipeline:start() method
+            try(PipelineProfile pp = mPipeline.start(config)){}
         }
     }
 
@@ -242,9 +252,13 @@ public class MainActivity extends AppCompatActivity {
             mHandler.removeCallbacks(mStreaming);
             mPipeline.stop();
             Log.d(TAG, "streaming stopped successfully");
+            mGLSurfaceViewOrg.clear();
+            mGLSurfaceViewProcessed.clear();
         }  catch (Exception e) {
             Log.d(TAG, "failed to stop streaming");
             mPipeline = null;
+            mColorizerOrg.close();
+            mColorizerProcessed.close();
         }
     }
 }

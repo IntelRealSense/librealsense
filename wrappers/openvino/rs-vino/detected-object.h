@@ -30,6 +30,7 @@ namespace openvino_helpers
 
         explicit detected_object( size_t id, std::string const & label, cv::Rect const & location,
             cv::Rect const & depth_location = cv::Rect {}, float intensity = 1, float depth = 0 );
+        virtual ~detected_object() {}
 
         // Update the location and intensity of the face
         void move( cv::Rect const & location, cv::Rect const & depth_location = cv::Rect {}, float intensity = 1, float depth = 0 )

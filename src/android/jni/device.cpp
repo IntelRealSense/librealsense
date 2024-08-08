@@ -57,9 +57,13 @@ Java_com_intel_realsense_librealsense_Device_nQuerySensors(JNIEnv *env, jclass t
         sensors.push_back(s);
     }
     jlongArray rv = env->NewLongArray(sensors.size());
-    env->SetLongArrayRegion(rv, 0, sensors.size(), reinterpret_cast<const jlong *>(sensors.data()));
-    return rv;
 
+    for (auto i = 0; i < sensors.size(); i++)
+    {
+        env->SetLongArrayRegion(rv, i, 1, reinterpret_cast<const jlong *>(&sensors[i]));
+    }
+
+    return rv;
 }
 
 extern "C"
@@ -108,6 +112,17 @@ Java_com_intel_realsense_librealsense_Updatable_nCreateFlashBackup(JNIEnv *env, 
     env->SetByteArrayRegion(rv, 0, raw_data_buffer->buffer.size(),
         reinterpret_cast<const jbyte *>(raw_data_buffer->buffer.data()));
     return rv;
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_intel_realsense_librealsense_Updatable_nCheckFirmwareCompatibility(JNIEnv *env, jobject instance,
+                                                                            jlong handle, jbyteArray image) {
+    rs2_error *e = NULL;
+    auto length = env->GetArrayLength(image);
+    int rv = rs2_check_firmware_compatibility(reinterpret_cast<const rs2_device *>(handle), image, length, &e);
+    handle_error(env, e);
+    return rv > 0;
 }
 
 extern "C"

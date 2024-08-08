@@ -1,38 +1,38 @@
 <?xml version="1.0"?>
 
 <!-- This file is only used to enable the building librealsense2 -->
-<!-- as a debian package for use with ROS (http://ros.org) -->
-<!-- via catkin_make (which invokes cmake) -->
+<!-- as a debian package for use with ROS 2 (http://ros.org) -->
 
 <package format="2">
   <name>librealsense2</name>
   <!-- The version tag needs to be updated with each new release of librealsense -->
-  <version>2.31.0</version>
+  <version>2.56.0</version>
   <description>
-  Library for capturing data from the Intel(R) RealSense(TM) SR300, D400 Depth cameras and T2xx Tracking devices. This effort was initiated to better support researchers, creative coders, and app developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense(TM); devices are implemented in this project.
+  Library for controlling and capturing data from the Intel(R) RealSense(TM) D400 devices.
   </description>
 
-  <maintainer email="sergey.dorodnicov@intel.com">Sergey Dorodnicov</maintainer>
+  <maintainer email="librs.ros@intel.com">LibRealSense ROS Team</maintainer>
 
   <url type="website">https://github.com/IntelRealSense/librealsense/</url>
 
-  <author email="sergey.dorodnicov@intel.com">Sergey Dorodnicov</author>
-  <author email="doron.hirshberg@intel.com">Doron Hirshberg</author>
-  <author email="mark.d.horn@intel.com">Mark Horn</author>
-  <author email="reagan.lopez@intel.com">Reagan Lopez</author>
-  <author email="itay.carpis@intel.com">Itay Carpis</author>
+  <author email="librs.ros@intel.com">LibRealSense ROS Team</author>
 
   <license>Apache License, Version 2.0</license>
 
-  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>cmake</buildtool_depend>
 
   <build_depend>pkg-config</build_depend>
 
-  <depend>libusb-1.0-dev</depend>
-  <depend>linux-headers-generic</depend>
-  <depend>libssl-dev</depend>
-  <depend>dkms</depend>
-  <depend>udev</depend>
+  <build_depend>libusb-1.0-dev</build_depend>
+  <build_depend>libssl-dev</build_depend>
+  <build_depend>libudev-dev</build_depend>
+  <build_depend>dkms</build_depend>
+  <build_depend>git</build_depend>
+  <build_depend>udev</build_depend>
+
+  <depend>libx11</depend>
+  <depend>libglfw3-dev</depend>
+  <depend>opengl</depend>
 
   <export>
     <build_type>cmake</build_type>

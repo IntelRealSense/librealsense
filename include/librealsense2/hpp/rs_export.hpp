@@ -30,7 +30,7 @@ namespace rs2
     inline vec3d operator + (const vec3d & a, const vec3d & b) { return{ a.x + b.x, a.y + b.y, a.z + b.z }; }
     inline vec3d operator - (const vec3d & a, const vec3d & b) { return{ a.x - b.x, a.y - b.y, a.z - b.z }; }
     inline vec3d cross(const vec3d & a, const vec3d & b) { return { a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x }; }
-    
+
     class save_to_ply : public filter
     {
     public:
@@ -76,9 +76,9 @@ namespace rs2
 
         void export_to_ply(points p, video_frame color) {
             const bool use_texcoords  = color && !get_option(OPTION_IGNORE_COLOR);
-            bool mesh = get_option(OPTION_PLY_MESH);
-            bool binary = get_option(OPTION_PLY_BINARY);
-            bool use_normals = get_option(OPTION_PLY_NORMALS);
+            bool mesh = get_option(OPTION_PLY_MESH) != 0;
+            bool binary = get_option(OPTION_PLY_BINARY) != 0;
+            bool use_normals = get_option(OPTION_PLY_NORMALS) != 0;
             const auto verts = p.get_vertices();
             const auto texcoords = p.get_texture_coordinates();
             const uint8_t* texture_data;
@@ -87,8 +87,8 @@ namespace rs2
             std::vector<rs2::vertex> new_verts;
             std::vector<vec3d> normals;
             std::vector<std::array<uint8_t, 3>> new_tex;
-            std::map<int, int> idx_map;
-            std::map<int, std::vector<vec3d>> index_to_normals;
+            std::map<size_t, size_t> idx_map;
+            std::map<size_t, std::vector<vec3d>> index_to_normals;
 
             new_verts.reserve(p.size());
             if (use_texcoords) new_tex.reserve(p.size());
@@ -99,7 +99,7 @@ namespace rs2
                 if (fabs(verts[i].x) >= min_distance || fabs(verts[i].y) >= min_distance ||
                     fabs(verts[i].z) >= min_distance)
                 {
-                    idx_map[i] = new_verts.size();
+                    idx_map[int(i)] = int(new_verts.size());
                     new_verts.push_back({ verts[i].x, -1 * verts[i].y, -1 * verts[i].z });
                     if (use_texcoords)
                     {
@@ -112,11 +112,11 @@ namespace rs2
             auto profile = p.get_profile().as<video_stream_profile>();
             auto width = profile.width(), height = profile.height();
             static const auto threshold = get_option(OPTION_PLY_THRESHOLD);
-            std::vector<std::array<int, 3>> faces;
+            std::vector<std::array<size_t, 3>> faces;
             if (mesh)
             {
-                for (int x = 0; x < width - 1; ++x) {
-                    for (int y = 0; y < height - 1; ++y) {
+                for (size_t x = 0; x < width - 1; ++x) {
+                    for (size_t y = 0; y < height - 1; ++y) {
                         auto a = y * width + x, b = y * width + x + 1, c = (y + 1)*width + x, d = (y + 1)*width + x + 1;
                         if (verts[a].z && verts[b].z && verts[c].z && verts[d].z
                             && fabs(verts[a].z - verts[b].z) < threshold && fabs(verts[a].z - verts[c].z) < threshold
@@ -155,7 +155,7 @@ namespace rs2
 
             if (mesh && use_normals)
             {
-                for (int i = 0; i < new_verts.size(); ++i)
+                for (size_t i = 0; i < new_verts.size(); ++i)
                 {
                     auto normals_vec = index_to_normals[i];
                     vec3d sum = { 0, 0, 0 };
@@ -202,7 +202,7 @@ namespace rs2
             {
                 out.close();
                 out.open(fname, std::ios_base::app | std::ios_base::binary);
-                for (int i = 0; i < new_verts.size(); ++i)
+                for (size_t i = 0; i < new_verts.size(); ++i)
                 {
                     // we assume little endian architecture on your device
                     out.write(reinterpret_cast<const char*>(&(new_verts[i].x)), sizeof(float));
@@ -226,7 +226,7 @@ namespace rs2
                 if (mesh)
                 {
                     auto size = faces.size();
-                    for (int i = 0; i < size; ++i) {
+                    for (size_t i = 0; i < size; ++i) {
                         static const int three = 3;
                         out.write(reinterpret_cast<const char*>(&three), sizeof(uint8_t));
                         out.write(reinterpret_cast<const char*>(&(faces[i][0])), sizeof(int));
@@ -237,7 +237,7 @@ namespace rs2
             }
             else
             {
-                for (int i = 0; i <new_verts.size(); ++i)
+                for (size_t i = 0; i <new_verts.size(); ++i)
                 {
                     out << new_verts[i].x << " ";
                     out << new_verts[i].y << " ";
@@ -263,7 +263,7 @@ namespace rs2
                 if (mesh)
                 {
                     auto size = faces.size();
-                    for (int i = 0; i < size; ++i) {
+                    for (size_t i = 0; i < size; ++i) {
                         int three = 3;
                         out << three << " ";
                         out << std::get<0>(faces[i]) << " ";
@@ -303,7 +303,7 @@ namespace rs2
             std::vector<std::tuple<stream_profile, stream_profile>> extrinsics;
 
             if (auto fs = data.as<frameset>()) {
-                for (int i = 0; i < fs.size(); ++i) {
+                for (int i = 0; size_t(i) < fs.size(); ++i) {
                     frame f = fs[i];
                     auto profile = f.get_profile();
                     std::stringstream sname;
@@ -331,7 +331,7 @@ namespace rs2
                         assert(false);
                     }
                     sensors.emplace_back(s, software_profile, i);
-                    
+
                     bool found_extrin = false;
                     for (auto& root : extrinsics) {
                         try {
@@ -347,7 +347,6 @@ namespace rs2
                     }
                 }
 
-                
 
                 // Recorder needs sensors to already exist when its created
                 std::stringstream name;

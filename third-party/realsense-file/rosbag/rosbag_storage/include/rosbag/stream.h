@@ -39,7 +39,6 @@
 #include <stdint.h>
 #include <string>
 
-//#include <boost/shared_ptr.hpp>
 #include <memory>
 #include "../../../roslz4/include/roslz4/lz4s.h"
 
@@ -100,7 +99,7 @@ class ROSBAG_DECL StreamFactory
 public:
     StreamFactory(ChunkedFile* file);
 
-	std::shared_ptr<Stream> getStream(CompressionType type) const;
+    std::shared_ptr<Stream> getStream(CompressionType type) const;
 
 private:
     std::shared_ptr<Stream> uncompressed_stream_;

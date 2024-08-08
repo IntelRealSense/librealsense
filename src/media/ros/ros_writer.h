@@ -5,9 +5,14 @@
 #include "rosbag/bag.h"
 #include "ros_file_format.h"
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
     using namespace device_serializer;
+
+    class recommended_proccesing_blocks_interface;
 
     class ros_writer: public writer
     {
@@ -44,7 +49,9 @@ namespace librealsense
             auto as_type = As<typename ExtensionToType<E>::type>(snapshot);
             if (as_type == nullptr)
             {
-                throw invalid_value_exception(to_string() << "Failed to cast snapshot to \"" << E << "\" (as \"" << ExtensionToType<E>::to_string() << "\")");
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Failed to cast snapshot to \"" << E << "\" (as \""
+                                               << ExtensionToType< E >::to_string() << "\")" );
             }
             return as_type;
         }
@@ -53,9 +60,6 @@ namespace librealsense
         void write_vendor_info(const std::string& topic, nanoseconds timestamp, std::shared_ptr<info_interface> info_snapshot);
         void write_sensor_option(device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, rs2_option type, const librealsense::option& option);
         void write_sensor_options(device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, std::shared_ptr<options_interface> options);
-        void write_l500_data(device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, std::shared_ptr<l500_depth_sensor_interface> l500_depth_sensor);
-
-        rs2_extension get_processing_block_extension(const std::shared_ptr<processing_block_interface> block);
         void write_sensor_processing_blocks(device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, std::shared_ptr<recommended_proccesing_blocks_interface> proccesing_blocks);
 
         template <typename T>
@@ -68,7 +72,8 @@ namespace librealsense
             }
             catch (rosbag::BagIOException& e)
             {
-                throw io_exception(to_string() << "Ros Writer failed to write topic: \"" << topic << "\" to file. (Exception message: " << e.what() << ")");
+                throw io_exception( rsutils::string::from() << "Ros Writer failed to write topic: \"" << topic
+                                                            << "\" to file. (Exception message: " << e.what() << ")" );
             }
         }
 

@@ -39,7 +39,7 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_TIME_OF_ARRIVAL                      , /**< Time of arrival in system clock */
     RS2_FRAME_METADATA_TEMPERATURE                          , /**< Temperature of the device, measured at the time of the frame capture. Celsius degrees */
     RS2_FRAME_METADATA_BACKEND_TIMESTAMP                    , /**< Timestamp get from uvc driver. usec*/
-    RS2_FRAME_METADATA_ACTUAL_FPS                           , /**< Actual fps */
+    RS2_FRAME_METADATA_ACTUAL_FPS                           , /**< Actual fps, times 1000 (30.1 fps would be 30100 in the metadata) */
     RS2_FRAME_METADATA_FRAME_LASER_POWER                    , /**< Laser power value 0-360. */
     RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE               , /**< Laser power mode. Zero corresponds to Laser power switched off and one for switched on. deprecated, replaced by RS2_FRAME_METADATA_FRAME_EMITTER_MODE*/
     RS2_FRAME_METADATA_EXPOSURE_PRIORITY                    , /**< Exposure priority. */
@@ -58,12 +58,37 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_MANUAL_WHITE_BALANCE                 , /**< Color image white balance. */
     RS2_FRAME_METADATA_POWER_LINE_FREQUENCY                 , /**< Power Line Frequency for anti-flickering Off/50Hz/60Hz/Auto. */
     RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION               , /**< Color lowlight compensation. Zero corresponds to switched off. */
-    RS2_FRAME_METADATA_FRAME_EMITTER_MODE                   , /**< Emitter mode: 0 – all emitters disabled. 1 – laser enabled. 2 – auto laser enabled (opt). 3 – LED enabled (opt).*/
+    RS2_FRAME_METADATA_FRAME_EMITTER_MODE                   , /**< Emitter mode: 0 - all emitters disabled. 1 - laser enabled. 2 - auto laser enabled (opt). 3 - LED enabled (opt).*/
     RS2_FRAME_METADATA_FRAME_LED_POWER                      , /**< Led power value 0-360. */
+    RS2_FRAME_METADATA_RAW_FRAME_SIZE                       , /**< The number of transmitted payload bytes, not including metadata */
+    RS2_FRAME_METADATA_GPIO_INPUT_DATA                      , /**< GPIO input data */
+    RS2_FRAME_METADATA_SEQUENCE_NAME                        , /**< sub-preset id */
+    RS2_FRAME_METADATA_SEQUENCE_ID                          , /**< sub-preset sequence id */
+    RS2_FRAME_METADATA_SEQUENCE_SIZE                        , /**< sub-preset sequence size */
+
+    //mipi metadata_values
+    RS2_FRAME_METADATA_TRIGGER                              , /**< Frame trigger type */
+    RS2_FRAME_METADATA_PRESET                               , /**< Preset id, used in MIPI SKU Metadata */
+    RS2_FRAME_METADATA_INPUT_WIDTH                          , /**< Frame input width in pixels, used as safety attribute */
+    RS2_FRAME_METADATA_INPUT_HEIGHT                         , /**< Frame input height in pixels, used as safety attribute */
+    RS2_FRAME_METADATA_SUB_PRESET_INFO                      , /**< Sub-preset information */
+    RS2_FRAME_METADATA_CALIB_INFO                           , /**< FW-controlled frame counter to be using in Calibration scenarios */
+    RS2_FRAME_METADATA_CRC                                  , /**< CRC checksum of the Metadata */
+
     RS2_FRAME_METADATA_COUNT
 } rs2_frame_metadata_value;
 const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata);
 const char* rs2_frame_metadata_value_to_string(rs2_frame_metadata_value metadata);
+
+/** \brief Calibration target type. */
+typedef enum rs2_calib_target_type
+{
+    RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES, /**< Flat rectangle with vertices as the centers of Gaussian dots */
+    RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES, /**< Flat rectangle with vertices as the centers of Gaussian dots with target inside the ROI */
+    RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES,  /**< Positions of vertices as the centers of Gaussian dots with target inside the ROI */
+    RS2_CALIB_TARGET_COUNT           /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+} rs2_calib_target_type;
+const char* rs2_calib_target_type_to_string(rs2_calib_target_type type);
 
 /**
 * retrieve metadata from frame handle
@@ -113,7 +138,7 @@ rs2_sensor* rs2_get_frame_sensor(const rs2_frame* frame, rs2_error** error);
 * retrieve frame number from frame handle
 * \param[in] frame      handle returned from a callback
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return               the frame nubmer of the frame, in milliseconds since the device was started
+* \return               the frame number
 */
 unsigned long long rs2_get_frame_number(const rs2_frame* frame, rs2_error** error);
 
@@ -148,6 +173,12 @@ int rs2_get_frame_width(const rs2_frame* frame, rs2_error** error);
 * \return               frame height in pixels
 */
 int rs2_get_frame_height(const rs2_frame* frame, rs2_error** error);
+
+/**
+* retrieve the scaling factor to use when converting a depth frame's get_data() units to meters
+* \return float - depth, in meters, per 1 unit stored in the frame data
+*/
+float rs2_depth_frame_get_units( const rs2_frame* frame, rs2_error** error );
 
 /**
 * retrieve frame stride in bytes (number of bytes from start of line N to start of line N+1)
@@ -327,6 +358,18 @@ void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error**
 * \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_pose_frame_get_pose_data(const rs2_frame* frame, rs2_pose* pose, rs2_error** error);
+
+/**
+* Extract the target dimensions on the specific target
+* \param[in] frame            Left or right camera frame of specified size based on the target type
+* \param[in] calib_type       Calibration target type
+* \param[in] target_dims_size Target dimension array size. 4 for RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES and 8 for RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES.
+* \param[out] target_dims     The array to hold the result target dimensions calculated. 
+                              For type RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES, the four rectangle side sizes in pixels with the order of top, bottom, left, and right
+                              For type RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES, the four vertices coordinates in pixels with the order of top, bottom, left, and right
+* \param[out] error           If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_extract_target_dimensions(const rs2_frame* frame, rs2_calib_target_type calib_type, float * target_dims, unsigned int target_dims_size, rs2_error** error);
 
 #ifdef __cplusplus
 }

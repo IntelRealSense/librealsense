@@ -8,9 +8,10 @@ SRC_VERSION_NAME=linux
 FULL_NAME=$( uname -r | tr "-" "\n")
 read -a VERSION <<< $FULL_NAME
 
-SRC_VERSION_ID=${VERSION[0]}  ## e.g. : 4.5.6
-SRC_VERSION_REL=${VERSION[1]} ## e.g. : 1
-LINUX_TYPE=${VERSION[2]}      ## e.g. : ARCH
+SRC_VERSION_ID=${VERSION[0]}             ## e.g. : 4.5.6
+SRC_VERSION_MAJOR=${SRC_VERSION_ID:0:1}  ## e.g. : 4
+SRC_VERSION_REL=${VERSION[1]}            ## e.g. : 1
+LINUX_TYPE=${VERSION[2]}                 ## e.g. : ARCH
 
 LINUX_BRANCH=archlinux-$SRC_VERSION_ID
 KERNEL_NAME=linux-$SRC_VERSION_ID
@@ -22,9 +23,9 @@ mkdir kernel
 cd kernel
 
 ## Get the kernel
-wget https://www.kernel.org/pub/linux/kernel/v4.x/$KERNEL_NAME.tar.xz
-wget https://www.kernel.org/pub/linux/kernel/v4.x/$PATCH_NAME.xz
-wget https://www.kernel.org/pub/linux/kernel/v4.x/$PATCH_NAME.sign
+wget https://www.kernel.org/pub/linux/kernel/v${SRC_VERSION_MAJOR}.x/$KERNEL_NAME.tar.xz
+wget https://www.kernel.org/pub/linux/kernel/v${SRC_VERSION_MAJOR}.x/$PATCH_NAME.xz
+#wget https://www.kernel.org/pub/linux/kernel/v${SRC_VERSION_MAJOR}.x/$PATCH_NAME.sign
 
 echo "Extract the kernel"
 tar xf $KERNEL_NAME.tar.xz
@@ -40,8 +41,13 @@ cd $KERNEL_NAME
 
 echo "RealSense patch..."
 
-# Apply our RealSense specific patch
+# TODO: The patches should be chosen to fit to the kernel version
+
+# Apply our RealSense specific camera formats patch
 patch -p1 < ../../realsense-camera-formats.patch
+
+# Apply our RealSense specific metadata patch
+patch -p1 < ../../realsense-metadata-bionic-5.patch
 
 # Prepare to compile modules
 
@@ -94,7 +100,7 @@ if [ -e $MODULE_NAME.xz ]; then
 
     # compress
     xz uvcvideo.ko
-    sudo cp uvcvideo.ko.xz $MODULE_NAME
+    sudo cp uvcvideo.ko.xz $MODULE_NAME.xz
 fi
 
 if [ -e $MODULE_NAME.gz ]; then

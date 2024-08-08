@@ -1,25 +1,25 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/hpp/rs_sensor.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
-#include "../include/librealsense2-gl/rs_processing_gl.hpp"
+#include <librealsense2/hpp/rs_sensor.hpp>
+#include <librealsense2/hpp/rs_processing.hpp>
+#include <librealsense2-gl/rs_processing_gl.hpp>
 
-#include "proc/synthetic-stream.h"
-#include "proc/colorizer.h"
+#include "../proc/synthetic-stream.h"
+#include "../proc/colorizer.h"
 #include "colorizer-gl.h"
 #include "upload.h"
 #include "option.h"
-#include "context.h"
 
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif // NOMINMAX
 
 #include <glad/glad.h>
 
 #include <iostream>
 
 #include <chrono>
-#include <strstream>
 
 #include "synthetic-stream-gl.h"
 
@@ -43,10 +43,17 @@ namespace librealsense
 
         upload::~upload()
         {
-            perform_gl_action([&]()
+            try
             {
-                cleanup_gpu_resources();
-            }, [] {});
+                perform_gl_action( [&]()
+                {
+                    cleanup_gpu_resources();
+                }, [] {} );
+            }
+            catch(...)
+            {
+                LOG_DEBUG( "Error while cleaning up gpu resources" );
+            }
         }
 
         void upload::cleanup_gpu_resources()
@@ -75,8 +82,11 @@ namespace librealsense
                     if (new_f) perform_gl_action([&]()
                     {
                         auto gf = dynamic_cast<gpu_addon_interface*>((frame_interface*)new_f.get());
+                        if (!gf)
+                            throw std::runtime_error("Frame is not gpu_addon_interface, cannot output texture");
 
                         uint32_t output_yuv;
+
                         gf->get_gpu_section().output_texture(0, &output_yuv, TEXTYPE_UINT16);
                         glBindTexture(GL_TEXTURE_2D, output_yuv);
                         glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, f.get_data());
@@ -91,7 +101,7 @@ namespace librealsense
                     });
                 }
 
-                if (f.is<rs2::depth_frame>())
+                if (f.is<rs2::depth_frame>() && (RS2_FORMAT_Z16 == f.get_profile().format()))
                 {
                     auto vf = f.as<rs2::depth_frame>();
                     auto width = vf.get_width();
@@ -102,6 +112,8 @@ namespace librealsense
                     if (new_f)
                     {
                         auto ptr = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)new_f.get());
+                        if (!ptr)
+                            throw std::runtime_error("Frame is not depth frame");
 
                         auto orig = (librealsense::frame_interface*)f.get();
                         auto depth_data = (uint16_t*)orig->get_frame_data();
@@ -125,7 +137,9 @@ namespace librealsense
                             //scoped_timer t("upload.depth");
 
                             auto gf = dynamic_cast<gpu_addon_interface*>((frame_interface*)new_f.get());
-
+                            if (!gf)
+                                throw std::runtime_error("Frame interface is not gpu addon interface");
+        
                             uint32_t depth_texture;
                             gf->get_gpu_section().output_texture(0, &depth_texture, TEXTYPE_UINT16);
                             glBindTexture(GL_TEXTURE_2D, depth_texture);

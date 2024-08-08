@@ -113,7 +113,7 @@ classdef config < handle
             validateattributes(file_name, {'char', 'string'}, {'scalartext'}, '', 'file_name', 2);
             realsense.librealsense_mex('rs2::config', 'enable_record_to_file', this.objectHandle, file_name);
         end
-        function disable_stream(this, stream, index)
+        function strm = disable_stream(this, stream, index)
             narginchk(2, 3);
             validateattributes(stream, {'realsense.stream', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.stream.count)}, '', 'stream', 2);
             if nargin == 2
@@ -122,7 +122,7 @@ classdef config < handle
                 validateattributes(index, {'numeric'}, {'scalar', 'real', 'integer'}, '', 'index', 3);
                 out = realsense.librealsense_mex('rs2::config', 'disable_stream', this.objectHandle, int64(stream), int64(index));
             end
-            stream = realsense.stream_profile(out{:});
+            strm = realsense.stream_profile(out{:});
         end
         function disable_all_streams(this)
             realsense.librealsense_mex('rs2::config', 'disable_all_streams', this.objectHandle);

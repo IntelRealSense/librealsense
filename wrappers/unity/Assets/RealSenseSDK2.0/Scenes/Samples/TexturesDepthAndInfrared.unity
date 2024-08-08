@@ -296,7 +296,6 @@ GameObject:
   m_Component:
   - component: {fileID: 413936642}
   - component: {fileID: 413936641}
-  - component: {fileID: 413936640}
   - component: {fileID: 413936639}
   - component: {fileID: 413936638}
   m_Layer: 0
@@ -314,13 +313,6 @@ AudioListener:
   m_GameObject: {fileID: 413936637}
   m_Enabled: 1
 --- !u!124 &413936639
-Behaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 413936637}
-  m_Enabled: 1
---- !u!92 &413936640
 Behaviour:
   m_ObjectHideFlags: 0
   m_PrefabParentObject: {fileID: 0}
@@ -611,7 +603,7 @@ Prefab:
     - target: {fileID: 114552477897960758, guid: d2790e271f1a64347bb2ede5601b1e23,
         type: 2}
       propertyPath: _streamIndex
-      value: 1
+      value: -1
       objectReference: {fileID: 0}
     - target: {fileID: 114070131009790432, guid: d2790e271f1a64347bb2ede5601b1e23,
         type: 2}
@@ -627,6 +619,11 @@ Prefab:
         type: 2}
       propertyPath: _format
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114866818567473902, guid: d2790e271f1a64347bb2ede5601b1e23,
+        type: 2}
+      propertyPath: DeviceConfiguration.Profiles.Array.data[1].StreamIndex
+      value: -1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: d2790e271f1a64347bb2ede5601b1e23, type: 2}

@@ -1,22 +1,41 @@
 message(STATUS "Setting Unix configurations")
 
 macro(os_set_flags)
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC -pedantic -g -D_DEFAULT_SOURCE")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -pedantic -g -Wno-missing-field-initializers")
+
+    # Put all the collaterals together, so we can find when trying to run examples/tests
+    # Note: this puts the outputs under <binary>/<build-type>
+    if( "${CMAKE_BUILD_TYPE}" STREQUAL "" )
+        # This can happen according to the docs -- and in GHA...
+        message( STATUS "No output directory set; using ${CMAKE_BINARY_DIR}/Release/" )
+        set( CMAKE_BUILD_TYPE "Release" )
+    endif()
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE})
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE})
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE})
+
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -pedantic -D_DEFAULT_SOURCE")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wno-missing-field-initializers")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch -Wno-multichar -Wsequence-point -Wformat -Wformat-security")
 
     execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE MACHINE)
-    if(${MACHINE} MATCHES "arm-linux-gnueabihf")
+    if(${MACHINE} MATCHES "arm64-*" OR ${MACHINE} MATCHES "aarch64-*")
+        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mstrict-align -ftree-vectorize")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mstrict-align -ftree-vectorize")
+    elseif(${MACHINE} MATCHES "arm-*")
         set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mfpu=neon -mfloat-abi=hard -ftree-vectorize -latomic")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon -mfloat-abi=hard -ftree-vectorize -latomic")
-    elseif(${MACHINE} MATCHES "aarch64-linux-gnu")
+    elseif(${MACHINE} MATCHES "powerpc64(le)?-linux-gnu")
+        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -ftree-vectorize")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftree-vectorize")
+    elseif(${MACHINE} MATCHES "riscv64-*")
         set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mstrict-align -ftree-vectorize")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mstrict-align -ftree-vectorize")
     else()
         set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mssse3")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mssse3")
         set(LRS_TRY_USE_AVX true)
-    endif(${MACHINE} MATCHES "arm-linux-gnueabihf")
+    endif(${MACHINE} MATCHES "arm64-*" OR ${MACHINE} MATCHES "aarch64-*")
 
     if(BUILD_WITH_OPENMP)
         find_package(OpenMP REQUIRED)
@@ -30,7 +49,6 @@ macro(os_set_flags)
     
     if(APPLE)
         set(FORCE_RSUSB_BACKEND ON)
-        set(BUILD_WITH_TM2 ON)
     endif()
     
     if(FORCE_RSUSB_BACKEND)

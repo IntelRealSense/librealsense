@@ -81,14 +81,14 @@ public:
 
         glPushMatrix();
         // Set the rotation, converting theta to degrees
-        glRotatef(theta.x * 180 / PI, 0, 0, -1);
-        glRotatef(theta.y * 180 / PI, 0, -1, 0);
-        glRotatef((theta.z - PI / 2) * 180 / PI, -1, 0, 0);
+        glRotatef(theta.x * 180 / PI_FL, 0, 0, -1);
+        glRotatef(theta.y * 180 / PI_FL, 0, -1, 0);
+        glRotatef((theta.z - PI_FL / 2) * 180 / PI_FL, -1, 0, 0);
 
         draw_axes();
 
         // Scale camera drawing
-        glScalef(0.035, 0.035, 0.035);
+        glScalef(0.035f, 0.035f, 0.035f);
 
         glBegin(GL_TRIANGLES);
         // Draw the camera
@@ -116,16 +116,18 @@ class rotation_estimator
     std::mutex theta_mtx;
     /* alpha indicates the part that gyro and accelerometer take in computation of theta; higher alpha gives more weight to gyro, but too high
     values cause drift; lower alpha gives more weight to accelerometer, which is more sensitive to disturbances */
-    float alpha = 0.98;
-    bool first = true;
+    float alpha = 0.98f;
+    bool firstGyro = true;
+    bool firstAccel = true;
     // Keeps the arrival time of previous gyro frame
     double last_ts_gyro = 0;
 public:
     // Function to calculate the change in angle of motion based on data from gyro
     void process_gyro(rs2_vector gyro_data, double ts)
     {
-        if (first) // On the first iteration, use only data from accelerometer to set the camera's initial position
+        if (firstGyro) // On the first iteration, use only data from accelerometer to set the camera's initial position
         {
+            firstGyro = false;
             last_ts_gyro = ts;
             return;
         }
@@ -142,7 +144,7 @@ public:
         last_ts_gyro = ts;
 
         // Change in angle equals gyro measures * time passed since last measurement
-        gyro_angle = gyro_angle * dt_gyro;
+        gyro_angle = gyro_angle * static_cast<float>(dt_gyro);
 
         // Apply the calculated change of angle to the current angle (theta)
         std::lock_guard<std::mutex> lock(theta_mtx);
@@ -160,12 +162,12 @@ public:
 
         // If it is the first iteration, set initial pose of camera according to accelerometer data (note the different handling for Y axis)
         std::lock_guard<std::mutex> lock(theta_mtx);
-        if (first)
+        if (firstAccel)
         {
-            first = false;
+            firstAccel = false;
             theta = accel_angle;
             // Since we can't infer the angle around Y axis using accelerometer data, we'll use PI as a convetion for the initial pose
-            theta.y = PI;
+            theta.y = PI_FL;
         }
         else
         {
@@ -221,7 +223,7 @@ int main(int argc, char * argv[]) try
     // Before running the example, check that a device supporting IMU is connected
     if (!check_imu_is_supported())
     {
-        std::cerr << "Device supporting IMU (D435i) not found";
+        std::cerr << "Device supporting IMU not found";
         return EXIT_FAILURE;
     }
 

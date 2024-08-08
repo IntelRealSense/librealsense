@@ -14,6 +14,7 @@ This example demonstrates usage of the following processing blocks:
 * Temporal
   * Filters depth data by looking into previous frames.
 
+For further infomration please refer to [Depth Post-Processing for Intel® RealSense™ Depth Camera D400 Series](https://dev.intelrealsense.com/docs/depth-post-processing)
 
 ## Expected Output
 ![expected output](https://user-images.githubusercontent.com/22654243/35924136-dd9cd1b6-0c2a-11e8-925a-84a52c0a5b96.gif)

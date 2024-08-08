@@ -6,10 +6,18 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-#include <glad/glad.h>
 
 #include <librealsense2/rs.hpp>
 #include <librealsense2-gl/rs_processing_gl.hpp>
+#include <rsutils/time/stopwatch.h>
+#include <rsutils/string/from.h>
+
+#include "matrix4.h"
+#include "float3.h"
+#include "float2.h"
+#include "rect.h"
+#include "animated.h"
+#include "plane.h"
 
 #include <vector>
 #include <algorithm>
@@ -23,7 +31,6 @@
 #include <array>
 #include <chrono>
 #define _USE_MATH_DEFINES
-#include <cmath>
 #include <map>
 #include <unordered_map>
 #include <mutex>
@@ -31,6 +38,8 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+
+#include <glad/glad.h>
 
 #ifdef _MSC_VER
 #ifndef GL_CLAMP_TO_BORDER
@@ -90,79 +99,17 @@ namespace rs2
     private:
         static const int _numerator = 1000;
         static const int _skip_frames = 5;
-        unsigned long long _num_of_frames;
         int _counter;
         double _delta;
         double _last_timestamp;
+        unsigned long long _num_of_frames;
         unsigned long long _last_frame_counter;
         mutable std::mutex _mtx;
     };
 
-    inline float clamp(float x, float min, float max)
-    {
-        return std::max(std::min(max, x), min);
-    }
-
-    inline float smoothstep(float x, float min, float max)
-    {
-        x = clamp((x - min) / (max - min), 0.0, 1.0);
-        return x*x*(3 - 2 * x);
-    }
-
     inline float lerp(float a, float b, float t)
     {
         return b * t + a * (1 - t);
-    }
-
-    struct plane
-    {
-        float a;
-        float b;
-        float c;
-        float d;
-    };
-    inline bool operator==(const plane& lhs, const plane& rhs) { return lhs.a == rhs.a && lhs.b == rhs.b && lhs.c == rhs.c && lhs.d == rhs.d; }
-
-    struct float3
-    {
-        float x, y, z;
-
-        float length() const { return sqrt(x*x + y*y + z*z); }
-
-        float3 normalize() const
-        {
-            return (length() > 0)? float3{ x / length(), y / length(), z / length() }:*this;
-        }
-    };
-
-    inline float3 cross(const float3& a, const float3& b)
-    {
-        return { a.y * b.z - b.y * a.z, a.x * b.z - b.x * a.z, a.x * b.y - a.y * b.x };
-    }
-
-    inline float evaluate_plane(const plane& plane, const float3& point)
-    {
-        return plane.a * point.x + plane.b * point.y + plane.c * point.z + plane.d;
-    }
-
-    inline float3 operator*(const float3& a, float t)
-    {
-        return { a.x * t, a.y * t, a.z * t };
-    }
-
-    inline float3 operator/(const float3& a, float t)
-    {
-        return { a.x / t, a.y / t, a.z / t };
-    }
-
-    inline float3 operator+(const float3& a, const float3& b)
-    {
-        return { a.x + b.x, a.y + b.y, a.z + b.z };
-    }
-
-    inline float3 operator-(const float3& a, const float3& b)
-    {
-        return { a.x - b.x, a.y - b.y, a.z - b.z };
     }
 
     inline float3 lerp(const float3& a, const float3& b, float t)
@@ -170,17 +117,10 @@ namespace rs2
         return b * t + a * (1 - t);
     }
 
-    struct float2
+    inline rs2::float2 lerp(const rs2::float2& a, const rs2::float2& b, float t)
     {
-        float x, y;
-
-        float length() const { return sqrt(x*x + y*y); }
-
-        float2 normalize() const
-        {
-            return { x / length(), y / length() };
-        }
-    };
+        return rs2::float2{ lerp(a.x, b.x, t), lerp(a.y, b.y, t) };
+    }
 
     inline float3 lerp(const std::array<float3, 4>& rect, const float2& p)
     {
@@ -210,11 +150,6 @@ namespace rs2
         return res;
     }
 
-    inline float operator*(const float3& a, const float3& b)
-    {
-        return a.x*b.x + a.y*b.y + a.z*b.z;
-    }
-
     inline bool is_valid(const plane_3d& p)
     {
         std::vector<float> angles;
@@ -225,8 +160,8 @@ namespace rs2
             auto p2 = p[(i+1) % p.size()];
             if ((p2 - p1).length() < 1e-3) return false;
 
-            p1 = p1.normalize();
-            p2 = p2.normalize();
+            p1 = p1.normalized();
+            p2 = p2.normalized();
 
             angles.push_back(acos((p1 * p2) / sqrt(p1.length() * p2.length())));
         }
@@ -244,168 +179,31 @@ namespace rs2
         return { a * b.x, a * b.y };
     }
 
-    struct matrix4
-    {
-        float mat[4][4];
-
-        operator float*() const
-        {
-            return (float*)&mat;
-        } 
-
-        static matrix4 identity()
-        {
-            matrix4 m;
-            for (int i = 0; i < 4; i++)
-                m.mat[i][i] = 1.f;
-            return m;
-        }
-
-        matrix4()
-        {
-            std::memset(mat, 0, sizeof(mat));
-        }
-
-        matrix4(float vals[4][4])
-        {
-            std::memcpy(mat,vals,sizeof(mat));
-        }
-
-        float& operator()(int i, int j) { return mat[i][j]; }
-
-        //init rotation matrix from quaternion
-        matrix4(rs2_quaternion q)
-        {
-            mat[0][0] = 1 - 2*q.y*q.y - 2*q.z*q.z; mat[0][1] = 2*q.x*q.y - 2*q.z*q.w;     mat[0][2] = 2*q.x*q.z + 2*q.y*q.w;     mat[0][3] = 0.0f;
-            mat[1][0] = 2*q.x*q.y + 2*q.z*q.w;     mat[1][1] = 1 - 2*q.x*q.x - 2*q.z*q.z; mat[1][2] = 2*q.y*q.z - 2*q.x*q.w;     mat[1][3] = 0.0f;
-            mat[2][0] = 2*q.x*q.z - 2*q.y*q.w;     mat[2][1] = 2*q.y*q.z + 2*q.x*q.w;     mat[2][2] = 1 - 2*q.x*q.x - 2*q.y*q.y; mat[2][3] = 0.0f;
-            mat[3][0] = 0.0f;                      mat[3][1] = 0.0f;                      mat[3][2] = 0.0f;                      mat[3][3] = 1.0f;
-        }
-
-        //init translation matrix from vector
-        matrix4(rs2_vector t)
-        {
-            mat[0][0] = 1.0f; mat[0][1] = 0.0f; mat[0][2] = 0.0f; mat[0][3] = t.x;
-            mat[1][0] = 0.0f; mat[1][1] = 1.0f; mat[1][2] = 0.0f; mat[1][3] = t.y;
-            mat[2][0] = 0.0f; mat[2][1] = 0.0f; mat[2][2] = 1.0f; mat[2][3] = t.z;
-            mat[3][0] = 0.0f; mat[3][1] = 0.0f; mat[3][2] = 0.0f; mat[3][3] = 1.0f;
-        }
-
-        rs2_quaternion normalize(rs2_quaternion a)
-        {
-            float norm = sqrtf(a.x*a.x + a.y*a.y + a.z*a.z + a.w*a.w);
-            rs2_quaternion res = a;
-            res.x /= norm;
-            res.y /= norm;
-            res.z /= norm;
-            res.w /= norm;
-            return res;
-        }
-
-        rs2_quaternion to_quaternion()
-        {
-            float tr[4];
-            rs2_quaternion res;
-            tr[0] = (mat[0][0] + mat[1][1] + mat[2][2]);
-            tr[1] = (mat[0][0] - mat[1][1] - mat[2][2]);
-            tr[2] = (-mat[0][0] + mat[1][1] - mat[2][2]);
-            tr[3] = (-mat[0][0] - mat[1][1] + mat[2][2]);
-            if (tr[0] >= tr[1] && tr[0] >= tr[2] && tr[0] >= tr[3])
-            {
-                float s = 2 * sqrt(tr[0] + 1);
-                res.w = s / 4;
-                res.x = (mat[2][1] - mat[1][2]) / s;
-                res.y = (mat[0][2] - mat[2][0]) / s;
-                res.z = (mat[1][0] - mat[0][1]) / s;
-            }
-            else if (tr[1] >= tr[2] && tr[1] >= tr[3]) {
-                float s = 2 * sqrt(tr[1] + 1);
-                res.w = (mat[2][1] - mat[1][2]) / s;
-                res.x = s / 4;
-                res.y = (mat[1][0] + mat[0][1]) / s;
-                res.z = (mat[2][0] + mat[0][2]) / s;
-            }
-            else if (tr[2] >= tr[3]) {
-                float s = 2 * sqrt(tr[2] + 1);
-                res.w = (mat[0][2] - mat[2][0]) / s;
-                res.x = (mat[1][0] + mat[0][1]) / s;
-                res.y = s / 4;
-                res.z = (mat[1][2] + mat[2][1]) / s;
-            }
-            else {
-                float s = 2 * sqrt(tr[3] + 1);
-                res.w = (mat[1][0] - mat[0][1]) / s;
-                res.x = (mat[0][2] + mat[2][0]) / s;
-                res.y = (mat[1][2] + mat[2][1]) / s;
-                res.z = s / 4;
-            }
-            return normalize(res);
-        }
-
-        void to_column_major(float column_major[16])
-        {
-            column_major[0] = mat[0][0];
-            column_major[1] = mat[1][0];
-            column_major[2] = mat[2][0];
-            column_major[3] = mat[3][0];
-            column_major[4] = mat[0][1];
-            column_major[5] = mat[1][1];
-            column_major[6] = mat[2][1];
-            column_major[7] = mat[3][1];
-            column_major[8] = mat[0][2];
-            column_major[9] = mat[1][2];
-            column_major[10] = mat[2][2];
-            column_major[11] = mat[3][2];
-            column_major[12] = mat[0][3];
-            column_major[13] = mat[1][3];
-            column_major[14] = mat[2][3];
-            column_major[15] = mat[3][3];
-        }
-    };
-
-    inline matrix4 operator*(const matrix4& a, const matrix4& b)
-    {
-        matrix4 res;
-        for (int i = 0; i < 4; i++)
-        {
-            for (int j = 0; j < 4; j++)
-            {
-                float sum = 0.0f;
-                for (int k = 0; k < 4; k++)
-                {
-                    sum += a.mat[i][k] * b.mat[k][j];
-                }
-                res.mat[i][j] = sum;
-            }
-        }
-        return res;
-    }
-
-    inline matrix4 tm2_pose_to_world_transformation(const rs2_pose& pose)
+    inline matrix4 pose_to_world_transformation(const rs2_pose& pose)
     {
         matrix4 rotation(pose.rotation);
         matrix4 translation(pose.translation);
-        matrix4 G_tm2_body_to_tm2_world = translation * rotation;
+        matrix4 G_body_to_world = translation * rotation;
         float rotate_180_y[4][4] = { { -1, 0, 0, 0 },
                                      { 0, 1, 0, 0 },
                                      { 0, 0,-1, 0 },
                                      { 0, 0, 0, 1 } };
-        matrix4 G_vr_body_to_tm2_body(rotate_180_y);
-        matrix4 G_vr_body_to_tm2_world = G_tm2_body_to_tm2_world * G_vr_body_to_tm2_body;
+        matrix4 G_vr_body_to_body(rotate_180_y);
+        matrix4 G_vr_body_to_world = G_body_to_world * G_vr_body_to_body;
 
         float rotate_90_x[4][4] = { { 1, 0, 0, 0 },
                                     { 0, 0,-1, 0 },
                                     { 0, 1, 0, 0 },
                                     { 0, 0, 0, 1 } };
-        matrix4 G_tm2_world_to_vr_world(rotate_90_x);
-        matrix4 G_vr_body_to_vr_world = G_tm2_world_to_vr_world * G_vr_body_to_tm2_world;
+        matrix4 G_world_to_vr_world(rotate_90_x);
+        matrix4 G_vr_body_to_vr_world = G_world_to_vr_world * G_vr_body_to_world;
 
         return G_vr_body_to_vr_world;
     }
 
-    inline rs2_pose correct_tm2_pose(const rs2_pose& pose)
+    inline rs2_pose correct_pose(const rs2_pose& pose)
     {
-        matrix4 G_vr_body_to_vr_world = tm2_pose_to_world_transformation(pose);
+        matrix4 G_vr_body_to_vr_world = pose_to_world_transformation(pose);
         rs2_pose res = pose;
         res.translation.x = G_vr_body_to_vr_world.mat[0][3];
         res.translation.y = G_vr_body_to_vr_world.mat[1][3];
@@ -414,308 +212,22 @@ namespace rs2
         return res;
     }
 
-    // return the distance between p and the line created by p1 and p2
-    inline float point_to_line_dist(float2 p1, float2 p2, float2 p)
-    {
-        float d = abs((p2.x - p1.x)*(p1.y - p.y) - (p1.x - p.x)*(p2.y - p1.y)) / sqrt((p2.x - p1.x)*(p2.x - p1.x) + (p2.y - p1.y)*(p2.y - p1.y));
-        return d;
-    }
-
-    inline std::vector<float2> simplify_line(const std::vector<float2>& points)
-    {
-        std::vector<float2> res;
-        float max_distance = 0.0f;
-        int max_distance_index = 0;
-        float distance_limit = 0.01f; //1 centimeter
-        // Find the point with the maximum distance from the 2 end points of the vector
-        for (size_t i = 1; i < points.size() - 1; i++)
-        {
-            float d = point_to_line_dist(points[0], points.back(), points[i]);
-            if (d > max_distance)
-            {
-                max_distance = d;
-                max_distance_index = (int)i;
-            }
-        }
-        // If max distance is greater than the limit, recursively simplify
-        if (max_distance > distance_limit)
-        {
-            // Recursive call
-            std::vector<float2> first_half(points.begin(), points.begin() + max_distance_index);
-            std::vector<float2> second_half(points.begin() + max_distance_index, points.end());
-            res = simplify_line(first_half);
-            std::vector<float2> res_second_half = simplify_line(second_half);
-            //check if the connection points of the 2 halves are too close
-            float2 p1 = res.back();
-            float2 p2 = res_second_half[0];
-            if (sqrt(pow((p1.x - p2.x), 2) + pow((p1.y - p2.y), 2)) < 0.01)
-            {
-                res.insert(res.end(), res_second_half.begin() + 1, res_second_half.end());
-            }
-            else
-            {
-                res.insert(res.end(), res_second_half.begin(), res_second_half.end());
-            }
-        }
-        else
-        {
-            res.push_back(points[0]);
-            res.push_back(points.back());
-        }
-
-        return res;
-    }
-
-    inline bool point_in_polygon_2D(const std::vector<float2>& polygon, float2 point)
-    {
-        bool inside = false;
-        int i = 0, j = 0;
-        for (i = 0, j = static_cast<int>(polygon.size()) - 1; i < static_cast<int>(polygon.size()); j = i++)
-        {
-            if (((polygon[i].y > point.y) != (polygon[j].y > point.y)) &&
-                (point.x < (polygon[j].x - polygon[i].x) * (point.y - polygon[i].y) / (polygon[j].y - polygon[i].y) + polygon[i].x))
-            {
-                inside = !inside;
-            }
-        }
-        return inside;
-    }
-
     struct mouse_info
     {
         float2 cursor{ 0.f, 0.f };
         float2 prev_cursor{ 0.f, 0.f };
-        bool mouse_down = false;
+        bool mouse_down[2] { false, false };
         int mouse_wheel = 0;
         float ui_wheel = 0.f;
     };
 
-    template<typename T>
-    T normalizeT(const T& in_val, const T& min, const T& max)
+    inline rect lerp( const rect& r, float t, const rect& other )
     {
-        return ((in_val - min)/(max - min));
+        return{
+            rs2::lerp( r.x, other.x, t ), rs2::lerp( r.y, other.y, t ),
+            rs2::lerp( r.w, other.w, t ), rs2::lerp( r.h, other.h, t ),
+        };
     }
-
-    template<typename T>
-    T unnormalizeT(const T& in_val, const T& min, const T& max)
-    {
-        if (min == max) return min;
-        return ((in_val * (max - min)) + min);
-    }
-
-    struct rect
-    {
-        float x, y;
-        float w, h;
-
-        void operator=(const rect& other)
-        {
-            x = other.x;
-            y = other.y;
-            w = other.w;
-            h = other.h;
-        }
-
-        operator bool() const
-        {
-            return w*w > 0 && h*h > 0;
-        }
-
-        bool operator==(const rect& other) const
-        {
-            return x == other.x && y == other.y && w == other.w && h == other.h;
-        }
-
-        bool operator!=(const rect& other) const
-        {
-            return !(*this == other);
-        }
-
-        rect normalize(const rect& normalize_to) const
-        {
-            return rect{normalizeT(x, normalize_to.x, normalize_to.x + normalize_to.w),
-                        normalizeT(y, normalize_to.y, normalize_to.y + normalize_to.h),
-                        normalizeT(w, 0.f, normalize_to.w),
-                        normalizeT(h, 0.f, normalize_to.h)};
-        }
-
-        rect unnormalize(const rect& unnormalize_to) const
-        {
-            return rect{unnormalizeT(x, unnormalize_to.x, unnormalize_to.x + unnormalize_to.w),
-                        unnormalizeT(y, unnormalize_to.y, unnormalize_to.y + unnormalize_to.h),
-                        unnormalizeT(w, 0.f, unnormalize_to.w),
-                        unnormalizeT(h, 0.f, unnormalize_to.h)};
-        }
-
-        // Calculate the intersection between two rects
-        // If the intersection is empty, a rect with width and height zero will be returned
-        rect intersection(const rect& other) const
-        {
-            auto x1 = std::max(x, other.x);
-            auto y1 = std::max(y, other.y);
-            auto x2 = std::min(x + w, other.x + other.w);
-            auto y2 = std::min(y + h, other.y + other.h);
-
-            return{
-                x1, y1,
-                std::max(x2 - x1, 0.f),
-                std::max(y2 - y1, 0.f)
-            };
-        }
-
-        // Calculate the area of the rect
-        float area() const
-        {
-            return w * h;
-        }
-
-        rect cut_by(const rect& r) const
-        {
-            auto x1 = x;
-            auto y1 = y;
-            auto x2 = x + w;
-            auto y2 = y + h;
-
-            x1 = std::max(x1, r.x);
-            x1 = std::min(x1, r.x + r.w);
-            y1 = std::max(y1, r.y);
-            y1 = std::min(y1, r.y + r.h);
-
-            x2 = std::max(x2, r.x);
-            x2 = std::min(x2, r.x + r.w);
-            y2 = std::max(y2, r.y);
-            y2 = std::min(y2, r.y + r.h);
-
-            return { x1, y1, x2 - x1, y2 - y1 };
-        }
-
-        bool contains(const float2& p) const
-        {
-            return (p.x >= x) && (p.x < x + w) && (p.y >= y) && (p.y < y + h);
-        }
-
-        rect pan(const float2& p) const
-        {
-            return { x - p.x, y - p.y, w, h };
-        }
-
-        rect center() const
-        {
-            return{ x + w / 2.f, y + h / 2.f, 0, 0 };
-        }
-
-        rect lerp(float t, const rect& other) const
-        {
-            return{
-                rs2::lerp(x, other.x, t), rs2::lerp(y, other.y, t),
-                rs2::lerp(w, other.w, t), rs2::lerp(h, other.h, t),
-            };
-        }
-
-        rect adjust_ratio(float2 size) const
-        {
-            auto H = static_cast<float>(h), W = static_cast<float>(h) * size.x / size.y;
-            if (W > w)
-            {
-                auto scale = w / W;
-                W *= scale;
-                H *= scale;
-            }
-
-            return{ float(floor(x + floor(w - W) / 2)),
-                    float(floor(y + floor(h - H) / 2)),
-                    W, H };
-        }
-
-        rect scale(float factor) const
-        {
-            return { x, y, w * factor, h * factor };
-        }
-
-        rect grow(int pixels) const
-        {
-            return { x - pixels, y - pixels, w + pixels*2, h + pixels*2 };
-        }
-
-        rect grow(int dx, int dy) const
-        {
-            return { x - dx, y - dy, w + dx*2, h + dy*2 };
-        }
-
-        rect shrink_by(float2 pixels) const
-        {
-            return { x + pixels.x, y + pixels.y, w - pixels.x * 2, h - pixels.y * 2 };
-        }
-
-        rect center_at(const float2& new_center) const
-        {
-            auto c = center();
-            auto diff_x = new_center.x - c.x;
-            auto diff_y = new_center.y - c.y;
-
-            return { x + diff_x, y + diff_y, w, h };
-        }
-
-        rect fit(rect r) const
-        {
-            float new_w = w;
-            float new_h = h;
-
-            if (w < r.w)
-                new_w = r.w;
-
-            if (h < r.h)
-                new_h = r.h;
-
-            auto res = rect{x, y, new_w, new_h};
-            return res.adjust_ratio({w,h});
-        }
-
-        rect zoom(float zoom_factor) const
-        {
-            auto c = center();
-            return scale(zoom_factor).center_at({c.x,c.y});
-        }
-
-        rect enclose_in(rect in_rect) const
-        {
-            rect out_rect{x, y, w, h};
-            if (w > in_rect.w || h > in_rect.h)
-            {
-                return in_rect;
-            }
-
-            if (x < in_rect.x)
-            {
-                out_rect.x = in_rect.x;
-            }
-
-            if (y < in_rect.y)
-            {
-                out_rect.y = in_rect.y;
-            }
-
-
-            if (x + w > in_rect.x + in_rect.w)
-            {
-                out_rect.x = in_rect.x + in_rect.w - w;
-            }
-
-            if (y + h > in_rect.y + in_rect.h)
-            {
-                out_rect.y = in_rect.y + in_rect.h - h;
-            }
-
-            return out_rect;
-        }
-
-        bool intersects(const rect& other) const
-        {
-            return other.contains({ x, y }) || other.contains({ x + w, y }) ||
-                other.contains({ x, y + h }) || other.contains({ x + w, y + h }) ||
-                contains({ other.x, other.y });
-        }
-    };
 
     //////////////////////////////
     // Simple font loading code //
@@ -811,151 +323,6 @@ namespace rs2
         size_t _size; float3* _data;
     };
 
-    static color_map classic {{
-            { 255, 0, 0 },
-            { 0, 0, 255 },
-        }};
-
-    static color_map jet {{
-            { 0, 0, 255 },
-            { 0, 255, 255 },
-            { 255, 255, 0 },
-            { 255, 0, 0 },
-            { 50, 0, 0 },
-        }};
-
-    static color_map hsv {{
-            { 255, 0, 0 },
-            { 255, 255, 0 },
-            { 0, 255, 0 },
-            { 0, 255, 255 },
-            { 0, 0, 255 },
-            { 255, 0, 255 },
-            { 255, 0, 0 },
-        }};
-
-
-    static std::vector<color_map*> color_maps { &classic, &jet, &hsv };
-    static std::vector<const char*> color_maps_names { "Classic", "Jet", "HSV" };
-
-/*    inline void make_depth_histogram(const color_map& map, uint8_t rgb_image[], const uint16_t depth_image[], int width, int height, bool equalize, float min, float max)
-    {
-        const auto max_depth = 0x10000;
-        if (equalize)
-        {
-            static uint32_t histogram[max_depth];
-            memset(histogram, 0, sizeof(histogram));
-
-            for (auto i = 0; i < width*height; ++i) ++histogram[depth_image[i]];
-            for (auto i = 2; i < max_depth; ++i) histogram[i] += histogram[i - 1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
-            for (auto i = 0; i < width*height; ++i)
-            {
-                auto d = depth_image[i];
-
-                if (d)
-                {
-                    auto f = histogram[d] / (float)histogram[0xFFFF]; // 0-255 based on histogram location
-
-                    auto c = map.get(f);
-                    rgb_image[i * 3 + 0] = (uint8_t)c.x;
-                    rgb_image[i * 3 + 1] = (uint8_t)c.y;
-                    rgb_image[i * 3 + 2] = (uint8_t)c.z;
-                }
-                else
-                {
-                    rgb_image[i * 3 + 0] = 0;
-                    rgb_image[i * 3 + 1] = 0;
-                    rgb_image[i * 3 + 2] = 0;
-                }
-            }
-        }
-        else
-        {
-            for (auto i = 0; i < width*height; ++i)
-            {
-                auto d = depth_image[i];
-
-                if (d)
-                {
-                    auto f = (d - min) / (max - min);
-
-                    auto c = map.get(f);
-                    rgb_image[i * 3 + 0] = (uint8_t)c.x;
-                    rgb_image[i * 3 + 1] = (uint8_t)c.y;
-                    rgb_image[i * 3 + 2] = (uint8_t)c.z;
-                }
-                else
-                {
-                    rgb_image[i * 3 + 0] = 0;
-                    rgb_image[i * 3 + 1] = 0;
-                    rgb_image[i * 3 + 2] = 0;
-                }
-            }
-        }
-    } */
-
-    using clock = std::chrono::steady_clock;
-
-    // Helper class to keep track of time
-    class timer
-    {
-    public:
-        timer()
-        {
-            _start = std::chrono::steady_clock::now();
-        }
-
-        void reset() { _start = std::chrono::steady_clock::now(); }
-
-        // Get elapsed milliseconds since timer creation
-        double elapsed_ms() const
-        {
-            return std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(elapsed()).count();
-        }
-
-        clock::duration elapsed() const
-        {
-            return clock::now() - _start;
-        }
-
-        clock::time_point now() const
-        {
-            return clock::now();
-        }
-    private:
-        clock::time_point _start;
-    };
-
-    class periodic_timer
-    {
-    public:
-        periodic_timer(clock::duration delta)
-            : _delta(delta)
-        {
-            _last = _time.now();
-        }
-
-        operator bool() const
-        {
-            if (_time.now() - _last > _delta)
-            {
-                _last = _time.now();
-                return true;
-            }
-            return false;
-        }
-
-        void signal() const
-        {
-            _last = _time.now() - _delta;
-        }
-
-    private:
-        timer _time;
-        mutable clock::time_point _last;
-        clock::duration _delta;
-    };
-
     // Temporal event is a very simple time filter
     // that allows a concensus based on a set of measurements in time
     // You set the window, and add measurements, and the class offers
@@ -964,6 +331,8 @@ namespace rs2
     class temporal_event
     {
     public:
+        using clock = std::chrono::steady_clock;
+
         temporal_event(clock::duration window) : _window(window) {}
         temporal_event() : _window(std::chrono::milliseconds(1000)) {}
 
@@ -975,9 +344,14 @@ namespace rs2
 
         bool eval()
         {
+            return get_stat() > 0.5f;
+        }
+
+        float get_stat()
+        {
             std::lock_guard<std::mutex> lock(_m);
 
-            if (_t.elapsed() < _window) return false; // Ensure no false alarms in the warm-up time
+            if (_t.get_elapsed() < _window) return false; // Ensure no false alarms in the warm-up time
 
             _measurements.erase(std::remove_if(_measurements.begin(), _measurements.end(),
                 [this](std::pair<clock::time_point, bool> pair) {
@@ -985,10 +359,10 @@ namespace rs2
             }),
                 _measurements.end());
             auto trues = std::count_if(_measurements.begin(), _measurements.end(),
-                [this](std::pair<clock::time_point, bool> pair) {
+                [](std::pair<clock::time_point, bool> pair) {
                 return pair.second;
             });
-            return size_t(trues * 2) > _measurements.size(); // At least 50% of observations agree
+            return size_t(trues) / (float)_measurements.size();
         }
 
         void reset()
@@ -1002,7 +376,7 @@ namespace rs2
         std::mutex _m;
         clock::duration _window;
         std::vector<std::pair<clock::time_point, bool>> _measurements;
-        timer _t;
+        rsutils::time::stopwatch _t;
     };
 
     class texture_buffer
@@ -1013,6 +387,7 @@ namespace rs2
     public:
         std::shared_ptr<colorizer> colorize;
         std::shared_ptr<yuy_decoder> yuy2rgb;
+        std::shared_ptr<y411_decoder> y411;
         bool zoom_preview = false;
         rect curr_preview_rect{};
         int texture_id = 0;
@@ -1049,12 +424,12 @@ namespace rs2
 
         // Simplified version of upload that lets us load basic RGBA textures
         // This is used for the splash screen
-        void upload_image(int w, int h, void* data)
+        void upload_image(int w, int h, void* data, int format = GL_RGBA)
         {
             if (!texture)
                 glGenTextures(1, &texture);
             glBindTexture(GL_TEXTURE_2D, texture);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(GL_TEXTURE_2D, 0, format, w, h, 0, format, GL_UNSIGNED_BYTE, data);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
@@ -1064,8 +439,6 @@ namespace rs2
 
         void upload(rs2::frame frame, rs2_format prefered_format = RS2_FORMAT_ANY)
         {
-            last_queue[0].enqueue(frame);
-
             if (!texture)
                 glGenTextures(1, &texture);
 
@@ -1073,6 +446,9 @@ namespace rs2
             int height = 0;
             int stride = 0;
             auto format = frame.get_profile().format();
+
+            last_queue[0].enqueue(frame);
+
             // When frame is a GPU frame
             // we don't need to access pixels, keep data NULL
             auto data = !frame.is<gl::gpu_frame>() ? frame.get_data() : nullptr;
@@ -1102,13 +478,12 @@ namespace rs2
             {
                 if (!frame.is<gl::gpu_frame>())
                 {
-                    // Points can be uploaded as two different 
+                    // Points can be uploaded as two different
                     // formats: XYZ for verteces and UV for texture coordinates
                     if (prefered_format == RS2_FORMAT_XYZ32F)
                     {
                         // Upload vertices
                         data = pc.get_vertices();
-                        auto v = pc.get_vertices();
                         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
                     }
                     else
@@ -1134,6 +509,8 @@ namespace rs2
                 {
                 case RS2_FORMAT_ANY:
                     throw std::runtime_error("not a valid format");
+                case RS2_FORMAT_Z16H:
+                    throw std::runtime_error("unexpected format: Z16H. Check decoder processing block");
                 case RS2_FORMAT_Z16:
                 case RS2_FORMAT_DISPARITY16:
                 case RS2_FORMAT_DISPARITY32:
@@ -1154,21 +531,22 @@ namespace rs2
                                 if (!colorized_frame.is<gl::gpu_frame>())
                                 {
                                     data = colorized_frame.get_data();
-                                    // Override the first pixel in the colorized image for occlusion invalidation.
-                                    memset((void*)data, 0, colorized_frame.get_bytes_per_pixel());
-                                    {
-                                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
-                                            colorized_frame.get_width(),
-                                            colorized_frame.get_height(),
-                                            0, GL_RGB, GL_UNSIGNED_BYTE,
-                                            data);
-                                    }
+
+                                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+                                        colorized_frame.get_width(),
+                                        colorized_frame.get_height(),
+                                        0, GL_RGB, GL_UNSIGNED_BYTE,
+                                        data);
+
                                 }
                                 rendered_frame = colorized_frame;
                             }
                         }
                     }
                     else glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, data);
+                    break;
+                case RS2_FORMAT_FG:
+                    glTexImage2D( GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
                     break;
                 case RS2_FORMAT_XYZ32F:
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, data);
@@ -1183,8 +561,30 @@ namespace rs2
                                 glBindTexture(GL_TEXTURE_2D, texture);
                                 data = colorized_frame.get_data();
 
-                                // Override the first pixel in the colorized image for occlusion invalidation.
-                                memset((void*)data, 0, colorized_frame.get_bytes_per_pixel());
+                                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+                                    colorized_frame.get_width(),
+                                    colorized_frame.get_height(),
+                                    0, GL_RGB, GL_UNSIGNED_BYTE,
+                                    colorized_frame.get_data());
+                            }
+                            rendered_frame = colorized_frame;
+                        }
+                    }
+                    else
+                    {
+                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);
+                    }
+                    break;
+                case RS2_FORMAT_Y411:
+                    if (y411)
+                    {
+                        if (auto colorized_frame = y411->process(frame).as<video_frame>())
+                        {
+                            if (!colorized_frame.is<gl::gpu_frame>())
+                            {
+                                glBindTexture(GL_TEXTURE_2D, texture);
+                                data = colorized_frame.get_data();
+
                                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
                                     colorized_frame.get_width(),
                                     colorized_frame.get_height(),
@@ -1222,6 +622,18 @@ namespace rs2
                     {
                         throw std::runtime_error("Not expecting a frame with motion format that is not a motion_frame");
                     }
+                    break;
+                }
+                case RS2_FORMAT_COMBINED_MOTION:
+                {
+                    auto & motion = *reinterpret_cast< const rs2_combined_motion * >( frame.get_data() );
+                    draw_motion_data( (float)motion.linear_acceleration.x,
+                                      (float)motion.linear_acceleration.y,
+                                      (float)motion.linear_acceleration.z );
+                    draw_motion_data( (float)motion.angular_velocity.x,
+                                      (float)motion.angular_velocity.y,
+                                      (float)motion.angular_velocity.z,
+                                      false );  // Don't clear previous draw
                     break;
                 }
                 case RS2_FORMAT_Y16:
@@ -1399,7 +811,7 @@ namespace rs2
             draw_text((int)(xy.x - w / 2), (int)xy.y, text);
         }
 
-        void draw_motion_data(float x, float y, float z)
+        void draw_motion_data(float x, float y, float z, bool clear=true)
         {
             glMatrixMode(GL_PROJECTION);
             glPushMatrix();
@@ -1408,7 +820,8 @@ namespace rs2
 
             glViewport(0, 0, 768, 768);
             glClearColor(0, 0, 0, 1);
-            glClear(GL_COLOR_BUFFER_BIT);
+            if( clear )
+                glClear(GL_COLOR_BUFFER_BIT);
 
             glMatrixMode(GL_PROJECTION);
             glLoadIdentity();
@@ -1423,11 +836,14 @@ namespace rs2
 
             glRotatef(-135, 0.0f, 1.0f, 0.0f);
 
-            draw_axes();
+            if( clear )
+            {
+                draw_axes();
 
-            draw_circle(1, 0, 0, 0, 1, 0);
-            draw_circle(0, 1, 0, 0, 0, 1);
-            draw_circle(1, 0, 0, 0, 0, 1);
+                draw_circle( 1, 0, 0, 0, 1, 0 );
+                draw_circle( 0, 1, 0, 0, 0, 1 );
+                draw_circle( 1, 0, 0, 0, 0, 1 );
+            }
 
             const auto canvas_size = 230;
             const auto vec_threshold = 0.2f;
@@ -1486,10 +902,10 @@ namespace rs2
 
         void draw_grid(float step)
         {
+            glLineWidth(1);
             glBegin(GL_LINES);
             glColor4f(0.1f, 0.1f, 0.1f, 0.8f);
-            glLineWidth(1);
-            
+
             for (float x = -1.5; x < 1.5; x += step)
             {
                 for (float y = -1.5; y < 1.5; y += step)
@@ -1523,7 +939,7 @@ namespace rs2
             draw_axes(0.3f, 2.f);
 
             // Drawing pose:
-            matrix4 pose_trans = tm2_pose_to_world_transformation(pose);
+            matrix4 pose_trans = pose_to_world_transformation(pose);
             float model[16];
             pose_trans.to_column_major(model);
 
@@ -1673,24 +1089,19 @@ namespace rs2
         return (fabs(fmod(f, 1)) < std::numeric_limits<float>::min());
     }
 
-    struct to_string
-    {
-        std::ostringstream ss;
-        template<class T> to_string & operator << (const T & val) { ss << val; return *this; }
-        operator std::string() const { return ss.str(); }
-    };
-
     inline std::string error_to_string(const error& e)
     {
-        return to_string() << rs2_exception_type_to_string(e.get_type())
+        return rsutils::string::from() << rs2_exception_type_to_string(e.get_type())
             << " in " << e.get_failed_function() << "("
             << e.get_failed_args() << "):\n" << e.what();
     }
 
     inline std::string api_version_to_string(int version)
     {
-        if (version / 10000 == 0) return to_string() << version;
-        return to_string() << (version / 10000) << "." << (version % 10000) / 100 << "." << (version % 100);
+        if( version / 10000 == 0 )
+            return rsutils::string::from() << version;
+        return rsutils::string::from() << ( version / 10000 ) << "." << ( version % 10000 ) / 100 << "."
+                                       << ( version % 100 );
     }
 
     // Comparing parameter against a range of values of the same type
@@ -1723,64 +1134,104 @@ namespace rs2
         }
     }
 
-    // RS4xx with RealTec RGB sensor may additionally require sensor orientation control to make runtime adjustments
-    inline void rotate_rgb_image(device& dev,uint32_t res_width)
-    {
-        static bool flip = true;
-        uint8_t hor_flip_val{}, ver_flip_val{};
-
-        if (flip)
-        {
-            hor_flip_val = ((res_width < 1280) ? (uint8_t)0x84 : (uint8_t)0x20);
-            ver_flip_val = ((res_width < 1280) ? (uint8_t)0x47 : (uint8_t)0x46);
-        }
-        else
-        {
-            hor_flip_val = ((res_width < 1280) ? (uint8_t)0x82 : (uint8_t)0x86);
-            ver_flip_val = ((res_width < 1280) ? (uint8_t)0x41 : (uint8_t)0x40);
-        }
-
-        std::vector<uint8_t> hor_flip{ 0x14, 0, 0xab, 0xcd, 0x29, 0, 0, 0, 0x20, 0x38, 0x0, 0x0,
-            hor_flip_val, 0,0,0,0,0,0,0,0,0,0,0 };
-        std::vector<uint8_t> ver_flip{ 0x14, 0, 0xab, 0xcd, 0x29, 0, 0, 0, 0x21, 0x38, 0x0, 0x0,
-            ver_flip_val, 0,0,0,0,0,0,0,0,0,0,0 };
-
-        dev.as<debug_protocol>().send_and_receive_raw_data(hor_flip);
-        dev.as<debug_protocol>().send_and_receive_raw_data(ver_flip);
-
-        flip = !flip;
-    }
-
     inline float to_rad(float deg)
     {
         return static_cast<float>(deg * (M_PI / 180.f));
     }
 
-    inline matrix4 create_perspective_projection_matrix(float width, float height, float fov, float n, float f)
+    // Single-Wave - helper function that smoothly goes from 0 to 1 between 0 and 0.5,
+    // and then smoothly returns from 1 to 0 between 0.5 and 1.0, and stays 0 anytime after
+    // Useful to animate variable on and off based on last time something happened
+    inline float single_wave(float x)
     {
-        auto ar = width / height;
-        auto y_scale = (1.f / (float)std::tan(to_rad(fov / 2.f))) * ar;
-        auto x_scale = y_scale / ar;
-        auto length = f - n;
-
-        matrix4 res;
-        for (int i = 0; i < 4; i++)
-            for (int j = 0; j < 4; j++)
-                res.mat[0][0] = 0.f;
-        res.mat[0][0] = x_scale;
-        res.mat[1][1] = y_scale;
-        res.mat[2][2] = -((f + n) / length);
-        res.mat[2][3] = -1;
-        res.mat[3][2] = -((2 * n * f) / length);
-        return res;
+        auto c = clamp(x, 0.f, 1.f);
+        return 0.5f * (sinf(2.f * float(M_PI) * c - float(M_PI_2)) + 1.f);
     }
 
-    inline matrix4 identity_matrix()
+    // convert 3d points into 2d viewport coordinates
+    inline float2 translate_3d_to_2d(float3 point, matrix4 p, matrix4 v, matrix4 f, int32_t vp[4])
     {
-        matrix4 data;
+        //
+        // retrieve model view and projection matrix
+        //
+        //   RS2_GL_MATRIX_CAMERA contains the model view matrix
+        //   RS2_GL_MATRIX_TRANSFORMATION is identity matrix
+        //   RS2_GL_MATRIX_PROJECTION is the projection matrix
+        //
+        // internal representation is in column major order, i.e., 13th, 14th, and 15th elelments
+        // of the 16 element model view matrix represents translations
+        //   float mat[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+        //
+        //   rs2::matrix4 m = { {0, 1, 2, 3}, {4, 5, 6, 7}, {8, 9, 10, 11}, {12, 13, 14, 15} };
+        //       0     1     2     3
+        //       4     5     6     7
+        //       8     9    10    11
+        //       12   13    14    15
+        //
+        // when use matrix4 in glUniformMatrix4fv, transpose option is GL_FALSE so data is passed into
+        // shader as column major order
+        //
+        //          rs2::matrix4 p = get_matrix(RS2_GL_MATRIX_PROJECTION);
+        //          rs2::matrix4 v = get_matrix(RS2_GL_MATRIX_CAMERA);
+        //          rs2::matrix4 f = get_matrix(RS2_GL_MATRIX_TRANSFORMATION);
+
+        // matrix * operation in column major, transpose matrix
+        //   0   4    8   12
+        //   1   5    9   13
+        //   2   6   10   14
+        //   3   7   11   15
+        //
+        matrix4 vc;
+        matrix4 pc;
+        matrix4 fc;
+
         for (int i = 0; i < 4; i++)
+        {
             for (int j = 0; j < 4; j++)
-                data.mat[i][j] = (i == j) ? 1.f : 0.f;
-        return data;
+            {
+                pc(i, j) = p(j, i);
+                vc(i, j) = v(j, i);
+                fc(i, j) = f(j, i);
+             }
+        }
+
+        // obtain the final transformation matrix
+        auto mvp = pc * vc * fc;
+
+        // test - origin (0, 0, -1.0, 1) should be translated into (0, 0, 0, 0) at this point
+        //float4 origin{ 0.f, 0.f, -1.f, 1.f };
+
+        // translate 3d vertex into 2d windows coordinates
+        float4 p3d;
+        p3d.x = point.x;
+        p3d.y = point.y;
+        p3d.z = point.z;
+        p3d.w = 1.0;
+
+        // transform from object coordinates into clip coordinates
+        float4 p2d = mvp * p3d;
+
+        // clip to [-w, w] and normalize
+        if (abs(p2d.w) > 0.0)
+        {
+            p2d.x /= p2d.w;
+            p2d.y /= p2d.w;
+            p2d.z /= p2d.w;
+            p2d.w /= p2d.w;
+        }
+
+        p2d.x = clamp(p2d.x, -1.0, 1.0);
+        p2d.y = clamp(p2d.y, -1.0, 1.0);
+        p2d.z = clamp(p2d.z, -1.0, 1.0);
+
+        // viewport coordinates
+        float x_vp = round((p2d.x + 1.f) / 2.f * vp[2]) + vp[0];
+        float y_vp = round((p2d.y + 1.f) / 2.f * vp[3]) + vp[1];
+
+        float2 p_w;
+        p_w.x = x_vp;
+        p_w.y = y_vp;
+
+        return p_w;
     }
 }

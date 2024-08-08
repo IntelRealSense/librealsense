@@ -14,7 +14,8 @@ Java_com_intel_realsense_librealsense_Frame_nAddRef(JNIEnv *env, jclass type, jl
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_Frame_nRelease(JNIEnv *env, jclass type, jlong handle) {
-    rs2_release_frame((rs2_frame *) handle);
+    if (handle)
+        rs2_release_frame((rs2_frame *) handle);
 }
 
 extern "C" JNIEXPORT jlong JNICALL
@@ -130,6 +131,14 @@ Java_com_intel_realsense_librealsense_DepthFrame_nGetDistance(JNIEnv *env, jclas
     return rv;
 }
 
+extern "C" JNIEXPORT jfloat JNICALL
+Java_com_intel_realsense_librealsense_DepthFrame_nGetUnits( JNIEnv *env, jclass type, jlong handle ) {
+    rs2_error *e = NULL;
+    float rv = rs2_depth_frame_get_units( reinterpret_cast<const rs2_frame *>(handle), &e );
+    handle_error( env, e );
+    return rv;
+}
+
 extern "C" JNIEXPORT jint JNICALL
 Java_com_intel_realsense_librealsense_Points_nGetCount(JNIEnv *env, jclass type, jlong handle) {
     rs2_error *e = NULL;
@@ -175,4 +184,14 @@ Java_com_intel_realsense_librealsense_Frame_nGetMetadata(JNIEnv *env, jclass typ
                                      static_cast<rs2_frame_metadata_value>(metadata_type), &e);
     handle_error(env, e);
     return rv;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_intel_realsense_librealsense_Frame_nSupportsMetadata(JNIEnv *env, jclass type, jlong handle,
+                                                         jint metadata_type) {
+    rs2_error *e = NULL;
+    int rv = rs2_supports_frame_metadata(reinterpret_cast<const rs2_frame *>(handle),
+                                     static_cast<rs2_frame_metadata_value>(metadata_type), &e);
+    handle_error(env, e);
+    return rv > 0;
 }

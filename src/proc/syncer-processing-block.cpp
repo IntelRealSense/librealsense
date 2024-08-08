@@ -6,54 +6,89 @@
 #include "sync.h"
 #include "proc/synthetic-stream.h"
 #include "proc/syncer-processing-block.h"
+#include <src/core/frame-processor-callback.h>
 
 
 namespace librealsense
 {
-    syncer_process_unit::syncer_process_unit(std::shared_ptr<bool_option> is_enabled_opt)
-        : processing_block("syncer"), _matcher((new timestamp_composite_matcher({}))), _is_enabled_opt(is_enabled_opt)
+    syncer_process_unit::syncer_process_unit(std::initializer_list< bool_option::ptr > enable_opts, bool log)
+        : processing_block("syncer"), _matcher((new composite_identity_matcher({})))
+        , _enable_opts(enable_opts.begin(), enable_opts.end())
     {
-        _matcher->set_callback([this](frame_holder f, syncronization_environment env)
-        {
-            std::stringstream ss;
-            ss << "SYNCED: ";
-            auto composite = dynamic_cast<composite_frame*>(f.frame);
-            for (int i = 0; i < composite->get_embedded_frames_count(); i++)
+        _matcher->set_callback( []( frame_holder f, syncronization_environment const & env ) {
+            if( env.log )
             {
-                auto matched = composite->get_frame(i);
-                ss << matched->get_stream()->get_stream_type() << " " << matched->get_frame_number() << ", "<<std::fixed<< matched->get_frame_timestamp()<<" ";
+                LOG_DEBUG( "<-- queueing " << f );
             }
 
-            LOG_DEBUG(ss.str());
-            env.matches.enqueue(std::move(f));
-        });
+            // We get here from within a dispatch() call, already protected by a mutex -- so only
+            // one thread can enqueue!
+            env.matches.enqueue( std::move( f ) );
+        } );
 
-        auto f = [&](frame_holder frame, synthetic_source_interface* source)
+        // This callback gets called by the previous processing block when it is done with a frame. We
+        // call the matchers with the frame and eventually call the next callback in the list using frame_ready().
+        // This callback can get called from multiple threads, one thread per stream -- but always in the correct
+        // frame order per stream.
+        auto f = [&, log](frame_holder && frame, synthetic_source_interface* source)
         {
             // if the syncer is disabled passthrough the frame
-            if (auto is_enabled = _is_enabled_opt.lock())
+            bool enabled = false;
+            size_t n_opts = 0;
+            for (auto& wopt : _enable_opts)
             {
-                if (!is_enabled->is_true())
+                auto opt = wopt.lock();
+                if (opt)
                 {
-                    get_source().frame_ready(std::move(frame));
-                    return;
+                    ++n_opts;
+                    if (opt->is_true())
+                    {
+                        enabled = true;
+                        break;
+                    }
                 }
             }
-
-            single_consumer_frame_queue<frame_holder> matches;
-
+            if (n_opts && !enabled)
+            {
+                get_source().frame_ready(std::move(frame));
+                return;
+            }
+            LOG_DEBUG( "--> syncing " << frame );
             {
                 std::lock_guard<std::mutex> lock(_mutex);
-                _matcher->dispatch(std::move(frame), { source, matches });
+                if( ! _matcher->get_active() )
+                {
+                    LOG_DEBUG( "matcher was stopped: NOT DISPATCHING FRAME!" );
+                    return;
+                }
+                _matcher->dispatch(std::move(frame), { source, _matches, log });
             }
 
             frame_holder f;
-            while (matches.try_dequeue(&f))
-                get_source().frame_ready(std::move(f));
+            {
+                // Another thread has the lock, meaning will get into the following loop and dequeue all
+                // the frames. So there's nothing for us to do...
+                std::unique_lock< std::mutex > lock(_callback_mutex, std::try_to_lock);
+                if (!lock.owns_lock())
+                    return;
+
+                while (_matches.try_dequeue(&f))
+                {
+                    LOG_DEBUG( "--> frame ready: " << *f.frame );
+                    get_source().frame_ready(std::move(f));
+                }
+            }
 
         };
 
-        set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
-            new internal_frame_processor_callback<decltype(f)>(f)));
+        set_processing_callback( make_frame_processor_callback( std::move( f ) ) );
+    }
+
+    // Stopping the syncer means no more frames will be enqueued, and any existing frames
+    // pending dispatch will be lost!
+    void syncer_process_unit::stop()
+    {
+        _matcher->stop();
     }
 }
+

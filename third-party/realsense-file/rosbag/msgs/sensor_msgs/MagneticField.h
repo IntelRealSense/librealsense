@@ -53,15 +53,15 @@ struct MagneticField_
 
 
 
-  typedef boost::shared_ptr< ::sensor_msgs::MagneticField_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::MagneticField_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::MagneticField_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::MagneticField_<ContainerAllocator> const> ConstPtr;
 
 }; // struct MagneticField_
 
 typedef ::sensor_msgs::MagneticField_<std::allocator<void> > MagneticField;
 
-typedef boost::shared_ptr< ::sensor_msgs::MagneticField > MagneticFieldPtr;
-typedef boost::shared_ptr< ::sensor_msgs::MagneticField const> MagneticFieldConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::MagneticField > MagneticFieldPtr;
+typedef std::shared_ptr< ::sensor_msgs::MagneticField const> MagneticFieldConstPtr;
 
 // constants requiring out of line definition
 
@@ -93,32 +93,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::MagneticField_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::MagneticField_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::MagneticField_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::MagneticField_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::MagneticField_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::MagneticField_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 

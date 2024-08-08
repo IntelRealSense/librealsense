@@ -17,6 +17,9 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include "core/options.h"   // Workaround for the missing DLL_EXPORT template
 #include "core/info.h"   // Workaround for the missing DLL_EXPORT template
 #include "../src/backend.h"
+#include <src/core/time-service.h>
+#include <src/platform/command-transfer.h>
+#include <src/platform/hid-device.h>
 #include "pybackend_extras.h"
 #include "../../third-party/stb_image_write.h"
 
@@ -31,6 +34,12 @@ using namespace pybind11::literals;
 
 using namespace librealsense;
 using namespace pybackend2;
+
+namespace librealsense {
+namespace platform {
+std::shared_ptr< backend > create_backend();
+}  // namespace platform
+}  // namespace librealsense
 
 
 // Prevents expensive copies of pixel buffers into python
@@ -58,10 +67,7 @@ PYBIND11_MODULE(NAME, m) {
                  .def_readwrite("def", &platform::control_range::def)
                  .def_readwrite("step", &platform::control_range::step);
 
-    py::class_<platform::time_service> time_service(m, "time_service");
-    time_service.def("get_time", &platform::time_service::get_time);
-
-    py::class_<platform::os_time_service, platform::time_service> os_time_service(m, "os_time_service");
+    m.def("get_time", &librealsense::time_service::get_time);
 
 #define BIND_RAW_RO_ARRAY(class, name, type, size) #name, [](const class &c) -> const std::array<type, size>& { return reinterpret_cast<const std::array<type, size>&>(c.name); }
 #define BIND_RAW_RW_ARRAY(class, name, type, size) BIND_RAW_RO_ARRAY(class, name, type, size), [](class &c, const std::array<type, size> &arr) { for (int i=0; i<size; ++i) c.name[i] = arr[i]; }
@@ -146,8 +152,8 @@ PYBIND11_MODULE(NAME, m) {
         .value("stream_format_filter", RS2_OPTION_STREAM_FORMAT_FILTER)
         .value("stream_index_filter", RS2_OPTION_STREAM_INDEX_FILTER)
         .value("emitter_on_off", RS2_OPTION_EMITTER_ON_OFF)
-        .value("zero_order_point_x", RS2_OPTION_ZERO_ORDER_POINT_X)
-        .value("zero_order_point_y", RS2_OPTION_ZERO_ORDER_POINT_Y)
+        .value("zero_order_point_x", RS2_OPTION_ZERO_ORDER_POINT_X) // Deprecated
+        .value("zero_order_point_y", RS2_OPTION_ZERO_ORDER_POINT_Y) // Deprecated
         .value("lld_temperature", RS2_OPTION_LLD_TEMPERATURE)
         .value("mc_temperature", RS2_OPTION_MC_TEMPERATURE)
         .value("ma_temperature", RS2_OPTION_MA_TEMPERATURE)
@@ -160,8 +166,39 @@ PYBIND11_MODULE(NAME, m) {
         .value("enable_dynamic_calibration", RS2_OPTION_ENABLE_DYNAMIC_CALIBRATION)
         .value("enable_depth_offset", RS2_OPTION_DEPTH_OFFSET)
         .value("enable_led_power", RS2_OPTION_LED_POWER)
-        .value("zero_order_enabled", RS2_OPTION_ZERO_ORDER_ENABLED)
+        .value("zero_order_enabled", RS2_OPTION_ZERO_ORDER_ENABLED) // Deprecated
         .value("enable_map_preservation", RS2_OPTION_ENABLE_MAP_PRESERVATION)
+        .value("enable_freefall_detection", RS2_OPTION_FREEFALL_DETECTION_ENABLED)
+        .value("exposure_time_receiver_APD", RS2_OPTION_AVALANCHE_PHOTO_DIODE)
+        .value("post_processing_sharpening_level", RS2_OPTION_POST_PROCESSING_SHARPENING)
+        .value("pre_processing_sharpening_level", RS2_OPTION_PRE_PROCESSING_SHARPENING)
+        .value("edge_background_noise_level", RS2_OPTION_NOISE_FILTERING)
+        .value("activate_pixel_invalidation", RS2_OPTION_INVALIDATION_BYPASS)
+        .value("ambient_light_environment_level", RS2_OPTION_AMBIENT_LIGHT)
+        .value("digital_gain", RS2_OPTION_DIGITAL_GAIN)
+        .value("sensor_resolution_mode", RS2_OPTION_SENSOR_MODE)
+        .value("emitter_always_on", RS2_OPTION_EMITTER_ALWAYS_ON)
+        .value("thermal_compensation", RS2_OPTION_THERMAL_COMPENSATION)
+        .value("host_performance", RS2_OPTION_HOST_PERFORMANCE)
+        .value("hdr_enabled", RS2_OPTION_HDR_ENABLED)
+        .value("sequence_name", RS2_OPTION_SEQUENCE_NAME)
+        .value("sequence_size", RS2_OPTION_SEQUENCE_SIZE)
+        .value("sequence_id", RS2_OPTION_SEQUENCE_ID)
+        .value("humidity_temperature", RS2_OPTION_HUMIDITY_TEMPERATURE)
+        .value("enable_max_usable_range", RS2_OPTION_ENABLE_MAX_USABLE_RANGE)
+        .value("alternate_ir", RS2_OPTION_ALTERNATE_IR)
+        .value("noise_estimation", RS2_OPTION_NOISE_ESTIMATION)
+        .value("enable_ir_reflectivity", RS2_OPTION_ENABLE_IR_REFLECTIVITY)
+        .value("auto_exposure_limit", RS2_OPTION_AUTO_EXPOSURE_LIMIT)
+        .value("auto_gain_limit", RS2_OPTION_AUTO_GAIN_LIMIT)
+        .value("auto_rx_sensitivity", RS2_OPTION_AUTO_RX_SENSITIVITY)
+        .value("transmitter_frequency", RS2_OPTION_TRANSMITTER_FREQUENCY)
+        .value("vertical_binning", RS2_OPTION_VERTICAL_BINNING)
+        .value("receiver_sensitivity", RS2_OPTION_RECEIVER_SENSITIVITY)
+        .value("exposure_limit_toggle", RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE)
+        .value("gain_limit_toggle", RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE)
+        .value("emitter_frequency", RS2_OPTION_EMITTER_FREQUENCY)
+        .value("depth_auto_exposure_mode", RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");
@@ -231,11 +268,6 @@ PYBIND11_MODULE(NAME, m) {
     hid_sensor_input.def_readwrite("index", &platform::hid_sensor_input::index)
                     .def_readwrite("name", &platform::hid_sensor_input::name);
 
-    py::class_<platform::callback_data> callback_data(m, "callback_data");
-    callback_data.def_readwrite("sensor", &platform::callback_data::sensor)
-                 .def_readwrite("sensor_input", &platform::callback_data::sensor_input)
-                 .def_readwrite("value", &platform::callback_data::value);
-
     py::class_<platform::sensor_data> sensor_data(m, "sensor_data");
     sensor_data.def_readwrite("sensor", &platform::sensor_data::sensor)
                .def_readwrite("fo", &platform::sensor_data::fo);
@@ -269,7 +301,7 @@ PYBIND11_MODULE(NAME, m) {
 
     hid_device.def("open", &platform::hid_device::open, "hid_profiles"_a)
               .def("close", &platform::hid_device::close)
-              .def("stop_capture", &platform::hid_device::stop_capture)
+              .def("stop_capture", &platform::hid_device::stop_capture, py::call_guard<py::gil_scoped_release>())
               .def("start_capture", &platform::hid_device::start_capture, "callback"_a)
               .def("get_sensors", &platform::hid_device::get_sensors)
               .def("get_custom_report_data", &platform::hid_device::get_custom_report_data,
@@ -280,7 +312,7 @@ PYBIND11_MODULE(NAME, m) {
     multi_pins_hid_device.def(py::init<std::vector<std::shared_ptr<platform::hid_device>>&>())
                          .def("open", &platform::multi_pins_hid_device::open, "hid_profiles"_a)
                          .def("close", &platform::multi_pins_hid_device::close)
-                         .def("stop_capture", &platform::multi_pins_hid_device::stop_capture)
+                         .def("stop_capture", &platform::multi_pins_hid_device::stop_capture, py::call_guard<py::gil_scoped_release>())
                          .def("start_capture", &platform::multi_pins_hid_device::start_capture, "callback"_a)
                          .def("get_sensors", &platform::multi_pins_hid_device::get_sensors)
                          .def("get_custom_report_data", &platform::multi_pins_hid_device::get_custom_report_data,
@@ -359,8 +391,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("create_usb_device", &platform::backend::create_usb_device, "info"_a)
         .def("query_usb_devices", &platform::backend::query_usb_devices)
         .def("create_hid_device", &platform::backend::create_hid_device, "info"_a)
-        .def("query_hid_devices", &platform::backend::query_hid_devices)
-        .def("create_time_service", &platform::backend::create_time_service);
+        .def("query_hid_devices", &platform::backend::query_hid_devices);
 
     py::class_<platform::multi_pins_uvc_device, std::shared_ptr<platform::multi_pins_uvc_device>, platform::uvc_device> multi_pins_uvc_device(m, "multi_pins_uvc_device");
     multi_pins_uvc_device.def(py::init<std::vector<std::shared_ptr<platform::uvc_device>>&>())
@@ -451,4 +482,3 @@ void librealsense::info_container::enable_recording(std::function<void(const inf
 void librealsense::info_container::update(std::shared_ptr<extension_snapshot> ext){}
 bool librealsense::info_container::supports_info(rs2_camera_info info) const { return false; }
 const std::string& librealsense::info_container::get_info(enum rs2_camera_info) const { static std::string s = ""; return s; }
-std::vector<rs2_option> librealsense::options_container::get_supported_options(void)const { return{}; }

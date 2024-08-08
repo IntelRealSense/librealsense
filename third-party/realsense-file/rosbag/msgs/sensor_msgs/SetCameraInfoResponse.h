@@ -38,21 +38,21 @@ struct SetCameraInfoResponse_
    typedef uint8_t _success_type;
   _success_type success;
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _status_message_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > >  _status_message_type;
   _status_message_type status_message;
 
 
 
 
-  typedef boost::shared_ptr< ::sensor_msgs::SetCameraInfoResponse_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::SetCameraInfoResponse_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::SetCameraInfoResponse_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::SetCameraInfoResponse_<ContainerAllocator> const> ConstPtr;
 
 }; // struct SetCameraInfoResponse_
 
 typedef ::sensor_msgs::SetCameraInfoResponse_<std::allocator<void> > SetCameraInfoResponse;
 
-typedef boost::shared_ptr< ::sensor_msgs::SetCameraInfoResponse > SetCameraInfoResponsePtr;
-typedef boost::shared_ptr< ::sensor_msgs::SetCameraInfoResponse const> SetCameraInfoResponseConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::SetCameraInfoResponse > SetCameraInfoResponsePtr;
+typedef std::shared_ptr< ::sensor_msgs::SetCameraInfoResponse const> SetCameraInfoResponseConstPtr;
 
 // constants requiring out of line definition
 
@@ -84,32 +84,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::SetCameraInfoResponse_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::SetCameraInfoResponse_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::SetCameraInfoResponse_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::SetCameraInfoResponse_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::SetCameraInfoResponse_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::SetCameraInfoResponse_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 
@@ -186,7 +186,7 @@ struct Printer< ::sensor_msgs::SetCameraInfoResponse_<ContainerAllocator> >
     s << indent << "success: ";
     Printer<uint8_t>::stream(s, indent + "  ", v.success);
     s << indent << "status_message: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.status_message);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > > >::stream(s, indent + "  ", v.status_message);
   }
 };
 

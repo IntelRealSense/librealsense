@@ -27,7 +27,7 @@ namespace librealsense
     {
         auto period = std::chrono::milliseconds(1000 / _render_rate).count();
         auto curr_time = std::chrono::steady_clock::now();
-        double diff = std::chrono::duration_cast<std::chrono::milliseconds>(curr_time - _last_print_time).count();
+        auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(curr_time - _last_print_time).count();
 
         if (diff < period)
             return;
@@ -45,11 +45,11 @@ namespace librealsense
         }
     }
 
-    rates_printer::profile::profile() : _counter(0), _last_frame_number(0), _acctual_fps(0)
+    rates_printer::profile::profile() : _counter(0), _last_frame_number(0), _actual_fps(0)
     {
     }
 
-    int rates_printer::profile::last_frame_number()
+    unsigned long long rates_printer::profile::last_frame_number()
     {
         return _last_frame_number;
     }
@@ -61,7 +61,7 @@ namespace librealsense
 
     float rates_printer::profile::get_fps()
     {
-        return _acctual_fps;
+        return _actual_fps;
     }
 
     void rates_printer::profile::on_frame_arrival(const rs2::frame& f)
@@ -77,10 +77,10 @@ namespace librealsense
         auto curr_time = std::chrono::steady_clock::now();
         _time_points.push_back(curr_time);
         auto oldest = _time_points[0];
-        if (_time_points.size() > _stream_profile.fps())
+        if (_time_points.size() > size_t(_stream_profile.fps()))
             _time_points.erase(_time_points.begin());
-        double diff = std::chrono::duration_cast<std::chrono::milliseconds>(curr_time - oldest).count() / 1000.0;
+        auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(curr_time - oldest).count() / 1000.f;
         if (diff > 0)
-            _acctual_fps = _time_points.size() / diff;
+            _actual_fps = _time_points.size() / diff;
     }
 }

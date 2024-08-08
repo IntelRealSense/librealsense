@@ -33,6 +33,10 @@ $ lsusb | grep 8086
 ```bash
 $ dmesg -T
 ```
+-To monitor the Linux Kernel log messages when there any change
+```bash
+$ dmesg -wH
+```
 
 - To clear the dmesg buffer:
 ```bash

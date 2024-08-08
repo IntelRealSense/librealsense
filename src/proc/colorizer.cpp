@@ -150,11 +150,38 @@ namespace librealsense
 
         _maps = { &jet, &classic, &grayscale, &inv_grayscale, &biomes, &cold, &warm, &quantized, &pattern, &hue };
 
-        auto min_opt = std::make_shared<ptr_option<float>>(0.f, 16.f, 0.1f, 0.f, &_min, "Min range in meters");
-        register_option(RS2_OPTION_MIN_DISTANCE, min_opt);
+        auto min_opt = std::make_shared< ptr_option< float > >( 0.f, 16.f, 0.1f, 0.f, &_min, "Min range in meters" );
 
-        auto max_opt = std::make_shared<ptr_option<float>>(0.f, 16.f, 0.1f, 6.f, &_max, "Max range in meters");
-        register_option(RS2_OPTION_MAX_DISTANCE, max_opt);
+        auto max_opt = std::make_shared< ptr_option< float > >( 0.f, 16.f, 0.1f, 6.f, &_max, "Max range in meters" );
+
+        auto max_dist_opt = std::make_shared< max_distance_option >( max_opt, min_opt );
+
+        auto min_dist_opt = std::make_shared< min_distance_option >( min_opt, max_opt );
+
+        register_option( RS2_OPTION_MAX_DISTANCE, max_dist_opt );
+
+        register_option( RS2_OPTION_MIN_DISTANCE, min_dist_opt );
+
+        auto hist_opt = std::make_shared< ptr_option< bool > >( false,
+                                                                true,
+                                                                true,
+                                                                true,
+                                                                &_equalize,
+                                                                "Perform histogram equalization" );
+        
+        auto weak_hist_opt = std::weak_ptr< ptr_option< bool > >( hist_opt );
+
+        max_dist_opt->add_observer( [weak_hist_opt]( float val ) {
+            auto strong_hist_opt = weak_hist_opt.lock();
+            if( strong_hist_opt )
+                strong_hist_opt->set( false );
+        } );
+
+        min_dist_opt->add_observer( [weak_hist_opt]( float val ) {
+            auto strong_hist_opt = weak_hist_opt.lock();
+            if( strong_hist_opt )
+                strong_hist_opt->set( false );
+        } );
 
         auto color_map = std::make_shared<ptr_option<int>>(0, (int)_maps.size() - 1, 1, 0, &_map_index, "Color map");
         color_map->set_description(0.f, "Jet");
@@ -210,7 +237,6 @@ namespace librealsense
         });
         register_option(RS2_OPTION_VISUAL_PRESET, preset_opt);
 
-        auto hist_opt = std::make_shared<ptr_option<bool>>(false, true, true, true, &_equalize, "Perform histogram equalization");
         register_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, hist_opt);
     }
 
@@ -219,22 +245,26 @@ namespace librealsense
         if (!frame || frame.is<rs2::frameset>())
             return false;
 
-        if (frame.get_profile().stream_type() != RS2_STREAM_DEPTH)
-            return false;
+        if ((frame.get_profile().stream_type() == RS2_STREAM_DEPTH) && 
+                    (_supported_formats.find(frame.get_profile().format()) != _supported_formats.end()))
+            return true;
 
-        return true;
+        return false;
     }
 
     rs2::frame colorizer::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
+        if (f.as<rs2::depth_frame>())
+            _depth_units = ((depth_frame*)f.get())->get_units();
         if (f.get_profile().get() != _source_stream_profile.get())
         {
             _source_stream_profile = f.get_profile();
-            _target_stream_profile = f.get_profile().clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_RGB8);
+            _target_stream_profile = f.get_profile().clone(RS2_STREAM_DEPTH, f.get_profile().stream_index(), RS2_FORMAT_RGB8);
 
-            auto info = disparity_info::update_info_from_frame(f);
-            _depth_units = info.depth_units;
-            _d2d_convert_factor = info.d2d_convert_factor;
+            // workaround for D457
+            //auto info = disparity_info::update_info_from_frame(f);
+            //_d2d_convert_factor = info.d2d_convert_factor;
+            _d2d_convert_factor = 681678.625;
         }
 
         auto make_equalized_histogram = [this](const rs2::video_frame& depth, rs2::video_frame rgb)
@@ -288,6 +318,7 @@ namespace librealsense
                 auto min = _min;
                 auto max = _max;
                 auto coloring_function = [&, this](float data) {
+                    if (min >= max) return 0.f;
                     return (data * _depth_units - min) / (max - min);
                 };
                 make_rgb_data<uint16_t>(depth_data, rgb_data, w, h, coloring_function);

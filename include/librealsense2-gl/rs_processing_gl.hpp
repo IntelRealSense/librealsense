@@ -139,6 +139,27 @@ namespace rs2
         };
 
         /**
+         * Similar in functionality (Y411->RGB8 conversion) to rs2::y411_decoder but performed on the GPU.
+         */
+        class y411_decoder : public rs2::y411_decoder
+        {
+        public:
+            y411_decoder() : rs2::y411_decoder( init() ) {}
+
+        private:
+            static std::shared_ptr<rs2_processing_block> init()
+            {
+                rs2_error* e = nullptr;
+                auto block = std::shared_ptr<rs2_processing_block>(
+                    rs2_gl_create_y411_decoder(RS2_API_VERSION, &e),
+                    rs2_delete_processing_block);
+                error::handle(e);
+
+                return block;
+            }
+        };
+
+        /**
         * Colorizer can be used for Depth->RGB conversion, including histogram equalization
         * Similar in functionality to rs2::colorizer but performed on the GPU
         */
@@ -227,6 +248,11 @@ namespace rs2
                 error::handle(e);
             }
 
+            static const auto OPTION_MOUSE_X = rs2_option(RS2_OPTION_COUNT + 1);
+            static const auto OPTION_MOUSE_Y = rs2_option(RS2_OPTION_COUNT + 2);
+            static const auto OPTION_MOUSE_PICK = rs2_option(RS2_OPTION_COUNT + 3);
+            static const auto OPTION_WAS_PICKED = rs2_option(RS2_OPTION_COUNT + 4);
+            static const auto OPTION_SELECTED = rs2_option(RS2_OPTION_COUNT + 5);
         private:
             friend class context;
 
@@ -262,6 +288,26 @@ namespace rs2
             }
 
             static const auto OPTION_FILLED = rs2_option(RS2_OPTION_COUNT + 1);
+            static const auto OPTION_SHADED = rs2_option(RS2_OPTION_COUNT + 2);
+
+            static const auto OPTION_MOUSE_X = rs2_option(RS2_OPTION_COUNT + 3);
+            static const auto OPTION_MOUSE_Y = rs2_option(RS2_OPTION_COUNT + 4);
+            static const auto OPTION_MOUSE_PICK = rs2_option(RS2_OPTION_COUNT + 5);
+
+            static const auto OPTION_PICKED_X = rs2_option(RS2_OPTION_COUNT + 6);
+            static const auto OPTION_PICKED_Y = rs2_option(RS2_OPTION_COUNT + 7);
+            static const auto OPTION_PICKED_Z = rs2_option(RS2_OPTION_COUNT + 8);
+
+            static const auto OPTION_PICKED_ID = rs2_option(RS2_OPTION_COUNT + 9);
+            static const auto OPTION_SELECTED  = rs2_option(RS2_OPTION_COUNT + 10);
+            static const auto OPTION_ORIGIN_PICKED  = rs2_option(RS2_OPTION_COUNT + 11);
+
+            static const auto OPTION_NORMAL_X = rs2_option(RS2_OPTION_COUNT + 12);
+            static const auto OPTION_NORMAL_Y = rs2_option(RS2_OPTION_COUNT + 13);
+            static const auto OPTION_NORMAL_Z = rs2_option(RS2_OPTION_COUNT + 14);
+
+            static const auto OPTION_SCALE_FACTOR = rs2_option(RS2_OPTION_COUNT + 15);
+            
         private:
             friend class context;
 

@@ -67,15 +67,15 @@ struct Range_
      enum { INFRARED = 1u };
  
 
-  typedef boost::shared_ptr< ::sensor_msgs::Range_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::Range_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::Range_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::Range_<ContainerAllocator> const> ConstPtr;
 
 }; // struct Range_
 
 typedef ::sensor_msgs::Range_<std::allocator<void> > Range;
 
-typedef boost::shared_ptr< ::sensor_msgs::Range > RangePtr;
-typedef boost::shared_ptr< ::sensor_msgs::Range const> RangeConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::Range > RangePtr;
+typedef std::shared_ptr< ::sensor_msgs::Range const> RangeConstPtr;
 
 // constants requiring out of line definition
 
@@ -111,32 +111,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::Range_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::Range_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::Range_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::Range_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::Range_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::Range_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 

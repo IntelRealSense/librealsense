@@ -18,16 +18,21 @@ int main(int argc, char * argv[]) try
 
     std::vector<rs2::pipeline>            pipelines;
 
-    // Start a streaming pipe per each connected device
+    // Capture serial numbers before opening streaming
+    std::vector<std::string>              serials;
     for (auto&& dev : ctx.query_devices())
+        serials.push_back(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+
+    // Start a streaming pipe per each connected device
+    for (auto&& serial : serials)
     {
         rs2::pipeline pipe(ctx);
         rs2::config cfg;
-        cfg.enable_device(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+        cfg.enable_device(serial);
         pipe.start(cfg);
         pipelines.emplace_back(pipe);
         // Map from each device's serial number to a different colorizer
-        colorizers[dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)] = rs2::colorizer();
+        colorizers[serial] = rs2::colorizer();
     }
 
     // We'll keep track of the last frame of each stream available to make the presentation persistent

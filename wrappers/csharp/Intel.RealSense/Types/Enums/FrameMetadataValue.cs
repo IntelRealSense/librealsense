@@ -100,5 +100,8 @@ namespace Intel.RealSense
 
         /// <summary>Led power value 0-360.</summary>
         FrameLedPower = 30,
+
+        /// <summary>The number of transmitted payload bytes, not including metadata.</summary>
+        RawFrameSizeBytes = 31,
     }
 }

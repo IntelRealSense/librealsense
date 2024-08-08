@@ -3,62 +3,83 @@
 
 #pragma once
 
-#include "core/processing.h"
-#include "concurrency.h"
-#include "archive.h"
-#include "metadata-parser.h"
-#include "frame-archive.h"
+
+#include <librealsense2/hpp/rs_types.hpp>
+#include <src/frame-archive.h>
+
+#include <tuple>
 
 namespace librealsense
 {
     class option;
+    class frame_holder;
+    class archive_interface;
 
     class LRS_EXTENSION_API frame_source
     {
     public:
-        frame_source(uint32_t max_publish_list_size = 16);
+        using archive_id = std::tuple< rs2_stream, int, rs2_extension >; // Stream type, stream index, extention type.
 
-        void init(std::shared_ptr<metadata_parser_map> metadata_parsers);
+        frame_source( uint32_t max_publish_list_size = 16 );
 
-        callback_invocation_holder begin_callback();
+        void init( std::shared_ptr< metadata_parser_map > metadata_parsers );
+
+        callback_invocation_holder begin_callback( archive_id id );
 
         void reset();
 
-        std::shared_ptr<option> get_published_size_option();
+        std::shared_ptr< option > get_published_size_option();
 
-        frame_interface* alloc_frame(rs2_extension type, size_t size, frame_additional_data additional_data, bool requires_memory) const;
+        frame_interface * alloc_frame( archive_id id,
+                                       size_t size,
+                                       frame_additional_data && additional_data,
+                                       bool requires_memory );
 
-        void set_callback(frame_callback_ptr callback);
-        frame_callback_ptr get_callback() const;
+        void set_callback( rs2_frame_callback_sptr callback );
+        rs2_frame_callback_sptr get_callback() const;
 
-        void invoke_callback(frame_holder frame) const;
+        void invoke_callback( frame_holder frame ) const;
 
         void flush() const;
 
         virtual ~frame_source() { flush(); }
 
-        double get_time() const { return _ts ? _ts->get_time() : 0; }
-
-        void set_sensor(const std::shared_ptr<sensor_interface>& s);
+        void set_sensor( const std::weak_ptr< sensor_interface > & s );
 
         template<class T>
-        void add_extension(rs2_extension ex)
+        void add_extension( rs2_extension ex )
         {
-            _archive[ex] = std::make_shared<frame_archive<T>>(&_max_publish_list_size, _ts, _metadata_parsers);
+            std::lock_guard< std::recursive_mutex > lock( _mutex );
+
+            auto it = std::find( _supported_extensions.begin(), _supported_extensions.end(), ex );
+            if( it == _supported_extensions.end() )
+            {
+                _supported_extensions.push_back( ex );
+            }
+
+            // We use a special index for extensions since we don't know the stream type here.
+            // We can't wait with the allocation because we need the type T in the creation.
+            archive_id special_index = { RS2_STREAM_COUNT, 0, ex };
+            _archive[special_index] = std::make_shared< frame_archive< T > >( &_max_publish_list_size, _metadata_parsers );
         }
 
-        void set_max_publish_list_size(int qsize) {_max_publish_list_size = qsize; }
+        void set_max_publish_list_size( int qsize ) { _max_publish_list_size = qsize; }
+
+        static rs2_extension stream_to_frame_types( rs2_stream stream );
 
     private:
         friend class syncer_process_unit;
 
-        mutable std::mutex _callback_mutex;
+        std::map< archive_id, std::shared_ptr< archive_interface > >::iterator create_archive( archive_id id );
 
-        std::map<rs2_extension, std::shared_ptr<archive_interface>> _archive;
+        mutable std::recursive_mutex _mutex;
 
-        std::atomic<uint32_t> _max_publish_list_size;
-        frame_callback_ptr _callback;
-        std::shared_ptr<platform::time_service> _ts;
-        std::shared_ptr<metadata_parser_map> _metadata_parsers;
+        std::map< archive_id, std::shared_ptr< archive_interface > > _archive;
+        std::vector< rs2_extension > _supported_extensions;
+
+        std::atomic< uint32_t > _max_publish_list_size;
+        rs2_frame_callback_sptr _callback;
+        std::shared_ptr< metadata_parser_map > _metadata_parsers;
+        std::weak_ptr< sensor_interface > _sensor;
     };
 }

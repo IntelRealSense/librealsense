@@ -26,12 +26,12 @@ struct Header_
   Header_()
     : seq(0)
     , stamp()
-    , frame_id()  {
+    , version()  {
     }
   Header_(const ContainerAllocator& _alloc)
     : seq(0)
     , stamp()
-    , frame_id(_alloc)  {
+    , version(_alloc)  {
   (void)_alloc;
     }
 
@@ -43,8 +43,8 @@ struct Header_
    typedef rs2rosinternal::Time _stamp_type;
   _stamp_type stamp;
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _frame_id_type;
-  _frame_id_type frame_id;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > >  _frame_id_type;
+  _frame_id_type version; // the field is used for ROSbag versions control
 
 
 
@@ -89,32 +89,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::Header_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::Header_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::Header_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::Header_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::Header_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::Header_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 
@@ -182,7 +182,7 @@ namespace serialization
     {
       stream.next(m.seq);
       stream.next(m.stamp);
-      stream.next(m.frame_id);
+      stream.next(m.version);
     }
 
     ROS_DECLARE_ALLINONE_SERIALIZER
@@ -205,8 +205,8 @@ struct Printer< ::std_msgs::Header_<ContainerAllocator> >
     Printer<uint32_t>::stream(s, indent + "  ", v.seq);
     s << indent << "stamp: ";
     Printer<rs2rosinternal::Time>::stream(s, indent + "  ", v.stamp);
-    s << indent << "frame_id: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.frame_id);
+    s << indent << "version: ";
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > > >::stream(s, indent + "  ", v.version);
   }
 };
 

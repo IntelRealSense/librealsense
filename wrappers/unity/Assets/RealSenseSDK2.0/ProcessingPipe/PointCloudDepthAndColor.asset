@@ -27,4 +27,4 @@ MonoBehaviour:
   enabled: 1
   TextureStream: 2
   TextureFormat: 5
-  _occlusionRemoval: 0
+  _occlusionRemoval: 1

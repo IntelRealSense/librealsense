@@ -80,18 +80,30 @@ class DeviceWatcher extends LrsClass {
         }
     }
 
+    private enum UpdateListenersType {
+        ATTACH,
+        DETACH
+    }
+
+    private void updateListeners(UpdateListenersType type){
+        for(DeviceListener listener : mAppDeviceListener) {
+            try {
+                if (type == UpdateListenersType.ATTACH)
+                    listener.onDeviceAttach();
+                else
+                    listener.onDeviceDetach();
+            } catch (Exception e) {
+                Log.e(TAG, e.getMessage());
+            }
+        }
+    }
+
     private void removeDevice(UsbDesc desc) {
         Log.d(TAG, "Removing device: " + desc.name);
 
         nRemoveUsbDevice(desc.descriptor);
         desc.connection.close();
-        for(DeviceListener listener : mAppDeviceListener) {
-            try {
-                listener.onDeviceDetach();
-            } catch (Exception e) {
-                Log.e(TAG, e.getMessage());
-            }
-        }
+        updateListeners(UpdateListenersType.DETACH);
         Log.d(TAG, "Device: " + desc.name + " removed successfully");
     }
 
@@ -108,13 +120,7 @@ class DeviceWatcher extends LrsClass {
         mDescriptors.put(device.getDeviceName(), desc);
         nAddUsbDevice(desc.name, desc.descriptor);
 
-        for (DeviceListener listener : mAppDeviceListener){
-            try {
-                listener.onDeviceAttach();
-            } catch (Exception e){
-                Log.e(TAG, e.getMessage());
-            }
-        }
+        updateListeners(UpdateListenersType.ATTACH);
         Log.d(TAG, "Device: " + desc.name + " added successfully");
     }
 

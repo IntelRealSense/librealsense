@@ -52,15 +52,15 @@ struct JoyFeedback_
      enum { TYPE_BUZZER = 2u };
  
 
-  typedef boost::shared_ptr< ::sensor_msgs::JoyFeedback_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::JoyFeedback_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::JoyFeedback_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::JoyFeedback_<ContainerAllocator> const> ConstPtr;
 
 }; // struct JoyFeedback_
 
 typedef ::sensor_msgs::JoyFeedback_<std::allocator<void> > JoyFeedback;
 
-typedef boost::shared_ptr< ::sensor_msgs::JoyFeedback > JoyFeedbackPtr;
-typedef boost::shared_ptr< ::sensor_msgs::JoyFeedback const> JoyFeedbackConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::JoyFeedback > JoyFeedbackPtr;
+typedef std::shared_ptr< ::sensor_msgs::JoyFeedback const> JoyFeedbackConstPtr;
 
 // constants requiring out of line definition
 
@@ -98,32 +98,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::JoyFeedback_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::JoyFeedback_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::JoyFeedback_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::JoyFeedback_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::JoyFeedback_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::JoyFeedback_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 

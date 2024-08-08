@@ -45,4 +45,4 @@ MonoBehaviour:
   enabled: 1
   TextureStream: 1
   TextureFormat: 1
-  _occlusionRemoval: 0
+  _occlusionRemoval: 1

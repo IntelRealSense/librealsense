@@ -22,7 +22,7 @@ cmake version 3.7.2
 
 ### Add swap
 Initial value is 100MB, but we need to build libraries so initial value isn't enough for that.
-In this case, need to switch from 100 to `2048` (2GB).  
+In this case, need to switch from 100 to `2048` (2GB). Note that this is only needed on Raspberry Pi's with a small amount of RAM. 
 ```
 $ sudo vim /etc/dphys-swapfile
 CONF_SWAPSIZE=2048
@@ -32,7 +32,7 @@ $ sudo /etc/init.d/dphys-swapfile restart swapon -s
 
 ### Install packages
 ```
-$ sudo apt-get install -y libdrm-amdgpu1 libdrm-amdgpu1-dbg libdrm-dev libdrm-exynos1 libdrm-exynos1-dbg libdrm-freedreno1 libdrm-freedreno1-dbg libdrm-nouveau2 libdrm-nouveau2-dbg libdrm-omap1 libdrm-omap1-dbg libdrm-radeon1 libdrm-radeon1-dbg libdrm-tegra0 libdrm-tegra0-dbg libdrm2 libdrm2-dbg
+$ sudo apt-get install -y libdrm-amdgpu1 libdrm-amdgpu1-dbgsym libdrm-dev libdrm-exynos1 libdrm-exynos1-dbgsym libdrm-freedreno1 libdrm-freedreno1-dbgsym libdrm-nouveau2 libdrm-nouveau2-dbgsym libdrm-omap1 libdrm-omap1-dbgsym libdrm-radeon1 libdrm-radeon1-dbgsym libdrm-tegra0 libdrm-tegra0-dbgsym libdrm2 libdrm2-dbgsym
 
 $ sudo apt-get install -y libglu1-mesa libglu1-mesa-dev glusterfs-common libglu1-mesa libglu1-mesa-dev libglui-dev libglui2c2
 
@@ -46,7 +46,7 @@ $ cd ~
 $ git clone https://github.com/IntelRealSense/librealsense.git
 $ cd librealsense
 $ sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/ 
-$ sudo udevadm control --reload-rules && udevadm trigger 
+$ sudo udevadm control --reload-rules && sudo udevadm trigger 
 
 ```
 

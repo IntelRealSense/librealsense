@@ -4,8 +4,14 @@
 #include <algorithm>
 #include "pipeline.h"
 #include "stream.h"
+#include "media/playback/playback_device.h"
 #include "media/record/record_device.h"
 #include "media/ros/ros_writer.h"
+#include <src/proc/syncer-processing-block.h>
+#include <src/core/frame-callback.h>
+
+#include <rsutils/string/from.h>
+
 
 namespace librealsense
 {
@@ -14,20 +20,21 @@ namespace librealsense
         pipeline::pipeline(std::shared_ptr<librealsense::context> ctx) :
             _ctx(ctx),
             _dispatcher(10),
-            _hub(ctx, RS2_PRODUCT_LINE_ANY_INTEL),
+            _hub( device_hub::make( ctx, RS2_PRODUCT_LINE_ANY_INTEL )),
             _synced_streams({ RS2_STREAM_COLOR, RS2_STREAM_DEPTH, RS2_STREAM_INFRARED, RS2_STREAM_FISHEYE })
         {}
 
         pipeline::~pipeline()
         {
-            try
-            {
-                unsafe_stop();
+            if (_active_profile) {
+                try {
+                    unsafe_stop();
+                }
+                catch (...) {}
             }
-            catch (...) {}
         }
 
-        std::shared_ptr<profile> pipeline::start(std::shared_ptr<config> conf, frame_callback_ptr callback)
+        std::shared_ptr<profile> pipeline::start(std::shared_ptr<config> conf, rs2_frame_callback_sptr callback)
         {
             std::lock_guard<std::mutex> lock(_mtx);
             if (_active_profile)
@@ -37,6 +44,16 @@ namespace librealsense
             _streams_callback = callback;
             unsafe_start(conf);
             return unsafe_get_active_profile();
+        }
+
+        void pipeline::set_device( std::shared_ptr< librealsense::device_interface >  dev ) 
+        {
+            _dev = dev;
+        }
+
+        std::shared_ptr< librealsense::device_interface > pipeline::get_device() 
+        {
+            return _dev;
         }
 
         std::shared_ptr<profile> pipeline::get_active_profile() const
@@ -81,16 +98,17 @@ namespace librealsense
             }
 
             assert(profile);
-            assert(profile->_multistream.get_profiles().size() > 0);
+            if (!profile->_multistream.get_profiles().size())
+                throw librealsense::wrong_api_call_sequence_exception("No streams are selected!");
 
             auto synced_streams_ids = on_start(profile);
 
-            frame_callback_ptr callbacks = get_callback(synced_streams_ids);
+            rs2_frame_callback_sptr callbacks = get_callback(synced_streams_ids);
 
             auto dev = profile->get_device();
             if (auto playback = As<librealsense::playback_device>(dev))
             {
-                _playback_stopped_token = playback->playback_status_changed += [this, callbacks](rs2_playback_status status)
+                _playback_stopped_token = playback->playback_status_changed.subscribe( [this, callbacks](rs2_playback_status status)
                 {
                     if (status == RS2_PLAYBACK_STATUS_STOPPED)
                     {
@@ -105,7 +123,7 @@ namespace librealsense
                             }
                         });
                     }
-                };
+                } );
             }
 
             _dispatcher.start();
@@ -131,11 +149,12 @@ namespace librealsense
             {
                 try
                 {
+                    _syncer->stop();
                     _aggregator->stop();
                     auto dev = _active_profile->get_device();
                     if (auto playback = As<librealsense::playback_device>(dev))
                     {
-                        playback->playback_status_changed -= _playback_stopped_token;
+                        _playback_stopped_token.cancel();
                     }
                     _active_profile->_multistream.stop();
                     _active_profile->_multistream.close();
@@ -144,16 +163,19 @@ namespace librealsense
                 catch (...)
                 {
                 } // Stop will throw if device was disconnected. TODO - refactoring anticipated
+
+                // shared pointers initialized when pipeline running with _active_profile
+                // should be reset with _active_profile too
+                _active_profile.reset();
+                _prev_conf.reset();
+                _streams_callback.reset();
             }
-            _active_profile.reset();
-            _prev_conf.reset();
-            _streams_callback.reset();
         }
 
         std::shared_ptr<device_interface> pipeline::wait_for_device(const std::chrono::milliseconds& timeout, const std::string& serial)
         {
             // pipeline's device selection shall be deterministic
-            return _hub.wait_for_device(timeout, false, serial);
+            return _hub->wait_for_device(timeout, false, serial);
         }
 
         std::shared_ptr<librealsense::context> pipeline::get_context() const
@@ -188,35 +210,24 @@ namespace librealsense
             return _streams_to_sync_ids;
         }
 
-        frame_callback_ptr pipeline::get_callback(std::vector<int> synced_streams_ids)
+        rs2_frame_callback_sptr pipeline::get_callback(std::vector<int> synced_streams_ids)
         {
-            auto pipeline_process_callback = [&](frame_holder fref)
-            {
-                _aggregator->invoke(std::move(fref));
-            };
+            _syncer->set_output_callback(
+                make_frame_callback( [&]( frame_holder fref ) { _aggregator->invoke( std::move( fref ) ); } ) );
 
-            frame_callback_ptr to_pipeline_process = {
-                new internal_frame_callback<decltype(pipeline_process_callback)>(pipeline_process_callback),
-                [](rs2_frame_callback* p) { p->release(); }
-            };
-
-            _syncer->set_output_callback(to_pipeline_process);
-
-            auto to_syncer = [&, synced_streams_ids](frame_holder fref)
-            {
-                // if the user requested to sync the frame push it to the syncer, otherwise push it to the aggregator
-                if (std::find(synced_streams_ids.begin(), synced_streams_ids.end(), fref->get_stream()->get_unique_id()) != synced_streams_ids.end())
-                    _syncer->invoke(std::move(fref));
-                else
-                    _aggregator->invoke(std::move(fref));
-            };
-
-            frame_callback_ptr rv = {
-                new internal_frame_callback<decltype(to_syncer)>(to_syncer),
-                [](rs2_frame_callback* p) { p->release(); }
-            };
-
-            return rv;
+            return make_frame_callback(
+                [&, synced_streams_ids]( frame_holder fref )
+                {
+                    // if the user requested to sync the frame push it to the syncer, otherwise push it to the
+                    // aggregator
+                    if( std::find( synced_streams_ids.begin(),
+                                   synced_streams_ids.end(),
+                                   fref->get_stream()->get_unique_id() )
+                        != synced_streams_ids.end() )
+                        _syncer->invoke( std::move( fref ) );
+                    else
+                        _aggregator->invoke( std::move( fref ) );
+                } );
         }
 
         frame_holder pipeline::wait_for_frames(unsigned int timeout_ms)
@@ -238,7 +249,7 @@ namespace librealsense
             }
 
             //hub returns true even if device already reconnected
-            if (!_hub.is_connected(*_active_profile->get_device()))
+            if (!_hub->is_connected(*_active_profile->get_device()))
             {
                 try
                 {
@@ -254,10 +265,11 @@ namespace librealsense
                 }
                 catch (const std::exception& e)
                 {
-                    throw std::runtime_error(to_string() << "Device disconnected. Failed to recconect: " << e.what() << timeout_ms);
+                    throw std::runtime_error( rsutils::string::from() << "Device disconnected. Failed to reconnect: "
+                                                                      << e.what() << timeout_ms );
                 }
             }
-            throw std::runtime_error(to_string() << "Frame didn't arrived within " << timeout_ms);
+            throw std::runtime_error( rsutils::string::from() << "Frame didn't arrive within " << timeout_ms );
         }
 
         bool pipeline::poll_for_frames(frame_holder* frame)
@@ -298,7 +310,7 @@ namespace librealsense
             }
 
             //hub returns true even if device already reconnected
-            if (!_hub.is_connected(*_active_profile->get_device()))
+            if (!_hub->is_connected(*_active_profile->get_device()))
             {
                 try
                 {

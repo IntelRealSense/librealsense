@@ -3,6 +3,11 @@
 
 #include "config.h"
 #include "pipeline.h"
+#include "platform/platform-device-info.h"
+#include "media/playback/playback-device-info.h"
+#include "context.h"
+#include <rsutils/string/from.h>
+
 
 namespace librealsense
 {
@@ -17,6 +22,9 @@ namespace librealsense
             std::lock_guard<std::mutex> lock(_mtx);
             _resolved_profile.reset();
             _stream_requests[{stream, index}] = { format, stream, index, width, height, fps };
+            auto position = std::find(_streams_to_disable.begin(), _streams_to_disable.end(), std::pair<rs2_stream, int>{stream, index});
+            if (position != _streams_to_disable.end())
+                _streams_to_disable.erase(position); //means the element was found
         }
 
         void config::enable_all_stream()
@@ -25,6 +33,7 @@ namespace librealsense
             _resolved_profile.reset();
             _stream_requests.clear();
             _enable_all_streams = true;
+            _streams_to_disable.clear();
         }
 
         void config::enable_device(const std::string& serial)
@@ -66,6 +75,8 @@ namespace librealsense
         void config::disable_stream(rs2_stream stream, int index)
         {
             std::lock_guard<std::mutex> lock(_mtx);
+            _streams_to_disable.push_back({ stream, std::max(index, 0) }); // for this DB default index should be 0 not -1 because it is compared to get_stream_index() API that returns 0 as default index
+
             auto itr = std::begin(_stream_requests);
             while (itr != std::end(_stream_requests))
             {
@@ -88,36 +99,87 @@ namespace librealsense
             _stream_requests.clear();
             _enable_all_streams = false;
             _resolved_profile.reset();
+            _streams_to_disable.clear();
+        }
+
+        util::config config::filter_stream_requests(const stream_profiles& profiles) const
+        {
+            util::config config;
+            if (!_streams_to_disable.empty())
+            {
+                for (auto prof : profiles)
+                {
+                    bool disable_stream = false;
+                    auto p = prof.get();
+                    auto vp = dynamic_cast<video_stream_profile*>(p);
+                    for (auto& st : _streams_to_disable)
+                    {
+                        if (st.first == p->get_stream_type())
+                        {
+                            if (st.second != p->get_stream_index())
+                                break; // don't disable stream if indexes don't match
+                            disable_stream = true;
+                            break;
+                        }
+                    }
+                    if (disable_stream)
+                        continue;
+                    if (vp)
+                        config.enable_stream(vp->get_stream_type(), vp->get_stream_index(), vp->get_width(), vp->get_height(), vp->get_format(), vp->get_framerate());
+                    else
+                        config.enable_stream(p->get_stream_type(), p->get_stream_index(), 0, 0, p->get_format(), p->get_framerate());
+                }
+            }
+            else
+            {
+                config.enable_streams(profiles);
+            }
+
+            return config;
         }
 
         std::shared_ptr<profile> config::resolve(std::shared_ptr<device_interface> dev)
         {
             util::config config;
+            util::config filtered_config;
 
             //if the user requested all streams
             if (_enable_all_streams)
             {
+                stream_profiles profiles;
                 for (size_t i = 0; i < dev->get_sensors_count(); ++i)
                 {
                     auto&& sub = dev->get_sensor(i);
-                    auto profiles = sub.get_stream_profiles(PROFILE_TAG_SUPERSET);
-                    config.enable_streams(profiles);
+                    auto p = sub.get_stream_profiles(PROFILE_TAG_SUPERSET);
+                    profiles.insert(profiles.end(), p.begin(), p.end());
                 }
-                return std::make_shared<profile>(dev, config, _device_request.record_output);
+                filtered_config = filter_stream_requests(profiles);
+                return std::make_shared<profile>(dev, filtered_config, _device_request.record_output);
             }
 
             //If the user did not request anything, give it the default, on playback all recorded streams are marked as default.
             if (_stream_requests.empty())
             {
                 auto default_profiles = get_default_configuration(dev);
-                config.enable_streams(default_profiles);
-                return std::make_shared<profile>(dev, config, _device_request.record_output);
+                filtered_config = filter_stream_requests(default_profiles);
+                return std::make_shared<profile>(dev, filtered_config, _device_request.record_output);
             }
 
             //Enabled requested streams
             for (auto&& req : _stream_requests)
             {
+                bool disable_stream = false;
                 auto r = req.second;
+                for (auto& st : _streams_to_disable)
+                {
+                    if (st.first == r.stream)
+                    {
+                        if (st.second > 0 && st.second != r.index) break; // don't disable stream if indexes don't match
+                        disable_stream = true;
+                        break;
+                    }
+                }
+                if (disable_stream) continue;
                 config.enable_stream(r.stream, r.index, r.width, r.height, r.format, r.fps);
             }
             return std::make_shared<profile>(dev, config, _device_request.record_output);
@@ -128,8 +190,11 @@ namespace librealsense
             std::lock_guard<std::mutex> lock(_mtx);
             _resolved_profile.reset();
 
+            std::shared_ptr< librealsense::device_interface > requested_device = pipe->get_device();
+            if(! requested_device )
+                requested_device = resolve_device_requests( pipe, timeout );
+
             //Resolve the the device that was specified by the user, this call will wait in case the device is not availabe.
-            auto requested_device = resolve_device_requests(pipe, timeout);
             if (requested_device != nullptr)
             {
                 _resolved_profile = resolve(requested_device);
@@ -142,7 +207,7 @@ namespace librealsense
             {
                 try
                 {
-                    auto dev = dev_info->create_device(true);
+                    auto dev = dev_info->create_device();
                     _resolved_profile = resolve(dev);
                     return _resolved_profile;
                 }
@@ -189,17 +254,14 @@ namespace librealsense
             //Check if the file is already loaded to context, and if so return that device
             for (auto&& d : ctx->query_devices(RS2_PRODUCT_LINE_ANY))
             {
-                auto playback_devs = d->get_device_data().playback_devices;
-                for (auto&& p : playback_devs)
-                {
-                    if (p.file_path == file)
-                    {
-                        return d->create_device();
-                    }
-                }
+                auto pdev = std::dynamic_pointer_cast< playback_device_info >( d );
+                if( pdev && pdev->get_filename() == file )
+                    return pdev->create_device();
             }
 
-            return ctx->add_device(file)->create_device(false);
+            auto dev_info = std::make_shared< playback_device_info >( ctx, file );
+            ctx->add_device( dev_info );
+            return dev_info->create_device();
         }
 
         std::shared_ptr<device_interface> config::resolve_device_requests(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout)
@@ -214,27 +276,36 @@ namespace librealsense
                 }
                 catch (const std::exception& e)
                 {
-                    throw std::runtime_error(to_string() << "Failed to resolve request. Request to enable_device_from_file(\"" << _device_request.filename << "\") was invalid, Reason: " << e.what());
+                    throw std::runtime_error( rsutils::string::from()
+                                              << "Failed to resolve request. Request to enable_device_from_file(\""
+                                              << _device_request.filename << "\") was invalid, Reason: " << e.what() );
                 }
                 //check if a serial number was also requested, and check again the device
                 if (!_device_request.serial.empty())
                 {
                     if (!dev->supports_info(RS2_CAMERA_INFO_SERIAL_NUMBER))
                     {
-                        throw std::runtime_error(to_string() << "Failed to resolve request. "
-                            "Conflic between enable_device_from_file(\"" << _device_request.filename
-                            << "\") and enable_device(\"" << _device_request.serial << "\"), "
-                            "File does not contain a device with such serial");
+                        throw std::runtime_error( rsutils::string::from()
+                                                  << "Failed to resolve request. "
+                                                     "Conflic between enable_device_from_file(\""
+                                                  << _device_request.filename << "\") and enable_device(\""
+                                                  << _device_request.serial
+                                                  << "\"), "
+                                                     "File does not contain a device with such serial" );
                     }
                     else
                     {
                         std::string s = dev->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
                         if (s != _device_request.serial)
                         {
-                            throw std::runtime_error(to_string() << "Failed to resolve request. "
-                                "Conflic between enable_device_from_file(\"" << _device_request.filename
-                                << "\") and enable_device(\"" << _device_request.serial << "\"), "
-                                "File contains device with different serial number (" << s << "\")");
+                            throw std::runtime_error( rsutils::string::from()
+                                                      << "Failed to resolve request. "
+                                                         "Conflic between enable_device_from_file(\""
+                                                      << _device_request.filename << "\") and enable_device(\""
+                                                      << _device_request.serial
+                                                      << "\"), "
+                                                         "File contains device with different serial number ("
+                                                      << s << "\")" );
                         }
                     }
                 }

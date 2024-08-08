@@ -25,24 +25,26 @@ struct Image_
   typedef Image_<ContainerAllocator> Type;
 
   Image_()
-    : header()
-    , height(0)
-    , width(0)
-    , encoding()
-    , is_bigendian(0)
-    , step(0)
-    , data()  {
-    }
+      : header()
+      , height(0)
+      , width(0)
+      , encoding()
+      , is_bigendian(0)
+      , step(0)
+      , depth_units(0)
+      , data() {
+  }
   Image_(const ContainerAllocator& _alloc)
-    : header(_alloc)
-    , height(0)
-    , width(0)
-    , encoding(_alloc)
-    , is_bigendian(0)
-    , step(0)
-    , data(_alloc)  {
-  (void)_alloc;
-    }
+      : header(_alloc)
+      , height(0)
+      , width(0)
+      , encoding(_alloc)
+      , is_bigendian(0)
+      , step(0)
+      , depth_units(0)
+      , data(_alloc) {
+      (void)_alloc;
+  }
 
 
 
@@ -55,7 +57,7 @@ struct Image_
    typedef uint32_t _width_type;
   _width_type width;
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _encoding_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > >  _encoding_type;
   _encoding_type encoding;
 
    typedef uint8_t _is_bigendian_type;
@@ -64,9 +66,11 @@ struct Image_
    typedef uint32_t _step_type;
   _step_type step;
 
-   typedef std::vector<uint8_t, typename ContainerAllocator::template rebind<uint8_t>::other >  _data_type;
+   typedef std::vector<uint8_t, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< uint8_t > >  _data_type;
   _data_type data;
 
+  typedef float _depth_units_type;
+  _depth_units_type depth_units;
 
 
 
@@ -110,32 +114,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::Image_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::Image_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::Image_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::Image_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::Image_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::Image_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 
@@ -238,6 +242,8 @@ namespace serialization
       stream.next(m.is_bigendian);
       stream.next(m.step);
       stream.next(m.data);
+      if (!m.header.version.compare("1"))
+          stream.next(m.depth_units);
     }
 
     ROS_DECLARE_ALLINONE_SERIALIZER
@@ -264,7 +270,7 @@ struct Printer< ::sensor_msgs::Image_<ContainerAllocator> >
     s << indent << "width: ";
     Printer<uint32_t>::stream(s, indent + "  ", v.width);
     s << indent << "encoding: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.encoding);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > > >::stream(s, indent + "  ", v.encoding);
     s << indent << "is_bigendian: ";
     Printer<uint8_t>::stream(s, indent + "  ", v.is_bigendian);
     s << indent << "step: ";
@@ -274,6 +280,11 @@ struct Printer< ::sensor_msgs::Image_<ContainerAllocator> >
     {
       s << indent << "  data[" << i << "]: ";
       Printer<uint8_t>::stream(s, indent + "  ", v.data[i]);
+    }
+    if(fabs(v.depth_units) > std::numeric_limits<float>::min())
+    {
+        s << indent << "depth_units: ";
+        Printer<float>::stream(s, indent + "  ", v.depth_units);
     }
   }
 };

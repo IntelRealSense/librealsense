@@ -8,10 +8,10 @@ add_library(${PROJECT_NAME}
     Context.cs
     NativeMethods.cs
     .nuget/Intel.RealSense.targets
-	GlobalSuppressions.cs
+    GlobalSuppressions.cs
     Properties/AssemblyInfo.cs
-	packages.config
-	stylecop.json
+    packages.config
+    stylecop.json
 )
 
 include(Base/CMakeLists.txt)
@@ -51,7 +51,7 @@ if(BUILD_UNITY_BINDINGS)
         string(REPLACE "/" "\\" UNITY_WIN_PATH ${UNITY_PATH})
         add_custom_command(TARGET ${PROJECT_NAME}
                    POST_BUILD
-                   COMMAND ${UNITY_WIN_PATH} -quit -batchmode -projectPath "${CMAKE_BINARY_WIN_DIR}\\wrappers\\unity" -exportPackage "Assets" "$(OutDir)realsense.unitypackage" || EXIT 0
+                   COMMAND ${UNITY_WIN_PATH} -quit -batchmode -logFile "$(OutDir)Unity.log" -projectPath "${CMAKE_BINARY_WIN_DIR}\\wrappers\\unity" -exportPackage "Assets" "$(OutDir)realsense.unitypackage" || EXIT 0
                    COMMENT "Try to generate a Unity package")
     else()
         message(WARNING "Couldn't locate Unity.exe")

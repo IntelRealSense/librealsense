@@ -1,3 +1,6 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+
 #pragma once
 
 #define GLFW_INCLUDE_GLU
@@ -14,6 +17,7 @@
 namespace rs2
 {
     class visualizer_2d;
+    class context;
 
     class viewer_ui_traits
     {
@@ -33,8 +37,9 @@ namespace rs2
     public:
         std::function<void(std::string)> on_file_drop = [](std::string) {};
         std::function<bool()>            on_load = []() { return false; };
+        std::function<void()>            on_reload_complete = []() { };
 
-        ux_window(const char* title);
+        ux_window(const char* title, context &ctx);
 
         float width() const { return float(_width); }
         float height() const { return float(_height); }
@@ -58,7 +63,9 @@ namespace rs2
         void reset();
 
         ImFont* get_large_font() const { return _font_18; }
-        ImFont* get_font() const { return _font_14; }
+        ImFont* get_monofont() const { return _monofont; }
+        ImFont* get_font() const { return _font_dynamic; }
+        int get_font_size() const { return font_size; }
 
         rs2::mouse_info& get_mouse() { return _mouse; }
         float get_scale_factor() const { return _scale_factor; }
@@ -74,6 +81,12 @@ namespace rs2
         void refresh();
 
         void link_hovered();
+        void cross_hovered();
+
+        void set_hovered_over_input() { _hovers_any_input_window = true; }
+        bool get_hovered_over_input() const { return _hovers_any_input_window; }
+
+        double time() const { return glfwGetTime(); }
     private:
         void open_window();
 
@@ -84,11 +97,13 @@ namespace rs2
 
         GLFWwindow               *_win;
         int                      _width, _height, _output_height;
-        int                     _fb_width, _fb_height;
+        int                     _fb_width = 0;
+        int                     _fb_height = 0;
         rs2::rect                _viewer_rect;
 
-        ImFont                   *_font_14, *_font_18;
-        rs2::mouse_info          _mouse;
+        ImFont                   *_font_dynamic, *_font_18, *_monofont;
+        int                      font_size;   
+        rs2::mouse_info          _mouse{};
         std::string              _error_message;
         float                    _scale_factor;
 
@@ -97,11 +112,12 @@ namespace rs2
         std::atomic<bool>        _app_ready;
         std::atomic<bool>        _keep_alive;
         texture_buffer           _splash_tex;
-        timer                    _splash_timer;
+        rsutils::time::stopwatch   _splash_timer;
         std::string              _title_str;
         std::vector<std::string> _on_load_message;
         std::mutex               _on_load_message_mtx;
 
+        bool                     _hovers_any_input_window = false;
         bool                     _query_devices = true;
         bool                     _missing_device = false;
         int                      _hourglass_index = 0;
@@ -118,9 +134,12 @@ namespace rs2
 
         bool                     _link_hovered = false;
         GLFWcursor*              _hand_cursor = nullptr;
+        bool                     _cross_hovered = false;
+        GLFWcursor*              _cross_cursor = nullptr;
 
         std::string              _title;
         std::shared_ptr<visualizer_2d> _2d_vis;
+        context                  &_ctx;
 
         bool                     _is_ui_aligned = false;
     };

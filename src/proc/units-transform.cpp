@@ -1,9 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/hpp/rs_sensor.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
+#include <librealsense2/hpp/rs_sensor.hpp>
+#include <librealsense2/hpp/rs_processing.hpp>
 
+#include "core/depth-frame.h"
+#include "core/sensor-interface.h"
 #include "proc/synthetic-stream.h"
 #include "environment.h"
 #include "units-transform.h"
@@ -51,13 +53,18 @@ namespace librealsense
     {
         update_configuration(f);
 
-        auto new_f = source.allocate_video_frame(_target_stream_profile, f,
-            _bpp, _width, _height, _stride, RS2_EXTENSION_DEPTH_FRAME);
+        auto new_f = source.allocate_video_frame( _target_stream_profile,
+                                                  f,
+                                                  (int)_bpp,
+                                                  (int)_width,
+                                                  (int)_height,
+                                                  (int)_stride,
+                                                  RS2_EXTENSION_DEPTH_FRAME );
 
         if (new_f && _depth_units)
         {
-            auto ptr = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)new_f.get());
-            auto orig = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)f.get());
+            auto ptr = reinterpret_cast< librealsense::frame_interface * >( new_f.get() );
+            auto orig = reinterpret_cast< librealsense::frame_interface * >( f.get() );
 
             auto depth_data = (uint16_t*)orig->get_frame_data();
             auto new_data = (float*)ptr->get_frame_data();

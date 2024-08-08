@@ -5,9 +5,8 @@ public class RsPointCloud : RsProcessingBlock
 {
     public enum OcclusionRemoval
     {
-        Off = 0,
-        Heuristic = 1,
-        Exhaustive = 2
+        Off = 1,
+        On = 2
     }
 
     public Stream TextureStream = Stream.Color;

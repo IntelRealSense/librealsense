@@ -42,6 +42,14 @@ extern "C" {
     void rs2_pipeline_stop(rs2_pipeline* pipe, rs2_error ** error);
 
     /**
+     * Set the device to be used in the pipline.
+     * The function is used to assign the device, useful when the user wish to set controls that cannot be set while streaming. 
+     * \param[in] pipe the pipeline.
+     * \param[in] device  the device to be used in the pipline.
+     */
+    void rs2_pipeline_set_device( rs2_pipeline * pipe, rs2_device * device, rs2_error ** error );
+
+    /**
     * Wait until a new set of frames becomes available.
     * The frames set includes time-synchronized frames of each enabled stream in the pipeline.
     * The method blocks the calling thread, and fetches the latest unread frames set.
@@ -150,7 +158,7 @@ extern "C" {
     * Start the pipeline streaming with its default configuration.
     * The pipeline captures samples from the device, and delivers them to the through the provided frame callback.
     * Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.
-    * When starting the pipeline with a callback both \c wait_for_frames() or \c poll_for_frames() will throw exception. 
+    * When starting the pipeline with a callback both \c wait_for_frames() or \c poll_for_frames() will throw exception.
     *
     * \param[in] pipe     A pointer to an instance of the pipeline
     * \param[in] callback callback object created from c++ application. ownership over the callback object is moved into the relevant streaming lock

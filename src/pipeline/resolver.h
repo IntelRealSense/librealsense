@@ -12,6 +12,7 @@
 #include "sensor.h"
 #include "types.h"
 #include "stream.h"
+#include <src/core/device-interface.h>
 
 namespace librealsense
 {
@@ -135,9 +136,17 @@ namespace librealsense
 
                 void open()
                 {
-                    for (auto && kvp : _dev_to_profiles) {
-                        auto&& sub = _results.at(kvp.first);
-                        sub->open(kvp.second);
+                    // Camera has a limitation such that opening the color sensor after the
+                    // depth sensor may cause the depth sensor a reset. 
+                    // This artifact may cause unexpected behavior when we ask to stop the sensor in parallel or control it
+                    // while it is doing a reset. 
+                    // As a workaround for pipeline API usage, we use the assumption that depth sensor is first in the map if it is added to the configuration,
+                    // When we reverse iterate it, the depth sensor opening will be last This should not affect other stream
+                    // which are capable of being opened decoupled from other sensors
+                    for( auto it = _dev_to_profiles.rbegin(); it != _dev_to_profiles.rend(); it++ )
+                    {
+                        auto && sub = _results.at( it->first );
+                        sub->open( it->second );
                     }
                 }
 
@@ -382,9 +391,10 @@ namespace librealsense
                 return r;
             }
 
-            stream_profiles map_sub_device(stream_profiles profiles, std::set<index_type> satisfied_streams, const device_interface* dev) const
+            stream_profiles map_sub_device(stream_profiles profiles,const device_interface* dev) const
             {
                 stream_profiles rv;
+                std::set<index_type> satisfied_streams;
                 try
                 {
                     std::vector<stream_profile> targets;
@@ -433,7 +443,6 @@ namespace librealsense
             std::multimap<int, std::shared_ptr<stream_profile_interface>> map_streams(const device_interface* dev) const
             {
                 std::multimap<int, std::shared_ptr<stream_profile_interface>> out;
-                std::set<index_type> satisfied_streams;
 
                 // Algorithm assumes get_adjacent_devices always
                 // returns the devices in the same order
@@ -441,8 +450,8 @@ namespace librealsense
                 {
                     auto&& sub = dev->get_sensor(i);
 
-                    auto default_profiles = map_sub_device(sub.get_stream_profiles(profile_tag::PROFILE_TAG_SUPERSET), satisfied_streams, dev);
-                    auto any_profiles = map_sub_device(sub.get_stream_profiles(profile_tag::PROFILE_TAG_ANY), satisfied_streams, dev);
+                    auto default_profiles = map_sub_device(sub.get_stream_profiles(profile_tag::PROFILE_TAG_SUPERSET), dev);
+                    auto any_profiles = map_sub_device(sub.get_stream_profiles(profile_tag::PROFILE_TAG_ANY), dev);
 
                     //use any streams if default streams wasn't satisfy
                     auto profiles = default_profiles.size() == any_profiles.size() ? default_profiles : any_profiles;

@@ -1,28 +1,52 @@
 <p align="center"><img src="doc/img/realsense.png" width="70%" /><br><br></p>
 
 -----------------
+[![License](https://img.shields.io/github/license/IntelRealSense/librealsense.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+[![Release](https://img.shields.io/github/v/release/IntelRealSense/librealsense?sort=semver)](https://github.com/IntelRealSense/librealsense/releases/latest)
+[![Commits](https://img.shields.io/github/commits-since/IntelRealSense/librealsense/master/development?label=commits%20since)](https://github.com/IntelRealSense/librealsense/compare/master...development)
+[![Issues](https://img.shields.io/github/issues/IntelRealSense/librealsense.svg)](https://github.com/IntelRealSense/librealsense/issues)
+[![GitHub CI](../../actions/workflows/buildsCI.yaml/badge.svg?branch=development)](../../actions/workflows/buildsCI.yaml)
+[![Forks](https://img.shields.io/github/forks/IntelRealSense/librealsense.svg)](https://github.com/IntelRealSense/librealsense/network/members)
 
-**CI State**: [![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=development)](https://travis-ci.org/IntelRealSense/librealsense)
 
------------------
 
 ## Overview
-**Intel® RealSense™ SDK 2.0** is a cross-platform library for Intel® RealSense™ depth cameras (D400 series and the SR300) and the [T265 tracking camera](./doc/t265.md).
+**Intel® RealSense™ SDK 2.0** is a cross-platform library for Intel® RealSense™ depth cameras.
 
 > :pushpin: For other Intel® RealSense™ devices (F200, R200, LR200 and ZR300), please refer to the [latest legacy release](https://github.com/IntelRealSense/librealsense/tree/v1.12.1).
 
 The SDK allows depth and color streaming, and provides intrinsic and extrinsic calibration information.
-The library also offers synthetic streams (pointcloud, depth aligned to color and vise-versa), and a built-in support for [record and playback](./src/media/readme.md) of streaming sessions.
+The library also offers synthetic streams (pointcloud, depth aligned to color and vise-versa), and a built-in support for [record and playback](./doc/record-and-playback.md) of streaming sessions.
 
 Developer kits containing the necessary hardware to use this library are available for purchase at [store.intelrealsense.com](https://store.intelrealsense.com/products.html).
 Information about the Intel® RealSense™ technology at [www.intelrealsense.com](https://www.intelrealsense.com/)
 
 > :open_file_folder: Don't have access to a RealSense camera? Check-out [sample data](./doc/sample-data.md)
 
+## Update on Recent Changes to the RealSense Product Line
+
+Intel has EOLed the LiDAR, Facial Authentication, and Tracking product lines. These products have been discontinued and will no longer be available for new orders.
+
+Intel WILL continue to sell and support stereo products including the following: D410, D415, D430, , D401 ,D450 modules and D415, D435, D435i, D435f, D405, D455, D457 depth cameras. We will also continue the work to support and develop our LibRealSense open source SDK.
+
+In the future, Intel and the RealSense team will focus our new development on advancing innovative technologies that better support our core businesses and IDM 2.0 strategy.
+
+## Building librealsense - Using vcpkg
+
+You can download and install librealsense using the [vcpkg](https://github.com/Microsoft/vcpkg) dependency manager:
+
+    git clone https://github.com/Microsoft/vcpkg.git
+    cd vcpkg
+    ./bootstrap-vcpkg.sh
+    ./vcpkg integrate install
+    ./vcpkg install realsense2
+
+The librealsense port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
+
 ## Download and Install
 * **Download** - The latest releases including the Intel RealSense SDK, Viewer and Depth Quality tools are available at: [**latest releases**](https://github.com/IntelRealSense/librealsense/releases). Please check the [**release notes**](https://github.com/IntelRealSense/librealsense/wiki/Release-Notes) for the supported platforms, new features and capabilities, known issues, how to upgrade the Firmware and more.
 
-* **Install** - You can also install or build from source the SDK (on [Linux](./doc/distribution_linux.md) \ [Windows](./doc/distribution_windows.md) \ [Mac OS](doc/installation_osx.md) \ [Android](./doc/android.md)), connect your D400 depth camera and you are ready to start writing your first application.
+* **Install** - You can also install or build from source the SDK (on [Linux](./doc/distribution_linux.md) \ [Windows](./doc/distribution_windows.md) \ [Mac OS](doc/installation_osx.md) \ [Android](./doc/android.md) \ [Docker](./scripts/Docker/readme.md)), connect your D400 depth camera and you are ready to start writing your first application.
 
 > **Support & Issues**: If you need product support (e.g. ask a question about / are having problems with the device), please check the [FAQ & Troubleshooting](https://github.com/IntelRealSense/librealsense/wiki/Troubleshooting-Q%26A) section.
 > If not covered there, please search our [Closed GitHub Issues](https://github.com/IntelRealSense/librealsense/issues?utf8=%E2%9C%93&q=is%3Aclosed) page,  [Community](https://communities.intel.com/community/tech/realsense) and [Support](https://www.intel.com/content/www/us/en/support/emerging-technologies/intel-realsense-technology.html) sites.
@@ -35,7 +59,7 @@ Information about the Intel® RealSense™ technology at [www.intelrealsense.com
 | **[Depth Quality Tool](./tools/depth-quality)** | This application allows you to test the camera’s depth quality, including: standard deviation from plane fit, normalized RMS – the subpixel accuracy, distance accuracy and fill rate. You should be able to easily get and interpret several of the depth quality metrics and record and save the data for offline analysis. |[**Depth.Quality.Tool.exe**](https://github.com/IntelRealSense/librealsense/releases) |
 | **[Debug Tools](./tools/)** | Device enumeration, FW logger, etc as can be seen at the tools directory | Included in [**Intel.RealSense.SDK.exe**](https://github.com/IntelRealSense/librealsense/releases)|
 | **[Code Samples](./examples)** |These simple examples demonstrate how to easily use the SDK to include code snippets that access the camera into your applications. Check some of the [**C++ examples**](./examples) including capture, pointcloud and more and basic [**C examples**](./examples/C) | Included in [**Intel.RealSense.SDK.exe**](https://github.com/IntelRealSense/librealsense/releases) |
-| **[Wrappers](https://github.com/IntelRealSense/librealsense/tree/development/wrappers)** | [Python](./wrappers/python), [C#/.NET](./wrappers/csharp), [Node.js](./wrappers/nodejs) API, as well as integration with the following 3rd-party technologies: [ROS](https://github.com/intel-ros/realsense/releases), [ROS2](https://github.com/intel/ros2_intel_realsense), [LabVIEW](./wrappers/labview), [OpenCV](./wrappers/opencv), [PCL](./wrappers/pcl), [Unity](./wrappers/unity), [Matlab](./wrappers/matlab), [OpenNI](./wrappers/openni2), [UnrealEngine4](./wrappers/unrealengine4) and more to come. | |
+| **[Wrappers](https://github.com/IntelRealSense/librealsense/tree/development/wrappers)** | [Python](./wrappers/python), [C#/.NET](./wrappers/csharp) API, as well as integration with the following 3rd-party technologies: [ROS1](https://github.com/IntelRealSense/realsense-ros/tree/ros1-legacy), [ROS2](https://github.com/IntelRealSense/realsense-ros/tree/ros2-master), [LabVIEW](./wrappers/labview), [OpenCV](./wrappers/opencv), [PCL](./wrappers/pcl), [Unity](./wrappers/unity), [Matlab](./wrappers/matlab), [OpenNI](./wrappers/openni2), [UnrealEngine4](./wrappers/unrealengine4) and more to come. | |
 
 
 ## Ready to Hack!

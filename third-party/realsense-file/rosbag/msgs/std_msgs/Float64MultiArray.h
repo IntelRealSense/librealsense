@@ -39,21 +39,21 @@ struct Float64MultiArray_
    typedef  ::std_msgs::MultiArrayLayout_<ContainerAllocator>  _layout_type;
   _layout_type layout;
 
-   typedef std::vector<double, typename ContainerAllocator::template rebind<double>::other >  _data_type;
+   typedef std::vector<double, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< double > >  _data_type;
   _data_type data;
 
 
 
 
-  typedef boost::shared_ptr< ::std_msgs::Float64MultiArray_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::std_msgs::Float64MultiArray_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::std_msgs::Float64MultiArray_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::std_msgs::Float64MultiArray_<ContainerAllocator> const> ConstPtr;
 
 }; // struct Float64MultiArray_
 
 typedef ::std_msgs::Float64MultiArray_<std::allocator<void> > Float64MultiArray;
 
-typedef boost::shared_ptr< ::std_msgs::Float64MultiArray > Float64MultiArrayPtr;
-typedef boost::shared_ptr< ::std_msgs::Float64MultiArray const> Float64MultiArrayConstPtr;
+typedef std::shared_ptr< ::std_msgs::Float64MultiArray > Float64MultiArrayPtr;
+typedef std::shared_ptr< ::std_msgs::Float64MultiArray const> Float64MultiArrayConstPtr;
 
 // constants requiring out of line definition
 
@@ -85,32 +85,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::Float64MultiArray_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::Float64MultiArray_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::Float64MultiArray_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::Float64MultiArray_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::Float64MultiArray_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::Float64MultiArray_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 

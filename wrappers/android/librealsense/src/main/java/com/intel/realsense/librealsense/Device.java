@@ -50,6 +50,8 @@ public class Device extends LrsClass {
         switch (extension){
             case UPDATABLE: return (T) new Updatable(mHandle);
             case UPDATE_DEVICE: return (T) new UpdateDevice(mHandle);
+            case DEBUG: return (T) new DebugProtocol(mHandle);
+            case FW_LOGGER: return (T) new FwLogger(mHandle);
         }
         throw new RuntimeException("this device is not extendable to " + extension.name());
     }

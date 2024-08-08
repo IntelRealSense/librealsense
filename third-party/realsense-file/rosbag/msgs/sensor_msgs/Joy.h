@@ -41,24 +41,24 @@ struct Joy_
    typedef  ::std_msgs::Header_<ContainerAllocator>  _header_type;
   _header_type header;
 
-   typedef std::vector<float, typename ContainerAllocator::template rebind<float>::other >  _axes_type;
+   typedef std::vector<float, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< float > >  _axes_type;
   _axes_type axes;
 
-   typedef std::vector<int32_t, typename ContainerAllocator::template rebind<int32_t>::other >  _buttons_type;
+   typedef std::vector<int32_t, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< int32_t > >  _buttons_type;
   _buttons_type buttons;
 
 
 
 
-  typedef boost::shared_ptr< ::sensor_msgs::Joy_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::Joy_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::Joy_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::Joy_<ContainerAllocator> const> ConstPtr;
 
 }; // struct Joy_
 
 typedef ::sensor_msgs::Joy_<std::allocator<void> > Joy;
 
-typedef boost::shared_ptr< ::sensor_msgs::Joy > JoyPtr;
-typedef boost::shared_ptr< ::sensor_msgs::Joy const> JoyConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::Joy > JoyPtr;
+typedef std::shared_ptr< ::sensor_msgs::Joy const> JoyConstPtr;
 
 // constants requiring out of line definition
 
@@ -90,32 +90,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::Joy_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::Joy_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::Joy_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::Joy_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::Joy_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::Joy_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 

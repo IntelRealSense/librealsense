@@ -40,13 +40,34 @@ max_uint8 = struct.unpack('B', b'\xff')[0]
 
 g = 9.80665 # SI Gravity page 52 of https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication330e2008.pdf
 
-COLOR_RED   = "\033[1;31m"  
+COLOR_RED   = "\033[1;31m"
 COLOR_BLUE  = "\033[1;34m"
 COLOR_CYAN  = "\033[1;36m"
 COLOR_GREEN = "\033[0;32m"
 COLOR_RESET = "\033[0;0m"
 COLOR_BOLD    = "\033[;1m"
 COLOR_REVERSE = "\033[;7m"
+
+def int_to_bytes(num, length=4, order='big'):
+    res = bytearray(length)
+    for i in range(length):
+        res[i] = num & 0xff
+        num >>= 8
+    if num:
+        raise OverflowError("Number {} doesn't fit into {} bytes.".format(num, length))
+    if order == 'little':
+        res.reverse()
+    return res
+
+
+def bytes_to_uint(bytes_array, order='little'):
+    bytes_array = list(bytes_array)
+    bytes_array.reverse()
+    if order == 'little':
+        return struct.unpack('>i', struct.pack('BBBB', *([0] * (4 - len(bytes_array))) + bytes_array))[0] & 0xffffffff
+    else:
+        return struct.unpack('>i', struct.pack('BBBB', *([0] * (4 - len(bytes_array))) + bytes_array))[0] & 0xffffffff
+
 
 class imu_wrapper:
     class Status(enum.Enum):
@@ -142,7 +163,7 @@ class imu_wrapper:
                 sys.stdout.write('\r %15s' % self.status)
                 crnt_dir = np.array(data_np) / np.linalg.norm(data_np)
                 crnt_diff = self.crnt_direction - crnt_dir
-                is_in_norm = np.linalg.norm(data_np - self.crnt_bucket) < self.max_norm               
+                is_in_norm = np.linalg.norm(data_np - self.crnt_bucket) < self.max_norm
 
                 ## Status.rotate
                 if self.status == self.Status.rotate:
@@ -256,7 +277,7 @@ class CHeader:
     def set_crc32(self, crc32):
         self.buffer.dtype=np.uint32
         self.buffer[3] = crc32 % (1<<32)    # convert from signed to unsigned 32 bit
-    
+
     def get_buffer(self):
         self.buffer.dtype=np.uint8
         return self.buffer
@@ -264,7 +285,7 @@ class CHeader:
 
 def bitwise_int_to_float(ival):
     return struct.unpack('f', struct.pack('i', ival))[0]
-    
+
 def bitwise_float_to_int(fval):
     return struct.unpack('i', struct.pack('f', fval))[0]
 
@@ -272,7 +293,7 @@ def parse_buffer(buffer):
     cmd_size = 24
     header_size = 16
 
-    buffer.dtype=np.uint32    
+    buffer.dtype=np.uint32
     tab1_size = buffer[3]
     buffer.dtype=np.uint8
     print('tab1_size (all_data): ', tab1_size)
@@ -298,11 +319,12 @@ def parse_buffer(buffer):
     tab4 = tab3[header_size:header_size+tab4_size]  # calibration data
     return tab1, tab2, tab3, tab4
 
-def get_D435_IMU_Calib_Table(X):
+def get_IMU_Calib_Table(X, product_line):
     version = ['0x02', '0x01']
     table_type = '0x20'
+
     header = CHeader(version, table_type)
-    
+
     header_size = header.size()
     data_size = 37*4 + 96
     size_of_buffer = header_size + data_size    # according to table "D435 IMU Calib Table" here: https://user-images.githubusercontent.com/6958867/50902974-20507500-1425-11e9-8ca5-8bd2ac2d0ea1.png
@@ -315,14 +337,14 @@ def get_D435_IMU_Calib_Table(X):
     data_buffer = np.ones(data_size, dtype=np.uint8) * 255
     data_buffer.dtype = np.float32
 
-    data_buffer[0] = bitwise_int_to_float(np.int32(int(use_intrinsics)) << 8 | 
+    data_buffer[0] = bitwise_int_to_float(np.int32(int(use_intrinsics)) << 8 |
                                           np.int32(int(use_extrinsics)))
 
     intrinsic_vector = np.zeros(24, dtype=np.float32)
     intrinsic_vector[:9] = X[:3,:3].T.flatten()
     intrinsic_vector[9:12] = X[:3,3]
     intrinsic_vector[12:21] = X[3:,:3].flatten()
-    intrinsic_vector[21:24] = X[3:,3]    
+    intrinsic_vector[21:24] = X[3:,3]
 
     data_buffer[13:13+X.size] = intrinsic_vector
     data_buffer.dtype = np.uint8
@@ -371,9 +393,9 @@ def get_eeprom(calibration_table):
 
     header_size = header.size()
     size_of_buffer = DC_MM_EEPROM_SIZE
-    data_size = size_of_buffer - header_size 
+    data_size = size_of_buffer - header_size
     # size_of_buffer = header_size + data_size
-    
+
     assert(size_of_buffer % 4 == 0)
     buffer = np.ones(size_of_buffer, dtype=np.uint8) * 255
 
@@ -431,11 +453,6 @@ def get_debug_device(serial_no):
         print('No RealSense device found' + str('.' if len(serial_no) == 0 else ' with serial number: '+serial_no))
         return 0
 
-    # set to advance mode:
-    advanced = rs.rs400_advanced_mode(dev)
-    if not advanced.is_enabled():
-        advanced.toggle_advanced_mode(True)
-
     # print(a few basic information about the device)
     print('  Device PID: ',  dev.get_info(rs.camera_info.product_id))
     print('  Device name: ',  dev.get_info(rs.camera_info.name))
@@ -456,6 +473,64 @@ def check_X(X, accel, show_graph):
         pylab.show()
     print ('norm (raw data  ): %f' % np.mean(norm_data))
     print ('norm (fixed data): %f' % np.mean(norm_fdata), "A good calibration will be near %f" % g)
+
+def l500_send_command(dev, op_code, param1=0, param2=0, param3=0, param4=0, data=[], retries=1):
+
+    for i in range(retries):
+        try:
+            debug_device = rs.debug_protocol(dev)
+            gvd_command_length = 0x14 + len(data)
+            magic_number1 = 0xab
+            magic_number2 = 0xcd
+
+            buf = bytearray()
+            buf += bytes(int_to_bytes(gvd_command_length, 2))
+            #buf += bytes(int_to_bytes(0, 1))
+            buf += bytes(int_to_bytes(magic_number1, 1))
+            buf += bytes(int_to_bytes(magic_number2, 1))
+            buf += bytes(int_to_bytes(op_code))
+            buf += bytes(int_to_bytes(param1))
+            buf += bytes(int_to_bytes(param2))
+            buf += bytes(int_to_bytes(param3))
+            buf += bytes(int_to_bytes(param4))
+            buf += bytearray(data)
+            l = list(buf)
+            res = debug_device.send_and_receive_raw_data(buf)
+
+            if res[0] == op_code:
+                res1 = res[4:]
+                return res1
+            else:
+                raise Exception("send_command return error", res[0])
+        except:
+            if i < retries - 1:
+                time.sleep(0.1)
+            else:
+                raise
+
+def wait_for_rs_device(serial_no):
+    ctx = rs.context()
+
+    start = int(round(time.time() * 1000))
+    now = int(round(time.time() * 1000))
+
+    while now - start < 5000:
+        devices = ctx.query_devices()
+        for dev in devices:
+            pid = str(dev.get_info(rs.camera_info.product_id))
+            if len(serial_no) == 0 or serial_no == dev.get_info(rs.camera_info.serial_number):
+
+                # print(a few basic information about the device)
+                print('  Device PID: ',  dev.get_info(rs.camera_info.product_id))
+                print('  Device name: ',  dev.get_info(rs.camera_info.name))
+                print('  Serial number: ',  dev.get_info(rs.camera_info.serial_number))
+                print('  Product Line: ',  dev.get_info(rs.camera_info.product_line))
+                print('  Firmware version: ',  dev.get_info(rs.camera_info.firmware_version))
+
+                return dev
+        time.sleep(5)
+        now = int(round(time.time() * 1000))
+    raise Exception('No RealSense device' + str('.' if len(serial_no) == 0 else ' with serial number: '+serial_no))
 
 
 def main():
@@ -484,11 +559,26 @@ def main():
             if sys.argv[idx] == '-s':
                 serial_no = sys.argv[idx+1]
 
+        print('waiting for realsense device...')
+
+        dev = wait_for_rs_device(serial_no)
+
+        product_line = dev.get_info(rs.camera_info.product_line)
+
         buckets = [[0, -g,  0], [ g,  0, 0],
                 [0,  g,  0], [-g,  0, 0],
                 [0,  0, -g], [ 0,  0, g]]
 
-        buckets_labels = ["Upright facing out", "USB cable up facing out", "Upside down facing out", "USB cable pointed down", "Viewing direction facing down", "Viewing direction facing up"]
+        # all D400 cameras with IMU equipped with a mounting screw at the bottom of the device
+        # when device is in normal use position upright facing out, mount screw is pointing down, aligned with positive Y direction in depth coordinate system
+        # IMU output on each of these devices is transformed into the depth coordinate system, i.e.,
+        # looking from back of the camera towards front, the positive x-axis points to the right, the positive y-axis points down, and the positive z-axis points forward.
+        # output of motion data is consistent with convention that positive direction aligned with gravity leads to -1g and opposite direction leads to +1g, for example,
+        # positive z_aixs points forward away from front glass of the device,
+        #  1) if place the device flat on a table, facing up, positive z-axis points up, z-axis acceleration is around +1g
+        #  2) facing down, positive z-axis points down, z-axis accleration would be around -1g
+        #
+        buckets_labels = ["Mounting screw pointing down, device facing out", "Mounting screw pointing left, device facing out", "Mounting screw pointing up, device facing out", "Mounting screw pointing right, device facing out", "Viewing direction facing down", "Viewing direction facing up"]
 
         gyro_bais = np.zeros(3, np.float32)
         old_settings = None
@@ -580,7 +670,9 @@ def main():
         check_X(X, w[:,:3], show_graph)
 
         calibration = {}
+
         calibration["device_type"] = "D435i"
+
         calibration["imus"] = list()
         calibration["imus"].append({})
         calibration["imus"][0]["accelerometer"] = {}
@@ -605,23 +697,26 @@ def main():
 
         # intrinsic_buffer = ((np.array(range(24),np.float32)+1)/10).reshape([6,4])
 
-        d435_imu_calib_table = get_D435_IMU_Calib_Table(intrinsic_buffer)
-        calibration_table = get_calibration_table(d435_imu_calib_table)
-        eeprom = get_eeprom(calibration_table)
+        imu_calib_table = get_IMU_Calib_Table(intrinsic_buffer, product_line)
 
         with open(os.path.join(directory,"calibration.bin"), 'wb') as outfile:
-            outfile.write(eeprom.astype('f').tostring())
+            outfile.write(imu_calib_table.astype('f').tostring())
 
-        is_write = input('Would you like to write the results to the camera\'s eeprom? (Y/N)')
+        is_write = input('Would you like to write the results to the camera? (Y/N)')
         is_write = 'Y' in is_write.upper()
         if is_write:
             print('Writing calibration to device.')
+
+            calibration_table = get_calibration_table(imu_calib_table)
+            eeprom = get_eeprom(calibration_table)
             write_eeprom_to_camera(eeprom, serial_no)
+
             print('Done.')
         else:
             print('Abort writing to device')
+
     except Exception as e:
-        print ('\nDone. %s' % e)
+        print ('\nError: %s' % e)
     finally:
         if os.name == 'posix' and old_settings is not None:
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)

@@ -29,11 +29,9 @@
 #include "rosbag/bag.h"
 #include "rosbag/message_instance.h"
 
-#include <boost/foreach.hpp>
 #include <set>
 #include <assert.h>
-
-#define foreach BOOST_FOREACH
+#include <algorithm>
 
 using std::map;
 using std::string;
@@ -76,7 +74,7 @@ void View::iterator::populate() {
     assert(view_ != NULL);
 
     iters_.clear();
-    foreach(MessageRange const* range, view_->ranges_)
+    for( MessageRange const * range : view_->ranges_ )
         if (range->begin != range->end)
             iters_.push_back(ViewIterHelper(range->begin, range));
 
@@ -88,7 +86,8 @@ void View::iterator::populateSeek(multiset<IndexEntry>::const_iterator iter) {
     assert(view_ != NULL);
 
     iters_.clear();
-    foreach(MessageRange const* range, view_->ranges_) {
+    for( MessageRange const * range : view_->ranges_ )
+    {
         multiset<IndexEntry>::const_iterator start = std::lower_bound(range->begin, range->end, iter->time, IndexEntryCompare());
         if (start != range->end)
             iters_.push_back(ViewIterHelper(start, range));
@@ -172,14 +171,14 @@ View::View(Bag const& bag, rs2rosinternal::Time const& start_time, rs2rosinterna
 	addQuery(bag, start_time, end_time);
 }
 
-View::View(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query, rs2rosinternal::Time const& start_time, rs2rosinternal::Time const& end_time, bool const& reduce_overlap) : view_revision_(0), size_cache_(0), size_revision_(0), reduce_overlap_(reduce_overlap) {
+View::View(Bag const& bag, std::function<bool(ConnectionInfo const*)> query, rs2rosinternal::Time const& start_time, rs2rosinternal::Time const& end_time, bool const& reduce_overlap) : view_revision_(0), size_cache_(0), size_revision_(0), reduce_overlap_(reduce_overlap) {
 	addQuery(bag, query, start_time, end_time);
 }
 
 View::~View() {
-    foreach(MessageRange* range, ranges_)
+    for( MessageRange * range : ranges_ )
         delete range;
-    foreach(BagQuery* query, queries_)
+    for( BagQuery * query : queries_ )
         delete query;
 }
 
@@ -190,7 +189,7 @@ rs2rosinternal::Time View::getBeginTime()
 
   rs2rosinternal::Time begin = rs2rosinternal::TIME_MAX;
 
-  foreach (rosbag::MessageRange* range, ranges_)
+  for( rosbag::MessageRange * range : ranges_ )
   {
     if (range->begin->time < begin)
       begin = range->begin->time;
@@ -205,7 +204,7 @@ rs2rosinternal::Time View::getEndTime()
 
   rs2rosinternal::Time end = rs2rosinternal::TIME_MIN;
 
-  foreach (rosbag::MessageRange* range, ranges_)
+  for( rosbag::MessageRange * range : ranges_ )
   {
     std::multiset<IndexEntry>::const_iterator e = range->end;
     e--;
@@ -234,7 +233,7 @@ uint32_t View::size() {
   {
     size_cache_ = 0;
 
-    foreach (MessageRange* range, ranges_)
+    for( MessageRange * range : ranges_ )
     {
       size_cache_ += static_cast<uint32_t>(std::distance(range->begin, range->end));
     }
@@ -249,14 +248,14 @@ void View::addQuery(Bag const& bag, rs2rosinternal::Time const& start_time, rs2r
     if ((bag.getMode() & bagmode::Read) != bagmode::Read)
         throw BagException("Bag not opened for reading");
 
-	boost::function<bool(ConnectionInfo const*)> query = TrueQuery();
+	std::function<bool(ConnectionInfo const*)> query = TrueQuery();
 
     queries_.push_back(new BagQuery(&bag, Query(query, start_time, end_time), bag.bag_revision_));
 
     updateQueries(queries_.back());
 }
 
-void View::addQuery(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query, rs2rosinternal::Time const& start_time, rs2rosinternal::Time const& end_time) {
+void View::addQuery(Bag const& bag, std::function<bool(ConnectionInfo const*)> query, rs2rosinternal::Time const& start_time, rs2rosinternal::Time const& end_time) {
     if ((bag.getMode() & bagmode::Read) != bagmode::Read)
         throw BagException("Bag not opened for reading");
 
@@ -323,7 +322,8 @@ void View::updateQueries(BagQuery* q) {
 }
 
 void View::update() {
-    foreach(BagQuery* query, queries_) {
+    for( BagQuery * query : queries_ )
+    {
         if (query->bag->bag_revision_ != query->bag_revision) {
             updateQueries(query);
             query->bag_revision = query->bag->bag_revision_;
@@ -335,7 +335,7 @@ std::vector<const ConnectionInfo*> View::getConnections()
 {
   std::vector<const ConnectionInfo*> connections;
 
-  foreach(MessageRange* range, ranges_)
+  for( MessageRange * range : ranges_ )
   {
     connections.push_back(range->connection_info);
   }

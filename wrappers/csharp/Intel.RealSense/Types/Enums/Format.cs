@@ -90,6 +90,18 @@ namespace Intel.RealSense
         Invi = 26,
 
         /// <summary>Grey-scale image as a bit-packed array. 4 pixel data stream taking 5 bytes.</summary>
-        W10 = 27
+        W10 = 27,
+
+        /// <summary>Deprecated! Variable-length Huffman-compressed 16-bit depth values.</summary>
+        Z16H = 28,
+
+        /// <summary>16-bit per-pixel frame grabber format.</summary>
+        FG = 29,
+
+        /// <summary>12-bit per-pixel. 4 pixel data stream taking 6 bytes.</summary>
+        Y411 = 30,
+
+        /// <summary>16-bit per pixel interleaved. 16-bit left, 16-bit right. Each pixel is stored in a 32-bit word in little-endian order.</summary>
+        Y16i = 31
     }
 }

@@ -2,6 +2,7 @@ package com.intel.realsense.librealsense;
 
 public class VideoStreamProfile extends StreamProfile {
     ResolutionParams mResolutionParams;
+    private Intrinsic mIntrinsic;
 
     private class ResolutionParams {
         public int width;
@@ -13,6 +14,16 @@ public class VideoStreamProfile extends StreamProfile {
         mOwner = false;
         mResolutionParams = new ResolutionParams();
         nGetResolution(mHandle, mResolutionParams);
+        mIntrinsic = null;
+    }
+
+    public Intrinsic getIntrinsic() throws Exception {
+        if(mIntrinsic == null){
+            mIntrinsic = new Intrinsic();
+            nGetIntrinsic(mHandle, mIntrinsic);
+            mIntrinsic.SetModel();
+        }
+        return mIntrinsic;
     }
 
     public int getWidth() {
@@ -24,4 +35,5 @@ public class VideoStreamProfile extends StreamProfile {
     }
 
     private static native void nGetResolution(long handle, ResolutionParams params);
+    private static native void nGetIntrinsic(long handle, Intrinsic intrinsic);
 }

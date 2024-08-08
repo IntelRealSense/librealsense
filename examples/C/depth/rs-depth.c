@@ -6,7 +6,7 @@
 #include <librealsense2/h/rs_pipeline.h>
 #include <librealsense2/h/rs_option.h>
 #include <librealsense2/h/rs_frame.h>
-#include "../example.h"
+#include "example.h"
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -17,7 +17,7 @@
 //                                     These parameters are reconfigurable                                        //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #define STREAM          RS2_STREAM_DEPTH  // rs2_stream is a types of data provided by RealSense device           //
-#define FORMAT          RS2_FORMAT_Z16    // rs2_format is identifies how binary data is encoded within a frame   //
+#define FORMAT          RS2_FORMAT_Z16    // rs2_format identifies how binary data is encoded within a frame      //
 #define WIDTH           640               // Defines the number of columns for each frame or zero for auto resolve//
 #define HEIGHT          0                 // Defines the number of lines for each frame or zero for auto resolve  //
 #define FPS             30                // Defines the rate of frames per second                                //
@@ -114,7 +114,7 @@ int main()
     check_error(e);
 
     // Start the pipeline streaming
-    // The retunred object should be released with rs2_delete_pipeline_profile(...)
+    // The returned object should be released with rs2_delete_pipeline_profile(...)
     rs2_pipeline_profile* pipeline_profile = rs2_pipeline_start_with_config(pipeline, config, &e);
     if (e)
     {

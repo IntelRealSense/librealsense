@@ -66,7 +66,7 @@ classdef stream_profile < handle
             end
         end
         function name = stream_name(this)
-            id = realsense.librealsense_mex('rs2::stream_profile', 'stream_name', this.objectHandle);
+            name = realsense.librealsense_mex('rs2::stream_profile', 'stream_name', this.objectHandle);
         end
         function value = is_default(this)
             value = realsense.librealsense_mex('rs2::stream_profile', 'is_default', this.objectHandle);
@@ -80,7 +80,7 @@ classdef stream_profile < handle
             extrinsics = realsense.librealsense_mex('rs2::stream_profile', 'get_extrinsics_to', this.objectHandle, to.objectHandle);
         end
         function value = is_cloned(this)
-            value = realsense.librealsense_mex('rs2::stream_profile', 'is_cloned', this.objectHandle)
+            value = realsense.librealsense_mex('rs2::stream_profile', 'is_cloned', this.objectHandle);
         end
 
         % Operators

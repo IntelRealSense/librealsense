@@ -38,6 +38,28 @@ namespace Intel.RealSense
             return intrinsics;
         }
 
+
+        
+        
+        /// <summary>
+        /// Clone current profile and change the type, index and format to input parameters
+        /// </summary>
+        /// <param name="type">will change the stream type from the cloned profile.</param>
+        /// <param name="index">will change the stream index from the cloned profile.</param>
+        /// <param name="format">will change the stream format from the cloned profile.</param>
+        /// <param name="width">will change the width of the profile.</param>
+        /// <param name="height">will change the height of the profile.</param>
+        /// <param name="intr">will change the intrinsics of the profile.</param>
+        /// <returns>the cloned stream profile.</returns>
+        public StreamProfile Clone(Stream type, int index, Format format, int width, int height, Intrinsics intr)
+        {
+            object error;
+            var ptr = NativeMethods.rs2_clone_video_stream_profile(Handle, type, index, format, width, height, intr, out error);
+            var p = StreamProfile.Create<VideoStreamProfile>(ptr);
+            p.clone = new Base.DeleterHandle(ptr, StreamProfileReleaser);
+            return p;
+        }
+
         /// <summary>
         /// Gets the width in pixels of the video stream
         /// </summary>

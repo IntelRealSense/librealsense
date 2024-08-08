@@ -37,7 +37,7 @@ struct MultiArrayDimension_
 
 
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _label_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > >  _label_type;
   _label_type label;
 
    typedef uint32_t _size_type;
@@ -49,15 +49,15 @@ struct MultiArrayDimension_
 
 
 
-  typedef boost::shared_ptr< ::std_msgs::MultiArrayDimension_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::std_msgs::MultiArrayDimension_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::std_msgs::MultiArrayDimension_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::std_msgs::MultiArrayDimension_<ContainerAllocator> const> ConstPtr;
 
 }; // struct MultiArrayDimension_
 
 typedef ::std_msgs::MultiArrayDimension_<std::allocator<void> > MultiArrayDimension;
 
-typedef boost::shared_ptr< ::std_msgs::MultiArrayDimension > MultiArrayDimensionPtr;
-typedef boost::shared_ptr< ::std_msgs::MultiArrayDimension const> MultiArrayDimensionConstPtr;
+typedef std::shared_ptr< ::std_msgs::MultiArrayDimension > MultiArrayDimensionPtr;
+typedef std::shared_ptr< ::std_msgs::MultiArrayDimension const> MultiArrayDimensionConstPtr;
 
 // constants requiring out of line definition
 
@@ -89,32 +89,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::MultiArrayDimension_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::MultiArrayDimension_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::MultiArrayDimension_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::MultiArrayDimension_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::MultiArrayDimension_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::MultiArrayDimension_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 
@@ -190,7 +190,7 @@ struct Printer< ::std_msgs::MultiArrayDimension_<ContainerAllocator> >
   template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::std_msgs::MultiArrayDimension_<ContainerAllocator>& v)
   {
     s << indent << "label: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.label);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > > >::stream(s, indent + "  ", v.label);
     s << indent << "size: ";
     Printer<uint32_t>::stream(s, indent + "  ", v.size);
     s << indent << "stride: ";

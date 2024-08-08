@@ -3,6 +3,7 @@
 
 #include <stdexcept>
 #include <memory>
+#include <cassert>
 
 // CUDA headers
 #include <cuda_runtime.h>

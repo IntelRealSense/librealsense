@@ -1,8 +1,8 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-#include "python.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
+#include "pyrealsense2.h"
+#include <librealsense2/hpp/rs_processing.hpp>
 
 void init_processing(py::module &m) {
     /** rs_processing.hpp **/
@@ -12,6 +12,8 @@ void init_processing(py::module &m) {
     frame_source.def("allocate_video_frame", &rs2::frame_source::allocate_video_frame, "Allocate a new video frame with given params",
                      "profile"_a, "original"_a, "new_bpp"_a = 0, "new_width"_a = 0,
                      "new_height"_a = 0, "new_stride"_a = 0, "frame_type"_a = RS2_EXTENSION_VIDEO_FRAME)
+        .def("allocate_motion_frame", &rs2::frame_source::allocate_motion_frame, "Allocate a new motion frame with given params",
+            "profile"_a, "original"_a, "frame_type"_a = RS2_EXTENSION_MOTION_FRAME)
         .def("allocate_points", &rs2::frame_source::allocate_points, "profile"_a,
              "original"_a) // No docstring in C++
         .def("allocate_composite_frame", &rs2::frame_source::allocate_composite_frame,
@@ -41,12 +43,13 @@ void init_processing(py::module &m) {
         }, "timeout_ms"_a = 5000, py::call_guard<py::gil_scoped_release>()) // No docstring in C++
         .def("__call__", &rs2::frame_queue::operator(), "Identical to calling enqueue.", "f"_a)
         .def("capacity", &rs2::frame_queue::capacity, "Return the capacity of the queue.")
+        .def("size", &rs2::frame_queue::size, "Number of enqueued frames.")
         .def("keep_frames", &rs2::frame_queue::keep_frames, "Return whether or not the queue calls keep on enqueued frames.");
 
     py::class_<rs2::processing_block, rs2::options> processing_block(m, "processing_block", "Define the processing block workflow, inherit this class to "
                                                                      "generate your own processing_block.");
-    processing_block.def(py::init([](std::function<void(rs2::frame, rs2::frame_source&)> processing_function) {
-            return new rs2::processing_block(processing_function);
+    processing_block.def(py::init([](std::function<void(rs2::frame, rs2::frame_source*)> processing_function) {
+        return new rs2::processing_block([=](rs2::frame f, rs2::frame_source& fs) {processing_function(f, &fs); });
         }), "processing_function"_a)
         .def("start", [](rs2::processing_block& self, std::function<void(rs2::frame)> f) {
             self.start(f);
@@ -67,8 +70,10 @@ void init_processing(py::module &m) {
         .def(BIND_DOWNCAST(filter, spatial_filter))
         .def(BIND_DOWNCAST(filter, temporal_filter))
         .def(BIND_DOWNCAST(filter, threshold_filter))
-        .def(BIND_DOWNCAST(filter, zero_order_invalidation))
-        .def("__nonzero__", &rs2::filter::operator bool); // No docstring in C++
+        .def(BIND_DOWNCAST(filter, hdr_merge))
+        .def(BIND_DOWNCAST(filter, sequence_id_filter))
+        .def("__nonzero__", &rs2::filter::operator bool) // Called to implement truth value testing in Python 2
+        .def("__bool__", &rs2::filter::operator bool);   // Called to implement truth value testing in Python 3
         // get_queue?
         // is/as?
 
@@ -94,20 +99,38 @@ void init_processing(py::module &m) {
     // rs2::asynchronous_syncer
 
     py::class_<rs2::syncer> syncer(m, "syncer", "Sync instance to align frames from different streams");
-    syncer.def(py::init<int>(), "queue_size"_a = 1)
-        .def("wait_for_frames", &rs2::syncer::wait_for_frames, "Wait until a coherent set "
-             "of frames becomes available", "timeout_ms"_a = 5000, py::call_guard<py::gil_scoped_release>())
-        .def("poll_for_frames", [](const rs2::syncer &self) {
-            rs2::frameset frames;
-            self.poll_for_frames(&frames);
-            return frames;
-        }, "Check if a coherent set of frames is available")
-        .def("try_wait_for_frames", [](const rs2::syncer &self, unsigned int timeout_ms) {
-            rs2::frameset fs;
-            auto success = self.try_wait_for_frames(&fs, timeout_ms);
-            return std::make_tuple(success, fs);
-        }, "timeout_ms"_a = 5000, py::call_guard<py::gil_scoped_release>()); // No docstring in C++
-        /*.def("__call__", &rs2::syncer::operator(), "frame"_a)*/
+    auto poll_for_frame = []( const rs2::syncer & self ) {
+        rs2::frameset frames;
+        self.poll_for_frames( &frames );
+        return frames;
+    };
+    auto wait_for_frame = []( const rs2::syncer& self, unsigned int timeout_ms ) {
+        rs2::frameset fs;
+        auto success = self.try_wait_for_frames( &fs, timeout_ms );
+        return std::make_tuple( success, fs );
+    };
+    syncer.def( py::init< int >(), "queue_size"_a = 1 )
+        .def( "wait_for_frames",
+              &rs2::syncer::wait_for_frames,
+              "Wait until a coherent set of frames becomes available",
+              "timeout_ms"_a = 5000,
+              py::call_guard< py::gil_scoped_release >() )
+        .def( "wait_for_frame",  // same, but with a name that matches frame_queue!
+              &rs2::syncer::wait_for_frames,
+              "Wait until a coherent set of frames becomes available",
+              "timeout_ms"_a = 5000,
+              py::call_guard< py::gil_scoped_release >() )
+        .def( "poll_for_frames", poll_for_frame, "Check if a coherent set of frames is available" )
+        .def( "poll_for_frame",  poll_for_frame, "Check if a coherent set of frames is available" )  // same, but with a name that matches frame_queue!
+        .def( "try_wait_for_frames",
+              wait_for_frame,
+              "timeout_ms"_a = 5000,
+              py::call_guard< py::gil_scoped_release >() )
+        .def( "try_wait_for_frame",  // same, but with a name that matches frame_queue!
+              wait_for_frame,
+              "timeout_ms"_a = 5000,
+              py::call_guard< py::gil_scoped_release >() );
+      /*.def("__call__", &rs2::syncer::operator(), "frame"_a)*/
 
     py::class_<rs2::align, rs2::filter> align(m, "align", "Performs alignment between depth image and another image.");
     align.def(py::init<rs2_stream>(), "To perform alignment of a depth image to the other, set the align_to parameter with the other stream type.\n"
@@ -159,9 +182,6 @@ void init_processing(py::module &m) {
                                                                           "to disparity representation and vice - versa in depth frames");
     disparity_transform.def(py::init<bool>(), "transform_to_disparity"_a = true);
 
-    py::class_<rs2::zero_order_invalidation, rs2::filter> zero_order_invalidation(m, "zero_order_invalidation", "Fixes the zero order artifact");
-    zero_order_invalidation.def(py::init<>());
-
     py::class_<rs2::hole_filling_filter, rs2::filter> hole_filling_filter(m, "hole_filling_filter", "The processing performed depends on the selected hole filling mode.");
     hole_filling_filter.def(py::init<>())
         .def(py::init<int>(), "Possible values for mode:\n"
@@ -169,6 +189,12 @@ void init_processing(py::module &m) {
              "1 - farest_from_around - Use the value from the neighboring pixel which is furthest away from the sensor\n"
              "2 - nearest_from_around - -Use the value from the neighboring pixel closest to the sensor", "mode"_a);
 
+    py::class_<rs2::hdr_merge, rs2::filter> hdr_merge(m, "hdr_merge", "Merges depth frames with different sequence ID");
+    hdr_merge.def(py::init<>());
+
+    py::class_<rs2::sequence_id_filter, rs2::filter> sequence_id_filter(m, "sequence_id_filter", "Splits depth frames with different sequence ID");
+    sequence_id_filter.def(py::init<>())
+        .def(py::init<float>(), "sequence_id"_a);
     // rs2::rates_printer
     /** end rs_processing.hpp **/
 }

@@ -9,14 +9,14 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
-#include "../example.h"
+#include "example.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                     These parameters are reconfigurable                                        //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #define STREAM          RS2_STREAM_COLOR  // rs2_stream is a types of data provided by RealSense device           //
-#define FORMAT          RS2_FORMAT_RGB8   // rs2_format is identifies how binary data is encoded within a frame   //
+#define FORMAT          RS2_FORMAT_RGB8   // rs2_format identifies how binary data is encoded within a frame      //
 #define WIDTH           640               // Defines the number of columns for each frame                         //
 #define HEIGHT          480               // Defines the number of lines for each frame                           //
 #define FPS             30                // Defines the rate of frames per second                                //

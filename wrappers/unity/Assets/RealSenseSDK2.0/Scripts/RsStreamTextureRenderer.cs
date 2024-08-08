@@ -117,7 +117,7 @@ public class RsStreamTextureRenderer : MonoBehaviour
     private bool Matches(Frame f)
     {
         using (var p = f.Profile)
-            return p.Stream == _stream && p.Format == _format && p.Index == _streamIndex;
+            return p.Stream == _stream && p.Format == _format && (p.Index == _streamIndex || _streamIndex == -1);
     }
 
     void OnNewSample(Frame frame)

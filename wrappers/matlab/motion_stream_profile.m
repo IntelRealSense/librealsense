@@ -10,7 +10,7 @@ classdef motion_stream_profile < realsense.stream_profile
 
         % Functions
         function motion_intrinsics = get_motion_intrinsics(this)
-            intrinsics = realsense.librealsense_mex('rs2::motion_stream_profile', 'get_motion_intrinsics', this.objectHandle);
+            motion_intrinsics = realsense.librealsense_mex('rs2::motion_stream_profile', 'get_motion_intrinsics', this.objectHandle);
         end
     end
 end

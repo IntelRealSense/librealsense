@@ -3,9 +3,15 @@
 #pragma once
 
 #include "archive.h"
+#include <src/core/frame-interface.h>
+
+#include <atomic>
+#include <vector>
 
 namespace librealsense
 {
+    constexpr static int RS2_USER_QUEUE_SIZE = 128;
+
     // Defines general frames storage model
     template<class T>
     class frame_archive : public std::enable_shared_from_this<frame_archive<T>>, public archive_interface
@@ -20,13 +26,12 @@ namespace librealsense
         std::atomic<bool> recycle_frames;
         int pending_frames = 0;
         std::recursive_mutex mutex;
-        std::shared_ptr<platform::time_service> _time_service;
 
         std::weak_ptr<sensor_interface> _sensor;
         std::shared_ptr<sensor_interface> get_sensor() const override { return _sensor.lock(); }
-        void set_sensor(std::shared_ptr<sensor_interface> s) override { _sensor = s; }
+        void set_sensor( const std::weak_ptr< sensor_interface > & s ) override { _sensor = s; }
 
-        T alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory)
+        T alloc_frame(const size_t size, frame_additional_data && additional_data, bool requires_memory)
         {
             T backbuffer;
             //const size_t size = modes[stream].get_image_size(stream);
@@ -59,7 +64,7 @@ namespace librealsense
             {
                 backbuffer.data.resize(size, 0); // TODO: Allow users to provide a custom allocator for frame buffers
             }
-            backbuffer.additional_data = additional_data;
+            backbuffer.additional_data = std::move( additional_data );
             return backbuffer;
         }
 
@@ -78,15 +83,14 @@ namespace librealsense
             return nullptr;
         }
 
-        void unpublish_frame(frame_interface* frame) override
+        void unpublish_frame(frame_interface * fi) override
         {
-            if (frame)
+            if( fi )
             {
-                auto f = (T*)frame;
-                log_frame_callback_end(f);
+                auto f = (T *)fi;
                 std::unique_lock<std::recursive_mutex> lock(mutex);
 
-                frame->keep();
+                fi->keep();
 
                 if (recycle_frames)
                 {
@@ -106,9 +110,9 @@ namespace librealsense
             --published_frames_count;
         }
 
-        frame_interface* publish_frame(frame_interface* frame) override
+        frame_interface * publish_frame( frame_interface * fi ) override
         {
-            auto f = (T*)frame;
+            auto f = (T *)fi;
 
             unsigned int max_frames = *max_frame_queue_size;
 
@@ -122,7 +126,7 @@ namespace librealsense
 
             if (new_frame)
             {
-                if (max_frames) 
+                if (max_frames)
                     new_frame->mark_fixed();
             }
             else
@@ -136,38 +140,16 @@ namespace librealsense
             return new_frame;
         }
 
-        void log_frame_callback_end(T* frame) const
-        {
-            if (frame && frame->get_stream())
-            {
-                auto callback_ended = _time_service ? _time_service->get_time() : 0;
-                auto callback_warning_duration = 1000 / (frame->get_stream()->get_framerate() + 1);
-                auto callback_duration = callback_ended - frame->get_frame_callback_start_time_point();
-
-                LOG_DEBUG("CallbackFinished," << rs2_stream_to_string(frame->get_stream()->get_stream_type()) << "," << std::dec << frame->get_frame_number()
-                    << ",DispatchedAt," << callback_ended);
-
-                if (callback_duration > callback_warning_duration)
-                {
-                    LOG_DEBUG("Frame Callback [" << rs2_stream_to_string(frame->get_stream()->get_stream_type())
-                        << "#" << std::dec << frame->additional_data.frame_number
-                        << "] overdue. (Duration: " << callback_duration
-                        << "ms, FPS: " << frame->get_stream()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
-                }
-            }
-        }
-
         std::shared_ptr<metadata_parser_map> get_md_parsers() const override { return _metadata_parsers; };
 
         friend class frame;
 
     public:
-        explicit frame_archive(std::atomic<uint32_t>* in_max_frame_queue_size,
-            std::shared_ptr<platform::time_service> ts,
-            std::shared_ptr<metadata_parser_map> parsers)
-            : max_frame_queue_size(in_max_frame_queue_size),
-            mutex(), recycle_frames(true), _time_service(ts),
-            _metadata_parsers(parsers)
+        explicit frame_archive( std::atomic< uint32_t > * in_max_frame_queue_size,
+                                std::shared_ptr< metadata_parser_map > const & parsers )
+            : max_frame_queue_size( in_max_frame_queue_size )
+            , recycle_frames( true )
+            , _metadata_parsers( parsers )
         {
             published_frames_count = 0;
         }
@@ -182,9 +164,9 @@ namespace librealsense
             ref->release();
         }
 
-        frame_interface* alloc_and_track(const size_t size, const frame_additional_data& additional_data, bool requires_memory) override
+        frame_interface* alloc_and_track(const size_t size, frame_additional_data && additional_data, bool requires_memory) override
         {
-            auto frame = alloc_frame(size, additional_data, requires_memory);
+            auto frame = alloc_frame( size, std::move( additional_data ), requires_memory );
             return track_frame(frame);
         }
 
@@ -221,7 +203,7 @@ namespace librealsense
         {
             if (pending_frames > 0)
             {
-                LOG_INFO("All frames from stream 0x"
+                LOG_DEBUG("All frames from stream 0x"
                     << std::hex << this << " are now released by the user" << std::dec);
             }
         }

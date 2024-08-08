@@ -27,11 +27,12 @@ namespace rs2 {
                     return "PLY converter";
                 }
 
-                void convert(rs2::frameset& frameset) override
+                void convert(rs2::frame& frame) override
                 {
                     rs2::pointcloud pc;
                     start_worker(
-                        [this, &frameset, pc]() mutable {
+                        [this, &frame, pc]() mutable {
+                            auto frameset = frame.as<rs2::frameset>();
                             auto frameDepth = frameset.get_depth_frame();
                             auto frameColor = frameset.get_color_frame();
 
@@ -46,12 +47,19 @@ namespace rs2 {
 
                                 std::stringstream filename;
                                 filename << _filePath
-                                    << "_" << frameDepth.get_frame_number()
+                                    << "_" << std::setprecision(14) << std::fixed << frameDepth.get_timestamp()
                                     << ".ply";
 
                                 points.export_to_ply(filename.str(), frameColor);
+
+                                std::stringstream metadata_file;
+                                metadata_file << _filePath
+                                    << "_metadata_" << std::setprecision(14) << std::fixed << frameDepth.get_timestamp()
+                                    << ".txt";
+
+                                metadata_to_txtfile(frameDepth, metadata_file.str());
                             }
-                        });
+                    });
                 }
             };
 

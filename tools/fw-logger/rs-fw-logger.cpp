@@ -2,36 +2,17 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/rs.hpp>
+#include <librealsense2/hpp/rs_internal.hpp>
+#include <rsutils/string/string-utilities.h>
 #include <fstream>
 #include <thread>
 #include "tclap/CmdLine.h"
-#include "fw-logs-parser.h"
 
 
 using namespace std;
 using namespace TCLAP;
-using namespace fw_logger;
 using namespace rs2;
 
-string hexify(unsigned char n)
-{
-    string res;
-
-    do
-    {
-        res += "0123456789ABCDEF"[n % 16];
-        n >>= 4;
-    } while (n);
-
-    reverse(res.begin(), res.end());
-
-    if (res.size() == 1)
-    {
-        res.insert(0, "0");
-    }
-
-    return res;
-}
 
 string datetime_string()
 {
@@ -44,82 +25,170 @@ string datetime_string()
     return string(buffer);
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char* argv[]) try
 {
-    CmdLine cmd("librealsense rs-fw-logger example tool", ' ', RS2_API_VERSION_STR);
+    int default_polling_interval_ms = 100;
+    CmdLine cmd("librealsense rs-fw-logger example tool", ' ', RS2_API_FULL_VERSION_STR);
+    ValueArg<string> sn_arg("s", "sn", "camera serial number", false, "", "camera serial number");
     ValueArg<string> xml_arg("l", "load", "Full file path of HW Logger Events XML file", false, "", "Load HW Logger Events XML file");
+    ValueArg<string> out_arg("o", "out", "Full file path of output file", false, "", "Print Fw logs to output file");
+    ValueArg<int> polling_interval_arg("p", "polling_interval", "Time Interval between each log messages polling (in milliseconds)", false, default_polling_interval_ms, "");
+    SwitchArg flash_logs_arg("f", "flash", "Flash Logs Request", false);
+    cmd.add(sn_arg);
     cmd.add(xml_arg);
+    cmd.add(out_arg);
+    cmd.add(polling_interval_arg);
+    cmd.add(flash_logs_arg);
     cmd.parse(argc, argv);
 
     log_to_file(RS2_LOG_SEVERITY_WARN, "librealsense.log");
-    // Obtain a list of devices currently present on the system
 
-    unique_ptr<fw_logs_parser> fw_log_parser;
     auto use_xml_file = false;
+    auto output_file_path = out_arg.getValue();
+    std::ofstream output_file(output_file_path);
+    // write to file if it is open, else write to console
+    std::ostream& out = (!output_file.is_open() ? std::cout : output_file);
+
+    auto sn = sn_arg.getValue();
     auto xml_full_file_path = xml_arg.getValue();
-    if (!xml_full_file_path.empty())
+    auto polling_interval_ms = polling_interval_arg.getValue();
+    if (polling_interval_ms < 25 || polling_interval_ms > 300)
     {
-        ifstream f(xml_full_file_path);
-        if (f.good())
-        {
-            fw_log_parser = unique_ptr<fw_logs_parser>(new fw_logs_parser(xml_full_file_path));
-            use_xml_file = true;
-        }
+        out << "Polling interval time provided: " << polling_interval_ms << "ms, is not in the valid range [25,300]. Default value " << default_polling_interval_ms << "ms is used." << std::endl;
+        polling_interval_ms = default_polling_interval_ms;
     }
+
+    bool are_flash_logs_requested = flash_logs_arg.isSet();
 
     context ctx;
     device_hub hub(ctx);
 
-    while (true)
+    bool should_loop_end = false;
+
+    while (!should_loop_end)
     {
         try
         {
-            cout << "\nWaiting for RealSense device to connect...\n";
-            auto dev = hub.wait_for_device();
-            cout << "RealSense device was connected...\n";
+            rs2::device dev;
+            bool found = false;
 
-            vector<uint8_t> input;
-            auto str_op_code = dev.get_info(RS2_CAMERA_INFO_DEBUG_OP_CODE);
-            auto op_code = static_cast<uint8_t>(stoi(str_op_code));
-            input = {0x14, 0x00, 0xab, 0xcd, op_code, 0x00, 0x00, 0x00,
-                     0xf4, 0x01, 0x00, 0x00, 0x00,    0x00, 0x00, 0x00,
-                     0x00, 0x00, 0x00, 0x00, 0x00,    0x00, 0x00, 0x00};
+            while(!found)
+            {
+                auto devs = ctx.query_devices();
+                out << "\n" << devs.size() << " realSense devices detected.";
 
-            cout << "Device Name: " << dev.get_info(RS2_CAMERA_INFO_NAME) << endl <<
-                    "Device Location: " << dev.get_info(RS2_CAMERA_INFO_PHYSICAL_PORT) << endl << endl;
+                for (rs2::device d : devs)
+                {
+                    string serial = d.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+
+                    if (sn.empty() || (!sn.empty() && serial.compare(sn) == 0))
+                    {
+                        dev = d;
+                        found = true;
+                        break;
+                    }
+                }
+
+                out << "\nWaiting for RealSense device " << sn << (!sn.empty() ? " " : "") << "to connect ...";
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            }
+
+            string serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+            out << "\nRealSense device " << serial << " was connected for logging.\n";
 
             setvbuf(stdout, NULL, _IONBF, 0); // unbuffering stdout
 
+            auto fw_log_device = dev.as<rs2::firmware_logger>();
+
+            bool using_parser = false;
+            if (!xml_full_file_path.empty())
+            {
+                ifstream f(xml_full_file_path);
+                if (f.good())
+                {
+                    std::string xml_content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+                    bool parser_initialized = fw_log_device.init_parser(xml_content);
+                    if (parser_initialized)
+                        using_parser = true;
+                }
+            }
+
+            fw_log_device.start_collecting();
+
+            bool are_there_remaining_flash_logs_to_pull = true;
+            auto time_of_previous_polling_ms = std::chrono::high_resolution_clock::now();
+
             while (hub.is_connected(dev))
             {
-                this_thread::sleep_for(chrono::milliseconds(100));
-
-                auto raw_data = dev.as<debug_protocol>().send_and_receive_raw_data(input);
-                vector<string> fw_log_lines = {""};
-                if (raw_data.size() <= 4)
-                    continue;
-
-                if (use_xml_file)
+                if (are_flash_logs_requested && !are_there_remaining_flash_logs_to_pull)
                 {
-                    fw_logs_binary_data fw_logs_binary_data = {raw_data};
-                    fw_logs_binary_data.logs_buffer.erase(fw_logs_binary_data.logs_buffer.begin(),fw_logs_binary_data.logs_buffer.begin()+4);
-                    fw_log_lines = fw_log_parser->get_fw_log_lines(fw_logs_binary_data);
-                    for (auto& elem : fw_log_lines)
-                        elem = datetime_string() + "  " + elem;
+                    should_loop_end = true;
+                    break;
+                }
+                auto log_message = fw_log_device.create_message();
+                bool result = false;
+                if (are_flash_logs_requested)
+                {
+                    result = fw_log_device.get_flash_log(log_message);
                 }
                 else
                 {
-                    stringstream sstr;
-                    sstr << datetime_string() << "  FW_Log_Data:";
-                    for (size_t i = 0; i < raw_data.size(); ++i)
-                        sstr << hexify(raw_data[i]) << " ";
-
-                    fw_log_lines.push_back(sstr.str());
+                    result = fw_log_device.get_firmware_log(log_message);
                 }
+                if (result)
+                {
+                    std::vector<string> fw_log_lines;
+                    if (using_parser)
+                    {
+                        auto parsed_log = fw_log_device.create_parsed_message();
+                        bool parsing_result = fw_log_device.parse_log(log_message, parsed_log);
+                        
+                        std::string module_print = parsed_log.module_name() + " ";
+                        if( module_print == "Unknown " )
+                            module_print.clear();  // Some devices don't support FW log modules
 
-                for (auto& line : fw_log_lines)
-                    cout << line << endl;
+                        stringstream sstr;
+                        sstr << datetime_string() << " " << parsed_log.timestamp() << " " << parsed_log.sequence_id()
+                             << " " << parsed_log.severity() << " " << parsed_log.thread_name() << " " << module_print
+                             << parsed_log.file_name() << " " << parsed_log.line() << " " << parsed_log.message();
+                        
+                        fw_log_lines.push_back(sstr.str());
+                    }
+                    else
+                    {
+                        stringstream sstr;
+                        sstr << datetime_string() << "  FW_Log_Data:";
+                        std::vector<uint8_t> msg_data = log_message.data();
+                        for (int i = 0; i < msg_data.size(); ++i)
+                        {
+                        sstr << rsutils::string::hexify(msg_data[i]) << " ";
+                        }
+                        fw_log_lines.push_back(sstr.str());
+                    }
+                    for (auto& line : fw_log_lines)
+                        out << line << endl;
+                }
+                else
+                {
+                    if (are_flash_logs_requested)
+                    {
+                        are_there_remaining_flash_logs_to_pull = false;
+                    }
+                }
+                auto num_of_messages = fw_log_device.get_number_of_fw_logs();
+                if (num_of_messages == 0)
+                {
+                    auto current_time = std::chrono::high_resolution_clock::now();
+                    auto time_since_previous_polling_ms = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - time_of_previous_polling_ms).count();
+                    if (time_since_previous_polling_ms < polling_interval_ms)
+                    {
+                        std::this_thread::sleep_for(chrono::milliseconds(polling_interval_ms - time_since_previous_polling_ms));
+                    }
+                    time_of_previous_polling_ms = std::chrono::high_resolution_clock::now();
+                }
             }
+
+            fw_log_device.stop_collecting();
         }
         catch (const error & e)
         {
@@ -128,4 +197,19 @@ int main(int argc, char* argv[])
     }
 
     return EXIT_SUCCESS;
+}
+catch( const rs2::error & e )
+{
+    cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
+    return EXIT_FAILURE;
+}
+catch( const exception & e )
+{
+    cerr << e.what() << endl;
+    return EXIT_FAILURE;
+}
+catch( ... )
+{
+    cerr << "some error" << endl;
+    return EXIT_FAILURE;
 }

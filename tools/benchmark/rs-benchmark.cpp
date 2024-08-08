@@ -17,6 +17,7 @@
 #include <fstream>
 
 #include "tclap/CmdLine.h"
+#include "example-utils.hpp"
 
 using namespace std;
 using namespace chrono;
@@ -106,7 +107,7 @@ public:
     frame process(frame f) override
     {
         return _block.process(f);
-    };
+    }
     virtual const std::string& name() const override
     {
         return _name;
@@ -135,7 +136,7 @@ public:
         auto res = pb_test<T>::process(f);
         flush();
         return res;
-    };
+    }
     frame prepare(frame f) override
     {
         auto res = _upload.process(f);
@@ -206,7 +207,22 @@ public:
 
 int main(int argc, char** argv) try
 {
-    CmdLine cmd("librealsense rs-benchmark tool", ' ', RS2_API_VERSION_STR);
+    std::string serial;
+    rs2_stream second_stream;
+    if (!device_with_streams({ RS2_STREAM_DEPTH }, serial))
+        return EXIT_SUCCESS;
+
+    if (device_with_streams({ RS2_STREAM_COLOR }, serial))
+        second_stream = RS2_STREAM_COLOR;
+    else if (device_with_streams({ RS2_STREAM_INFRARED }, serial))
+        second_stream = RS2_STREAM_INFRARED;
+    else
+    {
+        std::cout<< " Connect a Depth Camera that supports either RGB or Infrared streams." <<std::endl;
+        return EXIT_SUCCESS;
+    }
+
+    CmdLine cmd("librealsense rs-benchmark tool", ' ', RS2_API_FULL_VERSION_STR);
     cmd.parse(argc, argv);
 
     glfwInit();
@@ -236,8 +252,13 @@ int main(int argc, char** argv) try
 
     pipeline p;
     config cfg;
+    if (!serial.empty())
+        cfg.enable_device(serial);
     cfg.enable_stream(RS2_STREAM_DEPTH);
-    cfg.enable_stream(RS2_STREAM_COLOR, RS2_FORMAT_YUYV, 30);
+    if(second_stream == RS2_STREAM_COLOR)
+        cfg.enable_stream(RS2_STREAM_COLOR, RS2_FORMAT_YUYV, 30);
+    else
+        cfg.enable_stream(RS2_STREAM_INFRARED);
     auto prof = p.start(cfg);
     auto dev = prof.get_device();
     auto name = dev.get_info(RS2_CAMERA_INFO_NAME);
@@ -355,5 +376,15 @@ int main(int argc, char** argv) try
 catch (const error & e)
 {
     cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
+    return EXIT_FAILURE;
+}
+catch( const exception & e )
+{
+    cerr << e.what() << endl;
+    return EXIT_FAILURE;
+}
+catch( ... )
+{
+    cerr << "some error" << endl;
     return EXIT_FAILURE;
 }

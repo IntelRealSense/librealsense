@@ -2,18 +2,16 @@
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/rs.hpp>
-#include "../example.hpp"
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
+#include "example-imgui.hpp"
 
 /*
  This example introduces the concept of spatial stream alignment.
  For example usecase of alignment, please check out align-advanced and measure demos.
  The need for spatial alignment (from here "align") arises from the fact
  that not all camera streams are captured from a single viewport.
- Align process lets the user translate images from one viewport to another. 
+ Align process lets the user translate images from one viewport to another.
  That said, results of align are synthetic streams, and suffer from several artifacts:
- 1. Sampling - mapping stream to a different viewport will modify the resolution of the frame 
+ 1. Sampling - mapping stream to a different viewport will modify the resolution of the frame
                to match the resolution of target viewport. This will either cause downsampling or
                upsampling via interpolation. The interpolation used needs to be of type
                Nearest Neighbor to avoid introducing non-existing values.
@@ -35,6 +33,10 @@ void render_slider(rect location, float* alpha, direction* dir);
 
 int main(int argc, char * argv[]) try
 {
+    std::string serial;
+    if (!device_with_streams({ RS2_STREAM_COLOR,RS2_STREAM_DEPTH }, serial))
+        return EXIT_SUCCESS;
+
     // Create and initialize GUI related objects
     window app(1280, 720, "RealSense Align Example"); // Simple window handling
     ImGui_ImplGlfw_Init(app, false);      // ImGui library intializition
@@ -44,6 +46,8 @@ int main(int argc, char * argv[]) try
     // Create a pipeline to easily configure and start the camera
     rs2::pipeline pipe;
     rs2::config cfg;
+    if (!serial.empty())
+        cfg.enable_device(serial);
     cfg.enable_stream(RS2_STREAM_DEPTH);
     cfg.enable_stream(RS2_STREAM_COLOR);
     pipe.start(cfg);
@@ -55,7 +59,7 @@ int main(int argc, char * argv[]) try
     rs2::align align_to_depth(RS2_STREAM_DEPTH);
     rs2::align align_to_color(RS2_STREAM_COLOR);
 
-    float       alpha = 0.5f;               // Transparancy coefficient 
+    float       alpha = 0.5f;               // Transparancy coefficient
     direction   dir = direction::to_depth;  // Alignment direction
 
     while (app) // Application still alive?

@@ -6,12 +6,18 @@
 #include <map>
 #include <memory>
 #include <vector>
-#include "types.h"
+#include "../types.h"
 #include "extension.h"
-#include "streaming.h"
+#include "notification.h"
+#include "frame-holder.h"
+#include "stream-profile-interface.h"
+#include "notification.h"
+
 
 namespace librealsense
 {
+    class option;
+
     namespace device_serializer
     {
         struct sensor_identifier
@@ -139,7 +145,7 @@ namespace librealsense
         public:
             serialized_option(device_serializer::nanoseconds time, sensor_identifier id, rs2_option opt_id, std::shared_ptr<librealsense::option> o) :
                 serialized_data(time),
-                sensor_id(id), option_id(opt_id), option(o)
+                sensor_id(id), option(o), option_id(opt_id)
             {}
             sensor_identifier sensor_id;
             std::shared_ptr<librealsense::option> option;
