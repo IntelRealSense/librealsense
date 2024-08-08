@@ -11,7 +11,7 @@ import time
 
 ITERATIONS_COUNT = 20
 
-device = test.find_first_device_or_exit();
+device, _ = test.find_first_device_or_exit();
 safety_sensor = device.first_safety_sensor()
 #########################################################################
 # since we see many regressions on operational mode switching we add a short stress test
