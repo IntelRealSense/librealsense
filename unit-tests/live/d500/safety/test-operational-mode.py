@@ -7,7 +7,7 @@ import pyrealsense2 as rs
 from rspy import test, log
 import time
 
-device = test.find_first_device_or_exit();
+device, _ = test.find_first_device_or_exit();
 
 def verify_frames_received(pipe, count):
     for i in range(count):
