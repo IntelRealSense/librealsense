@@ -94,8 +94,35 @@ namespace librealsense
     void d500_device::hardware_reset()
     {
         command cmd(ds::HWRST);
-        cmd.require_response = false;
-        _hw_monitor->send(cmd);
+        cmd.require_response = true;
+        int retries = 0;
+        bool success = false;
+        const int ERR_SWNotReady = -21;
+        const int ERR_Operation_Timeout = -18;
+        do
+        {
+            auto res = _hw_monitor->send(cmd);
+            if (res.size() == 0)
+                return; // happens when no error occurs
+
+            auto hwm_ans = *reinterpret_cast<hwmon_response*>(res.data());
+            if (hwm_ans == hwmon_response::hwm_Success)
+                success = true;
+            else
+            {
+                if (hwm_ans == ERR_SWNotReady)
+                {
+                    retries++;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    LOG_WARNING("HW Reset - SW not ready received");
+                }
+                else
+                {
+                    throw std::runtime_error("HW Reset - error received - " + static_cast<int>(hwm_ans));
+                }
+            }
+
+        } while (!success && retries < 3);
     }
 
     void d500_device::enter_update_state() const
