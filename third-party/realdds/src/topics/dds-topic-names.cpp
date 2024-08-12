@@ -81,6 +81,15 @@ namespace notification {
             std::string const progress( "progress", 8 );
         }
     }
+    namespace calibration_changed {
+        std::string const id( "calibration-changed", 19 );
+        //namespace key {
+        //    using stream_options::key::intrinsics;
+        //}
+        //namespace intrinsics {
+        //    using namespace stream_options::intrinsics;
+        //}
+    }
 }
 
 namespace control {

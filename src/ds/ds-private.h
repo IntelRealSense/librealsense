@@ -318,6 +318,16 @@ namespace librealsense
                                                << "Calibration data invalid, buffer too small : expected "
                                                << sizeof( table_header ) << " , actual: " << raw_data.size() );
             }
+
+            // Make sure the table size does not exceed the actual data we have!
+            if( header->table_size + sizeof( table_header ) > raw_data.size() )
+            {
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Calibration table size does not fit inside reply: expected "
+                                               << ( raw_data.size() - sizeof( table_header ) ) << " but got "
+                                               << header->table_size );
+            }
+
             // verify the parsed table
             if (table->header.crc32 != rsutils::number::calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
             {

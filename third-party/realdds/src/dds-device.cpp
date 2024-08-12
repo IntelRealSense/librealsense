@@ -244,6 +244,11 @@ rsutils::subscription dds_device::on_notification( on_notification_callback && c
     return _impl->on_notification( std::move( cb ) );
 }
 
+rsutils::subscription dds_device::on_calibration_changed( on_calibration_changed_callback && cb )
+{
+    return _impl->on_calibration_changed( std::move( cb ) );
+}
+
 
 bool dds_device::check_reply( json const & reply, std::string * p_explanation )
 {

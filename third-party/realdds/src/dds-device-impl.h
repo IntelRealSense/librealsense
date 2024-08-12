@@ -109,6 +109,12 @@ public:
     {
         return _on_notification.subscribe( std::move( cb ) );
     }
+    using on_calibration_changed_signal = rsutils::signal< std::shared_ptr< const realdds::dds_stream > const & >;
+    using on_calibration_changed_callback = on_calibration_changed_signal::callback;
+    rsutils::subscription on_calibration_changed( on_calibration_changed_callback && cb )
+    {
+        return _on_calibration_changed.subscribe( std::move( cb ) );
+    }
 
 private:
     void create_notifications_reader();
@@ -124,12 +130,14 @@ private:
     void on_device_options( rsutils::json const &, dds_sample const & );
     void on_stream_header( rsutils::json const &, dds_sample const & );
     void on_stream_options( rsutils::json const &, dds_sample const & );
+    void on_calibration_changed( rsutils::json const &, dds_sample const & );
 
     void on_notification( rsutils::json &&, dds_sample const & );
 
     on_metadata_available_signal _on_metadata_available;
     on_device_log_signal _on_device_log;
     on_notification_signal _on_notification;
+    on_calibration_changed_signal _on_calibration_changed;
 };
 
 

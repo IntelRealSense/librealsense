@@ -99,6 +99,9 @@ public:
     typedef std::function< void( std::string const & id, rsutils::json const & ) > on_notification_callback;
     rsutils::subscription on_notification( on_notification_callback && );
 
+    typedef std::function< void( std::shared_ptr< const dds_stream > const & ) > on_calibration_changed_callback;
+    rsutils::subscription on_calibration_changed( on_calibration_changed_callback && );
+
     // dds_discovery_sink
 protected:
     void on_discovery_lost() override;

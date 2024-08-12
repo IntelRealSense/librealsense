@@ -90,3 +90,29 @@ Combining multiple log notifications can be done by packaging them together into
 Anybody can write to the notifications topic; but only a single participant is ever the real device - this is the participant from which the [device-info](discovery.md) was published.
 
 It is recommended that the device implementation on the Client ignore notifications that do not originate from this participant.
+
+
+# Notification Messages
+
+## `calibration-changed`
+
+Sent when clients need to be updated that internal camera calibration values have changed. Usually this can happen due to temperature fluctuations, especially while streaming.
+
+```JSON
+{
+    "id": "calibration-changed",
+    "Depth" : {
+        "intrinsics": {
+            "focal-length": [631.3428955078125,631.3428955078125]
+        }
+    },
+    "Infrared" : { ... },
+    "Infrared_2" : { ... }
+}
+```
+
+- Each stream for which calibration values change needs to be included by name
+- For each stream, the same format is used as by the [Initialization](initialization.md) message `stream-options`
+    - The intrinsics `width` and `height` are not expected to change
+
+The client is expected to take these new values into consideration when performing any calculations post-update.
