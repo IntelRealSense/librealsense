@@ -10,7 +10,7 @@ namespace librealsense
 
     int hw_monitor_extended_buffers::get_number_of_chunks(size_t msg_length) const
     {
-        return static_cast<int>(std::ceil(msg_length / (float)HW_MONITOR_BUFFER_SIZE));
+        return static_cast<int>(std::ceil(msg_length / (float)HW_MONITOR_COMMAND_SIZE));
     }
 
     hw_monitor_extended_buffers::hwm_buffer_type hw_monitor_extended_buffers::get_buffer_type(command cmd) const
