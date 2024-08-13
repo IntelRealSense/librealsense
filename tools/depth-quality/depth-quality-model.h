@@ -357,7 +357,7 @@ namespace rs2
         class tool_model
         {
         public:
-            tool_model(rs2::context& ctx);
+            tool_model( rs2::context & ctx, bool disable_log_to_console = false );
 
             bool start(ux_window& win);
 

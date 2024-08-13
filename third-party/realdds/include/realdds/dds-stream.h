@@ -70,7 +70,7 @@ public:
     typedef std::function< void( topics::image_msg &&, dds_sample && ) > on_data_available_callback;
     void on_data_available( on_data_available_callback cb ) { _on_data_available = cb; }
 
-    void set_intrinsics( const std::set< video_intrinsics > & intrinsics ) { _intrinsics = intrinsics; }
+    void set_intrinsics( std::set< video_intrinsics > intrinsics ) { _intrinsics = std::move( intrinsics ); }
     const std::set< video_intrinsics > & get_intrinsics() const { return _intrinsics; }
 
 protected:

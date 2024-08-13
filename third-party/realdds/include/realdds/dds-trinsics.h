@@ -34,6 +34,15 @@ struct distortion_parameters
 {
     distortion_model model;
     std::array< float, 5 > coeffs;
+
+    bool operator==( distortion_parameters const & other ) const
+    {
+        return model == other.model && coeffs == other.coeffs;
+    }
+    bool operator!=( distortion_parameters const & other ) const
+    {
+        return model != other.model || coeffs != other.coeffs;
+    }
 };
 
 std::ostream & operator<<( std::ostream &, distortion_parameters const & );
@@ -51,6 +60,7 @@ struct video_intrinsics
     float2 principal_point = { 0, 0 };                 // Pixel offset from top-left edge
     float2 focal_length = { 0, 0 };                    // As a multiple of pixel width and height
     distortion_parameters distortion = { distortion_model::none, { 0 } };
+    bool force_symmetry = false;
 
     bool is_valid() const { return focal_length.x > 0 && focal_length.y > 0; }
 
@@ -59,11 +69,21 @@ struct video_intrinsics
         // Arrange the intrinsics in order of increasing resolution (width then height)
         return width < rhs.width || ( width == rhs.width && height < rhs.height );
     }
+    bool operator==( video_intrinsics const & other ) const
+    {
+        return width == other.width && height == other.height && principal_point == other.principal_point
+            && focal_length == other.focal_length && distortion == other.distortion
+            && force_symmetry == other.force_symmetry;
+    }
+    bool operator!=( video_intrinsics const & other ) const { return ! operator==( other ); }
 
     video_intrinsics scaled_to( int width, int height ) const;
 
+    static distortion_parameters distortion_from_json( rsutils::json const & );
+
     rsutils::json to_json() const;
-    static video_intrinsics from_json( rsutils::json const & j );
+    static video_intrinsics from_json( rsutils::json const & );
+    void override_from_json( rsutils::json const & );
 };
 
 std::ostream & operator<<( std::ostream &, video_intrinsics const & );
@@ -79,6 +99,12 @@ struct motion_intrinsics
 
     rsutils::json to_json() const;
     static motion_intrinsics from_json( rsutils::json const & j );
+
+    bool operator!=( motion_intrinsics const & other ) const
+    {
+        return data != other.data || noise_variances != other.noise_variances || bias_variances != other.bias_variances;
+    }
+    bool operator==( motion_intrinsics const & other ) const { return ! operator!=( other ); }
 };
 
 

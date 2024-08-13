@@ -125,7 +125,7 @@ def on_flexible_available( reader ):
             if not s:
                 s = json.dumps( j )  # without indent
         else:
-            s = json.dumps( j, indent=4 )
+            s = dds.json_dump( j, indent=4 )
         i( f'{timestamp()} {sample} {s}', )
         got_something = True
 for topic_path in args.flexible_be or []:

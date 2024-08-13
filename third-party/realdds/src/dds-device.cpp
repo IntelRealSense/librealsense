@@ -203,10 +203,10 @@ json dds_device::query_option_value( const std::shared_ptr< dds_option > & optio
     return _impl->query_option_value( option );
 }
 
-void dds_device::send_control( topics::flexible_msg && msg, json * reply )
+void dds_device::send_control( json const & control, json * reply )
 {
     wait_until_ready( 0 );  // throw if not
-    _impl->write_control_message( std::move( msg ), reply );
+    _impl->write_control_message( control, reply );
 }
 
 bool dds_device::has_extrinsics() const
@@ -242,6 +242,11 @@ rsutils::subscription dds_device::on_device_log( on_device_log_callback && cb )
 rsutils::subscription dds_device::on_notification( on_notification_callback && cb )
 {
     return _impl->on_notification( std::move( cb ) );
+}
+
+rsutils::subscription dds_device::on_calibration_changed( on_calibration_changed_callback && cb )
+{
+    return _impl->on_calibration_changed( std::move( cb ) );
 }
 
 
@@ -285,7 +290,10 @@ bool dds_device::check_reply( json const & reply, std::string * p_explanation )
         }
     }
     if( ! p_explanation )
+    {
+        LOG_DEBUG( "error: " << std::setw( 4 ) << reply );
         DDS_THROW( runtime_error, os.str() );
+    }
     *p_explanation = os.str();
     return false;
 }

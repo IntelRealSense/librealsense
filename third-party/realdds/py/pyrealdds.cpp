@@ -142,6 +142,19 @@ PYBIND11_MODULE(NAME, m) {
            py::arg( "nested-string" ) = "",
            py::arg( "logger" ) = LIBREALSENSE_ELPP_ID );
 
+    m.def(
+        "json_dump",  // pretty print, using our own output; also available in pyrsutils - here for convenience
+        []( rsutils::json const & j, size_t indent )
+        {
+            std::ostringstream os;
+            if( indent )
+                os << std::setw( indent );
+            os << j;
+            return os.str();
+        },
+        py::arg( "json" ),
+        py::arg( "indent" ) = 4 );
+
     using realdds::dds_guid;
     py::class_< dds_guid >( m, "guid" )
         .def( py::init<>() )
@@ -954,6 +967,7 @@ PYBIND11_MODULE(NAME, m) {
         video_stream_client_base( m, "video_stream", stream_client_base );
     video_stream_client_base  //
         .def( "set_intrinsics", &dds_video_stream::set_intrinsics )
+        .def( "get_intrinsics", &dds_video_stream::get_intrinsics )
         .def( FN_FWD( dds_video_stream,
                       on_data_available,
                       ( dds_video_stream &, image_msg &&, dds_sample && ),
