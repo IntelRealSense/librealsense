@@ -157,7 +157,7 @@ function choose_kernel_branch {
 			;;
 		esac
 	else
-		echo -e "\e[31mUnsupported distribution $2, kernel version $1 . The patches are maintained for Ubuntu 16/18/20/22/24 LTS\e[0m" >&2
+		echo -e "\e[31mUnsupported distribution $2, kernel version $1 . The patches are maintained for Ubuntu 20/22/24 LTS\e[0m" >&2
 		exit 1
 	fi
 }
@@ -232,7 +232,10 @@ function try_module_insert {
 	fi
 
 	# backup the existing module (if available) for recovery
-	if [ -f ${tgt_ko} ];
+	if [ -f ${tgt_ko}.zst ];
+	then
+		sudo cp ${tgt_ko}.zst ${tgt_ko}.zst.bckup
+	elif [ -f ${tgt_ko} ];
 	then
 		sudo cp ${tgt_ko} ${tgt_ko}.bckup
 	else
@@ -254,7 +257,12 @@ function try_module_insert {
 		echo -e "\e[31mVerify that the current kernel version is aligned to the patched module version\e[0m"
 		if [ ${backup_available} -ne 0 ];
 		then
-			sudo cp ${tgt_ko}.bckup ${tgt_ko}
+			if [ -f ${tgt_ko}.zst.bckup ];
+			then
+				sudo cp ${tgt_ko}.zst.bckup ${tgt_ko}.zst
+			else
+				sudo cp ${tgt_ko}.bckup ${tgt_ko}
+			fi
 			sudo modprobe ${module_name}
 			printf "\e[34mThe original \e[33m %s \e[34m module was reloaded\n\e[0m" ${module_name}
 		fi
@@ -262,7 +270,8 @@ function try_module_insert {
 	else
 		# Everything went OK, delete backup
 		printf "\e[32m succeeded\e[0m"
-		sudo rm ${tgt_ko}.bckup
+		sudo rm -f ${tgt_ko}.zst.bckup
+		sudo rm -f ${tgt_ko}.bckup
 	fi
 
 	# Reload all dependent modules recursively

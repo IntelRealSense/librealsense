@@ -71,7 +71,7 @@ source ./scripts/patch-utils-hwe.sh
 LINUX_BRANCH=${LINUX_BRANCH:-$(uname -r)}
 
 # Get the required tools and headers to build the kernel
-sudo apt-get install linux-headers-generic linux-headers-$LINUX_BRANCH build-essential git bc -y
+sudo apt-get install linux-headers-$LINUX_BRANCH build-essential git bc -y
 #Packages to build the patched modules
 require_package libusb-1.0-0-dev
 require_package libssl-dev
@@ -137,7 +137,7 @@ if [ $rebuild_ko -eq 0 ];
 then
 	#Search the repository for the tag that matches the mmaj.min.patch-build of Ubuntu kernel
 	kernel_full_num=$(echo $LINUX_BRANCH | cut -d '-' -f 1,2)
-	if [ "${ubuntu_codename}" != "jammy" ];
+	if [[ "${ubuntu_codename}" != "jammy" && "${ubuntu_codename}" != "noble" ]];
 	then
 		kernel_git_tag=$(git ls-remote --tags origin | grep "${kernel_full_num}\." | grep '[^^{}]$' | tail -n 1 | awk -F/ '{print $NF}')
 	else
@@ -330,6 +330,7 @@ fi
 # As a precausion start with unloading the core uvcvideo:
 try_unload_module uvcvideo
 try_unload_module videobuf2_v4l2
+[ ${k_maj_min} -ge 608 ] && try_unload_module videobuf2_memops
 [ ${k_maj_min} -ge 500 ] && try_unload_module videobuf2_common
 [ ${k_maj_min} -ge 605 ] && try_unload_module uvc
 try_unload_module videodev
