@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 
 #if defined( WIN32 )
 #include <iostream>
@@ -30,6 +30,16 @@ static void reopen_console_streams()
 
 namespace rsutils {
 namespace os {
+
+
+bool has_console()
+{
+#if defined( WIN32 )
+    return GetStdHandle( STD_OUTPUT_HANDLE ) != INVALID_HANDLE_VALUE;
+#else
+    return true;
+#endif
+}
 
 
 void ensure_console( bool create_if_none )
