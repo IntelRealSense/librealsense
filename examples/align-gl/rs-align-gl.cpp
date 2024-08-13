@@ -4,6 +4,7 @@
 #include <librealsense2/rs.hpp>
 #include "example-imgui.hpp"
 #include <librealsense2-gl/rs_processing_gl.hpp> // Include GPU-Processing API
+#include <common/cli.h>
 
 
 /*
@@ -35,8 +36,12 @@ void render_slider(rect location, float* alpha, direction* dir);
 
 int main(int argc, char * argv[]) try
 {   
+    auto settings = rs2::cli( "rs-align-gl example" )
+        .process( argc, argv );
+
     std::string serial;
-    if (!device_with_streams({ RS2_STREAM_COLOR,RS2_STREAM_DEPTH }, serial))
+    rs2::context ctx( settings.dump() );
+    if( ! device_with_streams( ctx, { RS2_STREAM_COLOR, RS2_STREAM_DEPTH }, serial ) )
         return EXIT_SUCCESS;
 
     // The following toggle is going to control
@@ -57,7 +62,7 @@ int main(int argc, char * argv[]) try
     texture depth_image, color_image;     // Helpers for renderig images
 
     // Create a pipeline to easily configure and start the camera
-    rs2::pipeline pipe;
+    rs2::pipeline pipe( ctx );
     rs2::config cfg;
     if (!serial.empty())
         cfg.enable_device(serial);

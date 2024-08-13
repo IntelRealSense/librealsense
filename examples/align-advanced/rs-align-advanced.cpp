@@ -3,6 +3,7 @@
 
 #include <librealsense2/rs.hpp>
 #include "example-imgui.hpp"
+#include <common/cli.h>
 
 #include <sstream>
 #include <iostream>
@@ -18,6 +19,9 @@ bool profile_changed(const std::vector<rs2::stream_profile>& current, const std:
 
 int main(int argc, char * argv[]) try
 {
+    auto settings = rs2::cli( "rs-aligned-advanced example" )
+        .process( argc, argv );
+
     // Create and initialize GUI related objects
     window app(1280, 720, "RealSense Align (Advanced) Example"); // Simple window handling
     ImGui_ImplGlfw_Init(app, false);      // ImGui library intializition
@@ -25,7 +29,7 @@ int main(int argc, char * argv[]) try
     texture renderer;                     // Helper for renderig images
 
     // Create a pipeline to easily configure and start the camera
-    rs2::pipeline pipe;
+    rs2::pipeline pipe( settings.dump() );
     //Calling pipeline's start() without any additional parameters will start the first device
     // with its default streams.
     //The start function returns the pipeline profile which the pipeline used to start the device

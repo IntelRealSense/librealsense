@@ -17,6 +17,9 @@ else()
     endif()
 endif()
 
+# We need tclap for command-line interface
+list(APPEND DEPENDENCIES tclap)
+
 add_subdirectory(hello-realsense)
 add_subdirectory(software-device)
 add_subdirectory(capture)
