@@ -11,10 +11,10 @@ namespace rs2
 {
     namespace depth_quality
     {
-        tool_model::tool_model(rs2::context &ctx)
+        tool_model::tool_model( rs2::context & ctx, bool disable_log_to_console )
             : _ctx(ctx),
               _pipe(ctx),
-              _viewer_model(ctx),
+              _viewer_model( ctx, disable_log_to_console ),
               _update_readonly_options_timer(std::chrono::seconds(6)), _roi_percent(0.4f),
               _roi_located(std::chrono::seconds(4)),
               _too_close(std::chrono::seconds(4)),
@@ -1253,7 +1253,10 @@ namespace rs2
 
             //Store metric environment
             csv << "\nEnvironment:\nPlane-Fit_distance_mm," << (_metrics->_plane_fit ? std::to_string(_metrics->_latest_metrics.distance) : "N/A") << std::endl;
-            csv << "Ground-Truth_Distance_mm," << (_metrics->_use_gt ? std::to_string(_metrics->_ground_truth_mm ) : "N/A") << std::endl;
+            {
+                std::lock_guard< std::mutex > lock( _metrics->_m );
+                csv << "Ground-Truth_Distance_mm," << (_metrics->_use_gt ? std::to_string(_metrics->_ground_truth_mm ) : "N/A") << std::endl;
+            }
 
             // Generate columns header
             csv << "\nSample Id,Frame #,Timestamp (ms),";

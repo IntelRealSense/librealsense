@@ -539,7 +539,7 @@ void rs2_register_calibration_change_callback( rs2_device* dev, rs2_calibration_
     VALIDATE_NOT_NULL( dev );
     VALIDATE_NOT_NULL( callback );
 
-    auto d2r = VALIDATE_INTERFACE( dev->device, librealsense::device_calibration );
+    auto d2r = VALIDATE_INTERFACE( dev->device, librealsense::calibration_change_device );
 
     // Wrap the C function with a callback interface that will get deleted when done
     d2r->register_calibration_change_callback(
@@ -561,7 +561,7 @@ void rs2_register_calibration_change_callback_cpp( rs2_device* dev, rs2_calibrat
 
     VALIDATE_NOT_NULL( dev );
 
-    auto d2r = VALIDATE_INTERFACE( dev->device, librealsense::device_calibration );
+    auto d2r = VALIDATE_INTERFACE( dev->device, librealsense::calibration_change_device );
     d2r->register_calibration_change_callback( callback_ptr );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , dev, callback )

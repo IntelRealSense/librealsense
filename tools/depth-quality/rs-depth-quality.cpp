@@ -1,15 +1,79 @@
 ﻿// License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include <numeric>
-#include <librealsense2/rs.hpp>
 #include "depth-quality-model.h"
+
+#include <rsutils/os/ensure-console.h>
+#include <tclap/CmdLine.h>
+
+#include <librealsense2/rs.hpp>
+#include <numeric>
 
 int main(int argc, const char * argv[]) try
 {
-    rs2::context ctx;
+    TCLAP::CmdLine cmd( "realsense-viewer", ' ', RS2_API_FULL_VERSION_STR );
+#ifdef BUILD_EASYLOGGINGPP
+    TCLAP::SwitchArg debug_arg( "", "debug", "Turn on LibRS debug logs" );
+    cmd.add( debug_arg );
+#endif
+    TCLAP::SwitchArg only_sw_arg( "", "sw-only", "Show only software devices (playback, DDS, etc. -- but not USB/HID/etc.)" );
+    cmd.add( only_sw_arg );
+    // There isn't always a console... so if we need to show an error/usage, we need to enable it:
+    class cmdline_output : public TCLAP::StdOutput
+    {
+        typedef TCLAP::StdOutput super;
+
+    public:
+        void usage( TCLAP::CmdLineInterface & c ) override
+        {
+            rsutils::os::ensure_console();
+            super::usage( c );
+        }
+
+        void version( TCLAP::CmdLineInterface & c ) override
+        {
+            rsutils::os::ensure_console();
+            super::version( c );
+        }
+
+        void failure( TCLAP::CmdLineInterface & c, TCLAP::ArgException & e ) override
+        {
+            rsutils::os::ensure_console();
+            super::failure( c, e );
+        }
+    } our_cmdline_output;
+    cmd.setOutput( &our_cmdline_output );
+    cmd.parse( argc, argv );
+
+#ifdef BUILD_EASYLOGGINGPP
+    if( debug_arg.getValue() )
+        rsutils::os::ensure_console();
+#if defined( WIN32 )
+    // In Windows, we have no console unless we start the viewer from one; without one, calling log_to_console will
+    // ensure a console, so we want to avoid it by default!
+    if( GetStdHandle( STD_OUTPUT_HANDLE ) )
+#endif
+        rs2::log_to_console( debug_arg.getValue() ? RS2_LOG_SEVERITY_DEBUG : RS2_LOG_SEVERITY_INFO );
+#endif
+
+    rsutils::json settings = rsutils::json::object();
+    if( only_sw_arg.getValue() )
+    {
+#if defined( BUILD_WITH_DDS )
+        settings["dds"]["enabled"];  // null: remove global dds:false or dds/enabled:false, if any
+#endif
+        settings["device-mask"] = RS2_PRODUCT_LINE_SW_ONLY | RS2_PRODUCT_LINE_ANY;
+    }
+
+    rs2::context ctx( settings.dump() );
     rs2::ux_window window("Depth Quality Tool", ctx);
-    rs2::depth_quality::tool_model model(ctx);
+    
+#ifdef BUILD_EASYLOGGINGPP
+    bool const disable_log_to_console = debug_arg.getValue();
+#else
+    bool const disable_log_to_console = false;
+#endif
+    rs2::depth_quality::tool_model model( ctx, disable_log_to_console );
 
     using namespace rs2::depth_quality;
 

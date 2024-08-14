@@ -149,6 +149,7 @@ void dds_device::impl::on_notification( json && j, dds_sample const & notificati
         { topics::notification::stream_header::id, &dds_device::impl::on_stream_header },
         { topics::notification::stream_options::id, &dds_device::impl::on_stream_options },
         { topics::notification::log::id, &dds_device::impl::on_log },
+        { topics::notification::calibration_changed::id, &dds_device::impl::on_calibration_changed },
     };
 
     auto const control = j.nested( topics::reply::key::control );
@@ -364,12 +365,19 @@ void dds_device::impl::on_log( json const & j, dds_sample const & )
             if( stype.length() != 1 || ! strchr( "EWID", stype[0] ) )
                 throw std::runtime_error( "type not one of 'EWID'" );
             char const type = stype[0];
-            auto const & text = entry[2].string_ref();
+            auto const & text_s = entry[2].string_ref();
+            rsutils::string::slice text( text_s );
+            if( text.length() && text.back() == '\n' )
+                text = { text.begin(), text.end() - 1 };
             auto const & data = entry.size() > 3 ? entry[3] : rsutils::null_json;
 
-            if( ! _on_device_log.raise( timestamp, type, text, data ) )
-                LOG_DEBUG( "[" << debug_name() << "][" << timestamp << "][" << type << "] " << text
-                               << " [" << data << "]" );
+            if( ! _on_device_log.raise( timestamp, type, text_s, data ) )
+            {
+                if( data.is_null() )
+                    LOG_DEBUG( "[" << debug_name() << "][" << timestamp << "][" << type << "] " << text );
+                else
+                    LOG_DEBUG( "[" << debug_name() << "][" << timestamp << "][" << type << "] " << text << " [" << data << "]" );
+            }
         }
         catch( std::exception const & e )
         {
@@ -445,10 +453,10 @@ json dds_device::impl::query_option_value( const std::shared_ptr< dds_option > &
 }
 
 
-void dds_device::impl::write_control_message( topics::flexible_msg && msg, json * reply )
+void dds_device::impl::write_control_message( json const & j, json * reply )
 {
     assert( _control_writer != nullptr );
-    auto this_sequence_number = std::move( msg ).write_to( *_control_writer );
+    auto this_sequence_number = topics::flexible_msg( j ).write_to( *_control_writer );
     if( reply )
     {
         std::unique_lock< std::mutex > lock( _replies_mutex );
@@ -462,7 +470,7 @@ void dds_device::impl::write_control_message( topics::flexible_msg && msg, json 
                                         return true;
                                     } ) )
         {
-            DDS_THROW( runtime_error, "timeout waiting for reply #" << this_sequence_number );
+            DDS_THROW( runtime_error, "timeout waiting for reply #" << this_sequence_number << ": " << j );
         }
         //LOG_DEBUG( "got reply: " << actual_reply );
         *reply = std::move( actual_reply );
@@ -742,6 +750,60 @@ void dds_device::impl::on_stream_options( json const & j, dds_sample const & sam
         set_state( state_t::READY );
     else
         set_state( state_t::WAIT_FOR_STREAM_HEADER );
+}
+
+
+void dds_device::impl::on_calibration_changed( json const & j, dds_sample const & sample )
+{
+    for( auto const & name_stream : _streams )
+    {
+        auto & stream = name_stream.second;
+
+        auto j_int = j.nested( stream->name(), topics::notification::calibration_changed::key::intrinsics );
+        if( ! j_int )
+            continue;  // stream isn't updated
+
+        try
+        {
+            auto video_stream = std::dynamic_pointer_cast< dds_video_stream >( stream );
+            if( ! video_stream )
+                DDS_THROW( runtime_error, "not a video stream" );
+
+            auto const & old_intrinsics = video_stream->get_intrinsics();
+            std::set< video_intrinsics > new_intrinsics;
+            if( j_int.is_array() )
+            {
+                // Multiple resolutions are provided, likely from legacy devices from the adapter
+                if( j_int.size() != old_intrinsics.size() )
+                    DDS_THROW( runtime_error, "expecting " << old_intrinsics.size() << " intrinsics; got: " << j_int );
+                for( auto & ij : j_int )
+                {
+                    auto i = video_intrinsics::from_json( ij );
+                    auto it = old_intrinsics.find( i );  // uses width & height only
+                    if( it == old_intrinsics.end() )
+                        DDS_THROW( runtime_error, "intrinsics not found: " << ij );
+                    if( ! new_intrinsics.insert( std::move( i ) ).second )
+                        DDS_THROW( runtime_error, "width & height specified twice: " << ij );
+                }
+                LOG_DEBUG( "calibration-changed '" << stream->name() << "': changing " << j_int );
+            }
+            else
+            {
+                // Single intrinsics that will get scaled
+                auto i = *old_intrinsics.begin();
+                i.override_from_json( j_int );
+                LOG_DEBUG( "calibration-changed '" << stream->name() << "': changing " << j_int << " --> " << i );
+                new_intrinsics.insert( std::move( i ) );
+            }
+
+            video_stream->set_intrinsics( std::move( new_intrinsics ) );
+            _on_calibration_changed.raise( stream );
+        }
+        catch( std::exception const & e )
+        {
+            LOG_ERROR( "calibration-changed '" << stream->name() << "': " << e.what() );
+        }
+    }
 }
 
 

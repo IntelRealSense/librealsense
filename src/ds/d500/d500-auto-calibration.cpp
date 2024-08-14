@@ -67,11 +67,14 @@ namespace librealsense
 
     void d500_auto_calibrated::get_mode_from_json(const std::string& json)
     {
-        _mode = calibration_mode::RUN;
-        if (json.find("dry run") != std::string::npos)
+        if (json.find("calib run") != std::string::npos)
+            _mode = calibration_mode::RUN;
+        else if (json.find("calib dry run") != std::string::npos)
             _mode = calibration_mode::DRY_RUN;
-        else if (json.find("abort") != std::string::npos)
+        else if (json.find("calib abort") != std::string::npos)
             _mode = calibration_mode::ABORT;
+        else
+            throw std::runtime_error("run_on_chip_calibration called with wrong content in json file");
     }
 
     std::vector<uint8_t> d500_auto_calibrated::run_on_chip_calibration(int timeout_ms, std::string json, 

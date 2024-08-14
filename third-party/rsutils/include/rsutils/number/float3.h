@@ -33,6 +33,9 @@ struct float2
     }
     float length() const;
     float2 normalized() const;
+
+    bool operator==( float2 const & other ) const { return x == other.x && y == other.y; }
+    bool operator!=( float2 const & other ) const { return x != other.x || y != other.y; }
 };
 struct float3
 {
