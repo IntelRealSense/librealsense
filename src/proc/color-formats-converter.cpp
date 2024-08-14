@@ -17,6 +17,7 @@
 #ifdef __SSSE3__
 #include <tmmintrin.h> // For SSSE3 intrinsics
 #endif
+#include "neon/image-neon.h"
 
 #if defined (ANDROID) || (defined (__linux__) && !defined (__x86_64__)) || (defined (__APPLE__) && !defined (__x86_64__))
 
@@ -220,6 +221,16 @@ namespace librealsense
                 }
             }
         }
+
+#elif defined(__ARM_NEON)  && ! defined ANDROID
+
+        if (FORMAT == RS2_FORMAT_Y8) unpack_yuy2_neon_y8(d, s, n);
+        if (FORMAT == RS2_FORMAT_Y16) unpack_yuy2_neon_y16(d, s, n);
+        if (FORMAT == RS2_FORMAT_RGB8) unpack_yuy2_neon_rgb8(d, s, n);
+        if (FORMAT == RS2_FORMAT_RGBA8) unpack_yuy2_neon_rgba8(d, s, n);
+        if (FORMAT == RS2_FORMAT_BGR8) unpack_yuy2_neon_bgr8(d, s, n);
+        if (FORMAT == RS2_FORMAT_BGRA8) unpack_yuy2_neon_bgra8(d, s, n);
+
 #else  // Generic code for when SSSE3 is not available.
         auto src = reinterpret_cast<const uint8_t *>(s);
         auto dst = reinterpret_cast<uint8_t *>(d[0]);
