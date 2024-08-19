@@ -863,9 +863,7 @@ namespace librealsense
         uint32_t computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<const uint8_t*>(&app_config), sizeof(application_config));
 
         // prepare vector of data to be sent (header + application_config)
-        // TODO, revert this commit after SMCU fix their version compare -> version should be:
-        // uint16_t version = ((uint16_t)0x01 << 8) | 0x00;  // major=0x01, minor=0x00 --> ver = major.minor
-        uint16_t version = ((uint16_t)0x00 << 8) | 0x01;
+        uint16_t version = ((uint16_t)0x01 << 8) | 0x00;  // major=0x01, minor=0x00 --> ver = major.minor
         uint32_t calib_version = 0;  // ignoring this field, as requested by sw architect
         table_header header(version, static_cast<uint16_t>(ds::d500_calibration_table_id::app_config_table_id), sizeof(application_config),
             calib_version, computed_crc32);
