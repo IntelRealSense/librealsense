@@ -50,6 +50,8 @@ public:
     void stop();
     bool is_stopped() const;
 
+    std::shared_ptr< dds_participant > get_participant() const { return _participant; }
+
     // Iterate over discovered devices until the callback returns false; returns true if all devices were iterated over
     // and this never happened.
     //
