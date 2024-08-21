@@ -28,14 +28,8 @@ namespace librealsense
         std::shared_ptr<ds_motion_common> _ds_motion_common;
 
     private:
-        void register_fisheye_options();
-        void register_fisheye_metadata();
-
         void register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index);
 
-        void initialize_fisheye_sensor(std::shared_ptr<context> ctx, const platform::backend_device_group& group);
-
-        optional_value<uint8_t> _fisheye_device_idx;
         optional_value<uint8_t> _motion_module_device_idx;
     };
 }
