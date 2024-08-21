@@ -12,6 +12,7 @@
 #include <rsutils/string/from.h>
 
 #include <iostream>
+#include <fstream>
 #include <thread>
 #include <set>
 
@@ -146,6 +147,7 @@ try
 
     cli::flag quiet_arg( "quiet", "Suppress regular informational (-I-) messages" );
     cli::flag reset_arg( "reset", "Hardware reset without making any changes" );
+    cli::flag disable_arg( "disable", "Disable DDS in all librealsense examples & tools by default and exit" );
     cli::flag no_reset_arg( "no-reset", "Do not hardware reset after changes are made" );
     cli::flag golden_arg( "golden", "Show R/O golden values vs. current; mutually exclusive with any changes" );
     cli::flag factory_reset_arg( "factory-reset", "Reset settings back to the --golden values" );
@@ -165,6 +167,7 @@ try
         .arg( quiet_arg )
         .arg( sn_arg )
         .arg( reset_arg )
+        .arg( disable_arg )
         .arg( golden_arg )
         .arg( factory_reset_arg )
         .arg( usb_first_arg )
@@ -181,6 +184,27 @@ try
         .process( argc, argv );
 
     g_quiet = quiet_arg.isSet();
+
+    if( disable_arg.isSet() )
+    {
+        auto const filename = rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME;
+        auto config = rsutils::json_config::load_from_file( filename );
+        
+        if( config.nested( "context", "dds", "enabled" ).default_value( false ) )
+        {
+            config["context"]["dds"].erase("enabled");
+            std::ofstream out( filename );
+            out << std::setw( 2 ) << config;
+            out.close();
+            INFO( "DDS has been disabled by default" );
+        }
+        else
+        {
+            INFO( "DDS is already disabled; no changes made" );
+        }
+        return EXIT_SUCCESS;
+    }
+
     bool const golden = golden_arg.isSet();
 
     // Create a RealSense context and look for a device
@@ -191,25 +215,10 @@ try
     std::set< std::string > devices_looked_at;
     if( ! find_device( ctx, device, current, sn_arg, golden, devices_looked_at ) )
     {
-        auto dds_enabled = settings.nested( "dds", "enabled", &json::is_boolean );
-        if( ! dds_enabled || dds_enabled.get< bool >() )
-        {
-            LOG_DEBUG( "Waiting for ETH devices..." );
-            int tries = 5;
-            while( tries-- > 0 )
-            {
-                std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
-                if( find_device( ctx, device, current, sn_arg, golden, devices_looked_at ) )
-                    break;
-            }
-        }
-        if( ! device )
-        {
-            if( sn_arg.isSet() )
-                throw std::runtime_error( "Device not found or does not support Eth" );
+        if( sn_arg.isSet() )
+            throw std::runtime_error( "Device not found or does not support Eth" );
 
-            throw std::runtime_error( "No device found supporting Eth" );
-        }
+        throw std::runtime_error( "No device found supporting Eth" );
     }
     INFO( "Device: " << device.get_description() );
 
@@ -324,6 +333,36 @@ try
     else if( requested == current )
     {
         LOG_DEBUG( "nothing to do" );
+
+        // When running with no arguments, and DDS is disabled, and we actually find a DDS device, we automatically
+        // enable DDS in future runs:
+        if( device.get_type() == "DDS" )
+        {
+            auto const filename
+                = rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME;
+            auto config = rsutils::json_config::load_from_file( filename );
+
+            bool enabled;
+            if( ! config.nested( "context", "dds", "enabled" ).get_ex( enabled ) )
+            {
+                config["context"]["dds"]["enabled"] = true;
+                try
+                {
+                    std::ofstream out( filename );
+                    out << std::setw( 2 ) << config;
+                    out.close();
+                    INFO( "DDS is now enabled by default in " RS2_CONFIG_FILENAME );
+                }
+                catch( std::exception const & e )
+                {
+                    std::cout << "-W- " << "FAILED to enable DDS by default: " << e.what() << std::endl;
+                }
+            }
+            else
+            {
+                LOG_DEBUG( "'dds/enabled' was pre-set in configuration file (to " << enabled << "); no changes made" );
+            }
+        }
     }
     else
     {
