@@ -4,6 +4,7 @@
 #include "ux-alignment.h"
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 #include <vector>
 #include <memory>
 
@@ -46,10 +47,13 @@ bool is_gui_aligned(GLFWwindow *win)
         ImGui::PopStyleVar();
 
         ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(win);
 
-        ImGui_ImplGlfw_NewFrame(1.f);
+        //ImGui_ImplOpenGL3_NewFrame();
+        //ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
 
         SetFocus(hwn);
 

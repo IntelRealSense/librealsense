@@ -2,6 +2,7 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include "option-model.h"
+#include <realsense_imgui.h>
 #include <librealsense2/rs_advanced_mode.hpp>
 #include <imgui.h>
 #include <imgui_internal.h>

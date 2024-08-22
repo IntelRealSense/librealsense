@@ -6,6 +6,7 @@
 #include "viewer.h"
 #include "os.h"
 #include <imgui_internal.h>
+#include <realsense_imgui.h>
 
 
 namespace rs2

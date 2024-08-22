@@ -41,7 +41,7 @@ void updates_model::draw(std::shared_ptr<notifications_model> not_model, ux_wind
     ImGui::SetNextWindowSize({ positions.w, positions.h });
 
     auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
-        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_ShowBorders;
+        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings ;
 
     ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
     ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
@@ -411,7 +411,7 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
             sw_text_pos.y += 15;
             ImGui::SetCursorScreenPos(sw_text_pos);
             ImGui::InputTextMultiline("##Software Update Description", const_cast<char*>(msg),
-                strlen(msg) + 1, ImVec2(ImGui::GetContentRegionAvailWidth() - 150, pos.mid_y - (pos.orig_pos.y + 160) - 40),
+                strlen(msg) + 1, ImVec2(ImGui::GetContentRegionAvail().x - 150, pos.mid_y - (pos.orig_pos.y + 160) - 40),
                 ImGuiInputTextFlags_ReadOnly);
             ImGui::PopStyleColor(7);
             ImGui::PopTextWrapPos();
@@ -686,7 +686,7 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
         fw_text_pos.y += 15;
         ImGui::SetCursorScreenPos(fw_text_pos);
         ImGui::InputTextMultiline("##Firmware Update Description", const_cast<char*>(msg),
-            strlen(msg) + 1, ImVec2(ImGui::GetContentRegionAvailWidth() - 150, 75),
+            strlen(msg) + 1, ImVec2(ImGui::GetContentRegionAvail().x - 150, 75),
             ImGuiInputTextFlags_ReadOnly);
         ImGui::PopStyleColor(7);
         ImGui::PopTextWrapPos();

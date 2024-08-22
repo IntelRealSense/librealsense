@@ -280,7 +280,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
             ImGui::PopStyleColor(2);
         }
 
-        ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, dark_sensor_bg);
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, dark_sensor_bg);
 
         ImGui::BeginChild("##CalibData",ImVec2(w - 15, h - 110), true);
 

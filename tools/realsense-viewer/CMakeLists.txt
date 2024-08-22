@@ -28,6 +28,10 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     ../../third-party/imgui/imgui_impl_glfw.cpp
     ../../third-party/imgui/imgui-fonts-karla.hpp
     ../../third-party/imgui/imgui-fonts-fontawesome.hpp
+    ../../third-party/imgui/imgui_impl_opengl3.cpp
+    ../../third-party/imgui/imgui_widgets.cpp 
+    ../../third-party/imgui/imgui_tables.cpp
+    ../../third-party/imgui/realsense_imgui.cpp
     ../../common/realsense-ui-advanced-mode.h
     ../../common/rendering.h
     ../../common/model-views.h
@@ -182,6 +186,7 @@ if(WIN32)
         ../../third-party/tinyfiledialogs/tinyfiledialogs.h
         ../../third-party/imgui/imgui.cpp
         ../../third-party/imgui/imgui_draw.cpp
+        ../../third-party/imgui/imgui_impl_opengl3.cpp
         ../../third-party/imgui/imgui_impl_glfw.cpp
         ../../third-party/imgui/imgui-fonts-karla.hpp
         ../../third-party/imgui/imgui-fonts-fontawesome.hpp
