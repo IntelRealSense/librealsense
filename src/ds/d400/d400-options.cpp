@@ -2,7 +2,7 @@
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
 
-#include "ds/d400/d400-thermal-monitor.h"
+#include "ds/ds-thermal-monitor.h"
 #include "d400-options.h"
 
 #include <rsutils/string/from.h>
@@ -419,52 +419,6 @@ namespace librealsense
         command cmd( ds::AUTO_CALIB );
         cmd.param1 = 5;
         return _hwm.send( cmd );
-    }
-
-    librealsense::thermal_compensation::thermal_compensation(
-        std::shared_ptr<d400_thermal_monitor> monitor,
-        std::shared_ptr<option> toggle) :
-        _thermal_monitor(monitor),
-        _thermal_toggle(toggle)
-    {
-    }
-
-    float librealsense::thermal_compensation::query(void) const
-    {
-        auto val = _thermal_toggle->query();
-        return val;
-    }
-
-    void librealsense::thermal_compensation::set(float value)
-    {
-        if (value < 0)
-            throw invalid_value_exception("Invalid input for thermal compensation toggle: " + std::to_string(value));
-
-        _thermal_toggle->set(value);
-        _recording_function(*this);
-    }
-
-    const char* librealsense::thermal_compensation::get_description() const
-    {
-        return "Toggle thermal compensation adjustments mechanism";
-    }
-
-    const char* librealsense::thermal_compensation::get_value_description(float value) const
-    {
-        if (value == 0)
-        {
-            return "Disabled";
-        }
-        else
-        {
-            return "Enabled";
-        }
-    }
-
-    //Work-around the control latency
-    void librealsense::thermal_compensation::create_snapshot(std::shared_ptr<option>& snapshot) const
-    {
-        snapshot = std::make_shared<const_value_option>(get_description(), 0.f);
     }
 
     void librealsense::gyro_sensitivity_option::set( float value ) 

@@ -10,8 +10,9 @@
 #include "d500-private.h"
 #include "d500-options.h"
 #include "d500-info.h"
-#include "ds/ds-options.h"
-#include "ds/ds-timestamp.h"
+#include <src/ds/ds-options.h>
+#include <src/ds/ds-timestamp.h>
+#include <src/ds/ds-thermal-monitor.h>
 #include <src/depth-sensor.h>
 #include "stream.h"
 #include "environment.h"
@@ -154,11 +155,17 @@ namespace librealsense
                 set_frame_metadata_modifier([&](frame_additional_data& data) {data.depth_units = _depth_units.load(); });
 
                 synthetic_sensor::open(requests);
-                }); //group_multiple_fw_calls
+
+                if( _owner && _owner->_thermal_monitor )
+                    _owner->_thermal_monitor->update( true );
+            }); //group_multiple_fw_calls
         }
 
         void close() override
         {
+            if( _owner && _owner->_thermal_monitor )
+                _owner->_thermal_monitor->update( false );
+
             synthetic_sensor::close();
         }
 
@@ -549,6 +556,17 @@ namespace librealsense
                                                                                depth_xu,
                                                                                DS5_ERROR_REPORTING,
                                                                                "Error reporting" );
+
+            auto thermal_compensation_toggle = std::make_shared< d500_thermal_compensation_option >( _hw_monitor );
+
+            // Monitoring SOC PVT (not OHM) because it correlates to D400 ASIC temperature and we keep the model the same.
+            auto temperature_sensor = depth_sensor.get_option_handler( RS2_OPTION_SOC_PVT_TEMPERATURE );
+
+            _thermal_monitor = std::make_shared<ds_thermal_monitor>( temperature_sensor,
+                                                                     thermal_compensation_toggle );
+
+            depth_sensor.register_option( RS2_OPTION_THERMAL_COMPENSATION,
+                                          std::make_shared<thermal_compensation>( _thermal_monitor, thermal_compensation_toggle ) );
 
             _polling_error_handler = std::make_shared< polling_error_handler >(
                 1000,

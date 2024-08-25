@@ -33,7 +33,7 @@
 #include <src/proc/color-formats-converter.h>
 
 #include <src/hdr-config.h>
-#include "d400-thermal-monitor.h"
+#include <src/ds/ds-thermal-monitor.h>
 #include <common/fw/firmware-version.h>
 #include <src/fw-update/fw-update-unsigned.h>
 
@@ -706,7 +706,7 @@ namespace librealsense
 
                 auto temperature_sensor = depth_sensor.get_option_handler(RS2_OPTION_ASIC_TEMPERATURE);
 
-                _thermal_monitor = std::make_shared<d400_thermal_monitor>(temperature_sensor, thermal_compensation_toggle);
+                _thermal_monitor = std::make_shared<ds_thermal_monitor>(temperature_sensor, thermal_compensation_toggle);
 
                 depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
                 std::make_shared<thermal_compensation>(_thermal_monitor,thermal_compensation_toggle));

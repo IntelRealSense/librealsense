@@ -93,6 +93,18 @@ namespace librealsense
         { uvc_xu_option<int16_t>::enable_recording(record_action); }
     };
 
+    class d500_thermal_compensation_option : public bool_option
+    {
+    public:
+
+        d500_thermal_compensation_option( std::shared_ptr< hw_monitor > hwm );
+
+        virtual void set(float value) override;
+
+    private:
+        std::weak_ptr< hw_monitor > _hwm;
+    };
+
     class power_line_freq_option : public uvc_pu_option
     {
     public:
