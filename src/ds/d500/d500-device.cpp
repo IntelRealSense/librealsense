@@ -720,7 +720,7 @@ namespace librealsense
         auto res = _hw_monitor->send(cmd);
        
         if (res.size() != sizeof(d500_stream_pipe_config_table))
-            throw std::runtime_error("Stream Config table has unexpected length");
+            throw invalid_value_exception("Stream Config table has unexpected length");
         auto stream_pipe_config_table = check_calib<d500_stream_pipe_config_table>(res);
         return stream_pipe_config_table->is_depth_symmetrization_enabled == 1;
     }
