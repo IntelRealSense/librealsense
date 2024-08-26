@@ -493,6 +493,7 @@ namespace librealsense
                 masking_zones[masking_zone_index_str]["region_of_interests"][p]["j"] = sp.masking_zones[masking_zone_index].region_of_interests[region_of_interests_index].j;
             }
             masking_zones[masking_zone_index_str]["attributes"] = sp.masking_zones[masking_zone_index].attributes;
+            masking_zones[masking_zone_index_str]["minimal_range"] = sp.masking_zones[masking_zone_index].minimal_range;
         }
 
         auto& environment = json_data["safety_preset"]["environment"];
@@ -565,6 +566,7 @@ namespace librealsense
                 sp.masking_zones[masking_zone_index].region_of_interests[region_of_interests_index].j = masking_zones[masking_zone_index_str]["region_of_interests"][p]["j"];
             }
             sp.masking_zones[masking_zone_index].attributes = masking_zones[masking_zone_index_str]["attributes"];
+            sp.masking_zones[masking_zone_index].minimal_range = masking_zones[masking_zone_index_str]["minimal_range"];
         }
 
         auto& environment = json_data["safety_preset"]["environment"];
