@@ -82,6 +82,7 @@ namespace librealsense
             rgb_calibration_id = 0xb9,
             rgb_lut_id = 0xba,
             imu_calibration_id = 0xbb,
+            stream_pipe_config_id = 0xbe,
             calib_cfg_id = 0xc0dd,
             max_id = -1
         };
@@ -143,8 +144,8 @@ namespace librealsense
             single_sensor_coef_table  right_coefficients_table;
             float                     baseline;                   //  the baseline between the cameras in mm units
             uint8_t                   translation_dir;
-            uint8_t                   realignement_essential;     // 1/0 - indicates whether the vertical alignement
-                                                                  // is required to avoiid overflow in the REC buffer
+            uint8_t                   realignment_essential;     // 1/0 - indicates whether the vertical alignment
+                                                                  // is required to avoid overflow in the REC buffer
             int16_t                   vertical_shift;             // in pixels
             mini_intrinsics           rectified_intrinsics;
             uint8_t                   reserved[148];
@@ -168,7 +169,14 @@ namespace librealsense
         rs2_intrinsics get_d500_color_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         pose get_d500_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
 
-
+        struct d500_stream_pipe_config_table
+        {
+            table_header    header;
+            uint8_t         is_depth_symmetrization_enabled;
+            uint8_t         is_color_symmetrization_enabled;
+            uint8_t         is_depth_vertical_alignment_enabled;
+            uint8_t         reserved[237];
+        };
 
         enum class d500_calib_location
         {

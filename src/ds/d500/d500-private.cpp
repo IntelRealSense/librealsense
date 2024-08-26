@@ -284,7 +284,7 @@ namespace librealsense
             res += "--- --- ---\n";
             res += "baseline:\t" + std::to_string(baseline) + "\n";
             res += "translation_dir:\t" + std::to_string(translation_dir) + "\n";
-            res += "realignement_essential:\t" + std::to_string(realignement_essential) + "\n";
+            res += "realignment_essential:\t" + std::to_string(realignment_essential) + "\n";
             res += "vertical_shift:\t" + std::to_string(vertical_shift) + "\n";
             res += "--- rectified intrinsics ---\n";
             res += rectified_intrinsics.to_string();
