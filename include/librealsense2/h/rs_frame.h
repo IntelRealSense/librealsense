@@ -105,11 +105,16 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_SAFETY_SOC_MONITOR_L2_ERROR_TYPE     , /**< Soc Monitor Escalation of L2 error to Arbiter */
     RS2_FRAME_METADATA_SAFETY_SOC_MONITOR_L3_ERROR_TYPE     , /**< Soc Monitor Escalation of L3 error to Arbiter */
     RS2_FRAME_METADATA_SAFETY_SOC_SAFETY_AND_SECURITY       , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_DEPTH_FRAME_TIMESTAMP,
+    RS2_FRAME_METADATA_SAFETY_SMCU_PROCESSING_TIMESTAMP,
+    RS2_FRAME_METADATA_SAFETY_PIPELINE_PROPAGATION_DELAY,
     RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_STATUS_BITMASK     , /**< Bitmask: The values are state-specific and non-FuSa related. Shall be presented as HEX string */
     RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_INFO_INTERNAL_STATE, /**< Enumerated: according to S.MCU FSM */
     RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_INFO_BIST_STATUS   , /**< Bitmask. To be presented as HEX value */
-    RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO                 , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO_OUT             , /**< Bitmask, enumerated */
     RS2_FRAME_METADATA_SAFETY_SMCU_HW_MONITOR_STATUS        , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_SMCU_SW_MONITOR_STATUS        , /**< Bitmask, enumerated */
+    RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO_IN              , /**< Bitmask, enumerated */
     RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT                 , /**< Bitmask, enumerated */
     RS2_FRAME_METADATA_SAFETY_MB_FUSA_ACTION                , /**< Bitmask, enumerated */
     RS2_FRAME_METADATA_SAFETY_MB_STATUS                     , /**< Bitmask, enumerated */

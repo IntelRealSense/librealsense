@@ -1187,7 +1187,16 @@ namespace rs2
             "Error signal present",
             "Error signal on / off",
         };
-        descriptions[RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO] = "Non-FuSa GPIO:" + get_meaning(RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO, meanings, "OK");
+        descriptions[RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO_OUT] = "Non-FuSa GPIO Out:" + get_meaning(RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO_OUT, meanings, "OK");
+
+        meanings =
+        {
+            "Interlock_present",
+            "Interlock_status: Raised / Idle",
+            "HW_Reset_present",
+            "HW_Reset status: Raised / Idle"
+        };
+        descriptions[RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO_IN] = "Non-FuSa GPIO In:" + get_meaning(RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO_IN, meanings, "OK");
 
         meanings =
         {
@@ -1200,6 +1209,43 @@ namespace rs2
             "Triggered calibration data is valid"
         };
         descriptions[RS2_FRAME_METADATA_SAFETY_SOC_SAFETY_AND_SECURITY] = "Soc Safety and Security:" + get_meaning(RS2_FRAME_METADATA_SAFETY_SOC_SAFETY_AND_SECURITY, meanings, "None");
+
+        meanings =
+        {
+            "Global Notification",
+            "SMCU Alarm","SMCU Alarm","SMCU Alarm","SMCU Alarm","SMCU Alarm","SMCU Alarm","SMCU Alarm","SMCU Alarm","SMCU Alarm","SMCU Alarm",
+            "SMCU Image CRC Check failed",
+            "LBIST Failure",
+            "MONBIST Failure",
+            "SMU Alive Alarm Failure",
+            "RegMon CPU0 SRAM Failure",
+            "MBIST Config0 Failure",
+            "MBIST Config1 Failure",
+            "DTS Result Failure",
+            "RegMon CPU1 SRAM Failure",
+            "RegMon CPU2 SRAM Failure",
+            "RegMon SMU and PLL Failure",
+            "MCU Startup SFR Test"
+        };
+        descriptions[RS2_FRAME_METADATA_SAFETY_SMCU_HW_MONITOR_STATUS] = "SMCU HW Monitor Status:" + get_meaning(RS2_FRAME_METADATA_SAFETY_SMCU_HW_MONITOR_STATUS, meanings, "None");
+
+        meanings =
+        {
+            "Global Notification (SW Monitor Ok=0, Fail=1)",
+            "SW Monitor Status (Ok=0, fail =1)",
+            "Keep-Alive failure","Keep-Alive failure","Keep-Alive failure",
+            "Keep-Alive failure","Keep-Alive failure","Keep-Alive failure",
+            "Keep-Alive failure","Keep-Alive failure","Keep-Alive failure",
+            "SMCU Image CRC Check failed",
+            "SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure",
+            "SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure",
+            "SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure",
+            "SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure",
+            "SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure",
+            "SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure",
+            "SafeTpack Startup Tests Failure","SafeTpack Startup Tests Failure"
+        };
+        descriptions[RS2_FRAME_METADATA_SAFETY_SMCU_SW_MONITOR_STATUS] = "SMCU SW Monitor Status:" + get_meaning(RS2_FRAME_METADATA_SAFETY_SMCU_SW_MONITOR_STATUS, meanings, "None");
     }
 
     std::string stream_model::adapt_d585S_metadata_name( const std::string & name ) const
@@ -1284,8 +1330,11 @@ namespace rs2
                 RS2_FRAME_METADATA_SAFETY_SMCU_STATE,
                 RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_STATUS_BITMASK,
                 RS2_FRAME_METADATA_SAFETY_SMCU_DEBUG_INFO_BIST_STATUS,
-                RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO,
-                RS2_FRAME_METADATA_SAFETY_SOC_SAFETY_AND_SECURITY
+                RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO_OUT,
+                RS2_FRAME_METADATA_SAFETY_SOC_SAFETY_AND_SECURITY,
+                RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO_IN,
+                RS2_FRAME_METADATA_SAFETY_SMCU_HW_MONITOR_STATUS,
+                RS2_FRAME_METADATA_SAFETY_SMCU_SW_MONITOR_STATUS
             });
 
         if (show_in_hex.find(md_val) != show_in_hex.end())
