@@ -46,7 +46,7 @@ def generate_sip_part():
     sip_temporal_safety_features_selection = 0
     sip_mechanisms_thresholds = to_np_array(0, 16)
     sip_mechanisms_sampling_interval = to_np_array(0, 8)
-    tc_consecutives_failures_threshold = 3
+    tc_consecutives_failures_threshold = np.asarray([3], dtype=np.uint8)
     sip_reserved = to_np_array(0, 63)
 
     sip1 = np.asarray([sip_immediate_mode_safety_features_selection, sip_temporal_safety_features_selection], dtype=np.uint8)
