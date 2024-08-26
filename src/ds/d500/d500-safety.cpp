@@ -594,7 +594,7 @@ namespace librealsense
 
         // prepare vector of data to be sent (header + sic)
         rs2_safety_interface_config_with_header sic_with_header;
-        uint16_t version = ((uint16_t)0x03 << 8) | 0x00;  // major=0x03, minor=0x00 --> ver = major.minor
+        uint16_t version = ((uint16_t)0x03 << 8) | 0x01;  // major=0x03, minor=0x01 --> ver = major.minor
         uint32_t calib_version = 0;  // ignoring this field, as requested by sw architect
         sic_with_header.header = { version, static_cast<uint16_t>(ds::d500_calibration_table_id::safety_interface_cfg_id),
             sizeof(rs2_safety_interface_config), calib_version, computed_crc32 };

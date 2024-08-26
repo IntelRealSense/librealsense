@@ -17,7 +17,8 @@ app_config_json_str = '''
 			"immediate_mode_safety_features_selection": 0,
 			"temporal_safety_features_selection": 0,
 			"mechanisms_thresholds": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			"mechanisms_sampling_interval": [0, 0, 0, 0, 0, 0, 0, 0]
+			"mechanisms_sampling_interval": [0, 0, 0, 0, 0, 0, 0, 0],
+			"tc_consecutives_failures_threshold": 0
 		},
 		"dev_rules_selection": 0,
 		"depth_pipe_safety_checks_override": 0,
@@ -58,6 +59,7 @@ app_config_json_str = '''
         "depth_pipeline_config": 0,
         "depth_roi": 0,
         "ir_for_sip": 0,
+        "peripherals_sensors_disable_mask": 0,
         "digital_signature": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 	}
 }
