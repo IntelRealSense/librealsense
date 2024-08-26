@@ -721,8 +721,8 @@ namespace librealsense
        
         if (res.size() != sizeof(d500_stream_pipe_config_table))
             throw std::runtime_error("Stream Config table has unexpected length");
-        auto stream_pipe_config_table = *check_calib<d500_stream_pipe_config_table>(res);
-        return stream_pipe_config_table.is_depth_symmetrization_enabled == 1;
+        auto stream_pipe_config_table = check_calib<d500_stream_pipe_config_table>(res);
+        return stream_pipe_config_table->is_depth_symmetrization_enabled == 1;
     }
     
     void d500_device::get_gvd_details(const std::vector<uint8_t>& gvd_buff, ds::d500_gvd_parsed_fields* parsed_fields) const
