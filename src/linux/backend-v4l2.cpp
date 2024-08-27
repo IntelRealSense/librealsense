@@ -578,7 +578,7 @@ namespace librealsense
             }
         }
 
-        bool get_devname_from_video_path(const std::string& video_path, std::string& dev_name)
+        bool v4l_uvc_device::get_devname_from_video_path(const std::string& video_path, std::string& devname, bool is_for_dfu)
         {
             std::ifstream uevent_file(video_path + "/uevent");
             if (!uevent_file)
@@ -586,54 +586,20 @@ namespace librealsense
                 LOG_ERROR("Cannot access " + video_path + "/uevent");
                 return false;
             }
-
-            std::string uevent_line, major_string, minor_string;
-            while (std::getline(uevent_file, uevent_line) && (major_string.empty() || minor_string.empty()))
+            std::string uevent_line;
+            while (std::getline(uevent_file, uevent_line) && (devname.empty()))
             {
-                if (uevent_line.find("MAJOR=") != std::string::npos)
+                if (uevent_line.find("DEVNAME=") != std::string::npos)
                 {
-                    major_string = uevent_line.substr(uevent_line.find_last_of('=') + 1);
-                }
-                else if (uevent_line.find("MINOR=") != std::string::npos)
-                {
-                    minor_string = uevent_line.substr(uevent_line.find_last_of('=') + 1);
+                    devname = uevent_line.substr(uevent_line.find_last_of('=') + 1);
                 }
             }
             uevent_file.close();
-
-            if (major_string.empty() || minor_string.empty())
+            if (!is_for_dfu)
             {
-                LOG_ERROR("No Major or Minor number found for " + video_path);
-                return false;
+                devname = "/dev/" + devname;
             }
-
-            DIR * dir = opendir("/dev");
-            if (!dir)
-            {
-                LOG_ERROR("Cannot access /dev");
-                return false;
-            }
-            while (dirent * entry = readdir(dir))
-            {
-                std::string name = entry->d_name;
-                std::string path = "/dev/" + name;
-
-                struct stat st = {};
-                if (stat(path.c_str(), &st) < 0)
-                {
-                    continue;
-                }
-
-                if (std::stoi(major_string) == major(st.st_rdev) && std::stoi(minor_string) == minor(st.st_rdev))
-                {
-                    dev_name = path;
-                    closedir(dir);
-                    return true;
-                }
-            }
-            closedir(dir);
-
-            return false;
+            return true;
         }
 
         std::vector<std::string> v4l_uvc_device::get_video_paths()
@@ -723,30 +689,23 @@ namespace librealsense
                     {
                         continue;
                     }
-                    //                    if (get_devname_from_video_path(real_path, name))
-                    std::ifstream uevent_file(real_path + "/uevent");
-                    if (!uevent_file)
+                    std::string devname;
+                    bool for_dfu = true;
+                    if (get_devname_from_video_path(real_path, devname, for_dfu))
                     {
-                        LOG_ERROR("Cannot access " + real_path + "/uevent");
-                        continue;
-                    }
-                    std::string uevent_line, devname;
-                    while (std::getline(uevent_file, uevent_line) && (devname.empty()))
-                    {
-                        if (uevent_line.find("DEVNAME=") != std::string::npos)
+                        if (devname.empty())
                         {
-                            devname = uevent_line.substr(uevent_line.find_last_of('=') + 1);
+                            LOG_ERROR("No DEVNAME found for " + real_path);
+                            continue;
+                        }
+                        if ( std::find(dfu_paths.begin(), dfu_paths.end(), devname) == dfu_paths.end() )
+                        {
+                            dfu_paths.push_back(devname);
                         }
                     }
-                    uevent_file.close();
-                    if (devname.empty())
+                    else
                     {
-                        LOG_ERROR("No DEVNAME found for " + real_path);
                         continue;
-                    }
-                    if ( std::find(dfu_paths.begin(), dfu_paths.end(), devname) == dfu_paths.end() )
-                    {
-                        dfu_paths.push_back(devname);
                     }
                 }
             }
