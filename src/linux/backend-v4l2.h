@@ -405,6 +405,8 @@ namespace librealsense
             virtual inline std::shared_ptr<buffer> get_video_buffer(__u32 index) const {return _buffers[index];}
             virtual inline std::shared_ptr<buffer> get_md_buffer(__u32 index) const {return nullptr;}
 
+            static bool get_devname_from_video_path(const std::string& real_path, std::string& devname);
+
             power_state _state = D3;
             std::string _name = "";
             std::string _device_path = "";
