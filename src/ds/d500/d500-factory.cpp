@@ -17,6 +17,8 @@
 #include "d500-color.h"
 #include "d500-motion.h"
 #include "sync.h"
+#include <src/ds/ds-thermal-monitor.h>
+#include <src/ds/d500/d500-options.h>
 #include <src/ds/d500/d500-auto-calibration.h>
 
 #include <src/platform/platform-utils.h>
@@ -58,8 +60,23 @@ public:
                                            d500_device::_hw_monitor,
                                            get_firmware_logs_command() )
     {
-        auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>( d500_device::_hw_monitor, ds::LASERONCONST, ds::LASERONCONST);
-        get_depth_sensor().register_option(RS2_OPTION_EMITTER_ALWAYS_ON,emitter_always_on_opt);
+        auto & depth_sensor = get_depth_sensor();
+        group_multiple_fw_calls(depth_sensor, [&]()
+        {
+            auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>( d500_device::_hw_monitor,
+                                                                                     ds::LASERONCONST, ds::LASERONCONST);
+            depth_sensor.register_option( RS2_OPTION_EMITTER_ALWAYS_ON, emitter_always_on_opt );
+
+            auto thermal_compensation_toggle = std::make_shared< d500_thermal_compensation_option >( d500_device::_hw_monitor );
+
+            // Monitoring SOC PVT (not OHM) because it correlates to D400 ASIC temperature and we keep the model the same.
+            auto temperature_sensor = depth_sensor.get_option_handler( RS2_OPTION_SOC_PVT_TEMPERATURE );
+
+            _thermal_monitor = std::make_shared< ds_thermal_monitor >( temperature_sensor, thermal_compensation_toggle );
+
+            depth_sensor.register_option( RS2_OPTION_THERMAL_COMPENSATION,
+                                          std::make_shared< thermal_compensation >( _thermal_monitor, thermal_compensation_toggle ) );
+        } );  // group_multiple_fw_calls
     }
 
     std::shared_ptr< matcher > create_matcher( const frame_holder & frame ) const override
