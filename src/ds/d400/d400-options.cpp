@@ -2,7 +2,6 @@
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
 
-#include "ds/ds-thermal-monitor.h"
 #include "d400-options.h"
 
 #include <rsutils/string/from.h>

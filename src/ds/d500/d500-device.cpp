@@ -557,16 +557,20 @@ namespace librealsense
                                                                                DS5_ERROR_REPORTING,
                                                                                "Error reporting" );
 
-            auto thermal_compensation_toggle = std::make_shared< d500_thermal_compensation_option >( _hw_monitor );
+            if( _pid == ds::D555_PID )
+            {
+                auto thermal_compensation_toggle = std::make_shared< d500_thermal_compensation_option >( _hw_monitor );
 
-            // Monitoring SOC PVT (not OHM) because it correlates to D400 ASIC temperature and we keep the model the same.
-            auto temperature_sensor = depth_sensor.get_option_handler( RS2_OPTION_SOC_PVT_TEMPERATURE );
+                // Monitoring SOC PVT (not OHM) because it correlates to D400 ASIC temperature and we keep the model the same.
+                auto temperature_sensor = depth_sensor.get_option_handler( RS2_OPTION_SOC_PVT_TEMPERATURE );
 
-            _thermal_monitor = std::make_shared<ds_thermal_monitor>( temperature_sensor,
-                                                                     thermal_compensation_toggle );
+                _thermal_monitor = std::make_shared<ds_thermal_monitor>( temperature_sensor,
+                                                                         thermal_compensation_toggle );
 
-            depth_sensor.register_option( RS2_OPTION_THERMAL_COMPENSATION,
-                                          std::make_shared<thermal_compensation>( _thermal_monitor, thermal_compensation_toggle ) );
+                depth_sensor.register_option( RS2_OPTION_THERMAL_COMPENSATION,
+                                              std::make_shared<thermal_compensation>( _thermal_monitor,
+                                                                                      thermal_compensation_toggle ) );
+            }
 
             _polling_error_handler = std::make_shared< polling_error_handler >(
                 1000,
