@@ -748,4 +748,49 @@ namespace librealsense
         else
             return _uvc_option->is_enabled();
     }
-}
+
+    thermal_compensation::thermal_compensation( std::shared_ptr< ds_thermal_monitor > monitor,
+                                                std::shared_ptr< option > toggle )
+        : _thermal_monitor( monitor )
+        , _thermal_toggle( toggle )
+    {
+    }
+
+    float thermal_compensation::query(void) const
+    {
+        auto val = _thermal_toggle->query();
+        return val;
+    }
+
+    void thermal_compensation::set(float value)
+    {
+        if (value < 0)
+            throw invalid_value_exception("Invalid input for thermal compensation toggle: " + std::to_string(value));
+
+        _thermal_toggle->set(value);
+        _recording_function(*this);
+    }
+
+    const char* thermal_compensation::get_description() const
+    {
+        return "Toggle thermal compensation adjustments mechanism";
+    }
+
+    const char* thermal_compensation::get_value_description(float value) const
+    {
+        if (value == 0)
+        {
+            return "Disabled";
+        }
+        else
+        {
+            return "Enabled";
+        }
+    }
+
+    //Work-around the control latency
+    void thermal_compensation::create_snapshot(std::shared_ptr<option>& snapshot) const
+    {
+        snapshot = std::make_shared<const_value_option>(get_description(), 0.f);
+    }
+} // namespace librealsense

@@ -10,8 +10,9 @@
 #include "d500-private.h"
 #include "d500-options.h"
 #include "d500-info.h"
-#include "ds/ds-options.h"
-#include "ds/ds-timestamp.h"
+#include <src/ds/ds-options.h>
+#include <src/ds/ds-timestamp.h>
+#include <src/ds/ds-thermal-monitor.h>
 #include <src/depth-sensor.h>
 #include "stream.h"
 #include "environment.h"
@@ -154,11 +155,17 @@ namespace librealsense
                 set_frame_metadata_modifier([&](frame_additional_data& data) {data.depth_units = _depth_units.load(); });
 
                 synthetic_sensor::open(requests);
-                }); //group_multiple_fw_calls
+
+                if( _owner && _owner->_thermal_monitor )
+                    _owner->_thermal_monitor->update( true );
+            }); //group_multiple_fw_calls
         }
 
         void close() override
         {
+            if( _owner && _owner->_thermal_monitor )
+                _owner->_thermal_monitor->update( false );
+
             synthetic_sensor::close();
         }
 

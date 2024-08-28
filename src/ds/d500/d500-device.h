@@ -19,7 +19,7 @@
 
 namespace librealsense
 {
-    class d400_thermal_monitor;
+    class ds_thermal_monitor;
     class ds_devices_common;
     class d500_info;
 
@@ -108,7 +108,7 @@ namespace librealsense
         rsutils::lazy< std::vector< uint8_t > > _new_calib_table_raw;
 
         std::shared_ptr<polling_error_handler> _polling_error_handler;
-        std::shared_ptr<d400_thermal_monitor> _thermal_monitor;
+        std::shared_ptr<ds_thermal_monitor> _thermal_monitor;
         std::shared_ptr< rsutils::lazy< rs2_extrinsics > > _left_right_extrinsics;
         rsutils::lazy< std::vector< uint8_t > > _color_calib_table_raw;
         std::shared_ptr< rsutils::lazy< rs2_extrinsics > > _color_extrinsic;

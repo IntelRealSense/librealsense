@@ -4,8 +4,8 @@
 #include <cstddef>
 #include "metadata.h"
 
-#include "ds/ds-timestamp.h"
-#include "d400-thermal-monitor.h"
+#include <src/ds/ds-timestamp.h>
+#include <src/ds/ds-thermal-monitor.h>
 #include "proc/color-formats-converter.h"
 #include "d400-color.h"
 #include "d400-info.h"
