@@ -53,14 +53,16 @@ void auto_calibrated_proxy::write_calibration() const
 {
     if (_auto_calib_capability)
         _auto_calib_capability->write_calibration();
-    throw std::runtime_error("Auto Calibration capability has not been initiated");
+    else
+        throw std::runtime_error("Auto Calibration capability has not been initiated");
 }
 
 void auto_calibrated_proxy::set_calibration_table(const std::vector<uint8_t>& calibration)
 {
     if (_auto_calib_capability)
         _auto_calib_capability->set_calibration_table(calibration);
-    throw std::runtime_error("Auto Calibration capability has not been initiated");
+    else
+        throw std::runtime_error("Auto Calibration capability has not been initiated");
 }
 
 void auto_calibrated_proxy::reset_to_factory_calibration() const
@@ -105,7 +107,8 @@ void auto_calibrated_proxy::set_calibration_config(const std::string& calibratio
 {
     if (_auto_calib_capability)
         _auto_calib_capability->set_calibration_config(calibration_config_json_str);
-    throw std::runtime_error("Auto Calibration capability has not been initiated");
+    else
+        throw std::runtime_error("Auto Calibration capability has not been initiated");
 }
 
 } //namespace librealsense
