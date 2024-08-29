@@ -4115,9 +4115,9 @@ bool is_pixel_in_line(const float curr[2], const float start[2], const float end
 void adjust_2D_point_to_boundary(float p[2], int width, int height)
 {
     if (p[0] < 0) p[0] = 0;
-    if (p[0] > width) p[0] = (float)width;
+    if (p[0] > width) p[0] = (float)width - 1e - 10; // to make sure int(p[0]) + int(p[1])* width stay within [data, data + width * height)
     if (p[1] < 0) p[1] = 0;
-    if (p[1] > height) p[1] = (float)height;
+    if (p[1] > height) p[1] = (float)height - 1e-10; // to make sure int(p[0]) + int(p[1])* width stay within [data, data + width * height)
 }
 
 
