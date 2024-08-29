@@ -105,7 +105,7 @@ namespace librealsense
             rgb_calibration_id = 0xb9,
             rgb_lut_id = 0xba,
             imu_calibration_id = 0xbb,
-			stream_pipe_config_id = 0xbe,
+            stream_pipe_config_id = 0xbe,
             safety_presets_table_id = 0xc0da,
             safety_preset_id = 0xc0db,
             safety_interface_cfg_id = 0xc0dc,

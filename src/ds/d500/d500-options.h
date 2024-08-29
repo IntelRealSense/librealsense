@@ -126,8 +126,8 @@ namespace librealsense
         hw_monitor & _hwm;
         std::weak_ptr< sensor_base > _sensor;
     };
-	
-	class d500_thermal_compensation_option : public bool_option
+    
+    class d500_thermal_compensation_option : public bool_option
     {
     public:
 
