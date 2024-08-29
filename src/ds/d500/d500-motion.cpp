@@ -33,11 +33,7 @@ namespace librealsense
     double d500_motion::get_gyro_default_scale() const
     {
         // D585S outputs raw 16 bit register value, dynamic range +/-125 [deg/sec] --> 250/65536=0.003814697265625 [deg/sec/LSB]
-        if( get_info( RS2_CAMERA_INFO_NAME ) == ds::rs500_sku_names.at( ds::D585S_PID ) )
-            return 0.003814697265625;
-
-        // Other D500 devices output physical data in 0.1 [deg/sec] units.
-        return 0.1;
+        return 0.003814697265625;
     }
 
     std::shared_ptr<synthetic_sensor> d500_motion::create_hid_device( std::shared_ptr<context> ctx,
