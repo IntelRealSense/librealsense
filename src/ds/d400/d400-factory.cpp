@@ -21,7 +21,7 @@
 #include "d400-active.h"
 #include "d400-color.h"
 #include "d400-motion.h"
-#include "d400-thermal-monitor.h"
+#include <src/ds/ds-thermal-monitor.h>
 #include "sync.h"
 
 #include <src/platform/platform-utils.h>
@@ -1033,7 +1033,7 @@ namespace librealsense
                                public d400_motion,
                                public ds_advanced_mode_base,
                                public firmware_logger_device,
-                               public d400_thermal_tracking
+                               public ds_thermal_tracking
     {
     public:
         rs455_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
@@ -1047,7 +1047,7 @@ namespace librealsense
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device(
                   dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
-            , d400_thermal_tracking( d400_device::_thermal_monitor )
+            , ds_thermal_tracking( d400_device::_thermal_monitor )
         {
             if( _fw_version >= firmware_version( 5, 16, 0, 0 ) )
                 register_feature(

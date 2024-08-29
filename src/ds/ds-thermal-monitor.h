@@ -1,21 +1,20 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021-2024 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "sensor.h"
+#include "option.h"
 #include "device-calibration.h"
+
 #include <set>
 
 
 namespace librealsense
 {
-
-    class  d400_thermal_monitor
+    class ds_thermal_monitor
     {
     public:
-        d400_thermal_monitor(std::shared_ptr<option> temp_option,
-                            std::shared_ptr<option> tl_toggle);
-        ~d400_thermal_monitor();
+        ds_thermal_monitor(std::shared_ptr<option> temp_option, std::shared_ptr<option> tl_toggle);
+        ~ds_thermal_monitor();
 
         void update(bool on);
         void add_observer(std::function<void(float)> callback)
@@ -24,8 +23,8 @@ namespace librealsense
         }
 
     private:
-        d400_thermal_monitor(const d400_thermal_monitor&) = delete;       // disable copy and assignment ctors
-        d400_thermal_monitor& operator=(const d400_thermal_monitor&) = delete;
+        ds_thermal_monitor(const ds_thermal_monitor&) = delete;       // disable copy and assignment ctors
+        ds_thermal_monitor& operator=(const ds_thermal_monitor&) = delete;
 
         // Active Object's main routine
         void polling(dispatcher::cancellable_timer cancellable_timer);
@@ -44,10 +43,10 @@ namespace librealsense
     //// The class allows to track and calibration updates on the fly
     //// Specifically for D400 the calibration adjustments are generated in FW
     //// and retrieved on demand when a certain (thermal) trigger is invoked
-    class d400_thermal_tracking : public calibration_change_device
+    class ds_thermal_tracking : public calibration_change_device
     {
     public:
-        d400_thermal_tracking(std::shared_ptr<d400_thermal_monitor> monitor):
+        ds_thermal_tracking(std::shared_ptr<ds_thermal_monitor> monitor):
             _monitor(monitor)
         {
             if (auto mon = _monitor.lock())
@@ -64,8 +63,7 @@ namespace librealsense
         }
 
     private:
-        std::weak_ptr<d400_thermal_monitor>  _monitor;
+        std::weak_ptr<ds_thermal_monitor>  _monitor;
         std::set< rs2_calibration_change_callback_sptr > _user_callbacks;
     };
-
 }

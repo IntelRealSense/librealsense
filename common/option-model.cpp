@@ -442,7 +442,7 @@ bool option_model::draw_slider( notifications_model & model,
 
             char buff[TEXT_BUFF_SIZE];
             memset( buff, 0, TEXT_BUFF_SIZE );
-            strcpy( buff, buff_str.c_str() );
+            strncpy( buff, buff_str.c_str(), TEXT_BUFF_SIZE - 1 );
 
             if( ImGui::InputText( id.c_str(),
                                   buff,
@@ -453,7 +453,7 @@ bool option_model::draw_slider( notifications_model & model,
                 {
                     buff_str = convert_float_str( std::string( buff ), 0.01f );
                     memset( buff, 0, TEXT_BUFF_SIZE );
-                    strncpy( buff, buff_str.c_str(), TEXT_BUFF_SIZE );
+                    strncpy( buff, buff_str.c_str(), TEXT_BUFF_SIZE - 1 );
                 }
                 float new_value;
                 if( ! rsutils::string::string_to_value< float >( buff, new_value ) )
@@ -486,7 +486,7 @@ bool option_model::draw_slider( notifications_model & model,
             {
                 buff_str = convert_float_str( buff_str, 0.01f );
                 memset( buff, 0, TEXT_BUFF_SIZE );
-                strcpy( buff, buff_str.c_str() );
+                strncpy( buff, buff_str.c_str(), TEXT_BUFF_SIZE - 1 );
             }
             edit_value = buff;
         }

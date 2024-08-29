@@ -124,6 +124,7 @@ namespace librealsense
             RECPARAMSGET = 0x7E,     // Retrieve depth calibration table in new format (fw >= 5.11.12.100)
             LASERONCONST = 0x7F,     // Enable Laser On constantly (GS SKU Only)
             AUTO_CALIB = 0x80,      // auto calibration commands
+            HKR_THERMAL_COMPENSATION = 0x84, // Control HKR thermal compensation
             GETAELIMITS = 0x89,   //Auto Exp/Gain Limit command FW version >= 5.13.0.200
             SETAELIMITS = 0x8A,   //Auto Exp/Gain Limit command FW version >= 5.13.0.200
             SAFETY_PRESET_READ = 0x94,  // Read safety preset from given index

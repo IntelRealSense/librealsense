@@ -5,12 +5,12 @@
 #include <rsutils/json.h>
 #include "d400-device.h"
 #include "d400-private.h"
-#include "d400-thermal-monitor.h"
 #include "d400-auto-calibration.h"
 #include "librealsense2/rsutil.h"
 #include "algo.h"
 #include <src/core/video-frame.h>
 #include <src/ds/ds-calib-common.h>
+#include <src/ds/ds-thermal-monitor.h>
 
 #include <rsutils/string/from.h>
 
