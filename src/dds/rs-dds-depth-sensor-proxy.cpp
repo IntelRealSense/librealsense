@@ -38,7 +38,7 @@ float dds_depth_sensor_proxy::get_stereo_baseline_mm() const
         {
             if( prof->get_stream_index() == 1 )
                 ir1 = prof;
-            if( prof->get_stream_index() == 2 )
+            else if( prof->get_stream_index() == 2 )
                 ir2 = prof;
         }
     }
@@ -55,7 +55,7 @@ float dds_depth_sensor_proxy::get_stereo_baseline_mm() const
         }
     }
 
-    throw std::runtime_error( "Not a stereo depth sensor. Cannot get basline information." );
+    throw not_implemented_exception( "Not a stereo depth sensor. Cannot get basline information." );
 }
 
 void dds_depth_sensor_proxy::add_no_metadata( frame * const f, streaming_impl & streaming )
