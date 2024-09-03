@@ -22,6 +22,7 @@ std::ostream & operator<<( std::ostream &, LivelinessQosPolicy const & );
 std::ostream & operator<<( std::ostream &, DataSharingQosPolicy const & );
 std::ostream & operator<<( std::ostream &, RTPSEndpointQos const & );
 std::ostream & operator<<( std::ostream &, PublishModeQosPolicy const & );
+std::ostream & operator<<( std::ostream &, ParticipantResourceLimitsQos const & );
 
 class DomainParticipantQos;
 std::ostream & operator<<( std::ostream &, DomainParticipantQos const & );
@@ -49,6 +50,7 @@ namespace rtps {
 std::ostream & operator<<( std::ostream &, class WriterProxyData const & );
 std::ostream & operator<<( std::ostream &, class ReaderProxyData const & );
 std::ostream & operator<<( std::ostream &, BuiltinAttributes const & );
+std::ostream & operator<<( std::ostream &, RemoteLocatorsAllocationAttributes const & );
 }  // namespace rtps
 
 }  // namespace fastrtps
