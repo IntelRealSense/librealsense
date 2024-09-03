@@ -39,6 +39,9 @@ class slice;
 namespace realdds {
 
 
+class dds_adapter_watcher;
+
+
 // The starting point for any DDS interaction, a participant has a name and is the focal point for creating, destroying,
 // and managing other DDS objects. It defines the DDS domain (ID) in which every other object lives.
 //
@@ -53,6 +56,7 @@ class dds_participant
     struct listener_impl;
 
     rsutils::json _settings;
+    std::shared_ptr< dds_adapter_watcher > _adapter_watcher;
 
 public:
     dds_participant() = default;
@@ -70,6 +74,12 @@ public:
     public:
         qos( std::string const & participant_name );
     };
+
+    // Return the QoS (so user won't have to actually know about the DomainParticipant)
+    eprosima::fastdds::dds::DomainParticipantQos const & get_qos() const;
+
+    // Refresh the QoS, so it will pick up any changes in the system (e.g., if adapters have changed)
+    void refresh_qos();
 
     // Creates the underlying DDS participant and sets the QoS.
     // If callbacks are needed, set them before calling init. Note they may be called before init returns!
