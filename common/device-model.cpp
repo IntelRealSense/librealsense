@@ -3349,120 +3349,172 @@ namespace rs2
         {
             if (sub->supports_on_chip_calib() && !has_autocalib)
             {
+                bool is_d555 = false;
+
+                if( dev.supports( RS2_CAMERA_INFO_PRODUCT_ID ) )
+                {
+                    auto pid_str = std::string( dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID ) );
+                    if( pid_str == "0B56" || pid_str == "DDS" )
+                        is_d555 = true;
+                }
+
                 if (ImGui::Selectable("On-Chip Calibration", false, avoid_selection_flag))
                 {
                     try
                     {
-                        auto manager = std::make_shared<d500_on_chip_calib_manager>(viewer, sub, *this, dev);
-                        auto n = std::make_shared<d500_autocalib_notification_model>("", manager, false);
-                        viewer.not_model->add_notification(n);
+                        std::shared_ptr< process_manager > manager;
+                        std::shared_ptr< process_notification_model > n;
+                        if( is_d555 )
+                        {
+                            manager = std::make_shared< on_chip_calib_manager >( viewer, sub, *this, dev );
+                            n = std::make_shared< autocalib_notification_model >( "", manager, false );
+                        }
+                        else
+                        {
+                            manager = std::make_shared< d500_on_chip_calib_manager >( viewer, sub, *this, dev );
+                            n = std::make_shared< d500_autocalib_notification_model >( "", manager, false );
+                        }
+                        viewer.not_model->add_notification( n );
                         n->forced = true;
                         n->update_state = d500_autocalib_notification_model::RS2_CALIB_STATE_INIT_CALIB;
 
-                        for (auto&& n : related_notifications)
-                            if (dynamic_cast<d500_autocalib_notification_model*>(n.get()))
-                                n->dismiss(false);
-
-                        related_notifications.push_back(n);
-                    }
-                    catch (const error& e)
-                    {
-                        error_message = error_to_string(e);
-                    }
-                    catch (const std::exception& e)
-                    {
-                        error_message = e.what();
-                    }
-                }
-                if (ImGui::IsItemHovered())
-                {
-                    std::string tooltip = rsutils::string::from()
-                        << "On-Chip Calibration"
-                        << (streaming ? " (Disabled while streaming)" : "");
-                    ImGui::SetTooltip("%s", tooltip.c_str());
-                }
-                    
-                if (ImGui::Selectable("Dry Run On-Chip Calibration", false, avoid_selection_flag))
-                {
-                    try
-                    {
-                        auto manager = std::make_shared<d500_on_chip_calib_manager>(viewer, sub, *this, dev);
-                        auto n = std::make_shared<d500_autocalib_notification_model>("", manager, false);
-                        viewer.not_model->add_notification(n);
-                        n->forced = true;
-                        n->update_state = d500_autocalib_notification_model::RS2_CALIB_STATE_INIT_DRY_RUN;
-
-                        for (auto&& n : related_notifications)
-                            if (dynamic_cast<autocalib_notification_model*>(n.get()))
-                                n->dismiss(false);
-
-                        related_notifications.push_back(n);
-                    }
-                    catch (const error& e)
-                    {
-                        error_message = error_to_string(e);
-                    }
-                    catch (const std::exception& e)
-                    {
-                        error_message = e.what();
-                    }
-                }
-                if (ImGui::IsItemHovered())
-                {
-                    std::string tooltip = rsutils::string::from()
-                        << "Dry Run On-Chip Calibration"
-                        << (streaming ? " (Disabled while streaming)" : "");
-                    ImGui::SetTooltip("%s", tooltip.c_str());
-                }
-
-                bool is_d555 = false;
-                
-                if (dev.supports(RS2_CAMERA_INFO_PRODUCT_ID))
-                {
-                    auto pid_str = std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
-                    if (pid_str == "0B56" || pid_str == "DDS")
-                        is_d555 = true;
-                }
-
-                if( is_d555 && ImGui::Selectable( "Focal Length Calibration" ) )
-                {
-                    try
-                    {
-                        std::shared_ptr< subdevice_model > sub_color;
-                        for( auto && sub2 : subdevices )
-                        {
-                            if( sub2->s->is< rs2::color_sensor >() )
-                            {
-                                sub_color = sub2;
-                                break;
-                            }
-                        }
-
-                        auto manager = std::make_shared< on_chip_calib_manager >( viewer, sub, *this, dev, sub_color );
-                        auto n = std::make_shared< autocalib_notification_model >( "", manager, false );
-                        viewer.not_model->add_notification( n );
-                        n->forced = true;
-                        n->update_state = autocalib_notification_model::RS2_CALIB_STATE_FL_INPUT;
-
                         for( auto && n : related_notifications )
-                            if( dynamic_cast< autocalib_notification_model * >( n.get() ) )
+                            if( dynamic_cast< d500_autocalib_notification_model * >( n.get() ) )
                                 n->dismiss( false );
 
                         related_notifications.push_back( n );
-                        manager->start_fl_viewer();
                     }
-                    catch( const error & e )
+                    catch (const error& e)
                     {
-                        error_message = error_to_string( e );
+                        error_message = error_to_string(e);
                     }
-                    catch( const std::exception & e )
+                    catch (const std::exception& e)
                     {
                         error_message = e.what();
                     }
                 }
-                if( ImGui::IsItemHovered() )
-                    ImGui::SetTooltip(
-                        "Focal length calibration is used to adjust camera focal length with specific target." );
+                if (ImGui::IsItemHovered())
+                {
+                    std::string tooltip;
+                    if( is_d555 )
+                        tooltip = "This will improve the depth noise.\n"
+                                  "Point at a scene that normally would have > 50 %% valid depth pixels,\n"
+                                  "then press calibrate."
+                                  "The health-check will be calculated.\n"
+                                  "If >0.25 we recommend applying the new calibration.\n"
+                                  "\"White wall\" mode should only be used when pointing at a flat white wall "
+                                  "with projector on";
+                    else
+                        tooltip = rsutils::string::from() << "On-Chip Calibration" << (streaming ? " (Disabled while streaming)" : "");
+                    ImGui::SetTooltip("%s", tooltip.c_str());
+                }
+
+                if( !is_d555 )
+                {
+                    if( ImGui::Selectable( "Dry Run On-Chip Calibration", false, avoid_selection_flag ) )
+                    {
+                        try
+                        {
+                            auto manager = std::make_shared<d500_on_chip_calib_manager>(viewer, sub, *this, dev);
+                            auto n = std::make_shared<d500_autocalib_notification_model>("", manager, false);
+                            viewer.not_model->add_notification(n);
+                            n->forced = true;
+                            n->update_state = d500_autocalib_notification_model::RS2_CALIB_STATE_INIT_DRY_RUN;
+
+                            for (auto&& n : related_notifications)
+                                if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                    n->dismiss(false);
+
+                            related_notifications.push_back(n);
+                        }
+                        catch (const error& e)
+                        {
+                            error_message = error_to_string(e);
+                        }
+                        catch (const std::exception& e)
+                        {
+                            error_message = e.what();
+                        }
+                    }
+                    if (ImGui::IsItemHovered())
+                    {
+                        std::string tooltip = rsutils::string::from()
+                                           << "Dry Run On-Chip Calibration"
+                                           << ( streaming ? " (Disabled while streaming)" : "" );
+                        ImGui::SetTooltip("%s", tooltip.c_str());
+                    }
+                }
+                else
+                {
+                    if( ImGui::Selectable( "Focal Length Calibration" ) )
+                    {
+                        try
+                        {
+                            std::shared_ptr< subdevice_model > sub_color;
+                            for( auto && sub2 : subdevices )
+                            {
+                                if( sub2->s->is< rs2::color_sensor >() )
+                                {
+                                    sub_color = sub2;
+                                    break;
+                                }
+                            }
+
+                            auto manager = std::make_shared< on_chip_calib_manager >( viewer, sub, *this, dev, sub_color );
+                            auto n = std::make_shared< autocalib_notification_model >( "", manager, false );
+                            viewer.not_model->add_notification( n );
+                            n->forced = true;
+                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_FL_INPUT;
+
+                            for( auto && n : related_notifications )
+                                if( dynamic_cast< autocalib_notification_model * >( n.get() ) )
+                                    n->dismiss( false );
+
+                            related_notifications.push_back( n );
+                            manager->start_fl_viewer();
+                        }
+                        catch( const error & e )
+                        {
+                            error_message = error_to_string( e );
+                        }
+                        catch( const std::exception & e )
+                        {
+                            error_message = e.what();
+                        }
+                    }
+                    if( ImGui::IsItemHovered() )
+                        ImGui::SetTooltip( "Focal length calibration is used to adjust camera focal length with specific target." );
+
+                    if( ImGui::Selectable( "Tare Calibration" ) )
+                    {
+                        try
+                        {
+                            auto manager = std::make_shared< on_chip_calib_manager >( viewer, sub, *this, dev );
+                            auto n = std::make_shared< autocalib_notification_model >( "", manager, false );
+                            viewer.not_model->add_notification( n );
+                            n->forced = true;
+                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_TARE_INPUT;
+
+                            for( auto && n : related_notifications )
+                                if( dynamic_cast< autocalib_notification_model * >( n.get() ) )
+                                    n->dismiss( false );
+
+                            related_notifications.push_back( n );
+                        }
+                        catch( const error & e )
+                        {
+                            error_message = error_to_string( e );
+                        }
+                        catch( const std::exception & e )
+                        {
+                            error_message = e.what();
+                        }
+                    }
+                    if( ImGui::IsItemHovered() )
+                        ImGui::SetTooltip( "Tare calibration is used to adjust camera absolute distance to flat target.\n"
+                                           "User needs either to enter the known ground truth or use the get button\n"
+                                           "with specific target to get the ground truth." );
+                }
 
                 has_autocalib = true;
             }

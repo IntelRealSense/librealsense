@@ -64,29 +64,28 @@ namespace librealsense
                                                 int progress,
                                                 rs2_update_progress_callback_sptr progress_callback )
     {
-        fx = -1.0f;
-        std::vector< std::array< float, 4 > > rect_sides_arr;
-
         rs2_error * e = nullptr;
-        rs2_frame * f = nullptr;
-
         int queue_size = rs2_frame_queue_size( frames, &e );
         if( queue_size == 0 )
             throw std::runtime_error( "Extract target rectangle info - no frames in input queue!" );
 
-        int fc = 0;
-        while( ( fc++ < queue_size ) && rs2_poll_for_frame( frames, &f, &e ) )
+        int frame_counter = 0;
+        bool first_time = true;
+        rs2_frame * f = nullptr;
+        std::vector< std::array< float, 4 > > rect_sides_arr;
+        while( ( frame_counter++ < queue_size ) && rs2_poll_for_frame( frames, &f, &e ) )
         {
             rs2::frame ff( f );
             if( ff.get_data() )
             {
-                if( fx < 0.0f )
+                if( first_time )
                 {
                     auto p = ff.get_profile();
                     auto vsp = p.as< rs2::video_stream_profile >();
                     rs2_intrinsics intrin = vsp.get_intrinsics();
                     fx = intrin.fx;
                     fy = intrin.fy;
+                    first_time = false;
                 }
 
                 std::array< float, 4 > rec_sides_cur{};

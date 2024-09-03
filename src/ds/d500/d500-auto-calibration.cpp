@@ -309,10 +309,39 @@ namespace librealsense
         throw not_implemented_exception(rsutils::string::from() << "UV Map Calibration not applicable for this device");
     }
 
-    float d500_auto_calibrated::calculate_target_z(rs2_frame_queue* queue1, rs2_frame_queue* queue2, rs2_frame_queue* queue3,
-        float target_w, float target_h, rs2_update_progress_callback_sptr progress_callback)
+    float d500_auto_calibrated::calculate_target_z( rs2_frame_queue* queue1, rs2_frame_queue* queue2, rs2_frame_queue* queue3,
+                                                    float target_w, float target_h,
+                                                    rs2_update_progress_callback_sptr progress_callback )
     {
-        throw not_implemented_exception(rsutils::string::from() << "Calculate T not applicable for this device");
+        constexpr size_t min_frames_required = 10;
+
+        rs2_error * e = nullptr;
+        int queue_size = rs2_frame_queue_size( queue1, &e );
+        if( queue_size < min_frames_required )
+            throw std::runtime_error( rsutils::string::from() << "Target distance calculation requires at least "
+                                                                << min_frames_required << " frames, aborting" );
+
+        float target_fw = 0;
+        float target_fh = 0;
+        std::array< float, 4 > rect_sides{};
+        ds_calib_common::get_target_rect_info( queue1, rect_sides.data(), target_fw, target_fh, 50, progress_callback ); // Report 50% progress
+
+        float gt[4] = { 0 };
+        gt[0] = target_fw * target_w / rect_sides[0];
+        gt[1] = target_fw * target_w / rect_sides[1];
+        gt[2] = target_fh * target_h / rect_sides[2];
+        gt[3] = target_fh * target_h / rect_sides[3];
+
+        if( gt[0] <= 0.1f || gt[1] <= 0.1f || gt[2] <= 0.1f || gt[3] <= 0.1f )
+            throw std::runtime_error( "Target distance calculation failed" );
+
+        // Target's plane Z value is the average of the four calculated corners
+        float target_z_value = 0.f;
+        for( int i = 0; i < 4; ++i )
+            target_z_value += gt[i];
+        target_z_value /= 4.f;
+
+        return target_z_value;
     }
 
     std::string d500_auto_calibrated::get_calibration_config() const
