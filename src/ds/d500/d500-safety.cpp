@@ -308,6 +308,18 @@ namespace librealsense
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_SAFETY_AND_SECURITY,
             make_always_enabled_param_parser(&md_safety_info::soc_safety_and_security, md_prop_offset));
 
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_DEPTH_FRAME_TIMESTAMP,
+            make_attribute_parser(&md_safety_info::depth_frame_timestamp,
+                md_safety_info_attributes::frame_timestamp_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SMCU_PROCESSING_TIMESTAMP,
+            make_attribute_parser(&md_safety_info::smcu_processing_timestamp,
+                md_safety_info_attributes::frame_timestamp_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_PIPELINE_PROPAGATION_DELAY,
+            make_attribute_parser(&md_safety_info::safety_pipeline_propagation_delay,
+                md_safety_info_attributes::timing_kpi_attribute, md_prop_offset));
+
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_MB_FUSA_EVENT,
             make_attribute_parser(&md_safety_info::mb_fusa_event, 
                 md_safety_info_attributes::mb_fusa_event_attribute, md_prop_offset));
@@ -340,13 +352,21 @@ namespace librealsense
             make_attribute_parser(&md_safety_info::smcu_bist_status,
                 md_safety_info_attributes::smcu_debug_info_attribute, md_prop_offset));
 
-        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO,
-            make_attribute_parser(&md_safety_info::non_fusa_gpio,
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO_OUT,
+            make_attribute_parser(&md_safety_info::non_fusa_gpio_out,
                 md_safety_info_attributes::non_fusa_gpio_attribute, md_prop_offset));
 
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SMCU_HW_MONITOR_STATUS,
             make_attribute_parser(&md_safety_info::smcu_hw_monitor_status,
                 md_safety_info_attributes::smcu_hw_report_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SMCU_SW_MONITOR_STATUS,
+            make_attribute_parser(&md_safety_info::smcu_sw_monitor_status,
+                md_safety_info_attributes::smcu_hw_report_attribute, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_NON_FUSA_GPIO_IN,
+            make_attribute_parser(&md_safety_info::non_fusa_gpio_in,
+                md_safety_info_attributes::non_fusa_gpio_attribute, md_prop_offset));
 
         // calc CRC for safety MD payload, starting from "version" field (not including the uvc and md headers),
         // and without the crc field itself.
@@ -596,7 +616,7 @@ namespace librealsense
 
         // prepare vector of data to be sent (header + sic)
         rs2_safety_interface_config_with_header sic_with_header;
-        uint16_t version = ((uint16_t)0x03 << 8) | 0x00;  // major=0x03, minor=0x00 --> ver = major.minor
+        uint16_t version = ((uint16_t)0x03 << 8) | 0x01;  // major=0x03, minor=0x01 --> ver = major.minor
         uint32_t calib_version = 0;  // ignoring this field, as requested by sw architect
         sic_with_header.header = { version, static_cast<uint16_t>(ds::d500_calibration_table_id::safety_interface_cfg_id),
             sizeof(rs2_safety_interface_config), calib_version, computed_crc32 };

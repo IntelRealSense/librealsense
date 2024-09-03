@@ -36,6 +36,7 @@ namespace librealsense
         smcu_state_attribute = (1u << 22),
         sip_metrics_attribute = (1u << 23),
         smcu_hw_report_attribute = (1u << 24),
+        timing_kpi_attribute = (1u << 25),
         non_fusa_gpio_attribute = (1u << 29),
         smcu_debug_info_attribute = (1u << 30),
         crc32_attribute = (1u << 31)
@@ -222,11 +223,11 @@ namespace librealsense
                                                 Setting bit_0=1 (high) implies having one or more of mask bits [1-31] set to 1 as well
                                                 bits [15..31] are reserved (for MB/Peripheral Temperature and Humidity sensors) and must be zeroed
 
-    uint8_t     mb_fusa_action                  Bitmask: action taken
+    * uint8_t     mb_fusa_action                Bitmask: action taken
                                                 0x1 << 0  - HKR Reset
                                                 0x1 << 1  - HKR ShutDown
 
-    uint8_t     non_fusa_gpio;                  Bitmask.
+    * uint8_t     non_fusa_gpio                 Bitmask.
                                                 0x1 << 0 - OSSD2_A_present
                                                 0x1 << 1 - OSSD2_A status: Raised/Idle
                                                 0x1 << 2 - OSSD2_B_present
@@ -236,7 +237,7 @@ namespace librealsense
                                                 0x1 << 6 -Error signal present
                                                 0x1 << 7 -Error signal on/off"
 
-    uint8_t     smcu_internal_state;            "Enumerated: derived from S.MCU FSM : 
+    * uint8_t     smcu_internal_state           Enumerated: derived from S.MCU FSM : 
                                                 0 = INIT_STATE
                                                 1 = TRANSITION_STATE
                                                 2 = RUN_SAFE_STATE
@@ -251,7 +252,7 @@ namespace librealsense
                                                 11 = INTERLOCK_DANGER_STATE
                                                 12 = DFU_MCU_STATE"
 
-     uint32_t    smcu_hw_monitor_status;        S.MCU HW Error report.
+    * uint32_t    smcu_hw_monitor_status        S.MCU HW Error report.
                                                 The parameters are derived from FMEDA, bitmasked (1 for Danger, 0 otherwise) and S.MCU-specific
                                                 0x1 << 0 - Global Notification
                                                 [1:10] - SMU Alarms
@@ -268,9 +269,19 @@ namespace librealsense
                                                 0x1 << 21 - RegMon SMU and PLL Failure
                                                 [22:31] - Reserved
 
+    * uint32_t   smcu_sw_monitor_status         S.MCU SW Monitor Report, bitmask:
+                                                0x1 << 0 - Global Notification (SW Monitor Ok=0, Fail=1)
+                                                0x1 << 1 -  SW Monitor Status (Ok=0, fail =1)
+                                                [2:19] - Keep-Alive failure
+                                                0x1 << 11 - SMCU Image CRC Check failed
+                                                [12:31] - SafeTpack Startup Tests Failure
 
-
-
+    * uint8_t    non_fusa_gpio_in               Bitmask.  To be presented as HEX value
+                                                0x1 << 0 - Interlock_present
+                                                0x1 << 1 - Interlock_status: Raised=1/Idle=0
+                                                0x1 << 2 - HW_Reset_present
+                                                0x1 << 3 - HW_Reset status: Raised/Idle
+                                                Bits 4-7 are reserved (zeroed)
     *
     *
     */ 
@@ -324,7 +335,11 @@ namespace librealsense
         uint32_t    soc_monitor_l2_error_type;      // Soc Monitor Escalation of L2 error to Arbiter
         uint32_t    soc_monitor_l3_error_type;      // Soc Monitor Escalation of L3 error to Arbiter
         uint16_t    soc_safety_and_security;        // Bitmask: see details above the struct
-        uint8_t     soc_reserved[23];               // zeroed
+        uint64_t    depth_frame_timestamp;          // Depth Frame Timestamp (HKR Clock)
+        uint64_t    smcu_processing_timestamp;      // Timestamp of verdict (HKR Clock)
+        uint8_t     safety_pipeline_propagation_delay; // Interval measuring (SMCU Processing - Depth Timestamp) in msec units
+                                                    // Range[0.255]. Values above 255 will be trimmed to max
+        uint8_t     soc_reserved[6];               // zeroed
 
         // MB Monitor
         uint64_t    mb_fusa_event;                  // Bitmask: see details above the struct
@@ -342,11 +357,11 @@ namespace librealsense
         uint8_t     smcu_bist_status;               // Bitmask. To be presented as HEX value
 
         // OUT
-        uint8_t     non_fusa_gpio;                  // Bitmask: see details above the struct
-
+        uint8_t     non_fusa_gpio_out;              // Bitmask: see details above the struct
         uint32_t    smcu_hw_monitor_status;         // Bitmask: see details above the struct
-
-        uint8_t     mcu_reserved[28];               // zeroed
+        uint32_t    smcu_sw_monitor_status;         // Bitmask: see details above the struct
+        uint8_t     non_fusa_gpio_in;               // Bitmask: see details above the struct
+        uint8_t     mcu_reserved[23];               // zeroed
         
         uint32_t    crc32;                          // CRC
     };

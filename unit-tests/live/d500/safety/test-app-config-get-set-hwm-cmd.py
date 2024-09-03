@@ -46,12 +46,14 @@ def generate_sip_part():
     sip_temporal_safety_features_selection = 0
     sip_mechanisms_thresholds = to_np_array(0, 16)
     sip_mechanisms_sampling_interval = to_np_array(0, 8)
-    sip_reserved = to_np_array(0, 64)
+    tc_consecutives_failures_threshold = np.asarray([3], dtype=np.uint8)
+    sip_reserved = to_np_array(0, 63)
 
     sip1 = np.asarray([sip_immediate_mode_safety_features_selection, sip_temporal_safety_features_selection], dtype=np.uint8)
     sip2 = np.hstack((sip1, sip_mechanisms_thresholds), dtype=np.uint8)
     sip3 = np.hstack((sip2, sip_mechanisms_sampling_interval), dtype=np.uint8)
-    sip4 = np.hstack((sip3, sip_reserved), dtype=np.uint8)
+    sip4 = np.hstack((sip3, tc_consecutives_failures_threshold), dtype=np.uint8)
+    sip5 = np.hstack((sip4, sip_reserved), dtype=np.uint8)
 
     return sip4
 
@@ -163,14 +165,14 @@ def generate_depth_sign_features():
     depth_pipeline_config = 0
     depth_roi = 0
     ir_for_sip = 0
-    reserved3 = to_np_array(0, 39)
+    peripherals_sensors_disable_mask = to_np_array(0, 2)
+    reserved3 = to_np_array(0, 264)
     digital_signature = to_np_array(0, 32)
-    reserved = to_np_array(0, 228)
 
     ds_1 = np.asarray([depth_pipeline_config, depth_roi, ir_for_sip], dtype=np.uint8)
-    ds_2 = np.hstack((ds_1, reserved3))
-    ds_3 = np.hstack((ds_2, digital_signature))
-    ds_4 = np.hstack((ds_3, reserved))
+    ds_2 = np.hstack((ds_1, peripherals_sensors_disable_mask))
+    ds_3 = np.hstack((ds_2, reserved3))
+    ds_4 = np.hstack((ds_3, digital_signature))
 
     return ds_4
 
