@@ -69,6 +69,7 @@ fi
 #Include usability functions
 source ./scripts/patch-utils-hwe.sh
 LINUX_BRANCH=${LINUX_BRANCH:-$(uname -r)}
+UBUNTU_VERSION=$(uname -v | cut -d '-' -f 1 | cut -d '~' -f 2)
 
 # Get the required tools and headers to build the kernel
 sudo apt-get install linux-headers-$LINUX_BRANCH build-essential git bc -y
@@ -141,7 +142,13 @@ then
 	then
 		kernel_git_tag=$(git ls-remote --tags origin | grep "${kernel_full_num}\." | grep '[^^{}]$' | tail -n 1 | awk -F/ '{print $NF}')
 	else
-		kernel_git_tag=$(git ls-remote --tags origin | grep "${kernel_full_num}\." | grep '[^^{}]$' | head -n 1 | awk -F/ '{print $NF}')
+		# Search for the tag name with suitable UBUNTU_VERSION. If not there, pick the one with matching kernel version alone.
+		if [[ -z "$(git ls-remote --tags origin | grep "${kernel_full_num}\." | grep '[^^{}]$' | grep "${UBUNTU_VERSION}" )" ]];
+		then
+			kernel_git_tag=$(git ls-remote --tags origin | grep "${kernel_full_num}\." | grep '[^^{}]$' | head -n 1 | awk -F/ '{print $NF}')
+		else
+			kernel_git_tag=$(git ls-remote --tags origin | grep "${kernel_full_num}\." | grep '[^^{}]$' | grep "${UBUNTU_VERSION}" | head -n 1 | awk -F/ '{print $NF}')
+		fi
 	fi
 	echo -e "\e[32mFetching Ubuntu LTS tag \e[47m${kernel_git_tag}\e[0m \e[32m to the local kernel sources folder\e[0m"
 	git fetch origin tag ${kernel_git_tag} --no-tags --depth 1
