@@ -127,6 +127,18 @@ namespace librealsense
         std::weak_ptr< sensor_base > _sensor;
     };
     
+    class d500_thermal_compensation_option : public bool_option
+    {
+    public:
+
+        d500_thermal_compensation_option( std::shared_ptr< hw_monitor > hwm );
+
+        virtual void set(float value) override;
+
+    private:
+        std::weak_ptr< hw_monitor > _hwm;
+    };
+    
     class power_line_freq_option : public uvc_pu_option
     {
     public:

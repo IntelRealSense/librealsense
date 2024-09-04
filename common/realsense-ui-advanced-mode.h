@@ -74,7 +74,7 @@ inline void slider_int(std::string& error_message, const char* id, T* val, S T::
     {
         char buff[TEXT_BUFF_SIZE];
         memset(buff, 0, TEXT_BUFF_SIZE);
-        strncpy(buff, val_ptr->c_str(), TEXT_BUFF_SIZE);
+        strncpy(buff, val_ptr->c_str(), TEXT_BUFF_SIZE - 1);
         if (ImGui::InputText(slider_id.c_str(), buff, TEXT_BUFF_SIZE,
             ImGuiInputTextFlags_EnterReturnsTrue))
         {
@@ -139,7 +139,7 @@ inline void slider_float(std::string& error_message, const char* id, T* val, S T
     {
         char buff[TEXT_BUFF_SIZE];
         memset(buff, 0, TEXT_BUFF_SIZE);
-        strcpy(buff, val_ptr->c_str());
+        strncpy(buff, val_ptr->c_str(), TEXT_BUFF_SIZE - 1);
         if (ImGui::InputText(slider_id.c_str(), buff, TEXT_BUFF_SIZE,
             ImGuiInputTextFlags_EnterReturnsTrue))
         {
