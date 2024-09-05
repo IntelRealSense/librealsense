@@ -719,17 +719,27 @@ namespace librealsense
 
     bool d500_device::check_symmetrization_enabled() const
     {
-        using namespace ds;
-        command cmd(GET_HKR_CONFIG_TABLE,
-            static_cast<int>(d500_calib_location::d500_calib_ram_memory),
-            static_cast<int>(d500_calibration_table_id::stream_pipe_config_id),
-            static_cast<int>(d500_calib_type::d500_calib_dynamic));
-        auto res = _hw_monitor->send(cmd);
+        try
+        {
+            using namespace ds;
+            command cmd(GET_HKR_CONFIG_TABLE,
+                static_cast<int>(d500_calib_location::d500_calib_ram_memory),
+                static_cast<int>(d500_calibration_table_id::stream_pipe_config_id),
+                static_cast<int>(d500_calib_type::d500_calib_dynamic));
+            auto res = _hw_monitor->send(cmd);
        
-        if (res.size() != sizeof(d500_stream_pipe_config_table))
-            throw invalid_value_exception("Stream Config table has unexpected length");
-        auto stream_pipe_config_table = check_calib<d500_stream_pipe_config_table>(res);
-        return stream_pipe_config_table->is_depth_symmetrization_enabled == 1;
+            if (res.size() != sizeof(d500_stream_pipe_config_table))
+                throw invalid_value_exception("Stream Config table has unexpected length");
+            auto stream_pipe_config_table = check_calib<d500_stream_pipe_config_table>(res);
+            return stream_pipe_config_table->is_depth_symmetrization_enabled == 1;
+        }
+        catch (...)
+        {
+            command cmd{ ds::MRD, 0x80000004, 0x80000008 };
+            auto res = _hw_monitor->send(cmd);
+            uint32_t val = *reinterpret_cast<uint32_t*>(res.data());
+            return val == 1;
+        }
     }
     
     void d500_device::get_gvd_details(const std::vector<uint8_t>& gvd_buff, ds::d500_gvd_parsed_fields* parsed_fields) const
