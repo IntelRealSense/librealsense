@@ -14,13 +14,10 @@
         {
             assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
 
-            auto dst = reinterpret_cast<uint8_t *>(d[0]);
-            auto src = reinterpret_cast<const uint8_t *>(s);
-
             for (int i = 0; i < n; i+=16)
             {
                 // Load 16 pixels
-                const uint8x8x4_t yuyv = vld4_u8(reinterpret_cast<const uint8_t *>(&src[i * 2]));
+                const uint8x8x4_t yuyv = vld4_u8(&s[i * 2]);
                 // yuyv.val[0] = y0, yuyv.val[1] = u, yuyv.val[2] = y1, yuyv.val[3] = v
 
                 if (FORMAT == RS2_FORMAT_Y8)
@@ -28,7 +25,7 @@
                     const uint8x16_t y8_0_7 = vcombine_u8(yuyv.val[0], yuyv.val[0]);
                     const uint8x16_t y8_8_F = vcombine_u8(yuyv.val[2], yuyv.val[2]);
                     const uint8x16_t y8_0_F = vzip1q_u8(y8_0_7, y8_8_F);
-                    vst1q_u8(&dst[i], y8_0_F);
+                    vst1q_u8(d[i], y8_0_F);
                     continue;
                 }
 
@@ -41,7 +38,7 @@
                     uint8x16x2_t y16;
                     y16.val[0] = vdupq_n_u8(0);
                     y16.val[1] = y8_0_F;
-                    vst2q_u8(&dst[i * 2], y16);
+                    vst2q_u8(d[i * 2], y16);
                     continue;
                 }
 
@@ -94,19 +91,19 @@
                         //   = + (42 * (Y - 16)) >> 8 + (Y - 16)
                         //     + (260 * (U - 128)) >> 8 + (U - 128)
 
-                        auto c = vsubq_s16(y16.val[j], n16);
-                        c = vaddq_s16(
-                                vshrq_n_s16(vmulq_s16(c, vdupq_n_s16(298 - (1 << 8))), 8),
-                                c
+                        auto tmp0 = vsubq_s16(y16.val[j], n16);
+                        tmp0 = vaddq_s16(
+                                vshrq_n_s16(vmulq_s16(tmp0, vdupq_n_s16(298 - (1 << 8))), 8),
+                                tmp0
                         );
-                        const auto d = vsubq_s16(u16.val[j], n128);
-                        const auto e = vsubq_s16(v16.val[j], n128);
+                        const auto tmp1 = vsubq_s16(u16.val[j], n128);
+                        const auto tmp2 = vsubq_s16(v16.val[j], n128);
 
                         r16.val[j] = vaddq_s16(
-                            c,
+                            tmp0,
                             vaddq_s16(
-                                vshrq_n_s16(vmulq_s16(e, vdupq_n_s16(409 - (1 << 8))), 8),
-                                e
+                                vshrq_n_s16(vmulq_s16(tmp2, vdupq_n_s16(409 - (1 << 8))), 8),
+                                tmp2
                             )
                         );
                         // clamp min value to 0
@@ -115,16 +112,16 @@
                         r16.val[j] = vmaxq_s16(n0, r16.val[j]);
 
                         g16.val[j] = vsubq_s16(
-                            vsubq_s16(c, vshrq_n_s16(vmulq_s16(d, vdupq_n_s16(100)), 8)),
-                            vshrq_n_s16(vmulq_s16(e, vdupq_n_s16(208)), 8)
+                            vsubq_s16(tmp0, vshrq_n_s16(vmulq_s16(tmp1, vdupq_n_s16(100)), 8)),
+                            vshrq_n_s16(vmulq_s16(tmp2, vdupq_n_s16(208)), 8)
                         );
                         g16.val[j] = vmaxq_s16(n0, g16.val[j]);
 
                         b16.val[j] = vaddq_s16(
-                            c,
+                            tmp0,
                             vaddq_s16(
-                                vshrq_n_s16(vmulq_s16(d, vdupq_n_s16(516 - (1 << 8))), 8),
-                                d
+                                vshrq_n_s16(vmulq_s16(tmp1, vdupq_n_s16(516 - (1 << 8))), 8),
+                                tmp1
                             )
                         );
                         b16.val[j] = vmaxq_s16(n0, b16.val[j]);
@@ -152,7 +149,7 @@
                     rgba.val[1] = g8;
                     rgba.val[2] = b8;
                     rgba.val[3] = vdupq_n_u8(255);
-                    vst4q_u8(&dst[i * 4], rgba);
+                    vst4q_u8(d[i * 4], rgba);
                     continue;
                 }
                 if (FORMAT == RS2_FORMAT_RGB8)
@@ -161,7 +158,7 @@
                     rgb.val[0] = r8;
                     rgb.val[1] = g8;
                     rgb.val[2] = b8;
-                    vst3q_u8(&dst[i * 3], rgb);
+                    vst3q_u8(d[i * 3], rgb);
                     continue;
                 }
                 if (FORMAT == RS2_FORMAT_BGRA8)
@@ -171,7 +168,7 @@
                     bgra.val[1] = g8;
                     bgra.val[2] = r8;
                     bgra.val[3] = vdupq_n_u8(255);
-                    vst4q_u8(&dst[i * 4], bgra);
+                    vst4q_u8(d[i * 4], bgra);
                     continue;
                 }
                 if (FORMAT == RS2_FORMAT_BGR8)
@@ -180,7 +177,7 @@
                     bgr.val[0] = b8;
                     bgr.val[1] = g8;
                     bgr.val[2] = r8;
-                    vst3q_u8(&dst[i * 3], bgr);
+                    vst3q_u8(d[i * 3], bgr);
                     continue;
                 }
             }
