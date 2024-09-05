@@ -719,6 +719,10 @@ namespace librealsense
 
     bool d500_device::check_symmetrization_enabled() const
     {
+        // The following try catch block has been added to avoid
+        // device's constructor failure for users working with new librealsense
+        // version and old fw version (which would not have the stream pipe config table)
+        // Only the content of the try statemewnts should be kept, after some time.
         try
         {
             using namespace ds;
