@@ -25,7 +25,7 @@
                     const uint8x16_t y8_0_7 = vcombine_u8(yuyv.val[0], yuyv.val[0]);
                     const uint8x16_t y8_8_F = vcombine_u8(yuyv.val[2], yuyv.val[2]);
                     const uint8x16_t y8_0_F = vzip1q_u8(y8_0_7, y8_8_F);
-                    vst1q_u8(d[i], y8_0_F);
+                    vst1q_u8(&d[0][i], y8_0_F);
                     continue;
                 }
 
@@ -38,7 +38,7 @@
                     uint8x16x2_t y16;
                     y16.val[0] = vdupq_n_u8(0);
                     y16.val[1] = y8_0_F;
-                    vst2q_u8(d[i * 2], y16);
+                    vst2q_u8(&d[0][i * 2], y16);
                     continue;
                 }
 
@@ -149,7 +149,7 @@
                     rgba.val[1] = g8;
                     rgba.val[2] = b8;
                     rgba.val[3] = vdupq_n_u8(255);
-                    vst4q_u8(d[i * 4], rgba);
+                    vst4q_u8(&d[0][i * 4], rgba);
                     continue;
                 }
                 if (FORMAT == RS2_FORMAT_RGB8)
@@ -158,7 +158,7 @@
                     rgb.val[0] = r8;
                     rgb.val[1] = g8;
                     rgb.val[2] = b8;
-                    vst3q_u8(d[i * 3], rgb);
+                    vst3q_u8(&d[0][i * 3], rgb);
                     continue;
                 }
                 if (FORMAT == RS2_FORMAT_BGRA8)
@@ -168,7 +168,7 @@
                     bgra.val[1] = g8;
                     bgra.val[2] = r8;
                     bgra.val[3] = vdupq_n_u8(255);
-                    vst4q_u8(d[i * 4], bgra);
+                    vst4q_u8(&d[0][i * 4], bgra);
                     continue;
                 }
                 if (FORMAT == RS2_FORMAT_BGR8)
@@ -177,7 +177,7 @@
                     bgr.val[0] = b8;
                     bgr.val[1] = g8;
                     bgr.val[2] = r8;
-                    vst3q_u8(d[i * 3], bgr);
+                    vst3q_u8(&d[0][i * 3], bgr);
                     continue;
                 }
             }
