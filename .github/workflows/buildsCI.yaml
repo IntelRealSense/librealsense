@@ -260,7 +260,7 @@ jobs:
 
 
   #--------------------------------------------------------------------------------
-  U20_U24_ST_Py_EX_CfU_LiveTest:  # Ubuntu, Static, Python, Examples & Tools, Check for Updates
+  U22_U24_ST_Py_EX_CfU:  # Ubuntu, Static, Python, Examples & Tools, Check for Updates
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -293,16 +293,6 @@ jobs:
         cd build
         cmake .. -DCMAKE_BUILD_TYPE=${{env.LRS_RUN_CONFIG}} -DBUILD_SHARED_LIBS=false -DBUILD_EXAMPLES=true -DBUILD_TOOLS=true -DCHECK_FOR_UPDATES=true -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3)
         cmake --build . -- -j4
-        
-    - name: Test
-      shell: bash
-      id: test-step
-      # We set continue-on-error: true as a workaround for not skipping the upload log step on failure,
-      # The final step will check the return value from the test step and decide if to fail/pass the job
-      continue-on-error: true 
-      run: |
-        export LRS_LOG_LEVEL="DEBUG";
-        cd build/${{env.LRS_RUN_CONFIG}}/  
 
     - name: Upload RS log artifact
       uses: actions/upload-artifact@v4
