@@ -260,7 +260,7 @@ jobs:
 
 
   #--------------------------------------------------------------------------------
-  U20_U24_ST_Py_EX_CfU_LiveTest:  # Ubuntu, Static, Python, Examples & Tools, Check for Updates, Legacy Live-Tests
+  U20_U24_ST_Py_EX_CfU_LiveTest:  # Ubuntu, Static, Python, Examples & Tools, Check for Updates
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -291,7 +291,7 @@ jobs:
       shell: bash
       run: |
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=${{env.LRS_RUN_CONFIG}} -DBUILD_SHARED_LIBS=false -DBUILD_EXAMPLES=true -DBUILD_TOOLS=true -DCHECK_FOR_UPDATES=true -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3)
+        cmake .. -DCMAKE_BUILD_TYPE=${{env.LRS_RUN_CONFIG}} -DBUILD_SHARED_LIBS=false -DBUILD_EXAMPLES=true -DBUILD_TOOLS=true -DCHECK_FOR_UPDATES=true -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3)
         cmake --build . -- -j4
         
     - name: Test
@@ -469,79 +469,6 @@ jobs:
       shell: bash
       run: |
         python3 unit-tests/run-unit-tests.py --no-color --debug --stdout --not-live --context "dds linux" --tag dds
-  
-
-  #--------------------------------------------------------------------------------
-  U22_U24_SH_RSUSB_LiveTest:  # Ubuntu, Shared, Legacy live-tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-22.04, ubuntu-24.04]
-        include:
-          - os: ubuntu-22.04
-            name: U22
-          - os: ubuntu-24.04
-            name: U24
-    name: ${{ matrix.name }}_SH_RSUSB_LiveTest
-    timeout-minutes: 60
-    env: 
-      LRS_BUILD_NODEJS: true
-    steps:
-    - uses: actions/checkout@v4
-          
-    - name: Check_API
-      shell: bash
-      run: |
-        cd scripts
-        ./api_check.sh
-        cd ..  
-        
-    - name: Prebuild
-      shell: bash
-      run: |
-        set -x
-        
-        mkdir build
-        sudo apt-get update;
-        sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
-        sudo apt-get install -qq libusb-1.0-0-dev;
-        sudo apt-get install -qq libgtk-3-dev;
-        sudo apt-get install libglfw3-dev libglfw3;
-
-    - name: Build
-      shell: bash
-      run: | 
-        cd build
-        cmake .. -DCMAKE_BUILD_TYPE=${{env.LRS_BUILD_CONFIG}} -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DCHECK_FOR_UPDATES=false -DFORCE_RSUSB_BACKEND=true -DBUILD_LEGACY_LIVE_TEST=true
-        cmake --build . -- -j4
-
-    - name: Test
-      shell: bash
-      id: test-step
-      # We set continue-on-error: true as a workaround for not skipping the upload log step on failure,
-      # The final step will check the return value from the test step and decide if to fail/pass the job
-      continue-on-error: true 
-      run: | 
-        export LRS_LOG_LEVEL="DEBUG";
-        cd build/${{env.LRS_BUILD_CONFIG}}/
-        ./live-test -d yes -i [software-device]
-
-    - name: Upload RS log artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Log file - ${{ matrix.name }}_SH_RSUSB_LiveTest
-        path: build/${{env.LRS_BUILD_CONFIG}}/*.log
-
-    - name: Provide correct exit status for job 
-      shell: bash
-      run: |
-        if [ ${{steps.test-step.outcome}} = "failure" ];then
-           echo "Test step failed, please open it to view the reported issue"
-           exit 1
-        else
-           exit 0
-        fi
-
 
   #--------------------------------------------------------------------------------
   Mac_cpp:

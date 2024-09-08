@@ -259,12 +259,7 @@ namespace librealsense
         float fy[2] = { -1.0f, -1.0f };
 
         float left_rect_sides[4] = { 0.f };
-        ds_calib_common::get_target_rect_info( left,
-                                               left_rect_sides,
-                                               fx[0],
-                                               fy[0],
-                                               50,
-                                               progress_callback );  // Report 50% progress
+        ds_calib_common::get_target_rect_info( left, left_rect_sides, fx[0], fy[0], 50, progress_callback );  // Report 50% progress
 
         float right_rect_sides[4] = { 0.f };
         ds_calib_common::get_target_rect_info( right, right_rect_sides, fx[1], fy[1], 75, progress_callback );

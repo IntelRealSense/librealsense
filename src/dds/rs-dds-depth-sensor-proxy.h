@@ -8,10 +8,10 @@
 
 namespace librealsense {
 
-// For cases when checking if this is< depth_sensor > (like realsense-viewer::subdevice_model)
+// For cases when checking if this is< depth_sensor > or is< depth_stereo_sensor > (like realsense-viewer::subdevice_model and on-chip-calib)
 class dds_depth_sensor_proxy
     : public dds_sensor_proxy
-    , public depth_sensor
+    , public depth_stereo_sensor
 {
     using super = dds_sensor_proxy;
 
@@ -25,6 +25,7 @@ public:
 
     // Needed by abstract interfaces
     float get_depth_scale() const override;
+    float get_stereo_baseline_mm() const override;
 
 protected:
     void add_no_metadata( frame *, streaming_impl & ) override;
