@@ -28,12 +28,17 @@ namespace librealsense
         "Failed to Run"
     };
 
-    d500_auto_calibrated::d500_auto_calibrated(std::shared_ptr<d500_debug_protocol_calibration_engine> calib_engine) :
-        _calib_engine(calib_engine),
-        _mode (calibration_mode::RESERVED),
-        _state (calibration_state::IDLE),
-        _result(calibration_result::UNKNOWN)
-    {}
+    d500_auto_calibrated::d500_auto_calibrated( std::shared_ptr< d500_debug_protocol_calibration_engine > calib_engine,
+                                                debug_interface * debug_dev )
+        : _calib_engine( calib_engine )
+        , _mode( calibration_mode::RESERVED )
+        , _state( calibration_state::IDLE )
+        , _result( calibration_result::UNKNOWN )
+        , _debug_dev( debug_dev )
+    {
+        if( ! _debug_dev )
+            throw not_implemented_exception( " debug_interface must be supplied to d500_auto_calibrated" );
+    }
 
     void d500_auto_calibrated::check_preconditions_and_set_state()
     {
@@ -77,44 +82,116 @@ namespace librealsense
             throw std::runtime_error("run_on_chip_calibration called with wrong content in json file");
     }
 
-    std::vector<uint8_t> d500_auto_calibrated::run_on_chip_calibration(int timeout_ms, std::string json, 
-        float* const health, rs2_update_progress_callback_sptr progress_callback)
+    std::vector<uint8_t> d500_auto_calibrated::run_on_chip_calibration( int timeout_ms,
+                                                                        std::string json,
+                                                                        float * const health,
+                                                                        rs2_update_progress_callback_sptr progress_callback )
     {
-        std::vector<uint8_t> res;
+        bool is_d555 = false;
+        auto dev = As< device >( this );
+        std::string pid_str = dev ? dev->get_info( RS2_CAMERA_INFO_PRODUCT_ID ) : "";
+        if( pid_str == "0B56" || pid_str == "DDS" )
+            is_d555 = true;
+
+        if( is_d555 )
+            return run_occ( timeout_ms, json, health, progress_callback );
+
+        return run_triggered_calibration( timeout_ms, json, progress_callback );
+    }
+
+    std::vector< uint8_t > d500_auto_calibrated::run_triggered_calibration( int timeout_ms,
+                                                                            std::string json,
+                                                                            rs2_update_progress_callback_sptr progress_callback )
+    {
+        std::vector< uint8_t > res;
+
         try
         {
-            get_mode_from_json(json);
+            get_mode_from_json( json );
 
             // checking preconditions
             check_preconditions_and_set_state();
 
             // sending command to start calibration
-            res = _calib_engine->run_triggered_calibration(_mode);
+            res = _calib_engine->run_triggered_calibration( _mode );
 
-            if (_mode == calibration_mode::RUN ||
-                _mode == calibration_mode::DRY_RUN)
+            if( _mode == calibration_mode::RUN || _mode == calibration_mode::DRY_RUN )
             {
-                res = update_calibration_status(timeout_ms, progress_callback);
+                res = update_calibration_status( timeout_ms, progress_callback );
             }
-            else if (_mode == calibration_mode::ABORT)
+            else if( _mode == calibration_mode::ABORT )
             {
                 res = update_abort_status();
             }
         }
-        catch (std::runtime_error&)
+        catch( std::runtime_error & )
         {
             throw;
         }
-        catch(...)
+        catch( ... )
         {
             std::string error_message_prefix = "\nRUN OCC ";
-            if (_mode == calibration_mode::DRY_RUN)
+            if( _mode == calibration_mode::DRY_RUN )
                 error_message_prefix = "\nDRY RUN OCC ";
-            else if (_mode == calibration_mode::ABORT)
+            else if( _mode == calibration_mode::ABORT )
                 error_message_prefix = "\nABORT OCC ";
 
-            throw std::runtime_error(rsutils::string::from() << error_message_prefix + "Could not be triggered");
+            throw std::runtime_error( rsutils::string::from() << error_message_prefix + "Could not be triggered" );
         }
+
+        return res;
+    }
+
+    std::vector< uint8_t > d500_auto_calibrated::run_occ( int timeout_ms, std::string json, float * const health,
+                                                          rs2_update_progress_callback_sptr progress_callback )
+    {
+        int speed = ds_calib_common::SPEED_SLOW;
+        int scan_parameter = ds_calib_common::PY_SCAN;
+        int data_sampling = ds_calib_common::INTERRUPT;
+
+        volatile thermal_compensation_guard grd(this); //Enforce Thermal Compensation off during OCC
+
+        if (json.size() > 0)
+        {
+            auto jsn = ds_calib_common::parse_json( json );
+
+            ds_calib_common::update_value_if_exists( jsn, "speed", speed );
+            ds_calib_common::update_value_if_exists( jsn, "scan parameter", scan_parameter );
+            ds_calib_common::update_value_if_exists( jsn, "data sampling", data_sampling );
+
+            ds_calib_common::check_params( speed, scan_parameter, data_sampling );
+        }
+
+        LOG_DEBUG("run_on_chip_calibration with parameters: speed = " << speed << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
+
+        uint32_t p4 = 0;
+        if (scan_parameter)
+            p4 |= 1;
+        if (data_sampling)
+            p4 |= (1 << 3);
+
+        // Begin auto-calibration
+        auto cmd = _debug_dev->build_command( ds::AUTO_CALIB, ds_calib_common::PY_RX_CALIB_BEGIN, speed, 0, p4 );
+        std::vector< uint8_t > res = _debug_dev->send_receive_raw_data( cmd ); // TODO - need to remove res first 4 bytes?
+
+        ds_calib_common::dsc_check_status_result result = get_calibration_status(timeout_ms, [progress_callback, speed](int count)
+        {
+            if( progress_callback )
+                progress_callback->on_update_progress( count++ * ( 2.f * static_cast< int >( speed ) ) );  // currently this number does not reflect the actual progress
+        });
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        auto status = (ds_calib_common::dsc_status)result.status;
+
+        // Handle errors from firmware
+        if (status != ds_calib_common::STATUS_SUCCESS)
+        {
+            ds_calib_common::handle_calibration_error( status );
+        }
+        if (progress_callback)
+            progress_callback->on_update_progress(static_cast<float>(100));
+        res = get_calibration_results(health);
+
         return res;
     }
 
@@ -354,4 +431,82 @@ namespace librealsense
         _calib_engine->set_calibration_config(calibration_config_json_str);
     }
 
+    ds_calib_common::dsc_check_status_result
+    d500_auto_calibrated::get_calibration_status( int timeout_ms,
+                                                  std::function< void( const int count ) > progress_func,
+                                                  bool wait_for_final_results ) const
+    {
+        ds_calib_common::dsc_check_status_result result{};
+
+        int count = 0;
+        int retries = 0;
+        bool done = false;
+
+        auto start = std::chrono::high_resolution_clock::now();
+        auto now = start;
+
+        // While not ready...
+        do
+        {
+            std::this_thread::sleep_for( std::chrono::milliseconds( 200 ) );
+            try
+            {
+                // Check calibration status
+                auto cmd = _debug_dev->build_command( ds::AUTO_CALIB, ds_calib_common::PY_RX_CALIB_CHECK_STATUS );
+                auto res = _debug_dev->send_receive_raw_data( cmd ); // TODO - need to remove res first 4 bytes?
+                if( res.size() < sizeof( ds_calib_common::dsc_check_status_result ) )
+                {
+                    if( ! ( ( retries++ ) % 5 ) ) // Add log debug once a sec
+                        LOG_DEBUG( "Not enough data from CALIB_STATUS!" );
+                }
+                else
+                {
+                    result = *reinterpret_cast< ds_calib_common::dsc_check_status_result * >( res.data() );
+                    done = ! wait_for_final_results || result.status != ds_calib_common::STATUS_RESULT_NOT_READY;
+                }
+            }
+            catch( const invalid_value_exception & e )
+            {
+                LOG_DEBUG( "error: " << e.what() ); // Asked for status while firmware is still in progress.
+            }
+
+            if( progress_func )
+            {
+                progress_func( count );
+            }
+
+            now = std::chrono::high_resolution_clock::now();
+        }
+        while( now - start < std::chrono::milliseconds( timeout_ms ) && ! done );
+
+
+        // If we exit due to timeout, report timeout
+        if( ! done )
+            throw std::runtime_error( "Operation timed-out!\nCalibration state did not converge on time" );
+
+        return result;
+    }
+
+    std::vector< uint8_t > d500_auto_calibrated::get_calibration_results( float * const health ) const
+    {
+        // Get new calibration from the firmware
+        auto cmd = _debug_dev->build_command( ds::AUTO_CALIB, ds_calib_common::GET_CALIBRATION_RESULT );
+        auto res = _debug_dev->send_receive_raw_data( cmd );  // TODO - need to remove res first 4 bytes?
+        if( res.size() < sizeof( ds_calib_common::dsc_result ) )
+            throw std::runtime_error( "Not enough data from CALIB_STATUS!" );
+
+        auto * header = reinterpret_cast< ds::table_header * >( res.data() + sizeof( ds_calib_common::dsc_result ) );
+        if( res.size() < sizeof( ds_calib_common::dsc_result ) + sizeof( ds::table_header ) + header->table_size )
+            throw std::runtime_error( "Table truncated in CALIB_STATUS!" );
+
+        std::vector< uint8_t > calib;
+        calib.resize( sizeof( ds::table_header ) + header->table_size, 0 );
+        memcpy( calib.data(), header, calib.size() );  // Copy to new_calib
+
+        auto reslt = reinterpret_cast< ds_calib_common::dsc_result * >( res.data() );
+        if( health )
+            *health = reslt->healthCheck;
+
+        return calib;
+    }
 }

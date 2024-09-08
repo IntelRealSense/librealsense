@@ -5,15 +5,19 @@
 
 #include <src/auto-calibrated-device.h>
 #include <src/calibration-engine-interface.h>  // should remain for members _mode, _state, _result
+#include <src/ds/ds-calib-common.h>
 
 
 namespace librealsense
 {
+    class debug_interface;
     class d500_debug_protocol_calibration_engine;
+
     class d500_auto_calibrated : public auto_calibrated_interface
     {
     public:
-        d500_auto_calibrated(std::shared_ptr<d500_debug_protocol_calibration_engine> calib_engine);
+        d500_auto_calibrated( std::shared_ptr< d500_debug_protocol_calibration_engine > calib_engine,
+                              debug_interface * debug_dev );
         void write_calibration() const override;
         std::vector<uint8_t> run_on_chip_calibration(int timeout_ms, std::string json, float* const health, rs2_update_progress_callback_sptr progress_callback) override;
         std::vector<uint8_t> run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* const health, rs2_update_progress_callback_sptr progress_callback) override;
@@ -35,11 +39,20 @@ namespace librealsense
         void get_mode_from_json(const std::string& json);
         std::vector<uint8_t> update_calibration_status(int timeout_ms, rs2_update_progress_callback_sptr progress_callback);
         std::vector<uint8_t> update_abort_status();
+        std::vector< uint8_t > run_triggered_calibration( int timeout_ms, std::string json,
+                                                          rs2_update_progress_callback_sptr progress_callback );
+        std::vector< uint8_t > run_occ( int timeout_ms, std::string json, float * const health,
+                                        rs2_update_progress_callback_sptr progress_callback );
+        ds_calib_common::dsc_check_status_result get_calibration_status( int timeout_ms,
+                                                            std::function< void( const int count ) > progress_func,
+                                                            bool wait_for_final_results = true ) const;
+        std::vector< uint8_t > get_calibration_results( float * const health = nullptr ) const;
 
         mutable std::vector< uint8_t > _curr_calibration;
         std::shared_ptr<d500_debug_protocol_calibration_engine> _calib_engine;
         calibration_mode _mode;
         calibration_state _state;
         calibration_result _result;
+        debug_interface * _debug_dev;
     };
 }

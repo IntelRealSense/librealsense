@@ -9,7 +9,6 @@
 #include "librealsense2/rsutil.h"
 #include "algo.h"
 #include <src/core/video-frame.h>
-#include <src/ds/ds-calib-common.h>
 #include <src/ds/ds-thermal-monitor.h>
 
 #include <rsutils/string/from.h>
@@ -61,56 +60,14 @@ namespace librealsense
         uint16_t tableSize;  // 512 bytes
     };
 
-    struct DscResultParams
-    {
-        uint16_t m_status;
-        float    m_healthCheck;
-    };
-
     struct DscResultBuffer
     {
-        uint16_t m_paramSize;
-        DscResultParams m_dscResultParams;
-        uint16_t m_tableSize;
+        uint16_t paramSize;
+        uint16_t status;
+        float healthCheck;
+        uint16_t tableSize;
     };
-
-    enum rs2_dsc_status : uint16_t
-    {
-        RS2_DSC_STATUS_SUCCESS = 0, /**< Self calibration succeeded*/
-        RS2_DSC_STATUS_RESULT_NOT_READY = 1, /**< Self calibration result is not ready yet*/
-        RS2_DSC_STATUS_FILL_FACTOR_TOO_LOW = 2, /**< There are too little textures in the scene*/
-        RS2_DSC_STATUS_EDGE_TOO_CLOSE = 3, /**< Self calibration range is too small*/
-        RS2_DSC_STATUS_NOT_CONVERGE = 4, /**< For tare calibration only*/
-        RS2_DSC_STATUS_BURN_SUCCESS = 5,
-        RS2_DSC_STATUS_BURN_ERROR = 6,
-        RS2_DSC_STATUS_NO_DEPTH_AVERAGE = 7
-    };
-
 #pragma pack(pop)
-
-    enum auto_calib_sub_cmd : uint8_t
-    {
-        py_rx_calib_check_status        = 0x03,
-        interactive_scan_control        = 0x05,
-        py_rx_calib_begin               = 0x08,
-        tare_calib_begin                = 0x0b,
-        tare_calib_check_status         = 0x0c,
-        get_calibration_result          = 0x0d,
-        focal_length_calib_begin        = 0x11,
-        get_focal_legth_calib_result    = 0x12,
-        py_rx_plus_fl_calib_begin       = 0x13,
-        get_py_rx_plus_fl_calib_result  = 0x14,
-        set_coefficients                = 0x19
-    };
-
-    enum auto_calib_speed : uint8_t
-    {
-        speed_very_fast = 0,
-        speed_fast = 1,
-        speed_medium = 2,
-        speed_slow = 3,
-        speed_white_wall = 4
-    };
 
     enum class host_assistance_type
     {
@@ -126,18 +83,6 @@ namespace librealsense
         high = 1, //(0.05%)
         medium = 2, //(0.1%)
         low = 3 //(0.2%)
-    };
-
-    enum data_sampling
-    {
-        polling = 0,
-        interrupt = 1
-    };
-
-    enum scan_parameter
-    {
-        py_scan = 0,
-        rx_scan = 1
     };
 
     struct tare_params3
@@ -172,17 +117,17 @@ namespace librealsense
     const int DEFAULT_AVERAGE_STEP_COUNT = 20;
     const int DEFAULT_STEP_COUNT = 20;
     const int DEFAULT_ACCURACY = subpixel_accuracy::medium;
-    const auto_calib_speed DEFAULT_SPEED = auto_calib_speed::speed_slow;
-    const int DEFAULT_SCAN = scan_parameter::py_scan;
-    const int DEFAULT_SAMPLING = data_sampling::interrupt;
+    const ds_calib_common::auto_calib_speed DEFAULT_SPEED = ds_calib_common::SPEED_SLOW;
+    const int DEFAULT_SCAN = ds_calib_common::PY_SCAN;
+    const int DEFAULT_SAMPLING = ds_calib_common::INTERRUPT;
 
     const int DEFAULT_FL_STEP_COUNT = 100;
     const int DEFAULT_FY_SCAN_RANGE = 40;
     const int DEFAULT_KEEP_NEW_VALUE_AFTER_SUCESSFUL_SCAN = 1;
-    const int DEFAULT_FL_SAMPLING = data_sampling::interrupt;
+    const int DEFAULT_FL_SAMPLING = ds_calib_common::INTERRUPT;
     const int DEFAULT_ADJUST_BOTH_SIDES = 0;
 
-    const int DEFAULT_TARE_SAMPLING = data_sampling::polling;
+    const int DEFAULT_TARE_SAMPLING = ds_calib_common::POLLING;
 
     const int DEFAULT_OCC_FL_SCAN_LOCATION = 0;
     const int DEFAULT_FY_SCAN_DIRECTION = 0;
@@ -202,82 +147,10 @@ namespace librealsense
           _skipped_frames(0)
     {}
 
-    std::map<std::string, int> auto_calibrated::parse_json(std::string json_content)
+    ds_calib_common::dsc_check_status_result
+    auto_calibrated::get_calibration_status( int timeout_ms, std::function< void( const int count ) > progress_func, bool wait_for_final_results )
     {
-        auto j = rsutils::json::parse(json_content);
-
-        std::map<std::string, int> values;
-
-        for (auto it = j.begin(); it != j.end(); ++it)
-        {
-            values[it.key()] = it.value();
-        }
-
-        return values;
-    }
-
-    void try_fetch(std::map<std::string, int> jsn, std::string key, int* value)
-    {
-        std::replace(key.begin(), key.end(), '_', ' '); // Treat _ as space
-        if (jsn.find(key) != jsn.end())
-        {
-            *value = jsn[key];
-        }
-    }
-
-    // RAII to handle auto-calibration with the thermal compensation disabled
-    class thermal_compensation_guard
-    {
-    public:
-        thermal_compensation_guard(auto_calibrated_interface* handle) :
-            restart_tl(false), snr(nullptr)
-        {
-            if (Is<librealsense::device>(handle))
-            {
-                try
-                {
-                    // The depth sensor is assigned first by design
-                    snr = &(As<librealsense::device>(handle)->get_sensor(0));
-
-                    if (snr->supports_option(RS2_OPTION_THERMAL_COMPENSATION))
-                        restart_tl = static_cast<bool>(snr->get_option(RS2_OPTION_THERMAL_COMPENSATION).query() != 0);
-                    if (restart_tl)
-                    {
-                        snr->get_option(RS2_OPTION_THERMAL_COMPENSATION).set(0.f);
-                        // Allow for FW changes to propagate
-                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                    }
-                }
-                catch(...) {
-                    LOG_WARNING("Thermal Compensation guard failed to invoke");
-                }
-            }
-        }
-        virtual ~thermal_compensation_guard()
-        {
-            try
-            {
-                if (snr && restart_tl)
-                    snr->get_option(RS2_OPTION_THERMAL_COMPENSATION).set(1.f);
-            }
-            catch (...) {
-                LOG_WARNING("Thermal Compensation guard failed to complete");
-            }
-        }
-
-    protected:
-        bool restart_tl;
-        librealsense::sensor_interface* snr;
-
-    private:
-        // Disable copy/assignment ctors
-        thermal_compensation_guard(const thermal_compensation_guard&);
-        thermal_compensation_guard& operator=(const thermal_compensation_guard&);
-    };
-
-    DirectSearchCalibrationResult auto_calibrated::get_calibration_status(int timeout_ms, std::function<void(const int count)> progress_func, bool wait_for_final_results)
-    {
-        DirectSearchCalibrationResult result{};
+        ds_calib_common::dsc_check_status_result result{};
 
         int count = 0;
         int retries = 0;
@@ -293,9 +166,9 @@ namespace librealsense
             try
             {
                 // Check calibration status
-                auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_calib_check_status });
+                auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, ds_calib_common::PY_RX_CALIB_CHECK_STATUS });
                 LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__  << " check occ status, res size = " << res.size()));
-                if (res.size() < sizeof(DirectSearchCalibrationResult))
+                if( res.size() < sizeof( ds_calib_common::dsc_check_status_result ) )
                 {
                     if (!((retries++) % 5)) // Add log debug once in a sec
                     {
@@ -304,8 +177,8 @@ namespace librealsense
                 }
                 else
                 {
-                    result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
-                    done = !wait_for_final_results || result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
+                    result = *reinterpret_cast< ds_calib_common::dsc_check_status_result * >( res.data() );
+                    done = !wait_for_final_results || result.status != ds_calib_common::STATUS_RESULT_NOT_READY;
                 }
             }
             catch (const invalid_value_exception& e)
@@ -337,8 +210,8 @@ namespace librealsense
     {
         int calib_type = DEFAULT_CALIB_TYPE;
 
-        auto_calib_speed speed(DEFAULT_SPEED);
-        int speed_fl = auto_calib_speed::speed_slow;
+        ds_calib_common::auto_calib_speed speed( DEFAULT_SPEED );
+        int speed_fl = ds_calib_common::SPEED_SLOW;
         int scan_parameter = DEFAULT_SCAN;
         int data_sampling = DEFAULT_SAMPLING;
         int apply_preset = 1;
@@ -369,21 +242,21 @@ namespace librealsense
         {
             int tmp_speed(DEFAULT_SPEED);
             int tmp_host_assistance(0);
-            auto jsn = parse_json(json);
-            try_fetch(jsn, "calib type", &calib_type);
+            auto jsn = ds_calib_common::parse_json( json );
+            ds_calib_common::update_value_if_exists(jsn, "calib type", calib_type);
             if (calib_type == 0)
             {
-                try_fetch(jsn, "speed", &tmp_speed);
-                if (tmp_speed < speed_very_fast || tmp_speed >  speed_white_wall)
+                ds_calib_common::update_value_if_exists(jsn, "speed", tmp_speed);
+                if( tmp_speed < ds_calib_common::SPEED_VERY_FAST || tmp_speed > ds_calib_common::SPEED_WHITE_WALL )
                     throw invalid_value_exception( rsutils::string::from()
                                                    << "Auto calibration failed! Given value of 'speed' " << speed
                                                    << " is out of range (0 - 4)." );
-                speed = auto_calib_speed(tmp_speed);
+                speed = ds_calib_common::auto_calib_speed( tmp_speed );
             }
             else
-                try_fetch(jsn, "speed", &speed_fl);
+                ds_calib_common::update_value_if_exists(jsn, "speed", speed_fl);
 
-            try_fetch(jsn, "host assistance", &tmp_host_assistance);
+            ds_calib_common::update_value_if_exists(jsn, "host assistance", tmp_host_assistance);
             if (tmp_host_assistance < (int)host_assistance_type::no_assistance || tmp_host_assistance >  (int)host_assistance_type::assistance_second_feed)
                 throw invalid_value_exception( rsutils::string::from()
                                                << "Auto calibration failed! Given value of 'host assistance' "
@@ -391,25 +264,25 @@ namespace librealsense
                                                << (int)host_assistance_type::assistance_second_feed << ")." );
             host_assistance = host_assistance_type(tmp_host_assistance);
 
-            try_fetch(jsn, "scan parameter", &scan_parameter);
-            try_fetch(jsn, "data sampling", &data_sampling);
-            try_fetch(jsn, "apply preset", &apply_preset);
+            ds_calib_common::update_value_if_exists(jsn, "scan parameter", scan_parameter);
+            ds_calib_common::update_value_if_exists(jsn, "data sampling", data_sampling);
+            ds_calib_common::update_value_if_exists(jsn, "apply preset", apply_preset);
 
-            try_fetch(jsn, "fl step count", &fl_step_count);
-            try_fetch(jsn, "fy scan range", &fy_scan_range);
-            try_fetch(jsn, "keep new value after sucessful scan", &keep_new_value_after_sucessful_scan);
-            try_fetch(jsn, "fl data sampling", &fl_data_sampling);
-            try_fetch(jsn, "adjust both sides", &adjust_both_sides);
+            ds_calib_common::update_value_if_exists(jsn, "fl step count", fl_step_count);
+            ds_calib_common::update_value_if_exists(jsn, "fy scan range", fy_scan_range);
+            ds_calib_common::update_value_if_exists(jsn, "keep new value after sucessful scan", keep_new_value_after_sucessful_scan);
+            ds_calib_common::update_value_if_exists(jsn, "fl data sampling", fl_data_sampling);
+            ds_calib_common::update_value_if_exists(jsn, "adjust both sides", adjust_both_sides);
 
-            try_fetch(jsn, "fl scan location", &fl_scan_location);
-            try_fetch(jsn, "fy scan direction", &fy_scan_direction);
-            try_fetch(jsn, "white wall mode", &white_wall_mode);
+            ds_calib_common::update_value_if_exists(jsn, "fl scan location", fl_scan_location);
+            ds_calib_common::update_value_if_exists(jsn, "fy scan direction", fy_scan_direction);
+            ds_calib_common::update_value_if_exists(jsn, "white wall mode", white_wall_mode);
 
-            try_fetch(jsn, "scan only", &scan_only_v3);
-            try_fetch(jsn, "interactive scan", &interactive_scan_v3);
+            ds_calib_common::update_value_if_exists(jsn, "scan only", scan_only_v3);
+            ds_calib_common::update_value_if_exists(jsn, "interactive scan", interactive_scan_v3);
 
             int val = 0;
-            try_fetch(jsn, "step count v3", &val);
+            ds_calib_common::update_value_if_exists(jsn, "step count v3", val);
 
             step_count_v3 = static_cast<uint16_t>(val);
             if (step_count_v3 > 0)
@@ -419,11 +292,11 @@ namespace librealsense
                     val = 0;
                     std::stringstream ss;
                     ss << "fill factor " << i;
-                    try_fetch(jsn, ss.str(), &val);
+                    ds_calib_common::update_value_if_exists(jsn, ss.str(), val);
                     fill_factor[i] = static_cast<uint16_t>(val);
                 }
             }
-            try_fetch(jsn, "resize factor", &_resize_factor);
+            ds_calib_common::update_value_if_exists(jsn, "resize factor", _resize_factor);
         }
 
         std::vector<uint8_t> res;
@@ -436,24 +309,24 @@ namespace librealsense
             _interactive_scan = false; // Production code must enforce non-interactive runs. Interactive scans for development only
             switch (speed)
             {
-            case auto_calib_speed::speed_very_fast:
+            case ds_calib_common::SPEED_VERY_FAST:
                 _total_frames = 60;
                 break;
-            case auto_calib_speed::speed_fast:
+            case ds_calib_common::SPEED_FAST:
                 _total_frames = 120;
                 break;
-            case auto_calib_speed::speed_medium:
+            case ds_calib_common::SPEED_MEDIUM:
                 _total_frames = 256;
                 break;
-            case auto_calib_speed::speed_slow:
+            case ds_calib_common::SPEED_SLOW:
                 _total_frames = 256;
                 break;
-            case auto_calib_speed::speed_white_wall:
+            case ds_calib_common::SPEED_WHITE_WALL:
                 _total_frames = 120;
                 break;
             }
             std::fill_n(_fill_factor, 256, 0);
-            DirectSearchCalibrationResult result = get_calibration_status(timeout_ms, [progress_callback, host_assistance, speed](int count)
+            ds_calib_common::dsc_check_status_result result = get_calibration_status(timeout_ms, [progress_callback, host_assistance, speed](int count)
             {
                 if (progress_callback)
                 {
@@ -467,7 +340,7 @@ namespace librealsense
                 }
             }, false);
             // Handle errors from firmware
-            rs2_dsc_status status = (rs2_dsc_status)result.status;
+            ds_calib_common::dsc_status status = (ds_calib_common::dsc_status)result.status;
 
             if (result.maxDepth == 0)
             {
@@ -482,7 +355,7 @@ namespace librealsense
         if (calib_type == 0)
         {
             LOG_DEBUG("run_on_chip_calibration with parameters: speed = " << speed << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
-            check_params(speed, scan_parameter, data_sampling);
+            ds_calib_common::check_params(speed, scan_parameter, data_sampling);
 
             uint32_t p4 = 0;
             if (scan_parameter)
@@ -496,7 +369,7 @@ namespace librealsense
             if (interactive_scan_v3)
                 p4 |= (1 << 9);
 
-            if (speed == speed_white_wall && apply_preset)
+            if( speed == ds_calib_common::SPEED_WHITE_WALL && apply_preset )
             {
                 preset_recover = change_preset();
                 std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -505,7 +378,7 @@ namespace librealsense
             // Begin auto-calibration
             if (host_assistance == host_assistance_type::no_assistance || host_assistance == host_assistance_type::assistance_start)
             {
-                auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_calib_begin, speed, 0, p4 });
+                auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, ds_calib_common::PY_RX_CALIB_BEGIN, speed, 0, p4 });
                 LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__
                     << " send occ py_rx_calib_begin, speed = " << speed << ", p4 = " << p4 << " res size = " << res.size()));
             }
@@ -514,7 +387,7 @@ namespace librealsense
             {
                 if (host_assistance == host_assistance_type::assistance_first_feed)
                 {
-                    command cmd(ds::AUTO_CALIB, interactive_scan_control, 0, 0);
+                    command cmd( ds::AUTO_CALIB, ds_calib_common::INTERACTIVE_SCAN_CONTROL, 0, 0 );
                     LOG_OCC_WARN(" occ interactive_scan_control 0,0 - save statistics ");
                     uint8_t* p = reinterpret_cast<uint8_t*>(&step_count_v3);
                     cmd.data.push_back(p[0]);
@@ -545,7 +418,7 @@ namespace librealsense
                     while(( ++iter < 3) && (!success));
                 }
 
-                DirectSearchCalibrationResult result = get_calibration_status(timeout_ms, [progress_callback, host_assistance, speed](int count)
+                ds_calib_common::dsc_check_status_result result = get_calibration_status(timeout_ms, [progress_callback, host_assistance, speed](int count)
                     {
                         if( progress_callback )
                         {
@@ -560,10 +433,10 @@ namespace librealsense
                     });
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-                auto status = (rs2_dsc_status)result.status;
+                auto status = (ds_calib_common::dsc_status)result.status;
 
                 // Handle errors from firmware
-                if (status != RS2_DSC_STATUS_SUCCESS)
+                if (status != ds_calib_common::STATUS_SUCCESS)
                 {
                     handle_calibration_error(status);
                 }
@@ -600,7 +473,7 @@ namespace librealsense
             if (interactive_scan_v3)
                 p4 |= (1 << 9);
 
-            if (speed == speed_white_wall && apply_preset)
+            if( speed == ds_calib_common::SPEED_WHITE_WALL && apply_preset )
             {
                 preset_recover = change_preset();
                 std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -609,7 +482,7 @@ namespace librealsense
             if( host_assistance == host_assistance_type::no_assistance || host_assistance == host_assistance_type::assistance_start )
             {
                 _hw_monitor->send( command{ ds::AUTO_CALIB,
-                                            focal_length_calib_begin,
+                                            ds_calib_common::FOCAL_LENGTH_CALIB_BEGIN,
                                             static_cast< uint32_t >( fl_step_count ),
                                             static_cast< uint32_t >( fy_scan_range ),
                                             p4 } );
@@ -619,7 +492,7 @@ namespace librealsense
             {
                 if (host_assistance == host_assistance_type::assistance_first_feed)
                 {
-                    command cmd(ds::AUTO_CALIB, interactive_scan_control, 0, 0);
+                    command cmd( ds::AUTO_CALIB, ds_calib_common::INTERACTIVE_SCAN_CONTROL, 0, 0 );
                     LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__ << "occ interactive_scan_control 0,0 " << " res size = " << res.size()));
                     uint8_t* p = reinterpret_cast<uint8_t*>(&step_count_v3);
                     cmd.data.push_back(p[0]);
@@ -648,14 +521,14 @@ namespace librealsense
                     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
                     // Check calibration status
-                    auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, get_focal_legth_calib_result });
+                    auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, ds_calib_common::GET_FOCAL_LEGTH_CALIB_RESULT });
 
                     if (res.size() < sizeof(FocalLengthCalibrationResult))
                         LOG_WARNING("Not enough data from CALIB_STATUS!");
                     else
                     {
                         result = *reinterpret_cast<FocalLengthCalibrationResult*>(res.data());
-                        done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
+                        done = result.status != ds_calib_common::STATUS_RESULT_NOT_READY;
                     }
 
                     if( progress_callback )
@@ -683,10 +556,10 @@ namespace librealsense
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-                auto status = (rs2_dsc_status)result.status;
+                auto status = (ds_calib_common::dsc_status)result.status;
 
                 // Handle errors from firmware
-                if (status != RS2_DSC_STATUS_SUCCESS)
+                if (status != ds_calib_common::STATUS_SUCCESS)
                 {
                     handle_calibration_error(status);
                 }
@@ -722,7 +595,7 @@ namespace librealsense
             if (interactive_scan_v3)
                 p4 |= (1 << 9);
 
-            if (speed == speed_white_wall && apply_preset)
+            if( speed == ds_calib_common::SPEED_WHITE_WALL && apply_preset )
             {
                 preset_recover = change_preset();
                 std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -732,7 +605,7 @@ namespace librealsense
             if (host_assistance == host_assistance_type::no_assistance || host_assistance == host_assistance_type::assistance_start)
             {
                 _hw_monitor->send( command{ ds::AUTO_CALIB,
-                                            py_rx_plus_fl_calib_begin,
+                                            ds_calib_common::PY_RX_PLUS_FL_CALIB_BEGIN,
                                             static_cast< uint32_t >( speed_fl ),
                                             0,
                                             p4 } );
@@ -743,7 +616,7 @@ namespace librealsense
             {
                 if ((host_assistance == host_assistance_type::assistance_first_feed) || (host_assistance == host_assistance_type::assistance_second_feed))
                 {
-                    command cmd(ds::AUTO_CALIB, interactive_scan_control, 0, 0);
+                    command cmd( ds::AUTO_CALIB, ds_calib_common::INTERACTIVE_SCAN_CONTROL, 0, 0 );
                     LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__ << "occ interactive_scan_control 0,0"));
                     uint8_t* p = reinterpret_cast<uint8_t*>(&step_count_v3);
                     cmd.data.push_back(p[0]);
@@ -777,14 +650,14 @@ namespace librealsense
                         // Check calibration status
                         try
                         {
-                            auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, get_py_rx_plus_fl_calib_result });
+                            auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, ds_calib_common::GET_PY_RX_PLUS_FL_CALIB_RESULT });
                             LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__ << "occ get_py_rx_plus_fl_calib_result res size = " << res.size() ));
 
                             if (res.size() < sizeof(DscPyRxFLCalibrationTableResult))
                                 throw std::runtime_error("Not enough data from CALIB_STATUS!");
 
                             result = *reinterpret_cast<DscPyRxFLCalibrationTableResult*>(res.data());
-                            done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
+                            done = result.status != ds_calib_common::STATUS_RESULT_NOT_READY;
                         }
                         catch (const std::exception& ex)
                         {
@@ -815,10 +688,10 @@ namespace librealsense
 
                     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-                    auto status = (rs2_dsc_status)result.status;
+                    auto status = (ds_calib_common::dsc_status)result.status;
 
                     // Handle errors from firmware
-                    if (status != RS2_DSC_STATUS_SUCCESS)
+                    if (status != ds_calib_common::STATUS_SUCCESS)
                         handle_calibration_error(status);
 
                     res = get_PyRxFL_calibration_results(&h_1, &h_2);
@@ -864,24 +737,24 @@ namespace librealsense
 
         if (json.size() > 0)
         {
-            auto jsn = parse_json(json);
-            try_fetch(jsn, "speed", &speed);
-            try_fetch(jsn, "average step count", &average_step_count);
-            try_fetch(jsn, "step count", &step_count);
-            try_fetch(jsn, "accuracy", &accuracy);
-            try_fetch(jsn, "scan parameter", &scan_parameter);
-            try_fetch(jsn, "data sampling", &data_sampling);
-            try_fetch(jsn, "apply preset", &apply_preset);
+            auto jsn = ds_calib_common::parse_json( json );
+            ds_calib_common::update_value_if_exists(jsn, "speed", speed);
+            ds_calib_common::update_value_if_exists(jsn, "average step count", average_step_count);
+            ds_calib_common::update_value_if_exists(jsn, "step count", step_count);
+            ds_calib_common::update_value_if_exists(jsn, "accuracy", accuracy);
+            ds_calib_common::update_value_if_exists(jsn, "scan parameter", scan_parameter);
+            ds_calib_common::update_value_if_exists(jsn, "data sampling", data_sampling);
+            ds_calib_common::update_value_if_exists(jsn, "apply preset", apply_preset);
             int tmp_host_assistance(0);
-            try_fetch(jsn, "host assistance", &tmp_host_assistance);
+            ds_calib_common::update_value_if_exists(jsn, "host assistance", tmp_host_assistance);
             if (tmp_host_assistance < (int)host_assistance_type::no_assistance || tmp_host_assistance >(int)host_assistance_type::assistance_second_feed)
                 throw invalid_value_exception( rsutils::string::from()
                                                << "Auto calibration failed! Given value of 'host assistance' "
                                                << tmp_host_assistance << " is out of range (0 - "
                                                << (int)host_assistance_type::assistance_second_feed << ")." );
             host_assistance = host_assistance_type(tmp_host_assistance);
-            try_fetch(jsn, "depth", &depth);
-            try_fetch(jsn, "resize factor", &_resize_factor);
+            ds_calib_common::update_value_if_exists(jsn, "depth", depth);
+            ds_calib_common::update_value_if_exists(jsn, "resize factor", _resize_factor);
         }
 
         if (host_assistance != host_assistance_type::no_assistance && _interactive_state == interactive_calibration_state::RS2_OCC_STATE_NOT_ACTIVE)
@@ -893,7 +766,7 @@ namespace librealsense
             _action = auto_calib_action::RS2_OCC_ACTION_TARE_CALIB;
             _interactive_state = interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CAMERA_START;
 
-            DirectSearchCalibrationResult result = get_calibration_status(timeout_ms, [progress_callback, host_assistance, speed](int count)
+            ds_calib_common::dsc_check_status_result result = get_calibration_status(timeout_ms, [progress_callback, host_assistance, speed](int count)
                 {
                     if (progress_callback)
                     {
@@ -904,7 +777,7 @@ namespace librealsense
                     }
                 }, false);
             // Handle errors from firmware
-            rs2_dsc_status status = (rs2_dsc_status)result.status;
+            ds_calib_common::dsc_status status = (ds_calib_common::dsc_status)result.status;
 
             if (result.maxDepth == 0)
             {
@@ -920,7 +793,7 @@ namespace librealsense
         {
             LOG_OCC_WARN("run_tare_calibration interactive control (2) with parameters: depth = " << depth);
             _hw_monitor->send( command{ ds::AUTO_CALIB,
-                                        interactive_scan_control,
+                                        ds_calib_common::INTERACTIVE_SCAN_CONTROL,
                                         2,
                                         static_cast< uint32_t >( depth ) } );
         }
@@ -964,7 +837,7 @@ namespace librealsense
                 }
 
                 if (depth == 0)
-                    _hw_monitor->send(command{ ds::AUTO_CALIB, tare_calib_begin, param2, param3.param3, param.param_4 });
+                    _hw_monitor->send(command{ ds::AUTO_CALIB, ds_calib_common::TARE_CALIB_BEGIN, param2, param3.param3, param.param_4 });
             }
 
             if (host_assistance == host_assistance_type::no_assistance || depth < 0)
@@ -985,7 +858,7 @@ namespace librealsense
                     // Check calibration status
                     try
                     {
-                        res = _hw_monitor->send(command{ ds::AUTO_CALIB, tare_calib_check_status });
+                        res = _hw_monitor->send(command{ ds::AUTO_CALIB, ds_calib_common::TARE_CALIB_CHECK_STATUS });
                         if (res.size() < sizeof(TareCalibrationResult))
                         {
                             if (depth < 0)
@@ -994,7 +867,7 @@ namespace librealsense
                         }
 
                         result = *reinterpret_cast<TareCalibrationResult*>(res.data());
-                        done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
+                        done = result.status != ds_calib_common::STATUS_RESULT_NOT_READY;
                     }
                     catch (const std::exception& ex)
                     {
@@ -1023,7 +896,7 @@ namespace librealsense
                         "Calibration did not converge on time");
                 }
 
-                auto status = (rs2_dsc_status)result.status;
+                auto status = (ds_calib_common::dsc_status)result.status;
                 
                 uint8_t* p = res.data() + sizeof(TareCalibrationResult) + 2 * result.iterations * sizeof(uint32_t);
                 float* ph = reinterpret_cast<float*>(p);
@@ -1035,7 +908,7 @@ namespace librealsense
                 LOG_INFO("Z calculated from health check numbers : before=" << (ph[0] + 1) * ground_truth_mm << ", after=" << (ph[1] + 1) * ground_truth_mm);
 
                 // Handle errors from firmware
-                if (status != RS2_DSC_STATUS_SUCCESS)
+                if (status != ds_calib_common::STATUS_SUCCESS)
                     handle_calibration_error(status);
 
                 res = get_calibration_results();
@@ -1413,7 +1286,7 @@ namespace librealsense
 
                             if (_interactive_scan)
                             {
-                                auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, interactive_scan_control, 1});
+                                auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, ds_calib_common::INTERACTIVE_SCAN_CONTROL, 1});
                                 LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__ << " occ interactive_scan_control 1,"));
                             }
                             _skipped_frames = 0;
@@ -1486,7 +1359,7 @@ namespace librealsense
                 }
                 else if (_interactive_scan)
                 {
-                    _hw_monitor->send(command{ ds::AUTO_CALIB, interactive_scan_control, 1 });
+                    _hw_monitor->send( command{ ds::AUTO_CALIB, ds_calib_common::INTERACTIVE_SCAN_CONTROL, 1 } );
                     LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__ << "Call for interactive_scan_control, 1"));
                 }
             }
@@ -1624,25 +1497,9 @@ namespace librealsense
         _preset_change = false;
     }
 
-    void auto_calibrated::check_params(int speed, int scan_parameter, int data_sampling) const
-    {
-        if (speed < speed_very_fast || speed >  speed_white_wall)
-            throw invalid_value_exception( rsutils::string::from()
-                                           << "Auto calibration failed! Given value of 'speed' " << speed
-                                           << " is out of range (0 - 4)." );
-       if (scan_parameter != py_scan && scan_parameter != rx_scan)
-            throw invalid_value_exception( rsutils::string::from()
-                                           << "Auto calibration failed! Given value of 'scan parameter' "
-                                           << scan_parameter << " is out of range (0 - 1)." );
-        if (data_sampling != polling && data_sampling != interrupt)
-           throw invalid_value_exception( rsutils::string::from()
-                                          << "Auto calibration failed! Given value of 'data sampling' " << data_sampling
-                                          << " is out of range (0 - 1)." );
-    }
-
     void auto_calibrated::check_tare_params(int speed, int scan_parameter, int data_sampling, int average_step_count, int step_count, int accuracy)
     {
-        check_params(speed, scan_parameter, data_sampling);
+        ds_calib_common::check_params( speed, scan_parameter, data_sampling );
 
         if (average_step_count < 1 || average_step_count > 30)
             throw invalid_value_exception( rsutils::string::from()
@@ -1660,11 +1517,11 @@ namespace librealsense
 
     void auto_calibrated::check_one_button_params(int speed, int keep_new_value_after_sucessful_scan, int data_sampling, int adjust_both_sides, int fl_scan_location, int fy_scan_direction, int white_wall_mode) const
     {
-        if (speed < speed_very_fast || speed >  speed_white_wall)
+        if( speed < ds_calib_common::SPEED_VERY_FAST || speed > ds_calib_common::SPEED_WHITE_WALL )
             throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'speed' " << speed << " is out of range (0 - 4).");
         if (keep_new_value_after_sucessful_scan < 0 || keep_new_value_after_sucessful_scan >  1)
             throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'keep_new_value_after_sucessful_scan' " << keep_new_value_after_sucessful_scan << " is out of range (0 - 1).");
-        if (data_sampling != polling && data_sampling != interrupt)
+        if( data_sampling != ds_calib_common::POLLING && data_sampling != ds_calib_common::INTERRUPT )
             throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'data sampling' " << data_sampling << " is out of range (0 - 1).");
         if (adjust_both_sides < 0 || adjust_both_sides >  1)
             throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'adjust_both_sides' " << adjust_both_sides << " is out of range (0 - 1).");
@@ -1678,22 +1535,22 @@ namespace librealsense
 
     void auto_calibrated::handle_calibration_error(int status) const
     {
-        if (status == RS2_DSC_STATUS_EDGE_TOO_CLOSE)
+        if (status == ds_calib_common::STATUS_EDGE_TOO_CLOSE)
         {
             throw std::runtime_error("Calibration didn't converge! - edges too close\n"
                 "Please retry in different lighting conditions");
         }
-        else if (status == RS2_DSC_STATUS_FILL_FACTOR_TOO_LOW)
+        else if (status == ds_calib_common::STATUS_FILL_FACTOR_TOO_LOW)
         {
             throw std::runtime_error("Not enough depth pixels! - low fill factor)\n"
                 "Please retry in different lighting conditions");
         }
-        else if (status == RS2_DSC_STATUS_NOT_CONVERGE)
+        else if (status == ds_calib_common::STATUS_NOT_CONVERGE)
         {
             throw std::runtime_error("Calibration failed to converge\n"
                 "Please retry in different lighting conditions");
         }
-        else if (status == RS2_DSC_STATUS_NO_DEPTH_AVERAGE)
+        else if (status == ds_calib_common::STATUS_NO_DEPTH_AVERAGE)
         {
             throw std::runtime_error("Calibration didn't converge! - no depth average\n"
                 "Please retry in different lighting conditions");
@@ -1708,15 +1565,15 @@ namespace librealsense
         using namespace ds;
 
         // Get new calibration from the firmware
-        auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, get_calibration_result});
-        if (res.size() < sizeof(DscResultBuffer))
+        auto res = _hw_monitor->send( command{ ds::AUTO_CALIB, ds_calib_common::GET_CALIBRATION_RESULT } );
+        if( res.size() < sizeof( ds_calib_common::dsc_result ) )
             throw std::runtime_error("Not enough data from CALIB_STATUS!");
 
-        auto reslt = (DscResultBuffer*)(res.data());
+        auto reslt = (ds_calib_common::dsc_result *)( res.data() );
 
-        table_header* header = reinterpret_cast<table_header*>(res.data() + sizeof(DscResultBuffer));
+        table_header * header = reinterpret_cast< table_header * >( res.data() + sizeof( ds_calib_common::dsc_result ) );
 
-        if (res.size() < sizeof(DscResultBuffer) + sizeof(table_header) + header->table_size)
+        if( res.size() < sizeof( ds_calib_common::dsc_result ) + sizeof( table_header ) + header->table_size )
             throw std::runtime_error("Table truncated in CALIB_STATUS!");
 
         std::vector<uint8_t> calib;
@@ -1725,7 +1582,7 @@ namespace librealsense
         memcpy(calib.data(), header, calib.size()); // Copy to new_calib
 
         if(health)
-            *health = reslt->m_dscResultParams.m_healthCheck;
+            *health = reslt->healthCheck;
 
         return calib;
     }
@@ -1735,7 +1592,7 @@ namespace librealsense
         using namespace ds;
 
         // Get new calibration from the firmware
-        auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, get_py_rx_plus_fl_calib_result });
+        auto res = _hw_monitor->send( command{ ds::AUTO_CALIB, ds_calib_common::GET_PY_RX_PLUS_FL_CALIB_RESULT } );
         if (res.size() < sizeof(DscPyRxFLCalibrationTableResult))
             throw std::runtime_error("Not enough data from CALIB_STATUS!");
 

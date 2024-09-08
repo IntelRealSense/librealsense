@@ -369,7 +369,7 @@ namespace librealsense
 
     d500_device::d500_device( std::shared_ptr< const d500_info > const & dev_info )
         : backend_device(dev_info), global_time_interface(),
-          d500_auto_calibrated(std::make_shared<d500_debug_protocol_calibration_engine>(this)),
+          d500_auto_calibrated(std::make_shared<d500_debug_protocol_calibration_engine>(this), this),
           _device_capabilities(ds::ds_caps::CAP_UNDEFINED),
           _depth_stream(new stream(RS2_STREAM_DEPTH)),
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
