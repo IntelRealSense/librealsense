@@ -294,16 +294,6 @@ jobs:
         cmake .. -DCMAKE_BUILD_TYPE=${{env.LRS_RUN_CONFIG}} -DBUILD_SHARED_LIBS=false -DBUILD_EXAMPLES=true -DBUILD_TOOLS=true -DCHECK_FOR_UPDATES=true -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3)
         cmake --build . -- -j4
 
-    - name: Provide correct exit status for job 
-      shell: bash
-      run: |
-        if [ ${{steps.test-step.outcome}} = "failure" ];then
-           echo "Test step failed, please open it to view the reported issue"
-           exit 1
-        else
-           exit 0
-        fi
-
 
   #--------------------------------------------------------------------------------
   U20_SH_Py_CI:  # Ubuntu 2020, Shared, Python, LibCI with executables
