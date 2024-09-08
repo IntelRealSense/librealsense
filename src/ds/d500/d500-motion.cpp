@@ -53,8 +53,6 @@ namespace librealsense
         _ds_motion_common = std::make_shared<ds_motion_common>(this, _fw_version,
             _device_capabilities, _hw_monitor); 
         _ds_motion_common->init_motion(hid_infos.empty(), *_depth_stream);
-                
-        initialize_fisheye_sensor( dev_info->get_context(), dev_info->get_group() );
 
         // Try to add HID endpoint
         auto hid_ep = create_hid_device( dev_info->get_context(), dev_info->get_group().hid_devices );
@@ -65,49 +63,6 @@ namespace librealsense
             // HID metadata attributes
             hid_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&hid_header::timestamp));
         }
-    }
-
-    void d500_motion::initialize_fisheye_sensor(std::shared_ptr<context> ctx, const platform::backend_device_group& group)
-    {
-        using namespace ds;
-        
-        bool is_fisheye_avaialable = false;
-        auto fisheye_infos = _ds_motion_common->init_fisheye(group, is_fisheye_avaialable);
-
-        if (!is_fisheye_avaialable)
-            return;
-
-        std::unique_ptr< frame_timestamp_reader > ds_timestamp_reader_backup( new ds_timestamp_reader() );
-        std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(ds_timestamp_reader_backup)));
-        auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
-        auto raw_fisheye_ep
-            = std::make_shared< uvc_sensor >( "FishEye Sensor",
-                                              get_backend()->create_uvc_device( fisheye_infos.front() ),
-                                              std::unique_ptr< frame_timestamp_reader >( new global_timestamp_reader(
-                                                  std::move( ds_timestamp_reader_metadata ),
-                                                  _tf_keeper,
-                                                  enable_global_time_option ) ),
-                                              this );
-        auto fisheye_ep = std::make_shared<ds_fisheye_sensor>(raw_fisheye_ep, this);
-
-        _ds_motion_common->assign_fisheye_ep(raw_fisheye_ep, fisheye_ep, enable_global_time_option);
-
-        register_fisheye_options();
-
-        register_fisheye_metadata();
-
-        // Add fisheye endpoint
-        _fisheye_device_idx = add_sensor(fisheye_ep);
-    }
-
-    void d500_motion::register_fisheye_options()
-    {
-        _ds_motion_common->register_fisheye_options();
-    }
-
-    void d500_motion::register_fisheye_metadata()
-    {
-        _ds_motion_common->register_fisheye_metadata();
     }
 
     void d500_motion::register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index)
