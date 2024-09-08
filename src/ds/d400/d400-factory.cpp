@@ -653,18 +653,30 @@ namespace librealsense
         void hardware_reset() override 
         {
             d400_device::hardware_reset();
+            //limitation: the user must hold the context from which the device was created
             auto dev_info = this->get_device_info();
             auto non_const_device_info = std::const_pointer_cast< librealsense::device_info >( dev_info );
             std::vector< std::shared_ptr< device_info > > devices{ non_const_device_info };
-            auto ctx = get_context();
+            auto ctx =  std::weak_ptr<context>(get_context());
             //creating fake notification to trigger invoke_devices_changed_callbacks, causing connection and disconnection of mipi device
             std::thread fake_notification(
-                //sending a copy of ctx since the ctx of the device will be destroyed
-                [ ctx, devices ]() {
-                    ctx->invoke_devices_changed_callbacks(
-                        devices, {} );
-                    std::this_thread::sleep_for( std::chrono::milliseconds( 3000 ) ); 
-                    ctx->invoke_devices_changed_callbacks( {}, devices );
+                [  ctx , devices ]() {
+                    try
+                    {
+                        if( auto strong = ctx.lock() )
+                        {
+                            strong->invoke_devices_changed_callbacks( devices, {} );
+                            // MIPI devices do not re-enumerate so we need to give them some time to restart
+                            std::this_thread::sleep_for( std::chrono::milliseconds( 3000 ) );
+                        }
+                        if( auto strong = ctx.lock() )
+                            strong->invoke_devices_changed_callbacks( {}, devices );
+                    }
+                    catch( const std::exception & e ) 
+                    {
+                        std::cerr << e.what() << std::endl;
+                        return;
+                    }
                 } ); 
             fake_notification.detach();
         }
