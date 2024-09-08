@@ -270,7 +270,7 @@ jobs:
             name: U22
           - os: ubuntu-24.04
             name: U24
-    name: ${{ matrix.name }}_ST_Py_EX_CfU_LiveTest 
+    name: ${{ matrix.name }}_ST_Py_EX_CfU 
     timeout-minutes: 60
     steps:
     - uses: actions/checkout@v4
@@ -293,12 +293,6 @@ jobs:
         cd build
         cmake .. -DCMAKE_BUILD_TYPE=${{env.LRS_RUN_CONFIG}} -DBUILD_SHARED_LIBS=false -DBUILD_EXAMPLES=true -DBUILD_TOOLS=true -DCHECK_FOR_UPDATES=true -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3)
         cmake --build . -- -j4
-
-    - name: Upload RS log artifact
-      uses: actions/upload-artifact@v4
-      with: 
-        name: Log file - ${{ matrix.name }}_ST_Py_EX_CfU_LiveTest
-        path: build/${{env.LRS_RUN_CONFIG}}/*.log
 
     - name: Provide correct exit status for job 
       shell: bash
