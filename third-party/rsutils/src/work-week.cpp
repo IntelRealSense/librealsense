@@ -54,7 +54,7 @@ work_week::work_week( unsigned year, unsigned ww )
 work_week::work_week( const std::time_t & t )
 {
     tm buf;
-#ifdef WIN32
+#ifdef _WIN32
     localtime_s( &buf, &t );
     auto time = &buf;
 #else
