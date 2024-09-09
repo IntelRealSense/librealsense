@@ -179,7 +179,7 @@ namespace rs2
                      "and restart the realsense-viewer");
         }
         _done = true;
-        // update the fw version field in the viewer
+        // Restart the device to reconstruct with the new version information
         _dev.hardware_reset();
     }
 
