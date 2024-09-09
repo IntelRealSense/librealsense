@@ -163,6 +163,8 @@ namespace librealsense
             {
                 auto depth_calib = _calib_engine->get_depth_calibration();
                 LOG_INFO("Depth new Calibration = \n" + depth_calib.to_string());
+                auto depth_calib_start = reinterpret_cast<uint8_t*>(&depth_calib);
+                res.insert(res.begin(), depth_calib_start, depth_calib_start + sizeof(ds::d500_coefficients_table));
             }
             else if (_result == calibration_result::FAILED_TO_CONVERGE)
             {
