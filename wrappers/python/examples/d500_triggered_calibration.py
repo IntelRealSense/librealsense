@@ -15,16 +15,17 @@ and to check the improvement of the depth stream before / after the running of t
 
 is_safety_camera = False
 
+
 def check_d500_camera_found(dev):
     global is_safety_camera
     product_line = dev.get_info(rs.camera_info.product_line)
     if product_line != "D500":
         print("Device is not D500 Product Line - please check")
         exit(1)
-    else:
-	    if device_name != "Intel RealSense D585S":
-		    is_safety_camera = True
-        print("D500 Product Line Camera found")
+    device_name = dev.get_info(rs.camera_info.name)
+    if device_name == "Intel RealSense D585S":
+        is_safety_camera = True
+    print("D500 Product Line Camera found")
 
 
 def compute_fill_rate(frame):
@@ -185,7 +186,8 @@ fill_rate_before = stream_and_get_fill_rate()
 calib_before = get_depth_calib_from_device()
 
 # switching to service mode
-switch_device_to_service_mode(dev)
+if is_safety_camera:
+    switch_device_to_service_mode(dev)
 
 # Save existing calibration to file
 save_calib_to_file(calib_before, "depth_calib_before.bin")
@@ -202,10 +204,7 @@ exit_if_calibrations_are_equal()
 
 # switching to service mode if safety camera
 if is_safety_camera:
-    switch_device_to_service_mode(dev) 
-
-# Set calibration from file - needed until the flash writing is implemented in HKR
-write_after_calib_to_device("depth_calib_after.bin")
+    switch_device_to_service_mode(dev)
 
 # Stream and get Depth Fill Rate
 fill_rate_after = stream_and_get_fill_rate()
