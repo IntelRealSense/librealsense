@@ -660,7 +660,7 @@ namespace librealsense
             std::vector< std::shared_ptr< device_info > > devices{ non_const_device_info };
             auto ctx = std::weak_ptr< context >( get_context() );
             std::thread fake_notification(
-                [ctx, devs = std::move( devices )]()
+                [ ctx, devs = std::move( devices ) ]()
                 {
                     try
                     {
