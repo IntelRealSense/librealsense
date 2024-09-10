@@ -41,6 +41,14 @@ namespace librealsense
             SPEED_WHITE_WALL = 4
         };
 
+        enum subpixel_accuracy
+        {
+            ACCURACY_VERY_HIGH = 0, // 0.025%
+            ACCURACY_HIGH = 1,      // 0.05%
+            ACCURACY_MEDIUM = 2,    // 0.1%
+            ACCURACY_LOW = 3        // 0.2%
+        };
+
         enum dsc_status : uint16_t
         {
             STATUS_SUCCESS             = 0,
@@ -56,7 +64,7 @@ namespace librealsense
 #pragma pack( push, 1 )
         struct dsc_check_status_result
         {
-            uint16_t status;
+            dsc_status status;
             uint16_t stepCount;
             uint16_t stepSize;            // 1/1000 of a pixel
             uint32_t pixelCountThreshold; // minimum number of pixels in selected bin
@@ -73,6 +81,19 @@ namespace librealsense
             uint16_t status;
             float healthCheck;
             uint16_t tableSize;
+        };
+
+        struct TareCalibrationResult
+        {
+            dsc_status status;
+            uint32_t tareDepth;         // Tare depth in 1/100 of depth unit
+            uint32_t aveDepth;          // Average depth in 1/100 of depth unit
+            int32_t curPx;              // Current Px in 1/1000000 of normalized unit
+            int32_t calPx;              // Calibrated Px in 1/1000000 of normalized unit
+            float curRightRotation[9];  // Current right rotation
+            float calRightRotation[9];  // Calibrated right rotation
+            uint16_t accuracyLevel;     // [0-3] (Very High/High/Medium/Low)
+            uint16_t iterations;        // Number of iterations it took to converge
         };
 #pragma pack( pop )
 
@@ -103,14 +124,43 @@ namespace librealsense
             SET_COEFFICIENTS               = 0X19
         };
 
+        union param3
+        {
+            struct
+            {
+                uint8_t average_step_count;
+                uint8_t step_count;
+                uint8_t accuracy;
+                uint8_t reserved;
+            };
+
+            uint32_t as_uint32 = 0;
+        };
+
+        union param4
+        {
+            struct
+            {
+                uint8_t scan_parameter : 1;
+                uint8_t reserved : 2;
+                uint8_t data_sampling : 1;
+            };
+
+            uint32_t as_uint32 = 0;
+        };
+
         // Convert json to string-int pairs.
         static std::map< std::string, int > parse_json( const std::string & json_content );
 
         // If map contains requested key-value pair, update value.
         static void update_value_if_exists( const std::map< std::string, int > & jsn, const std::string & key, int & value );
 
-        // Check validity of common parameters.
+        // Check validity of common parameters. Throws on error.
         static void check_params( int speed, int scan_parameter, int data_sampling );
+
+        // Checks validity of tare caliration parameters. Throws on error.
+        static void check_tare_params( int speed, int scan_parameter, int data_sampling,
+                                       int average_step_count, int step_count, int accuracy );
 
         // Checks validity of focal length caliration parameters. Throws on error.
         static void check_focal_length_params( int step_count,
@@ -141,6 +191,10 @@ namespace librealsense
                                                          float & ratio,
                                                          float & angle );
 
+        // Checks status and throws an appropriate error.
         static void handle_calibration_error( int status );
+
+        // Changes device visual preset, returned shared_ptr will restore previous preset values when released.
+        //static std::shared_ptr< ds_advanced_mode_base > change_preset( ds_advanced_mode_base * advanced_mode );
     };
 }

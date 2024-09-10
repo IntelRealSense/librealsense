@@ -4,11 +4,13 @@
 
 #include "d500-auto-calibration.h"
 #include <src/ds/ds-calib-common.h>
-
-#include <rsutils/string/from.h>
-#include <rsutils/json.h>
-#include "d500-device.h"
+#include <src/ds/d500/d500-device.h>
 #include <src/ds/d500/d500-debug-protocol-calibration-engine.h>
+#include <src/sensor.h>
+#include <src/core/advanced_mode.h>
+
+#include <rsutils/json.h>
+#include <rsutils/string/from.h>
 
 namespace librealsense
 {
@@ -29,11 +31,13 @@ namespace librealsense
     };
 
     d500_auto_calibrated::d500_auto_calibrated( std::shared_ptr< d500_debug_protocol_calibration_engine > calib_engine,
-                                                debug_interface * debug_dev )
+                                                debug_interface * debug_dev,
+                                                sensor_base * ds )
         : _calib_engine( calib_engine )
         , _mode( calibration_mode::RESERVED )
         , _state( calibration_state::IDLE )
         , _result( calibration_result::UNKNOWN )
+        , _depth_sensor( ds )
         , _debug_dev( debug_dev )
     {
         if( ! _debug_dev )
@@ -164,33 +168,31 @@ namespace librealsense
 
         LOG_DEBUG("run_on_chip_calibration with parameters: speed = " << speed << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
 
-        uint32_t p4 = 0;
-        if (scan_parameter)
-            p4 |= 1;
-        if (data_sampling)
-            p4 |= (1 << 3);
+        ds_calib_common::param4 p4;
+        p4.scan_parameter = scan_parameter;
+        p4.data_sampling = data_sampling;
 
         // Begin auto-calibration
-        auto cmd = _debug_dev->build_command( ds::AUTO_CALIB, ds_calib_common::PY_RX_CALIB_BEGIN, speed, 0, p4 );
+        auto cmd = _debug_dev->build_command( ds::AUTO_CALIB, ds_calib_common::PY_RX_CALIB_BEGIN, speed, 0, p4.as_uint32 );
         std::vector< uint8_t > res = _debug_dev->send_receive_raw_data( cmd ); // TODO - need to remove res first 4 bytes?
 
         ds_calib_common::dsc_check_status_result result = get_calibration_status(timeout_ms, [progress_callback, speed](int count)
         {
             if( progress_callback )
-                progress_callback->on_update_progress( count++ * ( 2.f * static_cast< int >( speed ) ) );  // currently this number does not reflect the actual progress
+                progress_callback->on_update_progress( count++ * ( 2.f * static_cast< int >( speed ) ) );  // Currently this number does not reflect the actual progress
         });
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-        auto status = (ds_calib_common::dsc_status)result.status;
-
         // Handle errors from firmware
-        if (status != ds_calib_common::STATUS_SUCCESS)
+        if( result.status != ds_calib_common::STATUS_SUCCESS )
         {
-            ds_calib_common::handle_calibration_error( status );
+            ds_calib_common::handle_calibration_error( result.status );
         }
+
+        res = get_calibration_results(health);
+
         if (progress_callback)
             progress_callback->on_update_progress(static_cast<float>(100));
-        res = get_calibration_results(health);
 
         return res;
     }
@@ -287,7 +289,131 @@ namespace librealsense
 
     std::vector<uint8_t> d500_auto_calibrated::run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* const health, rs2_update_progress_callback_sptr progress_callback)
     {
-        throw not_implemented_exception(rsutils::string::from() << "Tare Calibration not applicable for this device");
+        int average_step_count = 20;
+        int step_count = 20;
+        int accuracy = ds_calib_common::ACCURACY_MEDIUM;
+        int speed = ds_calib_common::SPEED_SLOW;
+        int scan_parameter = ds_calib_common::PY_SCAN;
+        int data_sampling = ds_calib_common::POLLING;
+        int apply_preset = 1;
+
+        volatile thermal_compensation_guard grd( this ); // Enforce Thermal Compensation off during Tare calibration
+
+        if( json.size() > 0 )
+        {
+            auto jsn = ds_calib_common::parse_json( json );
+            ds_calib_common::update_value_if_exists( jsn, "average step count", average_step_count );
+            ds_calib_common::update_value_if_exists( jsn, "step count", step_count );
+            ds_calib_common::update_value_if_exists( jsn, "accuracy", accuracy );
+            ds_calib_common::update_value_if_exists( jsn, "speed", speed );
+            ds_calib_common::update_value_if_exists( jsn, "scan parameter", scan_parameter );
+            ds_calib_common::update_value_if_exists( jsn, "data sampling", data_sampling );
+            ds_calib_common::update_value_if_exists( jsn, "apply preset", apply_preset );
+        }
+
+        std::shared_ptr< option > preset_recover;
+        if( apply_preset )
+        {
+            preset_recover = change_preset();
+            std::this_thread::sleep_for( std::chrono::milliseconds( 200 ) );
+        }
+
+        LOG_DEBUG( "run_tare_calibration with parameters: speed = " << speed
+                   << " average_step_count = " << average_step_count << " step_count = " << step_count
+                   << " accuracy = " << accuracy << " scan_parameter = " << scan_parameter
+                   << " data_sampling = " << data_sampling );
+        ds_calib_common::check_tare_params( speed, scan_parameter, data_sampling, average_step_count, step_count, accuracy );
+
+        auto p2 = static_cast< uint32_t >( ground_truth_mm ) * 100;
+
+        ds_calib_common::param3 p3;
+        p3.average_step_count = average_step_count;
+        p3.step_count = step_count;
+        p3.accuracy = accuracy;
+
+        ds_calib_common::param4 p4;
+        p4.scan_parameter = scan_parameter;
+        p4.data_sampling = data_sampling;
+
+        // Log the current preset
+        //auto advanced_mode = dynamic_cast< ds_advanced_mode_base * >( this );
+        //if( advanced_mode )
+        //{
+        //    auto cur_preset = (rs2_rs400_visual_preset)(int)advanced_mode->_preset_opt->query();
+        //    LOG_DEBUG(
+        //        "run_tare_calibration with preset: " << rs2_rs400_visual_preset_to_string( cur_preset ) );
+        //}
+
+        auto cmd = _debug_dev->build_command( ds::AUTO_CALIB, ds_calib_common::TARE_CALIB_BEGIN, p2, p3.as_uint32, p4.as_uint32 );
+        _debug_dev->send_receive_raw_data( cmd ); // TODO - need to remove res first 4 bytes?
+
+        ds_calib_common::TareCalibrationResult result;
+
+        // While not ready...
+        int count = 0;
+        bool done = false;
+
+        std::vector< uint8_t > res;
+        auto start = std::chrono::high_resolution_clock::now();
+        auto now = start;
+        do
+        {
+            memset( &result, 0, sizeof( ds_calib_common::TareCalibrationResult ) );
+            std::this_thread::sleep_for( std::chrono::milliseconds( 200 ) );
+
+            // Check calibration status
+            try
+            {
+                auto cmd = _debug_dev->build_command( ds::AUTO_CALIB, ds_calib_common::TARE_CALIB_CHECK_STATUS );
+                res = _debug_dev->send_receive_raw_data( cmd ); // TODO - need to remove res first 4 bytes?
+                if( res.size() < sizeof( ds_calib_common::TareCalibrationResult ) )
+                {
+                    throw std::runtime_error( "Not enough data from CALIB_STATUS!" );
+                }
+
+                result = *reinterpret_cast< ds_calib_common::TareCalibrationResult * >( res.data() );
+                done = result.status != ds_calib_common::STATUS_RESULT_NOT_READY;
+            }
+            catch( const std::exception & ex )
+            {
+                LOG_INFO( ex.what() );
+            }
+
+            if( progress_callback )
+            {
+                progress_callback->on_update_progress( count++ * ( 2.f * speed ) );  // Currently this number does not reflect the actual progress
+            }
+
+            now = std::chrono::high_resolution_clock::now();
+        }
+        while( now - start < std::chrono::milliseconds( timeout_ms ) && ! done );
+
+        // If we exit due to timeout, report timeout
+        if( ! done )
+        {
+            throw std::runtime_error( "Operation timed-out!\nCalibration did not converge on time" );
+        }
+
+        uint8_t * p = res.data() + sizeof( ds_calib_common::TareCalibrationResult ) + 2 * result.iterations * sizeof( uint32_t );
+        float * ph = reinterpret_cast< float * >( p );
+        health[0] = ph[0];
+        health[1] = ph[1];
+
+        LOG_INFO( "Ground truth: " << ground_truth_mm << "mm" );
+        LOG_INFO( "Health check numbers from TareCalibrationResult(0x0C): before=" << ph[0] << ", after=" << ph[1] );
+        LOG_INFO( "Z calculated from health check numbers : before="
+                  << ( ph[0] + 1 ) * ground_truth_mm << ", after=" << ( ph[1] + 1 ) * ground_truth_mm );
+
+        // Handle errors from firmware
+        if( result.status != ds_calib_common::STATUS_SUCCESS )
+            ds_calib_common::handle_calibration_error( result.status );
+
+        res = get_calibration_results();
+
+        if( progress_callback )
+            progress_callback->on_update_progress( static_cast< float >( 100 ) );
+
+        return res;
     }
 
     std::vector<uint8_t> d500_auto_calibrated::process_calibration_frame(int timeout_ms, const rs2_frame* f, float* const health, rs2_update_progress_callback_sptr progress_callback)
@@ -508,5 +634,38 @@ namespace librealsense
             *health = reslt->healthCheck;
 
         return calib;
+    }
+
+    std::shared_ptr< option > d500_auto_calibrated::change_preset()
+    {
+        preset old_preset_values{};
+        rs2_rs400_visual_preset old_preset = { RS2_RS400_VISUAL_PRESET_DEFAULT };
+
+        if( ! _depth_sensor )
+            throw not_implemented_exception( " Depth sensor must be supplied to d500_auto_calibrated" );
+
+        if( _depth_sensor->supports_option( RS2_OPTION_VISUAL_PRESET ) )
+        {
+            auto & opt = _depth_sensor->get_option( RS2_OPTION_VISUAL_PRESET );
+            old_preset = static_cast< rs2_rs400_visual_preset >( opt.query() );
+            //if( old_preset == RS2_RS400_VISUAL_PRESET_CUSTOM )
+            //    old_preset_values = advanced_mode->get_all();
+            opt.set( RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY );
+
+            std::shared_ptr< option > recover_option( &opt, [old_preset, old_preset_values]( option * opt )
+            {
+                if( old_preset == RS2_RS400_VISUAL_PRESET_CUSTOM )
+                {
+                    opt->set( RS2_RS400_VISUAL_PRESET_CUSTOM );
+                    //adv->set_all( old_preset_values );
+                }
+                else
+                    opt->set( static_cast< float >( old_preset ) );
+            });
+
+            return recover_option;
+        }
+
+        return {};
     }
 }

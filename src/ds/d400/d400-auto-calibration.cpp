@@ -25,19 +25,6 @@ namespace librealsense
 {
 #pragma pack(push, 1)
 #pragma pack(1)
-    struct TareCalibrationResult
-    {
-        uint16_t status;  // DscStatus
-        uint32_t tareDepth;  // Tare depth in 1/100 of depth unit
-        uint32_t aveDepth;  // Average depth in 1/100 of depth unit
-        int32_t curPx;    // Current Px in 1/1000000 of normalized unit
-        int32_t calPx;    // Calibrated Px in 1/1000000 of normalized unit
-        float curRightRotation[9]; // Current right rotation
-        float calRightRotation[9]; // Calibrated right rotation
-        uint16_t accuracyLevel;  // [0-3] (Very High/High/Medium/Low)
-        uint16_t iterations;        // Number of iterations it took to converge
-    };
-
     struct FocalLengthCalibrationResult
     {
         uint16_t status;    // DscStatus
@@ -77,46 +64,13 @@ namespace librealsense
         assistance_second_feed,
     };
 
-    enum subpixel_accuracy
-    {
-        very_high = 0, //(0.025%)
-        high = 1, //(0.05%)
-        medium = 2, //(0.1%)
-        low = 3 //(0.2%)
-    };
 
-    struct tare_params3
-    {
-        uint8_t average_step_count;
-        uint8_t step_count;
-        uint8_t accuracy;
-        uint8_t reserved;
-    };
-
-    struct params4
-    {
-        int scan_parameter : 1;
-        int reserved : 2;
-        int data_sampling : 1;
-    };
-
-    union tare_calibration_params
-    {
-        tare_params3 param3_struct;
-        uint32_t param3;
-    };
-
-    union param4
-    {
-        params4 param4_struct;
-        uint32_t param_4;
-    };
 
     const int DEFAULT_CALIB_TYPE = 0;
 
     const int DEFAULT_AVERAGE_STEP_COUNT = 20;
     const int DEFAULT_STEP_COUNT = 20;
-    const int DEFAULT_ACCURACY = subpixel_accuracy::medium;
+    const int DEFAULT_ACCURACY = ds_calib_common::ACCURACY_MEDIUM;
     const ds_calib_common::auto_calib_speed DEFAULT_SPEED = ds_calib_common::SPEED_SLOW;
     const int DEFAULT_SCAN = ds_calib_common::PY_SCAN;
     const int DEFAULT_SAMPLING = ds_calib_common::INTERRUPT;
@@ -812,21 +766,21 @@ namespace librealsense
                 }
 
                 LOG_DEBUG("run_tare_calibration with parameters: speed = " << speed << " average_step_count = " << average_step_count << " step_count = " << step_count << " accuracy = " << accuracy << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
-                check_tare_params(speed, scan_parameter, data_sampling, average_step_count, step_count, accuracy);
+                ds_calib_common::check_tare_params(speed, scan_parameter, data_sampling, average_step_count, step_count, accuracy);
 
                 auto param2 = static_cast< uint32_t >( ground_truth_mm ) * 100;
 
-                tare_calibration_params param3{ static_cast< uint8_t >( average_step_count ),
-                                                static_cast< uint8_t >( step_count ),
-                                                static_cast< uint8_t >( accuracy ),
-                                                0 };
+                ds_calib_common::param3 p3{ static_cast< uint8_t >( average_step_count ),
+                                            static_cast< uint8_t >( step_count ),
+                                            static_cast< uint8_t >( accuracy ),
+                                            0 };
 
-                param4 param{ static_cast< uint8_t >( scan_parameter ),
-                              0,
-                              static_cast< uint8_t >( data_sampling ) };
+                ds_calib_common::param4 p4{ static_cast< uint8_t >( scan_parameter ),
+                                            0,
+                                            static_cast< uint8_t >( data_sampling ) };
 
                 if (host_assistance != host_assistance_type::no_assistance)
-                    param.param_4 |= (1 << 8);
+                    p4.as_uint32 |= (1 << 8);
 
                 // Log the current preset
                 auto advanced_mode = dynamic_cast<ds_advanced_mode_base*>(this);
@@ -837,12 +791,12 @@ namespace librealsense
                 }
 
                 if (depth == 0)
-                    _hw_monitor->send(command{ ds::AUTO_CALIB, ds_calib_common::TARE_CALIB_BEGIN, param2, param3.param3, param.param_4 });
+                    _hw_monitor->send(command{ ds::AUTO_CALIB, ds_calib_common::TARE_CALIB_BEGIN, param2, p3.as_uint32, p4.as_uint32 });
             }
 
             if (host_assistance == host_assistance_type::no_assistance || depth < 0)
             {
-                TareCalibrationResult result;
+                ds_calib_common::TareCalibrationResult result;
 
                 // While not ready...
                 int count = 0;
@@ -852,21 +806,21 @@ namespace librealsense
                 auto now = start;
                 do
                 {
-                    memset(&result, 0, sizeof(TareCalibrationResult));
+                    memset(&result, 0, sizeof(ds_calib_common::TareCalibrationResult));
                     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
                     // Check calibration status
                     try
                     {
                         res = _hw_monitor->send(command{ ds::AUTO_CALIB, ds_calib_common::TARE_CALIB_CHECK_STATUS });
-                        if (res.size() < sizeof(TareCalibrationResult))
+                        if (res.size() < sizeof(ds_calib_common::TareCalibrationResult))
                         {
                             if (depth < 0)
                                 restore_preset();
                             throw std::runtime_error("Not enough data from CALIB_STATUS!");
                         }
 
-                        result = *reinterpret_cast<TareCalibrationResult*>(res.data());
+                        result = *reinterpret_cast<ds_calib_common::TareCalibrationResult*>(res.data());
                         done = result.status != ds_calib_common::STATUS_RESULT_NOT_READY;
                     }
                     catch (const std::exception& ex)
@@ -898,7 +852,7 @@ namespace librealsense
 
                 auto status = (ds_calib_common::dsc_status)result.status;
                 
-                uint8_t* p = res.data() + sizeof(TareCalibrationResult) + 2 * result.iterations * sizeof(uint32_t);
+                uint8_t* p = res.data() + sizeof(ds_calib_common::TareCalibrationResult) + 2 * result.iterations * sizeof(uint32_t);
                 float* ph = reinterpret_cast<float*>(p);
                 health[0] = ph[0];
                 health[1] = ph[1];
@@ -1495,24 +1449,6 @@ namespace librealsense
                 advanced_mode->_preset_opt->set(static_cast<float>(_old_preset));
         }
         _preset_change = false;
-    }
-
-    void auto_calibrated::check_tare_params(int speed, int scan_parameter, int data_sampling, int average_step_count, int step_count, int accuracy)
-    {
-        ds_calib_common::check_params( speed, scan_parameter, data_sampling );
-
-        if (average_step_count < 1 || average_step_count > 30)
-            throw invalid_value_exception( rsutils::string::from()
-                                           << "Auto calibration failed! Given value of 'number of frames to average' "
-                                           << average_step_count << " is out of range (1 - 30)." );
-        if (step_count < 5 || step_count > 30)
-            throw invalid_value_exception( rsutils::string::from()
-                                           << "Auto calibration failed! Given value of 'max iteration steps' "
-                                           << step_count << " is out of range (5 - 30)." );
-        if (accuracy < very_high || accuracy > low)
-            throw invalid_value_exception( rsutils::string::from()
-                                           << "Auto calibration failed! Given value of 'subpixel accuracy' " << accuracy
-                                           << " is out of range (0 - 3)." );
     }
 
     void auto_calibrated::check_one_button_params(int speed, int keep_new_value_after_sucessful_scan, int data_sampling, int adjust_both_sides, int fl_scan_location, int fy_scan_direction, int white_wall_mode) const

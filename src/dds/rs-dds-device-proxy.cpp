@@ -390,11 +390,19 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
     }
     set_matcher_type( matcher );
 
-    if (supports_info(RS2_CAMERA_INFO_PRODUCT_LINE) && 
-        !strcmp(get_info(RS2_CAMERA_INFO_PRODUCT_LINE).c_str(), "D500"))
+    if( supports_info( RS2_CAMERA_INFO_PRODUCT_LINE )
+        && ! strcmp( get_info( RS2_CAMERA_INFO_PRODUCT_LINE ).c_str(), "D500" ) )
+    {
+        // Find depth sensor to pass into d500_auto_calibrated object
+        sensor_base * depth_sensor = nullptr;
+        for( auto & sensor : sensor_name_to_info )
+            if( sensor.second.type == RS2_STREAM_DEPTH )
+                depth_sensor = sensor.second.proxy.get();
+
         set_auto_calibration_capability( std::make_shared< d500_auto_calibrated >(
-            std::make_shared< d500_debug_protocol_calibration_engine >( this ), this ) );
-            
+            std::make_shared< d500_debug_protocol_calibration_engine >( this ), this, depth_sensor ) );
+    }
+
     _calibration_changed_subscription = _dds_dev->on_calibration_changed(
         [this]( std::shared_ptr< const realdds::dds_stream > const & stream )
         {

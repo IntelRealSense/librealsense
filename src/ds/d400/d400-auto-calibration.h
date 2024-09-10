@@ -51,9 +51,7 @@ namespace librealsense
         std::vector<uint8_t> get_calibration_results(float* const health = nullptr) const;
         std::vector<uint8_t> get_PyRxFL_calibration_results(float* const health = nullptr, float* health_fl = nullptr) const;
         void handle_calibration_error(int status) const;
-        std::map<std::string, int> parse_json(std::string json);
         std::shared_ptr< ds_advanced_mode_base> change_preset();
-        void check_tare_params(int speed, int scan_parameter, int data_sampling, int average_step_count, int step_count, int accuracy);
         void check_one_button_params(int speed, int keep_new_value_after_sucessful_scan, int data_sampling, int adjust_both_sides, int fl_scan_location, int fy_scan_direction, int white_wall_mode) const;
         void undistort(uint8_t* img, const rs2_intrinsics& intrin, int roi_ws, int roi_hs, int roi_we, int roi_he);
         void change_preset_and_stay();

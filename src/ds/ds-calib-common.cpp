@@ -92,6 +92,25 @@ namespace librealsense
                                            << data_sampling << " is out of range (0 - 1)." );
     }
 
+    void ds_calib_common::check_tare_params( int speed, int scan_parameter, int data_sampling,
+                                             int average_step_count, int step_count, int accuracy )
+    {
+        check_params( speed, scan_parameter, data_sampling );
+
+        if( average_step_count < 1 || average_step_count > 30 )
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "Auto calibration failed! Given value of 'number of frames to average' "
+                                           << average_step_count << " is out of range (1 - 30)." );
+        if( step_count < 5 || step_count > 30 )
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "Auto calibration failed! Given value of 'max iteration steps' "
+                                           << step_count << " is out of range (5 - 30)." );
+        if( accuracy < ACCURACY_HIGH || accuracy > ACCURACY_LOW )
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "Auto calibration failed! Given value of 'subpixel accuracy' " << accuracy
+                                           << " is out of range (0 - 3)." );
+    }
+
     void ds_calib_common::check_focal_length_params( int step_count,
                                                      int fy_scan_range,
                                                      int keep_new_value_after_sucessful_scan,

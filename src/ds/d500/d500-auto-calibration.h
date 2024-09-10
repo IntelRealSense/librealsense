@@ -12,12 +12,15 @@ namespace librealsense
 {
     class debug_interface;
     class d500_debug_protocol_calibration_engine;
+    class ds_advanced_mode_base;
+    class sensor_base;
 
     class d500_auto_calibrated : public auto_calibrated_interface
     {
     public:
         d500_auto_calibrated( std::shared_ptr< d500_debug_protocol_calibration_engine > calib_engine,
-                              debug_interface * debug_dev );
+                              debug_interface * debug_dev,
+                              sensor_base * ds = nullptr );
         void write_calibration() const override;
         std::vector<uint8_t> run_on_chip_calibration(int timeout_ms, std::string json, float* const health, rs2_update_progress_callback_sptr progress_callback) override;
         std::vector<uint8_t> run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* const health, rs2_update_progress_callback_sptr progress_callback) override;
@@ -33,6 +36,7 @@ namespace librealsense
             float target_width, float target_height, rs2_update_progress_callback_sptr progress_callback) override;
         std::string get_calibration_config() const override;
         void set_calibration_config(const std::string& calibration_config_json_str) const override;
+        void set_depth_sensor( sensor_base * ds ) { _depth_sensor = ds; }
 
     private:
         void check_preconditions_and_set_state();
@@ -47,12 +51,14 @@ namespace librealsense
                                                             std::function< void( const int count ) > progress_func,
                                                             bool wait_for_final_results = true ) const;
         std::vector< uint8_t > get_calibration_results( float * const health = nullptr ) const;
+        std::shared_ptr< option > change_preset();
 
         mutable std::vector< uint8_t > _curr_calibration;
         std::shared_ptr<d500_debug_protocol_calibration_engine> _calib_engine;
         calibration_mode _mode;
         calibration_state _state;
         calibration_result _result;
+        sensor_base * _depth_sensor;
         debug_interface * _debug_dev;
     };
 }

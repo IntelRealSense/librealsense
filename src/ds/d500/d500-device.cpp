@@ -438,6 +438,8 @@ namespace librealsense
         auto& depth_sensor = get_depth_sensor();
         auto raw_depth_sensor = get_raw_depth_sensor();
 
+        d500_auto_calibrated::set_depth_sensor( &depth_sensor );
+
         using namespace platform;
 
         std::string pid_hex_str, usb_type_str;
