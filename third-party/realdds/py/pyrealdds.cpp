@@ -32,7 +32,7 @@
 #include <realdds/dds-metadata-syncer.h>
 #include <realdds/dds-serialization.h>
 #include <realdds/dds-sample.h>
-#include <realdds/dds-adapter-watcher.h>
+#include <realdds/dds-network-adapter-watcher.h>
 
 #include <rsutils/os/special-folder.h>
 #include <rsutils/os/executable-name.h>
@@ -121,9 +121,9 @@ json load_rs_settings( json const & local_settings )
 }
 
 
-py::list adapter_list()
+py::list network_adapter_list()
 {
-    auto const ips = realdds::dds_adapter_watcher::current_ips();
+    auto const ips = realdds::dds_network_adapter_watcher::current_ips();
     py::list obj( ips.size() );
     int i = 0;
     for( auto & ip : ips )
@@ -237,7 +237,7 @@ PYBIND11_MODULE(NAME, m) {
     m.def( "timestr", []( dds_time t ) { return timestr( t ).to_string(); } );
 
 
-    m.def( "adapter_list", &adapter_list );
+    m.def( "network_adapter_list", &network_adapter_list );
 
 
     py::class_< dds_participant::listener,

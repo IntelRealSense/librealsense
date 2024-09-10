@@ -6,7 +6,7 @@
 #include <realdds/dds-guid.h>
 #include <realdds/dds-time.h>
 #include <realdds/dds-serialization.h>
-#include <realdds/dds-adapter-watcher.h>
+#include <realdds/dds-network-adapter-watcher.h>
 
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/domain/DomainParticipantListener.hpp>
@@ -258,7 +258,7 @@ void dds_participant::init( dds_domain_id domain_id, qos & pqos, rsutils::json c
     else
         DDS_THROW( runtime_error, "provided settings are invalid: " << settings );
 
-    _adapter_watcher = std::make_shared< dds_adapter_watcher >(
+    _adapter_watcher = std::make_shared< dds_network_adapter_watcher >(
         [this]
         {
             LOG_DEBUG( name() << ": refreshing QoS" );

@@ -8,7 +8,7 @@
 namespace rsutils {
 namespace os {
 namespace detail {
-class adapter_watcher_singleton;
+class network_adapter_watcher_singleton;
 }
 
 
@@ -18,15 +18,15 @@ class adapter_watcher_singleton;
 // 
 // To use, just create a watcher and keep a pointer to it to get notifications. Single callback per instance.
 //
-class adapter_watcher
+class network_adapter_watcher
 {
-    std::shared_ptr< detail::adapter_watcher_singleton > _singleton;
+    std::shared_ptr< detail::network_adapter_watcher_singleton > _singleton;
     subscription _subscription;
 
 public:
     using callback = std::function< void() >;
 
-    adapter_watcher( callback && );
+    network_adapter_watcher( callback && );
 };
 
 

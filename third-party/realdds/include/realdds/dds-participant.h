@@ -39,7 +39,7 @@ class slice;
 namespace realdds {
 
 
-class dds_adapter_watcher;
+class dds_network_adapter_watcher;
 
 
 // The starting point for any DDS interaction, a participant has a name and is the focal point for creating, destroying,
@@ -56,7 +56,7 @@ class dds_participant
     struct listener_impl;
 
     rsutils::json _settings;
-    std::shared_ptr< dds_adapter_watcher > _adapter_watcher;
+    std::shared_ptr< dds_network_adapter_watcher > _adapter_watcher;
 
 public:
     dds_participant() = default;

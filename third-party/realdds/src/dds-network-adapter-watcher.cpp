@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
-#include <realdds/dds-adapter-watcher.h>
+#include <realdds/dds-network-adapter-watcher.h>
 #include <rsutils/shared-ptr-singleton.h>
 #include <rsutils/signal.h>
 #include <rsutils/easylogging/easyloggingpp.h>
@@ -14,15 +14,15 @@ using eprosima::fastrtps::rtps::IPFinder;
 namespace realdds {
 
 
-using ip_set = dds_adapter_watcher::ip_set;
+using ip_set = dds_network_adapter_watcher::ip_set;
 
 
 namespace detail {
 
 
-class adapter_watcher_singleton
+class network_adapter_watcher_singleton
 {
-    std::shared_ptr< rsutils::os::adapter_watcher > _adapter_watcher;
+    std::shared_ptr< rsutils::os::network_adapter_watcher > _adapter_watcher;
 
     ip_set _ips;
 
@@ -30,13 +30,13 @@ class adapter_watcher_singleton
     rsutils::time::stopwatch _time_since_update;
 
     using public_signal
-        = rsutils::public_signal< adapter_watcher_singleton, ip_set const & /*new*/, ip_set const & /*old*/ >;
+        = rsutils::public_signal< network_adapter_watcher_singleton, ip_set const & /*new*/, ip_set const & /*old*/ >;
 
 public:
     public_signal callbacks;
 
-    adapter_watcher_singleton()
-        : _adapter_watcher( std::make_shared< rsutils::os::adapter_watcher >(
+    network_adapter_watcher_singleton()
+        : _adapter_watcher( std::make_shared< rsutils::os::network_adapter_watcher >(
             [this]()
             {
                 // Adapters have changed, but we won't see the effects for some time (several seconds)
@@ -45,7 +45,7 @@ public:
                 if( ! _th.joinable() )
                 {
                     _th = std::thread(
-                        [this, weak = std::weak_ptr< rsutils::os::adapter_watcher >( _adapter_watcher )]
+                        [this, weak = std::weak_ptr< rsutils::os::network_adapter_watcher >( _adapter_watcher )]
                         {
                             LOG_DEBUG( "waiting for IP changes" );
                             ip_set new_ips, old_ips;
@@ -66,11 +66,10 @@ public:
                 }
             } ) )
     {
-        LOG_DEBUG( "network adapter watcher singleton is up" );
         update_ips();
     }
 
-    ~adapter_watcher_singleton()
+    ~network_adapter_watcher_singleton()
     {
         _adapter_watcher.reset();  // signal the thread to finish
         if( _th.joinable() )
@@ -79,68 +78,72 @@ public:
 
     void update_ips( ip_set * p_new_ips = nullptr, ip_set * p_old_ips = nullptr )
     {
-        auto ips = dds_adapter_watcher::current_ips();
+        auto ips = dds_network_adapter_watcher::current_ips();
 
-        auto first1 = ips.begin();
-        auto const last1 = ips.end();
-        auto first2 = _ips.begin();
-        auto const last2 = _ips.end();
+        // Implement a set-difference function
+        // We can use the fact that a set sorts its items to efficiently do this
+        // (see https://en.cppreference.com/w/cpp/algorithm/set_difference)
+        auto new_it = ips.begin();
+        auto const new_end = ips.end();
+        auto old_it = _ips.begin();
+        auto const old_end = _ips.end();
 
-        while( first1 != last1 )
+        while( new_it != new_end )
         {
-            if( first2 == last2  || *first1 < *first2 )
+            if( old_it == old_end  || *new_it < *old_it )
             {
                 // New IP
-                LOG_DEBUG( "+adapter " << *first1 );
+                LOG_DEBUG( "+adapter " << *new_it );
                 if( p_new_ips )
-                    p_new_ips->insert( *first1 );
-                ++first1;
+                    p_new_ips->insert( *new_it );
+                ++new_it;
                 continue;
             }
 
-            if( *first2 < *first1 )
+            if( *old_it < *new_it )
             {
                 // Old IP
-                LOG_DEBUG( "-adapter " << *first2 );
+                LOG_DEBUG( "-adapter " << *old_it );
                 if( p_old_ips )
-                    p_old_ips->insert( *first2 );
-                ++first2;
+                    p_old_ips->insert( *old_it );
+                ++old_it;
                 continue;
             }
 
-            ++first1;
-            ++first2;
+            // *new_it == *old_it --> both new and old have this IP
+            ++new_it;
+            ++old_it;
         }
-        while( first2 != last2 )
+        while( old_it != old_end )
         {
             // Old IP
-            LOG_DEBUG( "-adapter " << *first2 );
+            LOG_DEBUG( "-adapter " << *old_it );
             if( p_old_ips )
-                p_old_ips->insert( *first2 );
-            ++first2;
+                p_old_ips->insert( *old_it );
+            ++old_it;
         }
 
         _ips = std::move( ips );
     }
 };
 
-static rsutils::shared_ptr_singleton< adapter_watcher_singleton > the_adapter_watcher;
+static rsutils::shared_ptr_singleton< network_adapter_watcher_singleton > the_adapter_watcher;
 
 
 }  // namespace detail
 
 
-dds_adapter_watcher::dds_adapter_watcher( callback && cb )
+dds_network_adapter_watcher::dds_network_adapter_watcher( callback && cb )
     : _singleton( detail::the_adapter_watcher.instance() )  // keep it alive
     , _subscription( _singleton->callbacks.subscribe(
           [cb]( ip_set const & new_ips, ip_set const & old_ips ) { cb(); } ) )
 {
-    // As long as someone keeps a pointer to an adapter_watcher, the singleton will be kept alive and it will watch for
-    // changes; as soon as all instances disappear, the singleton will disappear and the watch should stop.
+    // As long as someone keeps a pointer to a dds_network_adapter_watcher, the singleton will be kept alive and it will
+    // watch for changes; as soon as all instances disappear, the singleton will disappear and the watch should stop.
 }
 
 
-/*static*/ ip_set dds_adapter_watcher::current_ips()
+/*static*/ ip_set dds_network_adapter_watcher::current_ips()
 {
     std::vector< IPFinder::info_IP > local_interfaces;
     IPFinder::getIPs( &local_interfaces, false );
