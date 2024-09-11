@@ -654,7 +654,7 @@ namespace librealsense
         {
             d400_device::hardware_reset();
             //limitation: the user must hold the context from which the device was created
-            //creating fake notification to trigger invoke_devices_changed_callbacks, causing connection and
+            //creating fake notification to trigger invoke_devices_changed_callbacks, causing disconnection and connection
             auto dev_info = this->get_device_info();
             auto non_const_device_info = std::const_pointer_cast< librealsense::device_info >( dev_info );
             std::vector< std::shared_ptr< device_info > > devices{ non_const_device_info };
@@ -675,7 +675,7 @@ namespace librealsense
                     }
                     catch( const std::exception & e )
                     {
-                        std::cerr << e.what() << std::endl;
+                        LOG_ERROR( e.what() );
                         return;
                     }
                 } ); 
