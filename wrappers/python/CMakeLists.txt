@@ -140,11 +140,11 @@ set_target_properties( pybackend2
     PROPERTIES
         FOLDER Library/Python
     )
-target_include_directories(pybackend2 PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(pybackend2 PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
 if(${FORCE_RSUSB_BACKEND})
 if(APPLE)
-    target_include_directories(pybackend2 PRIVATE ${CMAKE_SOURCE_DIR}/third-party/hidapi/)
+    target_include_directories(pybackend2 PRIVATE ${PROJECT_SOURCE_DIR}/third-party/hidapi/)
 endif()
 endif()
 
