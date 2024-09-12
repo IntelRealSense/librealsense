@@ -39,7 +39,11 @@ def wait_for_devices( context, mask=product_line.any, n=1, timeout=3, throw=None
     timer = _Timer( timeout )
     devices = context.query_devices( mask )
     if len(devices) >= n:
-        if not exact or len(devices) == n:
+        if not exact:
+            return devices
+        if len(devices) == n:
+            if n == 1:
+                return devices[0]
             return devices
     #
     context.set_devices_changed_callback( _device_change_callback )

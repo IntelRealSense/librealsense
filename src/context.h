@@ -67,10 +67,11 @@ namespace librealsense
         std::shared_ptr< processing_block_interface > create_pp_block( std::string const & name,
                                                                        rsutils::json const & settings );
 
-    private:
+    
         void invoke_devices_changed_callbacks( std::vector< std::shared_ptr< device_info > > const & devices_removed,
                                                std::vector< std::shared_ptr< device_info > > const & devices_added );
 
+    private:
         std::map< std::string /*address*/, std::weak_ptr< device_info > > _user_devices;
 
         rsutils::signal< std::vector< std::shared_ptr< device_info > > const & /*removed*/,
