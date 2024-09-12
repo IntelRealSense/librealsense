@@ -8,7 +8,7 @@
 [![GitHub CI](../../actions/workflows/buildsCI.yaml/badge.svg?branch=development)](../../actions/workflows/buildsCI.yaml)
 [![Forks](https://img.shields.io/github/forks/IntelRealSense/librealsense.svg)](https://github.com/IntelRealSense/librealsense/network/members)
 
-
+ 
 
 ## Overview
 **Intel® RealSense™ SDK 2.0** is a cross-platform library for Intel® RealSense™ depth cameras.
