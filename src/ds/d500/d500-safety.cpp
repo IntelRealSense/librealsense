@@ -432,7 +432,7 @@ namespace librealsense
         command cmd(ds::SAFETY_PRESET_WRITE);
         cmd.param1 = index;
         cmd.data.insert(cmd.data.end(), data_as_ptr, data_as_ptr + sizeof(data));
-        cmd.require_response = false;
+        cmd.require_response = true;
 
         // send command 
         _owner->_hw_monitor->send(cmd);
@@ -629,7 +629,7 @@ namespace librealsense
             static_cast<int>(ds::d500_calibration_table_id::safety_interface_cfg_id),
             static_cast<int>(ds::d500_calib_type::d500_calib_gold));
         cmd.data.insert(cmd.data.end(), data_as_ptr, data_as_ptr + sizeof(rs2_safety_interface_config_with_header));
-        cmd.require_response = false;
+        cmd.require_response = true;
 
         // send command 
         _owner->_hw_monitor->send(cmd);
@@ -898,7 +898,7 @@ namespace librealsense
             static_cast<int>(ds::d500_calibration_table_id::app_config_table_id),
             static_cast<int>(ds::d500_calib_type::d500_calib_dynamic));
         cmd.data.insert(cmd.data.end(), data_as_ptr, data_as_ptr + sizeof(application_config_with_header));
-        cmd.require_response = false;
+        cmd.require_response = true;
 
         // send command 
         _owner->_hw_monitor->send(cmd);
