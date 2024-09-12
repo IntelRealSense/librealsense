@@ -60,23 +60,6 @@ std::vector<uint8_t> d500_debug_protocol_calibration_engine::run_triggered_calib
     return _dev->send_receive_raw_data(cmd);
 }
 
-static std::vector<uint8_t> add_header_to_calib_config(const rs2_calibration_config& calib_config)
-{
-    // calculate CRC
-    uint32_t computed_crc32 = rsutils::number::calc_crc32(reinterpret_cast<const uint8_t*>(&calib_config),
-        sizeof(rs2_calibration_config));
-
-    // prepare vector of data to be sent (header + sp)
-    rs2_calibration_config_with_header calib_config_with_header;
-    uint16_t version = ((uint16_t)0x01 << 8) | 0x01;  // major=0x01, minor=0x01 --> ver = major.minor
-    uint32_t calib_version = 0;  // ignoring this field, as requested by sw architect
-    calib_config_with_header.header = { version, static_cast<uint16_t>(ds::d500_calibration_table_id::calib_cfg_id),
-        sizeof(rs2_calibration_config), calib_version, computed_crc32 };
-    calib_config_with_header.payload = calib_config;
-    auto data_as_ptr = reinterpret_cast<uint8_t*>(&calib_config_with_header);
-    return std::vector<uint8_t>(data_as_ptr, data_as_ptr + sizeof(rs2_calibration_config_with_header));
-}
-
 calibration_state d500_debug_protocol_calibration_engine::get_triggered_calibration_state() const
 {
     return _calib_ans.state;
