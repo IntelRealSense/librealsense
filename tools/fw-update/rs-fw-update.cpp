@@ -226,6 +226,7 @@ try
     cli::flag unsigned_arg( 'u', "unsigned", "Update unsigned firmware, available only for unlocked cameras" );
     cli::value<std::string> backup_arg('b', "backup", "path", "", "Create a backup to the camera flash and saved it to the given path");
     cli::value<std::string> file_arg('f', "file", "path", "", "Path of the firmware image file");
+    cli::value<std::string> smcu_arg('m', "smcu", "path", "", "Path of the safety MCU image file");
     cli::value<std::string> serial_number_arg('s', "serial_number", "string", "", "The serial number of the device to be update, this is mandatory if more than one device is connected");
 
     cmd.default_log_level( RS2_LOG_SEVERITY_WARN );
