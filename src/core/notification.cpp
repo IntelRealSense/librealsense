@@ -48,6 +48,7 @@ void notifications_processor::set_callback( rs2_notifications_callback_sptr call
 
 rs2_notifications_callback_sptr notifications_processor::get_callback() const
 {
+    std::lock_guard< std::mutex > lock( _callback_mutex );
     return _callback;
 }
 

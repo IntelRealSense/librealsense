@@ -122,7 +122,7 @@ namespace rs2
         bool done() const { return _done; }
         bool started() const { return _started; }
         bool failed() const { return _failed; }
-        const std::string& get_log() const { return _log; }
+        const std::string get_log() const;
         void reset();
 
         void check_error(std::string& error) { if (_failed) error = _last_error; }
@@ -141,7 +141,7 @@ namespace rs2
         bool _failed = false;
         float _progress = 0;
 
-        std::mutex _log_lock;
+        mutable std::mutex _log_lock;
         std::string _last_error;
         std::string _process_name;
     };
